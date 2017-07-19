@@ -240,6 +240,7 @@ function install_wallet {
 
       npm run grunt-release &>> $logfile || { echo -e "\n\nCould not build web wallet release. Exiting." && exit 1; }
       echo -e "Done."
+      echo -e "---- PLEASE RELOAD YOUR NODE ----"
 
   else
       echo -e "Directory $root_path does not exist! Nothing to install.."
@@ -357,10 +358,6 @@ case $1 in
     "install_wallet")
       install_wallet
       sleep 2
-      stop_rise
-      sleep 2
-      start_rise
-      show_blockHeight
     ;;
     "update_client")
       start_log
