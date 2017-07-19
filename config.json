@@ -24,7 +24,9 @@
         "enabled": true,
         "access": {
             "public": false,
-            "whiteList": ["127.0.0.1"]
+            "whiteList": [
+                "127.0.0.1"
+            ]
         },
         "options": {
             "limits": {
