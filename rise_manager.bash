@@ -30,6 +30,7 @@ GIT_ORIGIN="testnet"
 BLOCKCHAIN_URL="https://downloads.rise.vision/snapshots/$GIT_ORIGIN/latest"
 DB_SNAPSHOT="blockchain.db.gz"
 GIT_BRANCH="$(git branch | sed -n '/\* /s///p')"
+GIT_ROOT="https://github.com/RiseVision"
 
 install_prereq() {
 
@@ -224,6 +225,34 @@ install_rise() {
     return 0;
 }
 
+# (re)Install wallet
+# ---------------------
+function install_wallet {
+  cd $HOME
+
+    ## Check if directory exists
+    if [ -d "$root_path" ]; then
+      cd $root_path
+
+      echo -n "Installing wallet... "
+
+      if [[ -d "public" ]]; then
+          echo -e "Found an existing public folder. Will remove it now.."
+          rm -rf public/
+      fi
+
+      git clone -b $GIT_BRANCH $GIT_ROOT/rise-wallet public &>> $logfile || { echo -n "Could not clone git wallet source. Exiting." && exit 1; }
+      cd public && npm install &>> $logfile || { echo -n "Could not install web wallet node modules. Exiting." && exit 1; }
+
+      npm run grunt-release &>> $logfile || { echo -e "\n\nCould not build web wallet release. Exiting." && exit 1; }
+      echo -e "Done."
+
+  else
+      echo -e "Directory $root_path does not exist! Nothing to install.."
+      exit 1;
+    fi
+}
+
 update_client() {
 
     if [[ -f config.json ]]; then
@@ -330,6 +359,14 @@ case $1 in
       echo "Rise successfully installed"
 
     ;;
+    "install_wallet")
+      install_wallet
+      sleep 1
+      stop_rise
+      sleep 1
+      start_rise
+      show_blockHeight
+    ;;
     "update_manager")
       update_manager
     ;;
@@ -379,7 +416,7 @@ case $1 in
     ;;
 
 *)
-    echo 'Available options: install, reload (stop/start), rebuild (official snapshot), clean_start (drop database), start, stop, update_manager, update_client'
+    echo 'Available options: install, install_wallet, reload (stop/start), rebuild (official snapshot), clean_start (drop database), start, stop, update_manager, update_client'
     echo 'Usage: ./rise_manager.bash install'
     exit 1
 ;;
