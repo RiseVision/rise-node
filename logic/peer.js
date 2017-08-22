@@ -3,11 +3,35 @@
 var _ = require('lodash');
 var ip = require('ip');
 
+/**
+ * Creates a peer.
+ * @memberof module:peers
+ * @class
+ * @classdesc Main peer logic.
+ * @implements {Peer.accept}
+ * @param {peer} peer
+ * @return calls accept method
+ */
 // Constructor
 function Peer (peer) {
 	return this.accept(peer || {});
 }
 
+/**
+ * @typedef {Object} peer
+ * @property {string} ip
+ * @property {number} port - Between 1 and 65535
+ * @property {number} state - Between 0 and 2. (banned = 0, unbanned = 1, active = 2)
+ * @property {string} os - Between 1 and 64 chars
+ * @property {string} version - Between 5 and 12 chars
+ * @property {string} dappid
+ * @property {hash} broadhash
+ * @property {number} height - Minimum 1
+ * @property {Date} clock
+ * @property {Date} updated
+ * @property {string} nonce - Check this!
+ * @property {string} string
+ */
 // Public properties
 Peer.prototype.properties = [
 	'ip',
@@ -48,7 +72,18 @@ Peer.prototype.nullable = [
 	'updated'
 ];
 
+Peer.STATE = {
+	BANNED: 0,
+	DISCONNECTED: 1,
+	CONNECTED: 2
+};
+
 // Public methods
+/**
+ * Checks peer properties and adjusts according rules.
+ * @param {peer} peer
+ * @return {Object} this
+ */
 Peer.prototype.accept = function (peer) {
 	// Normalize peer data
 	peer = this.normalize(peer);
@@ -72,6 +107,11 @@ Peer.prototype.accept = function (peer) {
 	return this;
 };
 
+/**
+ * Normalizes peer data.
+ * @param {peer} peer
+ * @return {peer} 
+ */
 Peer.prototype.normalize = function (peer) {
 	if (peer.dappid && !Array.isArray(peer.dappid)) {
 		var dappid = peer.dappid;
@@ -84,14 +124,17 @@ Peer.prototype.normalize = function (peer) {
 	}
 
 	peer.port = this.parseInt(peer.port, 0);
-
-	if (!/^[0-2]{1}$/.test(peer.state)) {
-		peer.state = 1;
-	}
+	peer.state = this.parseInt(peer.state, Peer.STATE.DISCONNECTED);
 
 	return peer;
 };
 
+/**
+ * Checks number or assigns default value from parameter.
+ * @param {number} integer
+ * @param {number} [fallback]
+ * @return {number} if not integer returns fallback
+ */
 Peer.prototype.parseInt = function (integer, fallback) {
 	integer = parseInt(integer);
 	integer = isNaN(integer) ? fallback : integer;
@@ -99,6 +142,11 @@ Peer.prototype.parseInt = function (integer, fallback) {
 	return integer;
 };
 
+/**
+ * Normalizes headers
+ * @param {Object} headers
+ * @return {Object} headers normalized
+ */
 Peer.prototype.applyHeaders = function (headers) {
 	headers = headers || {};
 	headers = this.normalize(headers);
@@ -106,13 +154,18 @@ Peer.prototype.applyHeaders = function (headers) {
 	return headers;
 };
 
+/**
+ * Updates peer values if mutable.
+ * @param {peer} peer
+ * @return {Object} this
+ */
 Peer.prototype.update = function (peer) {
 	peer = this.normalize(peer);
 
 	// Accept only supported properties
 	_.each(this.properties, function (key) {
-		// Change value only when is defined, also prevent release ban when banned peer connect to our node
-		if (peer[key] !== null && peer[key] !== undefined && !(key === 'state' && this.state === 0 && peer.state === 2) && !_.includes(this.immutable, key)) {
+		// Change value only when is defined
+		if (peer[key] !== null && peer[key] !== undefined && !_.includes(this.immutable, key)) {
 			this[key] = peer[key];
 		}
 	}.bind(this));
@@ -120,6 +173,9 @@ Peer.prototype.update = function (peer) {
 	return this;
 };
 
+/**
+ * @return {peer} clones current peer
+ */
 Peer.prototype.object = function () {
 	var copy = {};
 

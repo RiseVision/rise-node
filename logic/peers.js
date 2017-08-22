@@ -8,17 +8,32 @@ var schema = require('../schema/peers.js');
 // Private fields
 var __private = {};
 var self;
-var modules;
 var library;
-
+var modules;
+/**
+ * Initializes library.
+ * @memberof module:peers
+ * @class
+ * @classdesc Main peers logic.
+ * @param {Object} logger
+ * @param {function} cb - Callback function.
+ * @return {setImmediateCallback} Callback function with `this` as data.
+ */
 // Constructor
-function Peers (scope, cb) {
-	library = scope;
+function Peers (logger, cb) {
+	library = {
+		logger: logger
+	};
 	self = this;
 	__private.peers = {};
 	return setImmediate(cb, null, this);
 }
 
+/**
+ * Returns a peer instance.
+ * @param {peer} peer
+ * @return {peer} peer instance
+ */
 Peers.prototype.create = function (peer) {
 	if (!(peer instanceof Peer)) {
 		return new Peer(peer);
@@ -27,11 +42,21 @@ Peers.prototype.create = function (peer) {
 	}
 };
 
+/**
+ * Checks if peer is in peers list.
+ * @param {peer} peer
+ * @return {boolean} True if peer is in peers list
+ */
 Peers.prototype.exists = function (peer) {
 	peer = self.create(peer);
 	return !!__private.peers[peer.string];
 };
 
+/**
+ * Gets a peer from peers or creates a new one and returns it.
+ * @param {peer} peer
+ * @return {peer} peer new or peer from peers
+ */
 Peers.prototype.get = function (peer) {
 	if (typeof peer === 'string') {
 		return __private.peers[peer];
@@ -41,14 +66,22 @@ Peers.prototype.get = function (peer) {
 	}
 };
 
+/**
+ * Inserts or updates a peer
+ * @param {peer} peer
+ * @param {boolean} insertOnly - true to only insert.
+ * @return {boolean} True if operation is success.
+ */
 Peers.prototype.upsert = function (peer, insertOnly) {
 	// Insert new peer
 	var insert = function (peer) {
-		peer.updated = Date.now();
-		__private.peers[peer.string] = peer;
-
-		library.logger.debug('Inserted new peer', peer.string);
-		library.logger.trace('Inserted new peer', {peer: peer});
+		if (!_.isEmpty(modules.peers.acceptable([peer]))) {
+			peer.updated = Date.now();
+			__private.peers[peer.string] = peer;
+			library.logger.debug('Inserted new peer', peer.string);
+		} else {
+			library.logger.debug('Rejecting unacceptable peer', peer.string);
+		}
 	};
 
 	// Update existing peer
@@ -114,28 +147,11 @@ Peers.prototype.upsert = function (peer, insertOnly) {
 	return true;
 };
 
-Peers.prototype.ban = function (ip, port, seconds) {
-	return self.upsert({
-		ip: ip,
-		port: port,
-		// State 0 for banned peer
-		state: 0,
-		clock: Date.now() + (seconds || 1) * 1000
-	});
-};
-
-Peers.prototype.unban = function (peer) {
-	peer = self.get(peer);
-	if (peer) {
-		delete peer.clock;
-		peer.state = 1;
-		library.logger.debug('Released ban for peer', peer.string);
-	} else {
-		library.logger.debug('Failed to release ban for peer', {err: 'INVALID', peer: peer});
-	}
-	return peer;
-};
-
+/**
+ * Deletes peer from peers list.
+ * @param {peer} peer
+ * @return {boolean} True if peer exists
+ */
 Peers.prototype.remove = function (peer) {
 	peer = self.create(peer);
 	// Remove peer if exists
@@ -151,6 +167,11 @@ Peers.prototype.remove = function (peer) {
 	}
 };
 
+/**
+ * Returns private list of peers
+ * @param {boolean} [normalize] - If true transform list to object
+ * @return {peer[]} list of peers
+ */
 Peers.prototype.list = function (normalize) {
 	if (normalize) {
 		return Object.keys(__private.peers).map(function (key) { return __private.peers[key].object(); });
@@ -160,9 +181,14 @@ Peers.prototype.list = function (normalize) {
 };
 
 // Public methods
-Peers.prototype.bind = function (scope) {
-	modules = scope.modules;
-	library.logger.trace('Logic/Peers->bind');
+/**
+ * Modules are not required in this file.
+ * @param {Object} __modules - Peers module.
+ */
+Peers.prototype.bindModules = function (__modules) {
+	modules = {
+		peers: __modules.peers
+	};
 };
 
 // Export

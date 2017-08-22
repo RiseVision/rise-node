@@ -64,6 +64,16 @@ module.exports = {
 		},
 		required: ['address']
 	},
+	getDelegatesFee: {
+		id: 'accounts.getDelegatesFee',
+		type: 'object',
+		properties: {
+			height: {
+				type: 'integer',
+				minimum: 1
+			}
+		}
+	},
 	addDelegates: {
 		id: 'accounts.addDelegates',
 		type: 'object',

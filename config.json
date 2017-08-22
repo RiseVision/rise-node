@@ -4,9 +4,10 @@
     "fileLogLevel": "info",
     "logFileName": "logs/rise-master.log",
     "logAppend": false,
-    "consoleLogLevel": "log",
+    "consoleLogLevel": "warn",
     "trustProxy": false,
     "topAccounts": false,
+    "cacheEnabled": false,
     "db": {
         "host": "localhost",
         "port": 5432,
@@ -20,11 +21,19 @@
             "error"
         ]
     },
+    "redis": {
+        "host": "127.0.0.1",
+        "port": 6380,
+        "db": 0,
+        "password": null
+    },
     "api": {
         "enabled": true,
         "access": {
             "public": false,
-            "whiteList": ["127.0.0.1"]
+            "whiteList": [
+                "127.0.0.1"
+            ]
         },
         "options": {
             "limits": {
@@ -98,7 +107,7 @@
     },
     "dapp": {
         "masterrequired": true,
-        "masterpassword": "",
+        "masterpassword": "rh9bVsRD6ZVN",
         "autoexec": []
     },
     "nethash": "cd8171332c012514864edd8eb6f68fc3ea6cb2afbaf21c56e12751022684cea5"

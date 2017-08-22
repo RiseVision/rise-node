@@ -72,7 +72,7 @@ module.exports = {
 			limit: {
 				type: 'integer',
 				minimum: 1,
-				maximum: 100
+				maximum: 1000
 			}
 		},
 		required: ['q']
@@ -103,6 +103,16 @@ module.exports = {
 			offset: {
 				type: 'integer',
 				minimum: 0
+			}
+		}
+	},
+	getFee: {
+		id: 'delegates.getFee',
+		type: 'object',
+		properties: {
+			height: {
+				type: 'integer',
+				minimum: 1
 			}
 		}
 	},

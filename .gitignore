@@ -1,0 +1,13 @@
+dapps/
+logs/
+docs/jsdoc/
+node_modules
+ssl/
+public/
+stacktrace*
+test/.coverage-unit
+tmp
+sftp-config.json
+*.swp
+*.swo
+.idea/
