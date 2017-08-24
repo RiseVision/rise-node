@@ -258,9 +258,9 @@ update_client() {
 
     echo -e "Updating Rise client..."
     cd $root_path
-    git checkout . &>> $LOGFILE || { echo "Failed to checkout latest status. See $LOGFILE for more information." && exit 1; }
-    git pull &>> $LOGFILE || { echo "Failed to fetch new files from git. See $LOGFILE for more information. Exiting." && exit 1; }
-    npm install --production &>> $LOGFILE || { echo "Could not install node modules. See $LOGFILE for more information. Exiting." && exit 1; }
+    git checkout . &>> $logfile || { echo "Failed to checkout latest status. See $logfile for more information." && exit 1; }
+    git pull &>> $logfile || { echo "Failed to fetch new files from git. See $logfile for more information. Exiting." && exit 1; }
+    npm install --production &>> $logfile || { echo "Could not install node modules. See $logfile for more information. Exiting." && exit 1; }
 
     if [[ -f config.json.bak ]]; then
       echo -n "Take over config.json entries from previous installation ... "
