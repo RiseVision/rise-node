@@ -1,4 +1,4 @@
-## Rise-node version 0.1.0
+## Rise-node version 0.1.1
 
 ## Installation
 
