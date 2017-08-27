@@ -683,6 +683,7 @@ Peers.prototype.shared = {
 	 * @return {String}   cb.obj.build Build information (if available, otherwise '')
 	 * @return {String}   cb.obj.commit Hash of last git commit (if available, otherwise '')
 	 * @return {String}   cb.obj.version Shift current version
+	 * @return {String}   cb.obj.minVersion RISE current minimal required version
 	 */
 	version: function (req, cb) {
 		return setImmediate(cb, null, {

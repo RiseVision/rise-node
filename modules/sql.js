@@ -113,6 +113,16 @@ __private.pass = function (obj, dappid) {
 	}
 };
 
+/**
+ * Creates sql query to dapps
+ * @implements {jsonSql.build}
+ * @implements {library.db.query}
+ * @implements {async.until}
+ * @param {string} action
+ * @param {Object} config
+ * @param {function} cb
+ * @return {setImmediateCallback} cb, err, data
+ */
 __private.query = function (action, config, cb) {
 	var sql = null;
 
