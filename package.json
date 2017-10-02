@@ -69,7 +69,7 @@
     "istanbul": "=0.4.5",
     "istanbul-middleware": "=0.2.2",
     "jsdox": "=0.4.10",
-    "mocha": "=3.2.0",
+    "mocha": "^3.5.3",
     "moment": "=2.17.1",
     "rewire": "^2.5.2",
     "sinon": "=2.3.0",
