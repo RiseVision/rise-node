@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node app.js",
-    "test": "./node_modules/.bin/grunt test --verbose",
-    "test-unit": "NODE_ENV=test mocha './modules/**/*.spec.js'",
+    "test-integration": "./node_modules/.bin/grunt tests/integration --verbose",
+    "test-unit": "NODE_ENV=test mocha './tests/**/*.spec.js'",
     "travis": "./node_modules/.bin/grunt travis --verbose",
     "fetchCoverage": "./node_modules/.bin/grunt exec:fetchCoverage --verbose"
   },

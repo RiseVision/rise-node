@@ -3,11 +3,13 @@ var expect = chai.expect;
 var sinon = require("sinon");
 var rewire = require("rewire");
 var path = require("path");
-
 var jsonSql = require('json-sql')();
 jsonSql.setDialect('postgresql');
-var constants = require('../helpers/constants.js');
-var Account = rewire("./account");
+
+var rootDir = path.join(__dirname, "../../..");
+
+var constants = require(path.join(rootDir, "helpers/constants"));
+var Account = rewire(path.join(rootDir, "logic/account"));
 
 var table = 'mem_accounts';
 var model = [
