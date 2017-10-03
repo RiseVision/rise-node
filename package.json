@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node app.js",
-    "test": "./node_modules/.bin/grunt test --verbose",
-    "test-unit": "NODE_ENV=test mocha './modules/**/*.spec.js'",
+    "test-integration": "./node_modules/.bin/grunt tests/integration --verbose",
+    "test-unit": "NODE_ENV=test mocha './tests/**/*.spec.js'",
     "travis": "./node_modules/.bin/grunt travis --verbose",
     "fetchCoverage": "./node_modules/.bin/grunt exec:fetchCoverage --verbose"
   },
@@ -69,7 +69,7 @@
     "istanbul": "=0.4.5",
     "istanbul-middleware": "=0.2.2",
     "jsdox": "=0.4.10",
-    "mocha": "=3.2.0",
+    "mocha": "^3.5.3",
     "moment": "=2.17.1",
     "rewire": "^2.5.2",
     "sinon": "=2.3.0",

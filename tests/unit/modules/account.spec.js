@@ -1,15 +1,18 @@
+var path = require("path");
 var chai = require("chai");
 var expect = chai.expect;
 var sinon = require("sinon");
 var rewire = require("rewire");
-
 var crypto = require("crypto");
-var Accounts = rewire("./accounts");
-var Vote = require('../logic/vote.js');
-var ed = require('../helpers/ed.js');
-var constants = require('../helpers/constants.js');
-var schema = require('../schema/accounts.js');
-var transactionTypes = require('../helpers/transactionTypes.js');
+
+var rootDir = path.join(__dirname, "../../..");
+
+var Accounts = rewire(path.join(rootDir, "modules/accounts"));
+var Vote = require(path.join(rootDir, "logic/vote"));
+var ed = require(path.join(rootDir, "helpers/ed"));
+var constants = require(path.join(rootDir, "helpers/constants"));
+var schema = require(path.join(rootDir, "schema/accounts"));
+var transactionTypes = require(path.join(rootDir, "helpers/transactionTypes"));
 
 describe("modules/accounts", function() {
     it("constructor", function(done) {
@@ -296,7 +299,7 @@ describe("modules/accounts", function() {
         var testCall = {};
         var testArgs = {};
 
-        var sandboxHelper = require('../helpers/sandbox.js');
+        var sandboxHelper = require(path.join(rootDir, "helpers/sandbox"));
         var sandboxHelperStub = sinon.spy(sandboxHelper, "callMethod");
         var privateShared = Accounts.__get__("shared");
 
