@@ -28,7 +28,6 @@ describe("modules/accounts", function() {
         var callback = sinon.spy();
         var account = new Accounts(callback, scope);
 
-        expect(scope.logic.transaction.attachAssetType.called).to.be.true;
         expect(scope.logic.transaction.attachAssetType.calledOnce).to.be.true;
 
         expect(scope.logic.transaction.attachAssetType.getCall(0).args.length).to.equal(2);
@@ -189,33 +188,34 @@ describe("modules/accounts", function() {
     });
    
     describe("public.getAccount", function() {
-        it("with publicKey", function() {
-            var testObj = {};
+        var testObj1, testObj2;
 
-            account.getAccount({ publicKey : testAccount.publicKey }, testObj, callback);
+        beforeEach(function() {
+            testObj1 = {};
+            testObj2 = {};
+        });
+
+        it("with publicKey", function() {
+            account.getAccount({ publicKey : testAccount.publicKey }, testObj1, callback);
 
             expect(scope.logic.account.get.calledOnce).to.be.true;
             expect(scope.logic.account.get.getCall(0).args.length).to.equal(3);
             expect(scope.logic.account.get.getCall(0).args[0]).to.deep.equal({ address : testAccount.address });
-            expect(scope.logic.account.get.getCall(0).args[1]).to.equal(testObj);
+            expect(scope.logic.account.get.getCall(0).args[1]).to.equal(testObj1);
             expect(scope.logic.account.get.getCall(0).args[2]).to.equal(callback);
         });
 
         it("without publicKey", function() {
-            var testObj = {};
-
-            account.getAccount({ address : testAccount.address }, testObj, callback);
+            account.getAccount({ address : testAccount.address }, testObj1, callback);
 
             expect(scope.logic.account.get.calledOnce).to.be.true;
             expect(scope.logic.account.get.getCall(0).args.length).to.equal(3);
             expect(scope.logic.account.get.getCall(0).args[0]).to.deep.equal({ address : testAccount.address });
-            expect(scope.logic.account.get.getCall(0).args[1]).to.equal(testObj);
+            expect(scope.logic.account.get.getCall(0).args[1]).to.equal(testObj1);
             expect(scope.logic.account.get.getCall(0).args[2]).to.equal(callback);
         });
 
         it("public.getAccounts", function() {
-            var testObj1 = {}, testObj2 = {};
-
             account.getAccounts(testObj1, testObj2, callback)
 
             expect(scope.logic.account.getAll.calledOnce).to.be.true;
@@ -512,7 +512,7 @@ describe("modules/accounts", function() {
 
         it("validation passed, getAccount returns account with not empty  balance", function() {
             testAccount.balance = '1234';
-            testAccount.u_balance = '5678'
+            testAccount.u_balance = '5678';
             request.body.address = testAccount.address;
 
             account.shared.getBalance(request, callback);
@@ -889,7 +889,7 @@ describe("modules/accounts", function() {
         it("validation passed, getAccount returns account with delegates", function() {
             testAccount.delegates = ['1','2','3','4'];
 
-            var modules = Accounts.__get__('modules')
+            var modules = Accounts.__get__('modules');
             modules.delegates = {
                 getDelegates : function(){}
             };
