@@ -1,5 +1,5 @@
 ## Rise-node version 0.1.2
-# Lisk
+# RISE
 
 ## Installation
 
@@ -15,7 +15,7 @@ cd $HOME
 
 Then git clone
 ```
-git clone https://github.com/RiseVision/rise-node.git
+git clone -b master https://github.com/RiseVision/rise-node.git
 ```
 
 Go to the Rise directory
@@ -73,6 +73,7 @@ git clone -b testnet https://github.com/RiseVision/rise-node.git
 ```
 
 ## Authors
+- Andrea B. <vekexasia+crypto@gmail.com>
 - Jan <lepetitjan@icloud.com>
 - Mariusz Serek <mariusz@serek.net>
 - Goldeneye (Shift Team)
