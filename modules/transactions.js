@@ -600,7 +600,8 @@ Transactions.prototype.onBind = function (scope) {
 	);
 	__private.assetTypes[transactionTypes.SEND].bind(
 		scope.accounts,
-		scope.rounds
+		scope.rounds,
+		scope.system
 	);
 };
 

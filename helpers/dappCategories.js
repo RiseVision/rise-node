@@ -13,13 +13,14 @@
  * - 8:	Utilities
  */
 module.exports = {
-	Education: 0,
-	Entertainment: 1,
-	Finance: 2,
-	Games: 3,
-	Miscellaneous: 4,
+	Official: 0,
+	Education: 1,
+	Entertainment: 2,
+	Finance: 3,
+	Games: 4,
 	Networking: 5,
 	Science: 6,
 	Social: 7,
-	Utilities: 8
+	Utilities: 8,
+	Miscellaneous: 9
 };

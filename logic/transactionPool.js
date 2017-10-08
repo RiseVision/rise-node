@@ -721,7 +721,8 @@ __private.processVerifyTransaction = function (transaction, broadcast, cb) {
 			}
 		},
 		function verifyTransaction (sender, waterCb) {
-			library.logic.transaction.verify(transaction, sender, function (err) {
+			//FIXME: Here it should pass height instead of null!
+			library.logic.transaction.verify(transaction, sender, null, function (err) {
 				if (err) {
 					return setImmediate(waterCb, err);
 				} else {

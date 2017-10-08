@@ -6,7 +6,7 @@ var os = require('os');
 var sandboxHelper = require('../helpers/sandbox.js');
 var semver = require('semver');
 var sql = require('../sql/system.js');
-
+var constants = require('../helpers/constants.js');
 // Private fields
 var modules, library, self, __private = {}, shared = {};
 
@@ -38,7 +38,6 @@ function System (cb, scope) {
 			version: scope.config.version,
 			port: scope.config.port,
 			nethash: scope.config.nethash,
-			minVersion: scope.config.minVersion,
 		},
 	};
 	self = this;
@@ -49,15 +48,7 @@ function System (cb, scope) {
 	__private.height = 1;
 	__private.nethash = library.config.nethash;
 	__private.broadhash = library.config.nethash;
-	__private.minVersion = library.config.minVersion;
 	__private.nonce = library.nonce;
-
-	if (rcRegExp.test(__private.minVersion)) {
-		this.minVersion = __private.minVersion.replace(rcRegExp, '');
-		this.minVersionChar = __private.minVersion.charAt(__private.minVersion.length - 1);
-	} else {
-		this.minVersion = __private.minVersion;
-	}
 
 	setImmediate(cb, null, self);
 }
@@ -131,8 +122,28 @@ System.prototype.networkCompatible = function (nethash) {
  * Gets private variable `minVersion`
  * @return {string}
  */
-System.prototype.getMinVersion = function () {
-	return __private.minVersion;
+System.prototype.getMinVersion = function (height) {
+	height = height || modules.blocks.lastBlock.get().height;
+
+	var minVer = '';
+	for ( var i = constants.minVersion.length - 1; i >= 0 && minVer == ''; --i ) {
+		if (height>=constants.minVersion[i].height)
+			{minVer = constants.minVersion[i].ver;}
+	}
+
+	// update this.minVersion / this.minVersionChar, if necessary
+	if (minVer != this.lastMinVer) {
+		this.lastMinVer = minVer;
+		if (rcRegExp.test(minVer)) {
+			this.minVersion = minVer.replace(rcRegExp, '');
+			this.minVersionChar = minVer.charAt(minVer.length - 1);
+		} else {
+			this.minVersion = minVer;
+			this.minVersionChar = '';
+		}
+	}
+
+	return minVer;
 };
 
 /**
@@ -142,6 +153,8 @@ System.prototype.getMinVersion = function () {
  * @return {boolean}
  */
 System.prototype.versionCompatible = function (version) {
+	this.getMinVersion();		// set current minVersion
+
 	var versionChar;
 
 	if (rcRegExp.test(version)) {
@@ -184,6 +197,24 @@ System.prototype.getBroadhash = function (cb) {
 		library.logger.error(err.stack);
 		return setImmediate(cb, err);
 	});
+};
+
+System.prototype.getFees = function (height) {
+	height = height || modules.blocks.lastBlock.get().height+1;
+
+	var i;
+	for (i=constants.fees.length-1; i>0; i--)	{
+		if (height>=constants.fees[i].height) {
+			break;
+		}
+	}
+
+	return {
+		fromHeight: constants.fees[i].height,
+		toHeight: i == constants.fees.length-1 ? null : constants.fees[i+1].height-1,
+		height: height,
+		fees: constants.fees[i].fees
+	};
 };
 
 /**

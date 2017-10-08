@@ -20,10 +20,11 @@ function Transfer () {}
  * @param {Accounts} accounts
  * @param {Rounds} rounds
  */
-Transfer.prototype.bind = function (accounts, rounds) {
+Transfer.prototype.bind = function (accounts, rounds, system) {
 	modules = {
 		accounts: accounts,
 		rounds: rounds,
+		system: system
 	};
 };
 
@@ -39,14 +40,15 @@ Transfer.prototype.create = function (data, trs) {
 
 	return trs;
 };
+
 /**
  * Returns send fees from constants.
  * @param {transaction} trs
  * @param {account} sender
  * @return {number} fee
  */
-Transfer.prototype.calculateFee = function (trs, sender) {
-	return constants.fees.send;
+Transfer.prototype.calculateFee = function (trs, sender, height) {
+	return modules.system.getFees(height).fees.send;
 };
 
 /**

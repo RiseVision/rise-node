@@ -26,9 +26,10 @@ function Signature (schema, logger) {
  * Binds input parameters to private variable modules
  * @param {Accounts} accounts
  */
-Signature.prototype.bind = function (accounts) {
+Signature.prototype.bind = function (accounts, system) {
 	modules = {
 		accounts: accounts,
+		system: system
 	};
 };
 
@@ -55,8 +56,8 @@ Signature.prototype.create = function (data, trs) {
  * @param {account} sender - Unnecessary parameter.
  * @returns {number} Secondsignature fee.
  */
-Signature.prototype.calculateFee = function (trs, sender) {
-	return constants.fees.secondsignature;
+Signature.prototype.calculateFee = function (trs, sender, height) {
+	return modules.system.getFees(height).fees.secondsignature;
 };
 
 /**

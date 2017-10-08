@@ -121,5 +121,15 @@ module.exports = {
 			}
 		},
 		required: ['ip', 'port']
+	},
+	getMinVersion: {
+		id: 'peer.getMinVersion',
+		type: 'object',
+		properties: {
+			height: {
+				type: 'integer',
+				minimum: 1
+			}
+		}
 	}
 };

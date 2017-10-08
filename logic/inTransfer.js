@@ -29,10 +29,11 @@ function InTransfer (db, schema) {
  * @param {Rounds} rounds
  * @param {Object} sharedApi
  */
-InTransfer.prototype.bind = function (accounts, rounds, sharedApi) {
+InTransfer.prototype.bind = function (accounts, rounds, sharedApi, system) {
 	modules = {
 		accounts: accounts,
 		rounds: rounds,
+		system: system
 	};
 	shared = sharedApi;
 };
@@ -61,8 +62,8 @@ InTransfer.prototype.create = function (data, trs) {
  * @param {account} sender
  * @return {number} fee
  */
-InTransfer.prototype.calculateFee = function (trs, sender) {
-	return constants.fees.send;
+InTransfer.prototype.calculateFee = function (trs, sender, height) {
+	return modules.system.getFees(height).fees.send;
 };
 
 /**

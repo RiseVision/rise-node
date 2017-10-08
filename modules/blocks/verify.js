@@ -80,7 +80,7 @@ __private.checkTransaction = function (block, transaction, cb) {
 		function (sender, waterCb) {
 			// Check if transaction id valid against database state (mem_* tables).
 			// DATABASE: read only
-			library.logic.transaction.verify(transaction, sender, waterCb);
+			library.logic.transaction.verify(transaction, sender, block.height, waterCb);
 		}
 	], function (err) {
 		return setImmediate(cb, err);

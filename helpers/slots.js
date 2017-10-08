@@ -6,7 +6,7 @@ var constants = require('./constants.js');
  * @module helpers/slots
  */
 /**
- * Gets constant time from Lisk epoch.
+ * Get time from epoch.
  * @returns {number} epochTime from constants.
  */
 function beginEpochTime () {
@@ -37,8 +37,8 @@ module.exports = {
 	/**
 	 * @property {number} interval - Slot time interval in seconds.
 	 */
-	interval: 10,
-
+	interval: 30,
+	
 	/**
 	 * @property {number} delegates - Active delegates from constants.
 	 */

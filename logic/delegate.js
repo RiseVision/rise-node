@@ -23,9 +23,10 @@ function Delegate (schema) {
  * Binds input parameters to private variables modules.
  * @param {Accounts} accounts
  */
-Delegate.prototype.bind = function (accounts) {
+Delegate.prototype.bind = function (accounts, system) {
 	modules = {
 		accounts: accounts,
+		system: system
 	};
 };
 
@@ -56,8 +57,8 @@ Delegate.prototype.create = function (data, trs) {
  * @returns {number} constants.fees.delegate
  * @todo delete unnecessary function parameters trs, sender.
  */
-Delegate.prototype.calculateFee = function (trs, sender) {
-	return constants.fees.delegate;
+Delegate.prototype.calculateFee = function (trs, sender, height) {
+	return modules.system.getFees(height).fees.delegate;
 };
 
 /**
@@ -94,7 +95,7 @@ Delegate.prototype.verify = function (trs, sender, cb) {
 		return setImmediate(cb, 'Username must be lowercase');
 	}
 
-	var isAddress = /^[0-9]{1,21}[L|l]$/g;
+	var isAddress = /^[0-9]{1,21}[R|r]$/g;
 	var allowSymbols = /^[a-z0-9!@$&_.]+$/g;
 
 	var username = String(trs.asset.delegate.username).toLowerCase().trim();

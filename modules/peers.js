@@ -677,13 +677,15 @@ Peers.prototype.shared = {
 	 * @return {Object}   cb.obj Anonymous object with version info
 	 * @return {String}   cb.obj.build Build information (if available, otherwise '')
 	 * @return {String}   cb.obj.commit Hash of last git commit (if available, otherwise '')
-	 * @return {String}   cb.obj.version Lisk version from config file
+	 * @return {String}   cb.obj.version current version
+	 * @return {String}   cb.obj.minVersion current minimal required version
 	 */
 	version: function (req, cb) {
 		return setImmediate(cb, null, {
 			build: library.build,
 			commit: library.lastCommit,
-			version: library.config.version
+			version: constants.currentVersion,
+			minVersion: modules.system.getMinVersion()
 		});
 	}
 };

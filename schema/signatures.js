@@ -1,6 +1,16 @@
 'use strict';
 
 module.exports = {
+	getFee: {
+		id: 'signatures.getFee',
+		type: 'object',
+		properties: {
+			height: {
+				type: 'integer',
+				minimum: 1
+			}
+		}
+	},
 	addSignature: {
 		id: 'signatures.addSignature',
 		type: 'object',

@@ -39,10 +39,11 @@ function Multisignature (schema, network, transaction, logger) {
  * @param {Rounds} rounds
  * @param {Accounts} accounts
  */
-Multisignature.prototype.bind = function (rounds, accounts) {
+Multisignature.prototype.bind = function (rounds, accounts, system) {
 	modules = {
 		rounds: rounds,
 		accounts: accounts,
+		system: system
 	};
 };
 
@@ -71,8 +72,8 @@ Multisignature.prototype.create = function (data, trs) {
  * @param {account} sender - Unnecessary parameter.
  * @returns {number} Quantity of multisignature keysgroup * multisignature fees.
  */
-Multisignature.prototype.calculateFee = function (trs, sender) {
-	return (trs.asset.multisignature.keysgroup.length + 1) * constants.fees.multisignature;
+Multisignature.prototype.calculateFee = function (trs, sender, height) {
+	return (trs.asset.multisignature.keysgroup.length + 1) * modules.system.getFees(height).fees.multisignature;
 };
 
 /**

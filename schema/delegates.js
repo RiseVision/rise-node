@@ -106,6 +106,16 @@ module.exports = {
 			}
 		}
 	},
+	getFee: {
+		id: 'delegates.getFee',
+		type: 'object',
+		properties: {
+			height: {
+				type: 'integer',
+				minimum: 1
+			}
+		}
+	},
 	getForgedByAccount: {
 		id: 'delegates.getForgedByAccount',
 		type: 'object',

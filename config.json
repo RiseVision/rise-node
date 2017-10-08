@@ -1,19 +1,19 @@
 {
-    "port": 8000,
+    "port": 5555,
     "address": "0.0.0.0",
-    "version": "0.9.9",
-    "minVersion": ">=0.9.5",
+    "version": "0.1.1",
+    "minVersion": ">=0.1.0",
     "fileLogLevel": "info",
-    "logFileName": "logs/lisk.log",
-    "consoleLogLevel": "none",
+    "logFileName": "logs/rise-master.log",
+    "consoleLogLevel": "info",
     "trustProxy": false,
     "topAccounts": false,
     "cacheEnabled": false,
     "db": {
         "host": "localhost",
         "port": 5432,
-        "database": "lisk_main",
-        "user": "",
+        "database": "rise_db",
+        "user": "rise",
         "password": "password",
         "poolSize": 95,
         "poolIdleTimeout": 30000,
@@ -32,7 +32,9 @@
         "enabled": true,
         "access": {
             "public": false,
-            "whiteList": ["127.0.0.1"]
+            "whiteList": [
+                "127.0.0.1"
+            ]
         },
         "options": {
             "limits": {
@@ -47,44 +49,16 @@
         "enabled": true,
         "list": [
             {
-                "ip": "83.136.254.92",
-                "port": 8000
+                "ip": "45.32.136.66",
+                "port": 5555
             },
             {
-                "ip": "83.136.249.76",
-                "port": 8000
+                "ip": "45.76.36.14",
+                "port": 5555
             },
             {
-                "ip": "94.237.28.66",
-                "port": 8000
-            },
-            {
-                "ip": "94.237.24.199",
-                "port": 8000
-            },
-            {
-                "ip": "209.50.49.23",
-                "port": 8000
-            },
-            {
-                "ip": "209.50.49.40",
-                "port": 8000
-            },
-            {
-                "ip": "94.237.64.70",
-                "port": 8000
-            },
-            {
-                "ip": "94.237.64.73",
-                "port": 8000
-            },
-            {
-                "ip": "94.237.40.140",
-                "port": 8000
-            },
-            {
-                "ip": "94.237.40.141",
-                "port": 8000
+                "ip": "212.24.96.99",
+                "port": 5555
             }
         ],
         "access": {
@@ -126,16 +100,16 @@
     "ssl": {
         "enabled": false,
         "options": {
-            "port": 443,
+            "port": 5556,
             "address": "0.0.0.0",
-            "key": "./ssl/lisk.key",
-            "cert": "./ssl/lisk.crt"
+            "key": "./ssl/rise.key",
+            "cert": "./ssl/rise.crt"
         }
     },
     "dapp": {
         "masterrequired": true,
-        "masterpassword": "",
+        "masterpassword": "r8NJovDde9yB",
         "autoexec": []
     },
-    "nethash": "ed14889723f24ecc54871d058d98ce91ff2f973192075c0155ba2b7b70ad2511"
+    "nethash": "cd8171332c012514864edd8eb6f68fc3ea6cb2afbaf21c56e12751022684cea5"
 }

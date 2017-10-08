@@ -43,20 +43,30 @@
  */
 module.exports = {
 	activeDelegates: 101,
-	maxVotesPerTransaction: 33,
+	maximumVotes: 1,
+	maxVotesPerTransaction: 2,
 	addressLength: 208,
 	blockHeaderLength: 248,
-	blockReceiptTimeOut: 20, // 2 blocks
+	blockReceiptTimeOut: 30*2, // 2 blocks
 	confirmationLength: 77,
 	epochTime: new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
-	fees: {
-		send: 10000000,
-		vote: 100000000,
-		secondsignature: 500000000,
-		delegate: 2500000000,
-		multisignature: 500000000,
-		dapp: 2500000000
-	},
+	minVersion: [
+		{ height: 1,       ver: "^0.1.0"},
+		{ height: 241000,  ver: "^0.1.1"}
+	],
+	fees: [
+		{
+			height: 1,
+			fees: {
+        send: 10000000,
+        vote: 100000000,
+        secondsignature: 500000000,
+        delegate: 2500000000,
+        multisignature: 500000000,
+        dapp: 2500000000
+			}
+		}
+	],
 	feeStart: 1,
 	feeStartVolume: 10000 * 100000000,
 	fixedPoint: Math.pow(10, 8),
@@ -72,27 +82,26 @@ module.exports = {
 	minBroadhashConsensus: 51,
 	nethashes: [
 		// Mainnet
-		'ed14889723f24ecc54871d058d98ce91ff2f973192075c0155ba2b7b70ad2511',
+		'cd8171332c012514864edd8eb6f68fc3ea6cb2afbaf21c56e12751022684cea5',
 		// Testnet
-		'da3ed6a45429278bac2666961289ca17ad86595d33b31037615d4b8e8f158bba'
+		'e90d39ac200c495b97deb6d9700745177c7fc4aa80a404108ec820cbeced054c'
 	],
 	numberLength: 100000000,
 	requestLength: 104,
-	// WARNING: When changing rewards you also need to change getBlockRewards(int) SQL function!
-	rewards: {
-		milestones: [
-			500000000, // Initial Reward
-			400000000, // Milestone 1
-			300000000, // Milestone 2
-			200000000, // Milestone 3
-			100000000  // Milestone 4
-		],
-		offset: 1451520,   // Start rewards at block (n)
-		distance: 3000000, // Distance between each milestone
-	},
+	rewards: [
+		{ height: 1, reward: 0},
+		{ height: 10, reward: 1500000000},
+		{ height: 11, reward: 30000000},
+		{ height: 12, reward: 20000000},
+		{ height: 13, reward: 1500000000},
+		{ height: 1054080, reward: 1200000000},
+		{ height: 1054080*2, reward: 900000000},
+		{ height: 1054080*3, reward: 600000000},
+		{ height: 1054080*4, reward: 300000000},
+		{ height: 1054080*5, reward: 100000000},
+	],
 	signatureLength: 196,
-	// WARNING: When changing totalAmount you also need to change getBlockRewards(int) SQL function!
-	totalAmount: 10000000000000000,
+	totalAmount: 10999999991000000,
 	unconfirmedTransactionTimeOut: 10800, // 1080 blocks
 	multisigConstraints: {
 		min: {

@@ -320,7 +320,12 @@ Process.prototype.generateBlock = function (keypair, timestamp, cb) {
 			// Check transaction depends on type
 			if (library.logic.transaction.ready(transaction, sender)) {
 				// Verify transaction
-				library.logic.transaction.verify(transaction, sender, function (err) {
+				// FIXME: should use block height not null
+				library.logic.transaction.verify(transaction, sender, null, function (err) {
+					if (err) {
+						// TODO: why is error swallowed here? shouldn't we better handle this error?
+						library.logger.err(err.stack);
+					}
 					ready.push(transaction);
 					return setImmediate(cb);
 				});

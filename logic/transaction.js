@@ -333,7 +333,7 @@ Transaction.prototype.checkBalance = function (amount, balance, trs, sender) {
 	return {
 		exceeded: exceeded,
 		error: exceeded ? [
-			'Account does not have enough LSK:', sender.address,
+			'Account does not have enough RISE:', sender.address,
 			'balance:', new bignum(sender[balance].toString() || '0').div(Math.pow(10,8))
 		].join(' ') : null
 	};
@@ -406,17 +406,14 @@ Transaction.prototype.process = function (trs, sender, requester, cb) {
  * @implements {getId}
  * @param {transaction} trs
  * @param {account} sender
- * @param {account} requester
+ * @param {number} height
  * @param {function} cb
  * @return {setImmediateCallback} validation errors | trs
  */
-Transaction.prototype.verify = function (trs, sender, requester, cb) {
+Transaction.prototype.verify = function (trs, sender, height, cb) {
 	var valid = false;
 	var err = null;
 
-	if (typeof requester === 'function') {
-		cb = requester;
-	}
 
 	// Check sender
 	if (!sender) {
@@ -498,7 +495,6 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 
 	// Verify signature
 	try {
-		valid = false;
 		valid = this.verifySignature(trs, (trs.requesterPublicKey || trs.senderPublicKey), trs.signature);
 	} catch (e) {
 		this.scope.logger.error(e.stack);
@@ -519,10 +515,10 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 	}
 
 	// Verify second signature
-	if (requester.secondSignature || sender.secondSignature) {
+	if (sender.secondSignature) {
 		try {
 			valid = false;
-			valid = this.verifySecondSignature(trs, (requester.secondPublicKey || sender.secondPublicKey), trs.signSignature);
+			valid = this.verifySecondSignature(trs, sender.secondPublicKey, trs.signSignature);
 		} catch (e) {
 			return setImmediate(cb, e.toString());
 		}
@@ -566,7 +562,7 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 	}
 
 	// Calculate fee
-	var fee = __private.types[trs.type].calculateFee.call(this, trs, sender) || false;
+	var fee = __private.types[trs.type].calculateFee.call(this, trs, sender, height) || false;
 	if (!fee || trs.fee !== fee) {
 		return setImmediate(cb, 'Invalid transaction fee');
 	}

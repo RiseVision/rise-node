@@ -20,9 +20,6 @@ module.exports = {
 				minLength: 5,
 				maxLength: 12
 			},
-			minVersion: {
-				type: 'string'
-			},
 			fileLogLevel: {
 				type: 'string'
 			},
@@ -314,6 +311,6 @@ module.exports = {
 				format: 'hex'
 			}
 		},
-		required: ['port', 'address', 'version', 'minVersion', 'fileLogLevel', 'logFileName', 'consoleLogLevel', 'trustProxy', 'topAccounts', 'db', 'api', 'peers', 'broadcasts', 'transactions', 'forging', 'loading', 'ssl', 'dapp', 'nethash', 'cacheEnabled', 'redis']
+		required: ['port', 'address', 'version', 'fileLogLevel', 'logFileName', 'consoleLogLevel', 'trustProxy', 'topAccounts', 'db', 'api', 'peers', 'broadcasts', 'transactions', 'forging', 'loading', 'ssl', 'dapp', 'nethash', 'cacheEnabled', 'redis']
 	}
 };

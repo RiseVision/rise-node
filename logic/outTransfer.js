@@ -33,11 +33,12 @@ function OutTransfer (db, schema, logger) {
  * @param {Rounds} rounds
  * @param {Dapps} dapps
  */
-OutTransfer.prototype.bind = function (accounts, rounds, dapps) {
+OutTransfer.prototype.bind = function (accounts, rounds, dapps, system) {
 	modules = {
 		accounts: accounts,
 		rounds: rounds,
 		dapps: dapps,
+		system: system
 	};
 };
 
@@ -66,8 +67,8 @@ OutTransfer.prototype.create = function (data, trs) {
  * @param {account} sender
  * @return {number} fee
  */
-OutTransfer.prototype.calculateFee = function (trs, sender) {
-	return constants.fees.send;
+OutTransfer.prototype.calculateFee = function (trs, sender, height) {
+	return modules.system.getFees(height).fees.send;
 };
 
 /**

@@ -35,10 +35,11 @@ function Vote (logger, schema) {
  * @param {Delegates} delegates
  * @param {Rounds} rounds
  */
-Vote.prototype.bind = function (delegates, rounds) {
+Vote.prototype.bind = function (delegates, rounds, system) {
 	modules = {
 		delegates: delegates,
 		rounds: rounds,
+		system: system
 	};
 };
 
@@ -61,8 +62,8 @@ Vote.prototype.create = function (data, trs) {
  * @see {@link module:helpers/constants}
  * @return {number} fee
  */
-Vote.prototype.calculateFee = function (trs, sender) {
-	return constants.fees.vote;
+Vote.prototype.calculateFee = function (trs, sender, height) {
+	return modules.system.getFees(height).fees.vote;
 };
 
 /**

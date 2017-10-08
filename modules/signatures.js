@@ -79,7 +79,8 @@ Signatures.prototype.onBind = function (scope) {
 	};
 
 	__private.assetTypes[transactionTypes.SIGNATURE].bind(
-		scope.accounts
+		scope.accounts,
+		scope.system
 	);
 };
 
@@ -90,9 +91,16 @@ Signatures.prototype.onBind = function (scope) {
  */
 Signatures.prototype.shared = {
 	getFee: function (req, cb) {
-		var fee = constants.fees.secondsignature;
+		library.schema.validate(req.body, schema.getFee, function (err) {
+			if (err) {
+				return setImmediate(cb, err[0].message);
+			}
 
-		return setImmediate(cb, null, {fee: fee});
+			var f = modules.system.getFees(req.body.height);
+			f.fee = f.fees.secondsignature;
+			delete f.fees;
+			return setImmediate(cb, null, f);
+		});
 	},
 
 	addSignature: function (req, cb) {

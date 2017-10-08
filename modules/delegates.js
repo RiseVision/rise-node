@@ -277,10 +277,10 @@ __private.checkDelegates = function (publicKey, votes, state, cb) {
 
 			var total_votes = (existing_votes + additions) - removals;
 
-			if (total_votes > constants.activeDelegates) {
-				var exceeded = total_votes - constants.activeDelegates;
+			if (total_votes > constants.maximumVotes) {
+				var exceeded = total_votes - constants.maximumVotes;
 
-				return setImmediate(cb, 'Maximum number of ' + constants.activeDelegates + ' votes exceeded (' + exceeded + ' too many)');
+				return setImmediate(cb, 'Maximum number of ' + constants.maximumVotes + ' votes exceeded (' + exceeded + ' too many)');
 			} else {
 				return setImmediate(cb);
 			}
@@ -535,7 +535,8 @@ Delegates.prototype.onBind = function (scope) {
 	};
 
 	__private.assetTypes[transactionTypes.DELEGATE].bind(
-		scope.accounts
+		scope.accounts,
+		scope.system
 	);
 };
 
@@ -870,7 +871,16 @@ Delegates.prototype.shared = {
 	},
 
 	getFee: function (req, cb) {
-		return setImmediate(cb, null, {fee: constants.fees.delegate});
+		library.schema.validate(req.body, schema.getFee, function (err) {
+			if (err) {
+				return setImmediate(cb, err[0].message);
+			}
+
+			var f = modules.system.getFees(req.body.height);
+			f.fee = f.fees.delegate;
+			delete f.fees;
+			return setImmediate(cb, null, f);
+		});
 	},
 
 	getForgedByAccount: function (req, cb) {

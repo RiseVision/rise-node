@@ -7,7 +7,7 @@ var sql = require('../sql/dapps.js');
 var valid_url = require('valid-url');
 
 // Private fields
-var library, __private = {};
+var library, modules, __private = {};
 
 __private.unconfirmedNames = {};
 __private.unconfirmedLinks = {};
@@ -35,9 +35,13 @@ function DApp (db, logger, schema, network) {
 
 // Public methods
 /**
- * Binds scope.modules to private variable modules.
+ * Binds scope.library.modules to private variable modules.
  */
-DApp.prototype.bind = function () {};
+DApp.prototype.bind = function (system) {
+	modules = {
+		system: system
+	};
+};
 
 /**
  * Creates transaction.asset.dapp based on data.
@@ -66,10 +70,11 @@ DApp.prototype.create = function (data, trs) {
  * Returns dapp fee from constants.
  * @param {transaction} trs
  * @param {account} sender
+ * @param {number} height
  * @return {number} fee
  */
-DApp.prototype.calculateFee = function (trs, sender) {
-	return constants.fees.dapp;
+DApp.prototype.calculateFee = function (trs, sender, height) {
+	return modules.system.getFees(height).fees.dapp;
 };
 
 /**
