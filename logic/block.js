@@ -444,10 +444,9 @@ Block.prototype.getHash = function (block) {
  * Returns send fees from constants.
  * @param {block} block
  * @return {number} fee
- * @todo delete unused input parameter
  */
-Block.prototype.calculateFee = function (block) {
-	return constants.fees.send;
+Block.prototype.calculateFee = function () {
+	return constants.fees[0].fees.send;
 };
 
 /**
