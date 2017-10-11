@@ -3,18 +3,16 @@ var expect = chai.expect;
 var sinon = require("sinon");
 var rewire = require("rewire");
 var path = require("path");
-var jsonSql = require('json-sql')();
-jsonSql.setDialect('postgresql');
 
 var rootDir = path.join(__dirname, "../../..");
 
 var InTransfer = rewire(path.join(rootDir, "logic/inTransfer"));
 var constants = require(path.join(rootDir, "helpers/constants"));
-
+var System = rewire(path.join(rootDir, "modules/system"));
 
 describe("logic/inTransfer", function() {
 
-  var callback, trs, instance;
+  var callback, trs, instance, db = {}, schema = {};
 
 
   beforeEach(function() {
@@ -27,7 +25,7 @@ describe("logic/inTransfer", function() {
       },
       signatures: ['']
     };
-    instance = new InTransfer;
+    instance = new InTransfer(db, schema);
     callback = sinon.stub();
   });
 
@@ -39,18 +37,31 @@ describe("logic/inTransfer", function() {
     });
     it("should be an instance of inTransfer", function(done) {
 
+      var library =InTransfer.__get__("library");
+
       expect(instance).to.be.an.instanceOf(InTransfer);
-      // todo: test db and schema to be equal to input
+      expect(library.db).to.be.equal(db);
+      expect(library.schema).to.be.equal(schema);
+
       done()
     });
   });
 
-  // Todo: bind
   describe("bind", function() {
     it("should change the values of modules, library, shared", function(done) {
       instance.bind('accounts', 'rounds', 'sharedApi', 'system');
 
-      // todo-ask: how do I test the modules and shared?
+      var modules =InTransfer.__get__("modules");
+      var shared =InTransfer.__get__("shared");
+      var expectedModules = {
+        accounts: 'accounts',
+        rounds: 'rounds',
+        system: 'system'
+      };
+      var expectedShared = 'sharedApi';
+
+      expect(modules).to.be.deep.equal(expectedModules);
+      expect(shared).to.be.equal(expectedShared);
 
       done()
     });
@@ -77,9 +88,32 @@ describe("logic/inTransfer", function() {
   describe("calculateFee", function() {
     it("returns constant fee", function(done) {
 
-      // todo-ask: how to test getFees? If you uncomment this line test fails
-      // expect(instance.calculateFee()).to.be.equal(constants.fees.send);
+      var modules = {
+        system: {
+          getFees: sinon.stub().callsFake(function(height){
+            var i;
+            for (i=constants.fees.length-1; i>0; i--)	{
+              if (height>=constants.fees[i].height) {
+                break;
+              }
+            }
 
+            return {
+              fromHeight: constants.fees[i].height,
+              toHeight: i == constants.fees.length-1 ? null : constants.fees[i+1].height-1,
+              height: height,
+              fees: constants.fees[i].fees
+            };
+          })
+        }
+      };
+
+      InTransfer.__set__("modules", modules);
+
+      expect(instance.calculateFee(null, null, 10)).to.be.equal(10000000);
+      expect(modules.system.getFees.calledOnce).to.true;
+      expect(modules.system.getFees.getCall(0).args.length).to.equal(1);
+      expect(modules.system.getFees.getCall(0).args[0]).to.equal(10);
       done()
     });
   });
@@ -143,16 +177,24 @@ describe("logic/inTransfer", function() {
       done()
     });
 
-    it("todo x3", function(done) {
+    it("db.one rejects", function(done) {
 
-      // todo-ask: stuck on how to test library.db.one
+      var library = {
+        db: {
+          one: sinon.stub().rejects('')
+        }
+      };
 
-      // todo: I will add then test error Application not found:
-      // todo: I will add then add test success
-      // todo: I will add then add test catch error
+      InTransfer.__set__("library", library);
+
+      instance.verify(trs,null, callback);
+      clock.tick();
+      expect(callback.calledOnce).to.be.true;
 
       done()
     });
+
+    //todo test then 2x
   });
 
   describe("process", function() {
@@ -200,14 +242,169 @@ describe("logic/inTransfer", function() {
   });
 
   describe("apply", function () {
+    var shared, modules;
 
-    // todo-ask: confused on how to test getGenesis
+    beforeEach(function() {
+      shared = {
+        getGenesis: function() {}
+      };
+      modules = {
+        accounts: {
+          mergeAccountAndGet: function() {}
+        },
+        rounds: {
+          calc: sinon.stub().returns(1)
+        }
+      };
+      clock = sinon.useFakeTimers("setImmediate");
+
+      InTransfer.__set__("setImmediate", setImmediate);
+      InTransfer.__set__("shared", shared);
+      InTransfer.__set__("modules", modules);
+
+    });
+
+    afterEach(function() {
+      clock.restore();
+      InTransfer.__set__('setImmediate', setImmediate);
+    });
+
+
+    it("catches the error", function(done) {
+
+      sinon.stub(shared, "getGenesis").callsFake(function(obj, cb) {
+        return cb(true, null);
+      });
+      sinon.stub(modules.accounts, "mergeAccountAndGet");
+
+      instance.apply(trs, {id: 'foo'}, {}, callback);
+      expect(shared.getGenesis.calledOnce).to.equal(true);
+      clock.tick();
+      expect(callback.calledOnce).to.equal(true);
+      expect(modules.accounts.mergeAccountAndGet.calledOnce).to.equal(false);
+
+      done();
+    });
+
+
+    it("catches mergeAccountAndGet error", function(done) {
+
+      var res = {
+        authorId: ''
+      };
+      var block = {
+        id: ''
+      };
+
+      sinon.stub(shared, "getGenesis").callsFake(function(obj, cb) {
+        return cb(false, res);
+      });
+
+      sinon.stub(modules.accounts, "mergeAccountAndGet").callsFake(function(obj, cb) {
+        return cb(true, null);
+      });
+
+      instance.apply(trs, block, {}, callback);
+      expect(shared.getGenesis.calledOnce).to.equal(true);
+      expect(callback.calledOnce).to.equal(false);
+      expect(modules.accounts.mergeAccountAndGet.calledOnce).to.equal(true);
+      expect(modules.accounts.mergeAccountAndGet.getCall(0).args.length).to.equal(2);
+      expect(modules.accounts.mergeAccountAndGet.getCall(0).args[0]).to.deep.equal({
+        address: '',
+        balance: '10000000',
+        u_balance: '10000000',
+        blockId: '',
+        round: 1
+      });
+      clock.tick();
+      expect(callback.calledOnce).to.equal(true);
+
+      done();
+    });
 
   });
 
   describe("undo", function () {
 
-    // todo-ask: confused on how to test getGenesis
+    var shared, modules;
+
+    beforeEach(function() {
+      shared = {
+        getGenesis: function() {}
+      };
+      modules = {
+        accounts: {
+          mergeAccountAndGet: function() {}
+        },
+        rounds: {
+          calc: sinon.stub().returns(1)
+        }
+      };
+      clock = sinon.useFakeTimers("setImmediate");
+
+      InTransfer.__set__("setImmediate", setImmediate);
+      InTransfer.__set__("shared", shared);
+      InTransfer.__set__("modules", modules);
+
+    });
+
+    afterEach(function() {
+      clock.restore();
+      InTransfer.__set__('setImmediate', setImmediate);
+    });
+
+
+    it("catches the error", function(done) {
+
+      sinon.stub(shared, "getGenesis").callsFake(function(obj, cb) {
+        return cb(true, null);
+      });
+      sinon.stub(modules.accounts, "mergeAccountAndGet");
+
+      instance.undo(trs, {id: 'foo'}, {}, callback);
+      expect(shared.getGenesis.calledOnce).to.equal(true);
+      clock.tick();
+      expect(callback.calledOnce).to.equal(true);
+      expect(modules.accounts.mergeAccountAndGet.calledOnce).to.equal(false);
+
+      done();
+    });
+
+
+    it("catches the mergeAccountAndGet error", function(done) {
+
+      var res = {
+        authorId: ''
+      };
+      var block = {
+        id: ''
+      };
+
+      sinon.stub(shared, "getGenesis").callsFake(function(obj, cb) {
+        return cb(false, res);
+      });
+
+      sinon.stub(modules.accounts, "mergeAccountAndGet").callsFake(function(obj, cb) {
+        return cb(true, null);
+      });
+
+      instance.undo(trs, block, {}, callback);
+      expect(shared.getGenesis.calledOnce).to.equal(true);
+      expect(callback.calledOnce).to.equal(false);
+      expect(modules.accounts.mergeAccountAndGet.calledOnce).to.equal(true);
+      expect(modules.accounts.mergeAccountAndGet.getCall(0).args.length).to.equal(2);
+      expect(modules.accounts.mergeAccountAndGet.getCall(0).args[0]).to.deep.equal({
+        address: '',
+        balance: -10000000,
+        u_balance: -10000000,
+        blockId: '',
+        round: 1
+      });
+      clock.tick();
+      expect(callback.calledOnce).to.equal(true);
+
+      done();
+    });
 
   });
 
@@ -267,19 +464,43 @@ describe("logic/inTransfer", function() {
   });
 
 
-  // todo-ask: this test fails because objectNormalize cannot read validate from library.schema
-  // describe("objectNormalize", function () {
-  //   it("catches the error", function(done) {
-  //     var trsResult = instance.objectNormalize({});
-  //     console.log(trsResult);
-  //     done()
-  //   });
-  //
-  //   it("success", function(done) {
-  //     done()
-  //   });
-  // });
-  //
+  describe("objectNormalize", function () {
+    it("catches the error", function(done) {
+
+
+      var validateStub = sinon.stub().returns(false);
+      var throwError = function() {
+        instance.objectNormalize(trs)
+      };
+
+      instance = new InTransfer({}, {
+        validate : validateStub
+      });
+
+      expect(throwError).to.throw();
+      done()
+    });
+
+    it("success", function(done) {
+
+      var validateStub = sinon.stub().returns(true);
+      instance = new InTransfer({}, {
+        validate : validateStub
+      });
+
+      var trsResult = instance.objectNormalize(trs);
+
+      expect(trsResult).to.be.deep.equal({
+        id: 'theId',
+        amount: '10000000',
+        asset: { inTransfer: 'foo', dappId: '1919191' },
+        signatures: [ '' ]
+      });
+
+      done()
+    });
+  });
+
 
   describe("dbRead", function () {
     it("returns null when no in_dappId", function(done) {
