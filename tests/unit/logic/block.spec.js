@@ -220,7 +220,6 @@ describe('logic/block', function () {
 
     describe('objectNormalize() with a bad block schema', function () {
       it('...should throw an exception', function () {
-        // TODO this test is not working because the schema should not admit additional properties into the schema.
         var instance = callback.args[0][1]
         dummyBlock.greeting = 'Hello World!'
         var throwError = function () {
