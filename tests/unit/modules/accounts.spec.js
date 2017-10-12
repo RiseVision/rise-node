@@ -15,8 +15,11 @@ var schema = require(path.join(rootDir, "schema/accounts"));
 var transactionTypes = require(path.join(rootDir, "helpers/transactionTypes"));
 
 describe("modules/accounts", function() {
-    it("constructor", function(done) {
+    it("constructor", function() {
         expect(Accounts).to.be.a('function');
+
+        var clock = sinon.useFakeTimers();
+        Accounts.__set__("setImmediate", setImmediate);
 
         var scope = {
             logic : {
@@ -34,13 +37,13 @@ describe("modules/accounts", function() {
         expect(scope.logic.transaction.attachAssetType.getCall(0).args[0]).to.equal(transactionTypes.VOTE);
         expect(scope.logic.transaction.attachAssetType.getCall(0).args[1]).to.be.an.instanceof(Vote);
 
-        expect(callback.called).to.be.false;
-        setImmediate(function() {
-            expect(callback.called).to.be.true;
-            expect(callback.calledOnce).to.be.true;
-            expect(callback.calledWith(null, account));
-            done();
-        });
+        clock.tick();
+        expect(callback.called).to.be.true;
+        expect(callback.calledOnce).to.be.true;
+        expect(callback.calledWith(null, account));
+
+        clock.restore();
+        Accounts.__set__("setImmediate", setImmediate);
     });
 });
 
@@ -56,9 +59,10 @@ describe("modules/accounts", function() {
                     create : function(){}
                 },
                 account : {
-                    get : sinon.spy(),
-                    getAll : sinon.spy(),
-                    merge : sinon.spy()
+                    set : sinon.stub(),
+                    get : sinon.stub(),
+                    getAll : sinon.stub(),
+                    merge : sinon.stub()
                 }
             },
             schema : {
@@ -214,17 +218,163 @@ describe("modules/accounts", function() {
             expect(scope.logic.account.get.getCall(0).args[1]).to.equal(testObj1);
             expect(scope.logic.account.get.getCall(0).args[2]).to.equal(callback);
         });
+    });
 
-        it("public.getAccounts", function() {
-            account.getAccounts(testObj1, testObj2, callback)
+    describe("public.getAccounts", function() {
+        it("library.logic.account called", function() {
+            var filter = {};
+            var fields = {};
+
+            account.getAccounts(filter, fields, callback);
 
             expect(scope.logic.account.getAll.calledOnce).to.be.true;
             expect(scope.logic.account.getAll.getCall(0).args.length).to.equal(3);
-            expect(scope.logic.account.getAll.getCall(0).args[0]).to.equal(testObj1);
-            expect(scope.logic.account.getAll.getCall(0).args[1]).to.equal(testObj2);
+            expect(scope.logic.account.getAll.getCall(0).args[0]).to.equal(filter);
+            expect(scope.logic.account.getAll.getCall(0).args[1]).to.equal(fields);
             expect(scope.logic.account.getAll.getCall(0).args[2]).to.equal(callback);
         });
+    });
 
+    describe("public.setAccountAndGet", function() {
+        var clock;
+
+        beforeEach(function() {
+            clock = sinon.useFakeTimers();
+            Accounts.__set__('setImmediate', setImmediate);
+            sinon.stub(account, "generateAddressByPublicKey")
+        });
+
+        afterEach(function() {
+            clock.restore();
+            Accounts.__set__('setImmediate', setImmediate);
+            account.generateAddressByPublicKey.restore();
+        });
+
+        it("no address, no public key, callback doesn't exist", function() {
+            var data = {}; 
+
+            expect(account.setAccountAndGet.bind(account, data)).to.throws("Invalid public key");
+        });
+
+        it("no address, no public key, callback exists", function() {
+            var data = {}; 
+
+            account.setAccountAndGet(data, callback);
+
+            clock.tick();
+            expect(callback.calledOnce).to.be.true;
+            expect(callback.getCall(0).args.length).to.equal(1);
+            expect(callback.getCall(0).args[0]).to.equal("Invalid public key");
+        });
+
+        it("no address, publicKey exists, generating address error, callback doesn't exist", function() {
+            var data = {
+                publicKey : testAccount.publicKey
+            };
+            account.generateAddressByPublicKey.returns(null);
+
+            expect(account.setAccountAndGet.bind(account, data)).to.throw("Invalid public key");
+        });
+
+        it("no address, publicKey exists, generating address error, callback exists", function() {
+            var data = {
+                publicKey : testAccount.publicKey
+            };
+            account.generateAddressByPublicKey.returns(null);
+
+            account.setAccountAndGet(data, callback);
+
+            clock.tick();
+            expect(callback.calledOnce).to.be.true;
+            expect(callback.getCall(0).args.length).to.equal(1);
+            expect(callback.getCall(0).args[0]).to.equal("Invalid public key");
+        });
+
+        it("no address, publicKey exists, account.set error", function() {
+            var error = "Error";
+            var data = {
+                publicKey : testAccount.publicKey
+            };
+            account.generateAddressByPublicKey.returns(testAccount.address);
+            scope.logic.account.set.callsArgWith(2, error);
+
+            account.setAccountAndGet(data, callback);
+
+            expect(scope.logic.account.set.calledOnce).to.be.true;
+            expect(scope.logic.account.set.getCall(0).args.length).to.equal(3);
+            expect(scope.logic.account.set.getCall(0).args[0]).to.equal(testAccount.address);
+            expect(scope.logic.account.set.getCall(0).args[1]).to.equal(data);
+            expect(scope.logic.account.set.getCall(0).args[2]).to.be.a("function");
+
+            clock.tick();
+            expect(callback.calledOnce).to.be.true;
+            expect(callback.getCall(0).args.length).to.equal(1);
+            expect(callback.getCall(0).args[0]).to.equal(error);
+        });
+
+        it("no address, publicKey exists, account.set success", function() {
+            var data = {
+                publicKey : testAccount.publicKey
+            };
+            account.generateAddressByPublicKey.returns(testAccount.address);
+            scope.logic.account.set.callsArgWith(2, null);
+
+            account.setAccountAndGet(data, callback);
+
+            expect(scope.logic.account.set.calledOnce).to.be.true;
+            expect(scope.logic.account.set.getCall(0).args.length).to.equal(3);
+            expect(scope.logic.account.set.getCall(0).args[0]).to.equal(testAccount.address);
+            expect(scope.logic.account.set.getCall(0).args[1]).to.equal(data);
+            expect(scope.logic.account.set.getCall(0).args[2]).to.be.a("function");
+
+            expect(scope.logic.account.get.calledOnce).to.be.true;
+            expect(scope.logic.account.get.getCall(0).args.length).to.equal(2);
+            expect(scope.logic.account.get.getCall(0).args[0]).to.deep.equal({address : testAccount.address});
+            expect(scope.logic.account.get.getCall(0).args[1]).to.equal(callback);
+        });
+
+        it("address exists, account.set error", function() {
+            var error = "Error";
+            var data = {
+                publicKey : testAccount.publicKey,
+                address   : testAccount.address
+            };
+            scope.logic.account.set.callsArgWith(2, error);
+
+            account.setAccountAndGet(data, callback);
+
+            expect(scope.logic.account.set.calledOnce).to.be.true;
+            expect(scope.logic.account.set.getCall(0).args.length).to.equal(3);
+            expect(scope.logic.account.set.getCall(0).args[0]).to.equal(testAccount.address);
+            expect(scope.logic.account.set.getCall(0).args[1]).to.equal(data);
+            expect(scope.logic.account.set.getCall(0).args[2]).to.be.a("function");
+
+            clock.tick();
+            expect(callback.calledOnce).to.be.true;
+            expect(callback.getCall(0).args.length).to.equal(1);
+            expect(callback.getCall(0).args[0]).to.equal(error);
+        });
+
+        it("address exists, account.set success", function() {
+            var data = {
+                publicKey : testAccount.publicKey,
+                address   : testAccount.address
+            };
+            scope.logic.account.set.callsArgWith(2, null);
+
+            account.setAccountAndGet(data, callback);
+
+            expect(scope.logic.account.set.calledOnce).to.be.true;
+            expect(scope.logic.account.set.getCall(0).args.length).to.equal(3);
+            expect(scope.logic.account.set.getCall(0).args[0]).to.equal(testAccount.address);
+            expect(scope.logic.account.set.getCall(0).args[1]).to.equal(data);
+            expect(scope.logic.account.set.getCall(0).args[2]).to.be.a("function");
+
+            expect(scope.logic.account.get.calledOnce).to.be.true;
+            expect(scope.logic.account.get.getCall(0).args.length).to.equal(2);
+            expect(scope.logic.account.get.getCall(0).args[0]).to.deep.equal({address : testAccount.address});
+            expect(scope.logic.account.get.getCall(0).args[1]).to.equal(callback);
+        });
     });
    
     describe("public.mergeAccountAndGet", function() {
@@ -334,6 +484,14 @@ describe("modules/accounts", function() {
         expect(assetFakeBind.getCall(0).args[0]).to.equal(testScope.delegates);
         expect(assetFakeBind.getCall(0).args[1]).to.equal(testScope.rounds);
         expect(assetFakeBind.getCall(0).args[2]).to.equal(testScope.system);
+    });
+
+    describe("public.isLoaded", function() {
+        it("common", function() {
+            var modules = Accounts.__get__("modules");
+
+            expect(account.isLoaded()).to.equal(!!modules);
+        });
     });
 
     describe("share.open", function() {
