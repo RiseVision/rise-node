@@ -57,8 +57,8 @@ describe("logic/blockReward", function() {
 
     it("parseHeight is called", function() {
 
-      var parseHeight = sinon.stub().returns(1);
-      BlockReward.__set__('__private.parseHeight', parseHeight);
+      var __private = BlockReward.__get__('__private');
+      var parseHeight = sinon.stub(__private, "parseHeight").returns(1);
 
       instance.calcMilestone(10);
 
@@ -66,7 +66,7 @@ describe("logic/blockReward", function() {
       expect(parseHeight.getCall(0).args.length).to.equal(1);
       expect(parseHeight.getCall(0).args[0]).to.equal(10);
 
-      BlockReward.__get__('__private').parseHeight.reset();
+      parseHeight.restore();
 
     });
 
@@ -82,14 +82,15 @@ describe("logic/blockReward", function() {
 
     it("calcMilestone is called", function() {
 
-      var calcMilestone = sinon.stub().returns(1);
-      BlockReward.__set__('BlockReward.prototype.calcMilestone', calcMilestone);
+      var calcMilestone = sinon.stub(BlockReward.prototype, "calcMilestone").returns(0);
 
       instance.calcReward(10);
 
       expect(calcMilestone.calledOnce).to.be.true;
       expect(calcMilestone.getCall(0).args.length).to.equal(1);
       expect(calcMilestone.getCall(0).args[0]).to.equal(10);
+
+      calcMilestone.restore();
 
     });
 
@@ -99,21 +100,22 @@ describe("logic/blockReward", function() {
 
     var parseHeight, calcMilestone, mockedThis;
 
-
     beforeEach(function() {
-      parseHeight = sinon.stub().returns(1);
-      calcMilestone = sinon.stub().returns(0);
+      var __private = BlockReward.__get__('__private');
       mockedThis = {
-        calcMilestone: calcMilestone,
+        calcMilestone: function(){},
         rewards: constants.rewards
       };
+      parseHeight = sinon.stub(__private, "parseHeight").returns(1);
+      calcMilestone = sinon.stub(mockedThis, "calcMilestone").returns(0);
 
       BlockReward.__set__('__private.parseHeight', parseHeight);
       BlockReward.__set__('this.calcMilestone', calcMilestone);
     });
 
     afterEach(function() {
-      BlockReward.__get__('__private').parseHeight.reset();
+      calcMilestone.restore();
+      parseHeight.restore();
     });
 
     it("parseHeight is called", function() {
@@ -135,8 +137,11 @@ describe("logic/blockReward", function() {
     });
 
     it("correct supply", function() {
+      debugger
+      calcMilestone.restore();
+      parseHeight.restore();
 
-      expect(instance.calcSupply(10)).to.equal(10999987991000000);
+      expect(instance.calcSupply(10)).to.equal(11000001491000000);
 
     });
 
