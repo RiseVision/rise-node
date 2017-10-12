@@ -8,7 +8,6 @@ var rootDir = path.join(__dirname, "../../..");
 
 var InTransfer = rewire(path.join(rootDir, "logic/inTransfer"));
 var constants = require(path.join(rootDir, "helpers/constants"));
-var System = rewire(path.join(rootDir, "modules/system"));
 
 describe("logic/inTransfer", function() {
 
@@ -20,8 +19,9 @@ describe("logic/inTransfer", function() {
       id: 'theId',
       amount: '10000000',
       asset: {
-        inTransfer: 'foo',
-        dappId: '1919191'
+        inTransfer: {
+          dappId: '1919191'
+        }
       },
       signatures: ['']
     };
@@ -130,7 +130,6 @@ describe("logic/inTransfer", function() {
     });
     afterEach(function() {
       clock.restore();
-      InTransfer.__set__("setImmediate", setImmediate);
     });
 
     it("error Invalid recipient", function(done) {
@@ -179,6 +178,8 @@ describe("logic/inTransfer", function() {
 
     it("db.one rejects", function(done) {
 
+      clock.restore();
+
       var library = {
         db: {
           one: sinon.stub().rejects('')
@@ -188,13 +189,70 @@ describe("logic/inTransfer", function() {
       InTransfer.__set__("library", library);
 
       instance.verify(trs,null, callback);
-      clock.tick();
-      expect(callback.calledOnce).to.be.true;
 
-      done()
+      setImmediate(function(){
+        setImmediate(function(){
+          clock.tick();
+          expect(callback.calledOnce).to.be.true;
+          expect(callback.getCall(0).args.length).to.equal(1);
+          expect(callback.getCall(0).args[0]).to.instanceOf(Error);
+          done();
+        });
+      });
+
     });
 
-    //todo test then 2x
+    it("db.one resolves row.count", function(done) {
+
+      clock.restore();
+
+      var library = {
+        db: {
+          one: sinon.stub().resolves({count: 1})
+        }
+      };
+
+      InTransfer.__set__("library", library);
+
+      instance.verify(trs,null, callback);
+
+      setImmediate(function(){
+        setImmediate(function(){
+          clock.tick();
+          expect(callback.called).to.be.true;
+          expect(callback.getCall(0).args.length).to.equal(0);
+          done();
+        });
+      });
+
+    });
+
+    it("db.one resolves and Application not found", function(done) {
+
+      clock.restore();
+
+      var library = {
+        db: {
+          one: sinon.stub().resolves({count: 0})
+        }
+      };
+
+      InTransfer.__set__("library", library);
+
+      instance.verify(trs,null, callback);
+
+      setImmediate(function(){
+        setImmediate(function(){
+          clock.tick();
+          expect(callback.called).to.be.true;
+          expect(callback.getCall(0).args.length).to.equal(1);
+          expect(callback.getCall(0).args[0]).to.equal("Application not found: 1919191");
+          done();
+        });
+      });
+
+    });
+
   });
 
   describe("process", function() {
@@ -493,7 +551,7 @@ describe("logic/inTransfer", function() {
       expect(trsResult).to.be.deep.equal({
         id: 'theId',
         amount: '10000000',
-        asset: { inTransfer: 'foo', dappId: '1919191' },
+        asset: { inTransfer: { dappId: '1919191' }},
         signatures: [ '' ]
       });
 
