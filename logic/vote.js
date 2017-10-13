@@ -327,10 +327,15 @@ Vote.prototype.schema = {
 			type: 'array',
 			minItems: 1,
 			maxItems: constants.maxVotesPerTransaction,
-			uniqueItems: true
+			uniqueItems: true,
+      items: {
+        type: 'string',
+        pattern: '^[-+]{1}[0-9a-z]{64}$'
+      }
 		}
 	},
-	required: ['votes']
+	required: ['votes'],
+  "additionalProperties": false
 };
 
 /**
