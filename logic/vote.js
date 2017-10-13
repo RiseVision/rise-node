@@ -359,15 +359,16 @@ Vote.prototype.objectNormalize = function (trs) {
  * @return {null|votes} votes object
  */
 Vote.prototype.dbRead = function (raw) {
-	// console.log(raw.v_votes);
-
 	if (!raw.v_votes) {
 		return null;
-	} else {
-		var votes = raw.v_votes.split(',');
-
-		return {votes: votes};
 	}
+
+	if(typeof raw.v_votes !== 'string') {
+		return null;
+	}
+
+	var votes = raw.v_votes.split(',');
+	return {votes: votes};
 };
 
 Vote.prototype.dbTable = 'votes';
