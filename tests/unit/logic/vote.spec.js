@@ -567,11 +567,13 @@ describe('logic/vote', function () {
 		})
 
 		describe('undo()', function () {
-			var clock, trs, block, sender, callback, delegates, rounds, system, account
+			var clock, trs, block, sender, callback, delegates, rounds, system, account, schema, logger
 
 			beforeEach(function () {
 				callback = sinon.spy()
 				clock = sinon.useFakeTimers()
+				schema = new zSchema()
+				vote = new Vote(logger, schema)
 				account = { merge: function () {} }
 				sinon.stub(account, 'merge').callsFake(function (address, data, cb) {
 					cb()
@@ -693,12 +695,14 @@ describe('logic/vote', function () {
 			})
 		})
 
-		describe('undoUnconfirmed', function () {
-			var clock, trs, sender, callback, delegates, rounds, system, account
+		describe('undoUnconfirmed()', function () {
+			var clock, trs, sender, callback, delegates, rounds, system, account, schema, logger
 
 			beforeEach(function () {
 				callback = sinon.spy()
 				clock = sinon.useFakeTimers()
+				schema = new zSchema()
+				vote = new Vote(logger, schema)
 				account = { merge: function () {} }
 				sinon.stub(account, 'merge').callsFake(function (address, data, cb) {
 					cb()
