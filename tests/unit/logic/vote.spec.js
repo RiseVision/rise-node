@@ -27,7 +27,7 @@ describe('logic/vote', function () {
 		})
 
 		describe('logger and schema should be setted properly into library', function () {
-			it('...should be an object', function () {
+			it('should be an object', function () {
 				expect(Vote.__get__('library').logger).to.equals(logger)
 				expect(Vote.__get__('library').schema).to.equals(schema)
 			})
@@ -54,7 +54,7 @@ describe('logic/vote', function () {
 				system = 'c'
 			})
 
-			it('...delegates, rounds and system should be setted properly into modules variable', function () {
+			it('delegates, rounds and system should be setted properly into modules variable', function () {
 				vote.bind(delegates, rounds, system)
 				expect(Vote.__get__('modules').delegates).to.equals(delegates)
 				expect(Vote.__get__('modules').rounds).to.equals(rounds)
@@ -71,7 +71,7 @@ describe('logic/vote', function () {
 				trs = {recipientId: 0, asset: {votes: 0}}
 			})
 
-			it('...transaction should be setted properly with data parameter', function () {
+			it('transaction should be setted properly with data parameter', function () {
 				var transaction = vote.create(data, trs)
 				expect(transaction.recipientId).to.equals(data.sender.address)
 				expect(transaction.asset.votes).to.equals(data.votes)
@@ -89,7 +89,7 @@ describe('logic/vote', function () {
 				}}
 			})
 
-			it('...should return vote\'s fee', function () {
+			it('should return vote\'s fee', function () {
 				vote.bind(delegates, rounds, system)
 				var fee = vote.calculateFee(trs, sender, height)
 				expect(fee).to.equals(100)
@@ -114,7 +114,7 @@ describe('logic/vote', function () {
 					clock.restore()
 				})
 
-				it('...should return an \'Invalid recipient\' error', function () {
+				it('should return an \'Invalid recipient\' error', function () {
 					clock.tick()
 					expect(callback.called).to.be.true
 					expect(callback.args[0][0]).to.equals('Invalid recipient')
@@ -135,7 +135,7 @@ describe('logic/vote', function () {
 					clock.restore()
 				})
 
-				it('...should return an \'Invalid transaction asset\' error', function () {
+				it('should return an \'Invalid transaction asset\' error', function () {
 					clock.tick()
 					expect(callback.called).to.be.true
 					expect(callback.args[0][0]).to.equals('Invalid transaction asset')
@@ -156,7 +156,7 @@ describe('logic/vote', function () {
 					clock.restore()
 				})
 
-				it('...should return an \'Invalid transaction asset\' error', function () {
+				it('should return an \'Invalid transaction asset\' error', function () {
 					clock.tick()
 					expect(callback.called).to.be.true
 					expect(callback.args[0][0]).to.equals('Invalid transaction asset')
@@ -177,7 +177,7 @@ describe('logic/vote', function () {
 					clock.restore()
 				})
 
-				it('...should return an \'Invalid votes. Must be an array\' error', function () {
+				it('should return an \'Invalid votes. Must be an array\' error', function () {
 					clock.tick()
 					expect(callback.called).to.be.true
 					expect(callback.args[0][0]).to.equals('Invalid votes. Must be an array')
@@ -198,7 +198,7 @@ describe('logic/vote', function () {
 					clock.restore()
 				})
 
-				it('...should return an \'Invalid votes. Must not be empty\' error', function () {
+				it('should return an \'Invalid votes. Must not be empty\' error', function () {
 					clock.tick()
 					expect(callback.called).to.be.true
 					expect(callback.args[0][0]).to.equals('Invalid votes. Must not be empty')
@@ -219,7 +219,7 @@ describe('logic/vote', function () {
 					clock.restore()
 				})
 
-				it('...should return an \'Invalid votes. Must not be empty\' error', function () {
+				it('should return an \'Invalid votes. Must not be empty\' error', function () {
 					clock.tick()
 					expect(callback.called).to.be.true
 					expect(callback.args[0][0]).to.equals('Invalid votes. Must not be empty')
@@ -240,7 +240,7 @@ describe('logic/vote', function () {
 					clock.restore()
 				})
 
-				it('...should return an \'Voting limit exceeded. Maximum is\' error', function () {
+				it('should return an \'Voting limit exceeded. Maximum is\' error', function () {
 					clock.tick()
 					expect(callback.called).to.be.true
 					expect(callback.args[0][0]).to.include('Voting limit exceeded')
@@ -261,7 +261,7 @@ describe('logic/vote', function () {
 					clock.restore()
 				})
 
-				it('...should return an \'Invalid vote at index\' error', function () {
+				it('should return an \'Invalid vote at index\' error', function () {
 
 					clock.runAll()
 					expect(callback.called).to.be.true
@@ -283,7 +283,7 @@ describe('logic/vote', function () {
 					clock.restore()
 				})
 
-				it('...should return an \'Multiple votes for same delegate are not allowed\' error', function () {
+				it('should return an \'Multiple votes for same delegate are not allowed\' error', function () {
 
 					clock.runAll()
 					expect(callback.called).to.be.true
@@ -308,7 +308,7 @@ describe('logic/vote', function () {
 					clock.restore()
 				})
 
-				it('...should call to callback without errors', function () {
+				it('should call to callback without errors', function () {
 
 					clock.runAll()
 					expect(callback.called).to.be.true
@@ -333,7 +333,7 @@ describe('logic/vote', function () {
 					clock.restore()
 				})
 
-				it('...should return an \'Invalid vote type\' error', function () {
+				it('should return an \'Invalid vote type\' error', function () {
 					vote.verifyVote(123, callback)
 					clock.tick()
 					expect(callback.called).to.be.true
@@ -353,7 +353,7 @@ describe('logic/vote', function () {
 					clock.restore()
 				})
 
-				it('...should return an \'Invalid vote format\' error', function () {
+				it('should return an \'Invalid vote format\' error', function () {
 					vote.verifyVote('+b94d27b993-d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9', callback)
 					clock.tick()
 					expect(callback.called).to.be.true
@@ -373,7 +373,7 @@ describe('logic/vote', function () {
 					clock.restore()
 				})
 
-				it('...should return an \'Invalid vote length\' error', function () {
+				it('should return an \'Invalid vote length\' error', function () {
 					vote.verifyVote('+b94d27b993d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9zz', callback)
 					clock.tick()
 					expect(callback.called).to.be.true
@@ -393,7 +393,7 @@ describe('logic/vote', function () {
 					clock.restore()
 				})
 
-				it('...should call to callback without errors', function () {
+				it('should call to callback without errors', function () {
 					vote.verifyVote('+b94d27b993d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9z', callback)
 					clock.tick()
 					expect(callback.called).to.be.true
@@ -431,7 +431,7 @@ describe('logic/vote', function () {
 				clock.restore()
 			})
 
-			it('...should call to callback without errors', function () {
+			it('should call to callback without errors', function () {
 				clock.runAll()
 				expect(callback.called).to.be.true
 				expect(callback.args[0][0]).to.equals(undefined)
@@ -465,7 +465,7 @@ describe('logic/vote', function () {
 				clock.restore()
 			})
 
-			it('...should call to callback without errors', function () {
+			it('should call to callback without errors', function () {
 				clock.runAll()
 				expect(callback.called).to.be.true
 				expect(callback.args[0][0]).to.equals(undefined)
@@ -484,7 +484,7 @@ describe('logic/vote', function () {
 				vote.process(trs, null, callback)
 			})
 
-			it('...should call to callback passing the same transaction parameter received', function () {
+			it('should call to callback passing the same transaction parameter received', function () {
 				clock.runAll()
 				expect(callback.called).to.be.true
 				expect(callback.args[0][1]).to.equals(trs)
@@ -505,7 +505,7 @@ describe('logic/vote', function () {
 					}
 				})
 
-				it('...should throws an error', function () {
+				it('should throws an error', function () {
 					expect(getBytes).to.throw()
 				})
 			})
@@ -517,7 +517,7 @@ describe('logic/vote', function () {
 					result = vote.getBytes(trs)
 				})
 
-				it('...should return null', function () {
+				it('should return null', function () {
 					expect(result).to.equals(null)
 				})
 			})
@@ -529,7 +529,7 @@ describe('logic/vote', function () {
 					result = vote.getBytes(trs)
 				})
 
-				it('...should return a Buffer object', function () {
+				it('should return a Buffer object', function () {
 					expect(result).to.be.an.instanceof(Buffer)
 				})
 			})
@@ -559,7 +559,7 @@ describe('logic/vote', function () {
 				clock.restore()
 			})
 
-			it('...should call to callback', function () {
+			it('should call to callback', function () {
 
 				clock.runAll()
 				expect(callback.called).to.be.true
@@ -598,7 +598,7 @@ describe('logic/vote', function () {
 					vote.undo(trs, block, sender, callback)
 				})
 
-				it('...should not call to scope.account.merge()', function () {
+				it('should not call to scope.account.merge()', function () {
 					clock.runAll()
 					var result = Vote.__get__('self.scope')
 					expect(result.account.merge.called).to.be.false
@@ -613,7 +613,7 @@ describe('logic/vote', function () {
 					vote.undo(trs, block, sender, callback)
 				})
 
-				it('...should not call to scope.account.merge()', function () {
+				it('should not call to scope.account.merge()', function () {
 					clock.runAll()
 					var result = Vote.__get__('self.scope')
 					expect(result.account.merge.called).to.be.false
@@ -628,7 +628,7 @@ describe('logic/vote', function () {
 					vote.undo(trs, block, sender, callback)
 				})
 
-				it('...should not call to scope.account.merge()', function () {
+				it('should not call to scope.account.merge()', function () {
 					clock.runAll()
 					var result = Vote.__get__('self.scope')
 					expect(result.account.merge.called).to.be.false
@@ -643,7 +643,7 @@ describe('logic/vote', function () {
 					vote.undo(trs, block, sender, callback)
 				})
 
-				it('...should not call to scope.account.merge()', function () {
+				it('should not call to scope.account.merge()', function () {
 					clock.runAll()
 					var result = Vote.__get__('self.scope')
 					expect(result.account.merge.called).to.be.false
@@ -658,7 +658,7 @@ describe('logic/vote', function () {
 					vote.undo(trs, block, sender, callback)
 				})
 
-				it('...should call to scope.account.merge() and callback()', function () {
+				it('should call to scope.account.merge() and callback()', function () {
 					clock.runAll()
 					var result = Vote.__get__('self.scope')
 					expect(result.account.merge.called).to.be.true
@@ -688,7 +688,7 @@ describe('logic/vote', function () {
 				clock.restore()
 			})
 
-			it('...should call to callback', function () {
+			it('should call to callback', function () {
 
 				clock.runAll()
 				expect(callback.called).to.be.true
@@ -726,7 +726,7 @@ describe('logic/vote', function () {
 					vote.undoUnconfirmed(trs, sender, callback)
 				})
 
-				it('...should not call to scope.account.merge()', function () {
+				it('should not call to scope.account.merge()', function () {
 					clock.runAll()
 					var result = Vote.__get__('self.scope')
 					expect(result.account.merge.called).to.be.false
@@ -741,7 +741,7 @@ describe('logic/vote', function () {
 					vote.undoUnconfirmed(trs, sender, callback)
 				})
 
-				it('...should not call to scope.account.merge()', function () {
+				it('should not call to scope.account.merge()', function () {
 					clock.runAll()
 					var result = Vote.__get__('self.scope')
 					expect(result.account.merge.called).to.be.false
@@ -756,7 +756,7 @@ describe('logic/vote', function () {
 					vote.undoUnconfirmed(trs, sender, callback)
 				})
 
-				it('...should not call to scope.account.merge()', function () {
+				it('should not call to scope.account.merge()', function () {
 					clock.runAll()
 					var result = Vote.__get__('self.scope')
 					expect(result.account.merge.called).to.be.false
@@ -771,7 +771,7 @@ describe('logic/vote', function () {
 					vote.undoUnconfirmed(trs, sender, callback)
 				})
 
-				it('...should not call to scope.account.merge()', function () {
+				it('should not call to scope.account.merge()', function () {
 					clock.runAll()
 					var result = Vote.__get__('self.scope')
 					expect(result.account.merge.called).to.be.false
@@ -786,7 +786,7 @@ describe('logic/vote', function () {
 					vote.undoUnconfirmed(trs, sender, callback)
 				})
 
-				it('...should call to scope.account.merge() and callback()', function () {
+				it('should call to scope.account.merge() and callback()', function () {
 					clock.runAll()
 					var result = Vote.__get__('self.scope')
 					expect(result.account.merge.called).to.be.true
@@ -895,42 +895,42 @@ describe('logic/vote', function () {
 			})
 
 			context('Fail 1: If v_votes is undefined', function () {
-				it('...should return null', function () {
+				it('should return null', function () {
 					var result = vote.dbRead(raw_fail_1)
 					expect(result).to.equals(null)
 				})
 			})
 
 			context('Fail 2: If v_votes is null', function () {
-				it('...should return null', function () {
+				it('should return null', function () {
 					var result = vote.dbRead(raw_fail_2)
 					expect(result).to.equals(null)
 				})
 			})
 
 			context('Fail 3: If v_votes is false', function () {
-				it('...should return null', function () {
+				it('should return null', function () {
 					var result = vote.dbRead(raw_fail_3)
 					expect(result).to.equals(null)
 				})
 			})
 
 			context('Fail 4: If v_votes is an empty string', function () {
-				it('...should return null', function () {
+				it('should return null', function () {
 					var result = vote.dbRead(raw_fail_4)
 					expect(result).to.equals(null)
 				})
 			})
 
 			context('Fail 5: If v_votes is not a string', function () {
-				it('...should return null', function () {
+				it('should return null', function () {
 					var result = vote.dbRead(raw_fail_5)
 					expect(result).to.equals(null)
 				})
 			})
 
 			context('if everything is ok', function () {
-				it('...should return an object with votes as property in Array format', function () {
+				it('should return an object with votes as property in Array format', function () {
 					var result = vote.dbRead(raw_success)
 					expect(result).to.have.deep.property('votes')
 					expect(result).to.deep.equal({ votes: [ '1', '3', '4' ] })
@@ -948,7 +948,7 @@ describe('logic/vote', function () {
 				trs = {id: 123, asset: {votes: [1, 2, 3]}}
 			})
 
-			it('...should return an object with a valid db schema', function () {
+			it('should return an object with a valid db schema', function () {
 				var result = vote.dbSave(trs)
 				expect(result).to.instanceof(Object)
 				expect(result).to.deep.equal({table: 'votes', fields: ['votes', 'transactionId'], values: {votes: '1,2,3', transactionId: 123}})
@@ -972,28 +972,28 @@ describe('logic/vote', function () {
 			})
 
 			context('Case 1: If sender.multisignatures is not an Array', function () {
-				it('...should return true', function () {
+				it('should return true', function () {
 					var result = vote.ready(trs, sender_case_1)
 					expect(result).to.equals(true)
 				})
 			})
 
 			context('Case 2: If sender.multisignatures is an empty Array', function () {
-				it('...should return true', function () {
+				it('should return true', function () {
 					var result = vote.ready(trs, sender_case_2)
 					expect(result).to.equals(true)
 				})
 			})
 
 			context('Case 3: If trs.signatures is not an Array', function () {
-				it('...should return false', function () {
+				it('should return false', function () {
 					var result = vote.ready(trs, sender_case_3)
 					expect(result).to.equals(false)
 				})
 			})
 
 			context('Case 4: If trs.signatures greater or equal than sender.multimin', function () {
-				it('...should return true', function () {
+				it('should return true', function () {
 					var result = vote.ready(trs_case_4, sender_case_4)
 					var result_b = vote.ready(trs_case_4_b, sender_case_4)
 					expect(result).to.equals(true)
@@ -1002,7 +1002,7 @@ describe('logic/vote', function () {
 			})
 
 			context('Case 5: If trs.signatures less than sender.multimin', function () {
-				it('...should return false', function () {
+				it('should return false', function () {
 					var result = vote.ready(trs_case_5, sender_case_5)
 					expect(result).to.equals(false)
 				})
