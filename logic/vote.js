@@ -305,7 +305,11 @@ Vote.prototype.applyUnconfirmed = function (trs, sender, cb) {
  * @return {setImmediateCallback} cb, err
  */
 Vote.prototype.undoUnconfirmed = function (trs, sender, cb) {
-	if (trs.asset.votes === null) { return setImmediate(cb); }
+	try {
+		self.objectNormalize(trs);
+	} catch (err) {
+		return setImmediate(cb);
+	}
 
 	var votesInvert = Diff.reverse(trs.asset.votes);
 
