@@ -619,8 +619,10 @@ describe("logic/delegate", function() {
     beforeEach(function() {
       sender.nameexist = false;
       modules = Delegate.__get__('modules');
+      if(!modules) modules = {};
       modules.accounts = { setAccountAndGet: function() {} };
       setAccountAndGet = sinon.stub(modules.accounts, "setAccountAndGet");
+      Delegate.__set__("modules", modules);
     });
     afterEach(function() {
       setAccountAndGet.restore();
@@ -661,6 +663,280 @@ describe("logic/delegate", function() {
       expect(setAccountAndGet.calledOnce).to.be.true;
       expect(setAccountAndGet.getCall(0).args.length).to.equal(2);
       expect(setAccountAndGet.getCall(0).args[0]).to.deep.equal(expectedData);
+
+      done();
+    });
+
+  });
+
+  describe("undoUnconfirmed", function() {
+
+    var sender = {
+      address: '12929291r'
+    };
+    var modules, setAccountAndGet;
+
+    beforeEach(function() {
+      modules = Delegate.__get__('modules');
+      if(!modules) modules = {};
+      modules.accounts = { setAccountAndGet: function() {} };
+      setAccountAndGet = sinon.stub(modules.accounts, "setAccountAndGet");
+      Delegate.__set__("modules", modules);
+    });
+    afterEach(function() {
+      setAccountAndGet.restore();
+      trs.asset.delegate.username = "carbonara";
+    });
+
+    it("calls setAccountAndGet without username", function(done) {
+
+      var expectedData = {
+        address: "12929291r",
+        isDelegate: 0,
+        u_isDelegate: 0
+      };
+
+      trs.asset.delegate.username = false;
+      instance.undoUnconfirmed(trs, sender, callback);
+
+      expect(setAccountAndGet.calledOnce).to.be.true;
+      expect(setAccountAndGet.getCall(0).args.length).to.equal(2);
+      expect(setAccountAndGet.getCall(0).args[0]).to.deep.equal(expectedData);
+
+      setAccountAndGet.restore();
+      done();
+    });
+
+    it("calls setAccountAndGet with username", function(done) {
+
+      var expectedData = {
+        address: "12929291r",
+        isDelegate: 0,
+        u_isDelegate: 0,
+        username: null,
+        u_username: null
+      };
+
+      instance.undoUnconfirmed(trs, sender, callback);
+
+      expect(setAccountAndGet.calledOnce).to.be.true;
+      expect(setAccountAndGet.getCall(0).args.length).to.equal(2);
+      expect(setAccountAndGet.getCall(0).args[0]).to.deep.equal(expectedData);
+
+      done();
+    });
+
+  });
+
+  describe("schema", function() {
+
+    it("is correct", function(done) {
+
+      expect(instance.schema).to.deep.equal({
+        id: 'Delegate',
+        type: 'object',
+        properties: {
+          publicKey: {
+            type: 'string',
+            format: 'publicKey'
+          }
+        },
+        required: ['publicKey']
+      });
+
+      done();
+    });
+
+  });
+
+  describe("objectNormalize", function() {
+
+    var library, validate;
+    beforeEach(function(){
+      library = Delegate.__get__('library');
+      library.schema = { validate: function() {} };
+    });
+    afterEach(function() {
+      if(validate && validate.restore()) validate.restore();
+      trs.asset.delegate.username = "carbonara";
+    });
+
+    it("throws error", function(done) {
+
+      validate = sinon.stub(library.schema, "validate").returns(false);
+
+      var throwError = function() {
+        var context = {
+          schema: {
+            getLastErrors: sinon.stub().returns([new Error('error')])
+          }
+        };
+        instance.objectNormalize.call(context, trs);
+      };
+
+      expect(throwError).to.throw();
+
+      done();
+    });
+
+    it("success", function(done) {
+
+      validate = sinon.stub(library.schema, "validate").returns(true);
+
+      expect(instance.objectNormalize(trs)).to.deep.equal(trs);
+      expect(library.schema.validate.calledOnce).to.be.true;
+      expect(library.schema.validate.getCall(0).args.length).to.equal(2);
+      expect(library.schema.validate.getCall(0).args[0]).to.deep.equal({ username: 'carbonara' });
+      expect(library.schema.validate.getCall(0).args[1]).to.equal(instance.schema);
+
+      done();
+    });
+
+  });
+
+  describe("dbRead", function() {
+
+    it("returns null with no username", function(done) {
+
+      var raw = {
+        t_senderPublicKey: '0123',
+        t_senderId: '0123'
+      };
+
+      var retVal = instance.dbRead(raw);
+
+      expect(retVal).to.equal(null);
+
+      done();
+    });
+
+    it("success", function(done) {
+
+      var raw = {
+        d_username: 'carbonara',
+        t_senderPublicKey: '0123',
+        t_senderId: '0123'
+      };
+      var expectedResult = {
+        delegate: {
+          address: "0123",
+          publicKey: "0123",
+          username: "carbonara"
+        }
+      };
+
+      var retVal = instance.dbRead(raw);
+
+      expect(retVal).to.deep.equal(expectedResult);
+
+      done();
+    });
+
+  });
+
+  describe("dbTable", function() {
+
+    it("correct table", function(done) {
+
+      expect(instance.dbTable).to.equal('delegates');
+
+      done();
+    });
+
+  });
+
+  describe("dbFields", function() {
+
+    it("correct fields", function(done) {
+
+      var expectedFields = [
+        'username',
+        'transactionId'
+      ];
+
+      expect(instance.dbFields).to.deep.equal(expectedFields);
+
+      done();
+    });
+
+  });
+
+  describe("dbSave", function() {
+
+    it("returns correct value", function(done) {
+
+      var context = {
+        dbTable: 'delegates',
+        dbFields: [
+          'username',
+          'transactionId'
+        ]
+      };
+      var expectedObj = {
+        table: context.dbTable,
+        fields: context.dbFields,
+        values: {
+          username: trs.asset.delegate.username,
+          transactionId: trs.id
+        }
+      };
+
+      var retVal = instance.dbSave.call(context, trs);
+
+      expect(retVal).to.deep.equal(expectedObj);
+
+      done();
+    });
+
+  });
+
+  describe("ready", function() {
+
+    it("returns null", function(done) {
+
+      var retVal = instance.ready(trs, {});
+
+      expect(retVal).to.deep.equal(true);
+
+      done();
+    });
+
+    it("returns false with no signatures", function(done) {
+
+      var sender = {
+        multisignatures: [1]
+      };
+      var retVal = instance.ready(trs, sender);
+
+      expect(retVal).to.equal(false);
+
+      done();
+    });
+
+    it("returns ready when signatures < multimin", function(done) {
+
+      var sender = {
+        multisignatures: [1],
+        multimin: 2
+      };
+      trs.signatures = [1,2,3];
+      var retVal = instance.ready(trs, sender);
+
+      expect(retVal).to.equal(true);
+
+      done();
+    });
+
+    it("returns not ready when signatures > multimin", function(done) {
+
+      var sender = {
+        multisignatures: [1],
+        multimin: 10
+      };
+      trs.signatures = [1,2,3];
+      var retVal = instance.ready(trs, sender);
+
+      expect(retVal).to.equal(false);
 
       done();
     });
