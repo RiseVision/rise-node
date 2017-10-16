@@ -24,12 +24,12 @@ describe("logic/delegate", function() {
     trs = {
       asset: {
         delegate: {
-          username: 'carbonara'
+          username: "carbonara"
         }
       }
     };
   });
-  afterEach(function(){
+  afterEach(function() {
     clock.reset();
   });
 
@@ -68,20 +68,18 @@ describe("logic/delegate", function() {
   });
 
   describe("create", function() {
-
     var data;
 
-    beforeEach(function(){
+    beforeEach(function() {
       data = {
-        username: 'carbonara',
+        username: "carbonara",
         sender: {
-          publicKey: '123'
+          publicKey: "123"
         }
       };
     });
 
     it("returns trs without delegate.username", function(done) {
-
       data.username = undefined;
 
       var returnTrs = instance.create(data, trs);
@@ -92,7 +90,7 @@ describe("logic/delegate", function() {
         asset: {
           delegate: {
             username: undefined,
-            publicKey: '123'
+            publicKey: "123"
           }
         }
       });
@@ -101,8 +99,7 @@ describe("logic/delegate", function() {
     });
 
     it("correctly trims and lowercase the delegate.username", function(done) {
-
-      data.username = '    carboNARA   ';
+      data.username = "    carboNARA   ";
 
       var returnTrs = instance.create(data, trs);
 
@@ -111,8 +108,8 @@ describe("logic/delegate", function() {
         amount: 0,
         asset: {
           delegate: {
-            username: 'carbonara',
-            publicKey: '123'
+            username: "carbonara",
+            publicKey: "123"
           }
         }
       });
@@ -121,7 +118,6 @@ describe("logic/delegate", function() {
     });
 
     it("returns trs with delegate.username", function(done) {
-
       var returnTrs = instance.create(data, trs);
 
       expect(returnTrs).to.be.deep.equal({
@@ -129,8 +125,8 @@ describe("logic/delegate", function() {
         amount: 0,
         asset: {
           delegate: {
-            username: 'carbonara',
-            publicKey: '123'
+            username: "carbonara",
+            publicKey: "123"
           }
         }
       });
@@ -141,10 +137,9 @@ describe("logic/delegate", function() {
 
   describe("calculateFee", function() {
     it("calls getFees", function(done) {
-
       instance.bind(accounts, system);
-      var modules = Delegate.__get__('modules');
-      modules.system = {getFees: function() {}};
+      var modules = Delegate.__get__("modules");
+      modules.system = { getFees: function() {} };
       var getFees = sinon.stub(modules.system, "getFees").returns({
         fees: {
           delegate: 1
@@ -164,7 +159,6 @@ describe("logic/delegate", function() {
   });
 
   describe("verify", function() {
-
     var sender;
 
     beforeEach(function() {
@@ -175,77 +169,89 @@ describe("logic/delegate", function() {
         amount: 0,
         asset: {
           delegate: {
-            username: 'carbonara'
+            username: "carbonara"
           }
         }
-      }
+      };
     });
 
     it("Error invalid recipient", function(done) {
-
-      instance.verify({
-        recipientId: '1'
-      }, null, callback);
+      instance.verify(
+        {
+          recipientId: "1"
+        },
+        null,
+        callback
+      );
       clock.tick();
 
       expect(callback.calledOnce).to.be.true;
       expect(callback.getCall(0).args.length).to.equal(1);
-      expect(callback.getCall(0).args[0]).to.equal('Invalid recipient');
+      expect(callback.getCall(0).args[0]).to.equal("Invalid recipient");
 
       done();
     });
 
     it("Error invalid recipient", function(done) {
-
-      instance.verify({
-        amount: 1
-      }, null, callback);
+      instance.verify(
+        {
+          amount: 1
+        },
+        null,
+        callback
+      );
       clock.tick();
 
       expect(callback.calledOnce).to.be.true;
       expect(callback.getCall(0).args.length).to.equal(1);
-      expect(callback.getCall(0).args[0]).to.equal('Invalid transaction amount');
+      expect(callback.getCall(0).args[0]).to.equal(
+        "Invalid transaction amount"
+      );
 
       done();
     });
 
     it("Error invalid recipient", function(done) {
-
-      instance.verify({
-        amount: 1
-      }, null, callback);
+      instance.verify(
+        {
+          amount: 1
+        },
+        null,
+        callback
+      );
       clock.tick();
 
       expect(callback.calledOnce).to.be.true;
       expect(callback.getCall(0).args.length).to.equal(1);
-      expect(callback.getCall(0).args[0]).to.equal('Invalid transaction amount');
+      expect(callback.getCall(0).args[0]).to.equal(
+        "Invalid transaction amount"
+      );
 
       done();
     });
 
     it("Error Account is already a delegate", function(done) {
-
       sender.isDelegate = true;
       instance.verify(trs, sender, callback);
       clock.tick();
 
       expect(callback.calledOnce).to.be.true;
       expect(callback.getCall(0).args.length).to.equal(1);
-      expect(callback.getCall(0).args[0]).to.equal('Account is already a delegate');
+      expect(callback.getCall(0).args[0]).to.equal(
+        "Account is already a delegate"
+      );
 
       done();
     });
 
     it("Error Invalid transaction asset", function(done) {
-
       delete trs.asset;
       instance.verify(trs, sender, callback);
       clock.tick();
 
       expect(callback.calledOnce).to.be.true;
       expect(callback.getCall(0).args.length).to.equal(1);
-      expect(callback.getCall(0).args[0]).to.equal('Invalid transaction asset');
-
+      expect(callback.getCall(0).args[0]).to.equal("Invalid transaction asset");
 
       clock.reset();
       callback.reset();
@@ -255,99 +261,105 @@ describe("logic/delegate", function() {
 
       expect(callback.calledOnce).to.be.true;
       expect(callback.getCall(0).args.length).to.equal(1);
-      expect(callback.getCall(0).args[0]).to.equal('Invalid transaction asset');
+      expect(callback.getCall(0).args[0]).to.equal("Invalid transaction asset");
 
       done();
     });
 
     it("Error Username is undefined", function(done) {
-
       trs.asset.delegate.username = undefined;
       instance.verify(trs, sender, callback);
       clock.tick();
 
       expect(callback.calledOnce).to.be.true;
       expect(callback.getCall(0).args.length).to.equal(1);
-      expect(callback.getCall(0).args[0]).to.equal('Username is undefined');
+      expect(callback.getCall(0).args[0]).to.equal("Username is undefined");
 
       done();
     });
 
     it("Error Username must be lowercase", function(done) {
-
-      trs.asset.delegate.username = 'CARBONARA';
+      trs.asset.delegate.username = "CARBONARA";
       instance.verify(trs, sender, callback);
       clock.tick();
 
       expect(callback.calledOnce).to.be.true;
       expect(callback.getCall(0).args.length).to.equal(1);
-      expect(callback.getCall(0).args[0]).to.equal('Username must be lowercase');
+      expect(callback.getCall(0).args[0]).to.equal(
+        "Username must be lowercase"
+      );
 
       done();
     });
 
     it("Error Empty username", function(done) {
-
-      trs.asset.delegate.username = ' ';
+      trs.asset.delegate.username = " ";
       instance.verify(trs, sender, callback);
       clock.tick();
 
       expect(callback.calledOnce).to.be.true;
       expect(callback.getCall(0).args.length).to.equal(1);
-      expect(callback.getCall(0).args[0]).to.equal('Empty username');
+      expect(callback.getCall(0).args[0]).to.equal("Empty username");
 
       done();
     });
 
     it("Error Empty username", function(done) {
-
-      trs.asset.delegate.username = 'carbonaracarbonaracarbonaracarbonaracarbonaracarbonaracarbonara';
+      trs.asset.delegate.username =
+        "carbonaracarbonaracarbonaracarbonaracarbonaracarbonaracarbonara";
       instance.verify(trs, sender, callback);
       clock.tick();
 
       expect(callback.calledOnce).to.be.true;
       expect(callback.getCall(0).args.length).to.equal(1);
-      expect(callback.getCall(0).args[0]).to.equal('Username is too long. Maximum is 20 characters');
+      expect(callback.getCall(0).args[0]).to.equal(
+        "Username is too long. Maximum is 20 characters"
+      );
 
       done();
     });
 
     it("Error Username can not be a potential address", function(done) {
-
-      trs.asset.delegate.username = '1234444r';
+      trs.asset.delegate.username = "1234444r";
       instance.verify(trs, sender, callback);
       clock.tick();
 
       expect(callback.calledOnce).to.be.true;
       expect(callback.getCall(0).args.length).to.equal(1);
-      expect(callback.getCall(0).args[0]).to.equal('Username can not be a potential address');
+      expect(callback.getCall(0).args[0]).to.equal(
+        "Username can not be a potential address"
+      );
 
       done();
     });
 
-    it("Error Username can only contain alphanumeric characters with the exception of !@$&_.", function(done) {
-
-      trs.asset.delegate.username = 'carßonara';
+    it("Error Username can only contain alphanumeric characters with the exception of !@$&_.", function(
+      done
+    ) {
+      trs.asset.delegate.username = "carßonara";
       instance.verify(trs, sender, callback);
       clock.tick();
 
       expect(callback.calledOnce).to.be.true;
       expect(callback.getCall(0).args.length).to.equal(1);
-      expect(callback.getCall(0).args[0]).to.equal('Username can only contain alphanumeric characters with the exception of !@$&_.');
+      expect(callback.getCall(0).args[0]).to.equal(
+        "Username can only contain alphanumeric characters with the exception of !@$&_."
+      );
 
       done();
     });
 
     it("Error from getAccount cb", function(done) {
-
       var modules = {
         accounts: {
-          getAccount: function(){}
+          getAccount: function() {}
         }
       };
-      sinon.stub(modules.accounts, "getAccount").callsFake(function(account, cb) {
-        cb('error');
-      });
+      sinon
+        .stub(modules.accounts, "getAccount")
+        .callsFake(function(account, cb) {
+          cb("error");
+        });
 
       Delegate.__set__("modules", modules);
       instance.verify(trs, sender, callback);
@@ -355,22 +367,23 @@ describe("logic/delegate", function() {
 
       expect(callback.calledOnce).to.be.true;
       expect(callback.getCall(0).args.length).to.equal(1);
-      expect(callback.getCall(0).args[0]).to.equal('error');
+      expect(callback.getCall(0).args[0]).to.equal("error");
 
       Delegate.__get__("modules").accounts.getAccount.restore();
       done();
     });
 
     it("Error Username already exists", function(done) {
-
       var modules = {
         accounts: {
-          getAccount: function(){}
+          getAccount: function() {}
         }
       };
-      sinon.stub(modules.accounts, "getAccount").callsFake(function(account, cb) {
-        cb(null, true);
-      });
+      sinon
+        .stub(modules.accounts, "getAccount")
+        .callsFake(function(account, cb) {
+          cb(null, true);
+        });
 
       Delegate.__set__("modules", modules);
       instance.verify(trs, sender, callback);
@@ -378,22 +391,23 @@ describe("logic/delegate", function() {
 
       expect(callback.calledOnce).to.be.true;
       expect(callback.getCall(0).args.length).to.equal(1);
-      expect(callback.getCall(0).args[0]).to.equal('Username already exists');
+      expect(callback.getCall(0).args[0]).to.equal("Username already exists");
 
       Delegate.__get__("modules").accounts.getAccount.restore();
       done();
     });
 
     it("success", function(done) {
-
       var modules = {
         accounts: {
-          getAccount: function(){}
+          getAccount: function() {}
         }
       };
-      sinon.stub(modules.accounts, "getAccount").callsFake(function(account, cb) {
-        cb(null, null);
-      });
+      sinon
+        .stub(modules.accounts, "getAccount")
+        .callsFake(function(account, cb) {
+          cb(null, null);
+        });
 
       Delegate.__set__("modules", modules);
       instance.verify(trs, sender, callback);
@@ -411,7 +425,6 @@ describe("logic/delegate", function() {
 
   describe("process", function() {
     it("calls cb", function(done) {
-
       instance.process(trs, null, callback);
       clock.tick();
 
@@ -426,7 +439,6 @@ describe("logic/delegate", function() {
 
   describe("getBytes", function() {
     it("returns null with no username", function(done) {
-
       trs.asset.delegate.username = false;
       var retVall = instance.getBytes(trs);
 
@@ -436,11 +448,10 @@ describe("logic/delegate", function() {
     });
 
     it("catches the error", function(done) {
-
-      var Buffer = Delegate.__get__('Buffer');
+      var Buffer = Delegate.__get__("Buffer");
       Buffer.from = function() {};
       var from = sinon.stub(Buffer, "from").callsFake(function() {
-        throw new Error('Error');
+        throw new Error("Error");
       });
 
       Delegate.__set__("Buffer", Buffer);
@@ -449,15 +460,14 @@ describe("logic/delegate", function() {
         instance.getBytes(trs);
       };
 
-      expect(throwError).to.throw('Error');
+      expect(throwError).to.throw("Error");
       Delegate.__get__("Buffer").from.restore();
 
       done();
     });
 
     it("catches the error", function(done) {
-
-      var Buffer = Delegate.__get__('Buffer');
+      var Buffer = Delegate.__get__("Buffer");
       Buffer.from = function() {};
       var from = sinon.stub(Buffer, "from").returns(1);
 
@@ -473,14 +483,12 @@ describe("logic/delegate", function() {
   });
 
   describe("apply", function() {
-
     var sender = {
-      address: '12929291r'
+      address: "12929291r"
     };
 
     it("calls setAccountAndGet without username", function(done) {
-
-      var modules = Delegate.__get__('modules');
+      var modules = Delegate.__get__("modules");
       modules.accounts = { setAccountAndGet: function() {} };
       var setAccountAndGet = sinon.stub(modules.accounts, "setAccountAndGet");
       var expectedData = {
@@ -498,13 +506,12 @@ describe("logic/delegate", function() {
       expect(setAccountAndGet.getCall(0).args[0]).to.deep.equal(expectedData);
 
       setAccountAndGet.restore();
-      trs.asset.delegate.username = 'carbonara';
+      trs.asset.delegate.username = "carbonara";
       done();
     });
 
     it("calls setAccountAndGet with username", function(done) {
-
-      var modules = Delegate.__get__('modules');
+      var modules = Delegate.__get__("modules");
       modules.accounts = { setAccountAndGet: function() {} };
       var setAccountAndGet = sinon.stub(modules.accounts, "setAccountAndGet");
       var expectedData = {
@@ -525,19 +532,17 @@ describe("logic/delegate", function() {
       setAccountAndGet.restore();
       done();
     });
-
   });
 
   describe("undo", function() {
-
     var sender = {
-      address: '12929291r'
+      address: "12929291r"
     };
     var modules, setAccountAndGet;
 
     beforeEach(function() {
       sender.nameexist = false;
-      modules = Delegate.__get__('modules');
+      modules = Delegate.__get__("modules");
       modules.accounts = { setAccountAndGet: function() {} };
       setAccountAndGet = sinon.stub(modules.accounts, "setAccountAndGet");
     });
@@ -547,7 +552,6 @@ describe("logic/delegate", function() {
     });
 
     it("calls setAccountAndGet without nameexist", function(done) {
-
       var expectedData = {
         address: "12929291r",
         isDelegate: 0,
@@ -568,7 +572,6 @@ describe("logic/delegate", function() {
     });
 
     it("calls setAccountAndGet with nameexist and no username", function(done) {
-
       var expectedData = {
         address: "12929291r",
         isDelegate: 0,
@@ -587,8 +590,9 @@ describe("logic/delegate", function() {
       done();
     });
 
-    it("calls setAccountAndGet with username and not nameexist", function(done) {
-
+    it("calls setAccountAndGet with username and not nameexist", function(
+      done
+    ) {
       var expectedData = {
         address: "12929291r",
         isDelegate: 0,
@@ -606,20 +610,18 @@ describe("logic/delegate", function() {
 
       done();
     });
-
   });
 
   describe("applyUnconfirmed", function() {
-
     var sender = {
-      address: '12929291r'
+      address: "12929291r"
     };
     var modules, setAccountAndGet;
 
     beforeEach(function() {
       sender.nameexist = false;
-      modules = Delegate.__get__('modules');
-      if(!modules) modules = {};
+      modules = Delegate.__get__("modules");
+      if (!modules) modules = {};
       modules.accounts = { setAccountAndGet: function() {} };
       setAccountAndGet = sinon.stub(modules.accounts, "setAccountAndGet");
       Delegate.__set__("modules", modules);
@@ -630,7 +632,6 @@ describe("logic/delegate", function() {
     });
 
     it("calls setAccountAndGet without username", function(done) {
-
       var expectedData = {
         address: "12929291r",
         isDelegate: 0,
@@ -649,7 +650,6 @@ describe("logic/delegate", function() {
     });
 
     it("calls setAccountAndGet with username", function(done) {
-
       var expectedData = {
         address: "12929291r",
         isDelegate: 0,
@@ -666,19 +666,17 @@ describe("logic/delegate", function() {
 
       done();
     });
-
   });
 
   describe("undoUnconfirmed", function() {
-
     var sender = {
-      address: '12929291r'
+      address: "12929291r"
     };
     var modules, setAccountAndGet;
 
     beforeEach(function() {
-      modules = Delegate.__get__('modules');
-      if(!modules) modules = {};
+      modules = Delegate.__get__("modules");
+      if (!modules) modules = {};
       modules.accounts = { setAccountAndGet: function() {} };
       setAccountAndGet = sinon.stub(modules.accounts, "setAccountAndGet");
       Delegate.__set__("modules", modules);
@@ -689,7 +687,6 @@ describe("logic/delegate", function() {
     });
 
     it("calls setAccountAndGet without username", function(done) {
-
       var expectedData = {
         address: "12929291r",
         isDelegate: 0,
@@ -708,7 +705,6 @@ describe("logic/delegate", function() {
     });
 
     it("calls setAccountAndGet with username", function(done) {
-
       var expectedData = {
         address: "12929291r",
         isDelegate: 0,
@@ -725,50 +721,44 @@ describe("logic/delegate", function() {
 
       done();
     });
-
   });
 
   describe("schema", function() {
-
     it("is correct", function(done) {
-
       expect(instance.schema).to.deep.equal({
-        id: 'Delegate',
-        type: 'object',
+        id: "Delegate",
+        type: "object",
         properties: {
           publicKey: {
-            type: 'string',
-            format: 'publicKey'
+            type: "string",
+            format: "publicKey"
           }
         },
-        required: ['publicKey']
+        required: ["publicKey"]
       });
 
       done();
     });
-
   });
 
   describe("objectNormalize", function() {
-
     var library, validate;
-    beforeEach(function(){
-      library = Delegate.__get__('library');
+    beforeEach(function() {
+      library = Delegate.__get__("library");
       library.schema = { validate: function() {} };
     });
     afterEach(function() {
-      if(validate && validate.restore()) validate.restore();
+      if (validate && validate.restore()) validate.restore();
       trs.asset.delegate.username = "carbonara";
     });
 
     it("throws error", function(done) {
-
       validate = sinon.stub(library.schema, "validate").returns(false);
 
       var throwError = function() {
         var context = {
           schema: {
-            getLastErrors: sinon.stub().returns([new Error('error')])
+            getLastErrors: sinon.stub().returns([new Error("error")])
           }
         };
         instance.objectNormalize.call(context, trs);
@@ -780,27 +770,27 @@ describe("logic/delegate", function() {
     });
 
     it("success", function(done) {
-
       validate = sinon.stub(library.schema, "validate").returns(true);
 
       expect(instance.objectNormalize(trs)).to.deep.equal(trs);
       expect(library.schema.validate.calledOnce).to.be.true;
       expect(library.schema.validate.getCall(0).args.length).to.equal(2);
-      expect(library.schema.validate.getCall(0).args[0]).to.deep.equal({ username: 'carbonara' });
-      expect(library.schema.validate.getCall(0).args[1]).to.equal(instance.schema);
+      expect(library.schema.validate.getCall(0).args[0]).to.deep.equal({
+        username: "carbonara"
+      });
+      expect(library.schema.validate.getCall(0).args[1]).to.equal(
+        instance.schema
+      );
 
       done();
     });
-
   });
 
   describe("dbRead", function() {
-
     it("returns null with no username", function(done) {
-
       var raw = {
-        t_senderPublicKey: '0123',
-        t_senderId: '0123'
+        t_senderPublicKey: "0123",
+        t_senderId: "0123"
       };
 
       var retVal = instance.dbRead(raw);
@@ -811,11 +801,10 @@ describe("logic/delegate", function() {
     });
 
     it("success", function(done) {
-
       var raw = {
-        d_username: 'carbonara',
-        t_senderPublicKey: '0123',
-        t_senderId: '0123'
+        d_username: "carbonara",
+        t_senderPublicKey: "0123",
+        t_senderId: "0123"
       };
       var expectedResult = {
         delegate: {
@@ -831,46 +820,31 @@ describe("logic/delegate", function() {
 
       done();
     });
-
   });
 
   describe("dbTable", function() {
-
     it("correct table", function(done) {
-
-      expect(instance.dbTable).to.equal('delegates');
+      expect(instance.dbTable).to.equal("delegates");
 
       done();
     });
-
   });
 
   describe("dbFields", function() {
-
     it("correct fields", function(done) {
-
-      var expectedFields = [
-        'username',
-        'transactionId'
-      ];
+      var expectedFields = ["username", "transactionId"];
 
       expect(instance.dbFields).to.deep.equal(expectedFields);
 
       done();
     });
-
   });
 
   describe("dbSave", function() {
-
     it("returns correct value", function(done) {
-
       var context = {
-        dbTable: 'delegates',
-        dbFields: [
-          'username',
-          'transactionId'
-        ]
+        dbTable: "delegates",
+        dbFields: ["username", "transactionId"]
       };
       var expectedObj = {
         table: context.dbTable,
@@ -887,13 +861,10 @@ describe("logic/delegate", function() {
 
       done();
     });
-
   });
 
   describe("ready", function() {
-
     it("returns null", function(done) {
-
       var retVal = instance.ready(trs, {});
 
       expect(retVal).to.deep.equal(true);
@@ -902,7 +873,6 @@ describe("logic/delegate", function() {
     });
 
     it("returns false with no signatures", function(done) {
-
       var sender = {
         multisignatures: [1]
       };
@@ -914,12 +884,11 @@ describe("logic/delegate", function() {
     });
 
     it("returns ready when signatures < multimin", function(done) {
-
       var sender = {
         multisignatures: [1],
         multimin: 2
       };
-      trs.signatures = [1,2,3];
+      trs.signatures = [1, 2, 3];
       var retVal = instance.ready(trs, sender);
 
       expect(retVal).to.equal(true);
@@ -928,18 +897,16 @@ describe("logic/delegate", function() {
     });
 
     it("returns not ready when signatures > multimin", function(done) {
-
       var sender = {
         multisignatures: [1],
         multimin: 10
       };
-      trs.signatures = [1,2,3];
+      trs.signatures = [1, 2, 3];
       var retVal = instance.ready(trs, sender);
 
       expect(retVal).to.equal(false);
 
       done();
     });
-
   });
 });
