@@ -20,9 +20,9 @@ describe("logic/peer", function() {
   var instance, callback, clock, peer;
 
   beforeEach(function() {
-    var context = { accept: sinon.stub()};
+    var context = { accept: sinon.stub() };
     peer = {
-      mocked: 'true'
+      mocked: "true"
     };
     instance = construct(context, peer);
     // instance = new Peer();
@@ -41,9 +41,9 @@ describe("logic/peer", function() {
       done();
     });
     it("should be an instance of Delegate", function(done) {
-      var context = { accept: sinon.stub()};
+      var context = { accept: sinon.stub() };
       var peerObj = {
-        mocked: 'true'
+        mocked: "true"
       };
 
       construct(context, peer);
@@ -56,7 +56,6 @@ describe("logic/peer", function() {
       expect(context.accept.getCall(1).args.length).to.equal(1);
       expect(context.accept.getCall(1).args[0]).to.deep.equal({});
 
-
       done();
     });
   });
@@ -64,17 +63,17 @@ describe("logic/peer", function() {
   describe("properties", function() {
     it("is correct", function(done) {
       expect(instance.properties).to.deep.equal([
-        'ip',
-        'port',
-        'state',
-        'os',
-        'version',
-        'dappid',
-        'broadhash',
-        'height',
-        'clock',
-        'updated',
-        'nonce'
+        "ip",
+        "port",
+        "state",
+        "os",
+        "version",
+        "dappid",
+        "broadhash",
+        "height",
+        "clock",
+        "updated",
+        "nonce"
       ]);
 
       done();
@@ -83,11 +82,7 @@ describe("logic/peer", function() {
 
   describe("immutable", function() {
     it("is correct", function(done) {
-      expect(instance.immutable).to.deep.equal([
-        'ip',
-        'port',
-        'string'
-      ]);
+      expect(instance.immutable).to.deep.equal(["ip", "port", "string"]);
 
       done();
     });
@@ -96,12 +91,12 @@ describe("logic/peer", function() {
   describe("headers", function() {
     it("is correct", function(done) {
       expect(instance.headers).to.deep.equal([
-        'os',
-        'version',
-        'dappid',
-        'broadhash',
-        'height',
-        'nonce'
+        "os",
+        "version",
+        "dappid",
+        "broadhash",
+        "height",
+        "nonce"
       ]);
 
       done();
@@ -111,13 +106,13 @@ describe("logic/peer", function() {
   describe("nullable", function() {
     it("is correct", function(done) {
       expect(instance.nullable).to.deep.equal([
-        'os',
-        'version',
-        'dappid',
-        'broadhash',
-        'height',
-        'clock',
-        'updated'
+        "os",
+        "version",
+        "dappid",
+        "broadhash",
+        "height",
+        "clock",
+        "updated"
       ]);
 
       done();
@@ -137,31 +132,28 @@ describe("logic/peer", function() {
   });
 
   describe("accept", function() {
-
     var peer;
 
-    beforeEach(function(){
+    beforeEach(function() {
       peer = {
-        ip: '',
-        port: '',
-        state: '',
-        os: '',
-        version: '',
-        dappid: '',
-        broadhash: '',
-        height: '',
-        clock: '',
-        updated: '',
-        nonce: ''
+        ip: "",
+        port: "",
+        state: "",
+        os: "",
+        version: "",
+        dappid: "",
+        broadhash: "",
+        height: "",
+        clock: "",
+        updated: "",
+        nonce: ""
       };
     });
 
     it("returns peer with ip:port string", function(done) {
-
-
       var normalize = sinon.stub(instance, "normalize").returns(peer);
-      peer.ip = '127.0.0.1';
-      peer.port = '1010';
+      peer.ip = "127.0.0.1";
+      peer.port = "1010";
 
       var retVal = instance.accept(peer);
 
@@ -173,15 +165,12 @@ describe("logic/peer", function() {
       expect(normalize.calledOnce).to.be.true;
       expect(retVal).to.deep.equal(peer);
       done();
-
     });
 
     it("returns peer with ip:port string from a long ip", function(done) {
-
-
       var normalize = sinon.stub(instance, "normalize").returns(peer);
-      peer.ip = '2130706433';
-      peer.port = '1010';
+      peer.ip = "2130706433";
+      peer.port = "1010";
 
       var retVal = instance.accept(peer);
 
@@ -194,11 +183,9 @@ describe("logic/peer", function() {
       expect(normalize.calledOnce).to.be.true;
       expect(retVal).to.deep.equal(peer);
       done();
-
     });
 
     it("returns unmuted peer", function(done) {
-
       var normalize = sinon.stub(instance, "normalize").returns(peer);
 
       var retVal = instance.accept(peer);
@@ -209,48 +196,45 @@ describe("logic/peer", function() {
       expect(normalize.calledOnce).to.be.true;
       expect(retVal).to.deep.equal(peer);
       done();
-
     });
   });
 
   describe("normalize", function() {
-
     var peer, protoParseInt;
 
-    beforeEach(function(){
+    beforeEach(function() {
       peer = {
-        ip: '127.0.0.1',
+        ip: "127.0.0.1",
         port: "1010",
-        state: '2',
-        os: '',
-        version: '',
-        dappid: '',
-        broadhash: '',
-        height: '',
-        clock: '',
-        updated: '',
-        nonce: ''
+        state: "2",
+        os: "",
+        version: "",
+        dappid: "",
+        broadhash: "",
+        height: "",
+        clock: "",
+        updated: "",
+        nonce: ""
       };
-      protoParseInt = sinon.spy(instance, "parseInt")
+      protoParseInt = sinon.spy(instance, "parseInt");
     });
-    afterEach(function(){
-      protoParseInt.reset()
+    afterEach(function() {
+      protoParseInt.reset();
     });
 
     it("returns peer without dappId and height", function(done) {
-
       var expectedPeer = {
-        ip: '127.0.0.1',
+        ip: "127.0.0.1",
         port: 1010,
         state: 2,
-        os: '',
-        version: '',
-        dappid: '',
-        broadhash: '',
-        height: '',
-        clock: '',
-        updated: '',
-        nonce: ''
+        os: "",
+        version: "",
+        dappid: "",
+        broadhash: "",
+        height: "",
+        clock: "",
+        updated: "",
+        nonce: ""
       };
       var clonedPeer = Object.assign({}, peer);
       var retVal = instance.normalize(clonedPeer);
@@ -263,27 +247,27 @@ describe("logic/peer", function() {
       expect(protoParseInt.getCall(0).args[1]).to.equal(0);
       expect(protoParseInt.getCall(1).args.length).to.equal(2);
       expect(protoParseInt.getCall(1).args[0]).to.equal(peer.state);
-      expect(protoParseInt.getCall(1).args[1]).to.equal(Peer.STATE.DISCONNECTED);
+      expect(protoParseInt.getCall(1).args[1]).to.equal(
+        Peer.STATE.DISCONNECTED
+      );
       expect(retVal).to.deep.equal(expectedPeer);
       done();
-
     });
     it("returns peer without height", function(done) {
-
       var expectedPeer = {
-        ip: '127.0.0.1',
+        ip: "127.0.0.1",
         port: 1010,
         state: 2,
-        os: '',
-        version: '',
-        broadhash: '',
-        height: '',
-        clock: '',
-        updated: '',
-        nonce: '',
-        dappid: ['dappId']
+        os: "",
+        version: "",
+        broadhash: "",
+        height: "",
+        clock: "",
+        updated: "",
+        nonce: "",
+        dappid: ["dappId"]
       };
-      peer.dappid = 'dappId';
+      peer.dappid = "dappId";
       var clonedPeer = Object.assign({}, peer);
       var retVal = instance.normalize(clonedPeer);
 
@@ -295,28 +279,30 @@ describe("logic/peer", function() {
       expect(protoParseInt.getCall(0).args[1]).to.equal(0);
       expect(protoParseInt.getCall(1).args.length).to.equal(2);
       expect(protoParseInt.getCall(1).args[0]).to.equal(peer.state);
-      expect(protoParseInt.getCall(1).args[1]).to.equal(Peer.STATE.DISCONNECTED);
+      expect(protoParseInt.getCall(1).args[1]).to.equal(
+        Peer.STATE.DISCONNECTED
+      );
       expect(retVal).to.deep.equal(expectedPeer);
       done();
-
     });
 
-    it("returns unmuted dappIds array in peer obj without height", function(done) {
-
+    it("returns unmuted dappIds array in peer obj without height", function(
+      done
+    ) {
       var expectedPeer = {
-        ip: '127.0.0.1',
+        ip: "127.0.0.1",
         port: 1010,
         state: 2,
-        os: '',
-        version: '',
-        broadhash: '',
-        height: '',
-        clock: '',
-        updated: '',
-        nonce: '',
-        dappid: ['dappId', 'dappId2']
+        os: "",
+        version: "",
+        broadhash: "",
+        height: "",
+        clock: "",
+        updated: "",
+        nonce: "",
+        dappid: ["dappId", "dappId2"]
       };
-      peer.dappid = ['dappId', 'dappId2'];
+      peer.dappid = ["dappId", "dappId2"];
       var clonedPeer = Object.assign({}, peer);
       var retVal = instance.normalize(clonedPeer);
 
@@ -328,28 +314,28 @@ describe("logic/peer", function() {
       expect(protoParseInt.getCall(0).args[1]).to.equal(0);
       expect(protoParseInt.getCall(1).args.length).to.equal(2);
       expect(protoParseInt.getCall(1).args[0]).to.equal(peer.state);
-      expect(protoParseInt.getCall(1).args[1]).to.equal(Peer.STATE.DISCONNECTED);
+      expect(protoParseInt.getCall(1).args[1]).to.equal(
+        Peer.STATE.DISCONNECTED
+      );
       expect(retVal).to.deep.equal(expectedPeer);
       done();
-
     });
 
     it("returns unmuted dappIds array in peer obj with height", function(done) {
-
       var expectedPeer = {
-        ip: '127.0.0.1',
+        ip: "127.0.0.1",
         port: 1010,
         state: 2,
-        os: '',
-        version: '',
-        broadhash: '',
+        os: "",
+        version: "",
+        broadhash: "",
         height: 50,
-        clock: '',
-        updated: '',
-        nonce: '',
-        dappid: ['dappId', 'dappId2']
+        clock: "",
+        updated: "",
+        nonce: "",
+        dappid: ["dappId", "dappId2"]
       };
-      peer.dappid = ['dappId', 'dappId2'];
+      peer.dappid = ["dappId", "dappId2"];
       peer.height = "50";
       var clonedPeer = Object.assign({}, peer);
       var retVal = instance.normalize(clonedPeer);
@@ -365,68 +351,58 @@ describe("logic/peer", function() {
       expect(protoParseInt.getCall(1).args[1]).to.equal(0);
       expect(protoParseInt.getCall(2).args.length).to.equal(2);
       expect(protoParseInt.getCall(2).args[0]).to.equal(peer.state);
-      expect(protoParseInt.getCall(2).args[1]).to.equal(Peer.STATE.DISCONNECTED);
+      expect(protoParseInt.getCall(2).args[1]).to.equal(
+        Peer.STATE.DISCONNECTED
+      );
       expect(retVal).to.deep.equal(expectedPeer);
       done();
-
     });
-
   });
 
   describe("normalize", function() {
-
     it("returns fallback", function(done) {
-
       var retVal = instance.parseInt(null, 100);
 
       expect(retVal).to.equal(100);
 
       done();
-
     });
 
     it("parses integer from string", function(done) {
-
-      var retVal = instance.parseInt('200', 100);
+      var retVal = instance.parseInt("200", 100);
 
       expect(retVal).to.equal(200);
 
       done();
-
     });
 
     it("parses integer from float", function(done) {
-
       var retVal = instance.parseInt(2.2, 100);
 
       expect(retVal).to.equal(2);
 
       done();
-
     });
 
     it("returns integer", function(done) {
-
       var retVal = instance.parseInt(300, 100);
 
       expect(retVal).to.equal(300);
 
       done();
-
     });
-
   });
 
   describe("applyHeaders", function() {
-
     var normalize, update;
 
     beforeEach(function() {
-      normalize = sinon.stub(instance, "normalize").callsFake(function(obj){return obj});
+      normalize = sinon.stub(instance, "normalize").callsFake(function(obj) {
+        return obj;
+      });
       update = sinon.stub(instance, "update");
     });
     it("returns empty {}", function(done) {
-
       var retVal = instance.applyHeaders(undefined);
 
       expect(retVal).to.deep.equal({});
@@ -434,11 +410,9 @@ describe("logic/peer", function() {
       expect(update.calledOnce).to.be.true;
 
       done();
-
     });
     it("returns headers", function(done) {
-
-      var header = { something: 'header'};
+      var header = { something: "header" };
       var retVal = instance.applyHeaders(header);
 
       expect(retVal).to.deep.equal(header);
@@ -446,26 +420,26 @@ describe("logic/peer", function() {
       expect(update.calledOnce).to.be.true;
 
       done();
-
     });
-
   });
 
   describe("update", function() {
-
     it("returns only supported properties", function(done) {
-
-      var normalize = sinon.stub(instance, "normalize").callsFake(function(obj){return obj});
+      var normalize = sinon
+        .stub(instance, "normalize")
+        .callsFake(function(obj) {
+          return obj;
+        });
       var peer = {
-        state: '',
-        os: '',
-        version: '',
-        dappid: '',
-        broadhash: '',
-        height: '',
-        clock: '',
-        updated: '',
-        nonce: ''
+        state: "",
+        os: "",
+        version: "",
+        dappid: "",
+        broadhash: "",
+        height: "",
+        clock: "",
+        updated: "",
+        nonce: ""
       };
 
       var clonedPeer = Object.assign({}, peer);
@@ -474,68 +448,63 @@ describe("logic/peer", function() {
       retVal = Object.assign({}, retVal); // taking the peer from the instance
       delete peer.excluded;
 
-
       expect(normalize.calledOnce).to.be.true;
       expect(retVal).to.deep.equal(peer);
 
       done();
-
     });
-
   });
 
   describe("object", function() {
-
     it("returns only supported properties", function(done) {
-
       var peer = {
-        ip: '127.0.0.1',
-        port: '1010',
-        state: '2',
-        os: 'some',
-        version: 'some',
-        dappid: 'some',
-        broadhash: 'some',
-        height: 'some',
-        clock: 'some',
-        updated: 'some',
-        nonce: 'some',
+        ip: "127.0.0.1",
+        port: "1010",
+        state: "2",
+        os: "some",
+        version: "some",
+        dappid: "some",
+        broadhash: "some",
+        height: "some",
+        clock: "some",
+        updated: "some",
+        nonce: "some",
         excluded: true, // <- this field shouldn't show in the result∏
         nullable: [
-          'os',
-          'version',
-          'dappid',
-          'broadhash',
-          'height',
-          'clock',
-          'updated'
+          "os",
+          "version",
+          "dappid",
+          "broadhash",
+          "height",
+          "clock",
+          "updated"
         ],
         properties: [
-          'ip',
-          'port',
-          'state',
-          'os',
-          'version',
-          'dappid',
-          'broadhash',
-          'height',
-          'clock',
-          'updated',
-          'nonce'
+          "ip",
+          "port",
+          "state",
+          "os",
+          "version",
+          "dappid",
+          "broadhash",
+          "height",
+          "clock",
+          "updated",
+          "nonce"
         ]
       };
       var expectedPeer = {
-        ip: '127.0.0.1',
-        port: '1010',
-        state: '2',
-        os: 'some',
-        version: 'some',
-        dappid: 'some',
-        broadhash: 'some',
-        height: 'some',
-        clock: 'some',
-        updated: 'some',
-        nonce: 'some'
+        ip: "127.0.0.1",
+        port: "1010",
+        state: "2",
+        os: "some",
+        version: "some",
+        dappid: "some",
+        broadhash: "some",
+        height: "some",
+        clock: "some",
+        updated: "some",
+        nonce: "some"
       };
 
       var retVal = instance.object.call(peer);
@@ -543,9 +512,6 @@ describe("logic/peer", function() {
       expect(retVal).to.deep.equal(expectedPeer);
 
       done();
-
     });
-
   });
-
 });
