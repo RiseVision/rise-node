@@ -40,7 +40,7 @@ describe("logic/peer", function() {
 
       done();
     });
-    it("should be an instance of Delegate", function(done) {
+    it("should be an instance of Peer", function(done) {
       var context = { accept: sinon.stub() };
       var peerObj = {
         mocked: "true"
