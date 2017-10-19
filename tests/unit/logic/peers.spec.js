@@ -7,8 +7,7 @@ var path = require("path");
 var rootDir = path.join(__dirname, "../../..");
 
 var Peers = rewire(path.join(rootDir, "logic/peers"));
-var Peer = require('../../../logic/peer');
-
+var Peer = require("../../../logic/peer");
 
 describe("logic/peers", function() {
   var instance, callback, clock, schema, logger, peer;
@@ -33,15 +32,12 @@ describe("logic/peers", function() {
   });
 
   describe("constructor", function() {
-
     it("should be a function", function(done) {
-
       expect(Peers).to.be.a("function");
 
       done();
     });
     it("calls cb and sets", function(done) {
-
       var library = Peers.__get__("library");
       var self = Peers.__get__("self");
       var __private = Peers.__get__("__private");
@@ -66,11 +62,9 @@ describe("logic/peers", function() {
   });
 
   describe("create", function() {
-
     var create = Peers.__get__("Peers.prototype.create");
 
     it("returns a new Peer", function(done) {
-
       var retVal = create({});
 
       expect(retVal).to.be.an.instanceOf(Peer);
@@ -78,30 +72,26 @@ describe("logic/peers", function() {
       done();
     });
     it("returns the peer", function(done) {
-
       var retVal = create();
 
       expect(retVal).to.deep.equal(peer);
 
       done();
     });
-
   });
 
   describe("exists", function() {
-
     var __private;
     var exists = Peers.__get__("Peers.prototype.exists");
 
-    beforeEach(function(){
+    beforeEach(function() {
       __private = Peers.__get__("__private");
     });
-    afterEach(function(){
+    afterEach(function() {
       Peers.__set__("__private", __private);
     });
 
     it("returns true", function(done) {
-
       var mockedPrivate = {
         peers: {
           test: true
@@ -109,7 +99,7 @@ describe("logic/peers", function() {
       };
       Peers.__set__("__private", mockedPrivate);
 
-      peer.string = 'test';
+      peer.string = "test";
       var retVal = exists(peer);
 
       expect(retVal).to.equal(true);
@@ -117,46 +107,41 @@ describe("logic/peers", function() {
       done();
     });
     it("returns false", function(done) {
-
       var retVal = exists(peer);
 
       expect(retVal).to.equal(false);
 
       done();
     });
-
   });
 
   describe("get", function() {
-
     var __private;
     var get = Peers.__get__("Peers.prototype.get");
 
-    beforeEach(function(){
+    beforeEach(function() {
       __private = Peers.__get__("__private");
     });
-    afterEach(function(){
+    afterEach(function() {
       Peers.__set__("__private", __private);
     });
 
     it("returns peer", function(done) {
-
       var mockedPrivate = {
         peers: {
           test: {}
         }
       };
       Peers.__set__("__private", mockedPrivate);
-      var retVal = get('test');
+      var retVal = get("test");
 
       expect(retVal).to.deep.equal({});
 
       done();
     });
     it("returns false", function(done) {
-
       var self = Peers.__get__("self");
-      var create = sinon.stub(self, "create").callsFake(function(){
+      var create = sinon.stub(self, "create").callsFake(function() {
         var mockedPrivate = {
           peers: {
             test: {}
@@ -164,7 +149,7 @@ describe("logic/peers", function() {
         };
         Peers.__set__("__private", mockedPrivate);
         return {
-          string: 'test'
+          string: "test"
         };
       });
 
@@ -176,29 +161,26 @@ describe("logic/peers", function() {
 
       done();
     });
-
   });
 
   describe("upsert", function() {
-
     var selfInstance, create, modules, __private;
     var upsert = Peers.__get__("Peers.prototype.upsert");
 
-    beforeEach(function(){
+    beforeEach(function() {
       selfInstance = Peers.__get__("self");
       __private = Peers.__get__("__private");
       modules = Peers.__get__("modules");
 
       create = sinon.stub(selfInstance, "create");
     });
-    afterEach(function(){
+    afterEach(function() {
       create.restore();
       Peers.__set__("__private", __private);
       Peers.__set__("modules", modules);
     });
 
     it("upsert rejected", function(done) {
-
       create.returns({});
 
       var retVal = upsert({}, false);
@@ -213,10 +195,9 @@ describe("logic/peers", function() {
     });
 
     it("peer exists, forced update", function(done) {
-
       var exists = sinon.stub(selfInstance, "exists").returns(true);
-      create.callsFake(function(){
-        return {string: '1'}
+      create.callsFake(function() {
+        return { string: "1" };
       });
       var retVal = upsert({}, true);
 
@@ -230,7 +211,6 @@ describe("logic/peers", function() {
     });
 
     it("peer exists, updates", function(done) {
-
       var exists = sinon.stub(selfInstance, "exists").returns(true);
       var mockedPrivate = {
         peers: {
@@ -243,8 +223,8 @@ describe("logic/peers", function() {
 
       Peers.__set__("__private", mockedPrivate);
 
-      create.callsFake(function(){
-        return {string: 'test'}
+      create.callsFake(function() {
+        return { string: "test" };
       });
       var retVal = upsert({});
 
@@ -253,15 +233,16 @@ describe("logic/peers", function() {
       expect(create.getCall(0).args[0]).to.deep.equal({});
       expect(logger.debug.calledOnce).to.equal(true);
       expect(logger.debug.getCall(0).args.length).to.equal(2);
-      expect(logger.debug.getCall(0).args[0]).to.equal('Updated peer test');
+      expect(logger.debug.getCall(0).args[0]).to.equal("Updated peer test");
       expect(retVal).to.equal(true);
 
       exists.restore();
       done();
     });
 
-    it("peer doesn't exists, rejects unacceptable peer on insert", function(done) {
-
+    it("peer doesn't exists, rejects unacceptable peer on insert", function(
+      done
+    ) {
       var exists = sinon.stub(selfInstance, "exists").returns(false);
       var mockedPrivate = {
         peers: {
@@ -279,8 +260,8 @@ describe("logic/peers", function() {
       Peers.__set__("__private", mockedPrivate);
       Peers.__set__("modules", peersMocked);
 
-      create.callsFake(function(){
-        return {string: 'test'}
+      create.callsFake(function() {
+        return { string: "test" };
       });
       var retVal = upsert({});
 
@@ -289,7 +270,9 @@ describe("logic/peers", function() {
       expect(create.getCall(0).args[0]).to.deep.equal({});
       expect(logger.debug.calledOnce).to.equal(true);
       expect(logger.debug.getCall(0).args.length).to.equal(2);
-      expect(logger.debug.getCall(0).args[0]).to.equal('Rejecting unacceptable peer');
+      expect(logger.debug.getCall(0).args[0]).to.equal(
+        "Rejecting unacceptable peer"
+      );
       expect(retVal).to.equal(true);
 
       exists.restore();
@@ -297,7 +280,6 @@ describe("logic/peers", function() {
     });
 
     it("peer doesn't exists, inserts user", function(done) {
-
       var exists = sinon.stub(selfInstance, "exists").returns(false);
       var __private = Peers.__get__("__private");
       var modules = Peers.__get__("modules");
@@ -310,15 +292,15 @@ describe("logic/peers", function() {
       };
       var peersMocked = {
         peers: {
-          acceptable: sinon.stub().returns([1,2,3])
+          acceptable: sinon.stub().returns([1, 2, 3])
         }
       };
 
       Peers.__set__("__private", mockedPrivate);
       Peers.__set__("modules", peersMocked);
 
-      create.callsFake(function(){
-        return {string: 'test'}
+      create.callsFake(function() {
+        return { string: "test" };
       });
       var retVal = upsert({});
 
@@ -327,42 +309,39 @@ describe("logic/peers", function() {
       expect(create.getCall(0).args[0]).to.deep.equal({});
       expect(logger.debug.calledOnce).to.equal(true);
       expect(logger.debug.getCall(0).args.length).to.equal(2);
-      expect(logger.debug.getCall(0).args[0]).to.equal('Inserted new peer');
+      expect(logger.debug.getCall(0).args[0]).to.equal("Inserted new peer");
       expect(retVal).to.equal(true);
 
       exists.restore();
       done();
     });
-
   });
 
   describe("remove", function() {
-
     var __private, create, selfInstance, exists;
     var remove = Peers.__get__("Peers.prototype.remove");
 
-    beforeEach(function(){
+    beforeEach(function() {
       __private = Peers.__get__("__private");
       selfInstance = Peers.__get__("self");
       create = sinon.stub(selfInstance, "create");
       exists = sinon.stub(selfInstance, "exists");
     });
-    afterEach(function(){
+    afterEach(function() {
       Peers.__set__("__private", __private);
       create.restore();
       exists.restore();
     });
 
     it("peer not found", function(done) {
-
       var mockedPrivate = {
         peers: {
           test: {}
         }
       };
       Peers.__set__("__private", mockedPrivate);
-      create.callsFake(function(){
-        return {string: '1'}
+      create.callsFake(function() {
+        return { string: "1" };
       });
       exists.returns(false);
       var retVal = remove({});
@@ -372,21 +351,20 @@ describe("logic/peers", function() {
       expect(create.getCall(0).args[0]).to.deep.equal({});
       expect(exists.calledOnce).to.equal(true);
       expect(exists.getCall(0).args.length).to.equal(1);
-      expect(exists.getCall(0).args[0]).to.deep.equal({string: '1'});
+      expect(exists.getCall(0).args[0]).to.deep.equal({ string: "1" });
       expect(retVal).to.equal(false);
 
       done();
     });
     it("peer found", function(done) {
-
       var mockedPrivate = {
         peers: {
           test: {}
         }
       };
       Peers.__set__("__private", mockedPrivate);
-      create.callsFake(function(){
-        return {string: '1'}
+      create.callsFake(function() {
+        return { string: "1" };
       });
       exists.returns(true);
       var retVal = remove({});
@@ -396,7 +374,7 @@ describe("logic/peers", function() {
       expect(create.getCall(0).args[0]).to.deep.equal({});
       expect(exists.calledOnce).to.equal(true);
       expect(exists.getCall(0).args.length).to.equal(1);
-      expect(exists.getCall(0).args[0]).to.deep.equal({string: '1'});
+      expect(exists.getCall(0).args[0]).to.deep.equal({ string: "1" });
       expect(retVal).to.equal(true);
 
       done();
@@ -404,23 +382,23 @@ describe("logic/peers", function() {
   });
 
   describe("list", function() {
-
     var __private;
     var list = Peers.__get__("Peers.prototype.list");
 
-    beforeEach(function(){
+    beforeEach(function() {
       __private = Peers.__get__("__private");
     });
-    afterEach(function(){
+    afterEach(function() {
       Peers.__set__("__private", __private);
     });
 
     it("normalize false", function(done) {
-
       var mockedPrivate = {
         peers: {
           test: {
-            object: function() {return true}
+            object: function() {
+              return true;
+            }
           }
         }
       };
@@ -433,7 +411,6 @@ describe("logic/peers", function() {
       done();
     });
     it("normalize true", function(done) {
-
       var mockedPrivate = {
         peers: {
           test: {
@@ -458,11 +435,9 @@ describe("logic/peers", function() {
   });
 
   describe("bindModules", function() {
-
     var bindModules = Peers.__get__("Peers.prototype.bindModules");
 
     it("binds modules", function(done) {
-
       var modules;
       var modulesToBind = {
         peers: [1, 2]
@@ -479,5 +454,4 @@ describe("logic/peers", function() {
       done();
     });
   });
-
 });
