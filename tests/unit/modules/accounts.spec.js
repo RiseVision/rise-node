@@ -13,6 +13,7 @@ var ed = require(path.join(rootDir, "helpers/ed"));
 var constants = require(path.join(rootDir, "helpers/constants"));
 var schema = require(path.join(rootDir, "schema/accounts"));
 var transactionTypes = require(path.join(rootDir, "helpers/transactionTypes"));
+var sandboxHelper = require(path.join(rootDir, "helpers/sandbox"));
 
 describe("modules/accounts", function() {
     it("constructor", function() {
@@ -33,9 +34,9 @@ describe("modules/accounts", function() {
 
         expect(scope.logic.transaction.attachAssetType.calledOnce).to.be.true;
 
-        expect(scope.logic.transaction.attachAssetType.getCall(0).args.length).to.equal(2);
-        expect(scope.logic.transaction.attachAssetType.getCall(0).args[0]).to.equal(transactionTypes.VOTE);
-        expect(scope.logic.transaction.attachAssetType.getCall(0).args[1]).to.be.an.instanceof(Vote);
+        expect(scope.logic.transaction.attachAssetType.firstCall.args.length).to.equal(2);
+        expect(scope.logic.transaction.attachAssetType.firstCall.args[0]).to.equal(transactionTypes.VOTE);
+        expect(scope.logic.transaction.attachAssetType.firstCall.args[1]).to.be.an.instanceof(Vote);
 
         clock.tick();
         expect(callback.called).to.be.true;
@@ -113,14 +114,14 @@ describe("modules/accounts", function() {
             Accounts.__get__("__private").openAccount(secret, callback);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({publicKey : testAccount.publicKey});
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({publicKey : testAccount.publicKey});
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(error);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(error);
         });
 
         it("getAccount returns existed account without publicKey", function() {
@@ -131,30 +132,30 @@ describe("modules/accounts", function() {
             Accounts.__get__("__private").openAccount(secret, callback);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({publicKey : testAccount.publicKey});
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({publicKey : testAccount.publicKey});
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(2);
-            expect(callback.getCall(0).args[0]).to.equal(null);
-            expect(callback.getCall(0).args[1]).to.deep.equal(testAccount);
+            expect(callback.firstCall.args.length).to.equal(2);
+            expect(callback.firstCall.args[0]).to.equal(null);
+            expect(callback.firstCall.args[1]).to.deep.equal(testAccount);
         });
 
         it("getAccount returns existed account with publicKey", function() {
             Accounts.__get__("__private").openAccount(secret, callback);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({publicKey : testAccount.publicKey});
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({publicKey : testAccount.publicKey});
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(2);
-            expect(callback.getCall(0).args[0]).to.equal(null);
-            expect(callback.getCall(0).args[1]).to.deep.equal(testAccount);
+            expect(callback.firstCall.args.length).to.equal(2);
+            expect(callback.firstCall.args[0]).to.equal(null);
+            expect(callback.firstCall.args[1]).to.deep.equal(testAccount);
         });
 
         it("getAccount returns empty account", function() {
@@ -164,15 +165,15 @@ describe("modules/accounts", function() {
             Accounts.__get__("__private").openAccount(secret, callback);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({publicKey : testAccount.publicKey});
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({publicKey : testAccount.publicKey});
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(2);
-            expect(callback.getCall(0).args[0]).to.equal(null);
-            expect(callback.getCall(0).args[1]).to.deep.equal(testAccount);
+            expect(callback.firstCall.args.length).to.equal(2);
+            expect(callback.firstCall.args[0]).to.equal(null);
+            expect(callback.firstCall.args[1]).to.deep.equal(testAccount);
         });
     });
     
@@ -203,20 +204,20 @@ describe("modules/accounts", function() {
             account.getAccount({ publicKey : testAccount.publicKey }, testObj1, callback);
 
             expect(scope.logic.account.get.calledOnce).to.be.true;
-            expect(scope.logic.account.get.getCall(0).args.length).to.equal(3);
-            expect(scope.logic.account.get.getCall(0).args[0]).to.deep.equal({ address : testAccount.address });
-            expect(scope.logic.account.get.getCall(0).args[1]).to.equal(testObj1);
-            expect(scope.logic.account.get.getCall(0).args[2]).to.equal(callback);
+            expect(scope.logic.account.get.firstCall.args.length).to.equal(3);
+            expect(scope.logic.account.get.firstCall.args[0]).to.deep.equal({ address : testAccount.address });
+            expect(scope.logic.account.get.firstCall.args[1]).to.equal(testObj1);
+            expect(scope.logic.account.get.firstCall.args[2]).to.equal(callback);
         });
 
         it("without publicKey", function() {
             account.getAccount({ address : testAccount.address }, testObj1, callback);
 
             expect(scope.logic.account.get.calledOnce).to.be.true;
-            expect(scope.logic.account.get.getCall(0).args.length).to.equal(3);
-            expect(scope.logic.account.get.getCall(0).args[0]).to.deep.equal({ address : testAccount.address });
-            expect(scope.logic.account.get.getCall(0).args[1]).to.equal(testObj1);
-            expect(scope.logic.account.get.getCall(0).args[2]).to.equal(callback);
+            expect(scope.logic.account.get.firstCall.args.length).to.equal(3);
+            expect(scope.logic.account.get.firstCall.args[0]).to.deep.equal({ address : testAccount.address });
+            expect(scope.logic.account.get.firstCall.args[1]).to.equal(testObj1);
+            expect(scope.logic.account.get.firstCall.args[2]).to.equal(callback);
         });
     });
 
@@ -228,10 +229,10 @@ describe("modules/accounts", function() {
             account.getAccounts(filter, fields, callback);
 
             expect(scope.logic.account.getAll.calledOnce).to.be.true;
-            expect(scope.logic.account.getAll.getCall(0).args.length).to.equal(3);
-            expect(scope.logic.account.getAll.getCall(0).args[0]).to.equal(filter);
-            expect(scope.logic.account.getAll.getCall(0).args[1]).to.equal(fields);
-            expect(scope.logic.account.getAll.getCall(0).args[2]).to.equal(callback);
+            expect(scope.logic.account.getAll.firstCall.args.length).to.equal(3);
+            expect(scope.logic.account.getAll.firstCall.args[0]).to.equal(filter);
+            expect(scope.logic.account.getAll.firstCall.args[1]).to.equal(fields);
+            expect(scope.logic.account.getAll.firstCall.args[2]).to.equal(callback);
         });
     });
 
@@ -263,8 +264,8 @@ describe("modules/accounts", function() {
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Invalid public key");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Invalid public key");
         });
 
         it("no address, publicKey exists, generating address error, callback doesn't exist", function() {
@@ -286,8 +287,8 @@ describe("modules/accounts", function() {
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Invalid public key");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Invalid public key");
         });
 
         it("no address, publicKey exists, account.set error", function() {
@@ -301,15 +302,15 @@ describe("modules/accounts", function() {
             account.setAccountAndGet(data, callback);
 
             expect(scope.logic.account.set.calledOnce).to.be.true;
-            expect(scope.logic.account.set.getCall(0).args.length).to.equal(3);
-            expect(scope.logic.account.set.getCall(0).args[0]).to.equal(testAccount.address);
-            expect(scope.logic.account.set.getCall(0).args[1]).to.equal(data);
-            expect(scope.logic.account.set.getCall(0).args[2]).to.be.a("function");
+            expect(scope.logic.account.set.firstCall.args.length).to.equal(3);
+            expect(scope.logic.account.set.firstCall.args[0]).to.equal(testAccount.address);
+            expect(scope.logic.account.set.firstCall.args[1]).to.equal(data);
+            expect(scope.logic.account.set.firstCall.args[2]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(error);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(error);
         });
 
         it("no address, publicKey exists, account.set success", function() {
@@ -322,15 +323,15 @@ describe("modules/accounts", function() {
             account.setAccountAndGet(data, callback);
 
             expect(scope.logic.account.set.calledOnce).to.be.true;
-            expect(scope.logic.account.set.getCall(0).args.length).to.equal(3);
-            expect(scope.logic.account.set.getCall(0).args[0]).to.equal(testAccount.address);
-            expect(scope.logic.account.set.getCall(0).args[1]).to.equal(data);
-            expect(scope.logic.account.set.getCall(0).args[2]).to.be.a("function");
+            expect(scope.logic.account.set.firstCall.args.length).to.equal(3);
+            expect(scope.logic.account.set.firstCall.args[0]).to.equal(testAccount.address);
+            expect(scope.logic.account.set.firstCall.args[1]).to.equal(data);
+            expect(scope.logic.account.set.firstCall.args[2]).to.be.a("function");
 
             expect(scope.logic.account.get.calledOnce).to.be.true;
-            expect(scope.logic.account.get.getCall(0).args.length).to.equal(2);
-            expect(scope.logic.account.get.getCall(0).args[0]).to.deep.equal({address : testAccount.address});
-            expect(scope.logic.account.get.getCall(0).args[1]).to.equal(callback);
+            expect(scope.logic.account.get.firstCall.args.length).to.equal(2);
+            expect(scope.logic.account.get.firstCall.args[0]).to.deep.equal({address : testAccount.address});
+            expect(scope.logic.account.get.firstCall.args[1]).to.equal(callback);
         });
 
         it("address exists, account.set error", function() {
@@ -344,15 +345,15 @@ describe("modules/accounts", function() {
             account.setAccountAndGet(data, callback);
 
             expect(scope.logic.account.set.calledOnce).to.be.true;
-            expect(scope.logic.account.set.getCall(0).args.length).to.equal(3);
-            expect(scope.logic.account.set.getCall(0).args[0]).to.equal(testAccount.address);
-            expect(scope.logic.account.set.getCall(0).args[1]).to.equal(data);
-            expect(scope.logic.account.set.getCall(0).args[2]).to.be.a("function");
+            expect(scope.logic.account.set.firstCall.args.length).to.equal(3);
+            expect(scope.logic.account.set.firstCall.args[0]).to.equal(testAccount.address);
+            expect(scope.logic.account.set.firstCall.args[1]).to.equal(data);
+            expect(scope.logic.account.set.firstCall.args[2]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(error);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(error);
         });
 
         it("address exists, account.set success", function() {
@@ -365,15 +366,15 @@ describe("modules/accounts", function() {
             account.setAccountAndGet(data, callback);
 
             expect(scope.logic.account.set.calledOnce).to.be.true;
-            expect(scope.logic.account.set.getCall(0).args.length).to.equal(3);
-            expect(scope.logic.account.set.getCall(0).args[0]).to.equal(testAccount.address);
-            expect(scope.logic.account.set.getCall(0).args[1]).to.equal(data);
-            expect(scope.logic.account.set.getCall(0).args[2]).to.be.a("function");
+            expect(scope.logic.account.set.firstCall.args.length).to.equal(3);
+            expect(scope.logic.account.set.firstCall.args[0]).to.equal(testAccount.address);
+            expect(scope.logic.account.set.firstCall.args[1]).to.equal(data);
+            expect(scope.logic.account.set.firstCall.args[2]).to.be.a("function");
 
             expect(scope.logic.account.get.calledOnce).to.be.true;
-            expect(scope.logic.account.get.getCall(0).args.length).to.equal(2);
-            expect(scope.logic.account.get.getCall(0).args[0]).to.deep.equal({address : testAccount.address});
-            expect(scope.logic.account.get.getCall(0).args[1]).to.equal(callback);
+            expect(scope.logic.account.get.firstCall.args.length).to.equal(2);
+            expect(scope.logic.account.get.firstCall.args[0]).to.deep.equal({address : testAccount.address});
+            expect(scope.logic.account.get.firstCall.args[1]).to.equal(callback);
         });
     });
    
@@ -399,14 +400,14 @@ describe("modules/accounts", function() {
             account.mergeAccountAndGet(testData, callback);
 
             expect(account.generateAddressByPublicKey.calledOnce).to.be.true;
-            expect(account.generateAddressByPublicKey.getCall(0).args.length).to.equal(1);
-            expect(account.generateAddressByPublicKey.getCall(0).args[0]).to.equal(testAccount.publicKey);
+            expect(account.generateAddressByPublicKey.firstCall.args.length).to.equal(1);
+            expect(account.generateAddressByPublicKey.firstCall.args[0]).to.equal(testAccount.publicKey);
 
             expect(scope.logic.account.merge.calledOnce).to.be.true;
-            expect(scope.logic.account.merge.getCall(0).args.length).to.equal(3);
-            expect(scope.logic.account.merge.getCall(0).args[0]).to.equal(testAccount.address);
-            expect(scope.logic.account.merge.getCall(0).args[1]).to.equal(testData);
-            expect(scope.logic.account.merge.getCall(0).args[2]).to.equal(callback);
+            expect(scope.logic.account.merge.firstCall.args.length).to.equal(3);
+            expect(scope.logic.account.merge.firstCall.args[0]).to.equal(testAccount.address);
+            expect(scope.logic.account.merge.firstCall.args[1]).to.equal(testData);
+            expect(scope.logic.account.merge.firstCall.args[2]).to.equal(callback);
         });
 
         it("empty address, incorrect publicKey, callback exists", function() {
@@ -416,8 +417,8 @@ describe("modules/accounts", function() {
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Invalid public key");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Invalid public key");
 
         });
 
@@ -437,10 +438,10 @@ describe("modules/accounts", function() {
             expect(account.generateAddressByPublicKey.calledOnce).to.be.false;
 
             expect(scope.logic.account.merge.calledOnce).to.be.true;
-            expect(scope.logic.account.merge.getCall(0).args.length).to.equal(3);
-            expect(scope.logic.account.merge.getCall(0).args[0]).to.equal(testAccount.address);
-            expect(scope.logic.account.merge.getCall(0).args[1]).to.equal(testData);
-            expect(scope.logic.account.merge.getCall(0).args[2]).to.equal(callback);
+            expect(scope.logic.account.merge.firstCall.args.length).to.equal(3);
+            expect(scope.logic.account.merge.firstCall.args[0]).to.equal(testAccount.address);
+            expect(scope.logic.account.merge.firstCall.args[1]).to.equal(testData);
+            expect(scope.logic.account.merge.firstCall.args[2]).to.equal(callback);
         });
 
     });
@@ -449,18 +450,19 @@ describe("modules/accounts", function() {
         var testCall = {};
         var testArgs = {};
 
-        var sandboxHelper = require(path.join(rootDir, "helpers/sandbox"));
         var sandboxHelperStub = sinon.spy(sandboxHelper, "callMethod");
         var privateShared = Accounts.__get__("shared");
 
         account.sandboxApi(testCall, testArgs, callback);
 
         expect(sandboxHelperStub.calledOnce).to.be.true;
-        expect(sandboxHelperStub.getCall(0).args.length).to.equal(4);
-        expect(sandboxHelperStub.getCall(0).args[0]).to.equal(privateShared);
-        expect(sandboxHelperStub.getCall(0).args[1]).to.equal(testCall);
-        expect(sandboxHelperStub.getCall(0).args[2]).to.equal(testArgs);
-        expect(sandboxHelperStub.getCall(0).args[3]).to.equal(callback);
+        expect(sandboxHelperStub.firstCall.args.length).to.equal(4);
+        expect(sandboxHelperStub.firstCall.args[0]).to.equal(privateShared);
+        expect(sandboxHelperStub.firstCall.args[1]).to.equal(testCall);
+        expect(sandboxHelperStub.firstCall.args[2]).to.equal(testArgs);
+        expect(sandboxHelperStub.firstCall.args[3]).to.equal(callback);
+
+        sandboxHelperStub.restore();
     });
 
     it("public.onBind", function() {
@@ -480,10 +482,10 @@ describe("modules/accounts", function() {
         account.onBind(testScope);
 
         expect(assetFakeBind.calledOnce).to.be.true;
-        expect(assetFakeBind.getCall(0).args.length).to.equal(3);
-        expect(assetFakeBind.getCall(0).args[0]).to.equal(testScope.delegates);
-        expect(assetFakeBind.getCall(0).args[1]).to.equal(testScope.rounds);
-        expect(assetFakeBind.getCall(0).args[2]).to.equal(testScope.system);
+        expect(assetFakeBind.firstCall.args.length).to.equal(3);
+        expect(assetFakeBind.firstCall.args[0]).to.equal(testScope.delegates);
+        expect(assetFakeBind.firstCall.args[1]).to.equal(testScope.rounds);
+        expect(assetFakeBind.firstCall.args[2]).to.equal(testScope.system);
     });
 
     describe("public.isLoaded", function() {
@@ -523,14 +525,14 @@ describe("modules/accounts", function() {
             account.shared.open(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.open);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.open);
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(errors[0].message);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(errors[0].message);
         });
 
         it("validation passed, open account error", function() {
@@ -540,14 +542,14 @@ describe("modules/accounts", function() {
             account.shared.open(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.open);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.open);
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(error);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(error);
         });
 
         it("validation passed, account returned", function() {
@@ -559,15 +561,15 @@ describe("modules/accounts", function() {
             account.shared.open(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.open);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.open);
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(2);
-            expect(callback.getCall(0).args[0]).to.equal(null);
-            expect(callback.getCall(0).args[1]).to.deep.equal({
+            expect(callback.firstCall.args.length).to.equal(2);
+            expect(callback.firstCall.args[0]).to.equal(null);
+            expect(callback.firstCall.args[1]).to.deep.equal({
                 account : {
                     address: testAccount.address,
                     unconfirmedBalance: testAccount.u_balance,
@@ -614,14 +616,14 @@ describe("modules/accounts", function() {
             account.shared.getBalance(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getBalance);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getBalance);
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(errors[0].message);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(errors[0].message);
         });
 
         it("validation passed, getAccount error", function() {
@@ -632,19 +634,19 @@ describe("modules/accounts", function() {
             account.shared.getBalance(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getBalance);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getBalance);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({ address : request.body.address });
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({ address : request.body.address });
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(error);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(error);
         });
 
         it("validation passed, getAccount returns account with empty balance", function() {
@@ -653,20 +655,20 @@ describe("modules/accounts", function() {
             account.shared.getBalance(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getBalance);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getBalance);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({ address : request.body.address });
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({ address : request.body.address });
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(2);
-            expect(callback.getCall(0).args[0]).to.equal(null);
-            expect(callback.getCall(0).args[1]).to.deep.equal({
+            expect(callback.firstCall.args.length).to.equal(2);
+            expect(callback.firstCall.args[0]).to.equal(null);
+            expect(callback.firstCall.args[1]).to.deep.equal({
                 balance : testAccount.balance,
                 unconfirmedBalance : testAccount.u_balance
             });
@@ -680,20 +682,20 @@ describe("modules/accounts", function() {
             account.shared.getBalance(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getBalance);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getBalance);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({ address : request.body.address });
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({ address : request.body.address });
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick()
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(2);
-            expect(callback.getCall(0).args[0]).to.equal(null);
-            expect(callback.getCall(0).args[1]).to.deep.equal({
+            expect(callback.firstCall.args.length).to.equal(2);
+            expect(callback.firstCall.args[0]).to.equal(null);
+            expect(callback.firstCall.args[1]).to.deep.equal({
                 balance : testAccount.balance,
                 unconfirmedBalance : testAccount.u_balance
             });
@@ -733,14 +735,14 @@ describe("modules/accounts", function() {
             account.shared.getPublickey(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getPublicKey);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getPublicKey);
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(errors[0].message);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(errors[0].message);
         });
 
         it("validation passed, getAccount error", function() {
@@ -750,19 +752,19 @@ describe("modules/accounts", function() {
             account.shared.getPublickey(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getPublicKey);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getPublicKey);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({ address : request.body.address });
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({ address : request.body.address });
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(error);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(error);
         });
 
         it("validation passed, getAccount returns empty account", function() {
@@ -772,19 +774,19 @@ describe("modules/accounts", function() {
             account.shared.getPublickey(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getPublicKey);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getPublicKey);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({ address : request.body.address });
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({ address : request.body.address });
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(error);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(error);
         });
 
         it("validation passed, getAccount returns account without publicKey", function() {
@@ -794,39 +796,39 @@ describe("modules/accounts", function() {
             account.shared.getPublickey(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getPublicKey);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getPublicKey);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({ address : request.body.address });
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({ address : request.body.address });
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(error);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(error);
         });
 
         it("validation passed, getAccount returns account", function() {
             account.shared.getPublickey(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getPublicKey);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getPublicKey);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({ address : request.body.address });
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({ address : request.body.address });
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(2);
-            expect(callback.getCall(0).args[0]).to.equal(null);
-            expect(callback.getCall(0).args[1]).to.deep.equal({ publicKey : testAccount.publicKey });
+            expect(callback.firstCall.args.length).to.equal(2);
+            expect(callback.firstCall.args[0]).to.equal(null);
+            expect(callback.firstCall.args[1]).to.deep.equal({ publicKey : testAccount.publicKey });
         });
 
 
@@ -863,14 +865,14 @@ describe("modules/accounts", function() {
             account.shared.generatePublicKey(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.generatePublicKey);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.generatePublicKey);
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(errors[0].message);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(errors[0].message);
         });
 
         it("validation passed, private.openAccount error", function() {
@@ -880,20 +882,20 @@ describe("modules/accounts", function() {
             account.shared.generatePublicKey(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.generatePublicKey);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.generatePublicKey);
 
             expect(Accounts.__get__("__private").openAccount.calledOnce).to.be.true;
-            expect(Accounts.__get__("__private").openAccount.getCall(0).args.length).to.equal(2);
-            expect(Accounts.__get__("__private").openAccount.getCall(0).args[0]).to.deep.equal(request.body.secret);
-            expect(Accounts.__get__("__private").openAccount.getCall(0).args[1]).to.be.a("function");
+            expect(Accounts.__get__("__private").openAccount.firstCall.args.length).to.equal(2);
+            expect(Accounts.__get__("__private").openAccount.firstCall.args[0]).to.deep.equal(request.body.secret);
+            expect(Accounts.__get__("__private").openAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(2);
-            expect(callback.getCall(0).args[0]).to.equal(error);
-            expect(callback.getCall(0).args[1]).to.deep.equal({ publicKey : null });
+            expect(callback.firstCall.args.length).to.equal(2);
+            expect(callback.firstCall.args[0]).to.equal(error);
+            expect(callback.firstCall.args[1]).to.deep.equal({ publicKey : null });
         });
 
         it("validation passed, private.openAccount returns empty account", function() {
@@ -902,20 +904,20 @@ describe("modules/accounts", function() {
             account.shared.generatePublicKey(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.generatePublicKey);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.generatePublicKey);
 
             expect(Accounts.__get__("__private").openAccount.calledOnce).to.be.true;
-            expect(Accounts.__get__("__private").openAccount.getCall(0).args.length).to.equal(2);
-            expect(Accounts.__get__("__private").openAccount.getCall(0).args[0]).to.deep.equal(request.body.secret);
-            expect(Accounts.__get__("__private").openAccount.getCall(0).args[1]).to.be.a("function");
+            expect(Accounts.__get__("__private").openAccount.firstCall.args.length).to.equal(2);
+            expect(Accounts.__get__("__private").openAccount.firstCall.args[0]).to.deep.equal(request.body.secret);
+            expect(Accounts.__get__("__private").openAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(2);
-            expect(callback.getCall(0).args[0]).to.equal(null);
-            expect(callback.getCall(0).args[1]).to.deep.equal({ publicKey : null });
+            expect(callback.firstCall.args.length).to.equal(2);
+            expect(callback.firstCall.args[0]).to.equal(null);
+            expect(callback.firstCall.args[1]).to.deep.equal({ publicKey : null });
         });
 
         it("validation passed, private.openAccount returns account", function() {
@@ -924,20 +926,20 @@ describe("modules/accounts", function() {
             account.shared.generatePublicKey(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.generatePublicKey);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.generatePublicKey);
 
             expect(Accounts.__get__("__private").openAccount.calledOnce).to.be.true;
-            expect(Accounts.__get__("__private").openAccount.getCall(0).args.length).to.equal(2);
-            expect(Accounts.__get__("__private").openAccount.getCall(0).args[0]).to.deep.equal(request.body.secret);
-            expect(Accounts.__get__("__private").openAccount.getCall(0).args[1]).to.be.a("function");
+            expect(Accounts.__get__("__private").openAccount.firstCall.args.length).to.equal(2);
+            expect(Accounts.__get__("__private").openAccount.firstCall.args[0]).to.deep.equal(request.body.secret);
+            expect(Accounts.__get__("__private").openAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(2);
-            expect(callback.getCall(0).args[0]).to.equal(null);
-            expect(callback.getCall(0).args[1]).to.deep.equal({ publicKey : testAccount.publicKey });
+            expect(callback.firstCall.args.length).to.equal(2);
+            expect(callback.firstCall.args[0]).to.equal(null);
+            expect(callback.firstCall.args[1]).to.deep.equal({ publicKey : testAccount.publicKey });
         });
     });
 
@@ -974,14 +976,14 @@ describe("modules/accounts", function() {
             account.shared.getDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getDelegates);
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(errors[0].message);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(errors[0].message);
         });
 
         it("validation passed, getAccount error", function() {
@@ -991,19 +993,19 @@ describe("modules/accounts", function() {
             account.shared.getDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getDelegates);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({ address : request.body.address });
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({ address : request.body.address });
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(error);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(error);
         });
 
         it("validation passed, getAccount returns empty account", function() {
@@ -1013,39 +1015,39 @@ describe("modules/accounts", function() {
             account.shared.getDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getDelegates);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({ address : request.body.address });
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({ address : request.body.address });
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(error);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(error);
         });
 
         it("validation passed, getAccount returns account without delegates", function() {
             account.shared.getDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getDelegates);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({ address : request.body.address });
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({ address : request.body.address });
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(2);
-            expect(callback.getCall(0).args[0]).to.equal(null);
-            expect(callback.getCall(0).args[1]).to.deep.equal({ delegates : [] });
+            expect(callback.firstCall.args.length).to.equal(2);
+            expect(callback.firstCall.args[0]).to.equal(null);
+            expect(callback.firstCall.args[1]).to.deep.equal({ delegates : [] });
         });
 
         it("validation passed, getAccount returns account with delegates", function() {
@@ -1067,25 +1069,25 @@ describe("modules/accounts", function() {
             account.shared.getDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getDelegates);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({ address : request.body.address });
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({ address : request.body.address });
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             expect(modules.delegates.getDelegates.calledOnce).to.be.true;
-            expect(modules.delegates.getDelegates.getCall(0).args.length).to.equal(2);
-            expect(modules.delegates.getDelegates.getCall(0).args[0]).to.equal(request.body);
-            expect(modules.delegates.getDelegates.getCall(0).args[1]).to.be.a("function");
+            expect(modules.delegates.getDelegates.firstCall.args.length).to.equal(2);
+            expect(modules.delegates.getDelegates.firstCall.args[0]).to.equal(request.body);
+            expect(modules.delegates.getDelegates.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(2);
-            expect(callback.getCall(0).args[0]).to.equal(null);
-            expect(callback.getCall(0).args[1]).to.deep.equal({ delegates : [{publicKey : '2'},{publicKey : '4'}] });
+            expect(callback.firstCall.args.length).to.equal(2);
+            expect(callback.firstCall.args[0]).to.equal(null);
+            expect(callback.firstCall.args[1]).to.deep.equal({ delegates : [{publicKey : '2'},{publicKey : '4'}] });
         });
 
     });
@@ -1099,9 +1101,9 @@ describe("modules/accounts", function() {
         expect(callback.called).to.be.false;
         setImmediate(function(){
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(2);
-            expect(callback.getCall(0).args[0]).to.equal(null);
-            expect(callback.getCall(0).args[1]).to.deep.equal({fee : constants.fees.delegate});
+            expect(callback.firstCall.args.length).to.equal(2);
+            expect(callback.firstCall.args[0]).to.equal(null);
+            expect(callback.firstCall.args[1]).to.deep.equal({fee : constants.fees.delegate});
         });
     });
 
@@ -1164,13 +1166,13 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(errors[0].message);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(errors[0].message);
         });
 
         it("incorrect secret", function() {
@@ -1178,13 +1180,13 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Invalid passphrase");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Invalid passphrase");
         });
 
         it("multiple sign; first getAccount error", function() {
@@ -1195,25 +1197,25 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(modules.accounts.getAccount.calledOnce).to.be.true;
-            expect(modules.accounts.getAccount.getCall(0).args.length).to.equal(2);
-            expect(modules.accounts.getAccount.getCall(0).args[0]).to.deep.equal({ publicKey : secondSecret });
-            expect(modules.accounts.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(modules.accounts.getAccount.firstCall.args.length).to.equal(2);
+            expect(modules.accounts.getAccount.firstCall.args[0]).to.deep.equal({ publicKey : secondSecret });
+            expect(modules.accounts.getAccount.firstCall.args[1]).to.be.a("function");
 
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(error);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(error);
         });
 
         it("multiple sign; first getAccount doesn't return account", function() {
@@ -1223,25 +1225,25 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(modules.accounts.getAccount.calledOnce).to.be.true;
-            expect(modules.accounts.getAccount.getCall(0).args.length).to.equal(2);
-            expect(modules.accounts.getAccount.getCall(0).args[0]).to.deep.equal({ publicKey : secondSecret });
-            expect(modules.accounts.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(modules.accounts.getAccount.firstCall.args.length).to.equal(2);
+            expect(modules.accounts.getAccount.firstCall.args[0]).to.deep.equal({ publicKey : secondSecret });
+            expect(modules.accounts.getAccount.firstCall.args[1]).to.be.a("function");
 
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Multisignature account not found");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Multisignature account not found");
         });
 
         it("multiple sign; first getAccount doesn't return account.publicKey", function() {
@@ -1251,25 +1253,25 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(modules.accounts.getAccount.calledOnce).to.be.true;
-            expect(modules.accounts.getAccount.getCall(0).args.length).to.equal(2);
-            expect(modules.accounts.getAccount.getCall(0).args[0]).to.deep.equal({ publicKey : secondSecret });
-            expect(modules.accounts.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(modules.accounts.getAccount.firstCall.args.length).to.equal(2);
+            expect(modules.accounts.getAccount.firstCall.args[0]).to.deep.equal({ publicKey : secondSecret });
+            expect(modules.accounts.getAccount.firstCall.args[1]).to.be.a("function");
 
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Multisignature account not found");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Multisignature account not found");
         });
 
         it("multiple sign; account is not mulisigned", function() {
@@ -1279,25 +1281,25 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(modules.accounts.getAccount.calledOnce).to.be.true;
-            expect(modules.accounts.getAccount.getCall(0).args.length).to.equal(2);
-            expect(modules.accounts.getAccount.getCall(0).args[0]).to.deep.equal({ publicKey : secondSecret });
-            expect(modules.accounts.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(modules.accounts.getAccount.firstCall.args.length).to.equal(2);
+            expect(modules.accounts.getAccount.firstCall.args[0]).to.deep.equal({ publicKey : secondSecret });
+            expect(modules.accounts.getAccount.firstCall.args[1]).to.be.a("function");
 
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Account does not have multisignatures enabled");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Account does not have multisignatures enabled");
         });
 
         it("multiple sign; account is not in signatures list", function() {
@@ -1308,25 +1310,25 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(modules.accounts.getAccount.calledOnce).to.be.true;
-            expect(modules.accounts.getAccount.getCall(0).args.length).to.equal(2);
-            expect(modules.accounts.getAccount.getCall(0).args[0]).to.deep.equal({ publicKey : secondSecret });
-            expect(modules.accounts.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(modules.accounts.getAccount.firstCall.args.length).to.equal(2);
+            expect(modules.accounts.getAccount.firstCall.args[0]).to.deep.equal({ publicKey : secondSecret });
+            expect(modules.accounts.getAccount.firstCall.args[1]).to.be.a("function");
 
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Account does not belong to multisignature group");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Account does not belong to multisignature group");
         });
 
         it("multiple sign; second getAccount error", function() {
@@ -1338,19 +1340,19 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(modules.accounts.getAccount.calledTwice).to.be.true;
-            expect(modules.accounts.getAccount.getCall(0).args.length).to.equal(2);
-            expect(modules.accounts.getAccount.getCall(0).args[0]).to.deep.equal({ publicKey : testAccount.secondPublicKey });
-            expect(modules.accounts.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(modules.accounts.getAccount.firstCall.args.length).to.equal(2);
+            expect(modules.accounts.getAccount.firstCall.args[0]).to.deep.equal({ publicKey : testAccount.secondPublicKey });
+            expect(modules.accounts.getAccount.firstCall.args[1]).to.be.a("function");
             expect(modules.accounts.getAccount.getCall(1).args.length).to.equal(2);
             expect(modules.accounts.getAccount.getCall(1).args[0]).to.deep.equal({ publicKey : new Buffer(testAccount.publicKey, "hex") });
             expect(modules.accounts.getAccount.getCall(1).args[1]).to.be.a("function");
@@ -1358,8 +1360,8 @@ describe("modules/accounts", function() {
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(error);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(error);
         });
 
         it("multiple sign; second getAccount doesn't return account", function() {
@@ -1370,19 +1372,19 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(modules.accounts.getAccount.calledTwice).to.be.true;
-            expect(modules.accounts.getAccount.getCall(0).args.length).to.equal(2);
-            expect(modules.accounts.getAccount.getCall(0).args[0]).to.deep.equal({ publicKey : testAccount.secondPublicKey });
-            expect(modules.accounts.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(modules.accounts.getAccount.firstCall.args.length).to.equal(2);
+            expect(modules.accounts.getAccount.firstCall.args[0]).to.deep.equal({ publicKey : testAccount.secondPublicKey });
+            expect(modules.accounts.getAccount.firstCall.args[1]).to.be.a("function");
             expect(modules.accounts.getAccount.getCall(1).args.length).to.equal(2);
             expect(modules.accounts.getAccount.getCall(1).args[0]).to.deep.equal({ publicKey : new Buffer(testAccount.publicKey, "hex") });
             expect(modules.accounts.getAccount.getCall(1).args[1]).to.be.a("function");
@@ -1390,8 +1392,8 @@ describe("modules/accounts", function() {
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Requester not found");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Requester not found");
         });
 
         it("multiple sign; second getAccount doesn't return account.publicKey", function() {
@@ -1402,19 +1404,19 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(modules.accounts.getAccount.calledTwice).to.be.true;
-            expect(modules.accounts.getAccount.getCall(0).args.length).to.equal(2);
-            expect(modules.accounts.getAccount.getCall(0).args[0]).to.deep.equal({ publicKey : testAccount.secondPublicKey });
-            expect(modules.accounts.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(modules.accounts.getAccount.firstCall.args.length).to.equal(2);
+            expect(modules.accounts.getAccount.firstCall.args[0]).to.deep.equal({ publicKey : testAccount.secondPublicKey });
+            expect(modules.accounts.getAccount.firstCall.args[1]).to.be.a("function");
             expect(modules.accounts.getAccount.getCall(1).args.length).to.equal(2);
             expect(modules.accounts.getAccount.getCall(1).args[0]).to.deep.equal({ publicKey : new Buffer(testAccount.publicKey, "hex") });
             expect(modules.accounts.getAccount.getCall(1).args[1]).to.be.a("function");
@@ -1422,8 +1424,8 @@ describe("modules/accounts", function() {
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Requester not found");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Requester not found");
         });
 
         it("multiple sign; invalid second signature", function() {
@@ -1435,19 +1437,19 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(modules.accounts.getAccount.calledTwice).to.be.true;
-            expect(modules.accounts.getAccount.getCall(0).args.length).to.equal(2);
-            expect(modules.accounts.getAccount.getCall(0).args[0]).to.deep.equal({ publicKey : testAccount.secondPublicKey });
-            expect(modules.accounts.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(modules.accounts.getAccount.firstCall.args.length).to.equal(2);
+            expect(modules.accounts.getAccount.firstCall.args[0]).to.deep.equal({ publicKey : testAccount.secondPublicKey });
+            expect(modules.accounts.getAccount.firstCall.args[1]).to.be.a("function");
             expect(modules.accounts.getAccount.getCall(1).args.length).to.equal(2);
             expect(modules.accounts.getAccount.getCall(1).args[0]).to.deep.equal({ publicKey : new Buffer(testAccount.publicKey, "hex") });
             expect(modules.accounts.getAccount.getCall(1).args[1]).to.be.a("function");
@@ -1455,8 +1457,8 @@ describe("modules/accounts", function() {
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Missing requester second passphrase");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Missing requester second passphrase");
         });
 
         it("multiple sign; same public keys", function() {
@@ -1467,19 +1469,19 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(modules.accounts.getAccount.calledTwice).to.be.true;
-            expect(modules.accounts.getAccount.getCall(0).args.length).to.equal(2);
-            expect(modules.accounts.getAccount.getCall(0).args[0]).to.deep.equal({ publicKey : testAccount.secondPublicKey });
-            expect(modules.accounts.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(modules.accounts.getAccount.firstCall.args.length).to.equal(2);
+            expect(modules.accounts.getAccount.firstCall.args[0]).to.deep.equal({ publicKey : testAccount.secondPublicKey });
+            expect(modules.accounts.getAccount.firstCall.args[1]).to.be.a("function");
             expect(modules.accounts.getAccount.getCall(1).args.length).to.equal(2);
             expect(modules.accounts.getAccount.getCall(1).args[0]).to.deep.equal({ publicKey : new Buffer(testAccount.publicKey, "hex") });
             expect(modules.accounts.getAccount.getCall(1).args[1]).to.be.a("function");
@@ -1487,8 +1489,8 @@ describe("modules/accounts", function() {
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Invalid requester public key");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Invalid requester public key");
         });
 
         it("multiple sign; second secret is correct; transaction.create throws error", function() {
@@ -1513,19 +1515,19 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(modules.accounts.getAccount.calledTwice).to.be.true;
-            expect(modules.accounts.getAccount.getCall(0).args.length).to.equal(2);
-            expect(modules.accounts.getAccount.getCall(0).args[0]).to.deep.equal({ publicKey : firstAccount.publicKey });
-            expect(modules.accounts.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(modules.accounts.getAccount.firstCall.args.length).to.equal(2);
+            expect(modules.accounts.getAccount.firstCall.args[0]).to.deep.equal({ publicKey : firstAccount.publicKey });
+            expect(modules.accounts.getAccount.firstCall.args[1]).to.be.a("function");
             expect(modules.accounts.getAccount.getCall(1).args.length).to.equal(2);
             expect(modules.accounts.getAccount.getCall(1).args[0]).to.deep.equal({ publicKey : new Buffer(secondAccount.publicKey, "hex") });
             expect(modules.accounts.getAccount.getCall(1).args[1]).to.be.a("function");
@@ -1533,8 +1535,8 @@ describe("modules/accounts", function() {
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(error);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(error);
         });
 
         it("multiple sign; success", function() {
@@ -1561,36 +1563,36 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(modules.accounts.getAccount.calledTwice).to.be.true;
-            expect(modules.accounts.getAccount.getCall(0).args.length).to.equal(2);
-            expect(modules.accounts.getAccount.getCall(0).args[0]).to.deep.equal({ publicKey : firstAccount.publicKey });
-            expect(modules.accounts.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(modules.accounts.getAccount.firstCall.args.length).to.equal(2);
+            expect(modules.accounts.getAccount.firstCall.args[0]).to.deep.equal({ publicKey : firstAccount.publicKey });
+            expect(modules.accounts.getAccount.firstCall.args[1]).to.be.a("function");
             expect(modules.accounts.getAccount.getCall(1).args.length).to.equal(2);
             expect(modules.accounts.getAccount.getCall(1).args[0]).to.deep.equal({ publicKey : new Buffer(secondAccount.publicKey, "hex") });
             expect(modules.accounts.getAccount.getCall(1).args[1]).to.be.a("function");
 
             expect(scope.logic.transaction.create.calledOnce).to.be.true;
-            expect(scope.logic.transaction.create.getCall(0).args.length).to.equal(1);
-            expect(scope.logic.transaction.create.getCall(0).args[0]).to.deep.equal(transactionInput);
+            expect(scope.logic.transaction.create.firstCall.args.length).to.equal(1);
+            expect(scope.logic.transaction.create.firstCall.args[0]).to.deep.equal(transactionInput);
 
             expect(modules.transactions.receiveTransactions.calledOnce).to.be.true;
-            expect(modules.transactions.receiveTransactions.getCall(0).args.length).to.equal(3);
-            expect(modules.transactions.receiveTransactions.getCall(0).args[0]).to.deep.equal([transaction]);
+            expect(modules.transactions.receiveTransactions.firstCall.args.length).to.equal(3);
+            expect(modules.transactions.receiveTransactions.firstCall.args[0]).to.deep.equal([transaction]);
 
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args[0]).to.equal(null);
-            expect(callback.getCall(0).args[1]).to.deep.equal({transaction : transaction});
+            expect(callback.firstCall.args[0]).to.equal(null);
+            expect(callback.firstCall.args[1]).to.deep.equal({transaction : transaction});
         });
 
 
@@ -1601,25 +1603,25 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(account.setAccountAndGet.calledOnce).to.be.true;
-            expect(account.setAccountAndGet.getCall(0).args.length).to.equal(2);
-            expect(account.setAccountAndGet.getCall(0).args[0]).to.deep.equal({ publicKey : request.body.publicKey });
-            expect(account.setAccountAndGet.getCall(0).args[1]).to.be.a("function");
+            expect(account.setAccountAndGet.firstCall.args.length).to.equal(2);
+            expect(account.setAccountAndGet.firstCall.args[0]).to.deep.equal({ publicKey : request.body.publicKey });
+            expect(account.setAccountAndGet.firstCall.args[1]).to.be.a("function");
 
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(error);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(error);
         });
 
         it("single sign; getAccount doesn't return account", function() {
@@ -1628,25 +1630,25 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(account.setAccountAndGet.calledOnce).to.be.true;
-            expect(account.setAccountAndGet.getCall(0).args.length).to.equal(2);
-            expect(account.setAccountAndGet.getCall(0).args[0]).to.deep.equal({ publicKey : request.body.publicKey });
-            expect(account.setAccountAndGet.getCall(0).args[1]).to.be.a("function");
+            expect(account.setAccountAndGet.firstCall.args.length).to.equal(2);
+            expect(account.setAccountAndGet.firstCall.args[0]).to.deep.equal({ publicKey : request.body.publicKey });
+            expect(account.setAccountAndGet.firstCall.args[1]).to.be.a("function");
 
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Account not found");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Account not found");
         });
 
         it("single sign; getAccount doesn't return account.publicKey", function() {
@@ -1655,25 +1657,25 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(account.setAccountAndGet.calledOnce).to.be.true;
-            expect(account.setAccountAndGet.getCall(0).args.length).to.equal(2);
-            expect(account.setAccountAndGet.getCall(0).args[0]).to.deep.equal({ publicKey : request.body.publicKey });
-            expect(account.setAccountAndGet.getCall(0).args[1]).to.be.a("function");
+            expect(account.setAccountAndGet.firstCall.args.length).to.equal(2);
+            expect(account.setAccountAndGet.firstCall.args[0]).to.deep.equal({ publicKey : request.body.publicKey });
+            expect(account.setAccountAndGet.firstCall.args[1]).to.be.a("function");
 
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Account not found");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Account not found");
         });
 
         it("single sign; invalid second signature", function() {
@@ -1682,25 +1684,25 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(account.setAccountAndGet.calledOnce).to.be.true;
-            expect(account.setAccountAndGet.getCall(0).args.length).to.equal(2);
-            expect(account.setAccountAndGet.getCall(0).args[0]).to.deep.equal({ publicKey : request.body.publicKey });
-            expect(account.setAccountAndGet.getCall(0).args[1]).to.be.a("function");
+            expect(account.setAccountAndGet.firstCall.args.length).to.equal(2);
+            expect(account.setAccountAndGet.firstCall.args[0]).to.deep.equal({ publicKey : request.body.publicKey });
+            expect(account.setAccountAndGet.firstCall.args[1]).to.be.a("function");
 
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Invalid second passphrase");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Invalid second passphrase");
         });
 
         it("single sign; second secret is correct; transaction.create throws error", function() {
@@ -1711,25 +1713,25 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(account.setAccountAndGet.calledOnce).to.be.true;
-            expect(account.setAccountAndGet.getCall(0).args.length).to.equal(2);
-            expect(account.setAccountAndGet.getCall(0).args[0]).to.deep.equal({ publicKey : request.body.publicKey });
-            expect(account.setAccountAndGet.getCall(0).args[1]).to.be.a("function");
+            expect(account.setAccountAndGet.firstCall.args.length).to.equal(2);
+            expect(account.setAccountAndGet.firstCall.args[0]).to.deep.equal({ publicKey : request.body.publicKey });
+            expect(account.setAccountAndGet.firstCall.args[1]).to.be.a("function");
 
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Transaction error");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Transaction error");
         });
 
         it("single sign; success", function() {
@@ -1738,33 +1740,33 @@ describe("modules/accounts", function() {
             account.shared.addDelegates(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.addDelegates);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.addDelegates);
 
             expect(scope.balancesSequence.add.calledOnce).to.be.true;
-            expect(scope.balancesSequence.add.getCall(0).args.length).to.equal(2);
-            expect(scope.balancesSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(scope.balancesSequence.add.getCall(0).args[1]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args.length).to.equal(2);
+            expect(scope.balancesSequence.add.firstCall.args[0]).to.be.a("function");
+            expect(scope.balancesSequence.add.firstCall.args[1]).to.be.a("function");
 
             expect(account.setAccountAndGet.calledOnce).to.be.true;
-            expect(account.setAccountAndGet.getCall(0).args.length).to.equal(2);
-            expect(account.setAccountAndGet.getCall(0).args[0]).to.deep.equal({ publicKey : request.body.publicKey });
-            expect(account.setAccountAndGet.getCall(0).args[1]).to.be.a("function");
+            expect(account.setAccountAndGet.firstCall.args.length).to.equal(2);
+            expect(account.setAccountAndGet.firstCall.args[0]).to.deep.equal({ publicKey : request.body.publicKey });
+            expect(account.setAccountAndGet.firstCall.args[1]).to.be.a("function");
 
             expect(scope.logic.transaction.create.calledOnce).to.be.true;
-            expect(scope.logic.transaction.create.getCall(0).args.length).to.equal(1);
-            expect(scope.logic.transaction.create.getCall(0).args[0]).to.deep.equal(transactionInput);
+            expect(scope.logic.transaction.create.firstCall.args.length).to.equal(1);
+            expect(scope.logic.transaction.create.firstCall.args[0]).to.deep.equal(transactionInput);
 
             expect(modules.transactions.receiveTransactions.calledOnce).to.be.true;
-            expect(modules.transactions.receiveTransactions.getCall(0).args.length).to.equal(3);
-            expect(modules.transactions.receiveTransactions.getCall(0).args[0]).to.deep.equal([transaction]);
+            expect(modules.transactions.receiveTransactions.firstCall.args.length).to.equal(3);
+            expect(modules.transactions.receiveTransactions.firstCall.args[0]).to.deep.equal([transaction]);
 
             expect(callback.called).to.be.false;
             clock.tick(2);
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args[0]).to.equal(null);
-            expect(callback.getCall(0).args[1]).to.deep.equal({transaction : transaction});
+            expect(callback.firstCall.args[0]).to.equal(null);
+            expect(callback.firstCall.args[1]).to.deep.equal({transaction : transaction});
         });
     });
 
@@ -1799,13 +1801,13 @@ describe("modules/accounts", function() {
             account.shared.getAccount(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getAccount);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getAccount);
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(errors[0].message);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(errors[0].message);
         });
 
         it("no address and public key", function() {
@@ -1815,13 +1817,13 @@ describe("modules/accounts", function() {
             account.shared.getAccount(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getAccount);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getAccount);
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Missing required property: address or publicKey");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Missing required property: address or publicKey");
         });
 
         it("public key doesn't match address", function() {
@@ -1830,18 +1832,18 @@ describe("modules/accounts", function() {
             account.shared.getAccount(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getAccount);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getAccount);
 
             expect(account.generateAddressByPublicKey.calledOnce).to.be.true;
-            expect(account.generateAddressByPublicKey.getCall(0).args.length).to.equal(1);
-            expect(account.generateAddressByPublicKey.getCall(0).args[0]).to.equal(request.body.publicKey);
+            expect(account.generateAddressByPublicKey.firstCall.args.length).to.equal(1);
+            expect(account.generateAddressByPublicKey.firstCall.args[0]).to.equal(request.body.publicKey);
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Account publicKey does not match address");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Account publicKey does not match address");
         });
 
         it("getAccount error", function() {
@@ -1851,23 +1853,23 @@ describe("modules/accounts", function() {
             account.shared.getAccount(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getAccount);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getAccount);
 
             expect(account.generateAddressByPublicKey.calledOnce).to.be.true;
-            expect(account.generateAddressByPublicKey.getCall(0).args.length).to.equal(1);
-            expect(account.generateAddressByPublicKey.getCall(0).args[0]).to.equal(request.body.publicKey);
+            expect(account.generateAddressByPublicKey.firstCall.args.length).to.equal(1);
+            expect(account.generateAddressByPublicKey.firstCall.args[0]).to.equal(request.body.publicKey);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({ address : request.body.address });
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({ address : request.body.address });
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(error);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(error);
         });
 
         it("getAccount returns empty account", function() {
@@ -1876,23 +1878,23 @@ describe("modules/accounts", function() {
             account.shared.getAccount(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getAccount);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getAccount);
 
             expect(account.generateAddressByPublicKey.calledOnce).to.be.true;
-            expect(account.generateAddressByPublicKey.getCall(0).args.length).to.equal(1);
-            expect(account.generateAddressByPublicKey.getCall(0).args[0]).to.equal(request.body.publicKey);
+            expect(account.generateAddressByPublicKey.firstCall.args.length).to.equal(1);
+            expect(account.generateAddressByPublicKey.firstCall.args[0]).to.equal(request.body.publicKey);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({ address : request.body.address });
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({ address : request.body.address });
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal("Account not found");
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal("Account not found");
         });
 
         it("success", function() {
@@ -1912,24 +1914,24 @@ describe("modules/accounts", function() {
             account.shared.getAccount(request, callback);
 
             expect(scope.schema.validate.calledOnce).to.be.true;
-            expect(scope.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(scope.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(scope.schema.validate.getCall(0).args[1]).to.equal(schema.getAccount);
+            expect(scope.schema.validate.firstCall.args.length).to.equal(3);
+            expect(scope.schema.validate.firstCall.args[0]).to.equal(request.body);
+            expect(scope.schema.validate.firstCall.args[1]).to.equal(schema.getAccount);
 
             expect(account.generateAddressByPublicKey.calledOnce).to.be.true;
-            expect(account.generateAddressByPublicKey.getCall(0).args.length).to.equal(1);
-            expect(account.generateAddressByPublicKey.getCall(0).args[0]).to.equal(request.body.publicKey);
+            expect(account.generateAddressByPublicKey.firstCall.args.length).to.equal(1);
+            expect(account.generateAddressByPublicKey.firstCall.args[0]).to.equal(request.body.publicKey);
 
             expect(account.getAccount.calledOnce).to.be.true;
-            expect(account.getAccount.getCall(0).args.length).to.equal(2);
-            expect(account.getAccount.getCall(0).args[0]).to.deep.equal({ address : request.body.address });
-            expect(account.getAccount.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccount.firstCall.args.length).to.equal(2);
+            expect(account.getAccount.firstCall.args[0]).to.deep.equal({ address : request.body.address });
+            expect(account.getAccount.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(2);
-            expect(callback.getCall(0).args[0]).to.equal(null);
-            expect(callback.getCall(0).args[1]).to.deep.equal(result);
+            expect(callback.firstCall.args.length).to.equal(2);
+            expect(callback.firstCall.args[0]).to.equal(null);
+            expect(callback.firstCall.args[1]).to.deep.equal(result);
         });
 
     });
@@ -1943,9 +1945,9 @@ describe("modules/accounts", function() {
 
             setImmediate(function() {
                 expect(callback.calledOnce).to.be.true;
-                expect(callback.getCall(0).args.length).to.equal(2);
-                expect(callback.getCall(0).args[0]).to.equal(null);
-                expect(callback.getCall(0).args[1]).to.deep.equal({
+                expect(callback.firstCall.args.length).to.equal(2);
+                expect(callback.firstCall.args[0]).to.equal(null);
+                expect(callback.firstCall.args[1]).to.deep.equal({
                     success : true,
                     count : accountsLength
                 });
@@ -1979,20 +1981,20 @@ describe("modules/accounts", function() {
             account.internal.top(query, callback);
 
             expect(account.getAccounts.calledOnce).to.be.true;
-            expect(account.getAccounts.getCall(0).args.length).to.equal(2);
-            expect(account.getAccounts.getCall(0).args[0]).to.deep.equal({
+            expect(account.getAccounts.firstCall.args.length).to.equal(2);
+            expect(account.getAccounts.firstCall.args[0]).to.deep.equal({
                 sort: {
                     balance: -1
                 },
                 offset: query.offset,
                 limit: query.limit 
             });
-            expect(account.getAccounts.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccounts.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(error);
+            expect(callback.firstCall.args.length).to.equal(1);
+            expect(callback.firstCall.args[0]).to.equal(error);
         });
 
         it("success", function() {
@@ -2001,21 +2003,21 @@ describe("modules/accounts", function() {
             account.internal.top(query, callback);
 
             expect(account.getAccounts.calledOnce).to.be.true;
-            expect(account.getAccounts.getCall(0).args.length).to.equal(2);
-            expect(account.getAccounts.getCall(0).args[0]).to.deep.equal({
+            expect(account.getAccounts.firstCall.args.length).to.equal(2);
+            expect(account.getAccounts.firstCall.args[0]).to.deep.equal({
                 sort: {
                     balance: -1
                 },
                 offset: query.offset,
                 limit: query.limit 
             });
-            expect(account.getAccounts.getCall(0).args[1]).to.be.a("function");
+            expect(account.getAccounts.firstCall.args[1]).to.be.a("function");
 
             clock.tick();
             expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(2);
-            expect(callback.getCall(0).args[0]).to.equal(null);
-            expect(callback.getCall(0).args[1]).to.deep.equal({
+            expect(callback.firstCall.args.length).to.equal(2);
+            expect(callback.firstCall.args[0]).to.equal(null);
+            expect(callback.firstCall.args[1]).to.deep.equal({
                 success : true,
                 accounts : [{
 					address: testAccount.address,
@@ -2034,9 +2036,9 @@ describe("modules/accounts", function() {
 
             setImmediate(function() {
                 expect(callback.calledOnce).to.be.true;
-                expect(callback.getCall(0).args.length).to.equal(2);
-                expect(callback.getCall(0).args[0]).to.equal(null);
-                expect(callback.getCall(0).args[1]).to.deep.equal({
+                expect(callback.firstCall.args.length).to.equal(2);
+                expect(callback.firstCall.args[0]).to.equal(null);
+                expect(callback.firstCall.args[1]).to.deep.equal({
                     success : true,
                     accounts : Accounts.__get__("__private").accounts
                 });
