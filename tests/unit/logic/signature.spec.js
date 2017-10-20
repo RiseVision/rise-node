@@ -35,12 +35,11 @@ describe("logic/signature", function() {
 	});
 
 	describe("constructor", function() {
-		it("should be a function", function(done) {
+		it("should be a function", function() {
 			expect(Signature).to.be.a("function");
 
-			done();
 		});
-		it("should be an instance of Signature", function(done) {
+		it("should be an instance of Signature", function() {
 			expect(instance).to.be.an.instanceOf(Signature);
 
 			var library = Signature.__get__("library");
@@ -49,12 +48,11 @@ describe("logic/signature", function() {
 				logger: logger
 			});
 
-			done();
 		});
 	});
 
 	describe("bind", function() {
-		it("binds the modules", function(done) {
+		it("binds the modules", function() {
 			instance.bind({}, {});
 			var modules = Signature.__get__("modules");
 
@@ -63,12 +61,11 @@ describe("logic/signature", function() {
 				system: {}
 			});
 
-			done();
 		});
 	});
 
 	describe("create", function() {
-		it("returns correct trs", function(done) {
+		it("returns correct trs", function() {
 			var data = {
 				secondKeypair: {
 					publicKey: "123456"
@@ -87,7 +84,32 @@ describe("logic/signature", function() {
 				}
 			});
 
-			done();
+		});
+	});
+
+	describe("calculateFee", function() {
+		it("getFees is called", function() {
+
+      var modules = {
+      	system: {
+      		getFees: function(){}
+				}
+			};
+      var getFees = sinon.stub(modules.system, "getFees").returns({
+				fees: {
+          secondsignature: 1
+				}
+			});
+      Signature.__set__("modules", modules);
+
+			var retVal = instance.calculateFee(null, null, 10);
+
+			expect(retVal).to.be.equal(1);
+			expect(getFees.calledOnce).to.be.true;
+			expect(getFees.firstCall.args.length).to.equal(1);
+			expect(getFees.firstCall.args[0]).to.equal(10);
+
+      Signature.__get__("modules").system.getFees.restore();
 		});
 	});
 
@@ -111,7 +133,7 @@ describe("logic/signature", function() {
 			clock.reset();
 		});
 
-		it("error cb 'Invalid transaction asset'", function(done) {
+		it("error cb 'Invalid transaction asset'", function() {
 			delete trs.asset.signature;
 			instance.verify(trs, null, callback);
 			clock.tick();
@@ -120,27 +142,25 @@ describe("logic/signature", function() {
 			clock.tick();
 
 			expect(callback.calledTwice).to.be.true;
-			expect(callback.getCall(0).args.length).to.equal(1);
-			expect(callback.getCall(0).args[0]).to.equal("Invalid transaction asset");
+			expect(callback.firstCall.args.length).to.equal(1);
+			expect(callback.firstCall.args[0]).to.equal("Invalid transaction asset");
 			expect(callback.getCall(1).args.length).to.equal(1);
 			expect(callback.getCall(1).args[0]).to.equal("Invalid transaction asset");
 
-			done();
 		});
 
-		it("error cb 'Invalid transaction amount'", function(done) {
+		it("error cb 'Invalid transaction amount'", function() {
 			trs.amount = 10;
 			instance.verify(trs, null, callback);
 			clock.tick();
 
 			expect(callback.calledOnce).to.be.true;
-			expect(callback.getCall(0).args.length).to.equal(1);
-			expect(callback.getCall(0).args[0]).to.equal("Invalid transaction amount");
+			expect(callback.firstCall.args.length).to.equal(1);
+			expect(callback.firstCall.args[0]).to.equal("Invalid transaction amount");
 
-			done();
 		});
 
-		it("error cb first 'Invalid public key'", function(done) {
+		it("error cb first 'Invalid public key'", function() {
 			var pubKey = trs.asset.signature.publicKey;
 			var Buffer = Signature.__get__("Buffer");
 			var from = sinon.stub(Buffer, "from").returns([]);
@@ -153,21 +173,20 @@ describe("logic/signature", function() {
 			clock.tick();
 
 			expect(callback.calledTwice).to.be.true;
-			expect(callback.getCall(0).args.length).to.equal(1);
-			expect(callback.getCall(0).args[0]).to.equal("Invalid public key");
+			expect(callback.firstCall.args.length).to.equal(1);
+			expect(callback.firstCall.args[0]).to.equal("Invalid public key");
 			expect(callback.getCall(1).args.length).to.equal(1);
 			expect(callback.getCall(1).args[0]).to.equal("Invalid public key");
 
 			expect(from.calledOnce).to.be.true;
-			expect(from.getCall(0).args.length).to.equal(2);
-			expect(from.getCall(0).args[0]).to.equal(pubKey);
-			expect(from.getCall(0).args[1]).to.equal("hex");
+			expect(from.firstCall.args.length).to.equal(2);
+			expect(from.firstCall.args[0]).to.equal(pubKey);
+			expect(from.firstCall.args[1]).to.equal("hex");
 
 			Signature.__get__("Buffer").from.restore();
-			done();
 		});
 
-		it("error cb second 'Invalid public key'", function(done) {
+		it("error cb second 'Invalid public key'", function() {
 			var Buffer = Signature.__get__("Buffer");
 			var from = sinon.stub(Buffer, "from").callsFake(function() {
 				throw new Error();
@@ -186,35 +205,33 @@ describe("logic/signature", function() {
 			clock.tick();
 
 			expect(logger.calledOnce).to.be.true;
-			expect(logger.getCall(0).args.length).to.equal(1);
+			expect(logger.firstCall.args.length).to.equal(1);
 
 			expect(callback.calledOnce).to.be.true;
-			expect(callback.getCall(0).args.length).to.equal(1);
-			expect(callback.getCall(0).args[0]).to.equal("Invalid public key");
+			expect(callback.firstCall.args.length).to.equal(1);
+			expect(callback.firstCall.args[0]).to.equal("Invalid public key");
 
 			Signature.__get__("Buffer").from.restore();
 			Signature.__get__("library").logger.error.restore();
-			done();
 		});
 	});
 
 	describe("process", function() {
-		it("calls cb", function(done) {
+		it("calls cb", function() {
 			instance.process(trs, {}, callback);
 			clock.tick();
 
 			expect(callback.calledOnce).to.be.deep.true;
 
-			expect(callback.getCall(0).args.length).to.equal(2);
-			expect(callback.getCall(0).args[0]).to.be.equal(null);
-			expect(callback.getCall(0).args[1]).to.be.deep.equal(trs);
+			expect(callback.firstCall.args.length).to.equal(2);
+			expect(callback.firstCall.args[0]).to.be.equal(null);
+			expect(callback.firstCall.args[1]).to.be.deep.equal(trs);
 
-			done();
 		});
 	});
 
 	describe("getBytes", function() {
-		it("throws error", function(done) {
+		it("throws error", function() {
 			var pubKey = trs.asset.signature.publicKey;
 			var Buffer = Signature.__get__("Buffer");
 			var from = sinon.stub(Buffer, "from").callsFake(function() {
@@ -228,17 +245,15 @@ describe("logic/signature", function() {
 
 			expect(throwError).to.throw();
 			expect(from.calledOnce).to.be.true;
-			expect(from.getCall(0).args.length).to.equal(2);
-			expect(from.getCall(0).args[0]).to.equal(pubKey);
-			expect(from.getCall(0).args[1]).to.equal("hex");
+			expect(from.firstCall.args.length).to.equal(2);
+			expect(from.firstCall.args[0]).to.equal(pubKey);
+			expect(from.firstCall.args[1]).to.equal("hex");
 
-			done();
 			Signature.__get__("Buffer").from.restore();
 		});
-		it("returns buffer", function(done) {
+		it("returns buffer", function() {
 			var retVal = instance.getBytes(trs);
 			expect(retVal).to.be.instanceOf(Buffer);
-			done();
 		});
 	});
 
@@ -247,7 +262,7 @@ describe("logic/signature", function() {
 			address: "12929291r"
 		};
 
-		it("calls setAccountAndGet", function(done) {
+		it("calls setAccountAndGet", function() {
 			var modules = Signature.__get__("modules");
 			modules.accounts = { setAccountAndGet: function() {} };
 			var setAccountAndGet = sinon.stub(modules.accounts, "setAccountAndGet");
@@ -261,13 +276,12 @@ describe("logic/signature", function() {
 			instance.apply(trs, null, sender, callback);
 
 			expect(setAccountAndGet.calledOnce).to.be.true;
-			expect(setAccountAndGet.getCall(0).args.length).to.equal(2);
-			expect(setAccountAndGet.getCall(0).args[0]).to.deep.equal(expectedData);
-			expect(setAccountAndGet.getCall(0).args[1]).to.deep.equal(callback);
+			expect(setAccountAndGet.firstCall.args.length).to.equal(2);
+			expect(setAccountAndGet.firstCall.args[0]).to.deep.equal(expectedData);
+			expect(setAccountAndGet.firstCall.args[1]).to.deep.equal(callback);
 
 			setAccountAndGet.restore();
 			trs.asset.delegate.username = "carbonara";
-			done();
 		});
 	});
 
@@ -276,7 +290,7 @@ describe("logic/signature", function() {
 			address: "12929291r"
 		};
 
-		it("calls setAccountAndGet", function(done) {
+		it("calls setAccountAndGet", function() {
 			var modules = Signature.__get__("modules");
 			modules.accounts = { setAccountAndGet: function() {} };
 			var setAccountAndGet = sinon.stub(modules.accounts, "setAccountAndGet");
@@ -290,13 +304,12 @@ describe("logic/signature", function() {
 			instance.undo(trs, null, sender, callback);
 
 			expect(setAccountAndGet.calledOnce).to.be.true;
-			expect(setAccountAndGet.getCall(0).args.length).to.equal(2);
-			expect(setAccountAndGet.getCall(0).args[0]).to.deep.equal(expectedData);
-			expect(setAccountAndGet.getCall(0).args[1]).to.deep.equal(callback);
+			expect(setAccountAndGet.firstCall.args.length).to.equal(2);
+			expect(setAccountAndGet.firstCall.args[0]).to.deep.equal(expectedData);
+			expect(setAccountAndGet.firstCall.args[1]).to.deep.equal(callback);
 
 			setAccountAndGet.restore();
 			trs.asset.delegate.username = "carbonara";
-			done();
 		});
 	});
 
@@ -305,7 +318,7 @@ describe("logic/signature", function() {
 			address: "12929291r"
 		};
 
-		it("calls cb", function(done) {
+		it("calls cb", function() {
 			sender.u_secondSignature = true;
 			instance.applyUnconfirmed(trs, sender, callback);
 			clock.tick();
@@ -315,8 +328,8 @@ describe("logic/signature", function() {
 			clock.tick();
 
 			expect(callback.calledTwice).to.be.true;
-			expect(callback.getCall(0).args.length).to.equal(1);
-			expect(callback.getCall(0).args[0]).to.deep.equal(
+			expect(callback.firstCall.args.length).to.equal(1);
+			expect(callback.firstCall.args[0]).to.deep.equal(
 				"Second signature already enabled"
 			);
 			expect(callback.getCall(1).args.length).to.equal(1);
@@ -325,10 +338,9 @@ describe("logic/signature", function() {
 			);
 
 			delete sender.secondSignature;
-			done();
 		});
 
-		it("calls setAccountAndGet", function(done) {
+		it("calls setAccountAndGet", function() {
 			var modules = Signature.__get__("modules");
 			modules.accounts = { setAccountAndGet: function() {} };
 			var setAccountAndGet = sinon.stub(modules.accounts, "setAccountAndGet");
@@ -340,12 +352,11 @@ describe("logic/signature", function() {
 			instance.applyUnconfirmed(trs, sender, callback);
 
 			expect(setAccountAndGet.calledOnce).to.be.true;
-			expect(setAccountAndGet.getCall(0).args.length).to.equal(2);
-			expect(setAccountAndGet.getCall(0).args[0]).to.deep.equal(expectedData);
-			expect(setAccountAndGet.getCall(0).args[1]).to.deep.equal(callback);
+			expect(setAccountAndGet.firstCall.args.length).to.equal(2);
+			expect(setAccountAndGet.firstCall.args[0]).to.deep.equal(expectedData);
+			expect(setAccountAndGet.firstCall.args[1]).to.deep.equal(callback);
 
 			setAccountAndGet.restore();
-			done();
 		});
 	});
 
@@ -354,7 +365,7 @@ describe("logic/signature", function() {
 			address: "12929291r"
 		};
 
-		it("calls setAccountAndGet", function(done) {
+		it("calls setAccountAndGet", function() {
 			var modules = Signature.__get__("modules");
 			modules.accounts = { setAccountAndGet: function() {} };
 			var setAccountAndGet = sinon.stub(modules.accounts, "setAccountAndGet");
@@ -366,17 +377,16 @@ describe("logic/signature", function() {
 			instance.undoUnconfirmed(trs, sender, callback);
 
 			expect(setAccountAndGet.calledOnce).to.be.true;
-			expect(setAccountAndGet.getCall(0).args.length).to.equal(2);
-			expect(setAccountAndGet.getCall(0).args[0]).to.deep.equal(expectedData);
-			expect(setAccountAndGet.getCall(0).args[1]).to.deep.equal(callback);
+			expect(setAccountAndGet.firstCall.args.length).to.equal(2);
+			expect(setAccountAndGet.firstCall.args[0]).to.deep.equal(expectedData);
+			expect(setAccountAndGet.firstCall.args[1]).to.deep.equal(callback);
 
 			setAccountAndGet.restore();
-			done();
 		});
 	});
 
 	describe("schema", function() {
-		it("is correct", function(done) {
+		it("is correct", function() {
 			var expectedSchema = {
 				id: "Signature",
 				object: true,
@@ -390,7 +400,6 @@ describe("logic/signature", function() {
 			};
 			expect(instance.schema).to.be.deep.equal(expectedSchema);
 
-			done();
 		});
 	});
 
@@ -401,7 +410,7 @@ describe("logic/signature", function() {
 			library.schema = { validate: function() {} };
 		});
 
-		it("throws error", function(done) {
+		it("throws error", function() {
 			validate = sinon.stub(library.schema, "validate").returns(false);
 
 			var throwError = function() {
@@ -410,38 +419,35 @@ describe("logic/signature", function() {
 
 			expect(throwError).to.throw();
 
-			done();
 		});
 
-		it("success", function(done) {
+		it("success", function() {
 			validate = sinon.stub(library.schema, "validate").returns(true);
 
 			var retVal = instance.objectNormalize(trs);
 
 			expect(library.schema.validate.calledOnce).to.be.true;
-			expect(library.schema.validate.getCall(0).args.length).to.equal(2);
-			expect(library.schema.validate.getCall(0).args[0]).to.deep.equal(
+			expect(library.schema.validate.firstCall.args.length).to.equal(2);
+			expect(library.schema.validate.firstCall.args[0]).to.deep.equal(
 				trs.asset.signature
 			);
-			expect(library.schema.validate.getCall(0).args[1]).to.equal(instance.schema);
+			expect(library.schema.validate.firstCall.args[1]).to.equal(instance.schema);
 			expect(retVal).to.deep.equal(trs);
 
-			done();
 		});
 	});
 
 	describe("dbRead", function() {
-		it("returns null with no s_publicKey", function(done) {
+		it("returns null with no s_publicKey", function() {
 			var raw = {};
 
 			var retVal = instance.dbRead(raw);
 
 			expect(retVal).to.equal(null);
 
-			done();
 		});
 
-		it("success", function(done) {
+		it("success", function() {
 			var raw = {
 				t_id: "0123",
 				s_publicKey: "98765"
@@ -457,30 +463,27 @@ describe("logic/signature", function() {
 
 			expect(retVal).to.deep.equal(expectedResult);
 
-			done();
 		});
 	});
 
 	describe("dbTable", function() {
-		it("is correct", function(done) {
+		it("is correct", function() {
 			var expectedDbTable = "signatures";
 			expect(instance.dbTable).to.be.equal(expectedDbTable);
 
-			done();
 		});
 	});
 
 	describe("dbFields", function() {
-		it("is correct", function(done) {
+		it("is correct", function() {
 			var expectedDbFields = ["transactionId", "publicKey"];
 			expect(instance.dbFields).to.be.deep.equal(expectedDbFields);
 
-			done();
 		});
 	});
 
 	describe("dbSave", function() {
-		it("throws error", function(done) {
+		it("throws error", function() {
 			trs.asset.signature.publicKey = undefined;
 			var throwError = function() {
 				instance.dbSave.call(context, trs);
@@ -488,9 +491,8 @@ describe("logic/signature", function() {
 
 			expect(throwError).to.throw();
 
-			done();
 		});
-		it("returns correct value", function(done) {
+		it("returns correct value", function() {
 			var context = {
 				dbTable: "signatures",
 				dbFields: ["transactionId", "publicKey"]
@@ -509,12 +511,11 @@ describe("logic/signature", function() {
 
 			expect(retVal).to.deep.equal(expectedObj);
 
-			done();
 		});
 	});
 
 	describe("ready", function() {
-		it("returns false with no signatures", function(done) {
+		it("returns false with no signatures", function() {
 			var sender = {
 				multisignatures: [1]
 			};
@@ -522,10 +523,9 @@ describe("logic/signature", function() {
 
 			expect(retVal).to.equal(false);
 
-			done();
 		});
 
-		it("returns ready when signatures < multimin", function(done) {
+		it("returns ready when signatures < multimin", function() {
 			var sender = {
 				multisignatures: [1],
 				multimin: 2
@@ -535,10 +535,9 @@ describe("logic/signature", function() {
 
 			expect(retVal).to.equal(true);
 
-			done();
 		});
 
-		it("returns not ready when signatures > multimin", function(done) {
+		it("returns not ready when signatures > multimin", function() {
 			var sender = {
 				multisignatures: [1],
 				multimin: 10
@@ -548,7 +547,6 @@ describe("logic/signature", function() {
 
 			expect(retVal).to.equal(false);
 
-			done();
 		});
 	});
 });
