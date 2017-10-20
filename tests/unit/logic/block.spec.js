@@ -76,38 +76,43 @@ describe("logic/block", function() {
   });
 
   describe("when Block is instantiated...", function() {
-    var callback, ed, schema, transaction, block;
+    var callback, ed, schema, transaction, block, clock;
 
     beforeEach(function() {
       callback = sinon.spy();
       ed = 1;
       schema = 2;
       transaction = 3;
+      clock = sinon.useFakeTimers();
+      Block.__set__("setImmediate", setImmediate);
       block = new Block(ed, schema, transaction, callback);
     });
-
-    describe("the returned object", function() {
-      it("...should be an object", function() {
-        expect(block).to.be.an.instanceof(Object);
-      });
+    afterEach(function() {
+      clock.restore();
+      callback.reset();
     });
 
-    describe("the scope", function() {
-      it("...should be initialized properly", function() {
-        expect(callback.calledOnce).to.be.true;
-        expect(callback.called).to.be.true;
-        expect(callback.args[0][1].scope.ed).to.equal(ed);
-        expect(callback.args[0][1].scope.schema).to.equal(schema);
-        expect(callback.args[0][1].scope.transaction).to.equal(transaction);
-      });
+    it("block is an object", function() {
+
+      clock.tick();
+
+      expect(block).to.be.an.instanceof(Object);
     });
 
-    describe("callback", function() {
-      it("...should be called", function() {
-        expect(callback.called).to.be.true;
-        expect(callback.calledOnce).to.be.true;
-        expect(callback.calledWith(null, block));
-      });
+    it("callback is called", function() {
+
+      var expectedScope = {
+        ed: ed,
+        schema: schema,
+        transaction: transaction
+      };
+
+      clock.tick();
+
+      expect(callback.calledOnce).to.be.true;
+      expect(callback.calledWith(null, block));
+      expect(callback.getCall(0).args[0]).to.equal(null);
+      expect(callback.getCall(0).args[1].scope).to.deep.equal(expectedScope);
     });
   });
 
@@ -124,6 +129,8 @@ describe("logic/block", function() {
         getBytes: sinon.stub().returns(buffer),
         objectNormalize: sinon.stub().returnsArg(0)
       };
+      clock = sinon.useFakeTimers();
+      Block.__set__("setImmediate", setImmediate);
       block = new Block(ed, schema, transaction, callback);
       data = {
         transactions: dummyTransactions,
@@ -132,12 +139,19 @@ describe("logic/block", function() {
         keypair: dummyKeypar
       };
     });
+    afterEach(function() {
+      clock.restore();
+      callback.reset();
+    });
 
     describe("create()", function() {
-      it("...should return a new block", function() {
-        expect(callback.called).to.be.true;
+      it("returns a new block", function() {
+        clock.tick();
+
         var instance = callback.args[0][1];
         var new_block = instance.create(data);
+
+        expect(callback.called).to.be.true;
         expect(new_block).to.be.an.instanceof(Object);
         expect(new_block.totalFee).to.equal(8);
         expect(new_block.numberOfTransactions).to.equal(2);
@@ -146,7 +160,8 @@ describe("logic/block", function() {
     });
 
     describe("sign()", function() {
-      it("...should return a block signature with 128 of lenght", function() {
+      it("returns a block signature with 128 of lenght", function() {
+        clock.tick();
         expect(callback.called).to.be.true;
         var instance = callback.args[0][1];
         var blockSignature = instance.sign(dummyBlock, dummyKeypar);
@@ -155,7 +170,8 @@ describe("logic/block", function() {
     });
 
     describe("getBytes()", function() {
-      it("...should return a Buffer", function() {
+      it("returns a Buffer", function() {
+        clock.tick();
         var instance = callback.args[0][1];
         var bytes = instance.getBytes(dummyBlock);
         expect(bytes).to.be.an.instanceof(Buffer);
@@ -163,7 +179,8 @@ describe("logic/block", function() {
     });
 
     describe("verifySignature()", function() {
-      it("...should return a verified hash", function() {
+      it("returns a verified hash", function() {
+        clock.tick();
         var instance = callback.args[0][1];
         var verification = instance.verifySignature(dummyBlock);
         expect(verification).to.be.true;
@@ -171,7 +188,8 @@ describe("logic/block", function() {
     });
 
     describe("dbSave()", function() {
-      it("...should return an object", function() {
+      it("returns an object", function() {
+        clock.tick();
         var instance = callback.args[0][1];
         var data = instance.dbSave(dummyBlock);
         expect(data).to.be.an.instanceof(Object);
@@ -210,7 +228,8 @@ describe("logic/block", function() {
     });
 
     describe("dbSave() with wrong parameters", function() {
-      it("...should return an exception", function() {
+      it("returns an exception", function() {
+        clock.tick();
         var instance = callback.args[0][1];
         wrongBlock = {};
         var error = function() {
@@ -221,7 +240,8 @@ describe("logic/block", function() {
     });
 
     describe("objectNormalize()", function() {
-      it("...should return a normalized block", function() {
+      it("returns a normalized block", function() {
+        clock.tick();
         var instance = callback.args[0][1];
         dummyBlock.foo = null;
         dummyBlock.bar;
@@ -234,7 +254,8 @@ describe("logic/block", function() {
     });
 
     describe("objectNormalize() with a bad block schema", function() {
-      it("...should throw an exception", function() {
+      it("throws an exception", function() {
+        clock.tick();
         var instance = callback.args[0][1];
         dummyBlock.greeting = "Hello World!";
         var throwError = function() {
@@ -245,7 +266,8 @@ describe("logic/block", function() {
     });
 
     describe("getId()", function() {
-      it("...should return an id string", function() {
+      it("returns an id string", function() {
+        clock.tick();
         var instance = callback.args[0][1];
         var id = instance.getId(dummyBlock);
         expect(id).to.equal("1931531116681750305");
@@ -253,7 +275,8 @@ describe("logic/block", function() {
     });
 
     describe("getHash()", function() {
-      it("...should return a hash of Uint8Array type", function() {
+      it("returns a hash of Uint8Array type", function() {
+        clock.tick();
         var instance = callback.args[0][1];
         var hash = instance.getHash(dummyBlock);
         expect(hash).to.be.an.instanceof(Uint8Array);
@@ -298,7 +321,7 @@ describe("logic/block", function() {
 
     // TODO: This test is temporarely commented, because calculateFee() seems to be dead code. Waiting for a decision to be taken
     // describe('calculateFee()', function () {
-    //   it('...should return an integer', function () {
+    //   it('returns an integer', function () {
     //     var instance = callback.args[0][1]
     //     var fees = instance.calculateFee({})
     //     expect(fees).to.satisfy(Number.isInteger)
@@ -307,7 +330,8 @@ describe("logic/block", function() {
     // })
 
     describe("dbRead()", function() {
-      it("...should return an object", function() {
+      it("returns an object", function() {
+        clock.tick();
         var instance = callback.args[0][1];
         var raw = {
           b_id: 10,
