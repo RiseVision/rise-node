@@ -1,6 +1,6 @@
 ## Rise-node version 0.1.2
 # RISE
-
+[![Build Status](https://travis-ci.org/RiseVision/rise-node.svg?branch=unit-test%2Ffix-development-branch)](https://travis-ci.org/RiseVision/rise-node) [![Coverage Status](https://coveralls.io/repos/github/RiseVision/rise-node/badge.svg?branch=development)](https://coveralls.io/github/RiseVision/rise-node?branch=development) 
 ## Installation
 
 Automatic install script for Debian based systems Ubuntu, Mint, Debian.
