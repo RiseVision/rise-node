@@ -28,12 +28,12 @@ describe("logic/transfer", function() {
       transfer = new Transfer();
     });
 
-		it("should initialize modules properly", function() {
-			transfer.bind(accounts, rounds, system);
-			expect(Transfer.__get__("modules").accounts).to.equal(accounts);
-			expect(Transfer.__get__("modules").rounds).to.equal(rounds);
-			expect(Transfer.__get__("modules").system).to.equal(system);
-		});
+    it("should initialize modules properly", function() {
+      transfer.bind(accounts, rounds, system);
+      expect(Transfer.__get__("modules").accounts).to.equal(accounts);
+      expect(Transfer.__get__("modules").rounds).to.equal(rounds);
+      expect(Transfer.__get__("modules").system).to.equal(system);
+    });
   });
 
   describe("create", function() {
@@ -45,11 +45,11 @@ describe("logic/transfer", function() {
       transfer = new Transfer();
     });
 
-		it("trs should be initialized properly", function() {
-			transfer.create(data, trs);
-			expect(trs.recipientId).to.equal(data.recipientId);
-			expect(trs.amount).to.equal(data.amount);
-		});
+    it("trs should be initialized properly", function() {
+      transfer.create(data, trs);
+      expect(trs.recipientId).to.equal(data.recipientId);
+      expect(trs.amount).to.equal(data.amount);
+    });
   });
 
   describe("calculateFee", function() {
@@ -67,10 +67,10 @@ describe("logic/transfer", function() {
       result = transfer.calculateFee(trs, sender, height);
     });
 
-		it("should call to getFees", function() {
-			expect(system.getFees.called).to.be.true;
-			expect(result).to.equal(123);
-		});
+    it("should call to getFees", function() {
+      expect(system.getFees.called).to.be.true;
+      expect(result).to.equal(123);
+    });
   });
 
   describe("verify", function() {
@@ -99,31 +99,31 @@ describe("logic/transfer", function() {
       clock.restore();
     });
 
-		it("Case 1: should return an 'Missing recipient' error", function() {
-			transfer.verify(trs_case_1, sender, callback);
-			clock.runAll();
-			expect(callback.args[0][0]).contain("Missing recipient");
-		});
+    it("Case 1: should return an 'Missing recipient' error", function() {
+      transfer.verify(trs_case_1, sender, callback);
+      clock.runAll();
+      expect(callback.args[0][0]).contain("Missing recipient");
+    });
 
-		it("Case 2: should return an 'Invalid transaction amount' error", function() {
-			transfer.verify(trs_case_2, sender, callback);
-			clock.runAll();
-			expect(callback.args[0][0]).contain("Invalid transaction amount");
-		});
+    it("Case 2: should return an 'Invalid transaction amount' error", function() {
+      transfer.verify(trs_case_2, sender, callback);
+      clock.runAll();
+      expect(callback.args[0][0]).contain("Invalid transaction amount");
+    });
 
-		it("Case 3: should return an 'Invalid transaction amount' error", function() {
-			transfer.verify(trs_case_3, sender, callback);
-			clock.runAll();
-			expect(callback.args[0][0]).contain("Invalid transaction amount");
-		});
+    it("Case 3: should return an 'Invalid transaction amount' error", function() {
+      transfer.verify(trs_case_3, sender, callback);
+      clock.runAll();
+      expect(callback.args[0][0]).contain("Invalid transaction amount");
+    });
 
-		it("Case 4: should call to callback without errors and pass trs as secondary parameter", function() {
-			transfer.verify(trs_case_4, sender, callback);
-			clock.runAll();
-			expect(callback.args[0][0]).to.be.null;
-			expect(callback.args[0][1]).to.deep.equal(trs_case_4);
-			expect(callback.called).to.be.true;
-		});
+    it("Case 4: should call to callback without errors and pass trs as secondary parameter", function() {
+      transfer.verify(trs_case_4, sender, callback);
+      clock.runAll();
+      expect(callback.args[0][0]).to.be.null;
+      expect(callback.args[0][1]).to.deep.equal(trs_case_4);
+      expect(callback.called).to.be.true;
+    });
   });
 
   describe("process", function() {
@@ -142,13 +142,13 @@ describe("logic/transfer", function() {
       clock.restore();
     });
 
-		it("should call to callback and pass trs as secondary parameter without errors", function() {
-			transfer.process(trs, sender, callback);
-			clock.runAll();
-			expect(callback.args[0][0]).to.be.null;
-			expect(callback.args[0][1]).to.deep.equal(trs);
-			expect(callback.called).to.be.true;
-		});
+    it("should call to callback and pass trs as secondary parameter without errors", function() {
+      transfer.process(trs, sender, callback);
+      clock.runAll();
+      expect(callback.args[0][0]).to.be.null;
+      expect(callback.args[0][1]).to.deep.equal(trs);
+      expect(callback.called).to.be.true;
+    });
   });
 
   describe("getBytes", function() {
@@ -213,27 +213,27 @@ describe("logic/transfer", function() {
       clock.restore();
     });
 
-		it("Case 1: callback should receive an error as first parameter", function() {
-			transfer.apply(trs_case_1, block, sender, callback);
-			clock.runAll();
-			expect(callback.called).to.be.true;
-			expect(callback.args[0][0]).to.equal("error1");
-		});
+    it("Case 1: callback should receive an error as first parameter", function() {
+      transfer.apply(trs_case_1, block, sender, callback);
+      clock.runAll();
+      expect(callback.called).to.be.true;
+      expect(callback.args[0][0]).to.equal("error1");
+    });
 
-		it("Case 2: callback should receive an error as first parameter", function() {
-			transfer.apply(trs_case_2, block, sender, callback);
-			clock.runAll();
-			expect(callback.called).to.be.true;
-			expect(callback.args[0][0]).to.equal("error2");
-		});
+    it("Case 2: callback should receive an error as first parameter", function() {
+      transfer.apply(trs_case_2, block, sender, callback);
+      clock.runAll();
+      expect(callback.called).to.be.true;
+      expect(callback.args[0][0]).to.equal("error2");
+    });
 
-		it("Case 3: callback should not receive any error", function() {
-			transfer.apply(trs_case_3, block, sender, callback);
-			clock.runAll();
-			expect(callback.called).to.be.true;
-			expect(rounds.calc.called).to.be.true;
-			expect(callback.args[0][0]).to.equal("error2");
-		});
+    it("Case 3: callback should not receive any error", function() {
+      transfer.apply(trs_case_3, block, sender, callback);
+      clock.runAll();
+      expect(callback.called).to.be.true;
+      expect(rounds.calc.called).to.be.true;
+      expect(callback.args[0][0]).to.equal("error2");
+    });
   });
 
   describe("undo", function() {
@@ -290,27 +290,27 @@ describe("logic/transfer", function() {
       clock.restore();
     });
 
-		it("Case 1: callback should receive an error as first parameter", function() {
-			transfer.undo(trs_case_1, block, sender, callback);
-			clock.runAll();
-			expect(callback.called).to.be.true;
-			expect(callback.args[0][0]).to.equal("error1");
-		});
+    it("Case 1: callback should receive an error as first parameter", function() {
+      transfer.undo(trs_case_1, block, sender, callback);
+      clock.runAll();
+      expect(callback.called).to.be.true;
+      expect(callback.args[0][0]).to.equal("error1");
+    });
 
-		it("Case 2: callback should receive an error as first parameter", function() {
-			transfer.undo(trs_case_2, block, sender, callback);
-			clock.runAll();
-			expect(callback.called).to.be.true;
-			expect(callback.args[0][0]).to.equal("error2");
-		});
+    it("Case 2: callback should receive an error as first parameter", function() {
+      transfer.undo(trs_case_2, block, sender, callback);
+      clock.runAll();
+      expect(callback.called).to.be.true;
+      expect(callback.args[0][0]).to.equal("error2");
+    });
 
-		it("Case 3: callback should not receive any error", function() {
-			transfer.undo(trs_case_3, block, sender, callback);
-			clock.runAll();
-			expect(callback.called).to.be.true;
-			expect(rounds.calc.called).to.be.true;
-			expect(callback.args[0][0]).to.equal("error2");
-		});
+    it("Case 3: callback should not receive any error", function() {
+      transfer.undo(trs_case_3, block, sender, callback);
+      clock.runAll();
+      expect(callback.called).to.be.true;
+      expect(rounds.calc.called).to.be.true;
+      expect(callback.args[0][0]).to.equal("error2");
+    });
   });
 
   describe("applyUnconfirmed", function() {
@@ -407,29 +407,29 @@ describe("logic/transfer", function() {
       sender = { multisignatures: [1, 2], multimin: 1 };
     });
 
-		it("Case 1: should return true", function() {
-			var result = transfer.ready(trs, sender_case_1);
-			expect(result).to.be.true;
-		});
+    it("Case 1: should return true", function() {
+      var result = transfer.ready(trs, sender_case_1);
+      expect(result).to.be.true;
+    });
 
-		it("Case 2: should return false", function() {
-			var result = transfer.ready(trs, sender_case_2);
-			expect(result).to.be.false;
-		});
+    it("Case 2: should return false", function() {
+      var result = transfer.ready(trs, sender_case_2);
+      expect(result).to.be.false;
+    });
 
-		it("Case 3: trs.signatures > sender.multimin returns true", function() {
-			var result = transfer.ready(trs_case_3, sender);
-			expect(result).to.be.true;
-		});
+    it("Case 3: trs.signatures > sender.multimin returns true", function() {
+      var result = transfer.ready(trs_case_3, sender);
+      expect(result).to.be.true;
+    });
 
-		it("Case 4: trs.signatures = sender.multimin, returns true", function() {
-			var result = transfer.ready(trs_case_4, sender);
-			expect(result).to.be.true;
-		});
+    it("Case 4: trs.signatures = sender.multimin, returns true", function() {
+      var result = transfer.ready(trs_case_4, sender);
+      expect(result).to.be.true;
+    });
 
-		it("Case 5: trs.signatures < sender.multimin returns false", function() {
-			var result = transfer.ready(trs_case_5, sender);
-			expect(result).to.be.false;
-		});
+    it("Case 5: trs.signatures < sender.multimin returns false", function() {
+      var result = transfer.ready(trs_case_5, sender);
+      expect(result).to.be.false;
+    });
   });
 });
