@@ -13,6 +13,7 @@ var ed = require(path.join(rootDir, "helpers/ed"));
 var constants = require(path.join(rootDir, "helpers/constants"));
 var schema = require(path.join(rootDir, "schema/accounts"));
 var transactionTypes = require(path.join(rootDir, "helpers/transactionTypes"));
+var sandboxHelper = require(path.join(rootDir, "helpers/sandbox"));
 
 describe("modules/accounts", function() {
     it("constructor", function() {
@@ -449,7 +450,6 @@ describe("modules/accounts", function() {
         var testCall = {};
         var testArgs = {};
 
-        var sandboxHelper = require(path.join(rootDir, "helpers/sandbox"));
         var sandboxHelperStub = sinon.spy(sandboxHelper, "callMethod");
         var privateShared = Accounts.__get__("shared");
 
