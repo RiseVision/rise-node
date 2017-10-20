@@ -53,9 +53,9 @@ describe("logic/peers", function() {
         peers: {}
       });
       expect(callback.calledOnce).to.be.true;
-      expect(callback.getCall(0).args.length).to.equal(2);
-      expect(callback.getCall(0).args[0]).to.equal(null);
-      expect(callback.getCall(0).args[1]).to.deep.equal(self);
+      expect(callback.firstCall.args.length).to.equal(2);
+      expect(callback.firstCall.args[0]).to.equal(null);
+      expect(callback.firstCall.args[1]).to.deep.equal(self);
 
       done();
     });
@@ -155,8 +155,8 @@ describe("logic/peers", function() {
 
       var retVal = get(peer);
       expect(create.calledOnce).to.be.true;
-      expect(create.getCall(0).args.length).to.equal(1);
-      expect(create.getCall(0).args[0]).to.deep.equal(peer);
+      expect(create.firstCall.args.length).to.equal(1);
+      expect(create.firstCall.args[0]).to.deep.equal(peer);
       expect(retVal).to.deep.equal({});
 
       done();
@@ -186,8 +186,8 @@ describe("logic/peers", function() {
       var retVal = upsert({}, false);
 
       expect(create.calledOnce).to.equal(true);
-      expect(create.getCall(0).args.length).to.equal(1);
-      expect(create.getCall(0).args[0]).to.deep.equal({});
+      expect(create.firstCall.args.length).to.equal(1);
+      expect(create.firstCall.args[0]).to.deep.equal({});
       expect(logger.warn.calledOnce).to.equal(true);
       expect(retVal).to.equal(false);
 
@@ -202,8 +202,8 @@ describe("logic/peers", function() {
       var retVal = upsert({}, true);
 
       expect(create.calledOnce).to.equal(true);
-      expect(create.getCall(0).args.length).to.equal(1);
-      expect(create.getCall(0).args[0]).to.deep.equal({});
+      expect(create.firstCall.args.length).to.equal(1);
+      expect(create.firstCall.args[0]).to.deep.equal({});
       expect(retVal).to.equal(false);
 
       exists.restore();
@@ -229,18 +229,18 @@ describe("logic/peers", function() {
       var retVal = upsert({});
 
       expect(create.calledOnce).to.equal(true);
-      expect(create.getCall(0).args.length).to.equal(1);
-      expect(create.getCall(0).args[0]).to.deep.equal({});
+      expect(create.firstCall.args.length).to.equal(1);
+      expect(create.firstCall.args[0]).to.deep.equal({});
       expect(logger.debug.calledOnce).to.equal(true);
-      expect(logger.debug.getCall(0).args.length).to.equal(2);
-      expect(logger.debug.getCall(0).args[0]).to.equal("Updated peer test");
+      expect(logger.debug.firstCall.args.length).to.equal(2);
+      expect(logger.debug.firstCall.args[0]).to.equal("Updated peer test");
       expect(retVal).to.equal(true);
 
       exists.restore();
       done();
     });
 
-    it("peer doesn't exists, rejects unacceptable peer on insert", function(
+    it("peer doesn't exists, rejects peer on insert", function(
       done
     ) {
       var exists = sinon.stub(selfInstance, "exists").returns(false);
@@ -266,11 +266,11 @@ describe("logic/peers", function() {
       var retVal = upsert({});
 
       expect(create.calledOnce).to.equal(true);
-      expect(create.getCall(0).args.length).to.equal(1);
-      expect(create.getCall(0).args[0]).to.deep.equal({});
+      expect(create.firstCall.args.length).to.equal(1);
+      expect(create.firstCall.args[0]).to.deep.equal({});
       expect(logger.debug.calledOnce).to.equal(true);
-      expect(logger.debug.getCall(0).args.length).to.equal(2);
-      expect(logger.debug.getCall(0).args[0]).to.equal(
+      expect(logger.debug.firstCall.args.length).to.equal(2);
+      expect(logger.debug.firstCall.args[0]).to.equal(
         "Rejecting unacceptable peer"
       );
       expect(retVal).to.equal(true);
@@ -305,11 +305,11 @@ describe("logic/peers", function() {
       var retVal = upsert({});
 
       expect(create.calledOnce).to.equal(true);
-      expect(create.getCall(0).args.length).to.equal(1);
-      expect(create.getCall(0).args[0]).to.deep.equal({});
+      expect(create.firstCall.args.length).to.equal(1);
+      expect(create.firstCall.args[0]).to.deep.equal({});
       expect(logger.debug.calledOnce).to.equal(true);
-      expect(logger.debug.getCall(0).args.length).to.equal(2);
-      expect(logger.debug.getCall(0).args[0]).to.equal("Inserted new peer");
+      expect(logger.debug.firstCall.args.length).to.equal(2);
+      expect(logger.debug.firstCall.args[0]).to.equal("Inserted new peer");
       expect(retVal).to.equal(true);
 
       exists.restore();
@@ -347,11 +347,11 @@ describe("logic/peers", function() {
       var retVal = remove({});
 
       expect(create.calledOnce).to.equal(true);
-      expect(create.getCall(0).args.length).to.equal(1);
-      expect(create.getCall(0).args[0]).to.deep.equal({});
+      expect(create.firstCall.args.length).to.equal(1);
+      expect(create.firstCall.args[0]).to.deep.equal({});
       expect(exists.calledOnce).to.equal(true);
-      expect(exists.getCall(0).args.length).to.equal(1);
-      expect(exists.getCall(0).args[0]).to.deep.equal({ string: "1" });
+      expect(exists.firstCall.args.length).to.equal(1);
+      expect(exists.firstCall.args[0]).to.deep.equal({ string: "1" });
       expect(retVal).to.equal(false);
 
       done();
@@ -370,11 +370,11 @@ describe("logic/peers", function() {
       var retVal = remove({});
 
       expect(create.calledOnce).to.equal(true);
-      expect(create.getCall(0).args.length).to.equal(1);
-      expect(create.getCall(0).args[0]).to.deep.equal({});
+      expect(create.firstCall.args.length).to.equal(1);
+      expect(create.firstCall.args[0]).to.deep.equal({});
       expect(exists.calledOnce).to.equal(true);
-      expect(exists.getCall(0).args.length).to.equal(1);
-      expect(exists.getCall(0).args[0]).to.deep.equal({ string: "1" });
+      expect(exists.firstCall.args.length).to.equal(1);
+      expect(exists.firstCall.args[0]).to.deep.equal({ string: "1" });
       expect(retVal).to.equal(true);
 
       done();
