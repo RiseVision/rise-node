@@ -3,3 +3,6 @@ node_js:
   - "6"
 sudo: required
 script: npm run test-unit
+cache:
+  directories:
+    - node_modules
