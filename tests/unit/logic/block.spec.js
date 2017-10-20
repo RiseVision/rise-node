@@ -25,7 +25,6 @@ describe("logic/block", function() {
   var buffer = bb.toBuffer();
 
   beforeEach(function() {
-
     dummyTransactions = [
       {
         type: 0,
@@ -104,7 +103,6 @@ describe("logic/block", function() {
   });
 
   it("callback is called", function() {
-
     var expectedScope = {
       ed: ed,
       schema: schema,
