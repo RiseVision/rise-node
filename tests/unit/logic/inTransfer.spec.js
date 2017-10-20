@@ -125,7 +125,6 @@ describe("logic/inTransfer", function() {
     beforeEach(function() {
       clock = sinon.useFakeTimers("setImmediate");
       InTransfer.__set__("setImmediate", setImmediate);
-
       instance = new InTransfer;
     });
     afterEach(function() {
@@ -190,15 +189,13 @@ describe("logic/inTransfer", function() {
 
       instance.verify(trs,null, callback);
 
-      setImmediate(function(){
-        setImmediate(function(){
-          clock.tick();
+      setTimeout(function(){ //running in a separate thread
+          clock.runAll();
           expect(callback.calledOnce).to.be.true;
           expect(callback.getCall(0).args.length).to.equal(1);
           expect(callback.getCall(0).args[0]).to.instanceOf(Error);
           done();
-        });
-      });
+      }, 0);
 
     });
 
@@ -216,14 +213,12 @@ describe("logic/inTransfer", function() {
 
       instance.verify(trs,null, callback);
 
-      setImmediate(function(){
-        setImmediate(function(){
-          clock.tick();
-          expect(callback.called).to.be.true;
-          expect(callback.getCall(0).args.length).to.equal(0);
-          done();
-        });
-      });
+      setTimeout(function(){
+        clock.runAll();
+        expect(callback.called).to.be.true;
+        expect(callback.getCall(0).args.length).to.equal(0);
+        done();
+      }, 0);
 
     });
 
@@ -241,15 +236,13 @@ describe("logic/inTransfer", function() {
 
       instance.verify(trs,null, callback);
 
-      setImmediate(function(){
-        setImmediate(function(){
-          clock.tick();
-          expect(callback.called).to.be.true;
-          expect(callback.getCall(0).args.length).to.equal(1);
-          expect(callback.getCall(0).args[0]).to.equal("Application not found: 1919191");
-          done();
-        });
-      });
+      setTimeout(function(){
+        clock.runAll();
+        expect(callback.called).to.be.true;
+        expect(callback.getCall(0).args.length).to.equal(1);
+        expect(callback.getCall(0).args[0]).to.equal("Application not found: 1919191");
+        done();
+      }, 0);
 
     });
 
