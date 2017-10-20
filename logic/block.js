@@ -441,15 +441,6 @@ Block.prototype.getHash = function (block) {
 };
 
 /**
- * Returns send fees from constants.
- * @param {block} block
- * @return {number} fee
- */
-Block.prototype.calculateFee = function () {
-	return constants.fees[0].fees.send;
-};
-
-/**
  * Creates block object based on raw data.
  * @implements {bignum}
  * @param {Object} raw
