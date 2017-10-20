@@ -326,6 +326,10 @@ describe('logic/transfer', function () {
 			transfer.applyUnconfirmed(trs, sender, callback)
 		})
 
+		afterEach(function () {
+      clock.restore()
+    })
+
 		it('should call to callback', function () {
 			clock.runAll()
 			expect(callback.called).to.be.true
@@ -342,6 +346,10 @@ describe('logic/transfer', function () {
 			transfer = new Transfer()
 			transfer.undoUnconfirmed(trs, sender, callback)
 		})
+
+    afterEach(function () {
+      clock.restore()
+    })
 
 		it('should call to callback', function () {
 			clock.runAll()
