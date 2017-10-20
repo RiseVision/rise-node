@@ -18,7 +18,7 @@ describe("logic/transfer", function() {
     });
   });
 
-  describe("bind()", function() {
+  describe("bind", function() {
     var transfer, accounts, rounds, system;
 
     beforeEach(function() {
@@ -36,7 +36,7 @@ describe("logic/transfer", function() {
 		});
   });
 
-  describe("create()", function() {
+  describe("create", function() {
     var transfer, data, trs;
 
     beforeEach(function() {
@@ -52,7 +52,7 @@ describe("logic/transfer", function() {
 		});
   });
 
-  describe("calculateFee()", function() {
+  describe("calculateFee", function() {
     var transfer, accounts, rounds, system, trs, sender, height, result;
 
     beforeEach(function() {
@@ -67,13 +67,13 @@ describe("logic/transfer", function() {
       result = transfer.calculateFee(trs, sender, height);
     });
 
-		it("should call to getFees()", function() {
+		it("should call to getFees", function() {
 			expect(system.getFees.called).to.be.true;
 			expect(result).to.equal(123);
 		});
   });
 
-  describe("verify()", function() {
+  describe("verify", function() {
     var transfer,
       trs_case_1,
       trs_case_2,
@@ -126,7 +126,7 @@ describe("logic/transfer", function() {
 		});
   });
 
-  describe("process()", function() {
+  describe("process", function() {
     var transfer, trs, sender, callback, clock;
 
     beforeEach(function() {
@@ -151,7 +151,7 @@ describe("logic/transfer", function() {
 		});
   });
 
-  describe("getBytes()", function() {
+  describe("getBytes", function() {
     it("should return null", function() {
       var transfer = new Transfer();
       var result = transfer.getBytes();
@@ -159,7 +159,7 @@ describe("logic/transfer", function() {
     });
   });
 
-  describe("apply()", function() {
+  describe("apply", function() {
     var transfer,
       accounts,
       rounds,
@@ -236,7 +236,7 @@ describe("logic/transfer", function() {
 		});
   });
 
-  describe("undo()", function() {
+  describe("undo", function() {
     var transfer,
       accounts,
       rounds,
@@ -313,7 +313,7 @@ describe("logic/transfer", function() {
 		});
   });
 
-  describe("applyUnconfirmed()", function() {
+  describe("applyUnconfirmed", function() {
     var transfer, trs, sender, callback, clock;
 
     beforeEach(function() {
@@ -334,7 +334,7 @@ describe("logic/transfer", function() {
     });
   });
 
-  describe("undoUnconfirmed()", function() {
+  describe("undoUnconfirmed", function() {
     var transfer, trs, sender, callback, clock;
 
     beforeEach(function() {
@@ -355,7 +355,7 @@ describe("logic/transfer", function() {
     });
   });
 
-  describe("objectNormalize()", function() {
+  describe("objectNormalize", function() {
     var transfer, trs, trs2;
 
     beforeEach(function() {
@@ -370,7 +370,7 @@ describe("logic/transfer", function() {
     });
   });
 
-  describe("dbRead()", function() {
+  describe("dbRead", function() {
     it("should return null", function() {
       var transfer = new Transfer();
       var result = transfer.dbRead({});
@@ -378,7 +378,7 @@ describe("logic/transfer", function() {
     });
   });
 
-  describe("dbSave()", function() {
+  describe("dbSave", function() {
     it("should return null", function() {
       var transfer = new Transfer();
       var result = transfer.dbSave({});
@@ -386,7 +386,7 @@ describe("logic/transfer", function() {
     });
   });
 
-  describe("ready()", function() {
+  describe("ready", function() {
     var transfer,
       trs,
       trs_case_3,
