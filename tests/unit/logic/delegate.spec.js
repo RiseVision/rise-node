@@ -449,12 +449,9 @@ describe("logic/delegate", function() {
 
     it("catches the error", function(done) {
       var Buffer = Delegate.__get__("Buffer");
-      Buffer.from = function() {};
       var from = sinon.stub(Buffer, "from").callsFake(function() {
         throw new Error("Error");
       });
-
-      Delegate.__set__("Buffer", Buffer);
 
       var throwError = function() {
         instance.getBytes(trs);
@@ -463,12 +460,12 @@ describe("logic/delegate", function() {
       expect(throwError).to.throw("Error");
       Delegate.__get__("Buffer").from.restore();
 
+      from.restore();
       done();
     });
 
-    it("catches the error", function(done) {
+    it("success", function(done) {
       var Buffer = Delegate.__get__("Buffer");
-      Buffer.from = function() {};
       var from = sinon.stub(Buffer, "from").returns(1);
 
       Delegate.__set__("Buffer", Buffer);
@@ -478,6 +475,7 @@ describe("logic/delegate", function() {
       expect(retval).to.equal(1);
       Delegate.__get__("Buffer").from.restore();
 
+      from.restore();
       done();
     });
   });
