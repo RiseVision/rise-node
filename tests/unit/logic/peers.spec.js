@@ -453,3 +453,4 @@ describe("logic/peers", function() {
 		});
 	});
 });
+
