@@ -461,6 +461,8 @@ describe("modules/accounts", function() {
         expect(sandboxHelperStub.getCall(0).args[1]).to.equal(testCall);
         expect(sandboxHelperStub.getCall(0).args[2]).to.equal(testArgs);
         expect(sandboxHelperStub.getCall(0).args[3]).to.equal(callback);
+
+        sandboxHelperStub.restore();
     });
 
     it("public.onBind", function() {
