@@ -38,13 +38,13 @@ describe("logic/peer", function() {
 		it("should be a function", function(done) {
 			expect(Peer).to.be.a("function");
 
-			done();
-		});
-		it("should be an instance of Delegate", function(done) {
-			var context = { accept: sinon.stub() };
-			var peerObj = {
-				mocked: "true"
-			};
+      done();
+    });
+    it("should be an instance of Peer", function(done) {
+      var context = { accept: sinon.stub() };
+      var peerObj = {
+        mocked: "true"
+      };
 
 			construct(context, peer);
 			construct(context, null);
