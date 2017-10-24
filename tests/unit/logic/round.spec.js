@@ -44,12 +44,7 @@ describe("logic/logic", function() {
 			none: sinon.stub().returns("it works!"),
 			query: sinon.stub().returns("query works!")
 		};
-		clock = sinon.useFakeTimers("setImmediate");
-		Round.__set__("setImmediate", setImmediate);
 		instance = new Round(scope, task);
-	});
-	afterEach(function() {
-		clock.reset();
 	});
 
 	describe("constructor", function() {
