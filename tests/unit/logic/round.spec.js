@@ -8,8 +8,8 @@ var rootDir = path.join(__dirname, "../../..");
 
 var Round = rewire(path.join(rootDir, "logic/round"));
 
-describe("logic/logic", function() {
-	var instance, scope, callback, clock, task;
+describe("logic/round", function() {
+	var instance, scope, callback, task;
 
 	beforeEach(function() {
 		scope = {
@@ -662,8 +662,8 @@ describe("logic/logic", function() {
 		});
 	});
 
-	describe("land", function(done) {
-		it("returns this.t", function() {
+	describe("land", function() {
+		it("returns this.t", function(done) {
 			var updateVotes = sinon.stub(instance, "updateVotes").resolves(true);
 			var updateMissedBlocks = sinon
 				.stub(instance, "updateMissedBlocks")
@@ -671,26 +671,25 @@ describe("logic/logic", function() {
 			var flushRound = sinon.stub(instance, "flushRound").resolves(true);
 			var applyRound = sinon.stub(instance, "applyRound").resolves(true);
 
-			var retVal = instance.land();
-
-			setTimeout(function() {
+			var retVal = instance.land().then(function(){
 				expect(updateVotes.calledTwice).to.equal.true;
 				expect(updateMissedBlocks.calledOnce).to.equal.true;
 				expect(flushRound.calledTwice).to.equal.true;
 				expect(applyRound.calledOnce).to.equal.true;
-				expect(retVal).to.deep.equal(task);
+
 
 				updateVotes.restore();
 				updateMissedBlocks.restore();
 				flushRound.restore();
 				applyRound.restore();
+
 				done();
-			}, 0);
+			});
 		});
 	});
 
-	describe("backwardLand", function(done) {
-		it("returns this.t", function() {
+	describe("backwardLand", function() {
+		it("returns this.t", function(done) {
 			var updateVotes = sinon.stub(instance, "updateVotes").resolves(true);
 			var updateMissedBlocks = sinon
 				.stub(instance, "updateMissedBlocks")
@@ -701,24 +700,21 @@ describe("logic/logic", function() {
 				.stub(instance, "restoreRoundSnapshot")
 				.resolves(true);
 
-			var retVal = instance.land();
+			instance.backwardLand().then(function(){
+        expect(updateVotes.calledTwice).to.equal.true;
+        expect(updateMissedBlocks.calledOnce).to.equal.true;
+        expect(flushRound.calledTwice).to.equal.true;
+        expect(applyRound.calledOnce).to.equal.true;
+        expect(restoreRoundSnapshot.calledTwice).to.equal.true;
 
-			setTimeout(function() {
-				expect(updateVotes.calledTwice).to.equal.true;
-				expect(updateMissedBlocks.calledOnce).to.equal.true;
-				expect(flushRound.calledTwice).to.equal.true;
-				expect(applyRound.calledOnce).to.equal.true;
-				expect(restoreRoundSnapshot.calledTwice).to.equal.true;
-				expect(retVal).to.deep.equal(task);
+        updateVotes.restore();
+        updateMissedBlocks.restore();
+        flushRound.restore();
+        applyRound.restore();
+        restoreRoundSnapshot.restore();
 
-				updateVotes.restore();
-				updateMissedBlocks.restore();
-				flushRound.restore();
-				applyRound.restore();
-				restoreRoundSnapshot.restore();
-
-				done();
-			}, 0);
+        done();
+			});
 		});
 	});
 });
