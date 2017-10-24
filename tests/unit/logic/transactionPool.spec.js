@@ -981,6 +981,7 @@ describe('logic/transactionPool', function () {
 		});
 
 		afterEach(function () {
+			clock.restore();
 			callback.reset();
 			expireTransactionsSpy.reset();
 			getUnconfirmedTransactionListSpy.reset();
