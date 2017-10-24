@@ -31,7 +31,7 @@ describe("logic/signature", function() {
 		};
 	});
 	afterEach(function() {
-		clock.reset();
+		clock.restore();
 	});
 
 	describe("constructor", function() {
