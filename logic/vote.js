@@ -363,12 +363,11 @@ Vote.prototype.dbRead = function (raw) {
 		return null;
 	}
 
-	if(typeof raw.v_votes !== 'string') {
+	if (typeof(raw.v_votes) !== 'string') {
 		return null;
 	}
 
-	var votes = raw.v_votes.split(',');
-	return {votes: votes};
+	return { votes: raw.v_votes.split(',') };
 };
 
 Vote.prototype.dbTable = 'votes';
