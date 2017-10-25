@@ -253,7 +253,11 @@ Vote.prototype.apply = function (trs, block, sender, cb) {
  * @return {setImmediateCallback} cb, err
  */
 Vote.prototype.undo = function (trs, block, sender, cb) {
-	if (trs.asset.votes === null) { return setImmediate(cb); }
+  try {
+    self.objectNormalize(trs);
+  } catch (err) {
+    return setImmediate(cb);
+  }
 
 	var votesInvert = Diff.reverse(trs.asset.votes);
 
