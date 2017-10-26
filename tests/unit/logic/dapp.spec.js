@@ -4,8 +4,7 @@ var sinon = require("sinon");
 var rewire = require("rewire");
 var path = require("path");
 var valid_url = require("valid-url");
-var sql = require('../../../sql/dapps.js');
-
+var sql = require("../../../sql/dapps.js");
 
 var rootDir = path.join(__dirname, "../../..");
 
@@ -47,10 +46,10 @@ describe("modules/dapp", function() {
 					name: "CarbonaraDapp",
 					description: "Carbonara",
 					category: 4,
-          tags: "cool, dapp",
+					tags: "cool, dapp",
 					link: "https://alessio.rocks/app.zip",
 					icon: "https://alessio.rocks/img/carbonara_bro.jpeg",
-          type: 0
+					type: 0
 				}
 			}
 		};
@@ -428,86 +427,94 @@ describe("modules/dapp", function() {
 		});
 
 		it("catches the rejection from db.query", function(done) {
-		  db.query.rejects();
+			db.query.rejects();
 			instance.verify(trs, sender, callback);
 			expect(db.query.calledOnce).to.be.true;
 			expect(db.query.firstCall.args.length).to.equal(2);
 			expect(db.query.firstCall.args[0]).to.equal(sql.getExisting);
 			expect(db.query.firstCall.args[1]).to.deep.equal({
-        name: trs.asset.dapp.name,
-        link: trs.asset.dapp.link,
-        transactionId: trs.id
-      });
+				name: trs.asset.dapp.name,
+				link: trs.asset.dapp.link,
+				transactionId: trs.id
+			});
 
-			setTimeout(function(){
+			setTimeout(function() {
 				clock.tick();
-        expect(logger.error.calledOnce).to.be.true;
-        expect(callback.calledOnce).to.be.true;
-        expect(callback.firstCall.args.length).to.equal(1);
-        expect(callback.firstCall.args[0]).to.equal(
-          "DApp#verify error"
-        );
-			  done();
-      },0);
+				expect(logger.error.calledOnce).to.be.true;
+				expect(callback.calledOnce).to.be.true;
+				expect(callback.firstCall.args.length).to.equal(1);
+				expect(callback.firstCall.args[0]).to.equal("DApp#verify error");
+				done();
+			}, 0);
 		});
 
 		it("Dapp exists with the same name", function(done) {
-		  db.query.resolves([{
-		  	name:	'CarbonaraDapp'
-			}]);
+			db.query.resolves([
+				{
+					name: "CarbonaraDapp"
+				}
+			]);
 			instance.verify(trs, sender, callback);
 
-			setTimeout(function(){
+			setTimeout(function() {
 				clock.tick();
-        expect(callback.calledOnce).to.be.true;
-        expect(callback.firstCall.args.length).to.equal(1);
-        expect(callback.firstCall.args[0]).to.equal('Application name already exists: CarbonaraDapp');
-			  done();
-      },0);
+				expect(callback.calledOnce).to.be.true;
+				expect(callback.firstCall.args.length).to.equal(1);
+				expect(callback.firstCall.args[0]).to.equal(
+					"Application name already exists: CarbonaraDapp"
+				);
+				done();
+			}, 0);
 		});
 
 		it("Dapp exists with the same link", function(done) {
-		  db.query.resolves([{
-		  	link:	'https://alessio.rocks/app.zip'
-			}]);
+			db.query.resolves([
+				{
+					link: "https://alessio.rocks/app.zip"
+				}
+			]);
 			instance.verify(trs, sender, callback);
 
-			setTimeout(function(){
+			setTimeout(function() {
 				clock.tick();
-        expect(callback.calledOnce).to.be.true;
-        expect(callback.firstCall.args.length).to.equal(1);
-        expect(callback.firstCall.args[0]).to.equal('Application link already exists: https://alessio.rocks/app.zip');
-			  done();
-      },0);
+				expect(callback.calledOnce).to.be.true;
+				expect(callback.firstCall.args.length).to.equal(1);
+				expect(callback.firstCall.args[0]).to.equal(
+					"Application link already exists: https://alessio.rocks/app.zip"
+				);
+				done();
+			}, 0);
 		});
 
 		it("Dapp exists", function(done) {
-		  db.query.resolves([{
-		  	itExists:	true
-			}]);
+			db.query.resolves([
+				{
+					itExists: true
+				}
+			]);
 			instance.verify(trs, sender, callback);
 
-			setTimeout(function(){
+			setTimeout(function() {
 				clock.tick();
-        expect(callback.calledOnce).to.be.true;
-        expect(callback.firstCall.args.length).to.equal(1);
-        expect(callback.firstCall.args[0]).to.equal('Application already exists');
-			  done();
-      },0);
+				expect(callback.calledOnce).to.be.true;
+				expect(callback.firstCall.args.length).to.equal(1);
+				expect(callback.firstCall.args[0]).to.equal("Application already exists");
+				done();
+			}, 0);
 		});
 
 		it("Success no dapp, db.query resolved, call cb", function(done) {
-		  db.query.resolves([]);
+			db.query.resolves([]);
 			instance.verify(trs, sender, callback);
 
-			setTimeout(function(){
+			setTimeout(function() {
 				clock.tick();
-        expect(callback.calledOnce).to.be.true;
-        expect(callback.firstCall.args.length).to.equal(2);
-        expect(callback.firstCall.args[0]).to.equal(null);
-        expect(callback.firstCall.args[1]).to.equal(trs);
-			  done();
-      },0);
+				expect(callback.calledOnce).to.be.true;
+				expect(callback.firstCall.args.length).to.equal(2);
+				expect(callback.firstCall.args[0]).to.equal(null);
+				expect(callback.firstCall.args[1]).to.equal(trs);
+				done();
+			}, 0);
 		});
 	});
 
@@ -524,26 +531,23 @@ describe("modules/dapp", function() {
 	});
 
 	describe("getBytes", function() {
-
 		var from;
 		// var outputBuffer = Buffer.from([]);
 
-		beforeEach(function(){
+		beforeEach(function() {
 			BufferModule = Dapp.__get__("Buffer");
 			from = sinon.spy(BufferModule, "from");
-
 		});
-		afterEach(function(){
+		afterEach(function() {
 			Dapp.__get__("Buffer").from.restore();
 		});
 
 		it("throws error", function() {
-
 			from.restore();
 			from = sinon.stub(BufferModule, "from");
 			from.callsFake(function() {
-        throw new Error();
-      });
+				throw new Error();
+			});
 
 			var throwError = function() {
 				instance.getBytes(trs);
@@ -559,19 +563,19 @@ describe("modules/dapp", function() {
 			expect(from.getCall(0).args[0]).to.deep.equal([]);
 			expect(from.getCall(1).args.length).to.equal(2);
 			expect(from.getCall(1).args[0]).to.equal(trs.asset.dapp.name);
-			expect(from.getCall(1).args[1]).to.equal('utf8');
+			expect(from.getCall(1).args[1]).to.equal("utf8");
 			expect(from.getCall(2).args.length).to.equal(2);
 			expect(from.getCall(2).args[0]).to.equal(trs.asset.dapp.description);
-			expect(from.getCall(2).args[1]).to.equal('utf8');
+			expect(from.getCall(2).args[1]).to.equal("utf8");
 			expect(from.getCall(3).args.length).to.equal(2);
 			expect(from.getCall(3).args[0]).to.equal(trs.asset.dapp.tags);
-			expect(from.getCall(3).args[1]).to.equal('utf8');
+			expect(from.getCall(3).args[1]).to.equal("utf8");
 			expect(from.getCall(4).args.length).to.equal(2);
 			expect(from.getCall(4).args[0]).to.equal(trs.asset.dapp.link);
-			expect(from.getCall(4).args[1]).to.equal('utf8');
+			expect(from.getCall(4).args[1]).to.equal("utf8");
 			expect(from.getCall(5).args.length).to.equal(2);
 			expect(from.getCall(5).args[0]).to.equal(trs.asset.dapp.icon);
-			expect(from.getCall(5).args[1]).to.equal('utf8');
+			expect(from.getCall(5).args[1]).to.equal("utf8");
 			expect(retVal).to.be.instanceOf(Buffer);
 		});
 	});
@@ -596,29 +600,26 @@ describe("modules/dapp", function() {
 		});
 	});
 
-
 	describe("applyUnconfirmed", function() {
 		var __private;
 
 		beforeEach(function() {
-      __private = Dapp.__get__("__private");
+			__private = Dapp.__get__("__private");
 		});
-		afterEach(function(){
-			Dapp.__set__("__private", __private)
+		afterEach(function() {
+			Dapp.__set__("__private", __private);
 		});
 
 		it("returns error Application name already exists", function() {
-
 			var mockedPrivate = {
-        unconfirmedNames: {
-        	CarbonaraDapp: true
+				unconfirmedNames: {
+					CarbonaraDapp: true
 				}
 			};
 
-      Dapp.__set__("__private", mockedPrivate);
+			Dapp.__set__("__private", mockedPrivate);
 
-
-      instance.applyUnconfirmed(trs, sender, callback);
+			instance.applyUnconfirmed(trs, sender, callback);
 			clock.tick();
 
 			expect(callback.calledOnce).to.be.true;
@@ -629,18 +630,16 @@ describe("modules/dapp", function() {
 		});
 
 		it("Application link already exists", function() {
-
 			var mockedPrivate = {
-        unconfirmedNames: {},
-        unconfirmedLinks: {
-        	"https://alessio.rocks/app.zip": true
+				unconfirmedNames: {},
+				unconfirmedLinks: {
+					"https://alessio.rocks/app.zip": true
 				}
 			};
 
-      Dapp.__set__("__private", mockedPrivate);
+			Dapp.__set__("__private", mockedPrivate);
 
-
-      instance.applyUnconfirmed(trs, sender, callback);
+			instance.applyUnconfirmed(trs, sender, callback);
 			clock.tick();
 
 			expect(callback.calledOnce).to.be.true;
@@ -651,29 +650,28 @@ describe("modules/dapp", function() {
 		});
 
 		it("success", function() {
-
-      var mockedPrivate = {
-        unconfirmedNames: {
-        	CarbonaraDapp: true
+			var mockedPrivate = {
+				unconfirmedNames: {
+					CarbonaraDapp: true
 				},
-        unconfirmedLinks: {
-        	"https://alessio.rocks/app.zip": true
+				unconfirmedLinks: {
+					"https://alessio.rocks/app.zip": true
 				}
-      };
-      var expectedPrivate = {
-        unconfirmedNames: {},
-        unconfirmedLinks: {}
-      };
+			};
+			var expectedPrivate = {
+				unconfirmedNames: {},
+				unconfirmedLinks: {}
+			};
 
-      Dapp.__set__("__private", mockedPrivate);
+			Dapp.__set__("__private", mockedPrivate);
 
-      instance.undoUnconfirmed(trs, sender, callback);
-      clock.tick();
-      var innerPrivate = Dapp.__get__("__private");
+			instance.undoUnconfirmed(trs, sender, callback);
+			clock.tick();
+			var innerPrivate = Dapp.__get__("__private");
 
-      expect(callback.calledOnce).to.be.true;
-      expect(callback.firstCall.args.length).to.deep.equal(0);
-      expect(innerPrivate).to.deep.equal(expectedPrivate);
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.firstCall.args.length).to.deep.equal(0);
+			expect(innerPrivate).to.deep.equal(expectedPrivate);
 		});
 	});
 
@@ -681,59 +679,57 @@ describe("modules/dapp", function() {
 		var modules, expectedMerge;
 
 		it("calls diff.reverse and account.merge", function() {
-      var private = Dapp.__get__("__private");
-      var mockedPrivate = {
-        unconfirmedNames: {
-
-				},
-        unconfirmedLinks: {}
-			}
+			var private = Dapp.__get__("__private");
+			var mockedPrivate = {
+				unconfirmedNames: {},
+				unconfirmedLinks: {}
+			};
 		});
 	});
 
 	describe("schema", function() {
 		it("it's correct", function() {
 			expect(instance.schema).to.deep.equal({
-        id: 'DApp',
-        type: 'object',
-        properties: {
-          category: {
-            type: 'integer',
-            minimum: 0,
-            maximum: 8
-          },
-          name: {
-            type: 'string',
-            minLength: 1,
-            maxLength: 32
-          },
-          description: {
-            type: 'string',
-            minLength: 0,
-            maxLength: 160
-          },
-          tags: {
-            type: 'string',
-            minLength: 0,
-            maxLength: 160
-          },
-          type: {
-            type: 'integer',
-            minimum: 0
-          },
-          link: {
-            type: 'string',
-            minLength: 0,
-            maxLength: 2000
-          },
-          icon: {
-            type: 'string',
-            minLength: 0,
-            maxLength: 2000
-          }
-        },
-        required: ['type', 'name', 'category']
-      });
+				id: "DApp",
+				type: "object",
+				properties: {
+					category: {
+						type: "integer",
+						minimum: 0,
+						maximum: 8
+					},
+					name: {
+						type: "string",
+						minLength: 1,
+						maxLength: 32
+					},
+					description: {
+						type: "string",
+						minLength: 0,
+						maxLength: 160
+					},
+					tags: {
+						type: "string",
+						minLength: 0,
+						maxLength: 160
+					},
+					type: {
+						type: "integer",
+						minimum: 0
+					},
+					link: {
+						type: "string",
+						minLength: 0,
+						maxLength: 2000
+					},
+					icon: {
+						type: "string",
+						minLength: 0,
+						maxLength: 2000
+					}
+				},
+				required: ["type", "name", "category"]
+			});
 		});
 	});
 
@@ -770,7 +766,9 @@ describe("modules/dapp", function() {
 			expect(instance.objectNormalize(trs)).to.deep.equal(trs);
 			expect(library.schema.validate.calledOnce).to.be.true;
 			expect(library.schema.validate.getCall(0).args.length).to.equal(2);
-			expect(library.schema.validate.getCall(0).args[0]).to.deep.equal(trs.asset.dapp);
+			expect(library.schema.validate.getCall(0).args[0]).to.deep.equal(
+				trs.asset.dapp
+			);
 			expect(library.schema.validate.getCall(0).args[1]).to.equal(instance.schema);
 
 			done();
@@ -800,14 +798,14 @@ describe("modules/dapp", function() {
 			};
 			var expectedResult = {
 				dapp: {
-          name: raw.dapp_name,
-          description: raw.dapp_description,
-          tags: raw.dapp_tags,
-          type: raw.dapp_type,
-          link: raw.dapp_link,
-          category: raw.dapp_category,
-          icon: raw.dapp_icon
-        }
+					name: raw.dapp_name,
+					description: raw.dapp_description,
+					tags: raw.dapp_tags,
+					type: raw.dapp_type,
+					link: raw.dapp_link,
+					category: raw.dapp_category,
+					icon: raw.dapp_icon
+				}
 			};
 
 			var retVal = instance.dbRead(raw);
@@ -827,14 +825,14 @@ describe("modules/dapp", function() {
 	describe("dbFields", function() {
 		it("it's correct", function() {
 			expect(instance.dbFields).to.deep.equal([
-        'type',
-        'name',
-        'description',
-        'tags',
-        'link',
-        'category',
-        'icon',
-        'transactionId'
+				"type",
+				"name",
+				"description",
+				"tags",
+				"link",
+				"category",
+				"icon",
+				"transactionId"
 			]);
 		});
 	});
@@ -842,18 +840,18 @@ describe("modules/dapp", function() {
 	describe("dbSave", function() {
 		it("returns correct query", function() {
 			expect(instance.dbSave(trs)).to.deep.equal({
-        table: instance.dbTable,
-        fields: instance.dbFields,
-        values: {
-          type: trs.asset.dapp.type,
-          name: trs.asset.dapp.name,
-          description: trs.asset.dapp.description || null,
-          tags: trs.asset.dapp.tags || null,
-          link: trs.asset.dapp.link || null,
-          icon: trs.asset.dapp.icon || null,
-          category: trs.asset.dapp.category,
-          transactionId: trs.id
-        }
+				table: instance.dbTable,
+				fields: instance.dbFields,
+				values: {
+					type: trs.asset.dapp.type,
+					name: trs.asset.dapp.name,
+					description: trs.asset.dapp.description || null,
+					tags: trs.asset.dapp.tags || null,
+					link: trs.asset.dapp.link || null,
+					icon: trs.asset.dapp.icon || null,
+					category: trs.asset.dapp.category,
+					transactionId: trs.id
+				}
 			});
 		});
 	});
@@ -865,9 +863,7 @@ describe("modules/dapp", function() {
 
 			expect(network.io.sockets.emit.calledOnce).to.be.true;
 			expect(network.io.sockets.emit.firstCall.args.length).to.equal(2);
-			expect(network.io.sockets.emit.firstCall.args[0]).to.equal(
-				"dapps/change"
-			);
+			expect(network.io.sockets.emit.firstCall.args[0]).to.equal("dapps/change");
 			expect(network.io.sockets.emit.firstCall.args[1]).to.deep.equal({});
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.firstCall.args.length).to.equal(0);
@@ -884,7 +880,7 @@ describe("modules/dapp", function() {
 
 		it("returns false sender.multisignature not valid array", function() {
 			var sender = {
-				multisignatures: [1,2,3]
+				multisignatures: [1, 2, 3]
 			};
 			trs.signatures = [1, 2, 3];
 			var retVal = instance.ready(trs, sender);
