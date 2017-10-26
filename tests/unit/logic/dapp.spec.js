@@ -171,46 +171,12 @@ describe("modules/dapp", function() {
 		var ready, library, Buffer, from, isUri;
 
 		beforeEach(function() {
-			var fullArray = [
-				1,
-				2,
-				3,
-				4,
-				5,
-				6,
-				7,
-				8,
-				9,
-				1,
-				2,
-				3,
-				4,
-				5,
-				6,
-				7,
-				8,
-				9,
-				1,
-				2,
-				3,
-				4,
-				5,
-				6,
-				7,
-				8,
-				9,
-				1,
-				2,
-				3,
-				4,
-				5
-			]; // length 32
 			sender = {
 				multisignatures: false
 			};
 			ready = sinon.stub(instance, "ready").returns(true);
 			Buffer = Dapp.__get__("Buffer");
-			from = sinon.stub(Buffer, "from").returns(fullArray);
+			from = sinon.stub(Buffer, "from").returns([]);
 			Dapp.__set__("Buffer", Buffer);
 			isUri = sinon.spy(valid_url, "isUri");
 		});
