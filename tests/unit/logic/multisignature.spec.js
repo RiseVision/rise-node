@@ -27,7 +27,13 @@ describe("modules/multisignature", function() {
 
 	beforeEach(function() {
 		schema = {};
-		network = {};
+		network = {
+			io: {
+				sockets: {
+					emit: sinon.stub()
+				}
+			}
+		};
 		transaction = {};
 		logger = {
 			debug: sinon.stub(),
@@ -223,8 +229,8 @@ describe("modules/multisignature", function() {
 		});
 
 		it("returns 'Invalid transaction asset'", function() {
-		  var tempTrs = {};
-      Object.assign(tempTrs, trs);
+			var tempTrs = {};
+			Object.assign(tempTrs, trs);
 			delete tempTrs.asset.multisignature;
 			instance.verify(tempTrs, sender, callback);
 			clock.tick();
@@ -241,8 +247,8 @@ describe("modules/multisignature", function() {
 		});
 
 		it("returns 'Invalid multisignature keysgroup'", function() {
-      var tempTrs = {};
-      Object.assign(tempTrs, trs);
+			var tempTrs = {};
+			Object.assign(tempTrs, trs);
 			delete tempTrs.asset.multisignature.keysgroup;
 			instance.verify(trs, sender, callback);
 			clock.tick();
@@ -889,8 +895,8 @@ describe("modules/multisignature", function() {
 		it("success keysgroup array split", function(done) {
 			var raw = {
 				m_keysgroup: "carbonara",
-        m_min: 10,
-        m_lifetime: 10
+				m_min: 10,
+				m_lifetime: 10
 			};
 			var expectedResult = {
 				multisignature: {
@@ -910,12 +916,12 @@ describe("modules/multisignature", function() {
 		it("success keysgroup array empty", function(done) {
 			var raw = {
 				m_keysgroup: 123,
-        m_min: 10,
-        m_lifetime: 10
+				m_min: 10,
+				m_lifetime: 10
 			};
 			var expectedResult = {
 				multisignature: {
-          keysgroup: [],
+					keysgroup: [],
 					min: raw.m_min,
 					lifetime: raw.m_lifetime
 				}
@@ -929,61 +935,103 @@ describe("modules/multisignature", function() {
 		});
 	});
 
-  describe("dbTable", function() {
-    it("it's correct", function() {
-      expect(instance.dbTable).to.deep.equal('multisignatures');
-    });
-  });
+	describe("dbTable", function() {
+		it("it's correct", function() {
+			expect(instance.dbTable).to.deep.equal("multisignatures");
+		});
+	});
 
-  describe("dbFields", function() {
-    it("it's correct", function() {
-      expect(instance.dbFields).to.deep.equal([
-        'min',
-        'lifetime',
-        'keysgroup',
-        'transactionId'
-      ]);
-    });
-  });
+	describe("dbFields", function() {
+		it("it's correct", function() {
+			expect(instance.dbFields).to.deep.equal([
+				"min",
+				"lifetime",
+				"keysgroup",
+				"transactionId"
+			]);
+		});
+	});
 
-  describe("dbSave", function() {
-    it("returns correct query", function() {
-      expect(instance.dbSave(trs)).to.deep.equal({
-        table: "multisignatures",
-        fields: [
-          'min',
-          'lifetime',
-          'keysgroup',
-          'transactionId'
-        ],
-        values: {
-          min: trs.asset.multisignature.min,
-          lifetime: trs.asset.multisignature.lifetime,
-          keysgroup: trs.asset.multisignature.keysgroup.join(','),
-          transactionId: trs.id
-        }
-      });
-    });
-  });
+	describe("dbSave", function() {
+		it("returns correct query", function() {
+			expect(instance.dbSave(trs)).to.deep.equal({
+				table: "multisignatures",
+				fields: ["min", "lifetime", "keysgroup", "transactionId"],
+				values: {
+					min: trs.asset.multisignature.min,
+					lifetime: trs.asset.multisignature.lifetime,
+					keysgroup: trs.asset.multisignature.keysgroup.join(","),
+					transactionId: trs.id
+				}
+			});
+		});
+	});
 
-  describe("dbSave", function() {
-    it("returns correct query", function() {
-      expect(instance.dbSave(trs)).to.deep.equal({
-        table: "multisignatures",
-        fields: [
-          'min',
-          'lifetime',
-          'keysgroup',
-          'transactionId'
-        ],
-        values: {
-          min: trs.asset.multisignature.min,
-          lifetime: trs.asset.multisignature.lifetime,
-          keysgroup: trs.asset.multisignature.keysgroup.join(','),
-          transactionId: trs.id
-        }
-      });
-    });
-  });
+	describe("afterSave", function() {
+		it("sockets.emit called and called cb", function() {
+			instance.afterSave(trs, callback);
+			clock.tick();
 
+			expect(network.io.sockets.emit.calledOnce).to.be.true;
+			expect(network.io.sockets.emit.firstCall.args.length).to.equal(2);
+			expect(network.io.sockets.emit.firstCall.args[0]).to.equal(
+				"multisignatures/change"
+			);
+			expect(network.io.sockets.emit.firstCall.args[1]).to.deep.equal(trs);
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.firstCall.args.length).to.equal(0);
+		});
+	});
+
+	describe("ready", function() {
+		it("returns false with no signatures", function() {
+			trs.signatures = "not an array";
+			var retVal = instance.ready(trs, sender);
+
+			expect(retVal).to.equal(false);
+		});
+
+		it("returns false sender.multisignature not valid array", function() {
+			var sender = {
+				multisignatures: 123
+			};
+			trs.signatures = [1, 2, 3];
+			var retVal = instance.ready(trs, sender);
+
+			expect(retVal).to.equal(false);
+		});
+
+		it("returns true sender.multisignature not valid array", function() {
+			var sender = {
+				multisignatures: []
+			};
+			trs.signatures = [];
+			trs.asset.multisignature.keysgroup = [];
+			var retVal = instance.ready(trs, sender);
+
+			expect(retVal).to.equal(true);
+		});
+
+		it("returns false when signatures >= multimin", function() {
+			var sender = {
+				multisignatures: [1],
+				multimin: 10
+			};
+			trs.signatures = [1, 2, 3];
+			var retVal = instance.ready(trs, sender);
+
+			expect(retVal).to.equal(false);
+		});
+
+		it("returns true when signatures >= multimin", function() {
+			var sender = {
+				multisignatures: [1],
+				multimin: 1
+			};
+			trs.signatures = [1, 2, 3];
+			var retVal = instance.ready(trs, sender);
+
+			expect(retVal).to.equal(true);
+		});
+	});
 });
