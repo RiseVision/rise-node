@@ -5,13 +5,13 @@
  * - 0: Official
  * - 1: Education
  * - 2: Entertainment
- * - 3:	Finance
+ * - 3: Finance
  * - 4: Games
- * - 5:	Networking
- * - 6:	Science
+ * - 5: Networking
+ * - 6: Science
  * - 7: Social
- * - 8:	Utilities
- * - 9:	Miscellaneous
+ * - 8: Utilities
+ * - 9: Miscellaneous
  */
 module.exports = {
 	Official: 0,
