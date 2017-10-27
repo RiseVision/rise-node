@@ -183,8 +183,8 @@ describe("modules/multisignature", function() {
 			verifySignature = sinon
 				.stub(library.logic.transaction, "verifySignature")
 				.returns(true);
-      var returnBuff = new Buffer('00000000000000000000000000000000');
-      Buff = Multisignature.__get__("Buffer");
+			var returnBuff = new Buffer("00000000000000000000000000000000");
+			Buff = Multisignature.__get__("Buffer");
 			from = sinon.stub(Buff, "from").returns(returnBuff);
 			Multisignature.__set__("Buffer", Buff);
 		});
