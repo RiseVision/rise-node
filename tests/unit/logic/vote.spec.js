@@ -340,11 +340,16 @@ describe('logic/vote', function () {
 
 		beforeEach(function () {
 			vote = new Vote();
-			mergeStub = sinon
-				.stub(vote.scope.account, 'merge')
-				.callsFake(function (address, block, cb) {
-					setImmediate(cb);
-				});
+      vote.scope = {
+        account: {
+          merge: function(){}
+        }
+      };
+      mergeStub = sinon
+        .stub(vote.scope.account, 'merge')
+        .callsFake(function (address, block, cb) {
+          setImmediate(cb);
+        });
 			checkConfirmedDelegatesStub = sinon
 				.stub(vote, 'checkConfirmedDelegates')
 				.callsFake(function (trs, seriesCb) {
@@ -353,9 +358,9 @@ describe('logic/vote', function () {
 		});
 
 		afterEach(function () {
-			mergeStub.restore();
 			checkConfirmedDelegatesStub.restore();
-			calcSpy.reset();
+			calcSpy.restore();
+      mergeStub.restore();
 		});
 
 		it('should call to callback', function () {
@@ -373,8 +378,8 @@ describe('logic/vote', function () {
 			clock.runAll();
 			expect(checkConfirmedDelegatesStub.calledOnce).to.be.true;
 			expect(checkConfirmedDelegatesStub.args[0][0]).to.deep.equal(trs);
-			expect(mergeStub.calledOnce).to.be.true;
-			expect(mergeStub.args[0][0]).to.equal(sender.address);
+			expect(vote.scope.account.merge.calledOnce).to.be.true;
+			expect(vote.scope.account.merge.args[0][0]).to.equal(sender.address);
 			expect(calcSpy.calledOnce).to.be.true;
 			expect(callback.calledOnce).to.be.true;
 		});
@@ -386,6 +391,11 @@ describe('logic/vote', function () {
 		beforeEach(function () {
 			schema = new zSchema();
 			vote = new Vote(logger, schema);
+			vote.scope = {
+				account: {
+					merge: function(){}
+				}
+			};
 			mergeStub = sinon
 				.stub(vote.scope.account, 'merge')
 				.callsFake(function (address, block, cb) {
@@ -468,6 +478,11 @@ describe('logic/vote', function () {
 
 		beforeEach(function () {
 			vote = new Vote();
+      vote.scope = {
+        account: {
+          merge: function(){}
+        }
+      }
 			checkUnconfirmedDelegatesStub = sinon
 				.stub(vote, 'checkUnconfirmedDelegates')
 				.callsFake(function (trs, cb) {
@@ -511,6 +526,11 @@ describe('logic/vote', function () {
 		beforeEach(function () {
 			schema = new zSchema();
 			vote = new Vote(logger, schema);
+      vote.scope = {
+        account: {
+          merge: function(){}
+        }
+      };
 			mergeStub = sinon
 				.stub(vote.scope.account, 'merge')
 				.callsFake(function (address, block, cb) {
@@ -734,8 +754,10 @@ describe('logic/vote', function () {
 
 		it('Fail 5: If v_votes is not a string', function () {
 			raw = { v_votes: [] };
-			result = vote.dbRead(raw);
-			expect(result).to.equals(null);
+      throwError = function () {
+        vote.dbRead(raw);
+      };
+			expect(throwError).to.throws();
 		});
 
 		it('success', function () {
