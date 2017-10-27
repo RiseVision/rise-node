@@ -169,43 +169,9 @@ describe("modules/multisignature", function() {
 	});
 
 	describe("verify", function() {
-		var ready, library, verifySignature, Buffer, from;
+		var ready, library, verifySignature, Buff, from;
 
 		beforeEach(function() {
-			var fullArray = [
-				1,
-				2,
-				3,
-				4,
-				5,
-				6,
-				7,
-				8,
-				9,
-				1,
-				2,
-				3,
-				4,
-				5,
-				6,
-				7,
-				8,
-				9,
-				1,
-				2,
-				3,
-				4,
-				5,
-				6,
-				7,
-				8,
-				9,
-				1,
-				2,
-				3,
-				4,
-				5
-			]; // length 32
 			sender = {
 				multisignatures: false
 			};
@@ -217,9 +183,10 @@ describe("modules/multisignature", function() {
 			verifySignature = sinon
 				.stub(library.logic.transaction, "verifySignature")
 				.returns(true);
-			Buffer = Multisignature.__get__("Buffer");
-			from = sinon.stub(Buffer, "from").returns(fullArray);
-			Multisignature.__set__("Buffer", Buffer);
+      var returnBuff = new Buffer('00000000000000000000000000000000');
+      Buff = Multisignature.__get__("Buffer");
+			from = sinon.stub(Buff, "from").returns(returnBuff);
+			Multisignature.__set__("Buffer", Buff);
 		});
 		afterEach(function() {
 			ready.restore();
