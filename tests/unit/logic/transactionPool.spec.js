@@ -4,7 +4,7 @@ var sinon = require('sinon');
 var rewire = require('rewire');
 var TransactionPool = rewire('../../../logic/transactionPool');
 var transactionTypes = require('../../../helpers/transactionTypes');
-var jobsQueue = require('../../../helpers/jobsQueue');
+var jobsQueue = require('../../../helpers/jobsQueue').default;
 var constants = require('../../../helpers/constants').default;
 
 describe('logic/transactionPool', function () {

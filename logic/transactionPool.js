@@ -3,7 +3,7 @@
 var async = require('async');
 var config = require('../config.json');
 var constants = require('../helpers/constants').default;
-var jobsQueue = require('../helpers/jobsQueue.js');
+var jobsQueue = require('../helpers/jobsQueue').default;
 var transactionTypes = require('../helpers/transactionTypes.js');
 
 // Private fields
