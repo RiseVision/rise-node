@@ -1,6 +1,6 @@
 'use strict';
 
-var Router = require('../../helpers/router');
+var Router = require('../../helpers/router').default;
 var httpApi = require('../../helpers/httpApi');
 /**
  * Binds api with modules and creates common url.
