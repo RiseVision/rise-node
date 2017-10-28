@@ -19,7 +19,7 @@ var rmdir = require('rimraf');
 var Router = require('../helpers/router.js');
 var Sandbox = require('lisk-sandbox');
 var sandboxHelper = require('../helpers/sandbox.js');
-var schema = require('../schema/dapps.js');
+var schema = require('../schema/dapps').default;
 var sql = require('../sql/dapps.js');
 var transactionTypes = require('../helpers/transactionTypes.js');
 
