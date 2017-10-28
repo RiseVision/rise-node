@@ -1,7 +1,7 @@
 'use strict';
 
 var _ = require('lodash');
-var bignum = require('../helpers/bignum.js');
+var bignum = require('../helpers/bignum').default;
 var ByteBuffer = require('bytebuffer');
 var constants = require('../helpers/constants').default;
 var crypto = require('crypto');

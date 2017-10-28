@@ -5,6 +5,7 @@
     "emitDecoratorMetadata"       : false,
     "experimentalDecorators"      : true,
     "sourceMap"                   : false,
+    "allowJs"                     : true,
     "moduleResolution"            : "node",
     "allowSyntheticDefaultImports": true,
     "lib"                         : [

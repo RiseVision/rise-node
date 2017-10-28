@@ -1,7 +1,7 @@
 'use strict';
 
 var async = require('async');
-var bignum = require('./bignum');
+var bignum = require('./bignum').default;
 var fs = require('fs');
 var path = require('path');
 

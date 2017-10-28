@@ -2,7 +2,7 @@
 
 var _ = require('lodash');
 var async = require('async');
-var bignum = require('../helpers/bignum.js');
+var bignum = require('../helpers/bignum').default;
 var BlockReward = require('../logic/blockReward.js');
 var checkIpInList = require('../helpers/checkIpInList.js');
 var constants = require('../helpers/constants').default;

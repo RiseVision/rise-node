@@ -1,6 +1,6 @@
 'use strict';
 
-var bignum = require('./bignum');
+var bignum = require('./bignum').default;
 var slots = require('./slots');
 var exceptions = require('./exceptions');
 

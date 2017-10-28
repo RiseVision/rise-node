@@ -1,6 +1,6 @@
 'use strict';
 
-var bignum = require('../helpers/bignum.js');
+var bignum = require('../helpers/bignum').default;
 var BlockReward = require('../logic/blockReward.js');
 var constants = require('../helpers/constants').default;
 var crypto = require('crypto');
