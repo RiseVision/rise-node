@@ -6,7 +6,7 @@ var extend = require('extend');
 var genesisblock = null;
 var Multisignature = require('../logic/multisignature.js');
 var sandboxHelper = require('../helpers/sandbox.js');
-var schema = require('../schema/multisignatures.js');
+var schema = require('../schema/multisignatures').default;
 var sql = require('../sql/multisignatures.js');
 var transactionTypes = require('../helpers/transactionTypes.js');
 

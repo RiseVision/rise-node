@@ -3,7 +3,7 @@
 var _ = require('lodash');
 var async = require('async');
 var Peer = require('../logic/peer.js');
-var schema = require('../schema/peers.js');
+var schema = require('../schema/peers').default;
 
 // Private fields
 var __private = {};
