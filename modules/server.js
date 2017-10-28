@@ -2,7 +2,7 @@
 
 var async = require('async');
 var path = require('path');
-var sandboxHelper = require('../helpers/sandbox.js');
+var sandboxHelper = require('../helpers/sandbox');
 
 // Private fields
 var modules, self, __private = {}, shared = {};

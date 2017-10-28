@@ -4,7 +4,7 @@ var async = require('async');
 var extend = require('extend');
 var jsonSql = require('json-sql')();
 jsonSql.setDialect('postgresql');
-var sandboxHelper = require('../helpers/sandbox.js');
+var sandboxHelper = require('../helpers/sandbox');
 
 // Private fields
 var library, self, __private = {}, shared = {};

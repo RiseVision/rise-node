@@ -6,7 +6,7 @@ var constants = require('../helpers/constants').default;
 var crypto = require('crypto');
 var extend = require('extend');
 var schema = require('../schema/accounts').default;
-var sandboxHelper = require('../helpers/sandbox.js');
+var sandboxHelper = require('../helpers/sandbox');
 var transactionTypes = require('../helpers/transactionTypes.js');
 var Vote = require('../logic/vote.js');
 

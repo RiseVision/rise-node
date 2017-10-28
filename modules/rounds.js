@@ -3,7 +3,7 @@
 var async = require('async');
 var constants = require('../helpers/constants').default;
 var Round = require('../logic/round.js');
-var sandboxHelper = require('../helpers/sandbox.js');
+var sandboxHelper = require('../helpers/sandbox');
 var slots = require('../helpers/slots.js');
 var sql = require('../sql/rounds.js');
 

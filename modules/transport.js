@@ -11,7 +11,7 @@ var extend = require('extend');
 var ip = require('ip');
 var popsicle = require('popsicle');
 var schema = require('../schema/transport').default;
-var sandboxHelper = require('../helpers/sandbox.js');
+var sandboxHelper = require('../helpers/sandbox');
 var sql = require('../sql/transport.js');
 var zlib = require('zlib');
 
