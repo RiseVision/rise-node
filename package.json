@@ -5,8 +5,8 @@
   "scripts": {
     "start": "node app.js",
     "test-integration": "./node_modules/.bin/grunt tests/integration --verbose",
-    "test-unit": "NODE_ENV=test mocha './tests/**/*.spec.js'",
-    "test-unit-cover": "NODE_ENV=test istanbul cover _mocha --  './tests/**/*.spec.js' && istanbul-coveralls ",
+    "test-unit": "NODE_ENV=test mocha --bail --require ts-node/register './tests/**/*.spec.js'",
+    "test-unit-cover": "NODE_ENV=test istanbul cover _mocha --  --require ts-node/register './tests/**/*.spec.js' && istanbul-coveralls ",
     "jenkins": "./node_modules/.bin/grunt jenkins --verbose",
     "eslint": "./node_modules/.bin/grunt eslint-nofix --verbose",
     "fetchCoverage": "./node_modules/.bin/grunt exec:fetchCoverage --verbose",

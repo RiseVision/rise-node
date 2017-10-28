@@ -7,7 +7,7 @@ var path = require("path");
 var rootDir = path.join(__dirname, "../../..");
 
 var BlockReward = rewire(path.join(rootDir, "logic/blockReward"));
-var constants = require(path.join(rootDir, "helpers/constants"));
+var constants = require(path.join(rootDir, "helpers/constants")).default;
 
 describe("logic/blockReward", function() {
 	var instance;

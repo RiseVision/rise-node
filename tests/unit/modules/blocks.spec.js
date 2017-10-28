@@ -6,7 +6,7 @@ var path = require("path");
 
 var rootDir = path.join(__dirname, "../../..");
 
-var constants = require(path.join(rootDir, "helpers/constants"));
+var constants = require(path.join(rootDir, "helpers/constants")).default;
 var blocksModule = rewire(path.join(rootDir, "modules/blocks"));
 
 describe("modules/blocks", function() {

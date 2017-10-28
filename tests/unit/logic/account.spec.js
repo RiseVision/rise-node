@@ -8,7 +8,7 @@ jsonSql.setDialect("postgresql");
 
 var rootDir = path.join(__dirname, "../../..");
 
-var constants = require(path.join(rootDir, "helpers/constants"));
+var constants = require(path.join(rootDir, "helpers/constants")).default;
 var Account = rewire(path.join(rootDir, "logic/account"));
 
 var table = "mem_accounts";

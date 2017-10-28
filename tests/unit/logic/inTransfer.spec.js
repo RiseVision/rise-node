@@ -7,7 +7,7 @@ var path = require("path");
 var rootDir = path.join(__dirname, "../../..");
 
 var InTransfer = rewire(path.join(rootDir, "logic/inTransfer"));
-var constants = require(path.join(rootDir, "helpers/constants"));
+var constants = require(path.join(rootDir, "helpers/constants")).default;
 
 describe("logic/inTransfer", function() {
 

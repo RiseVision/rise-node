@@ -10,8 +10,8 @@ var rootDir = path.join(__dirname, "../../..");
 var Accounts = rewire(path.join(rootDir, "modules/accounts"));
 var Vote = require(path.join(rootDir, "logic/vote"));
 var ed = require(path.join(rootDir, "helpers/ed"));
-var constants = require(path.join(rootDir, "helpers/constants"));
-var schema = require(path.join(rootDir, "schema/accounts"));
+var constants = require(path.join(rootDir, "helpers/constants")).default;
+var schema = require(path.join(rootDir, "schema/accounts")).default;
 var transactionTypes = require(path.join(rootDir, "helpers/transactionTypes"));
 var sandboxHelper = require(path.join(rootDir, "helpers/sandbox"));
 
