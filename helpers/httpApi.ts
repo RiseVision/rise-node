@@ -1,4 +1,5 @@
 import {Application, NextFunction, Request, Response, Router} from 'express';
+import {ILogger} from '../logger';
 import {checkIpInList} from './checkIpInList';
 
 export const middleware = {
@@ -114,7 +115,7 @@ export const middleware = {
    * If it's a miss, forward the request but cache the response if it's a success.
    * TODO: Describe logger and cache
    */
-  useCache(logger, cache, req: Request, res: Response, next: NextFunction) {
+  useCache(logger: ILogger, cache, req: Request, res: Response, next: NextFunction) {
     if (!cache.isReady()) {
       return next();
     }

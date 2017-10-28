@@ -31,7 +31,7 @@ var fs = require('fs');
 var genesisblock = require('./genesisBlock.json');
 var git = require('./helpers/git');
 var https = require('https');
-var Logger = require('./logger.js');
+var Logger = require('./logger').default;
 var packageJson = require('./package.json');
 var path = require('path');
 var program = require('commander');
@@ -141,17 +141,17 @@ var config = {
 		cache: './modules/cache.js'
 	},
 	api: {
-		accounts: { http: './api/http/accounts.js' },
-		blocks: { http: './api/http/blocks.js' },
-		dapps: { http: './api/http/dapps.js' },
-		delegates: { http: './api/http/delegates.js' },
-		loader: { http: './api/http/loader.js' },
-		multisignatures: { http: './api/http/multisignatures.js' },
-		peers: { http: './api/http/peers.js' },
-		server: { http: './api/http/server.js' },
-		signatures: { http: './api/http/signatures.js' },
-		transactions: { http: './api/http/transactions.js' },
-		transport: { http: './api/http/transport.js' }
+		accounts: { http: './api/http/accounts' },
+		blocks: { http: './api/http/blocks' },
+		dapps: { http: './api/http/dapps' },
+		delegates: { http: './api/http/delegates' },
+		loader: { http: './api/http/loader' },
+		multisignatures: { http: './api/http/multisignatures' },
+		peers: { http: './api/http/peers' },
+		server: { http: './api/http/server' },
+		signatures: { http: './api/http/signatures' },
+		transactions: { http: './api/http/transactions' },
+		transport: { http: './api/http/transport' }
 	}
 };
 
@@ -167,7 +167,7 @@ var logger = new Logger({ echo: appConfig.consoleLogLevel, errorLevel: appConfig
 try {
 	lastCommit = git.getLastCommit();
 } catch (err) {
-	logger.debug('Cannot get last git commit', err.message);
+	logger.debug('Cannot get last git commit', err.menonssage);
 }
 
 /**
@@ -543,8 +543,8 @@ d.run(function () {
 				Object.keys(config.api[moduleName]).forEach(function (protocol) {
 					var apiEndpointPath = config.api[moduleName][protocol];
 					try {
-						var ApiEndpoint = require(apiEndpointPath);
-						new ApiEndpoint(scope.modules[moduleName], scope.network.app, scope.logger, scope.modules.cache);
+						var apiEndpointInitializer = require(apiEndpointPath).default;
+						apiEndpointInitializer(scope.modules[moduleName], scope.network.app, scope.logger, scope.modules.cache);
 					} catch (e) {
 						scope.logger.error('Unable to load API endpoint for ' + moduleName + ' of ' + protocol, e);
 					}
