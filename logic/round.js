@@ -1,7 +1,7 @@
 'use strict';
 
 var pgp = require('pg-promise');
-var RoundChanges = require('../helpers/RoundChanges.js');
+var RoundChanges = require('../helpers/RoundChanges').RoundChanges;
 var sql = require('../sql/rounds.js');
 
 /**
