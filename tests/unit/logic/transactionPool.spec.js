@@ -5,7 +5,7 @@ var rewire = require('rewire');
 var TransactionPool = rewire('../../../logic/transactionPool');
 var transactionTypes = require('../../../helpers/transactionTypes');
 var jobsQueue = require('../../../helpers/jobsQueue');
-var constants = require('../../../helpers/constants.js');
+var constants = require('../../../helpers/constants').default;
 
 describe('logic/transactionPool', function () {
 	var __private, jobsQueueStub, logger;

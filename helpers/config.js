@@ -4,7 +4,7 @@ var fs = require('fs');
 var path = require('path');
 var z_schema = require('./z_schema.js');
 var configSchema = require('../schema/config.js');
-var constants = require('../helpers/constants.js');
+var constants = require('./constants').default;
 
 /**
  * Loads config.json file

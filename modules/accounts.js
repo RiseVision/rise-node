@@ -2,10 +2,10 @@
 
 var bignum = require('../helpers/bignum.js');
 var BlockReward = require('../logic/blockReward.js');
-var constants = require('../helpers/constants.js');
+var constants = require('../helpers/constants').default;
 var crypto = require('crypto');
 var extend = require('extend');
-var schema = require('../schema/accounts.js');
+var schema = require('../schema/accounts').default;
 var sandboxHelper = require('../helpers/sandbox.js');
 var transactionTypes = require('../helpers/transactionTypes.js');
 var Vote = require('../logic/vote.js');

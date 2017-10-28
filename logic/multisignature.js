@@ -2,7 +2,7 @@
 
 var async = require('async');
 var ByteBuffer = require('bytebuffer');
-var constants = require('../helpers/constants.js');
+var constants = require('../helpers/constants').default;
 var Diff = require('../helpers/diff.js');
 var exceptions = require('../helpers/exceptions.js');
 

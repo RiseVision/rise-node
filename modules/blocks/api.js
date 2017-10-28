@@ -2,9 +2,9 @@
 
 var _ = require('lodash');
 var BlockReward = require('../../logic/blockReward.js');
-var constants = require('../../helpers/constants.js');
+var constants = require('../../helpers/constants').default;
 var OrderBy = require('../../helpers/orderBy.js');
-var schema = require('../../schema/blocks.js');
+var schema = require('../../schema/blocks').default;
 var sql = require('../../sql/blocks.js');
 
 var modules, library, self, __private = {};

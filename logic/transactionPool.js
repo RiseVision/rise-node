@@ -2,7 +2,7 @@
 
 var async = require('async');
 var config = require('../config.json');
-var constants = require('../helpers/constants.js');
+var constants = require('../helpers/constants').default;
 var jobsQueue = require('../helpers/jobsQueue.js');
 var transactionTypes = require('../helpers/transactionTypes.js');
 

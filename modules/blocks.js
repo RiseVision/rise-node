@@ -1,6 +1,6 @@
 'use strict';
 
-var constants     = require('../helpers/constants.js');
+var constants     = require('../helpers/constants').default;
 var sandboxHelper = require('../helpers/sandbox.js');
 // Submodules
 var blocksAPI     = require('./blocks/api');

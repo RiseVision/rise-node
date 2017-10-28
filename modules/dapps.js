@@ -1,6 +1,6 @@
 var _ = require('lodash');
 var async = require('async');
-var constants = require('../helpers/constants.js');
+var constants = require('../helpers/constants');
 var crypto = require('crypto');
 var DApp = require('../logic/dapp.js');
 var dappCategories = require('../helpers/dappCategories.js');

@@ -6,7 +6,7 @@ var os = require('os');
 var sandboxHelper = require('../helpers/sandbox.js');
 var semver = require('semver');
 var sql = require('../sql/system.js');
-var constants = require('../helpers/constants.js');
+var constants = require('../helpers/constants').default;
 // Private fields
 var modules, library, self, __private = {}, shared = {};
 

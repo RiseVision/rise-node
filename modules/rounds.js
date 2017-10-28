@@ -1,7 +1,7 @@
 'use strict';
 
 var async = require('async');
-var constants = require('../helpers/constants.js');
+var constants = require('../helpers/constants').default;
 var Round = require('../logic/round.js');
 var sandboxHelper = require('../helpers/sandbox.js');
 var slots = require('../helpers/slots.js');

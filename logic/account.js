@@ -5,7 +5,7 @@ var pgp = require('pg-promise');
 var path = require('path');
 var jsonSql = require('json-sql')();
 jsonSql.setDialect('postgresql');
-var constants = require('../helpers/constants.js');
+var constants = require('../helpers/constants').default;
 var slots = require('../helpers/slots.js');
 
 // Private fields

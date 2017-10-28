@@ -1,7 +1,7 @@
 'use strict';
 
 var _ = require('lodash');
-var constants = require('../../helpers/constants.js');
+var constants = require('../../helpers/constants').default;
 var sql = require('../../sql/blocks.js');
 var transactionTypes = require('../../helpers/transactionTypes.js');
 

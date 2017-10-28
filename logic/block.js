@@ -5,7 +5,7 @@ var crypto = require('crypto');
 var bignum = require('../helpers/bignum.js');
 var ByteBuffer = require('bytebuffer');
 var BlockReward = require('../logic/blockReward.js');
-var constants = require('../helpers/constants.js');
+var constants = require('../helpers/constants').default;
 
 // Private fields
 var __private = {};
@@ -372,8 +372,8 @@ Block.prototype.schema = {
 			minimum: 0
 		}
 	},
-	required: ['blockSignature', 'generatorPublicKey', 'numberOfTransactions', 'payloadHash', 'payloadLength', 'timestamp', 'totalAmount', 'totalFee', 'reward', 'transactions', 'version'],
-  "additionalProperties": false
+	required: ['blockSignature', 'generatorPublicKey', 'numberOfTransactions', 'payloadHash', 'payloadLength', 'timestamp', 'totalAmount', 'totalFee', 'reward', 'transactions', 'version']
+  // "additionalProperties": false
 };
 
 /**

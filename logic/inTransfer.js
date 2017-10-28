@@ -1,6 +1,6 @@
 'use strict';
 
-var constants = require('../helpers/constants.js');
+var constants = require('../helpers/constants').default;
 var sql = require('../sql/dapps.js');
 
 // Private fields

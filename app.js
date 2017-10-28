@@ -22,7 +22,7 @@
  * CLI options available.
  * @module app
  */
-
+require('ts-node').register();
 var async = require('async');
 var checkIpInList = require('./helpers/checkIpInList.js');
 var extend = require('extend');

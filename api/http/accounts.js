@@ -2,7 +2,7 @@
 
 var Router = require('../../helpers/router');
 var httpApi = require('../../helpers/httpApi');
-var schema = require('../../schema/accounts.js');
+var schema = require('../../schema/accounts').default;
 
 /**
  * Binds api with modules and creates common url.

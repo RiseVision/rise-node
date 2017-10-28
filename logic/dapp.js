@@ -1,7 +1,7 @@
 'use strict';
 
 var ByteBuffer = require('bytebuffer');
-var constants = require('../helpers/constants.js');
+var constants = require('../helpers/constants').default;
 var dappCategories = require('../helpers/dappCategories.js');
 var sql = require('../sql/dapps.js');
 var valid_url = require('valid-url');

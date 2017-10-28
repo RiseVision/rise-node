@@ -1,6 +1,6 @@
 'use strict';
 
-var constants = require('../helpers/constants.js');
+var constants = require('../helpers/constants').default;
 
 // Private fields
 var modules;

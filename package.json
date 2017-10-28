@@ -80,6 +80,9 @@
     "moment": "=2.17.1",
     "rewire": "^2.5.2",
     "sinon": "=2.3.0",
-    "supertest": "=3.0.0"
+    "supertest": "=3.0.0",
+    "ts-node": "^3.3.0",
+    "tslint": "^5.8.0",
+    "typescript": "^2.5.3"
   }
 }
