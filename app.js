@@ -273,7 +273,7 @@ d.run(function () {
 				app.use('/coverage', im.createHandler());
 			}
 
-			require('./helpers/request-limiter')(app, appConfig);
+			require('./helpers/request-limiter').default(app, appConfig);
 
 			app.use(compression({ level: 9 }));
 			app.use(cors());
