@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import configSchema from '../schema/config';
 import constants from './constants';
-import * as Z_schema from './z_schema.js';
+import Z_schema from './z_schema';
 
 // TODO: define return type.
 /**

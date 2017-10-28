@@ -1,4 +1,4 @@
-import ip from 'ip';
+import * as ip from 'ip';
 import _ from 'lodash';
 
 /**

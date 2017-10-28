@@ -38,7 +38,7 @@ var program = require('commander');
 var httpApi = require('./helpers/httpApi.js');
 var Sequence = require('./helpers/sequence.js');
 var util = require('util');
-var z_schema = require('./helpers/z_schema.js');
+var z_schema = require('./helpers/z_schema').default;
 
 process.stdin.resume();
 
