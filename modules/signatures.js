@@ -4,7 +4,7 @@ var async = require('async');
 var constants = require('../helpers/constants').default;
 var crypto = require('crypto');
 var sandboxHelper = require('../helpers/sandbox.js');
-var schema = require('../schema/signatures.js');
+var schema = require('../schema/signatures').default;
 var Signature = require('../logic/signature.js');
 var transactionTypes = require('../helpers/transactionTypes.js');
 
