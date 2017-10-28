@@ -443,7 +443,7 @@ d.run(function () {
 		 * @param {function} cb
 		 */
 		cache: function (cb) {
-			var cache = require('./helpers/cache.js');
+			var cache = require('./helpers/cache').default;
 			cache.connect(config.cacheEnabled, config.cache, logger, cb);
 		},
 		/**
