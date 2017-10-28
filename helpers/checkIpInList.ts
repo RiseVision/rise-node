@@ -1,5 +1,5 @@
 import * as ip from 'ip';
-import _ from 'lodash';
+import * as _ from 'lodash';
 
 /**
  * Checks if ip address is in list (e.g. whitelist, blacklist).

@@ -29,13 +29,13 @@ var extend = require('extend');
 var fs = require('fs');
 
 var genesisblock = require('./genesisBlock.json');
-var git = require('./helpers/git.js');
+var git = require('./helpers/git');
 var https = require('https');
 var Logger = require('./logger.js');
 var packageJson = require('./package.json');
 var path = require('path');
 var program = require('commander');
-var httpApi = require('./helpers/httpApi.js');
+var httpApi = require('./helpers/httpApi');
 var Sequence = require('./helpers/sequence.js');
 var util = require('util');
 var z_schema = require('./helpers/z_schema').default;
