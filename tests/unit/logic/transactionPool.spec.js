@@ -3,7 +3,7 @@ var expect = chai.expect;
 var sinon = require('sinon');
 var rewire = require('rewire');
 var TransactionPool = rewire('../../../logic/transactionPool');
-var transactionTypes = require('../../../helpers/transactionTypes');
+var transactionTypes = require('../../../helpers/transactionTypes').TransactionType;
 var jobsQueue = require('../../../helpers/jobsQueue').default;
 var constants = require('../../../helpers/constants').default;
 

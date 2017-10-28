@@ -5,10 +5,10 @@ var expect = chai.expect;
 var sinon = require('sinon');
 var rewire = require('rewire');
 var Vote = rewire('../../../logic/vote');
-var zSchema = require('../../../helpers/z_schema');
-var constants = require('../../../helpers/constants.js');
+var zSchema = require('../../../helpers/z_schema').default;
+var constants = require('../../../helpers/constants').default;
 var crypto = require('crypto');
-var Diff = require('../../../helpers/diff.js');
+var Diff = require('../../../helpers/diff');
 
 describe('logic/vote', function () {
 	var callback,

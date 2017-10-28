@@ -8,7 +8,7 @@ var sql = require("../../../sql/dapps.js");
 
 var rootDir = path.join(__dirname, "../../..");
 
-var constants = require(path.join(rootDir, "helpers/constants"));
+var constants = require(path.join(rootDir, "helpers/constants")).default;
 var exceptions = require(path.join(rootDir, "helpers/exceptions"));
 var Dapp = rewire(path.join(rootDir, "logic/dapp"));
 
