@@ -405,7 +405,7 @@ d.run(function () {
 		}],
 
 		ed: function (cb) {
-			cb(null, require('./helpers/ed.js'));
+			cb(null, require('./helpers/ed'));
 		},
 
 		bus: ['ed', function (scope, cb) {
