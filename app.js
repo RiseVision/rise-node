@@ -36,7 +36,7 @@ var packageJson = require('./package.json');
 var path = require('path');
 var program = require('commander');
 var httpApi = require('./helpers/httpApi');
-var Sequence = require('./helpers/sequence.js');
+var Sequence = require('./helpers/sequence').default;
 var util = require('util');
 var z_schema = require('./helpers/z_schema').default;
 
