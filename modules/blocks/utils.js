@@ -3,7 +3,7 @@
 var _ = require('lodash');
 var constants = require('../../helpers/constants').default;
 var sql = require('../../sql/blocks.js');
-var transactionTypes = require('../../helpers/transactionTypes.js');
+var transactionTypes = require('../../helpers/transactionTypes').TransactionType;
 
 var modules, library, self, __private = {};
 

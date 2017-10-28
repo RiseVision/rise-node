@@ -15,7 +15,7 @@ var sandboxHelper = require('../helpers/sandbox');
 var schema = require('../schema/delegates').default;
 var slots = require('../helpers/slots').default;
 var sql = require('../sql/delegates.js');
-var transactionTypes = require('../helpers/transactionTypes.js');
+var transactionTypes = require('../helpers/transactionTypes').TransactionType;
 
 // Private fields
 var modules, library, self, __private = {}, shared = {};

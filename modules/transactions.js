@@ -10,7 +10,7 @@ var sandboxHelper = require('../helpers/sandbox');
 var schema = require('../schema/transactions').default;
 var sql = require('../sql/transactions.js');
 var TransactionPool = require('../logic/transactionPool.js');
-var transactionTypes = require('../helpers/transactionTypes.js');
+var transactionTypes = require('../helpers/transactionTypes').TransactionType;
 var Transfer = require('../logic/transfer.js');
 
 // Private fields

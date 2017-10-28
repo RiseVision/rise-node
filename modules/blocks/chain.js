@@ -5,7 +5,7 @@ var async = require('async');
 var crypto = require('crypto');
 var Inserts = require('../../helpers/inserts.js');
 var sql = require('../../sql/blocks.js');
-var transactionTypes = require('../../helpers/transactionTypes.js');
+var transactionTypes = require('../../helpers/transactionTypes').TransactionType;
 
 var modules, library, self, __private = {};
 

@@ -21,7 +21,7 @@ var Sandbox = require('lisk-sandbox');
 var sandboxHelper = require('../helpers/sandbox');
 var schema = require('../schema/dapps').default;
 var sql = require('../sql/dapps.js');
-var transactionTypes = require('../helpers/transactionTypes.js');
+var transactionTypes = require('../helpers/transactionTypes').TransactionType;
 
 // Private fields
 var modules, library, self, __private = {}, shared = {};

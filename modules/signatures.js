@@ -6,7 +6,7 @@ var crypto = require('crypto');
 var sandboxHelper = require('../helpers/sandbox');
 var schema = require('../schema/signatures').default;
 var Signature = require('../logic/signature.js');
-var transactionTypes = require('../helpers/transactionTypes.js');
+var transactionTypes = require('../helpers/transactionTypes').TransactionType;
 
 // Private fields
 var modules, library, self, __private = {}, shared = {};

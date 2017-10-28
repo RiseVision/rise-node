@@ -7,7 +7,7 @@ var crypto = require('crypto');
 var extend = require('extend');
 var schema = require('../schema/accounts').default;
 var sandboxHelper = require('../helpers/sandbox');
-var transactionTypes = require('../helpers/transactionTypes.js');
+var transactionTypes = require('../helpers/transactionTypes').TransactionType;
 var Vote = require('../logic/vote.js');
 
 // Private fields
