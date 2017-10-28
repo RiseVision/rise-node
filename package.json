@@ -56,6 +56,8 @@
     "z-schema": "=3.18.2"
   },
   "devDependencies": {
+    "@types/ip": "0.0.30",
+    "@types/lodash": "^4.14.80",
     "@types/node": "^8.0.47",
     "@types/redis": "^2.8.1",
     "bitcore-mnemonic": "=1.1.1",

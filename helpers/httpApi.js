@@ -8,7 +8,7 @@
  */
 
 var extend = require('extend');
-var checkIpInList = require('./checkIpInList');
+var checkIpInList = require('./checkIpInList').checkIpInList;
 
 /**
  * @namespace middleware

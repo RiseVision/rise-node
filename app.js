@@ -24,7 +24,7 @@
  */
 require('ts-node').register();
 var async = require('async');
-var checkIpInList = require('./helpers/checkIpInList.js');
+var checkIpInList = require('./helpers/checkIpInList').checkIpInList;
 var extend = require('extend');
 var fs = require('fs');
 
@@ -443,7 +443,7 @@ d.run(function () {
 		 * @param {function} cb
 		 */
 		cache: function (cb) {
-			var cache = require('./helpers/cache').default;
+			var cache = require('./helpers/cache');
 			cache.connect(config.cacheEnabled, config.cache, logger, cb);
 		},
 		/**
