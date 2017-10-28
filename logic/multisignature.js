@@ -3,7 +3,7 @@
 var async = require('async');
 var ByteBuffer = require('bytebuffer');
 var constants = require('../helpers/constants').default;
-var Diff = require('../helpers/diff.js');
+var Diff = require('../helpers/diff');
 var exceptions = require('../helpers/exceptions.js');
 
 // Private fields

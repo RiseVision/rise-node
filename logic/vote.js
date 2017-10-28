@@ -3,7 +3,7 @@
 var async = require('async');
 var constants = require('../helpers/constants').default;
 var exceptions = require('../helpers/exceptions.js');
-var Diff = require('../helpers/diff.js');
+var Diff = require('../helpers/diff');
 var _ = require('lodash');
 
 // Private fields
