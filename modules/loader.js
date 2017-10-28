@@ -5,7 +5,7 @@ var constants = require('../helpers/constants').default;
 var jobsQueue = require('../helpers/jobsQueue.js');
 var ip = require('ip');
 var sandboxHelper = require('../helpers/sandbox.js');
-var schema = require('../schema/loader.js');
+var schema = require('../schema/loader').default;
 var sql = require('../sql/loader.js');
 
 require('colors');
