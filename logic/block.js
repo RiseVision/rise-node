@@ -1,6 +1,6 @@
 'use strict';
 
-var slots = require('../helpers/slots.js');
+var slots = require('../helpers/slots').default;
 var crypto = require('crypto');
 var bignum = require('../helpers/bignum').default;
 var ByteBuffer = require('bytebuffer');

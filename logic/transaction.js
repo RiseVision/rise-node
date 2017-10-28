@@ -7,7 +7,7 @@ var constants = require('../helpers/constants').default;
 var crypto = require('crypto');
 var exceptions = require('../helpers/exceptions.js');
 var extend = require('extend');
-var slots = require('../helpers/slots.js');
+var slots = require('../helpers/slots').default;
 var sql = require('../sql/transactions.js');
 
 // Private fields

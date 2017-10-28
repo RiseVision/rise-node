@@ -4,7 +4,7 @@ var async = require('async');
 var constants = require('../helpers/constants').default;
 var Round = require('../logic/round.js');
 var sandboxHelper = require('../helpers/sandbox');
-var slots = require('../helpers/slots.js');
+var slots = require('../helpers/slots').default;
 var sql = require('../sql/rounds.js');
 
 // Private fields

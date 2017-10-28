@@ -4,7 +4,7 @@ var async = require('async');
 var BlockReward = require('../../logic/blockReward.js');
 var constants = require('../../helpers/constants').default;
 var crypto = require('crypto');
-var slots = require('../../helpers/slots.js');
+var slots = require('../../helpers/slots').default;
 var sql = require('../../sql/blocks.js');
 var exceptions = require('../../helpers/exceptions.js');
 

@@ -4,7 +4,7 @@ var _ = require('lodash');
 var async = require('async');
 var constants = require('../../helpers/constants').default;
 var schema = require('../../schema/blocks').default;
-var slots = require('../../helpers/slots.js');
+var slots = require('../../helpers/slots').default;
 var sql = require('../../sql/blocks.js');
 
 var modules, library, self, __private = {};

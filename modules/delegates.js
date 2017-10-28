@@ -13,7 +13,7 @@ var extend = require('extend');
 var OrderBy = require('../helpers/orderBy').default;
 var sandboxHelper = require('../helpers/sandbox');
 var schema = require('../schema/delegates').default;
-var slots = require('../helpers/slots.js');
+var slots = require('../helpers/slots').default;
 var sql = require('../sql/delegates.js');
 var transactionTypes = require('../helpers/transactionTypes.js');
 

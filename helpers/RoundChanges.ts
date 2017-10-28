@@ -1,5 +1,5 @@
 import Bignum from './bignum';
-import * as slots from './slots';
+import slots from './slots';
 
 export class RoundChanges {
   private roundFees: number;
