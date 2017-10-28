@@ -4,9 +4,11 @@ var sinon = require('sinon');
 var rewire = require('rewire');
 var Transaction = rewire('../../../logic/transaction');
 var transactionTypes = require('../../../helpers/transactionTypes');
-var Vote = require('../../../logic/vote.js');
-var slots = require('../../../helpers/slots.js');
+var Vote = require('../../../logic/vote');
+var Delegate = require('../../../logic/delegate');
+var slots = require('../../../helpers/slots');
 var ed = require('../../../helpers/ed');
+var bignum = require('../../../helpers/bignum.js');
 var crypto = require('crypto');
 var senderHash = crypto
 	.createHash('sha256')
@@ -174,4 +176,210 @@ describe('logic/transaction', function () {
 			expect(calculateFeeStub.args[0][1]).to.deep.equal(data.sender);
 		});
 	});
+
+	describe('attachAssetType', function () {
+		var transactionInstance, instance;
+
+		beforeEach(function () {
+			transactionInstance = new Transaction();
+			instance = {
+				create: function () {},
+				getBytes: function () {},
+				calculateFee: function () {},
+				verify: function () {},
+				objectNormalize: function () {},
+				dbRead: function () {},
+				apply: function () {},
+				undo: function () {},
+				applyUnconfirmed: function () {},
+				undoUnconfirmed: function () {},
+				ready: function () {},
+				process: function () {}
+			};
+		});
+
+		it('If instance is false', function () {
+			expect(function () {
+				transactionInstance.attachAssetType(true);
+			}).to.throw('Invalid instance interface');
+		});
+
+		it('create() is not a function', function () {
+			delete instance.create;
+			expect(function () {
+				transactionInstance.attachAssetType(true, instance);
+			}).to.throw('Invalid instance interface');
+		});
+
+		it('getBytes() is not a function', function () {
+			delete instance.getBytes;
+			expect(function () {
+				transactionInstance.attachAssetType(true, instance);
+			}).to.throw('Invalid instance interface');
+		});
+
+		it('calculateFee() is not a function', function () {
+			delete instance.calculateFee;
+			expect(function () {
+				transactionInstance.attachAssetType(true, instance);
+			}).to.throw('Invalid instance interface');
+		});
+
+		it('verify() is not a function', function () {
+			delete instance.verify;
+			expect(function () {
+				transactionInstance.attachAssetType(true, instance);
+			}).to.throw('Invalid instance interface');
+		});
+
+		it('objectNormalize() is not a function', function () {
+			delete instance.objectNormalize;
+			expect(function () {
+				transactionInstance.attachAssetType(true, instance);
+			}).to.throw('Invalid instance interface');
+		});
+
+		it('dbRead() is not a function', function () {
+			delete instance.dbRead;
+			expect(function () {
+				transactionInstance.attachAssetType(true, instance);
+			}).to.throw('Invalid instance interface');
+		});
+
+		it('apply() is not a function', function () {
+			delete instance.apply;
+			expect(function () {
+				transactionInstance.attachAssetType(true, instance);
+			}).to.throw('Invalid instance interface');
+		});
+
+		it('undo() is not a function', function () {
+			delete instance.undo;
+			expect(function () {
+				transactionInstance.attachAssetType(true, instance);
+			}).to.throw('Invalid instance interface');
+		});
+
+		it('applyUnconfirmed() is not a function', function () {
+			delete instance.applyUnconfirmed;
+			expect(function () {
+				transactionInstance.attachAssetType(true, instance);
+			}).to.throw('Invalid instance interface');
+		});
+
+		it('undoUnconfirmed() is not a function', function () {
+			delete instance.undoUnconfirmed;
+			expect(function () {
+				transactionInstance.attachAssetType(true, instance);
+			}).to.throw('Invalid instance interface');
+		});
+
+		it('ready() is not a function', function () {
+			delete instance.ready;
+			expect(function () {
+				transactionInstance.attachAssetType(true, instance);
+			}).to.throw('Invalid instance interface');
+		});
+
+		it('process() is not a function', function () {
+			delete instance.process;
+			expect(function () {
+				transactionInstance.attachAssetType(true, instance);
+			}).to.throw('Invalid instance interface');
+		});
+
+		it('success', function () {
+			var delegateInstance = transactionInstance.attachAssetType(
+				transactionTypes.DELEGATE,
+				new Delegate()
+			);
+			expect(delegateInstance).to.be.instanceof(Delegate);
+		});
+	});
+
+	describe('sign()', function () {
+		var getHashSpy, signSpy, validTransaction;
+
+		it('success', function () {
+			validTransaction = {
+				id: '16140284222734558289',
+				rowId: 133,
+				blockId: '1462190441827192029',
+				type: transactionTypes.VOTE,
+				timestamp: 33363661,
+				senderPublicKey:
+					'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f',
+				senderId: '16313739661670634666R',
+				recipientId: '5649948960790668770R',
+				amount: 8067474861277,
+				fee: 10000000,
+				signature:
+					'7ff5f0ee2c4d4c83d6980a46efe31befca41f7aa8cda5f7b4c2850e4942d923af058561a6a3312005ddee566244346bdbccf004bc8e2c84e653f9825c20be008',
+				signSignature: null,
+				requesterPublicKey: null,
+				signatures: null,
+				asset: {}
+			};
+			instance = new Transaction(null, ed);
+			instance.attachAssetType(transactionTypes.VOTE, new Vote());
+			getHashSpy = sinon.spy(instance, 'getHash');
+			signSpy = sinon.spy(instance.scope.ed, 'sign');
+			var result = instance.sign(senderKeypair, validTransaction);
+			expect(getHashSpy.calledOnce).to.be.true;
+			expect(getHashSpy.args[0][0]).to.deep.equal(validTransaction);
+			expect(signSpy.calledOnce).to.be.true;
+			expect(signSpy.args[0][0]).to.be.instanceof(Buffer);
+			expect(signSpy.args[0][1]).to.deep.equal(senderKeypair);
+			expect(result).to.be.string;
+			getHashSpy.restore();
+			signSpy.restore();
+		});
+
+		describe('multisign()', function () {
+			var getBytesSpy, createHashSpy, signSpy, validTransaction;
+
+			it('success', function () {
+				validTransaction = {
+					id: '16140284222734558289',
+					rowId: 133,
+					blockId: '1462190441827192029',
+					type: transactionTypes.VOTE,
+					timestamp: 33363661,
+					senderPublicKey:
+						'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f',
+					senderId: '16313739661670634666R',
+					recipientId: '5649948960790668770R',
+					amount: 8067474861277,
+					fee: 10000000,
+					signature:
+						'7ff5f0ee2c4d4c83d6980a46efe31befca41f7aa8cda5f7b4c2850e4942d923af058561a6a3312005ddee566244346bdbccf004bc8e2c84e653f9825c20be008',
+					signSignature: null,
+					requesterPublicKey: null,
+					signatures: null,
+					asset: {}
+				};
+				instance = new Transaction(null, ed);
+				instance.attachAssetType(transactionTypes.VOTE, new Vote());
+				getBytesSpy = sinon.spy(instance, 'getBytes');
+				createHashSpy = sinon.spy(crypto, 'createHash');
+				signSpy = sinon.spy(instance.scope.ed, 'sign');
+				var result = instance.multisign(senderKeypair, validTransaction);
+				expect(getBytesSpy.calledOnce).to.be.true;
+				expect(getBytesSpy.args[0][0]).to.deep.equal(validTransaction);
+				expect(getBytesSpy.args[0][1]).to.be.true;
+				expect(getBytesSpy.args[0][2]).to.be.true;
+				expect(createHashSpy.calledOnce).to.be.true;
+				expect(createHashSpy.args[0][0]).to.equal('sha256');
+				expect(signSpy.calledOnce).to.be.true;
+				expect(signSpy.args[0][0]).to.be.instanceof(Buffer);
+				expect(signSpy.args[0][1]).to.deep.equal(senderKeypair);
+				expect(result).to.be.string;
+				getBytesSpy.restore();
+				createHashSpy.restore();
+				signSpy.restore();
+			});
+		});
+	});
+
+	describe('getId', function () {});
 });
