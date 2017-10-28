@@ -69,7 +69,7 @@ program
  * @property {object} - The default list of configuration options. Can be updated by CLI.
  * @default 'config.json'
  */
-var appConfig = require('./helpers/config.js')(program.config);
+var appConfig = require('./helpers/config').default(program.config);
 
 if (program.port) {
 	appConfig.port = program.port;
