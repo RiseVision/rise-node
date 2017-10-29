@@ -28,6 +28,7 @@
     "express-rate-limit": "=2.6.0",
     "extend": "=3.0.0",
     "ip": "=1.1.5",
+    "is-empty": "^1.2.0",
     "json-schema": "=0.2.3",
     "json-sql": "LiskHQ/json-sql#27e1ed1",
     "lisk-sandbox": "LiskHQ/lisk-sandbox#162da38",
