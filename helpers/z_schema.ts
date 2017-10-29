@@ -48,30 +48,14 @@ z_schema.registerFormat('username', (str: string) => {
   return /^[a-z0-9!@$&_.]+$/ig.test(str);
 });
 
-z_schema.registerFormat('hex', (str: string) => {
-  try {
-    // FIXME: a non 'hex' string does not throw! See https://github.com/nodejs/node/issues/3770
-    Buffer.from(str, 'hex');
-  } catch (e) {
-    return false;
-  }
-
-  return true;
-});
+z_schema.registerFormat('hex', (str: string) => /^[a-f0-9]*$/i.test(str));
 
 z_schema.registerFormat('publicKey', (str: string) => {
   if (str.length === 0) {
     return true;
   }
 
-  try {
-    // FIXME: see previous fixme!
-    const publicKey = Buffer.from(str, 'hex');
-
-    return publicKey.length === 32;
-  } catch (e) {
-    return false;
-  }
+  return /^[a-f0-9]{64}$/i.test(str);
 });
 
 z_schema.registerFormat('csv', (str: string) => {

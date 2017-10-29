@@ -1,5 +1,12 @@
 import {api as sodium} from 'sodium';
 
+// tslint:disable-next-line
+export type Ed = {
+  makeKeypair: (hash: string | Buffer) => IKeypair;
+  sign: (hash: string | Buffer, keypair: IKeypair) => Buffer;
+  verify: (hash: string | Buffer, signature: Buffer, publicKey: Buffer) => boolean
+};
+
 export interface IKeypair {
   publicKey: Buffer;
   privateKey: Buffer;
