@@ -183,16 +183,12 @@ describe("modules/multisignature", function() {
 			verifySignature = sinon
 				.stub(library.logic.transaction, "verifySignature")
 				.returns(true);
-			var returnBuff = new Buffer("00000000000000000000000000000000");
-			Buff = Multisignature.__get__("Buffer");
-			from = sinon.stub(Buff, "from").returns(returnBuff);
-			Multisignature.__set__("Buffer", Buff);
+
 		});
 		afterEach(function() {
 			ready.restore();
 			clock.restore();
 			verifySignature.restore();
-			from.restore();
 		});
 
 		it("returns 'Invalid transaction asset'", function() {
@@ -310,6 +306,7 @@ describe("modules/multisignature", function() {
 		});
 
 		it("catches error Failed to verify signature in multisignature keysgroup'", function() {
+
 			verifySignature.throws();
 			instance.verify(trs, sender, callback);
 			clock.tick();
@@ -320,7 +317,7 @@ describe("modules/multisignature", function() {
 			expect(callback.firstCall.args[0]).to.contain(
 				"Failed to verify signature in multisignature keysgroup"
 			);
-		});
+    });
 
 		it("not valid Failed to verify signature in multisignature keysgroup", function() {
 			verifySignature.returns(false);
@@ -378,7 +375,6 @@ describe("modules/multisignature", function() {
 		});
 
 		it("Invalid public key in multisignature keysgroup", function(done) {
-			from.throws();
 			instance.verify(trs, sender, callback);
 			clock.runAll();
 
@@ -395,6 +391,7 @@ describe("modules/multisignature", function() {
 		});
 
 		it("success", function(done) {
+      trs.asset.multisignature.keysgroup[0] = '+7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0';
 			instance.verify(trs, sender, callback);
 			clock.runAll();
 
@@ -422,25 +419,6 @@ describe("modules/multisignature", function() {
 	});
 
 	describe("getBytes", function() {
-		it("throws error", function() {
-			var Buffer = Multisignature.__get__("Buffer");
-			var from = sinon.stub(Buffer, "from").callsFake(function() {
-				throw new Error();
-			});
-			Multisignature.__set__("Buffer", Buffer);
-
-			var throwError = function() {
-				instance.getBytes(trs);
-			};
-
-			expect(throwError).to.throw();
-			expect(from.calledOnce).to.be.true;
-			expect(from.firstCall.args.length).to.equal(2);
-			expect(from.firstCall.args[0]).to.equal("+929292929");
-			expect(from.firstCall.args[1]).to.equal("utf8");
-
-			Multisignature.__get__("Buffer").from.restore();
-		});
 		it("returns buffer", function() {
 			var retVal = instance.getBytes(trs);
 			expect(retVal).to.be.instanceOf(Buffer);
