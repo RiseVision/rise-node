@@ -730,6 +730,8 @@ Account.prototype.merge = function (address, diff, cb) {
 						}
 					}
 				} else {
+					console.log(trueValue[0]);
+					console.log(typeof(trueValue[0]), Object.prototype.toString.call(trueValue[0]));
 					for (i = 0; i < trueValue.length; i++) {
 						var math = trueValue[i][0];
 						val = null;
@@ -788,6 +790,8 @@ Account.prototype.merge = function (address, diff, cb) {
 
 	var sqles = [];
 
+	console.log(remove);
+	console.log('ciao');
 	if (Object.keys(remove).length) {
 		Object.keys(remove).forEach(function (el) {
 			var sql = jsonSql.build({
@@ -817,6 +821,7 @@ Account.prototype.merge = function (address, diff, cb) {
 			}
 		});
 	}
+
 
 	if (Object.keys(remove_object).length) {
 		Object.keys(remove_object).forEach(function (el) {

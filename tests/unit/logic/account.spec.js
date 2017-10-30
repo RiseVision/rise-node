@@ -9,7 +9,8 @@ jsonSql.setDialect("postgresql");
 var rootDir = path.join(__dirname, "../../..");
 
 var constants = require(path.join(rootDir, "helpers/constants")).default;
-var Account = rewire(path.join(rootDir, "logic/account"));
+// var Account = rewire(path.join(rootDir, "logic/_account.js"));
+var Account = rewire(path.join(rootDir, "logic/account.ts"));
 
 var table = "mem_accounts";
 var model = [
@@ -124,7 +125,7 @@ var model = [
       required: true,
       type: "integer",
       minimum: 0,
-      maximum: constants.totalAMount
+      maximum: constants.totalAmount
     },
     conv: Number,
     expression: '("u_balance")::bigint'
@@ -316,11 +317,10 @@ var model = [
 
 describe("logic/account", function() {
   var clock, scope, pgp, account, accountCallback, callback;
-  var __private = Account.__get__("__private");
   var originalPgp = Account.__get__("pgp");
 
   beforeEach(function() {
-    clock = sinon.useFakeTimers("setImmediate");
+    clock = sinon.useFakeTimers();
     scope = {
       schema: {
         validate: sinon.stub(),
@@ -342,17 +342,19 @@ describe("logic/account", function() {
     pgp = {
       QueryFile: function() {}
     };
-    Account.__set__("setImmediate", setImmediate);
+    //
     Account.__set__("pgp", pgp);
     callback = sinon.stub();
     accountCallback = sinon.stub();
-    new Account(scope.db, scope.schema, scope.library.logger, accountCallback);
-    account = Account.__get__("self");
+    account = new Account.AccountLogic(scope.db, scope.schema, scope.library.logger, accountCallback);
+    // new Account(scope.db, scope.schema, scope.library.logger, accountCallback);
+    // account = Account.__get__("self");
+    // console.log(account);
   });
 
   afterEach(function() {
     clock.restore();
-    Account.__set__("setImmediate", setImmediate);
+    //
     Account.__set__("pgp", originalPgp);
   });
 
@@ -457,7 +459,7 @@ describe("logic/account", function() {
           required: true,
           type: "integer",
           minimum: 0,
-          maximum: undefined
+          maximum: 10999999991000000
         },
         vote: { type: "integer" },
         rate: { type: "integer" },
@@ -550,7 +552,7 @@ describe("logic/account", function() {
       expect(accountCallback.calledOnce).to.be.true;
       expect(accountCallback.getCall(0).args.length).to.equal(2);
       expect(accountCallback.getCall(0).args[0]).to.be.null;
-      expect(accountCallback.getCall(0).args[1]).to.be.instanceof(Account);
+      expect(accountCallback.getCall(0).args[1]).to.be.instanceof(Account.AccountLogic);
     });
   });
 
@@ -599,30 +601,22 @@ describe("logic/account", function() {
       });
     });
 
-    it("sql success", function(done) {
-      clock.restore();
-      Account.__set__("setImmediate", setImmediate);
+    it("sql success", function() {
+      scope.db.query.returns(Promise.resolve());//();
 
-      scope.db.query.resolves();
+      return account.createTables(callback)
+        .then(function() {
+          expect(pgp.QueryFile.calledOnce).to.be.true;
+          expect(pgp.QueryFile.getCall(0).args.length).to.equal(2);
+          expect(pgp.QueryFile.getCall(0).args[0]).to.equal(sqlPath);
+          expect(pgp.QueryFile.getCall(0).args[1]).to.deep.equal({ minify: true });
 
-      account.createTables(callback);
-
-      expect(pgp.QueryFile.calledOnce).to.be.true;
-      expect(pgp.QueryFile.getCall(0).args.length).to.equal(2);
-      expect(pgp.QueryFile.getCall(0).args[0]).to.equal(sqlPath);
-      expect(pgp.QueryFile.getCall(0).args[1]).to.deep.equal({ minify: true });
-
-      expect(scope.db.query.calledOnce).to.be.true;
-      expect(scope.db.query.getCall(0).args.length).to.equal(1);
-      expect(scope.db.query.getCall(0).args[0]).to.be.instanceof(pgp.QueryFile);
-
-      setImmediate(function() {
-        setImmediate(function() {
+          expect(scope.db.query.calledOnce).to.be.true;
+          expect(scope.db.query.getCall(0).args.length).to.equal(1);
+          expect(scope.db.query.getCall(0).args[0]).to.be.instanceof(pgp.QueryFile);
           expect(callback.calledOnce).to.be.true;
           expect(callback.getCall(0).args.length).to.equal(0);
-          done();
         });
-      });
     });
   });
 
@@ -745,23 +739,23 @@ describe("logic/account", function() {
   describe("account.verifyPublicKey", function() {
     it("public key is not a string error", function() {
       var error = "Invalid public key, must be a string";
-
-      expect(account.verifyPublicKey.bind(account, null)).to.throws(error);
+      expect(() => account.verifyPublicKey(null)).to.throw(error);
     });
 
     it("public key is too short error", function() {
       var error = "Invalid public key, must be 64 characters long";
 
-      expect(account.verifyPublicKey.bind(account, "short string")).to.throws(
-        error
-      );
+      expect(() => account.verifyPublicKey('short string')).to.throw(error);
+
     });
 
-    it("success", function() {
-      var publicKey =
-        "29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da";
-
-      expect(account.verifyPublicKey.bind(account, publicKey)).to.not.throws();
+    it("should call through schema hex validation.", function() {
+      scope.schema.validate = sinon.stub().returns(false);
+      var publicKey = '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da';
+      expect(() => account.verifyPublicKey(publicKey)).to.throw('Invalid public key, must be a hex string');
+      expect(scope.schema.validate.calledOnce).is.true;
+      expect(scope.schema.validate.firstCall.args[0]).to.be.eq(publicKey);
+      expect(scope.schema.validate.firstCall.args[1]).to.be.deep.eq({format: 'hex'});
     });
   });
 
@@ -786,12 +780,12 @@ describe("logic/account", function() {
 
     beforeEach(function() {
       sinon.stub(account, "getAll");
-      Account.__set__("setImmediate", setImmediate);
+      //
     });
 
     afterEach(function() {
       account.getAll.restore();
-      Account.__set__("setImmediate", setImmediate);
+      //
     });
 
     it("without fields; getAll error", function() {
@@ -800,44 +794,45 @@ describe("logic/account", function() {
         return field.alias || field.field;
       });
 
-      account.getAll.callsArgWith(2, error, data);
+      account.getAll.returns(Promise.reject(error));
 
-      account.get(filter, callback);
+      return account.get(filter, callback)
+        .then(() => Promise.reject('failure'))
+        .catch(err => expect(err).to.equal(error))
+        .then(() => {
+          expect(account.getAll.calledOnce).to.be.true;
+          expect(account.getAll.getCall(0).args.length).to.equal(2);
+          expect(account.getAll.getCall(0).args[0]).to.equal(filter);
+          expect(account.getAll.getCall(0).args[1]).to.deep.equal(fields);
+        });
 
-      clock.tick();
-
-      expect(account.getAll.calledOnce).to.be.true;
-      expect(account.getAll.getCall(0).args.length).to.equal(3);
-      expect(account.getAll.getCall(0).args[0]).to.equal(filter);
-      expect(account.getAll.getCall(0).args[1]).to.deep.equal(fields);
-      expect(account.getAll.getCall(0).args[2]).to.be.a("function");
-
-      expect(callback.calledOnce).to.be.true;
-      expect(callback.getCall(0).args.length).to.equal(2);
-      expect(callback.getCall(0).args[0]).to.equal(error);
-      expect(callback.getCall(0).args[1]).to.equal(data[0]);
     });
 
     it("with fields; getAll error", function() {
       var error = "error";
       var fields = {};
 
-      account.getAll.callsArgWith(2, error, data);
+      account.getAll.returns(Promise.reject(error));
 
       account.get(filter, fields, callback);
 
       clock.tick();
 
       expect(account.getAll.calledOnce).to.be.true;
-      expect(account.getAll.getCall(0).args.length).to.equal(3);
+      expect(account.getAll.getCall(0).args.length).to.equal(2);
       expect(account.getAll.getCall(0).args[0]).to.equal(filter);
       expect(account.getAll.getCall(0).args[1]).to.equal(fields);
-      expect(account.getAll.getCall(0).args[2]).to.be.a("function");
 
-      expect(callback.calledOnce).to.be.true;
-      expect(callback.getCall(0).args.length).to.equal(2);
-      expect(callback.getCall(0).args[0]).to.equal(error);
-      expect(callback.getCall(0).args[1]).to.equal(data[0]);
+
+      setImmediate(function() {
+        setImmediate(function () {
+          expect(callback.calledOnce).to.be.true;
+          expect(callback.getCall(0).args.length).to.equal(2);
+          expect(callback.getCall(0).args[0]).to.equal(error);
+          expect(callback.getCall(0).args[1]).to.equal(data[0]);
+        });
+      });
+
     });
 
     it("without fields", function() {
@@ -845,43 +840,48 @@ describe("logic/account", function() {
         return field.alias || field.field;
       });
 
-      account.getAll.callsArgWith(2, null, data);
+      account.getAll.returns(Promise.resolve(data));
 
       account.get(filter, callback);
 
       clock.tick();
 
       expect(account.getAll.calledOnce).to.be.true;
-      expect(account.getAll.getCall(0).args.length).to.equal(3);
+      expect(account.getAll.getCall(0).args.length).to.equal(2);
       expect(account.getAll.getCall(0).args[0]).to.equal(filter);
       expect(account.getAll.getCall(0).args[1]).to.deep.equal(fields);
-      expect(account.getAll.getCall(0).args[2]).to.be.a("function");
 
-      expect(callback.calledOnce).to.be.true;
-      expect(callback.getCall(0).args.length).to.equal(2);
-      expect(callback.getCall(0).args[0]).to.equal(null);
-      expect(callback.getCall(0).args[1]).to.equal(data[0]);
+
+      setTimeout(function() {
+        expect(callback.calledOnce).to.be.true;
+
+        expect(callback.getCall(0).args.length).to.equal(2);
+        expect(callback.getCall(0).args[0]).to.equal(null);
+        expect(callback.getCall(0).args[1]).to.equal(data[0]);
+      }, 10);
     });
 
     it("with fields", function() {
       var fields = {};
 
-      account.getAll.callsArgWith(2, null, data);
+      account.getAll.returns(Promise.resolve(data));
 
       account.get(filter, fields, callback);
 
       clock.tick();
 
       expect(account.getAll.calledOnce).to.be.true;
-      expect(account.getAll.getCall(0).args.length).to.equal(3);
+      expect(account.getAll.getCall(0).args.length).to.equal(2);
       expect(account.getAll.getCall(0).args[0]).to.equal(filter);
       expect(account.getAll.getCall(0).args[1]).to.equal(fields);
-      expect(account.getAll.getCall(0).args[2]).to.be.a("function");
 
-      expect(callback.calledOnce).to.be.true;
-      expect(callback.getCall(0).args.length).to.equal(2);
-      expect(callback.getCall(0).args[0]).to.equal(null);
-      expect(callback.getCall(0).args[1]).to.equal(data[0]);
+      setTimeout(function() {
+        expect(callback.calledOnce).to.be.true;
+        expect(callback.getCall(0).args.length).to.equal(2);
+        expect(callback.getCall(0).args[0]).to.equal(null);
+        expect(callback.getCall(0).args[1]).to.equal(data[0]);
+      }, 10);
+
     });
   });
 
@@ -935,7 +935,7 @@ describe("logic/account", function() {
 
     it("without fields; success", function(done) {
       clock.restore();
-      Account.__set__("setImmediate", setImmediate);
+
 
       scope.db.query.resolves(rows);
 
@@ -991,7 +991,7 @@ describe("logic/account", function() {
 
     it("with fields; success", function() {
       clock.restore();
-      Account.__set__("setImmediate", setImmediate);
+
 
       scope.db.query.resolves(rows);
 
@@ -1031,62 +1031,44 @@ describe("logic/account", function() {
       account.verifyPublicKey.restore();
     });
 
-    it("verify throws error", function() {
-      account.verifyPublicKey.throws("error");
+    // it("verify throws error", function() {
+    //   account.verifyPublicKey.throws("error");
+    //
+    //   expect(account.set.bind(account, address, fields, callback)).to.throw();
+    // });
 
-      expect(account.set.bind(account, address, fields, callback)).to.throw();
-    });
-
-    it("error", function(done) {
+    it("error", function() {
       var error = { stack: "error" };
 
       account.verifyPublicKey.returns(true);
       scope.db.none.rejects(error);
 
-      account.set(address, fields, callback);
+      return account.set(address, fields, callback)
+        .then(() => Promise.reject('should have failed'))
+        .catch((err) => expect(err).to.be.deep.eq('Account#set error'))
+        .then(() => {
+          expect(scope.db.none.calledOnce).to.be.true;
+          expect(scope.db.none.getCall(0).args.length).to.equal(2);
+          expect(scope.db.none.getCall(0).args[0]).to.equal(sql);
+          expect(scope.db.none.getCall(0).args[1]).to.deep.equal(values);
+        });
 
-      expect(scope.db.none.calledOnce).to.be.true;
-      expect(scope.db.none.getCall(0).args.length).to.equal(2);
-      expect(scope.db.none.getCall(0).args[0]).to.equal(sql);
-      expect(scope.db.none.getCall(0).args[1]).to.deep.equal(values);
-
-      process.nextTick(function() {
-        expect(scope.library.logger.error.calledOnce).to.be.true;
-        expect(scope.library.logger.error.getCall(0).args.length).to.equal(1);
-        expect(scope.library.logger.error.getCall(0).args[0]).to.equal(
-          error.stack
-        );
-
-        clock.tick();
-
-        expect(callback.calledOnce).to.be.true;
-        expect(callback.getCall(0).args.length).to.equal(1);
-        expect(callback.getCall(0).args[0]).to.equal("Account#set error");
-        done();
-      });
     });
 
-    it("success", function(done) {
-      clock.restore();
-      Account.__set__("setImmediate", setImmediate);
-
+    it("success", function() {
       account.verifyPublicKey.returns(true);
       scope.db.none.resolves();
 
-      account.set(address, fields, callback);
-
-      expect(scope.db.none.calledOnce).to.be.true;
-      expect(scope.db.none.getCall(0).args.length).to.equal(2);
-      expect(scope.db.none.getCall(0).args[0]).to.equal(sql);
-      expect(scope.db.none.getCall(0).args[1]).to.deep.equal(values);
-
-      setImmediate(function() {
-        setImmediate(function() {
+      return account.set(address, fields, callback)
+        .then(() => {
+          expect(scope.db.none.calledOnce).to.be.true;
+          expect(scope.db.none.getCall(0).args.length).to.equal(2);
+          expect(scope.db.none.getCall(0).args[0]).to.equal(sql);
+          expect(scope.db.none.getCall(0).args[1]).to.deep.equal(values);
           expect(callback.calledOnce).to.be.true;
-          expect(callback.getCall(0).args.length).to.equal(0);
-          done();
+
+          expect(callback.getCall(0).args[1]).to.not.exist;
         });
-      });
     });
   });
 
@@ -1140,18 +1122,20 @@ describe("logic/account", function() {
     });
 
     it("no queries", function() {
-      Account.__set__("pgp", originalPgp);
+      scope.db.query.returns(Promise.resolve([]));
+      return account.merge(address, {}, callback)
+        .then(() => {
+          // console.log(scope.db.none.firstCall.args);
+          expect(scope.db.none.called).to.be.false;
+          // expect(callback.called).to.be.false;
 
-      account.merge(address, {}, callback);
+          expect(callback.calledOnce).to.be.true;
+          expect(callback.getCall(0).args.length).to.equal(2);
+          expect(callback.getCall(0).args[0]).to.be.null;
+          expect(callback.getCall(0).args[1]).to.be.undefined;
+        });
 
-      expect(scope.db.none.called).to.be.false;
-      expect(callback.called).to.be.false;
 
-      clock.tick();
-
-      expect(callback.calledOnce).to.be.true;
-      expect(callback.getCall(0).args.length).to.equal(1);
-      expect(callback.getCall(0).args[0]).to.be.undefined;
     });
 
     it("no callback", function() {
@@ -1162,55 +1146,47 @@ describe("logic/account", function() {
       expect(testQueries).to.equal(queries);
     });
 
-    it("callback error", function(done) {
+    it("callback error", function() {
       var error = { stack: "error" };
       Account.__set__("pgp", originalPgp);
       scope.db.none.rejects(error);
 
-      account.merge(address, diff, callback);
+      return account.merge(address, diff, callback)
+        .then(() => Promise.reject('Should have failed'))
+        .catch((err) => expect(err).to.be.eq('Account#merge error'))
+        .then(() => {
+          expect(scope.db.none.calledOnce).to.be.true;
+          expect(scope.db.none.getCall(0).args.length).to.equal(1);
+          expect(scope.db.none.getCall(0).args[0]).to.equal(queries);
+          expect(scope.library.logger.error.calledOnce).to.be.true;
+          expect(scope.library.logger.error.getCall(0).args.length).to.equal(1);
+          expect(scope.library.logger.error.getCall(0).args[0]).to.equal(
+            error.stack
+          );
 
-      expect(scope.db.none.calledOnce).to.be.true;
-      expect(scope.db.none.getCall(0).args.length).to.equal(1);
-      expect(scope.db.none.getCall(0).args[0]).to.equal(queries);
-
-      process.nextTick(function() {
-        expect(scope.library.logger.error.calledOnce).to.be.true;
-        expect(scope.library.logger.error.getCall(0).args.length).to.equal(1);
-        expect(scope.library.logger.error.getCall(0).args[0]).to.equal(
-          error.stack
-        );
-
-        clock.tick();
-
-        expect(callback.calledOnce).to.be.true;
-        expect(callback.getCall(0).args.length).to.equal(1);
-        expect(callback.getCall(0).args[0]).to.equal("Account#merge error");
-        done();
-      });
-    });
-
-    it("callback success", function(done) {
-      clock.restore();
-      Account.__set__("setImmediate", setImmediate);
-
-      Account.__set__("pgp", originalPgp);
-      scope.db.none.resolves();
-
-      account.merge(address, diff, callback);
-
-      expect(scope.db.none.calledOnce).to.be.true;
-      expect(scope.db.none.getCall(0).args.length).to.equal(1);
-      expect(scope.db.none.getCall(0).args[0]).to.equal(queries);
-
-      setImmediate(function() {
-        setImmediate(function() {
           expect(callback.calledOnce).to.be.true;
           expect(callback.getCall(0).args.length).to.equal(1);
-          expect(callback.getCall(0).args[0]).to.be.undefined;
-          done();
+          expect(callback.getCall(0).args[0]).to.equal("Account#merge error");
         });
-      });
     });
+
+    it("callback success", function() {
+      clock.restore();
+      Account.__set__("pgp", originalPgp);
+      scope.db.none.returns(Promise.resolve());
+      scope.db.query.returns(Promise.resolve([]));
+      return account.merge(address, diff, callback)
+        .then(() => {
+          expect(scope.db.none.calledOnce).to.be.true;
+          expect(scope.db.none.getCall(0).args.length).to.equal(1);
+          expect(scope.db.none.getCall(0).args[0]).to.equal(queries);
+          expect(callback.calledOnce).to.be.true;
+          expect(callback.getCall(0).args.length).to.equal(2);
+          expect(callback.getCall(0).args[0]).to.be.null;
+          expect(callback.getCall(0).args[1]).to.be.undefined;
+        });
+    });
+
   });
 
   describe("account.remove", function() {
@@ -1247,7 +1223,7 @@ describe("logic/account", function() {
 
     it("promise resolves", function() {
       clock.restore();
-      Account.__set__("setImmediate", setImmediate);
+
 
       scope.db.none.resolves();
 

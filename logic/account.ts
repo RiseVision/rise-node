@@ -2,14 +2,15 @@ import * as jsonSqlCreator from 'json-sql';
 import * as path from 'path';
 import * as pgp from 'pg-promise';
 
-import {catchToLoggerAndRemapError, cback, emptyCB, promiseToCB } from '../helpers/promiseToCback';
-import {ILogger} from '../logger';
-import {accountsModelCreator} from './models/account';
-import {IModelField, IModelFilter} from './models/modelField';
+import { catchToLoggerAndRemapError, cback, emptyCB, promiseToCB } from '../helpers/promiseToCback';
+
+import { ILogger } from '../logger';
+import { accountsModelCreator } from './models/account';
+import { IModelField, IModelFilter } from './models/modelField';
 
 const jsonSql = jsonSqlCreator();
-jsonSql.setDialect('postgressql');
 
+jsonSql.setDialect('postgresql');
 // tslint:disable-next-line
 export type MemAccountsData = {
   username: string;
@@ -44,7 +45,7 @@ export type MemAccountsData = {
 };
 
 // tslint:disable-next-line
-type FilterData = { address: string, limit?: number, offset?: number, sort?: string };
+type FilterData = { address: string, limit?: number, offset?: number, sort?: string | { [k: string]: -1 | 1 } };
 
 export class AccountLogic {
   private table = 'mem_accounts';
@@ -79,8 +80,8 @@ export class AccountLogic {
   private library: any;
 
   constructor(db, schema, logger: ILogger, cb) {
-    this.scope   = { db, schema };
-    this.library = { logger };
+    this.scope   = {db, schema};
+    this.library = {logger};
     this.model   = accountsModelCreator(this.table);
 
     this.fields = this.model.map((field) => {
@@ -122,11 +123,16 @@ export class AccountLogic {
    * Creates memory tables related to accounts!
    */
   public createTables(cb): Promise<void> {
-    const sql = new pgp.QueryFile(path.join(process.cwd(), 'sql', 'memoryTables.sql'), { minify: true });
+    const sql = new pgp.QueryFile(path.join(process.cwd(), 'sql', 'memoryTables.sql'), {minify: true});
     return promiseToCB<void>(
       this.scope.db.query(sql)
-        .catch(catchToLoggerAndRemapError('Accounts#createTablesError', this.library.logger)),
-      cb
+        .catch(catchToLoggerAndRemapError('Account#createTables error', this.library.logger)),
+      (err) => {
+        if (err) {
+          return cb(err);
+        }
+        cb();
+      }
     );
   }
 
@@ -225,6 +231,10 @@ export class AccountLogic {
   public get(filter: FilterData, fields: Array<(keyof MemAccountsData)>, cb: cback<any>): Promise<any>;
   public get(filter: FilterData, fields: Array<(keyof MemAccountsData)> | cback<any>,
              cb?: cback<any>): Promise<any> {
+    if (typeof( fields ) === 'function') {
+      cb     = fields;
+      fields = this.fields.map((field) => field.alias || field.field) as any;
+    }
     return promiseToCB(
       this.getAll(filter, fields as any) // TODO: check why i need to do as any here.
         .then((res) => res[0]),
@@ -259,13 +269,20 @@ export class AccountLogic {
 
     const limit: number  = filter.limit > 0 ? filter.limit : undefined;
     const offset: number = filter.offset > 0 ? filter.offset : undefined;
-    const sort: string   = filter.sort ? filter.sort : undefined;
+    const sort: any      = filter.sort ? filter.sort : undefined;
 
-    const condition = {
-      address: (typeof filter.address) === 'string' ? {
+    const condition: any = {...filter, ...{limit: undefined, offset: undefined, sort: undefined}};
+    if (typeof(filter.address) === 'string') {
+      condition.address = {
         $upper: ['address', filter.address],
-      } : undefined,
-    };
+      };
+    }
+    // Remove fields = undefined (such as limit, offset and sort)
+    Object.keys(condition).forEach((k) => {
+      if (typeof(condition[k]) === 'undefined') {
+        delete condition[k]
+      }
+    });
 
     const sql = jsonSql.build({
       alias : 'a',
@@ -320,7 +337,9 @@ export class AccountLogic {
    * @param {cback<any>} cb
    * @returns {Promise<any>}
    */
-  public merge(address: string, diff: MemAccountsData, cb: cback<any>) {
+  public merge(address: string, diff: MemAccountsData): string;
+  public merge(address: string, diff: MemAccountsData, cb: cback<any>): Promise<any>;
+  public merge(address: string, diff: MemAccountsData, cb?: cback<any>) {
     const update: any       = {};
     const remove: any       = {};
     const insert: any       = {};
@@ -328,6 +347,7 @@ export class AccountLogic {
     const removeObject: any = {};
     const round: any        = [];
 
+    address = address.toUpperCase();
     this.verifyPublicKey(diff.publicKey);
     for (const fieldName of this.editable) {
       if (typeof(diff[fieldName]) === 'undefined') {
@@ -380,15 +400,18 @@ export class AccountLogic {
           }
           break;
         case Array:
-          if (typeof(trueValue[0]) === 'object') {
+          if (Object.prototype.toString.call(trueValue[0]) === '[object Object]') {
+
             for (const val of (trueValue as Array<{ action?: '-' | '+' } & any>)) {
               if (val.action === '-') {
                 delete val.action;
                 removeObject[fieldName] = removeObject[fieldName] || [];
+                removeObject[fieldName].accountId = address;
                 removeObject[fieldName].push(val);
               } else {
                 delete val.action;
                 insertObject[fieldName] = insertObject[fieldName] || [];
+                insertObject[fieldName].accountId = address;
                 insertObject[fieldName].push(val);
               }
             }
@@ -414,7 +437,7 @@ export class AccountLogic {
               } else {
                 const theVal      = val.slice(1);
                 remove[fieldName] = remove[fieldName] || [];
-                remove[fieldName].push(val);
+                remove[fieldName].push(theVal);
                 if (fieldName === 'delegates') {
                   round.push({
                     // tslint:disable-next-line
@@ -440,8 +463,8 @@ export class AccountLogic {
     // All remove
       .map((el) => jsonSql.build({
         condition: {
+          dependentId: {$in: remove[el]},
           accountId  : address,
-          dependentId: { $in: remove[el] },
         },
         table    : `${this.table}2${el}`,
         type     : 'remove',
@@ -458,14 +481,13 @@ export class AccountLogic {
               dependentId,
             },
           }))
-          .reduce((a, b) => a.concat(b), [])
-        )
+        ).reduce((a, b) => a.concat(b), [])
       )
 
       // All remove objects
       .concat(Object.keys(removeObject)
         .map((el) => jsonSql.build({
-          condition: { ...removeObject[el], ...{ accountId: address } },
+          condition: removeObject[el],
           table    : `${this.table}2${el}`,
           type     : 'remove',
         })))
@@ -473,25 +495,45 @@ export class AccountLogic {
       // All inserts - TODO: Check code logically differs here from original implementation
       .concat(Object.keys(insertObject)
         .map((el) => jsonSql.build({
-          condition: { ...insertObject[el], ...{ accountId: address } },
+          values: insertObject[el],
           table    : `${this.table}2${el}`,
           type     : 'insert',
         })));
 
     if (Object.keys(update).length > 0) {
       sqles.push(jsonSql.build({
-        condition: { address },
+        condition: {address},
         modifier : update,
         table    : this.table,
         type     : 'update',
       }));
     }
 
+    let sqlQuery: string = sqles.concat(round)
+      .map((sql) => pgp.as.format(sql.query, sql.values))
+      .join('');
+    //if (address == '15326312953541715317R' && typeof(remove.u_delegates) !== 'undefined') {
+    //  console.log(remove);
+    //  console.log(removeObject);
+    //  console.log(diff);
+    //  console.log(address);
+    //  process.exit(1);
+    //}
+    if (remove.length > 0) {
+      process.exit(1);
+    }
+    if (!cb) {
+      return sqlQuery;
+    }
+
+    if (sqlQuery.length === 0) {
+      // Nothing to run return account
+      return this.get({address}, cb);
+    }
+
     return promiseToCB(
-      this.scope.db.none(
-        sqles.concat(round).map((sql) => pgp.as.format(sql.query, sql.values)).join('')
-      )
-        .then(() => this.get({ address }, emptyCB))
+      this.scope.db.none(sqlQuery)
+        .then(() => this.get({address}, emptyCB))
         .catch((err) => {
           this.library.logger.error(err.stack);
           return Promise.reject('Account#merge error');
@@ -508,7 +550,7 @@ export class AccountLogic {
    */
   public remove(address: string, cb: cback<string>): Promise<string> {
     const sql = jsonSql.build({
-      condition: { address },
+      condition: {address},
       table    : this.table,
       type     : 'remove',
     });

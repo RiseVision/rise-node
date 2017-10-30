@@ -2,7 +2,7 @@ import {ILogger} from '../logger';
 
 export const emptyCB = () => void 0;
 
-export type cback<T = void> = (err: Error, data: T) => void;
+export type cback<T = void> = (err: Error, data?: T) => void;
 
 export function catchToLoggerAndRemapError<T>(rejectString: string, logger: ILogger): (err: Error) => Promise<T> {
   return (err: Error) => {
@@ -19,11 +19,11 @@ export function catchToLoggerAndRemapError<T>(rejectString: string, logger: ILog
 export function promiseToCB<T>(promise: Promise<T>, cb: cback<T> = emptyCB): Promise<T> {
   return promise
     .then((res) => {
-      setImmediate(cb, null, res);
+      cb(null, res);
       return Promise.resolve(res);
     })
     .catch((err) => {
-      setImmediate(cb, err);
+      cb(err);
       return Promise.reject(err);
     });
 }
