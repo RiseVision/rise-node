@@ -183,7 +183,6 @@ describe("modules/multisignature", function() {
 			verifySignature = sinon
 				.stub(library.logic.transaction, "verifySignature")
 				.returns(true);
-
 		});
 		afterEach(function() {
 			ready.restore();
@@ -306,7 +305,6 @@ describe("modules/multisignature", function() {
 		});
 
 		it("catches error Failed to verify signature in multisignature keysgroup'", function() {
-
 			verifySignature.throws();
 			instance.verify(trs, sender, callback);
 			clock.tick();
@@ -317,7 +315,7 @@ describe("modules/multisignature", function() {
 			expect(callback.firstCall.args[0]).to.contain(
 				"Failed to verify signature in multisignature keysgroup"
 			);
-    });
+		});
 
 		it("not valid Failed to verify signature in multisignature keysgroup", function() {
 			verifySignature.returns(false);
@@ -391,7 +389,8 @@ describe("modules/multisignature", function() {
 		});
 
 		it("success", function(done) {
-      trs.asset.multisignature.keysgroup[0] = '+7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0';
+			trs.asset.multisignature.keysgroup[0] =
+				"+7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0";
 			instance.verify(trs, sender, callback);
 			clock.runAll();
 
