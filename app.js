@@ -457,9 +457,9 @@ d.run(function () {
 		logic: ['db', 'bus', 'schema', 'genesisblock', function (scope, cb) {
 			var Transaction = require('./logic/transaction.js');
 			var Block = require('./logic/block.js');
-			var Account = require('./logic/account.js');
-			var Peers = require('./logic/peers.js');
-
+      var Account = require('./logic/account.ts').AccountLogic;
+      // var Account = require('./logic/_account.js');
+      var Peers = require('./logic/peers.js');
 			async.auto({
 				bus: function (cb) {
 					cb(null, scope.bus);
@@ -482,7 +482,7 @@ d.run(function () {
 					});
 				},
 				account: ['db', 'bus', 'ed', 'schema', 'genesisblock', 'logger', function (scope, cb) {
-					new Account(scope.db, scope.schema, scope.logger, cb);
+          new Account(scope.db, scope.schema, scope.logger, cb);
 				}],
 				transaction: ['db', 'bus', 'ed', 'schema', 'genesisblock', 'account', 'logger', function (scope, cb) {
 					new Transaction(scope.db, scope.ed, scope.schema, scope.genesisblock, scope.account, scope.logger, cb);
@@ -716,3 +716,7 @@ process.on('uncaughtException', function (err) {
 	 */
 	process.emit('cleanup');
 });
+
+process.on('unhandledRejection', (err) => {
+	console.log(err);
+})

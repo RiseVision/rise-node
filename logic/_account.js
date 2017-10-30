@@ -657,6 +657,7 @@ Account.prototype.set = function (address, fields, cb) {
 Account.prototype.merge = function (address, diff, cb) {
 	var update = {}, remove = {}, insert = {}, insert_object = {}, remove_object = {}, round = [];
 
+	self = this;
 	// Verify public key
 	this.verifyPublicKey(diff.publicKey);
 
@@ -674,7 +675,6 @@ Account.prototype.merge = function (address, diff, cb) {
 				break;
 			case Number:
 				if (isNaN(trueValue) || trueValue === Infinity) {
-					console.log(diff);
 					return setImmediate(cb, 'Encountered unsane number: ' + trueValue);
 				} else if (Math.abs(trueValue) === trueValue && trueValue !== 0) {
 					update.$inc = update.$inc || {};
@@ -818,6 +818,7 @@ Account.prototype.merge = function (address, diff, cb) {
 		});
 	}
 
+
 	if (Object.keys(remove_object).length) {
 		Object.keys(remove_object).forEach(function (el) {
 			remove_object[el].accountId = address;
@@ -870,6 +871,7 @@ Account.prototype.merge = function (address, diff, cb) {
 	var queries = sqles.concat(round).map(function (sql) {
 		return pgp.as.format(sql.query, sql.values);
 	}).join('');
+
 
 	if (!cb) {
 		return queries;
