@@ -779,8 +779,7 @@ describe('logic/transaction', function () {
 	});
 
 	describe('verify()', function () {
-
-		var instance, scope, requesterRevert, debugSpy, errorSpy, vote;
+		var scope, requesterRevert, debugSpy, errorSpy, vote;
 
 		beforeEach(function () {
 			requesterRevert = Transaction.__set__('requester', {
@@ -790,9 +789,7 @@ describe('logic/transaction', function () {
 				genesisblock: { block: { id: 456 } },
 				logger: {
 					debug: function () {},
-					error: function () {
-
-					}
+					error: function () {}
 				}
 			};
 			debugSpy = sinon.spy(scope.logger, 'debug');
@@ -977,9 +974,11 @@ describe('logic/transaction', function () {
 					requesterPublicKey: true,
 					senderPublicKey: '12345678',
 					senderId: '123R',
-					asset: {multisignature: {
-						keysgroup: [1,2,3]
-					}}
+					asset: {
+						multisignature: {
+							keysgroup: [1, 2, 3]
+						}
+					}
 				},
 				{
 					secondSignature: false,
@@ -1007,9 +1006,11 @@ describe('logic/transaction', function () {
 					requesterPublicKey: 'ABC',
 					senderPublicKey: '12345678',
 					senderId: '123R',
-					asset: {multisignature: {
-						keysgroup: ['1','2','3']
-					}}
+					asset: {
+						multisignature: {
+							keysgroup: ['1', '2', '3']
+						}
+					}
 				},
 				{
 					secondSignature: false,
@@ -1023,12 +1024,16 @@ describe('logic/transaction', function () {
 			);
 			clock.tick();
 			expect(callback.calledOnce).to.be.true;
-			expect(callback.args[0][0]).to.have.string('Account does not belong to multisignature group');
+			expect(callback.args[0][0]).to.have.string(
+				'Account does not belong to multisignature group'
+			);
 			expect(debugSpy.called).to.be.false;
 		});
 
 		it('Verify signature throws error', function () {
-			var verifySignatureStub = sinon.stub(instance, 'verifySignature').throws('fakeError');
+			var verifySignatureStub = sinon
+				.stub(instance, 'verifySignature')
+				.throws('fakeError');
 			instance.verify(
 				{
 					id: '123',
@@ -1038,9 +1043,11 @@ describe('logic/transaction', function () {
 					requesterPublicKey: 'ABC',
 					senderPublicKey: '12345678',
 					senderId: '123R',
-					asset: {multisignature: {
-						keysgroup: ['AAA','BBB','CCC']
-					}}
+					asset: {
+						multisignature: {
+							keysgroup: ['AAA', 'BBB', 'CCC']
+						}
+					}
 				},
 				{
 					secondSignature: false,
@@ -1062,7 +1069,9 @@ describe('logic/transaction', function () {
 		});
 
 		it('Failed to verify signature: Call to callback', function () {
-			var verifySignatureStub = sinon.stub(instance, 'verifySignature').returns(false);
+			var verifySignatureStub = sinon
+				.stub(instance, 'verifySignature')
+				.returns(false);
 			instance.verify(
 				{
 					id: '123',
@@ -1072,9 +1081,11 @@ describe('logic/transaction', function () {
 					requesterPublicKey: 'ABC',
 					senderPublicKey: '12345678',
 					senderId: '123R',
-					asset: {multisignature: {
-						keysgroup: ['AAA','BBB','CCC']
-					}}
+					asset: {
+						multisignature: {
+							keysgroup: ['AAA', 'BBB', 'CCC']
+						}
+					}
 				},
 				{
 					secondSignature: false,
@@ -1096,8 +1107,12 @@ describe('logic/transaction', function () {
 		});
 
 		it('Verify second signature throws error', function () {
-			var verifySignatureStub = sinon.stub(instance, 'verifySignature').returns(true);
-			var verifySecondSignatureStub = sinon.stub(instance, 'verifySecondSignature').throws('fakeError2');
+			var verifySignatureStub = sinon
+				.stub(instance, 'verifySignature')
+				.returns(true);
+			var verifySecondSignatureStub = sinon
+				.stub(instance, 'verifySecondSignature')
+				.throws('fakeError2');
 			instance.verify(
 				{
 					id: '123',
@@ -1107,9 +1122,11 @@ describe('logic/transaction', function () {
 					requesterPublicKey: 'ABC',
 					senderPublicKey: '12345678',
 					senderId: '123R',
-					asset: {multisignature: {
-						keysgroup: ['AAA','BBB','CCC']
-					}}
+					asset: {
+						multisignature: {
+							keysgroup: ['AAA', 'BBB', 'CCC']
+						}
+					}
 				},
 				{
 					secondSignature: true,
@@ -1133,8 +1150,12 @@ describe('logic/transaction', function () {
 		});
 
 		it('Failed to verify second signature', function () {
-			var verifySignatureStub = sinon.stub(instance, 'verifySignature').returns(true);
-			var verifySecondSignatureStub = sinon.stub(instance, 'verifySecondSignature').returns(false);
+			var verifySignatureStub = sinon
+				.stub(instance, 'verifySignature')
+				.returns(true);
+			var verifySecondSignatureStub = sinon
+				.stub(instance, 'verifySecondSignature')
+				.returns(false);
 			instance.verify(
 				{
 					id: '123',
@@ -1144,9 +1165,11 @@ describe('logic/transaction', function () {
 					requesterPublicKey: 'ABC',
 					senderPublicKey: '12345678',
 					senderId: '123R',
-					asset: {multisignature: {
-						keysgroup: ['AAA','BBB','CCC']
-					}}
+					asset: {
+						multisignature: {
+							keysgroup: ['AAA', 'BBB', 'CCC']
+						}
+					}
 				},
 				{
 					secondSignature: true,
@@ -1160,7 +1183,9 @@ describe('logic/transaction', function () {
 			);
 			clock.tick();
 			expect(callback.calledOnce).to.be.true;
-			expect(callback.args[0][0]).to.have.string('Failed to verify second signature');
+			expect(callback.args[0][0]).to.have.string(
+				'Failed to verify second signature'
+			);
 			expect(debugSpy.called).to.be.false;
 			expect(errorSpy.called).to.be.false;
 			expect(verifySignatureStub.calledOnce).to.be.true;
@@ -1170,8 +1195,12 @@ describe('logic/transaction', function () {
 		});
 
 		it('Encountered duplicate signature in transaction', function () {
-			var verifySignatureStub = sinon.stub(instance, 'verifySignature').returns(true);
-			var verifySecondSignatureStub = sinon.stub(instance, 'verifySecondSignature').returns(true);
+			var verifySignatureStub = sinon
+				.stub(instance, 'verifySignature')
+				.returns(true);
+			var verifySecondSignatureStub = sinon
+				.stub(instance, 'verifySecondSignature')
+				.returns(true);
 			instance.verify(
 				{
 					id: '123',
@@ -1181,10 +1210,12 @@ describe('logic/transaction', function () {
 					requesterPublicKey: 'ABC',
 					senderPublicKey: '12345678',
 					senderId: '123R',
-					asset: {multisignature: {
-						keysgroup: ['AAA','BBB','CCC']
-					}},
-					signatures: ['a','b','c','b','c']
+					asset: {
+						multisignature: {
+							keysgroup: ['AAA', 'BBB', 'CCC']
+						}
+					},
+					signatures: ['a', 'b', 'c', 'b', 'c']
 				},
 				{
 					secondSignature: true,
@@ -1198,7 +1229,9 @@ describe('logic/transaction', function () {
 			);
 			clock.tick();
 			expect(callback.calledOnce).to.be.true;
-			expect(callback.args[0][0]).to.have.string('Encountered duplicate signature in transaction');
+			expect(callback.args[0][0]).to.have.string(
+				'Encountered duplicate signature in transaction'
+			);
 			expect(debugSpy.called).to.be.false;
 			expect(errorSpy.called).to.be.false;
 			expect(verifySignatureStub.calledOnce).to.be.true;
@@ -1211,7 +1244,9 @@ describe('logic/transaction', function () {
 			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
 			verifySignatureStub.onFirstCall().returns(true);
 			verifySignatureStub.returns(false);
-			var verifySecondSignatureStub = sinon.stub(instance, 'verifySecondSignature').returns(true);
+			var verifySecondSignatureStub = sinon
+				.stub(instance, 'verifySecondSignature')
+				.returns(true);
 			instance.verify(
 				{
 					id: '123',
@@ -1221,10 +1256,12 @@ describe('logic/transaction', function () {
 					requesterPublicKey: 'ABC',
 					senderPublicKey: '12345678',
 					senderId: '123R',
-					asset: {multisignature: {
-						keysgroup: ['AAA','BBB','CCC']
-					}},
-					signatures: ['a','b','c','d']
+					asset: {
+						multisignature: {
+							keysgroup: ['AAA', 'BBB', 'CCC']
+						}
+					},
+					signatures: ['a', 'b', 'c', 'd']
 				},
 				{
 					secondSignature: true,
@@ -1238,7 +1275,9 @@ describe('logic/transaction', function () {
 			);
 			clock.tick();
 			expect(callback.calledOnce).to.be.true;
-			expect(callback.args[0][0]).to.have.string('Failed to verify multisignature');
+			expect(callback.args[0][0]).to.have.string(
+				'Failed to verify multisignature'
+			);
 			expect(debugSpy.called).to.be.false;
 			expect(errorSpy.called).to.be.false;
 			expect(verifySignatureStub.calledTwice).to.be.true;
@@ -1251,7 +1290,9 @@ describe('logic/transaction', function () {
 			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(false);
 			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
 			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon.stub(instance, 'verifySecondSignature').returns(true);
+			var verifySecondSignatureStub = sinon
+				.stub(instance, 'verifySecondSignature')
+				.returns(true);
 			var trs = {
 				id: '123',
 				type: transactionTypes.VOTE,
@@ -1260,10 +1301,12 @@ describe('logic/transaction', function () {
 				requesterPublicKey: 'ABC',
 				senderPublicKey: '12345678',
 				senderId: '123R',
-				asset: {multisignature: {
-					keysgroup: ['AAA','BBB','CCC']
-				}},
-				signatures: ['a','b','c','d'],
+				asset: {
+					multisignature: {
+						keysgroup: ['AAA', 'BBB', 'CCC']
+					}
+				},
+				signatures: ['a', 'b', 'c', 'd'],
 				fee: 123
 			};
 			var sender = {
@@ -1273,12 +1316,7 @@ describe('logic/transaction', function () {
 				multisignatures: ['ABC'],
 				u_multisignatures: []
 			};
-			instance.verify(
-				trs,
-				sender,
-				false,
-				callback
-			);
+			instance.verify(trs, sender, false, callback);
 			clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Invalid transaction fee');
@@ -1299,7 +1337,9 @@ describe('logic/transaction', function () {
 			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(50);
 			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
 			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon.stub(instance, 'verifySecondSignature').returns(true);
+			var verifySecondSignatureStub = sinon
+				.stub(instance, 'verifySecondSignature')
+				.returns(true);
 			var trs = {
 				id: '123',
 				type: transactionTypes.VOTE,
@@ -1308,10 +1348,12 @@ describe('logic/transaction', function () {
 				requesterPublicKey: 'ABC',
 				senderPublicKey: '12345678',
 				senderId: '123R',
-				asset: {multisignature: {
-					keysgroup: ['AAA','BBB','CCC']
-				}},
-				signatures: ['a','b','c','d'],
+				asset: {
+					multisignature: {
+						keysgroup: ['AAA', 'BBB', 'CCC']
+					}
+				},
+				signatures: ['a', 'b', 'c', 'd'],
 				fee: 50,
 				amount: -1
 			};
@@ -1322,12 +1364,7 @@ describe('logic/transaction', function () {
 				multisignatures: ['ABC'],
 				u_multisignatures: []
 			};
-			instance.verify(
-				trs,
-				sender,
-				false,
-				callback
-			);
+			instance.verify(trs, sender, false, callback);
 			clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Invalid transaction amount');
@@ -1348,7 +1385,9 @@ describe('logic/transaction', function () {
 			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(50);
 			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
 			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon.stub(instance, 'verifySecondSignature').returns(true);
+			var verifySecondSignatureStub = sinon
+				.stub(instance, 'verifySecondSignature')
+				.returns(true);
 			var amount = constants.totalAmount + 10;
 			var trs = {
 				id: '123',
@@ -1358,10 +1397,12 @@ describe('logic/transaction', function () {
 				requesterPublicKey: 'ABC',
 				senderPublicKey: '12345678',
 				senderId: '123R',
-				asset: {multisignature: {
-					keysgroup: ['AAA','BBB','CCC']
-				}},
-				signatures: ['a','b','c','d'],
+				asset: {
+					multisignature: {
+						keysgroup: ['AAA', 'BBB', 'CCC']
+					}
+				},
+				signatures: ['a', 'b', 'c', 'd'],
 				fee: 50,
 				amount: amount
 			};
@@ -1372,12 +1413,7 @@ describe('logic/transaction', function () {
 				multisignatures: ['ABC'],
 				u_multisignatures: []
 			};
-			instance.verify(
-				trs,
-				sender,
-				false,
-				callback
-			);
+			instance.verify(trs, sender, false, callback);
 			clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Invalid transaction amount');
@@ -1398,7 +1434,9 @@ describe('logic/transaction', function () {
 			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(50);
 			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
 			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon.stub(instance, 'verifySecondSignature').returns(true);
+			var verifySecondSignatureStub = sinon
+				.stub(instance, 'verifySecondSignature')
+				.returns(true);
 			var trs = {
 				id: '123',
 				type: transactionTypes.VOTE,
@@ -1407,10 +1445,12 @@ describe('logic/transaction', function () {
 				requesterPublicKey: 'ABC',
 				senderPublicKey: '12345678',
 				senderId: '123R',
-				asset: {multisignature: {
-					keysgroup: ['AAA','BBB','CCC']
-				}},
-				signatures: ['a','b','c','d'],
+				asset: {
+					multisignature: {
+						keysgroup: ['AAA', 'BBB', 'CCC']
+					}
+				},
+				signatures: ['a', 'b', 'c', 'd'],
 				fee: 50,
 				amount: 123.45
 			};
@@ -1421,12 +1461,7 @@ describe('logic/transaction', function () {
 				multisignatures: ['ABC'],
 				u_multisignatures: []
 			};
-			instance.verify(
-				trs,
-				sender,
-				false,
-				callback
-			);
+			instance.verify(trs, sender, false, callback);
 			clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Invalid transaction amount');
@@ -1447,7 +1482,9 @@ describe('logic/transaction', function () {
 			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(50);
 			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
 			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon.stub(instance, 'verifySecondSignature').returns(true);
+			var verifySecondSignatureStub = sinon
+				.stub(instance, 'verifySecondSignature')
+				.returns(true);
 			var trs = {
 				id: '123',
 				type: transactionTypes.VOTE,
@@ -1456,10 +1493,12 @@ describe('logic/transaction', function () {
 				requesterPublicKey: 'ABC',
 				senderPublicKey: '12345678',
 				senderId: '123R',
-				asset: {multisignature: {
-					keysgroup: ['AAA','BBB','CCC']
-				}},
-				signatures: ['a','b','c','d'],
+				asset: {
+					multisignature: {
+						keysgroup: ['AAA', 'BBB', 'CCC']
+					}
+				},
+				signatures: ['a', 'b', 'c', 'd'],
 				fee: 50,
 				amount: '123e10'
 			};
@@ -1470,12 +1509,7 @@ describe('logic/transaction', function () {
 				multisignatures: ['ABC'],
 				u_multisignatures: []
 			};
-			instance.verify(
-				trs,
-				sender,
-				false,
-				callback
-			);
+			instance.verify(trs, sender, false, callback);
 			clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Invalid transaction amount');
@@ -1496,7 +1530,9 @@ describe('logic/transaction', function () {
 			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(50);
 			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
 			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon.stub(instance, 'verifySecondSignature').returns(true);
+			var verifySecondSignatureStub = sinon
+				.stub(instance, 'verifySecondSignature')
+				.returns(true);
 			var trs = {
 				id: '123',
 				type: transactionTypes.VOTE,
@@ -1505,10 +1541,12 @@ describe('logic/transaction', function () {
 				requesterPublicKey: 'ABC',
 				senderPublicKey: '12345678',
 				senderId: '123R',
-				asset: {multisignature: {
-					keysgroup: ['AAA','BBB','CCC']
-				}},
-				signatures: ['a','b','c','d'],
+				asset: {
+					multisignature: {
+						keysgroup: ['AAA', 'BBB', 'CCC']
+					}
+				},
+				signatures: ['a', 'b', 'c', 'd'],
 				fee: 50,
 				amount: '100'
 			};
@@ -1520,15 +1558,12 @@ describe('logic/transaction', function () {
 				u_multisignatures: [],
 				balance: 149
 			};
-			instance.verify(
-				trs,
-				sender,
-				false,
-				callback
-			);
+			instance.verify(trs, sender, false, callback);
 			clock.tick();
 			expect(callback.calledOnce).to.be.true;
-			expect(callback.args[0][0]).to.have.string('Account does not have enough RISE: 123R balance: 0.00000149');
+			expect(callback.args[0][0]).to.have.string(
+				'Account does not have enough RISE: 123R balance: 0.00000149'
+			);
 			expect(debugSpy.called).to.be.false;
 			expect(errorSpy.called).to.be.false;
 			expect(verifySignatureStub.callCount).to.equal(5);
@@ -1546,8 +1581,11 @@ describe('logic/transaction', function () {
 			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(50);
 			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
 			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon.stub(instance, 'verifySecondSignature').returns(true);
-			var transactionTimestamp = ((Date.now()/1000)-(constants.epochTime.getTime()/1000)) + 1000;
+			var verifySecondSignatureStub = sinon
+				.stub(instance, 'verifySecondSignature')
+				.returns(true);
+			var transactionTimestamp =
+				Date.now() / 1000 - constants.epochTime.getTime() / 1000 + 1000;
 			var trs = {
 				id: '123',
 				type: transactionTypes.VOTE,
@@ -1556,10 +1594,12 @@ describe('logic/transaction', function () {
 				requesterPublicKey: 'ABC',
 				senderPublicKey: '12345678',
 				senderId: '123R',
-				asset: {multisignature: {
-					keysgroup: ['AAA','BBB','CCC']
-				}},
-				signatures: ['a','b','c','d'],
+				asset: {
+					multisignature: {
+						keysgroup: ['AAA', 'BBB', 'CCC']
+					}
+				},
+				signatures: ['a', 'b', 'c', 'd'],
 				fee: 50,
 				amount: '100',
 				timestamp: transactionTimestamp
@@ -1572,15 +1612,12 @@ describe('logic/transaction', function () {
 				u_multisignatures: [],
 				balance: 151
 			};
-			instance.verify(
-				trs,
-				sender,
-				false,
-				callback
-			);
+			instance.verify(trs, sender, false, callback);
 			clock.tick();
 			expect(callback.calledOnce).to.be.true;
-			expect(callback.args[0][0]).to.have.string('Invalid transaction timestamp. Timestamp is in the future');
+			expect(callback.args[0][0]).to.have.string(
+				'Invalid transaction timestamp. Timestamp is in the future'
+			);
 			expect(debugSpy.called).to.be.false;
 			expect(errorSpy.called).to.be.false;
 			expect(verifySignatureStub.callCount).to.equal(5);
@@ -1596,13 +1633,18 @@ describe('logic/transaction', function () {
 
 		it('verify() call from transaction type returns error', function () {
 			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(50);
-			var verifyStub = sinon.stub(vote, 'verify').callsFake(function (trs, sender, cb) {
-				setImmediate(cb, 'verifyError');
-			});
+			var verifyStub = sinon
+				.stub(vote, 'verify')
+				.callsFake(function (trs, sender, cb) {
+					setImmediate(cb, 'verifyError');
+				});
 			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
 			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon.stub(instance, 'verifySecondSignature').returns(true);
-			var transactionTimestamp = ((Date.now()/1000)-(constants.epochTime.getTime()/1000)) - 1000;
+			var verifySecondSignatureStub = sinon
+				.stub(instance, 'verifySecondSignature')
+				.returns(true);
+			var transactionTimestamp =
+				Date.now() / 1000 - constants.epochTime.getTime() / 1000 - 1000;
 			var trs = {
 				id: '123',
 				type: transactionTypes.VOTE,
@@ -1611,10 +1653,12 @@ describe('logic/transaction', function () {
 				requesterPublicKey: 'ABC',
 				senderPublicKey: '12345678',
 				senderId: '123R',
-				asset: {multisignature: {
-					keysgroup: ['AAA','BBB','CCC']
-				}},
-				signatures: ['a','b','c','d'],
+				asset: {
+					multisignature: {
+						keysgroup: ['AAA', 'BBB', 'CCC']
+					}
+				},
+				signatures: ['a', 'b', 'c', 'd'],
 				fee: 50,
 				amount: '100',
 				timestamp: transactionTimestamp
@@ -1627,12 +1671,7 @@ describe('logic/transaction', function () {
 				u_multisignatures: [],
 				balance: 151
 			};
-			instance.verify(
-				trs,
-				sender,
-				false,
-				callback
-			);
+			instance.verify(trs, sender, false, callback);
 			clock.runAll();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('verifyError');
@@ -1654,17 +1693,24 @@ describe('logic/transaction', function () {
 		});
 
 		it('Success', function () {
-			var checkConfirmedStub = sinon.stub(instance, 'checkConfirmed').callsFake(function (trs, cb) {
-				setImmediate(cb);
-			});
+			var checkConfirmedStub = sinon
+				.stub(instance, 'checkConfirmed')
+				.callsFake(function (trs, cb) {
+					setImmediate(cb);
+				});
 			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(50);
-			var verifyStub = sinon.stub(vote, 'verify').callsFake(function (trs, sender, cb) {
-				setImmediate(cb);
-			});
+			var verifyStub = sinon
+				.stub(vote, 'verify')
+				.callsFake(function (trs, sender, cb) {
+					setImmediate(cb);
+				});
 			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
 			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon.stub(instance, 'verifySecondSignature').returns(true);
-			var transactionTimestamp = ((Date.now()/1000)-(constants.epochTime.getTime()/1000)) - 1000;
+			var verifySecondSignatureStub = sinon
+				.stub(instance, 'verifySecondSignature')
+				.returns(true);
+			var transactionTimestamp =
+				Date.now() / 1000 - constants.epochTime.getTime() / 1000 - 1000;
 			var trs = {
 				id: '123',
 				type: transactionTypes.VOTE,
@@ -1673,10 +1719,12 @@ describe('logic/transaction', function () {
 				requesterPublicKey: 'ABC',
 				senderPublicKey: '12345678',
 				senderId: '123R',
-				asset: {multisignature: {
-					keysgroup: ['AAA','BBB','CCC']
-				}},
-				signatures: ['a','b','c','d'],
+				asset: {
+					multisignature: {
+						keysgroup: ['AAA', 'BBB', 'CCC']
+					}
+				},
+				signatures: ['a', 'b', 'c', 'd'],
 				fee: 50,
 				amount: '100',
 				timestamp: transactionTimestamp
@@ -1689,12 +1737,7 @@ describe('logic/transaction', function () {
 				u_multisignatures: [],
 				balance: 151
 			};
-			instance.verify(
-				trs,
-				sender,
-				false,
-				callback
-			);
+			instance.verify(trs, sender, false, callback);
 			clock.runAll();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.equal(undefined);
@@ -1719,16 +1762,316 @@ describe('logic/transaction', function () {
 		});
 	});
 
-	describe('verifySignature()', function () {});
-	describe('verifySecondSignature()', function () {});
-	describe('verifyBytes()', function () {});
-	describe('apply()', function () {});
+	describe('verifySignature()', function () {
+		var getBytesStub, verifyBytesStub;
+
+		beforeEach(function () {
+			instance = new Transaction();
+			getBytesStub = sinon.stub(instance, 'getBytes');
+			verifyBytesStub = sinon.stub(instance, 'verifyBytes');
+		});
+
+		afterEach(function () {
+			getBytesStub.restore();
+			verifyBytesStub.restore();
+		});
+
+		it('Unknown transaction type', function () {
+			expect(function () {
+				instance.verifySignature({ type: transactionTypes.VOTE });
+			}).throws('Unknown transaction type');
+			expect(getBytesStub.called).to.be.false;
+			expect(verifyBytesStub.called).to.be.false;
+		});
+
+		it('Not signature received', function () {
+			instance.attachAssetType(transactionTypes.VOTE, new Vote());
+			var result = instance.verifySignature({ type: transactionTypes.VOTE });
+			expect(result).to.be.false;
+			expect(getBytesStub.called).to.be.false;
+			expect(verifyBytesStub.called).to.be.false;
+		});
+
+		it('getBytes() throws error', function () {
+			getBytesStub.throws(Error('getBytesError'));
+			instance.attachAssetType(transactionTypes.VOTE, new Vote());
+			var trs = { type: transactionTypes.VOTE };
+			expect(function () {
+				instance.verifySignature(trs, true, true);
+			}).throws('getBytesError');
+			expect(getBytesStub.called).to.be.true;
+			expect(getBytesStub.args[0][0]).to.deep.equal(trs);
+			expect(getBytesStub.args[0][1]).to.be.true;
+			expect(getBytesStub.args[0][2]).to.be.true;
+			expect(verifyBytesStub.called).to.be.false;
+		});
+
+		it('verifyBytes() throws error', function () {
+			getBytesStub.returns(3);
+			verifyBytesStub.throws(Error('verifyBytesError'));
+			instance.attachAssetType(transactionTypes.VOTE, new Vote());
+			var trs = { type: transactionTypes.VOTE };
+			expect(function () {
+				instance.verifySignature(trs, 1, 2);
+			}).throws('verifyBytesError');
+			expect(getBytesStub.called).to.be.true;
+			expect(getBytesStub.args[0][0]).to.deep.equal(trs);
+			expect(getBytesStub.args[0][1]).to.be.true;
+			expect(getBytesStub.args[0][2]).to.be.true;
+			expect(verifyBytesStub.called).to.be.true;
+			expect(verifyBytesStub.args[0][0]).to.equal(3);
+			expect(verifyBytesStub.args[0][1]).to.equal(1);
+			expect(verifyBytesStub.args[0][2]).to.equal(2);
+		});
+
+		it('Success', function () {
+			getBytesStub.returns(3);
+			verifyBytesStub.returns(4);
+			instance.attachAssetType(transactionTypes.VOTE, new Vote());
+			var trs = { type: transactionTypes.VOTE };
+			var result = instance.verifySignature(trs, 1, 2);
+			expect(getBytesStub.called).to.be.true;
+			expect(getBytesStub.args[0][0]).to.deep.equal(trs);
+			expect(getBytesStub.args[0][1]).to.be.true;
+			expect(getBytesStub.args[0][2]).to.be.true;
+			expect(verifyBytesStub.called).to.be.true;
+			expect(verifyBytesStub.args[0][0]).to.equal(3);
+			expect(verifyBytesStub.args[0][1]).to.equal(1);
+			expect(verifyBytesStub.args[0][2]).to.equal(2);
+			expect(result).to.equal(4);
+		});
+	});
+
+	describe('verifySecondSignature()', function () {
+		var getBytesStub, verifyBytesStub;
+
+		beforeEach(function () {
+			instance = new Transaction();
+			getBytesStub = sinon.stub(instance, 'getBytes');
+			verifyBytesStub = sinon.stub(instance, 'verifyBytes');
+		});
+
+		afterEach(function () {
+			getBytesStub.restore();
+			verifyBytesStub.restore();
+		});
+
+		it('Unknown transaction type', function () {
+			expect(function () {
+				instance.verifySecondSignature({ type: transactionTypes.VOTE });
+			}).throws('Unknown transaction type');
+			expect(getBytesStub.called).to.be.false;
+			expect(verifyBytesStub.called).to.be.false;
+		});
+
+		it('Not signature received', function () {
+			instance.attachAssetType(transactionTypes.VOTE, new Vote());
+			var result = instance.verifySecondSignature({
+				type: transactionTypes.VOTE
+			});
+			expect(result).to.be.false;
+			expect(getBytesStub.called).to.be.false;
+			expect(verifyBytesStub.called).to.be.false;
+		});
+
+		it('getBytes() throws error', function () {
+			getBytesStub.throws(Error('getBytesError'));
+			instance.attachAssetType(transactionTypes.VOTE, new Vote());
+			var trs = { type: transactionTypes.VOTE };
+			expect(function () {
+				instance.verifySecondSignature(trs, true, true);
+			}).throws('getBytesError');
+			expect(getBytesStub.called).to.be.true;
+			expect(getBytesStub.args[0][0]).to.deep.equal(trs);
+			expect(getBytesStub.args[0][1]).to.be.false;
+			expect(getBytesStub.args[0][2]).to.be.true;
+			expect(verifyBytesStub.called).to.be.false;
+		});
+
+		it('verifyBytes() throws error', function () {
+			getBytesStub.returns(3);
+			verifyBytesStub.throws(Error('verifyBytesError'));
+			instance.attachAssetType(transactionTypes.VOTE, new Vote());
+			var trs = { type: transactionTypes.VOTE };
+			expect(function () {
+				instance.verifySecondSignature(trs, 1, 2);
+			}).throws('verifyBytesError');
+			expect(getBytesStub.called).to.be.true;
+			expect(getBytesStub.args[0][0]).to.deep.equal(trs);
+			expect(getBytesStub.args[0][1]).to.be.false;
+			expect(getBytesStub.args[0][2]).to.be.true;
+			expect(verifyBytesStub.called).to.be.true;
+			expect(verifyBytesStub.args[0][0]).to.equal(3);
+			expect(verifyBytesStub.args[0][1]).to.equal(1);
+			expect(verifyBytesStub.args[0][2]).to.equal(2);
+		});
+
+		it('Success', function () {
+			getBytesStub.returns(3);
+			verifyBytesStub.returns(4);
+			instance.attachAssetType(transactionTypes.VOTE, new Vote());
+			var trs = { type: transactionTypes.VOTE };
+			var result = instance.verifySecondSignature(trs, 1, 2);
+			expect(getBytesStub.called).to.be.true;
+			expect(getBytesStub.args[0][0]).to.deep.equal(trs);
+			expect(getBytesStub.args[0][1]).to.be.false;
+			expect(getBytesStub.args[0][2]).to.be.true;
+			expect(verifyBytesStub.called).to.be.true;
+			expect(verifyBytesStub.args[0][0]).to.equal(3);
+			expect(verifyBytesStub.args[0][1]).to.equal(1);
+			expect(verifyBytesStub.args[0][2]).to.equal(2);
+			expect(result).to.equal(4);
+		});
+	});
+
+	describe('verifyBytes()', function () {
+		var scope, verifyStub, bytes, publicKey, signature;
+
+		beforeEach(function () {
+			bytes = [1, 2, 3];
+			publicKey =
+				'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f';
+			signature =
+				'7ff5f0ee2c4d4c83d6980a46efe31befca41f7aa8cda5f7b4c2850e4942d923af058561a6a3312005ddee566244346bdbccf004bc8e2c84e653f9825c20be008';
+			scope = { ed: ed };
+			verifyStub = sinon.stub(scope.ed, 'verify');
+			instance = new Transaction();
+			instance.scope = scope;
+		});
+
+		afterEach(function () {
+			verifyStub.restore();
+		});
+
+		it('Throws error', function () {
+			verifyStub.throws(Error('verifyError'));
+			expect(function () {
+				instance.verifyBytes(bytes, publicKey, signature);
+			}).throw('verifyError');
+		});
+
+		it('Success', function () {
+			verifyStub.returns('success');
+			var result = instance.verifyBytes(bytes, publicKey, signature);
+			expect(result).to.equal('success');
+		});
+	});
+
+	describe('apply()', function () {
+		var readyStub,
+			checkBalanceStub,
+			trs,
+			block,
+			sender,
+			amount,
+			scope,
+			traceSpy,
+			traceParam2;
+
+		beforeEach(function () {
+			scope = {
+				logger: {
+					trace: function () {}
+				}
+			};
+			traceSpy = sinon.spy(scope.logger, 'trace');
+			instance = new Transaction();
+			instance.scope = scope;
+			readyStub = sinon.stub(instance, 'ready');
+			checkBalanceStub = sinon.stub(instance, 'checkBalance');
+		});
+
+		afterEach(function () {
+			readyStub.restore();
+			checkBalanceStub.restore();
+			traceSpy.restore();
+		});
+
+		it('Transaction is not ready', function () {
+			readyStub.returns(false);
+			trs = 1;
+			block = 2;
+			sender = 3;
+			instance.apply(trs, block, sender, callback);
+			clock.tick();
+			expect(readyStub.calledOnce).to.be.true;
+			expect(readyStub.args[0][0]).to.equal(trs);
+			expect(readyStub.args[0][1]).to.equal(sender);
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal('Transaction is not ready');
+		});
+
+		it('Balance exceeded', function () {
+			readyStub.returns(true);
+			checkBalanceStub.returns({
+				exceeded: true,
+				error: 'BalanceExceededError'
+			});
+			trs = { amount: 100, fee: 50 };
+			block = 2;
+			sender = 3;
+			amount = new bignum(150);
+			instance.apply(trs, block, sender, callback);
+			clock.tick();
+			expect(readyStub.calledOnce).to.be.true;
+			expect(readyStub.args[0][0]).to.deep.equal(trs);
+			expect(readyStub.args[0][1]).to.equal(sender);
+			expect(checkBalanceStub.calledOnce).to.be.true;
+			expect(checkBalanceStub.args[0][0]).to.deep.equal(amount);
+			expect(checkBalanceStub.args[0][1]).to.equal('balance');
+			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
+			expect(checkBalanceStub.args[0][3]).to.equal(sender);
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal('BalanceExceededError');
+		});
+
+		it('Account merge error #1', function () {
+			readyStub.returns(true);
+			checkBalanceStub.returns({ exceeded: false });
+			trs = { amount: 100, fee: 50 };
+			block = 2;
+			sender = 3;
+			amount = new bignum(150);
+			traceParam2 = {
+				sender: sender.address,
+				balance: -amount,
+				blockId: block.id,
+				round: modules.rounds.calc(block.height)
+			};
+			instance.apply(trs, block, sender, callback);
+			clock.tick();
+			expect(readyStub.calledOnce).to.be.true;
+			expect(readyStub.args[0][0]).to.deep.equal(trs);
+			expect(readyStub.args[0][1]).to.equal(sender);
+			expect(checkBalanceStub.calledOnce).to.be.true;
+			expect(checkBalanceStub.args[0][0]).to.deep.equal(amount);
+			expect(checkBalanceStub.args[0][1]).to.equal('balance');
+			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
+			expect(checkBalanceStub.args[0][3]).to.equal(sender);
+			expect(traceSpy.calledOnce).to.be.true;
+			expect(traceSpy.args[0][0]).to.equal('Logic/Transaction->apply');
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal('BalanceExceededError');
+		});
+
+		it('Account merge error #2', function () {});
+
+		it('Success', function () {});
+	});
+/*
 	describe('undo()', function () {});
+
 	describe('applyUnconfirmed()', function () {});
+
 	describe('undoUnconfirmed()', function () {});
+
 	describe('dbSave()', function () {});
+
 	describe('afterSave()', function () {});
+
 	describe('objectNormalize()', function () {});
+
 	describe('dbRead()', function () {});
-	describe('bindModules()', function () {});
+
+	describe('bindModules()', function () {}); */
 });
