@@ -187,31 +187,24 @@ describe("logic/signature", function() {
 		});
 
 		it("error cb second 'Invalid public key'", function() {
-			var Buffer = Signature.__get__("Buffer");
-			var from = sinon.stub(Buffer, "from").callsFake(function() {
-				throw new Error();
-			});
+
 			var library = {
 				logger: {
 					error: function() {}
 				}
 			};
-			var logger = sinon.stub(library.logger, "error");
 
-			Signature.__set__("Buffer", Buffer);
 			Signature.__set__("library", library);
-
+			var oldPublicKey = trs.asset.signature.publicKey;
+      trs.asset.signature.publicKey = 'xx';
 			instance.verify(trs, null, callback);
-			clock.tick();
-
-			expect(logger.calledOnce).to.be.true;
-			expect(logger.firstCall.args.length).to.equal(1);
+      trs.asset.signature.publicKey = oldPublicKey;
+      clock.tick();
 
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.firstCall.args.length).to.equal(1);
 			expect(callback.firstCall.args[0]).to.equal("Invalid public key");
 
-			Signature.__get__("Buffer").from.restore();
 			Signature.__get__("library").logger.error.restore();
 		});
 	});
