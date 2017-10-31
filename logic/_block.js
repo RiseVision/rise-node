@@ -4,7 +4,7 @@ var slots = require('../helpers/slots').default;
 var crypto = require('crypto');
 var bignum = require('../helpers/bignum').default;
 var ByteBuffer = require('bytebuffer');
-var BlockReward = require('../logic/blockReward.js');
+var BlockReward = require('../logic/blockReward').BlockRewardLogic;
 var constants = require('../helpers/constants').default;
 
 // Private fields

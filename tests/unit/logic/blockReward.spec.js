@@ -6,23 +6,23 @@ var path = require("path");
 
 var rootDir = path.join(__dirname, "../../..");
 
-var BlockReward = rewire(path.join(rootDir, "logic/blockReward"));
+var {BlockRewardLogic} = require('../../../logic/blockReward.ts');
 var constants = require(path.join(rootDir, "helpers/constants")).default;
 
 describe("logic/blockReward", function() {
 	var instance;
 
 	beforeEach(function() {
-		instance = new BlockReward();
+		instance = new BlockRewardLogic();
 	});
 
 	describe("constructor", function() {
 		it("should be a function", function(done) {
-			expect(BlockReward).to.be.a("function");
+			expect(BlockRewardLogic).to.be.a("function");
 			done();
 		});
 		it("should be an instance of blockReward", function(done) {
-			expect(instance).to.be.an.instanceOf(BlockReward);
+			expect(instance).to.be.an.instanceOf(BlockRewardLogic);
 			expect(instance.rewards).to.be.deep.equal(constants.rewards);
 			done();
 		});
@@ -30,28 +30,17 @@ describe("logic/blockReward", function() {
 
 	describe("private.parseHeight", function() {
 		it("returns error", function() {
-			var throwError = function() {
-				BlockReward.__get__("__private").parseHeight("string");
-			};
-
-			expect(throwError).to.throw("Invalid block height");
+			expect(() => instance.parseHeight('string')).to.throw("Invalid block height");
 		});
 
 		it("returns success", function() {
-			var result = 1234;
-
-			var parseHeight = function() {
-				return BlockReward.__get__("__private").parseHeight(1234);
-			};
-
-			expect(parseHeight()).to.equal(result);
+      expect(instance.parseHeight(1237)).to.eq(1237);
 		});
 	});
 
 	describe("calcMilestone", function() {
 		it("parseHeight is called", function() {
-			var __private = BlockReward.__get__("__private");
-			var parseHeight = sinon.stub(__private, "parseHeight").returns(1);
+			var parseHeight = sinon.stub(instance, "parseHeight").returns(1);
 
 			instance.calcMilestone(10);
 
@@ -69,9 +58,7 @@ describe("logic/blockReward", function() {
 
 	describe("calcReward", function() {
 		it("calcMilestone is called", function() {
-			var calcMilestone = sinon
-				.stub(BlockReward.prototype, "calcMilestone")
-				.returns(0);
+			const calcMilestone = sinon.stub(instance, 'calcMilestone').returns(0);
 
 			instance.calcReward(10);
 
@@ -79,32 +66,13 @@ describe("logic/blockReward", function() {
 			expect(calcMilestone.getCall(0).args.length).to.equal(1);
 			expect(calcMilestone.getCall(0).args[0]).to.equal(10);
 
-			calcMilestone.restore();
 		});
 	});
 
 	describe("calcSupply", function() {
-		var parseHeight, calcMilestone, mockedThis;
-
-		beforeEach(function() {
-			var __private = BlockReward.__get__("__private");
-			mockedThis = {
-				calcMilestone: function() {},
-				rewards: constants.rewards
-			};
-			parseHeight = sinon.stub(__private, "parseHeight").returns(1);
-			calcMilestone = sinon.stub(mockedThis, "calcMilestone").returns(0);
-
-			BlockReward.__set__("__private.parseHeight", parseHeight);
-			BlockReward.__set__("this.calcMilestone", calcMilestone);
-		});
-
-		afterEach(function() {
-			calcMilestone.restore();
-			parseHeight.restore();
-		});
 
 		it("parseHeight is called", function() {
+			const parseHeight = sinon.stub(instance, 'parseHeight').returns(10);
 			instance.calcSupply(10);
 
 			expect(parseHeight.getCall(0).args.length).to.equal(1);
@@ -112,18 +80,27 @@ describe("logic/blockReward", function() {
 		});
 
 		it("calcMilestone is called", function() {
-			instance.calcSupply.call(mockedThis, 10);
+      const calcMilestone = sinon.stub(instance, 'calcMilestone').returns(1);
+			instance.calcSupply(1);
 
 			expect(calcMilestone.getCall(0).args.length).to.equal(1);
 			expect(calcMilestone.getCall(0).args[0]).to.equal(1);
 		});
 
-		it("correct supply", function() {
-			debugger;
-			calcMilestone.restore();
-			parseHeight.restore();
+		const tests = [
+			{height: 10, supply: 11000001491000000},
+			{height: 11, supply: 11000001491000000 + 30000000},
+			{height: 12, supply: 11000001491000000 + 30000000 + 20000000},
+			{height: 13, supply: 11000001491000000 + 30000000 + 20000000 + 1500000000},
+			{height: 100, supply: 11000001491000000 + 30000000 + 20000000 + 1500000000 * (100-12)},
 
-			expect(instance.calcSupply(10)).to.equal(11000001491000000);
+		];
+		tests.forEach((supplyTest) => {
+			it(`Correct supply for height ${supplyTest.height}`, () => {
+
+        expect(instance.calcSupply(supplyTest.height)).to.equal(supplyTest.supply);
+			});
 		});
+
 	});
 });

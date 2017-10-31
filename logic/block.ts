@@ -4,7 +4,7 @@ import BigNum from '../helpers/bignum';
 import constants from '../helpers/constants';
 import { Ed, IKeypair } from '../helpers/ed';
 import logicBlockSchema from '../schema/logic/block';
-import * as BlockReward from './blockReward';
+import {BlockRewardLogic} from './blockReward';
 import { IBaseTransaction } from './transactions/baseTransaction';
 import * as OldImplementation from './_block.js';
 
@@ -122,7 +122,7 @@ export class BlockLogic {
     'blockSignature',
   ];
 
-  private blockReward = new BlockReward();
+  private blockReward = new BlockRewardLogic();
   private scope: { ed: Ed, schema: any /*ZSchema*/, transaction: any };
 
   constructor(ed: Ed, schema: any, transaction: any, cb?: any) {

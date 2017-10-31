@@ -1,7 +1,7 @@
 'use strict';
 
 var _ = require('lodash');
-var BlockReward = require('../../logic/blockReward.js');
+var BlockReward = require('../../logic/blockReward').BlockRewardLogic;
 var constants = require('../../helpers/constants').default;
 var OrderBy = require('../../helpers/orderBy').default;
 var schema = require('../../schema/blocks').default;
