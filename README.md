@@ -73,6 +73,7 @@ git clone -b testnet https://github.com/RiseVision/rise-node.git
 ```
 
 ## Authors
+- Alessio Scarapazzi <me@alessio.rocks>
 - Andrea B. <vekexasia+crypto@gmail.com>
 - Jan <lepetitjan@icloud.com>
 - Mariusz Serek <mariusz@serek.net>
