@@ -470,7 +470,8 @@ describe("modules/dapp", function() {
 			clock.tick();
 			var __private = OutTransfer.__get__("__private");
 
-			expect(__private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId]).to.be.false;
+			expect(__private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId])
+				.to.be.false;
 
 			expect(setAccountAndGet.calledOnce).to.be.true;
 			expect(setAccountAndGet.firstCall.args.length).to.equal(2);
@@ -496,7 +497,8 @@ describe("modules/dapp", function() {
 			clock.tick();
 			var __private = OutTransfer.__get__("__private");
 
-			expect(__private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId]).to.be.false;
+			expect(__private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId])
+				.to.be.false;
 
 			expect(mergeAccountAndGet.calledOnce).to.be.true;
 			expect(mergeAccountAndGet.firstCall.args.length).to.equal(2);
@@ -513,14 +515,14 @@ describe("modules/dapp", function() {
 		});
 
 		it("calls mergeAccountAndGet without", function() {
-
 			OutTransfer.__set__("modules", mockedModules);
 
 			instance.apply(trs, block, sender, callback);
 			clock.tick();
 			var __private = OutTransfer.__get__("__private");
 
-			expect(__private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId]).to.be.false;
+			expect(__private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId])
+				.to.be.false;
 
 			expect(mergeAccountAndGet.calledOnce).to.be.true;
 			expect(mergeAccountAndGet.firstCall.args.length).to.equal(2);
@@ -592,7 +594,8 @@ describe("modules/dapp", function() {
 			clock.tick();
 			var __private = OutTransfer.__get__("__private");
 
-			expect(__private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId]).to.be.true;
+			expect(__private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId])
+				.to.be.true;
 
 			expect(setAccountAndGet.calledOnce).to.be.true;
 			expect(setAccountAndGet.firstCall.args.length).to.equal(2);
@@ -618,7 +621,8 @@ describe("modules/dapp", function() {
 			clock.tick();
 			var __private = OutTransfer.__get__("__private");
 
-			expect(__private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId]).to.be.true;
+			expect(__private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId])
+				.to.be.true;
 
 			expect(mergeAccountAndGet.calledOnce).to.be.true;
 			expect(mergeAccountAndGet.firstCall.args.length).to.equal(2);
@@ -635,14 +639,14 @@ describe("modules/dapp", function() {
 		});
 
 		it("calls mergeAccountAndGet without", function() {
-
 			OutTransfer.__set__("modules", mockedModules);
 
 			instance.undo(trs, block, sender, callback);
 			clock.tick();
 			var __private = OutTransfer.__get__("__private");
 
-			expect(__private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId]).to.be.true;
+			expect(__private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId])
+				.to.be.true;
 
 			expect(mergeAccountAndGet.calledOnce).to.be.true;
 			expect(mergeAccountAndGet.firstCall.args.length).to.equal(2);
@@ -660,282 +664,280 @@ describe("modules/dapp", function() {
 	});
 
 	describe("applyUnconfirmed", function() {
-
 		it("calls cb", function() {
-
 			instance.applyUnconfirmed(trs, sender, callback);
 			clock.tick();
-      var __private = OutTransfer.__get__("__private");
+			var __private = OutTransfer.__get__("__private");
 
-      expect(__private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId]).to.be.true;
-      expect(callback.calledOnce).to.be.true;
+			expect(__private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId])
+				.to.be.true;
+			expect(callback.calledOnce).to.be.true;
 			expect(callback.firstCall.args.length).to.equal(0);
 		});
 	});
 
 	describe("undoUnconfirmed", function() {
-
 		it("calls cb", function() {
-
 			instance.undoUnconfirmed(trs, sender, callback);
 			clock.tick();
-      var __private = OutTransfer.__get__("__private");
+			var __private = OutTransfer.__get__("__private");
 
-      expect(__private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId]).to.be.false;
-      expect(callback.calledOnce).to.be.true;
+			expect(__private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId])
+				.to.be.false;
+			expect(callback.calledOnce).to.be.true;
 			expect(callback.firstCall.args.length).to.equal(0);
 		});
 	});
 
 	describe("schema", function() {
-
 		it("is correct", function() {
-
 			var schema = instance.schema;
 			var expectedSchema = {
-        id: 'OutTransfer',
-        object: true,
-        properties: {
-          dappId: {
-            type: 'string',
-            format: 'id',
-            minLength: 1,
-            maxLength: 20
-          },
-          transactionId: {
-            type: 'string',
-            format: 'id',
-            minLength: 1,
-            maxLength: 20
-          }
-        },
-        required: ['dappId', 'transactionId']
-      };
+				id: "OutTransfer",
+				object: true,
+				properties: {
+					dappId: {
+						type: "string",
+						format: "id",
+						minLength: 1,
+						maxLength: 20
+					},
+					transactionId: {
+						type: "string",
+						format: "id",
+						minLength: 1,
+						maxLength: 20
+					}
+				},
+				required: ["dappId", "transactionId"]
+			};
 
 			expect(schema).to.deep.equal(expectedSchema);
 		});
 	});
 
-  describe("objectNormalize", function() {
-    var library, validate;
-    beforeEach(function() {
-      library = OutTransfer.__get__("library");
-      library.schema = { validate: function() {} };
-    });
-    afterEach(function() {
-      if (validate && validate.restore) validate.restore();
-    });
+	describe("objectNormalize", function() {
+		var library, validate;
+		beforeEach(function() {
+			library = OutTransfer.__get__("library");
+			library.schema = { validate: function() {} };
+		});
+		afterEach(function() {
+			if (validate && validate.restore) validate.restore();
+		});
 
-    it("throws error", function(done) {
-      validate = sinon.stub(library.schema, "validate").returns(false);
+		it("throws error", function(done) {
+			validate = sinon.stub(library.schema, "validate").returns(false);
 
-      var throwError = function() {
-        var context = {
-          schema: {
-            getLastErrors: sinon.stub().returns([new Error("error")])
-          }
-        };
-        instance.objectNormalize.call(context, trs);
-      };
+			var throwError = function() {
+				var context = {
+					schema: {
+						getLastErrors: sinon.stub().returns([new Error("error")])
+					}
+				};
+				instance.objectNormalize.call(context, trs);
+			};
 
-      expect(throwError).to.throw();
+			expect(throwError).to.throw();
 
-      done();
-    });
+			done();
+		});
 
-    it("success", function(done) {
-      validate = sinon.stub(library.schema, "validate").returns(true);
+		it("success", function(done) {
+			validate = sinon.stub(library.schema, "validate").returns(true);
 
-      expect(instance.objectNormalize(trs)).to.deep.equal(trs);
+			expect(instance.objectNormalize(trs)).to.deep.equal(trs);
 
-      expect(validate.calledOnce).to.be.true;
-      expect(library.schema.validate.getCall(0).args.length).to.equal(2);
-      expect(library.schema.validate.getCall(0).args[0]).to.deep.equal(trs.asset.outTransfer);
-      expect(library.schema.validate.getCall(0).args[1]).to.equal(OutTransfer.prototype.schema);
+			expect(validate.calledOnce).to.be.true;
+			expect(library.schema.validate.getCall(0).args.length).to.equal(2);
+			expect(library.schema.validate.getCall(0).args[0]).to.deep.equal(
+				trs.asset.outTransfer
+			);
+			expect(library.schema.validate.getCall(0).args[1]).to.equal(
+				OutTransfer.prototype.schema
+			);
 
-      done();
-    });
-  });
+			done();
+		});
+	});
 
-  describe("dbRead", function() {
-    var raw;
-    beforeEach(function() {
-      raw = {
-        ot_dappId: 'carbonara',
-        transactionId: 'is available for hire'
-      }
-    });
+	describe("dbRead", function() {
+		var raw;
+		beforeEach(function() {
+			raw = {
+				ot_dappId: "carbonara",
+				transactionId: "is available for hire"
+			};
+		});
 
-    it("returns null", function(done) {
-      raw.ot_dappId = false;
-      var retVal = instance.dbRead(raw);
+		it("returns null", function(done) {
+			raw.ot_dappId = false;
+			var retVal = instance.dbRead(raw);
 
-      expect(retVal).to.equal(null);
+			expect(retVal).to.equal(null);
 
-      done();
-    });
+			done();
+		});
 
-    it("returns outTransfer", function(done) {
-      var retVal = instance.dbRead(raw);
+		it("returns outTransfer", function(done) {
+			var retVal = instance.dbRead(raw);
 
-      expect(retVal).to.deep.equal({outTransfer: {
-        dappId: raw.ot_dappId,
-        transactionId: raw.ot_outTransactionId
-      }});
+			expect(retVal).to.deep.equal({
+				outTransfer: {
+					dappId: raw.ot_dappId,
+					transactionId: raw.ot_outTransactionId
+				}
+			});
 
-      done();
-    });
-  });
+			done();
+		});
+	});
 
-  describe("dbTable", function() {
+	describe("dbTable", function() {
+		it("is correct", function() {
+			var dbTable = instance.dbTable;
 
-    it("is correct", function() {
+			expect(dbTable).to.deep.equal("outtransfer");
+		});
+	});
 
-      var dbTable = instance.dbTable;
+	describe("dbFields", function() {
+		it("is correct", function() {
+			var dbFields = instance.dbFields;
 
-      expect(dbTable).to.deep.equal('outtransfer');
-    });
-  });
+			expect(dbFields).to.deep.deep.equal([
+				"dappId",
+				"outTransactionId",
+				"transactionId"
+			]);
+		});
+	});
 
-  describe("dbFields", function() {
+	describe("dbSave", function() {
+		it("returns correct", function() {
+			var dbFields = instance.dbSave(trs);
 
-    it("is correct", function() {
+			expect(dbFields).to.deep.deep.equal({
+				table: instance.dbTable,
+				fields: instance.dbFields,
+				values: {
+					dappId: trs.asset.outTransfer.dappId,
+					outTransactionId: trs.asset.outTransfer.transactionId,
+					transactionId: trs.id
+				}
+			});
+		});
+	});
 
-      var dbFields = instance.dbFields;
+	describe("afterSave", function() {
+		it("calls dapps message", function() {
+			var mockedModules = {
+				dapps: {
+					message: function() {}
+				}
+			};
+			var message = sinon
+				.stub(mockedModules.dapps, "message")
+				.callsFake(function(dappId, obj, cb) {
+					return cb(true);
+				});
 
-      expect(dbFields).to.deep.deep.equal([
-        'dappId',
-        'outTransactionId',
-        'transactionId'
-      ]);
-    });
-  });
+			var modules = OutTransfer.__get__("modules");
+			OutTransfer.__set__("modules", mockedModules);
 
-  describe("dbSave", function() {
+			instance.afterSave(trs, callback);
+			clock.tick();
 
-    it("returns correct", function() {
+			expect(message.calledOnce).to.be.true;
+			expect(message.firstCall.args.length).to.be.equal(3);
+			expect(message.firstCall.args[0]).to.be.equal(trs.asset.outTransfer.dappId);
+			expect(message.firstCall.args[1]).to.be.deep.equal({
+				topic: "withdrawal",
+				message: {
+					transactionId: trs.id
+				}
+			});
+			expect(typeof message.firstCall.args[2]).to.equal("function");
 
-      var dbFields = instance.dbSave(trs);
+			expect(logger.debug.calledOnce).to.be.true;
+			expect(logger.debug.firstCall.args.length).to.equal(1);
+			expect(logger.debug.firstCall.args[0]).to.be.true;
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.firstCall.args.length).to.equal(0);
 
-      expect(dbFields).to.deep.deep.equal({
-        table: instance.dbTable,
-        fields: instance.dbFields,
-        values: {
-          dappId: trs.asset.outTransfer.dappId,
-          outTransactionId: trs.asset.outTransfer.transactionId,
-          transactionId: trs.id
-        }
-      });
-    });
-  });
+			OutTransfer.__set__("modules", modules);
+		});
+		it("calls dapps message", function() {
+			var mockedModules = {
+				dapps: {
+					message: function() {}
+				}
+			};
+			var message = sinon
+				.stub(mockedModules.dapps, "message")
+				.callsFake(function(dappId, obj, cb) {
+					return cb(false);
+				});
 
-  describe("afterSave", function() {
+			var modules = OutTransfer.__get__("modules");
+			OutTransfer.__set__("modules", mockedModules);
 
-    it("calls dapps message", function() {
+			instance.afterSave(trs, callback);
+			clock.tick();
 
-      var mockedModules = {
-        dapps: {
-          message: function() {}
-        }
-      };
-      var message = sinon.stub(mockedModules.dapps, "message").callsFake(function(dappId, obj, cb){return cb(true)});
+			expect(message.calledOnce).to.be.true;
+			expect(message.firstCall.args.length).to.be.equal(3);
+			expect(message.firstCall.args[0]).to.be.equal(trs.asset.outTransfer.dappId);
+			expect(message.firstCall.args[1]).to.be.deep.equal({
+				topic: "withdrawal",
+				message: {
+					transactionId: trs.id
+				}
+			});
+			expect(typeof message.firstCall.args[2]).to.equal("function");
 
-      var modules = OutTransfer.__get__("modules");
-      OutTransfer.__set__("modules", mockedModules);
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.firstCall.args.length).to.equal(0);
 
-      instance.afterSave(trs,callback);
-      clock.tick();
+			OutTransfer.__set__("modules", modules);
+		});
+	});
 
-      expect(message.calledOnce).to.be.true;
-      expect(message.firstCall.args.length).to.be.equal(3);
-      expect(message.firstCall.args[0]).to.be.equal(trs.asset.outTransfer.dappId);
-      expect(message.firstCall.args[1]).to.be.deep.equal({
-        topic: 'withdrawal',
-        message: {
-          transactionId: trs.id
-        }
-      });
-      expect(typeof(message.firstCall.args[2])).to.equal('function');
+	describe("ready", function() {
+		it("returns true when no multisig", function() {
+			sender.multisignatures = "not an array";
+			var retVal = instance.ready(trs, sender);
 
-      expect(logger.debug.calledOnce).to.be.true;
-      expect(logger.debug.firstCall.args.length).to.equal(1);
-      expect(logger.debug.firstCall.args[0]).to.be.true;
-      expect(callback.calledOnce).to.be.true;
-      expect(callback.firstCall.args.length).to.equal(0);
+			expect(retVal).to.equal(true);
+		});
+		it("returns true when no multisig", function() {
+			sender.multisignatures = [];
+			var retVal = instance.ready(trs, sender);
 
-      OutTransfer.__set__("modules", modules);
-    });
-    it("calls dapps message", function() {
+			expect(retVal).to.equal(true);
+		});
+		it("returns false when no signatures", function() {
+			sender.multisignatures = ["1", "2", "3"];
+			trs.signatures = "signature";
+			var retVal = instance.ready(trs, sender);
 
-      var mockedModules = {
-        dapps: {
-          message: function() {}
-        }
-      };
-      var message = sinon.stub(mockedModules.dapps, "message").callsFake(function(dappId, obj, cb){return cb(false)});
+			expect(retVal).to.equal(false);
+		});
+		it("returns false when not enough signatures", function() {
+			sender.multisignatures = ["1", "2", "3"];
+			trs.signatures = ["1", "2", "3"];
+			sender.multimin = 4;
+			var retVal = instance.ready(trs, sender);
 
-      var modules = OutTransfer.__get__("modules");
-      OutTransfer.__set__("modules", mockedModules);
+			expect(retVal).to.equal(false);
+		});
+		it("returns true when enough signatures", function() {
+			sender.multisignatures = ["1", "2", "3"];
+			trs.signatures = ["1", "2", "3"];
+			sender.multimin = 2;
+			var retVal = instance.ready(trs, sender);
 
-      instance.afterSave(trs,callback);
-      clock.tick();
-
-      expect(message.calledOnce).to.be.true;
-      expect(message.firstCall.args.length).to.be.equal(3);
-      expect(message.firstCall.args[0]).to.be.equal(trs.asset.outTransfer.dappId);
-      expect(message.firstCall.args[1]).to.be.deep.equal({
-        topic: 'withdrawal',
-        message: {
-          transactionId: trs.id
-        }
-      });
-      expect(typeof(message.firstCall.args[2])).to.equal('function');
-
-      expect(callback.calledOnce).to.be.true;
-      expect(callback.firstCall.args.length).to.equal(0);
-
-      OutTransfer.__set__("modules", modules);
-    });
-  });
-
-  describe("ready", function() {
-    it("returns true when no multisig", function() {
-      sender.multisignatures = "not an array";
-      var retVal = instance.ready(trs, sender);
-
-      expect(retVal).to.equal(true);
-    });
-    it("returns true when no multisig", function() {
-      sender.multisignatures = [];
-      var retVal = instance.ready(trs, sender);
-
-      expect(retVal).to.equal(true);
-    });
-    it("returns false when no signatures", function() {
-      sender.multisignatures = ['1','2','3'];
-      trs.signatures = 'signature';
-      var retVal = instance.ready(trs, sender);
-
-      expect(retVal).to.equal(false);
-    });
-    it("returns false when not enough signatures", function() {
-      sender.multisignatures = ['1','2','3'];
-      trs.signatures = ['1','2','3'];
-      sender.multimin = 4;
-      var retVal = instance.ready(trs, sender);
-
-      expect(retVal).to.equal(false);
-    });
-    it("returns true when enough signatures", function() {
-      sender.multisignatures = ['1','2','3'];
-      trs.signatures = ['1','2','3'];
-      sender.multimin = 2;
-      var retVal = instance.ready(trs, sender);
-
-      expect(retVal).to.equal(true);
-    });
-
-  });
-
-
+			expect(retVal).to.equal(true);
+		});
+	});
 });
