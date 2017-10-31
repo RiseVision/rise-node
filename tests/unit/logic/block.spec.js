@@ -4,7 +4,9 @@ chai.use(assertArrays);
 var expect = chai.expect;
 var sinon = require("sinon");
 var rewire = require("rewire");
-var Block = rewire("../../../logic/block");
+// var Block = rewire("../../../logic/block");
+var Block = rewire("../../../logic/block.ts");
+
 var ByteBuffer = require("bytebuffer");
 var ed = require("../../../helpers/ed");
 var zSchema = require("../../../helpers/z_schema").default;
@@ -79,7 +81,7 @@ describe("logic/block", function() {
     };
     clock = sinon.useFakeTimers();
     Block.__set__("setImmediate", setImmediate);
-    block = new Block(ed, schema, transaction, callback);
+    block = new Block.BlockLogic(ed, schema, transaction, callback);
     data = {
       transactions: dummyTransactions,
       timestamp: Date.now(),
@@ -94,7 +96,7 @@ describe("logic/block", function() {
 
   describe("when is imported", function() {
     it("should be a function", function() {
-      expect(Block).to.be.a("function");
+      expect(Block.BlockLogic).to.be.a("function");
     });
   });
 
@@ -142,21 +144,16 @@ describe("logic/block", function() {
     });
   });
 
-  describe("getBytes", function() {
+  describe("[static] getBytes", function() {
     it("returns a Buffer", function() {
-      clock.tick();
-      var instance = callback.args[0][1];
-      var bytes = instance.getBytes(dummyBlock);
-      expect(bytes).to.be.an.instanceof(Buffer);
+      expect(Block.BlockLogic.getBytes(dummyBlock)).to.be.an.instanceof(Buffer);
     });
   });
 
-  describe("verifySignature", function() {
+  describe("[static] verifySignature", function() {
     it("returns a verified hash", function() {
-      clock.tick();
-      var instance = callback.args[0][1];
-      var verification = instance.verifySignature(dummyBlock);
-      expect(verification).to.be.true;
+      expect(block.verifySignature(dummyBlock))
+        .to.be.an.true;
     });
   });
 
@@ -238,20 +235,16 @@ describe("logic/block", function() {
     // });
   });
 
-  describe("getId", function() {
+  describe("[static] getId", function() {
     it("returns an id string", function() {
-      clock.tick();
-      var instance = callback.args[0][1];
-      var id = instance.getId(dummyBlock);
-      expect(id).to.equal("1931531116681750305");
+      expect(Block.BlockLogic.getId(dummyBlock)).to.equal("1931531116681750305");
     });
   });
 
-  describe("getHash", function() {
+  describe("[static] getHash", function() {
     it("returns a hash of Uint8Array type", function() {
-      clock.tick();
-      var instance = callback.args[0][1];
-      var hash = instance.getHash(dummyBlock);
+      // var instance = callback.args[0][1];
+      var hash = Block.BlockLogic.getHash(dummyBlock);
       expect(hash).to.be.an.instanceof(Uint8Array);
       expect(hash).to.be.ofSize(32);
       var dummyHash = Uint8Array.from([

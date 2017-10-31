@@ -456,7 +456,8 @@ d.run(function () {
 		 */	
 		logic: ['db', 'bus', 'schema', 'genesisblock', function (scope, cb) {
 			var Transaction = require('./logic/transaction.js');
-			var Block = require('./logic/block.js');
+			// var Block = require('./logic/_block.js');
+			var Block = require('./logic/block.ts').BlockLogic;
       var Account = require('./logic/account.ts').AccountLogic;
       // var Account = require('./logic/_account.js');
       var Peers = require('./logic/peers.js');
@@ -488,7 +489,8 @@ d.run(function () {
 					new Transaction(scope.db, scope.ed, scope.schema, scope.genesisblock, scope.account, scope.logger, cb);
 				}],
 				block: ['db', 'bus', 'ed', 'schema', 'genesisblock', 'account', 'transaction', function (scope, cb) {
-					new Block(scope.ed, scope.schema, scope.transaction, cb);
+					const blockLogic = new Block(scope.ed, scope.schema, scope.transaction);
+					cb(null, blockLogic);
 				}],
 				peers: ['logger', function (scope, cb) {
 					new Peers(scope.logger, cb);

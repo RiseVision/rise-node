@@ -205,7 +205,7 @@ describe("logic/signature", function() {
 			expect(callback.firstCall.args.length).to.equal(1);
 			expect(callback.firstCall.args[0]).to.equal("Invalid public key");
 
-			Signature.__get__("library").logger.error.restore();
+			// Signature.__get__("library").logger.error.restore();
 		});
 	});
 

@@ -790,8 +790,8 @@ Account.prototype.merge = function (address, diff, cb) {
 
 	var sqles = [];
 
-	console.log(remove);
-	console.log('ciao');
+	// console.log(remove);
+	// console.log('ciao');
 	if (Object.keys(remove).length) {
 		Object.keys(remove).forEach(function (el) {
 			var sql = jsonSql.build({

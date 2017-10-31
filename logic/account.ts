@@ -4,9 +4,9 @@ import * as pgp from 'pg-promise';
 
 import {catchToLoggerAndRemapError, cback, emptyCB, promiseToCB } from '../helpers/promiseToCback';
 import {ILogger} from '../logger';
+import * as OriginalAccount from './_account.js';
 import {accountsModelCreator} from './models/account';
 import {IModelField, IModelFilter} from './models/modelField';
-import * as OriginalAccount from './_account.js';
 
 const jsonSql = jsonSqlCreator();
 
