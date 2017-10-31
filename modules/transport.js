@@ -3,7 +3,8 @@
 var _ = require('lodash');
 var async = require('async');
 var Broadcaster = require('../logic/broadcaster.js');
-var Peer = require('../logic/peer.js');
+var Peer = require('../logic/peer').Peer;
+var PeerState = require('../logic/peer').PeerState;
 var bignum = require('../helpers/bignum').default;
 var constants = require('../helpers/constants').default;
 var crypto = require('crypto');
@@ -313,7 +314,7 @@ Transport.prototype.getFromRandomPeer = function (config, options, cb) {
 		config = {};
 	}
 	config.limit = 1;
-	config.allowedStates = [Peer.STATE.DISCONNECTED, Peer.STATE.CONNECTED];
+	config.allowedStates = [PeerState.DISCONNECTED, PeerState.CONNECTED];
 	modules.peers.list(config, function (err, peers) {
 		if (!err && peers.length) {
 			return self.getFromPeer(peers[0], options, cb);

@@ -11,7 +11,8 @@ var path = require('path');
 var pgp = require('pg-promise')(); // We also initialize library here
 var sandboxHelper = require('../helpers/sandbox');
 var schema = require('../schema/peers').default;
-var Peer = require('../logic/peer.js');
+var Peer = require('../logic/peer').Peer;
+var PeerState = require('../logic/peer').PeerState;
 var sql = require('../sql/peers.js');
 var util = require('util');
 
@@ -293,7 +294,7 @@ Peers.prototype.sandboxApi = function (call, args, cb) {
  * @todo rename this function to activePeer or similar
  */
 Peers.prototype.update = function (peer) {
-	peer.state = Peer.STATE.CONNECTED;
+	peer.state = PeerState.CONNECTED;
 	return library.logic.peers.upsert(peer);
 };
 
@@ -378,7 +379,7 @@ Peers.prototype.discover = function (cb) {
 				}
 
 				// Set peer state to disconnected
-				peer.state = Peer.STATE.DISCONNECTED;
+				peer.state = PeerState.DISCONNECTED;
 				// We rely on data from other peers only when new peer is discovered for the first time
 				library.logic.peers.upsert(peer, true);
 				return setImmediate(eachCb);
@@ -428,7 +429,7 @@ Peers.prototype.acceptable = function (peers) {
 Peers.prototype.list = function (options, cb) {
 	options.limit = options.limit || constants.maxPeers;
 	options.broadhash = options.broadhash || modules.system.getBroadhash();
-	options.allowedStates = options.allowedStates || [Peer.STATE.CONNECTED];
+	options.allowedStates = options.allowedStates || [PeerState.CONNECTED];
 	options.attempts = ['matched broadhash', 'unmatched broadhash'];
 	options.attempt = 0;
 	options.matched = 0;
@@ -604,13 +605,13 @@ Peers.prototype.shared = {
 	count: function (req, cb) {
 		async.series({
 			connected: function (cb) {
-				__private.countByFilter({state: Peer.STATE.CONNECTED}, cb);
+				__private.countByFilter({state: PeerState.CONNECTED}, cb);
 			},
 			disconnected: function (cb) {
-				__private.countByFilter({state: Peer.STATE.DISCONNECTED}, cb);
+				__private.countByFilter({state: PeerState.DISCONNECTED}, cb);
 			},
 			banned: function (cb) {
-				__private.countByFilter({state: Peer.STATE.BANNED}, cb);
+				__private.countByFilter({state: PeerState.BANNED}, cb);
 			}
 		}, function (err, res) {
 			if (err) {

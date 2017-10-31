@@ -1,37 +1,17 @@
-var chai = require("chai");
+import { PeerState } from "../../../logic/peer";
+
+var chai   = require("chai");
 var expect = chai.expect;
-var sinon = require("sinon");
+var sinon  = require("sinon");
 var rewire = require("rewire");
-var path = require("path");
+var path   = require("path");
 
 var rootDir = path.join(__dirname, "../../..");
 
-var Peer = rewire(path.join(rootDir, "logic/peer"));
-
-function construct(context, args) {
-	function mocked() {
-		return Peer.apply(context, [args]);
-	}
-	mocked.prototype = Peer.prototype;
-	return new mocked();
-}
+// var Peer = rewire(path.join(rootDir, "logic/peer"));
+var Peer = rewire(path.join(rootDir, "logic/peer.ts")).Peer;
 
 describe("logic/peer", function() {
-	var instance, callback, clock, peer;
-
-	beforeEach(function() {
-		var context = { accept: sinon.stub() };
-		peer = {
-			mocked: "true"
-		};
-		instance = construct(context, peer);
-		callback = sinon.stub();
-		clock = sinon.useFakeTimers("setImmediate");
-		Peer.__set__("setImmediate", setImmediate);
-	});
-	afterEach(function() {
-		clock.reset();
-	});
 
 	describe("constructor", function() {
 		it("should be a function", function() {
@@ -39,27 +19,16 @@ describe("logic/peer", function() {
 
     });
     it("should be an instance of Peer", function() {
-      var context = { accept: sinon.stub() };
-      var peerObj = {
-        mocked: "true"
-      };
 
-			construct(context, peer);
-			construct(context, null);
-
+			const instance = new Peer({});
 			expect(instance).to.be.an.instanceOf(Peer);
-			expect(context.accept.calledTwice).to.be.true;
-			expect(context.accept.firstCall.args.length).to.equal(1);
-			expect(context.accept.firstCall.args[0]).to.deep.equal(peerObj);
-			expect(context.accept.getCall(1).args.length).to.equal(1);
-			expect(context.accept.getCall(1).args[0]).to.deep.equal({});
 
 		});
 	});
 
 	describe("properties", function() {
 		it("is correct", function() {
-			expect(instance.properties).to.deep.equal([
+			expect(new Peer({}).properties).to.deep.equal([
 				"ip",
 				"port",
 				"state",
@@ -78,14 +47,14 @@ describe("logic/peer", function() {
 
 	describe("immutable", function() {
 		it("is correct", function() {
-			expect(instance.immutable).to.deep.equal(["ip", "port", "string"]);
+			expect(new Peer({}).immutable).to.deep.equal(["ip", "port", "string"]);
 
 		});
 	});
 
 	describe("headers", function() {
 		it("is correct", function() {
-			expect(instance.headers).to.deep.equal([
+			expect(new Peer({}).headers).to.deep.equal([
 				"os",
 				"version",
 				"dappid",
@@ -99,7 +68,7 @@ describe("logic/peer", function() {
 
 	describe("nullable", function() {
 		it("is correct", function() {
-			expect(instance.nullable).to.deep.equal([
+			expect(new Peer({}).nullable).to.deep.equal([
 				"os",
 				"version",
 				"dappid",
@@ -113,13 +82,14 @@ describe("logic/peer", function() {
 	});
 
 	describe("STATE", function() {
-		it("is correct", function() {
-			expect(Peer.STATE).to.deep.equal({
-				BANNED: 0,
-				DISCONNECTED: 1,
-				CONNECTED: 2
-			});
-
+		it('Should be banned 0 ', () => {
+			expect(PeerState.BANNED).to.be.eq(0);
+		});
+    it('Should be DISCONNECTED 1 ', () => {
+      expect(PeerState.DISCONNECTED).to.be.eq(1);
+    });
+    it('Should be CONNECTED 2 ', () => {
+			expect(PeerState.CONNECTED).to.be.eq(2);
 		});
 	});
 
@@ -143,48 +113,23 @@ describe("logic/peer", function() {
 		});
 
 		it("returns peer with ip:port string", function() {
-			var normalize = sinon.stub(instance, "normalize").returns(peer);
+
 			peer.ip = "127.0.0.1";
 			peer.port = "1010";
 
-			var retVal = instance.accept(peer);
+			const instance = new Peer(peer);
 
-			delete retVal.normalize;
-			retVal = Object.assign({}, retVal); // taking the peer from the instance
-
-			peer.string = "127.0.0.1:1010";
-
-			expect(normalize.calledOnce).to.be.true;
-			expect(retVal).to.deep.equal(peer);
+			expect(instance.string).to.deep.equal("127.0.0.1:1010");
 		});
 
 		it("returns peer with ip:port string from a long ip", function() {
-			var normalize = sinon.stub(instance, "normalize").returns(peer);
-			peer.ip = "2130706433";
-			peer.port = "1010";
 
-			var retVal = instance.accept(peer);
+      peer.ip = "2130706433";
+      peer.port = "1010";
 
-			delete retVal.normalize;
-			retVal = Object.assign({}, retVal); // taking the peer from the instance
+      const instance = new Peer(peer);
 
-			peer.ip = "127.0.0.1";
-			peer.string = "127.0.0.1:1010";
-
-			expect(normalize.calledOnce).to.be.true;
-			expect(retVal).to.deep.equal(peer);
-		});
-
-		it("returns unmuted peer", function() {
-			var normalize = sinon.stub(instance, "normalize").returns(peer);
-
-			var retVal = instance.accept(peer);
-
-			delete retVal.normalize;
-			retVal = Object.assign({}, retVal); // taking the peer from the instance
-
-			expect(normalize.calledOnce).to.be.true;
-			expect(retVal).to.deep.equal(peer);
+      expect(instance.string).to.deep.equal("127.0.0.1:1010");
 		});
 	});
 
@@ -205,10 +150,6 @@ describe("logic/peer", function() {
 				updated: "",
 				nonce: ""
 			};
-			protoParseInt = sinon.spy(instance, "parseInt");
-		});
-		afterEach(function() {
-			protoParseInt.reset();
 		});
 
 		it("returns peer without dappId and height", function() {
@@ -226,17 +167,20 @@ describe("logic/peer", function() {
 				nonce: ""
 			};
 			var clonedPeer = Object.assign({}, peer);
+			const instance = new Peer(clonedPeer);
+			const protoParseInt= sinon.spy(instance, 'parseInt');
+
 			var retVal = instance.normalize(clonedPeer);
 
 			retVal = Object.assign({}, retVal); // taking the peer from the instance
 
 			expect(protoParseInt.calledTwice).to.be.true;
 			expect(protoParseInt.firstCall.args.length).to.equal(2);
-			expect(protoParseInt.firstCall.args[0]).to.equal(peer.port);
+			expect(protoParseInt.firstCall.args[0]).to.equal(instance.port);
 			expect(protoParseInt.firstCall.args[1]).to.equal(0);
 			expect(protoParseInt.getCall(1).args.length).to.equal(2);
-			expect(protoParseInt.getCall(1).args[0]).to.equal(peer.state);
-			expect(protoParseInt.getCall(1).args[1]).to.equal(Peer.STATE.DISCONNECTED);
+			expect(protoParseInt.getCall(1).args[0]).to.equal(instance.state);
+			expect(protoParseInt.getCall(1).args[1]).to.equal(PeerState.DISCONNECTED);
 			expect(retVal).to.deep.equal(expectedPeer);
 		});
 		it("returns peer without height", function() {
@@ -255,7 +199,10 @@ describe("logic/peer", function() {
 			};
 			peer.dappid = "dappId";
 			var clonedPeer = Object.assign({}, peer);
-			var retVal = instance.normalize(clonedPeer);
+			const instance = new Peer({});
+      const protoParseInt= sinon.spy(instance, 'parseInt');
+
+      var retVal = instance.normalize(clonedPeer);
 
 			retVal = Object.assign({}, retVal); // taking the peer from the instance
 
@@ -265,7 +212,7 @@ describe("logic/peer", function() {
 			expect(protoParseInt.firstCall.args[1]).to.equal(0);
 			expect(protoParseInt.getCall(1).args.length).to.equal(2);
 			expect(protoParseInt.getCall(1).args[0]).to.equal(peer.state);
-			expect(protoParseInt.getCall(1).args[1]).to.equal(Peer.STATE.DISCONNECTED);
+			expect(protoParseInt.getCall(1).args[1]).to.equal(PeerState.DISCONNECTED);
 			expect(retVal).to.deep.equal(expectedPeer);
 		});
 
@@ -285,6 +232,8 @@ describe("logic/peer", function() {
 			};
 			peer.dappid = ["dappId", "dappId2"];
 			var clonedPeer = Object.assign({}, peer);
+      const instance = new Peer({});
+      const protoParseInt= sinon.spy(instance, 'parseInt');
 			var retVal = instance.normalize(clonedPeer);
 
 			retVal = Object.assign({}, retVal); // taking the peer from the instance
@@ -295,7 +244,7 @@ describe("logic/peer", function() {
 			expect(protoParseInt.firstCall.args[1]).to.equal(0);
 			expect(protoParseInt.getCall(1).args.length).to.equal(2);
 			expect(protoParseInt.getCall(1).args[0]).to.equal(peer.state);
-			expect(protoParseInt.getCall(1).args[1]).to.equal(Peer.STATE.DISCONNECTED);
+			expect(protoParseInt.getCall(1).args[1]).to.equal(PeerState.DISCONNECTED);
 			expect(retVal).to.deep.equal(expectedPeer);
 		});
 
@@ -316,6 +265,8 @@ describe("logic/peer", function() {
 			peer.dappid = ["dappId", "dappId2"];
 			peer.height = "50";
 			var clonedPeer = Object.assign({}, peer);
+      const instance = new Peer({});
+      const protoParseInt= sinon.spy(instance, 'parseInt');
 			var retVal = instance.normalize(clonedPeer);
 
 			retVal = Object.assign({}, retVal); // taking the peer from the instance
@@ -329,35 +280,35 @@ describe("logic/peer", function() {
 			expect(protoParseInt.getCall(1).args[1]).to.equal(0);
 			expect(protoParseInt.getCall(2).args.length).to.equal(2);
 			expect(protoParseInt.getCall(2).args[0]).to.equal(peer.state);
-			expect(protoParseInt.getCall(2).args[1]).to.equal(Peer.STATE.DISCONNECTED);
+			expect(protoParseInt.getCall(2).args[1]).to.equal(PeerState.DISCONNECTED);
 			expect(retVal).to.deep.equal(expectedPeer);
 		});
 	});
 
-	describe("normalize", function() {
+	describe("parseInt", function() {
 		it("returns fallback", function() {
-			var retVal = instance.parseInt(null, 100);
+			var retVal = new Peer({}).parseInt(null, 100);
 
 			expect(retVal).to.equal(100);
 
 		});
 
 		it("parses integer from string", function() {
-			var retVal = instance.parseInt("200", 100);
+			var retVal = new Peer({}).parseInt("200", 100);
 
 			expect(retVal).to.equal(200);
 
 		});
 
 		it("parses integer from float", function() {
-			var retVal = instance.parseInt(2.2, 100);
+			var retVal = new Peer({}).parseInt(2.2, 100);
 
 			expect(retVal).to.equal(2);
 
 		});
 
 		it("returns integer", function() {
-			var retVal = instance.parseInt(300, 100);
+			var retVal = new Peer({}).parseInt(300, 100);
 
 			expect(retVal).to.equal(300);
 
@@ -365,9 +316,10 @@ describe("logic/peer", function() {
 	});
 
 	describe("applyHeaders", function() {
-		var normalize, update;
+		var normalize, update, instance;
 
 		beforeEach(function() {
+      instance = new Peer({});
 			normalize = sinon.stub(instance, "normalize").callsFake(function(obj) {
 				return obj;
 			});
@@ -394,6 +346,7 @@ describe("logic/peer", function() {
 
 	describe("update", function() {
 		it("returns only supported properties", function() {
+      const instance = new Peer({});
 			var normalize = sinon.stub(instance, "normalize").callsFake(function(obj) {
 				return obj;
 			});
@@ -406,7 +359,8 @@ describe("logic/peer", function() {
 				height: "",
 				clock: "",
 				updated: "",
-				nonce: ""
+				nonce: "",
+				port: 0,
 			};
 
 			var clonedPeer = Object.assign({}, peer);
@@ -423,6 +377,7 @@ describe("logic/peer", function() {
 
 	describe("object", function() {
 		it("returns only supported properties", function() {
+      const instance = new Peer({});
 			var peer = {
 				ip: "127.0.0.1",
 				port: "1010",

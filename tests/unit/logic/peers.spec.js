@@ -7,7 +7,7 @@ var path = require("path");
 var rootDir = path.join(__dirname, "../../..");
 
 var Peers = rewire(path.join(rootDir, "logic/peers"));
-var Peer = require("../../../logic/peer");
+var Peer = require("../../../logic/peer.ts").Peer;
 
 describe("logic/peers", function() {
 	var instance, callback, clock, schema, logger, peer;
@@ -24,7 +24,7 @@ describe("logic/peers", function() {
 		clock = sinon.useFakeTimers("setImmediate");
 		Peers.__set__("setImmediate", setImmediate);
 		instance = new Peers(logger, callback);
-		peer = new Peer();
+		peer = new Peer({});
 	});
 	afterEach(function() {
 		clock.reset();
