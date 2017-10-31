@@ -12,7 +12,7 @@ var constants = require(path.join(rootDir, "helpers/constants.js"));
 
 var blocksApiModule = rewire(path.join(rootDir, "modules/blocks/api"));
 
-describe.only("modules/blocks/api", function() {
+describe("modules/blocks/api", function() {
     var __private = blocksApiModule.__get__("__private");
 
     var library = {
