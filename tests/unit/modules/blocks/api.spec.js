@@ -98,11 +98,6 @@ describe("modules/blocks/api", function() {
 
             __private.getById(id, callback);
 
-            expect(library.db.query.calledOnce).to.be.true;
-            expect(library.db.query.getCall(0).args.length).to.equal(2);
-            expect(library.db.query.getCall(0).args[0]).to.equal(sql.getById);
-            expect(library.db.query.getCall(0).args[1]).to.deep.equal({ id : id });
-
             process.nextTick(function() {
                 expect(library.logger.error.calledOnce).to.be.true;
                 expect(library.logger.error.getCall(0).args.length).to.equal(1);
@@ -122,11 +117,6 @@ describe("modules/blocks/api", function() {
             library.db.query.resolves([]);
 
             __private.getById(id, callback);
-
-            expect(library.db.query.calledOnce).to.be.true;
-            expect(library.db.query.getCall(0).args.length).to.equal(2);
-            expect(library.db.query.getCall(0).args[0]).to.equal(sql.getById);
-            expect(library.db.query.getCall(0).args[1]).to.deep.equal({ id : id });
 
             Promise.resolve().then(function() {
                 sandbox.clock.tick();
@@ -241,14 +231,6 @@ describe("modules/blocks/api", function() {
 
             __private.list(filter, callback);
 
-            expect(orderByStub.calledOnce).to.be.true;
-            expect(orderByStub.getCall(0).args.length).to.equal(2);
-            expect(orderByStub.getCall(0).args[0]).to.equal(filter.orderBy);
-            expect(orderByStub.getCall(0).args[1]).to.have.property("sortFields");
-            expect(orderByStub.getCall(0).args[1]).to.have.property("fieldPrefix");
-            expect(orderByStub.getCall(0).args[1]["sortFields"]).to.equal(sql.sortFields);
-            expect(orderByStub.getCall(0).args[1]["fieldPrefix"]).to.equal("b_");
-
             sandbox.clock.tick();
 
             expect(callback.calledOnce).to.be.true;
@@ -267,10 +249,6 @@ describe("modules/blocks/api", function() {
 
             __private.list(filter, callback);
 
-            expect(sql.countList.calledOnce).to.be.true;
-            expect(sql.countList.getCall(0).args.length).to.equal(1);
-            expect(sql.countList.getCall(0).args[0]).to.deep.equal({ where : where });
-
             expect(library.db.query.calledOnce).to.be.true;
             expect(library.db.query.getCall(0).args.length).to.equal(2);
             expect(library.db.query.getCall(0).args[0]).to.equal(listCount);
@@ -287,10 +265,6 @@ describe("modules/blocks/api", function() {
             sql.countList.returns(listCount);
 
             __private.list(filter, callback);
-
-            expect(sql.countList.calledOnce).to.be.true;
-            expect(sql.countList.getCall(0).args.length).to.equal(1);
-            expect(sql.countList.getCall(0).args[0]).to.deep.equal({ where : where });
 
             expect(library.db.query.calledOnce).to.be.true;
             expect(library.db.query.getCall(0).args.length).to.equal(2);
@@ -313,26 +287,16 @@ describe("modules/blocks/api", function() {
             expect(orderByStub.getCall(0).args[1]).to.have.property("fieldPrefix");
             expect(orderByStub.getCall(0).args[1]["sortFields"]).to.equal(sql.sortFields);
             expect(orderByStub.getCall(0).args[1]["fieldPrefix"]).to.equal("b_");
-
-            sandbox.clock.tick();
-
-            expect(callback.calledOnce).to.be.true;
-            expect(callback.getCall(0).args.length).to.equal(1);
-            expect(callback.getCall(0).args[0]).to.equal(order.error);
         });
 
-        it("countList rejects", function() {
+        it("countList rejects", function(done) {
             var listCount = {};
             var error = { stack : "error" };
 
-            library.db.query.rejects({});
+            library.db.query.rejects(error);
             sql.countList.returns(listCount);
 
             __private.list(filter, callback);
-
-            expect(sql.countList.calledOnce).to.be.true;
-            expect(sql.countList.getCall(0).args.length).to.equal(1);
-            expect(sql.countList.getCall(0).args[0]).to.deep.equal({ where : where });
 
             expect(library.db.query.calledOnce).to.be.true;
             expect(library.db.query.getCall(0).args.length).to.equal(2);
@@ -349,10 +313,12 @@ describe("modules/blocks/api", function() {
                 expect(callback.calledOnce);
                 expect(callback.getCall(0).args.length).to.equal(1);
                 expect(callback.getCall(0).args[0]).to.equal("Blocks#list error");
+
+                done();
             });
         });
 
-        it("list rejects", function() {
+        it("list rejects", function(done) {
             var count = 30;
             var listCountQuery = {};
             var listCountData = [{ count : count }];
@@ -366,24 +332,7 @@ describe("modules/blocks/api", function() {
 
             __private.list(filter, callback);
 
-            expect(sql.countList.calledOnce).to.be.true;
-            expect(sql.countList.getCall(0).args.length).to.equal(1);
-            expect(sql.countList.getCall(0).args[0]).to.deep.equal({ where : where });
-
-            expect(library.db.query.calledOnce).to.be.true;
-            expect(library.db.query.getCall(0).args.length).to.equal(2);
-            expect(library.db.query.getCall(0).args[0]).to.equal(listCountQuery);
-            expect(library.db.query.getCall(0).args[1]).to.deep.equal(params);
-
-            Promise.resolve(function() {
-                expect(sql.list.calledOnce).to.be.true;
-                expect(sql.list.getCall(0).args.length).to.equal(1);
-                expect(sql.list.getCall(0).args[0]).to.deep.equal({
-                    where : where,
-                    sortField : order.sortField,
-                    sortMethod : order.sortMethod 
-                });
-
+            Promise.resolve().then(function() {
                 expect(library.db.query.calledTwice).to.be.true;
                 expect(library.db.query.getCall(1).args.length).to.equal(2);
                 expect(library.db.query.getCall(1).args[0]).to.equal(listQuery);
@@ -399,11 +348,13 @@ describe("modules/blocks/api", function() {
                     expect(callback.calledOnce);
                     expect(callback.getCall(0).args.length).to.equal(1);
                     expect(callback.getCall(0).args[0]).to.equal("Blocks#list error");
+
+                    done();
                 });
             });
         });
 
-        it("success", function() {
+        it("success", function(done) {
             var count = 30;
             var listCountQuery = {};
             var listCountData = [{ count : count }];
@@ -433,7 +384,7 @@ describe("modules/blocks/api", function() {
             expect(library.db.query.getCall(0).args[0]).to.equal(listCountQuery);
             expect(library.db.query.getCall(0).args[1]).to.deep.equal(params);
 
-            Promise.resolve(function() {
+            Promise.resolve().then(function() {
                 expect(sql.list.calledOnce).to.be.true;
                 expect(sql.list.getCall(0).args.length).to.equal(1);
                 expect(sql.list.getCall(0).args[0]).to.deep.equal({
@@ -447,12 +398,12 @@ describe("modules/blocks/api", function() {
                 expect(library.db.query.getCall(1).args[0]).to.equal(listQuery);
                 expect(library.db.query.getCall(1).args[1]).to.deep.equal(params);
 
-                Promise.resolve(function() {
+                Promise.resolve().then(function() {
                     expect(library.logic.block.dbRead.calledTwice).to.be.true;
-                    expect(library.logger.error.getCall(0).args.length).to.equal(1);
-                    expect(library.logger.error.getCall(0).args[0]).to.equal(row1);
-                    expect(library.logger.error.getCall(1).args.length).to.equal(1);
-                    expect(library.logger.error.getCall(1).args[0]).to.equal(row2)
+                    expect(library.logic.block.dbRead.getCall(0).args.length).to.equal(1);
+                    expect(library.logic.block.dbRead.getCall(0).args[0]).to.equal(row1);
+                    expect(library.logic.block.dbRead.getCall(1).args.length).to.equal(1);
+                    expect(library.logic.block.dbRead.getCall(1).args[0]).to.equal(row2)
 
                     sandbox.clock.tick();
 
@@ -460,6 +411,8 @@ describe("modules/blocks/api", function() {
                     expect(callback.getCall(0).args.length).to.equal(2);
                     expect(callback.getCall(0).args[0]).to.be.null;
                     expect(callback.getCall(0).args[1]).to.deep.equal({ blocks : parsedRows, count : count });
+
+                    done();
                 });
             });
         });
@@ -528,22 +481,6 @@ describe("modules/blocks/api", function() {
 
             API.getBlock(request, callback);
 
-            expect(library.schema.validate.calledOnce).to.be.true;
-            expect(library.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(library.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(library.schema.validate.getCall(0).args[1]).to.equal(schema.getBlock);
-            expect(library.schema.validate.getCall(0).args[2]).to.be.a("function");
-
-            expect(library.dbSequence.add.calledOnce).to.be.true;
-            expect(library.dbSequence.add.getCall(0).args.length).to.equal(2);
-            expect(library.dbSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(library.dbSequence.add.getCall(0).args[1]).to.equal(callback);
-
-            expect(__private.getById.calledOnce).to.be.true;
-            expect(__private.getById.getCall(0).args.length).to.equal(2);
-            expect(__private.getById.getCall(0).args[0]).to.equal(request.body.id);
-            expect(__private.getById.getCall(0).args[1]).to.be.a("function");
-
             sandbox.clock.tick();
 
             expect(callback.calledOnce).to.be.true;
@@ -562,22 +499,6 @@ describe("modules/blocks/api", function() {
             __private.getById.callsArgWith(1, error, block);
 
             API.getBlock(request, callback);
-
-            expect(library.schema.validate.calledOnce).to.be.true;
-            expect(library.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(library.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(library.schema.validate.getCall(0).args[1]).to.equal(schema.getBlock);
-            expect(library.schema.validate.getCall(0).args[2]).to.be.a("function");
-
-            expect(library.dbSequence.add.calledOnce).to.be.true;
-            expect(library.dbSequence.add.getCall(0).args.length).to.equal(2);
-            expect(library.dbSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(library.dbSequence.add.getCall(0).args[1]).to.equal(callback);
-
-            expect(__private.getById.calledOnce).to.be.true;
-            expect(__private.getById.getCall(0).args.length).to.equal(2);
-            expect(__private.getById.getCall(0).args[0]).to.equal(request.body.id);
-            expect(__private.getById.getCall(0).args[1]).to.be.a("function");
 
             sandbox.clock.tick();
 
@@ -661,12 +582,6 @@ describe("modules/blocks/api", function() {
 
             API.getBlocks(request, callback);
 
-            expect(library.schema.validate.calledOnce).to.be.true;
-            expect(library.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(library.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(library.schema.validate.getCall(0).args[1]).to.equal(schema.getBlocks);
-            expect(library.schema.validate.getCall(0).args[2]).to.be.a("function");
-
             sandbox.clock.tick();
 
             expect(callback.calledOnce).to.be.true;
@@ -688,22 +603,6 @@ describe("modules/blocks/api", function() {
             __private.list.callsArgWith(1, error, data);
 
             API.getBlocks(request, callback);
-
-            expect(library.schema.validate.calledOnce).to.be.true;
-            expect(library.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(library.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(library.schema.validate.getCall(0).args[1]).to.equal(schema.getBlocks);
-            expect(library.schema.validate.getCall(0).args[2]).to.be.a("function");
-
-            expect(library.dbSequence.add.calledOnce).to.be.true;
-            expect(library.dbSequence.add.getCall(0).args.length).to.equal(2);
-            expect(library.dbSequence.add.getCall(0).args[0]).to.be.a("function");
-            expect(library.dbSequence.add.getCall(0).args[1]).to.equal(callback);
-
-            expect(__private.list.calledOnce).to.be.true;
-            expect(__private.list.getCall(0).args.length).to.equal(2);
-            expect(__private.list.getCall(0).args[0]).to.equal(request.body);
-            expect(__private.list.getCall(0).args[1]).to.be.a("function");
 
             sandbox.clock.tick();
 
@@ -899,12 +798,6 @@ describe("modules/blocks/api", function() {
 
             API.getFee(request, callback);
 
-            expect(library.schema.validate.calledOnce).to.be.true;
-            expect(library.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(library.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(library.schema.validate.getCall(0).args[1]).to.equal(schema.getFee);
-            expect(library.schema.validate.getCall(0).args[2]).to.be.a("function");
-
             sandbox.clock.tick();
 
             expect(callback.calledOnce).to.be.true;
@@ -970,12 +863,6 @@ describe("modules/blocks/api", function() {
             library.schema.validate.callsArgWith(2, error);
 
             API.getFees(request, callback);
-
-            expect(library.schema.validate.calledOnce).to.be.true;
-            expect(library.schema.validate.getCall(0).args.length).to.equal(3);
-            expect(library.schema.validate.getCall(0).args[0]).to.equal(request.body);
-            expect(library.schema.validate.getCall(0).args[1]).to.equal(schema.getFees);
-            expect(library.schema.validate.getCall(0).args[2]).to.be.a("function");
 
             sandbox.clock.tick();
 
