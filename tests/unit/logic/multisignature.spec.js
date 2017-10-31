@@ -389,8 +389,7 @@ describe("modules/multisignature", function() {
 		});
 
 		it("success", function(done) {
-			trs.asset.multisignature.keysgroup[0] =
-				"+7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0";
+			trs.asset.multisignature.keysgroup[0] = "+7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0";
 			instance.verify(trs, sender, callback);
 			clock.runAll();
 
