@@ -372,8 +372,7 @@ Block.prototype.schema = {
 			minimum: 0
 		}
 	},
-	required: ['blockSignature', 'generatorPublicKey', 'numberOfTransactions', 'payloadHash', 'payloadLength', 'timestamp', 'totalAmount', 'totalFee', 'reward', 'transactions', 'version'],
-  "additionalProperties": false
+	required: ['blockSignature', 'generatorPublicKey', 'numberOfTransactions', 'payloadHash', 'payloadLength', 'timestamp', 'totalAmount', 'totalFee', 'reward', 'transactions', 'version']
 };
 
 /**
@@ -439,16 +438,6 @@ Block.prototype.getId = function (block) {
  */
 Block.prototype.getHash = function (block) {
 	return crypto.createHash('sha256').update(this.getBytes(block)).digest();
-};
-
-/**
- * Returns send fees from constants.
- * @param {block} block
- * @return {number} fee
- * @todo delete unused input parameter
- */
-Block.prototype.calculateFee = function (block) {
-	return constants.fees.send;
 };
 
 /**
