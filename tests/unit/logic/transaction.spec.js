@@ -1966,25 +1966,46 @@ describe('logic/transaction', function () {
 			amount,
 			scope,
 			traceSpy,
-			traceParam2;
+			traceParam2,
+			modules,
+			calcStub,
+			mergeStub,
+			vote,
+			applyStub;
 
 		beforeEach(function () {
 			scope = {
 				logger: {
-					trace: function () {}
+					trace: function (height) {}
+				},
+				account: {
+					merge: function (address, diff, cb) {}
 				}
 			};
 			traceSpy = sinon.spy(scope.logger, 'trace');
+			mergeStub = sinon.stub(scope.account, 'merge');
+			vote = new Vote();
+			applyStub = sinon.stub(vote, 'apply');
 			instance = new Transaction();
+			instance.attachAssetType(transactionTypes.VOTE, vote);
 			instance.scope = scope;
 			readyStub = sinon.stub(instance, 'ready');
 			checkBalanceStub = sinon.stub(instance, 'checkBalance');
+			modules = {
+				rounds: {
+					calc: function () {}
+				}
+			};
+			calcStub = sinon.stub(modules.rounds, 'calc').returns(500);
 		});
 
 		afterEach(function () {
+			traceSpy.restore();
+			mergeStub.restore();
+			applyStub.restore();
 			readyStub.restore();
 			checkBalanceStub.restore();
-			traceSpy.restore();
+			calcStub.restore();
 		});
 
 		it('Transaction is not ready', function () {
@@ -2025,21 +2046,30 @@ describe('logic/transaction', function () {
 			expect(callback.args[0][0]).to.equal('BalanceExceededError');
 		});
 
-		it('Account merge error #1', function () {
+		it('account.merge() returns error #1', function () {
+			instance.bindModules(modules);
 			readyStub.returns(true);
 			checkBalanceStub.returns({ exceeded: false });
 			trs = { amount: 100, fee: 50 };
-			block = 2;
-			sender = 3;
+			block = { id: 600, height: 70 };
+			sender = { address: 700 };
 			amount = new bignum(150);
 			traceParam2 = {
 				sender: sender.address,
 				balance: -amount,
 				blockId: block.id,
-				round: modules.rounds.calc(block.height)
+				round: 500
 			};
+			var mergeParam2 = {
+				balance: -150,
+				blockId: block.id,
+				round: 500
+			};
+			mergeStub.callsFake(function (address, diff, cb) {
+				setImmediate(cb, 'mergeError');
+			});
 			instance.apply(trs, block, sender, callback);
-			clock.tick();
+			clock.runAll();
 			expect(readyStub.calledOnce).to.be.true;
 			expect(readyStub.args[0][0]).to.deep.equal(trs);
 			expect(readyStub.args[0][1]).to.equal(sender);
@@ -2048,21 +2078,436 @@ describe('logic/transaction', function () {
 			expect(checkBalanceStub.args[0][1]).to.equal('balance');
 			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
 			expect(checkBalanceStub.args[0][3]).to.equal(sender);
-			expect(traceSpy.calledOnce).to.be.true;
-			expect(traceSpy.args[0][0]).to.equal('Logic/Transaction->apply');
+			expect(traceSpy.calledTwice).to.be.true;
+			expect(traceSpy.args[0][0]).to.equal('Logic/Transaction->bindModules');
+			expect(traceSpy.args[1][0]).to.equal('Logic/Transaction->apply');
+			expect(traceSpy.args[1][1]).to.deep.equal(traceParam2);
+			expect(calcStub.called).to.be.true;
+			expect(calcStub.args[0][0]).to.equal(block.height);
+			expect(calcStub.args[1][0]).to.equal(block.height);
+			expect(mergeStub.calledOnce).to.be.true;
+			expect(mergeStub.args[0][0]).to.equal(sender.address);
+			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam2);
 			expect(callback.calledOnce).to.be.true;
-			expect(callback.args[0][0]).to.equal('BalanceExceededError');
+			expect(callback.args[0][0]).to.equal('mergeError');
 		});
 
-		it('Account merge error #2', function () {});
+		it('account.merge() returns error #2', function () {
+			applyStub.callsFake(function (trs, block, sender, cb) {
+				setImmediate(cb, 'applyError');
+			});
+			instance.bindModules(modules);
+			readyStub.returns(true);
+			checkBalanceStub.returns({ exceeded: false });
+			trs = { amount: 100, fee: 50, type: transactionTypes.VOTE };
+			block = { id: 600, height: 70 };
+			sender = { address: 700 };
+			amount = new bignum(150);
+			traceParam2 = {
+				sender: sender.address,
+				balance: -amount,
+				blockId: block.id,
+				round: 500
+			};
+			var mergeParam2 = {
+				balance: -150,
+				blockId: block.id,
+				round: 500
+			};
+			mergeStub.onCall(0).callsFake(function (address, diff, cb) {
+				setImmediate(cb, undefined, { address: 700 });
+			});
+			mergeStub.onCall(1).callsFake(function (address, diff, cb) {
+				setImmediate(cb, 'mergeError2');
+			});
+			instance.apply(trs, block, sender, callback);
+			clock.runAll();
+			expect(readyStub.calledOnce).to.be.true;
+			expect(readyStub.args[0][0]).to.deep.equal(trs);
+			expect(readyStub.args[0][1]).to.equal(sender);
+			expect(checkBalanceStub.calledOnce).to.be.true;
+			expect(checkBalanceStub.args[0][0]).to.deep.equal(amount);
+			expect(checkBalanceStub.args[0][1]).to.equal('balance');
+			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
+			expect(checkBalanceStub.args[0][3]).to.equal(sender);
+			expect(traceSpy.calledTwice).to.be.true;
+			expect(traceSpy.args[0][0]).to.equal('Logic/Transaction->bindModules');
+			expect(traceSpy.args[1][0]).to.equal('Logic/Transaction->apply');
+			expect(traceSpy.args[1][1]).to.deep.equal(traceParam2);
+			expect(calcStub.called).to.be.true;
+			expect(calcStub.args[0][0]).to.equal(block.height);
+			expect(calcStub.args[1][0]).to.equal(block.height);
+			expect(mergeStub.calledTwice).to.be.true;
+			expect(mergeStub.args[0][0]).to.equal(sender.address);
+			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam2);
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal('mergeError2');
+		});
 
-		it('Success', function () {});
+		it('Success', function () {
+			applyStub.callsFake(function (trs, block, sender, cb) {
+				setImmediate(cb, 'applyError');
+			});
+			instance.bindModules(modules);
+			readyStub.returns(true);
+			checkBalanceStub.returns({ exceeded: false });
+			trs = { amount: 100, fee: 50, type: transactionTypes.VOTE };
+			block = { id: 600, height: 70 };
+			sender = { address: 700 };
+			amount = new bignum(150);
+			traceParam2 = {
+				sender: sender.address,
+				balance: -amount,
+				blockId: block.id,
+				round: 500
+			};
+			var mergeParam2 = {
+				balance: -150,
+				blockId: block.id,
+				round: 500
+			};
+			mergeStub.callsFake(function (address, diff, cb) {
+				setImmediate(cb, undefined, { address: 700 });
+			});
+			instance.apply(trs, block, sender, callback);
+			clock.runAll();
+			expect(readyStub.calledOnce).to.be.true;
+			expect(readyStub.args[0][0]).to.deep.equal(trs);
+			expect(readyStub.args[0][1]).to.equal(sender);
+			expect(checkBalanceStub.calledOnce).to.be.true;
+			expect(checkBalanceStub.args[0][0]).to.deep.equal(amount);
+			expect(checkBalanceStub.args[0][1]).to.equal('balance');
+			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
+			expect(checkBalanceStub.args[0][3]).to.equal(sender);
+			expect(traceSpy.calledTwice).to.be.true;
+			expect(traceSpy.args[0][0]).to.equal('Logic/Transaction->bindModules');
+			expect(traceSpy.args[1][0]).to.equal('Logic/Transaction->apply');
+			expect(traceSpy.args[1][1]).to.deep.equal(traceParam2);
+			expect(calcStub.called).to.be.true;
+			expect(calcStub.args[0][0]).to.equal(block.height);
+			expect(calcStub.args[1][0]).to.equal(block.height);
+			expect(mergeStub.calledTwice).to.be.true;
+			expect(mergeStub.args[0][0]).to.equal(sender.address);
+			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam2);
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal(undefined);
+		});
 	});
-/*
-	describe('undo()', function () {});
 
-	describe('applyUnconfirmed()', function () {});
+	describe('undo()', function () {
+		var scope,
+			traceSpy,
+			mergeStub,
+			trs,
+			block,
+			sender,
+			modules,
+			calcStub,
+			vote,
+			undoStub;
 
+		beforeEach(function () {
+			scope = {
+				logger: {
+					trace: function (height) {}
+				},
+				account: {
+					merge: function (address, diff, cb) {}
+				}
+			};
+			traceSpy = sinon.spy(scope.logger, 'trace');
+			mergeStub = sinon.stub(scope.account, 'merge');
+			modules = {
+				rounds: {
+					calc: function () {}
+				}
+			};
+			calcStub = sinon.stub(modules.rounds, 'calc').returns(500);
+			vote = new Vote();
+			undoStub = sinon.stub(vote, 'undo');
+			instance = new Transaction();
+			instance.attachAssetType(transactionTypes.VOTE, vote);
+			instance.scope = scope;
+			instance.bindModules(modules);
+		});
+
+		afterEach(function () {
+			traceSpy.restore();
+			mergeStub.restore();
+		});
+
+		it('account.merge() returns error #1', function () {
+			trs = {
+				amount: 100,
+				fee: 50
+			};
+			block = {
+				id: '100',
+				height: '4'
+			};
+			sender = {
+				address: '123'
+			};
+			var traceParam = {
+				sender: sender.address,
+				balance: 150,
+				blockId: block.id,
+				round: 500
+			};
+			var mergeParam = {
+				balance: 150,
+				blockId: block.id,
+				round: 500
+			};
+			mergeStub.callsFake(function (address, diff, cb) {
+				setImmediate(cb, 'mergeError1');
+			});
+			instance.undo(trs, block, sender, callback);
+			clock.runAll();
+			expect(traceSpy.calledTwice).to.be.true;
+			expect(traceSpy.args[0][0]).to.equal('Logic/Transaction->bindModules');
+			expect(traceSpy.args[1][0]).to.equal('Logic/Transaction->undo');
+			expect(traceSpy.args[1][1]).to.deep.equal(traceParam);
+			expect(mergeStub.calledOnce).to.be.true;
+			expect(mergeStub.args[0][0]).to.equal(sender.address);
+			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam);
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal('mergeError1');
+		});
+
+		it('account.merge() returns error #2', function () {
+			trs = {
+				amount: 100,
+				fee: 50,
+				type: transactionTypes.VOTE
+			};
+			block = {
+				id: '100',
+				height: '4'
+			};
+			sender = {
+				address: '123'
+			};
+			var traceParam = {
+				sender: sender.address,
+				balance: 150,
+				blockId: block.id,
+				round: 500
+			};
+			var mergeParam1 = {
+				balance: 150,
+				blockId: block.id,
+				round: 500
+			};
+			var mergeParam2 = {
+				balance: -150,
+				blockId: block.id,
+				round: 500
+			};
+			mergeStub.onCall(0).callsFake(function (address, diff, cb) {
+				setImmediate(cb, undefined, {address: '123'});
+			});
+			mergeStub.onCall(1).callsFake(function (address, diff, cb) {
+				setImmediate(cb, 'mergeError2');
+			});
+			undoStub.callsFake(function (trs, block, sender, cb) {
+				setImmediate(cb, 'undoError');
+			});
+			instance.undo(trs, block, sender, callback);
+			clock.runAll();
+			expect(traceSpy.calledTwice).to.be.true;
+			expect(traceSpy.args[0][0]).to.equal('Logic/Transaction->bindModules');
+			expect(traceSpy.args[1][0]).to.equal('Logic/Transaction->undo');
+			expect(traceSpy.args[1][1]).to.deep.equal(traceParam);
+			expect(mergeStub.calledTwice).to.be.true;
+			expect(mergeStub.args[0][0]).to.equal(sender.address);
+			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam1);
+			expect(mergeStub.args[1][0]).to.equal(sender.address);
+			expect(mergeStub.args[1][1]).to.deep.equal(mergeParam2);
+			expect(undoStub.calledOnce).to.be.true;
+			expect(undoStub.args[0][0]).to.deep.equal(trs);
+			expect(undoStub.args[0][1]).to.deep.equal(block);
+			expect(undoStub.args[0][2]).to.deep.equal(sender);
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal('mergeError2');
+		});
+
+		it('success', function () {
+			trs = {
+				amount: 100,
+				fee: 50,
+				type: transactionTypes.VOTE
+			};
+			block = {
+				id: '100',
+				height: '4'
+			};
+			sender = {
+				address: '123'
+			};
+			var traceParam = {
+				sender: sender.address,
+				balance: 150,
+				blockId: block.id,
+				round: 500
+			};
+			var mergeParam1 = {
+				balance: 150,
+				blockId: block.id,
+				round: 500
+			};
+			var mergeParam2 = {
+				balance: -150,
+				blockId: block.id,
+				round: 500
+			};
+			mergeStub.callsFake(function (address, diff, cb) {
+				setImmediate(cb, undefined, {address: '123'});
+			});
+			undoStub.callsFake(function (trs, block, sender, cb) {
+				setImmediate(cb);
+			});
+			instance.undo(trs, block, sender, callback);
+			clock.runAll();
+			expect(traceSpy.calledTwice).to.be.true;
+			expect(traceSpy.args[0][0]).to.equal('Logic/Transaction->bindModules');
+			expect(traceSpy.args[1][0]).to.equal('Logic/Transaction->undo');
+			expect(traceSpy.args[1][1]).to.deep.equal(traceParam);
+			expect(mergeStub.calledOnce).to.be.true;
+			expect(mergeStub.args[0][0]).to.equal(sender.address);
+			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam1);
+			expect(undoStub.calledOnce).to.be.true;
+			expect(undoStub.args[0][0]).to.deep.equal(trs);
+			expect(undoStub.args[0][1]).to.deep.equal(block);
+			expect(undoStub.args[0][2]).to.deep.equal(sender);
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal(undefined);
+		});
+	});
+
+	describe('applyUnconfirmed()', function () {
+
+		var trs, checkBalanceStub, scope, mergeStub, sender, amount, vote, applyUnconfirmedStub;
+
+		beforeEach(function () {
+			scope = {
+				account: {
+					merge: function (address, diff, cb) {}
+				}
+			};
+			mergeStub = sinon.stub(scope.account, 'merge');
+			vote = new Vote();
+			applyUnconfirmedStub = sinon.stub(vote, 'applyUnconfirmed');
+			instance = new Transaction();
+			instance.attachAssetType(transactionTypes.VOTE, vote);
+			instance.scope = scope;
+			checkBalanceStub = sinon.stub(instance, 'checkBalance');
+		});
+
+		afterEach(function () {
+			checkBalanceStub.restore();
+			mergeStub.restore();
+			applyUnconfirmedStub.restore();
+		});
+
+		it('Balance exceeded', function () {
+			trs = {amount: 100, fee: 50};
+			sender = {address: '123'};
+			checkBalanceStub.returns({exceeded: true, error: 'balanceExceeded'});
+			instance.applyUnconfirmed(trs, sender, callback);
+			amount = new bignum(150);
+			clock.runAll();
+
+			expect(checkBalanceStub.calledOnce).to.be.true;
+			expect(checkBalanceStub.args[0][0]).to.deep.equal(amount);
+			expect(checkBalanceStub.args[0][1]).to.equal('u_balance');
+			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
+			expect(checkBalanceStub.args[0][3]).to.deep.equal(sender);
+
+			expect(callback.args[0][0]).to.equal('balanceExceeded');
+		});
+
+		it('account.merge() returns error #1', function () {
+			trs = {amount: 100, fee: 50};
+			sender = {address: '123'};
+			checkBalanceStub.returns({exceeded: false});
+			mergeStub.callsFake(function (address, diff, cb) {
+				setImmediate(cb, 'mergeError1');
+			});
+			var mergeParam1 = {u_balance: -150};
+			instance.applyUnconfirmed(trs, sender, callback);
+			amount = new bignum(150);
+			clock.runAll();
+			expect(checkBalanceStub.calledOnce).to.be.true;
+			expect(checkBalanceStub.args[0][0]).to.deep.equal(amount);
+			expect(checkBalanceStub.args[0][1]).to.equal('u_balance');
+			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
+			expect(checkBalanceStub.args[0][3]).to.deep.equal(sender);
+			expect(mergeStub.calledOnce).to.be.true;
+			expect(mergeStub.args[0][0]).to.equal(sender.address);
+			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam1);
+			expect(callback.args[0][0]).to.equal('mergeError1');
+		});
+
+		it('account.merge() returns error #2', function () {
+			trs = {amount: 100, fee: 50, type: transactionTypes.VOTE};
+			sender = {address: '123'};
+			checkBalanceStub.returns({exceeded: false});
+			mergeStub.onCall(0).callsFake(function (address, diff, cb) {
+				setImmediate(cb, undefined, {address: address});
+			});
+			mergeStub.onCall(1).callsFake(function (address, diff, cb) {
+				setImmediate(cb, 'mergeError2');
+			});
+			applyUnconfirmedStub.callsFake(function (trs, sender, cb) {
+				setImmediate(cb, 'applyUnconfirmedError');
+			});
+			var mergeParam1 = {u_balance: -150};
+			var mergeParam2 = {u_balance: 150};
+			instance.applyUnconfirmed(trs, sender, callback);
+			amount = new bignum(150);
+			clock.runAll();
+			expect(checkBalanceStub.calledOnce).to.be.true;
+			expect(checkBalanceStub.args[0][0]).to.deep.equal(amount);
+			expect(checkBalanceStub.args[0][1]).to.equal('u_balance');
+			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
+			expect(checkBalanceStub.args[0][3]).to.deep.equal(sender);
+			expect(mergeStub.calledTwice).to.be.true;
+			expect(mergeStub.args[0][0]).to.equal(sender.address);
+			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam1);
+			expect(mergeStub.args[1][0]).to.equal(sender.address);
+			expect(mergeStub.args[1][1]).to.deep.equal(mergeParam2);
+			expect(callback.args[0][0]).to.equal('mergeError2');
+		});
+
+		it('success', function () {
+			trs = {amount: 100, fee: 50, type: transactionTypes.VOTE};
+			sender = {address: '123'};
+			checkBalanceStub.returns({exceeded: false});
+			mergeStub.callsFake(function (address, diff, cb) {
+				setImmediate(cb, undefined, {address: address});
+			});
+			applyUnconfirmedStub.callsFake(function (trs, sender, cb) {
+				setImmediate(cb);
+			});
+			var mergeParam1 = {u_balance: -150};
+			var mergeParam2 = {u_balance: 150};
+			instance.applyUnconfirmed(trs, sender, callback);
+			amount = new bignum(150);
+			clock.runAll();
+			expect(checkBalanceStub.calledOnce).to.be.true;
+			expect(checkBalanceStub.args[0][0]).to.deep.equal(amount);
+			expect(checkBalanceStub.args[0][1]).to.equal('u_balance');
+			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
+			expect(checkBalanceStub.args[0][3]).to.deep.equal(sender);
+			expect(mergeStub.calledOnce).to.be.true;
+			expect(mergeStub.args[0][0]).to.equal(sender.address);
+			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam1);
+			expect(callback.args[0][0]).to.equal(undefined);
+		});
+	});
+
+	/*
 	describe('undoUnconfirmed()', function () {});
 
 	describe('dbSave()', function () {});
