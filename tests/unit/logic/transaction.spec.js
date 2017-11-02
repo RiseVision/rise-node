@@ -6,6 +6,7 @@ var Transaction = rewire('../../../logic/transaction');
 var transactionTypes = require('../../../helpers/transactionTypes');
 var Vote = require('../../../logic/vote');
 var Delegate = require('../../../logic/delegate');
+var Dapp = require('../../../logic/dapp');
 var slots = require('../../../helpers/slots');
 var ed = require('../../../helpers/ed');
 var bignum = require('../../../helpers/bignum.js');
@@ -2305,7 +2306,7 @@ describe('logic/transaction', function () {
 				round: 500
 			};
 			mergeStub.onCall(0).callsFake(function (address, diff, cb) {
-				setImmediate(cb, undefined, {address: '123'});
+				setImmediate(cb, undefined, { address: '123' });
 			});
 			mergeStub.onCall(1).callsFake(function (address, diff, cb) {
 				setImmediate(cb, 'mergeError2');
@@ -2362,7 +2363,7 @@ describe('logic/transaction', function () {
 				round: 500
 			};
 			mergeStub.callsFake(function (address, diff, cb) {
-				setImmediate(cb, undefined, {address: '123'});
+				setImmediate(cb, undefined, { address: '123' });
 			});
 			undoStub.callsFake(function (trs, block, sender, cb) {
 				setImmediate(cb);
@@ -2386,8 +2387,14 @@ describe('logic/transaction', function () {
 	});
 
 	describe('applyUnconfirmed()', function () {
-
-		var trs, checkBalanceStub, scope, mergeStub, sender, amount, vote, applyUnconfirmedStub;
+		var trs,
+			checkBalanceStub,
+			scope,
+			mergeStub,
+			sender,
+			amount,
+			vote,
+			applyUnconfirmedStub;
 
 		beforeEach(function () {
 			scope = {
@@ -2411,9 +2418,9 @@ describe('logic/transaction', function () {
 		});
 
 		it('Balance exceeded', function () {
-			trs = {amount: 100, fee: 50};
-			sender = {address: '123'};
-			checkBalanceStub.returns({exceeded: true, error: 'balanceExceeded'});
+			trs = { amount: 100, fee: 50 };
+			sender = { address: '123' };
+			checkBalanceStub.returns({ exceeded: true, error: 'balanceExceeded' });
 			instance.applyUnconfirmed(trs, sender, callback);
 			amount = new bignum(150);
 			clock.runAll();
@@ -2428,13 +2435,13 @@ describe('logic/transaction', function () {
 		});
 
 		it('account.merge() returns error #1', function () {
-			trs = {amount: 100, fee: 50};
-			sender = {address: '123'};
-			checkBalanceStub.returns({exceeded: false});
+			trs = { amount: 100, fee: 50 };
+			sender = { address: '123' };
+			checkBalanceStub.returns({ exceeded: false });
 			mergeStub.callsFake(function (address, diff, cb) {
 				setImmediate(cb, 'mergeError1');
 			});
-			var mergeParam1 = {u_balance: -150};
+			var mergeParam1 = { u_balance: -150 };
 			instance.applyUnconfirmed(trs, sender, callback);
 			amount = new bignum(150);
 			clock.runAll();
@@ -2450,11 +2457,11 @@ describe('logic/transaction', function () {
 		});
 
 		it('account.merge() returns error #2', function () {
-			trs = {amount: 100, fee: 50, type: transactionTypes.VOTE};
-			sender = {address: '123'};
-			checkBalanceStub.returns({exceeded: false});
+			trs = { amount: 100, fee: 50, type: transactionTypes.VOTE };
+			sender = { address: '123' };
+			checkBalanceStub.returns({ exceeded: false });
 			mergeStub.onCall(0).callsFake(function (address, diff, cb) {
-				setImmediate(cb, undefined, {address: address});
+				setImmediate(cb, undefined, { address: address });
 			});
 			mergeStub.onCall(1).callsFake(function (address, diff, cb) {
 				setImmediate(cb, 'mergeError2');
@@ -2462,8 +2469,8 @@ describe('logic/transaction', function () {
 			applyUnconfirmedStub.callsFake(function (trs, sender, cb) {
 				setImmediate(cb, 'applyUnconfirmedError');
 			});
-			var mergeParam1 = {u_balance: -150};
-			var mergeParam2 = {u_balance: 150};
+			var mergeParam1 = { u_balance: -150 };
+			var mergeParam2 = { u_balance: 150 };
 			instance.applyUnconfirmed(trs, sender, callback);
 			amount = new bignum(150);
 			clock.runAll();
@@ -2481,17 +2488,17 @@ describe('logic/transaction', function () {
 		});
 
 		it('success', function () {
-			trs = {amount: 100, fee: 50, type: transactionTypes.VOTE};
-			sender = {address: '123'};
-			checkBalanceStub.returns({exceeded: false});
+			trs = { amount: 100, fee: 50, type: transactionTypes.VOTE };
+			sender = { address: '123' };
+			checkBalanceStub.returns({ exceeded: false });
 			mergeStub.callsFake(function (address, diff, cb) {
-				setImmediate(cb, undefined, {address: address});
+				setImmediate(cb, undefined, { address: address });
 			});
 			applyUnconfirmedStub.callsFake(function (trs, sender, cb) {
 				setImmediate(cb);
 			});
-			var mergeParam1 = {u_balance: -150};
-			var mergeParam2 = {u_balance: 150};
+			var mergeParam1 = { u_balance: -150 };
+			var mergeParam2 = { u_balance: 150 };
 			instance.applyUnconfirmed(trs, sender, callback);
 			amount = new bignum(150);
 			clock.runAll();
@@ -2507,16 +2514,341 @@ describe('logic/transaction', function () {
 		});
 	});
 
-	/*
-	describe('undoUnconfirmed()', function () {});
+	describe('undoUnconfirmed()', function () {
+		var scope,
+			vote,
+			sender,
+			trs,
+			mergeParam1,
+			mergeParam2,
+			mergeStub,
+			undoUnconfirmedStub;
 
-	describe('dbSave()', function () {});
+		beforeEach(function () {
+			scope = {
+				account: {
+					merge: function (address, diff, cb) {}
+				}
+			};
+			mergeStub = sinon.stub(scope.account, 'merge');
+			vote = new Vote();
+			undoUnconfirmedStub = sinon.stub(vote, 'undoUnconfirmed');
+			instance = new Transaction();
+			instance.attachAssetType(transactionTypes.VOTE, vote);
+			instance.scope = scope;
+		});
 
-	describe('afterSave()', function () {});
+		afterEach(function () {
+			mergeStub.restore();
+			undoUnconfirmedStub.restore();
+		});
 
-	describe('objectNormalize()', function () {});
+		it('account.merge() error #1', function () {
+			trs = { amount: 100, fee: 50 };
+			sender = { address: '123' };
+			mergeParam1 = { u_balance: 150 };
+			mergeStub.callsFake(function (trs, sender, cb) {
+				setImmediate(cb, 'mergeError1');
+			});
+			instance.undoUnconfirmed(trs, sender, callback);
+			clock.runAll();
+			expect(mergeStub.calledOnce).to.be.true;
+			expect(mergeStub.args[0][0]).to.equal(sender.address);
+			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam1);
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal('mergeError1');
+		});
 
-	describe('dbRead()', function () {});
+		it('account.merge() error #2', function () {
+			trs = { amount: 100, fee: 50, type: transactionTypes.VOTE };
+			sender = { address: '123' };
+			mergeParam1 = { u_balance: 150 };
+			mergeParam2 = { u_balance: -150 };
+			mergeStub.onCall(0).callsFake(function (trs, sender, cb) {
+				setImmediate(cb, undefined, { address: '123' });
+			});
+			mergeStub.onCall(1).callsFake(function (trs, sender, cb) {
+				setImmediate(cb, 'mergeError2');
+			});
+			undoUnconfirmedStub.callsFake(function (address, diff, cb) {
+				setImmediate(cb, 'undoUnconfirmedError');
+			});
+			instance.attachAssetType(transactionTypes.VOTE, vote);
+			instance.undoUnconfirmed(trs, sender, callback);
+			clock.runAll();
+			expect(mergeStub.calledTwice).to.be.true;
+			expect(mergeStub.args[0][0]).to.equal(sender.address);
+			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam1);
+			expect(mergeStub.args[1][0]).to.equal(sender.address);
+			expect(mergeStub.args[1][1]).to.deep.equal(mergeParam2);
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal('mergeError2');
+		});
 
-	describe('bindModules()', function () {}); */
+		it('Success', function () {
+			trs = { amount: 100, fee: 50, type: transactionTypes.VOTE };
+			sender = { address: '123' };
+			mergeParam1 = { u_balance: 150 };
+			mergeStub.callsFake(function (trs, sender, cb) {
+				setImmediate(cb, undefined, { address: '123' });
+			});
+			undoUnconfirmedStub.callsFake(function (address, diff, cb) {
+				setImmediate(cb);
+			});
+			instance.attachAssetType(transactionTypes.VOTE, vote);
+			instance.undoUnconfirmed(trs, sender, callback);
+			clock.runAll();
+			expect(mergeStub.calledOnce).to.be.true;
+			expect(mergeStub.args[0][0]).to.equal(sender.address);
+			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam1);
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal(undefined);
+		});
+	});
+
+	describe('dbSave()', function () {
+		var trs, vote;
+
+		beforeEach(function () {
+			instance = new Transaction();
+			vote = new Vote();
+		});
+
+		it('Unknown transaction type', function () {
+			expect(function () {
+				instance.dbSave({ type: transactionTypes.VOTE });
+			}).throws('Unknown transaction type');
+		});
+
+		it('throws Error', function () {
+			instance.attachAssetType(transactionTypes.VOTE, vote);
+			expect(function () {
+				instance.dbSave({ type: transactionTypes.VOTE });
+			}).throws();
+		});
+
+		it('Success', function () {
+			instance.attachAssetType(transactionTypes.VOTE, vote);
+			trs = {
+				id: '123',
+				type: transactionTypes.VOTE,
+				senderPublicKey:
+					'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f',
+				signature:
+					'7ff5f0ee2c4d4c83d6980a46efe31befca41f7aa8cda5f7b4c2850e4942d923af058561a6a3312005ddee566244346bdbccf004bc8e2c84e653f9825c20be008',
+				signSignature: null,
+				requesterPublicKey: null,
+				blockId: '456',
+				timestamp: 33363661,
+				senderId: '123456789R',
+				recipientId: '123456780R',
+				amount: 100,
+				fee: 50,
+				signatures: null,
+				asset: { votes: [] }
+			};
+			var result = instance.dbSave(trs);
+			expect(result).to.have.length(2);
+		});
+	});
+
+	describe('afterSave()', function () {
+		beforeEach(function () {
+			instance = new Transaction();
+		});
+
+		it('Unknown transaction type', function () {
+			instance.afterSave({ type: transactionTypes.VOTE }, callback);
+			clock.runAll();
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal(
+				'Unknown transaction type ' + transactionTypes.VOTE
+			);
+		});
+
+		it('afterSave() doesn\'t exist', function () {
+			instance.attachAssetType(transactionTypes.VOTE, new Vote());
+			instance.afterSave({ type: transactionTypes.VOTE }, callback);
+			clock.runAll();
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal(undefined);
+		});
+
+		it('Success', function () {
+			var dappInstance = new Dapp();
+			var afterSaveStub = sinon.stub(dappInstance, 'afterSave');
+			instance.attachAssetType(transactionTypes.DAPP, dappInstance);
+			var trs = { type: transactionTypes.DAPP };
+			instance.afterSave({ type: transactionTypes.DAPP }, callback);
+			clock.runAll();
+			expect(callback.called).to.be.false;
+			expect(afterSaveStub.calledOnce).to.be.true;
+			expect(afterSaveStub.args[0][0]).to.deep.equal(trs);
+			afterSaveStub.restore();
+		});
+	});
+
+	describe('objectNormalize()', function () {
+		var scope, validateStub, trs, vote, objectNormalizeStub;
+
+		beforeEach(function () {
+			scope = {
+				schema: {
+					validate: function () {},
+					getLastErrors: function () {
+						return [{ message: 'foo #1' }, { message: 'foo #2' }];
+					}
+				}
+			};
+			validateStub = sinon.stub(scope.schema, 'validate');
+			instance = new Transaction();
+			instance.scope = scope;
+			trs = { type: transactionTypes.VOTE };
+			vote = new Vote();
+			objectNormalizeStub = sinon.stub(vote, 'objectNormalize');
+		});
+
+		afterEach(function () {
+			validateStub.restore();
+		});
+
+		it('Unknown transaction type', function () {
+			expect(function () {
+				instance.objectNormalize(trs);
+			}).throws('Unknown transaction type');
+		});
+
+		it('Failed to validate transaction schema', function () {
+			instance.attachAssetType(transactionTypes.VOTE, vote);
+			validateStub.returns(false);
+			expect(function () {
+				instance.objectNormalize(trs);
+			}).throws('Failed to validate transaction schema');
+			expect(validateStub.args[0][0]).to.deep.equal(trs);
+			expect(validateStub.args[0][1]).to.deep.equal(instance.schema);
+		});
+
+		it('Throws error', function () {
+			validateStub.returns(true);
+			objectNormalizeStub.throws(Error('fooError'));
+			instance.attachAssetType(transactionTypes.VOTE, vote);
+			expect(function () {
+				instance.objectNormalize(trs);
+			}).throws('fooError');
+		});
+
+		it('Success', function () {
+			validateStub.returns(true);
+			objectNormalizeStub.returns(trs);
+			instance.attachAssetType(transactionTypes.VOTE, vote);
+			var result = instance.objectNormalize(trs);
+			expect(result).to.deep.equal(trs);
+		});
+	});
+
+	describe('dbRead()', function () {
+		var raw, vote, dbReadStub, trs;
+
+		beforeEach(function () {
+			instance = new Transaction();
+			raw = {
+				t_id: 'a',
+				b_height: 'b',
+				b_id: 'c',
+				t_type: '3',
+				t_timestamp: Date.now(),
+				t_senderPublicKey: 'f',
+				t_requesterPublicKey: 'g',
+				t_senderId: 'h',
+				t_recipientId: 'i',
+				m_recipientPublicKey: 'j',
+				t_amount: '100',
+				t_fee: '50',
+				t_signature: 'm',
+				t_signSignature: 'n',
+				t_signatures: 'o,p,q',
+				confirmations: '2'
+			};
+			trs = {
+				id: raw.t_id,
+				height: raw.b_height,
+				blockId: raw.b_id || raw.t_blockId,
+				type: parseInt(raw.t_type),
+				timestamp: parseInt(raw.t_timestamp),
+				senderPublicKey: raw.t_senderPublicKey,
+				requesterPublicKey: raw.t_requesterPublicKey,
+				senderId: raw.t_senderId,
+				recipientId: raw.t_recipientId,
+				recipientPublicKey: raw.m_recipientPublicKey || null,
+				amount: parseInt(raw.t_amount),
+				fee: parseInt(raw.t_fee),
+				signature: raw.t_signature,
+				signSignature: raw.t_signSignature,
+				signatures: raw.t_signatures ? raw.t_signatures.split(',') : [],
+				confirmations: parseInt(raw.confirmations),
+				asset: {}
+			};
+			vote = new Vote();
+			dbReadStub = sinon.stub(vote, 'dbRead');
+		});
+
+		afterEach(function () {
+			dbReadStub.restore();
+		});
+
+		it('returns null', function () {
+			var result = instance.dbRead({});
+			expect(result).to.be.null;
+		});
+
+		it('Unknown transaction type', function () {
+			expect(function () {
+				instance.dbRead(raw);
+			}).throws('Unknown transaction type');
+		});
+
+		it('Success and extending asset', function () {
+			var asset = ['x', 'y', 'z'];
+			dbReadStub.returns(asset);
+			instance.attachAssetType(transactionTypes.VOTE, vote);
+			trs.asset['0'] = asset[0];
+			trs.asset['1'] = asset[1];
+			trs.asset['2'] = asset[2];
+			var result = instance.dbRead(raw);
+			expect(result).to.deep.equal(trs);
+			expect(dbReadStub.calledOnce).to.be.true;
+			expect(dbReadStub.args[0][0]).to.deep.equal(raw);
+		});
+
+		it('Success without extending asset', function () {
+			dbReadStub.returns(false);
+			instance.attachAssetType(transactionTypes.VOTE, vote);
+			var result = instance.dbRead(raw);
+			expect(result).to.deep.equal(trs);
+			expect(dbReadStub.calledOnce).to.be.true;
+			expect(dbReadStub.args[0][0]).to.deep.equal(raw);
+		});
+	});
+
+	describe('bindModules()', function () {
+		var scope, traceStub, modules, dummyModules;
+
+		it('success', function () {
+			dummyModules = { rounds: 123 };
+			scope = {
+				logger: {
+					trace: function () {}
+				}
+			};
+			traceStub = sinon.stub(scope.logger, 'trace');
+			instance = new Transaction();
+			instance.scope = scope;
+			instance.bindModules(dummyModules);
+			expect(traceStub.calledOnce).to.be.true;
+			expect(traceStub.args[0][0]).to.equal('Logic/Transaction->bindModules');
+			modules = Transaction.__get__('modules');
+			expect(modules).to.deep.equal(dummyModules);
+			traceStub.restore();
+		});
+	});
 });
