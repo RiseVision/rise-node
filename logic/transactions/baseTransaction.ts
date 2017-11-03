@@ -11,6 +11,7 @@ export interface IBaseTransaction<T> {
   signature: string;
   id: string;
   fee: number;
+  signatures?: string[]
 }
 
 /**

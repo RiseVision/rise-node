@@ -478,45 +478,6 @@ TransactionPool.prototype.processUnconfirmedTransaction = function (transaction,
 };
 
 /**
- * Based on transaction bundled, type and signatures queues transaction into:
- * bundle, multisignature or queue.
- * @implements {countBundled}
- * @implements {addBundledTransaction}
- * @implements {countMultisignature}
- * @implements {addMultisignatureTransaction}
- * @implements {countQueued}
- * @implements {addQueuedTransaction}
- * @param {transaction} transaction
- * @param {function} cb - Callback function.
- * @return {setImmediateCallback} error | cb
- */
-TransactionPool.prototype.queueTransaction = function (transaction, cb) {
-	transaction.receivedAt = new Date();
-
-	if (transaction.bundled) {
-		if (self.countBundled() >= config.transactions.maxTxsPerQueue) {
-			return setImmediate(cb, 'Transaction pool is full');
-		} else {
-			self.addBundledTransaction(transaction);
-		}
-	} else if (transaction.type === transactionTypes.MULTI || Array.isArray(transaction.signatures)) {
-		if (self.countMultisignature() >= config.transactions.maxTxsPerQueue) {
-			return setImmediate(cb, 'Transaction pool is full');
-		} else {
-			self.addMultisignatureTransaction(transaction);
-		}
-	} else {
-		if (self.countQueued() >= config.transactions.maxTxsPerQueue) {
-			return setImmediate(cb, 'Transaction pool is full');
-		} else {
-			self.addQueuedTransaction(transaction);
-		}
-	}
-
-	return setImmediate(cb);
-};
-
-/**
  * Applies unconfirmed list to unconfirmed transactions list.
  * @implements {getUnconfirmedTransactionList}
  * @param {function} cb - Callback function.
