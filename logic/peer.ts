@@ -87,7 +87,7 @@ export class Peer implements PeerType {
   public string: string;
 
   public constructor(peer: PeerType = {} as any) {
-    this.accept(peer);
+    this.accept({...{}, ...peer});
   }
 
   public accept(peer: PeerType) {

@@ -460,7 +460,7 @@ d.run(function () {
 			var Block = require('./logic/block.ts').BlockLogic;
       var Account = require('./logic/account.ts').AccountLogic;
       // var Account = require('./logic/_account.js');
-      var Peers = require('./logic/peers.js');
+      var Peers = require('./logic/peers').Peers;
 			async.auto({
 				bus: function (cb) {
 					cb(null, scope.bus);
@@ -493,7 +493,8 @@ d.run(function () {
 					cb(null, blockLogic);
 				}],
 				peers: ['logger', function (scope, cb) {
-					new Peers(scope.logger, cb);
+					cb(null, new Peers(scope.logger));
+
 				}]
 			}, cb);
 		}],
