@@ -27,3 +27,17 @@ export function promiseToCB<T>(promise: Promise<T>, cb: cback<T> = emptyCB): Pro
       return Promise.reject(err);
     });
 }
+
+/**
+ * Promisify a fn that returns a callback
+ */
+export function cbToPromise<T>(fn: (cb: cback<T>) => void): Promise<T> {
+  return new Promise((resolve, reject) => {
+    fn((err, res) => {
+      if (err) {
+        return reject(err);
+      }
+      return resolve(res);
+    });
+  });
+}

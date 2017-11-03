@@ -9,9 +9,10 @@ var OrderBy = require('../helpers/orderBy').default;
 var sandboxHelper = require('../helpers/sandbox');
 var schema = require('../schema/transactions').default;
 var sql = require('../sql/transactions.js');
-var TransactionPool = require('../logic/transactionPool.js');
+var TransactionPool = require('../logic/transactionPool').TransactionPool;
 var transactionTypes = require('../helpers/transactionTypes').TransactionType;
 var Transfer = require('../logic/transfer.js');
+var promiseToCB = require('../helpers/promiseToCback').promiseToCB;
 
 // Private fields
 var __private = {};
@@ -355,7 +356,7 @@ Transactions.prototype.transactionInPool = function (id) {
  * @return {function} Calls transactionPool.getUnconfirmedTransaction
  */
 Transactions.prototype.getUnconfirmedTransaction = function (id) {
-	return __private.transactionPool.getUnconfirmedTransaction(id);
+	return __private.transactionPool.unconfirmed.get(id);
 };
 
 /**
@@ -363,7 +364,7 @@ Transactions.prototype.getUnconfirmedTransaction = function (id) {
  * @return {function} Calls transactionPool.getQueuedTransaction
  */
 Transactions.prototype.getQueuedTransaction = function (id) {
-	return __private.transactionPool.getQueuedTransaction(id);
+	return __private.transactionPool.queued.get(id);
 };
 
 /**
@@ -371,7 +372,7 @@ Transactions.prototype.getQueuedTransaction = function (id) {
  * @return {function} Calls transactionPool.getMultisignatureTransaction
  */
 Transactions.prototype.getMultisignatureTransaction = function (id) {
-	return __private.transactionPool.getMultisignatureTransaction(id);
+	return __private.transactionPool.multisignature.get(id);
 };
 
 /**
@@ -381,7 +382,7 @@ Transactions.prototype.getMultisignatureTransaction = function (id) {
  * @return {function} Calls transactionPool.getUnconfirmedTransactionList
  */
 Transactions.prototype.getUnconfirmedTransactionList = function (reverse, limit) {
-	return __private.transactionPool.getUnconfirmedTransactionList(reverse, limit);
+	return __private.transactionPool.unconfirmed.list(reverse, limit);
 };
 
 /**
@@ -391,7 +392,7 @@ Transactions.prototype.getUnconfirmedTransactionList = function (reverse, limit)
  * @return {function} Calls transactionPool.getQueuedTransactionList
  */
 Transactions.prototype.getQueuedTransactionList = function (reverse, limit) {
-	return __private.transactionPool.getQueuedTransactionList(reverse, limit);
+	return __private.transactionPool.queued.list(reverse, limit);
 };
 
 /**
@@ -401,7 +402,7 @@ Transactions.prototype.getQueuedTransactionList = function (reverse, limit) {
  * @return {function} Calls transactionPool.getQueuedTransactionList
  */
 Transactions.prototype.getMultisignatureTransactionList = function (reverse, limit) {
-	return __private.transactionPool.getMultisignatureTransactionList(reverse, limit);
+	return __private.transactionPool.multisignature.list(reverse, limit);
 };
 
 /**
@@ -441,7 +442,7 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
  * @return {function} Calls transactionPool.applyUnconfirmedList
  */
 Transactions.prototype.applyUnconfirmedList = function (cb) {
-	return __private.transactionPool.applyUnconfirmedList(cb);
+	return promiseToCB(__private.transactionPool.applyUnconfirmedList(), cb);
 };
 
 /**
@@ -451,7 +452,7 @@ Transactions.prototype.applyUnconfirmedList = function (cb) {
  * @return {function} Calls transactionPool.applyUnconfirmedIds
  */
 Transactions.prototype.applyUnconfirmedIds = function (ids, cb) {
-	return __private.transactionPool.applyUnconfirmedIds(ids, cb);
+	return promiseToCB(__private.transactionPool.applyUnconfirmedList(ids), cb);
 };
 
 /**
@@ -460,7 +461,7 @@ Transactions.prototype.applyUnconfirmedIds = function (ids, cb) {
  * @return {function} Calls transactionPool.undoUnconfirmedList
  */
 Transactions.prototype.undoUnconfirmedList = function (cb) {
-	return __private.transactionPool.undoUnconfirmedList(cb);
+	return promiseToCB(__private.transactionPool.undoUnconfirmedList(), cb);
 };
 
 /**
@@ -549,7 +550,7 @@ Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
  * @return {function} Calls transactionPool.receiveTransactions
  */
 Transactions.prototype.receiveTransactions = function (transactions, broadcast, cb) {
-	return __private.transactionPool.receiveTransactions(transactions, broadcast, cb);
+	return promiseToCB(__private.transactionPool.receiveTransactions(transactions, broadcast, transactions[0].bundled), cb);
 };
 
 /**
@@ -558,7 +559,7 @@ Transactions.prototype.receiveTransactions = function (transactions, broadcast, 
  * @return {function} Calls transactionPool.fillPool
  */
 Transactions.prototype.fillPool = function (cb) {
-	return __private.transactionPool.fillPool(cb);
+	return promiseToCB(__private.transactionPool.fillPool(), cb);
 };
 
 /**
@@ -676,9 +677,9 @@ Transactions.prototype.shared = {
 		library.db.query(sql.count).then(function (transactionsCount) {
 			return setImmediate(cb, null, {
 				confirmed: transactionsCount[0].count,
-				multisignature: __private.transactionPool.multisignature.transactions.length,
-				unconfirmed: __private.transactionPool.unconfirmed.transactions.length,
-				queued: __private.transactionPool.queued.transactions.length
+				multisignature: __private.transactionPool.multisignature.count,
+				unconfirmed: __private.transactionPool.unconfirmed.count,
+				queued: __private.transactionPool.queued.count
 			});
 		}, function (err) {
 			return setImmediate(cb, 'Unable to count transactions');

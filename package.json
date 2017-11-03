@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node app.js",
     "test-integration": "./node_modules/.bin/grunt tests/integration --verbose",
-    "test-unit": "NODE_ENV=test mocha --grep 'logic/peers' --bail --require ts-node/register './tests/**/*.spec.js'",
+    "test-unit": "NODE_ENV=test mocha --grep 'logic/transactionPool' --bail --require ts-node/register './tests/**/*.spec.js'",
     "test-unit-cover": "NODE_ENV=test istanbul cover _mocha -- --bail --require ts-node/register './tests/**/*.spec.js' && istanbul-coveralls "
   },
   "author": "Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team, Rise Team",
@@ -67,6 +67,7 @@
     "browserify-bignum": "=1.3.0-2",
     "chai": "=3.5.0",
     "chai-arrays": "^1.1.0",
+    "chai-as-promised": "^7.1.1",
     "chai-bignumber": "=2.0.0",
     "coveralls": "=2.11.16",
     "istanbul": "=0.4.5",

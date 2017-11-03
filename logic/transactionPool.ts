@@ -1,21 +1,17 @@
-import * as async from 'async';
 import constants from '../helpers/constants';
 import jobsQueue from '../helpers/jobsQueue';
-import { cback } from '../helpers/promiseToCback';
-import { ILogger } from '../logger';
-import { IBus } from '../types/bus';
-import { IBaseTransaction } from './transactions/baseTransaction';
-import { TransactionType } from '../helpers/transactionTypes';
+import {cbToPromise, promiseToCB} from '../helpers/promiseToCback';
+import {TransactionType} from '../helpers/transactionTypes';
+import {ILogger} from '../logger';
+import {IBus} from '../types/bus';
+import {IBaseTransaction} from './transactions/baseTransaction';
 // tslint:disable-next-line
 const config = require('../config.json');
 
-class InnerTXQueue<T = { receivedAt: Date }> {
+export class InnerTXQueue<T = { receivedAt: Date }> {
   private transactions: Array<IBaseTransaction<any>> = [];
-  private index: { [k: string]: number };
-  private payload: { [k: string]: T };
-
-  constructor() {
-  }
+  private index: { [k: string]: number } = {};
+  private payload: { [k: string]: T } = {};
 
   public has(id: string) {
     return id in this.index;
@@ -40,6 +36,13 @@ class InnerTXQueue<T = { receivedAt: Date }> {
       this.index[tx.id]   = this.transactions.indexOf(tx);
       this.payload[tx.id] = payload;
     }
+  }
+
+  public get(txID: string): IBaseTransaction<any> {
+    if (!this.has(txID)) {
+      throw new Error(`Transaction not found in this queue ${txID}`);
+    }
+    return this.transactions[this.index[txID]];
   }
 
   public reindex() {
@@ -68,9 +71,25 @@ class InnerTXQueue<T = { receivedAt: Date }> {
     return res;
   }
 
+  // tslint:disable-next-line
+  public listWithPayload(reverse: boolean, limit?: number, filterFn?: (tx: IBaseTransaction<any>) => boolean): Array<{ tx: IBaseTransaction<any>, payload: T }> {
+    const txs   = this.list(reverse, limit, filterFn);
+    const toRet = [];
+    for (const tx of txs) {
+      toRet.push({ tx, payload: this.payload[tx.id] });
+    }
+    return toRet;
+  }
+
 }
 
 export class TransactionPool {
+
+  public unconfirmed    = new InnerTXQueue();
+  public bundled        = new InnerTXQueue();
+  public queued         = new InnerTXQueue();
+  public multisignature = new InnerTXQueue();
+
   private library: {
     logger: ILogger,
     bus: IBus,
@@ -84,10 +103,6 @@ export class TransactionPool {
       }
     }
   };
-  private unconfirmed       = new InnerTXQueue();
-  private bundled           = new InnerTXQueue();
-  private queued            = new InnerTXQueue();
-  private multisignature    = new InnerTXQueue();
   private expiryInterval    = 30000;
   private bundledInterval: number;
   private bundleLimit: number;
@@ -99,39 +114,40 @@ export class TransactionPool {
     this.library = {
       bus,
       config: {
-        broadcasts: {broadcastInterval, releaseLimit},
+        broadcasts: { broadcastInterval, releaseLimit },
       },
       logger,
-      logic : {transaction: transactionLogic},
+      logic : { transaction: transactionLogic },
     };
 
     this.bundledInterval = broadcastInterval;
     this.bundleLimit     = releaseLimit;
-
     jobsQueue.register(
       'transactionPoolNextBundle',
       (cb) => {
+        return promiseToCB(this.processBundled(), cb);
       },
       this.bundledInterval
     );
     jobsQueue.register(
       'transactionPoolNextExpiry',
-      () => {
-
+      (cb) => {
+        this.expireTransactions();
+        process.nextTick(cb);
       },
       this.expiryInterval
     );
   }
 
   public bind(accounts, transactions, loader) {
-    this.modules = {accounts, transactions, loader};
+    this.modules = { accounts, transactions, loader };
   }
 
   /**
    * Queue a transaction or throws an error if it couldnt
    */
   public queueTransaction(tx: IBaseTransaction<any>, bundled: boolean): void {
-    const payload = {receivedAt: new Date()};
+    const payload = { receivedAt: new Date() };
 
     let queue: InnerTXQueue;
     if (bundled) {
@@ -149,9 +165,9 @@ export class TransactionPool {
     }
   }
 
-  public fillPool(cb) {
+  public fillPool(): Promise<void> {
     if (this.modules.loader.syncing()) {
-      return setImmediate(cb);
+      return Promise.resolve();
     }
 
     const unconfirmedCount = this.unconfirmed.count;
@@ -159,18 +175,144 @@ export class TransactionPool {
 
     const spare = constants.maxTxsPerBlock - unconfirmedCount;
     if (spare <= 0) {
-      return setImmediate(cb);
+      return Promise.resolve();
     }
+
     const multignatures = this.multisignature.list(
       true,
       5,
       // tslint:disable-next-line
       (tx) => (tx as any)['ready']);
 
-    const inQueue = this.queued.list(true, Math.max(0, spare - multignatures.length))
+    const inQueue = this.queued.list(true, Math.max(0, spare - multignatures.length));
 
     const txs = multignatures.concat(inQueue);
     txs.forEach((tx) => this.unconfirmed.add(tx));
+
+    return this.applyUnconfirmedList(txs);
+  }
+
+  public transactionInPool(txID: string) {
+    return this.allQueues
+      .map((queue) => queue.has(txID))
+      .filter((isInQueue) => isInQueue)
+      .length > 0;
+  }
+
+  /**
+   * Gets unconfirmed, multisig and queued txs based on limit and reverse opts
+   * FIXME Parameters are not taken into account!
+   */
+  public getMergedTransactionList(reverse: boolean, limit: number) {
+    const minLimit = (constants.maxTxsPerBlock + 2);
+
+    if (limit <= minLimit || limit > constants.maxSharedTxs) {
+      limit = minLimit;
+    }
+
+    const unconfirmed = this.modules.transactions.getUnconfirmedTransactionList(false, constants.maxTxsPerBlock);
+    limit -= unconfirmed.length;
+
+    const multisignatures = this.modules.transactions.getMultisignatureTransactionList(
+      false,
+      false,
+      constants.maxTxsPerBlock
+    );
+    limit -= multisignatures.length;
+
+    const queued = this.modules.transactions.getQueuedTransactionList(false, limit);
+    limit -= queued.length;
+
+    return unconfirmed.concat(multisignatures).concat(queued);
+  }
+
+  public expireTransactions(): string[] {
+    const unconfirmed    = this.unconfirmed.listWithPayload(true);
+    const queued         = this.queued.listWithPayload(true);
+    const multisignature = this.multisignature.listWithPayload(true);
+
+    const all = unconfirmed.concat(queued).concat(multisignature);
+
+    const ids: string[] = [];
+    for (const txP of all) {
+      const { tx, payload } = txP;
+      if (!tx) {
+        continue;
+      }
+      const now     = Math.floor(Date.now() / 1000);
+      const timeOut = this.txTimeout(tx);
+      const seconds = now - Math.floor(payload.receivedAt.getTime() / 1000);
+      if (seconds > timeOut) {
+        ids.push(tx.id);
+        this.removeUnconfirmedTransaction(tx.id);
+        this.library.logger.info(`Expired transaction: ${tx.id} received at: ${payload.receivedAt.toUTCString()}`);
+      }
+    }
+    return ids;
+  }
+
+  /**
+   * Picks bundled transactions, verifies them and then enqueue them
+   */
+  public async processBundled() {
+    const bundledTxs = this.bundled.list(true, this.bundleLimit);
+    for (const tx of bundledTxs) {
+      if (!tx) {
+        continue;
+      }
+      this.bundled.remove(tx.id);
+      try {
+        await this.processVerifyTransaction(
+          tx,
+          true
+        );
+        try {
+          this.queueTransaction(tx, true);
+        } catch (e) {
+          this.library.logger.debug(`Failed to queue bundled transaction: ${tx.id}`, e);
+        }
+      } catch (e) {
+        this.library.logger.debug(`Failed to process / verify bundled transaction: ${tx.id}`, e);
+        this.unconfirmed.remove(tx.id);
+      }
+    }
+  }
+
+  /**
+   * Cycles through the transactions and calls processNewTransaction.
+   * It will fail at the first not valid tx
+   * @param {Array<IBaseTransaction<any>>} txs
+   * @param {boolean} broadcast
+   * @param {boolean} bundled
+   */
+  public async receiveTransactions(txs: Array<IBaseTransaction<any>>, broadcast: boolean, bundled: boolean) {
+    for (const tx of txs) {
+      await this.processNewTransaction(tx, broadcast, bundled);
+    }
+  }
+
+  /**
+   * process a new incoming transaction. It may reject in case  the tx is not valid.
+   */
+  public async processNewTransaction(tx: IBaseTransaction<any>, broadcast: boolean, bundled: boolean): Promise<void> {
+    if (this.transactionInPool(tx.id)) {
+      return Promise.reject(`Transaction is already processed: ${tx.id}`);
+    }
+    this.processed++;
+    if (this.processed > 1000) {
+      // Reindex queues.
+      this.reindexAllQueues();
+      this.processed = 1; // TODO: Maybe one day use a different counter to keep stats clean
+    }
+
+    if (bundled) {
+      return this.queueTransaction(tx, bundled);
+    }
+
+    await this.processVerifyTransaction(tx, broadcast);
+    // IF i'm here it means verify went through and did not throw.
+    // So lets enqueue the transaction!
+    this.queueTransaction(tx, bundled);
 
   }
 
@@ -178,119 +320,136 @@ export class TransactionPool {
    * Calls processVerifyTransaction for each transaction and applies
    * unconfirmed transaction.
    */
-  private applyUnconfirmedList(txs: Array<IBaseTransaction<any>>, cb: cback<void>) {
-    async.eachSeries(txs, (tx, serieCB) => {
-      const theTx: IBaseTransaction<any> = tx as any;
+  // tslint:disable-next-line
+  public async applyUnconfirmedList(txs: Array<IBaseTransaction<any> | string> = this.unconfirmed.list(true)): Promise<void> {
+    for (let theTx of txs) {
       if (!theTx) {
-        return serieCB();
+        continue; // move on the next item.
       }
-      this.processVerifyTransaction(
-        theTx,
-        false,
-        (err, sender) => {
-          if (err) {
-            this.library.logger.error(`Failed to process / verify unconfirmed transaction: ${theTx.id}`, err);
-            this.unconfirmed.remove(theTx.id);
-            return serieCB();
-          }
-          this.modules.transactions.applyUnconfirmed(
+      if (typeof(theTx) === 'string') {
+        theTx = this.unconfirmed.get(theTx);
+      }
+
+      try {
+        const sender = await this.processVerifyTransaction(
+          theTx,
+          false
+        );
+        try {
+          await cbToPromise((cb) => this.modules.transactions.applyUnconfirmed(
             theTx,
             sender,
-            (err2) => {
-              if (err2) {
-                this.library.logger.error(`Failed to apply unconfirmed transaction ${theTx.id}`, err2);
-                this.unconfirmed.remove(theTx.id);
-              }
-              return serieCB();
-            }
-          );
+            cb
+          ));
+        } catch (e) {
+          this.library.logger.error(`Failed to apply unconfirmed transaction ${theTx.id}`, e);
+          this.unconfirmed.remove(theTx.id);
         }
-      );
-    });
+      } catch (e) {
+        this.library.logger.error(`Failed to process / verify unconfirmed transaction: ${theTx.id}`, e);
+        this.unconfirmed.remove(theTx.id);
+      }
+    }
   }
 
-  private undoUnconfirmedList(cb: cback<void>) {
-    const ids = [];
-    async.eachSeries(
-      this.unconfirmed.list(false),
-      (tx, ecb) => {
-        if (tx) {
-          ids.push(tx.id);
-          this.modules.transactions.undoUnconfirmed(tx, (err) => {
-            if (err) {
-              this.library.logger.error(``)
-            }
-          });
+  public async undoUnconfirmedList(): Promise<string[]> {
+    const ids: string[] = [];
+    const txs           = this.unconfirmed.list(false);
+    for (const tx of txs) {
+      if (!tx) {
+        continue;
+      }
+      ids.push(tx.id);
+      await cbToPromise((cb) => this.modules.transactions.undoUnconfirmed(tx, (err) => {
+        if (err) {
+          this.library.logger.error(`Failed to undo unconfirmed transaction: ${tx.id}`, err);
+          this.removeUnconfirmedTransaction(tx.id);
         }
-      })
+        cb(null);
+      }));
+    }
+    return ids;
+  }
+
+  /**
+   * Calls reindex to each queue to clean memory
+   */
+  private reindexAllQueues() {
+    this.allQueues
+      .forEach((queue) => queue.reindex());
+  }
+
+  private get allQueues(): InnerTXQueue[] {
+    return [this.unconfirmed, this.bundled, this.queued, this.multisignature];
+  }
+
+  private removeUnconfirmedTransaction(txID: string) {
+    this.unconfirmed.remove(txID);
+    this.queued.remove(txID);
+    this.multisignature.remove(txID);
   }
 
   /**
    * Gets sender account verifies if its multisignature and evnetually gets requester
    * process transaaction and verifies it.
    */
-  private processVerifyTransaction(transaction: IBaseTransaction<any>, broadcast: any, cb: cback<any>) {
+  private async processVerifyTransaction(transaction: IBaseTransaction<any>, broadcast: any) {
     if (!transaction) {
-      return setImmediate(cb, new Error('Missing transaction'));
+      throw new Error('Missing transaction');
     }
-    async.waterfall([
-        (wcb) => {
-          this.modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, wcb);
-        },
-        // Check if multisig
-        (sender, wcb) => {
-          const hasMultisignatures = Array.isArray(sender.multisignature) && sender.multisignature.length > 0;
-          if (hasMultisignatures) {
-            // TODO: Fixme
-            (transaction as any).signatures = (transaction as any).signatures || [];
-          }
-          if (sender && transaction.requesterPublicKey && hasMultisignatures) {
-            this.modules.accounts.getAccount({publicKey: transaction.requesterPublicKey}, (err, requester) => {
-              if (!requester) {
-                return wcb(new Error('Requester not found'));
-              }
-              return wcb(null, sender, requester);
-            });
-          } else {
-            return wcb(null, sender, null);
-          }
-        },
-        // Process transaction
-        (sender, requester, wcb) => {
-          this.library.logic.transaction.process(transaction, sender, requester, (err) => {
-            if (err) {
-              return wcb(err);
-            }
-            return wcb(null, sender);
-          });
-        },
-        // Normalize transaction
-        (sender, wcb) => {
-          try {
-            transaction = this.library.logic.transaction.objectNormalize(transaction);
-            return wcb(null, sender);
-          } catch (err) {
-            return wcb(err);
-          }
-        },
-        // Verify Transaction
-        (sender, wcb) => {
-          this.library.logic.transaction.verify(transaction, sender, null, (err) => {
-            if (err) {
-              return wcb(err);
-            }
-            return wcb(null, sender);
-          });
-        },
-      ],
-      (err: Error, sender: any) => {
-        if (!err) {
-          this.library.bus.message('unconfirmedTransaction', transaction, broadcast);
-        }
-        return cb(err, sender);
-      }
+
+    const sender = await cbToPromise<any>(
+      (cb) => this.modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey }, cb)
     );
+
+    const isMultisigAccount = Array.isArray(sender.multisignature) && sender.multisignature.length > 0;
+    if (isMultisigAccount) {
+      // TODO: fixme please
+      (transaction as any).signatures = (transaction as any).signatures || [];
+    }
+    let requester = null;
+    if (sender && transaction.requesterPublicKey && isMultisigAccount) {
+      // Fetch the requester
+      requester = await cbToPromise(
+        (cb) => this.modules.accounts.getAccount({ publicKey: transaction.requesterPublicKey }, cb)
+      );
+    }
+
+    // Process the transaction!
+    await cbToPromise((cb) => this
+      .library
+      .logic
+      .transaction
+      .process(
+        transaction,
+        sender,
+        requester,
+        cb
+      )
+    );
+
+    // Normalize tx.
+    const normalizedTx = this.library.logic.transaction.objectNormalize(transaction);
+
+    // Verify the transaction
+    await cbToPromise((cb) => this.library.logic.transaction.verify(normalizedTx, sender, null /*TODO: height */, cb));
+
+    this.library.bus.message('unconfirmedTransaction', normalizedTx, broadcast);
+    return sender;
   }
 
+  /**
+   * Returns a tx expiration timeout in seconds
+   * @returns {number}
+   */
+  private txTimeout(tx: IBaseTransaction<any>): number {
+    if (tx.type === TransactionType.MULTI) {
+      return tx.asset.multisignature.lifetime * 3600;
+    } else if (Array.isArray(tx.signatures)) {
+      return constants.unconfirmedTransactionTimeOut * 8;
+    } else {
+      return constants.unconfirmedTransactionTimeOut;
+    }
+  }
 
 }
