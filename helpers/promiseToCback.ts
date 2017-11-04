@@ -1,8 +1,8 @@
 import {ILogger} from '../logger';
 
-export const emptyCB = () => void 0;
-
 export type cback<T = void> = (err: Error, data?: T) => void;
+
+export const emptyCB: cback<any> = () => void 0;
 
 export function catchToLoggerAndRemapError<T>(rejectString: string, logger: ILogger): (err: Error) => Promise<T> {
   return (err: Error) => {

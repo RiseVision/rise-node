@@ -8,7 +8,7 @@ var crypto = require('crypto');
 var exceptions = require('../helpers/exceptions.js');
 var extend = require('extend');
 var slots = require('../helpers/slots').default;
-var sql = require('../sql/transactions.js');
+var sql = require('../sql/transactions.ts');
 
 // Private fields
 var self, modules, __private = {};
@@ -596,95 +596,7 @@ Transaction.prototype.verify = function (trs, sender, height, cb) {
 	});
 };
 
-/**
- * Verifies signature for valid transaction type
- * @implements {getBytes}
- * @implements {verifyBytes}
- * @param {transaction} trs
- * @param {publicKey} publicKey
- * @param {signature} signature
- * @return {boolean}
- * @throws {error}
- */
-Transaction.prototype.verifySignature = function (trs, publicKey, signature) {
-	if (!__private.types[trs.type]) {
-		throw 'Unknown transaction type ' + trs.type;
-	}
 
-	if (!signature) { return false; }
-
-	var res;
-
-	try {
-		var bytes = this.getBytes(trs, true, true);
-		res = this.verifyBytes(bytes, publicKey, signature);
-	} catch (e) {
-		throw e;
-	}
-
-	return res;
-};
-
-/**
- * Verifies second signature for valid transaction type
- * @implements {getBytes}
- * @implements {verifyBytes}
- * @param {transaction} trs
- * @param {publicKey} publicKey
- * @param {signature} signature
- * @return {boolean}
- * @throws {error}
- */
-Transaction.prototype.verifySecondSignature = function (trs, publicKey, signature) {
-	if (!__private.types[trs.type]) {
-		throw 'Unknown transaction type ' + trs.type;
-	}
-
-	if (!signature) { return false; }
-
-	var res;
-
-	try {
-		var bytes = this.getBytes(trs, false, true);
-		res = this.verifyBytes(bytes, publicKey, signature);
-	} catch (e) {
-		throw e;
-	}
-
-	return res;
-};
-
-/**
- * Verifies hash, publicKey and signature.
- * @implements {crypto.createHash}
- * @implements {scope.ed.verify}
- * @param {Array} bytes
- * @param {publicKey} publicKey
- * @param {signature} signature
- * @return {boolean} verified hash, signature and publicKey
- * @throws {error}
- */
-Transaction.prototype.verifyBytes = function (bytes, publicKey, signature) {
-	var res;
-
-	try {
-		var data2 = Buffer.alloc(bytes.length);
-
-		for (var i = 0; i < data2.length; i++) {
-			data2[i] = bytes[i];
-		}
-
-		var hash = crypto.createHash('sha256').update(data2).digest();
-		var signatureBuffer = Buffer.from(signature, 'hex');
-		var publicKeyBuffer = Buffer.from(publicKey, 'hex');
-
-		res = this.scope.ed.verify(hash, signatureBuffer || ' ', publicKeyBuffer || ' ');
-	} catch (e) {
-		throw e;
-	}
-
-	return res;
-};
 
 /**
  * Merges account into sender address, Calls `apply` based on trs type (privateTypes).

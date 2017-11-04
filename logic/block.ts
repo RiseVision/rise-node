@@ -5,12 +5,12 @@ import constants from '../helpers/constants';
 import { Ed, IKeypair } from '../helpers/ed';
 import logicBlockSchema from '../schema/logic/block';
 import {BlockRewardLogic} from './blockReward';
-import { IBaseTransaction } from './transactions/baseTransaction';
+import { IBaseTransaction } from './transactions/baseTransactionType';
 import * as OldImplementation from './_block.js';
 
 // tslint:disable-next-line interface-over-type-literal
 export type BlockType = {
-
+ù
   height?: number;
   version: number;
   totalAmount: number;

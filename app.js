@@ -455,7 +455,7 @@ d.run(function () {
 		 * @param {function} cb - Callback function.
 		 */	
 		logic: ['db', 'bus', 'schema', 'genesisblock', function (scope, cb) {
-			var Transaction = require('./logic/transaction.js');
+			var Transaction = require('./logic/_transaction.js');
 			// var Block = require('./logic/_block.js');
 			var Block = require('./logic/block.ts').BlockLogic;
       var Account = require('./logic/account.ts').AccountLogic;

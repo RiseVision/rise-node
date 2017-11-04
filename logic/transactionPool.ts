@@ -4,7 +4,7 @@ import {cbToPromise, promiseToCB} from '../helpers/promiseToCback';
 import {TransactionType} from '../helpers/transactionTypes';
 import {ILogger} from '../logger';
 import {IBus} from '../types/bus';
-import {IBaseTransaction} from './transactions/baseTransaction';
+import {IBaseTransaction} from './transactions/baseTransactionType';
 // tslint:disable-next-line
 const config = require('../config.json');
 

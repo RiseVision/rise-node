@@ -337,9 +337,9 @@ export class AccountLogic {
    * @param {cback<any>} cb
    * @returns {Promise<any>}
    */
-  public merge(address: string, diff: MemAccountsData): string;
-  public merge(address: string, diff: MemAccountsData, cb: cback<any>): Promise<any>;
-  public merge(address: string, diff: MemAccountsData, cb?: cback<any>) {
+  public merge(address: string, diff: any): string;
+  public merge(address: string, diff: any, cb: cback<any>): Promise<any>;
+  public merge(address: string, diff: any, cb?: cback<any>) {
     const update: any       = {};
     const remove: any       = {};
     const insert: any       = {};
