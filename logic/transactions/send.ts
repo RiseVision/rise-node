@@ -30,7 +30,7 @@ export class SendTransaction extends BaseTransactionType<void> {
 
   public async apply(tx: IConfirmedTransaction<void>, block: SignedBlockType,
                      sender: any): Promise<void> {
-    // Create accoutn if does not exist.
+    // Create account if does not exist.
     await cbToPromise((cb) => this.modules.accounts.setAccountAndGet({ address: tx.recipientId }, cb));
 
     return cbToPromise<void>((cb) => this.modules.accounts.mergeAccountAndGet({
@@ -43,7 +43,7 @@ export class SendTransaction extends BaseTransactionType<void> {
   }
 
   public async undo(tx: IConfirmedTransaction<void>, block: SignedBlockType, sender: any): Promise<void> {
-    // Create accoutn if does not exist.
+    // Create account if does not exist.
     await cbToPromise((cb) => this.modules.accounts.setAccountAndGet({ address: tx.recipientId }, cb));
 
     return cbToPromise<void>((cb) => this.modules.accounts.mergeAccountAndGet({
