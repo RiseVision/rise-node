@@ -1,4 +1,5 @@
 'use strict';
+import {promiseToCB} from '../../helpers/promiseToCback';
 
 var async = require('async');
 var BlockReward = require('../../logic/blockReward').BlockRewardLogic;
@@ -6,7 +7,7 @@ var constants = require('../../helpers/constants').default;
 var crypto = require('crypto');
 var slots = require('../../helpers/slots').default;
 var sql = require('../../sql/blocks.js');
-var exceptions = require('../../helpers/exceptions.js');
+var exceptions = require('../../helpers/exceptions.ts');
 
 var modules, library, self, __private = {};
 
@@ -57,8 +58,9 @@ __private.checkTransaction = function (block, transaction, cb) {
 		function (waterCb) {
 			// Check if transaction is already in database, otherwise fork 2.
 			// DATABASE: read only
-			library.logic.transaction.checkConfirmed(transaction, function (err) {
-				if (err) {
+			library.logic.transaction.assertNonConfirmed(transaction)
+				.then(() => waterCb())
+				.catch((err) => {
 					// Fork: Transaction already confirmed.
 					modules.delegates.fork(block, 2);
 					// Undo the offending transaction.
@@ -67,10 +69,7 @@ __private.checkTransaction = function (block, transaction, cb) {
 						modules.transactions.removeUnconfirmedTransaction(transaction.id);
 						return setImmediate(waterCb, err2 || err);
 					});
-				} else {
-					return setImmediate(waterCb);
-				}
-			});
+				});
 		},
 		function (waterCb) {
 			// Get account from database if any (otherwise cold wallet).
@@ -80,7 +79,7 @@ __private.checkTransaction = function (block, transaction, cb) {
 		function (sender, waterCb) {
 			// Check if transaction id valid against database state (mem_* tables).
 			// DATABASE: read only
-			library.logic.transaction.verify(transaction, sender, block.height, waterCb);
+			promiseToCB(library.logic.transaction.verify(transaction, sender, block.height), waterCb);
 		}
 	], function (err) {
 		return setImmediate(cb, err);

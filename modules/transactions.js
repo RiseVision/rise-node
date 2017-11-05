@@ -432,8 +432,8 @@ Transactions.prototype.removeUnconfirmedTransaction = function (id) {
  * @param {function} cb - Callback function.
  * @return {function} Calls transactionPool.processUnconfirmedTransaction
  */
-Transactions.prototype.processUnconfirmedTransaction = function (transaction, broadcast, cb) {
-	return __private.transactionPool.processUnconfirmedTransaction(transaction, broadcast, cb);
+Transactions.prototype.processUnconfirmedTransaction = function (transaction, broadcast, bundled, cb) {
+	return promiseToCB(__private.transactionPool.processNewTransaction(transaction, broadcast, bundled), cb);
 };
 
 /**

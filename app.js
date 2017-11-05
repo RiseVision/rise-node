@@ -455,17 +455,12 @@ d.run(function () {
 		 * @param {function} cb - Callback function.
 		 */
 		logic: ['db', 'bus', 'schema', 'genesisblock', function (scope, cb) {
-			console.log('ciao');
 			var Transaction = require('./logic/transaction').TransactionLogic;
-			console.log('ciao');
 			// var Block = require('./logic/_block.js');
 			var Block = require('./logic/block.ts').BlockLogic;
-			console.log('ciao');
 			var Account = require('./logic/account.ts').AccountLogic;
-			console.log('ciao');
 			// var Account = require('./logic/_account.js');
       var Peers = require('./logic/peers').Peers;
-      console.log('ciao');
 			async.auto({
 				bus: function (cb) {
 					cb(null, scope.bus);

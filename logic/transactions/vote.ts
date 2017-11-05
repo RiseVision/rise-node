@@ -30,7 +30,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
   }
 
   public calculateFee(tx: IBaseTransaction<VoteAsset>, sender: any, height: number): number {
-    return this.modules.system.getFees(height).fees.send;
+    return this.modules.system.getFees(height).fees.vote;
   }
 
   public async verify(tx: IBaseTransaction<VoteAsset> & { senderId: string }, sender: any): Promise<void> {
@@ -73,7 +73,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
 
   public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType,
                      sender: any): Promise<void> {
-    await this.checkUnconfirmedDelegates(tx);
+    await this.checkConfirmedDelegates(tx);
     return this.library.account.merge(sender.address, {
       blockId  : block.id,
       delegates: tx.asset.votes,
@@ -146,7 +146,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
       throw new Error('Invalid vote type');
     }
 
-    if (['-', '+'].indexOf(vote[0]) !== 0) {
+    if (['-', '+'].indexOf(vote[0]) === -1) {
       throw new Error('Invalid vote format');
     }
 

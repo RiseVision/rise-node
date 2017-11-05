@@ -1,4 +1,5 @@
 'use strict';
+import {promiseToCB} from '../helpers/promiseToCback';
 
 var async = require('async');
 var constants = require('../helpers/constants').default;
@@ -271,8 +272,7 @@ __private.loadTransactions = function (cb) {
 		function (transactions, waterCb) {
 			async.eachSeries(transactions, function (transaction, eachSeriesCb) {
 				library.balancesSequence.add(function (cb) {
-					transaction.bundled = true;
-					modules.transactions.processUnconfirmedTransaction(transaction, false, cb);
+					promiseToCB(modules.transactions.processUnconfirmedTransaction(transaction, false, true), cb);
 				}, function (err) {
 					if (err) {
 						// TODO: Validate if must include error propagation.

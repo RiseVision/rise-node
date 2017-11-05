@@ -1,4 +1,5 @@
 'use strict';
+import {promiseToCB} from '../helpers/promiseToCback';
 
 var async = require('async');
 var constants = require('../helpers/constants').default;
@@ -240,7 +241,7 @@ __private.filterTransaction = function (transaction, cb) {
 		if (modules.transactions.transactionInPool(transaction.id)) {
 			return setImmediate(cb, null, true);
 		} else {
-			return library.logic.transaction.checkConfirmed(transaction, function (err) {
+			promiseToCB(library.logic.transaction.assertNonConfirmed(transaction), function (err) {
 				return setImmediate(cb, null, !err);
 			});
 		}

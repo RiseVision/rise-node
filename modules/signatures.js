@@ -37,10 +37,10 @@ function Signatures (cb, scope) {
 
 	__private.assetTypes[transactionTypes.SIGNATURE] = library.logic.transaction.attachAssetType(
 		transactionTypes.SIGNATURE,
-		new Signature(
-			scope.schema,
-			scope.logger
-		)
+		new Signature({
+			schema: scope.schema,
+			logger: scope.logger
+		})
 	);
 
 	setImmediate(cb, null, self);

@@ -5,7 +5,7 @@ var async = require('async');
 
 var modulesLoader = require('../../../common/initModule').modulesLoader;
 var BlockLogic = require('../../../../logic/block.js');
-var exceptions = require('../../../../helpers/exceptions.js');
+var exceptions = require('../../../../helpers/exceptions').default;
 var clearDatabaseTable = require('../../../common/globalBefore').clearDatabaseTable;
 
 var crypto = require('crypto');

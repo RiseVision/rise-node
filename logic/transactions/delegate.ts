@@ -26,7 +26,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     'transactionId',
   ];
 
-  constructor(public library: { db: any, logger: ILogger, schema: any, network: any }) {
+  constructor(public library: { schema: any }) {
     super(TransactionType.DAPP);
   }
 

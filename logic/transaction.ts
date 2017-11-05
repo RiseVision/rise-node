@@ -4,6 +4,7 @@ import * as crypto from 'crypto';
 import BigNum from '../helpers/bignum';
 import constants from '../helpers/constants';
 import {Ed, IKeypair} from '../helpers/ed';
+import exceptions from '../helpers/exceptions';
 import {emptyCB} from '../helpers/promiseToCback';
 import slots from '../helpers/slots';
 import {TransactionType} from '../helpers/transactionTypes';
@@ -116,7 +117,6 @@ export class TransactionLogic {
 
     const bb = new ByteBuffer(1 + 4 + 32 + 32 + 8 + 8 + 64 + 64 + assetBytes.length, true);
 
-    bb.writeByte(tx.type);
     bb.writeByte(tx.type);
     bb.writeInt(tx.timestamp);
 
@@ -287,9 +287,9 @@ export class TransactionLogic {
       throw new Error(`Invalid sender public key: ${tx.senderPublicKey} expected ${sender.publicKey}`);
     }
 
-    // TODO Fix Me
     // Check sender is not genesis account unless block id equals genesis
-    if (tx.blockId !== this.scope.genesisblock.block.id) {
+    if ([exceptions.genesisPublicKey.mainnet, exceptions.genesisPublicKey.testnet].indexOf(sender.publicKey) !== -1
+      && tx.blockId !== this.scope.genesisblock.block.id) {
       throw new Error('Invalid sender. Can not send from genesis account');
     }
 
