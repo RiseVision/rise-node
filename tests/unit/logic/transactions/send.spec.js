@@ -5,7 +5,6 @@ let chaiAsPromised = require("chai-as-promised");
 const expect = chai.expect;
 const sinon = require("sinon");
 const rewire = require("rewire");
-const Send = rewire("../../../../logic/transactions/send");
 const SendTransaction = require("../../../../logic/transactions/send").SendTransaction;
 const BaseTransactionType = require("../../../../logic/transactions/baseTransactionType").BaseTransactionType;
 
@@ -70,27 +69,27 @@ describe("logic/transfer", () => {
   });
 
   describe("verify", () => {
-    it("throws Missing recipient", () => {
+    it("throws Missing recipient when !tx.recipientId", () => {
       expect(instance.verify({},sender)).to.be.rejectedWith('Missing recipient');
     });
 
-    it("throws Invalid transaction amount", () => {
+    it("throws Invalid transaction amount when tx.amount <= 0", () => {
       tx.amount = 0;
       expect(instance.verify(tx,sender)).to.be.rejectedWith('Invalid transaction amount');
     });
-    it("success", () => {
+    it("executes successfully", () => {
       expect(instance.verify(tx,sender)).to.be.fulfilled;
     });
   });
 
   describe("apply", () => {
-    it("setAccountAndGet throws error", () => {
+    it("setAccountAndGet is called and throws error", () => {
       accounts.setAccountAndGet.rejects('error');
       instance.bind(accounts, rounds, system);
 
       expect(instance.apply(tx, block, sender)).to.be.rejectedWith('error');
     });
-    it("setAccountAndGet success", () => {
+    it("setAccountAndGet is called and executes successfully", () => {
 
       expect(instance.apply(tx, block, sender)).to.be.fulfilled;
       expect(accounts.setAccountAndGet.calledOnce).to.be.true;
@@ -98,13 +97,13 @@ describe("logic/transfer", () => {
       expect(accounts.setAccountAndGet.firstCall.args[0]).to.deep.equal({ address: tx.recipientId });
       expect(accounts.setAccountAndGet.firstCall.args[1]).to.be.a('function');
     });
-    it("mergeAccountAndGet rejected", () => {
+    it("mergeAccountAndGet is called and rejected the promise", () => {
       accounts.mergeAccountAndGet.rejects('error');
       instance.bind(accounts, rounds, system);
 
       expect(instance.apply(tx, block, sender)).to.be.rejectedWith('error');
     });
-    it("setAccountAndGet success", () => {
+    it("setAccountAndGet is called and executes successfully", () => {
       expect(instance.apply(tx, block, sender)).to.be.fulfilled;
       expect(rounds.calc.calledOnce).to.be.true;
       expect(rounds.calc.firstCall.args.length).to.equal(1);
@@ -125,13 +124,13 @@ describe("logic/transfer", () => {
   });
 
   describe("undo", () => {
-    it("setAccountAndGet throws error", () => {
+    it("setAccountAndGet is called and throws error", () => {
       accounts.setAccountAndGet.rejects('error');
       instance.bind(accounts, rounds, system);
 
       expect(instance.undo(tx, block, sender)).to.be.rejectedWith('error');
     });
-    it("setAccountAndGet success", () => {
+    it("setAccountAndGet is called and executes successfully", () => {
 
       expect(instance.undo(tx, block, sender)).to.be.fulfilled;
       expect(accounts.setAccountAndGet.calledOnce).to.be.true;
@@ -139,13 +138,13 @@ describe("logic/transfer", () => {
       expect(accounts.setAccountAndGet.firstCall.args[0]).to.deep.equal({ address: tx.recipientId });
       expect(accounts.setAccountAndGet.firstCall.args[1]).to.be.a('function');
     });
-    it("mergeAccountAndGet rejected", () => {
+    it("mergeAccountAndGet is called and rejects the promise", () => {
       accounts.mergeAccountAndGet.rejects('error');
       instance.bind(accounts, rounds, system);
 
       expect(instance.undo(tx, block, sender)).to.be.rejectedWith('error');
     });
-    it("setAccountAndGet success", () => {
+    it("setAccountAndGet is called and executes successfully", () => {
 
       expect(instance.undo(tx, block, sender)).to.be.fulfilled;
       expect(rounds.calc.calledOnce).to.be.true;
@@ -167,19 +166,19 @@ describe("logic/transfer", () => {
   });
 
   describe("objectNormalize", () => {
-    it("is instanceof BaseTransactionType", () => {
+    it("returns the tx", () => {
       expect(instance.objectNormalize(tx)).to.deep.equal(tx);
     });
   });
 
   describe("dbRead", () => {
-    it("is instanceof BaseTransactionType", () => {
+    it("returns null", () => {
       expect(instance.dbRead()).to.deep.equal(null);
     });
   });
 
   describe("dbSave", () => {
-    it("is instanceof BaseTransactionType", () => {
+    it("returns null", () => {
       expect(instance.dbSave()).to.deep.equal(null);
     });
   });
