@@ -6,11 +6,11 @@ import { Ed, IKeypair } from '../helpers/ed';
 import logicBlockSchema from '../schema/logic/block';
 import {BlockRewardLogic} from './blockReward';
 import { IBaseTransaction } from './transactions/baseTransactionType';
-import * as OldImplementation from './_block.js';
+import {TransactionLogic} from './transaction';
+// import * as OldImplementation from './_block.js';
 
 // tslint:disable-next-line interface-over-type-literal
 export type BlockType = {
-ù
   height?: number;
   version: number;
   totalAmount: number;
@@ -123,7 +123,7 @@ export class BlockLogic {
   ];
 
   private blockReward = new BlockRewardLogic();
-  private scope: { ed: Ed, schema: any /*ZSchema*/, transaction: any };
+  private scope: { ed: Ed, schema: any /*ZSchema*/, transaction: TransactionLogic };
 
   constructor(ed: Ed, schema: any, transaction: any, cb?: any) {
     this.scope = {

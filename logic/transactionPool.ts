@@ -4,14 +4,15 @@ import {cbToPromise, promiseToCB} from '../helpers/promiseToCback';
 import {TransactionType} from '../helpers/transactionTypes';
 import {ILogger} from '../logger';
 import {IBus} from '../types/bus';
+import {TransactionLogic} from './transaction';
 import {IBaseTransaction} from './transactions/baseTransactionType';
 // tslint:disable-next-line
 const config = require('../config.json');
 
 export class InnerTXQueue<T = { receivedAt: Date }> {
   private transactions: Array<IBaseTransaction<any>> = [];
-  private index: { [k: string]: number } = {};
-  private payload: { [k: string]: T } = {};
+  private index: { [k: string]: number }             = {};
+  private payload: { [k: string]: T }                = {};
 
   public has(id: string) {
     return id in this.index;
@@ -94,7 +95,7 @@ export class TransactionPool {
     logger: ILogger,
     bus: IBus,
     logic: {
-      transaction: any
+      transaction: TransactionLogic
     }
     config: {
       broadcasts: {
@@ -416,23 +417,14 @@ export class TransactionPool {
     }
 
     // Process the transaction!
-    await cbToPromise((cb) => this
-      .library
-      .logic
-      .transaction
-      .process(
-        transaction,
-        sender,
-        requester,
-        cb
-      )
-    );
+    await this.library.logic.transaction.process(transaction, sender, requester);
 
     // Normalize tx.
     const normalizedTx = this.library.logic.transaction.objectNormalize(transaction);
 
     // Verify the transaction
-    await cbToPromise((cb) => this.library.logic.transaction.verify(normalizedTx, sender, null /*TODO: height */, cb));
+    // TODO: check why here we've to cast to any
+    await this.library.logic.transaction.verify(normalizedTx as any, sender, requester, null);
 
     this.library.bus.message('unconfirmedTransaction', normalizedTx, broadcast);
     return sender;

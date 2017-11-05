@@ -8,10 +8,10 @@ var extend = require('extend');
 var OrderBy = require('../helpers/orderBy').default;
 var sandboxHelper = require('../helpers/sandbox');
 var schema = require('../schema/transactions').default;
-var sql = require('../sql/transactions.ts');
+var sql = require('../sql/logic/transactions.ts');
 var TransactionPool = require('../logic/transactionPool').TransactionPool;
 var transactionTypes = require('../helpers/transactionTypes').TransactionType;
-var Transfer = require('../logic/transfer.js');
+var Transfer = require('../logic/transactions/send').SendTransaction;
 var promiseToCB = require('../helpers/promiseToCback').promiseToCB;
 
 // Private fields
@@ -474,7 +474,7 @@ Transactions.prototype.undoUnconfirmedList = function (cb) {
  */
 Transactions.prototype.apply = function (transaction, block, sender, cb) {
 	library.logger.debug('Applying confirmed transaction', transaction.id);
-	library.logic.transaction.apply(transaction, block, sender, cb);
+	promiseToCB(library.logic.transaction.apply(transaction, block, sender), cb);
 };
 
 /**
@@ -515,10 +515,10 @@ Transactions.prototype.applyUnconfirmed = function (transaction, sender, cb) {
 					return setImmediate(cb, 'Requester not found');
 				}
 
-				library.logic.transaction.applyUnconfirmed(transaction, sender, requester, cb);
+				promiseToCB(library.logic.transaction.applyUnconfirmed(transaction, sender, requester), cb);
 			});
 		} else {
-			library.logic.transaction.applyUnconfirmed(transaction, sender, cb);
+			promiseToCB(library.logic.transaction.applyUnconfirmed(transaction, sender), cb);
 		}
 	}
 };

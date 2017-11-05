@@ -8,7 +8,7 @@ var extend = require('extend');
 var schema = require('../schema/accounts').default;
 var sandboxHelper = require('../helpers/sandbox');
 var transactionTypes = require('../helpers/transactionTypes').TransactionType;
-var Vote = require('../logic/vote.js');
+var Vote = require('../logic/transactions/vote').VoteTransaction;
 
 // Private fields
 var modules, library, self, __private = {}, shared = {};
@@ -41,10 +41,11 @@ function Accounts (cb, scope) {
 
 	__private.assetTypes[transactionTypes.VOTE] = library.logic.transaction.attachAssetType(
 		transactionTypes.VOTE,
-		new Vote(
-			scope.logger,
-			scope.schema
-		)
+		new Vote({
+			logger:  scope.logger,
+			schema: scope.schema,
+			account: scope.logic.account,
+		})
 	);
 
 	setImmediate(cb, null, self);

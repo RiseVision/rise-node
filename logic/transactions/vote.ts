@@ -2,11 +2,11 @@ import constants from '../../helpers/constants';
 import Diff from '../../helpers/diff';
 import {cbToPromise, emptyCB} from '../../helpers/promiseToCback';
 import {TransactionType} from '../../helpers/transactionTypes';
+import {ILogger} from '../../logger';
 import voteSchema from '../../schema/logic/transactions/vote';
+import {AccountLogic} from '../account';
 import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
-import {ILogger} from '../../logger';
-import {AccountLogic} from '../account';
 
 // tslint:disable-next-line interface-over-type-literal
 export type VoteAsset = {
@@ -14,7 +14,7 @@ export type VoteAsset = {
 };
 
 export class VoteTransaction extends BaseTransactionType<VoteAsset> {
-  public modules: { accounts: any, delegates: any, rounds: any, system: any };
+  public modules: { delegates: any, rounds: any, system: any };
   private dbTable  = 'votes';
   private dbFields = [
     'votes',
@@ -25,8 +25,8 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
     super(TransactionType.VOTE);
   }
 
-  public bind(accounts: any, delegates: any, rounds: any, system: any) {
-    this.modules = { accounts, delegates, rounds, system };
+  public bind(delegates: any, rounds: any, system: any) {
+    this.modules = { delegates, rounds, system };
   }
 
   public calculateFee(tx: IBaseTransaction<VoteAsset>, sender: any, height: number): number {

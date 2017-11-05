@@ -5,7 +5,7 @@ var constants = require('../helpers/constants').default;
 var crypto = require('crypto');
 var sandboxHelper = require('../helpers/sandbox');
 var schema = require('../schema/signatures').default;
-var Signature = require('../logic/signature.js');
+var Signature = require('../logic/transactions/secondSignature').SecondSignatureTransaction;
 var transactionTypes = require('../helpers/transactionTypes').TransactionType;
 
 // Private fields

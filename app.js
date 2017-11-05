@@ -160,7 +160,7 @@ var config = {
  * The Object is initialized here and pass to others as parameter.
  * @property {object} - Logger instance.
  */
-var logger = new Logger({ echo: appConfig.consoleLogLevel, errorLevel: appConfig.fileLogLevel, 
+var logger = new Logger({ echo: appConfig.consoleLogLevel, errorLevel: appConfig.fileLogLevel,
 	filename: appConfig.logFileName });
 
 // Trying to get last git commit
@@ -257,7 +257,7 @@ d.run(function () {
 		 * @method network
 		 * @param {object} scope - The results from current execution,
 		 * at leats will contain the required elements.
-		 * @param {nodeStyleCallback} cb - Callback function with created Object: 
+		 * @param {nodeStyleCallback} cb - Callback function with created Object:
 		 * `{express, app, server, io, https, https_io}`.
 		 */
 		network: ['config', function (scope, cb) {
@@ -338,7 +338,7 @@ d.run(function () {
 		 * Once config, public, genesisblock, logger, build and network are completed,
 		 * adds configuration to `network.app`.
 		 * @method connect
-		 * @param {object} scope - The results from current execution, 
+		 * @param {object} scope - The results from current execution,
 		 * at leats will contain the required elements.
 		 * @param {function} cb - Callback function.
 		 */
@@ -450,17 +450,22 @@ d.run(function () {
 		 * Once db, bus, schema and genesisblock are completed,
 		 * loads transaction, block, account and peers from logic folder.
 		 * @method logic
-		 * @param {object} scope - The results from current execution, 
+		 * @param {object} scope - The results from current execution,
 		 * at leats will contain the required elements.
 		 * @param {function} cb - Callback function.
-		 */	
+		 */
 		logic: ['db', 'bus', 'schema', 'genesisblock', function (scope, cb) {
-			var Transaction = require('./logic/_transaction.js');
+			console.log('ciao');
+			var Transaction = require('./logic/transaction').TransactionLogic;
+			console.log('ciao');
 			// var Block = require('./logic/_block.js');
 			var Block = require('./logic/block.ts').BlockLogic;
-      var Account = require('./logic/account.ts').AccountLogic;
-      // var Account = require('./logic/_account.js');
+			console.log('ciao');
+			var Account = require('./logic/account.ts').AccountLogic;
+			console.log('ciao');
+			// var Account = require('./logic/_account.js');
       var Peers = require('./logic/peers').Peers;
+      console.log('ciao');
 			async.auto({
 				bus: function (cb) {
 					cb(null, scope.bus);
@@ -486,7 +491,15 @@ d.run(function () {
           new Account(scope.db, scope.schema, scope.logger, cb);
 				}],
 				transaction: ['db', 'bus', 'ed', 'schema', 'genesisblock', 'account', 'logger', function (scope, cb) {
-					new Transaction(scope.db, scope.ed, scope.schema, scope.genesisblock, scope.account, scope.logger, cb);
+					cb(null, new Transaction({
+							db          : scope.db,
+							ed          : scope.ed,
+							schema      : scope.schema,
+							genesisblock: scope.genesisblock,
+							account     : scope.account,
+							logger      : scope.logger
+						})
+					);
 				}],
 				block: ['db', 'bus', 'ed', 'schema', 'genesisblock', 'account', 'transaction', function (scope, cb) {
 					const blockLogic = new Block(scope.ed, scope.schema, scope.transaction);
@@ -537,10 +550,10 @@ d.run(function () {
 		 * Loads api from `api` folder using `config.api`, once modules, logger and
 		 * network are completed.
 		 * @method api
-		 * @param {object} scope - The results from current execution, 
+		 * @param {object} scope - The results from current execution,
 		 * at leats will contain the required elements.
 		 * @param {function} cb - Callback function.
-		 */	
+		 */
 		api: ['modules', 'logger', 'network', function (scope, cb) {
 			Object.keys(config.api).forEach(function (moduleName) {
 				Object.keys(config.api[moduleName]).forEach(function (protocol) {
@@ -569,7 +582,7 @@ d.run(function () {
 		 * Once 'ready' is completed, binds and listens for connections on the
 		 * specified host and port for `scope.network.server`.
 		 * @method listen
-		 * @param {object} scope - The results from current execution, 
+		 * @param {object} scope - The results from current execution,
 		 * at leats will contain the required elements.
 		 * @param {nodeStyleCallback} cb - Callback function with `scope.network`.
 		 */

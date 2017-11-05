@@ -53,11 +53,12 @@ export class TransactionLogic {
     this.modules = modules;
   }
 
-  public attachAssetType(type: TransactionType, instance: BaseTransactionType<any>) {
+  public attachAssetType<T>(type: TransactionType, instance: BaseTransactionType<T>): BaseTransactionType<T> {
     if (!(instance instanceof BaseTransactionType)) {
       throw new Error('Invalid instance interface');
     }
     this.types[type] = instance;
+    return instance;
   }
 
   /**
