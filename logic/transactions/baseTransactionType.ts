@@ -1,5 +1,5 @@
 import {TransactionType} from '../../helpers/transactionTypes';
-import {BlockType, SignedBlockType} from '../block';
+import {SignedBlockType} from '../block';
 
 export interface IBaseTransaction<T> {
   type: TransactionType;
@@ -31,33 +31,62 @@ const emptyBuffer = new Buffer(0);
  */
 export abstract class BaseTransactionType<T> {
 
+  constructor(private txType: TransactionType) {
+  }
+
+  public get type(): TransactionType {
+    return this.txType;
+  }
+
   public abstract calculateFee(tx: IBaseTransaction<T>, sender: any, height: number): number;
 
-  public abstract verify(tx: IBaseTransaction<T>, sender: any): Promise<void>;
+  public verify(tx: IBaseTransaction<T>, sender: any): Promise<void> {
+    return Promise.resolve();
+  }
 
-  public abstract process(tx: IBaseTransaction<T>, sender: any): Promise<void>;
+  public process(tx: IBaseTransaction<T>, sender: any): Promise<void> {
+    return Promise.resolve();
+  }
 
   public getBytes(tx: IBaseTransaction<T>, skipSignature: boolean, skipSecondSignature: boolean): Buffer {
     return emptyBuffer;
   }
 
-  public abstract apply(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: any): Promise<void>;
+  public apply(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: any): Promise<void> {
+    return Promise.resolve();
+  }
 
-  public abstract applyUnconfirmed(tx: IBaseTransaction<T>, sender: any): Promise<void>;
+  public applyUnconfirmed(tx: IBaseTransaction<T>, sender: any): Promise<void> {
+    return Promise.resolve();
+  }
 
-  public abstract undo(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: any): Promise<void>;
+  public undo(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: any): Promise<void> {
+    return Promise.resolve();
+  }
 
-  public abstract undoUnconfirmed(tx: IBaseTransaction<T>, sender: any): Promise<void>;
+  public undoUnconfirmed(tx: IBaseTransaction<T>, sender: any): Promise<void> {
+    return Promise.resolve();
+  }
 
   public abstract objectNormalize(tx: IBaseTransaction<T>): IBaseTransaction<T>;
 
   public abstract dbRead(raw: any): T;
 
-  public abstract dbSave(tx: IConfirmedTransaction<T> & {senderId: string}): { table: string, fields: string[], values: any };
+  public abstract dbSave(tx: IConfirmedTransaction<T> & { senderId: string }): { table: string, fields: string[], values: any };
 
-  public abstract afterSave(tx: IBaseTransaction<T>): Promise<void>;
+  public afterSave(tx: IBaseTransaction<T>): Promise<void> {
+    return Promise.resolve();
+  }
 
-  public abstract ready(tx: IBaseTransaction<T>, sender: any): boolean;
-
+  public ready(tx: IBaseTransaction<T>, sender: any): boolean {
+    if (Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
+      if (!Array.isArray(tx.signatures)) {
+        return false;
+      }
+      return tx.signatures.length >= sender.multimin;
+    } else {
+      return true;
+    }
+  }
 
 }

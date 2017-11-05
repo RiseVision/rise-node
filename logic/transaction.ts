@@ -9,7 +9,7 @@ import slots from '../helpers/slots';
 import {TransactionType} from '../helpers/transactionTypes';
 import {ILogger} from '../logger';
 import txSchema from '../schema/logic/transaction';
-import sql from '../sql/transactions';
+import sql from '../sql/logic/transactions';
 import {AccountLogic} from './account';
 import {SignedBlockType} from './block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './transactions/baseTransactionType';

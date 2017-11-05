@@ -1,4 +1,4 @@
-export enum DappCategories {
+export enum DappCategory {
   Official      = 0,
   Education     = 1,
   Entertainment = 2,
