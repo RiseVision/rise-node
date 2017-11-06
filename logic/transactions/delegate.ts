@@ -91,7 +91,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     return cbToPromise((cb) => this.modules.accounts.getAccount({ username }, cb))
       .then((account) => {
         if (account) {
-          throw new Error('Usernale already exists');
+          throw new Error(`Username already exists: ${username}`);
         }
       });
   }

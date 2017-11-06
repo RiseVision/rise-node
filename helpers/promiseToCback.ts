@@ -1,4 +1,4 @@
-import {ILogger} from '../logger';
+import { ILogger } from '../logger';
 
 export type cback<T = void> = (err: Error, data?: T) => void;
 
@@ -31,13 +31,20 @@ export function promiseToCB<T>(promise: Promise<T>, cb: cback<T> = emptyCB): Pro
 /**
  * Promisify a fn that returns a callback
  */
-export function cbToPromise<T>(fn: (cb: cback<T>) => void): Promise<T> {
+export function cbToPromise<T>(fn: (cb: cback<T>) => void, multi: true): Promise<T[]>;
+export function cbToPromise<T>(fn: (cb: cback<T>) => void, multi?: false): Promise<T>;
+export function cbToPromise<T>(fn: (cb: cback<T>) => void, multi = false): Promise<T> {
   return new Promise((resolve, reject) => {
-    fn((err, res) => {
-      if (err) {
-        return reject(err);
+    fn((...args) => {
+      if (args[0]) {
+        return reject(args[0]);
       }
-      return resolve(res);
+      args.splice(0, 1);
+      if (multi) {
+        return resolve(args as any);
+      } else {
+        return resolve(args[0]);
+      }
     });
   });
 }

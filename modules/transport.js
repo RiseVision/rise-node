@@ -1,8 +1,9 @@
 'use strict';
+import { promiseToCB } from "../helpers/promiseToCback";
 
 var _ = require('lodash');
 var async = require('async');
-var Broadcaster = require('../logic/broadcaster.js');
+var Broadcaster = require('../logic/broadcaster').BroadcasterLogic;
 var Peer = require('../logic/peer').Peer;
 var PeerState = require('../logic/peer').PeerState;
 var bignum = require('../helpers/bignum').default;
@@ -56,13 +57,19 @@ function Transport (cb, scope) {
 	};
 	self = this;
 
-	__private.broadcaster = new Broadcaster(
-		scope.config.broadcasts,
-		scope.config.forging.force,
-		scope.logic.peers,
-		scope.logic.transaction,
-		scope.logger
-	);
+	__private.broadcaster = new Broadcaster( {
+		logger: scope.logger,
+		logic: {
+			peers: scope.logic.peers,
+			transactions: scope.logic.transactions
+		},
+		config: {
+			broadcasts: scope.config.broadcasts,
+			forging: {
+				force: scope.config.forging.force
+			}
+		}
+	});
 
 	setImmediate(cb, null, self);
 }
@@ -294,7 +301,7 @@ Transport.prototype.poorConsensus = function () {
  * @return {Broadcaster.getPeers} calls getPeers
  */
 Transport.prototype.getPeers = function (params, cb) {
-	return __private.broadcaster.getPeers(params, cb);
+	return promiseToCB(__private.broadcaster.getPeers(params), cb);
 };
 
 /**
