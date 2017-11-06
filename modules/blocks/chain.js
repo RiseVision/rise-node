@@ -1,4 +1,5 @@
 'use strict';
+import { promiseToCB } from "../../helpers/promiseToCback";
 
 var _ = require('lodash');
 var async = require('async');
@@ -123,7 +124,7 @@ __private.afterSave = function (block, cb) {
 	// Execute afterSave callbacks for each transaction, depends on tx type
 	// see: logic.outTransfer.afterSave, logic.dapp.afterSave
 	async.eachSeries(block.transactions, function (transaction, cb) {
-		return library.logic.transaction.afterSave(transaction, cb);
+		return promiseToCB(library.logic.transaction.afterSave(transaction), cb);
 	}, function (err) {
 		return setImmediate(cb, err);
 	});
