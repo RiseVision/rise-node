@@ -9,7 +9,7 @@ var rootDir = path.join(__dirname, "../../..");
 var Round = rewire(path.join(rootDir, "logic/round"));
 
 describe("logic/round", function() {
-	var instance, scope, callback, task;
+	var instance, scope, task;
 
 	beforeEach(function() {
 		scope = {
@@ -37,17 +37,16 @@ describe("logic/round", function() {
 				height: "here"
 			}
 		};
-		callback = sinon.stub();
 		task = {
 			none: sinon.stub().returns("it works!"),
 			query: sinon.stub().returns("query works!")
 		};
-		instance = new Round(scope, task);
+		instance = new Round.RoundLogic(scope, task);
 	});
 
 	describe("constructor", function() {
 		it("should be a function", function() {
-			expect(Round).to.be.a("function");
+			expect(Round.RoundLogic).to.be.a("function");
 		});
 
 		it("throws error when a property is missing", function() {
@@ -65,7 +64,7 @@ describe("logic/round", function() {
 
 				delete scope[prop];
 				var throwError = function() {
-					new Round(scope, callback);
+					new Round.RoundLogic(scope);
 				};
 				expect(throwError).to.throw();
 			});
@@ -90,14 +89,14 @@ describe("logic/round", function() {
 
 				delete scope[prop];
 				var throwError = function() {
-					new Round(scope, callback);
+					new Round.RoundLogic(scope);
 				};
 				expect(throwError).to.throw();
 			});
 		});
 		it("success", function() {
 			expect(instance.scope).to.deep.equal(scope);
-			expect(instance.t).to.deep.equal(task);
+			expect(instance.task).to.deep.equal(task);
 		});
 	});
 
@@ -119,18 +118,21 @@ describe("logic/round", function() {
 	});
 
 	describe("updateMissedBlocks", function() {
-		it("returns task", function() {
+		it("returns promise", function() {
 			scope.roundOutsiders = [];
-			var instanceTest = new Round(scope, task);
-			var retVal = instanceTest.updateMissedBlocks();
+			var instanceTest = new Round.RoundLogic(scope, task);
 
-			expect(retVal).to.deep.equal(task);
-			expect(task.none.notCalled).to.equal(true);
+
+			return instanceTest.updateMissedBlocks()
+				.then((ar) => {
+					expect(ar).to.be.empty;
+          expect(task.none.notCalled).to.equal(true);
+				})
 		});
 
 		it("returns response from updateMissedBlocks", function() {
-			var sql = Round.__get__("sql");
-			var updateMissedBlocks = sinon.stub(sql, "updateMissedBlocks").returns(true);
+			var sql = Round.__get__("rounds_1");
+			var updateMissedBlocks = sinon.stub(sql.default, "updateMissedBlocks").returns(true);
 			var retVal = instance.updateMissedBlocks();
 
 			expect(task.none.calledOnce).to.equal(true);
@@ -251,7 +253,7 @@ describe("logic/round", function() {
 				'UPDATE mem_accounts SET "blockId" = ${newId} WHERE "blockId" = ${oldId};';
 			scope.backwards = true;
 
-			var instanceTest = new Round(scope, task);
+			var instanceTest = new Round.RoundLogic(scope, task);
 			var retVal = instanceTest.markBlockId();
 
 			expect(task.none.calledOnce).to.be.true;
@@ -263,9 +265,12 @@ describe("logic/round", function() {
 			});
 			expect(retVal).to.equal("it works!");
 		});
-		it("returns task", function() {
-			var retVal = instance.markBlockId();
-			expect(retVal).to.deep.equal(task);
+		it("returns empty data and does not call task.none if scope.backwars is false ", function() {
+			scope.backwards = false;
+			return instance.markBlockId()
+				.then(() => {
+					expect(task.none.notCalled).to.be.true;
+				})
 		});
 	});
 
@@ -275,7 +280,7 @@ describe("logic/round", function() {
 				'DELETE FROM blocks WHERE "height" > (${height})::bigint;';
 			scope.backwards = true;
 
-			var instanceTest = new Round(scope, task);
+			var instanceTest = new Round.RoundLogic(scope, task);
 			var retVal = instanceTest.truncateBlocks();
 
 			expect(task.none.calledOnce).to.be.true;
@@ -294,7 +299,7 @@ describe("logic/round", function() {
 				"INSERT INTO mem_round SELECT * FROM mem_round_snapshot";
 			scope.backwards = true;
 
-			var instanceTest = new Round(scope, task);
+			var instanceTest = new Round.RoundLogic(scope, task);
 			var retVal = instanceTest.restoreRoundSnapshot();
 
 			expect(scope.library.logger.debug.calledOnce).to.be.true;
@@ -316,7 +321,7 @@ describe("logic/round", function() {
 				"UPDATE mem_accounts m SET vote = b.vote FROM mem_votes_snapshot b WHERE m.address = b.address";
 			scope.backwards = true;
 
-			var instanceTest = new Round(scope, task);
+			var instanceTest = new Round.RoundLogic(scope, task);
 			var retVal = instanceTest.restoreVotesSnapshot();
 
 			expect(scope.library.logger.debug.calledOnce).to.be.true;
@@ -334,14 +339,15 @@ describe("logic/round", function() {
 
 	describe("applyRound", function() {
 		it("Applies round changes to each delegate backwards false, fees > 0", function() {
-			var roundChangesOriginal = Round.__get__("RoundChanges");
+			var roundChangesOriginal = Round.__get__("RoundChanges_1");
 			var at = sinon.stub().returns({
 				feesRemaining: 10
 			});
+
 			var RoundChanges = function() {
 				return { at: at };
 			};
-			Round.__set__("RoundChanges", RoundChanges);
+			Round.__set__("RoundChanges_1", {RoundChanges: RoundChanges});
 
 			var retVal = instance.applyRound();
 
@@ -382,10 +388,10 @@ describe("logic/round", function() {
 			expect(task.none.firstCall.args.length).to.equal(1);
 			expect(task.none.firstCall.args[0]).to.equal("yesyes");
 
-			Round.__set__("RoundChanges", roundChangesOriginal);
+			Round.__set__("RoundChanges_1", roundChangesOriginal);
 		});
 		it("no delegates backwards false, fees > 0", function() {
-			var roundChangesOriginal = Round.__get__("RoundChanges");
+			var roundChangesOriginal = Round.__get__("RoundChanges_1");
 			var at = sinon.stub().returns({
 				feesRemaining: 10
 			});
@@ -393,10 +399,10 @@ describe("logic/round", function() {
 				return { at: at };
 			};
 
-			Round.__set__("RoundChanges", RoundChanges);
+			Round.__set__("RoundChanges_1", {RoundChanges: RoundChanges});
 			scope.roundDelegates = [];
 
-			var instance = new Round(scope, task);
+			var instance = new Round.RoundLogic(scope, task);
 			var retVal = instance.applyRound();
 
 			expect(at.calledOnce).to.be.true;
@@ -423,17 +429,17 @@ describe("logic/round", function() {
 			expect(task.none.firstCall.args.length).to.equal(1);
 			expect(task.none.firstCall.args[0]).to.equal("yes");
 
-			Round.__set__("RoundChanges", roundChangesOriginal);
+			Round.__set__("RoundChanges_1", roundChangesOriginal);
 		});
 		it("Applies round changes to each delegate backwards false, fees = 0", function() {
-			var roundChangesOriginal = Round.__get__("RoundChanges");
+			var roundChangesOriginal = Round.__get__("RoundChanges_1");
 			var at = sinon.stub().returns({
 				feesRemaining: 0
 			});
 			var RoundChanges = function() {
 				return { at: at };
 			};
-			Round.__set__("RoundChanges", RoundChanges);
+			Round.__set__("RoundChanges_1", {RoundChanges: RoundChanges});
 
 			var retVal = instance.applyRound();
 
@@ -462,10 +468,10 @@ describe("logic/round", function() {
 			expect(task.none.firstCall.args.length).to.equal(1);
 			expect(task.none.firstCall.args[0]).to.equal("yes");
 
-			Round.__set__("RoundChanges", roundChangesOriginal);
+			Round.__set__("RoundChanges_1", roundChangesOriginal);
 		});
 		it("no delegates backwards false, fees = 0", function() {
-			var roundChangesOriginal = Round.__get__("RoundChanges");
+			var roundChangesOriginal = Round.__get__("RoundChanges_1");
 			var at = sinon.stub().returns({
 				feesRemaining: 0
 			});
@@ -473,10 +479,10 @@ describe("logic/round", function() {
 				return { at: at };
 			};
 
-			Round.__set__("RoundChanges", RoundChanges);
+			Round.__set__("RoundChanges_1", {RoundChanges: RoundChanges});
 			scope.roundDelegates = [];
 
-			var instance = new Round(scope, task);
+			var instance = new Round.RoundLogic(scope, task);
 			var retVal = instance.applyRound();
 
 			expect(at.calledOnce).to.be.true;
@@ -489,23 +495,27 @@ describe("logic/round", function() {
 				"Applying round"
 			);
 			expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal([]);
-			expect(retVal).to.deep.equal(task);
+			expect(retVal).to.be.instanceOf(Promise);
 
-			Round.__set__("RoundChanges", roundChangesOriginal);
+			retVal.then(() => {
+				expect(task.none.notCalled).is.true;
+        Round.__set__("RoundChanges_1", roundChangesOriginal);
+			});
+
 		});
 
 		it("Applies round changes to each delegate backwards true, fees > 0", function() {
-			var roundChangesOriginal = Round.__get__("RoundChanges");
+			var roundChangesOriginal = Round.__get__("RoundChanges_1");
 			var at = sinon.stub().returns({
 				feesRemaining: 10
 			});
 			var RoundChanges = function() {
 				return { at: at };
 			};
-			Round.__set__("RoundChanges", RoundChanges);
+			Round.__set__("RoundChanges_1", {RoundChanges: RoundChanges});
 			scope.backwards = true;
 
-			var instance = new Round(scope, task);
+			var instance = new Round.RoundLogic(scope, task);
 			var retVal = instance.applyRound();
 
 			expect(at.calledTwice).to.be.true;
@@ -545,10 +555,10 @@ describe("logic/round", function() {
 			expect(task.none.firstCall.args.length).to.equal(1);
 			expect(task.none.firstCall.args[0]).to.equal("yesyes");
 
-			Round.__set__("RoundChanges", roundChangesOriginal);
+			Round.__set__("RoundChanges_1", roundChangesOriginal);
 		});
 		it("no delegates backwards true, fees > 0", function() {
-			var roundChangesOriginal = Round.__get__("RoundChanges");
+			var roundChangesOriginal = Round.__get__("RoundChanges_1");
 			var at = sinon.stub().returns({
 				feesRemaining: 10
 			});
@@ -556,11 +566,11 @@ describe("logic/round", function() {
 				return { at: at };
 			};
 
-			Round.__set__("RoundChanges", RoundChanges);
+			Round.__set__("RoundChanges_1", {RoundChanges: RoundChanges});
 			scope.roundDelegates = [];
 			scope.backwards = true;
 
-			var instance = new Round(scope, task);
+			var instance = new Round.RoundLogic(scope, task);
 			var retVal = instance.applyRound();
 
 			expect(at.calledOnce).to.be.true;
@@ -587,20 +597,20 @@ describe("logic/round", function() {
 			expect(task.none.firstCall.args.length).to.equal(1);
 			expect(task.none.firstCall.args[0]).to.equal("yes");
 
-			Round.__set__("RoundChanges", roundChangesOriginal);
+			Round.__set__("RoundChanges_1", roundChangesOriginal);
 		});
 		it("Applies round changes to each delegate backwards true, fees = 0", function() {
-			var roundChangesOriginal = Round.__get__("RoundChanges");
+			var roundChangesOriginal = Round.__get__("RoundChanges_1");
 			var at = sinon.stub().returns({
 				feesRemaining: 0
 			});
 			var RoundChanges = function() {
 				return { at: at };
 			};
-			Round.__set__("RoundChanges", RoundChanges);
+			Round.__set__("RoundChanges_1", {RoundChanges: RoundChanges});
 			scope.backwards = true;
 
-			var instance = new Round(scope, task);
+			var instance = new Round.RoundLogic(scope, task);
 			var retVal = instance.applyRound();
 
 			expect(at.calledTwice).to.be.true;
@@ -628,10 +638,10 @@ describe("logic/round", function() {
 			expect(task.none.firstCall.args.length).to.equal(1);
 			expect(task.none.firstCall.args[0]).to.equal("yes");
 
-			Round.__set__("RoundChanges", roundChangesOriginal);
+			Round.__set__("RoundChanges_1", roundChangesOriginal);
 		});
 		it("no delegates backwards true, fees = 0", function() {
-			var roundChangesOriginal = Round.__get__("RoundChanges");
+			var roundChangesOriginal = Round.__get__("RoundChanges_1");
 			var at = sinon.stub().returns({
 				feesRemaining: 0
 			});
@@ -639,11 +649,11 @@ describe("logic/round", function() {
 				return { at: at };
 			};
 
-			Round.__set__("RoundChanges", RoundChanges);
+			Round.__set__("RoundChanges_1", {RoundChanges: RoundChanges});
 			scope.roundDelegates = [];
 			scope.backwards = true;
 
-			var instance = new Round(scope, task);
+			var instance = new Round.RoundLogic(scope, task);
 			var retVal = instance.applyRound();
 
 			expect(at.calledOnce).to.be.true;
@@ -656,14 +666,19 @@ describe("logic/round", function() {
 				"Applying round"
 			);
 			expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal([]);
-			expect(retVal).to.deep.equal(task);
+			expect(retVal).to.be.instanceOf(Promise);
+			return retVal
+				.then(() => {
+					expect(task.none.notCalled).is.true;
+          Round.__set__("RoundChanges_1", roundChangesOriginal);
+				});
 
-			Round.__set__("RoundChanges", roundChangesOriginal);
+
 		});
 	});
 
 	describe("land", function() {
-		it("returns this.t", function(done) {
+		it("call correct methods", function() {
 			var updateVotes = sinon.stub(instance, "updateVotes").resolves(true);
 			var updateMissedBlocks = sinon
 				.stub(instance, "updateMissedBlocks")
@@ -671,7 +686,7 @@ describe("logic/round", function() {
 			var flushRound = sinon.stub(instance, "flushRound").resolves(true);
 			var applyRound = sinon.stub(instance, "applyRound").resolves(true);
 
-			var retVal = instance.land().then(function(){
+			return instance.land().then(function(){
 				expect(updateVotes.calledTwice).to.equal.true;
 				expect(updateMissedBlocks.calledOnce).to.equal.true;
 				expect(flushRound.calledTwice).to.equal.true;
@@ -682,14 +697,13 @@ describe("logic/round", function() {
 				updateMissedBlocks.restore();
 				flushRound.restore();
 				applyRound.restore();
-
-				done();
 			});
 		});
+		it('should preserve order of calling');
 	});
 
 	describe("backwardLand", function() {
-		it("returns this.t", function(done) {
+		it("call correct methods", function() {
 			var updateVotes = sinon.stub(instance, "updateVotes").resolves(true);
 			var updateMissedBlocks = sinon
 				.stub(instance, "updateMissedBlocks")
@@ -700,7 +714,7 @@ describe("logic/round", function() {
 				.stub(instance, "restoreRoundSnapshot")
 				.resolves(true);
 
-			instance.backwardLand().then(function(){
+			return instance.backwardLand().then(function(){
         expect(updateVotes.calledTwice).to.equal.true;
         expect(updateMissedBlocks.calledOnce).to.equal.true;
         expect(flushRound.calledTwice).to.equal.true;
@@ -712,9 +726,8 @@ describe("logic/round", function() {
         flushRound.restore();
         applyRound.restore();
         restoreRoundSnapshot.restore();
-
-        done();
 			});
 		});
+    it('should preserve order of calling');
 	});
 });

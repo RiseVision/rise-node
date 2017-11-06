@@ -2,10 +2,10 @@
 
 var async = require('async');
 var constants = require('../helpers/constants').default;
-var Round = require('../logic/round.js');
+var Round = require('../logic/round').RoundLogic;
 var sandboxHelper = require('../helpers/sandbox');
 var slots = require('../helpers/slots').default;
-var sql = require('../sql/rounds.js');
+var sql = require('../sql/logic/rounds.ts').default;
 
 // Private fields
 var modules, library, self, __private = {}, shared = {};
