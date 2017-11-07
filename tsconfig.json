@@ -1,14 +1,17 @@
 {
   "compilerOptions": {
-    "target"                      : "es5",
-    "module"                      : "commonjs",
-    "emitDecoratorMetadata"       : false,
-    "experimentalDecorators"      : true,
-    "sourceMap"                   : false,
-    "allowJs"                     : true,
-    "moduleResolution"            : "node",
+    "target":                       "es5",
+    "module":                       "commonjs",
+    "emitDecoratorMetadata":        true,
+    "types":                        [
+      "reflect-metadata"
+    ],
+    "experimentalDecorators":       true,
+    "sourceMap":                    false,
+    "allowJs":                      true,
+    "moduleResolution":             "node",
     "allowSyntheticDefaultImports": true,
-    "lib"                         : [
+    "lib":                          [
       "dom",
       "es5",
       "es6",
@@ -16,7 +19,7 @@
       "es2015.promise"
     ]
   },
-  "exclude"        : [
+  "exclude":         [
     "node_modules"
   ]
 }

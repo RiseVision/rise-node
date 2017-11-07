@@ -579,7 +579,7 @@ Accounts.prototype.internal = {
 			offset: query.offset,
 			limit: (query.limit || 100)
 		}, function (err, raw) {
-			if (err) {
+			if (err) {https://nodei.co/npm/ts-express-decorators/
 				return setImmediate(cb, err);
 			}
 

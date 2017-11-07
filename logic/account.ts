@@ -1,12 +1,13 @@
+import * as crypto from 'crypto';
 import * as jsonSqlCreator from 'json-sql';
 import * as path from 'path';
 import * as pgp from 'pg-promise';
+import { catchToLoggerAndRemapError, cback, emptyCB, promiseToCB } from '../helpers/promiseToCback';
+import { ILogger } from '../logger';
+import { accountsModelCreator } from './models/account';
+import { IModelField, IModelFilter } from './models/modelField';
 
-import {catchToLoggerAndRemapError, cback, emptyCB, promiseToCB } from '../helpers/promiseToCback';
-import {ILogger} from '../logger';
-import * as OriginalAccount from './_account.js';
-import {accountsModelCreator} from './models/account';
-import {IModelField, IModelFilter} from './models/modelField';
+import MyBigNumb from '../helpers/bignum';
 
 const jsonSql = jsonSqlCreator();
 
@@ -45,7 +46,13 @@ export type MemAccountsData = {
 };
 
 // tslint:disable-next-line
-type FilterData = { address: string, limit?: number, offset?: number, sort?: string | { [k: string]: -1 | 1 } };
+export type AccountFilterData = {
+  address?: string,
+  publicKey?: string,
+  limit?: number,
+  offset?: number,
+  sort?: string | { [k: string]: -1 | 1 }
+};
 
 export class AccountLogic {
   private table = 'mem_accounts';
@@ -80,8 +87,8 @@ export class AccountLogic {
   private library: any;
 
   constructor(db, schema, logger: ILogger, cb) {
-    this.scope   = { db, schema };
-    this.library = { logger };
+    this.scope   = {db, schema};
+    this.library = {logger};
     this.model   = accountsModelCreator(this.table);
 
     this.fields = this.model.map((field) => {
@@ -123,7 +130,7 @@ export class AccountLogic {
    * Creates memory tables related to accounts!
    */
   public createTables(cb): Promise<void> {
-    const sql = new pgp.QueryFile(path.join(process.cwd(), 'sql', 'memoryTables.sql'), { minify: true });
+    const sql = new pgp.QueryFile(path.join(process.cwd(), 'sql', 'memoryTables.sql'), {minify: true});
     return promiseToCB<void>(
       this.scope.db.query(sql)
         .catch(catchToLoggerAndRemapError('Account#createTables error', this.library.logger)),
@@ -193,7 +200,7 @@ export class AccountLogic {
    * Verifies validity of public Key
    * @param {string} publicKey
    */
-  public verifyPublicKey(publicKey: string) {
+  public verifyPublicKey(publicKey: string, allowUndefined: boolean = true) {
     if (typeof(publicKey) !== 'undefined') {
       if (typeof(publicKey) !== 'string') {
         throw new Error('Invalid public key, must be a string');
@@ -202,11 +209,12 @@ export class AccountLogic {
         throw new Error('Invalid public key, must be 64 characters long');
       }
 
-      if (!this.scope.schema.validate(publicKey, { format: 'hex' })) {
+      if (!this.scope.schema.validate(publicKey, {format: 'hex'})) {
         throw new Error('Invalid public key, must be a hex string');
       }
+    } else if (!allowUndefined) {
+      throw new Error('Public Key is undefined');
     }
-    // TODO: undefined publicKey is valid?
   }
 
   /**
@@ -227,10 +235,10 @@ export class AccountLogic {
   /**
    * Get account information for specific fields and filtering criteria
    */
-  public get(filter: FilterData, cb: cback<any>): Promise<any>;
-  public get(filter: FilterData, fields: Array<(keyof MemAccountsData)>, cb: cback<any>): Promise<any>;
-  public get(filter: FilterData, fields: Array<(keyof MemAccountsData)> | cback<any>,
-             cb?: cback<any>): Promise<any> {
+  public get(filter: AccountFilterData, cb?: cback<MemAccountsData>): Promise<MemAccountsData>;
+  public get(filter: AccountFilterData, fields: Array<(keyof MemAccountsData)>, cb?: cback<MemAccountsData>): Promise<MemAccountsData>;
+  public get(filter: AccountFilterData, fields: Array<(keyof MemAccountsData)> | cback<MemAccountsData>,
+             cb?: cback<MemAccountsData>): Promise<MemAccountsData> {
     if (typeof( fields ) === 'function') {
       cb     = fields;
       fields = this.fields.map((field) => field.alias || field.field) as any;
@@ -245,13 +253,13 @@ export class AccountLogic {
   /**
    * Get accountS information for specific fields and filtering criteria.
    */
-  public getAll(filter: FilterData,
+  public getAll(filter: AccountFilterData,
                 cb: cback<any>): Promise<any[]>;
-  public getAll(filter: FilterData,
-                fields: Array<(keyof MemAccountsData)>, cb: cback<any>): Promise<any[]>;
-  public getAll(filter: FilterData,
+  public getAll(filter: AccountFilterData,
+                fields: Array<(keyof MemAccountsData)>, cb?: cback<any>): Promise<any[]>;
+  public getAll(filter: AccountFilterData,
                 fields: Array<(keyof MemAccountsData)> | cback<any>,
-                cb?: cback<any>): Promise<any[]> {
+                cb?: cback<any>): Promise<MemAccountsData[]> {
 
     if (typeof( fields ) === 'function') {
       cb     = fields;
@@ -271,7 +279,7 @@ export class AccountLogic {
     const offset: number = filter.offset > 0 ? filter.offset : undefined;
     const sort: any      = filter.sort ? filter.sort : undefined;
 
-    const condition: any = { ...filter, ...{ limit: undefined, offset: undefined, sort: undefined } };
+    const condition: any = {...filter, ...{limit: undefined, offset: undefined, sort: undefined}};
     if (typeof(filter.address) === 'string') {
       condition.address = {
         $upper: ['address', filter.address],
@@ -308,7 +316,7 @@ export class AccountLogic {
    * @param fields
    * @param {cback<any>} cb
    */
-  public set(address: string, fields: { [k: string]: any }, cb: cback<any>) {
+  public set(address: string, fields: { [k: string]: any }, cb?: cback<any>) {
     return promiseToCB((async () => {
         this.verifyPublicKey(fields.publicKey);
         address        = String(address).toUpperCase();
@@ -347,7 +355,7 @@ export class AccountLogic {
     const removeObject: any = {};
     const round: any        = [];
     // TODO: REmove this as it's only used for debugging against older implementation later in code.
-    const tmpDiff = JSON.parse(JSON.stringify(diff));
+    const tmpDiff           = JSON.parse(JSON.stringify(diff));
 
     address = address.toUpperCase();
     this.verifyPublicKey(diff.publicKey);
@@ -465,7 +473,7 @@ export class AccountLogic {
     // All remove
       .map((el) => jsonSql.build({
         condition: {
-          dependentId: { $in: remove[el] },
+          dependentId: {$in: remove[el]},
           // tslint:disable-next-line
           accountId  : address,
         },
@@ -505,7 +513,7 @@ export class AccountLogic {
 
     if (Object.keys(update).length > 0) {
       sqles.push(jsonSql.build({
-        condition: { address },
+        condition: {address},
         modifier : update,
         table    : this.table,
         type     : 'update',
@@ -520,19 +528,6 @@ export class AccountLogic {
       process.exit(1);
     }
 
-    // TODO: Checking against implementation ( REMOVE )
-    const origQuery = OriginalAccount.prototype.merge.call(this, address, tmpDiff);
-    if (origQuery !== sqlQuery) {
-      // tslint:disable
-      console.log(insertObject);
-      console.log('DIFFER');
-      console.log(sqlQuery);
-      console.log('----');
-      console.log(origQuery);
-      process.exit(1);
-      // tslint:enable
-    }
-
     // If callback is not given then return the built query.
     // TODO: this is not a good coding practice but third party code relies on this.
     if (!cb) {
@@ -541,12 +536,12 @@ export class AccountLogic {
 
     if (sqlQuery.length === 0) {
       // Nothing to run return account
-      return this.get({ address }, cb);
+      return this.get({address}, cb);
     }
 
     return promiseToCB(
       this.scope.db.none(sqlQuery)
-        .then(() => this.get({ address }, emptyCB))
+        .then(() => this.get({address}, emptyCB))
         .catch((err) => {
           this.library.logger.error(err.stack);
           return Promise.reject('Account#merge error');
@@ -563,7 +558,7 @@ export class AccountLogic {
    */
   public remove(address: string, cb: cback<string>): Promise<string> {
     const sql = jsonSql.build({
-      condition: { address },
+      condition: {address},
       table    : this.table,
       type     : 'remove',
     });
@@ -573,5 +568,19 @@ export class AccountLogic {
         .catch(catchToLoggerAndRemapError('Account#remove error', this.library.logger)),
       cb
     );
+  }
+
+  public generateAddreddByPublicKey(publicKey: string): string {
+    this.verifyPublicKey(publicKey, false);
+
+    const hash = crypto.createHash('sha256')
+      .update(new Buffer(publicKey, 'hex'))
+      .digest();
+
+    const tmp = Buffer.alloc(8);
+    for (let i = 0; i < 8; i++) {
+      tmp[i] = hash[7 - i];
+    }
+    return `${MyBigNumb.fromBuffer(tmp).toString()}R`;
   }
 }
