@@ -1,16 +1,16 @@
-import {cbToPromise} from '../../helpers/promiseToCback';
 import {TransactionType} from '../../helpers/transactionTypes';
+import {AccountsModule} from '../../modules/accounts';
 import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
 
 export class SendTransaction extends BaseTransactionType<void> {
-  public modules: { accounts: any, rounds: any, system: any };
+  public modules: { accounts: AccountsModule, rounds: any, system: any };
 
   constructor() {
     super(TransactionType.SEND);
   }
 
-  public bind(accounts: any, rounds: any, system: any) {
+  public bind(accounts: AccountsModule, rounds: any, system: any) {
     this.modules = { accounts, rounds, system };
   }
 
@@ -31,28 +31,30 @@ export class SendTransaction extends BaseTransactionType<void> {
   public async apply(tx: IConfirmedTransaction<void>, block: SignedBlockType,
                      sender: any): Promise<void> {
     // Create account if does not exist.
-    await cbToPromise((cb) => this.modules.accounts.setAccountAndGet({ address: tx.recipientId }, cb));
+    await this.modules.accounts.setAccountAndGet({ address: tx.recipientId });
 
-    return cbToPromise<void>((cb) => this.modules.accounts.mergeAccountAndGet({
+    return this.modules.accounts.mergeAccountAndGet({
       address  : tx.recipientId,
       balance  : tx.amount,
       blockId  : block.id,
       round    : this.modules.rounds.calc(block.height),
       u_balance: tx.amount,
-    }, cb));
+    })
+      .then(() => void 0);
   }
 
   public async undo(tx: IConfirmedTransaction<void>, block: SignedBlockType, sender: any): Promise<void> {
     // Create account if does not exist.
-    await cbToPromise((cb) => this.modules.accounts.setAccountAndGet({ address: tx.recipientId }, cb));
+    await this.modules.accounts.setAccountAndGet({ address: tx.recipientId });
 
-    return cbToPromise<void>((cb) => this.modules.accounts.mergeAccountAndGet({
+    return this.modules.accounts.mergeAccountAndGet({
       address  : tx.recipientId,
       balance  : -tx.amount,
       blockId  : block.id,
       round    : this.modules.rounds.calc(block.height),
       u_balance: -tx.amount,
-    }, cb));
+    })
+      .then(() => void 0);
   }
 
   public objectNormalize(tx: IBaseTransaction<void>): IBaseTransaction<void> {

@@ -6,6 +6,7 @@ import dappsSQL from '../../sql/logic/transactions/dapps';
 import {AccountLogic} from '../account';
 import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
+import {AccountsModule} from '../../modules/accounts';
 
 // tslint:disable-next-line interface-over-type-literal
 export type OutTransferAsset = {
@@ -16,7 +17,7 @@ export type OutTransferAsset = {
 };
 
 export class OutTransferTransaction extends BaseTransactionType<OutTransferAsset> {
-  public modules: { accounts: any, dapps: any, rounds: any, system: any };
+  public modules: { accounts: AccountsModule, dapps: any, rounds: any, system: any };
 
   private unconfirmedOutTransfers: { [txID: string]: true } = {};
   private dbTable                                           = 'outtransfer';
@@ -94,30 +95,32 @@ export class OutTransferTransaction extends BaseTransactionType<OutTransferAsset
     delete this.unconfirmedOutTransfers[tx.asset.outTransfer.transactionId];
 
     // Create account if does not exist
-    await cbToPromise((cb) => this.modules.accounts.setAccountAndGet({ address: tx.recipientId }, cb));
+    await this.modules.accounts.setAccountAndGet({ address: tx.recipientId });
 
-    return cbToPromise<void>((cb) => this.modules.accounts.mergeAccountAndGet({
+    return this.modules.accounts.mergeAccountAndGet({
       address  : tx.recipientId,
       balance  : tx.amount,
       blockId  : block.id,
       round    : this.modules.rounds.calc(block.height),
       u_balance: tx.amount,
-    }, cb));
+    })
+      .then(() => void 0);
   }
 
   public async undo(tx: IConfirmedTransaction<OutTransferAsset>, block: SignedBlockType, sender: any): Promise<void> {
     this.unconfirmedOutTransfers[tx.asset.outTransfer.transactionId] = true;
 
     // Create account if does not exist
-    await cbToPromise((cb) => this.modules.accounts.setAccountAndGet({ address: tx.recipientId }, cb));
+    await this.modules.accounts.setAccountAndGet({ address: tx.recipientId });
 
-    return cbToPromise<void>((cb) => this.modules.accounts.mergeAccountAndGet({
+    return this.modules.accounts.mergeAccountAndGet({
       address  : tx.recipientId,
       balance  : -tx.amount,
       blockId  : block.id,
       round    : this.modules.rounds.calc(block.height),
       u_balance: -tx.amount,
-    }, cb));
+    })
+      .then(() => void 0);
   }
 
   public async applyUnconfirmed(tx: IBaseTransaction<OutTransferAsset>, sender: any): Promise<void> {

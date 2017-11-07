@@ -255,7 +255,7 @@ Chain.prototype.applyGenesisBlock = function (block, cb) {
 		// Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
 		// FIXME: Poor performance - every transaction cause SQL query to be executed
 		// WARNING: DB_WRITE
-		modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
+		promiseToCB(modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}), function (err, sender) {
 			if (err) {
 				return setImmediate(cb, {
 					message: err,
@@ -365,7 +365,7 @@ Chain.prototype.applyBlock = function (block, broadcast, cb, saveBlock) {
 		applyUnconfirmed: function (seriesCb) {
 			async.eachSeries(block.transactions, function (transaction, eachSeriesCb) {
 				// DATABASE write
-				modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
+				promiseToCB(modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}), function (err, sender) {
 					// DATABASE: write
 					modules.transactions.applyUnconfirmed(transaction, sender, function (err) {
 						if (err) {
@@ -391,7 +391,7 @@ Chain.prototype.applyBlock = function (block, broadcast, cb, saveBlock) {
 					// Rewind any already applied unconfirmed transactions.
 					// Leaves the database state as per the previous block.
 					async.eachSeries(block.transactions, function (transaction, eachSeriesCb) {
-						modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
+						promiseToCB(modules.accounts.getAccount({publicKey: transaction.senderPublicKey}), function (err, sender) {
 							if (err) {
 								return setImmediate(eachSeriesCb, err);
 							}
@@ -415,7 +415,7 @@ Chain.prototype.applyBlock = function (block, broadcast, cb, saveBlock) {
 		// Apply transactions to confirmed mem_accounts fields.
 		applyConfirmed: function (seriesCb) {
 			async.eachSeries(block.transactions, function (transaction, eachSeriesCb) {
-				modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
+				promiseToCB(modules.accounts.getAccount({publicKey: transaction.senderPublicKey}), function (err, sender) {
 					if (err) {
 						// Fatal error, memory tables will be inconsistent
 						err = ['Failed to apply transaction:', transaction.id, '-', err].join(' ');
@@ -526,7 +526,7 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 				async.series([
 					function (cb) {
 						// Retrieve sender by public key
-						modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
+						promiseToCB(modules.accounts.getAccount({publicKey: transaction.senderPublicKey}), function (err, sender) {
 							if (err) {
 								return setImmediate(cb, err);
 							}

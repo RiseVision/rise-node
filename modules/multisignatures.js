@@ -44,12 +44,13 @@ function Multisignatures (cb, scope) {
 
 	__private.assetTypes[transactionTypes.MULTI] = library.logic.transaction.attachAssetType(
 		transactionTypes.MULTI,
-		new Multisignature(
-			scope.schema,
-			scope.network,
-			scope.logic.transaction,
-			scope.logger
-		)
+		new Multisignature({
+			transaction: scope.logic.transaction,
+			logger: scope.logger,
+			schema: scope.schema,
+			network: scope.network,
+			account: scope.logic.account
+		})
 	);
 
 	setImmediate(cb, null, self);
@@ -74,9 +75,9 @@ Multisignatures.prototype.processSignature = function (tx, cb) {
 				return setImmediate(cb, 'Transaction not found');
 			}
 
-			modules.accounts.getAccount({
+      promiseToCB(modules.accounts.getAccount({
 				address: transaction.senderId
-			}, function (err, sender) {
+			}), function (err, sender) {
 				if (err) {
 					return setImmediate(cb, err);
 				} else if (!sender) {
@@ -123,9 +124,9 @@ Multisignatures.prototype.processSignature = function (tx, cb) {
 
 		return done(cb);
 	} else {
-		modules.accounts.getAccount({
+    promiseToCB(modules.accounts.getAccount({
 			address: transaction.senderId
-		}, function (err, account) {
+		}), function (err, account) {
 			if (err) {
 				return setImmediate(cb, 'Multisignature account not found');
 			}
@@ -233,10 +234,10 @@ Multisignatures.prototype.shared = {
 				});
 			},
 			getAccounts: function (seriesCb) {
-				modules.accounts.getAccounts({
+        promiseToCB(modules.accounts.getAccounts({
 					address: { $in: scope.accountIds },
 					sort: 'balance'
-				}, ['address', 'balance', 'multisignatures', 'multilifetime', 'multimin'], function (err, accounts) {
+				}, ['address', 'balance', 'multisignatures', 'multilifetime', 'multimin']), function (err, accounts) {
 					if (err) {
 						return setImmediate(seriesCb, err);
 					} else {
@@ -253,9 +254,9 @@ Multisignatures.prototype.shared = {
 						addresses.push(modules.accounts.generateAddressByPublicKey(account.multisignatures[i]));
 					}
 
-					modules.accounts.getAccounts({
+          promiseToCB(modules.accounts.getAccounts({
 						address: { $in: addresses }
-					}, ['address', 'publicKey', 'balance'], function (err, multisigaccounts) {
+					}, ['address', 'publicKey', 'balance']), function (err, multisigaccounts) {
 						if (err) {
 							return setImmediate(eachSeriesCb, err);
 						}
@@ -326,9 +327,9 @@ Multisignatures.prototype.shared = {
 						signed = true;
 					}
 
-					modules.accounts.getAccount({
+          promiseToCB(modules.accounts.getAccount({
 						publicKey: transaction.senderPublicKey
-					}, function (err, sender) {
+					}), function (err, sender) {
 						if (err) {
 							return setImmediate(cb, err);
 						}
@@ -441,9 +442,9 @@ Multisignatures.prototype.shared = {
 					return setImmediate(seriesCb);
 				},
 				getAccount: function (seriesCb) {
-					modules.accounts.getAccount({
+          promiseToCB(modules.accounts.getAccount({
 						address: scope.transaction.senderId
-					}, function (err, sender) {
+					}), function (err, sender) {
 						if (err) {
 							return setImmediate(seriesCb, err);
 						} else if (!sender) {
@@ -508,7 +509,7 @@ Multisignatures.prototype.shared = {
 						}
 					}
 
-					modules.accounts.setAccountAndGet({publicKey: scope.keypair.publicKey.toString('hex')}, function (err, account) {
+          promiseToCB(modules.accounts.setAccountAndGet({publicKey: scope.keypair.publicKey.toString('hex')}), function (err, account) {
 						if (err) {
 							return setImmediate(seriesCb, err);
 						}

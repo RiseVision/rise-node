@@ -1,6 +1,7 @@
 import {cbToPromise} from '../../helpers/promiseToCback';
 import {TransactionType} from '../../helpers/transactionTypes';
 import {ILogger} from '../../logger';
+import {AccountsModule} from '../../modules/accounts';
 import inTransferSchema from '../../schema/logic/transactions/inTransfer';
 import dappSql from '../../sql/logic/transactions/dapps';
 import {SignedBlockType} from '../block';
@@ -15,9 +16,7 @@ export type InTransferAsset = {
 
 export class InTranferTransaction extends BaseTransactionType<InTransferAsset> {
 
-  public modules: { accounts: any, rounds: any, sharedApi:any, system: any };
-  private unconfirmedNames: { [name: string]: true };
-  private unconfirmedLinks: { [link: string]: true };
+  public modules: { accounts: AccountsModule, rounds: any, sharedApi: any, system: any };
   private dbTable  = 'intransfer';
   private dbFields = [
     'dappId',
@@ -67,30 +66,30 @@ export class InTranferTransaction extends BaseTransactionType<InTransferAsset> {
 
   public apply(tx: IConfirmedTransaction<InTransferAsset>, block: SignedBlockType, sender: any): Promise<void> {
     return cbToPromise<any>((cb) => this.modules.sharedApi.getGenesis({ dappid: tx.asset.inTransfer.dappId }, cb))
-      .then((res) => cbToPromise<void>((cb) => this.modules.accounts.mergeAccountAndGet(
+      .then((res) => this.modules.accounts.mergeAccountAndGet(
         {
           address  : res.authorId,
           balance  : tx.amount,
           blockId  : block.id,
           round    : this.modules.rounds.calc(block.height),
           u_balance: tx.amount,
-        },
-        cb
-      )));
+        })
+      )
+      .then(() => void 0);
   }
 
   public undo(tx: IConfirmedTransaction<InTransferAsset>, block: SignedBlockType, sender: any): Promise<void> {
     return cbToPromise<any>((cb) => this.modules.sharedApi.getGenesis({ dappid: tx.asset.inTransfer.dappId }, cb))
-      .then((res) => cbToPromise<void>((cb) => this.modules.accounts.mergeAccountAndGet(
+      .then((res) => this.modules.accounts.mergeAccountAndGet(
         {
           address  : res.authorId,
           balance  : -tx.amount,
           blockId  : block.id,
           round    : this.modules.rounds.calc(block.height),
           u_balance: -tx.amount,
-        },
-        cb
-      )));
+        }
+      ))
+      .then(() => void 0);
   }
 
   public objectNormalize(tx: IBaseTransaction<InTransferAsset>): IBaseTransaction<InTransferAsset> {

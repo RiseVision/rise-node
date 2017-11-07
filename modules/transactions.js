@@ -506,7 +506,7 @@ Transactions.prototype.applyUnconfirmed = function (transaction, sender, cb) {
 		return setImmediate(cb, 'Invalid block id');
 	} else {
 		if (transaction.requesterPublicKey) {
-			modules.accounts.getAccount({publicKey: transaction.requesterPublicKey}, function (err, requester) {
+      promiseToCB(modules.accounts.getAccount({publicKey: transaction.requesterPublicKey}), function (err, requester) {
 				if (err) {
 					return setImmediate(cb, err);
 				}
@@ -534,7 +534,7 @@ Transactions.prototype.applyUnconfirmed = function (transaction, sender, cb) {
 Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
 	library.logger.debug('Undoing unconfirmed transaction', transaction.id);
 
-	modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
+  promiseToCB(modules.accounts.getAccount({publicKey: transaction.senderPublicKey}), function (err, sender) {
 		if (err) {
 			return setImmediate(cb, err);
 		}
@@ -728,7 +728,7 @@ Transactions.prototype.shared = {
 			var query = {address: req.body.recipientId};
 
 			library.balancesSequence.add(function (cb) {
-				modules.accounts.getAccount(query, function (err, recipient) {
+        promiseToCB(modules.accounts.getAccount(query), function (err, recipient) {
 					if (err) {
 						return setImmediate(cb, err);
 					}
@@ -740,7 +740,7 @@ Transactions.prototype.shared = {
 					}
 
 					if (req.body.multisigAccountPublicKey && req.body.multisigAccountPublicKey !== keypair.publicKey.toString('hex')) {
-						modules.accounts.getAccount({publicKey: req.body.multisigAccountPublicKey}, function (err, account) {
+            promiseToCB(modules.accounts.getAccount({publicKey: req.body.multisigAccountPublicKey}), function (err, account) {
 							if (err) {
 								return setImmediate(cb, err);
 							}
@@ -757,7 +757,7 @@ Transactions.prototype.shared = {
 								return setImmediate(cb, 'Account does not belong to multisignature group');
 							}
 
-							modules.accounts.getAccount({publicKey: keypair.publicKey}, function (err, requester) {
+              promiseToCB(modules.accounts.getAccount({publicKey: keypair.publicKey}), function (err, requester) {
 								if (err) {
 									return setImmediate(cb, err);
 								}
@@ -801,7 +801,7 @@ Transactions.prototype.shared = {
 							});
 						});
 					} else {
-						modules.accounts.setAccountAndGet({publicKey: keypair.publicKey.toString('hex')}, function (err, account) {
+            promiseToCB(modules.accounts.setAccountAndGet({publicKey: keypair.publicKey.toString('hex')}), function (err, account) {
 							if (err) {
 								return setImmediate(cb, err);
 							}

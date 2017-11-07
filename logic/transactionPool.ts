@@ -3,6 +3,7 @@ import jobsQueue from '../helpers/jobsQueue';
 import {cbToPromise, promiseToCB} from '../helpers/promiseToCback';
 import {TransactionType} from '../helpers/transactionTypes';
 import {ILogger} from '../logger';
+import {AccountsModule} from '../modules/accounts';
 import {IBus} from '../types/bus';
 import {TransactionLogic} from './transaction';
 import {IBaseTransaction} from './transactions/baseTransactionType';
@@ -109,7 +110,7 @@ export class TransactionPool {
   private bundleLimit: number;
   private processed: number = 0;
   // TODO: Describe these.
-  private modules: { accounts: any, transactions: any, loader: any };
+  private modules: { accounts: AccountsModule, transactions: any, loader: any };
 
   constructor(broadcastInterval: number, releaseLimit: number, transactionLogic: any, bus: IBus, logger: ILogger) {
     this.library = {
@@ -399,11 +400,9 @@ export class TransactionPool {
       throw new Error('Missing transaction');
     }
 
-    const sender = await cbToPromise<any>(
-      (cb) => this.modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey }, cb)
-    );
+    const sender = await this.modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey });
 
-    const isMultisigAccount = Array.isArray(sender.multisignature) && sender.multisignature.length > 0;
+    const isMultisigAccount = Array.isArray(sender.multisignatures) && sender.multisignatures.length > 0;
     if (isMultisigAccount) {
       // TODO: fixme please
       (transaction as any).signatures = (transaction as any).signatures || [];
@@ -411,9 +410,7 @@ export class TransactionPool {
     let requester = null;
     if (sender && transaction.requesterPublicKey && isMultisigAccount) {
       // Fetch the requester
-      requester = await cbToPromise(
-        (cb) => this.modules.accounts.getAccount({ publicKey: transaction.requesterPublicKey }, cb)
-      );
+      requester = await this.modules.accounts.getAccount({ publicKey: transaction.requesterPublicKey });
     }
 
     // Process the transaction!

@@ -1,4 +1,5 @@
 'use strict';
+import {promiseToCB} from '../helpers/promiseToCback';
 
 var _ = require('lodash');
 var async = require('async');
@@ -78,11 +79,11 @@ function Delegates (cb, scope) {
  * @returns {setImmediateCallback}
  */
 __private.getKeysSortByVote = function (cb) {
-	modules.accounts.getAccounts({
+  promiseToCB(modules.accounts.getAccounts({
 		isDelegate: 1,
 		sort: {'vote': -1, 'publicKey': 1},
 		limit: slots.delegates
-	}, ['publicKey'], function (err, rows) {
+	}, ['publicKey']), function (err, rows) {
 		if (err) {
 			return setImmediate(cb, err);
 		}
@@ -218,7 +219,7 @@ __private.checkDelegates = function (publicKey, votes, state, cb) {
 		return setImmediate(cb, 'Votes must be an array');
 	}
 
-	modules.accounts.getAccount({publicKey: publicKey}, function (err, account) {
+  promiseToCB(modules.accounts.getAccount({publicKey: publicKey}), function (err, account) {
 		if (err) {
 			return setImmediate(cb, err);
 		}
@@ -259,7 +260,7 @@ __private.checkDelegates = function (publicKey, votes, state, cb) {
 				return setImmediate(cb, 'Failed to remove vote, account has not voted for this delegate');
 			}
 
-			modules.accounts.getAccount({ publicKey: publicKey, isDelegate: 1 }, function (err, account) {
+      promiseToCB(modules.accounts.getAccount({ publicKey: publicKey, isDelegate: 1 }), function (err, account) {
 				if (err) {
 					return setImmediate(cb, err);
 				}
@@ -314,9 +315,9 @@ __private.loadDelegates = function (cb) {
 	async.eachSeries(secrets, function (secret, cb) {
 		var keypair = library.ed.makeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
 
-		modules.accounts.getAccount({
+    promiseToCB(modules.accounts.getAccount({
 			publicKey: keypair.publicKey.toString('hex')
-		}, function (err, account) {
+		}), function (err, account) {
 			if (err) {
 				return setImmediate(cb, err);
 			}
@@ -380,10 +381,10 @@ Delegates.prototype.getDelegates = function (query, cb) {
 	if (!query) {
 		throw 'Missing query argument';
 	}
-	modules.accounts.getAccounts({
+  promiseToCB(modules.accounts.getAccounts({
 		isDelegate: 1,
 		sort: { 'vote': -1, 'publicKey': 1 }
-	}, ['username', 'address', 'publicKey', 'vote', 'missedblocks', 'producedblocks'], function (err, delegates) {
+	}, ['username', 'address', 'publicKey', 'vote', 'missedblocks', 'producedblocks']), function (err, delegates) {
 		if (err) {
 			return setImmediate(cb, err);
 		}
@@ -608,7 +609,7 @@ Delegates.prototype.internal = {
 				return setImmediate(cb, 'Forging is already enabled');
 			}
 
-			modules.accounts.getAccount({publicKey: keypair.publicKey.toString('hex')}, function (err, account) {
+      promiseToCB(modules.accounts.getAccount({publicKey: keypair.publicKey.toString('hex')}), function (err, account) {
 				if (err) {
 					return setImmediate(cb, err);
 				}
@@ -641,7 +642,7 @@ Delegates.prototype.internal = {
 				return setImmediate(cb, 'Delegate not found');
 			}
 
-			modules.accounts.getAccount({publicKey: keypair.publicKey.toString('hex')}, function (err, account) {
+      promiseToCB(modules.accounts.getAccount({publicKey: keypair.publicKey.toString('hex')}), function (err, account) {
 				if (err) {
 					return setImmediate(cb, err);
 				}
@@ -804,10 +805,10 @@ Delegates.prototype.shared = {
 			library.db.one(sql.getVoters, { publicKey: req.body.publicKey }).then(function (row) {
 				var addresses = (row.accountIds) ? row.accountIds : [];
 
-				modules.accounts.getAccounts({
+        promiseToCB(modules.accounts.getAccounts({
 					address: { $in: addresses },
 					sort: 'balance'
-				}, ['address', 'balance', 'username', 'publicKey'], function (err, rows) {
+				}, ['address', 'balance', 'username', 'publicKey']), function (err, rows) {
 					if (err) {
 						return setImmediate(cb, err);
 					} else {
@@ -899,7 +900,7 @@ Delegates.prototype.shared = {
 					return setImmediate(cb, null, {fees: reward.fees, rewards: reward.rewards, forged: forged, count: reward.count});
 				});
 			} else {
-				modules.accounts.getAccount({publicKey: req.body.generatorPublicKey}, ['fees', 'rewards'], function (err, account) {
+        promiseToCB(modules.accounts.getAccount({publicKey: req.body.generatorPublicKey}, ['fees', 'rewards']), function (err, account) {
 					if (err || !account) {
 						return setImmediate(cb, err || 'Account not found');
 					}
@@ -928,7 +929,7 @@ Delegates.prototype.shared = {
 
 			library.balancesSequence.add(function (cb) {
 				if (req.body.multisigAccountPublicKey && req.body.multisigAccountPublicKey !== keypair.publicKey.toString('hex')) {
-					modules.accounts.getAccount({publicKey: req.body.multisigAccountPublicKey}, function (err, account) {
+          promiseToCB(modules.accounts.getAccount({publicKey: req.body.multisigAccountPublicKey}), function (err, account) {
 						if (err) {
 							return setImmediate(cb, err);
 						}
@@ -945,7 +946,7 @@ Delegates.prototype.shared = {
 							return setImmediate(cb, 'Account does not belong to multisignature group');
 						}
 
-						modules.accounts.getAccount({publicKey: keypair.publicKey}, function (err, requester) {
+            promiseToCB(modules.accounts.getAccount({publicKey: keypair.publicKey}), function (err, requester) {
 							if (err) {
 								return setImmediate(cb, err);
 							}
@@ -987,7 +988,8 @@ Delegates.prototype.shared = {
 						});
 					});
 				} else {
-					modules.accounts.setAccountAndGet({publicKey: keypair.publicKey.toString('hex')}, function (err, account) {
+
+          promiseToCB(modules.accounts.setAccountAndGet({publicKey: keypair.publicKey.toString('hex')}), function (err, account) {
 						if (err) {
 							return setImmediate(cb, err);
 						}

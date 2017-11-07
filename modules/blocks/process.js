@@ -312,7 +312,7 @@ Process.prototype.generateBlock = function (keypair, timestamp, cb) {
 	var ready = [];
 
 	async.eachSeries(transactions, function (transaction, cb) {
-		modules.accounts.getAccount({ publicKey: transaction.senderPublicKey }, function (err, sender) {
+    promiseToCB(modules.accounts.getAccount({ publicKey: transaction.senderPublicKey }), function (err, sender) {
 			if (err || !sender) {
 				return setImmediate(cb, 'Sender not found');
 			}

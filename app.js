@@ -124,7 +124,7 @@ var config = {
 	cacheEnabled: appConfig.cacheEnabled,
 	modules: {
 		server: './modules/server.js',
-		accounts: './modules/accounts.js',
+		// accounts: './modules/accounts.js',
 		transactions: './modules/transactions.js',
 		blocks: './modules/blocks.js',
 		signatures: './modules/signatures.js',
@@ -420,7 +420,7 @@ d.run(function () {
 					// executes the each module onBind function
 					modules.forEach(function (module) {
 						if (typeof(module[eventName]) === 'function') {
-							module[eventName].apply(module[eventName], args);
+							module[eventName].apply(module, args);
 						}
 						if (module.submodules) {
 							async.each(module.submodules, function (submodule) {
@@ -535,6 +535,13 @@ d.run(function () {
 					});
 				};
 			});
+
+			tasks['accounts'] = (cb) => {
+        let accountsModule = new (require('./modules/accounts').AccountsModule)(scope);
+        modules.push(accountsModule);
+        cb(null, accountsModule);
+			};
+
 
 			async.parallel(tasks, function (err, results) {
 				cb(err, results);

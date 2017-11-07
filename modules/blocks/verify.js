@@ -74,7 +74,7 @@ __private.checkTransaction = function (block, transaction, cb) {
 		function (waterCb) {
 			// Get account from database if any (otherwise cold wallet).
 			// DATABASE: read only
-			modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, waterCb);
+			promiseToCB(modules.accounts.getAccount({publicKey: transaction.senderPublicKey}), waterCb);
 		},
 		function (sender, waterCb) {
 			// Check if transaction id valid against database state (mem_* tables).

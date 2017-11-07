@@ -1,9 +1,9 @@
 'use strict';
 import * as pgp from 'pg-promise';
-import { ITask } from 'pg-promise';
-import { RoundChanges } from '../helpers/RoundChanges';
+import {ITask} from 'pg-promise';
+import {RoundChanges} from '../helpers/RoundChanges';
 import roundSQL from '../sql/logic/rounds';
-import { ILogger } from '../logger';
+import {ILogger} from '../logger';
 
 type ScopeLogic = {
   backwards: boolean;
@@ -52,14 +52,12 @@ export class RoundLogic {
    * @returns {Promise<void>}
    */
   public mergeBlockGenerator(): Promise<void> {
-    return this.task.none(
-      this.scope.modules.accounts.mergeAccountAndGet({
-        blockId       : this.scope.block.id,
-        producedblocks: (this.scope.backwards ? -1 : 1),
-        publicKey     : this.scope.block.generatorPublicKey,
-        round         : this.scope.round,
-      })
-    );
+    return this.scope.modules.accounts.mergeAccountAndGet({
+      blockId       : this.scope.block.id,
+      producedblocks: (this.scope.backwards ? -1 : 1),
+      publicKey     : this.scope.block.generatorPublicKey,
+      round         : this.scope.round,
+    });
   }
 
   /**
@@ -84,7 +82,7 @@ export class RoundLogic {
   public getVotes(): Promise<Array<{ delegate: string, amount: number }>> {
     return this.task.query(
       roundSQL.getVotes,
-      {round: this.scope.round}
+      { round: this.scope.round }
     );
   }
 
@@ -131,7 +129,7 @@ export class RoundLogic {
   public flushRound(): Promise<void> {
     return this.task.none(
       roundSQL.flush,
-      {round: this.scope.round}
+      { round: this.scope.round }
     );
   }
 
@@ -141,7 +139,7 @@ export class RoundLogic {
   public truncateBlocks() {
     return this.task.none(
       roundSQL.truncateBlocks,
-      {height: this.scope.block.height}
+      { height: this.scope.block.height }
     );
   }
 
@@ -167,8 +165,8 @@ export class RoundLogic {
    * For each delegate in round calls mergeAccountAndGet with new Balance
    */
   public applyRound(): Promise<void> {
-    const roundChanges = new RoundChanges(this.scope);
-    const queries      = [];
+    const roundChanges      = new RoundChanges(this.scope);
+    const queries: string[] = [];
 
     const delegates = this.scope.backwards ?
       this.scope.roundDelegates.reverse() :
@@ -177,10 +175,10 @@ export class RoundLogic {
     for (let i = 0; i < delegates.length; i++) {
       const delegate = delegates[i];
       const changes  = roundChanges.at(i);
-      this.scope.library.logger.trace('Delegate changes', {delegate, changes});
+      this.scope.library.logger.trace('Delegate changes', { delegate, changes });
 
       // merge Account in the direction.
-      queries.push(this.scope.modules.accounts.mergeAccountAndGet({
+      queries.push(this.scope.modules.accounts.mergeAccountAndGetSQL({
         balance  : (this.scope.backwards ? -changes.balance : changes.balance),
         blockId  : this.scope.block.id,
         fees     : (this.scope.backwards ? -changes.fees : changes.fees),
@@ -206,7 +204,7 @@ export class RoundLogic {
         index   : remainderIndex,
       });
 
-      queries.push(this.scope.modules.accounts.mergeAccountAndGet({
+      queries.push(this.scope.modules.accounts.mergeAccountAndGetSQL({
         balance  : feesRemaining,
         blockId  : this.scope.block.id,
         fees     : feesRemaining,

@@ -1,15 +1,17 @@
-var _ = require('lodash');
-var async = require('async');
-var constants = require('../helpers/constants');
-var crypto = require('crypto');
-var DApp = require('../logic/transactions/dapp').DappTransaction;
+import {promiseToCB} from '../helpers/promiseToCback';
+
+var _              = require('lodash');
+var async          = require('async');
+var constants      = require('../helpers/constants');
+var crypto         = require('crypto');
+var DApp           = require('../logic/transactions/dapp').DappTransaction;
 var dappCategories = require('../helpers/dappCategories').DappCategory;
-var dappTypes = require('../helpers/dappTypes').DappType;
-var DecompressZip = require('decompress-zip');
-var extend = require('extend');
-var fs = require('fs');
-var ip = require('ip');
-var InTransfer = require('../logic/transactions/inTransfer').InTranferTransaction;
+var dappTypes      = require('../helpers/dappTypes').DappType;
+var DecompressZip  = require('decompress-zip');
+var extend         = require('extend');
+var fs             = require('fs');
+var ip             = require('ip');
+var InTransfer     = require('../logic/transactions/inTransfer').InTranferTransaction;
 var npm = require('npm');
 var OrderBy = require('../helpers/orderBy').default;
 var OutTransfer = require('../logic/transactions/outTransfer').OutTransferTransaction;
@@ -1065,7 +1067,7 @@ DApps.prototype.internal = {
 		}
 
 		library.balancesSequence.add(function (cb) {
-			modules.accounts.setAccountAndGet({publicKey: keypair.publicKey.toString('hex')}, function (err, account) {
+			promiseToCB(modules.accounts.setAccountAndGet({publicKey: keypair.publicKey.toString('hex')}), function (err, account) {
 				if (err) {
 					return setImmediate(cb, err);
 				}
@@ -1462,7 +1464,7 @@ DApps.prototype.internal = {
 
 			library.balancesSequence.add(function (cb) {
 				if (req.body.multisigAccountPublicKey && req.body.multisigAccountPublicKey !== keypair.publicKey.toString('hex')) {
-					modules.accounts.getAccount({publicKey: req.body.multisigAccountPublicKey}, function (err, account) {
+					promiseToCB(modules.accounts.getAccount({publicKey: req.body.multisigAccountPublicKey}), function (err, account) {
 						if (err) {
 							return setImmediate(cb, err);
 						}
@@ -1479,7 +1481,7 @@ DApps.prototype.internal = {
 							return setImmediate(cb, 'Account does not belong to multisignature group');
 						}
 
-						modules.accounts.getAccount({publicKey: keypair.publicKey}, function (err, requester) {
+						promiseToCB(modules.accounts.getAccount({publicKey: keypair.publicKey}), function (err, requester) {
 							if (err) {
 								return setImmediate(cb, err);
 							}
@@ -1523,7 +1525,7 @@ DApps.prototype.internal = {
 						});
 					});
 				} else {
-					modules.accounts.setAccountAndGet({publicKey: keypair.publicKey.toString('hex')}, function (err, account) {
+          promiseToCB(modules.accounts.setAccountAndGet({publicKey: keypair.publicKey.toString('hex')}), function (err, account) {
 						if (err) {
 							return setImmediate(cb, err);
 						}
@@ -1584,7 +1586,7 @@ DApps.prototype.internal = {
 
 			library.balancesSequence.add(function (cb) {
 				if (req.body.multisigAccountPublicKey && req.body.multisigAccountPublicKey !== keypair.publicKey.toString('hex')) {
-					modules.accounts.getAccount({publicKey: req.body.multisigAccountPublicKey}, function (err, account) {
+          promiseToCB(modules.accounts.getAccount({publicKey: req.body.multisigAccountPublicKey}), function (err, account) {
 						if (err) {
 							return setImmediate(cb, err);
 						}
@@ -1601,7 +1603,7 @@ DApps.prototype.internal = {
 							return setImmediate(cb, 'Account does not belong to multisignature group');
 						}
 
-						modules.accounts.getAccount({publicKey: keypair.publicKey}, function (err, requester) {
+            promiseToCB(modules.accounts.getAccount({publicKey: keypair.publicKey}), function (err, requester) {
 							if (err) {
 								return setImmediate(cb, err);
 							}
@@ -1647,7 +1649,7 @@ DApps.prototype.internal = {
 						});
 					});
 				} else {
-					modules.accounts.setAccountAndGet({publicKey: keypair.publicKey.toString('hex')}, function (err, account) {
+          promiseToCB(modules.accounts.setAccountAndGet({publicKey: keypair.publicKey.toString('hex')}), function (err, account) {
 						if (err) {
 							return setImmediate(cb, err);
 						}

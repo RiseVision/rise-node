@@ -1,10 +1,12 @@
 import * as ByteBuffer from 'bytebuffer';
 import constants from '../../helpers/constants';
 import Diff from '../../helpers/diff';
-import {cbToPromise} from '../../helpers/promiseToCback';
+import {cbToPromise, emptyCB} from '../../helpers/promiseToCback';
 import {TransactionType} from '../../helpers/transactionTypes';
 import {ILogger} from '../../logger';
+import {AccountsModule} from '../../modules/accounts';
 import multiSigSchema from '../../schema/logic/transactions/multisignature';
+import {AccountLogic} from '../account';
 import {SignedBlockType} from '../block';
 import {TransactionLogic} from '../transaction';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
@@ -20,7 +22,7 @@ export type InTransferAsset = {
 
 export class MultiSignatureTransaction extends BaseTransactionType<InTransferAsset> {
 
-  public modules: { accounts: any, rounds: any, sharedApi: any, system: any };
+  public modules: { accounts: AccountsModule, rounds: any, sharedApi: any, system: any };
   private unconfirmedSignatures: { [name: string]: true };
   private dbTable  = 'multisignatures';
   private dbFields = [
@@ -30,11 +32,14 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
     'transactionId',
   ];
 
-  constructor(public library: { db: any, logger: ILogger, schema: any, network: any, transaction: TransactionLogic }) {
+  constructor(public library: {
+    account: AccountLogic,
+    logger: ILogger, schema: any, network: any, transaction: TransactionLogic
+  }) {
     super(TransactionType.IN_TRANSFER);
   }
 
-  public bind(accounts: any, rounds: any, sharedApi: any, system: any) {
+  public bind(accounts: AccountsModule, rounds: any, sharedApi: any, system: any) {
     this.modules = { accounts, rounds, sharedApi, system };
   }
 
@@ -144,7 +149,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
 
   public async apply(tx: IConfirmedTransaction<InTransferAsset>, block: SignedBlockType, sender: any): Promise<void> {
     delete this.unconfirmedSignatures[sender.address];
-    await cbToPromise((cb) => this.modules.accounts.merge(
+    await this.library.account.merge(
       sender.address,
       {
         blockId        : block.id,
@@ -153,15 +158,15 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
         multisignatures: tx.asset.multisignature.keysgroup,
         round          : this.modules.rounds.calc(block.height),
       },
-      cb
-    ));
+      emptyCB
+    );
 
     // Generate accounts
     for (const key of tx.asset.multisignature.keysgroup) {
       // index 0 has "+" or "-"
       const realKey = key.substr(1);
-      const address = this.modules.accounts.generateAddressByPublicKey(realKey);
-      await cbToPromise((cb) => this.modules.accounts.setAccountAndGet({ address, publicKey: realKey }, cb));
+      const address = this.library.account.generateAddressByPublicKey(realKey);
+      await this.modules.accounts.setAccountAndGet({ address, publicKey: realKey });
     }
   }
 
@@ -170,7 +175,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
 
     this.unconfirmedSignatures[sender.address] = true;
 
-    return cbToPromise((cb) => this.modules.accounts.merge(
+    return this.library.account.merge(
       sender.address, {
         blockId        : block.id,
         multilifetime  : -tx.asset.multisignature.lifetime,
@@ -178,8 +183,8 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
         multisignatures: multiInvert,
         round          : this.modules.rounds.calc(block.height),
       },
-      cb
-    ));
+      emptyCB
+    );
   }
 
   public applyUnconfirmed(tx: IBaseTransaction<InTransferAsset>, sender: any): Promise<void> {
@@ -188,30 +193,30 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
     }
     this.unconfirmedSignatures[sender.address] = true;
 
-    return cbToPromise((cb) => this.modules.accounts.merge(
+    return this.library.account.merge(
       sender.address,
       {
         u_multilifetime  : tx.asset.multisignature.lifetime,
         u_multimin       : tx.asset.multisignature.min,
         u_multisignatures: tx.asset.multisignature.keysgroup,
       },
-      cb
-    ));
+      emptyCB
+    );
   }
 
   public undoUnconfirmed(tx: IBaseTransaction<InTransferAsset>, sender: any): Promise<void> {
     const multiInvert = Diff.reverse(tx.asset.multisignature.keysgroup);
     delete this.unconfirmedSignatures[sender.address];
 
-    return cbToPromise((cb) => this.modules.accounts.merge(
+    return this.library.account.merge(
       sender.address,
       {
         u_multilifetime  : -tx.asset.multisignature.lifetime,
         u_multimin       : -tx.asset.multisignature.min,
         u_multisignatures: multiInvert,
       },
-      cb
-    ));
+      emptyCB
+    );
   }
 
   public objectNormalize(tx: IBaseTransaction<InTransferAsset>): IBaseTransaction<InTransferAsset> {

@@ -1,7 +1,6 @@
 import {removeEmptyObjKeys} from '../../helpers/genericUtils';
-import {cbToPromise} from '../../helpers/promiseToCback';
 import {TransactionType} from '../../helpers/transactionTypes';
-import {ILogger} from '../../logger';
+import {AccountsModule} from '../../modules/accounts';
 import delegateSchema from '../../schema/logic/transactions/delegate';
 import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
@@ -17,9 +16,7 @@ export type DelegateAsset = {
 
 export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAsset> {
 
-  public modules: { accounts: any, system: any };
-  private unconfirmedNames: { [name: string]: true };
-  private unconfirmedLinks: { [link: string]: true };
+  public modules: { accounts: AccountsModule, system: any };
   private dbTable  = 'delegates';
   private dbFields = [
     'username',
@@ -88,12 +85,10 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       throw new Error('Username can only contain alphanumeric characters with the exception of !@$&_.');
     }
 
-    return cbToPromise((cb) => this.modules.accounts.getAccount({ username }, cb))
-      .then((account) => {
-        if (account) {
-          throw new Error(`Username already exists: ${username}`);
-        }
-      });
+    const account = await this.modules.accounts.getAccount({ username });
+    if (account) {
+      throw new Error(`Username already exists: ${username}`);
+    }
   }
 
   public apply(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: any): Promise<void> {
@@ -108,7 +103,8 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.u_username = tx.asset.delegate.username;
     }
 
-    return cbToPromise((cb) => this.modules.accounts.setAccountAndGet(data, cb));
+    return this.modules.accounts.setAccountAndGet(data)
+      .then(() => void 0);
   }
 
   public undo(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: any): Promise<void> {
@@ -123,7 +119,8 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.u_username = tx.asset.delegate.username;
     }
 
-    return cbToPromise((cb) => this.modules.accounts.setAccountAndGet(data, cb));
+    return this.modules.accounts.setAccountAndGet(data)
+      .then(() => void 0);
   }
 
   /**
@@ -140,7 +137,8 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.u_username = tx.asset.delegate.username;
     }
 
-    return cbToPromise((cb) => this.modules.accounts.setAccountAndGet(data, cb));
+    return this.modules.accounts.setAccountAndGet(data)
+      .then(() => void 0);
   }
 
   public undoUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: any): Promise<void> {
@@ -154,7 +152,8 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.u_username = null;
     }
 
-    return cbToPromise((cb) => this.modules.accounts.setAccountAndGet(data, cb));
+    return this.modules.accounts.setAccountAndGet(data)
+      .then(() => void 0);
   }
 
   public objectNormalize(tx: IBaseTransaction<DelegateAsset>): IBaseTransaction<DelegateAsset> {

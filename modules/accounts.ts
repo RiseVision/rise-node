@@ -1,17 +1,17 @@
 import * as crypto from 'crypto';
-import { Ed } from '../helpers/ed';
-import { emptyCB } from '../helpers/promiseToCback';
-import { TransactionType } from '../helpers/transactionTypes';
-import { ILogger } from '../logger';
-import { AccountFilterData, AccountLogic, MemAccountsData } from '../logic/account';
-import { TransactionLogic } from '../logic/transaction';
-import { VoteTransaction } from '../logic/transactions/vote';
+import {Ed} from '../helpers/ed';
+import {emptyCB} from '../helpers/promiseToCback';
+import {TransactionType} from '../helpers/transactionTypes';
+import {ILogger} from '../logger';
+import {AccountFilterData, AccountLogic, MemAccountsData} from '../logic/account';
+import {TransactionLogic} from '../logic/transaction';
+import {VoteTransaction} from '../logic/transactions/vote';
 
 // tslint:disable-next-line
 type AccountLibrary = { ed: Ed, logger: ILogger, schema: any, balancesSequence: any, logic: { account: AccountLogic, transaction: TransactionLogic } }
 
 export class AccountsModule {
-  public modules: {delegates: any, rounds: any, system: any, transactions: any};
+  public modules: { delegates: any, rounds: any, system: any, transactions: any };
   private voteAsset: VoteTransaction;
 
   constructor(public library: AccountLibrary) {
@@ -25,14 +25,14 @@ export class AccountsModule {
     );
   }
 
-  public onBind(modules: {delegates: any, rounds: any, system: any, transactions: any}) {
+  public onBind(modules: { delegates: any, rounds: any, system: any, transactions: any }) {
     this.modules = modules;
     this.voteAsset.bind(modules.delegates, modules.rounds, modules.system);
   }
 
   public getAccount(filter: AccountFilterData, fields?: Array<(keyof MemAccountsData)>): Promise<MemAccountsData> {
     if (filter.publicKey) {
-      filter.address = this.library.logic.account.generateAddreddByPublicKey(filter.publicKey);
+      filter.address = this.library.logic.account.generateAddressByPublicKey(filter.publicKey);
       delete filter.publicKey;
     }
     return this.library.logic.account.get(filter, fields);
@@ -51,7 +51,7 @@ export class AccountsModule {
     const keypair   = this.library.ed.makeKeypair(hash);
     const publicKey = keypair.publicKey.toString('hex');
 
-    const account = await this.getAccount({publicKey});
+    const account = await this.getAccount({ publicKey });
     if (account) {
       if (account.publicKey === null) {
         account.publicKey = publicKey;
@@ -59,7 +59,7 @@ export class AccountsModule {
       return account;
     } else {
       return {
-        address          : this.library.logic.account.generateAddreddByPublicKey(publicKey),
+        address          : this.library.logic.account.generateAddressByPublicKey(publicKey),
         balance          : 0,
         multisignatures  : null,
         publicKey,
@@ -77,19 +77,32 @@ export class AccountsModule {
    * @param {MemAccountsData} data
    * @returns {Promise<MemAccountsData>}
    */
-  public async setAccountAndGet(data: MemAccountsData): Promise<MemAccountsData> {
+
+  public async setAccountAndGet(data: ({ publicKey: string } | { address: string }) & { [k: string]: any }): Promise<MemAccountsData> {
     if (!data.address && !data.publicKey) {
       throw new Error('Missing address and public key');
     }
     if (!data.address) {
-      data.address = this.library.logic.account.generateAddreddByPublicKey(data.publicKey);
+      data.address = this.library.logic.account.generateAddressByPublicKey(data.publicKey);
     }
     // no need to reset address!
-    const {address} = data;
+    const { address } = data;
     delete data.address;
 
     await this.library.logic.account.set(address, data);
-    return this.library.logic.account.get({address});
+    return this.library.logic.account.get({ address });
+  }
+
+  public mergeAccountAndGetSQL(diff: any): string {
+    if (!diff.address && !diff.publicKey) {
+      throw new Error('Missing address and public key');
+    }
+    if (!diff.address) {
+      diff.address = this.library.logic.account.generateAddressByPublicKey(diff.publicKey);
+    }
+    const { address } = diff;
+    delete diff.address;
+    return this.library.logic.account.merge(address, diff);
   }
 
   /**
@@ -97,16 +110,24 @@ export class AccountsModule {
    * @param {MemAccountsData} data
    * @returns {Promise<MemAccountsData>}
    */
+
   public async mergeAccountAndGet(diff: any): Promise<MemAccountsData> {
     if (!diff.address && !diff.publicKey) {
       throw new Error('Missing address and public key');
     }
     if (!diff.address) {
-      diff.address = this.library.logic.account.generateAddreddByPublicKey(diff.publicKey);
+      diff.address = this.library.logic.account.generateAddressByPublicKey(diff.publicKey);
     }
-    const {address} = diff;
+    const { address } = diff;
     delete diff.address;
 
     return this.library.logic.account.merge(address, diff, emptyCB);
+  }
+
+  /**
+   * @deprecated
+   */
+  public generateAddressByPublicKey(pk: string) {
+    return this.library.logic.account.generateAddressByPublicKey(pk);
   }
 }

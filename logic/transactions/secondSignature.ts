@@ -1,6 +1,6 @@
-import {cbToPromise} from '../../helpers/promiseToCback';
 import {TransactionType} from '../../helpers/transactionTypes';
 import {ILogger} from '../../logger';
+import {AccountsModule} from '../../modules/accounts';
 import secondSignatureSchema from '../../schema/logic/transactions/secondSignature';
 import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
@@ -13,7 +13,7 @@ export type SecondSignatureAsset = {
 
 export class SecondSignatureTransaction extends BaseTransactionType<SecondSignatureAsset> {
 
-  public modules: { accounts: any, system: any };
+  public modules: { accounts: AccountsModule, system: any };
   private dbTable  = 'signatures';
   private dbFields = [
     'publicKey',
@@ -58,40 +58,42 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
 
   public async apply(tx: IConfirmedTransaction<SecondSignatureAsset>, block: SignedBlockType,
                      sender: any): Promise<void> {
-    return cbToPromise<void>((cb) => this.modules.accounts.setAccountAndGet({
-        address          : sender.address,
-        secondPublicKey  : tx.asset.signature.publicKey,
-        secondSignature  : 1,
-        u_secondSignature: 0,
-      }, cb)
-    );
+    return this.modules.accounts.setAccountAndGet({
+      address          : sender.address,
+      secondPublicKey  : tx.asset.signature.publicKey,
+      secondSignature  : 1,
+      u_secondSignature: 0,
+    })
+      .then(() => void 0);
   }
 
   public undo(tx: IConfirmedTransaction<SecondSignatureAsset>, block: SignedBlockType, sender: any): Promise<void> {
-    return cbToPromise((cb) => this.modules.accounts.setAccountAndGet({
-        address          : sender.address,
-        secondPublicKey  : null,
-        secondSignature  : 0,
-        u_secondSignature: 1,
-      }, cb)
-    );
+    return this.modules.accounts.setAccountAndGet({
+      address          : sender.address,
+      secondPublicKey  : null,
+      secondSignature  : 0,
+      u_secondSignature: 1,
+    })
+      .then(() => void 0);
   }
 
   public applyUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>, sender: any): Promise<void> {
-    return cbToPromise((cb) => this.modules.accounts.setAccountAndGet({
+    return this.modules.accounts.setAccountAndGet({
       address          : sender.address,
       u_secondSignature: 0,
-    }, cb));
+    })
+      .then(() => void 0);
   }
 
   public undoUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>, sender: any): Promise<void> {
     if (sender.u_secondSignature || sender.secondSignature) {
       return Promise.reject('Second signature already enabled');
     }
-    return cbToPromise((cb) => this.modules.accounts.setAccountAndGet({
+    return this.modules.accounts.setAccountAndGet({
       address          : sender.address,
       u_secondSignature: 1,
-    }, cb));
+    })
+      .then(() => void 0);
   }
 
   public objectNormalize(tx: IBaseTransaction<SecondSignatureAsset>): IBaseTransaction<SecondSignatureAsset> {

@@ -2,10 +2,10 @@ import * as crypto from 'crypto';
 import * as jsonSqlCreator from 'json-sql';
 import * as path from 'path';
 import * as pgp from 'pg-promise';
-import { catchToLoggerAndRemapError, cback, emptyCB, promiseToCB } from '../helpers/promiseToCback';
-import { ILogger } from '../logger';
-import { accountsModelCreator } from './models/account';
-import { IModelField, IModelFilter } from './models/modelField';
+import {catchToLoggerAndRemapError, cback, emptyCB, promiseToCB} from '../helpers/promiseToCback';
+import {ILogger} from '../logger';
+import {accountsModelCreator} from './models/account';
+import {IModelField, IModelFilter} from './models/modelField';
 
 import MyBigNumb from '../helpers/bignum';
 
@@ -47,10 +47,11 @@ export type MemAccountsData = {
 
 // tslint:disable-next-line
 export type AccountFilterData = {
-  address?: string,
-  publicKey?: string,
-  limit?: number,
-  offset?: number,
+  username?: string;
+  address?: string;
+  publicKey?: string;
+  limit?: number;
+  offset?: number;
   sort?: string | { [k: string]: -1 | 1 }
 };
 
@@ -87,8 +88,8 @@ export class AccountLogic {
   private library: any;
 
   constructor(db, schema, logger: ILogger, cb) {
-    this.scope   = {db, schema};
-    this.library = {logger};
+    this.scope   = { db, schema };
+    this.library = { logger };
     this.model   = accountsModelCreator(this.table);
 
     this.fields = this.model.map((field) => {
@@ -130,7 +131,7 @@ export class AccountLogic {
    * Creates memory tables related to accounts!
    */
   public createTables(cb): Promise<void> {
-    const sql = new pgp.QueryFile(path.join(process.cwd(), 'sql', 'memoryTables.sql'), {minify: true});
+    const sql = new pgp.QueryFile(path.join(process.cwd(), 'sql', 'memoryTables.sql'), { minify: true });
     return promiseToCB<void>(
       this.scope.db.query(sql)
         .catch(catchToLoggerAndRemapError('Account#createTables error', this.library.logger)),
@@ -209,7 +210,7 @@ export class AccountLogic {
         throw new Error('Invalid public key, must be 64 characters long');
       }
 
-      if (!this.scope.schema.validate(publicKey, {format: 'hex'})) {
+      if (!this.scope.schema.validate(publicKey, { format: 'hex' })) {
         throw new Error('Invalid public key, must be a hex string');
       }
     } else if (!allowUndefined) {
@@ -262,7 +263,10 @@ export class AccountLogic {
                 cb?: cback<any>): Promise<MemAccountsData[]> {
 
     if (typeof( fields ) === 'function') {
-      cb     = fields;
+      cb = fields;
+    }
+
+    if (!Array.isArray(fields)) {
       fields = this.fields.map((field) => field.alias || field.field) as any;
     }
 
@@ -279,7 +283,7 @@ export class AccountLogic {
     const offset: number = filter.offset > 0 ? filter.offset : undefined;
     const sort: any      = filter.sort ? filter.sort : undefined;
 
-    const condition: any = {...filter, ...{limit: undefined, offset: undefined, sort: undefined}};
+    const condition: any = { ...filter, ...{ limit: undefined, offset: undefined, sort: undefined } };
     if (typeof(filter.address) === 'string') {
       condition.address = {
         $upper: ['address', filter.address],
@@ -473,7 +477,7 @@ export class AccountLogic {
     // All remove
       .map((el) => jsonSql.build({
         condition: {
-          dependentId: {$in: remove[el]},
+          dependentId: { $in: remove[el] },
           // tslint:disable-next-line
           accountId  : address,
         },
@@ -513,7 +517,7 @@ export class AccountLogic {
 
     if (Object.keys(update).length > 0) {
       sqles.push(jsonSql.build({
-        condition: {address},
+        condition: { address },
         modifier : update,
         table    : this.table,
         type     : 'update',
@@ -524,10 +528,6 @@ export class AccountLogic {
       .map((sql) => pgp.as.format(sql.query, sql.values))
       .join('');
 
-    if (remove.length > 0) {
-      process.exit(1);
-    }
-
     // If callback is not given then return the built query.
     // TODO: this is not a good coding practice but third party code relies on this.
     if (!cb) {
@@ -536,12 +536,12 @@ export class AccountLogic {
 
     if (sqlQuery.length === 0) {
       // Nothing to run return account
-      return this.get({address}, cb);
+      return this.get({ address }, cb);
     }
 
     return promiseToCB(
       this.scope.db.none(sqlQuery)
-        .then(() => this.get({address}, emptyCB))
+        .then(() => this.get({ address }, emptyCB))
         .catch((err) => {
           this.library.logger.error(err.stack);
           return Promise.reject('Account#merge error');
@@ -558,7 +558,7 @@ export class AccountLogic {
    */
   public remove(address: string, cb: cback<string>): Promise<string> {
     const sql = jsonSql.build({
-      condition: {address},
+      condition: { address },
       table    : this.table,
       type     : 'remove',
     });
@@ -570,7 +570,7 @@ export class AccountLogic {
     );
   }
 
-  public generateAddreddByPublicKey(publicKey: string): string {
+  public generateAddressByPublicKey(publicKey: string): string {
     this.verifyPublicKey(publicKey, false);
 
     const hash = crypto.createHash('sha256')

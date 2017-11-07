@@ -1,4 +1,5 @@
 'use strict';
+import {promiseToCB} from '../helpers/promiseToCback';
 
 var bignum = require('../helpers/bignum').default;
 var BlockReward = require('../logic/blockReward').BlockRewardLogic;
@@ -410,7 +411,7 @@ Accounts.prototype.shared = {
 
 			library.balancesSequence.add(function (cb) {
 				if (req.body.multisigAccountPublicKey && req.body.multisigAccountPublicKey !== keypair.publicKey.toString('hex')) {
-					modules.accounts.getAccount({ publicKey: req.body.multisigAccountPublicKey }, function (err, account) {
+					promiseToCB(modules.accounts.getAccount({ publicKey: req.body.multisigAccountPublicKey }), function (err, account) {
 						if (err) {
 							return setImmediate(cb, err);
 						}
@@ -427,7 +428,7 @@ Accounts.prototype.shared = {
 							return setImmediate(cb, 'Account does not belong to multisignature group');
 						}
 
-						modules.accounts.getAccount({ publicKey: keypair.publicKey }, function (err, requester) {
+						promiseToCB(modules.accounts.getAccount({ publicKey: keypair.publicKey }), function (err, requester) {
 							if (err) {
 								return setImmediate(cb, err);
 							}
