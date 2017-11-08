@@ -1,4 +1,4 @@
-import { ILogger } from '../logger';
+import {ILogger} from '../logger';
 
 export type cback<T = void> = (err: Error, data?: T) => void;
 
@@ -47,4 +47,8 @@ export function cbToPromise<T>(fn: (cb: cback<T>) => void, multi = false): Promi
       }
     });
   });
+}
+
+export function cbToVoidPromise(fn: (cb: cback<any>) => void): Promise<void> {
+  return cbToPromise(fn);
 }

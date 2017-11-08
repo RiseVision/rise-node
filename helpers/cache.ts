@@ -1,4 +1,5 @@
 import redis from 'redis';
+import {ILogger} from '../logger';
 
 /**
  * Connects with redis server using the config provided via parameters
@@ -6,9 +7,8 @@ import redis from 'redis';
  * @param {Object} config - Redis configuration
  * @param {Object} logger
  * @param {Function} cb
- * TODO: Fix logger  definition
  */
-export const connect = (cacheEnabled: boolean, config: redis.ClientOpts, logger: any,
+export const connect = (cacheEnabled: boolean, config: redis.ClientOpts, logger: ILogger,
                         cb: (err: Error, res: { cacheEnabled: boolean, client: redis.RedisClient }) => void) => {
 
   let isRedisLoaded = false;
