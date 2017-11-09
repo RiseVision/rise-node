@@ -1,8 +1,9 @@
 import redis from 'redis';
-import {ILogger} from '../logger';
 import {cbToPromise, cbToVoidPromise, emptyCB} from '../helpers/promiseToCback';
-import {IBaseTransaction} from '../logic/transactions/baseTransactionType';
 import {TransactionType} from '../helpers/transactionTypes';
+import {ILogger} from '../logger';
+import {IBaseTransaction} from '../logic/transactions/baseTransactionType';
+// import {DebugLog} from '../helpers/decorators/debugLog';
 
 export class Cache {
   private cacheReady: boolean;
@@ -66,7 +67,7 @@ export class Cache {
   }
 
   public async cleanup() {
-    return cbToVoidPromise((cb) => this.redisClient.quit(cb));
+    return this.quit();
   }
 
   public async quit() {
