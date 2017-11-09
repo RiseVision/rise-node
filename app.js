@@ -131,7 +131,7 @@ var config = {
     signatures     : './modules/signatures.js',
     transport      : './modules/transport.js',
     loader         : './modules/loader.js',
-    system         : './modules/system.js',
+    // system         : './modules/system.js',
     peers          : './modules/peers.js',
     delegates      : './modules/delegates.js',
     rounds         : './modules/rounds.js',
@@ -545,6 +545,11 @@ d.run(function () {
       };
       tasks['cache']    = (cb) => {
         let module = new (require('./modules/cache').Cache)(scope, scope.cache.client, scope.cache.cacheEnabled);
+        modules.push(module);
+        cb(null, module);
+      };
+      tasks['system']    = (cb) => {
+        let module = new (require('./modules/system').SystemModule)(scope);
         modules.push(module);
         cb(null, module);
       };

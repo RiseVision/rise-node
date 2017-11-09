@@ -7,6 +7,7 @@ import {AccountLogic} from '../account';
 import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
 import {AccountsModule} from '../../modules/accounts';
+import {SystemModule} from '../../modules/system';
 
 // tslint:disable-next-line interface-over-type-literal
 export type OutTransferAsset = {
@@ -17,7 +18,7 @@ export type OutTransferAsset = {
 };
 
 export class OutTransferTransaction extends BaseTransactionType<OutTransferAsset> {
-  public modules: { accounts: AccountsModule, dapps: any, rounds: any, system: any };
+  public modules: { accounts: AccountsModule, dapps: any, rounds: any, system: SystemModule };
 
   private unconfirmedOutTransfers: { [txID: string]: true } = {};
   private dbTable                                           = 'outtransfer';

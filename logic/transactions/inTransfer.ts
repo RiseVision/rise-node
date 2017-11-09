@@ -6,6 +6,7 @@ import inTransferSchema from '../../schema/logic/transactions/inTransfer';
 import dappSql from '../../sql/logic/transactions/dapps';
 import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
+import {SystemModule} from '../../modules/system';
 
 // tslint:disable-next-line interface-over-type-literal
 export type InTransferAsset = {
@@ -16,7 +17,7 @@ export type InTransferAsset = {
 
 export class InTranferTransaction extends BaseTransactionType<InTransferAsset> {
 
-  public modules: { accounts: AccountsModule, rounds: any, sharedApi: any, system: any };
+  public modules: { accounts: AccountsModule, rounds: any, sharedApi: any, system: SystemModule };
   private dbTable  = 'intransfer';
   private dbFields = [
     'dappId',

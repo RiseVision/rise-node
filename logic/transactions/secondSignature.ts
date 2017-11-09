@@ -4,6 +4,7 @@ import {AccountsModule} from '../../modules/accounts';
 import secondSignatureSchema from '../../schema/logic/transactions/secondSignature';
 import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
+import {SystemModule} from '../../modules/system';
 // tslint:disable-next-line interface-over-type-literal
 export type SecondSignatureAsset = {
   signature: {
@@ -13,7 +14,7 @@ export type SecondSignatureAsset = {
 
 export class SecondSignatureTransaction extends BaseTransactionType<SecondSignatureAsset> {
 
-  public modules: { accounts: AccountsModule, system: any };
+  public modules: { accounts: AccountsModule, system: SystemModule };
   private dbTable  = 'signatures';
   private dbFields = [
     'publicKey',

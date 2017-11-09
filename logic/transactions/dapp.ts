@@ -7,6 +7,7 @@ import {ILogger} from '../../logger';
 import dappSchema from '../../schema/logic/transactions/dapp';
 import dappSql from '../../sql/logic/transactions/dapps';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
+import {SystemModule} from '../../modules/system';
 
 // tslint:disable-next-line interface-over-type-literal
 export type DappAsset = {
@@ -23,7 +24,7 @@ export type DappAsset = {
 
 export class DappTransaction extends BaseTransactionType<DappAsset> {
 
-  public modules: { system: any };
+  public modules: { system: SystemModule };
   private unconfirmedNames: { [name: string]: true };
   private unconfirmedLinks: { [link: string]: true };
   private dbTable  = 'dapps';

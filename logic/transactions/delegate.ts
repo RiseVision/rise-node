@@ -4,6 +4,7 @@ import {AccountsModule} from '../../modules/accounts';
 import delegateSchema from '../../schema/logic/transactions/delegate';
 import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
+import {SystemModule} from '../../modules/system';
 
 // tslint:disable-next-line interface-over-type-literal
 export type DelegateAsset = {
@@ -16,7 +17,7 @@ export type DelegateAsset = {
 
 export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAsset> {
 
-  public modules: { accounts: AccountsModule, system: any };
+  public modules: { accounts: AccountsModule, system: SystemModule };
   private dbTable  = 'delegates';
   private dbFields = [
     'username',

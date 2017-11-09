@@ -624,7 +624,7 @@ __private.sync = function (cb) {
 			return __private.loadBlocksFromNetwork(seriesCb);
 		},
 		updateSystem: function (seriesCb) {
-			return modules.system.update(seriesCb);
+			return promiseToCB(modules.system.update(), seriesCb);
 		},
 		getPeersAfter: function (seriesCb) {
 			library.logger.debug('Establishing broadhash consensus after sync');
@@ -893,7 +893,7 @@ Loader.prototype.shared = {
 			syncing: self.syncing(),
 			blocks: __private.blocksToSync,
 			height: modules.blocks.lastBlock.get().height,
-			broadhash: modules.system.getBroadhash(),
+			broadhash: modules.system.broadhash,
 			consensus: modules.transport.consensus()
 		});
 	}

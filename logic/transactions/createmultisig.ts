@@ -1,7 +1,7 @@
 import * as ByteBuffer from 'bytebuffer';
 import constants from '../../helpers/constants';
 import Diff from '../../helpers/diff';
-import {cbToPromise, emptyCB} from '../../helpers/promiseToCback';
+import {emptyCB} from '../../helpers/promiseToCback';
 import {TransactionType} from '../../helpers/transactionTypes';
 import {ILogger} from '../../logger';
 import {AccountsModule} from '../../modules/accounts';
@@ -10,6 +10,7 @@ import {AccountLogic} from '../account';
 import {SignedBlockType} from '../block';
 import {TransactionLogic} from '../transaction';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
+import {SystemModule} from '../../modules/system';
 
 // tslint:disable-next-line interface-over-type-literal
 export type InTransferAsset = {
@@ -22,7 +23,7 @@ export type InTransferAsset = {
 
 export class MultiSignatureTransaction extends BaseTransactionType<InTransferAsset> {
 
-  public modules: { accounts: AccountsModule, rounds: any, sharedApi: any, system: any };
+  public modules: { accounts: AccountsModule, rounds: any, sharedApi: any, system: SystemModule };
   private unconfirmedSignatures: { [name: string]: true };
   private dbTable  = 'multisignatures';
   private dbFields = [

@@ -217,7 +217,7 @@ __private.receiveTransactions = function (query, peer, extraLogMessage, cb) {
 
 /**
  * Normalizes transaction and remove peer if it fails.
- * Calls balancesSequence.add to receive transaction and 
+ * Calls balancesSequence.add to receive transaction and
  * processUnconfirmedTransaction to confirm it.
  * @private
  * @implements {library.logic.transaction.objectNormalize}
@@ -447,7 +447,7 @@ Transport.prototype.onBind = function (scope) {
 		system: scope.system,
 	};
 
-	__private.headers = modules.system.headers();
+	__private.headers = modules.system.headers;
 	__private.broadcaster.bind(
 		scope.peers,
 		scope.transport,
@@ -506,13 +506,13 @@ Transport.prototype.onUnconfirmedTransaction = function (transaction, broadcast)
  */
 Transport.prototype.onNewBlock = function (block, broadcast) {
 	if (broadcast) {
-		var broadhash = modules.system.getBroadhash();
+		var broadhash = modules.system.broadhash;
 
-		modules.system.update(function () {
-			if (!__private.broadcaster.maxRelays(block)) {
-				__private.broadcaster.broadcast({limit: constants.maxPeers, broadhash: broadhash}, {api: '/blocks', data: {block: block}, method: 'POST', immediate: true});
-			}
-			library.network.io.sockets.emit('blocks/change', block);
+		promiseToCB(modules.system.update(), function() {
+      if (!__private.broadcaster.maxRelays(block)) {
+        __private.broadcaster.broadcast({limit: constants.maxPeers, broadhash: broadhash}, {api: '/blocks', data: {block: block}, method: 'POST', immediate: true});
+      }
+      library.network.io.sockets.emit('blocks/change', block);
 		});
 	}
 };
@@ -542,7 +542,7 @@ Transport.prototype.cleanup = function (cb) {
 
 /**
  * Returns true if modules are loaded and private variable loaded is true.
- * @return {boolean} 
+ * @return {boolean}
  */
 Transport.prototype.isLoaded = function () {
 	return modules && __private.loaded;

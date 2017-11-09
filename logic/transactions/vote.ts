@@ -7,6 +7,7 @@ import voteSchema from '../../schema/logic/transactions/vote';
 import {AccountLogic} from '../account';
 import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
+import {SystemModule} from '../../modules/system';
 
 // tslint:disable-next-line interface-over-type-literal
 export type VoteAsset = {
@@ -14,7 +15,7 @@ export type VoteAsset = {
 };
 
 export class VoteTransaction extends BaseTransactionType<VoteAsset> {
-  public modules: { delegates: any, rounds: any, system: any };
+  public modules: { delegates: any, rounds: any, system: SystemModule };
   private dbTable  = 'votes';
   private dbFields = [
     'votes',

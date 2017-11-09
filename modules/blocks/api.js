@@ -240,7 +240,7 @@ API.prototype.getBroadhash = function (req, cb) {
 		return setImmediate(cb, 'Blockchain is loading');
 	}
 
-	return setImmediate(cb, null, {broadhash: modules.system.getBroadhash()});
+	return setImmediate(cb, null, {broadhash: modules.system.broadhash});
 };
 
 API.prototype.getEpoch = function (req, cb) {
@@ -331,7 +331,7 @@ API.prototype.getStatus = function (req, cb) {
 	var lastBlock = modules.blocks.lastBlock.get();
 
 	return setImmediate(cb, null, {
-		broadhash: modules.system.getBroadhash(),
+		broadhash: modules.system.broadhash,
 		epoch: constants.epochTime,
 		height: lastBlock.height,
 		fee: modules.system.getFees(lastBlock.height).fees.send,

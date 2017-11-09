@@ -5,7 +5,7 @@ var crypto = require('crypto');
 var os = require('os');
 var sandboxHelper = require('../helpers/sandbox');
 var semver = require('semver');
-var sql = require('../sql/system.js');
+var sql = require('../sql/system.ts');
 var constants = require('../helpers/constants').default;
 // Private fields
 var modules, library, self, __private = {}, shared = {};

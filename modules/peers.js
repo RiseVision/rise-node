@@ -428,7 +428,7 @@ Peers.prototype.acceptable = function (peers) {
  */
 Peers.prototype.list = function (options, cb) {
 	options.limit = options.limit || constants.maxPeers;
-	options.broadhash = options.broadhash || modules.system.getBroadhash();
+	options.broadhash = options.broadhash || modules.system.broadhash;
 	options.allowedStates = options.allowedStates || [PeerState.CONNECTED];
 	options.attempts = ['matched broadhash', 'unmatched broadhash'];
 	options.attempt = 0;

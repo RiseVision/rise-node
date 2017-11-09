@@ -2,9 +2,10 @@ import {TransactionType} from '../../helpers/transactionTypes';
 import {AccountsModule} from '../../modules/accounts';
 import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
+import {SystemModule} from '../../modules/system';
 
 export class SendTransaction extends BaseTransactionType<void> {
-  public modules: { accounts: AccountsModule, rounds: any, system: any };
+  public modules: { accounts: AccountsModule, rounds: any, system: SystemModule };
 
   constructor() {
     super(TransactionType.SEND);
