@@ -39,18 +39,64 @@ var validTransaction = {
 };
 
 describe('logic/transaction', function () {
-	var instance, callback, clock, transactionRevert;
+	var sandbox, instance, callback, transactionRevert, scope;
 
-	beforeEach(function () {
-		clock = sinon.useFakeTimers('setImmediate');
-		callback = sinon.spy();
+	before(function () {
+		sandbox = sinon.sandbox.create({
+			injectInto: null,
+			properties: ['spy', 'stub', 'clock'],
+			useFakeTimers: true,
+			useFakeServer: false
+		});
+
+		scope = {
+			db: {
+				one: function () {}
+			},
+			logger: {
+				debug: function () {},
+				error: function (error) {},
+				trace: function () {}
+			},
+			genesisblock: { block: { id: 0 } },
+			ed: ed,
+			account: {
+				merge: function (address, diff, cb) {}
+			},
+			schema: {
+				validate: function () {},
+				getLastErrors: function () {
+					return [{ message: 'foo #1' }, { message: 'foo #2' }];
+				}
+			}
+		};
+
+		sandbox.spy(scope.logger, 'debug');
+		sandbox.spy(scope.logger, 'error');
+		sandbox.spy(scope.logger, 'trace');
+		sandbox.stub(scope.db, 'one');
+		sandbox.stub(scope.ed, 'verify');
+		sandbox.stub(scope.account, 'merge');
+		sandbox.stub(scope.schema, 'validate');
+
 		transactionRevert = Transaction.__set__('setImmediate', setImmediate);
+		callback = sandbox.spy();
+		sandbox.spy(slots, 'getTime');
+		sandbox.spy(Buffer, 'from');
+		sandbox.spy(ed, 'sign');
+		sandbox.spy(crypto, 'createHash');
 	});
 
+	beforeEach(function () {});
+
 	afterEach(function () {
+		sandbox.reset();
 		callback.reset();
-		clock.restore();
 		Transaction.__set__('__private', { types: {} });
+	});
+
+	after(function () {
+		sandbox.restore();
 		transactionRevert();
 	});
 
@@ -63,7 +109,7 @@ describe('logic/transaction', function () {
 	describe('when is instantiated', function () {
 		it('should initialize scope properly', function () {
 			new Transaction(1, 2, 3, 4, 5, 6, callback);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			instance = callback.args[0][1];
 			expect(instance.scope.db).to.equal(1);
@@ -87,36 +133,27 @@ describe('logic/transaction', function () {
 	});
 
 	describe('create()', function () {
-		var getTimeSpy, vote, createStub, signStub, getIdStub, calculateFeeStub;
+		var vote;
 
 		beforeEach(function () {
-			getTimeSpy = sinon.spy(slots, 'getTime');
 			instance = new Transaction();
 			vote = new Vote();
-			createStub = sinon.stub(vote, 'create').callsFake(function (data, trs) {
+			sandbox.stub(vote, 'create').callsFake(function (data, trs) {
 				if (data.type === trs.type) {
 					return trs;
 				} else {
 					return false;
 				}
 			});
-			calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(456);
-			signStub = sinon.stub(instance, 'sign').callsFake(function (keypair, trs) {
+			sandbox.stub(vote, 'calculateFee').returns(456);
+			sandbox.stub(instance, 'sign').callsFake(function (keypair, trs) {
 				if (keypair && trs.type) {
 					return true;
 				} else {
 					return false;
 				}
 			});
-			getIdStub = sinon.stub(instance, 'getId').returns(123);
-		});
-
-		afterEach(function () {
-			getTimeSpy.restore();
-			createStub.restore();
-			signStub.restore();
-			getIdStub.restore();
-			calculateFeeStub.restore();
+			sandbox.stub(instance, 'getId').returns(123);
 		});
 
 		it('Unknown transaction type', function () {
@@ -154,20 +191,20 @@ describe('logic/transaction', function () {
 				keypair: senderKeypair
 			};
 			instance.create(data);
-			expect(getTimeSpy.calledOnce).to.be.true;
-			expect(createStub.calledOnce).to.be.true;
-			expect(createStub.args[0][0]).to.deep.equal(data);
-			expect(createStub.args[0][1].type).to.equal(transactionTypes.VOTE);
-			expect(signStub.calledTwice).to.be.true;
-			expect(signStub.args[0][0]).to.deep.equal(data.keypair);
-			expect(signStub.args[0][1].type).to.equal(transactionTypes.VOTE);
-			expect(signStub.args[1][0]).to.equal(data.secondKeypair);
-			expect(signStub.args[1][1].type).to.equal(transactionTypes.VOTE);
-			expect(getIdStub.calledOnce).to.be.true;
-			expect(getIdStub.args[0][0].type).to.equal(transactionTypes.VOTE);
-			expect(calculateFeeStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.args[0][0].type).to.equal(transactionTypes.VOTE);
-			expect(calculateFeeStub.args[0][1]).to.deep.equal(data.sender);
+			expect(slots.getTime.calledOnce).to.be.true;
+			expect(vote.create.calledOnce).to.be.true;
+			expect(vote.create.args[0][0]).to.deep.equal(data);
+			expect(vote.create.args[0][1].type).to.equal(transactionTypes.VOTE);
+			expect(instance.sign.calledTwice).to.be.true;
+			expect(instance.sign.args[0][0]).to.deep.equal(data.keypair);
+			expect(instance.sign.args[0][1].type).to.equal(transactionTypes.VOTE);
+			expect(instance.sign.args[1][0]).to.equal(data.secondKeypair);
+			expect(instance.sign.args[1][1].type).to.equal(transactionTypes.VOTE);
+			expect(instance.getId.calledOnce).to.be.true;
+			expect(instance.getId.args[0][0].type).to.equal(transactionTypes.VOTE);
+			expect(vote.calculateFee.calledOnce).to.be.true;
+			expect(vote.calculateFee.args[0][0].type).to.equal(transactionTypes.VOTE);
+			expect(vote.calculateFee.args[0][1]).to.deep.equal(data.sender);
 		});
 
 		it('If secondSignature or secondKeypair are not true', function () {
@@ -185,18 +222,18 @@ describe('logic/transaction', function () {
 				keypair: senderKeypair
 			};
 			instance.create(data);
-			expect(getTimeSpy.calledOnce).to.be.true;
-			expect(createStub.calledOnce).to.be.true;
-			expect(createStub.args[0][0]).to.deep.equal(data);
-			expect(createStub.args[0][1].type).to.equal(transactionTypes.VOTE);
-			expect(signStub.calledOnce).to.be.true;
-			expect(signStub.args[0][0]).to.deep.equal(data.keypair);
-			expect(signStub.args[0][1].type).to.equal(transactionTypes.VOTE);
-			expect(getIdStub.calledOnce).to.be.true;
-			expect(getIdStub.args[0][0].type).to.equal(transactionTypes.VOTE);
-			expect(calculateFeeStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.args[0][0].type).to.equal(transactionTypes.VOTE);
-			expect(calculateFeeStub.args[0][1]).to.deep.equal(data.sender);
+			expect(slots.getTime.calledOnce).to.be.true;
+			expect(vote.create.calledOnce).to.be.true;
+			expect(vote.create.args[0][0]).to.deep.equal(data);
+			expect(vote.create.args[0][1].type).to.equal(transactionTypes.VOTE);
+			expect(instance.sign.calledOnce).to.be.true;
+			expect(instance.sign.args[0][0]).to.deep.equal(data.keypair);
+			expect(instance.sign.args[0][1].type).to.equal(transactionTypes.VOTE);
+			expect(instance.getId.calledOnce).to.be.true;
+			expect(instance.getId.args[0][0].type).to.equal(transactionTypes.VOTE);
+			expect(vote.calculateFee.calledOnce).to.be.true;
+			expect(vote.calculateFee.args[0][0].type).to.equal(transactionTypes.VOTE);
+			expect(vote.calculateFee.args[0][1]).to.deep.equal(data.sender);
 		});
 	});
 
@@ -321,99 +358,72 @@ describe('logic/transaction', function () {
 	});
 
 	describe('sign()', function () {
-		var getHashSpy, signSpy;
-
 		it('success', function () {
 			instance = new Transaction(null, ed);
 			instance.attachAssetType(transactionTypes.VOTE, new Vote());
-			getHashSpy = sinon.spy(instance, 'getHash');
-			signSpy = sinon.spy(instance.scope.ed, 'sign');
+			sandbox.spy(instance, 'getHash');
 			var result = instance.sign(senderKeypair, validTransaction);
-			expect(getHashSpy.calledOnce).to.be.true;
-			expect(getHashSpy.args[0][0]).to.deep.equal(validTransaction);
-			expect(signSpy.calledOnce).to.be.true;
-			expect(signSpy.args[0][0]).to.be.instanceof(Buffer);
-			expect(signSpy.args[0][1]).to.deep.equal(senderKeypair);
-			expect(result).to.be.string;
-			getHashSpy.restore();
-			signSpy.restore();
+			expect(instance.getHash.calledOnce).to.be.true;
+			expect(instance.getHash.args[0][0]).to.deep.equal(validTransaction);
+			expect(instance.scope.ed.sign.calledOnce).to.be.true;
+			expect(instance.scope.ed.sign.args[0][0]).to.be.instanceof(Buffer);
+			expect(instance.scope.ed.sign.args[0][1]).to.deep.equal(senderKeypair);
+			expect(result).to.be.a('string');
 		});
 	});
 
 	describe('multisign()', function () {
-		var getBytesSpy, createHashSpy, signSpy;
-
 		it('success', function () {
 			instance = new Transaction(null, ed);
 			instance.attachAssetType(transactionTypes.VOTE, new Vote());
-			getBytesSpy = sinon.spy(instance, 'getBytes');
-			createHashSpy = sinon.spy(crypto, 'createHash');
-			signSpy = sinon.spy(instance.scope.ed, 'sign');
+			sandbox.spy(instance, 'getBytes');
 			var result = instance.multisign(senderKeypair, validTransaction);
-			expect(getBytesSpy.calledOnce).to.be.true;
-			expect(getBytesSpy.args[0][0]).to.deep.equal(validTransaction);
-			expect(getBytesSpy.args[0][1]).to.be.true;
-			expect(getBytesSpy.args[0][2]).to.be.true;
-			expect(createHashSpy.calledOnce).to.be.true;
-			expect(createHashSpy.args[0][0]).to.equal('sha256');
-			expect(signSpy.calledOnce).to.be.true;
-			expect(signSpy.args[0][0]).to.be.instanceof(Buffer);
-			expect(signSpy.args[0][1]).to.deep.equal(senderKeypair);
-			expect(result).to.be.string;
-			getBytesSpy.restore();
-			createHashSpy.restore();
-			signSpy.restore();
+			expect(instance.getBytes.calledOnce).to.be.true;
+			expect(instance.getBytes.args[0][0]).to.deep.equal(validTransaction);
+			expect(instance.getBytes.args[0][1]).to.be.true;
+			expect(instance.getBytes.args[0][2]).to.be.true;
+			expect(crypto.createHash.calledOnce).to.be.true;
+			expect(crypto.createHash.args[0][0]).to.equal('sha256');
+			expect(instance.scope.ed.sign.calledOnce).to.be.true;
+			expect(instance.scope.ed.sign.args[0][0]).to.be.instanceof(Buffer);
+			expect(instance.scope.ed.sign.args[0][1]).to.deep.equal(senderKeypair);
+			expect(result).to.be.a('string');
 		});
 	});
 
 	describe('getId', function () {
-		var getHashSpy, fromBufferSpy, idresult;
-
 		it('success', function () {
 			instance = new Transaction();
 			instance.attachAssetType(transactionTypes.VOTE, new Vote());
-			getHashSpy = sinon.spy(instance, 'getHash');
-			fromBufferSpy = sinon.spy(bignum, 'fromBuffer');
-			idresult = instance.getId(validTransaction);
+			sandbox.spy(instance, 'getHash');
+			sandbox.spy(bignum, 'fromBuffer');
+			var idresult = instance.getId(validTransaction);
 			expect(idresult).to.be.a('string');
-			expect(getHashSpy.calledOnce).to.be.true;
-			expect(getHashSpy.args[0][0]).to.deep.equal(validTransaction);
-			expect(fromBufferSpy.calledOnce).to.be.true;
-			expect(fromBufferSpy.args[0][0]).to.be.instanceof(Buffer);
-			getHashSpy.restore();
-			fromBufferSpy.restore();
+			expect(instance.getHash.calledOnce).to.be.true;
+			expect(instance.getHash.args[0][0]).to.deep.equal(validTransaction);
+			expect(bignum.fromBuffer.calledOnce).to.be.true;
+			expect(bignum.fromBuffer.args[0][0]).to.be.instanceof(Buffer);
 		});
 	});
 
 	describe('getHash()', function () {
-		var createHashSpy, getBytesSpy, hashResult;
-
 		it('success', function () {
-			createHashSpy = sinon.spy(crypto, 'createHash');
 			instance = new Transaction();
-			getBytesSpy = sinon.spy(instance, 'getBytes');
+			sandbox.spy(instance, 'getBytes');
 			instance.attachAssetType(transactionTypes.VOTE, new Vote());
-			hashResult = instance.getHash(validTransaction);
-			expect(createHashSpy.calledOnce).to.be.true;
-			expect(getBytesSpy.calledOnce).to.be.true;
+			var hashResult = instance.getHash(validTransaction);
+			expect(crypto.createHash.calledOnce).to.be.true;
+			expect(instance.getBytes.calledOnce).to.be.true;
 			expect(hashResult).to.be.instanceof(Buffer);
-			createHashSpy.restore();
-			getBytesSpy.restore();
 		});
 	});
 
 	describe('getBytes()', function () {
-		var vote, result, getBytesSpy, bufferFromSpy;
+		var vote, result;
 
 		beforeEach(function () {
 			vote = new Vote();
-			getBytesSpy = sinon.spy(vote, 'getBytes');
-			bufferFromSpy = sinon.spy(Buffer, 'from');
-		});
-
-		afterEach(function () {
-			getBytesSpy.restore();
-			bufferFromSpy.restore();
+			sandbox.spy(vote, 'getBytes');
 		});
 
 		it('Unknown transaction type', function () {
@@ -428,12 +438,12 @@ describe('logic/transaction', function () {
 			instance = new Transaction();
 			instance.attachAssetType(transactionTypes.VOTE, vote);
 			result = instance.getBytes(validTransaction, true, true);
-			expect(getBytesSpy.calledOnce).to.be.true;
-			expect(bufferFromSpy.calledOnce).to.be.true;
-			expect(bufferFromSpy.args[0][0]).to.be.equal(
+			expect(vote.getBytes.calledOnce).to.be.true;
+			expect(Buffer.from.calledOnce).to.be.true;
+			expect(Buffer.from.args[0][0]).to.be.equal(
 				validTransaction.senderPublicKey
 			);
-			expect(bufferFromSpy.args[0][1]).to.be.equal('hex');
+			expect(Buffer.from.args[0][1]).to.be.equal('hex');
 			expect(result).to.be.instanceof(Buffer);
 		});
 
@@ -443,16 +453,16 @@ describe('logic/transaction', function () {
 			validTransaction.requesterPublicKey =
 				'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f';
 			result = instance.getBytes(validTransaction, true, true);
-			expect(getBytesSpy.calledOnce).to.be.true;
-			expect(bufferFromSpy.calledTwice).to.be.true;
-			expect(bufferFromSpy.args[0][0]).to.be.equal(
+			expect(vote.getBytes.calledOnce).to.be.true;
+			expect(Buffer.from.calledTwice).to.be.true;
+			expect(Buffer.from.args[0][0]).to.be.equal(
 				validTransaction.senderPublicKey
 			);
-			expect(bufferFromSpy.args[0][1]).to.be.equal('hex');
-			expect(bufferFromSpy.args[1][0]).to.be.equal(
+			expect(Buffer.from.args[0][1]).to.be.equal('hex');
+			expect(Buffer.from.args[1][0]).to.be.equal(
 				validTransaction.requesterPublicKey
 			);
-			expect(bufferFromSpy.args[1][1]).to.be.equal('hex');
+			expect(Buffer.from.args[1][1]).to.be.equal('hex');
 			expect(result).to.be.instanceof(Buffer);
 		});
 
@@ -464,22 +474,22 @@ describe('logic/transaction', function () {
 			validTransaction.signSignature =
 				'7ff5f0ee2c4d4c83d6980a46efe31befca41f7aa8cda5f7b4c2850e4942d923af058561a6a3312005ddee566244346bdbccf004bc8e2c84e653f9825c20be008';
 			result = instance.getBytes(validTransaction, false, false);
-			expect(getBytesSpy.calledOnce).to.be.true;
-			expect(bufferFromSpy.callCount).to.equal(4);
-			expect(bufferFromSpy.args[0][0]).to.be.equal(
+			expect(vote.getBytes.calledOnce).to.be.true;
+			expect(Buffer.from.callCount).to.equal(4);
+			expect(Buffer.from.args[0][0]).to.be.equal(
 				validTransaction.senderPublicKey
 			);
-			expect(bufferFromSpy.args[0][1]).to.be.equal('hex');
-			expect(bufferFromSpy.args[1][0]).to.be.equal(
+			expect(Buffer.from.args[0][1]).to.be.equal('hex');
+			expect(Buffer.from.args[1][0]).to.be.equal(
 				validTransaction.requesterPublicKey
 			);
-			expect(bufferFromSpy.args[1][1]).to.be.equal('hex');
-			expect(bufferFromSpy.args[2][0]).to.be.equal(validTransaction.signature);
-			expect(bufferFromSpy.args[2][1]).to.be.equal('hex');
-			expect(bufferFromSpy.args[3][0]).to.be.equal(
+			expect(Buffer.from.args[1][1]).to.be.equal('hex');
+			expect(Buffer.from.args[2][0]).to.be.equal(validTransaction.signature);
+			expect(Buffer.from.args[2][1]).to.be.equal('hex');
+			expect(Buffer.from.args[3][0]).to.be.equal(
 				validTransaction.signSignature
 			);
-			expect(bufferFromSpy.args[3][1]).to.be.equal('hex');
+			expect(Buffer.from.args[3][1]).to.be.equal('hex');
 			expect(result).to.be.instanceof(Buffer);
 		});
 	});
@@ -504,157 +514,105 @@ describe('logic/transaction', function () {
 		it('success', function () {
 			instance = new Transaction();
 			var vote = new Vote();
-			var readySpy = sinon.spy(vote, 'ready');
+			sandbox.spy(vote, 'ready');
 			instance.attachAssetType(transactionTypes.VOTE, vote);
 			validTransaction.type = transactionTypes.VOTE;
 			instance.ready(validTransaction, true);
-			expect(readySpy.calledOnce).to.be.true;
-			readySpy.restore();
+			expect(vote.ready.calledOnce).to.be.true;
 		});
 	});
 
 	describe('countById()', function () {
-		var oneStub, scope, errorSpy;
-
 		beforeEach(function () {
-			clock.restore();
-			transactionRevert();
-			scope = {
-				db: {
-					one: function () {}
-				},
-				logger: {
-					error: function (error) {}
-				}
-			};
-			errorSpy = sinon.spy(scope.logger, 'error');
-
 			instance = new Transaction();
 			instance.scope = scope;
 		});
 
-		afterEach(function () {
-			errorSpy.restore();
+		it('success', function () {
+			instance.scope.db.one.resolves({ count: 2 });
+			instance.countById({ id: 123 }, callback);
+			expect(instance.scope.db.one.called).to.be.true;
+
+			return Promise.resolve().then(function () {
+				sandbox.clock.tick();
+				expect(callback.called).to.be.true;
+				expect(callback.args[0][0]).to.equal(null);
+				expect(callback.args[0][1]).to.equal(2);
+				expect(scope.logger.error.called).to.be.false;
+			});
 		});
 
-		it('success', function (done) {
-			oneStub = sinon.stub(scope.db, 'one').resolves({ count: 2 });
+		it('error', function () {
+			instance.scope.db.one.rejects('abc');
 			instance.countById({ id: 123 }, callback);
-			expect(oneStub.called).to.be.true;
+			expect(instance.scope.db.one.called).to.be.true;
 
-			setTimeout(function () {
-				setImmediate(function () {
-					expect(callback.called).to.be.true;
-					expect(callback.args[0][0]).to.equal(null);
-					expect(callback.args[0][1]).to.equal(2);
-					expect(errorSpy.called).to.be.false;
-					oneStub.restore();
-					done();
-				});
-			}, 0);
-		});
-
-		it('error', function (done) {
-			oneStub = sinon.stub(scope.db, 'one').rejects();
-			instance.countById({ id: 123 }, callback);
-			expect(oneStub.called).to.be.true;
-
-			setTimeout(function () {
-				setImmediate(function () {
+			return Promise.reject()
+				.then(function () {})
+				.catch(function (error) {
+					sandbox.clock.tick();
 					expect(callback.called).to.be.true;
 					expect(callback.args[0][0]).to.equal('Transaction#countById error');
-					expect(errorSpy.called).to.be.true;
-					oneStub.restore();
-					done();
+					expect(instance.scope.logger.error.called).to.be.true;
 				});
-			}, 0);
 		});
 	});
 
 	describe('checkConfirmed()', function () {
-		var oneStub, scope, errorSpy;
-
 		beforeEach(function () {
-			clock.restore();
-			transactionRevert();
-			scope = {
-				db: {
-					one: function () {}
-				},
-				logger: {
-					error: function (error) {}
-				}
-			};
-			errorSpy = sinon.spy(scope.logger, 'error');
-
 			instance = new Transaction();
 			instance.scope = scope;
 		});
 
-		it('error', function (done) {
-			oneStub = sinon.stub(scope.db, 'one').rejects();
+		it('error', function () {
+			instance.scope.db.one.rejects();
 			instance.checkConfirmed({ id: 123 }, callback);
-
-			setTimeout(function () {
-				setImmediate(function () {
-					setImmediate(function () {
-						expect(callback.called).to.be.true;
-						expect(callback.args[0][0]).to.equal('Transaction#countById error');
-						expect(errorSpy.called).to.be.true;
-						oneStub.restore();
-						done();
-					});
+			return Promise.reject()
+				.then(function (response) {})
+				.catch(function (error) {
+					sandbox.clock.runAll();
+					expect(callback.called).to.be.true;
+					expect(callback.args[0][0]).to.equal('Transaction#countById error');
+					expect(instance.scope.logger.error.called).to.be.true;
 				});
-			}, 0);
 		});
 
-		it('count > 0', function (done) {
-			oneStub = sinon.stub(scope.db, 'one').resolves({ count: 1 });
+		it('count > 0', function () {
+			instance.scope.db.one.resolves({ count: 1 });
 			instance.checkConfirmed({ id: 123 }, callback);
-
-			setTimeout(function () {
-				setImmediate(function () {
-					setImmediate(function () {
-						expect(callback.called).to.be.true;
-						expect(callback.args[0][0]).to.have.string(
-							'Transaction is already confirmed: 123'
-						);
-						expect(errorSpy.called).to.be.false;
-						oneStub.restore();
-						done();
-					});
-				});
-			}, 0);
+			return Promise.resolve().then(function (response) {
+				sandbox.clock.runAll();
+				expect(callback.called).to.be.true;
+				expect(callback.args[0][0]).to.have.string(
+					'Transaction is already confirmed: 123'
+				);
+				expect(instance.scope.logger.error.called).to.be.false;
+			});
 		});
 
-		it('count <= 0', function (done) {
-			oneStub = sinon.stub(scope.db, 'one').resolves({ count: 0 });
+		it('count <= 0', function () {
+			instance.scope.db.one.resolves({ count: 0 });
 			instance.checkConfirmed({ id: 123 }, callback);
 
-			setTimeout(function () {
-				setImmediate(function () {
-					setImmediate(function () {
-						expect(callback.called).to.be.true;
-						expect(callback.args[0][0]).to.equal(undefined);
-						expect(errorSpy.called).to.be.false;
-						oneStub.restore();
-						done();
-					});
-				});
-			}, 0);
+			return Promise.resolve().then(function (response) {
+				sandbox.clock.runAll();
+				expect(callback.called).to.be.true;
+				expect(callback.args[0][0]).to.equal(undefined);
+				expect(instance.scope.logger.error.called).to.be.false;
+			});
 		});
 	});
 
 	describe('checkBalance()', function () {
-		var amount, balance, trs, sender, scope, result;
+		var amount, balance, trs, sender, result;
 
 		beforeEach(function () {
 			balance = 'abc';
 			trs = { blockId: 456 };
 			sender = { abc: 1000, address: '123R' };
-			scope = { genesisblock: { block: { id: 123 } } };
 			instance = new Transaction();
 			instance.scope = scope;
+			instance.scope.genesisblock.block.id = 123;
 		});
 
 		it('If exceeded', function () {
@@ -669,7 +627,6 @@ describe('logic/transaction', function () {
 		it('If exceeded but blockId are equals', function () {
 			amount = 1001;
 			trs = { blockId: 123 };
-			scope = { genesisblock: { block: { id: 123 } } };
 			result = instance.checkBalance(amount, balance, trs, sender);
 			expect(result).to.deep.equal({ exceeded: false, error: null });
 		});
@@ -682,27 +639,17 @@ describe('logic/transaction', function () {
 	});
 
 	describe('process()', function () {
-		var trs, instance, getIdStub, scope, errorSpy;
+		var trs, instance;
 
 		beforeEach(function () {
 			trs = { id: '123', type: transactionTypes.VOTE };
 			instance = new Transaction();
-			scope = {
-				logger: {
-					error: function () {}
-				}
-			};
-			errorSpy = sinon.spy(scope.logger, 'error');
 			instance.scope = scope;
-		});
-
-		afterEach(function () {
-			errorSpy.restore();
 		});
 
 		it('Unknown transaction type', function () {
 			instance.process(trs, false, callback);
-			clock.runAll();
+			sandbox.clock.runAll();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Unknown transaction type');
 		});
@@ -710,106 +657,143 @@ describe('logic/transaction', function () {
 		it('Missing sender', function () {
 			instance.attachAssetType(transactionTypes.VOTE, new Vote());
 			instance.process(trs, false, callback);
-			clock.runAll();
+			sandbox.clock.runAll();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Missing sender');
 		});
 
 		it('Failed to get transaction id', function () {
-			getIdStub = sinon.stub(instance, 'getId').throws();
+			sandbox.stub(instance, 'getId').throws();
 			instance.attachAssetType(transactionTypes.VOTE, new Vote());
 			instance.process(trs, true, callback);
-			clock.runAll();
+			sandbox.clock.runAll();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string(
 				'Failed to get transaction id'
 			);
-			expect(errorSpy.calledOnce).to.be.true;
-			getIdStub.restore();
+			expect(instance.scope.logger.error.calledOnce).to.be.true;
 		});
 
 		it('Invalid transaction id', function () {
-			getIdStub = sinon.stub(instance, 'getId').returns('456');
+			sandbox.stub(instance, 'getId').returns('456');
 			instance.attachAssetType(transactionTypes.VOTE, new Vote());
 			instance.process(trs, true, callback);
-			clock.runAll();
+			sandbox.clock.runAll();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Invalid transaction id');
-			expect(errorSpy.calledOnce).to.be.false;
-			getIdStub.restore();
+			expect(instance.scope.logger.error.calledOnce).to.be.false;
 		});
 
 		it('error', function () {
 			var vote;
 			vote = new Vote();
-			var processStub = sinon
-				.stub(vote, 'process')
-				.callsFake(function (trs, sender, cb) {
-					setImmediate(cb, 'fakeError');
-				});
-			getIdStub = sinon.stub(instance, 'getId').returns('123');
+			sandbox.stub(vote, 'process').callsFake(function (trs, sender, cb) {
+				setImmediate(cb, 'fakeError');
+			});
+			sandbox.stub(instance, 'getId').returns('123');
 			instance.attachAssetType(transactionTypes.VOTE, vote);
 			instance.process(trs, true, callback);
-			clock.runAll();
+			sandbox.clock.runAll();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('fakeError');
-			expect(errorSpy.calledOnce).to.be.false;
-			getIdStub.restore();
-			processStub.restore();
+			expect(instance.scope.logger.error.calledOnce).to.be.false;
 		});
 
 		it('success', function () {
 			var vote;
 			vote = new Vote();
-			var processStub = sinon
-				.stub(vote, 'process')
-				.callsFake(function (trs, sender, cb) {
-					setImmediate(cb, null, { success: true });
-				});
-			getIdStub = sinon.stub(instance, 'getId').returns('123');
+			sandbox.stub(vote, 'process').callsFake(function (trs, sender, cb) {
+				setImmediate(cb, null, { success: true });
+			});
+			sandbox.stub(instance, 'getId').returns('123');
 			instance.attachAssetType(transactionTypes.VOTE, vote);
 			instance.process(trs, true, callback);
-			clock.runAll();
+			sandbox.clock.runAll();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.equal(null);
 			expect(callback.args[0][1]).to.deep.equal({ success: true });
-			expect(errorSpy.calledOnce).to.be.false;
-			getIdStub.restore();
-			processStub.restore();
+			expect(instance.scope.logger.error.calledOnce).to.be.false;
 		});
 	});
 
 	describe('verify()', function () {
-		var scope, requesterRevert, debugSpy, errorSpy, vote;
+		var requesterRevert, vote;
 
 		beforeEach(function () {
 			requesterRevert = Transaction.__set__('requester', {
 				secondSignature: true
 			});
-			scope = {
-				genesisblock: { block: { id: 456 } },
-				logger: {
-					debug: function () {},
-					error: function () {}
-				}
-			};
-			debugSpy = sinon.spy(scope.logger, 'debug');
-			errorSpy = sinon.spy(scope.logger, 'error');
 			instance = new Transaction();
 			instance.scope = scope;
+			instance.scope.genesisblock.block.id = 456;
 			vote = new Vote();
 			instance.attachAssetType(transactionTypes.VOTE, vote);
 		});
 
 		afterEach(function () {
 			requesterRevert();
-			debugSpy.restore();
-			errorSpy.restore();
+		});
+
+		it('Success', function () {
+			sandbox.stub(instance, 'checkConfirmed').callsFake(function (trs, cb) {
+				setImmediate(cb);
+			});
+			sandbox.stub(vote, 'calculateFee').returns(50);
+			sandbox.stub(vote, 'verify').callsFake(function (trs, sender, cb) {
+				setImmediate(cb);
+			});
+			sandbox.stub(instance, 'verifySignature').returns(true);
+			sandbox.stub(instance, 'verifySecondSignature').returns(true);
+			var transactionTimestamp =
+				Date.now() / 1000 - constants.epochTime.getTime() / 1000 - 1000;
+			var trs = {
+				id: '123',
+				type: transactionTypes.VOTE,
+				blockId: 123,
+				signSignature: 'abc',
+				requesterPublicKey: 'ABC',
+				senderPublicKey: '12345678',
+				senderId: '123R',
+				asset: {
+					multisignature: {
+						keysgroup: ['AAA', 'BBB', 'CCC']
+					}
+				},
+				signatures: ['a', 'b', 'c', 'd'],
+				fee: 50,
+				amount: '100',
+				timestamp: transactionTimestamp
+			};
+			var sender = {
+				secondSignature: true,
+				publicKey: '12345678',
+				address: '123R',
+				multisignatures: ['ABC'],
+				u_multisignatures: [],
+				balance: 151
+			};
+			instance.verify(trs, sender, false, callback);
+			sandbox.clock.runAll();
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal(undefined);
+			expect(instance.scope.logger.debug.called).to.be.false;
+			expect(instance.scope.logger.error.called).to.be.false;
+			expect(instance.verifySignature.callCount).to.equal(5);
+			expect(instance.verifySecondSignature.calledOnce).to.be.true;
+			expect(vote.calculateFee.calledOnce).to.be.true;
+			expect(vote.calculateFee.args[0][0]).to.deep.equal(trs);
+			expect(vote.calculateFee.args[0][1]).to.deep.equal(sender);
+			expect(vote.calculateFee.args[0][2]).to.deep.equal(false);
+			expect(vote.verify.calledOnce).to.be.true;
+			expect(vote.verify.args[0][0]).to.deep.equal(trs);
+			expect(vote.verify.args[0][1]).to.deep.equal(sender);
+			expect(instance.checkConfirmed.calledOnce).to.be.true;
+			expect(instance.checkConfirmed.args[0][0]).to.deep.equal(trs);
 		});
 
 		it('Missing sender', function () {
 			instance.verify(false, false, false, callback);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Missing sender');
 		});
@@ -817,7 +801,7 @@ describe('logic/transaction', function () {
 		it('Unknown transaction type', function () {
 			Transaction.__set__('__private', { types: {} });
 			instance.verify({ type: transactionTypes.VOTE }, true, false, callback);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Unknown transaction type');
 		});
@@ -829,7 +813,7 @@ describe('logic/transaction', function () {
 				false,
 				callback
 			);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string(
 				'Missing sender second signature'
@@ -843,7 +827,7 @@ describe('logic/transaction', function () {
 				false,
 				callback
 			);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string(
 				'Sender does not have a second signature'
@@ -862,7 +846,7 @@ describe('logic/transaction', function () {
 				false,
 				callback
 			);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string(
 				'Missing requester second signature'
@@ -884,7 +868,7 @@ describe('logic/transaction', function () {
 				false,
 				callback
 			);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string(
 				'Requester does not have a second signature'
@@ -905,12 +889,12 @@ describe('logic/transaction', function () {
 				false,
 				callback
 			);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string(
 				'Invalid sender public key: 123 expected: 456'
 			);
-			expect(debugSpy.called).to.be.false;
+			expect(instance.scope.logger.debug.called).to.be.false;
 		});
 
 		it('Invalid sender. Can not send from genesis account', function () {
@@ -932,12 +916,12 @@ describe('logic/transaction', function () {
 				false,
 				callback
 			);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string(
 				'Invalid sender. Can not send from genesis account'
 			);
-			expect(debugSpy.called).to.be.false;
+			expect(instance.scope.logger.debug.called).to.be.false;
 		});
 
 		it('Invalid sender address', function () {
@@ -959,10 +943,9 @@ describe('logic/transaction', function () {
 				false,
 				callback
 			);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Invalid sender address');
-			expect(debugSpy.called).to.be.false;
 		});
 
 		it('Invalid member in keysgroup', function () {
@@ -991,10 +974,9 @@ describe('logic/transaction', function () {
 				false,
 				callback
 			);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Invalid member in keysgroup');
-			expect(debugSpy.called).to.be.false;
 		});
 
 		it('Account does not belong to multisignature group', function () {
@@ -1023,18 +1005,15 @@ describe('logic/transaction', function () {
 				false,
 				callback
 			);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string(
 				'Account does not belong to multisignature group'
 			);
-			expect(debugSpy.called).to.be.false;
 		});
 
 		it('Verify signature throws error', function () {
-			var verifySignatureStub = sinon
-				.stub(instance, 'verifySignature')
-				.throws('fakeError');
+			sandbox.stub(instance, 'verifySignature').throws('fakeError');
 			instance.verify(
 				{
 					id: '123',
@@ -1060,19 +1039,15 @@ describe('logic/transaction', function () {
 				false,
 				callback
 			);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('fakeError');
-			expect(debugSpy.called).to.be.false;
-			expect(errorSpy.called).to.be.true;
-			expect(verifySignatureStub.calledOnce).to.be.true;
-			verifySignatureStub.restore();
+			expect(instance.scope.logger.error.called).to.be.true;
+			expect(instance.verifySignature.calledOnce).to.be.true;
 		});
 
 		it('Failed to verify signature: Call to callback', function () {
-			var verifySignatureStub = sinon
-				.stub(instance, 'verifySignature')
-				.returns(false);
+			sandbox.stub(instance, 'verifySignature').returns(false);
 			instance.verify(
 				{
 					id: '123',
@@ -1098,22 +1073,15 @@ describe('logic/transaction', function () {
 				false,
 				callback
 			);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Failed to verify signature');
-			expect(debugSpy.called).to.be.false;
-			expect(errorSpy.called).to.be.false;
-			expect(verifySignatureStub.calledOnce).to.be.true;
-			verifySignatureStub.restore();
+			expect(instance.verifySignature.calledOnce).to.be.true;
 		});
 
 		it('Verify second signature throws error', function () {
-			var verifySignatureStub = sinon
-				.stub(instance, 'verifySignature')
-				.returns(true);
-			var verifySecondSignatureStub = sinon
-				.stub(instance, 'verifySecondSignature')
-				.throws('fakeError2');
+			sandbox.stub(instance, 'verifySignature').returns(true);
+			sandbox.stub(instance, 'verifySecondSignature').throws('fakeError2');
 			instance.verify(
 				{
 					id: '123',
@@ -1139,24 +1107,15 @@ describe('logic/transaction', function () {
 				false,
 				callback
 			);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('fakeError2');
-			expect(debugSpy.called).to.be.false;
-			expect(errorSpy.called).to.be.false;
-			expect(verifySignatureStub.calledOnce).to.be.true;
-			expect(verifySecondSignatureStub.calledOnce).to.be.true;
-			verifySignatureStub.restore();
-			verifySecondSignatureStub.restore();
+			expect(instance.verifySecondSignature.calledOnce).to.be.true;
 		});
 
 		it('Failed to verify second signature', function () {
-			var verifySignatureStub = sinon
-				.stub(instance, 'verifySignature')
-				.returns(true);
-			var verifySecondSignatureStub = sinon
-				.stub(instance, 'verifySecondSignature')
-				.returns(false);
+			sandbox.stub(instance, 'verifySignature').returns(true);
+			sandbox.stub(instance, 'verifySecondSignature').returns(false);
 			instance.verify(
 				{
 					id: '123',
@@ -1182,26 +1141,18 @@ describe('logic/transaction', function () {
 				false,
 				callback
 			);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string(
 				'Failed to verify second signature'
 			);
-			expect(debugSpy.called).to.be.false;
-			expect(errorSpy.called).to.be.false;
-			expect(verifySignatureStub.calledOnce).to.be.true;
-			expect(verifySecondSignatureStub.calledOnce).to.be.true;
-			verifySignatureStub.restore();
-			verifySecondSignatureStub.restore();
+			expect(instance.verifySignature.calledOnce).to.be.true;
+			expect(instance.verifySecondSignature.calledOnce).to.be.true;
 		});
 
 		it('Encountered duplicate signature in transaction', function () {
-			var verifySignatureStub = sinon
-				.stub(instance, 'verifySignature')
-				.returns(true);
-			var verifySecondSignatureStub = sinon
-				.stub(instance, 'verifySecondSignature')
-				.returns(true);
+			sandbox.stub(instance, 'verifySignature').returns(true);
+			sandbox.stub(instance, 'verifySecondSignature').returns(true);
 			instance.verify(
 				{
 					id: '123',
@@ -1228,26 +1179,20 @@ describe('logic/transaction', function () {
 				false,
 				callback
 			);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string(
 				'Encountered duplicate signature in transaction'
 			);
-			expect(debugSpy.called).to.be.false;
-			expect(errorSpy.called).to.be.false;
-			expect(verifySignatureStub.calledOnce).to.be.true;
-			expect(verifySecondSignatureStub.calledOnce).to.be.true;
-			verifySignatureStub.restore();
-			verifySecondSignatureStub.restore();
+			expect(instance.verifySignature.calledOnce).to.be.true;
+			expect(instance.verifySecondSignature.calledOnce).to.be.true;
 		});
 
 		it('Failed to verify multisignature', function () {
-			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
-			verifySignatureStub.onFirstCall().returns(true);
-			verifySignatureStub.returns(false);
-			var verifySecondSignatureStub = sinon
-				.stub(instance, 'verifySecondSignature')
-				.returns(true);
+			sandbox.stub(instance, 'verifySignature');
+			instance.verifySignature.onFirstCall().returns(true);
+			instance.verifySignature.returns(false);
+			sandbox.stub(instance, 'verifySecondSignature').returns(true);
 			instance.verify(
 				{
 					id: '123',
@@ -1274,26 +1219,20 @@ describe('logic/transaction', function () {
 				false,
 				callback
 			);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string(
 				'Failed to verify multisignature'
 			);
-			expect(debugSpy.called).to.be.false;
-			expect(errorSpy.called).to.be.false;
-			expect(verifySignatureStub.calledTwice).to.be.true;
-			expect(verifySecondSignatureStub.calledOnce).to.be.true;
-			verifySignatureStub.restore();
-			verifySecondSignatureStub.restore();
+			expect(instance.verifySignature.calledTwice).to.be.true;
+			expect(instance.verifySecondSignature.calledOnce).to.be.true;
 		});
 
 		it('Invalid transaction fee', function () {
-			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(false);
-			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
-			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon
-				.stub(instance, 'verifySecondSignature')
-				.returns(true);
+			sandbox.stub(vote, 'calculateFee').returns(false);
+			sandbox.stub(instance, 'verifySignature');
+			instance.verifySignature.returns(true);
+			sandbox.stub(instance, 'verifySecondSignature').returns(true);
 			var trs = {
 				id: '123',
 				type: transactionTypes.VOTE,
@@ -1318,29 +1257,21 @@ describe('logic/transaction', function () {
 				u_multisignatures: []
 			};
 			instance.verify(trs, sender, false, callback);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Invalid transaction fee');
-			expect(debugSpy.called).to.be.false;
-			expect(errorSpy.called).to.be.false;
-			expect(verifySignatureStub.callCount).to.equal(5);
-			expect(verifySecondSignatureStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.args[0][0]).to.deep.equal(trs);
-			expect(calculateFeeStub.args[0][1]).to.deep.equal(sender);
-			expect(calculateFeeStub.args[0][2]).to.deep.equal(false);
-			verifySignatureStub.restore();
-			verifySecondSignatureStub.restore();
-			calculateFeeStub.restore();
+			expect(instance.verifySignature.callCount).to.equal(5);
+			expect(vote.calculateFee.calledOnce).to.be.true;
+			expect(vote.calculateFee.args[0][0]).to.deep.equal(trs);
+			expect(vote.calculateFee.args[0][1]).to.deep.equal(sender);
+			expect(vote.calculateFee.args[0][2]).to.deep.equal(false);
 		});
 
 		it('Amount is less than zero', function () {
-			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(50);
-			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
-			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon
-				.stub(instance, 'verifySecondSignature')
-				.returns(true);
+			sandbox.stub(vote, 'calculateFee').returns(50);
+			sandbox.stub(instance, 'verifySignature');
+			instance.verifySignature.returns(true);
+			sandbox.stub(instance, 'verifySecondSignature').returns(true);
 			var trs = {
 				id: '123',
 				type: transactionTypes.VOTE,
@@ -1366,29 +1297,20 @@ describe('logic/transaction', function () {
 				u_multisignatures: []
 			};
 			instance.verify(trs, sender, false, callback);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Invalid transaction amount');
-			expect(debugSpy.called).to.be.false;
-			expect(errorSpy.called).to.be.false;
-			expect(verifySignatureStub.callCount).to.equal(5);
-			expect(verifySecondSignatureStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.args[0][0]).to.deep.equal(trs);
-			expect(calculateFeeStub.args[0][1]).to.deep.equal(sender);
-			expect(calculateFeeStub.args[0][2]).to.deep.equal(false);
-			verifySignatureStub.restore();
-			verifySecondSignatureStub.restore();
-			calculateFeeStub.restore();
+			expect(vote.calculateFee.calledOnce).to.be.true;
+			expect(vote.calculateFee.args[0][0]).to.deep.equal(trs);
+			expect(vote.calculateFee.args[0][1]).to.deep.equal(sender);
+			expect(vote.calculateFee.args[0][2]).to.deep.equal(false);
 		});
 
 		it('Amount is greater than constants.totalAmount', function () {
-			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(50);
-			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
-			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon
-				.stub(instance, 'verifySecondSignature')
-				.returns(true);
+			sandbox.stub(vote, 'calculateFee').returns(50);
+			sandbox.stub(instance, 'verifySignature');
+			instance.verifySignature.returns(true);
+			sandbox.stub(instance, 'verifySecondSignature').returns(true);
 			var amount = constants.totalAmount + 10;
 			var trs = {
 				id: '123',
@@ -1415,29 +1337,20 @@ describe('logic/transaction', function () {
 				u_multisignatures: []
 			};
 			instance.verify(trs, sender, false, callback);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Invalid transaction amount');
-			expect(debugSpy.called).to.be.false;
-			expect(errorSpy.called).to.be.false;
-			expect(verifySignatureStub.callCount).to.equal(5);
-			expect(verifySecondSignatureStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.args[0][0]).to.deep.equal(trs);
-			expect(calculateFeeStub.args[0][1]).to.deep.equal(sender);
-			expect(calculateFeeStub.args[0][2]).to.deep.equal(false);
-			verifySignatureStub.restore();
-			verifySecondSignatureStub.restore();
-			calculateFeeStub.restore();
+			expect(vote.calculateFee.calledOnce).to.be.true;
+			expect(vote.calculateFee.args[0][0]).to.deep.equal(trs);
+			expect(vote.calculateFee.args[0][1]).to.deep.equal(sender);
+			expect(vote.calculateFee.args[0][2]).to.deep.equal(false);
 		});
 
 		it('Amount contains dots', function () {
-			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(50);
-			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
-			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon
-				.stub(instance, 'verifySecondSignature')
-				.returns(true);
+			sandbox.stub(vote, 'calculateFee').returns(50);
+			sandbox.stub(instance, 'verifySignature');
+			instance.verifySignature.returns(true);
+			sandbox.stub(instance, 'verifySecondSignature').returns(true);
 			var trs = {
 				id: '123',
 				type: transactionTypes.VOTE,
@@ -1463,29 +1376,20 @@ describe('logic/transaction', function () {
 				u_multisignatures: []
 			};
 			instance.verify(trs, sender, false, callback);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Invalid transaction amount');
-			expect(debugSpy.called).to.be.false;
-			expect(errorSpy.called).to.be.false;
-			expect(verifySignatureStub.callCount).to.equal(5);
-			expect(verifySecondSignatureStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.args[0][0]).to.deep.equal(trs);
-			expect(calculateFeeStub.args[0][1]).to.deep.equal(sender);
-			expect(calculateFeeStub.args[0][2]).to.deep.equal(false);
-			verifySignatureStub.restore();
-			verifySecondSignatureStub.restore();
-			calculateFeeStub.restore();
+			expect(vote.calculateFee.calledOnce).to.be.true;
+			expect(vote.calculateFee.args[0][0]).to.deep.equal(trs);
+			expect(vote.calculateFee.args[0][1]).to.deep.equal(sender);
+			expect(vote.calculateFee.args[0][2]).to.deep.equal(false);
 		});
 
 		it('Amount contains scientific notation', function () {
-			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(50);
-			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
-			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon
-				.stub(instance, 'verifySecondSignature')
-				.returns(true);
+			sandbox.stub(vote, 'calculateFee').returns(50);
+			sandbox.stub(instance, 'verifySignature');
+			instance.verifySignature.returns(true);
+			sandbox.stub(instance, 'verifySecondSignature').returns(true);
 			var trs = {
 				id: '123',
 				type: transactionTypes.VOTE,
@@ -1511,29 +1415,20 @@ describe('logic/transaction', function () {
 				u_multisignatures: []
 			};
 			instance.verify(trs, sender, false, callback);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('Invalid transaction amount');
-			expect(debugSpy.called).to.be.false;
-			expect(errorSpy.called).to.be.false;
-			expect(verifySignatureStub.callCount).to.equal(5);
-			expect(verifySecondSignatureStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.args[0][0]).to.deep.equal(trs);
-			expect(calculateFeeStub.args[0][1]).to.deep.equal(sender);
-			expect(calculateFeeStub.args[0][2]).to.deep.equal(false);
-			verifySignatureStub.restore();
-			verifySecondSignatureStub.restore();
-			calculateFeeStub.restore();
+			expect(vote.calculateFee.calledOnce).to.be.true;
+			expect(vote.calculateFee.args[0][0]).to.deep.equal(trs);
+			expect(vote.calculateFee.args[0][1]).to.deep.equal(sender);
+			expect(vote.calculateFee.args[0][2]).to.deep.equal(false);
 		});
 
 		it('Sender balance error', function () {
-			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(50);
-			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
-			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon
-				.stub(instance, 'verifySecondSignature')
-				.returns(true);
+			sandbox.stub(vote, 'calculateFee').returns(50);
+			sandbox.stub(instance, 'verifySignature');
+			instance.verifySignature.returns(true);
+			sandbox.stub(instance, 'verifySecondSignature').returns(true);
 			var trs = {
 				id: '123',
 				type: transactionTypes.VOTE,
@@ -1560,31 +1455,22 @@ describe('logic/transaction', function () {
 				balance: 149
 			};
 			instance.verify(trs, sender, false, callback);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string(
 				'Account does not have enough RISE: 123R balance: 0.00000149'
 			);
-			expect(debugSpy.called).to.be.false;
-			expect(errorSpy.called).to.be.false;
-			expect(verifySignatureStub.callCount).to.equal(5);
-			expect(verifySecondSignatureStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.args[0][0]).to.deep.equal(trs);
-			expect(calculateFeeStub.args[0][1]).to.deep.equal(sender);
-			expect(calculateFeeStub.args[0][2]).to.deep.equal(false);
-			verifySignatureStub.restore();
-			verifySecondSignatureStub.restore();
-			calculateFeeStub.restore();
+			expect(vote.calculateFee.calledOnce).to.be.true;
+			expect(vote.calculateFee.args[0][0]).to.deep.equal(trs);
+			expect(vote.calculateFee.args[0][1]).to.deep.equal(sender);
+			expect(vote.calculateFee.args[0][2]).to.deep.equal(false);
 		});
 
 		it('Invalid transaction timestamp. Timestamp is in the future', function () {
-			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(50);
-			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
-			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon
-				.stub(instance, 'verifySecondSignature')
-				.returns(true);
+			sandbox.stub(vote, 'calculateFee').returns(50);
+			sandbox.stub(instance, 'verifySignature');
+			instance.verifySignature.returns(true);
+			sandbox.stub(instance, 'verifySecondSignature').returns(true);
 			var transactionTimestamp =
 				Date.now() / 1000 - constants.epochTime.getTime() / 1000 + 1000;
 			var trs = {
@@ -1614,36 +1500,25 @@ describe('logic/transaction', function () {
 				balance: 151
 			};
 			instance.verify(trs, sender, false, callback);
-			clock.tick();
+			sandbox.clock.tick();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string(
 				'Invalid transaction timestamp. Timestamp is in the future'
 			);
-			expect(debugSpy.called).to.be.false;
-			expect(errorSpy.called).to.be.false;
-			expect(verifySignatureStub.callCount).to.equal(5);
-			expect(verifySecondSignatureStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.args[0][0]).to.deep.equal(trs);
-			expect(calculateFeeStub.args[0][1]).to.deep.equal(sender);
-			expect(calculateFeeStub.args[0][2]).to.deep.equal(false);
-			verifySignatureStub.restore();
-			verifySecondSignatureStub.restore();
-			calculateFeeStub.restore();
+			expect(vote.calculateFee.calledOnce).to.be.true;
+			expect(vote.calculateFee.args[0][0]).to.deep.equal(trs);
+			expect(vote.calculateFee.args[0][1]).to.deep.equal(sender);
+			expect(vote.calculateFee.args[0][2]).to.deep.equal(false);
 		});
 
 		it('verify() call from transaction type returns error', function () {
-			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(50);
-			var verifyStub = sinon
-				.stub(vote, 'verify')
-				.callsFake(function (trs, sender, cb) {
-					setImmediate(cb, 'verifyError');
-				});
-			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
-			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon
-				.stub(instance, 'verifySecondSignature')
-				.returns(true);
+			sandbox.stub(vote, 'calculateFee').returns(50);
+			sandbox.stub(vote, 'verify').callsFake(function (trs, sender, cb) {
+				setImmediate(cb, 'verifyError');
+			});
+			sandbox.stub(instance, 'verifySignature');
+			instance.verifySignature.returns(true);
+			sandbox.stub(instance, 'verifySecondSignature').returns(true);
 			var transactionTimestamp =
 				Date.now() / 1000 - constants.epochTime.getTime() / 1000 - 1000;
 			var trs = {
@@ -1673,196 +1548,110 @@ describe('logic/transaction', function () {
 				balance: 151
 			};
 			instance.verify(trs, sender, false, callback);
-			clock.runAll();
+			sandbox.clock.runAll();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.have.string('verifyError');
-			expect(debugSpy.called).to.be.false;
-			expect(errorSpy.called).to.be.false;
-			expect(verifySignatureStub.callCount).to.equal(5);
-			expect(verifySecondSignatureStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.args[0][0]).to.deep.equal(trs);
-			expect(calculateFeeStub.args[0][1]).to.deep.equal(sender);
-			expect(calculateFeeStub.args[0][2]).to.deep.equal(false);
-			expect(verifyStub.calledOnce).to.be.true;
-			expect(verifyStub.args[0][0]).to.deep.equal(trs);
-			expect(verifyStub.args[0][1]).to.deep.equal(sender);
-			verifySignatureStub.restore();
-			verifySecondSignatureStub.restore();
-			calculateFeeStub.restore();
-			verifyStub.restore();
-		});
-
-		it('Success', function () {
-			var checkConfirmedStub = sinon
-				.stub(instance, 'checkConfirmed')
-				.callsFake(function (trs, cb) {
-					setImmediate(cb);
-				});
-			var calculateFeeStub = sinon.stub(vote, 'calculateFee').returns(50);
-			var verifyStub = sinon
-				.stub(vote, 'verify')
-				.callsFake(function (trs, sender, cb) {
-					setImmediate(cb);
-				});
-			var verifySignatureStub = sinon.stub(instance, 'verifySignature');
-			verifySignatureStub.returns(true);
-			var verifySecondSignatureStub = sinon
-				.stub(instance, 'verifySecondSignature')
-				.returns(true);
-			var transactionTimestamp =
-				Date.now() / 1000 - constants.epochTime.getTime() / 1000 - 1000;
-			var trs = {
-				id: '123',
-				type: transactionTypes.VOTE,
-				blockId: 123,
-				signSignature: 'abc',
-				requesterPublicKey: 'ABC',
-				senderPublicKey: '12345678',
-				senderId: '123R',
-				asset: {
-					multisignature: {
-						keysgroup: ['AAA', 'BBB', 'CCC']
-					}
-				},
-				signatures: ['a', 'b', 'c', 'd'],
-				fee: 50,
-				amount: '100',
-				timestamp: transactionTimestamp
-			};
-			var sender = {
-				secondSignature: true,
-				publicKey: '12345678',
-				address: '123R',
-				multisignatures: ['ABC'],
-				u_multisignatures: [],
-				balance: 151
-			};
-			instance.verify(trs, sender, false, callback);
-			clock.runAll();
-			expect(callback.calledOnce).to.be.true;
-			expect(callback.args[0][0]).to.equal(undefined);
-			expect(debugSpy.called).to.be.false;
-			expect(errorSpy.called).to.be.false;
-			expect(verifySignatureStub.callCount).to.equal(5);
-			expect(verifySecondSignatureStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.calledOnce).to.be.true;
-			expect(calculateFeeStub.args[0][0]).to.deep.equal(trs);
-			expect(calculateFeeStub.args[0][1]).to.deep.equal(sender);
-			expect(calculateFeeStub.args[0][2]).to.deep.equal(false);
-			expect(verifyStub.calledOnce).to.be.true;
-			expect(verifyStub.args[0][0]).to.deep.equal(trs);
-			expect(verifyStub.args[0][1]).to.deep.equal(sender);
-			expect(checkConfirmedStub.calledOnce).to.be.true;
-			expect(checkConfirmedStub.args[0][0]).to.deep.equal(trs);
-			verifySignatureStub.restore();
-			verifySecondSignatureStub.restore();
-			calculateFeeStub.restore();
-			verifyStub.restore();
-			checkConfirmedStub.restore();
+			expect(vote.verify.calledOnce).to.be.true;
+			expect(vote.verify.args[0][0]).to.deep.equal(trs);
+			expect(vote.verify.args[0][1]).to.deep.equal(sender);
 		});
 	});
 
 	describe('verifySignature()', function () {
-		var getBytesStub, verifyBytesStub;
-
 		beforeEach(function () {
 			instance = new Transaction();
-			getBytesStub = sinon.stub(instance, 'getBytes');
-			verifyBytesStub = sinon.stub(instance, 'verifyBytes');
+			sandbox.stub(instance, 'getBytes');
+			sandbox.stub(instance, 'verifyBytes');
 		});
 
-		afterEach(function () {
-			getBytesStub.restore();
-			verifyBytesStub.restore();
+		it('Success', function () {
+			instance.getBytes.returns(3);
+			instance.verifyBytes.returns(4);
+			instance.attachAssetType(transactionTypes.VOTE, new Vote());
+			var trs = { type: transactionTypes.VOTE };
+			var result = instance.verifySignature(trs, 1, 2);
+			expect(instance.getBytes.called).to.be.true;
+			expect(instance.getBytes.args[0][0]).to.deep.equal(trs);
+			expect(instance.getBytes.args[0][1]).to.be.true;
+			expect(instance.getBytes.args[0][2]).to.be.true;
+			expect(instance.verifyBytes.called).to.be.true;
+			expect(instance.verifyBytes.args[0][0]).to.equal(3);
+			expect(instance.verifyBytes.args[0][1]).to.equal(1);
+			expect(instance.verifyBytes.args[0][2]).to.equal(2);
+			expect(result).to.equal(4);
 		});
 
 		it('Unknown transaction type', function () {
 			expect(function () {
 				instance.verifySignature({ type: transactionTypes.VOTE });
 			}).throws('Unknown transaction type');
-			expect(getBytesStub.called).to.be.false;
-			expect(verifyBytesStub.called).to.be.false;
+			expect(instance.getBytes.called).to.be.false;
+			expect(instance.verifyBytes.called).to.be.false;
 		});
 
 		it('Not signature received', function () {
 			instance.attachAssetType(transactionTypes.VOTE, new Vote());
 			var result = instance.verifySignature({ type: transactionTypes.VOTE });
 			expect(result).to.be.false;
-			expect(getBytesStub.called).to.be.false;
-			expect(verifyBytesStub.called).to.be.false;
+			expect(instance.getBytes.called).to.be.false;
+			expect(instance.verifyBytes.called).to.be.false;
 		});
 
 		it('getBytes() throws error', function () {
-			getBytesStub.throws(Error('getBytesError'));
+			instance.getBytes.throws(Error('getBytesError'));
 			instance.attachAssetType(transactionTypes.VOTE, new Vote());
 			var trs = { type: transactionTypes.VOTE };
 			expect(function () {
 				instance.verifySignature(trs, true, true);
 			}).throws('getBytesError');
-			expect(getBytesStub.called).to.be.true;
-			expect(getBytesStub.args[0][0]).to.deep.equal(trs);
-			expect(getBytesStub.args[0][1]).to.be.true;
-			expect(getBytesStub.args[0][2]).to.be.true;
-			expect(verifyBytesStub.called).to.be.false;
+			expect(instance.getBytes.called).to.be.true;
+			expect(instance.getBytes.args[0][0]).to.deep.equal(trs);
+			expect(instance.getBytes.args[0][1]).to.be.true;
+			expect(instance.getBytes.args[0][2]).to.be.true;
+			expect(instance.verifyBytes.called).to.be.false;
 		});
 
 		it('verifyBytes() throws error', function () {
-			getBytesStub.returns(3);
-			verifyBytesStub.throws(Error('verifyBytesError'));
+			instance.getBytes.returns(3);
+			instance.verifyBytes.throws(Error('verifyBytesError'));
 			instance.attachAssetType(transactionTypes.VOTE, new Vote());
 			var trs = { type: transactionTypes.VOTE };
 			expect(function () {
 				instance.verifySignature(trs, 1, 2);
 			}).throws('verifyBytesError');
-			expect(getBytesStub.called).to.be.true;
-			expect(getBytesStub.args[0][0]).to.deep.equal(trs);
-			expect(getBytesStub.args[0][1]).to.be.true;
-			expect(getBytesStub.args[0][2]).to.be.true;
-			expect(verifyBytesStub.called).to.be.true;
-			expect(verifyBytesStub.args[0][0]).to.equal(3);
-			expect(verifyBytesStub.args[0][1]).to.equal(1);
-			expect(verifyBytesStub.args[0][2]).to.equal(2);
-		});
-
-		it('Success', function () {
-			getBytesStub.returns(3);
-			verifyBytesStub.returns(4);
-			instance.attachAssetType(transactionTypes.VOTE, new Vote());
-			var trs = { type: transactionTypes.VOTE };
-			var result = instance.verifySignature(trs, 1, 2);
-			expect(getBytesStub.called).to.be.true;
-			expect(getBytesStub.args[0][0]).to.deep.equal(trs);
-			expect(getBytesStub.args[0][1]).to.be.true;
-			expect(getBytesStub.args[0][2]).to.be.true;
-			expect(verifyBytesStub.called).to.be.true;
-			expect(verifyBytesStub.args[0][0]).to.equal(3);
-			expect(verifyBytesStub.args[0][1]).to.equal(1);
-			expect(verifyBytesStub.args[0][2]).to.equal(2);
-			expect(result).to.equal(4);
 		});
 	});
 
 	describe('verifySecondSignature()', function () {
-		var getBytesStub, verifyBytesStub;
-
 		beforeEach(function () {
 			instance = new Transaction();
-			getBytesStub = sinon.stub(instance, 'getBytes');
-			verifyBytesStub = sinon.stub(instance, 'verifyBytes');
+			sandbox.stub(instance, 'getBytes');
+			sandbox.stub(instance, 'verifyBytes');
 		});
 
-		afterEach(function () {
-			getBytesStub.restore();
-			verifyBytesStub.restore();
+		it('Success', function () {
+			instance.getBytes.returns(3);
+			instance.verifyBytes.returns(4);
+			instance.attachAssetType(transactionTypes.VOTE, new Vote());
+			var trs = { type: transactionTypes.VOTE };
+			var result = instance.verifySecondSignature(trs, 1, 2);
+			expect(instance.getBytes.called).to.be.true;
+			expect(instance.getBytes.args[0][0]).to.deep.equal(trs);
+			expect(instance.getBytes.args[0][1]).to.be.false;
+			expect(instance.getBytes.args[0][2]).to.be.true;
+			expect(instance.verifyBytes.called).to.be.true;
+			expect(instance.verifyBytes.args[0][0]).to.equal(3);
+			expect(instance.verifyBytes.args[0][1]).to.equal(1);
+			expect(instance.verifyBytes.args[0][2]).to.equal(2);
+			expect(result).to.equal(4);
 		});
 
 		it('Unknown transaction type', function () {
 			expect(function () {
 				instance.verifySecondSignature({ type: transactionTypes.VOTE });
 			}).throws('Unknown transaction type');
-			expect(getBytesStub.called).to.be.false;
-			expect(verifyBytesStub.called).to.be.false;
+			expect(instance.getBytes.called).to.be.false;
+			expect(instance.verifyBytes.called).to.be.false;
 		});
 
 		it('Not signature received', function () {
@@ -1871,62 +1660,36 @@ describe('logic/transaction', function () {
 				type: transactionTypes.VOTE
 			});
 			expect(result).to.be.false;
-			expect(getBytesStub.called).to.be.false;
-			expect(verifyBytesStub.called).to.be.false;
+			expect(instance.getBytes.called).to.be.false;
+			expect(instance.verifyBytes.called).to.be.false;
 		});
 
 		it('getBytes() throws error', function () {
-			getBytesStub.throws(Error('getBytesError'));
+			instance.getBytes.throws(Error('getBytesError'));
 			instance.attachAssetType(transactionTypes.VOTE, new Vote());
 			var trs = { type: transactionTypes.VOTE };
 			expect(function () {
 				instance.verifySecondSignature(trs, true, true);
 			}).throws('getBytesError');
-			expect(getBytesStub.called).to.be.true;
-			expect(getBytesStub.args[0][0]).to.deep.equal(trs);
-			expect(getBytesStub.args[0][1]).to.be.false;
-			expect(getBytesStub.args[0][2]).to.be.true;
-			expect(verifyBytesStub.called).to.be.false;
+			expect(instance.getBytes.called).to.be.true;
+			expect(instance.verifyBytes.called).to.be.false;
 		});
 
 		it('verifyBytes() throws error', function () {
-			getBytesStub.returns(3);
-			verifyBytesStub.throws(Error('verifyBytesError'));
+			instance.getBytes.returns(3);
+			instance.verifyBytes.throws(Error('verifyBytesError'));
 			instance.attachAssetType(transactionTypes.VOTE, new Vote());
 			var trs = { type: transactionTypes.VOTE };
 			expect(function () {
 				instance.verifySecondSignature(trs, 1, 2);
 			}).throws('verifyBytesError');
-			expect(getBytesStub.called).to.be.true;
-			expect(getBytesStub.args[0][0]).to.deep.equal(trs);
-			expect(getBytesStub.args[0][1]).to.be.false;
-			expect(getBytesStub.args[0][2]).to.be.true;
-			expect(verifyBytesStub.called).to.be.true;
-			expect(verifyBytesStub.args[0][0]).to.equal(3);
-			expect(verifyBytesStub.args[0][1]).to.equal(1);
-			expect(verifyBytesStub.args[0][2]).to.equal(2);
-		});
-
-		it('Success', function () {
-			getBytesStub.returns(3);
-			verifyBytesStub.returns(4);
-			instance.attachAssetType(transactionTypes.VOTE, new Vote());
-			var trs = { type: transactionTypes.VOTE };
-			var result = instance.verifySecondSignature(trs, 1, 2);
-			expect(getBytesStub.called).to.be.true;
-			expect(getBytesStub.args[0][0]).to.deep.equal(trs);
-			expect(getBytesStub.args[0][1]).to.be.false;
-			expect(getBytesStub.args[0][2]).to.be.true;
-			expect(verifyBytesStub.called).to.be.true;
-			expect(verifyBytesStub.args[0][0]).to.equal(3);
-			expect(verifyBytesStub.args[0][1]).to.equal(1);
-			expect(verifyBytesStub.args[0][2]).to.equal(2);
-			expect(result).to.equal(4);
+			expect(instance.getBytes.called).to.be.true;
+			expect(instance.verifyBytes.called).to.be.true;
 		});
 	});
 
 	describe('verifyBytes()', function () {
-		var scope, verifyStub, bytes, publicKey, signature;
+		var bytes, publicKey, signature;
 
 		beforeEach(function () {
 			bytes = [1, 2, 3];
@@ -1934,98 +1697,119 @@ describe('logic/transaction', function () {
 				'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f';
 			signature =
 				'7ff5f0ee2c4d4c83d6980a46efe31befca41f7aa8cda5f7b4c2850e4942d923af058561a6a3312005ddee566244346bdbccf004bc8e2c84e653f9825c20be008';
-			scope = { ed: ed };
-			verifyStub = sinon.stub(scope.ed, 'verify');
 			instance = new Transaction();
 			instance.scope = scope;
 		});
 
-		afterEach(function () {
-			verifyStub.restore();
+		after(function () {
+			scope.ed.verify.restore();
 		});
 
 		it('Throws error', function () {
-			verifyStub.throws(Error('verifyError'));
+			instance.scope.ed.verify.throws(Error('verifyError'));
 			expect(function () {
 				instance.verifyBytes(bytes, publicKey, signature);
 			}).throw('verifyError');
 		});
 
 		it('Success', function () {
-			verifyStub.returns('success');
+			instance.scope.ed.verify.returns('success');
 			var result = instance.verifyBytes(bytes, publicKey, signature);
 			expect(result).to.equal('success');
 		});
 	});
 
 	describe('apply()', function () {
-		var readyStub,
-			checkBalanceStub,
-			trs,
-			block,
-			sender,
-			amount,
-			scope,
-			traceSpy,
-			traceParam2,
-			modules,
-			calcStub,
-			mergeStub,
-			vote,
-			applyStub;
+		var trs, block, sender, amount, traceParam2, modules, vote;
 
 		beforeEach(function () {
-			scope = {
-				logger: {
-					trace: function (height) {}
-				},
-				account: {
-					merge: function (address, diff, cb) {}
-				}
-			};
-			traceSpy = sinon.spy(scope.logger, 'trace');
-			mergeStub = sinon.stub(scope.account, 'merge');
-			vote = new Vote();
-			applyStub = sinon.stub(vote, 'apply');
-			instance = new Transaction();
-			instance.attachAssetType(transactionTypes.VOTE, vote);
-			instance.scope = scope;
-			readyStub = sinon.stub(instance, 'ready');
-			checkBalanceStub = sinon.stub(instance, 'checkBalance');
 			modules = {
 				rounds: {
 					calc: function () {}
 				}
 			};
-			calcStub = sinon.stub(modules.rounds, 'calc').returns(500);
+			vote = new Vote();
+			instance = new Transaction();
+			instance.attachAssetType(transactionTypes.VOTE, vote);
+			instance.scope = scope;
+			sandbox.stub(vote, 'apply');
+			sandbox.stub(instance, 'ready');
+			sandbox.stub(instance, 'checkBalance');
+			sandbox.stub(modules.rounds, 'calc').returns(500);
 		});
 
-		afterEach(function () {
-			traceSpy.restore();
-			mergeStub.restore();
-			applyStub.restore();
-			readyStub.restore();
-			checkBalanceStub.restore();
-			calcStub.restore();
+		it('Success', function () {
+			vote.apply.callsFake(function (trs, block, sender, cb) {
+				setImmediate(cb, 'applyError');
+			});
+			instance.bindModules(modules);
+			instance.ready.returns(true);
+			instance.checkBalance.returns({ exceeded: false });
+			trs = { amount: 100, fee: 50, type: transactionTypes.VOTE };
+			block = { id: 600, height: 70 };
+			sender = { address: 700 };
+			amount = new bignum(150);
+			traceParam2 = {
+				sender: sender.address,
+				balance: -amount,
+				blockId: block.id,
+				round: 500
+			};
+			var mergeParam2 = {
+				balance: -150,
+				blockId: block.id,
+				round: 500
+			};
+			instance.scope.account.merge.callsFake(function (address, diff, cb) {
+				setImmediate(cb, undefined, { address: 700 });
+			});
+			instance.apply(trs, block, sender, callback);
+			sandbox.clock.runAll();
+			expect(instance.ready.calledOnce).to.be.true;
+			expect(instance.ready.args[0][0]).to.deep.equal(trs);
+			expect(instance.ready.args[0][1]).to.equal(sender);
+			expect(instance.checkBalance.calledOnce).to.be.true;
+			expect(instance.checkBalance.args[0][0]).to.deep.equal(amount);
+			expect(instance.checkBalance.args[0][1]).to.equal('balance');
+			expect(instance.checkBalance.args[0][2]).to.deep.equal(trs);
+			expect(instance.checkBalance.args[0][3]).to.equal(sender);
+			expect(instance.scope.logger.trace.calledTwice).to.be.true;
+			expect(instance.scope.logger.trace.args[0][0]).to.equal(
+				'Logic/Transaction->bindModules'
+			);
+			expect(instance.scope.logger.trace.args[1][0]).to.equal(
+				'Logic/Transaction->apply'
+			);
+			expect(instance.scope.logger.trace.args[1][1]).to.deep.equal(traceParam2);
+			expect(modules.rounds.calc.called).to.be.true;
+			expect(modules.rounds.calc.args[0][0]).to.equal(block.height);
+			expect(modules.rounds.calc.args[1][0]).to.equal(block.height);
+			expect(instance.scope.account.merge.calledTwice).to.be.true;
+			expect(instance.scope.account.merge.args[0][0]).to.equal(sender.address);
+			expect(instance.scope.account.merge.args[0][1]).to.deep.equal(
+				mergeParam2
+			);
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal(undefined);
 		});
 
 		it('Transaction is not ready', function () {
-			readyStub.returns(false);
-			trs = 1;
+			instance.ready.returns(false);
+			trs = { amount: 100, fee: 50 };
 			block = 2;
 			sender = 3;
 			instance.apply(trs, block, sender, callback);
-			clock.tick();
-			expect(readyStub.calledOnce).to.be.true;
-			expect(readyStub.args[0][0]).to.equal(trs);
-			expect(readyStub.args[0][1]).to.equal(sender);
+			sandbox.clock.tick();
+			expect(instance.ready.calledOnce).to.be.true;
+			expect(instance.ready.args[0][0]).to.deep.equal(trs);
+			expect(instance.ready.args[0][1]).to.equal(sender);
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.equal('Transaction is not ready');
 		});
 
 		it('Balance exceeded', function () {
-			readyStub.returns(true);
-			checkBalanceStub.returns({
+			instance.ready.returns(true);
+			instance.checkBalance.returns({
 				exceeded: true,
 				error: 'BalanceExceededError'
 			});
@@ -2034,23 +1818,20 @@ describe('logic/transaction', function () {
 			sender = 3;
 			amount = new bignum(150);
 			instance.apply(trs, block, sender, callback);
-			clock.tick();
-			expect(readyStub.calledOnce).to.be.true;
-			expect(readyStub.args[0][0]).to.deep.equal(trs);
-			expect(readyStub.args[0][1]).to.equal(sender);
-			expect(checkBalanceStub.calledOnce).to.be.true;
-			expect(checkBalanceStub.args[0][0]).to.deep.equal(amount);
-			expect(checkBalanceStub.args[0][1]).to.equal('balance');
-			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
-			expect(checkBalanceStub.args[0][3]).to.equal(sender);
+			sandbox.clock.tick();
+			expect(instance.checkBalance.calledOnce).to.be.true;
+			expect(instance.checkBalance.args[0][0]).to.deep.equal(amount);
+			expect(instance.checkBalance.args[0][1]).to.equal('balance');
+			expect(instance.checkBalance.args[0][2]).to.deep.equal(trs);
+			expect(instance.checkBalance.args[0][3]).to.equal(sender);
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.equal('BalanceExceededError');
 		});
 
 		it('account.merge() returns error #1', function () {
 			instance.bindModules(modules);
-			readyStub.returns(true);
-			checkBalanceStub.returns({ exceeded: false });
+			instance.ready.returns(true);
+			instance.checkBalance.returns({ exceeded: false });
 			trs = { amount: 100, fee: 50 };
 			block = { id: 600, height: 70 };
 			sender = { address: 700 };
@@ -2066,40 +1847,38 @@ describe('logic/transaction', function () {
 				blockId: block.id,
 				round: 500
 			};
-			mergeStub.callsFake(function (address, diff, cb) {
+			instance.scope.account.merge.callsFake(function (address, diff, cb) {
 				setImmediate(cb, 'mergeError');
 			});
 			instance.apply(trs, block, sender, callback);
-			clock.runAll();
-			expect(readyStub.calledOnce).to.be.true;
-			expect(readyStub.args[0][0]).to.deep.equal(trs);
-			expect(readyStub.args[0][1]).to.equal(sender);
-			expect(checkBalanceStub.calledOnce).to.be.true;
-			expect(checkBalanceStub.args[0][0]).to.deep.equal(amount);
-			expect(checkBalanceStub.args[0][1]).to.equal('balance');
-			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
-			expect(checkBalanceStub.args[0][3]).to.equal(sender);
-			expect(traceSpy.calledTwice).to.be.true;
-			expect(traceSpy.args[0][0]).to.equal('Logic/Transaction->bindModules');
-			expect(traceSpy.args[1][0]).to.equal('Logic/Transaction->apply');
-			expect(traceSpy.args[1][1]).to.deep.equal(traceParam2);
-			expect(calcStub.called).to.be.true;
-			expect(calcStub.args[0][0]).to.equal(block.height);
-			expect(calcStub.args[1][0]).to.equal(block.height);
-			expect(mergeStub.calledOnce).to.be.true;
-			expect(mergeStub.args[0][0]).to.equal(sender.address);
-			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam2);
+			sandbox.clock.runAll();
+			expect(instance.scope.logger.trace.calledTwice).to.be.true;
+			expect(instance.scope.logger.trace.args[0][0]).to.equal(
+				'Logic/Transaction->bindModules'
+			);
+			expect(instance.scope.logger.trace.args[1][0]).to.equal(
+				'Logic/Transaction->apply'
+			);
+			expect(instance.scope.logger.trace.args[1][1]).to.deep.equal(traceParam2);
+			expect(modules.rounds.calc.called).to.be.true;
+			expect(modules.rounds.calc.args[0][0]).to.equal(block.height);
+			expect(modules.rounds.calc.args[1][0]).to.equal(block.height);
+			expect(instance.scope.account.merge.calledOnce).to.be.true;
+			expect(instance.scope.account.merge.args[0][0]).to.equal(sender.address);
+			expect(instance.scope.account.merge.args[0][1]).to.deep.equal(
+				mergeParam2
+			);
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.equal('mergeError');
 		});
 
 		it('account.merge() returns error #2', function () {
-			applyStub.callsFake(function (trs, block, sender, cb) {
+			vote.apply.callsFake(function (trs, block, sender, cb) {
 				setImmediate(cb, 'applyError');
 			});
 			instance.bindModules(modules);
-			readyStub.returns(true);
-			checkBalanceStub.returns({ exceeded: false });
+			instance.ready.returns(true);
+			instance.checkBalance.returns({ exceeded: false });
 			trs = { amount: 100, fee: 50, type: transactionTypes.VOTE };
 			block = { id: 600, height: 70 };
 			sender = { address: 700 };
@@ -2115,126 +1894,97 @@ describe('logic/transaction', function () {
 				blockId: block.id,
 				round: 500
 			};
-			mergeStub.onCall(0).callsFake(function (address, diff, cb) {
-				setImmediate(cb, undefined, { address: 700 });
-			});
-			mergeStub.onCall(1).callsFake(function (address, diff, cb) {
-				setImmediate(cb, 'mergeError2');
-			});
+			instance.scope.account.merge
+				.onCall(0)
+				.callsFake(function (address, diff, cb) {
+					setImmediate(cb, undefined, { address: 700 });
+				});
+			instance.scope.account.merge
+				.onCall(1)
+				.callsFake(function (address, diff, cb) {
+					setImmediate(cb, 'mergeError2');
+				});
 			instance.apply(trs, block, sender, callback);
-			clock.runAll();
-			expect(readyStub.calledOnce).to.be.true;
-			expect(readyStub.args[0][0]).to.deep.equal(trs);
-			expect(readyStub.args[0][1]).to.equal(sender);
-			expect(checkBalanceStub.calledOnce).to.be.true;
-			expect(checkBalanceStub.args[0][0]).to.deep.equal(amount);
-			expect(checkBalanceStub.args[0][1]).to.equal('balance');
-			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
-			expect(checkBalanceStub.args[0][3]).to.equal(sender);
-			expect(traceSpy.calledTwice).to.be.true;
-			expect(traceSpy.args[0][0]).to.equal('Logic/Transaction->bindModules');
-			expect(traceSpy.args[1][0]).to.equal('Logic/Transaction->apply');
-			expect(traceSpy.args[1][1]).to.deep.equal(traceParam2);
-			expect(calcStub.called).to.be.true;
-			expect(calcStub.args[0][0]).to.equal(block.height);
-			expect(calcStub.args[1][0]).to.equal(block.height);
-			expect(mergeStub.calledTwice).to.be.true;
-			expect(mergeStub.args[0][0]).to.equal(sender.address);
-			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam2);
+			sandbox.clock.runAll();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.equal('mergeError2');
-		});
-
-		it('Success', function () {
-			applyStub.callsFake(function (trs, block, sender, cb) {
-				setImmediate(cb, 'applyError');
-			});
-			instance.bindModules(modules);
-			readyStub.returns(true);
-			checkBalanceStub.returns({ exceeded: false });
-			trs = { amount: 100, fee: 50, type: transactionTypes.VOTE };
-			block = { id: 600, height: 70 };
-			sender = { address: 700 };
-			amount = new bignum(150);
-			traceParam2 = {
-				sender: sender.address,
-				balance: -amount,
-				blockId: block.id,
-				round: 500
-			};
-			var mergeParam2 = {
-				balance: -150,
-				blockId: block.id,
-				round: 500
-			};
-			mergeStub.callsFake(function (address, diff, cb) {
-				setImmediate(cb, undefined, { address: 700 });
-			});
-			instance.apply(trs, block, sender, callback);
-			clock.runAll();
-			expect(readyStub.calledOnce).to.be.true;
-			expect(readyStub.args[0][0]).to.deep.equal(trs);
-			expect(readyStub.args[0][1]).to.equal(sender);
-			expect(checkBalanceStub.calledOnce).to.be.true;
-			expect(checkBalanceStub.args[0][0]).to.deep.equal(amount);
-			expect(checkBalanceStub.args[0][1]).to.equal('balance');
-			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
-			expect(checkBalanceStub.args[0][3]).to.equal(sender);
-			expect(traceSpy.calledTwice).to.be.true;
-			expect(traceSpy.args[0][0]).to.equal('Logic/Transaction->bindModules');
-			expect(traceSpy.args[1][0]).to.equal('Logic/Transaction->apply');
-			expect(traceSpy.args[1][1]).to.deep.equal(traceParam2);
-			expect(calcStub.called).to.be.true;
-			expect(calcStub.args[0][0]).to.equal(block.height);
-			expect(calcStub.args[1][0]).to.equal(block.height);
-			expect(mergeStub.calledTwice).to.be.true;
-			expect(mergeStub.args[0][0]).to.equal(sender.address);
-			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam2);
-			expect(callback.calledOnce).to.be.true;
-			expect(callback.args[0][0]).to.equal(undefined);
 		});
 	});
 
 	describe('undo()', function () {
-		var scope,
-			traceSpy,
-			mergeStub,
-			trs,
-			block,
-			sender,
-			modules,
-			calcStub,
-			vote,
-			undoStub;
+		var trs, block, sender, modules, vote;
 
 		beforeEach(function () {
-			scope = {
-				logger: {
-					trace: function (height) {}
-				},
-				account: {
-					merge: function (address, diff, cb) {}
-				}
-			};
-			traceSpy = sinon.spy(scope.logger, 'trace');
-			mergeStub = sinon.stub(scope.account, 'merge');
 			modules = {
 				rounds: {
 					calc: function () {}
 				}
 			};
-			calcStub = sinon.stub(modules.rounds, 'calc').returns(500);
+			sandbox.stub(modules.rounds, 'calc').returns(500);
 			vote = new Vote();
-			undoStub = sinon.stub(vote, 'undo');
+			sandbox.stub(vote, 'undo');
 			instance = new Transaction();
 			instance.attachAssetType(transactionTypes.VOTE, vote);
 			instance.scope = scope;
 			instance.bindModules(modules);
 		});
 
-		afterEach(function () {
-			traceSpy.restore();
-			mergeStub.restore();
+		it('success', function () {
+			trs = {
+				amount: 100,
+				fee: 50,
+				type: transactionTypes.VOTE
+			};
+			block = {
+				id: '100',
+				height: '4'
+			};
+			sender = {
+				address: '123'
+			};
+			var traceParam = {
+				sender: sender.address,
+				balance: 150,
+				blockId: block.id,
+				round: 500
+			};
+			var mergeParam1 = {
+				balance: 150,
+				blockId: block.id,
+				round: 500
+			};
+			var mergeParam2 = {
+				balance: -150,
+				blockId: block.id,
+				round: 500
+			};
+			instance.scope.account.merge.callsFake(function (address, diff, cb) {
+				setImmediate(cb, undefined, { address: '123' });
+			});
+			vote.undo.callsFake(function (trs, block, sender, cb) {
+				setImmediate(cb);
+			});
+			instance.undo(trs, block, sender, callback);
+			sandbox.clock.runAll();
+			expect(instance.scope.logger.trace.calledTwice).to.be.true;
+			expect(instance.scope.logger.trace.args[0][0]).to.equal(
+				'Logic/Transaction->bindModules'
+			);
+			expect(instance.scope.logger.trace.args[1][0]).to.equal(
+				'Logic/Transaction->undo'
+			);
+			expect(instance.scope.logger.trace.args[1][1]).to.deep.equal(traceParam);
+			expect(instance.scope.account.merge.calledOnce).to.be.true;
+			expect(instance.scope.account.merge.args[0][0]).to.equal(sender.address);
+			expect(instance.scope.account.merge.args[0][1]).to.deep.equal(
+				mergeParam1
+			);
+			expect(vote.undo.calledOnce).to.be.true;
+			expect(vote.undo.args[0][0]).to.deep.equal(trs);
+			expect(vote.undo.args[0][1]).to.deep.equal(block);
+			expect(vote.undo.args[0][2]).to.deep.equal(sender);
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal(undefined);
 		});
 
 		it('account.merge() returns error #1', function () {
@@ -2260,18 +2010,14 @@ describe('logic/transaction', function () {
 				blockId: block.id,
 				round: 500
 			};
-			mergeStub.callsFake(function (address, diff, cb) {
+			instance.scope.account.merge.callsFake(function (address, diff, cb) {
 				setImmediate(cb, 'mergeError1');
 			});
 			instance.undo(trs, block, sender, callback);
-			clock.runAll();
-			expect(traceSpy.calledTwice).to.be.true;
-			expect(traceSpy.args[0][0]).to.equal('Logic/Transaction->bindModules');
-			expect(traceSpy.args[1][0]).to.equal('Logic/Transaction->undo');
-			expect(traceSpy.args[1][1]).to.deep.equal(traceParam);
-			expect(mergeStub.calledOnce).to.be.true;
-			expect(mergeStub.args[0][0]).to.equal(sender.address);
-			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam);
+			sandbox.clock.runAll();
+			expect(instance.scope.account.merge.calledOnce).to.be.true;
+			expect(instance.scope.account.merge.args[0][0]).to.equal(sender.address);
+			expect(instance.scope.account.merge.args[0][1]).to.deep.equal(mergeParam);
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.equal('mergeError1');
 		});
@@ -2305,256 +2051,178 @@ describe('logic/transaction', function () {
 				blockId: block.id,
 				round: 500
 			};
-			mergeStub.onCall(0).callsFake(function (address, diff, cb) {
-				setImmediate(cb, undefined, { address: '123' });
-			});
-			mergeStub.onCall(1).callsFake(function (address, diff, cb) {
-				setImmediate(cb, 'mergeError2');
-			});
-			undoStub.callsFake(function (trs, block, sender, cb) {
+			instance.scope.account.merge
+				.onCall(0)
+				.callsFake(function (address, diff, cb) {
+					setImmediate(cb, undefined, { address: '123' });
+				});
+			instance.scope.account.merge
+				.onCall(1)
+				.callsFake(function (address, diff, cb) {
+					setImmediate(cb, 'mergeError2');
+				});
+			vote.undo.callsFake(function (trs, block, sender, cb) {
 				setImmediate(cb, 'undoError');
 			});
 			instance.undo(trs, block, sender, callback);
-			clock.runAll();
-			expect(traceSpy.calledTwice).to.be.true;
-			expect(traceSpy.args[0][0]).to.equal('Logic/Transaction->bindModules');
-			expect(traceSpy.args[1][0]).to.equal('Logic/Transaction->undo');
-			expect(traceSpy.args[1][1]).to.deep.equal(traceParam);
-			expect(mergeStub.calledTwice).to.be.true;
-			expect(mergeStub.args[0][0]).to.equal(sender.address);
-			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam1);
-			expect(mergeStub.args[1][0]).to.equal(sender.address);
-			expect(mergeStub.args[1][1]).to.deep.equal(mergeParam2);
-			expect(undoStub.calledOnce).to.be.true;
-			expect(undoStub.args[0][0]).to.deep.equal(trs);
-			expect(undoStub.args[0][1]).to.deep.equal(block);
-			expect(undoStub.args[0][2]).to.deep.equal(sender);
+			sandbox.clock.runAll();
+			expect(instance.scope.account.merge.calledTwice).to.be.true;
+			expect(instance.scope.account.merge.args[0][0]).to.equal(sender.address);
+			expect(instance.scope.account.merge.args[0][1]).to.deep.equal(
+				mergeParam1
+			);
+			expect(instance.scope.account.merge.args[1][0]).to.equal(sender.address);
+			expect(instance.scope.account.merge.args[1][1]).to.deep.equal(
+				mergeParam2
+			);
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.equal('mergeError2');
-		});
-
-		it('success', function () {
-			trs = {
-				amount: 100,
-				fee: 50,
-				type: transactionTypes.VOTE
-			};
-			block = {
-				id: '100',
-				height: '4'
-			};
-			sender = {
-				address: '123'
-			};
-			var traceParam = {
-				sender: sender.address,
-				balance: 150,
-				blockId: block.id,
-				round: 500
-			};
-			var mergeParam1 = {
-				balance: 150,
-				blockId: block.id,
-				round: 500
-			};
-			var mergeParam2 = {
-				balance: -150,
-				blockId: block.id,
-				round: 500
-			};
-			mergeStub.callsFake(function (address, diff, cb) {
-				setImmediate(cb, undefined, { address: '123' });
-			});
-			undoStub.callsFake(function (trs, block, sender, cb) {
-				setImmediate(cb);
-			});
-			instance.undo(trs, block, sender, callback);
-			clock.runAll();
-			expect(traceSpy.calledTwice).to.be.true;
-			expect(traceSpy.args[0][0]).to.equal('Logic/Transaction->bindModules');
-			expect(traceSpy.args[1][0]).to.equal('Logic/Transaction->undo');
-			expect(traceSpy.args[1][1]).to.deep.equal(traceParam);
-			expect(mergeStub.calledOnce).to.be.true;
-			expect(mergeStub.args[0][0]).to.equal(sender.address);
-			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam1);
-			expect(undoStub.calledOnce).to.be.true;
-			expect(undoStub.args[0][0]).to.deep.equal(trs);
-			expect(undoStub.args[0][1]).to.deep.equal(block);
-			expect(undoStub.args[0][2]).to.deep.equal(sender);
-			expect(callback.calledOnce).to.be.true;
-			expect(callback.args[0][0]).to.equal(undefined);
 		});
 	});
 
 	describe('applyUnconfirmed()', function () {
-		var trs,
-			checkBalanceStub,
-			scope,
-			mergeStub,
-			sender,
-			amount,
-			vote,
-			applyUnconfirmedStub;
+		var trs, sender, amount, vote;
 
 		beforeEach(function () {
-			scope = {
-				account: {
-					merge: function (address, diff, cb) {}
-				}
-			};
-			mergeStub = sinon.stub(scope.account, 'merge');
 			vote = new Vote();
-			applyUnconfirmedStub = sinon.stub(vote, 'applyUnconfirmed');
+			sandbox.stub(vote, 'applyUnconfirmed');
 			instance = new Transaction();
 			instance.attachAssetType(transactionTypes.VOTE, vote);
 			instance.scope = scope;
-			checkBalanceStub = sinon.stub(instance, 'checkBalance');
+			sandbox.stub(instance, 'checkBalance');
 		});
 
-		afterEach(function () {
-			checkBalanceStub.restore();
-			mergeStub.restore();
-			applyUnconfirmedStub.restore();
+		it('success', function () {
+			trs = { amount: 100, fee: 50, type: transactionTypes.VOTE };
+			sender = { address: '123' };
+			instance.checkBalance.returns({ exceeded: false });
+			instance.scope.account.merge.callsFake(function (address, diff, cb) {
+				setImmediate(cb, undefined, { address: address });
+			});
+			vote.applyUnconfirmed.callsFake(function (trs, sender, cb) {
+				setImmediate(cb);
+			});
+			var mergeParam1 = { u_balance: -150 };
+			instance.applyUnconfirmed(trs, sender, callback);
+			amount = new bignum(150);
+			sandbox.clock.runAll();
+			expect(instance.checkBalance.calledOnce).to.be.true;
+			expect(instance.checkBalance.args[0][0]).to.deep.equal(amount);
+			expect(instance.checkBalance.args[0][1]).to.equal('u_balance');
+			expect(instance.checkBalance.args[0][2]).to.deep.equal(trs);
+			expect(instance.checkBalance.args[0][3]).to.deep.equal(sender);
+			expect(instance.scope.account.merge.calledOnce).to.be.true;
+			expect(instance.scope.account.merge.args[0][0]).to.equal(sender.address);
+			expect(instance.scope.account.merge.args[0][1]).to.deep.equal(
+				mergeParam1
+			);
+			expect(callback.args[0][0]).to.equal(undefined);
 		});
 
 		it('Balance exceeded', function () {
 			trs = { amount: 100, fee: 50 };
 			sender = { address: '123' };
-			checkBalanceStub.returns({ exceeded: true, error: 'balanceExceeded' });
+			instance.checkBalance.returns({
+				exceeded: true,
+				error: 'balanceExceeded'
+			});
 			instance.applyUnconfirmed(trs, sender, callback);
 			amount = new bignum(150);
-			clock.runAll();
-
-			expect(checkBalanceStub.calledOnce).to.be.true;
-			expect(checkBalanceStub.args[0][0]).to.deep.equal(amount);
-			expect(checkBalanceStub.args[0][1]).to.equal('u_balance');
-			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
-			expect(checkBalanceStub.args[0][3]).to.deep.equal(sender);
-
+			sandbox.clock.runAll();
 			expect(callback.args[0][0]).to.equal('balanceExceeded');
 		});
 
 		it('account.merge() returns error #1', function () {
 			trs = { amount: 100, fee: 50 };
 			sender = { address: '123' };
-			checkBalanceStub.returns({ exceeded: false });
-			mergeStub.callsFake(function (address, diff, cb) {
+			instance.checkBalance.returns({ exceeded: false });
+			instance.scope.account.merge.callsFake(function (address, diff, cb) {
 				setImmediate(cb, 'mergeError1');
 			});
 			var mergeParam1 = { u_balance: -150 };
 			instance.applyUnconfirmed(trs, sender, callback);
 			amount = new bignum(150);
-			clock.runAll();
-			expect(checkBalanceStub.calledOnce).to.be.true;
-			expect(checkBalanceStub.args[0][0]).to.deep.equal(amount);
-			expect(checkBalanceStub.args[0][1]).to.equal('u_balance');
-			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
-			expect(checkBalanceStub.args[0][3]).to.deep.equal(sender);
-			expect(mergeStub.calledOnce).to.be.true;
-			expect(mergeStub.args[0][0]).to.equal(sender.address);
-			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam1);
+			sandbox.clock.runAll();
 			expect(callback.args[0][0]).to.equal('mergeError1');
 		});
 
 		it('account.merge() returns error #2', function () {
 			trs = { amount: 100, fee: 50, type: transactionTypes.VOTE };
 			sender = { address: '123' };
-			checkBalanceStub.returns({ exceeded: false });
-			mergeStub.onCall(0).callsFake(function (address, diff, cb) {
-				setImmediate(cb, undefined, { address: address });
-			});
-			mergeStub.onCall(1).callsFake(function (address, diff, cb) {
-				setImmediate(cb, 'mergeError2');
-			});
-			applyUnconfirmedStub.callsFake(function (trs, sender, cb) {
+			instance.checkBalance.returns({ exceeded: false });
+			instance.scope.account.merge
+				.onCall(0)
+				.callsFake(function (address, diff, cb) {
+					setImmediate(cb, undefined, { address: address });
+				});
+			instance.scope.account.merge
+				.onCall(1)
+				.callsFake(function (address, diff, cb) {
+					setImmediate(cb, 'mergeError2');
+				});
+			vote.applyUnconfirmed.callsFake(function (trs, sender, cb) {
 				setImmediate(cb, 'applyUnconfirmedError');
 			});
 			var mergeParam1 = { u_balance: -150 };
 			var mergeParam2 = { u_balance: 150 };
 			instance.applyUnconfirmed(trs, sender, callback);
 			amount = new bignum(150);
-			clock.runAll();
-			expect(checkBalanceStub.calledOnce).to.be.true;
-			expect(checkBalanceStub.args[0][0]).to.deep.equal(amount);
-			expect(checkBalanceStub.args[0][1]).to.equal('u_balance');
-			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
-			expect(checkBalanceStub.args[0][3]).to.deep.equal(sender);
-			expect(mergeStub.calledTwice).to.be.true;
-			expect(mergeStub.args[0][0]).to.equal(sender.address);
-			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam1);
-			expect(mergeStub.args[1][0]).to.equal(sender.address);
-			expect(mergeStub.args[1][1]).to.deep.equal(mergeParam2);
+			sandbox.clock.runAll();
+			expect(instance.scope.account.merge.calledTwice).to.be.true;
+			expect(instance.scope.account.merge.args[0][0]).to.equal(sender.address);
+			expect(instance.scope.account.merge.args[0][1]).to.deep.equal(
+				mergeParam1
+			);
+			expect(instance.scope.account.merge.args[1][0]).to.equal(sender.address);
+			expect(instance.scope.account.merge.args[1][1]).to.deep.equal(
+				mergeParam2
+			);
 			expect(callback.args[0][0]).to.equal('mergeError2');
-		});
-
-		it('success', function () {
-			trs = { amount: 100, fee: 50, type: transactionTypes.VOTE };
-			sender = { address: '123' };
-			checkBalanceStub.returns({ exceeded: false });
-			mergeStub.callsFake(function (address, diff, cb) {
-				setImmediate(cb, undefined, { address: address });
-			});
-			applyUnconfirmedStub.callsFake(function (trs, sender, cb) {
-				setImmediate(cb);
-			});
-			var mergeParam1 = { u_balance: -150 };
-			var mergeParam2 = { u_balance: 150 };
-			instance.applyUnconfirmed(trs, sender, callback);
-			amount = new bignum(150);
-			clock.runAll();
-			expect(checkBalanceStub.calledOnce).to.be.true;
-			expect(checkBalanceStub.args[0][0]).to.deep.equal(amount);
-			expect(checkBalanceStub.args[0][1]).to.equal('u_balance');
-			expect(checkBalanceStub.args[0][2]).to.deep.equal(trs);
-			expect(checkBalanceStub.args[0][3]).to.deep.equal(sender);
-			expect(mergeStub.calledOnce).to.be.true;
-			expect(mergeStub.args[0][0]).to.equal(sender.address);
-			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam1);
-			expect(callback.args[0][0]).to.equal(undefined);
 		});
 	});
 
 	describe('undoUnconfirmed()', function () {
-		var scope,
-			vote,
-			sender,
-			trs,
-			mergeParam1,
-			mergeParam2,
-			mergeStub,
-			undoUnconfirmedStub;
+		var vote, sender, trs, mergeParam1, mergeParam2;
 
 		beforeEach(function () {
-			scope = {
-				account: {
-					merge: function (address, diff, cb) {}
-				}
-			};
-			mergeStub = sinon.stub(scope.account, 'merge');
 			vote = new Vote();
-			undoUnconfirmedStub = sinon.stub(vote, 'undoUnconfirmed');
+			sandbox.stub(vote, 'undoUnconfirmed');
 			instance = new Transaction();
 			instance.attachAssetType(transactionTypes.VOTE, vote);
 			instance.scope = scope;
 		});
 
-		afterEach(function () {
-			mergeStub.restore();
-			undoUnconfirmedStub.restore();
+		it('Success', function () {
+			trs = { amount: 100, fee: 50, type: transactionTypes.VOTE };
+			sender = { address: '123' };
+			mergeParam1 = { u_balance: 150 };
+			instance.scope.account.merge.callsFake(function (trs, sender, cb) {
+				setImmediate(cb, undefined, { address: '123' });
+			});
+			vote.undoUnconfirmed.callsFake(function (address, diff, cb) {
+				setImmediate(cb);
+			});
+			instance.attachAssetType(transactionTypes.VOTE, vote);
+			instance.undoUnconfirmed(trs, sender, callback);
+			sandbox.clock.runAll();
+			expect(instance.scope.account.merge.calledOnce).to.be.true;
+			expect(instance.scope.account.merge.args[0][0]).to.equal(sender.address);
+			expect(instance.scope.account.merge.args[0][1]).to.deep.equal(
+				mergeParam1
+			);
+			expect(callback.calledOnce).to.be.true;
+			expect(callback.args[0][0]).to.equal(undefined);
 		});
 
 		it('account.merge() error #1', function () {
 			trs = { amount: 100, fee: 50 };
 			sender = { address: '123' };
 			mergeParam1 = { u_balance: 150 };
-			mergeStub.callsFake(function (trs, sender, cb) {
+			instance.scope.account.merge.callsFake(function (trs, sender, cb) {
 				setImmediate(cb, 'mergeError1');
 			});
 			instance.undoUnconfirmed(trs, sender, callback);
-			clock.runAll();
-			expect(mergeStub.calledOnce).to.be.true;
-			expect(mergeStub.args[0][0]).to.equal(sender.address);
-			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam1);
+			sandbox.clock.runAll();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.equal('mergeError1');
 		});
@@ -2564,45 +2232,33 @@ describe('logic/transaction', function () {
 			sender = { address: '123' };
 			mergeParam1 = { u_balance: 150 };
 			mergeParam2 = { u_balance: -150 };
-			mergeStub.onCall(0).callsFake(function (trs, sender, cb) {
-				setImmediate(cb, undefined, { address: '123' });
-			});
-			mergeStub.onCall(1).callsFake(function (trs, sender, cb) {
-				setImmediate(cb, 'mergeError2');
-			});
-			undoUnconfirmedStub.callsFake(function (address, diff, cb) {
+			instance.scope.account.merge
+				.onCall(0)
+				.callsFake(function (trs, sender, cb) {
+					setImmediate(cb, undefined, { address: '123' });
+				});
+			instance.scope.account.merge
+				.onCall(1)
+				.callsFake(function (trs, sender, cb) {
+					setImmediate(cb, 'mergeError2');
+				});
+			vote.undoUnconfirmed.callsFake(function (address, diff, cb) {
 				setImmediate(cb, 'undoUnconfirmedError');
 			});
 			instance.attachAssetType(transactionTypes.VOTE, vote);
 			instance.undoUnconfirmed(trs, sender, callback);
-			clock.runAll();
-			expect(mergeStub.calledTwice).to.be.true;
-			expect(mergeStub.args[0][0]).to.equal(sender.address);
-			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam1);
-			expect(mergeStub.args[1][0]).to.equal(sender.address);
-			expect(mergeStub.args[1][1]).to.deep.equal(mergeParam2);
+			sandbox.clock.runAll();
+			expect(instance.scope.account.merge.calledTwice).to.be.true;
+			expect(instance.scope.account.merge.args[0][0]).to.equal(sender.address);
+			expect(instance.scope.account.merge.args[0][1]).to.deep.equal(
+				mergeParam1
+			);
+			expect(instance.scope.account.merge.args[1][0]).to.equal(sender.address);
+			expect(instance.scope.account.merge.args[1][1]).to.deep.equal(
+				mergeParam2
+			);
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.equal('mergeError2');
-		});
-
-		it('Success', function () {
-			trs = { amount: 100, fee: 50, type: transactionTypes.VOTE };
-			sender = { address: '123' };
-			mergeParam1 = { u_balance: 150 };
-			mergeStub.callsFake(function (trs, sender, cb) {
-				setImmediate(cb, undefined, { address: '123' });
-			});
-			undoUnconfirmedStub.callsFake(function (address, diff, cb) {
-				setImmediate(cb);
-			});
-			instance.attachAssetType(transactionTypes.VOTE, vote);
-			instance.undoUnconfirmed(trs, sender, callback);
-			clock.runAll();
-			expect(mergeStub.calledOnce).to.be.true;
-			expect(mergeStub.args[0][0]).to.equal(sender.address);
-			expect(mergeStub.args[0][1]).to.deep.equal(mergeParam1);
-			expect(callback.calledOnce).to.be.true;
-			expect(callback.args[0][0]).to.equal(undefined);
 		});
 	});
 
@@ -2659,7 +2315,7 @@ describe('logic/transaction', function () {
 
 		it('Unknown transaction type', function () {
 			instance.afterSave({ type: transactionTypes.VOTE }, callback);
-			clock.runAll();
+			sandbox.clock.runAll();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.equal(
 				'Unknown transaction type ' + transactionTypes.VOTE
@@ -2669,47 +2325,33 @@ describe('logic/transaction', function () {
 		it('afterSave() doesn\'t exist', function () {
 			instance.attachAssetType(transactionTypes.VOTE, new Vote());
 			instance.afterSave({ type: transactionTypes.VOTE }, callback);
-			clock.runAll();
+			sandbox.clock.runAll();
 			expect(callback.calledOnce).to.be.true;
 			expect(callback.args[0][0]).to.equal(undefined);
 		});
 
 		it('Success', function () {
 			var dappInstance = new Dapp();
-			var afterSaveStub = sinon.stub(dappInstance, 'afterSave');
+			sandbox.stub(dappInstance, 'afterSave');
 			instance.attachAssetType(transactionTypes.DAPP, dappInstance);
 			var trs = { type: transactionTypes.DAPP };
 			instance.afterSave({ type: transactionTypes.DAPP }, callback);
-			clock.runAll();
+			sandbox.clock.runAll();
 			expect(callback.called).to.be.false;
-			expect(afterSaveStub.calledOnce).to.be.true;
-			expect(afterSaveStub.args[0][0]).to.deep.equal(trs);
-			afterSaveStub.restore();
+			expect(dappInstance.afterSave.calledOnce).to.be.true;
+			expect(dappInstance.afterSave.args[0][0]).to.deep.equal(trs);
 		});
 	});
 
 	describe('objectNormalize()', function () {
-		var scope, validateStub, trs, vote, objectNormalizeStub;
+		var trs, vote;
 
 		beforeEach(function () {
-			scope = {
-				schema: {
-					validate: function () {},
-					getLastErrors: function () {
-						return [{ message: 'foo #1' }, { message: 'foo #2' }];
-					}
-				}
-			};
-			validateStub = sinon.stub(scope.schema, 'validate');
 			instance = new Transaction();
 			instance.scope = scope;
 			trs = { type: transactionTypes.VOTE };
 			vote = new Vote();
-			objectNormalizeStub = sinon.stub(vote, 'objectNormalize');
-		});
-
-		afterEach(function () {
-			validateStub.restore();
+			sandbox.stub(vote, 'objectNormalize');
 		});
 
 		it('Unknown transaction type', function () {
@@ -2720,17 +2362,19 @@ describe('logic/transaction', function () {
 
 		it('Failed to validate transaction schema', function () {
 			instance.attachAssetType(transactionTypes.VOTE, vote);
-			validateStub.returns(false);
+			instance.scope.schema.validate.returns(false);
 			expect(function () {
 				instance.objectNormalize(trs);
 			}).throws('Failed to validate transaction schema');
-			expect(validateStub.args[0][0]).to.deep.equal(trs);
-			expect(validateStub.args[0][1]).to.deep.equal(instance.schema);
+			expect(instance.scope.schema.validate.args[0][0]).to.deep.equal(trs);
+			expect(instance.scope.schema.validate.args[0][1]).to.deep.equal(
+				instance.schema
+			);
 		});
 
 		it('Throws error', function () {
-			validateStub.returns(true);
-			objectNormalizeStub.throws(Error('fooError'));
+			instance.scope.schema.validate.returns(true);
+			vote.objectNormalize.throws(Error('fooError'));
 			instance.attachAssetType(transactionTypes.VOTE, vote);
 			expect(function () {
 				instance.objectNormalize(trs);
@@ -2738,8 +2382,8 @@ describe('logic/transaction', function () {
 		});
 
 		it('Success', function () {
-			validateStub.returns(true);
-			objectNormalizeStub.returns(trs);
+			instance.scope.schema.validate.returns(true);
+			vote.objectNormalize.returns(trs);
 			instance.attachAssetType(transactionTypes.VOTE, vote);
 			var result = instance.objectNormalize(trs);
 			expect(result).to.deep.equal(trs);
@@ -2747,7 +2391,7 @@ describe('logic/transaction', function () {
 	});
 
 	describe('dbRead()', function () {
-		var raw, vote, dbReadStub, trs;
+		var raw, vote, trs;
 
 		beforeEach(function () {
 			instance = new Transaction();
@@ -2789,11 +2433,7 @@ describe('logic/transaction', function () {
 				asset: {}
 			};
 			vote = new Vote();
-			dbReadStub = sinon.stub(vote, 'dbRead');
-		});
-
-		afterEach(function () {
-			dbReadStub.restore();
+			sandbox.stub(vote, 'dbRead');
 		});
 
 		it('returns null', function () {
@@ -2809,46 +2449,41 @@ describe('logic/transaction', function () {
 
 		it('Success and extending asset', function () {
 			var asset = ['x', 'y', 'z'];
-			dbReadStub.returns(asset);
+			vote.dbRead.returns(asset);
 			instance.attachAssetType(transactionTypes.VOTE, vote);
 			trs.asset['0'] = asset[0];
 			trs.asset['1'] = asset[1];
 			trs.asset['2'] = asset[2];
 			var result = instance.dbRead(raw);
 			expect(result).to.deep.equal(trs);
-			expect(dbReadStub.calledOnce).to.be.true;
-			expect(dbReadStub.args[0][0]).to.deep.equal(raw);
+			expect(vote.dbRead.calledOnce).to.be.true;
+			expect(vote.dbRead.args[0][0]).to.deep.equal(raw);
 		});
 
 		it('Success without extending asset', function () {
-			dbReadStub.returns(false);
+			vote.dbRead.returns(false);
 			instance.attachAssetType(transactionTypes.VOTE, vote);
 			var result = instance.dbRead(raw);
 			expect(result).to.deep.equal(trs);
-			expect(dbReadStub.calledOnce).to.be.true;
-			expect(dbReadStub.args[0][0]).to.deep.equal(raw);
+			expect(vote.dbRead.calledOnce).to.be.true;
+			expect(vote.dbRead.args[0][0]).to.deep.equal(raw);
 		});
 	});
 
 	describe('bindModules()', function () {
-		var scope, traceStub, modules, dummyModules;
+		var modules, dummyModules;
 
 		it('success', function () {
 			dummyModules = { rounds: 123 };
-			scope = {
-				logger: {
-					trace: function () {}
-				}
-			};
-			traceStub = sinon.stub(scope.logger, 'trace');
 			instance = new Transaction();
 			instance.scope = scope;
 			instance.bindModules(dummyModules);
-			expect(traceStub.calledOnce).to.be.true;
-			expect(traceStub.args[0][0]).to.equal('Logic/Transaction->bindModules');
+			expect(instance.scope.logger.trace.calledOnce).to.be.true;
+			expect(instance.scope.logger.trace.args[0][0]).to.equal(
+				'Logic/Transaction->bindModules'
+			);
 			modules = Transaction.__get__('modules');
 			expect(modules).to.deep.equal(dummyModules);
-			traceStub.restore();
 		});
 	});
 });
