@@ -1,5 +1,4 @@
 import * as ip from 'ip';
-import * as _ from 'lodash';
 
 export enum PeerState {
   BANNED       = 0,
@@ -19,9 +18,13 @@ export type PeerHeaders = {
 };
 
 // tslint:disable-next-line
-export interface PeerType {
+export interface BasePeerType {
   ip: string;
   port: number;
+}
+
+// tslint:disable-next-line
+export interface PeerType extends BasePeerType {
   state: PeerState;
   os: string;
   version: string;
@@ -86,11 +89,11 @@ export class Peer implements PeerType {
   public nonce: string;
   public string: string;
 
-  public constructor(peer: PeerType = {} as any) {
-    this.accept({...{}, ...peer});
+  public constructor(peer: BasePeerType = {} as any) {
+    this.accept({ ...{}, ...peer });
   }
 
-  public accept(peer: PeerType) {
+  public accept(peer: BasePeerType) {
     // Normalize peer data
     peer = this.normalize(peer);
 
@@ -137,10 +140,10 @@ export class Peer implements PeerType {
     return integer;
   }
 
-  public applyHeaders(headers: PeerHeaders = {} as any) {
-    headers = this.normalize(headers);
-    this.update(headers);
-    return headers;
+  public applyHeaders(h: PeerHeaders = {} as any) {
+    h = this.normalize(h);
+    this.update(h);
+    return h;
   }
 
   public update(peer: PeerType | PeerHeaders) {

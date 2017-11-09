@@ -1,7 +1,7 @@
 'use strict';
-import { ILogger } from '../logger';
-import { Peer, PeerState, PeerType } from './peer';
 import * as _ from 'lodash';
+import { ILogger } from '../logger';
+import {BasePeerType, Peer, PeerState, PeerType} from './peer';
 
 export class Peers {
   private library: { logger: ILogger };
@@ -14,7 +14,7 @@ export class Peers {
     this.library = {logger};
   }
 
-  public create(peer: PeerType): Peer {
+  public create(peer: BasePeerType): Peer {
     if (!(peer instanceof Peer)) {
       return new Peer(peer);
     }
@@ -24,7 +24,7 @@ export class Peers {
   /**
    * Checks if peer is in list
    */
-  public exists(peer: PeerType): boolean {
+  public exists(peer: BasePeerType): boolean {
     const thePeer = this.create(peer);
     return typeof(this.peers[thePeer.string]) !== 'undefined';
   }
@@ -98,7 +98,7 @@ export class Peers {
 
   }
 
-  public remove(peer: PeerType): boolean {
+  public remove(peer: BasePeerType): boolean {
     if (this.exists(peer)) {
       const thePeer = this.create(peer);
       this.library.logger.info('Removed peer', thePeer.string);
