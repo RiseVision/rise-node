@@ -6,7 +6,6 @@ export default {
   truncateBlocks: 'DELETE FROM blocks WHERE "height" > (${height})::bigint;',
 
   updateMissedBlocks(backwards: boolean) {
-    console.log('dioboiael');
     return [
       'UPDATE mem_accounts SET "missedblocks" = "missedblocks"',
       (backwards ? '- 1' : '+ 1'),

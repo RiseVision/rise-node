@@ -1,4 +1,4 @@
-export function DebugLog(target: any, method: string, descriptor: TypedPropertyDescriptor<() => void>) {
+export function DebugLog(target: any, method: string, descriptor: TypedPropertyDescriptor<(...args: any[]) => any>) {
   // Do nothing for now.
   const old        = descriptor.value;
   // tslint: disable-next-line

@@ -3,12 +3,13 @@ import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
 import constants from '../helpers/constants';
 import jobsQueue from '../helpers/jobsQueue';
-import { cbToPromise, promiseToCB } from '../helpers/promiseToCback';
-import { ILogger } from '../logger';
-import { PeerType } from './peer';
-import { Peers } from './peers';
-import { TransactionLogic } from './transaction';
-import { IBaseTransaction } from './transactions/baseTransactionType';
+import {cbToPromise, promiseToCB} from '../helpers/promiseToCback';
+import {ILogger} from '../logger';
+import {PeersModule} from '../modules/peers';
+import {PeerType} from './peer';
+import {Peers} from './peers';
+import {TransactionLogic} from './transaction';
+import {IBaseTransaction} from './transactions/baseTransactionType';
 
 // tslint:disable interface-over-type-literal
 export type BroadcastsType = {
@@ -54,7 +55,7 @@ export class BroadcasterLogic {
   };
   public consensus: number;
   // Broadcast routes
-  public routes                      = [{
+  public routes                 = [{
     collection: 'transactions',
     method    : 'POST',
     object    : 'transaction',
@@ -66,7 +67,7 @@ export class BroadcasterLogic {
     path      : '/signatures',
   }];
 
-  public modules: { peers: any, transport: any, transactions: any };
+  public modules: { peers: PeersModule, transport: any, transactions: any };
 
   constructor(public library: BroadcastLibrary) {
     this.config = {
@@ -94,7 +95,7 @@ export class BroadcasterLogic {
   }
 
   public bind(peers: any, transport: any, transactions: any) {
-    this.modules = {peers, transport, transactions};
+    this.modules = { peers, transport, transactions };
   }
 
   public async getPeers(params: { limit?: number, broadhash?: string }): Promise<PeerType[]> {
@@ -103,10 +104,7 @@ export class BroadcasterLogic {
 
     const originalLimit = params.limit;
 
-    const [peers, consensus] = await cbToPromise<any>(
-      (cb) => this.modules.peers.list(params, cb),
-      true
-    );
+    const { peers, consensus } = await this.modules.peers.list(params);
 
     if (originalLimit === constants.maxPeers) {
       this.consensus = consensus;
@@ -116,7 +114,7 @@ export class BroadcasterLogic {
 
   public enqueue(params: any, options: BroadcastTaskOptions): number {
     options.immediate = false;
-    return this.queue.push({params, options});
+    return this.queue.push({ params, options });
   }
 
   public async broadcast(params: {
@@ -148,10 +146,10 @@ export class BroadcasterLogic {
             return null;
           })
         ),
-      {maxInProgress: this.config.broadcasts.parallelLimit}
+      { maxInProgress: this.config.broadcasts.parallelLimit }
     );
     this.library.logger.debug('End broadcast');
-    return {peer: peers};
+    return { peer: peers };
   }
 
   /**
@@ -261,7 +259,7 @@ export class BroadcasterLogic {
 
     try {
       for (const brc of broadcasts) {
-        await this.broadcast(extend({}, {peers}, brc.params), brc.options);
+        await this.broadcast(extend({}, { peers }, brc.params), brc.options);
       }
       this.library.logger.debug(`Broadcasts released ${broadcasts.length}`);
     } catch (e) {

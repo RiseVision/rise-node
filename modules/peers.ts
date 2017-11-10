@@ -12,6 +12,7 @@ import {Peer, PeerState, PeerType} from '../logic/peer';
 import schema from '../schema/peers';
 import peerSQL from '../sql/peers';
 import {SystemModule} from './system';
+import {DebugLog} from '../helpers/decorators/debugLog';
 
 const pgp = pgpCreator();
 
@@ -146,7 +147,7 @@ export class PeersModule {
   /**
    * Gets peers list and calculated consensus.
    */
-  public async list(options: { limit?: number, broadhash?: string, allowedStates: PeerState[] }): Promise<{ consensus: number, peers: PeerType[] }> {
+  public async list(options: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }): Promise<{ consensus: number, peers: PeerType[] }> {
     options.limit         = options.limit || constants.maxPeers;
     options.broadhash     = options.broadhash || this.modules.system.broadhash;
     options.allowedStates = options.allowedStates || [PeerState.CONNECTED];
@@ -184,6 +185,7 @@ export class PeersModule {
     await this.insertSeeds();
     await this.dbLoad();
     await this.discover();
+    this.library.bus.message('peersReady');
   }
 
   public async onPeersReady() {
@@ -354,7 +356,10 @@ export class PeersModule {
       shuffle(peers);
     }
 
-    return peers.slice(offset, (offset + limit));
+    if (limit) {
+      return peers.slice(offset, (offset + limit));
+    }
+    return peers.slice(offset);
   }
 
   private async insertSeeds() {
@@ -366,7 +371,7 @@ export class PeersModule {
       await this.ping(peer);
       updated++;
     }));
-    this.library.logger.trace('Peers->insertSeeds - Peers discovered', {
+    this.library.logger.info('Peers->insertSeeds - Peers discovered', {
       total: this.library.config.peers.list.length,
       updated,
     });

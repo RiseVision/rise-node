@@ -731,7 +731,7 @@ Loader.prototype.getNetwork = function (cb) {
 		return setImmediate(cb, null, __private.network);
 	}
 
-	modules.peers.list({}, function (err, peers) {
+	promiseToCB(modules.peers.list({}), function (err, {peers}) {
 		if (err) {
 			return setImmediate(cb, err);
 		}

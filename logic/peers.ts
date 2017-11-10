@@ -2,13 +2,14 @@
 import * as _ from 'lodash';
 import { ILogger } from '../logger';
 import {BasePeerType, Peer, PeerState, PeerType} from './peer';
+import {PeersModule} from '../modules/peers';
 
 export class Peers {
   private library: { logger: ILogger };
 
   private peers: { [peerIdentifier: string]: Peer } = {};
 
-  private modules: { peers: any };
+  private modules: { peers: PeersModule };
 
   constructor(logger: ILogger) {
     this.library = {logger};

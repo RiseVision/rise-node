@@ -322,7 +322,7 @@ Transport.prototype.getFromRandomPeer = function (config, options, cb) {
 	}
 	config.limit = 1;
 	config.allowedStates = [PeerState.DISCONNECTED, PeerState.CONNECTED];
-	modules.peers.list(config, function (err, peers) {
+	promiseToCB(modules.peers.list(config), function (err, {peers, consensus}) {
 		if (!err && peers.length) {
 			return self.getFromPeer(peers[0], options, cb);
 		} else {
@@ -615,7 +615,7 @@ Transport.prototype.internal = {
 	},
 
 	list: function (req, cb) {
-		modules.peers.list({limit: constants.maxPeers}, function (err, peers) {
+		promiseToCB(modules.peers.list({limit: constants.maxPeers}), function (err, {peers}) {
 			peers = (!err ? peers : []);
 			return setImmediate(cb, null, {success: !err, peers: peers});
 		});

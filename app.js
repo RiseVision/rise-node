@@ -132,7 +132,7 @@ var config = {
     transport      : './modules/transport.js',
     loader         : './modules/loader.js',
     // system         : './modules/system.js',
-    peers          : './modules/peers.js',
+    // peers          : './modules/peers.js',
     delegates      : './modules/delegates.js',
     rounds         : './modules/rounds.js',
     multisignatures: './modules/multisignatures.js',
@@ -550,6 +550,11 @@ d.run(function () {
       };
       tasks['system']    = (cb) => {
         let module = new (require('./modules/system').SystemModule)(scope);
+        modules.push(module);
+        cb(null, module);
+      };
+      tasks['peers']    = (cb) => {
+        let module = new (require('./modules/peers').PeersModule)(scope);
         modules.push(module);
         cb(null, module);
       };

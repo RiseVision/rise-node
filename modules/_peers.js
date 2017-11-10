@@ -13,7 +13,7 @@ var sandboxHelper = require('../helpers/sandbox');
 var schema = require('../schema/peers').default;
 var Peer = require('../logic/peer').Peer;
 var PeerState = require('../logic/peer').PeerState;
-var sql = require('../sql/peers.js');
+var sql = require('../sql/peers.ts');
 var util = require('util');
 
 // Private fields
