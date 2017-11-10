@@ -36,7 +36,7 @@ export type PeersLibrary = {
   }
 };
 
-export type PeerFilter = { limit?: number, offset?: number, orderBy?: string }
+export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip?: string, port?: number, state?: PeerState};
 
 export class PeersModule {
   public modules: { transport: any, system: SystemModule };
@@ -142,6 +142,57 @@ export class PeersModule {
 
     this.library.logger.trace(`Discovered ${discovered} peers - Rejected ${rejected}`);
 
+  }
+
+
+  /**
+   * Gets the peers using the given filter.
+   */
+  public async getByFilter(filter: PeerFilter): Promise<PeerType[]> {
+    const allowedFields = ['ip', 'port', 'state', 'os', 'version', 'broadhash', 'height', 'nonce'];
+    const limit         = filter.limit ? Math.abs(filter.limit) : 0;
+    const offset        = filter.offset ? Math.abs(filter.offset) : 0;
+    const sortPeers     = (field: string, asc: boolean) => (a: PeerType, b: PeerType) => a[field] === b[field] ? 0 :
+      a[field] === null ? 1 :
+        b[field] === null ? -1 :
+          // Ascending
+          asc ? (a[field] < b[field] ? -1 : 1) :
+            // Descending
+            (a[field] < b[field] ? 1 : -1);
+
+    const peers = this.library.logic.peers.list(true)
+      .filter((peer) => {
+        let passed       = true;
+        const filterKeys = Object.keys(filter);
+        for (let i = 0; i < filterKeys.length && passed; i++) {
+          const key   = filterKeys[i];
+          const value = filter[key];
+          if (key === 'dappid' && (peer[key] === null || (Array.isArray(peer[key]) &&
+              !_.includes(peer[key], String(value))))) {
+            passed = false;
+          }
+          // Every filter field need to be in allowed fields, exists and match value
+          if (_.includes(allowedFields, key) && !(peer[key] !== undefined && peer[key] === value)) {
+            passed = false;
+          }
+        }
+        return passed;
+      });
+
+    if (filter.orderBy) {
+      const [field, method] = filter.orderBy.split(':');
+      if (field && _.includes(allowedFields, field)) {
+        peers.sort(sortPeers(field, method !== 'desc'));
+      }
+    } else {
+      // By default shuffle the peers
+      shuffle(peers);
+    }
+
+    if (limit) {
+      return peers.slice(offset, (offset + limit));
+    }
+    return peers.slice(offset);
   }
 
   /**
@@ -310,56 +361,6 @@ export class PeersModule {
   private async countByFilter(filter: PeerFilter): Promise<number> {
     const p = await this.getByFilter(filter);
     return p.length;
-  }
-
-  /**
-   * Gets the peers using the given filter.
-   */
-  private async getByFilter(filter: PeerFilter): Promise<PeerType[]> {
-    const allowedFields = ['ip', 'port', 'state', 'os', 'version', 'broadhash', 'height', 'nonce'];
-    const limit         = filter.limit ? Math.abs(filter.limit) : 0;
-    const offset        = filter.offset ? Math.abs(filter.offset) : 0;
-    const sortPeers     = (field: string, asc: boolean) => (a: PeerType, b: PeerType) => a[field] === b[field] ? 0 :
-      a[field] === null ? 1 :
-        b[field] === null ? -1 :
-          // Ascending
-          asc ? (a[field] < b[field] ? -1 : 1) :
-            // Descending
-            (a[field] < b[field] ? 1 : -1);
-
-    const peers = this.library.logic.peers.list(true)
-      .filter((peer) => {
-        let passed       = true;
-        const filterKeys = Object.keys(filter);
-        for (let i = 0; i < filterKeys.length && passed; i++) {
-          const key   = filterKeys[i];
-          const value = filter[key];
-          if (key === 'dappid' && (peer[key] === null || (Array.isArray(peer[key]) &&
-              !_.includes(peer[key], String(value))))) {
-            passed = false;
-          }
-          // Every filter field need to be in allowed fields, exists and match value
-          if (_.includes(allowedFields, key) && !(peer[key] !== undefined && peer[key] === value)) {
-            passed = false;
-          }
-        }
-        return passed;
-      });
-
-    if (filter.orderBy) {
-      const [field, method] = filter.orderBy.split(':');
-      if (field && _.includes(allowedFields, field)) {
-        peers.sort(sortPeers(field, method !== 'desc'));
-      }
-    } else {
-      // By default shuffle the peers
-      shuffle(peers);
-    }
-
-    if (limit) {
-      return peers.slice(offset, (offset + limit));
-    }
-    return peers.slice(offset);
   }
 
   private async insertSeeds() {
