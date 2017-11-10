@@ -1,9 +1,18 @@
 interface ITask {
+  isPromise: false;
   args: any[];
 
   worker(...args: any[]): void;
 
+  worker(...args: any[]): Promise<any>;
+
   done(err: Error, res: any): void;
+}
+
+interface IPromiseTask {
+  isPromise: true;
+
+  worker(): Promise<any>;
 }
 
 /**
@@ -11,7 +20,7 @@ interface ITask {
  * Calls __tick with 3
  */
 export default class Sequence {
-  private sequence: ITask[] = [];
+  private sequence: Array<ITask | IPromiseTask> = [];
   private config: {
     onWarning: (curPending: number, warnLimit: number) => void,
     warningLimit: number
@@ -36,13 +45,28 @@ export default class Sequence {
     return this.sequence.length;
   }
 
+  public addAndPromise<T>(worker: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const task: IPromiseTask = {
+        isPromise: true,
+        worker() {
+          return worker()
+            .then(resolve)
+            .catch(reject);
+        },
+      };
+      this.sequence.push(task);
+    });
+
+  }
+
   public add(worker, args?: any[] | ((err: Error, res: any) => void), done?: (err: Error, res: any) => void) {
     if (!done && args && typeof(args) === 'function') {
       done = args;
       args = undefined;
     }
     if (worker && typeof(worker) === 'function') {
-      const task: ITask = { worker, done, args: null };
+      const task: ITask = { isPromise: false, worker, done, args: null };
       if (Array.isArray(args)) {
         task.args = args;
       }
@@ -51,20 +75,26 @@ export default class Sequence {
   }
 
   private tick(cb) {
-    const task = this.sequence.shift();
+    const task: ITask|IPromiseTask = this.sequence.shift();
     if (!task) {
       return setImmediate(cb);
     }
-    let args = [(err, res) => {
-      if (task.done) {
-        setImmediate(task.done, err, res);
+    if (task.isPromise === true) {
+      return task.worker()
+        .then((res) => cb())
+        .catch((err) => cb());
+    } else {
+      let args = [(err, res) => {
+        if (task.done) {
+          setImmediate(task.done, err, res);
+        }
+        setImmediate(cb);
+      }];
+      if (task.args) {
+        args = args.concat(task.args);
       }
-      setImmediate(cb);
-    }];
-    if (task.args) {
-      args = args.concat(task.args);
+      task.worker.apply(task.worker, args);
     }
-    task.worker.apply(task.worker, args);
   }
 
   private nextSequenceTick() {
