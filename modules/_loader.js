@@ -7,7 +7,7 @@ var jobsQueue = require('../helpers/jobsQueue').default;
 var ip = require('ip');
 var sandboxHelper = require('../helpers/sandbox');
 var schema = require('../schema/loader').default;
-var sql = require('../sql/loader.js');
+var sql = require('../sql/loader.ts');
 
 require('colors');
 
@@ -367,11 +367,7 @@ __private.loadBlockChain = function () {
 			if (err) {
 				library.logger.error(err);
 				if (err.block) {
-					library.logger.error('Blockchain failed at: ' + err.block.height);
-					modules.blocks.chain.deleteAfterBlock(err.block.id, function (err, res) {
-						library.logger.error('Blockchain clipped');
-						library.bus.message('blockchainReady');
-					});
+
 				}
 			} else {
 				library.logger.info('Blockchain ready');

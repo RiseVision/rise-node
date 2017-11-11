@@ -7,11 +7,14 @@ import {IBus} from '../types/bus';
 import {TransactionLogic} from '../logic/transaction';
 import {AccountLogic} from '../logic/account';
 import {Peers} from '../logic/peers';
+import loaderSchema from '../schema/loader';
+import sql from '../sql/loader';
 import {Peer, PeerType} from '../logic/peer';
 import {BlockType, SignedBlockType} from '../logic/block';
 import Sequence from '../helpers/sequence';
-import {cbToPromise} from '../helpers/promiseToCback';
+import {cbToPromise, emptyCB} from '../helpers/promiseToCback';
 import {PeersModule} from './peers';
+import {IBaseTransaction} from '../logic/transactions/baseTransactionType';
 import Timer = NodeJS.Timer;
 
 export type LoaderLibrary = {
@@ -22,7 +25,7 @@ export type LoaderLibrary = {
   sequence: Sequence;
   bus: IBus;
   genesisblock: BlockType;
-  balancesSequence: any;
+  balancesSequence: Sequence;
   logic: {
     transaction: TransactionLogic;
     account: AccountLogic;
@@ -32,9 +35,10 @@ export type LoaderLibrary = {
     loading: {
       verifyOnLoading: boolean;
       snapshot: boolean;
+      loadPerIteration: number;
     }
   }
-}
+};
 
 export class LoaderModule {
 
@@ -45,8 +49,10 @@ export class LoaderModule {
   private blocksToSync: number    = 0;
   private loaded: boolean         = false;
   private isActive: boolean       = false;
+  private retries: number         = 5;
+  private syncInterval            = 1000;
 
-  private modules: { blocks: any, transactions: any, transport: any, peers: PeersModule };
+  private modules: { blocks: any, transactions: any, transport: any, peers: PeersModule, multisignatures: any };
 
   constructor(public library: LoaderLibrary) {
     this.initialize();
@@ -54,11 +60,145 @@ export class LoaderModule {
   }
 
   public async getNework() {
-    if (this.network.height > 0 && Math.abs(this.network.height - this.modules.blocks.lastBlock.get().height) === 1) {
-      return this.network;
+    if (!(
+        this.network.height > 0 &&
+        Math.abs(this.network.height - this.modules.blocks.lastBlock.get().height) === 1)
+    ) {
+      const { peers } = await this.modules.peers.list({});
+      this.network    = this.findGoodPeers(peers);
     }
-    const { peers, consensus } = await this.modules.peers.list({});
+    return this.network;
+  }
 
+  public async gerRandomPeer(): Promise<Peer> {
+    const { peers } = await this.getNework();
+    return peers[Math.floor(Math.random() * peers.length)];
+  }
+
+  /**
+   * Checks if we're syncing or not.
+   */
+  public get isSyncing(): boolean {
+    return !!this.syncIntervalId;
+  }
+
+  public async onBind(modules: any) {
+    this.modules = {
+      transactions   : modules.transactions,
+      blocks         : modules.blocks,
+      peers          : modules.peers,
+      rounds         : modules.rounds,
+      transport      : modules.transport,
+      multisignatures: modules.multisignatures,
+      system         : modules.system,
+    };
+
+    this.loadBlockChain();
+  }
+
+  public async onPeersReady() {
+    await this.syncTimer();
+
+    if (this.loaded) {
+      // Load transactions.
+      try {
+        await promiseRetry(async (retry) => {
+          try {
+            await this.loadTransactions();
+          } catch (e) {
+            retry(e);
+          }
+        }, { retries: this.retries });
+      } catch (e) {
+        this.library.logger.log('Unconfirmed transactions loader error', e);
+      }
+
+      // load multisignature transactions
+      try {
+        await promiseRetry(async (retry) => {
+          try {
+            await this.loadSignatures();
+          } catch (e) {
+            retry(e);
+          }
+        }, { retries: this.retries });
+      } catch (e) {
+        this.library.logger.log('Multisig pending transactions loader error', e);
+      }
+    }
+
+  }
+
+  private async load(count: number, limitPerIteration: number, message?: string) {
+    let offset = 0;
+    if (message) {
+      this.library.logger.warn(message);
+      this.library.logger.warn('Recreating memory tables');
+    }
+
+    await this.library.logic.account.removeTables(emptyCB);
+
+    await this.library.logic.account.createTables(emptyCB);
+
+    try {
+      do {
+        if (count > 1) {
+          this.library.logger.info('Rebuilding blockchain, current block height: ' + (offset + 1));
+        }
+        const lastBlock = await cbToPromise<any>(
+          (cb) => this.modules.blocks.process.loadBlocksOffset(limitPerIteration, offset, true/*verify*/, cb)
+        );
+        offset          = offset + limitPerIteration;
+        this.lastblock  = lastBlock;
+
+      } while (count < offset);
+      this.library.logger.info('Blockchain ready');
+      this.library.bus.message('blockchainReady');
+    } catch (err) {
+      this.library.logger.error(err);
+      if (err.block) {
+        this.library.logger.error('Blockchain failed at: ' + err.block.height);
+        await cbToPromise((cb) => this.modules.blocks.chain.deleteAfterBlock(err.block.id, cb));
+        this.library.logger.error('Blockchain clipped');
+        this.library.bus.message('blockchainReady');
+      }
+    }
+
+  }
+
+  /**
+   * Checks mem tables:
+   * - count blocks from `blocks` table
+   * - get genesis block from `blocks` table
+   * - count accounts from `mem_accounts` table by block id
+   * - get rounds from `mem_round`
+   * Matchs genesis block with database.
+   * Verifies Snapshot mode.
+   * Recreates memory tables when neccesary:
+   *  - Calls logic.account to removeTables and createTables
+   *  - Calls block to load block. When blockchain ready emits a bus message.
+   * Detects orphaned blocks in `mem_accounts` and gets delegates.
+   * Loads last block and emits a bus message blockchain is ready.
+   */
+  private async loadBlockChain() {
+    const offset = 0;
+    const limit  = Number(this.library.config.loading.loadPerIteration) || 1000;
+    let verify   = Boolean(this.library.config.loading.verifyOnLoading);
+
+
+    const results = await this.library.db.task((t) => t.batch([
+      t.one(sql.countBlocks),
+      t.query(sql.getGenesisBlock),
+      t.one(sql.countMemAccounts),
+      t.query(sql.getMemRounds),
+      t.query(sql.countDuplicatedDelegates),
+    ]));
+
+    const blocksCount = results[0].count;
+    this.library.logger.info(`Blocks ${blocksCount}`);
+    if (blocksCount === 1) {
+
+    }
   }
 
   private initialize() {
@@ -76,7 +216,9 @@ export class LoaderModule {
    * therefore need to aggregate).
    * Gets the list of good peers.
    */
-  private findGoodPeers(peers: PeerType[]): { height: number, peers: Peer[] } {
+  private findGoodPeers(peers: PeerType[]): {
+    height: number, peers: Peer[]
+  } {
     const lastBlockHeight: number = this.modules.blocks.lastBlock.get().height;
     this.library.logger.trace('Good peers - received', { count: peers.length });
 
@@ -145,12 +287,15 @@ export class LoaderModule {
     }
   }
 
-  private async loadBlocksFromNetwork() {
-    const network = await this.getNework();
-    let loaded    = false;
+  private async
+
+  loadBlocksFromNetwork() {
+    let loaded = false;
+
     do {
-      await promiseRetry(async (retry) => {
-        const randomPeer                 = this.network.peers[Math.floor(Math.random() * this.network.peers.length)];
+      await
+      promiseRetry(async (retry) => {
+        const randomPeer                 = await this.gerRandomPeer();
         const lastBlock: SignedBlockType = this.modules.blocks.lastBlock.get();
 
         if (lastBlock.height !== 1) {
@@ -160,7 +305,7 @@ export class LoaderModule {
               .blocks.process.getCommonBlock(randomPeer, lastBlock.height, cb));
             if (!commonBlock) {
               this.library.logger.error(`Failed to find common block with: ${randomPeer.string}`);
-              return retry(new Error('Failed to fined common block'));
+              return retry(new Error('Failed to find common block'));
             }
           } catch (err) {
             this.library.logger.error(`Failed to find common block with: ${randomPeer.string}`);
@@ -193,7 +338,9 @@ export class LoaderModule {
    * - Establish broadhash consensus
    * - Applies unconfirmed transactions
    */
-  private async sync() {
+  private async
+
+  sync() {
     this.library.logger.info('Starting sync');
     this.library.bus.message('syncStarted');
 
@@ -202,13 +349,16 @@ export class LoaderModule {
 
     // undo unconfirmedList
     this.library.logger.debug('Undoing unconfirmed transactions before sync');
-    await cbToPromise((cb) => this.modules.transactions.undoUnconfirmedList(cb));
+    await
+    cbToPromise((cb) => this.modules.transactions.undoUnconfirmedList(cb));
 
     // Establish consensus. (internally)
     this.library.logger.debug('Establishing broadhash consensus before sync');
-    await cbToPromise((cb) => this.modules.transport.getPeers({ limit: constants.maxPeers }, cb));
+    await
+    cbToPromise((cb) => this.modules.transport.getPeers({ limit: constants.maxPeers }, cb));
 
-    await this.loadBlocksFromNetwork();
+    await
+    this.loadBlocksFromNetwork();
   }
 
   private async
@@ -220,25 +370,114 @@ export class LoaderModule {
       this.library.logger.trace('Sync timer trigger', {
         last_receipt: this.modules.blocks.lastReceipt.get(),
         loaded      : this.loaded,
-        syncing     : this.syncing(),
+        syncing     : this.isSyncing,
       });
 
-      if (this.loaded && !self.syncing() && modules.blocks.lastReceipt.isStale()) {
-        await this.library.sequence.addAndPromise(async () => {
-
-        })
-        this.library.sequence.addAn(function (sequenceCb) {
-          async.retry(this.retries, this.sync, sequenceCb);
-        }, function (err) {
-          if (err) {
-            library.logger.error('Sync timer', err);
-            __private.initialize();
+      if (this.loaded && !this.isSyncing && this.modules.blocks.lastReceipt.isStale()) {
+        await this.library.sequence.addAndPromise(() => promiseRetry(async (retries) => {
+          try {
+            await this.sync();
+          } catch (err) {
+            retries(err);
           }
-          return setImmediate(cb);
-        });
-      } else {
-        return setImmediate(cb);
+        }, { retries: this.retries }));
       }
-    }, __private.syncInterval);
+      return setImmediate(cb);
+    }, this.syncInterval);
+  }
+
+  /**
+   * Loads pending multisignature transactions
+   */
+  private async
+
+  loadSignatures() {
+    const randomPeer = await
+    this.gerRandomPeer();
+    this.library.logger.log(`Loading signatures from: ${randomPeer.string}`);
+    const res = await
+    cbToPromise<any>((cb) => this.modules.transport.getFromPeer(
+      randomPeer,
+      {
+        api   : '/signatures',
+        method: 'GET',
+      },
+      cb)
+    );
+
+    if (!this.library.schema.validate(res.body, loaderSchema.loadSignatures)) {
+      throw new Error('Failed to validate /signatures schema');
+    }
+
+    // FIXME: signatures array
+    const { signatures }: { signatures: any[] } = res.body;
+
+    // Process multisignature transactions and validate signatures in sequence
+    await
+    this.library.sequence.addAndPromise(async () => {
+      for (const multiSigTX of signatures) {
+        for (const signature of  multiSigTX.signatures) {
+          try {
+            await cbToPromise((cb) => this.modules.multisignatures.processSignature({
+              signature,
+              transaction: multiSigTX.transaction,
+            }));
+          } catch (err) {
+            this.library.logger.warn(`Cannot process multisig signature for ${multiSigTX.transaction} `, err);
+          }
+        }
+      }
+      return void 0;
+    });
+  }
+
+  /**
+   * Load transactions from a random peer.
+   * Validates each transaction from peer and eventually remove the peer if invalid.
+   */
+  private async
+
+  loadTransactions() {
+    const peer = await
+    this.gerRandomPeer();
+    this.library.logger.log(`Loading transactions from: ${peer.string}`);
+    const res = await
+    cbToPromise<any>((cb) => this.modules.transport.getFromPeer(peer, {
+      api   : '/transactions',
+      method: 'GET',
+    }, cb));
+
+    if (!this.library.schema.validate(res.body, loaderSchema.loadTransactions)) {
+      throw new Error('Cannot validate load transactions schema against peer');
+    }
+
+    const { transactions }: { transactions: Array<IBaseTransaction<any>> } = res.body;
+    for (const tx of transactions) {
+      try {
+        // Perform validation and throw if error
+        this.library.logic.transaction.objectNormalize(tx);
+      } catch (e) {
+        this.library.logger.debug('Transaction normalization failed', { err: e.toString(), module: 'loader', tx });
+
+        this.library.logger.warn(['Transaction', tx.id, 'is not valid, peer removed'].join(' '), peer.string);
+
+        // Remove invalid peer as a mechanism to discourage invalid processing.
+        this.modules.peers.remove(peer.ip, peer.port);
+        throw e;
+      }
+    }
+
+    // Process unconfirmed transaction
+    for (const tx of transactions) {
+      await
+      this.library.balancesSequence.addAndPromise(async () => {
+        try {
+          this.modules.transactions.processUnconfirmedTransaction(tx, false, true);
+        } catch (err) {
+          this.library.logger.debug(err);
+        }
+      });
+    }
+
   }
 }
