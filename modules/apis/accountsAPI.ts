@@ -13,7 +13,7 @@ class AccountsPublicAPI {
   }
 
   @Get('/getBalance')
-  @ValidateSchema
+  @ValidateSchema()
   public async getBalance(@SchemaValid(accountSchema.getBalance)
                           @QueryParams() params: { address: string }) {
     const account            = await this.accounts
@@ -24,7 +24,7 @@ class AccountsPublicAPI {
   }
 
   @Get('/getPublicKey')
-  @ValidateSchema
+  @ValidateSchema()
   public async getPublickey(@SchemaValid(accountSchema.getPublicKey)
                             @QueryParams() params: { address: string }) {
     const account = await this.accounts
@@ -34,7 +34,7 @@ class AccountsPublicAPI {
   }
 
   @Get('/delegates')
-  @ValidateSchema
+  @ValidateSchema()
   public async getDelegates(@SchemaValid(accountSchema.getDelegates)
                             @QueryParams() params: { address: string }) {
     const account = await this.accounts
@@ -51,16 +51,16 @@ class AccountsPublicAPI {
   }
 
   @Get('/delegates/fee')
-  @ValidateSchema
+  @ValidateSchema()
   public async getDelegatesFee(@SchemaValid(accountSchema.getDelegatesFee)
                                @QueryParams() params: { height: number }) {
     return {
-      fee: this.accounts.modules.system.getFees(params.height).delegate,
+      fee: this.accounts.modules.system.getFees(params.height).fees.delegate,
     };
   }
 
   @Post('/open')
-  @ValidateSchema
+  @ValidateSchema()
   public async open(@SchemaValid(accountSchema.open)
                     @BodyParams() body: { secret: string }): Promise<any> {
     throw new Error('Method is not supported anymore');

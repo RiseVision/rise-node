@@ -13,7 +13,7 @@ class PeersPublicAPI {
   }
 
   @Get('/')
-  @ValidateSchema
+  @ValidateSchema()
   public async getPeers(@SchemaValid(peersSchema.getPeers)
                         @QueryParams() params: any) {
     try {
@@ -25,7 +25,7 @@ class PeersPublicAPI {
   }
 
   @Get('/get')
-  @ValidateSchema
+  @ValidateSchema()
   public async getPeer(@SchemaValid(peersSchema.getPeer)
                        @QueryParams() params: { ip: string, port: number }) {
     try {

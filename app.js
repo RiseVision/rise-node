@@ -129,7 +129,7 @@ var config = {
     transactions   : './modules/transactions.js',
     blocks         : './modules/blocks.js',
     signatures     : './modules/signatures.js',
-    transport      : './modules/transport.js',
+    // transport      : './modules/transport.js',
     // loader         : './modules/loader.js',
     // system         : './modules/system.js',
     // peers          : './modules/peers.js',
@@ -560,6 +560,11 @@ d.run(function () {
       };
       tasks['loader']    = (cb) => {
         let module = new (require('./modules/loader').LoaderModule)(scope);
+        modules.push(module);
+        cb(null, module);
+      };
+      tasks['transport']    = (cb) => {
+        let module = new (require('./modules/transport').TransportModule)(scope);
         modules.push(module);
         cb(null, module);
       };

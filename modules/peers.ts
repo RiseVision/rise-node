@@ -4,18 +4,19 @@ import * as pgpCreator from 'pg-promise';
 import {ITask} from 'pg-promise';
 import * as shuffle from 'shuffle-array';
 import constants from '../helpers/constants';
-import jobsQueue from '../helpers/jobsQueue'
+import jobsQueue from '../helpers/jobsQueue';
 import {cbToPromise} from '../helpers/promiseToCback';
 import {ILogger} from '../logger';
-import {Peers} from '../logic/peers';
 import {Peer, PeerState, PeerType} from '../logic/peer';
+import {Peers} from '../logic/peers';
 import schema from '../schema/peers';
 import peerSQL from '../sql/peers';
 import {SystemModule} from './system';
-import {DebugLog} from '../helpers/decorators/debugLog';
+import {TransportModule} from './transport';
 
 const pgp = pgpCreator();
 
+// tslint:disable-next-line
 export type PeersLibrary = {
   logger: ILogger,
   db: ITask<any>,
@@ -36,10 +37,11 @@ export type PeersLibrary = {
   }
 };
 
-export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip?: string, port?: number, state?: PeerState};
+// tslint:disable-next-line
+export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip?: string, port?: number, state?: PeerState };
 
 export class PeersModule {
-  public modules: { transport: any, system: SystemModule };
+  public modules: { transport: TransportModule, system: SystemModule };
 
   constructor(public library: PeersLibrary) {
   }
@@ -72,15 +74,12 @@ export class PeersModule {
   public async ping(peer: Peer) {
     this.library.logger.trace(`Pinging peer: ${peer.string}`);
     try {
-      await cbToPromise(
-        (cb) => this.modules.transport.getFromPeer(
-          peer,
-          {
-            api   : '/height',
-            method: 'GET',
-          },
-          cb
-        )
+      await this.modules.transport.getFromPeer(
+        peer,
+        {
+          api   : '/height',
+          method: 'GET',
+        }
       );
     } catch (err) {
       this.library.logger.trace(`Ping peer failed: ${peer.string}`, err);
@@ -115,10 +114,12 @@ export class PeersModule {
    */
   public async discover(): Promise<void> {
     this.library.logger.trace('Peer->discover');
-    const response = await cbToPromise<any>((cb) => this.modules.transport.getFromRandomPeer({
+    const response = await this.modules.transport.getFromRandomPeer<any>(
+      {},
+      {
         api   : '/list',
         method: 'GET',
-      }, cb)
+      }
     );
 
     await cbToPromise((cb) => this.library.schema.validate(response.body, schema.discover.peers, cb));
@@ -143,7 +144,6 @@ export class PeersModule {
     this.library.logger.trace(`Discovered ${discovered} peers - Rejected ${rejected}`);
 
   }
-
 
   /**
    * Gets the peers using the given filter.
@@ -198,6 +198,7 @@ export class PeersModule {
   /**
    * Gets peers list and calculated consensus.
    */
+  // tslint:disable-next-line max-line-length
   public async list(options: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }): Promise<{ consensus: number, peers: PeerType[] }> {
     options.limit         = options.limit || constants.maxPeers;
     options.broadhash     = options.broadhash || this.modules.system.broadhash;
@@ -251,7 +252,7 @@ export class PeersModule {
       let updated = 0;
 
       const peers = this.library.logic.peers.list(false);
-      this.library.logger.trace('Updating peers', {count: peers.length});
+      this.library.logger.trace('Updating peers', { count: peers.length });
 
       for (const p of peers) {
         if (p && p.state !== PeerState.BANNED && (!p.updated || Date.now() - p.updated > 3000)) {
@@ -377,6 +378,5 @@ export class PeersModule {
       updated,
     });
   }
-
 
 }

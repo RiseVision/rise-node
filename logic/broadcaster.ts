@@ -10,6 +10,7 @@ import {PeerType} from './peer';
 import {Peers} from './peers';
 import {TransactionLogic} from './transaction';
 import {IBaseTransaction} from './transactions/baseTransactionType';
+import {TransportModule} from '../modules/transport';
 
 // tslint:disable interface-over-type-literal
 export type BroadcastsType = {
@@ -67,7 +68,7 @@ export class BroadcasterLogic {
     path      : '/signatures',
   }];
 
-  public modules: { peers: PeersModule, transport: any, transactions: any };
+  public modules: { peers: PeersModule, transport: TransportModule, transactions: any };
 
   constructor(public library: BroadcastLibrary) {
     this.config = {
@@ -119,7 +120,7 @@ export class BroadcasterLogic {
 
   public async broadcast(params: {
                            limit?: number, broadhash?: string,
-                           peers: PeerType[]
+                           peers?: PeerType[]
                          },
                          options: any): Promise<{ peer: PeerType[] }> {
 
@@ -140,7 +141,7 @@ export class BroadcasterLogic {
     await PromiseThrottle.all(
       peers
         .map((p) => this.library.logic.peers.create(p))
-        .map((peer) => () => cbToPromise((cb) => this.modules.transport.getFromPeer(peer, options, cb))
+        .map((peer) => () => this.modules.transport.getFromPeer(peer, options)
           .catch((err) => {
             this.library.logger.debug(`Failed to broadcast to peer: ${peer.string}`, err);
             return null;

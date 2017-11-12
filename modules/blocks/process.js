@@ -1,4 +1,5 @@
 'use strict';
+import {promiseToCB} from '../../helpers/promiseToCback';
 
 var _ = require('lodash');
 var async = require('async');
@@ -73,10 +74,10 @@ Process.prototype.getCommonBlock = function (peer, height, cb) {
 			var ids = res.ids;
 
 			// Perform request to supplied remote peer
-			modules.transport.getFromPeer(peer, {
+			promiseToCB(modules.transport.getFromPeer(peer, {
 				api: '/blocks/common?ids=' + ids,
 				method: 'GET'
-			}, function (err, res) {
+			}), function (err, res) {
 				if (err || res.body.error) {
 					return setImmediate(waterCb, err || res.body.error.toString());
 				} else if (!res.body.common) {
@@ -121,7 +122,7 @@ Process.prototype.getCommonBlock = function (peer, height, cb) {
 		}
 	], function (err, res) {
 		// If comparison failed and current consensus is low - perform chain recovery
-		if (comparisionFailed && modules.transport.poorConsensus()) {
+		if (comparisionFailed && modules.transport.poorConsensus) {
 			return modules.blocks.chain.recoverChain(cb);
 		} else {
 			return setImmediate(cb, err, res);
@@ -219,10 +220,10 @@ Process.prototype.loadBlocksFromPeer = function (peer, cb) {
 
 	function getFromPeer (seriesCb) {
 		// Ask remote peer for blocks
-		modules.transport.getFromPeer(peer, {
+		promiseToCB(modules.transport.getFromPeer(peer, {
 			method: 'GET',
 			api: '/blocks?lastBlockId=' + lastValidBlock.id
-		}, function (err, res) {
+		}), function (err, res) {
 			err = err || res.body.error;
 			if (err) {
 				return setImmediate(seriesCb, err);

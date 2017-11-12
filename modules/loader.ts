@@ -17,6 +17,7 @@ import {IBus} from '../types/bus';
 import {PeersModule} from './peers';
 import {DebugLog} from '../helpers/decorators/debugLog';
 import Timer = NodeJS.Timer;
+import {TransportModule} from './transport';
 
 export type LoaderLibrary = {
   logger: ILogger;
@@ -54,7 +55,7 @@ export class LoaderModule {
   private syncInterval                             = 1000;
 
   private modules: {
-    blocks: any, rounds: any, system: any, transactions: any, transport: any, peers: PeersModule,
+    blocks: any, rounds: any, system: any, transactions: any, transport: TransportModule, peers: PeersModule,
     multisignatures: any
   };
 
@@ -420,7 +421,6 @@ export class LoaderModule {
    * - Establish broadhash consensus
    * - Applies unconfirmed transactions
    */
-  @DebugLog
   private async sync() {
     this.library.logger.info('Starting sync');
     this.library.bus.message('syncStarted');
@@ -434,7 +434,7 @@ export class LoaderModule {
 
     // Establish consensus. (internally)
     this.library.logger.debug('Establishing broadhash consensus before sync');
-    await cbToPromise((cb) => this.modules.transport.getPeers({ limit: constants.maxPeers }, cb));
+    this.modules.transport.getPeers({ limit: constants.maxPeers });
 
     await this.loadBlocksFromNetwork();
   }
@@ -468,14 +468,12 @@ export class LoaderModule {
   private async loadSignatures() {
     const randomPeer = await this.gerRandomPeer();
     this.library.logger.log(`Loading signatures from: ${randomPeer.string}`);
-    const res = await cbToPromise<any>((cb) => this.modules.transport.getFromPeer(
+    const res = await this.modules.transport.getFromPeer<any>(
       randomPeer,
       {
         api   : '/signatures',
         method: 'GET',
-      },
-      cb)
-    );
+      });
 
     if (!this.library.schema.validate(res.body, loaderSchema.loadSignatures)) {
       throw new Error('Failed to validate /signatures schema');
@@ -510,10 +508,10 @@ export class LoaderModule {
   private async loadTransactions() {
     const peer = await this.gerRandomPeer();
     this.library.logger.log(`Loading transactions from: ${peer.string}`);
-    const res = await cbToPromise<any>((cb) => this.modules.transport.getFromPeer(peer, {
+    const res = await this.modules.transport.getFromPeer<any>(peer, {
       api   : '/transactions',
       method: 'GET',
-    }, cb));
+    });
 
     if (!this.library.schema.validate(res.body, loaderSchema.loadTransactions)) {
       throw new Error('Cannot validate load transactions schema against peer');
