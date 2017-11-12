@@ -130,7 +130,7 @@ var config = {
     blocks         : './modules/blocks.js',
     signatures     : './modules/signatures.js',
     transport      : './modules/transport.js',
-    loader         : './modules/loader.js',
+    // loader         : './modules/loader.js',
     // system         : './modules/system.js',
     // peers          : './modules/peers.js',
     delegates      : './modules/delegates.js',
@@ -555,6 +555,11 @@ d.run(function () {
       };
       tasks['peers']    = (cb) => {
         let module = new (require('./modules/peers').PeersModule)(scope);
+        modules.push(module);
+        cb(null, module);
+      };
+      tasks['loader']    = (cb) => {
+        let module = new (require('./modules/loader').LoaderModule)(scope);
         modules.push(module);
         cb(null, module);
       };

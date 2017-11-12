@@ -168,7 +168,7 @@ export class TransactionPool {
   }
 
   public fillPool(): Promise<void> {
-    if (this.modules.loader.syncing()) {
+    if (this.modules.loader.isSyncing) {
       return Promise.resolve();
     }
 
