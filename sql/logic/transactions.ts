@@ -21,10 +21,8 @@ export default {
   countList(params) {
     return [
       'SELECT COUNT(1) FROM trs_list',
-      (params.where.length || params.owner ? 'WHERE' : ''),
+      (params.where.length ? 'WHERE' : ''),
       (params.where.length ? '(' + params.where.join(' ') + ')' : ''),
-      // FIXME: Backward compatibility, should be removed after transitional period
-      (params.where.length && params.owner ? ' AND ' + params.owner : params.owner),
     ].filter(Boolean).join(' ');
   },
 
@@ -36,8 +34,6 @@ export default {
       'FROM trs_list',
       (params.where.length || params.owner ? 'WHERE' : ''),
       (params.where.length ? '(' + params.where.join(' ') + ')' : ''),
-      // FIXME: Backward compatibility, should be removed after transitional period
-      (params.where.length && params.owner ? ' AND ' + params.owner : params.owner),
       (params.sortField ? 'ORDER BY ' + [params.sortField, params.sortMethod].join(' ') : ''),
       'LIMIT ${limit} OFFSET ${offset}',
     ].filter(Boolean).join(' ');

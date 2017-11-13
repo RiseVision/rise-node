@@ -65,7 +65,7 @@ __private.checkTransaction = function (block, transaction, cb) {
 					modules.delegates.fork(block, 2);
 					// Undo the offending transaction.
 					// DATABASE: write
-					modules.transactions.undoUnconfirmed(transaction, function (err2) {
+					promiseToCB(modules.transactions.undoUnconfirmed(transaction), function (err2) {
 						modules.transactions.removeUnconfirmedTransaction(transaction.id);
 						return setImmediate(waterCb, err2 || err);
 					});

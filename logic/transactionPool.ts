@@ -1,9 +1,11 @@
 import constants from '../helpers/constants';
 import jobsQueue from '../helpers/jobsQueue';
-import {cbToPromise, promiseToCB} from '../helpers/promiseToCback';
+import {promiseToCB} from '../helpers/promiseToCback';
 import {TransactionType} from '../helpers/transactionTypes';
 import {ILogger} from '../logger';
 import {AccountsModule} from '../modules/accounts';
+import {LoaderModule} from '../modules/loader';
+import {TransactionsModule} from '../modules/transactions';
 import {IBus} from '../types/bus';
 import {TransactionLogic} from './transaction';
 import {IBaseTransaction} from './transactions/baseTransactionType';
@@ -110,9 +112,10 @@ export class TransactionPool {
   private bundleLimit: number;
   private processed: number = 0;
   // TODO: Describe these.
-  private modules: { accounts: AccountsModule, transactions: any, loader: any };
+  private modules: { accounts: AccountsModule, transactions: TransactionsModule, loader: LoaderModule };
 
-  constructor(broadcastInterval: number, releaseLimit: number, transactionLogic: any, bus: IBus, logger: ILogger) {
+  constructor(broadcastInterval: number, releaseLimit: number, transactionLogic: TransactionLogic,
+              bus: IBus, logger: ILogger) {
     this.library = {
       bus,
       config: {
@@ -141,7 +144,7 @@ export class TransactionPool {
     );
   }
 
-  public bind(accounts, transactions, loader) {
+  public bind(accounts, transactions: TransactionsModule, loader) {
     this.modules = { accounts, transactions, loader };
   }
 
@@ -215,11 +218,7 @@ export class TransactionPool {
     const unconfirmed = this.modules.transactions.getUnconfirmedTransactionList(false, constants.maxTxsPerBlock);
     limit -= unconfirmed.length;
 
-    const multisignatures = this.modules.transactions.getMultisignatureTransactionList(
-      false,
-      false,
-      constants.maxTxsPerBlock
-    );
+    const multisignatures = this.multisignature.list(false, constants.maxTxsPerBlock, ((t) => (t as any).ready));
     limit -= multisignatures.length;
 
     const queued = this.modules.transactions.getQueuedTransactionList(false, limit);
@@ -287,7 +286,8 @@ export class TransactionPool {
    * @param {boolean} broadcast
    * @param {boolean} bundled
    */
-  public async receiveTransactions(txs: Array<IBaseTransaction<any>>, broadcast: boolean, bundled: boolean) {
+  public async receiveTransactions(txs: Array<IBaseTransaction<any>>,
+                                   broadcast: boolean, bundled: boolean): Promise<void> {
     for (const tx of txs) {
       await this.processNewTransaction(tx, broadcast, bundled);
     }
@@ -338,11 +338,9 @@ export class TransactionPool {
           false
         );
         try {
-          await cbToPromise((cb) => this.modules.transactions.applyUnconfirmed(
-            theTx,
-            sender,
-            cb
-          ));
+          await this.modules.transactions.applyUnconfirmed(
+            theTx as any, // TODO: check me.
+            sender);
         } catch (e) {
           this.library.logger.error(`Failed to apply unconfirmed transaction ${theTx.id}`, e);
           this.unconfirmed.remove(theTx.id);
@@ -362,13 +360,13 @@ export class TransactionPool {
         continue;
       }
       ids.push(tx.id);
-      await cbToPromise((cb) => this.modules.transactions.undoUnconfirmed(tx, (err) => {
-        if (err) {
-          this.library.logger.error(`Failed to undo unconfirmed transaction: ${tx.id}`, err);
-          this.removeUnconfirmedTransaction(tx.id);
-        }
-        cb(null);
-      }));
+      await this.modules.transactions.undoUnconfirmed(tx)
+        .catch((err) => {
+          if (err) {
+            this.library.logger.error(`Failed to undo unconfirmed transaction: ${tx.id}`, err);
+            this.removeUnconfirmedTransaction(tx.id);
+          }
+        });
     }
     return ids;
   }

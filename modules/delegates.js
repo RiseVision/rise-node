@@ -557,7 +557,7 @@ Delegates.prototype.onBlockchainReady = function () {
 
 			async.series([
 				__private.forge,
-				modules.transactions.fillPool
+				(cb) => promiseToCB(modules.transactions.fillPool(), cb)
 			], function () {
 				return setImmediate(cb);
 			});
@@ -984,7 +984,7 @@ Delegates.prototype.shared = {
 							} catch (e) {
 								return setImmediate(cb, e.toString());
 							}
-							modules.transactions.receiveTransactions([transaction], true, cb);
+							promiseToCB(modules.transactions.receiveTransactions([transaction], true), cb);
 						});
 					});
 				} else {
@@ -1022,7 +1022,7 @@ Delegates.prototype.shared = {
 						} catch (e) {
 							return setImmediate(cb, e.toString());
 						}
-						modules.transactions.receiveTransactions([transaction], true, cb);
+						promiseToCB(modules.transactions.receiveTransactions([transaction], true), cb);
 					});
 				}
 			}, function (err, transaction) {

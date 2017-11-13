@@ -403,7 +403,7 @@ export class TransactionLogic {
     );
   }
 
-  public async apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: any) {
+  public async apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void> {
     if (!this.ready(tx, sender)) {
       throw new Error('Transaction is not ready');
     }
@@ -496,7 +496,8 @@ export class TransactionLogic {
     }
   }
 
-  public async applyUnconfirmed(tx: IBaseTransaction<any>, sender: any): Promise<void> {
+  public async applyUnconfirmed(tx: IBaseTransaction<any>, sender: any, requester?: any): Promise<void> {
+    // FIXME propagate requester?
     const amount        = new BigNum(tx.amount.toString()).plus(tx.fee.toString());
     const senderBalance = this.checkBalance(amount, 'u_balance', tx, sender);
     if (senderBalance.exceeded) {

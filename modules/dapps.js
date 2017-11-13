@@ -1107,7 +1107,7 @@ DApps.prototype.internal = {
 					return setImmediate(cb, e.toString());
 				}
 
-				modules.transactions.receiveTransactions([transaction], true, cb);
+				promiseToCB(modules.transactions.receiveTransactions([transaction], true), cb);
 			});
 		}, function (err, transaction) {
 			if (err) {
@@ -1521,7 +1521,7 @@ DApps.prototype.internal = {
 								return setImmediate(cb, e.toString());
 							}
 
-							modules.transactions.receiveTransactions([transaction], true, cb);
+							promiseToCB(modules.transactions.receiveTransactions([transaction], true), cb);
 						});
 					});
 				} else {
@@ -1560,7 +1560,7 @@ DApps.prototype.internal = {
 							return setImmediate(cb, e.toString());
 						}
 
-						modules.transactions.receiveTransactions([transaction], true, cb);
+						promiseToCB(modules.transactions.receiveTransactions([transaction], true), cb);
 					});
 				}
 			}, function (err, transaction) {
@@ -1645,7 +1645,7 @@ DApps.prototype.internal = {
 								return setImmediate(cb, e.toString());
 							}
 
-							modules.transactions.receiveTransactions([transaction], true, cb);
+							promiseToCB(modules.transactions.receiveTransactions([transaction], true), cb);
 						});
 					});
 				} else {
@@ -1686,7 +1686,7 @@ DApps.prototype.internal = {
 							return setImmediate(cb, e.toString());
 						}
 
-						modules.transactions.receiveTransactions([transaction], true, cb);
+						promiseToCB(modules.transactions.receiveTransactions([transaction], true), cb);
 					});
 				}
 			}, function (err, transaction) {

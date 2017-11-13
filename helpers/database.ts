@@ -20,7 +20,7 @@ export class Migrator {
   /**
    * Gets last migration record from db table
    */
-  public async getLastMigration(hasMigration: boolean): Promise<any> {
+  public async getLastMigration(hasMigration: boolean): Promise<BigNumber> {
     if (!hasMigration) {
       return;
     }
@@ -36,7 +36,7 @@ export class Migrator {
    * Reads sql migration folder and returns only pending migrations sqls.
    */
   // tslint:disable-next-line max-line-length
-  public async readPendingMigrations(lastMigration: any): Promise<Array<{ id: BigNumber, name: string, path: string }>> {
+  public async readPendingMigrations(lastMigration: BigNumber): Promise<Array<{ id: BigNumber, name: string, path: string }>> {
     const migrationsPath = path.join(process.cwd(), 'sql', 'migrations');
 
     function matchMigrationName(file) {
@@ -62,7 +62,7 @@ export class Migrator {
       .filter((d) => fs.statSync(d.path).isFile())
       .filter((d) => /\.sql$/.test(d.path))
       // Filter only pending migrations
-      .filter((d) => !lastMigration || d.id.greaterThan(lastMigration.id));
+      .filter((d) => !lastMigration || d.id.greaterThan(lastMigration));
   }
 
   public async applyPendingMigrations(pendingMigrations: Array<{ id: BigNumber, name: string, path: string }>) {

@@ -17,6 +17,7 @@ import {IBus} from '../types/bus';
 import {SchemaValid, ValidateSchema} from './apis/baseAPIClass';
 import {PeersModule} from './peers';
 import {SystemModule} from './system';
+import {TransactionsModule} from './transactions';
 // import {DebugLog} from '../helpers/decorators/debugLog';
 
 // tslint:disable-next-line
@@ -50,7 +51,7 @@ export type TransportLibrary = {
 export class TransportModule {
   public schema: any;
   public headers: any;
-  public modules: { peers: PeersModule, multisignatures: any, transactions: any, system: SystemModule };
+  public modules: { peers: PeersModule, multisignatures: any, transactions: TransactionsModule, system: SystemModule };
   private broadcaster: BroadcasterLogic;
   private loaded: boolean = false;
 
@@ -285,12 +286,11 @@ export class TransportModule {
     try {
       await this.library.balancesSequence.addAndPromise(async () => {
         this.library.logger.debug(`Received transaction ${transaction.id} from peer: ${peer.string}`);
-        await cbToPromise((cb) => this.modules.transactions.processUnconfirmedTransaction(
+        await this.modules.transactions.processUnconfirmedTransaction(
           transaction,
           true,
-          bundled,
-          cb
-        ));
+          bundled
+        );
       });
       return transaction.id;
     } catch (err) {

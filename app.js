@@ -126,7 +126,7 @@ var config = {
   modules     : {
     server         : './modules/server.js',
     // accounts: './modules/accounts.js',
-    transactions   : './modules/transactions.js',
+    // transactions   : './modules/transactions.js',
     blocks         : './modules/blocks.js',
     signatures     : './modules/signatures.js',
     // transport      : './modules/transport.js',
@@ -438,7 +438,8 @@ d.run(function () {
     }],
     db     : function (cb) {
       var db = require('./helpers/database.ts');
-      db.connect(config.db, logger, cb);
+      db.connect(config.db, logger)
+        .then((db) => cb(null, db));
     },
     /**
      * It tries to connect with redis server based on config. provided in config.json file
@@ -560,6 +561,11 @@ d.run(function () {
       };
       tasks['loader']    = (cb) => {
         let module = new (require('./modules/loader').LoaderModule)(scope);
+        modules.push(module);
+        cb(null, module);
+      };
+      tasks['transactions']    = (cb) => {
+        let module = new (require('./modules/transactions').TransactionsModule)(scope);
         modules.push(module);
         cb(null, module);
       };

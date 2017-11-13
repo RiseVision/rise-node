@@ -7,12 +7,13 @@ import {AccountFilterData, AccountLogic, MemAccountsData} from '../logic/account
 import {TransactionLogic} from '../logic/transaction';
 import {VoteTransaction} from '../logic/transactions/vote';
 import {SystemModule} from './system';
+import {TransactionsModule} from './transactions';
 
 // tslint:disable-next-line
 type AccountLibrary = { ed: Ed, logger: ILogger, schema: any, balancesSequence: any, logic: { account: AccountLogic, transaction: TransactionLogic } }
 
 export class AccountsModule {
-  public modules: { delegates: any, rounds: any, system: SystemModule, transactions: any };
+  public modules: { delegates: any, rounds: any, system: SystemModule, transactions: TransactionsModule };
   private voteAsset: VoteTransaction;
 
   constructor(public library: AccountLibrary) {

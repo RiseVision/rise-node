@@ -175,7 +175,7 @@ Signatures.prototype.shared = {
 								return setImmediate(cb, e.toString());
 							}
 
-							modules.transactions.receiveTransactions([transaction], true, cb);
+							promiseToCB(modules.transactions.receiveTransactions([transaction], true), cb);
 						});
 					});
 				} else {
@@ -206,7 +206,7 @@ Signatures.prototype.shared = {
 						} catch (e) {
 							return setImmediate(cb, e.toString());
 						}
-						modules.transactions.receiveTransactions([transaction], true, cb);
+						promiseToCB(modules.transactions.receiveTransactions([transaction], true), cb);
 					});
 				}
 

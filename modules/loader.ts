@@ -15,9 +15,9 @@ import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
 import {IBus} from '../types/bus';
 import {PeersModule} from './peers';
-import {DebugLog} from '../helpers/decorators/debugLog';
-import Timer = NodeJS.Timer;
 import {TransportModule} from './transport';
+import {TransactionsModule} from './transactions';
+import Timer = NodeJS.Timer;
 
 export type LoaderLibrary = {
   logger: ILogger;
@@ -55,7 +55,8 @@ export class LoaderModule {
   private syncInterval                             = 1000;
 
   private modules: {
-    blocks: any, rounds: any, system: any, transactions: any, transport: TransportModule, peers: PeersModule,
+    blocks: any, rounds: any, system: any, transactions: TransactionsModule, transport: TransportModule,
+    peers: PeersModule,
     multisignatures: any
   };
 
@@ -430,7 +431,7 @@ export class LoaderModule {
 
     // undo unconfirmedList
     this.library.logger.debug('Undoing unconfirmed transactions before sync');
-    await cbToPromise((cb) => this.modules.transactions.undoUnconfirmedList(cb));
+    await this.modules.transactions.undoUnconfirmedList();
 
     // Establish consensus. (internally)
     this.library.logger.debug('Establishing broadhash consensus before sync');
@@ -538,7 +539,7 @@ export class LoaderModule {
       await
         this.library.balancesSequence.addAndPromise(async () => {
           try {
-            this.modules.transactions.processUnconfirmedTransaction(tx, false, true);
+            await this.modules.transactions.processUnconfirmedTransaction(tx, false, true);
           } catch (err) {
             this.library.logger.debug(err);
           }

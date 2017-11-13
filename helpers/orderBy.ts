@@ -15,7 +15,7 @@ export default function OrderBy(orderBy: string,
                                   sortMethod?: string,
                                   sortFields?: string[],
                                   fieldPrefix?: string | ((f: string) => string)
-                                }) {
+                                }): { sortField: string, sortMethod: 'DESC' | 'ASC', error?: string } {
 
   options            = (typeof options === 'object') ? options : {};
   options.sortField  = options.sortField || null;
@@ -28,8 +28,8 @@ export default function OrderBy(orderBy: string,
   let sortMethod;
 
   if (orderBy) {
-    const sort  = String(orderBy).split(':');
-    sortField = sort[0].replace(/[^\w\s]/gi, '');
+    const sort = String(orderBy).split(':');
+    sortField  = sort[0].replace(/[^\w\s]/gi, '');
 
     if (sort.length === 2) {
       sortMethod = sort[1] === 'desc' ? 'DESC' : 'ASC';
@@ -66,7 +66,7 @@ export default function OrderBy(orderBy: string,
     } else {
       return {
         error: 'Invalid sort field',
-      };
+      } as any;
     }
   } else {
     sortField = prefixField(options.sortField);
@@ -77,7 +77,7 @@ export default function OrderBy(orderBy: string,
   }
 
   return {
-    sortField : quoteField(sortField),
+    sortField: quoteField(sortField),
     sortMethod,
   };
 }

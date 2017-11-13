@@ -298,7 +298,7 @@ Chain.prototype.applyGenesisBlock = function (block, cb) {
  */
 __private.applyTransaction = function (block, transaction, sender, cb) {
 	// FIXME: Not sure about flow here, when nodes have different transactions - 'applyUnconfirmed' can fail but 'apply' can be ok
-	modules.transactions.applyUnconfirmed(transaction, sender, function (err) {
+	promiseToCB(modules.transactions.applyUnconfirmed(transaction, sender), function (err) {
 		if (err) {
 			return setImmediate(cb, {
 				message: err,
@@ -307,7 +307,7 @@ __private.applyTransaction = function (block, transaction, sender, cb) {
 			});
 		}
 
-		modules.transactions.apply(transaction, block, sender, function (err) {
+		promiseToCB(modules.transactions.apply(transaction, block, sender), function (err) {
 			if (err) {
 				return setImmediate(cb, {
 					message: 'Failed to apply transaction: ' + transaction.id,
@@ -349,7 +349,7 @@ Chain.prototype.applyBlock = function (block, broadcast, cb, saveBlock) {
 		// TODO: It should be possible to remove this call if we can guarantee that only this function is processing transactions atomically. Then speed should be improved further.
 		// TODO: Other possibility, when we rebuild from block chain this action should be moved out of the rebuild function.
 		undoUnconfirmedList: function (seriesCb) {
-			modules.transactions.undoUnconfirmedList(function (err, ids) {
+			promiseToCB(modules.transactions.undoUnconfirmedList(),function (err, ids) {
 				if (err) {
 					// Fatal error, memory tables will be inconsistent
 					library.logger.error('Failed to undo unconfirmed list', err);
@@ -367,7 +367,7 @@ Chain.prototype.applyBlock = function (block, broadcast, cb, saveBlock) {
 				// DATABASE write
 				promiseToCB(modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}), function (err, sender) {
 					// DATABASE: write
-					modules.transactions.applyUnconfirmed(transaction, sender, function (err) {
+					promiseToCB(modules.transactions.applyUnconfirmed(transaction, sender), function (err) {
 						if (err) {
 							err = ['Failed to apply transaction:', transaction.id, '-', err].join(' ');
 							library.logger.error(err);
@@ -425,7 +425,7 @@ Chain.prototype.applyBlock = function (block, broadcast, cb, saveBlock) {
 						return process.exit(0);
 					}
 					// DATABASE: write
-					modules.transactions.apply(transaction, block, sender, function (err) {
+					promiseToCB(modules.transactions.apply(transaction, block, sender), function (err) {
 						if (err) {
 							// Fatal error, memory tables will be inconsistent
 							err = ['Failed to apply transaction:', transaction.id, '-', err].join(' ');
@@ -475,7 +475,7 @@ Chain.prototype.applyBlock = function (block, broadcast, cb, saveBlock) {
 		// TODO: See undoUnconfirmedList discussion above.
 		applyUnconfirmedIds: function (seriesCb) {
 			// DATABASE write
-			modules.transactions.applyUnconfirmedIds(unconfirmedTransactionIds, function (err) {
+			promiseToCB(modules.transactions.applyUnconfirmedIds(unconfirmedTransactionIds), function (err) {
 				return setImmediate(seriesCb, err);
 			});
 		},
@@ -532,12 +532,12 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 							}
 							// Undoing confirmed tx - refresh confirmed balance (see: logic.transaction.undo, logic.transfer.undo)
 							// WARNING: DB_WRITE
-							modules.transactions.undo(transaction, oldLastBlock, sender, cb);
+							promiseToCB(modules.transactions.undo(transaction, oldLastBlock, sender), cb);
 						});
 					}, function (cb) {
 						// Undoing unconfirmed tx - refresh unconfirmed balance (see: logic.transaction.undoUnconfirmed)
 						// WARNING: DB_WRITE
-						modules.transactions.undoUnconfirmed(transaction, cb);
+						promiseToCB(modules.transactions.undoUnconfirmed(transaction), cb);
 					}, function (cb) {
 						return setImmediate(cb);
 					}

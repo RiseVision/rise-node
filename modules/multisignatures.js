@@ -1,4 +1,5 @@
 'use strict';
+import {promiseToCB} from '../helpers/promiseToCback';
 
 var async = require('async');
 var crypto = require('crypto');
@@ -543,7 +544,7 @@ Multisignatures.prototype.shared = {
 							return setImmediate(seriesCb, e.toString());
 						}
 
-						modules.transactions.receiveTransactions([scope.transaction], true, seriesCb);
+						promiseToCB(modules.transactions.receiveTransactions([scope.transaction], true), seriesCb);
 					});
 				}
 			}, function (err) {
