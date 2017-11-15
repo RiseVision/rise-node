@@ -9,7 +9,7 @@ var rootDir = path.join(__dirname, "../../../..");
 var chainModule = rewire(path.join(rootDir, "modules/blocks/chain"));
 var sql = require(path.join(rootDir, "sql/blocks"));
 
-describe.only("modules/blocks/chain", function() {
+describe("modules/blocks/chain", function() {
     var sandbox = sinon.sandbox.create({
         injectInto: null,
         properties: ["spy", "stub", "clock"],
