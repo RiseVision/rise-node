@@ -124,7 +124,7 @@ var config = {
   cache       : appConfig.redis,
   cacheEnabled: appConfig.cacheEnabled,
   modules     : {
-    server         : './modules/server.js',
+    // server         : './modules/server.js',
     // accounts: './modules/accounts.js',
     // transactions   : './modules/transactions.js',
     blocks         : './modules/blocks.js',
@@ -571,6 +571,11 @@ d.run(function () {
       };
       tasks['transport']    = (cb) => {
         let module = new (require('./modules/transport').TransportModule)(scope);
+        modules.push(module);
+        cb(null, module);
+      };
+      tasks['server']    = (cb) => {
+        let module = new (require('./modules/server').ServerModule)();
         modules.push(module);
         cb(null, module);
       };
