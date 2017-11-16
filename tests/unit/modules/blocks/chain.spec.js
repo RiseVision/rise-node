@@ -10,61 +10,76 @@ var chainModule = rewire(path.join(rootDir, "modules/blocks/chain"));
 var sql = require(path.join(rootDir, "sql/blocks"));
 
 describe("modules/blocks/chain", function() {
-    var sandbox = sinon.sandbox.create({
-        injectInto: null,
-        properties: ["spy", "stub", "clock"],
-        useFakeTimers: true,
-        useFakeServer: false
-    });
-
-    var library = {
-		logger: {
-            trace : sandbox.stub(),
-            error : sandbox.stub(),
-            debug : sandbox.stub(),
-            warn  : sandbox.stub(),
-            info : sandbox.stub()
-        },
-		db: {
-            query : sandbox.stub(),
-            tx : sandbox.stub(),
-            none : sandbox.stub()
-        },
-		genesisblock: {
-            block : {}
-        },
-		bus: {
-            message : sandbox.stub()
-        },
-		balancesSequence: {
-            add : sandbox.stub()
-        },
-		logic: {
-			block: {
-                id : "id",
-                dbSave : sandbox.stub()
-            },
-			transaction: {
-                dbSave : sandbox.stub(),
-                afterSave : sandbox.stub(),
-                undoUnconfirmed : sandbox.stub()
-            },
-		},
-	};
+    var sandbox; 
+    var library;
 
     var Chain; 
     var __library;
     var __private;
-    var callback = sandbox.stub();
+    var __libraryTemp;
+    var __privateTemp;
+    var callback; 
 
-    chainModule.__set__("setImmediate", setImmediate);
 
     before(function() {
-        __library = chainModule.__get__("library");
+        sandbox = sinon.sandbox.create({
+            injectInto: null,
+            properties: ["spy", "stub", "clock"],
+            useFakeTimers: true,
+            useFakeServer: false
+        });
+
+        library = {
+            logger: {
+                trace : sandbox.stub(),
+                error : sandbox.stub(),
+                debug : sandbox.stub(),
+                warn  : sandbox.stub(),
+                info : sandbox.stub()
+            },
+            db: {
+                query : sandbox.stub(),
+                tx : sandbox.stub(),
+                none : sandbox.stub()
+            },
+            genesisblock: {
+                block : {}
+            },
+            bus: {
+                message : sandbox.stub()
+            },
+            balancesSequence: {
+                add : sandbox.stub()
+            },
+            logic: {
+                block: {
+                    id : "id",
+                    dbSave : sandbox.stub()
+                },
+                transaction: {
+                    dbSave : sandbox.stub(),
+                    afterSave : sandbox.stub(),
+                    undoUnconfirmed : sandbox.stub()
+                },
+            },
+        };
+        callback = sandbox.stub();
+
         __private = chainModule.__get__("__private");
+        __privateTemp = {};
+        for(var prop in __private) {
+            __privateTemp[prop] = __private[prop];
+        }
+
+        chainModule.__set__("setImmediate", setImmediate);
     });
 
     beforeEach(function() {
+        chainModule.__set__("library", undefined);
+        chainModule.__set__("__private", __privateTemp);
+        chainModule.__set__("self", undefined);
+        chainModule.__set__("modules", undefined);
+
         Chain = new chainModule(
             library.logger,
             library.logic.block,
@@ -75,6 +90,7 @@ describe("modules/blocks/chain", function() {
             library.balancesSequence
         );
         __library = chainModule.__get__("library");
+        __private = chainModule.__get__("__private");
     });
 
     afterEach(function() {
@@ -84,6 +100,11 @@ describe("modules/blocks/chain", function() {
     after(function() {
         sandbox.restore();
         chainModule.__set__("setImmediate", setImmediate);
+
+        chainModule.__set__("library", undefined);
+        chainModule.__set__("__private", __privateTemp);
+        chainModule.__set__("self", undefined);
+        chainModule.__set__("modules", undefined);
     });
 
     describe("constructor", function() {
@@ -753,7 +774,6 @@ describe("modules/blocks/chain", function() {
                     tick : sandbox.stub()
                 }
             };
-            chainModule.__set__("modules", modulesStub);
 
             applyTransactionTemp = __private.applyTransaction;
             applyTransactionStub = sandbox.stub();
@@ -763,6 +783,7 @@ describe("modules/blocks/chain", function() {
         });
 
         beforeEach(function() {
+            chainModule.__set__("modules", modulesStub);
             block = {
                 transactions : [
                     { type : 0, senderPublicKey : "first" },
@@ -851,10 +872,10 @@ describe("modules/blocks/chain", function() {
                     apply : sandbox.stub()
                 }
             };
-            chainModule.__set__("modules", modulesStub);
         });
 
         beforeEach(function() {
+            chainModule.__set__("modules", modulesStub);
             block = { value : "block" };
             transaction = { id : "transaction" };
             sender = { value : "sender" };
@@ -984,13 +1005,13 @@ describe("modules/blocks/chain", function() {
                     tick : sandbox.stub()
                 }
             };
-            chainModule.__set__("modules", modulesStub);
 
             sandbox.stub(process, "exit");
             sandbox.stub(process, "emit");
         });
 
         beforeEach(function() {
+            chainModule.__set__("modules", modulesStub);
             block = {
                 transactions : [
                     { id : "1", type : 0, senderPublicKey : "first" },
@@ -1545,12 +1566,13 @@ describe("modules/blocks/chain", function() {
                     backwardTick : sandbox.stub()
                 }
             };
-            chainModule.__set__("modules", modulesStub);
 
             sandbox.stub(process, "exit");
         });
 
         beforeEach(function() {
+            chainModule.__set__("modules", modulesStub);
+
             block = {
                 previousBlock : "45",
                 transactions : [
@@ -1828,6 +1850,7 @@ describe("modules/blocks/chain", function() {
 
         before(function() {
             modulesTemp = chainModule.__get__("modules"); 
+
             modulesStub = {
                 blocks : {
                     lastBlock : {
@@ -1836,12 +1859,13 @@ describe("modules/blocks/chain", function() {
                     }
                 }
             };
-            chainModule.__set__("modules", modulesStub);
 
             sandbox.stub(__private, "popLastBlock");
         });
 
         beforeEach(function() {
+            chainModule.__set__("modules", modulesStub);
+
             lastBlock = {
                 height : 100
             };
