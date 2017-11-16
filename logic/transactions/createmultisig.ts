@@ -5,12 +5,13 @@ import {emptyCB} from '../../helpers/promiseToCback';
 import {TransactionType} from '../../helpers/transactionTypes';
 import {ILogger} from '../../logger';
 import {AccountsModule} from '../../modules/accounts';
+import {RoundsModule} from '../../modules/rounds';
+import {SystemModule} from '../../modules/system';
 import multiSigSchema from '../../schema/logic/transactions/multisignature';
 import {AccountLogic} from '../account';
 import {SignedBlockType} from '../block';
 import {TransactionLogic} from '../transaction';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
-import {SystemModule} from '../../modules/system';
 
 // tslint:disable-next-line interface-over-type-literal
 export type InTransferAsset = {
@@ -23,7 +24,7 @@ export type InTransferAsset = {
 
 export class MultiSignatureTransaction extends BaseTransactionType<InTransferAsset> {
 
-  public modules: { accounts: AccountsModule, rounds: any, sharedApi: any, system: SystemModule };
+  public modules: { accounts: AccountsModule, rounds: RoundsModule, sharedApi: any, system: SystemModule };
   private unconfirmedSignatures: { [name: string]: true };
   private dbTable  = 'multisignatures';
   private dbFields = [
@@ -157,7 +158,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
         multilifetime  : tx.asset.multisignature.lifetime,
         multimin       : tx.asset.multisignature.min,
         multisignatures: tx.asset.multisignature.keysgroup,
-        round          : this.modules.rounds.calc(block.height),
+        round          : this.modules.rounds.calcRound(block.height),
       },
       emptyCB
     );
@@ -182,7 +183,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
         multilifetime  : -tx.asset.multisignature.lifetime,
         multimin       : -tx.asset.multisignature.min,
         multisignatures: multiInvert,
-        round          : this.modules.rounds.calc(block.height),
+        round          : this.modules.rounds.calcRound(block.height),
       },
       emptyCB
     );

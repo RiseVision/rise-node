@@ -6,7 +6,7 @@ import * as util from 'util';
 
 const strftime = tstrftime.timezone('+0000');
 
-type logFn = (message: string, data?: string | any) => void;
+type logFn = (message?: string|any, data?: string | any) => void;
 
 export interface ILogger {
   none: logFn;

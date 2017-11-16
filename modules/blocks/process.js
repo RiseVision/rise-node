@@ -374,7 +374,7 @@ Process.prototype.onReceiveBlock = function (block) {
 	library.sequence.add(function (cb) {
 		// When client is not loaded, is syncing or round is ticking
 		// Do not receive new blocks as client is not ready
-		if (!__private.loaded || modules.loader.isSyncing || modules.rounds.ticking()) {
+		if (!__private.loaded || modules.loader.isSyncing || modules.rounds.isTicking()) {
 			library.logger.debug('Client not ready to receive block', block.id);
 			return;
 		}
@@ -399,7 +399,7 @@ Process.prototype.onReceiveBlock = function (block) {
 				library.logger.warn([
 					'Discarded block that does not match with current chain:', block.id,
 					'height:', block.height,
-					'round:',  modules.rounds.calc(block.height),
+					'round:',  modules.rounds.calcRound(block.height),
 					'slot:', slots.getSlotNumber(block.timestamp),
 					'generator:', block.generatorPublicKey
 				].join(' '));
@@ -424,7 +424,7 @@ __private.receiveBlock = function (block, cb) {
 	library.logger.info([
 		'Received new block id:', block.id,
 		'height:', block.height,
-		'round:',  modules.rounds.calc(block.height),
+		'round:',  modules.rounds.calcRound(block.height),
 		'slot:', slots.getSlotNumber(block.timestamp),
 		'reward:', block.reward
 	].join(' '));

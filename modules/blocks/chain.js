@@ -278,7 +278,7 @@ Chain.prototype.applyGenesisBlock = function (block, cb) {
 			modules.blocks.lastBlock.set(block);
 			// Tick round
 			// WARNING: DB_WRITE
-			modules.rounds.tick(block, cb);
+			promiseToCB(modules.rounds.tick(block), cb);
 		}
 	});
 };
@@ -462,13 +462,13 @@ Chain.prototype.applyBlock = function (block, broadcast, cb, saveBlock) {
 					library.bus.message('newBlock', block, broadcast);
 
 					// DATABASE write. Update delegates accounts
-					modules.rounds.tick(block, seriesCb);
+					promiseToCB(modules.rounds.tick(block), seriesCb);
 				});
 			} else {
 				library.bus.message('newBlock', block, broadcast);
 
 				// DATABASE write. Update delegates accounts
-				modules.rounds.tick(block, seriesCb);
+        promiseToCB(modules.rounds.tick(block), seriesCb);
 			}
 		},
 		// Push back unconfirmed transactions list (minus the one that were on the block if applied correctly).
@@ -552,7 +552,7 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 
 				// Perform backward tick on rounds
 				// WARNING: DB_WRITE
-				modules.rounds.backwardTick(oldLastBlock, previousBlock, function (err) {
+        promiseToCB(modules.rounds.backwardTick(oldLastBlock, previousBlock), function (err) {
 					if (err) {
 						// Fatal error, memory tables will be inconsistent
 						library.logger.error('Failed to perform backwards tick', err);

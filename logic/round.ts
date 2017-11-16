@@ -4,13 +4,14 @@ import {ITask} from 'pg-promise';
 import {RoundChanges} from '../helpers/RoundChanges';
 import roundSQL from '../sql/logic/rounds';
 import {ILogger} from '../logger';
+import {address, publicKey} from '../types/sanityTypes';
 
-type ScopeLogic = {
+export type RoundLogicScope = {
   backwards: boolean;
   round: number;
   // List of address which missed a block in this round
-  roundOutsiders: string[];
-  roundDelegates: string[];
+  roundOutsiders: address[];
+  roundDelegates: publicKey[];
   roundFees: any;
   roundRewards: number[];
   finishRound: boolean;
@@ -21,15 +22,15 @@ type ScopeLogic = {
     accounts: any;
   }
   block: {
-    generatorPublicKey: string;
+    generatorPublicKey: publicKey;
     id: string;
-    height: string;
+    height: number;
   }
 };
 
 export class RoundLogic {
 
-  constructor(public scope: ScopeLogic, public task: ITask<any>) {
+  constructor(public scope: RoundLogicScope, public task: ITask<any>) {
     let reqProps = ['library', 'modules', 'block', 'round', 'backwards'];
     if (scope.finishRound) {
       reqProps = reqProps.concat([

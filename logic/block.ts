@@ -26,7 +26,7 @@ export type BlockType = {
 };
 
 export type SignedBlockType = BlockType & {
-  id?: string;
+  id: string;
   blockSignature: string;
 };
 
@@ -213,7 +213,7 @@ export class BlockLogic {
       totalFee,
       transactions        : blockTransactions,
       version             : 0,
-    };
+    } as any; // FIXME id is missing so it's not a SignedBlockType
 
     block.blockSignature = this.sign(block, data.keypair);
     return this.objectNormalize(block);

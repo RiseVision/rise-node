@@ -134,7 +134,7 @@ var config = {
     // system         : './modules/system.js',
     // peers          : './modules/peers.js',
     delegates      : './modules/delegates.js',
-    rounds         : './modules/rounds.js',
+    // rounds         : './modules/rounds.js',
     multisignatures: './modules/multisignatures.js',
     // dapps          : './modules/dapps.js',
     // sql            : './modules/sql.js',
@@ -584,7 +584,11 @@ d.run(function () {
         modules.push(module);
         cb(null, module);
       };
-
+      tasks['rounds']    = (cb) => {
+        let module = new (require('./modules/rounds').RoundsModule)(scope);
+        modules.push(module);
+        cb(null, module);
+      };
 
       async.parallel(tasks, function (err, results) {
         cb(err, results);

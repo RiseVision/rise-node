@@ -15,10 +15,12 @@ import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
 import {IBus} from '../types/bus';
 import {PeersModule} from './peers';
-import {TransportModule} from './transport';
+import {RoundsModule} from './rounds';
 import {TransactionsModule} from './transactions';
+import {TransportModule} from './transport';
 import Timer = NodeJS.Timer;
 
+// tslint:disable-next-line
 export type LoaderLibrary = {
   logger: ILogger;
   db: ITask<any>;
@@ -55,7 +57,7 @@ export class LoaderModule {
   private syncInterval                             = 1000;
 
   private modules: {
-    blocks: any, rounds: any, system: any, transactions: TransactionsModule, transport: TransportModule,
+    blocks: any, rounds: RoundsModule, system: any, transactions: TransactionsModule, transport: TransportModule,
     peers: PeersModule,
     multisignatures: any
   };
@@ -228,7 +230,7 @@ export class LoaderModule {
       this.library.logger.info('Genesis block matches with database');
     }
 
-    const round = this.modules.rounds.calc(blocksCount);
+    const round = this.modules.rounds.calcRound(blocksCount);
 
     // Check if we are in verifySnapshot mode.
     if (this.library.config.loading.snapshot) {

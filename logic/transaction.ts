@@ -9,6 +9,7 @@ import {emptyCB} from '../helpers/promiseToCback';
 import slots from '../helpers/slots';
 import {TransactionType} from '../helpers/transactionTypes';
 import {ILogger} from '../logger';
+import {RoundsModule} from '../modules/rounds';
 import txSchema from '../schema/logic/transaction';
 import sql from '../sql/logic/transactions';
 import {AccountLogic} from './account';
@@ -43,7 +44,7 @@ export class TransactionLogic {
     'signatures',
   ];
 
-  public modules: { rounds: any };
+  public modules: { rounds: RoundsModule };
 
   private types: { [k: number]: BaseTransactionType<any> } = {};
 
@@ -419,7 +420,7 @@ export class TransactionLogic {
     this.scope.logger.trace('Logic/Transaction->apply', {
       balance: -amountNumber,
       blockId: block.id,
-      round  : this.modules.rounds.calc(block.height),
+      round  : this.modules.rounds.calcRound(block.height),
       sender : sender.address,
     });
     await this.scope.account.merge(
@@ -427,7 +428,7 @@ export class TransactionLogic {
       {
         balance: -amountNumber,
         blockId: block.id,
-        round  : this.modules.rounds.calc(block.height),
+        round  : this.modules.rounds.calcRound(block.height),
       } as any, // TODO: round is not defined in typescript definition. Possible bug?
       // tslint:disable-next-line no-empty
       () => {
@@ -443,7 +444,7 @@ export class TransactionLogic {
         {
           balance: amountNumber,
           blockId: block.id,
-          round  : this.modules.rounds.calc(block.height),
+          round  : this.modules.rounds.calcRound(block.height),
         },
         // tslint:disable-next-line no-empty
         () => {
@@ -466,7 +467,7 @@ export class TransactionLogic {
     this.scope.logger.trace('Logic/Transaction->undo', {
       balance: amount,
       blockId: block.id,
-      round  : this.modules.rounds.calc(block.height),
+      round  : this.modules.rounds.calcRound(block.height),
       sender : sender.address,
     });
     const mergedSender = await this.scope.account.merge(
@@ -474,7 +475,7 @@ export class TransactionLogic {
       {
         balance: amount,
         blockId: block.id,
-        round  : this.modules.rounds.calc(block.id),
+        round  : this.modules.rounds.calcRound(block.height),
       },
       emptyCB
     );
@@ -488,7 +489,7 @@ export class TransactionLogic {
         {
           balance: -amount,
           blockId: block.id,
-          round  : this.modules.rounds.calc(block.id),
+          round  : this.modules.rounds.calcRound(block.height),
         },
         emptyCB
       );

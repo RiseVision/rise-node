@@ -8,6 +8,7 @@ import {AccountLogic} from '../account';
 import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
 import {SystemModule} from '../../modules/system';
+import {RoundsModule} from '../../modules/rounds';
 
 // tslint:disable-next-line interface-over-type-literal
 export type VoteAsset = {
@@ -15,7 +16,7 @@ export type VoteAsset = {
 };
 
 export class VoteTransaction extends BaseTransactionType<VoteAsset> {
-  public modules: { delegates: any, rounds: any, system: SystemModule };
+  public modules: { delegates: any, rounds: RoundsModule, system: SystemModule };
   private dbTable  = 'votes';
   private dbFields = [
     'votes',
@@ -78,7 +79,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
     return this.library.account.merge(sender.address, {
       blockId  : block.id,
       delegates: tx.asset.votes,
-      round    : this.modules.rounds.calc(block.height),
+      round    : this.modules.rounds.calcRound(block.height),
     }, emptyCB);
   }
 
@@ -88,7 +89,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
     return this.library.account.merge(sender.address, {
       blockId  : block.id,
       delegates: invertedVotes,
-      round    : this.modules.rounds.calc(block.height),
+      round    : this.modules.rounds.calcRound(block.height),
     }, emptyCB);
   }
 

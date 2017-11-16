@@ -1,13 +1,14 @@
 import {cbToPromise} from '../../helpers/promiseToCback';
 import {TransactionType} from '../../helpers/transactionTypes';
 import {ILogger} from '../../logger';
+import {AccountsModule} from '../../modules/accounts';
+import {RoundsModule} from '../../modules/rounds';
+import {SystemModule} from '../../modules/system';
 import outTransferSchema from '../../schema/logic/transactions/outTransfer';
 import dappsSQL from '../../sql/logic/transactions/dapps';
 import {AccountLogic} from '../account';
 import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
-import {AccountsModule} from '../../modules/accounts';
-import {SystemModule} from '../../modules/system';
 
 // tslint:disable-next-line interface-over-type-literal
 export type OutTransferAsset = {
@@ -18,7 +19,7 @@ export type OutTransferAsset = {
 };
 
 export class OutTransferTransaction extends BaseTransactionType<OutTransferAsset> {
-  public modules: { accounts: AccountsModule, dapps: any, rounds: any, system: SystemModule };
+  public modules: { accounts: AccountsModule, dapps: any, rounds: RoundsModule, system: SystemModule };
 
   private unconfirmedOutTransfers: { [txID: string]: true } = {};
   private dbTable                                           = 'outtransfer';
@@ -102,7 +103,7 @@ export class OutTransferTransaction extends BaseTransactionType<OutTransferAsset
       address  : tx.recipientId,
       balance  : tx.amount,
       blockId  : block.id,
-      round    : this.modules.rounds.calc(block.height),
+      round    : this.modules.rounds.calcRound(block.height),
       u_balance: tx.amount,
     })
       .then(() => void 0);
@@ -118,7 +119,7 @@ export class OutTransferTransaction extends BaseTransactionType<OutTransferAsset
       address  : tx.recipientId,
       balance  : -tx.amount,
       blockId  : block.id,
-      round    : this.modules.rounds.calc(block.height),
+      round    : this.modules.rounds.calcRound(block.height),
       u_balance: -tx.amount,
     })
       .then(() => void 0);

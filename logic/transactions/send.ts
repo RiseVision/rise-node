@@ -1,11 +1,12 @@
 import {TransactionType} from '../../helpers/transactionTypes';
 import {AccountsModule} from '../../modules/accounts';
+import {RoundsModule} from '../../modules/rounds';
+import {SystemModule} from '../../modules/system';
 import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
-import {SystemModule} from '../../modules/system';
 
 export class SendTransaction extends BaseTransactionType<void> {
-  public modules: { accounts: AccountsModule, rounds: any, system: SystemModule };
+  public modules: { accounts: AccountsModule, rounds: RoundsModule, system: SystemModule };
 
   constructor() {
     super(TransactionType.SEND);
@@ -38,7 +39,7 @@ export class SendTransaction extends BaseTransactionType<void> {
       address  : tx.recipientId,
       balance  : tx.amount,
       blockId  : block.id,
-      round    : this.modules.rounds.calc(block.height),
+      round    : this.modules.rounds.calcRound(block.height),
       u_balance: tx.amount,
     })
       .then(() => void 0);
@@ -52,7 +53,7 @@ export class SendTransaction extends BaseTransactionType<void> {
       address  : tx.recipientId,
       balance  : -tx.amount,
       blockId  : block.id,
-      round    : this.modules.rounds.calc(block.height),
+      round    : this.modules.rounds.calcRound(block.height),
       u_balance: -tx.amount,
     })
       .then(() => void 0);
