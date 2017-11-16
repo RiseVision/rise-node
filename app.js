@@ -128,7 +128,7 @@ var config = {
     // accounts: './modules/accounts.js',
     // transactions   : './modules/transactions.js',
     blocks         : './modules/blocks.js',
-    signatures     : './modules/signatures.js',
+    // signatures     : './modules/signatures.js',
     // transport      : './modules/transport.js',
     // loader         : './modules/loader.js',
     // system         : './modules/system.js',
@@ -576,6 +576,11 @@ d.run(function () {
       };
       tasks['server']    = (cb) => {
         let module = new (require('./modules/server').ServerModule)();
+        modules.push(module);
+        cb(null, module);
+      };
+      tasks['signatures']    = (cb) => {
+        let module = new (require('./modules/signatures').SignaturesModule)(scope);
         modules.push(module);
         cb(null, module);
       };
