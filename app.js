@@ -136,8 +136,8 @@ var config = {
     delegates      : './modules/delegates.js',
     rounds         : './modules/rounds.js',
     multisignatures: './modules/multisignatures.js',
-    dapps          : './modules/dapps.js',
-    sql            : './modules/sql.js',
+    // dapps          : './modules/dapps.js',
+    // sql            : './modules/sql.js',
     // cache: './modules/cache.js'
   },
   api         : {
