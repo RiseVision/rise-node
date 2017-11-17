@@ -338,8 +338,11 @@ export class BlockLogic {
   }
 
   private getAddressByPublicKey(publicKey: Buffer | string) {
+    if ( typeof( publicKey ) === 'string') {
+      publicKey = new Buffer(publicKey, 'hex');
+    }
     const publicKeyHash = crypto.createHash('sha256')
-      .update(publicKey, 'utf8' /* TODO: should be hex?*/).digest();
+      .update(publicKey).digest();
     const temp          = Buffer.alloc(8);
 
     for (let i = 0; i < 8; i++) {

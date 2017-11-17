@@ -495,9 +495,6 @@ Delegates.prototype.validateBlockSlot = function (block, cb) {
 
 		var currentSlot = slots.getSlotNumber(block.timestamp);
 		var delegate_id = activeDelegates[currentSlot % slots.delegates];
-		console.log(currentSlot % slots.delegates);
-
-		console.log(activeDelegates.indexOf(block.generatorPublicKey));
 
 		// var nextDelegate_id = activeDelegates[(currentSlot + 1) % slots.delegates];
 		// var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];
