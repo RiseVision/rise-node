@@ -75,13 +75,17 @@ Utils.prototype.readDbRows = function (rows) {
 			blocks[block.id].transactions = blocks[block.id].transactions || {};
 
 			if (transaction) {
+
 				// Add transaction to block if not there already
 				if (!blocks[block.id].transactions[transaction.id]) {
+          console.log('adding', transaction.id, 'to', block.id);
+
 					blocks[block.id].transactions[transaction.id] = transaction;
 				}
 			}
 		}
 	}
+
 
 	// Reorganize list
 	blocks = order.map(function (v) {

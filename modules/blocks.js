@@ -6,7 +6,7 @@ var sandboxHelper = require('../helpers/sandbox');
 var blocksAPI     = require('./blocks/api');
 var blocksVerify  = require('./blocks/verify');
 var blocksProcess = require('./blocks/process');
-var blocksUtils   = require('./blocks/utils');
+var blocksUtils   = require('./blocks/_utils');
 var blocksChain   = require('./blocks/chain');
 
 // Private fields

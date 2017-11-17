@@ -310,7 +310,7 @@ export class BlockLogic {
     return block;
   }
 
-  public dbRead(rawBlock: any): BlockType {
+  public dbRead(rawBlock: any): SignedBlockType {
     if (!rawBlock.b_id) {
       return null;
     } else {
