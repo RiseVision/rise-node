@@ -5,7 +5,7 @@ var BlockReward = require('../../logic/blockReward').BlockRewardLogic;
 var constants = require('../../helpers/constants').default;
 var OrderBy = require('../../helpers/orderBy').default;
 var schema = require('../../schema/blocks').default;
-var sql = require('../../sql/blocks.js');
+var sql = require('../../sql/blocks').default;
 
 var modules, library, self, __private = {};
 

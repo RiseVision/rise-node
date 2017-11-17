@@ -2,7 +2,7 @@
 
 var _ = require('lodash');
 var constants = require('../../helpers/constants').default;
-var sql = require('../../sql/blocks.js');
+var sql = require('../../sql/blocks.ts');
 var transactionTypes = require('../../helpers/transactionTypes').TransactionType;
 
 var modules, library, self, __private = {};

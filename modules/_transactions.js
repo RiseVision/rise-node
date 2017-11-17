@@ -12,7 +12,7 @@ var sql = require('../sql/logic/transactions.ts');
 var TransactionPool = require('../logic/transactionPool').TransactionPool;
 var transactionTypes = require('../helpers/transactionTypes').TransactionType;
 var Transfer = require('../logic/transactions/send').SendTransaction;
-var promiseToCB = require('../helpers/promiseToCback').promiseToCB;
+var promiseToCB = require('../helpers/promiseUtils').promiseToCB;
 
 // Private fields
 var __private = {};

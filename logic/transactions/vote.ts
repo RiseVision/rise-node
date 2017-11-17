@@ -1,6 +1,6 @@
 import constants from '../../helpers/constants';
 import Diff from '../../helpers/diff';
-import {cbToPromise, emptyCB} from '../../helpers/promiseToCback';
+import {cbToPromise, emptyCB} from '../../helpers/promiseUtils';
 import {TransactionType} from '../../helpers/transactionTypes';
 import {ILogger} from '../../logger';
 import voteSchema from '../../schema/logic/transactions/vote';

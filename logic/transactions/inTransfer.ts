@@ -1,4 +1,4 @@
-import {cbToPromise} from '../../helpers/promiseToCback';
+import {cbToPromise} from '../../helpers/promiseUtils';
 import {TransactionType} from '../../helpers/transactionTypes';
 import {ILogger} from '../../logger';
 import {AccountsModule} from '../../modules/accounts';

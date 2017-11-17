@@ -52,3 +52,10 @@ export function cbToPromise<T>(fn: (cb: cback<T>) => void, multi = false): Promi
 export function cbToVoidPromise(fn: (cb: cback<any>) => void): Promise<void> {
   return cbToPromise(fn);
 }
+
+export function logCatchRewrite(logger: ILogger, errString: string): (err: Error) => Promise<any> {
+  return (err: Error) => {
+    logger.error(err.stack);
+    return Promise.reject(new Error(errString));
+  };
+}

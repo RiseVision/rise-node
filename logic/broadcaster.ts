@@ -3,7 +3,7 @@ import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
 import constants from '../helpers/constants';
 import jobsQueue from '../helpers/jobsQueue';
-import {cbToPromise, promiseToCB} from '../helpers/promiseToCback';
+import {cbToPromise, promiseToCB} from '../helpers/promiseUtils';
 import {ILogger} from '../logger';
 import {PeersModule} from '../modules/peers';
 import {PeerType} from './peer';

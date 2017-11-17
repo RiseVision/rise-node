@@ -1,7 +1,7 @@
 import * as ByteBuffer from 'bytebuffer';
 import constants from '../../helpers/constants';
 import Diff from '../../helpers/diff';
-import {emptyCB} from '../../helpers/promiseToCback';
+import {emptyCB} from '../../helpers/promiseUtils';
 import {TransactionType} from '../../helpers/transactionTypes';
 import {ILogger} from '../../logger';
 import {AccountsModule} from '../../modules/accounts';

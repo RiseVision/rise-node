@@ -1,11 +1,11 @@
 'use strict';
-import { promiseToCB } from "../../helpers/promiseToCback";
+import { promiseToCB } from "../../helpers/promiseUtils";
 
 var _ = require('lodash');
 var async = require('async');
 var crypto = require('crypto');
 var Inserts = require('../../helpers/inserts.js');
-var sql = require('../../sql/blocks.js');
+var sql = require('../../sql/blocks').default;
 var transactionTypes = require('../../helpers/transactionTypes').TransactionType;
 
 var modules, library, self, __private = {};
@@ -515,7 +515,7 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 	library.balancesSequence.add(function (cb) {
 		// Load previous block from full_blocks_list table
 		// TODO: Can be inefficient, need performnce tests
-		modules.blocks.utils.loadBlocksPart({ id: oldLastBlock.previousBlock }, function (err, previousBlock) {
+    promiseToCB(modules.blocks.utils.loadBlocksPart({ id: oldLastBlock.previousBlock }), function (err, previousBlock) {
 			if (err || !previousBlock.length) {
 				return setImmediate(cb, err || 'previousBlock is null');
 			}

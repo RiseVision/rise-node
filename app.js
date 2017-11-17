@@ -39,7 +39,7 @@ var httpApi      = require('./helpers/httpApi');
 var Sequence     = require('./helpers/sequence').default;
 var util         = require('util');
 var z_schema     = require('./helpers/z_schema').default;
-var promiseToCB  = require('./helpers/promiseToCback').promiseToCB;
+var promiseToCB  = require('./helpers/promiseUtils').promiseToCB;
 
 process.stdin.resume();
 
@@ -427,7 +427,7 @@ d.run(function () {
             if (module.submodules) {
               async.each(module.submodules, function (submodule) {
                 if (submodule && typeof(submodule[eventName]) === 'function') {
-                  submodule[eventName].apply(submodule[eventName], args);
+                  submodule[eventName].apply(submodule, args);
                 }
               });
             }

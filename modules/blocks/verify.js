@@ -1,12 +1,12 @@
 'use strict';
-import {promiseToCB} from '../../helpers/promiseToCback';
+import {promiseToCB} from '../../helpers/promiseUtils';
 
 var async = require('async');
 var BlockReward = require('../../logic/blockReward').BlockRewardLogic;
 var constants = require('../../helpers/constants').default;
 var crypto = require('crypto');
 var slots = require('../../helpers/slots').default;
-var sql = require('../../sql/blocks.js');
+var sql = require('../../sql/blocks').default;
 var exceptions = require('../../helpers/exceptions.ts');
 
 var modules, library, self, __private = {};

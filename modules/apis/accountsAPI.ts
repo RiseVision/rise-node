@@ -1,5 +1,5 @@
 import { BodyParams, Controller, Get, Post, Put, QueryParams } from 'ts-express-decorators';
-import { cbToPromise } from '../../helpers/promiseToCback';
+import { cbToPromise } from '../../helpers/promiseUtils';
 import accountSchema from '../../schema/accounts';
 import { AccountsModule } from '../accounts';
 import { SchemaValid, ValidateSchema } from './baseAPIClass';

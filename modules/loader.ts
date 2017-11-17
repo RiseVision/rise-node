@@ -2,11 +2,11 @@ import {ITask} from 'pg-promise';
 import * as promiseRetry from 'promise-retry';
 import constants from '../helpers/constants';
 import jobsQueue from '../helpers/jobsQueue';
-import {cbToPromise, emptyCB} from '../helpers/promiseToCback';
+import {cbToPromise, emptyCB} from '../helpers/promiseUtils';
 import Sequence from '../helpers/sequence';
 import {ILogger} from '../logger';
 import {AccountLogic} from '../logic/account';
-import {BlockType, SignedBlockType} from '../logic/block';
+import {SignedBlockType} from '../logic/block';
 import {Peer, PeerType} from '../logic/peer';
 import {Peers} from '../logic/peers';
 import {TransactionLogic} from '../logic/transaction';
@@ -18,6 +18,7 @@ import {PeersModule} from './peers';
 import {RoundsModule} from './rounds';
 import {TransactionsModule} from './transactions';
 import {TransportModule} from './transport';
+import {BlocksModuleUtils} from './blocks/utils';
 import Timer = NodeJS.Timer;
 
 // tslint:disable-next-line
@@ -48,7 +49,7 @@ export class LoaderModule {
 
   private network: { height: number, peers: Peer[] };
   private genesisBlock: { block: SignedBlockType } = null;
-  private lastblock: BlockType                     = null;
+  private lastblock: SignedBlockType               = null;
   private syncIntervalId: Timer                    = null;
   private blocksToSync: number                     = 0;
   private loaded: boolean                          = false;
@@ -57,7 +58,8 @@ export class LoaderModule {
   private syncInterval                             = 1000;
 
   private modules: {
-    blocks: any, rounds: RoundsModule, system: any, transactions: TransactionsModule, transport: TransportModule,
+    blocks: { utils: BlocksModuleUtils, [k: string]: any },
+    rounds: RoundsModule, system: any, transactions: TransactionsModule, transport: TransportModule,
     peers: PeersModule,
     multisignatures: any
   };
@@ -279,7 +281,7 @@ export class LoaderModule {
       return this.load(blocksCount, limit, 'No delegates found');
     }
     try {
-      this.lastblock = await cbToPromise<any>((cb) => this.modules.blocks.utils.loadLastBlock(cb));
+      this.lastblock = await this.modules.blocks.utils.loadLastBlock();
       this.library.logger.info('Blockchain ready');
       this.library.bus.message('blockchainReady');
     } catch (err) {

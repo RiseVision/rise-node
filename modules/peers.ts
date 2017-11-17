@@ -5,7 +5,7 @@ import {ITask} from 'pg-promise';
 import * as shuffle from 'shuffle-array';
 import constants from '../helpers/constants';
 import jobsQueue from '../helpers/jobsQueue';
-import {cbToPromise} from '../helpers/promiseToCback';
+import {cbToPromise} from '../helpers/promiseUtils';
 import {ILogger} from '../logger';
 import {Peer, PeerState, PeerType} from '../logic/peer';
 import {Peers} from '../logic/peers';

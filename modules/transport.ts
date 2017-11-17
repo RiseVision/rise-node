@@ -3,7 +3,7 @@ import {ITask} from 'pg-promise';
 import * as popsicle from 'popsicle';
 import MyBigNumb from '../helpers/bignum';
 import constants from '../helpers/constants';
-import {cbToPromise} from '../helpers/promiseToCback';
+import {cbToPromise} from '../helpers/promiseUtils';
 import Sequence from '../helpers/sequence';
 import {ILogger} from '../logger';
 import {BlockLogic, SignedBlockType} from '../logic/block';

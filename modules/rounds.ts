@@ -1,6 +1,6 @@
 import { IDatabase, ITask } from 'pg-promise';
 import constants from '../helpers/constants';
-import { cbToPromise } from '../helpers/promiseToCback';
+import { cbToPromise } from '../helpers/promiseUtils';
 import slots from '../helpers/slots';
 import { ILogger } from '../logger';
 import { SignedBlockType } from '../logic/block';

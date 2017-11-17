@@ -1,6 +1,6 @@
 import constants from '../helpers/constants';
 import jobsQueue from '../helpers/jobsQueue';
-import {promiseToCB} from '../helpers/promiseToCback';
+import {promiseToCB} from '../helpers/promiseUtils';
 import {TransactionType} from '../helpers/transactionTypes';
 import {ILogger} from '../logger';
 import {AccountsModule} from '../modules/accounts';

@@ -6,7 +6,7 @@ var Round         = require('../logic/round').RoundLogic;
 var sandboxHelper = require('../helpers/sandbox');
 var slots         = require('../helpers/slots').default;
 var sql           = require('../sql/logic/rounds.ts').default;
-var {cbToPromise}   = require('../helpers/promiseToCback');
+var {cbToPromise}   = require('../helpers/promiseUtils');
 // Private fields
 var modules, library, self, __private = {}, shared = {};
 

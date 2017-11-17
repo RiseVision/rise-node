@@ -1,10 +1,17 @@
-import { ILogger } from '../../logger';
-import { BlockLogic, SignedBlockType } from '../../logic/block';
-import { TransactionLogic } from '../../logic/transaction';
-import { IDatabase } from 'pg-promise';
+import * as _ from 'lodash';
+import {IDatabase} from 'pg-promise';
+import constants from '../../helpers/constants';
+import {catchToLoggerAndRemapError, logCatchRewrite} from '../../helpers/promiseUtils';
 import Sequence from '../../helpers/sequence';
+import {TransactionType} from '../../helpers/transactionTypes';
+import {ILogger} from '../../logger';
+import {BlockLogic, SignedBlockType} from '../../logic/block';
+import {TransactionLogic} from '../../logic/transaction';
 import sql from '../../sql/blocks';
+import {RawFullBlockListType} from '../../types/rawDBTypes';
+import {publicKey} from '../../types/sanityTypes';
 
+// tslint:disable-next-line
 export type BlocksModuleUtilsLibrary = {
   logger: ILogger,
   logic: {
@@ -17,11 +24,14 @@ export type BlocksModuleUtilsLibrary = {
 };
 
 export class BlocksModuleUtils {
+  public loaded = false;
+  private modules: { blocks: any };
+
   public constructor(public library: BlocksModuleUtilsLibrary) {
     this.library.logger.trace('Blocks->Utils: Submodule initialized');
   }
 
-  public readDbRows(rows: any[]): SignedBlockType[] {
+  public readDbRows(rows: RawFullBlockListType[]): SignedBlockType[] {
     const blocks = {};
     const order  = [];
     // a block is defined in multiple_rows
@@ -72,62 +82,186 @@ export class BlocksModuleUtils {
    * Loads full blocks from database and normalize them
    *
    */
-  public loadBlocksPart(filter, cb) {
-    self.loadBlocksData(filter, function (err, rows) {
-      var blocks = [];
-
-      if (!err) {
-        // Normalize list of blocks
-        blocks = this.readDbRows(rows);
-      }
-
-      return setImmediate(cb, err, blocks);
-    });
+  public async loadBlocksPart(filter: { limit?: number, id?: string, lastId?: string }) {
+    const blocks = await this.loadBlocksData(filter);
+    return this.readDbRows(blocks);
   }
 
-
   /**
-   * Loads full normalized last block from database
-   * see: loader.loadBlockChain (private)
-   *
-   * @async
-   * @public
-   * @method loadLastBlock
-   * @param  {Function} cb Callback function
-   * @return {Function} cb Callback function from params (through setImmediate)
-   * @return {Object}   cb.err Error message if error occurred
-   * @return {Object}   cb.block Full normalized last block
+   * Loads the last block from db and normalizes it.
+   * @return {Promise<SignedBlockType>}
    */
-  public loadLastBlock(cb) {
-    this.library.dbSequence.add(function (cb) {
-      // Get full last block from database
-      // FIXME: Ordering in that SQL - to rewrite
-      this.library.db.query(sql.loadLastBlock).then(function (rows) {
-        // Normalize block
-        var block = modules.blocks.utils.readDbRows(rows)[0];
+  public async loadLastBlock(): Promise<SignedBlockType> {
+    return await this.library.dbSequence.addAndPromise(async () => {
+      const rows  = await this.library.db.query(sql.loadLastBlock);
+      const block = this.readDbRows(rows)[0];
 
-        // Sort block's transactions
-        block.transactions = block.transactions.sort(function (a, b) {
-          if (block.id === library.genesisblock.block.id) {
-            if (a.type === transactionTypes.VOTE) {
-              return 1;
-            }
-          }
-
-          if (a.type === transactionTypes.SIGNATURE) {
+      // this is not correct. Ordering should always return consistent data so it should also account b
+      // I'm not sure why this is needed though
+      // FIXME PLEASE!
+      block.transactions = block.transactions.sort((a, b) => {
+        if (block.id === this.library.genesisblock.block.id) {
+          if (a.type === TransactionType.VOTE) {
             return 1;
           }
-
-          return 0;
-        });
-
-        // Update last block
-        modules.blocks.lastBlock.set(block);
-        return setImmediate(cb, null, block);
-      }).catch(function (err) {
-        library.logger.error(err.stack);
-        return setImmediate(cb, 'Blocks#loadLastBlock error');
+        }
+        if (a.type === TransactionType.SIGNATURE) {
+          return 1;
+        }
+        return 0;
       });
-    }, cb);
-  };
+
+      this.modules.blocks.lastBlock.set(block);
+      return block;
+    })
+      .catch(logCatchRewrite(this.library.logger, 'Blocks#loadLastBlock error'));
+  }
+
+  /**
+   * Gets block IDs sequence - last block id, ids of first blocks of last 5 rounds and genesis block id.
+   * @param {number} height
+   */
+  public async getIdSequence(height: number): Promise<{ firstHeight: number, ids: string[] }> {
+    const lastBlock = this.modules.blocks.lastBlock.get();
+    // Get IDs of first blocks of (n) last rounds, descending order
+    // EXAMPLE: For height 2000000 (round 19802) we will get IDs of blocks at height: 1999902, 1999801, 1999700,
+    // 1999599, 1999498
+    const rows = await this.library.db.query(sql.getIdSequence(), {
+      delegates: constants.activeDelegates,
+      height,
+      limit    : 5,
+    });
+
+    if (rows.length === 0) {
+      throw new Error(`Failed to get id sequence for height ${height}`);
+    }
+
+    // Add genesis block at the end if the set doesn't contain it already
+    if (this.library.genesisblock && this.library.genesisblock.block) {
+      const gb = {
+        height: this.library.genesisblock.block.height,
+        id    : this.library.genesisblock.block.id,
+      };
+      if (!_.includes(rows, gb.id)) {
+        rows.push(gb);
+      }
+    }
+
+    // Add last block at the beginning if the set doesn't contain it already
+    if (lastBlock && !_.includes(rows, lastBlock.id)) {
+      rows.unshift({
+        height: lastBlock.height,
+        id    : lastBlock.id,
+      });
+    }
+
+    const ids: string[] = rows.map((r) => r.id);
+
+    return { firstHeight: rows[0].height, ids };
+  }
+
+  // tslint:disable-next-line max-line-length
+  public async loadBlocksData(filter: { limit?: number, id?: string, lastId?: string }): Promise<RawFullBlockListType[]> {
+    const params: any = { limit: filter.limit || 1 };
+    // FIXME: filter.id is not used
+    if (filter.id && filter.lastId) {
+      throw new Error('Invalid filter: Received both id and lastId');
+    } else if (filter.id) {
+      params.id = filter.id;
+    } else if (filter.lastId) {
+      params.lastId = filter.lastId;
+    }
+    return await this.library.dbSequence.addAndPromise(async () => {
+      const rows = await this.library.db.query(sql.getHeightByLastId, { lastId: filter.lastId || null });
+
+      const height = rows.length ? rows[0].height : 0;
+      // Calculate max block height for database query
+
+      params.limit  = height + (parseInt(`${filter.limit}`, 10) || 1);
+      params.height = height;
+
+      return this.library.db.query(sql.loadBlocksData(filter), params);
+    })
+      .catch((err) => {
+        this.library.logger.error(err.stack);
+        return Promise.reject(new Error('Blocks#loadBlockData error'));
+      });
+  }
+
+  public getBlockProgressLogger(txCount: number, logsFrequency: number, msg: string) {
+    return new BlockProgressLogger(txCount, logsFrequency, msg, this.library.logger);
+  }
+
+  /**
+   * Gets block rewards for a delegate for time period
+   */
+  // tslint:disable-next-line max-line-length
+  public async aggregateBlockReward(filter: { generatorPublicKey: publicKey, start?: number, end?: number }): Promise<{ fees: number, rewards: number, count: number }> {
+    const params: any         = {};
+    params.generatorPublicKey = filter.generatorPublicKey;
+    params.delegates          = constants.activeDelegates;
+
+    if (typeof(filter.start) !== 'undefined') {
+      params.start = filter.start - constants.epochTime.getTime() / 1000;
+    }
+
+    if (typeof(filter.end) !== 'undefined') {
+      params.end = filter.end - constants.epochTime.getTime() / 1000;
+    }
+
+    // Get calculated rewards
+    const [data] = await this.library.db.query(sql.aggregateBlocksReward(params), params)
+      .catch(catchToLoggerAndRemapError('Blocks#aggregateBlocksReward error', this.library.logger));
+
+    if (data.delegate === null) {
+      throw new Error('Account not found or is not a delegate');
+    }
+    return { fees: data.fees || 0, rewards: data.rewards || 0, count: data.count || 0 };
+  }
+
+  public onBind(scope: { blocks: any }) {
+    this.library.logger.trace('Blocks->Utils: Shared modules bind.');
+    this.modules = { blocks: scope.blocks };
+    this.loaded  = true;
+  }
+}
+
+// tslint:disable-next-line
+export class BlockProgressLogger {
+  private target: number;
+  private step: number;
+  private applied: number = 0;
+
+  constructor(txCount: number, logsFrequency: number, private msg: string, private logger: ILogger) {
+    this.target = txCount;
+    this.step   = Math.floor(txCount / logsFrequency);
+
+  }
+
+  public reset() {
+    this.applied = 0;
+  }
+
+  /**
+   * Increments applied transactions and logs the progress
+   * - For the first and last transaction
+   * - With given frequency
+   */
+  public applyNext() {
+    if (this.applied >= this.target) {
+      throw new Error('Cannot apply transaction over the limit: ' + this.target);
+    }
+    this.applied += 1;
+    if (this.applied === 1 || this.applied === this.target || this.applied % this.step === 1) {
+      this.log();
+    }
+  }
+
+  /**
+   * Logs the progress
+   */
+  private log() {
+    this.logger.info(this.msg, ((this.applied / this.target) * 100).toPrecision(4) + ' %' +
+      ': applied ' + this.applied + ' of ' + this.target + ' transactions');
+  }
 }

@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 import {Ed} from '../helpers/ed';
-import {emptyCB} from '../helpers/promiseToCback';
+import {emptyCB} from '../helpers/promiseUtils';
 import {TransactionType} from '../helpers/transactionTypes';
 import {ILogger} from '../logger';
 import {AccountFilterData, AccountLogic, MemAccountsData} from '../logic/account';

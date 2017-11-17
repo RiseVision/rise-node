@@ -5,7 +5,7 @@ import BigNum from '../helpers/bignum';
 import constants from '../helpers/constants';
 import {Ed, IKeypair} from '../helpers/ed';
 import exceptions from '../helpers/exceptions';
-import {emptyCB} from '../helpers/promiseToCback';
+import {emptyCB} from '../helpers/promiseUtils';
 import slots from '../helpers/slots';
 import {TransactionType} from '../helpers/transactionTypes';
 import {ILogger} from '../logger';

@@ -1,12 +1,12 @@
 'use strict';
-import {promiseToCB} from '../../helpers/promiseToCback';
+import {promiseToCB} from '../../helpers/promiseUtils';
 
 var _ = require('lodash');
 var async = require('async');
 var constants = require('../../helpers/constants').default;
 var schema = require('../../schema/blocks').default;
 var slots = require('../../helpers/slots').default;
-var sql = require('../../sql/blocks.js');
+var sql = require('../../sql/blocks').default;
 
 var modules, library, self, __private = {};
 
@@ -66,7 +66,7 @@ Process.prototype.getCommonBlock = function (peer, height, cb) {
 	async.waterfall([
 		function (waterCb) {
 			// Get IDs sequence (comma separated list)
-			modules.blocks.utils.getIdSequence(height, function (err, res) {
+      promiseToCB(modules.blocks.utils.getIdSequence(height), function (err, res) {
 				return setImmediate(waterCb, err, res);
 			});
 		},

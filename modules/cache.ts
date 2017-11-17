@@ -1,5 +1,5 @@
 import redis from 'redis';
-import {cbToPromise, cbToVoidPromise, emptyCB} from '../helpers/promiseToCback';
+import {cbToPromise, cbToVoidPromise, emptyCB} from '../helpers/promiseUtils';
 import {TransactionType} from '../helpers/transactionTypes';
 import {ILogger} from '../logger';
 import {IBaseTransaction} from '../logic/transactions/baseTransactionType';

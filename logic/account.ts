@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import * as jsonSqlCreator from 'json-sql';
 import * as path from 'path';
 import * as pgp from 'pg-promise';
-import {catchToLoggerAndRemapError, cback, emptyCB, promiseToCB} from '../helpers/promiseToCback';
+import {catchToLoggerAndRemapError, cback, emptyCB, promiseToCB} from '../helpers/promiseUtils';
 import {ILogger} from '../logger';
 import {accountsModelCreator} from './models/account';
 import {IModelField, IModelFilter} from './models/modelField';

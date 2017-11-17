@@ -1,5 +1,5 @@
 'use strict';
-import {promiseToCB} from '../helpers/promiseToCback';
+import {promiseToCB} from '../helpers/promiseUtils';
 
 var async = require('async');
 var crypto = require('crypto');
