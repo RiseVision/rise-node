@@ -12,7 +12,7 @@ import {ILogger} from '../logger';
 import {RoundsModule} from '../modules/rounds';
 import txSchema from '../schema/logic/transaction';
 import sql from '../sql/logic/transactions';
-import {AccountLogic} from './account';
+import {AccountLogic, MemAccountsData} from './account';
 import {SignedBlockType} from './block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './transactions/baseTransactionType';
 
@@ -257,7 +257,7 @@ export class TransactionLogic {
     return tx;
   }
 
-  public async verify(tx: IConfirmedTransaction<any>, sender: any, requester: any, height: number) {
+  public async verify(tx: IConfirmedTransaction<any>, sender: MemAccountsData, requester: any, height: number) {
     this.assertKnownTransactionType(tx);
     if (!sender) {
       throw new Error('Missing sender');

@@ -5,7 +5,7 @@ import constants from '../helpers/constants';
 import { Ed, IKeypair } from '../helpers/ed';
 import logicBlockSchema from '../schema/logic/block';
 import {BlockRewardLogic} from './blockReward';
-import { IBaseTransaction } from './transactions/baseTransactionType';
+import {IBaseTransaction, IConfirmedTransaction} from './transactions/baseTransactionType';
 import {TransactionLogic} from './transaction';
 // import * as OldImplementation from './_block.js';
 
@@ -28,6 +28,7 @@ export type BlockType = {
 export type SignedBlockType = BlockType & {
   id: string;
   blockSignature: string;
+  transactions?: Array<IConfirmedTransaction<any>>;
 };
 
 export class BlockLogic {

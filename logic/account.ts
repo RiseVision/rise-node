@@ -29,8 +29,8 @@ export type MemAccountsData = {
   rate: number;
   delegates: string;
   u_delegates: string;
-  multisignatures: string;
-  u_multisignatures: string;
+  multisignatures: string[];
+  u_multisignatures: string[];
   multimin: number;
   u_multimin: number;
   multilifetime: number;
