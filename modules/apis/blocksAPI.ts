@@ -1,4 +1,5 @@
-import {Get, JsonController, QueryParams} from 'routing-controllers';
+import {Get, JsonController, QueryParam, QueryParams} from 'routing-controllers';
+import constants from '../../helpers/constants';
 import {TransportModule} from '../transport';
 import {PeersModule} from '../peers';
 import {SchemaValid, ValidateSchema} from './baseAPIClass';
@@ -8,6 +9,9 @@ import {publicKey} from '../../types/sanityTypes';
 import OrderBy from '../../helpers/orderBy';
 import sql from '../../sql/blocks';
 import {IDatabase} from 'pg-promise';
+import {BlockLogic, SignedBlockType} from '../../logic/block';
+import {SystemModule} from '../system';
+import {BlockRewardLogic} from '../../logic/blockReward';
 
 type FilterType = {
   generatorPublicKey?: publicKey,
@@ -22,16 +26,17 @@ type FilterType = {
   offset?: number
   orderBy?: string
 };
-// TODO : this is not possible to create due to limitation of routing-controllers
-// We'll need to set up dependency injection first to let this work properly.
 @JsonController('/blocks')
-export class blocksAPI {
+export class BlocksAPI {
   public schema: any;
 
   constructor(private transportModule: TransportModule, private blocksModule: any,
+              private systemModule: SystemModule,
               private peersModule: PeersModule,
               private dbSequence: Sequence,
+              private blockReward: BlockRewardLogic,
               private transactionsModule: any,
+              private blockLogic: BlockLogic,
               private db: IDatabase<any>) {
     this.schema = transportModule.schema;
   }
@@ -39,11 +44,78 @@ export class blocksAPI {
   @Get('/')
   @ValidateSchema()
   public async getBlocks(@SchemaValid(blocksSchema.getBlocks)
-                         @QueryParams() params) {
-    this.dbSequence.addAndPromise(() => this.list())
+                         @QueryParams() filters) {
+    return this.dbSequence.addAndPromise(() => this.list(filters));
   }
 
-  private async list(filter: FilterType) {
+  @Get('/get')
+  @ValidateSchema()
+  public async getBlock(@SchemaValid(blocksSchema.getBlock)
+                        @QueryParams() filters) {
+    return this.dbSequence.addAndPromise((() => this.list(filters)));
+  }
+
+  @Get('/getBroadhash')
+  public async getBroadHash() {
+    return this.systemModule.getBroadhash();
+  }
+
+  @Get('/getEpoch')
+  public getEpoch() {
+    return { epoch: constants.epochTime };
+  }
+
+  @Get('/getFee')
+  @ValidateSchema()
+  public getFee(@SchemaValid(blocksSchema.getFee.properties.height)
+                @QueryParam('height', { required: true }) height: number) {
+    const fees = this.systemModule.getFees(height);
+    return { fee: fees.fees.send, fromHeight: fees.fromHeight, toHeight: fees.toHeight, height };
+  }
+
+  @Get('/getFees')
+  @ValidateSchema()
+  public getFees(@SchemaValid(blocksSchema.getFees.properties.height)
+                 @QueryParam('height', { required: true }) height: number) {
+    return this.systemModule.getFees(height);
+  }
+
+  @Get('/getNethash')
+  public getNethash() {
+    return { nethash: this.systemModule.getNethash() };
+  }
+
+  @Get('/getMilestone')
+  public getMilestone() {
+    return { milestone: this.blockReward.calcMilestone(this.blocksModule.lastBlock.get().height) };
+  }
+
+  @Get('/getReward')
+  public getReward() {
+    return { reward: this.blockReward.calcReward(this.blocksModule.lastBlock.get().height) };
+  }
+
+  @Get('/getSupply')
+  public getSupply() {
+    return { supply: this.blockReward.calcSupply(this.blocksModule.lastBlock.get().height) };
+  }
+
+  @Get('/getStatus')
+  public getStatus() {
+    const lastBlock = this.blocksModule.lastBlock.get();
+    return {
+      broadhash: this.systemModule.broadhash,
+      epoch    : constants.epochTime,
+      fee      : this.systemModule.getFees(lastBlock.height).fees.send,
+      height   : lastBlock.height,
+      milestone: this.blockReward.calcMilestone(lastBlock.height),
+      nethash  : this.systemModule.getNethash(),
+      reward   : this.blockReward.calcReward(lastBlock.height),
+      supply   : this.blockReward.calcSupply(lastBlock.height)
+    };
+  }
+
+  private async list(filter: FilterType): Promise<{ count: number, blocks: SignedBlockType[] }> {
     const params: any = {};
     const where       = [];
     if (filter.generatorPublicKey) {
@@ -110,14 +182,21 @@ export class blocksAPI {
       throw new Error(orderBy.error);
     }
 
-    const rows = await this.db.query(sql.list({
+    const rows = await this.db.query(sql.countList({ where }), params);
+
+    const count = rows[0].count;
+
+    const blockRows = await this.db.query(sql.list({
       sortField : orderBy.sortField,
       sortMethod: orderBy.sortMethod,
       where,
     }), params);
 
+    const blocks = blockRows.map((b) => this.blockLogic.dbRead(b));
 
-
-
+    return {
+      blocks,
+      count,
+    };
   }
 }
