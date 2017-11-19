@@ -34,6 +34,7 @@
     "lisk-sandbox": "https://github.com/ShiftNrg/lisk-sandbox/tarball/master",
     "lodash": "=4.17.4",
     "method-override": "=2.3.7",
+    "nan": "=2.7.0",
     "npm": "=2.15.10",
     "pg-monitor": "=0.7.1",
     "pg-native": "=1.10.0",
