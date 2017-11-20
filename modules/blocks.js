@@ -5,7 +5,7 @@ var sandboxHelper = require('../helpers/sandbox');
 // Submodules
 var blocksAPI     = require('./blocks/api');
 var blocksVerify  = require('./blocks/verify').BlocksModuleVerify;
-var blocksProcess = require('./blocks/process');
+var blocksProcess = require('./blocks/process').BlocksModuleProcess;
 var blocksUtils   = require('./blocks/utils').BlocksModuleUtils;
 var blocksChain   = require('./blocks/chain');
 
@@ -43,10 +43,10 @@ function Blocks(cb, scope) {
     verify : new blocksVerify({ logger: scope.logger, logic: { block: scope.logic.block,
       transaction: scope.logic.transaction}, db: scope.db
   }),
-    process: new blocksProcess(
-      scope.logger, scope.logic.block, scope.logic.peers, scope.logic.transaction,
-      scope.schema, scope.db, scope.dbSequence, scope.sequence, scope.genesisblock
-    ),
+    process: new blocksProcess( {
+      logger: scope.logger, logic: { block: scope.logic.block, peers: scope.logic.peers, transaction: scope.logic.transaction},
+      schema: scope.schema, db: scope.db, dbSequence: scope.dbSequence, sequence: scope.sequence, genesisblock: scope.genesisblock
+  }),
     utils  : new blocksUtils({
       logger      : scope.logger,
       logic       : {

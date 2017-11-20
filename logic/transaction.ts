@@ -179,7 +179,7 @@ export class TransactionLogic {
     return bb.toBuffer() as any;
   }
 
-  public ready(tx: IBaseTransaction<any>, sender: any): boolean {
+  public ready(tx: IBaseTransaction<any>, sender: MemAccountsData): boolean {
     this.assertKnownTransactionType(tx);
 
     if (!sender) {
@@ -257,14 +257,14 @@ export class TransactionLogic {
     return tx;
   }
 
-  public async verify(tx: IConfirmedTransaction<any>, sender: MemAccountsData, requester: any, height: number) {
+  public async verify(tx: IConfirmedTransaction<any>|IBaseTransaction<any>, sender: MemAccountsData, requester: any, height: number) {
     this.assertKnownTransactionType(tx);
     if (!sender) {
       throw new Error('Missing sender');
     }
 
     if (tx.requesterPublicKey && sender.secondSignature && !tx.signSignature &&
-      tx.blockId !== this.scope.genesisblock.block.id) {
+      (tx as IConfirmedTransaction<any>).blockId !== this.scope.genesisblock.block.id) {
       throw new Error('Missing sender second signature');
     }
 
@@ -290,7 +290,7 @@ export class TransactionLogic {
 
     // Check sender is not genesis account unless block id equals genesis
     if ([exceptions.genesisPublicKey.mainnet, exceptions.genesisPublicKey.testnet].indexOf(sender.publicKey) !== -1
-      && tx.blockId !== this.scope.genesisblock.block.id) {
+      && (tx as IConfirmedTransaction<any>).blockId !== this.scope.genesisblock.block.id) {
       throw new Error('Invalid sender. Can not send from genesis account');
     }
 

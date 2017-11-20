@@ -179,7 +179,7 @@ __private.forge = function (cb) {
 					library.logger.warn(err);
 					return setImmediate(cb, err);
 				} else {
-					return modules.blocks.process.generateBlock(currentBlockData.keypair, currentBlockData.time, cb);
+					return promiseToCB(modules.blocks.process.generateBlock(currentBlockData.keypair, currentBlockData.time), cb);
 				}
 			});
 		}, function (err) {

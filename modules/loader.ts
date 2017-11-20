@@ -14,11 +14,12 @@ import {IBaseTransaction} from '../logic/transactions/baseTransactionType';
 import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
 import {IBus} from '../types/bus';
+import {BlocksModuleProcess} from './blocks/process';
+import {BlocksModuleUtils} from './blocks/utils';
 import {PeersModule} from './peers';
 import {RoundsModule} from './rounds';
 import {TransactionsModule} from './transactions';
 import {TransportModule} from './transport';
-import {BlocksModuleUtils} from './blocks/utils';
 import Timer = NodeJS.Timer;
 
 // tslint:disable-next-line
@@ -58,7 +59,7 @@ export class LoaderModule {
   private syncInterval                             = 1000;
 
   private modules: {
-    blocks: { utils: BlocksModuleUtils, [k: string]: any },
+    blocks: { utils: BlocksModuleUtils, process: BlocksModuleProcess, [k: string]: any },
     rounds: RoundsModule, system: any, transactions: TransactionsModule, transport: TransportModule,
     peers: PeersModule,
     multisignatures: any
@@ -163,9 +164,7 @@ export class LoaderModule {
         if (count > 1) {
           this.library.logger.info('Rebuilding blockchain, current block height: ' + (offset + 1));
         }
-        const lastBlock = await cbToPromise<any>(
-          (cb) => this.modules.blocks.process.loadBlocksOffset(limitPerIteration, offset, true/*verify*/, cb)
-        );
+        const lastBlock = await this.modules.blocks.process.loadBlocksOffset(limitPerIteration, offset, true/*verify*/);
         offset          = offset + limitPerIteration;
         this.lastblock  = lastBlock;
       }
@@ -389,8 +388,7 @@ export class LoaderModule {
         if (lastBlock.height !== 1) {
           this.library.logger.info('Looking for common block with: ' + randomPeer.string);
           try {
-            const commonBlock = await cbToPromise((cb) => this.modules
-              .blocks.process.getCommonBlock(randomPeer, lastBlock.height, cb));
+            const commonBlock = await this.modules.blocks.process.getCommonBlock(randomPeer, lastBlock.height);
             if (!commonBlock) {
               this.library.logger.error(`Failed to find common block with: ${randomPeer.string}`);
               return retry(new Error('Failed to find common block'));
@@ -405,9 +403,7 @@ export class LoaderModule {
         // Now that we know that peer is reliable we can sync blocks with him!!
         this.blocksToSync = randomPeer.height;
         try {
-          const lastValidBlock: SignedBlockType = await cbToPromise<any>(
-            (cb) => this.modules.blocks.process.loadBlocksFromPeer(randomPeer, cb)
-          );
+          const lastValidBlock: SignedBlockType = await this.modules.blocks.process.loadBlocksFromPeer(randomPeer);
 
           loaded = lastValidBlock.id === lastBlock.id;
         } catch (err) {
