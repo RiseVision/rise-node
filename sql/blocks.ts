@@ -12,7 +12,6 @@ export default {
     'generatorPublicKey',
   ],
 
-  getGenesisBlockId: 'SELECT "id" FROM blocks WHERE "id" = ${id}',
 
   deleteBlock: 'DELETE FROM blocks WHERE "id" = ${id};',
 
@@ -101,6 +100,8 @@ export default {
   loadBlocksOffset: 'SELECT * FROM full_blocks_list WHERE "b_height" >= ${offset} AND "b_height" < ${limit} ORDER BY "b_height", "t_rowId"',
 
   loadLastBlock: 'SELECT * FROM full_blocks_list WHERE "b_height" = (SELECT MAX("height") FROM blocks) ORDER BY "b_height", "t_rowId"',
+
+  // getGenesisBlockId: 'SELECT "id" FROM blocks WHERE "id" = ${id}',
 
   getBlockId: 'SELECT "id" FROM blocks WHERE "id" = ${id}',
 
