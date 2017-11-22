@@ -48,7 +48,7 @@ export type MemAccountsData = {
 // tslint:disable-next-line
 export type AccountFilterData = {
   username?: string;
-  address?: string;
+  address?: string | { $in: string[] };
   publicKey?: string;
   limit?: number;
   offset?: number;

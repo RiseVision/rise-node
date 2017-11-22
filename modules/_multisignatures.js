@@ -8,7 +8,7 @@ var genesisblock = null;
 var Multisignature = require('../logic/transactions/createmultisig').MultiSignatureTransaction;
 var sandboxHelper = require('../helpers/sandbox');
 var schema = require('../schema/multisignatures').default;
-var sql = require('../sql/multisignatures.js');
+var sql = require('../sql/multisignatures.ts');
 var transactionTypes = require('../helpers/transactionTypes').TransactionType;
 
 // Private fields

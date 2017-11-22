@@ -4,6 +4,7 @@ import {SignedBlockType} from '../block';
 export interface IBaseTransaction<T> {
   type: TransactionType;
   amount: number;
+  senderId?: string;
   senderPublicKey: string;
   requesterPublicKey?: string;
   timestamp: number;

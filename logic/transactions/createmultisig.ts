@@ -14,7 +14,7 @@ import {TransactionLogic} from '../transaction';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
 
 // tslint:disable-next-line interface-over-type-literal
-export type InTransferAsset = {
+export type MultisigAsset = {
   multisignature: {
     min: number;
     lifetime: number;
@@ -22,7 +22,7 @@ export type InTransferAsset = {
   }
 };
 
-export class MultiSignatureTransaction extends BaseTransactionType<InTransferAsset> {
+export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset> {
 
   public modules: { accounts: AccountsModule, rounds: RoundsModule, sharedApi: any, system: SystemModule };
   private unconfirmedSignatures: { [name: string]: true };
@@ -45,11 +45,11 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
     this.modules = { accounts, rounds, sharedApi, system };
   }
 
-  public calculateFee(tx: IBaseTransaction<InTransferAsset>, sender: any, height: number): number {
+  public calculateFee(tx: IBaseTransaction<MultisigAsset>, sender: any, height: number): number {
     return this.modules.system.getFees(height).fees.multisignature;
   }
 
-  public getBytes(tx: IBaseTransaction<InTransferAsset>, skipSignature: boolean, skipSecondSignature: boolean): Buffer {
+  public getBytes(tx: IBaseTransaction<MultisigAsset>, skipSignature: boolean, skipSecondSignature: boolean): Buffer {
     const keysBuff = Buffer.from(tx.asset.multisignature.keysgroup.join(''), 'utf8');
     const bb       = new ByteBuffer(1 + 1 + keysBuff.length, true);
     bb.writeByte(tx.asset.multisignature.min);
@@ -64,7 +64,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
     return bb.toBuffer() as any;
   }
 
-  public async verify(tx: IBaseTransaction<InTransferAsset>, sender: any): Promise<void> {
+  public async verify(tx: IBaseTransaction<MultisigAsset>, sender: any): Promise<void> {
     if (!tx.asset || !tx.asset.multisignature) {
       throw new Error('Invalid transaction asset');
     }
@@ -149,7 +149,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
     }
   }
 
-  public async apply(tx: IConfirmedTransaction<InTransferAsset>, block: SignedBlockType, sender: any): Promise<void> {
+  public async apply(tx: IConfirmedTransaction<MultisigAsset>, block: SignedBlockType, sender: any): Promise<void> {
     delete this.unconfirmedSignatures[sender.address];
     await this.library.account.merge(
       sender.address,
@@ -172,7 +172,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
     }
   }
 
-  public undo(tx: IConfirmedTransaction<InTransferAsset>, block: SignedBlockType, sender: any): Promise<void> {
+  public undo(tx: IConfirmedTransaction<MultisigAsset>, block: SignedBlockType, sender: any): Promise<void> {
     const multiInvert = Diff.reverse(tx.asset.multisignature.keysgroup);
 
     this.unconfirmedSignatures[sender.address] = true;
@@ -189,7 +189,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
     );
   }
 
-  public applyUnconfirmed(tx: IBaseTransaction<InTransferAsset>, sender: any): Promise<void> {
+  public applyUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: any): Promise<void> {
     if (this.unconfirmedSignatures[sender.address]) {
       throw new Error('Signature on this account is pending confirmation');
     }
@@ -206,7 +206,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
     );
   }
 
-  public undoUnconfirmed(tx: IBaseTransaction<InTransferAsset>, sender: any): Promise<void> {
+  public undoUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: any): Promise<void> {
     const multiInvert = Diff.reverse(tx.asset.multisignature.keysgroup);
     delete this.unconfirmedSignatures[sender.address];
 
@@ -221,7 +221,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
     );
   }
 
-  public objectNormalize(tx: IBaseTransaction<InTransferAsset>): IBaseTransaction<InTransferAsset> {
+  public objectNormalize(tx: IBaseTransaction<MultisigAsset>): IBaseTransaction<MultisigAsset> {
     const report = this.library.schema.validate(tx.asset.multisignature, multiSigSchema);
     if (!report) {
       throw new Error(`Failed to validate multisignature schema: ${this.library.schema.getLastErrors()
@@ -231,7 +231,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
     return tx;
   }
 
-  public dbRead(raw: any): InTransferAsset {
+  public dbRead(raw: any): MultisigAsset {
     if (!raw.m_keysgroup) {
       return null;
     } else {
@@ -250,7 +250,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(tx: IConfirmedTransaction<InTransferAsset> & { senderId: string }): { table: string; fields: string[]; values: any } {
+  public dbSave(tx: IConfirmedTransaction<MultisigAsset> & { senderId: string }): { table: string; fields: string[]; values: any } {
     // tslint:disable object-literal-sort-keys
     return {
       table : this.dbTable,
@@ -265,7 +265,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
     // tslint:enable object-literal-sort-keys
   }
 
-  public afterSave(tx: IBaseTransaction<InTransferAsset>): Promise<void> {
+  public afterSave(tx: IBaseTransaction<MultisigAsset>): Promise<void> {
     this.library.network.io.sockets.emit('multisignatures/change', tx);
     return Promise.resolve();
   }
@@ -274,11 +274,11 @@ export class MultiSignatureTransaction extends BaseTransactionType<InTransferAss
    * Checks if the tx is ready to be confirmed.
    * So it checks if the tx has been cosigned by every member if new account or min members.
    * DOES not check the signatures validity but just the number.
-   * @param {IBaseTransaction<InTransferAsset>} tx
+   * @param {IBaseTransaction<MultisigAsset>} tx
    * @param sender
    * @returns {boolean}
    */
-  public ready(tx: IBaseTransaction<InTransferAsset>, sender: any): boolean {
+  public ready(tx: IBaseTransaction<MultisigAsset>, sender: any): boolean {
     if (!Array.isArray(tx.signatures)) {
       return false;
     }

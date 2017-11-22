@@ -10,6 +10,8 @@ export interface IBus {
 
   message(what: 'newBlock', block: SignedBlockType, broadcast: boolean);
 
+  message(what: 'signature', ob: { transaction: string, signature: any }, broadcast: boolean);
+
   message(what: 'syncStarted');
 
   message(what: 'unconfirmedTransaction', transaction: any, broadcast: any);
