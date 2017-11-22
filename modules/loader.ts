@@ -14,6 +14,7 @@ import {IBaseTransaction} from '../logic/transactions/baseTransactionType';
 import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
 import {IBus} from '../types/bus';
+import {BlocksModuleChain} from './blocks/chain';
 import {BlocksModuleProcess} from './blocks/process';
 import {BlocksModuleUtils} from './blocks/utils';
 import {PeersModule} from './peers';
@@ -59,7 +60,7 @@ export class LoaderModule {
   private syncInterval                             = 1000;
 
   private modules: {
-    blocks: { utils: BlocksModuleUtils, process: BlocksModuleProcess, [k: string]: any },
+    blocks: { chain: BlocksModuleChain, utils: BlocksModuleUtils, process: BlocksModuleProcess, [k: string]: any },
     rounds: RoundsModule, system: any, transactions: TransactionsModule, transport: TransportModule,
     peers: PeersModule,
     multisignatures: any
@@ -174,7 +175,7 @@ export class LoaderModule {
       this.library.logger.error(err);
       if (err.block) {
         this.library.logger.error('Blockchain failed at: ' + err.block.height);
-        await cbToPromise((cb) => this.modules.blocks.chain.deleteAfterBlock(err.block.id, cb));
+        await this.modules.blocks.chain.deleteAfterBlock(err.block.id);
         this.library.logger.error('Blockchain clipped');
         this.library.bus.message('blockchainReady');
       }
@@ -492,7 +493,7 @@ export class LoaderModule {
               await cbToPromise((cb) => this.modules.multisignatures.processSignature({
                 signature,
                 transaction: multiSigTX.transaction,
-              }));
+              }, cb));
             } catch (err) {
               this.library.logger.warn(`Cannot process multisig signature for ${multiSigTX.transaction} `, err);
             }

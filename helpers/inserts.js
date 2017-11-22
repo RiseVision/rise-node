@@ -1,4 +1,5 @@
 'use strict';
+import {DebugLog} from './decorators/debugLog';
 
 var pgp = require('pg-promise');
 
@@ -45,7 +46,7 @@ function Inserts (record, values, concat) {
 		var values;
 		var fields = record.fields.map(pgp.as.name).join(',');
 		if (concat) {
-			values = '$1';
+			values = '$1^';
 		} else {
 			values = '(' + this.namedTemplate() + ')';
 		}
@@ -54,7 +55,7 @@ function Inserts (record, values, concat) {
 
 	this._rawDBType = true;
 
-	this.formatDBType = function () {
+	this.toPostgres = function () {
 		return values.map(function (v) {
 			return '(' + pgp.as.format(self._template, v) + ')';
 		}).join(',');

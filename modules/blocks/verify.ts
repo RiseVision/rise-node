@@ -12,6 +12,7 @@ import {IConfirmedTransaction} from '../../logic/transactions/baseTransactionTyp
 import sql from '../../sql/blocks';
 import {AccountsModule} from '../accounts';
 import {TransactionsModule} from '../transactions';
+import {BlocksModuleChain} from './chain';
 
 // tslint:disable-next-line
 export type BlocksModuleVerifyLibrary = {
@@ -26,7 +27,12 @@ export type BlocksModuleVerifyLibrary = {
 export class BlocksModuleVerify {
   private loaded: boolean;
   private blockReward = new BlockRewardLogic();
-  private modules: { blocks: any, delegates: any, transactions: TransactionsModule, accounts: AccountsModule };
+  private modules: {
+    blocks: { chain: BlocksModuleChain, [k: string]: any },
+    delegates: any,
+    transactions: TransactionsModule,
+    accounts: AccountsModule
+  };
 
   public constructor(public library: BlocksModuleVerifyLibrary) {
     this.library.logger.trace('Blocks->Verify: Submodule initialized.');
@@ -120,7 +126,7 @@ export class BlocksModuleVerify {
     // * Block and transactions have valid values (signatures, block slots, etc...)
     // * The check against database state passed (for instance sender has enough LSK, votes are under 101, etc...)
     // We thus update the database with the transactions values, save the block and tick it
-    return cbToPromise((cb) => this.modules.blocks.chain.applyBlock(block, broadcast, cb, saveBlock));
+    return this.modules.blocks.chain.applyBlock(block, broadcast, saveBlock);
   }
 
   public onBind(scope) {

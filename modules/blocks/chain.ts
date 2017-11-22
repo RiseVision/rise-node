@@ -1,20 +1,20 @@
 import * as _ from 'lodash';
-import {ILogger} from '../../logger';
 import {IDatabase, ITask} from 'pg-promise';
-import {IBus} from '../../types/bus';
-import Sequence from '../../helpers/sequence';
 import * as Inserts from '../../helpers/inserts.js';
+import {catchToLoggerAndRemapError} from '../../helpers/promiseUtils';
+import Sequence from '../../helpers/sequence';
+import {TransactionType} from '../../helpers/transactionTypes';
+import {ILogger} from '../../logger';
 import {BlockLogic, SignedBlockType} from '../../logic/block';
 import {TransactionLogic} from '../../logic/transaction';
-import {BlocksModuleUtils} from './utils';
-import {AccountsModule} from '../accounts';
-import {TransactionsModule} from '../transactions';
 import {IConfirmedTransaction} from '../../logic/transactions/baseTransactionType';
-import {catchToLoggerAndRemapError} from '../../helpers/promiseUtils';
-import {RoundsModule} from '../rounds';
 import sql from '../../sql/blocks';
-import {TransactionType} from '../../helpers/transactionTypes';
-import {MemAccountsData} from '../../logic/account';
+import {IBus} from '../../types/bus';
+import {AccountsModule} from '../accounts';
+import {RoundsModule} from '../rounds';
+import {TransactionsModule} from '../transactions';
+import {BlocksModuleUtils} from './utils';
+import {DebugLog} from '../../helpers/decorators/debugLog';
 
 export type BlocksModuleChainLibrary = {
   logger: ILogger,
@@ -29,10 +29,25 @@ export type BlocksModuleChainLibrary = {
 };
 
 export class BlocksModuleChain {
-  private modules: { rounds: RoundsModule, transactions: TransactionsModule, accounts: AccountsModule, blocks: { utils: BlocksModuleUtils, [k: string]: any } };
+  private modules: {
+    rounds: RoundsModule,
+    transactions: TransactionsModule,
+    accounts: AccountsModule,
+    blocks: { utils: BlocksModuleUtils, [k: string]: any }
+  };
 
   constructor(private library: BlocksModuleChainLibrary) {
     library.logger.trace('Blocks->Chain: Submodule initialized.');
+  }
+
+  public onBind(scope) {
+    this.library.logger.trace('Blocks->Chain: Shared modules bind.');
+    this.modules = {
+      accounts    : scope.accounts,
+      blocks      : scope.blocks,
+      rounds      : scope.rounds,
+      transactions: scope.transactions,
+    };
   }
 
   /**
@@ -46,6 +61,23 @@ export class BlocksModuleChain {
   }
 
   /**
+   * Deletes last block and returns the "new" lastBlock (previous basically)
+   * @returns {Promise<SignedBlockType>}
+   */
+  public async deleteLastBlock(): Promise<SignedBlockType> {
+    const lastBlock = this.modules.blocks.lastBlock.get();
+    this.library.logger.warn('Deleting last block', lastBlock);
+
+    if (lastBlock.height === 1) {
+      throw new Error('Cannot delete genesis block');
+    }
+    const newLastBlock = await this.popLastBlock(lastBlock);
+    // Set new "new" last block.
+    this.modules.blocks.lastBlock.set(newLastBlock);
+    return newLastBlock;
+  }
+
+  /**
    * Deletes blocks after a certain block id.
    * @param {string} blockId
    * @returns {Promise<void>}
@@ -56,11 +88,25 @@ export class BlocksModuleChain {
   }
 
   /**
+   * Recover chain - wrapper for deleteLastBLock
+   * @returns {Promise<void>}
+   */
+  public async recoverChain(): Promise<void> {
+    try {
+      const newLastBlock = await this.deleteLastBlock();
+      this.library.logger.error('Recovery complete, new last block', newLastBlock.id);
+    } catch (err) {
+      this.library.logger.error('Recovery failed', err);
+      throw err;
+    }
+  }
+
+  /**
    * Checks for genesis in db and eventually calls #saveBlock
    * @returns {Promise<any>}
    */
   public async saveGenesisBlock() {
-    const rows    = await this.library.db.query(sql.getById, { id: this.library.genesisblock.block.id })
+    const rows    = await this.library.db.query(sql.getBlockId, { id: this.library.genesisblock.block.id })
       .catch(catchToLoggerAndRemapError('Blocks#saveGenesisBlock error', this.library.logger));
     const blockId = rows.length && rows[0].id;
     if (!blockId) {
@@ -152,13 +198,61 @@ export class BlocksModuleChain {
 
         await this.library.logic.transaction.undoUnconfirmed(transaction, sender);
       }
-
     }
 
+    // Block and transactions are ok.
+    // Apply transactions to confirmed mem_accounts fields.
+    for (const tx of block.transactions) {
+      try {
+        const sender = await this.modules.accounts.getAccount({ publicKey: tx.senderPublicKey });
+        await this.modules.transactions.apply(tx, block, sender);
+
+      } catch (err) {
+        // Fatal error, memory tables will be inconsistent
+        this.library.logger.error(`Failed to apply transaction: ${tx.id}`, err);
+        this.library.logger.error('Transaction', tx);
+        return process.exit(0);
+      }
+
+      // Transaction applied, removed from the unconfirmed list.
+      this.modules.transactions.removeUnconfirmedTransaction(tx.id);
+    }
+
+    this.modules.blocks.lastBlock.set(block);
+    if (saveBlock) {
+      try {
+        await this.saveBlock(block);
+      } catch (err) {
+        this.library.logger.error('Failed to save block...');
+        this.library.logger.error('Block', block);
+        return process.exit(0);
+      }
+      this.library.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');
+    }
+
+    this.library.bus.message('newBlock', block, broadcast);
+
+    await this.modules.rounds.tick(block);
+
+    // restore the (yet) unconfirmed ids.
+    await this.modules.transactions.applyUnconfirmedIds(unconfirmedTransactionIds);
+
+    // Shutdown now can happen
+    this.modules.blocks.isActive.set(false);
+    // Nullify large objects.
+    // Prevents memory leak during synchronisation.
+    // appliedTransactions = unconfirmedTransactionIds = block = null;
+    block = null;
+    // Finish here if snapshotting.
+    // FIXME: Not the best place to do that
+    // if (err === 'Snapshot finished') {
+    //   library.logger.info(err);
+    //   process.emit('SIGTERM');
+    // }
   }
 
   /**
-   * Save block with dransactionjs to database
+   * Save block with transactions to database
    * @param {SignedBlockType} b
    * @returns {Promise<void>}
    */
@@ -179,7 +273,7 @@ export class BlocksModuleChain {
       // Apply transactions inserts
       t = this.promiseTransactions(t, b);
       // Exec inserts as batch
-      t.batch(promises);
+      return t.batch(promises);
     });
 
     await this.afterSave(b)
@@ -206,6 +300,11 @@ export class BlocksModuleChain {
     }
 
     const savePromises = block.transactions
+      .map((tx) => {
+        // tslint:disable-next-line
+        tx['blockId'] = block.id; // apply block id;
+        return tx;
+      })
       .map((tx) => this.library.logic.transaction.dbSave(tx as any))
       .reduce((a, b) => a.concat(b), []);
 
@@ -234,11 +333,6 @@ export class BlocksModuleChain {
     for (const tx of  block.transactions) {
       await this.library.logic.transaction.afterSave(tx);
     }
-  }
-
-  private async applyTransaction(block: SignedBlockType, tx: IConfirmedTransaction<any>, sender: MemAccountsData) {
-    await this.modules.transactions.applyUnconfirmed(tx, sender);
-    await this.modules.transactions.apply(tx, block, sender);
   }
 
   /**

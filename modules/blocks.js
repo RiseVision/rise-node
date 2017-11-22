@@ -1,4 +1,5 @@
 'use strict';
+import {promiseToCB} from '../helpers/promiseUtils';
 
 var constants     = require('../helpers/constants').default;
 var sandboxHelper = require('../helpers/sandbox');
@@ -7,7 +8,7 @@ var blocksAPI     = require('./blocks/api');
 var blocksVerify  = require('./blocks/verify').BlocksModuleVerify;
 var blocksProcess = require('./blocks/process').BlocksModuleProcess;
 var blocksUtils   = require('./blocks/utils').BlocksModuleUtils;
-var blocksChain   = require('./blocks/chain');
+var blocksChain   = require('./blocks/chain').BlocksModuleChain;
 
 // Private fields
 var modules, library, self, __private = {};
@@ -57,10 +58,17 @@ function Blocks(cb, scope) {
       dbSequence  : scope.dbSequence,
       genesisblock: scope.genesisblock,
     }),
-    chain  : new blocksChain(
-      scope.logger, scope.logic.block, scope.logic.transaction, scope.db,
-      scope.genesisblock, scope.bus, scope.balancesSequence
-    )
+    chain  : new blocksChain({
+      logger: scope.logger,
+      db: scope.db,
+      genesisblock: scope.genesisblock,
+      bus: scope.bus,
+      balancesSequence: scope.balancesSequence,
+      logic: {
+        block: scope.logic.block,
+        transaction: scope.logic.transaction
+      }
+    })
   };
 
   // Expose submodules
@@ -72,7 +80,7 @@ function Blocks(cb, scope) {
 
   self = this;
 
-  this.submodules.chain.saveGenesisBlock(function (err) {
+  promiseToCB(this.submodules.chain.saveGenesisBlock(),function (err) {
     return setImmediate(cb, err, self);
   });
 }

@@ -1,11 +1,11 @@
 import * as _ from 'lodash';
+import {IDatabase} from 'pg-promise';
 import constants from '../../helpers/constants';
+import Sequence from '../../helpers/sequence';
 import {ILogger} from '../../logger';
 import {BlockLogic, SignedBlockType} from '../../logic/block';
 import {Peers} from '../../logic/peers';
 import {TransactionLogic} from '../../logic/transaction';
-import Sequence from '../../helpers/sequence';
-import {IDatabase} from 'pg-promise';
 import {AccountsModule} from '../accounts';
 import {LoaderModule} from '../loader';
 import {RoundsModule} from '../rounds';
@@ -22,6 +22,7 @@ import {IKeypair} from '../../helpers/ed';
 import {IBaseTransaction} from '../../logic/transactions/baseTransactionType';
 import slots from '../../helpers/slots';
 import {ForkType} from '../../helpers/forkTypes';
+import {BlocksModuleChain} from './chain';
 
 export type BlocksModuleProcessLibrary = {
   dbSequence: Sequence,
@@ -40,7 +41,7 @@ export type BlocksModuleProcessLibrary = {
 export class BlocksModuleProcess {
   private modules: {
     accounts: AccountsModule,
-    blocks: { utils: BlocksModuleUtils, chain: any, verify: BlocksModuleVerify, [k: string]: any },
+    blocks: { utils: BlocksModuleUtils, chain: BlocksModuleChain, verify: BlocksModuleVerify, [k: string]: any },
     delegates: any,
     loader: LoaderModule,
     rounds: RoundsModule,
@@ -60,7 +61,8 @@ export class BlocksModuleProcess {
    * @param {number} height
    * @return {Promise<void>}
    */
-  public async getCommonBlock(peer: Peer, height: number): Promise<{ id: string, previousBlock: string, height: number }> {
+  // FIXME VOid return for recoverChain
+  public async getCommonBlock(peer: Peer, height: number): Promise<{ id: string, previousBlock: string, height: number } | void> {
     const { ids }              = await this.modules.blocks.utils.getIdSequence(height);
     const { body: commonResp } = await this.modules.transport
       .getFromPeer<{ common: { id: string, previousBlock: string, height: number } }>(peer, {
@@ -70,7 +72,7 @@ export class BlocksModuleProcess {
     // FIXME: Need better checking here, is base on 'common' property enough?
     if (!commonResp.common) {
       if (this.modules.transport.poorConsensus) {
-        return cbToPromise<any>((cb) => this.modules.blocks.chain.recoverChain(cb));
+        return this.modules.blocks.chain.recoverChain();
       } else {
         throw new Error(`Chain comparison failed with peer ${peer.string} using ids: ${ids.join(', ')}`);
       }
@@ -91,7 +93,7 @@ export class BlocksModuleProcess {
     if (!prevBlockRows.length || !prevBlockRows[0].count) {
       // Block does not exist  - comparison failed.
       if (this.modules.transport.poorConsensus) {
-        return cbToPromise<any>((cb) => this.modules.blocks.chain.recoverChain(cb));
+        return this.modules.blocks.chain.recoverChain();
       } else {
         throw new Error(`Chain comparison failed with peer: ${
           peer.string} using block ${JSON.stringify(commonResp.common)}`);
@@ -140,13 +142,13 @@ export class BlocksModuleProcess {
         }
 
         if (block.id === this.library.genesisblock.block.id) {
-          await cbToPromise((cb) => this.modules.blocks.chain.applyGenesisBlock(block, cb));
+          await this.modules.blocks.chain.applyGenesisBlock(block);
         } else {
           // Apply block - broadcast: false, saveBlock: false
           // FIXME: Looks like we are missing some validations here, because applyBlock is
           // different than processBlock used elesewhere
           // - that need to be checked and adjusted to be consistent
-          await cbToPromise((cb) => this.modules.blocks.chain.applyBlock(block, false, cb, false));
+          await this.modules.blocks.chain.applyBlock(block, false, false);
         }
 
         this.modules.blocks.lastBlock.set(block);
@@ -337,8 +339,8 @@ export class BlocksModuleProcess {
           throw new Error(check.errors[0]);
         }
         // Delete last 2 blocks
-        await cbToPromise((cb) => this.modules.blocks.chain.deleteLastBlock(cb));
-        await cbToPromise((cb) => this.modules.blocks.chain.deleteLastBlock(cb));
+        await this.modules.blocks.chain.deleteLastBlock();
+        await this.modules.blocks.chain.deleteLastBlock();
       } catch (err) {
         this.library.logger.error('Fork recovery failed', err);
         throw err;
@@ -376,7 +378,7 @@ export class BlocksModuleProcess {
         }
 
         // delete previous block
-        await cbToPromise((cb) => this.modules.blocks.chain.deleteLastBlock(cb));
+        await this.modules.blocks.chain.deleteLastBlock();
 
         // Process new block (again);
         await this.receiveBlock(block);
