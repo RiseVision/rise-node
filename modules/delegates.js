@@ -144,7 +144,7 @@ __private.forge = function (cb) {
 	}
 
 	var currentSlot = slots.getSlotNumber();
-	var lastBlock = modules.blocks.lastBlock.get();
+	var lastBlock = modules.blocks.lastBlock;
 
 	if (currentSlot === slots.getSlotNumber(lastBlock.timestamp)) {
 		library.logger.debug('Waiting for next delegate slot');
@@ -186,7 +186,7 @@ __private.forge = function (cb) {
 			if (err) {
 				library.logger.error('Failed to generate block within delegate slot', err);
 			} else {
-				var forgedBlock = modules.blocks.lastBlock.get();
+				var forgedBlock = modules.blocks.lastBlock;
 				modules.blocks.lastReceipt.update();
 
 				library.logger.info([
@@ -399,7 +399,7 @@ Delegates.prototype.getDelegates = function (query, cb) {
 		var length = Math.min(limit, count);
 		var realLimit = Math.min(offset + limit, count);
 
-		var lastBlock   = modules.blocks.lastBlock.get(),
+		var lastBlock   = modules.blocks.lastBlock,
 		    totalSupply = __private.blockReward.calcSupply(lastBlock.height);
 
 		for (var i = 0; i < delegates.length; i++) {
@@ -735,7 +735,7 @@ Delegates.prototype.shared = {
 	},
 
 	getNextForgers: function (req, cb) {
-		var currentBlock = modules.blocks.lastBlock.get();
+		var currentBlock = modules.blocks.lastBlock;
 		var limit = req.body.limit || 10;
 
 		modules.delegates.generateDelegateList(currentBlock.height, function (err, activeDelegates) {

@@ -56,9 +56,9 @@ export class RoundsModule {
     this.loaded = true;
   }
 
-  public cleanup(cb) {
+  public cleanup() {
     this.loaded = false;
-    process.nextTick(cb);
+    return Promise.resolve();
   }
 
   /**

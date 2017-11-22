@@ -127,7 +127,7 @@ var config = {
     // server         : './modules/server.js',
     // accounts: './modules/accounts.js',
     // transactions   : './modules/transactions.js',
-    blocks         : './modules/blocks.js',
+    // blocks         : './modules/blocks.js',
     // signatures     : './modules/signatures.js',
     // transport      : './modules/transport.js',
     // loader         : './modules/loader.js',
@@ -418,19 +418,12 @@ d.run(function () {
           Array.prototype.push.apply(args, arguments);
           var topic     = args.shift();
           var eventName = 'on' + changeCase.pascalCase(topic);
-
           // executes the each module onBind function
           modules.forEach(function (module) {
             if (typeof(module[eventName]) === 'function') {
               module[eventName].apply(module, args);
             }
-            if (module.submodules) {
-              async.each(module.submodules, function (submodule) {
-                if (submodule && typeof(submodule[eventName]) === 'function') {
-                  submodule[eventName].apply(submodule, args);
-                }
-              });
-            }
+
           });
         };
       };
@@ -543,6 +536,31 @@ d.run(function () {
         let accountsModule = new (require('./modules/accounts').AccountsModule)(scope);
         modules.push(accountsModule);
         cb(null, accountsModule);
+      };
+      tasks['blocksChain'] = (cb) => {
+        let module = new (require('./modules/blocks/chain').BlocksModuleChain)(scope);
+        modules.push(module);
+        cb(null, module);
+      };
+      tasks['blocksProcess'] = (cb) => {
+        let module = new (require('./modules/blocks/process').BlocksModuleProcess)(scope);
+        modules.push(module);
+        cb(null, module);
+      };
+      tasks['blocksUtils'] = (cb) => {
+        let module = new (require('./modules/blocks/utils').BlocksModuleUtils)(scope);
+        modules.push(module);
+        cb(null, module);
+      };
+      tasks['blocksVerify'] = (cb) => {
+        let module = new (require('./modules/blocks/verify').BlocksModuleVerify)(scope);
+        modules.push(module);
+        cb(null, module);
+      };
+      tasks['blocks'] = (cb) => {
+        let module = new (require('./modules/blocks').BlocksModule)(scope);
+        modules.push(module);
+        cb(null, module);
       };
       tasks['cache']    = (cb) => {
         let module = new (require('./modules/cache').Cache)(scope, scope.cache.client, scope.cache.cacheEnabled);

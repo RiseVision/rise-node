@@ -11,8 +11,8 @@ import {TransactionLogic} from '../../logic/transaction';
 import {IConfirmedTransaction} from '../../logic/transactions/baseTransactionType';
 import sql from '../../sql/blocks';
 import {AccountsModule} from '../accounts';
+import {BlocksModule} from '../blocks';
 import {TransactionsModule} from '../transactions';
-import {BlocksModuleChain} from './chain';
 
 // tslint:disable-next-line
 export type BlocksModuleVerifyLibrary = {
@@ -28,7 +28,7 @@ export class BlocksModuleVerify {
   private loaded: boolean;
   private blockReward = new BlockRewardLogic();
   private modules: {
-    blocks: { chain: BlocksModuleChain, [k: string]: any },
+    blocks: BlocksModule,
     delegates: any,
     transactions: TransactionsModule,
     accounts: AccountsModule
@@ -42,7 +42,7 @@ export class BlocksModuleVerify {
    * Verifies block before fork detection and return all possible errors related to block
    */
   public verifyReceipt(block: SignedBlockType): { errors: string[], verified: boolean } {
-    const lastBlock: SignedBlockType = this.modules.blocks.lastBlock.get();
+    const lastBlock: SignedBlockType = this.modules.blocks.lastBlock;
 
     block.height           = lastBlock.height + 1;
     const errors: string[] = [
@@ -66,7 +66,7 @@ export class BlocksModuleVerify {
    * Verify block before processing and return all possible errors related to block
    */
   public verifyBlock(block: SignedBlockType): { errors: string[], verified: boolean } {
-    const lastBlock: SignedBlockType = this.modules.blocks.lastBlock.get();
+    const lastBlock: SignedBlockType = this.modules.blocks.lastBlock;
 
     const res = this.verifyReceipt(block);
 
@@ -86,7 +86,7 @@ export class BlocksModuleVerify {
   }
 
   public async processBlock(block: SignedBlockType, broadcast: boolean, saveBlock: boolean): Promise<any> {
-    if (this.modules.blocks.isCleaning.get()) {
+    if (this.modules.blocks.isCleaning) {
       // We're shutting down so stop processing any further
       throw new Error('Cleaning up');
     }

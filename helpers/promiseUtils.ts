@@ -59,3 +59,7 @@ export function logCatchRewrite(logger: ILogger, errString: string): (err: Error
     return Promise.reject(new Error(errString));
   };
 }
+
+export function wait(msToWait: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, msToWait));
+}

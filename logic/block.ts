@@ -31,6 +31,10 @@ export type SignedBlockType = BlockType & {
   transactions?: Array<IConfirmedTransaction<any>>;
 };
 
+export type SignedAndChainedBlockType = SignedBlockType & {
+  height: number
+};
+
 export class BlockLogic {
   /**
    * Calculates block id.
@@ -157,7 +161,7 @@ export class BlockLogic {
   public create(data: {
     keypair: IKeypair, timestamp: number,
     transactions: Array<IBaseTransaction<any>>,
-    previousBlock?: { id: string, height: number }
+    previousBlock?: SignedAndChainedBlockType
   }) {
     const transactions = data.transactions.sort((a, b) => {
       if (a.type < b.type) {

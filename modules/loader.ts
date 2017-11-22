@@ -14,9 +14,7 @@ import {IBaseTransaction} from '../logic/transactions/baseTransactionType';
 import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
 import {IBus} from '../types/bus';
-import {BlocksModuleChain} from './blocks/chain';
-import {BlocksModuleProcess} from './blocks/process';
-import {BlocksModuleUtils} from './blocks/utils';
+import {BlocksModule} from './blocks';
 import {PeersModule} from './peers';
 import {RoundsModule} from './rounds';
 import {TransactionsModule} from './transactions';
@@ -60,7 +58,7 @@ export class LoaderModule {
   private syncInterval                             = 1000;
 
   private modules: {
-    blocks: { chain: BlocksModuleChain, utils: BlocksModuleUtils, process: BlocksModuleProcess, [k: string]: any },
+    blocks: BlocksModule,
     rounds: RoundsModule, system: any, transactions: TransactionsModule, transport: TransportModule,
     peers: PeersModule,
     multisignatures: any
@@ -74,7 +72,7 @@ export class LoaderModule {
   public async getNework() {
     if (!(
         this.network.height > 0 &&
-        Math.abs(this.network.height - this.modules.blocks.lastBlock.get().height) === 1)
+        Math.abs(this.network.height - this.modules.blocks.lastBlock.height) === 1)
     ) {
       const { peers } = await this.modules.peers.list({});
       this.network    = this.findGoodPeers(peers);
@@ -144,9 +142,9 @@ export class LoaderModule {
     this.loaded = true;
   }
 
-  public cleanup(cb) {
+  public cleanup() {
     this.loaded = false;
-    cb();
+    return Promise.resolve();
   }
 
   private async load(count: number, limitPerIteration: number, message?: string) {
@@ -307,7 +305,7 @@ export class LoaderModule {
   private findGoodPeers(peers: PeerType[]): {
     height: number, peers: Peer[]
   } {
-    const lastBlockHeight: number = this.modules.blocks.lastBlock.get().height;
+    const lastBlockHeight: number = this.modules.blocks.lastBlock.height;
     this.library.logger.trace('Good peers - received', { count: peers.length });
 
     // Removing unreachable peers or heights below last block height
@@ -369,7 +367,7 @@ export class LoaderModule {
         this.library.logger.trace('Sync trigger');
         this.library.network.io.sockets.emit('loader/sync', {
           blocks: this.blocksToSync,
-          height: this.modules.blocks.lastBlock.get().height,
+          height: this.modules.blocks.lastBlock.height,
         });
       }, 1000);
     }
@@ -384,7 +382,7 @@ export class LoaderModule {
     do {
       await promiseRetry(async (retry) => {
         const randomPeer                 = await this.gerRandomPeer();
-        const lastBlock: SignedBlockType = this.modules.blocks.lastBlock.get();
+        const lastBlock: SignedBlockType = this.modules.blocks.lastBlock;
 
         if (lastBlock.height !== 1) {
           this.library.logger.info('Looking for common block with: ' + randomPeer.string);

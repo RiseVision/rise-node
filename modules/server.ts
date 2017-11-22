@@ -11,6 +11,7 @@ export class ServerModule {
 
   public cleanup() {
     this.loaded = false;
+    return Promise.resolve();
   }
 
   public isLoaded(): boolean {

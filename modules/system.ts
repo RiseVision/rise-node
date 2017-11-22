@@ -5,6 +5,8 @@ import * as semver from 'semver';
 import constants from '../helpers/constants';
 import {ILogger} from '../logger';
 import sqlSystem from '../sql/system';
+import {BlocksModule} from './blocks';
+import {TransportModule} from './transport';
 // tslint:disable-next-line
 type SystemLibrary = { logger: ILogger, db: DB<any>, nonce: any, config: { version: string, port: number, nethash: string } }
 // tslint:disable-next-line
@@ -22,7 +24,7 @@ const rcRegExp = /[a-z]+$/;
 export class SystemModule {
   public minVersion: string;
   public headers: PeerHeaders;
-  public modules: { blocks: any, transport: any };
+  public modules: { blocks: BlocksModule, transport: TransportModule };
 
   private lastMinVer: string;
   private minVersionChar: string;
@@ -102,7 +104,7 @@ export class SystemModule {
    * Gets private variable `minVersion`
    * @return {string}
    */
-  public getMinVersion(height: number = this.modules.blocks.lastBlock.get().height) {
+  public getMinVersion(height: number = this.modules.blocks.lastBlock.height) {
 
     let minVer = '';
     for (let i = constants.minVersion.length - 1; i >= 0 && minVer === ''; --i) {
@@ -124,7 +126,7 @@ export class SystemModule {
     }
 
     return minVer;
-  };
+  }
 
   /**
    * Checks version compatibility from input param against private values.
@@ -174,7 +176,7 @@ export class SystemModule {
     return hash.toString('hex');
   }
 
-  public getFees(height: number = this.modules.blocks.lastBlock.get().height + 1): {
+  public getFees(height: number = this.modules.blocks.lastBlock.height + 1): {
     fees: {
       send: number,
       vote: number,
@@ -205,6 +207,6 @@ export class SystemModule {
    */
   public async update() {
     this.headers.broadhash = await this.getBroadhash();
-    this.headers.height    = this.modules.blocks.lastBlock.get().height;
+    this.headers.height    = this.modules.blocks.lastBlock.height;
   }
 }

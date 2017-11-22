@@ -153,9 +153,9 @@ export class TransportModule {
     return this.getFromPeer<T>(peers[0], options);
   }
 
-  public cleanup(cb) {
+  public cleanup() {
     this.loaded = false;
-    process.nextTick(cb);
+    return Promise.resolve();
   }
 
   public onBind(modules: any) {

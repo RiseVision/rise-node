@@ -5,11 +5,12 @@ import {catchToLoggerAndRemapError, logCatchRewrite} from '../../helpers/promise
 import Sequence from '../../helpers/sequence';
 import {TransactionType} from '../../helpers/transactionTypes';
 import {ILogger} from '../../logger';
-import {BlockLogic, SignedBlockType} from '../../logic/block';
+import {BlockLogic, SignedAndChainedBlockType, SignedBlockType} from '../../logic/block';
 import {TransactionLogic} from '../../logic/transaction';
 import sql from '../../sql/blocks';
 import {RawFullBlockListType} from '../../types/rawDBTypes';
 import {publicKey} from '../../types/sanityTypes';
+import {BlocksModule} from '../blocks';
 
 // tslint:disable-next-line
 export type BlocksModuleUtilsLibrary = {
@@ -25,13 +26,13 @@ export type BlocksModuleUtilsLibrary = {
 
 export class BlocksModuleUtils {
   public loaded = false;
-  private modules: { blocks: any };
+  private modules: { blocks: BlocksModule };
 
   public constructor(public library: BlocksModuleUtilsLibrary) {
     this.library.logger.trace('Blocks->Utils: Submodule initialized');
   }
 
-  public readDbRows(rows: RawFullBlockListType[]): SignedBlockType[] {
+  public readDbRows(rows: RawFullBlockListType[]): SignedAndChainedBlockType[] {
     const blocks = {};
     const order  = [];
     // a block is defined in multiple_rows
@@ -111,7 +112,7 @@ export class BlocksModuleUtils {
         return 0;
       });
 
-      this.modules.blocks.lastBlock.set(block);
+      this.modules.blocks.lastBlock = block;
       return block;
     })
       .catch(logCatchRewrite(this.library.logger, 'Blocks#loadLastBlock error'));
@@ -122,7 +123,7 @@ export class BlocksModuleUtils {
    * @param {number} height
    */
   public async getIdSequence(height: number): Promise<{ firstHeight: number, ids: string[] }> {
-    const lastBlock = this.modules.blocks.lastBlock.get();
+    const lastBlock = this.modules.blocks.lastBlock;
     // Get IDs of first blocks of (n) last rounds, descending order
     // EXAMPLE: For height 2000000 (round 19802) we will get IDs of blocks at height: 1999902, 1999801, 1999700,
     // 1999599, 1999498

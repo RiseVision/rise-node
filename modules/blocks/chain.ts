@@ -13,8 +13,7 @@ import {IBus} from '../../types/bus';
 import {AccountsModule} from '../accounts';
 import {RoundsModule} from '../rounds';
 import {TransactionsModule} from '../transactions';
-import {BlocksModuleUtils} from './utils';
-import {DebugLog} from '../../helpers/decorators/debugLog';
+import {BlocksModule} from '../blocks';
 
 export type BlocksModuleChainLibrary = {
   logger: ILogger,
@@ -33,7 +32,7 @@ export class BlocksModuleChain {
     rounds: RoundsModule,
     transactions: TransactionsModule,
     accounts: AccountsModule,
-    blocks: { utils: BlocksModuleUtils, [k: string]: any }
+    blocks: BlocksModule
   };
 
   constructor(private library: BlocksModuleChainLibrary) {
@@ -57,7 +56,7 @@ export class BlocksModuleChain {
     // Delete block with ID from blocks table
     // WARNING: DB_WRITE
     return this.library.db.none(sql.deleteBlock, { id: blockId })
-      .catch(catchToLoggerAndRemapError('Blocks#deleteBlock error', this.library.logger));
+      .catch(catchToLoggerAndRemapError<void>('Blocks#deleteBlock error', this.library.logger));
   }
 
   /**
@@ -65,15 +64,15 @@ export class BlocksModuleChain {
    * @returns {Promise<SignedBlockType>}
    */
   public async deleteLastBlock(): Promise<SignedBlockType> {
-    const lastBlock = this.modules.blocks.lastBlock.get();
+    const lastBlock = this.modules.blocks.lastBlock;
     this.library.logger.warn('Deleting last block', lastBlock);
 
     if (lastBlock.height === 1) {
       throw new Error('Cannot delete genesis block');
     }
-    const newLastBlock = await this.popLastBlock(lastBlock);
+    const newLastBlock            = await this.popLastBlock(lastBlock);
     // Set new "new" last block.
-    this.modules.blocks.lastBlock.set(newLastBlock);
+    this.modules.blocks.lastBlock = newLastBlock;
     return newLastBlock;
   }
 
@@ -147,13 +146,13 @@ export class BlocksModuleChain {
       this.library.logger.error(err);
       process.exit(0);
     }
-    await this.modules.blocks.lastBlock.set(block);
+    this.modules.blocks.lastBlock = block;
     await this.modules.rounds.tick(block);
   }
 
   public async applyBlock(block: SignedBlockType, broadcast: boolean, saveBlock: boolean) {
     // Prevent shutdown during database writes.
-    this.modules.blocks.isActive.set(true);
+    this.modules.blocks.isActive = true;
 
     // Transactions to rewind in case of error.
     const appliedTransactions: { [k: string]: IConfirmedTransaction<any> } = {};
@@ -218,7 +217,7 @@ export class BlocksModuleChain {
       this.modules.transactions.removeUnconfirmedTransaction(tx.id);
     }
 
-    this.modules.blocks.lastBlock.set(block);
+    this.modules.blocks.lastBlock = block;
     if (saveBlock) {
       try {
         await this.saveBlock(block);
@@ -238,7 +237,7 @@ export class BlocksModuleChain {
     await this.modules.transactions.applyUnconfirmedIds(unconfirmedTransactionIds);
 
     // Shutdown now can happen
-    this.modules.blocks.isActive.set(false);
+    this.modules.blocks.isActive = false;
     // Nullify large objects.
     // Prevents memory leak during synchronisation.
     // appliedTransactions = unconfirmedTransactionIds = block = null;

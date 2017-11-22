@@ -3,7 +3,7 @@ import {IDatabase} from 'pg-promise';
 import constants from '../../helpers/constants';
 import Sequence from '../../helpers/sequence';
 import {ILogger} from '../../logger';
-import {BlockLogic, SignedBlockType} from '../../logic/block';
+import {BlockLogic, SignedAndChainedBlockType, SignedBlockType} from '../../logic/block';
 import {Peers} from '../../logic/peers';
 import {TransactionLogic} from '../../logic/transaction';
 import {AccountsModule} from '../accounts';
@@ -12,17 +12,15 @@ import {RoundsModule} from '../rounds';
 import {TransactionsModule} from '../transactions';
 import {TransportModule} from '../transport';
 import {BasePeerType, Peer} from '../../logic/peer';
-import {BlocksModuleUtils} from './utils';
 import schema from '../../schema/blocks';
 import sql from '../../sql/blocks';
-import {catchToLoggerAndRemapError, cbToPromise} from '../../helpers/promiseUtils';
-import {BlocksModuleVerify} from './verify';
+import {catchToLoggerAndRemapError} from '../../helpers/promiseUtils';
 import {RawFullBlockListType} from '../../types/rawDBTypes';
 import {IKeypair} from '../../helpers/ed';
 import {IBaseTransaction} from '../../logic/transactions/baseTransactionType';
 import slots from '../../helpers/slots';
 import {ForkType} from '../../helpers/forkTypes';
-import {BlocksModuleChain} from './chain';
+import {BlocksModule} from '../blocks';
 
 export type BlocksModuleProcessLibrary = {
   dbSequence: Sequence,
@@ -41,7 +39,7 @@ export type BlocksModuleProcessLibrary = {
 export class BlocksModuleProcess {
   private modules: {
     accounts: AccountsModule,
-    blocks: { utils: BlocksModuleUtils, chain: BlocksModuleChain, verify: BlocksModuleVerify, [k: string]: any },
+    blocks: BlocksModule,
     delegates: any,
     loader: LoaderModule,
     rounds: RoundsModule,
@@ -117,7 +115,7 @@ export class BlocksModuleProcess {
     this.library.logger.debug('Loading blocks offset', { limit, offset, verify });
 
     return this.library.dbSequence.addAndPromise(async () => {
-      const blocks: SignedBlockType[] = this.modules.blocks.utils.readDbRows(
+      const blocks: SignedAndChainedBlockType[] = this.modules.blocks.utils.readDbRows(
         await this.library.db.query(sql.loadBlocksOffset, params)
           .catch(catchToLoggerAndRemapError('Blocks#loadBlocksOffset error', this.library.logger))
       );
@@ -125,7 +123,7 @@ export class BlocksModuleProcess {
       // Cycle through every block and apply it.
       for (const block of blocks) {
         // Stop Processing if node is shutting down
-        if (this.modules.blocks.isCleaning.get()) {
+        if (this.modules.blocks.isCleaning) {
           return;
         }
         this.library.logger.debug('Processing block', block.id);
@@ -151,10 +149,10 @@ export class BlocksModuleProcess {
           await this.modules.blocks.chain.applyBlock(block, false, false);
         }
 
-        this.modules.blocks.lastBlock.set(block);
+        this.modules.blocks.lastBlock = block;
 
       }
-      return this.modules.blocks.lastBlock.get();
+      return this.modules.blocks.lastBlock;
     });
   }
 
@@ -164,17 +162,18 @@ export class BlocksModuleProcess {
    * @return {Promise<SignedBlockType>}
    */
   public async loadBlocksFromPeer(rawPeer: Peer | BasePeerType): Promise<SignedBlockType> {
-    let lastValidBlock: SignedBlockType = this.modules.blocks.lastBlock.get();
+    let lastValidBlock: SignedBlockType = this.modules.blocks.lastBlock;
 
     // normalize Peer
     const peer = this.library.logic.peers.create(rawPeer);
 
     this.library.logger.info(`Loading blocks from ${peer.string}`);
 
-    const { body: blocksFromPeer } = await this.modules.transport.getFromPeer<{ blocks: RawFullBlockListType[] }>(peer, {
-      api   : `/blocks?lastBlockId=${lastValidBlock.id}`,
-      method: 'GET',
-    });
+    const { body: blocksFromPeer } = await this.modules.transport
+      .getFromPeer<{ blocks: RawFullBlockListType[] }>(peer, {
+        api   : `/blocks?lastBlockId=${lastValidBlock.id}`,
+        method: 'GET',
+      });
 
     // TODO: fix schema of loadBlocksFromPeer
     if (!this.library.schema.validate(blocksFromPeer.blocks, schema.loadBlocksFromPeer)) {
@@ -183,7 +182,7 @@ export class BlocksModuleProcess {
 
     const blocks = this.modules.blocks.utils.readDbRows(blocksFromPeer.blocks);
     for (const block of blocks) {
-      if (this.modules.blocks.isCleaning.get()) {
+      if (this.modules.blocks.isCleaning) {
         return lastValidBlock;
       }
       try {
@@ -208,7 +207,7 @@ export class BlocksModuleProcess {
    * @return {Promise<void>}
    */
   public async generateBlock(keypair: IKeypair, timestamp: number) {
-    const previousBlock = this.modules.blocks.lastBlock.get();
+    const previousBlock = this.modules.blocks.lastBlock;
     const txs           = this.modules.transactions.getUnconfirmedTransactionList(false, constants.maxTxsPerBlock);
 
     const ready: Array<IBaseTransaction<any>> = [];
@@ -252,7 +251,7 @@ export class BlocksModuleProcess {
         return;
       }
 
-      const lastBlock = this.modules.blocks.lastBlock.get();
+      const lastBlock = this.modules.blocks.lastBlock;
       // Detect sane block
       if (block.previousBlock === lastBlock.id && lastBlock.height + 1 === block.height) {
         // Process received block
