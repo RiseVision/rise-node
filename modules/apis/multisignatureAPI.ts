@@ -1,4 +1,4 @@
-import {Get, JsonController, QueryParam} from 'routing-controllers';
+import {Get, JsonController, Post, Put, QueryParam} from 'routing-controllers';
 import {SchemaValid, ValidateSchema} from './baseAPIClass';
 import {IDatabase} from 'pg-promise';
 import sql from '../../sql/multisignatures';
@@ -24,7 +24,7 @@ export class MultisignatureAPI {
   public async getAccounts(@SchemaValid({ format: 'publicKey', type: 'string' })
                            @QueryParam('publicKey', { required: true }) publicKey: string) {
     const row = await this.db.one(sql.getAccountIds, { publicKey })
-      .catch(catchToLoggerAndRemapError('Multisitngature#getAccountIds error', this.logger));
+      .catch(catchToLoggerAndRemapError('Multisignature#getAccountIds error', this.logger));
 
     const accountIds = Array.isArray(row.accountIds) ? row.accountIds : [];
     // Get all multisignature accounts associated to that have that publicKey as a signer.
@@ -34,7 +34,8 @@ export class MultisignatureAPI {
 
     const items = [];
     for (const account of accounts) {
-      const addresses        = account.multisignatures.map((pk) => this.modules.accounts.generateAddressByPublicKey(pk));
+      const addresses        = account.multisignatures.map((pk) => this.modules.accounts
+        .generateAddressByPublicKey(pk));
       const multisigaccounts = await this.modules.accounts.getAccounts(
         {
           address: { $in: addresses },
@@ -90,7 +91,17 @@ export class MultisignatureAPI {
       });
     }
 
-    return {transactions: toRet};
+    return { transactions: toRet };
 
+  }
+
+  @Post('/sign')
+  public sign() {
+    return Promise.reject('Method deprecated');
+  }
+
+  @Put('/')
+  public addMultisignature() {
+    return Promise.reject('Method deprecated');
   }
 }
