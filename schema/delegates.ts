@@ -93,6 +93,15 @@ export default {
     properties: {
       orderBy: {
         type: 'string',
+        enum: [
+          'approval:desc', 'approval:asc',
+          'productivity:desc', 'productivity:asc',
+          'rank:desc', 'rank:asc',
+          'vote:desc', 'vote:asc',
+          'address:desc', 'address:asc',
+          'username:desc', 'username:asc',
+          'publicKey:desc', 'publicKey:asc',
+        ],
       },
       limit  : {
         type   : 'integer',

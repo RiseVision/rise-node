@@ -15,7 +15,7 @@ var OrderBy = require('../helpers/orderBy').default;
 var sandboxHelper = require('../helpers/sandbox');
 var schema = require('../schema/delegates').default;
 var slots = require('../helpers/slots').default;
-var sql = require('../sql/delegates.js');
+var sql = require('../sql/delegates.ts');
 var transactionTypes = require('../helpers/transactionTypes').TransactionType;
 
 // Private fields
