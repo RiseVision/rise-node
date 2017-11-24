@@ -1,25 +1,28 @@
-import {Get, JsonController, Put, QueryParam, QueryParams} from 'routing-controllers';
-import {SchemaValid, ValidateSchema} from './baseAPIClass';
-import {IDatabase} from 'pg-promise';
-import {ILogger} from '../../logger';
-import {TransactionsModule} from '../transactions';
-import {TransactionLogic} from '../../logic/transaction';
+import * as crypto from 'crypto';
+import { Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
+import { SchemaValid, ValidateSchema } from './baseAPIClass';
+import { IDatabase } from 'pg-promise';
+import { ILogger } from '../../logger';
+import { TransactionsModule } from '../transactions';
+import { TransactionLogic } from '../../logic/transaction';
 import schema from '../../schema/delegates';
-import {DelegatesModule} from '../delegates';
-import {SystemModule} from '../system';
-import {publicKey} from '../../types/sanityTypes';
-import {BlocksModule} from '../blocks';
+import { DelegatesModule } from '../delegates';
+import { SystemModule } from '../system';
+import { publicKey } from '../../types/sanityTypes';
+import { BlocksModule } from '../blocks';
 import BigNumber from 'bignumber.js';
-import {AccountsModule} from '../accounts';
+import { AccountsModule } from '../accounts';
 import sql from '../../sql/delegates';
 import constants from '../../helpers/constants';
 import slots from '../../helpers/slots';
 import OrderBy from '../../helpers/orderBy';
+import { Ed } from '../../helpers/ed';
 
 @JsonController('/delegates')
 export class DelegatesAPI {
   public schema: any;
   private db: IDatabase<any>;
+  private ed: Ed;
   private logger: ILogger;
   private txLogic: TransactionLogic;
   private modules: {
@@ -56,17 +59,17 @@ export class DelegatesAPI {
     }
 
     const delegates = d.delegates.slice(d.offset, d.limit);
-    return { delegates, totalCount: d.count };
+    return {delegates, totalCount: d.count};
   }
 
   @Get('/fee')
   @ValidateSchema()
   public async getFee(@SchemaValid(schema.getFee.properties.height)
-                      @QueryParam('height', { required: true }) height: number) {
-    const f            = this.modules.system.getFees(height);
-    const { delegate } = f.fees;
+                      @QueryParam('height', {required: true}) height: number) {
+    const f          = this.modules.system.getFees(height);
+    const {delegate} = f.fees;
     delete f.fees;
-    return { ...f, ... { fee: delegate } };
+    return {...f, ... {fee: delegate}};
 
   }
 
@@ -89,7 +92,7 @@ export class DelegatesAPI {
       };
     } else {
       const account = await this.modules.accounts
-        .getAccount({ publicKey: params.generatorPublicKey }, ['fees', 'rewards']);
+        .getAccount({publicKey: params.generatorPublicKey}, ['fees', 'rewards']);
 
       if (!account) {
         throw new Error('Account not found');
@@ -104,18 +107,30 @@ export class DelegatesAPI {
 
   }
 
+  @Get('/get')
+  @ValidateSchema()
+  public async getDelegate(@SchemaValid(schema.getDelegate)
+                           @QueryParams() params: { publicKey: publicKey, username: string }) {
+    const {delegates} = await this.modules.delegatesModule.getDelegates({orderBy: 'username:asc'});
+    const delegate    = delegates.find((d) => d.publicKey === params.publicKey || d.username === params.username);
+    if (delegate) {
+      return {delegate};
+    }
+    throw new Error('Delegate not found');
+  }
+
   @Get('/voters')
   @ValidateSchema()
   public async getVoters(@SchemaValid(schema.getVoters.properties.publicKey)
                          @QueryParam('publicKey') publicKey: string) {
-    const row       = await this.db.one(sql.getVoters, { publicKey });
+    const row       = await this.db.one(sql.getVoters, {publicKey});
     const addresses = row.accountIds ? row.accountIds : [];
 
     const accounts = await this.modules.accounts.getAccounts(
-      { address: { $in: addresses }, sort: 'balance' },
+      {address: {$in: addresses}, sort: 'balance'},
       ['address', 'balance', 'username', 'publicKey']);
 
-    return { accounts };
+    return {accounts};
   }
 
   @Get('/search')
@@ -137,17 +152,17 @@ export class DelegatesAPI {
       sortField : orderBy.sortField,
       sortMethod: orderBy.sortMethod,
     }));
-    return { delegates };
+    return {delegates};
   }
 
   @Get('/count')
   public async count() {
-    const { count } = await this.db.one(sql.count);
-    return { count };
+    const {count} = await this.db.one(sql.count);
+    return {count};
   }
 
   @Get('/getNextForgers')
-  public async getNextForgers(@QueryParam('limit', { required: false }) limit: number = 10) {
+  public async getNextForgers(@QueryParam('limit', {required: false}) limit: number = 10) {
     const curBlock = this.modules.blocks.lastBlock;
 
     const activeDelegates = await this.modules.delegatesModule.generateDelegateList(curBlock.height);
@@ -174,4 +189,88 @@ export class DelegatesAPI {
   public createDelegate() {
     return Promise.reject('Method deprecated');
   }
+
+
+  // internal stuff.
+  @Get('/forging/status')
+  @ValidateSchema()
+  public getForgingStatus(@SchemaValid(schema.forgingStatus.properties.publicKey)
+                          @QueryParam('publicKey') pk: publicKey) {
+    // TODO: Add middleware
+    /*
+    		if (!checkIpInList(library.config.forging.access.whiteList, req.ip)) {
+			return setImmediate(cb, 'Access denied');
+		}
+     */
+    if (pk) {
+      return {
+        delegates: [pk],
+        enabled  : !!this.modules.delegatesModule.enabledKeys[pk],
+      };
+    } else {
+      const delegates = Object.keys(this.modules.delegatesModule.enabledKeys);
+      return {
+        delegates,
+        enabled: delegates.length > 0,
+      };
+    }
+
+  }
+
+  @Get('/forging/enable')
+  @ValidateSchema()
+  public async forgingEnable(@SchemaValid(schema.disableForging)
+                             @QueryParams() params: { secret: string, publicKey: string }) {
+    const kp = this.ed.makeKeypair(crypto
+      .createHash('sha256').update(params.secret, 'utf8')
+      .digest());
+
+    const pk = kp.publicKey.toString('hex');
+    if (params.publicKey && pk !== params.publicKey) {
+      throw new Error('Invalid passphrase');
+    }
+
+    if (this.modules.delegatesModule.enabledKeys[pk]) {
+      throw new Error('Forging is already enabled');
+    }
+
+    const account = await this.modules.accounts.getAccount({publicKey: pk});
+    if (!account) {
+      throw new Error('Account not found');
+    }
+    if (!account.isDelegate) {
+      throw new Error('Delegate not found');
+    }
+
+    this.modules.delegatesModule.enableForge(kp);
+  }
+
+  @Get('/forging/disable')
+  @ValidateSchema()
+  public async forgingDisable(@SchemaValid(schema.disableForging)
+                             @QueryParams() params: { secret: string, publicKey: string }) {
+    const kp = this.ed.makeKeypair(crypto
+      .createHash('sha256').update(params.secret, 'utf8')
+      .digest());
+
+    const pk = kp.publicKey.toString('hex');
+    if (params.publicKey && pk !== params.publicKey) {
+      throw new Error('Invalid passphrase');
+    }
+
+    if (typeof(this.modules.delegatesModule.enabledKeys[pk]) === 'undefined') {
+      throw new Error('Forging is already disabled');
+    }
+
+    const account = await this.modules.accounts.getAccount({publicKey: pk});
+    if (!account) {
+      throw new Error('Account not found');
+    }
+    if (!account.isDelegate) {
+      throw new Error('Delegate not found');
+    }
+
+    this.modules.delegatesModule.disableForge(pk);
+  }
+
 }

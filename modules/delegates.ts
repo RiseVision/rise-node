@@ -1,28 +1,28 @@
 import * as crypto from 'crypto';
-import {ILogger} from '../logger';
+import { ILogger } from '../logger';
 import Sequence from '../helpers/sequence';
 import OrderBy from '../helpers/orderBy';
 import jobsQueue from '../helpers/jobsQueue';
 import constants from '../helpers/constants';
-import {Ed, IKeypair} from '../helpers/ed';
-import {IDatabase} from 'pg-promise';
-import {TransactionLogic} from '../logic/transaction';
-import {RegisterDelegateTransaction} from '../logic/transactions/delegate';
-import {TransactionType} from '../helpers/transactionTypes';
-import {publicKey} from '../types/sanityTypes';
+import { Ed, IKeypair } from '../helpers/ed';
+import { IDatabase } from 'pg-promise';
+import { TransactionLogic } from '../logic/transaction';
+import { RegisterDelegateTransaction } from '../logic/transactions/delegate';
+import { TransactionType } from '../helpers/transactionTypes';
+import { publicKey } from '../types/sanityTypes';
 import slots from '../helpers/slots';
-import {AccountsModule} from './accounts';
-import {RoundsModule} from './rounds';
-import {LoaderModule} from './loader';
-import {BlocksModule} from './blocks';
-import {TransportModule} from './transport';
-import {catchToLoggerAndRemapError} from '../helpers/promiseUtils';
-import {SignedBlockType} from '../logic/block';
-import {ForkType} from '../helpers/forkTypes';
+import { AccountsModule } from './accounts';
+import { RoundsModule } from './rounds';
+import { LoaderModule } from './loader';
+import { BlocksModule } from './blocks';
+import { TransportModule } from './transport';
+import { catchToLoggerAndRemapError } from '../helpers/promiseUtils';
+import { SignedBlockType } from '../logic/block';
+import { ForkType } from '../helpers/forkTypes';
 import sql from '../sql/delegates';
-import {TransactionsModule} from './transactions';
-import {BlockRewardLogic} from '../logic/blockReward';
-import {MemAccountsData} from '../logic/account';
+import { TransactionsModule } from './transactions';
+import { BlockRewardLogic } from '../logic/blockReward';
+import { MemAccountsData } from '../logic/account';
 
 export type DelegatesModuleLibrary = {
   logger: ILogger
@@ -46,6 +46,7 @@ export type DelegatesModuleLibrary = {
 };
 
 export class DelegatesModule {
+  public enabledKeys: { [k: string]: true }   = {};
   private blockReward: BlockRewardLogic       = new BlockRewardLogic();
   private delegateRegistrationTx: RegisterDelegateTransaction;
   private keypairs: { [k: string]: IKeypair } = {};
@@ -62,7 +63,7 @@ export class DelegatesModule {
   constructor(public library: DelegatesModuleLibrary) {
     this.delegateRegistrationTx = this.library.logic.transaction.attachAssetType(
       TransactionType.DELEGATE,
-      new RegisterDelegateTransaction({ schema: this.library.schema })
+      new RegisterDelegateTransaction({schema: this.library.schema})
     );
   }
 
@@ -75,6 +76,32 @@ export class DelegatesModule {
   }
 
   /**
+   * enable forging for specific pk or all if pk is undefined
+   */
+  public enableForge(pk?: publicKey | IKeypair) {
+    let thePK: publicKey;
+    if (typeof(pk) === 'object') {
+      thePK                = pk.publicKey.toString('hex');
+      this.keypairs[thePK] = pk;
+    } else {
+      thePK = pk;
+    }
+
+    Object.keys(this.keypairs)
+      .filter((p) => typeof(thePK) === 'undefined' || p === thePK)
+      .forEach((p) => this.enabledKeys[p] = true);
+  }
+
+  /**
+   * disable forging for specific pk or all if pk is undefined
+   */
+  public disableForge(pk?: publicKey) {
+    Object.keys(this.keypairs)
+      .filter((p) => typeof(pk) === 'undefined' || p === pk)
+      .forEach((p) => delete this.enabledKeys[p]);
+  }
+
+  /**
    * Inserts a fork into fork_stats table and emits a socket signal with the fork data
    * @param {SignedBlockType} block
    * @param {ForkType} cause
@@ -82,7 +109,7 @@ export class DelegatesModule {
    */
   public async fork(block: SignedBlockType, cause: ForkType) {
     this.library.logger.info('Fork', {
-      block   : { id: block.id, timestamp: block.timestamp, height: block.height, previousBlock: block.previousBlock },
+      block   : {id: block.id, timestamp: block.timestamp, height: block.height, previousBlock: block.previousBlock},
       cause,
       delegate: block.generatorPublicKey,
     });
@@ -141,7 +168,7 @@ export class DelegatesModule {
 
     const delegates = await this.modules.accounts.getAccounts({
         isDelegate: 1,
-        sort      : { vote: -1, publicKey: 1 },
+        sort      : {vote: -1, publicKey: 1},
       },
       ['username', 'address', 'publicKey', 'vote', 'missedblocks', 'producedblocks']
     );
@@ -170,11 +197,11 @@ export class DelegatesModule {
 
       crunchedDelegates.push({
         ... delegates[i],
-        ... { rank, approval, productivity },
+        ... {rank, approval, productivity},
       });
     }
 
-    const orderBy = OrderBy(query.orderBy, { quoteField: false });
+    const orderBy = OrderBy(query.orderBy, {quoteField: false});
 
     if (orderBy.error) {
       throw new Error(orderBy.error);
@@ -249,7 +276,7 @@ export class DelegatesModule {
     const rows = await this.modules.accounts.getAccounts({
       isDelegate: 1,
       limit     : slots.delegates,
-      sort      : { vote: -1, publicKey: 1 },
+      sort      : {vote: -1, publicKey: 1},
     }, ['publicKey']);
     return rows.map((r) => r.publicKey);
   }
@@ -266,7 +293,7 @@ export class DelegatesModule {
     for (let cs = slot; cs < lastSlot; cs++) {
       const delegPos = cs % slots.delegates;
       const delegId  = pkeys[delegPos];
-      if (delegId && this.keypairs[delegId]) {
+      if (delegId && this.enabledKeys[delegId]) {
         return {
           keypair: this.keypairs[delegId],
           time   : slots.getSlotTime(cs),
@@ -323,7 +350,7 @@ export class DelegatesModule {
 
     await this.library.sequence.addAndPromise(async () => {
       // updates consensus.
-      await this.modules.transport.getPeers({ limit: constants.maxPeers });
+      await this.modules.transport.getPeers({limit: constants.maxPeers});
 
       if (this.modules.transport.poorConsensus) {
         throw new Error(`Inadequate broadhash consensus ${this.modules.transport.consensus} %`);
@@ -345,7 +372,7 @@ export class DelegatesModule {
    * @return {Promise<void>}
    */
   private async checkDelegates(pk: publicKey, votes: string[], state: 'confirmed' | 'unconfirmed') {
-    const account = await this.modules.accounts.getAccount({ publicKey: pk });
+    const account = await this.modules.accounts.getAccount({publicKey: pk});
 
     if (!account) {
       throw new Error('Account not found');
@@ -369,7 +396,7 @@ export class DelegatesModule {
 
       const curPK = vote.substr(1);
 
-      if (!this.library.schema.validate(curPK, { format: 'publicKey', type: 'string' })) {
+      if (!this.library.schema.validate(curPK, {format: 'publicKey', type: 'string'})) {
         throw new Error('Invalid public key');
       }
 
@@ -382,7 +409,7 @@ export class DelegatesModule {
 
       // check voted (or unvoted) is actually a delegate.
       // TODO: This can be optimized as it's only effective when "Adding" a vote.
-      const del = await this.modules.accounts.getAccount({ publicKey: curPK, isDelegate: 1 });
+      const del = await this.modules.accounts.getAccount({publicKey: curPK, isDelegate: 1});
       if (!del) {
         throw new Error('Delegate not found');
       }
@@ -408,7 +435,7 @@ export class DelegatesModule {
 
     for (const secret of secrets) {
       const keypair = this.library.ed.makeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
-      const account = await this.modules.accounts.getAccount({ publicKey: keypair.publicKey.toString('hex') });
+      const account = await this.modules.accounts.getAccount({publicKey: keypair.publicKey.toString('hex')});
       if (!account) {
         throw new Error(`Account with publicKey: ${keypair.publicKey.toString('hex')} not found`);
       }
@@ -420,5 +447,7 @@ export class DelegatesModule {
         this.library.logger.warn(`Account with public Key: ${account.publicKey} is not a delegate`);
       }
     }
+    // Enable forging for all accounts
+    this.enableForge();
   }
 }

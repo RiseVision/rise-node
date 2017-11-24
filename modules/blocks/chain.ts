@@ -5,7 +5,7 @@ import {catchToLoggerAndRemapError} from '../../helpers/promiseUtils';
 import Sequence from '../../helpers/sequence';
 import {TransactionType} from '../../helpers/transactionTypes';
 import {ILogger} from '../../logger';
-import {BlockLogic, SignedBlockType} from '../../logic/block';
+import { BlockLogic, SignedAndChainedBlockType, SignedBlockType } from '../../logic/block';
 import {TransactionLogic} from '../../logic/transaction';
 import {IConfirmedTransaction} from '../../logic/transactions/baseTransactionType';
 import sql from '../../sql/blocks';
@@ -339,7 +339,7 @@ export class BlocksModuleChain {
    * @param {SignedBlockType} lb
    * @returns {Promise<SignedBlockType>}
    */
-  private async popLastBlock(lb: SignedBlockType): Promise<SignedBlockType> {
+  private async popLastBlock(lb: SignedBlockType): Promise<SignedAndChainedBlockType> {
     return this.library.balancesSequence.addAndPromise(async () => {
       const b = await this.modules.blocks.utils.loadBlocksPart({ id: lb.previousBlock });
       if (b.length === 0) {
