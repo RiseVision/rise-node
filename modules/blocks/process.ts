@@ -21,6 +21,7 @@ import {IBaseTransaction} from '../../logic/transactions/baseTransactionType';
 import slots from '../../helpers/slots';
 import {ForkType} from '../../helpers/forkTypes';
 import {BlocksModule} from '../blocks';
+import {DelegatesModule} from '../delegates';
 
 export type BlocksModuleProcessLibrary = {
   dbSequence: Sequence,
@@ -40,7 +41,7 @@ export class BlocksModuleProcess {
   private modules: {
     accounts: AccountsModule,
     blocks: BlocksModule,
-    delegates: any,
+    delegates: DelegatesModule,
     loader: LoaderModule,
     rounds: RoundsModule,
     transactions: TransactionsModule,
@@ -130,7 +131,7 @@ export class BlocksModuleProcess {
         if (verify && block.id !== this.library.genesisblock.block.id) {
           // Sanity check of the block, if values are coherent.
           // No access to database.
-          const check = this.modules.blocks.verify.verifyBlock(block);
+          const check = await this.modules.blocks.verify.verifyBlock(block);
 
           if (!check.verified) {
             this.library.logger.error(`Block ${block.id} verification failed`, check.errors.join(', '));

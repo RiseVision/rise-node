@@ -1,15 +1,14 @@
-import { IDatabase, ITask } from 'pg-promise';
+import {IDatabase, ITask} from 'pg-promise';
 import constants from '../helpers/constants';
-import { cbToPromise } from '../helpers/promiseUtils';
 import slots from '../helpers/slots';
-import { ILogger } from '../logger';
-import { SignedBlockType } from '../logic/block';
-import { RoundLogic, RoundLogicScope } from '../logic/round';
+import {ILogger} from '../logger';
+import {SignedBlockType} from '../logic/block';
+import {RoundLogic, RoundLogicScope} from '../logic/round';
 import roundsSQL from '../sql/logic/rounds';
-import { IBus } from '../types/bus';
-import { address, publicKey } from '../types/sanityTypes';
-import { AccountsModule } from './accounts';
-import { DebugLog } from '../helpers/decorators/debugLog';
+import {IBus} from '../types/bus';
+import {address, publicKey} from '../types/sanityTypes';
+import {AccountsModule} from './accounts';
+import {DelegatesModule} from './delegates';
 
 // tslint:disable-next-line
 export type RoundsLibrary = {
@@ -28,7 +27,7 @@ export class RoundsModule {
   private loaded: boolean  = false;
   private ticking: boolean = false;
 
-  private modules: { delegates: any, accounts: AccountsModule };
+  private modules: { delegates: DelegatesModule, accounts: AccountsModule };
 
   constructor(private library: RoundsLibrary) {
   }
@@ -49,7 +48,7 @@ export class RoundsModule {
   }
 
   public onFinishRound(round: number) {
-    this.library.network.io.sockets.emit('rounds/change', {number: round});
+    this.library.network.io.sockets.emit('rounds/change', { number: round });
   }
 
   public onBlockchainReady() {
@@ -90,7 +89,7 @@ export class RoundsModule {
    * Deletes specific round from mem_rounds table
    */
   public flush(round: number) {
-    return this.library.db.none(roundsSQL.flush, {round})
+    return this.library.db.none(roundsSQL.flush, { round })
       .catch((err) => {
         this.library.logger.error(err.stack);
         return Promise.reject(new Error('Rounds#flush error'));
@@ -212,10 +211,8 @@ export class RoundsModule {
    */
   private async getOutsiders(round: number, roundDelegates: publicKey[]): Promise<address[]> {
 
-    const { last }          = this.heightFromRound(round);
-    const originalDelegates = await cbToPromise<publicKey[]>(
-      (cb) => this.modules.delegates.generateDelegateList(last, cb)
-    );
+    const { last: height }  = this.heightFromRound(round);
+    const originalDelegates = await this.modules.delegates.generateDelegateList(height);
 
     return originalDelegates
       .filter((pk) => roundDelegates.indexOf(pk) === -1)

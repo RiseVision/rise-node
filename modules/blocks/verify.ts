@@ -2,10 +2,9 @@ import * as crypto from 'crypto';
 import {IDatabase} from 'pg-promise';
 import constants from '../../helpers/constants';
 import {ForkType} from '../../helpers/forkTypes';
-import {cbToPromise} from '../../helpers/promiseUtils';
 import slots from '../../helpers/slots';
 import {ILogger} from '../../logger';
-import {BlockLogic, SignedBlockType} from '../../logic/block';
+import {BlockLogic, SignedAndChainedBlockType, SignedBlockType} from '../../logic/block';
 import {BlockRewardLogic} from '../../logic/blockReward';
 import {TransactionLogic} from '../../logic/transaction';
 import {IConfirmedTransaction} from '../../logic/transactions/baseTransactionType';
@@ -13,6 +12,7 @@ import sql from '../../sql/blocks';
 import {AccountsModule} from '../accounts';
 import {BlocksModule} from '../blocks';
 import {TransactionsModule} from '../transactions';
+import {DelegatesModule} from '../delegates';
 
 // tslint:disable-next-line
 export type BlocksModuleVerifyLibrary = {
@@ -29,7 +29,7 @@ export class BlocksModuleVerify {
   private blockReward = new BlockRewardLogic();
   private modules: {
     blocks: BlocksModule,
-    delegates: any,
+    delegates: DelegatesModule,
     transactions: TransactionsModule,
     accounts: AccountsModule
   };
@@ -65,14 +65,14 @@ export class BlocksModuleVerify {
   /**
    * Verify block before processing and return all possible errors related to block
    */
-  public verifyBlock(block: SignedBlockType): { errors: string[], verified: boolean } {
+  public async verifyBlock(block: SignedBlockType): Promise<{ errors: string[], verified: boolean }> {
     const lastBlock: SignedBlockType = this.modules.blocks.lastBlock;
 
     const res = this.verifyReceipt(block);
 
     const errors = [
-      this.verifyForkOne(block, lastBlock),
-      this.verifyBlockSlot(block, lastBlock),
+      await this.verifyForkOne(block, lastBlock),
+      await this.verifyBlockSlot(block, lastBlock),
     ].reduce((a, b) => a.concat(b));
 
     res.errors.reverse();
@@ -96,7 +96,10 @@ export class BlocksModuleVerify {
 
     block = this.library.logic.block.objectNormalize(block);
 
-    const { verified, errors } = this.verifyBlock(block);
+    // after verifyBlock block also have 'height' field so it's a SignedAndChainedBlock
+    // That's because of verifyReceipt.
+    const { verified, errors } = await this.verifyBlock(block);
+
     if (!verified) {
       this.library.logger.error(`Block ${block.id} verification failed`, errors.join(', '));
       throw new Error(errors[0]);
@@ -109,9 +112,9 @@ export class BlocksModuleVerify {
     }
 
     // Check block slot.
-    await cbToPromise((cb) => this.modules.delegates.validateBlockSlot(block, cb))
-      .catch((err) => {
-        this.modules.delegates.fork(block, ForkType.WRONG_FORGE_SLOT);
+    await this.modules.delegates.validateBlockSlot(block)
+      .catch(async (err) => {
+        await this.modules.delegates.fork(block, ForkType.WRONG_FORGE_SLOT);
         return Promise.reject(err);
       });
 
@@ -126,7 +129,7 @@ export class BlocksModuleVerify {
     // * Block and transactions have valid values (signatures, block slots, etc...)
     // * The check against database state passed (for instance sender has enough LSK, votes are under 101, etc...)
     // We thus update the database with the transactions values, save the block and tick it
-    return this.modules.blocks.chain.applyBlock(block, broadcast, saveBlock);
+    return this.modules.blocks.chain.applyBlock(block as SignedAndChainedBlockType, broadcast, saveBlock);
   }
 
   public onBind(scope) {
@@ -263,15 +266,15 @@ export class BlocksModuleVerify {
   /**
    * Verifies if this block is after the previous one or is on another chain (Fork type 1)
    */
-  private verifyForkOne(block: SignedBlockType, lastBlock: SignedBlockType): string[] {
+  private async verifyForkOne(block: SignedBlockType, lastBlock: SignedBlockType): Promise<string[]> {
     if (block.previousBlock && block.previousBlock !== lastBlock.id) {
-      this.modules.delegates.fork(block, ForkType.TYPE_1);
+      await this.modules.delegates.fork(block, ForkType.TYPE_1);
       return [`Invalid previous block: ${block.previousBlock} expected ${lastBlock.id}`];
     }
     return [];
   }
 
-  private verifyBlockSlot(block: SignedBlockType, lastBlock: SignedBlockType): string[] {
+  private async verifyBlockSlot(block: SignedBlockType, lastBlock: SignedBlockType): Promise<string[]> {
     const slotNumber = slots.getSlotNumber(block.timestamp);
     const lastSlot   = slots.getSlotNumber(lastBlock.timestamp);
 
@@ -295,7 +298,7 @@ export class BlocksModuleVerify {
     // Check if db is in db already if so -> fork type 2.
     await this.library.logic.transaction.assertNonConfirmed(tx)
       .catch(async (err) => {
-        this.modules.delegates.fork(block, ForkType.TX_ALREADY_CONFIRMED);
+        await this.modules.delegates.fork(block, ForkType.TX_ALREADY_CONFIRMED);
         // undo the offending tx
         await this.modules.transactions.undoUnconfirmed(tx);
         this.modules.transactions.removeUnconfirmedTransaction(tx.id);

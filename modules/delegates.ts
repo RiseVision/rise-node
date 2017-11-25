@@ -23,6 +23,7 @@ import sql from '../sql/delegates';
 import { TransactionsModule } from './transactions';
 import { BlockRewardLogic } from '../logic/blockReward';
 import { MemAccountsData } from '../logic/account';
+import {DebugLog} from '../helpers/decorators/debugLog';
 
 export type DelegatesModuleLibrary = {
   logger: ILogger

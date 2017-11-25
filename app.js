@@ -133,9 +133,9 @@ var config = {
     // loader         : './modules/loader.js',
     // system         : './modules/system.js',
     // peers          : './modules/peers.js',
-    delegates      : './modules/delegates.js',
+    // delegates      : './modules/delegates.js',
     // rounds         : './modules/rounds.js',
-    multisignatures: './modules/multisignatures.js',
+    // multisignatures: './modules/multisignatures.js',
     // dapps          : './modules/dapps.js',
     // sql            : './modules/sql.js',
     // cache: './modules/cache.js'
@@ -536,6 +536,16 @@ d.run(function () {
         let accountsModule = new (require('./modules/accounts').AccountsModule)(scope);
         modules.push(accountsModule);
         cb(null, accountsModule);
+      };
+      tasks['delegates'] = (cb) => {
+        let module = new (require('./modules/delegates').DelegatesModule)(scope);
+        modules.push(module);
+        cb(null, module);
+      };
+      tasks['multisignatures'] = (cb) => {
+        let module = new (require('./modules/multisignatures').MultisignaturesModule)(scope);
+        modules.push(module);
+        cb(null, module);
       };
       tasks['blocksChain'] = (cb) => {
         let module = new (require('./modules/blocks/chain').BlocksModuleChain)(scope);

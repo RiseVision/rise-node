@@ -9,6 +9,7 @@ import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
 import {SystemModule} from '../../modules/system';
 import {RoundsModule} from '../../modules/rounds';
+import {DelegatesModule} from '../../modules/delegates';
 
 // tslint:disable-next-line interface-over-type-literal
 export type VoteAsset = {
@@ -16,7 +17,7 @@ export type VoteAsset = {
 };
 
 export class VoteTransaction extends BaseTransactionType<VoteAsset> {
-  public modules: { delegates: any, rounds: RoundsModule, system: SystemModule };
+  public modules: { delegates: DelegatesModule, rounds: RoundsModule, system: SystemModule };
   private dbTable  = 'votes';
   private dbFields = [
     'votes',
@@ -93,14 +94,18 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
     }, emptyCB);
   }
 
+  /**
+   * Checks vote integrity of tx sender
+   */
   public checkUnconfirmedDelegates(tx: IBaseTransaction<VoteAsset>): Promise<any> {
-    return cbToPromise((cb) => this.modules.delegates
-      .checkUnconfirmedDelegates(tx.senderPublicKey, tx.asset.votes, cb));
+    return this.modules.delegates.checkUnconfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
   }
 
+  /**
+   * Checks vote integrity of sender
+   */
   public checkConfirmedDelegates(tx: IBaseTransaction<VoteAsset>): Promise<any> {
-    return cbToPromise((cb) => this.modules.delegates
-      .checkConfirmedDelegates(tx.senderPublicKey, tx.asset.votes, cb));
+    return this.modules.delegates.checkConfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
   }
 
   public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: any): Promise<void> {

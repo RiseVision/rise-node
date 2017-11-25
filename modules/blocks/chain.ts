@@ -118,7 +118,7 @@ export class BlocksModuleChain {
    * @param {SignedBlockType} block
    * @returns {Promise<void>}
    */
-  public async applyGenesisBlock(block: SignedBlockType) {
+  public async applyGenesisBlock(block: SignedAndChainedBlockType) {
     // This is a shitty sort. Does not take into account b and it's not ok
     block.transactions.sort((a) => a.type === TransactionType.VOTE ? 1 : 0);
 
@@ -150,7 +150,7 @@ export class BlocksModuleChain {
     await this.modules.rounds.tick(block);
   }
 
-  public async applyBlock(block: SignedBlockType, broadcast: boolean, saveBlock: boolean) {
+  public async applyBlock(block: SignedAndChainedBlockType, broadcast: boolean, saveBlock: boolean) {
     // Prevent shutdown during database writes.
     this.modules.blocks.isActive = true;
 
