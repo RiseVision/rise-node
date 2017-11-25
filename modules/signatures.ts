@@ -1,9 +1,7 @@
-import {Ed} from '../helpers/ed';
-import Sequence from '../helpers/sequence';
-import {TransactionType} from '../helpers/transactionTypes';
+import {Ed, Sequence, TransactionType} from '../helpers/';
 import {ILogger} from '../logger';
-import {TransactionLogic} from '../logic/transaction';
-import {SecondSignatureTransaction} from '../logic/transactions/secondSignature';
+import {TransactionLogic} from '../logic/';
+import {SecondSignatureTransaction} from '../logic/transactions/';
 import {AccountsModule} from './accounts';
 import {SystemModule} from './system';
 import {TransactionsModule} from './transactions';

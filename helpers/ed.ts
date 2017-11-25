@@ -6,7 +6,7 @@ export interface IKeypair {
 }
 
 export class Ed {
-  public static makeKeypair(hash: string | Buffer): IKeypair {
+  public makeKeypair(hash: string | Buffer): IKeypair {
     const keypair = sodium.crypto_sign_seed_keypair(hash);
 
     return {
@@ -30,4 +30,3 @@ export class Ed {
   }
 
 }
-

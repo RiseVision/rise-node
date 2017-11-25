@@ -1,18 +1,14 @@
 import * as crypto from 'crypto';
 import {IDatabase} from 'pg-promise';
-import constants from '../../helpers/constants';
-import {ForkType} from '../../helpers/forkTypes';
-import slots from '../../helpers/slots';
+import {constants, ForkType, Slots} from '../../helpers/';
 import {ILogger} from '../../logger';
-import {BlockLogic, SignedAndChainedBlockType, SignedBlockType} from '../../logic/block';
-import {BlockRewardLogic} from '../../logic/blockReward';
-import {TransactionLogic} from '../../logic/transaction';
+import {BlockLogic, BlockRewardLogic, SignedAndChainedBlockType, SignedBlockType, TransactionLogic} from '../../logic/';
 import {IConfirmedTransaction} from '../../logic/transactions/baseTransactionType';
 import sql from '../../sql/blocks';
 import {AccountsModule} from '../accounts';
 import {BlocksModule} from '../blocks';
-import {TransactionsModule} from '../transactions';
 import {DelegatesModule} from '../delegates';
+import {TransactionsModule} from '../transactions';
 
 // tslint:disable-next-line
 export type BlocksModuleVerifyLibrary = {
@@ -275,10 +271,10 @@ export class BlocksModuleVerify {
   }
 
   private async verifyBlockSlot(block: SignedBlockType, lastBlock: SignedBlockType): Promise<string[]> {
-    const slotNumber = slots.getSlotNumber(block.timestamp);
-    const lastSlot   = slots.getSlotNumber(lastBlock.timestamp);
+    const slotNumber = Slots.getSlotNumber(block.timestamp);
+    const lastSlot   = Slots.getSlotNumber(lastBlock.timestamp);
 
-    if (slotNumber > slots.getSlotNumber(slots.getTime()) || slotNumber <= lastSlot) {
+    if (slotNumber > Slots.getSlotNumber(Slots.getTime()) || slotNumber <= lastSlot) {
       // if in future or in the past => error
       return ['Invalid block timestamp'];
     }

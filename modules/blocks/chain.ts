@@ -1,20 +1,17 @@
 import * as _ from 'lodash';
 import {IDatabase, ITask} from 'pg-promise';
-import * as Inserts from '../../helpers/inserts.js';
-import {catchToLoggerAndRemapError} from '../../helpers/promiseUtils';
-import Sequence from '../../helpers/sequence';
-import {TransactionType} from '../../helpers/transactionTypes';
+import {catchToLoggerAndRemapError, Inserts, Sequence, TransactionType} from '../../helpers/';
 import {ILogger} from '../../logger';
-import { BlockLogic, SignedAndChainedBlockType, SignedBlockType } from '../../logic/block';
-import {TransactionLogic} from '../../logic/transaction';
+import {BlockLogic, SignedAndChainedBlockType, SignedBlockType, TransactionLogic} from '../../logic/';
 import {IConfirmedTransaction} from '../../logic/transactions/baseTransactionType';
 import sql from '../../sql/blocks';
 import {IBus} from '../../types/bus';
 import {AccountsModule} from '../accounts';
+import {BlocksModule} from '../blocks';
 import {RoundsModule} from '../rounds';
 import {TransactionsModule} from '../transactions';
-import {BlocksModule} from '../blocks';
 
+// tslint:disable-next-line interface-over-type-literal
 export type BlocksModuleChainLibrary = {
   logger: ILogger,
   db: IDatabase<any>,
@@ -159,8 +156,9 @@ export class BlocksModuleChain {
 
     // List of unconfirmed transactions ids.
     // Rewind any unconfirmed transactions before applying block.
-    // TODO: It should be possible to remove this call if we can guarantee that only this function is processing transactions atomically. Then speed should be improved further.
-    // TODO: Other possibility, when we rebuild from block chain this action should be moved out of the rebuild function.
+    // TODO: It should be possible to remove this call if we can guarantee that only
+    // TODO: this function is processing transactions atomically. Then speed should be improved further.
+    // TODO: Other possibility, when we rebuild from block chain this action should be moved out of the rebuild fn.
     const unconfirmedTransactionIds = await this.modules.transactions.undoUnconfirmedList()
       .catch((err) => {
         // Fatal error, memory tables will be inconsistent

@@ -1,10 +1,7 @@
-import constants from '../helpers/constants';
-import {wait} from '../helpers/promiseUtils';
+import {constants, wait} from '../helpers/';
 import {ILogger} from '../logger';
-import {SignedAndChainedBlockType, SignedBlockType} from '../logic/block';
+import {SignedAndChainedBlockType} from '../logic/';
 import {BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify} from './blocks/';
-import {DebugLog} from '../helpers/decorators/debugLog';
-
 
 export class BlocksModule {
   public lastReceipt: { get: () => number, isStale: () => boolean, update: () => void };

@@ -1,9 +1,9 @@
-import {constants, JobsQueue, promiseToCB, TransactionType} from '../helpers/';
-import {ILogger} from '../logger';
-import {AccountsModule, LoaderModule, TransactionsModule} from '../modules/';
-import {IBus} from '../types/bus';
-import {TransactionLogic} from './transaction';
-import {IBaseTransaction} from './transactions/baseTransactionType';
+import { constants, JobsQueue, promiseToCB, TransactionType } from '../helpers/';
+import { ILogger } from '../logger';
+import { AccountsModule, LoaderModule, TransactionsModule } from '../modules/';
+import { IBus } from '../types/bus';
+import { TransactionLogic } from './transaction';
+import { IBaseTransaction } from './transactions/';
 // tslint:disable-next-line
 const config = require('../config.json');
 

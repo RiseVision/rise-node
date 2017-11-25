@@ -1,12 +1,8 @@
 import * as _ from 'lodash';
 import {IDatabase} from 'pg-promise';
-import constants from '../../helpers/constants';
-import {catchToLoggerAndRemapError, logCatchRewrite} from '../../helpers/promiseUtils';
-import Sequence from '../../helpers/sequence';
-import {TransactionType} from '../../helpers/transactionTypes';
+import {catchToLoggerAndRemapError, constants, logCatchRewrite, Sequence, TransactionType} from '../../helpers/';
 import {ILogger} from '../../logger';
-import {BlockLogic, SignedAndChainedBlockType, SignedBlockType} from '../../logic/block';
-import {TransactionLogic} from '../../logic/transaction';
+import {BlockLogic, SignedAndChainedBlockType, SignedBlockType, TransactionLogic} from '../../logic/';
 import sql from '../../sql/blocks';
 import {RawFullBlockListType} from '../../types/rawDBTypes';
 import {publicKey} from '../../types/sanityTypes';

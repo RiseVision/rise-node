@@ -1,18 +1,15 @@
 import * as ip from 'ip';
 import * as _ from 'lodash';
 import * as pgpCreator from 'pg-promise';
-import {ITask} from 'pg-promise';
+import { ITask } from 'pg-promise';
 import * as shuffle from 'shuffle-array';
-import constants from '../helpers/constants';
-import jobsQueue from '../helpers/jobsQueue';
-import {cbToPromise} from '../helpers/promiseUtils';
-import {ILogger} from '../logger';
-import {Peer, PeerState, PeerType} from '../logic/peer';
-import {Peers} from '../logic/peers';
+import { cbToPromise, constants, JobsQueue } from '../helpers/';
+import { ILogger } from '../logger';
+import { Peer, Peers, PeerState, PeerType } from '../logic/';
 import schema from '../schema/peers';
 import peerSQL from '../sql/peers';
-import {SystemModule} from './system';
-import {TransportModule} from './transport';
+import { SystemModule } from './system';
+import { TransportModule } from './transport';
 
 const pgp = pgpCreator();
 
@@ -243,7 +240,7 @@ export class PeersModule {
   public async onPeersReady() {
     this.library.logger.trace('Peers ready');
 
-    jobsQueue.register('peersDiscoveryAndUpdate', async (cb) => {
+    JobsQueue.register('peersDiscoveryAndUpdate', async (cb) => {
       try {
         await this.discover();
       } catch (err) {

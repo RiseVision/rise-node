@@ -1,3 +1,4 @@
+export * from './baseTransactionType';
 export * from './send';
 export * from './dapp';
 export * from './delegate';

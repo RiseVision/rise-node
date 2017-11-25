@@ -1,14 +1,11 @@
 import * as crypto from 'crypto';
-import {Ed} from '../helpers/ed';
-import {emptyCB} from '../helpers/promiseUtils';
-import {TransactionType} from '../helpers/transactionTypes';
+import {Ed, emptyCB, TransactionType} from '../helpers/';
 import {ILogger} from '../logger';
-import {AccountFilterData, AccountLogic, MemAccountsData} from '../logic/account';
-import {TransactionLogic} from '../logic/transaction';
-import {VoteTransaction} from '../logic/transactions/vote';
+import {AccountFilterData, AccountLogic, MemAccountsData, TransactionLogic} from '../logic/';
+import {VoteTransaction} from '../logic/transactions/';
+import {DelegatesModule} from './delegates';
 import {SystemModule} from './system';
 import {TransactionsModule} from './transactions';
-import {DelegatesModule} from './delegates';
 
 // tslint:disable-next-line
 type AccountLibrary = { ed: Ed, logger: ILogger, schema: any, balancesSequence: any, logic: { account: AccountLogic, transaction: TransactionLogic } }

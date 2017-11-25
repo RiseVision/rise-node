@@ -1,30 +1,30 @@
 import * as crypto from 'crypto';
-import { ILogger } from '../logger';
-import Sequence from '../helpers/sequence';
-import OrderBy from '../helpers/orderBy';
-import jobsQueue from '../helpers/jobsQueue';
-import constants from '../helpers/constants';
-import { Ed, IKeypair } from '../helpers/ed';
 import { IDatabase } from 'pg-promise';
-import { TransactionLogic } from '../logic/transaction';
-import { RegisterDelegateTransaction } from '../logic/transactions/delegate';
-import { TransactionType } from '../helpers/transactionTypes';
-import { publicKey } from '../types/sanityTypes';
-import slots from '../helpers/slots';
-import { AccountsModule } from './accounts';
-import { RoundsModule } from './rounds';
-import { LoaderModule } from './loader';
-import { BlocksModule } from './blocks';
-import { TransportModule } from './transport';
-import { catchToLoggerAndRemapError } from '../helpers/promiseUtils';
-import { SignedBlockType } from '../logic/block';
-import { ForkType } from '../helpers/forkTypes';
+import {
+  catchToLoggerAndRemapError,
+  constants,
+  Ed,
+  ForkType,
+  IKeypair,
+  JobsQueue,
+  OrderBy,
+  Sequence,
+  Slots,
+  TransactionType
+} from '../helpers/';
+import { ILogger } from '../logger';
+import { BlockRewardLogic, MemAccountsData, SignedBlockType, TransactionLogic } from '../logic/';
+import { RegisterDelegateTransaction } from '../logic/transactions/';
 import sql from '../sql/delegates';
+import { publicKey } from '../types/sanityTypes';
+import { AccountsModule } from './accounts';
+import { BlocksModule } from './blocks';
+import { LoaderModule } from './loader';
+import { RoundsModule } from './rounds';
 import { TransactionsModule } from './transactions';
-import { BlockRewardLogic } from '../logic/blockReward';
-import { MemAccountsData } from '../logic/account';
-import {DebugLog} from '../helpers/decorators/debugLog';
+import { TransportModule } from './transport';
 
+// tslint:disable-next-line interface-over-type-literal
 export type DelegatesModuleLibrary = {
   logger: ILogger
   sequence: Sequence
@@ -64,7 +64,7 @@ export class DelegatesModule {
   constructor(public library: DelegatesModuleLibrary) {
     this.delegateRegistrationTx = this.library.logic.transaction.attachAssetType(
       TransactionType.DELEGATE,
-      new RegisterDelegateTransaction({schema: this.library.schema})
+      new RegisterDelegateTransaction({ schema: this.library.schema })
     );
   }
 
@@ -110,7 +110,7 @@ export class DelegatesModule {
    */
   public async fork(block: SignedBlockType, cause: ForkType) {
     this.library.logger.info('Fork', {
-      block   : {id: block.id, timestamp: block.timestamp, height: block.height, previousBlock: block.previousBlock},
+      block   : { id: block.id, timestamp: block.timestamp, height: block.height, previousBlock: block.previousBlock },
       cause,
       delegate: block.generatorPublicKey,
     });
@@ -169,7 +169,7 @@ export class DelegatesModule {
 
     const delegates = await this.modules.accounts.getAccounts({
         isDelegate: 1,
-        sort      : {vote: -1, publicKey: 1},
+        sort      : { vote: -1, publicKey: 1 },
       },
       ['username', 'address', 'publicKey', 'vote', 'missedblocks', 'producedblocks']
     );
@@ -193,16 +193,16 @@ export class DelegatesModule {
         100 - (delegates[i].missedblocks / ((delegates[i].producedblocks + delegates[i].missedblocks) / 100))
       ) || 0;
 
-      const outsider     = i + 1 > slots.delegates;
+      const outsider     = i + 1 > Slots.delegates;
       const productivity = (!outsider) ? Math.round(percent * 1e2) / 1e2 : 0;
 
       crunchedDelegates.push({
         ... delegates[i],
-        ... {rank, approval, productivity},
+        ... { rank, approval, productivity },
       });
     }
 
-    const orderBy = OrderBy(query.orderBy, {quoteField: false});
+    const orderBy = OrderBy(query.orderBy, { quoteField: false });
 
     if (orderBy.error) {
       throw new Error(orderBy.error);
@@ -224,8 +224,8 @@ export class DelegatesModule {
   public async validateBlockSlot(block: SignedBlockType) {
     const delegates = await this.generateDelegateList(block.height);
 
-    const curSlot = slots.getSlotNumber(block.timestamp);
-    const delegId = delegates[curSlot % slots.delegates];
+    const curSlot = Slots.getSlotNumber(block.timestamp);
+    const delegId = delegates[curSlot % Slots.delegates];
     if (!(delegId && block.generatorPublicKey === delegId)) {
       this.library.logger.error(`Expected generator ${delegId} Received generator: ${block.generatorPublicKey}`);
       throw new Error(`Failed to verify slot ${curSlot}`);
@@ -238,8 +238,8 @@ export class DelegatesModule {
       blocks      : scope.blocks,
       loader      : scope.loader,
       rounds      : scope.rounds,
-      transport   : scope.transport,
       transactions: scope.transactions,
+      transport   : scope.transport,
       // delegates   : scope.delegates,
     };
 
@@ -249,7 +249,7 @@ export class DelegatesModule {
   public async onBlockchainReady() {
     this.loaded = true;
     await this.loadDelegates();
-    jobsQueue.register(
+    JobsQueue.register(
       'delegatesNextForge',
       async (cb) => {
         try {
@@ -276,8 +276,8 @@ export class DelegatesModule {
   private async getKeysSortByVote(): Promise<publicKey[]> {
     const rows = await this.modules.accounts.getAccounts({
       isDelegate: 1,
-      limit     : slots.delegates,
-      sort      : {vote: -1, publicKey: 1},
+      limit     : Slots.delegates,
+      sort      : { vote: -1, publicKey: 1 },
     }, ['publicKey']);
     return rows.map((r) => r.publicKey);
   }
@@ -289,15 +289,15 @@ export class DelegatesModule {
   private async getBlockSlotData(slot: number, height: number): Promise<{ time: number, keypair: IKeypair }> {
     const pkeys = await this.generateDelegateList(height);
 
-    const lastSlot = slots.getLastSlot(slot);
+    const lastSlot = Slots.getLastSlot(slot);
 
     for (let cs = slot; cs < lastSlot; cs++) {
-      const delegPos = cs % slots.delegates;
+      const delegPos = cs % Slots.delegates;
       const delegId  = pkeys[delegPos];
       if (delegId && this.enabledKeys[delegId]) {
         return {
           keypair: this.keypairs[delegId],
-          time   : slots.getSlotTime(cs),
+          time   : Slots.getSlotTime(cs),
         };
       }
     }
@@ -330,9 +330,9 @@ export class DelegatesModule {
       }
     }
 
-    const currentSlot = slots.getSlotNumber();
+    const currentSlot = Slots.getSlotNumber();
     const lastBlock   = this.modules.blocks.lastBlock;
-    if (currentSlot === slots.getSlotNumber(lastBlock.timestamp)) {
+    if (currentSlot === Slots.getSlotNumber(lastBlock.timestamp)) {
       this.library.logger.debug('Waiting for next delegate slot');
       return;
     }
@@ -343,15 +343,15 @@ export class DelegatesModule {
       return;
     }
 
-    if (slots.getSlotNumber(blockData.time) !== slots.getSlotNumber()) {
+    if (Slots.getSlotNumber(blockData.time) !== Slots.getSlotNumber()) {
       // not current slot. skip
-      this.library.logger.debug(`Delegate slot ${slots.getSlotNumber()}`);
+      this.library.logger.debug(`Delegate slot ${Slots.getSlotNumber()}`);
       return;
     }
 
     await this.library.sequence.addAndPromise(async () => {
       // updates consensus.
-      await this.modules.transport.getPeers({limit: constants.maxPeers});
+      await this.modules.transport.getPeers({ limit: constants.maxPeers });
 
       if (this.modules.transport.poorConsensus) {
         throw new Error(`Inadequate broadhash consensus ${this.modules.transport.consensus} %`);
@@ -373,7 +373,7 @@ export class DelegatesModule {
    * @return {Promise<void>}
    */
   private async checkDelegates(pk: publicKey, votes: string[], state: 'confirmed' | 'unconfirmed') {
-    const account = await this.modules.accounts.getAccount({publicKey: pk});
+    const account = await this.modules.accounts.getAccount({ publicKey: pk });
 
     if (!account) {
       throw new Error('Account not found');
@@ -397,7 +397,7 @@ export class DelegatesModule {
 
       const curPK = vote.substr(1);
 
-      if (!this.library.schema.validate(curPK, {format: 'publicKey', type: 'string'})) {
+      if (!this.library.schema.validate(curPK, { format: 'publicKey', type: 'string' })) {
         throw new Error('Invalid public key');
       }
 
@@ -410,7 +410,7 @@ export class DelegatesModule {
 
       // check voted (or unvoted) is actually a delegate.
       // TODO: This can be optimized as it's only effective when "Adding" a vote.
-      const del = await this.modules.accounts.getAccount({publicKey: curPK, isDelegate: 1});
+      const del = await this.modules.accounts.getAccount({ publicKey: curPK, isDelegate: 1 });
       if (!del) {
         throw new Error('Delegate not found');
       }
@@ -436,7 +436,7 @@ export class DelegatesModule {
 
     for (const secret of secrets) {
       const keypair = this.library.ed.makeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
-      const account = await this.modules.accounts.getAccount({publicKey: keypair.publicKey.toString('hex')});
+      const account = await this.modules.accounts.getAccount({ publicKey: keypair.publicKey.toString('hex') });
       if (!account) {
         throw new Error(`Account with publicKey: ${keypair.publicKey.toString('hex')} not found`);
       }

@@ -1,9 +1,7 @@
 import {IDatabase, ITask} from 'pg-promise';
-import constants from '../helpers/constants';
-import slots from '../helpers/slots';
+import {constants, Slots} from '../helpers/';
 import {ILogger} from '../logger';
-import {SignedBlockType} from '../logic/block';
-import {RoundLogic, RoundLogicScope} from '../logic/round';
+import {RoundLogic, RoundLogicScope, SignedBlockType} from '../logic/';
 import roundsSQL from '../sql/logic/rounds';
 import {IBus} from '../types/bus';
 import {address, publicKey} from '../types/sanityTypes';
@@ -72,7 +70,7 @@ export class RoundsModule {
    * @return {number}
    */
   public calcRound(height: number) {
-    return Math.ceil(height / slots.delegates);
+    return Math.ceil(height / Slots.delegates);
   }
 
   /**
@@ -80,8 +78,8 @@ export class RoundsModule {
    */
   public heightFromRound(round: number): { first: number, last: number } {
     return {
-      first: round * slots.delegates + 1,
-      last : (round + 1) * slots.delegates,
+      first: round * Slots.delegates + 1,
+      last : (round + 1) * Slots.delegates,
     };
   }
 
@@ -149,7 +147,7 @@ export class RoundsModule {
       async () => {
         // Check if we are one block before last block of round, if yes - perform round snapshot
         // TODO: Check either logic or comment one of the 2 seems off.
-        if ((block.height + 1) % slots.delegates === 0) {
+        if ((block.height + 1) % Slots.delegates === 0) {
           this.library.logger.debug('Performing round snapshot...');
 
           await this.library.db.tx((t) => t.batch([

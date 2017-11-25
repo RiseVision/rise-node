@@ -1,24 +1,17 @@
-import {ITask} from 'pg-promise';
+import { ITask } from 'pg-promise';
 import * as promiseRetry from 'promise-retry';
-import constants from '../helpers/constants';
-import jobsQueue from '../helpers/jobsQueue';
-import {cbToPromise, emptyCB} from '../helpers/promiseUtils';
-import Sequence from '../helpers/sequence';
-import {ILogger} from '../logger';
-import {AccountLogic} from '../logic/account';
-import {SignedBlockType} from '../logic/block';
-import {Peer, PeerType} from '../logic/peer';
-import {Peers} from '../logic/peers';
-import {TransactionLogic} from '../logic/transaction';
-import {IBaseTransaction} from '../logic/transactions/baseTransactionType';
+import { cbToPromise, constants, emptyCB, JobsQueue, Sequence } from '../helpers/';
+import { ILogger } from '../logger';
+import { AccountLogic, Peer, Peers, PeerType, SignedBlockType, TransactionLogic } from '../logic/';
+import { IBaseTransaction } from '../logic/transactions/baseTransactionType';
 import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
-import {IBus} from '../types/bus';
-import {BlocksModule} from './blocks';
-import {PeersModule} from './peers';
-import {RoundsModule} from './rounds';
-import {TransactionsModule} from './transactions';
-import {TransportModule} from './transport';
+import { IBus } from '../types/bus';
+import { BlocksModule } from './blocks';
+import { PeersModule } from './peers';
+import { RoundsModule } from './rounds';
+import { TransactionsModule } from './transactions';
+import { TransportModule } from './transport';
 import Timer = NodeJS.Timer;
 
 // tslint:disable-next-line
@@ -442,7 +435,7 @@ export class LoaderModule {
   private async syncTimer() {
     this.library.logger.trace('Setting sync timer');
 
-    jobsQueue.register('loaderSyncTimer', async (cb) => {
+    JobsQueue.register('loaderSyncTimer', async (cb) => {
       this.library.logger.trace('Sync timer trigger', {
         last_receipt: this.modules.blocks.lastReceipt.get(),
         loaded      : this.loaded,

@@ -1,28 +1,30 @@
 import * as _ from 'lodash';
 import {IDatabase} from 'pg-promise';
-import constants from '../../helpers/constants';
-import Sequence from '../../helpers/sequence';
+import {catchToLoggerAndRemapError, constants, ForkType, IKeypair, Sequence, Slots} from '../../helpers/';
 import {ILogger} from '../../logger';
-import {BlockLogic, SignedAndChainedBlockType, SignedBlockType} from '../../logic/block';
-import {Peers} from '../../logic/peers';
-import {TransactionLogic} from '../../logic/transaction';
+import {
+  BasePeerType,
+  BlockLogic,
+  Peer,
+  Peers,
+  SignedAndChainedBlockType,
+  SignedBlockType,
+  TransactionLogic
+} from '../../logic/';
+import {IBaseTransaction} from '../../logic/transactions/baseTransactionType';
+import schema from '../../schema/blocks';
+import sql from '../../sql/blocks';
+import {RawFullBlockListType} from '../../types/rawDBTypes';
+
 import {AccountsModule} from '../accounts';
+import {BlocksModule} from '../blocks';
+import {DelegatesModule} from '../delegates';
 import {LoaderModule} from '../loader';
 import {RoundsModule} from '../rounds';
 import {TransactionsModule} from '../transactions';
 import {TransportModule} from '../transport';
-import {BasePeerType, Peer} from '../../logic/peer';
-import schema from '../../schema/blocks';
-import sql from '../../sql/blocks';
-import {catchToLoggerAndRemapError} from '../../helpers/promiseUtils';
-import {RawFullBlockListType} from '../../types/rawDBTypes';
-import {IKeypair} from '../../helpers/ed';
-import {IBaseTransaction} from '../../logic/transactions/baseTransactionType';
-import slots from '../../helpers/slots';
-import {ForkType} from '../../helpers/forkTypes';
-import {BlocksModule} from '../blocks';
-import {DelegatesModule} from '../delegates';
 
+// tslint:disable-next-line interface-over-type-literal
 export type BlocksModuleProcessLibrary = {
   dbSequence: Sequence,
   db: IDatabase<any>,
@@ -272,7 +274,7 @@ export class BlocksModuleProcess {
             'Discarded block that does not match with current chain:', block.id,
             'height:', block.height,
             'round:', this.modules.rounds.calcRound(block.height),
-            'slot:', slots.getSlotNumber(block.timestamp),
+            'slot:', Slots.getSlotNumber(block.timestamp),
             'generator:', block.generatorPublicKey,
           ].join(' '));
         }
@@ -307,7 +309,7 @@ export class BlocksModuleProcess {
       'Received new block id:', block.id,
       'height:', block.height,
       'round:', this.modules.rounds.calcRound(block.height),
-      'slot:', slots.getSlotNumber(block.timestamp),
+      'slot:', Slots.getSlotNumber(block.timestamp),
       'reward:', block.reward,
     ].join(' '));
 

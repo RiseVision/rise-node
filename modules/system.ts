@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import * as os from 'os';
 import {ITask as DB} from 'pg-promise';
 import * as semver from 'semver';
-import constants from '../helpers/constants';
+import {constants} from '../helpers/';
 import {ILogger} from '../logger';
 import sqlSystem from '../sql/system';
 import {BlocksModule} from './blocks';

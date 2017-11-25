@@ -1,23 +1,28 @@
 import * as crypto from 'crypto';
-import {ITask} from 'pg-promise';
+import { ITask } from 'pg-promise';
 import * as popsicle from 'popsicle';
-import MyBigNumb from '../helpers/bignum';
-import constants from '../helpers/constants';
-import {cbToPromise} from '../helpers/promiseUtils';
-import Sequence from '../helpers/sequence';
-import {ILogger} from '../logger';
-import {BlockLogic, SignedBlockType} from '../logic/block';
-import {BroadcasterLogic, BroadcastsType} from '../logic/broadcaster';
-import {BasePeerType, Peer, PeerHeaders, PeerState, PeerType} from '../logic/peer';
-import {Peers} from '../logic/peers';
-import {TransactionLogic} from '../logic/transaction';
-import {IBaseTransaction} from '../logic/transactions/baseTransactionType';
+import { BigNum, cbToPromise, constants, Sequence } from '../helpers/';
+import { ILogger } from '../logger';
+import {
+  BasePeerType,
+  BlockLogic,
+  BroadcasterLogic,
+  BroadcastsType,
+  Peer,
+  PeerHeaders,
+  Peers,
+  PeerState,
+  PeerType,
+  SignedBlockType
+} from '../logic/';
+import { TransactionLogic } from '../logic/';
+import { IBaseTransaction } from '../logic/transactions/';
 import schema from '../schema/transport';
-import {IBus} from '../types/bus';
-import {SchemaValid, ValidateSchema} from './apis/baseAPIClass';
-import {PeersModule} from './peers';
-import {SystemModule} from './system';
-import {TransactionsModule} from './transactions';
+import { IBus } from '../types/bus';
+import { SchemaValid, ValidateSchema } from './apis/baseAPIClass';
+import { PeersModule } from './peers';
+import { SystemModule } from './system';
+import { TransactionsModule } from './transactions';
 // import {DebugLog} from '../helpers/decorators/debugLog';
 
 // tslint:disable-next-line
@@ -310,7 +315,7 @@ export class TransportModule {
     for (let i = 0; i < 8; i++) {
       tmp[i] = hash[7 - i];
     }
-    return MyBigNumb.fromBuffer(tmp).toString();
+    return BigNum.fromBuffer(tmp).toString();
   }
 
   /**

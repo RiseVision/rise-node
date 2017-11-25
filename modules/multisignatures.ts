@@ -1,15 +1,11 @@
-import {ILogger} from '../logger';
-import {IDatabase} from 'pg-promise';
-import {Ed} from '../helpers/ed';
-import {IBus} from '../types/bus';
-import Sequence from '../helpers/sequence';
-import {TransactionLogic} from '../logic/transaction';
-import {MultisigAsset, MultiSignatureTransaction} from '../logic/transactions/createmultisig';
-import {TransactionType} from '../helpers/transactionTypes';
-import {AccountLogic} from '../logic/account';
-import {TransactionsModule} from './transactions';
-import {IBaseTransaction} from '../logic/transactions/baseTransactionType';
-import {AccountsModule} from './accounts';
+import { IDatabase } from 'pg-promise';
+import { Ed, Sequence, TransactionType } from '../helpers/';
+import { ILogger } from '../logger';
+import { AccountLogic, TransactionLogic } from '../logic/';
+import { IBaseTransaction, MultisigAsset, MultiSignatureTransaction } from '../logic/transactions/';
+import { IBus } from '../types/bus';
+import { AccountsModule } from './accounts';
+import { TransactionsModule } from './transactions';
 
 export class MultisignaturesModule {
   private multiTx: MultiSignatureTransaction;
