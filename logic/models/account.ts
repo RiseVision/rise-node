@@ -321,4 +321,4 @@ export const accountsModelCreator = (table:string): IModelField[] =>  [
     conv     : Boolean,
     immutable: true
   }
-]
+];

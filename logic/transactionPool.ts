@@ -1,11 +1,6 @@
-import constants from '../helpers/constants';
-import jobsQueue from '../helpers/jobsQueue';
-import {promiseToCB} from '../helpers/promiseUtils';
-import {TransactionType} from '../helpers/transactionTypes';
+import {constants, JobsQueue, promiseToCB, TransactionType} from '../helpers/';
 import {ILogger} from '../logger';
-import {AccountsModule} from '../modules/accounts';
-import {LoaderModule} from '../modules/loader';
-import {TransactionsModule} from '../modules/transactions';
+import {AccountsModule, LoaderModule, TransactionsModule} from '../modules/';
 import {IBus} from '../types/bus';
 import {TransactionLogic} from './transaction';
 import {IBaseTransaction} from './transactions/baseTransactionType';
@@ -127,14 +122,14 @@ export class TransactionPool {
 
     this.bundledInterval = broadcastInterval;
     this.bundleLimit     = releaseLimit;
-    jobsQueue.register(
+    JobsQueue.register(
       'transactionPoolNextBundle',
       (cb) => {
         return promiseToCB(this.processBundled(), cb);
       },
       this.bundledInterval
     );
-    jobsQueue.register(
+    JobsQueue.register(
       'transactionPoolNextExpiry',
       (cb) => {
         this.expireTransactions();

@@ -1,4 +1,4 @@
-export default class JobsQueue {
+export class JobsQueue {
   public static jobs: { [k: string]: NodeJS.Timer } = {};
 
   public static register(name: string, job: (cb: () => void) => void, time: number) {

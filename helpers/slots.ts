@@ -1,7 +1,7 @@
 'use strict';
 import constants from './constants';
 
-export default class Slots {
+export class Slots {
   /**
    * Slot interval in seconds
    */

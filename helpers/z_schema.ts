@@ -109,4 +109,4 @@ z_schema.registerFormat('version', (str: string) => /^([0-9]{1,3}\.[0-9]{1,3}\.[
 // console.log(registeredFormats);
 
 // Exports
-export default z_schema;
+export {z_schema};

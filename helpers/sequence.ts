@@ -19,7 +19,7 @@ interface IPromiseTask {
  * Creates a FIFO sequence array and default settings with config values.
  * Calls __tick with 3
  */
-export default class Sequence {
+export class Sequence {
   private sequence: Array<ITask | IPromiseTask> = [];
   private config: {
     onWarning: (curPending: number, warnLimit: number) => void,

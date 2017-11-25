@@ -1,4 +1,4 @@
-import constants from '../helpers/constants';
+import {constants} from '../helpers/';
 
 export class BlockRewardLogic {
   public rewards = constants.rewards;

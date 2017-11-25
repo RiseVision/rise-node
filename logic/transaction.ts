@@ -1,15 +1,9 @@
 import {BigNumber} from 'bignumber.js';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
-import BigNum from '../helpers/bignum';
-import constants from '../helpers/constants';
-import {Ed, IKeypair} from '../helpers/ed';
-import exceptions from '../helpers/exceptions';
-import {emptyCB} from '../helpers/promiseUtils';
-import slots from '../helpers/slots';
-import {TransactionType} from '../helpers/transactionTypes';
+import {BigNum, constants, Ed, emptyCB, IKeypair, Slots, TransactionType} from '../helpers/';
 import {ILogger} from '../logger';
-import {RoundsModule} from '../modules/rounds';
+import {RoundsModule} from '../modules/';
 import txSchema from '../schema/logic/transaction';
 import sql from '../sql/logic/transactions';
 import {AccountLogic, MemAccountsData} from './account';
@@ -257,7 +251,8 @@ export class TransactionLogic {
     return tx;
   }
 
-  public async verify(tx: IConfirmedTransaction<any>|IBaseTransaction<any>, sender: MemAccountsData, requester: any, height: number) {
+  public async verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: MemAccountsData,
+                      requester: any, height: number) {
     this.assertKnownTransactionType(tx);
     if (!sender) {
       throw new Error('Missing sender');
@@ -289,7 +284,7 @@ export class TransactionLogic {
     }
 
     // Check sender is not genesis account unless block id equals genesis
-    if ([exceptions.genesisPublicKey.mainnet, exceptions.genesisPublicKey.testnet].indexOf(sender.publicKey) !== -1
+    if (this.scope.genesisblock.block.generatorPublicKey === sender.publicKey
       && (tx as IConfirmedTransaction<any>).blockId !== this.scope.genesisblock.block.id) {
       throw new Error('Invalid sender. Can not send from genesis account');
     }
@@ -374,7 +369,7 @@ export class TransactionLogic {
     }
 
     // Check timestamp
-    if (slots.getSlotNumber(tx.timestamp) > slots.getSlotNumber()) {
+    if (Slots.getSlotNumber(tx.timestamp) > Slots.getSlotNumber()) {
       throw new Error('Invalid transaction timestamp. Timestamp is in the future');
     }
 

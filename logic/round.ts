@@ -1,11 +1,11 @@
-'use strict';
 import * as pgp from 'pg-promise';
 import {ITask} from 'pg-promise';
-import {RoundChanges} from '../helpers/RoundChanges';
-import roundSQL from '../sql/logic/rounds';
+import {RoundChanges} from '../helpers/';
 import {ILogger} from '../logger';
+import roundSQL from '../sql/logic/rounds';
 import {address, publicKey} from '../types/sanityTypes';
 
+// tslint:disable-next-line
 export type RoundLogicScope = {
   backwards: boolean;
   round: number;

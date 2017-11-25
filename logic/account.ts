@@ -2,12 +2,10 @@ import * as crypto from 'crypto';
 import * as jsonSqlCreator from 'json-sql';
 import * as path from 'path';
 import * as pgp from 'pg-promise';
-import {catchToLoggerAndRemapError, cback, emptyCB, promiseToCB} from '../helpers/promiseUtils';
+import {BigNum, catchToLoggerAndRemapError, cback, emptyCB, promiseToCB} from '../helpers/';
 import {ILogger} from '../logger';
 import {accountsModelCreator} from './models/account';
 import {IModelField, IModelFilter} from './models/modelField';
-
-import MyBigNumb from '../helpers/bignum';
 
 const jsonSql = jsonSqlCreator();
 
@@ -47,7 +45,7 @@ export type MemAccountsData = {
 
 // tslint:disable-next-line
 export type AccountFilterData = {
-  isDelegate?: 1|0;
+  isDelegate?: 1 | 0;
   username?: string;
   address?: string | { $in: string[] };
   publicKey?: string;
@@ -238,10 +236,11 @@ export class AccountLogic {
    * Get account information for specific fields and filtering criteria
    */
   public get(filter: AccountFilterData, cb?: cback<MemAccountsData>): Promise<MemAccountsData>;
-  public get(filter: AccountFilterData, fields: Array<(keyof MemAccountsData)>, cb?: cback<MemAccountsData>): Promise<MemAccountsData>;
+  public get(filter: AccountFilterData, fields: Array<(keyof MemAccountsData)>,
+             cb?: cback<MemAccountsData>): Promise<MemAccountsData>;
   public get(filter: AccountFilterData, fields: Array<(keyof MemAccountsData)> | cback<MemAccountsData>,
              cb?: cback<MemAccountsData>): Promise<MemAccountsData> {
-    if (typeof( fields ) === 'function') {
+    if (typeof(fields) === 'function') {
       cb     = fields;
       fields = this.fields.map((field) => field.alias || field.field) as any;
     }
@@ -263,7 +262,7 @@ export class AccountLogic {
                 fields: Array<(keyof MemAccountsData)> | cback<any>,
                 cb?: cback<any>): Promise<MemAccountsData[]> {
 
-    if (typeof( fields ) === 'function') {
+    if (typeof(fields) === 'function') {
       cb = fields;
     }
 
@@ -582,6 +581,6 @@ export class AccountLogic {
     for (let i = 0; i < 8; i++) {
       tmp[i] = hash[7 - i];
     }
-    return `${MyBigNumb.fromBuffer(tmp).toString()}R`;
+    return `${BigNum.fromBuffer(tmp).toString()}R`;
   }
 }

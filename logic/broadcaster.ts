@@ -1,16 +1,13 @@
 import * as extend from 'extend';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
-import constants from '../helpers/constants';
-import jobsQueue from '../helpers/jobsQueue';
-import {cbToPromise, promiseToCB} from '../helpers/promiseUtils';
+import {constants, JobsQueue, promiseToCB} from '../helpers/';
 import {ILogger} from '../logger';
-import {PeersModule} from '../modules/peers';
+import {PeersModule, TransportModule} from '../modules/';
 import {PeerType} from './peer';
 import {Peers} from './peers';
 import {TransactionLogic} from './transaction';
 import {IBaseTransaction} from './transactions/baseTransactionType';
-import {TransportModule} from '../modules/transport';
 
 // tslint:disable interface-over-type-literal
 export type BroadcastsType = {
@@ -82,7 +79,7 @@ export class BroadcasterLogic {
       this.consensus = 100;
     }
 
-    jobsQueue.register(
+    JobsQueue.register(
       'broadcasterNextRelease',
       (cb) => promiseToCB(this.releaseQueue()
           .catch((err) => {

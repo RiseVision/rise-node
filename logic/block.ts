@@ -1,12 +1,10 @@
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
-import BigNum from '../helpers/bignum';
-import constants from '../helpers/constants';
-import { Ed, IKeypair } from '../helpers/ed';
+import { BigNum, constants, Ed, IKeypair } from '../helpers/';
 import logicBlockSchema from '../schema/logic/block';
 import {BlockRewardLogic} from './blockReward';
-import {IBaseTransaction, IConfirmedTransaction} from './transactions/baseTransactionType';
 import {TransactionLogic} from './transaction';
+import {IBaseTransaction, IConfirmedTransaction} from './transactions/baseTransactionType';
 // import * as OldImplementation from './_block.js';
 
 // tslint:disable-next-line interface-over-type-literal

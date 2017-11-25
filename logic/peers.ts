@@ -1,8 +1,8 @@
 'use strict';
 import * as _ from 'lodash';
 import { ILogger } from '../logger';
+import {PeersModule} from '../modules/';
 import {BasePeerType, Peer, PeerState, PeerType} from './peer';
-import {PeersModule} from '../modules/peers';
 
 export class Peers {
   private library: { logger: ILogger };

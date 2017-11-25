@@ -8,7 +8,7 @@
  * @param {string} options
  * @return {Object} error | {sortField, sortMethod}.
  */
-export default function OrderBy(orderBy: string,
+export function OrderBy(orderBy: string,
                                 options: {
                                   quoteField?: boolean,
                                   sortField?: string,
