@@ -2,9 +2,9 @@ import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import { BigNum, constants, Ed, IKeypair } from '../helpers/';
 import logicBlockSchema from '../schema/logic/block';
-import {BlockRewardLogic} from './blockReward';
-import {TransactionLogic} from './transaction';
-import {IBaseTransaction, IConfirmedTransaction} from './transactions/baseTransactionType';
+import { BlockRewardLogic } from './blockReward';
+import { TransactionLogic } from './transaction';
+import { IBaseTransaction, IConfirmedTransaction } from './transactions/';
 // import * as OldImplementation from './_block.js';
 
 // tslint:disable-next-line interface-over-type-literal
@@ -62,7 +62,7 @@ export class BlockLogic {
 
     if (block.previousBlock) {
       const pb = new BigNum(block.previousBlock)
-        .toBuffer({size: 8});
+        .toBuffer({ size: 8 });
 
       for (let i = 0; i < 8; i++) {
         bb.writeByte(pb[i]);
@@ -341,7 +341,7 @@ export class BlockLogic {
   }
 
   private getAddressByPublicKey(publicKey: Buffer | string) {
-    if ( typeof( publicKey ) === 'string') {
+    if (typeof(publicKey) === 'string') {
       publicKey = new Buffer(publicKey, 'hex');
     }
     const publicKeyHash = crypto.createHash('sha256')

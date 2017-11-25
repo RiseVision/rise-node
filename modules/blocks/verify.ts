@@ -152,6 +152,7 @@ export class BlocksModuleVerify {
     try {
       valid = this.library.logic.block.verifySignature(block);
     } catch (e) {
+      console.log(e);
       errors.push(e.toString());
     }
 

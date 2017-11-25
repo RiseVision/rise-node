@@ -36,9 +36,9 @@ var packageJson  = require('./package.json');
 var path         = require('path');
 var program      = require('commander');
 var httpApi      = require('./helpers/httpApi');
-var Sequence     = require('./helpers/sequence').default;
+var Sequence     = require('./helpers/sequence').Sequence;
 var util         = require('util');
-var z_schema     = require('./helpers/z_schema').default;
+var z_schema     = require('./helpers/z_schema').z_schema;
 var promiseToCB  = require('./helpers/promiseUtils').promiseToCB;
 
 process.stdin.resume();
@@ -407,7 +407,7 @@ d.run(function () {
     }],
 
     ed: function (cb) {
-      cb(null, require('./helpers/ed'));
+      cb(null, new (require('./helpers/ed').Ed)());
     },
 
     bus    : ['ed', function (scope, cb) {

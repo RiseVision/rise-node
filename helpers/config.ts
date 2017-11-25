@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import configSchema from '../schema/config';
 import constants from './constants';
-import Z_schema from './z_schema';
+import {z_schema} from './z_schema';
 
 // TODO: define return type.
 /**
@@ -20,7 +20,7 @@ export default function config(configPath: string): any {
     configData = JSON.parse(configData);
   }
 
-  const validator = new Z_schema();
+  const validator = new z_schema();
   const valid     = validator.validate(configData, configSchema.config);
 
   if (!valid) {
