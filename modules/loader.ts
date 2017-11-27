@@ -1,7 +1,7 @@
 import { IDatabase } from 'pg-promise';
 import * as promiseRetry from 'promise-retry';
 import z_schema from 'z-schema';
-import { cbToPromise, constants, emptyCB, JobsQueue, Sequence } from '../helpers/';
+import { Bus, cbToPromise, constants, emptyCB, JobsQueue, Sequence } from '../helpers/';
 import { ILogger } from '../logger';
 import {
   AccountLogic, Peer, Peers, PeerType, SignedAndChainedBlockType, SignedBlockType,
@@ -10,14 +10,14 @@ import {
 import { IBaseTransaction } from '../logic/transactions/';
 import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
-import { IBus } from '../types/bus';
+import { AppConfig } from '../types/genericTypes';
 import { BlocksModule } from './blocks';
 import { PeersModule } from './peers';
 import { RoundsModule } from './rounds';
 import { TransactionsModule } from './transactions';
 import { TransportModule } from './transport';
 import Timer = NodeJS.Timer;
-import { AppConfig } from '../types/genericTypes';
+import { DebugLog } from '../helpers/decorators/debugLog';
 
 // tslint:disable-next-line
 export type LoaderLibrary = {
@@ -26,7 +26,7 @@ export type LoaderLibrary = {
   io: SocketIO.Server;
   schema: z_schema;
   sequence: Sequence;
-  bus: IBus;
+  bus: Bus;
   genesisblock: SignedAndChainedBlockType;
   balancesSequence: Sequence;
   logic: {
@@ -94,8 +94,6 @@ export class LoaderModule {
       transactions   : modules.transactions,
       transport      : modules.transport,
     };
-
-    await this.loadBlockChain();
   }
 
   public async onPeersReady() {
@@ -139,40 +137,6 @@ export class LoaderModule {
     return Promise.resolve();
   }
 
-  private async load(count: number, limitPerIteration: number, message?: string) {
-    let offset = 0;
-    if (message) {
-      this.library.logger.warn(message);
-      this.library.logger.warn('Recreating memory tables');
-    }
-
-    await this.library.logic.account.removeTables(emptyCB);
-
-    await this.library.logic.account.createTables(emptyCB);
-
-    try {
-      while (count >= offset) {
-        if (count > 1) {
-          this.library.logger.info('Rebuilding blockchain, current block height: ' + (offset + 1));
-        }
-        const lastBlock = await this.modules.blocks.process.loadBlocksOffset(limitPerIteration, offset, true/*verify*/);
-        offset          = offset + limitPerIteration;
-        this.lastblock  = lastBlock;
-      }
-      this.library.logger.info('Blockchain ready');
-      this.library.bus.message('blockchainReady');
-    } catch (err) {
-      this.library.logger.error(err);
-      if (err.block) {
-        this.library.logger.error('Blockchain failed at: ' + err.block.height);
-        await this.modules.blocks.chain.deleteAfterBlock(err.block.id);
-        this.library.logger.error('Blockchain clipped');
-        this.library.bus.message('blockchainReady');
-      }
-    }
-
-  }
-
   /**
    * Checks mem tables:
    * - count blocks from `blocks` table
@@ -187,7 +151,7 @@ export class LoaderModule {
    * Detects orphaned blocks in `mem_accounts` and gets delegates.
    * Loads last block and emits a bus message blockchain is ready.
    */
-  private async loadBlockChain() {
+  public async loadBlockChain() {
     const limit = Number(this.library.config.loading.loadPerIteration) || 1000;
     // const verify   = Boolean(this.library.config.loading.verifyOnLoading);
 
@@ -273,10 +237,44 @@ export class LoaderModule {
     try {
       this.lastblock = await this.modules.blocks.utils.loadLastBlock();
       this.library.logger.info('Blockchain ready');
-      this.library.bus.message('blockchainReady');
+      await this.library.bus.message('blockchainReady');
     } catch (err) {
       return this.load(blocksCount, err.message || 'Failed to load last block');
     }
+  }
+
+  private async load(count: number, limitPerIteration: number, message?: string) {
+    let offset = 0;
+    if (message) {
+      this.library.logger.warn(message);
+      this.library.logger.warn('Recreating memory tables');
+    }
+
+    await this.library.logic.account.removeTables(emptyCB);
+
+    await this.library.logic.account.createTables(emptyCB);
+
+    try {
+      while (count >= offset) {
+        if (count > 1) {
+          this.library.logger.info('Rebuilding blockchain, current block height: ' + (offset + 1));
+        }
+        const lastBlock = await this.modules.blocks.process.loadBlocksOffset(limitPerIteration, offset, true/*verify*/);
+        offset          = offset + limitPerIteration;
+        this.lastblock  = lastBlock;
+      }
+      this.library.logger.info('Blockchain ready');
+      await this.library.bus.message('blockchainReady');
+    } catch (err) {
+      this.library.logger.error(err);
+      if (err.block) {
+        this.library.logger.error('Blockchain failed at: ' + err.block.height);
+        await this.modules.blocks.chain.deleteAfterBlock(err.block.id);
+        this.library.logger.error('Blockchain clipped');
+        await this.library.bus.message('blockchainReady');
+      }
+    }
+
   }
 
   private initialize() {
@@ -298,6 +296,7 @@ export class LoaderModule {
     height: number, peers: Peer[]
   } {
     const lastBlockHeight: number = this.modules.blocks.lastBlock.height;
+
     this.library.logger.trace('Good peers - received', {count: peers.length});
 
     // Removing unreachable peers or heights below last block height
@@ -415,7 +414,7 @@ export class LoaderModule {
    */
   private async sync() {
     this.library.logger.info('Starting sync');
-    this.library.bus.message('syncStarted');
+    await this.library.bus.message('syncStarted');
 
     this.isActive = true;
     this.syncTrigger(true);

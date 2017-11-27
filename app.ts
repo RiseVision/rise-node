@@ -15,7 +15,8 @@ import loggerCreator from './logger';
 import {
   applyExpressLimits,
   Bus,
-  cache, cbToPromise,
+  cache,
+  cbToPromise,
   config as configCreator,
   Database,
   Ed,
@@ -25,13 +26,7 @@ import {
   z_schema,
 } from './helpers/';
 
-import {
-  AccountLogic,
-  BlockLogic,
-  Peers,
-  SignedAndChainedBlockType,
-  TransactionLogic,
-} from './logic/';
+import { AccountLogic, BlockLogic, Peers, SignedAndChainedBlockType, TransactionLogic, } from './logic/';
 
 import {
   AccountsModule,
@@ -82,7 +77,7 @@ if (program.peers) {
     appConfig.peers.list = program.peers.split(',')
       .map((peer) => {
         const [ip, port] = peer.split(':');
-        return {ip, port: port || appConfig.port};
+        return { ip, port: port || appConfig.port };
       });
   } else {
     appConfig.peers.list = [];
@@ -147,14 +142,14 @@ async function boot(): Promise<() => Promise<void>> {
 
   applyExpressLimits(app, appConfig);
 
-  app.use(compression({level: 9}));
+  app.use(compression({ level: 9 }));
   app.use(cors());
   app.options('*', cors());
 
   app.use(express.static(`${__dirname}/public`));
-  app.use(bodyParser.raw({limit: '2mb'}));
-  app.use(bodyParser.urlencoded({extended: true, limit: '2mb', parameterLimit: 5000}));
-  app.use(bodyParser.json({limit: '2mb'}));
+  app.use(bodyParser.raw({ limit: '2mb' }));
+  app.use(bodyParser.urlencoded({ extended: true, limit: '2mb', parameterLimit: 5000 }));
+  app.use(bodyParser.json({ limit: '2mb' }));
   app.use(methodOverride());
 
   app.use(middleware.logClientConnections(logger));
@@ -184,7 +179,7 @@ async function boot(): Promise<() => Promise<void>> {
   );
 
   // Logic loading.
-  const accountLogic     = new AccountLogic({db, logger, schema});
+  const accountLogic     = new AccountLogic({ db, logger, schema });
   const transactionLogic = new TransactionLogic({
     account     : accountLogic,
     db,
@@ -194,7 +189,7 @@ async function boot(): Promise<() => Promise<void>> {
     schema,
   });
 
-  const blockLogic = new BlockLogic({ed, schema, transaction: transactionLogic});
+  const blockLogic = new BlockLogic({ ed, schema, transaction: transactionLogic });
 
   const peersLogic = new Peers(logger);
 
@@ -206,8 +201,8 @@ async function boot(): Promise<() => Promise<void>> {
   // modules.
 
   const modules = {
-    accounts: new AccountsModule({ed, balancesSequence, logger, schema, logic}),
-    blocks  : new BlocksModule({logger}),
+    accounts: new AccountsModule({ ed, balancesSequence, logger, schema, logic }),
+    blocks  : new BlocksModule({ logger }),
 
     blocksChain: new BlocksSubModules.BlocksModuleChain({
       balancesSequence,
@@ -252,7 +247,7 @@ async function boot(): Promise<() => Promise<void>> {
         transaction: transactionLogic,
       },
     }),
-    cache        : new Cache({logger}, theCache.client, theCache.cacheEnabled),
+    cache        : new Cache({ logger }, theCache.client, theCache.cacheEnabled),
     delegates    : new DelegatesModule({
       balancesSequence,
       config          : appConfig,
@@ -278,7 +273,7 @@ async function boot(): Promise<() => Promise<void>> {
       db,
       lastCommit,
       logger,
-      logic : {peers: peersLogic},
+      logic : { peers: peersLogic },
       nonce,
       schema,
     }),
@@ -294,10 +289,10 @@ async function boot(): Promise<() => Promise<void>> {
       balancesSequence,
       ed,
       logger,
-      logic: {transaction: transactionLogic},
+      logic: { transaction: transactionLogic },
       schema,
     }),
-    system       : new SystemModule({db, config: appConfig, logger, nonce}),
+    system       : new SystemModule({ db, config: appConfig, logger, nonce }),
     transactions : new TransactionsModule({
       balancesSequence,
       bus,
@@ -306,7 +301,7 @@ async function boot(): Promise<() => Promise<void>> {
       ed,
       genesisblock: genesisBlock,
       logger,
-      logic       : {transaction: transactionLogic},
+      logic       : { transaction: transactionLogic },
       schema,
     }),
     transport    : new TransportModule({
@@ -325,9 +320,11 @@ async function boot(): Promise<() => Promise<void>> {
   // apis.
   // TODO: APIS
 
+  // save genesis
+  await modules.blocksChain.saveGenesisBlock();
   // bind modules
   bus.modules = modules;
-  bus.message('bind', modules);
+  await bus.message('bind', modules);
 
   transactionLogic.bindModules(modules);
   peersLogic.bindModules(modules);
@@ -338,7 +335,9 @@ async function boot(): Promise<() => Promise<void>> {
 
   logger.info('Modules ready and launched');
 
-  return async () => {
+  // load blockchain
+
+  const cleanup = async () => {
     logger.info('Cleaning up...');
     const moduleKeys = Object.keys(modules);
     try {
@@ -353,17 +352,25 @@ async function boot(): Promise<() => Promise<void>> {
     }
     process.exit(1);
   };
+
+  modules.loader.loadBlockChain()
+    .catch((err) => {
+      logger.warn('Cannot load blockchain', err);
+      return cleanup();
+    });
+
+  return cleanup;
 }
 
 boot()
   .then((cleanupFN) => {
     process.on('uncaughtException', (err) => {
-      logger.fatal('System error', {message: err.message, stack: err.stack});
+      logger.fatal('System error', { message: err.message, stack: err.stack });
       cleanupFN();
     });
 
     process.on('unhandledRejection', (err) => {
-      logger.fatal('Unhandled Promise rejection', {message: err.message, stack: err.stack});
+      logger.fatal('Unhandled Promise rejection', { message: err.message, stack: err.stack });
       cleanupFN();
     });
 

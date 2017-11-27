@@ -1,7 +1,6 @@
-import { constants, JobsQueue, promiseToCB, TransactionType } from '../helpers/';
+import { Bus, constants, JobsQueue, promiseToCB, TransactionType } from '../helpers/';
 import { ILogger } from '../logger';
 import { AccountsModule, LoaderModule, TransactionsModule } from '../modules/';
-import { IBus } from '../types/bus';
 import { TransactionLogic } from './transaction';
 import { IBaseTransaction } from './transactions/';
 // tslint:disable-next-line
@@ -91,7 +90,7 @@ export class TransactionPool {
 
   private library: {
     logger: ILogger,
-    bus: IBus,
+    bus: Bus,
     logic: {
       transaction: TransactionLogic
     }
@@ -110,7 +109,7 @@ export class TransactionPool {
   private modules: { accounts: AccountsModule, transactions: TransactionsModule, loader: LoaderModule };
 
   constructor(broadcastInterval: number, releaseLimit: number, transactionLogic: TransactionLogic,
-              bus: IBus, logger: ILogger) {
+              bus: Bus, logger: ILogger) {
     this.library = {
       bus,
       config: {
@@ -416,7 +415,7 @@ export class TransactionPool {
     // TODO: check why here we've to cast to any
     await this.library.logic.transaction.verify(normalizedTx as any, sender, requester, null);
 
-    this.library.bus.message('unconfirmedTransaction', normalizedTx, broadcast);
+    await this.library.bus.message('unconfirmedTransaction', normalizedTx, broadcast);
     return sender;
   }
 

@@ -9,9 +9,9 @@ import { ILogger } from '../logger';
 import { Peer, Peers, PeerState, PeerType } from '../logic/';
 import schema from '../schema/peers';
 import peerSQL from '../sql/peers';
+import { AppConfig } from '../types/genericTypes';
 import { SystemModule } from './system';
 import { TransportModule } from './transport';
-import { AppConfig } from '../types/genericTypes';
 
 const pgp = pgpCreator();
 
@@ -61,6 +61,10 @@ export class PeersModule {
       .value();
   }
 
+  public cleanup() {
+    // save on cleanup.
+    return this.dbSave();
+  }
   /**
    * Pings a peer
    */
@@ -230,7 +234,7 @@ export class PeersModule {
     await this.insertSeeds();
     await this.dbLoad();
     await this.discover();
-    this.library.bus.message('peersReady');
+    await this.library.bus.message('peersReady');
   }
 
   public async onPeersReady() {

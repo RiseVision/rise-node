@@ -1,22 +1,21 @@
 import * as _ from 'lodash';
-import {IDatabase, ITask} from 'pg-promise';
-import {catchToLoggerAndRemapError, Inserts, Sequence, TransactionType} from '../../helpers/';
-import {ILogger} from '../../logger';
-import {BlockLogic, SignedAndChainedBlockType, SignedBlockType, TransactionLogic} from '../../logic/';
-import {IConfirmedTransaction} from '../../logic/transactions/';
+import { IDatabase, ITask } from 'pg-promise';
+import { Bus, catchToLoggerAndRemapError, Inserts, Sequence, TransactionType } from '../../helpers/';
+import { ILogger } from '../../logger';
+import { BlockLogic, SignedAndChainedBlockType, SignedBlockType, TransactionLogic } from '../../logic/';
+import { IConfirmedTransaction } from '../../logic/transactions/';
 import sql from '../../sql/blocks';
-import {IBus} from '../../types/bus';
-import {AccountsModule} from '../accounts';
-import {BlocksModule} from '../blocks';
-import {RoundsModule} from '../rounds';
-import {TransactionsModule} from '../transactions';
+import { AccountsModule } from '../accounts';
+import { BlocksModule } from '../blocks';
+import { RoundsModule } from '../rounds';
+import { TransactionsModule } from '../transactions';
 
 // tslint:disable-next-line interface-over-type-literal
 export type BlocksModuleChainLibrary = {
   logger: ILogger,
   db: IDatabase<any>,
   genesisblock: SignedAndChainedBlockType,
-  bus: IBus,
+  bus: Bus,
   balancesSequence: Sequence,
   logic: {
     block: BlockLogic,
@@ -227,7 +226,7 @@ export class BlocksModuleChain {
       this.library.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');
     }
 
-    this.library.bus.message('newBlock', block, broadcast);
+    await this.library.bus.message('newBlock', block, broadcast);
 
     await this.modules.rounds.tick(block);
 
@@ -322,7 +321,7 @@ export class BlocksModuleChain {
    * @returns {Promise<void>}
    */
   private async afterSave(block: SignedBlockType) {
-    this.library.bus.message('transactionsSaved', block.transactions);
+    await this.library.bus.message('transactionsSaved', block.transactions);
     // Execute afterSave callbacks for each transaction, depends on tx type
     // see: logic.outTransfer.afterSave, logic.dapp.afterSave
     for (const tx of  block.transactions) {

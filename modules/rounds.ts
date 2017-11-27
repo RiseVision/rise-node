@@ -1,19 +1,18 @@
 import {IDatabase, ITask} from 'pg-promise';
-import {constants, Slots} from '../helpers/';
+import { Bus, constants, Slots } from '../helpers/';
 import {ILogger} from '../logger';
 import {RoundLogic, RoundLogicScope, SignedBlockType} from '../logic/';
 import roundsSQL from '../sql/logic/rounds';
-import {IBus} from '../types/bus';
+import { AppConfig } from '../types/genericTypes';
 import {address, publicKey} from '../types/sanityTypes';
 import {AccountsModule} from './accounts';
 import {DelegatesModule} from './delegates';
-import { AppConfig } from '../types/genericTypes';
 
 // tslint:disable-next-line
 export type RoundsLibrary = {
   logger: ILogger,
   db: IDatabase<any>,
-  bus: IBus,
+  bus: Bus,
   io: SocketIO.Server,
   config: AppConfig
 };

@@ -1,11 +1,10 @@
 import * as _ from 'lodash';
 import {IDatabase} from 'pg-promise';
-import {constants, Ed, OrderBy, Sequence, TransactionType} from '../helpers/';
+import { Bus, constants, Ed, OrderBy, Sequence, TransactionType } from '../helpers/';
 import {ILogger} from '../logger';
 import {SignedBlockType, TransactionLogic, TransactionPool} from '../logic/';
 import {IBaseTransaction, IConfirmedTransaction, SendTransaction} from '../logic/transactions/';
 import txSQL from '../sql/logic/transactions';
-import {IBus} from '../types/bus';
 import {AccountsModule} from './accounts';
 import {LoaderModule} from './loader';
 import {SystemModule} from './system';
@@ -16,7 +15,7 @@ export type TransactionLibrary = {
   db: IDatabase<any>,
   schema: any,
   ed: Ed,
-  bus: IBus,
+  bus: Bus,
   balancesSequence: Sequence,
   logic: {
     transaction: TransactionLogic,

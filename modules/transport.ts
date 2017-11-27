@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import { IDatabase } from 'pg-promise';
 import * as popsicle from 'popsicle';
 import * as z_schema from 'z-schema';
-import { BigNum, cbToPromise, constants, Sequence } from '../helpers/';
+import { BigNum, Bus, cbToPromise, constants, Sequence } from '../helpers/';
 import { ILogger } from '../logger';
 import {
   BasePeerType,
@@ -19,7 +19,6 @@ import {
 import { TransactionLogic } from '../logic/';
 import { IBaseTransaction } from '../logic/transactions/';
 import schema from '../schema/transport';
-import { IBus } from '../types/bus';
 import { SchemaValid, ValidateSchema } from './apis/baseAPIClass';
 import { PeersModule } from './peers';
 import { SystemModule } from './system';
@@ -32,7 +31,7 @@ export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | '
 export type TransportLibrary = {
   logger: ILogger,
   db: IDatabase<any>,
-  bus: IBus,
+  bus: Bus,
   schema: z_schema,
   io: SocketIO.Server,
   balancesSequence: Sequence,

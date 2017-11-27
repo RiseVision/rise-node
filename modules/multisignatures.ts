@@ -1,9 +1,9 @@
 import { IDatabase } from 'pg-promise';
-import { Ed, Sequence, TransactionType } from '../helpers/';
+import * as z_schema from 'z-schema';
+import { Bus, Ed, Sequence, TransactionType } from '../helpers/';
 import { ILogger } from '../logger';
-import { AccountLogic, TransactionLogic } from '../logic/';
+import { AccountLogic, SignedAndChainedBlockType, TransactionLogic } from '../logic/';
 import { IBaseTransaction, MultisigAsset, MultiSignatureTransaction } from '../logic/transactions/';
-import { IBus } from '../types/bus';
 import { AccountsModule } from './accounts';
 import { TransactionsModule } from './transactions';
 
@@ -18,15 +18,15 @@ export class MultisignaturesModule {
     logger: ILogger,
     db: IDatabase<any>,
     network: any,
-    schema: any,
+    schema: z_schema,
     ed: Ed,
-    bus: IBus,
+    bus: Bus,
     balancesSequence: Sequence,
     logic: {
       transaction: TransactionLogic
       account: AccountLogic
     }
-    genesisblock: any
+    genesisblock: SignedAndChainedBlockType
   }) {
 
     this.multiTx = this.library.logic.transaction.attachAssetType(
@@ -77,7 +77,7 @@ export class MultisignaturesModule {
       // TODO: Check if following line is needed
       // multisigTx.ready = this.multiTx.ready(multisigTx, sender);
 
-      this.library.bus.message('signature', { transaction: tx.transaction, signature: tx.signature }, true);
+      await this.library.bus.message('signature', { transaction: tx.transaction, signature: tx.signature }, true);
       return null;
     });
   }
