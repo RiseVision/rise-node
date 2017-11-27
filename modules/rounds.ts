@@ -7,18 +7,15 @@ import {IBus} from '../types/bus';
 import {address, publicKey} from '../types/sanityTypes';
 import {AccountsModule} from './accounts';
 import {DelegatesModule} from './delegates';
+import { AppConfig } from '../types/genericTypes';
 
 // tslint:disable-next-line
 export type RoundsLibrary = {
   logger: ILogger,
   db: IDatabase<any>,
   bus: IBus,
-  network: any,
-  config: {
-    loading: {
-      snapshot: number // round number till which the snapshot needs to be verified.
-    }
-  }
+  io: SocketIO.Server,
+  config: AppConfig
 };
 
 export class RoundsModule {
@@ -46,7 +43,7 @@ export class RoundsModule {
   }
 
   public onFinishRound(round: number) {
-    this.library.network.io.sockets.emit('rounds/change', { number: round });
+    this.library.io.sockets.emit('rounds/change', { number: round });
   }
 
   public onBlockchainReady() {

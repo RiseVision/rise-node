@@ -1,6 +1,7 @@
-import {Application, NextFunction, Request, Response, Router} from 'express';
-import {ILogger} from '../logger';
-import {checkIpInList} from './checkIpInList';
+import { Application, NextFunction, Request, Response, Router } from 'express';
+import { ILogger } from '../logger';
+import { checkIpInList } from './checkIpInList';
+import { AppConfig } from '../types/genericTypes';
 
 export const middleware = {
   /**
@@ -15,12 +16,14 @@ export const middleware = {
   /**
    * Logs all api errors.
    */
-  errorLogger(logger, err: Error, req: Request, res: Response, next: NextFunction) {
-    if (!err) {
-      return next();
-    }
-    logger.error('API error ' + req.url, err.message);
-    res.status(500).send({ success: false, error: 'API error: ' + err.message });
+  errorLogger(logger) {
+    return (err: Error, req: Request, res: Response, next: NextFunction) => {
+      if (!err) {
+        return next();
+      }
+      logger.error('API error ' + req.url, err.message);
+      res.status(500).send({success: false, error: 'API error: ' + err.message});
+    };
   },
 
   /**
@@ -30,11 +33,12 @@ export const middleware = {
    * @param {Object} res
    * @param {Function} next
    */
-  logClientConnections(logger, req: Request, res: Response, next: NextFunction) {
-    // Log client connections
-    logger.log(req.method + ' ' + req.url + ' from ' + req.ip);
-
-    return next();
+  logClientConnections(logger: ILogger) {
+    return (req: Request, res: Response, next: NextFunction) => {
+      // Log client connections
+      logger.log(req.method + ' ' + req.url + ' from ' + req.ip);
+      return next();
+    };
   },
 
   /**
@@ -48,14 +52,14 @@ export const middleware = {
     if (isLoaded()) {
       return next();
     }
-    res.status(500).send({ success: false, error: 'Blockchain is loading' });
+    res.status(500).send({success: false, error: 'Blockchain is loading'});
   },
 
   /**
    * Resends error if API endpoint doesn't exists.
    */
   notFound(req: Request, res: Response, next: NextFunction) {
-    return res.status(500).send({ success: false, error: 'API endpoint not found' });
+    return res.status(500).send({success: false, error: 'API endpoint not found'});
   },
 
   /**
@@ -65,7 +69,7 @@ export const middleware = {
     return (req: Request & { sanitize: (...args: any[]) => void }, res: Response, next: NextFunction) => {
       req.sanitize(req[property], schema, (err, report, sanitized) => {
         if (!report.isValid) {
-          return res.json({ success: false, error: report.issues });
+          return res.json({success: false, error: report.issues});
         }
         return cb(sanitized, respond.bind(null, res));
       });
@@ -75,30 +79,33 @@ export const middleware = {
   /**
    * Attachs header to response.
    */
-  attachResponseHeader(headerKey: string, headerValue: string, req: Request, res: Response, next: NextFunction) {
-    res.setHeader(headerKey, headerValue);
-    return next();
+  attachResponseHeader(headerKey: string, headerValue: string) {
+    return (req: Request, res: Response, next: NextFunction) => {
+      res.setHeader(headerKey, headerValue);
+      return next();
+    }
   },
 
   /**
    * Applies rules of public / internal API described in config.json.
-   * TODO: describe config
    */
-  applyAPIAccessRules(config, req: Request, res: Response, next: NextFunction) {
-    if (req.url.match(/^\/peer[\/]?.*/)) {
-      const internalApiAllowed = config.peers.enabled && !checkIpInList(config.peers.access.blackList,
-        req.ip, false);
-      rejectDisallowed(internalApiAllowed, config.peers.enabled);
-    } else {
-      const publicApiAllowed = config.api.enabled && (config.api.access.public ||
-        checkIpInList(config.api.access.whiteList, req.ip, false));
-      rejectDisallowed(publicApiAllowed, config.api.enabled);
-    }
+  applyAPIAccessRules(config: AppConfig) {
+    return (req: Request, res: Response, next: NextFunction) => {
+      if (req.url.match(/^\/peer[\/]?.*/)) {
+        const internalApiAllowed = config.peers.enabled && !checkIpInList(config.peers.access.blackList,
+          req.ip, false);
+        rejectDisallowed(internalApiAllowed, config.peers.enabled);
+      } else {
+        const publicApiAllowed = config.api.enabled && (config.api.access.public ||
+          checkIpInList(config.api.access.whiteList, req.ip, false));
+        rejectDisallowed(publicApiAllowed, config.api.enabled);
+      }
 
-    function rejectDisallowed(apiAllowed, isEnabled) {
-      return apiAllowed ? next() : isEnabled ?
-        res.status(403).send({ success: false, error: 'API access denied' }) :
-        res.status(500).send({ success: false, error: 'API access disabled' });
+      function rejectDisallowed(apiAllowed, isEnabled) {
+        return apiAllowed ? next() : isEnabled ?
+          res.status(403).send({success: false, error: 'API access denied'}) :
+          res.status(500).send({success: false, error: 'API access disabled'});
+      }
     }
   },
 
@@ -147,9 +154,9 @@ export const middleware = {
  */
 export function respond(res: Response, err: Error, response: any) {
   if (err) {
-    res.json({ success: false, error: err });
+    res.json({success: false, error: err});
   } else {
-    return res.json({ ...{ success: true }, ...response });
+    return res.json({...{success: true}, ...response});
   }
 }
 

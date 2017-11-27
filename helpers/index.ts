@@ -1,13 +1,16 @@
 import BigNum from './bignum';
 import * as cache from './cache';
-import * as config from './config';
+import config from './config';
 import constants from './constants';
 import * as Database from './database';
 import * as Diff from './diff';
 import * as Inserts from './inserts.js';
+import applyExpressLimits from './request-limiter';
 
+export * from './bus';
 export * from './checkIpInList';
 export * from './ed';
+export * from './httpApi';
 export * from './forkTypes';
 export * from './genericUtils';
 export * from './git';
@@ -18,6 +21,15 @@ export * from './RoundChanges';
 export * from './sequence';
 export * from './slots';
 export * from './transactionTypes';
+export * from './z_schema';
 
-
-export {BigNum, cache, config, constants, Database, Diff, Inserts};
+export {
+  applyExpressLimits,
+  BigNum,
+  cache,
+  config,
+  constants,
+  Database,
+  Diff,
+  Inserts
+};

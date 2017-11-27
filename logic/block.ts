@@ -1,5 +1,6 @@
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
+import z_schema from 'z-schema';
 import { BigNum, constants, Ed, IKeypair } from '../helpers/';
 import logicBlockSchema from '../schema/logic/block';
 import { BlockRewardLogic } from './blockReward';
@@ -62,7 +63,7 @@ export class BlockLogic {
 
     if (block.previousBlock) {
       const pb = new BigNum(block.previousBlock)
-        .toBuffer({ size: 8 });
+        .toBuffer({size: 8});
 
       for (let i = 0; i < 8; i++) {
         bb.writeByte(pb[i]);
@@ -128,17 +129,12 @@ export class BlockLogic {
   private blockReward = new BlockRewardLogic();
   private scope: { ed: Ed, schema: any /*ZSchema*/, transaction: TransactionLogic };
 
-  constructor(ed: Ed, schema: any, transaction: any, cb?: any) {
+  constructor(config: { ed: Ed, schema: z_schema, transaction: TransactionLogic }) {
     this.scope = {
-      ed,
-      schema,
-      transaction,
+      ed         : config.ed,
+      schema     : config.schema,
+      transaction: config.transaction,
     };
-
-    // TODO: remove this nonSeNSE
-    if (cb) {
-      setImmediate(cb, null, this);
-    }
   }
 
   /**

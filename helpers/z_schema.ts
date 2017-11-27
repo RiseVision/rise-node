@@ -108,5 +108,6 @@ z_schema.registerFormat('version', (str: string) => /^([0-9]{1,3}\.[0-9]{1,3}\.[
 // var registeredFormats = z_schema.getRegisteredFormats();
 // console.log(registeredFormats);
 
-// Exports
 export {z_schema};
+
+// Exports

@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import {Ed, emptyCB, TransactionType} from '../helpers/';
+import { Ed, emptyCB, Sequence, TransactionType } from '../helpers/';
 import {ILogger} from '../logger';
 import {AccountFilterData, AccountLogic, MemAccountsData, TransactionLogic} from '../logic/';
 import {VoteTransaction} from '../logic/transactions/';
@@ -8,7 +8,7 @@ import {SystemModule} from './system';
 import {TransactionsModule} from './transactions';
 
 // tslint:disable-next-line
-type AccountLibrary = { ed: Ed, logger: ILogger, schema: any, balancesSequence: any, logic: { account: AccountLogic, transaction: TransactionLogic } }
+type AccountLibrary = { ed: Ed, logger: ILogger, schema: any, balancesSequence: Sequence, logic: { account: AccountLogic, transaction: TransactionLogic } }
 
 export class AccountsModule {
   public modules: { delegates: DelegatesModule, rounds: any, system: SystemModule, transactions: TransactionsModule };

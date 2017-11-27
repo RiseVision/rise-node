@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
-import { ITask } from 'pg-promise';
+import { IDatabase } from 'pg-promise';
 import * as popsicle from 'popsicle';
+import * as z_schema from 'z-schema';
 import { BigNum, cbToPromise, constants, Sequence } from '../helpers/';
 import { ILogger } from '../logger';
 import {
@@ -30,10 +31,10 @@ export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | '
 // tslint:disable-next-line
 export type TransportLibrary = {
   logger: ILogger,
-  db: ITask<any>,
+  db: IDatabase<any>,
   bus: IBus,
-  schema: any,
-  network: any,
+  schema: z_schema,
+  io: SocketIO.Server,
   balancesSequence: Sequence,
   logic: {
     block: BlockLogic,
@@ -54,8 +55,8 @@ export type TransportLibrary = {
 };
 
 export class TransportModule {
-  public schema: any;
-  public headers: any;
+  public schema: z_schema;
+  public headers: PeerHeaders;
   public modules: { peers: PeersModule, multisignatures: any, transactions: TransactionsModule, system: SystemModule };
   private broadcaster: BroadcasterLogic;
   private loaded: boolean = false;
@@ -192,7 +193,7 @@ export class TransportModule {
   public onSignature(signature: { transaction: string, signature: string, relays?: number }, broadcast: boolean) {
     if (broadcast && !this.broadcaster.maxRelays(signature)) {
       this.broadcaster.enqueue({}, { api: '/signatures', data: { signature }, method: 'POST' });
-      this.library.network.io.sockets.emit('signature/change', signature);
+      this.library.io.sockets.emit('signature/change', signature);
     }
   }
 
@@ -204,7 +205,7 @@ export class TransportModule {
   public onUnconfirmedTransaction(transaction: IBaseTransaction<any> & { relays?: number }, broadcast: boolean) {
     if (broadcast && !this.broadcaster.maxRelays(transaction)) {
       this.broadcaster.enqueue({}, { api: '/transactions', data: { transaction }, method: 'POST' });
-      this.library.network.io.sockets.emit('transactions/change', transaction);
+      this.library.io.sockets.emit('transactions/change', transaction);
     }
   }
 
@@ -223,7 +224,7 @@ export class TransportModule {
         await this.broadcaster.broadcast({ limit: constants.maxPeers, broadhash },
           { api: '/blocks', data: { block }, method: 'POST', immediate: true });
       }
-      this.library.network.io.sockets.emit('blocks/change', block);
+      this.library.io.sockets.emit('blocks/change', block);
     }
   }
 

@@ -1,37 +1,33 @@
 import * as ip from 'ip';
 import * as _ from 'lodash';
 import * as pgpCreator from 'pg-promise';
-import { ITask } from 'pg-promise';
+import { IDatabase, ITask } from 'pg-promise';
 import * as shuffle from 'shuffle-array';
-import { cbToPromise, constants, JobsQueue } from '../helpers/';
+import * as z_schema from 'z-schema';
+import { Bus, cbToPromise, constants, JobsQueue } from '../helpers/';
 import { ILogger } from '../logger';
 import { Peer, Peers, PeerState, PeerType } from '../logic/';
 import schema from '../schema/peers';
 import peerSQL from '../sql/peers';
 import { SystemModule } from './system';
 import { TransportModule } from './transport';
+import { AppConfig } from '../types/genericTypes';
 
 const pgp = pgpCreator();
 
 // tslint:disable-next-line
 export type PeersLibrary = {
   logger: ILogger,
-  db: ITask<any>,
-  schema: any,
-  bus: any,
+  db: IDatabase<any>,
+  schema: z_schema,
+  bus: Bus,
   nonce: string;
   build: string;
   lastCommit: string;
   logic: {
     peers: Peers;
   },
-  config: {
-    peers: {
-      enabled: boolean;
-      list: Array<{ ip: string, port: number }>;
-    },
-    version: string;
-  }
+  config: AppConfig
 };
 
 // tslint:disable-next-line
@@ -102,7 +98,7 @@ export class PeersModule {
       this.library.logger.debug('Cannot remove frozen peer', peerIP + ':' + port);
       return false;
     } else {
-      return this.library.logic.peers.remove({ ip: peerIP, port });
+      return this.library.logic.peers.remove({ip: peerIP, port});
     }
   }
 
@@ -227,7 +223,7 @@ export class PeersModule {
     consensus     = isNaN(consensus) ? 0 : consensus;
 
     this.library.logger.debug(`Listing ${peersList.length} total peers`);
-    return { consensus, peers: peersList };
+    return {consensus, peers: peersList};
   }
 
   public async onBlockchainReady() {
@@ -249,7 +245,7 @@ export class PeersModule {
       let updated = 0;
 
       const peers = this.library.logic.peers.list(false);
-      this.library.logger.trace('Updating peers', { count: peers.length });
+      this.library.logger.trace('Updating peers', {count: peers.length});
 
       for (const p of peers) {
         if (p && p.state !== PeerState.BANNED && (!p.updated || Date.now() - p.updated > 3000)) {
@@ -281,7 +277,7 @@ export class PeersModule {
           return col.value ? Buffer.from(col.value, 'hex') : null;
         },
       },
-    ], { table: 'peers' });
+    ], {table: 'peers'});
 
     try {
       // Wrap sql queries in transaction and execute
@@ -313,7 +309,7 @@ export class PeersModule {
       });
       this.library.logger.info('Peers exported to database');
     } catch (err) {
-      this.library.logger.error('Export peers to database failed', { error: err.message || err });
+      this.library.logger.error('Export peers to database failed', {error: err.message || err});
     }
   }
 
@@ -347,9 +343,9 @@ export class PeersModule {
           }
         }
       }
-      this.library.logger.trace('Peers->dbLoad Peers discovered', { updated, total: rows.length });
+      this.library.logger.trace('Peers->dbLoad Peers discovered', {updated, total: rows.length});
     } catch (e) {
-      this.library.logger.error('Import peers from database failed', { error: e.message || e });
+      this.library.logger.error('Import peers from database failed', {error: e.message || e});
     }
   }
 

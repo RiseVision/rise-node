@@ -6,6 +6,7 @@ import * as pgPromise from 'pg-promise';
 import {IDatabase} from 'pg-promise';
 import {ILogger} from '../logger';
 import MyBigNumb from './bignum';
+import { AppConfigDatabase } from '../types/genericTypes';
 
 export class Migrator {
   constructor(private pgp: pgPromise.IMain, private db: IDatabase<any>) {
@@ -98,7 +99,7 @@ export class Migrator {
   }
 }
 
-export const connect = async (config: any, logger: ILogger): Promise<IDatabase<any>> => {
+export const connect = async (config: AppConfigDatabase, logger: ILogger): Promise<IDatabase<any>> => {
   const pgOptions = { pgNative: true };
   const pgp       = pgPromise(pgOptions);
 

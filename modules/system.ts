@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 import * as os from 'os';
-import {ITask as DB} from 'pg-promise';
+import { IDatabase } from 'pg-promise';
 import * as semver from 'semver';
 import {constants} from '../helpers/';
 import {ILogger} from '../logger';
@@ -8,7 +8,7 @@ import sqlSystem from '../sql/system';
 import {BlocksModule} from './blocks';
 import {TransportModule} from './transport';
 // tslint:disable-next-line
-type SystemLibrary = { logger: ILogger, db: DB<any>, nonce: any, config: { version: string, port: number, nethash: string } }
+type SystemLibrary = { logger: ILogger, db: IDatabase<any>, nonce: any, config: { version: string, port: number, nethash: string } }
 // tslint:disable-next-line
 type PeerHeaders = {
   os: string;

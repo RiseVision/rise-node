@@ -2,10 +2,12 @@ import * as crypto from 'crypto';
 import * as jsonSqlCreator from 'json-sql';
 import * as path from 'path';
 import * as pgp from 'pg-promise';
-import {BigNum, catchToLoggerAndRemapError, cback, emptyCB, promiseToCB} from '../helpers/';
-import {ILogger} from '../logger';
-import {accountsModelCreator} from './models/account';
-import {IModelField, IModelFilter} from './models/modelField';
+import { IDatabase } from 'pg-promise';
+import * as z_schema from 'z-schema';
+import { BigNum, catchToLoggerAndRemapError, cback, emptyCB, promiseToCB } from '../helpers/';
+import { ILogger } from '../logger';
+import { accountsModelCreator } from './models/account';
+import { IModelField, IModelFilter } from './models/modelField';
 
 const jsonSql = jsonSqlCreator();
 
@@ -83,12 +85,12 @@ export class AccountLogic {
    */
   private editable: string[];
 
-  private scope: any;
-  private library: any;
+  private scope: { db: IDatabase<any>, schema: z_schema };
+  private library: { logger: ILogger };
 
-  constructor(db, schema, logger: ILogger, cb) {
-    this.scope   = { db, schema };
-    this.library = { logger };
+  constructor(config: { db: IDatabase<any>, schema: z_schema, logger: ILogger }) {
+    this.scope   = {db: config.db, schema: config.schema};
+    this.library = {logger: config.logger};
     this.model   = accountsModelCreator(this.table);
 
     this.fields = this.model.map((field) => {
@@ -123,14 +125,13 @@ export class AccountLogic {
       .filter((field) => !field.immutable)
       .map((field) => field.name);
 
-    setImmediate(cb, null, this); // TODO: get rid of this nonsense!
   }
 
   /**
    * Creates memory tables related to accounts!
    */
   public createTables(cb): Promise<void> {
-    const sql = new pgp.QueryFile(path.join(process.cwd(), 'sql', 'memoryTables.sql'), { minify: true });
+    const sql = new pgp.QueryFile(path.join(process.cwd(), 'sql', 'memoryTables.sql'), {minify: true});
     return promiseToCB<void>(
       this.scope.db.query(sql)
         .catch(catchToLoggerAndRemapError('Account#createTables error', this.library.logger)),
@@ -209,7 +210,7 @@ export class AccountLogic {
         throw new Error('Invalid public key, must be 64 characters long');
       }
 
-      if (!this.scope.schema.validate(publicKey, { format: 'hex' })) {
+      if (!this.scope.schema.validate(publicKey, {format: 'hex'})) {
         throw new Error('Invalid public key, must be a hex string');
       }
     } else if (!allowUndefined) {
@@ -283,7 +284,7 @@ export class AccountLogic {
     const offset: number = filter.offset > 0 ? filter.offset : undefined;
     const sort: any      = filter.sort ? filter.sort : undefined;
 
-    const condition: any = { ...filter, ...{ limit: undefined, offset: undefined, sort: undefined } };
+    const condition: any = {...filter, ...{limit: undefined, offset: undefined, sort: undefined}};
     if (typeof(filter.address) === 'string') {
       condition.address = {
         $upper: ['address', filter.address],
@@ -477,7 +478,7 @@ export class AccountLogic {
     // All remove
       .map((el) => jsonSql.build({
         condition: {
-          dependentId: { $in: remove[el] },
+          dependentId: {$in: remove[el]},
           // tslint:disable-next-line
           accountId  : address,
         },
@@ -517,7 +518,7 @@ export class AccountLogic {
 
     if (Object.keys(update).length > 0) {
       sqles.push(jsonSql.build({
-        condition: { address },
+        condition: {address},
         modifier : update,
         table    : this.table,
         type     : 'update',
@@ -536,12 +537,12 @@ export class AccountLogic {
 
     if (sqlQuery.length === 0) {
       // Nothing to run return account
-      return this.get({ address }, cb);
+      return this.get({address}, cb);
     }
 
     return promiseToCB(
       this.scope.db.none(sqlQuery)
-        .then(() => this.get({ address }, emptyCB))
+        .then(() => this.get({address}, emptyCB))
         .catch((err) => {
           this.library.logger.error(err.stack);
           return Promise.reject('Account#merge error');
@@ -558,7 +559,7 @@ export class AccountLogic {
    */
   public remove(address: string, cb: cback<string>): Promise<string> {
     const sql = jsonSql.build({
-      condition: { address },
+      condition: {address},
       table    : this.table,
       type     : 'remove',
     });

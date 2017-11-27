@@ -1,21 +1,22 @@
 import {BigNumber} from 'bignumber.js';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
+import z_schema from 'z-schema';
 import {BigNum, constants, Ed, emptyCB, IKeypair, Slots, TransactionType} from '../helpers/';
 import {ILogger} from '../logger';
 import {RoundsModule} from '../modules/';
 import txSchema from '../schema/logic/transaction';
 import sql from '../sql/logic/transactions';
 import {AccountLogic, MemAccountsData} from './account';
-import {SignedBlockType} from './block';
-import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './transactions/baseTransactionType';
+import { SignedAndChainedBlockType, SignedBlockType } from './block';
+import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './transactions/';
 
 // tslint:disable-next-line
 export type TransactionLogicScope = {
   db: any,
   ed: Ed,
-  schema: any,
-  genesisblock: any,
+  schema: z_schema,
+  genesisblock: SignedAndChainedBlockType,
   account: AccountLogic,
   logger: ILogger
 };
@@ -221,7 +222,7 @@ export class TransactionLogic {
     const accountBalance  = sender[balanceKey].toString();
     const exceededBalance = new BigNum(accountBalance).lessThan(amount);
     // tslint:disable-next-line
-    const exceeded        = (tx['blockId'] !== this.scope.genesisblock.block.id && exceededBalance);
+    const exceeded        = (tx['blockId'] !== this.scope.genesisblock.id && exceededBalance);
     return {
       error: exceeded ? `Account does not have enough currency: ${sender.address} balance: ${
         (accountBalance || new BigNum(0)).div(Math.pow(10, 8))}` : null,
@@ -259,7 +260,7 @@ export class TransactionLogic {
     }
 
     if (tx.requesterPublicKey && sender.secondSignature && !tx.signSignature &&
-      (tx as IConfirmedTransaction<any>).blockId !== this.scope.genesisblock.block.id) {
+      (tx as IConfirmedTransaction<any>).blockId !== this.scope.genesisblock.id) {
       throw new Error('Missing sender second signature');
     }
 
@@ -284,8 +285,8 @@ export class TransactionLogic {
     }
 
     // Check sender is not genesis account unless block id equals genesis
-    if (this.scope.genesisblock.block.generatorPublicKey === sender.publicKey
-      && (tx as IConfirmedTransaction<any>).blockId !== this.scope.genesisblock.block.id) {
+    if (this.scope.genesisblock.generatorPublicKey === sender.publicKey
+      && (tx as IConfirmedTransaction<any>).blockId !== this.scope.genesisblock.id) {
       throw new Error('Invalid sender. Can not send from genesis account');
     }
 

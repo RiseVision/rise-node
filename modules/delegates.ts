@@ -23,27 +23,20 @@ import { LoaderModule } from './loader';
 import { RoundsModule } from './rounds';
 import { TransactionsModule } from './transactions';
 import { TransportModule } from './transport';
-
+import { AppConfig } from '../types/genericTypes';
 // tslint:disable-next-line interface-over-type-literal
 export type DelegatesModuleLibrary = {
   logger: ILogger
   sequence: Sequence
   ed: Ed,
   db: IDatabase<any>
-  network: any
+  io: SocketIO.Server
   schema: any
   balancesSequence: Sequence,
   logic: {
     transaction: TransactionLogic
   },
-  config: {
-    forging: {
-      secret: string[]
-      access: {
-        whiteList: string
-      }
-    }
-  }
+  config: AppConfig
 };
 
 export class DelegatesModule {
@@ -125,7 +118,7 @@ export class DelegatesModule {
     };
 
     await this.library.db.none(sql.insertFork, fork);
-    this.library.network.io.sockets.emit('delegates/fork', fork);
+    this.library.io.sockets.emit('delegates/fork', fork);
   }
 
   /**

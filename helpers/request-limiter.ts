@@ -1,6 +1,7 @@
 'use strict';
 import {Application} from 'express';
 import * as RateLimit from 'express-rate-limit';
+import { AppConfig } from '../types/genericTypes';
 
 export interface IRateLimiterOpts {
   delayAfter: number;
@@ -38,7 +39,7 @@ export function applyLimits(limits: IRateLimiterOpts): IRateLimiterOpts {
 /**
  * Applies limits config to app
  */
-export default function applyLimitsToApp(app: Application, config: any): {
+export default function applyLimitsToApp(app: Application, config: AppConfig): {
   client: IRateLimiterOpts, peer: IRateLimiterOpts, middleware: {
     client: void, // TODO: In reality its not void but other express app but since i suspect its unused i keep void here
     peer: void
@@ -47,12 +48,6 @@ export default function applyLimitsToApp(app: Application, config: any): {
   if (config.trustProxy) {
     app.enable('trust proxy');
   }
-
-  config.api         = config.api || {};
-  config.api.options = config.api.options || {};
-
-  config.peers         = config.peers || {};
-  config.peers.options = config.peers.options || {};
 
   const limits = {
     client    : applyLimits(config.api.options.limits),

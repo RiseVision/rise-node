@@ -3,6 +3,7 @@ import * as path from 'path';
 import configSchema from '../schema/config';
 import constants from './constants';
 import {z_schema} from './z_schema';
+import { AppConfig } from '../types/genericTypes';
 
 // TODO: define return type.
 /**
@@ -10,7 +11,7 @@ import {z_schema} from './z_schema';
  * @param {string} configPath
  * @returns {Buffer}
  */
-export default function config(configPath: string): any {
+export default function config(configPath: string): AppConfig {
   let configData: any = fs.readFileSync(path.resolve(process.cwd(), (configPath || 'config.json')), 'utf8');
 
   if (!configData.length) {

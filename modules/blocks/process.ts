@@ -1,5 +1,6 @@
 import * as _ from 'lodash';
 import {IDatabase} from 'pg-promise';
+import * as z_schema from 'z-schema';
 import {catchToLoggerAndRemapError, constants, ForkType, IKeypair, Sequence, Slots} from '../../helpers/';
 import {ILogger} from '../../logger';
 import {
@@ -11,7 +12,7 @@ import {
   SignedBlockType,
   TransactionLogic
 } from '../../logic/';
-import {IBaseTransaction} from '../../logic/transactions/baseTransactionType';
+import {IBaseTransaction} from '../../logic/transactions/';
 import schema from '../../schema/blocks';
 import sql from '../../sql/blocks';
 import {RawFullBlockListType} from '../../types/rawDBTypes';
@@ -28,10 +29,10 @@ import {TransportModule} from '../transport';
 export type BlocksModuleProcessLibrary = {
   dbSequence: Sequence,
   db: IDatabase<any>,
-  schema: any,
-  sequence: any,
+  schema: z_schema,
+  sequence: Sequence,
   logger: ILogger,
-  genesisblock: any
+  genesisblock: SignedAndChainedBlockType
   logic: {
     block: BlockLogic,
     peers: Peers,
@@ -111,7 +112,7 @@ export class BlocksModuleProcess {
    * @param {boolean} verify
    * @return {Promise<void>}
    */
-  public async loadBlocksOffset(limit: number, offset: number = 0, verify: boolean): Promise<SignedBlockType> {
+  public async loadBlocksOffset(limit: number, offset: number = 0, verify: boolean): Promise<SignedAndChainedBlockType> {
     const newLimit = limit + (offset || 0);
     const params   = { limit: newLimit, offset: offset || 0 };
 
@@ -130,7 +131,7 @@ export class BlocksModuleProcess {
           return;
         }
         this.library.logger.debug('Processing block', block.id);
-        if (verify && block.id !== this.library.genesisblock.block.id) {
+        if (verify && block.id !== this.library.genesisblock.id) {
           // Sanity check of the block, if values are coherent.
           // No access to database.
           const check = await this.modules.blocks.verify.verifyBlock(block);
@@ -142,7 +143,7 @@ export class BlocksModuleProcess {
           }
         }
 
-        if (block.id === this.library.genesisblock.block.id) {
+        if (block.id === this.library.genesisblock.id) {
           await this.modules.blocks.chain.applyGenesisBlock(block);
         } else {
           // Apply block - broadcast: false, saveBlock: false

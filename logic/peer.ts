@@ -13,7 +13,7 @@ export type PeerHeaders = {
   version: string;
   broadhash?: string;
   height?: number;
-  nonce?: number;
+  nonce?: string;
   os?: string;
 };
 

@@ -1,3 +1,4 @@
+import * as z_schema from 'z-schema';
 import {Ed, Sequence, TransactionType} from '../helpers/';
 import {ILogger} from '../logger';
 import {TransactionLogic} from '../logic/';
@@ -8,7 +9,7 @@ import {TransactionsModule} from './transactions';
 
 // tslint:disable-next-line
 export type SignatureLibrary = {
-  schema: any,
+  schema: z_schema,
   ed: Ed,
   logger: ILogger,
   balancesSequence: Sequence,

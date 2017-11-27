@@ -17,7 +17,7 @@ export type BlocksModuleUtilsLibrary = {
   },
   db: IDatabase<any>,
   dbSequence: Sequence,
-  genesisblock: any
+  genesisblock: SignedAndChainedBlockType
 };
 
 export class BlocksModuleUtils {
@@ -42,7 +42,7 @@ export class BlocksModuleUtils {
       if (block) {
         // If block is not already in the list...
         if (!blocks[block.id]) {
-          if (block.id === this.library.genesisblock.block.id) {
+          if (block.id === this.library.genesisblock.id) {
             // Generate fake signature for genesis block
             // tslint:disable-next-line
             block['generationSignature'] = (new Array(65)).join('0');
@@ -88,7 +88,7 @@ export class BlocksModuleUtils {
    * Loads the last block from db and normalizes it.
    * @return {Promise<SignedBlockType>}
    */
-  public async loadLastBlock(): Promise<SignedBlockType> {
+  public async loadLastBlock(): Promise<SignedAndChainedBlockType> {
     return await this.library.dbSequence.addAndPromise(async () => {
       const rows  = await this.library.db.query(sql.loadLastBlock);
       const block = this.readDbRows(rows)[0];
@@ -97,7 +97,7 @@ export class BlocksModuleUtils {
       // I'm not sure why this is needed though
       // FIXME PLEASE!
       block.transactions = block.transactions.sort((a, b) => {
-        if (block.id === this.library.genesisblock.block.id) {
+        if (block.id === this.library.genesisblock.id) {
           if (a.type === TransactionType.VOTE) {
             return 1;
           }
@@ -134,10 +134,10 @@ export class BlocksModuleUtils {
     }
 
     // Add genesis block at the end if the set doesn't contain it already
-    if (this.library.genesisblock && this.library.genesisblock.block) {
+    if (this.library.genesisblock && this.library.genesisblock) {
       const gb = {
-        height: this.library.genesisblock.block.height,
-        id    : this.library.genesisblock.block.id,
+        height: this.library.genesisblock.height,
+        id    : this.library.genesisblock.id,
       };
       if (!_.includes(rows, gb.id)) {
         rows.push(gb);

@@ -1,9 +1,13 @@
-import { ITask } from 'pg-promise';
+import { IDatabase } from 'pg-promise';
 import * as promiseRetry from 'promise-retry';
+import z_schema from 'z-schema';
 import { cbToPromise, constants, emptyCB, JobsQueue, Sequence } from '../helpers/';
 import { ILogger } from '../logger';
-import { AccountLogic, Peer, Peers, PeerType, SignedBlockType, TransactionLogic } from '../logic/';
-import { IBaseTransaction } from '../logic/transactions/baseTransactionType';
+import {
+  AccountLogic, Peer, Peers, PeerType, SignedAndChainedBlockType, SignedBlockType,
+  TransactionLogic
+} from '../logic/';
+import { IBaseTransaction } from '../logic/transactions/';
 import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
 import { IBus } from '../types/bus';
@@ -13,42 +17,37 @@ import { RoundsModule } from './rounds';
 import { TransactionsModule } from './transactions';
 import { TransportModule } from './transport';
 import Timer = NodeJS.Timer;
+import { AppConfig } from '../types/genericTypes';
 
 // tslint:disable-next-line
 export type LoaderLibrary = {
   logger: ILogger;
-  db: ITask<any>;
-  network: any;
-  schema: any;
+  db: IDatabase<any>;
+  io: SocketIO.Server;
+  schema: z_schema;
   sequence: Sequence;
   bus: IBus;
-  genesisblock: { block: SignedBlockType };
+  genesisblock: SignedAndChainedBlockType;
   balancesSequence: Sequence;
   logic: {
     transaction: TransactionLogic;
     account: AccountLogic;
     peers: Peers
   },
-  config: {
-    loading: {
-      verifyOnLoading: boolean;
-      snapshot: number;
-      loadPerIteration: number;
-    }
-  }
+  config: AppConfig
 };
 
 export class LoaderModule {
 
   private network: { height: number, peers: Peer[] };
-  private genesisBlock: { block: SignedBlockType } = null;
-  private lastblock: SignedBlockType               = null;
-  private syncIntervalId: Timer                    = null;
-  private blocksToSync: number                     = 0;
-  private loaded: boolean                          = false;
-  private isActive: boolean                        = false;
-  private retries: number                          = 5;
-  private syncInterval                             = 1000;
+  private genesisBlock: SignedAndChainedBlockType = null;
+  private lastblock: SignedAndChainedBlockType    = null;
+  private syncIntervalId: Timer                   = null;
+  private blocksToSync: number                    = 0;
+  private loaded: boolean                         = false;
+  private isActive: boolean                       = false;
+  private retries: number                         = 5;
+  private syncInterval                            = 1000;
 
   private modules: {
     blocks: BlocksModule,
@@ -67,14 +66,14 @@ export class LoaderModule {
         this.network.height > 0 &&
         Math.abs(this.network.height - this.modules.blocks.lastBlock.height) === 1)
     ) {
-      const { peers } = await this.modules.peers.list({});
-      this.network    = this.findGoodPeers(peers);
+      const {peers} = await this.modules.peers.list({});
+      this.network  = this.findGoodPeers(peers);
     }
     return this.network;
   }
 
   public async gerRandomPeer(): Promise<Peer> {
-    const { peers } = await this.getNework();
+    const {peers} = await this.getNework();
     return peers[Math.floor(Math.random() * peers.length)];
   }
 
@@ -110,7 +109,7 @@ export class LoaderModule {
           } catch (e) {
             retry(e);
           }
-        }, { retries: this.retries });
+        }, {retries: this.retries});
       } catch (e) {
         this.library.logger.log('Unconfirmed transactions loader error', e);
       }
@@ -123,7 +122,7 @@ export class LoaderModule {
           } catch (e) {
             retry(e);
           }
-        }, { retries: this.retries });
+        }, {retries: this.retries});
       } catch (e) {
         this.library.logger.log('Multisig pending transactions loader error', e);
       }
@@ -213,9 +212,9 @@ export class LoaderModule {
     // If there's a genesis in db lets check its validity against code version
     if (genesisBlock) {
       const matches = (
-        genesisBlock.id === this.genesisBlock.block.id &&
-        genesisBlock.payloadHash.toString('hex') === this.genesisBlock.block.payloadHash &&
-        genesisBlock.blockSignature.toString('hex') === this.genesisBlock.block.blockSignature
+        genesisBlock.id === this.genesisBlock.id &&
+        genesisBlock.payloadHash.toString('hex') === this.genesisBlock.payloadHash &&
+        genesisBlock.blockSignature.toString('hex') === this.genesisBlock.blockSignature
       );
       if (!matches) {
         throw new Error('Failed to match genesis block with database');
@@ -299,16 +298,16 @@ export class LoaderModule {
     height: number, peers: Peer[]
   } {
     const lastBlockHeight: number = this.modules.blocks.lastBlock.height;
-    this.library.logger.trace('Good peers - received', { count: peers.length });
+    this.library.logger.trace('Good peers - received', {count: peers.length});
 
     // Removing unreachable peers or heights below last block height
     peers = peers.filter((p) => p !== null && p.height >= lastBlockHeight);
 
-    this.library.logger.trace('Good peers - filtered', { count: peers.length });
+    this.library.logger.trace('Good peers - filtered', {count: peers.length});
 
     // No peers found
     if (peers.length === 0) {
-      return { height: 0, peers: [] };
+      return {height: 0, peers: []};
     } else {
       // Ordering the peers with descending height
       peers = peers.sort((a, b) => b.height - a.height);
@@ -336,10 +335,10 @@ export class LoaderModule {
         .filter((peer) => peer && Math.abs(height - peer.height) < aggregation + 1)
         .map((peer) => this.library.logic.peers.create(peer));
 
-      this.library.logger.trace('Good peers - accepted', { count: peerObjs.length });
+      this.library.logger.trace('Good peers - accepted', {count: peerObjs.length});
       this.library.logger.debug('Good peers', peerObjs);
 
-      return { height, peers: peerObjs };
+      return {height, peers: peerObjs};
     }
   }
 
@@ -358,7 +357,7 @@ export class LoaderModule {
       this.library.logger.trace('Setting sync interval');
       this.syncIntervalId = setTimeout(() => {
         this.library.logger.trace('Sync trigger');
-        this.library.network.io.sockets.emit('loader/sync', {
+        this.library.io.sockets.emit('loader/sync', {
           blocks: this.blocksToSync,
           height: this.modules.blocks.lastBlock.height,
         });
@@ -427,7 +426,7 @@ export class LoaderModule {
 
     // Establish consensus. (internally)
     this.library.logger.debug('Establishing broadhash consensus before sync');
-    this.modules.transport.getPeers({ limit: constants.maxPeers });
+    this.modules.transport.getPeers({limit: constants.maxPeers});
 
     await this.loadBlocksFromNetwork();
   }
@@ -449,7 +448,7 @@ export class LoaderModule {
           } catch (err) {
             retries(err);
           }
-        }, { retries: this.retries }));
+        }, {retries: this.retries}));
       }
       return setImmediate(cb);
     }, this.syncInterval);
@@ -473,7 +472,7 @@ export class LoaderModule {
     }
 
     // FIXME: signatures array
-    const { signatures }: { signatures: any[] } = res.body;
+    const {signatures}: { signatures: any[] } = res.body;
 
     // Process multisignature transactions and validate signatures in sequence
     await
@@ -510,13 +509,13 @@ export class LoaderModule {
       throw new Error('Cannot validate load transactions schema against peer');
     }
 
-    const { transactions }: { transactions: Array<IBaseTransaction<any>> } = res.body;
+    const {transactions}: { transactions: Array<IBaseTransaction<any>> } = res.body;
     for (const tx of transactions) {
       try {
         // Perform validation and throw if error
         this.library.logic.transaction.objectNormalize(tx);
       } catch (e) {
-        this.library.logger.debug('Transaction normalization failed', { err: e.toString(), module: 'loader', tx });
+        this.library.logger.debug('Transaction normalization failed', {err: e.toString(), module: 'loader', tx});
 
         this.library.logger.warn(['Transaction', tx.id, 'is not valid, peer removed'].join(' '), peer.string);
 
