@@ -61,5 +61,5 @@ export function logCatchRewrite(logger: ILogger, errString: string): (err: Error
 }
 
 export function wait(msToWait: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, msToWait));
+  return new Promise<void>((resolve) => setTimeout(resolve, msToWait));
 }

@@ -3,7 +3,7 @@ import {IDatabase, ITask} from 'pg-promise';
 import {catchToLoggerAndRemapError, Inserts, Sequence, TransactionType} from '../../helpers/';
 import {ILogger} from '../../logger';
 import {BlockLogic, SignedAndChainedBlockType, SignedBlockType, TransactionLogic} from '../../logic/';
-import {IConfirmedTransaction} from '../../logic/transactions/baseTransactionType';
+import {IConfirmedTransaction} from '../../logic/transactions/';
 import sql from '../../sql/blocks';
 import {IBus} from '../../types/bus';
 import {AccountsModule} from '../accounts';
@@ -15,7 +15,7 @@ import {TransactionsModule} from '../transactions';
 export type BlocksModuleChainLibrary = {
   logger: ILogger,
   db: IDatabase<any>,
-  genesisblock: any,
+  genesisblock: SignedAndChainedBlockType,
   bus: IBus,
   balancesSequence: Sequence,
   logic: {
@@ -102,11 +102,11 @@ export class BlocksModuleChain {
    * @returns {Promise<any>}
    */
   public async saveGenesisBlock() {
-    const rows    = await this.library.db.query(sql.getBlockId, { id: this.library.genesisblock.block.id })
+    const rows    = await this.library.db.query(sql.getBlockId, { id: this.library.genesisblock.id })
       .catch(catchToLoggerAndRemapError('Blocks#saveGenesisBlock error', this.library.logger));
     const blockId = rows.length && rows[0].id;
     if (!blockId) {
-      return this.saveBlock(this.library.genesisblock.block);
+      return this.saveBlock(this.library.genesisblock);
     }
   }
 
@@ -286,8 +286,6 @@ export class BlocksModuleChain {
    * Build a sequence of transaction queries
    * FIXME: Processing here is not clean
    *
-   * @param {pgPromise.ITask<any>} t
-   * @param {SignedBlockType} b
    * @returns {pgPromise.ITask<any>}
    */
   private promiseTransactions(t: ITask<any>, block: SignedBlockType): ITask<any> {

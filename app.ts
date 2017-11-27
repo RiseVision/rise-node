@@ -1,3 +1,5 @@
+declare const gc; // garbage collection if exposed.
+
 import * as bodyParser from 'body-parser';
 import * as program from 'commander';
 import * as compression from 'compression';
@@ -324,6 +326,7 @@ async function boot(): Promise<() => Promise<void>> {
   // TODO: APIS
 
   // bind modules
+  bus.modules = modules;
   bus.message('bind', modules);
 
   transactionLogic.bindModules(modules);
@@ -361,6 +364,7 @@ boot()
 
     process.on('unhandledRejection', (err) => {
       logger.fatal('Unhandled Promise rejection', {message: err.message, stack: err.stack});
+      cleanupFN();
     });
 
     const cleanupEvents = ['SIGTERM', 'exit', 'SIGINT'];

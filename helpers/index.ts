@@ -4,7 +4,6 @@ import config from './config';
 import constants from './constants';
 import * as Database from './database';
 import * as Diff from './diff';
-import * as Inserts from './inserts.js';
 import applyExpressLimits from './request-limiter';
 
 export * from './bus';
@@ -14,6 +13,7 @@ export * from './httpApi';
 export * from './forkTypes';
 export * from './genericUtils';
 export * from './git';
+export * from './inserts';
 export * from './jobsQueue';
 export * from './orderBy';
 export * from './promiseUtils';
@@ -30,6 +30,5 @@ export {
   config,
   constants,
   Database,
-  Diff,
-  Inserts
+  Diff
 };

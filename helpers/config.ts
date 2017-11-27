@@ -21,7 +21,7 @@ export default function config(configPath: string): AppConfig {
     configData = JSON.parse(configData);
   }
 
-  const validator = new z_schema();
+  const validator = new z_schema({});
   const valid     = validator.validate(configData, configSchema.config);
 
   if (!valid) {

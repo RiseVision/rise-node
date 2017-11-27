@@ -1,9 +1,6 @@
-import {cbToPromise} from '../../helpers/promiseUtils';
-import {TransactionType} from '../../helpers/transactionTypes';
+import {cbToPromise, TransactionType} from '../../helpers/';
 import {ILogger} from '../../logger';
-import {AccountsModule} from '../../modules/accounts';
-import {RoundsModule} from '../../modules/rounds';
-import {SystemModule} from '../../modules/system';
+import {AccountsModule, RoundsModule, SystemModule} from '../../modules/';
 import outTransferSchema from '../../schema/logic/transactions/outTransfer';
 import dappsSQL from '../../sql/logic/transactions/dapps';
 import {AccountLogic} from '../account';
@@ -169,7 +166,7 @@ export class OutTransferTransaction extends BaseTransactionType<OutTransferAsset
   }
 
   public afterSave(tx: IBaseTransaction<OutTransferAsset>): Promise<void> {
-    return cbToPromise((cb) => this.modules.dapps.message(
+    return cbToPromise<void>((cb) => this.modules.dapps.message(
       tx.asset.outTransfer.dappId,
       {
         message: { transactionId: tx.id },
