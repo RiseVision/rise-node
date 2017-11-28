@@ -5,7 +5,7 @@
     "minVersion": ">=0.1.0",
     "fileLogLevel": "info",
     "logFileName": "logs/rise-master.log",
-    "consoleLogLevel": "trace",
+    "consoleLogLevel": "info",
     "trustProxy": false,
     "topAccounts": false,
     "cacheEnabled": false,

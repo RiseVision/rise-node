@@ -1,5 +1,6 @@
 declare const gc; // garbage collection if exposed.
 
+import * as exitHook from 'async-exit-hook';
 import * as bodyParser from 'body-parser';
 import * as program from 'commander';
 import * as compression from 'compression';
@@ -22,6 +23,7 @@ import {
   Ed,
   getLastCommit,
   middleware,
+  promiseToCB,
   Sequence,
   z_schema,
 } from './helpers/';
@@ -345,22 +347,19 @@ async function boot(): Promise<() => Promise<void>> {
     logger.info('Cleaning up...');
     const moduleKeys = Object.keys(modules);
     try {
-      for (const k of moduleKeys) {
-        if (typeof(modules[k].cleanup) === 'function') {
-          await modules[k].cleanup();
-        }
-      }
+      await Promise.all(moduleKeys
+        .filter((k) => typeof(modules[k].cleanup) === 'function')
+        .map((k) => modules[k].cleanup()));
       logger.info('Cleaned up successfully');
     } catch (err) {
       logger.error(err);
     }
-    process.exit(1);
   };
 
   modules.loader.loadBlockChain()
     .catch((err) => {
-      logger.warn('Cannot load blockchain', err);
-      return cleanup();
+      logger.warn('Cannot load blockchain', err.message || err);
+      return Promise.reject(err);
     });
 
   return cleanup;
@@ -368,21 +367,12 @@ async function boot(): Promise<() => Promise<void>> {
 
 boot()
   .then((cleanupFN) => {
-    process.on('uncaughtException', (err) => {
-      logger.fatal('System error', {message: err.message, stack: err.stack});
-      cleanupFN();
-    });
-
-    process.on('unhandledRejection', (err) => {
+    exitHook.forceExitTimeout(15000);
+    exitHook((cb) => promiseToCB(cleanupFN(), cb));
+    // exitHook.uncaughtExceptionHandler((err) => {
+    //  logger.fatal('System error', {message: err.message, stack: err.stack});
+    // });
+    exitHook.unhandledRejectionHandler((err) => {
       logger.fatal('Unhandled Promise rejection', {message: err.message, stack: err.stack});
-      cleanupFN();
     });
-
-    const cleanupEvents = ['SIGTERM', 'exit', 'SIGINT'];
-
-    cleanupEvents
-      .forEach((event) => process.once(event as any, () => {
-        logger.info(`Received ${event} calling cleanup...`);
-        cleanupFN();
-      }));
   });

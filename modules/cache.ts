@@ -1,7 +1,8 @@
 import redis from 'redis';
-import {cbToPromise, cbToVoidPromise, emptyCB, TransactionType} from '../helpers/';
-import {ILogger} from '../logger';
-import {IBaseTransaction} from '../logic/transactions/baseTransactionType';
+import { cbToPromise, cbToVoidPromise, emptyCB, TransactionType } from '../helpers/';
+import { ILogger } from '../logger';
+import { IBaseTransaction } from '../logic/transactions/baseTransactionType';
+
 // import {DebugLog} from '../helpers/decorators/debugLog';
 
 export class Cache {
@@ -66,7 +67,9 @@ export class Cache {
   }
 
   public async cleanup() {
-    return this.quit();
+    if (this.isConnected) {
+      return this.quit();
+    }
   }
 
   public async quit() {
