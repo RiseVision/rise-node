@@ -315,7 +315,7 @@ var model = [
     }
 ];
 
-describe.only("logic/account", function() {
+describe("logic/account", function() {
     var clock, scope, pgp, account, accountCallback, callback;
     var originalPgp = Account.__get__("pgp");
 
@@ -1202,15 +1202,17 @@ describe.only("logic/account", function() {
         it("promise resolves", function(done) {
             scope.db.none.resolves();
 
-            account.remove(address, callback).then(() => {
+            account.remove(address, callback).then((addr) => {
                 expect(scope.db.none.calledOnce).to.be.true;
                 expect(scope.db.none.getCall(0).args.length).to.equal(2);
                 expect(scope.db.none.getCall(0).args[0]).to.equal(queries);
                 expect(scope.db.none.getCall(0).args[1]).to.deep.equal(values);
 
                 expect(callback.calledOnce).to.be.true;
-                expect(callback.getCall(0).args.length).to.equal(1);
+                expect(callback.getCall(0).args.length).to.equal(2);
                 expect(callback.getCall(0).args[0]).to.equal(null);
+                expect(callback.getCall(0).args[1]).to.equal(address);
+                expect(addr).to.equal(address);
                 done();
             }).catch(err => {
                 done(new Error("Should resolves"));

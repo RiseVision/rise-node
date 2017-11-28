@@ -176,10 +176,10 @@ describe("logic/peer", function() {
 
 			expect(protoParseInt.calledTwice).to.be.true;
 			expect(protoParseInt.firstCall.args.length).to.equal(2);
-			expect(protoParseInt.firstCall.args[0]).to.equal(instance.port);
+			expect(protoParseInt.firstCall.args[0]).to.equal(instance.port.toString());
 			expect(protoParseInt.firstCall.args[1]).to.equal(0);
 			expect(protoParseInt.getCall(1).args.length).to.equal(2);
-			expect(protoParseInt.getCall(1).args[0]).to.equal(instance.state);
+			expect(protoParseInt.getCall(1).args[0]).to.equal(instance.state.toString());
 			expect(protoParseInt.getCall(1).args[1]).to.equal(PeerState.DISCONNECTED);
 			expect(retVal).to.deep.equal(expectedPeer);
 		});
