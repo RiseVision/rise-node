@@ -64,7 +64,9 @@ export class Cache {
   }
 
   public async cleanup() {
-    return this.quit();
+    if (this.isConnected) {
+      return this.quit();
+    }
   }
 
   public async quit() {
