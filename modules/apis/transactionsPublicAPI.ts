@@ -1,8 +1,8 @@
 import * as _ from 'lodash';
-import {Body, Get, JsonController, Put, QueryParam, QueryParams} from 'routing-controllers';
+import { Body, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
 import schema from '../../schema/transactions';
-import {TransactionsModule} from '../transactions';
-import {SchemaValid, ValidateSchema} from './baseAPIClass';
+import { TransactionsModule } from '../transactions';
+import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 // TODO : this is not possible to create due to limitation of routing-controllers
 // We'll need to set up dependency injection first to let this work properly.

@@ -1,8 +1,8 @@
-import {Controller, Get, QueryParams} from 'ts-express-decorators';
-import {PeerState} from '../../logic/peer';
+import { Controller, Get, QueryParams } from 'ts-express-decorators';
+import { PeerState } from '../../logic/';
 import peersSchema from '../../schema/peers';
-import {PeersModule} from '../peers';
-import {SchemaValid, ValidateSchema} from './baseAPIClass';
+import { PeersModule } from '../peers';
+import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 @Controller('/peers')
 class PeersPublicAPI {

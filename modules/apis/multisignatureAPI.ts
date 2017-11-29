@@ -1,12 +1,12 @@
-import {Get, JsonController, Post, Put, QueryParam} from 'routing-controllers';
-import {SchemaValid, ValidateSchema} from './baseAPIClass';
-import {IDatabase} from 'pg-promise';
+import { IDatabase } from 'pg-promise';
+import { Get, JsonController, Post, Put, QueryParam } from 'routing-controllers';
+import { catchToLoggerAndRemapError } from '../../helpers/';
+import { ILogger } from '../../logger';
+import { TransactionLogic } from '../../logic/';
 import sql from '../../sql/multisignatures';
-import {catchToLoggerAndRemapError} from '../../helpers/promiseUtils';
-import {ILogger} from '../../logger';
-import {AccountsModule} from '../accounts';
-import {TransactionsModule} from '../transactions';
-import {TransactionLogic} from '../../logic/transaction';
+import { AccountsModule } from '../accounts';
+import { TransactionsModule } from '../transactions';
+import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 @JsonController('/multisignatures')
 export class MultisignatureAPI {

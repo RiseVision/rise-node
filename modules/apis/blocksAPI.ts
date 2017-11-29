@@ -1,18 +1,15 @@
-import {Get, JsonController, QueryParam, QueryParams} from 'routing-controllers';
-import constants from '../../helpers/constants';
-import {TransportModule} from '../transport';
-import {PeersModule} from '../peers';
-import {SchemaValid, ValidateSchema} from './baseAPIClass';
+import { IDatabase } from 'pg-promise';
+import { Get, JsonController, QueryParam, QueryParams } from 'routing-controllers';
+import { PeersModule, TransportModule } from '../';
+import { constants, OrderBy, Sequence } from '../../helpers/';
+import { BlockLogic, BlockRewardLogic, SignedBlockType } from '../../logic/';
 import blocksSchema from '../../schema/blocks';
-import Sequence from '../../helpers/sequence';
-import {publicKey} from '../../types/sanityTypes';
-import OrderBy from '../../helpers/orderBy';
 import sql from '../../sql/blocks';
-import {IDatabase} from 'pg-promise';
-import {BlockLogic, SignedBlockType} from '../../logic/block';
-import {SystemModule} from '../system';
-import {BlockRewardLogic} from '../../logic/blockReward';
+import { publicKey } from '../../types/sanityTypes';
+import { SystemModule } from '../system';
+import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
+// tslint:disable-next-line
 type FilterType = {
   generatorPublicKey?: publicKey,
   numberOfTransactions?: number
@@ -26,6 +23,7 @@ type FilterType = {
   offset?: number
   orderBy?: string
 };
+
 @JsonController('/blocks')
 export class BlocksAPI {
   public schema: any;
@@ -111,7 +109,7 @@ export class BlocksAPI {
       milestone: this.blockReward.calcMilestone(lastBlock.height),
       nethash  : this.systemModule.getNethash(),
       reward   : this.blockReward.calcReward(lastBlock.height),
-      supply   : this.blockReward.calcSupply(lastBlock.height)
+      supply   : this.blockReward.calcSupply(lastBlock.height),
     };
   }
 

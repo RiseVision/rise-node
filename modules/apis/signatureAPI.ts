@@ -1,6 +1,6 @@
-import {Get, JsonController, QueryParam} from 'routing-controllers';
-import {SystemModule} from '../system';
-import {SchemaValid, ValidateSchema} from './baseAPIClass';
+import { Get, JsonController, QueryParam } from 'routing-controllers';
+import { SystemModule } from '../system';
+import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 // TODO : this is not possible to create due to limitation of routing-controllers
 // We'll need to set up dependency injection first to let this work properly.
