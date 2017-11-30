@@ -2,10 +2,12 @@ import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import z_schema from 'z-schema';
 import { BigNum, constants, Ed, IKeypair } from '../helpers/';
+import { IBlockLogic } from '../ioc/interfaces/logic/';
 import logicBlockSchema from '../schema/logic/block';
 import { BlockRewardLogic } from './blockReward';
 import { TransactionLogic } from './transaction';
 import { IBaseTransaction, IConfirmedTransaction } from './transactions/';
+
 // import * as OldImplementation from './_block.js';
 
 // tslint:disable-next-line interface-over-type-literal
@@ -34,7 +36,7 @@ export type SignedAndChainedBlockType = SignedBlockType & {
   height: number
 };
 
-export class BlockLogic {
+export class BlockLogic implements IBlockLogic {
   /**
    * Calculates block id.
    * @param {BlockType} block
@@ -109,7 +111,7 @@ export class BlockLogic {
     return bb.toBuffer() as any;
   }
 
-  public table    = 'blocks';
+  public table = 'blocks';
   public dbFields = [
     'id',
     'version',
@@ -156,7 +158,7 @@ export class BlockLogic {
     keypair: IKeypair, timestamp: number,
     transactions: Array<IBaseTransaction<any>>,
     previousBlock?: SignedAndChainedBlockType
-  }) {
+  }): SignedBlockType {
     const transactions = data.transactions.sort((a, b) => {
       if (a.type < b.type) {
         return -1;
