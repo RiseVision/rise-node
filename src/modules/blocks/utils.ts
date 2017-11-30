@@ -2,6 +2,7 @@ import * as _ from 'lodash';
 import { IDatabase } from 'pg-promise';
 import sql from '../../../sql/blocks';
 import {
+  BlockProgressLogger,
   catchToLoggerAndRemapError,
   constants,
   ILogger,
@@ -13,6 +14,7 @@ import { BlockLogic, SignedAndChainedBlockType, SignedBlockType, TransactionLogi
 import { RawFullBlockListType } from '../../types/rawDBTypes';
 import { publicKey } from '../../types/sanityTypes';
 import { BlocksModule } from '../blocks';
+import { IBlocksModuleUtils } from '../../ioc/interfaces/modules/blocks/IBlocksModuleUtils';
 
 // tslint:disable-next-line
 export type BlocksModuleUtilsLibrary = {
@@ -26,7 +28,7 @@ export type BlocksModuleUtilsLibrary = {
   genesisblock: SignedAndChainedBlockType
 };
 
-export class BlocksModuleUtils {
+export class BlocksModuleUtils implements IBlocksModuleUtils {
   public loaded = false;
   private modules: { blocks: BlocksModule };
 
@@ -226,45 +228,5 @@ export class BlocksModuleUtils {
     this.library.logger.trace('Blocks->Utils: Shared modules bind.');
     this.modules = { blocks: scope.blocks };
     this.loaded  = true;
-  }
-}
-
-// tslint:disable-next-line
-export class BlockProgressLogger {
-  private target: number;
-  private step: number;
-  private applied: number = 0;
-
-  constructor(txCount: number, logsFrequency: number, private msg: string, private logger: ILogger) {
-    this.target = txCount;
-    this.step   = Math.floor(txCount / logsFrequency);
-
-  }
-
-  public reset() {
-    this.applied = 0;
-  }
-
-  /**
-   * Increments applied transactions and logs the progress
-   * - For the first and last transaction
-   * - With given frequency
-   */
-  public applyNext() {
-    if (this.applied >= this.target) {
-      throw new Error('Cannot apply transaction over the limit: ' + this.target);
-    }
-    this.applied += 1;
-    if (this.applied === 1 || this.applied === this.target || this.applied % this.step === 1) {
-      this.log();
-    }
-  }
-
-  /**
-   * Logs the progress
-   */
-  private log() {
-    this.logger.info(this.msg, ((this.applied / this.target) * 100).toPrecision(4) + ' %' +
-      ': applied ' + this.applied + ' of ' + this.target + ' transactions');
   }
 }

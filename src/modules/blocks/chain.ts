@@ -2,6 +2,7 @@ import * as _ from 'lodash';
 import { IDatabase, ITask } from 'pg-promise';
 import sql from '../../../sql/blocks';
 import { Bus, catchToLoggerAndRemapError, ILogger, Inserts, Sequence, TransactionType } from '../../helpers/';
+import { IBlocksModuleChain } from '../../ioc/interfaces/modules';
 import { BlockLogic, SignedAndChainedBlockType, SignedBlockType, TransactionLogic } from '../../logic/';
 import { IConfirmedTransaction } from '../../logic/transactions/';
 import { AccountsModule } from '../accounts';
@@ -22,7 +23,7 @@ export type BlocksModuleChainLibrary = {
   }
 };
 
-export class BlocksModuleChain {
+export class BlocksModuleChain implements IBlocksModuleChain {
   private modules: {
     rounds: RoundsModule,
     transactions: TransactionsModule,
@@ -32,6 +33,10 @@ export class BlocksModuleChain {
 
   constructor(private library: BlocksModuleChainLibrary) {
     library.logger.trace('Blocks->Chain: Submodule initialized.');
+  }
+
+  public cleanup() {
+    return Promise.resolve();
   }
 
   public onBind(scope) {
@@ -58,7 +63,7 @@ export class BlocksModuleChain {
    * Deletes last block and returns the "new" lastBlock (previous basically)
    * @returns {Promise<SignedBlockType>}
    */
-  public async deleteLastBlock(): Promise<SignedBlockType> {
+  public async deleteLastBlock(): Promise<SignedAndChainedBlockType> {
     const lastBlock = this.modules.blocks.lastBlock;
     this.library.logger.warn('Deleting last block', lastBlock);
 

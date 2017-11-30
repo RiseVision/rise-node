@@ -7,6 +7,7 @@ import * as Diff from './diff';
 import loggerCreator from './logger';
 import applyExpressLimits from './request-limiter';
 
+export * from './blocksProgressLogger';
 export * from './bus';
 export * from './checkIpInList';
 export * from './ed';

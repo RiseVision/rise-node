@@ -23,6 +23,7 @@ import { LoaderModule } from '../loader';
 import { RoundsModule } from '../rounds';
 import { TransactionsModule } from '../transactions';
 import { TransportModule } from '../transport';
+import { IBlocksModuleProcess } from '../../ioc/interfaces/modules/blocks/IBlocksModuleProcess';
 
 // tslint:disable-next-line interface-over-type-literal
 export type BlocksModuleProcessLibrary = {
@@ -39,7 +40,7 @@ export type BlocksModuleProcessLibrary = {
   }
 };
 
-export class BlocksModuleProcess {
+export class BlocksModuleProcess implements IBlocksModuleProcess {
   private modules: {
     accounts: AccountsModule,
     blocks: BlocksModule,
@@ -53,6 +54,10 @@ export class BlocksModuleProcess {
 
   constructor(public library: BlocksModuleProcessLibrary) {
     this.library.logger.trace('Blocks->Process: Submodule initialized.');
+  }
+
+  public cleanup() {
+    return Promise.resolve();
   }
 
   /**
@@ -304,7 +309,7 @@ export class BlocksModuleProcess {
    * @param {SignedBlockType} block
    * @return {Promise<any>}
    */
-  private receiveBlock(block: SignedBlockType) {
+  receiveBlock(block: SignedBlockType) {
     this.library.logger.info([
       'Received new block id:', block.id,
       'height:', block.height,
@@ -322,7 +327,7 @@ export class BlocksModuleProcess {
   /**
    * Receive block detected as fork cause 1: Consecutive height but different previous block id
    */
-  private async receiveForkOne(block: SignedBlockType, lastBlock: SignedBlockType) {
+  async receiveForkOne(block: SignedBlockType, lastBlock: SignedBlockType) {
     const tmpBlock = _.clone(block);
 
     // Fork: Consecutive height but different previous block id
@@ -353,7 +358,7 @@ export class BlocksModuleProcess {
   /**
    * Receive block detected as fork cause 5: Same height and previous block id, but different block id
    */
-  private async receiveForkFive(block: SignedBlockType, lastBlock: SignedBlockType) {
+  async receiveForkFive(block: SignedBlockType, lastBlock: SignedBlockType) {
     const tmpBlock = _.clone(block);
 
     // Fork: Same height and previous block id, but different block id

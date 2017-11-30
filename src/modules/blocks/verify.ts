@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 import { IDatabase } from 'pg-promise';
 import sql from '../../../sql/blocks';
 import { constants, ForkType, ILogger, Slots } from '../../helpers/';
+import { IBlocksModuleVerify } from '../../ioc/interfaces/modules/';
 import {
   BlockLogic,
   BlockRewardLogic,
@@ -25,7 +26,7 @@ export type BlocksModuleVerifyLibrary = {
   }
 };
 
-export class BlocksModuleVerify {
+export class BlocksModuleVerify implements IBlocksModuleVerify {
   private loaded: boolean;
   private blockReward = new BlockRewardLogic();
   private modules: {
@@ -39,6 +40,9 @@ export class BlocksModuleVerify {
     this.library.logger.trace('Blocks->Verify: Submodule initialized.');
   }
 
+  public cleanup(): Promise<void> {
+    return Promise.resolve();
+  }
   /**
    * Verifies block before fork detection and return all possible errors related to block
    */
@@ -113,7 +117,7 @@ export class BlocksModuleVerify {
     }
 
     // Check block slot.
-    await this.modules.delegates.validateBlockSlot(block)
+    await this.modules.delegates.assertValidBlockSlot(block)
       .catch(async (err) => {
         await this.modules.delegates.fork(block, ForkType.WRONG_FORGE_SLOT);
         return Promise.reject(err);

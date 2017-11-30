@@ -738,20 +738,20 @@ describe("logic/account", function() {
     describe("account.verifyPublicKey", function() {
         it("public key is not a string error", function() {
             var error = "Invalid public key, must be a string";
-            expect(() => account.verifyPublicKey(null)).to.throw(error);
+            expect(() => account.assertPublicKey(null)).to.throw(error);
         });
 
         it("public key is too short error", function() {
             var error = "Invalid public key, must be 64 characters long";
 
-            expect(() => account.verifyPublicKey('short string')).to.throw(error);
+            expect(() => account.assertPublicKey('short string')).to.throw(error);
 
         });
 
         it("should call through schema hex validation.", function() {
             scope.schema.validate = sinon.stub().returns(false);
             var publicKey = '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da';
-            expect(() => account.verifyPublicKey(publicKey)).to.throw('Invalid public key, must be a hex string');
+            expect(() => account.assertPublicKey(publicKey)).to.throw('Invalid public key, must be a hex string');
             expect(scope.schema.validate.calledOnce).is.true;
             expect(scope.schema.validate.firstCall.args[0]).to.be.eq(publicKey);
             expect(scope.schema.validate.firstCall.args[1]).to.be.deep.eq({format: 'hex'});
@@ -1008,7 +1008,7 @@ describe("logic/account", function() {
         });
 
         afterEach(function() {
-            account.verifyPublicKey.restore();
+            account.assertPublicKey.restore();
         });
 
         // it("verify throws error", function() {
@@ -1020,7 +1020,7 @@ describe("logic/account", function() {
         it("error", function() {
             var error = { stack: "error" };
 
-            account.verifyPublicKey.returns(true);
+            account.assertPublicKey.returns(true);
             scope.db.none.rejects(error);
 
             return account.set(address, fields, callback)
@@ -1036,7 +1036,7 @@ describe("logic/account", function() {
         });
 
         it("success", function() {
-            account.verifyPublicKey.returns(true);
+            account.assertPublicKey.returns(true);
             scope.db.none.resolves();
 
             return account.set(address, fields, callback)
@@ -1088,15 +1088,15 @@ describe("logic/account", function() {
             queries =
                 'delete from "mem_accounts2delegates" where "dependentId" in (5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde) and "accountId" = \'2841811297332056155R\';insert into "mem_accounts2delegates" ("accountId", "dependentId") values (\'2841811297332056155R\', 5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde);delete from "mem_accounts2multisignatures" where "dependentId" = \'11995752116878847490R\';insert into "mem_accounts2multisignatures" ("dependentId") values (\'11995752116878847490R\');update "mem_accounts" set "balance" = "balance" + 300, "u_balance" = "u_balance" - 300, "virgin" = 0, "blockId" = \'11273313233467167051\' where "address" = \'2841811297332056155R\';INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT \'2841811297332056155R\', (300)::bigint, "dependentId", \'11273313233467167051\', 2707 FROM mem_accounts2delegates WHERE "accountId" = \'2841811297332056155R\';INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT \'2841811297332056155R\', (balance)::bigint, array[\'5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde\'], \'11273313233467167051\', 2707 FROM mem_accounts WHERE address = \'2841811297332056155R\';INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT \'2841811297332056155R\', (-balance)::bigint, array[\'5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde\'], \'11273313233467167051\', 2707 FROM mem_accounts WHERE address = \'2841811297332056155R\';';
             sinon.stub(account, "verifyPublicKey");
-            account.verifyPublicKey.returns(true);
+            account.assertPublicKey.returns(true);
         });
 
         afterEach(function() {
-            account.verifyPublicKey.restore();
+            account.assertPublicKey.restore();
         });
 
         it("verify throws error", function() {
-            account.verifyPublicKey.throws("error");
+            account.assertPublicKey.throws("error");
 
             expect(account.merge.bind(account, address, diff, callback)).to.throw();
         });

@@ -14,8 +14,10 @@ import {
   Slots,
   TransactionType
 } from '../helpers/';
+import { IDelegatesModule } from '../ioc/interfaces/modules';
 import { BlockRewardLogic, MemAccountsData, SignedBlockType, TransactionLogic } from '../logic/';
 import { RegisterDelegateTransaction } from '../logic/transactions/';
+import { AppConfig } from '../types/genericTypes';
 import { publicKey } from '../types/sanityTypes';
 import { AccountsModule } from './accounts';
 import { BlocksModule } from './blocks';
@@ -23,7 +25,6 @@ import { LoaderModule } from './loader';
 import { RoundsModule } from './rounds';
 import { TransactionsModule } from './transactions';
 import { TransportModule } from './transport';
-import { AppConfig } from '../types/genericTypes';
 // tslint:disable-next-line interface-over-type-literal
 export type DelegatesModuleLibrary = {
   logger: ILogger
@@ -39,7 +40,7 @@ export type DelegatesModuleLibrary = {
   config: AppConfig
 };
 
-export class DelegatesModule {
+export class DelegatesModule implements IDelegatesModule {
   public enabledKeys: { [k: string]: true }   = {};
   private blockReward: BlockRewardLogic       = new BlockRewardLogic();
   private delegateRegistrationTx: RegisterDelegateTransaction;
@@ -214,7 +215,7 @@ export class DelegatesModule {
   /**
    * Assets that the block was signed by the correct delegate.
    */
-  public async validateBlockSlot(block: SignedBlockType) {
+  public async assertValidBlockSlot(block: SignedBlockType) {
     const delegates = await this.generateDelegateList(block.height);
 
     const curSlot = Slots.getSlotNumber(block.timestamp);

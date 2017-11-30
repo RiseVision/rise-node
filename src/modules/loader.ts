@@ -248,9 +248,9 @@ export class LoaderModule {
       this.library.logger.warn('Recreating memory tables');
     }
 
-    await this.library.logic.account.removeTables(emptyCB);
+    await this.library.logic.account.removeTables();
 
-    await this.library.logic.account.createTables(emptyCB);
+    await this.library.logic.account.createTables();
 
     try {
       while (count >= offset) {

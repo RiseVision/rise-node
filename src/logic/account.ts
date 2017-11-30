@@ -5,6 +5,7 @@ import * as pgp from 'pg-promise';
 import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
 import { BigNum, catchToLoggerAndRemapError, cback, emptyCB, ILogger, promiseToCB } from '../helpers/';
+import { IAccountLogic } from '../ioc/interfaces/';
 import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
 
@@ -55,7 +56,7 @@ export type AccountFilterData = {
   sort?: string | { [k: string]: -1 | 1 }
 };
 
-export class AccountLogic {
+export class AccountLogic implements IAccountLogic {
   private table = 'mem_accounts';
 
   /**
@@ -129,18 +130,10 @@ export class AccountLogic {
   /**
    * Creates memory tables related to accounts!
    */
-  public createTables(cb): Promise<void> {
+  public createTables(): Promise<void> {
     const sql = new pgp.QueryFile(path.join(process.cwd(), 'sql', 'memoryTables.sql'), {minify: true});
-    return promiseToCB<void>(
-      this.scope.db.query(sql)
-        .catch(catchToLoggerAndRemapError('Account#createTables error', this.library.logger)),
-      (err) => {
-        if (err) {
-          return cb(err);
-        }
-        cb();
-      }
-    );
+    return this.scope.db.query(sql)
+      .catch(catchToLoggerAndRemapError('Account#createTables error', this.library.logger));
   }
 
   /**
@@ -153,7 +146,7 @@ export class AccountLogic {
    * @param cb
    * @returns {Promise<void>}
    */
-  public removeTables(cb): Promise<void> {
+  public removeTables(): Promise<void> {
     const fullQuery = [
       this.table,
       'mem_round',
@@ -170,11 +163,8 @@ export class AccountLogic {
     )
       .join('');
 
-    return promiseToCB(
-      this.scope.db.query(fullQuery)
-        .catch(catchToLoggerAndRemapError('Account#removeTables error', this.library.logger)),
-      cb
-    );
+    return this.scope.db.query(fullQuery)
+      .catch(catchToLoggerAndRemapError('Account#removeTables error', this.library.logger));
   }
 
   /**
@@ -200,7 +190,7 @@ export class AccountLogic {
    * Verifies validity of public Key
    * @param {string} publicKey
    */
-  public verifyPublicKey(publicKey: string, allowUndefined: boolean = true) {
+  public assertPublicKey(publicKey: string, allowUndefined: boolean = true) {
     if (typeof(publicKey) !== 'undefined') {
       if (typeof(publicKey) !== 'string') {
         throw new Error('Invalid public key, must be a string');
@@ -322,7 +312,7 @@ export class AccountLogic {
    */
   public set(address: string, fields: { [k: string]: any }, cb?: cback<any>) {
     return promiseToCB((async () => {
-        this.verifyPublicKey(fields.publicKey);
+        this.assertPublicKey(fields.publicKey);
         address        = String(address).toUpperCase();
         fields.address = address;
         const sql      = jsonSql.build({
@@ -362,7 +352,7 @@ export class AccountLogic {
     const tmpDiff           = JSON.parse(JSON.stringify(diff));
 
     address = address.toUpperCase();
-    this.verifyPublicKey(diff.publicKey);
+    this.assertPublicKey(diff.publicKey);
     for (const fieldName of this.editable) {
       if (typeof(diff[fieldName]) === 'undefined') {
         continue;
@@ -571,7 +561,7 @@ export class AccountLogic {
   }
 
   public generateAddressByPublicKey(publicKey: string): string {
-    this.verifyPublicKey(publicKey, false);
+    this.assertPublicKey(publicKey, false);
 
     const hash = crypto.createHash('sha256')
       .update(new Buffer(publicKey, 'hex'))

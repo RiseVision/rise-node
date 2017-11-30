@@ -1,16 +1,18 @@
 import * as crypto from 'crypto';
+import * as z_schema from 'z-schema';
 import { Ed, emptyCB, ILogger, Sequence, TransactionType } from '../helpers/';
-import {AccountFilterData, AccountLogic, MemAccountsData, TransactionLogic} from '../logic/';
-import {VoteTransaction} from '../logic/transactions/';
-import {DelegatesModule} from './delegates';
-import {SystemModule} from './system';
-import {TransactionsModule} from './transactions';
+import { AccountFilterData, AccountLogic, MemAccountsData, TransactionLogic } from '../logic/';
+import { VoteTransaction } from '../logic/transactions/';
+import { DelegatesModule } from './delegates';
+import { RoundsModule } from './rounds';
+import { SystemModule } from './system';
+import { TransactionsModule } from './transactions';
+import { IAccountsModule } from '../ioc/interfaces/modules';
 
 // tslint:disable-next-line
-type AccountLibrary = { ed: Ed, logger: ILogger, schema: any, balancesSequence: Sequence, logic: { account: AccountLogic, transaction: TransactionLogic } }
+type AccountLibrary = { ed: Ed, logger: ILogger, schema: z_schema, balancesSequence: Sequence, logic: { account: AccountLogic, transaction: TransactionLogic } }
 
-export class AccountsModule {
-  public modules: { delegates: DelegatesModule, rounds: any, system: SystemModule, transactions: TransactionsModule };
+export class AccountsModule implements IAccountsModule {
   private voteAsset: VoteTransaction;
 
   constructor(public library: AccountLibrary) {
@@ -24,8 +26,11 @@ export class AccountsModule {
     );
   }
 
+  public cleanup() {
+    return Promise.resolve();
+  }
+
   public onBind(modules: { delegates: any, rounds: any, system: any, transactions: any }) {
-    this.modules = modules;
     this.voteAsset.bind(modules.delegates, modules.rounds, modules.system);
   }
 
