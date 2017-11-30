@@ -20,14 +20,12 @@ export interface ITransportModule extends IModule {
 
   /**
    * Calls enqueue signatures and emits a signature change socket message
-   * TODO: Eventually fixme
    */
   onSignature(signature: { transaction: string, signature: string, relays?: number }, broadcast: boolean): void;
 
   /**
    * Calls enqueue if broadcast is true and did not exhaust relays
    * Be aware that the transaction object is modified by adding relays: number
-   * TODO: Eventually fixme
    */
   onUnconfirmedTransaction(transaction: IBaseTransaction<any> & { relays?: number }, broadcast: boolean): void;
 
@@ -35,7 +33,6 @@ export interface ITransportModule extends IModule {
    * On new block get current broadhash, update system (to calc new broadhash) and broadcast block to all
    * peers on old broadhash.
    * Be aware that original block will be modified by adding relays if not there.
-   * TODO: eventually fixme ^^
    */
   onNewBlock(block: SignedBlockType & { relays?: number }, broadcast: boolean): Promise<void>;
 
