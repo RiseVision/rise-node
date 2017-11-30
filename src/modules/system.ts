@@ -4,6 +4,7 @@ import { IDatabase } from 'pg-promise';
 import * as semver from 'semver';
 import sqlSystem from '../../sql/system';
 import { constants, ILogger } from '../helpers/';
+import { ISystemModule } from '../ioc/interfaces/modules/';
 import { BlocksModule } from './blocks';
 import { TransportModule } from './transport';
 // tslint:disable-next-line
@@ -20,7 +21,7 @@ type PeerHeaders = {
 };
 const rcRegExp = /[a-z]+$/;
 
-export class SystemModule {
+export class SystemModule implements ISystemModule {
   public minVersion: string;
   public headers: PeerHeaders;
   public modules: { blocks: BlocksModule, transport: TransportModule };
@@ -40,6 +41,9 @@ export class SystemModule {
     };
   }
 
+  public cleanup() {
+    return Promise.resolve();
+  }
   /**
    * Assigns used modules to modules variable.
    */
@@ -92,10 +96,8 @@ export class SystemModule {
 
   /**
    * Gets private variable `nethash` and compares with input param.
-   * @param {hash}
-   * @return {boolean} True if input param is equal to private value.
    */
-  public networkCompatible(nethash) {
+  public networkCompatible(nethash: string): boolean {
     return this.headers.nethash === nethash;
   }
 
