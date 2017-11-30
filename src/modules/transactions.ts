@@ -2,12 +2,13 @@ import * as _ from 'lodash';
 import { IDatabase } from 'pg-promise';
 import txSQL from '../../sql/logic/transactions';
 import { Bus, constants, Ed, ILogger, OrderBy, Sequence, TransactionType } from '../helpers/';
+import { ITransactionsModule } from '../ioc/interfaces/modules/';
 import { SignedBlockType, TransactionLogic, TransactionPool } from '../logic/';
 import { IBaseTransaction, IConfirmedTransaction, SendTransaction } from '../logic/transactions/';
+import { AppConfig } from '../types/genericTypes';
 import { AccountsModule } from './accounts';
 import { LoaderModule } from './loader';
 import { SystemModule } from './system';
-import { AppConfig } from '../types/genericTypes';
 
 // tslint:disable-next-line
 export type TransactionLibrary = {
@@ -24,7 +25,7 @@ export type TransactionLibrary = {
   config: AppConfig
 };
 
-export class TransactionsModule {
+export class TransactionsModule implements ITransactionsModule {
   public modules: { accounts: AccountsModule };
   private transactionPool: TransactionPool;
   private sendAsset: SendTransaction;
@@ -40,6 +41,10 @@ export class TransactionsModule {
       TransactionType.SEND,
       new SendTransaction()
     );
+  }
+
+  public cleanup() {
+    return Promise.resolve();
   }
 
   /**
