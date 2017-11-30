@@ -28,7 +28,7 @@ import {
   z_schema,
 } from './helpers/';
 
-import { AccountLogic, BlockLogic, Peers, SignedAndChainedBlockType, TransactionLogic, } from './logic/';
+import { AccountLogic, BlockLogic, PeersLogic, SignedAndChainedBlockType, TransactionLogic, } from './logic/';
 
 import {
   AccountsModule,

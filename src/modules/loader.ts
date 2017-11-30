@@ -6,8 +6,8 @@ import { Bus, cbToPromise, constants, ILogger, JobsQueue, Sequence } from '../he
 import { ILoaderModule } from '../ioc/interfaces/modules/';
 import {
   AccountLogic,
-  Peer,
-  Peers,
+  PeerLogic,
+  PeersLogic,
   PeerType,
   SignedAndChainedBlockType,
   SignedBlockType,
@@ -36,14 +36,14 @@ export type LoaderLibrary = {
   logic: {
     transaction: TransactionLogic;
     account: AccountLogic;
-    peers: Peers
+    peers: PeersLogic
   },
   config: AppConfig
 };
 
 export class LoaderModule implements ILoaderModule {
 
-  private network: { height: number, peers: Peer[] };
+  private network: { height: number, peers: PeerLogic[] };
   private genesisBlock: SignedAndChainedBlockType = null;
   private lastblock: SignedAndChainedBlockType    = null;
   private syncIntervalId: Timer                   = null;
@@ -76,7 +76,7 @@ export class LoaderModule implements ILoaderModule {
     return this.network;
   }
 
-  public async gerRandomPeer(): Promise<Peer> {
+  public async gerRandomPeer(): Promise<PeerLogic> {
     const { peers } = await this.getNework();
     return peers[Math.floor(Math.random() * peers.length)];
   }
@@ -298,7 +298,7 @@ export class LoaderModule implements ILoaderModule {
    * Gets the list of good peers.
    */
   private findGoodPeers(peers: PeerType[]): {
-    height: number, peers: Peer[]
+    height: number, peers: PeerLogic[]
   } {
     const lastBlockHeight: number = this.modules.blocks.lastBlock.height;
 

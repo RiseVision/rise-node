@@ -8,9 +8,9 @@ import {
   BasePeerType,
   BlockLogic,
   BroadcasterLogic,
-  Peer,
+  PeerLogic,
   PeerHeaders,
-  Peers,
+  PeersLogic,
   PeerState,
   PeerType,
   SignedBlockType,
@@ -39,7 +39,7 @@ export type TransportLibrary = {
   logic: {
     block: BlockLogic,
     transaction: TransactionLogic,
-    peers: Peers
+    peers: PeersLogic
   },
   config: AppConfig
 };
@@ -91,7 +91,7 @@ export class TransportModule implements ITransportModule {
   }
 
   // tslint:disable-next-line max-line-length
-  public async getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: Peer }> {
+  public async getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: PeerLogic }> {
     let url = options.url;
     if (options.api) {
       url = `/peer${options.api}`;
@@ -248,7 +248,7 @@ export class TransportModule implements ITransportModule {
   @ValidateSchema()
   public async receiveTransactions(@SchemaValid(schema.transactions, 'Invalid transactions body')
                                      query: { transactions: any[] },
-                                   peer: Peer,
+                                   peer: PeerLogic,
                                    extraLogMessage: string) {
     for (const tx of  query.transactions) {
       try {
@@ -265,7 +265,7 @@ export class TransportModule implements ITransportModule {
    * @returns {Promise<void>}
    */
   // tslint:disable-next-line max-line-length
-  public async receiveTransaction(transaction: IBaseTransaction<any>, peer: Peer, bundled: boolean, extraLogMessage: string): Promise<string> {
+  public async receiveTransaction(transaction: IBaseTransaction<any>, peer: PeerLogic, bundled: boolean, extraLogMessage: string): Promise<string> {
     try {
       transaction = this.library.logic.transaction.objectNormalize(transaction);
     } catch (e) {
@@ -312,7 +312,7 @@ export class TransportModule implements ITransportModule {
   /**
    * Removes a peer by calling modules peer remove
    */
-  private removePeer(options: { code: string, peer: Peer }, extraMessage: string) {
+  private removePeer(options: { code: string, peer: PeerLogic }, extraMessage: string) {
     this.library.logger.debug(`${options.code} Removing peer ${options.peer.string} ${extraMessage}`);
     this.modules.peers.remove(options.peer.ip, options.peer.port);
   }

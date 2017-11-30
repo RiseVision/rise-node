@@ -1,4 +1,4 @@
-import { Peer, PeerState, PeerType } from '../../../logic';
+import { PeerLogic, PeerState, PeerType } from '../../../logic';
 import { PeerFilter } from '../../../modules';
 import { IModule } from './IModule';
 
@@ -11,12 +11,12 @@ export interface IPeersModule extends IModule {
   /**
    * Pings a peer
    */
-  ping(peer: Peer): Promise<void>;
+  ping(peer: PeerLogic): Promise<void>;
 
   /**
    * Sets peer state to active and updates it to the list
    */
-  update(peer: Peer): boolean;
+  update(peer: PeerLogic): boolean;
 
   /**
    * Remove a peer from the list if its not one from config files

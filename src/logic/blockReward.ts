@@ -1,6 +1,7 @@
-import {constants} from '../helpers/';
+import { constants } from '../helpers/';
+import { IBlockReward } from '../ioc/interfaces/logic/';
 
-export class BlockRewardLogic {
+export class BlockRewardLogic implements IBlockReward {
   public rewards = constants.rewards;
 
   public calcMilestone(height: number) {
@@ -32,7 +33,7 @@ export class BlockRewardLogic {
     }
 
     // add current milestone
-    supply += (height - amountAccounted ) * this.rewards[milestone].reward;
+    supply += (height - amountAccounted) * this.rewards[milestone].reward;
 
     // const tha = new (require('./_blockReward.js'))().calcSupply(height);
     // if (supply !== tha) {

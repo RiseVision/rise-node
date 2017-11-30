@@ -1,13 +1,14 @@
 'use strict';
 import * as _ from 'lodash';
 import { ILogger } from '../helpers';
-import {PeersModule} from '../modules/';
-import {BasePeerType, Peer, PeerState, PeerType} from './peer';
+import { IPeersLogic } from '../ioc/interfaces/logic/';
+import { PeersModule } from '../modules/';
+import { BasePeerType, PeerLogic, PeerState, PeerType } from './peer';
 
-export class Peers {
+export class PeersLogic implements IPeersLogic {
   private library: { logger: ILogger };
 
-  private peers: { [peerIdentifier: string]: Peer } = {};
+  private peers: { [peerIdentifier: string]: PeerLogic } = {};
 
   private modules: { peers: PeersModule };
 
@@ -15,9 +16,9 @@ export class Peers {
     this.library = {logger};
   }
 
-  public create(peer: BasePeerType): Peer {
-    if (!(peer instanceof Peer)) {
-      return new Peer(peer);
+  public create(peer: BasePeerType): PeerLogic {
+    if (!(peer instanceof PeerLogic)) {
+      return new PeerLogic(peer);
     }
     return peer as any;
   }
@@ -71,15 +72,15 @@ export class Peers {
     }
 
     const stats = {
-      alive: 0,
+      alive         : 0,
       emptyBroadhash: 0,
-      emptyHeight: 0,
-      total: 0,
+      emptyHeight   : 0,
+      total         : 0,
     };
 
     Object.keys(this.peers)
       .map((key) => this.peers[key])
-      .forEach((p: Peer) => {
+      .forEach((p: PeerLogic) => {
         stats.total++;
 
         if (p.state === PeerState.CONNECTED) {
@@ -103,17 +104,17 @@ export class Peers {
     if (this.exists(peer)) {
       const thePeer = this.create(peer);
       this.library.logger.info('Removed peer', thePeer.string);
-      this.library.logger.debug('Removed peer', {peer: this.peers[thePeer.string]});
+      this.library.logger.debug('Removed peer', { peer: this.peers[thePeer.string] });
       delete this.peers[thePeer.string];
       return true;
     }
 
-    this.library.logger.debug('Failed to remove peer', {err: 'AREMOVED', peer});
+    this.library.logger.debug('Failed to remove peer', { err: 'AREMOVED', peer });
     return false;
   }
 
   public list(normalize: true): PeerType[];
-  public list(normalize: false): Peer[];
+  public list(normalize: false): PeerLogic[];
   public list(normalize: boolean) {
     return Object.keys(this.peers)
       .map((k) => this.peers[k])

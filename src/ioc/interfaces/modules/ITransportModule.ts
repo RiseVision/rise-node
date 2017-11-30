@@ -1,4 +1,4 @@
-import { BasePeerType, Peer, PeerState, PeerType, SignedBlockType } from '../../../logic';
+import { BasePeerType, PeerLogic, PeerState, PeerType, SignedBlockType } from '../../../logic';
 import { IBaseTransaction } from '../../../logic/transactions';
 import { PeerRequestOptions } from '../../../modules';
 import { IModule } from './IModule';
@@ -13,10 +13,10 @@ export interface ITransportModule extends IModule {
    */
   getPeers(params: { limit?: number, broadhash?: string }): Promise<PeerType[]>;
 
-  getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: Peer }>;
+  getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: PeerLogic }>;
 
   getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] },
-                       options: PeerRequestOptions): Promise<{ body: any; peer: Peer }>;
+                       options: PeerRequestOptions): Promise<{ body: any; peer: PeerLogic }>;
 
   /**
    * Calls enqueue signatures and emits a signature change socket message
@@ -45,7 +45,7 @@ export interface ITransportModule extends IModule {
   receiveSignature(signature: { transaction: string, signature: string }): Promise<void>;
 
   receiveTransactions(query: { transactions: any[] },
-                      peer: Peer,
+                      peer: PeerLogic,
                       extraLogMessage: string): Promise<void>;
 
   /**
@@ -54,5 +54,5 @@ export interface ITransportModule extends IModule {
    * @returns {Promise<void>}
    */
   // tslint:disable-next-line max-line-length
-  receiveTransaction(transaction: IBaseTransaction<any>, peer: Peer, bundled: boolean, extraLogMessage: string): Promise<string>;
+  receiveTransaction(transaction: IBaseTransaction<any>, peer: PeerLogic, bundled: boolean, extraLogMessage: string): Promise<string>;
 }

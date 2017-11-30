@@ -6,8 +6,8 @@ import { catchToLoggerAndRemapError, constants, ForkType, IKeypair, ILogger, Seq
 import {
   BasePeerType,
   BlockLogic,
-  Peer,
-  Peers,
+  PeerLogic,
+  PeersLogic,
   SignedAndChainedBlockType,
   SignedBlockType,
   TransactionLogic
@@ -35,7 +35,7 @@ export type BlocksModuleProcessLibrary = {
   genesisblock: SignedAndChainedBlockType
   logic: {
     block: BlockLogic,
-    peers: Peers,
+    peers: PeersLogic,
     transaction: TransactionLogic
   }
 };
@@ -63,12 +63,12 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   /**
    * Performs chain comparison with remote peer
    * WARNING: Can trigger chain recovery
-   * @param {Peer} peer
+   * @param {PeerLogic} peer
    * @param {number} height
    * @return {Promise<void>}
    */
   // FIXME VOid return for recoverChain
-  public async getCommonBlock(peer: Peer, height: number): Promise<{ id: string, previousBlock: string, height: number } | void> {
+  public async getCommonBlock(peer: PeerLogic, height: number): Promise<{ id: string, previousBlock: string, height: number } | void> {
     const { ids }              = await this.modules.blocks.utils.getIdSequence(height);
     const { body: commonResp } = await this.modules.transport
       .getFromPeer<{ common: { id: string, previousBlock: string, height: number } }>(peer, {
@@ -166,10 +166,10 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
   /**
    * Query remote peer for block, process them and return last processed (and valid) block
-   * @param {Peer | BasePeerType} rawPeer
+   * @param {PeerLogic | BasePeerType} rawPeer
    * @return {Promise<SignedBlockType>}
    */
-  public async loadBlocksFromPeer(rawPeer: Peer | BasePeerType): Promise<SignedBlockType> {
+  public async loadBlocksFromPeer(rawPeer: PeerLogic | BasePeerType): Promise<SignedBlockType> {
     let lastValidBlock: SignedBlockType = this.modules.blocks.lastBlock;
 
     // normalize Peer

@@ -1,4 +1,5 @@
 import * as ip from 'ip';
+import { IPeerLogic } from '../ioc/interfaces/logic/';
 
 export enum PeerState {
   BANNED       = 0,
@@ -75,7 +76,7 @@ const properties = [
   'nonce',
 ];
 
-export class Peer implements PeerType {
+export class PeerLogic implements PeerType, IPeerLogic {
   public ip: string;
   public port: number;
   public state: PeerState;

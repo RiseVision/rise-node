@@ -7,7 +7,7 @@ import * as z_schema from 'z-schema';
 import peerSQL from '../../sql/peers';
 import { Bus, cbToPromise, constants, ILogger, JobsQueue } from '../helpers/';
 import { IPeersModule } from '../ioc/interfaces/modules/';
-import { Peer, Peers, PeerState, PeerType } from '../logic/';
+import { PeerLogic, PeersLogic, PeerState, PeerType } from '../logic/';
 import schema from '../schema/peers';
 import { AppConfig } from '../types/genericTypes';
 import { SystemModule } from './system';
@@ -25,7 +25,7 @@ export type PeersLibrary = {
   build: string;
   lastCommit: string;
   logic: {
-    peers: Peers;
+    peers: PeersLogic;
   },
   config: AppConfig
 };
@@ -69,7 +69,7 @@ export class PeersModule implements IPeersModule {
   /**
    * Pings a peer
    */
-  public async ping(peer: Peer) {
+  public async ping(peer: PeerLogic) {
     this.library.logger.trace(`Pinging peer: ${peer.string}`);
     try {
       await this.modules.transport.getFromPeer(
@@ -88,7 +88,7 @@ export class PeersModule implements IPeersModule {
   /**
    * Sets peer state to active and updates it to the list
    */
-  public update(peer: Peer) {
+  public update(peer: PeerLogic) {
     peer.state = PeerState.CONNECTED;
     return this.library.logic.peers.upsert(peer, false);
   }
@@ -128,7 +128,7 @@ export class PeersModule implements IPeersModule {
     let discovered = 0;
     let rejected   = 0;
     for (const rawPeer of acceptablePeers) {
-      const peer: Peer = this.library.logic.peers.create(rawPeer);
+      const peer: PeerLogic = this.library.logic.peers.create(rawPeer);
       if (this.library.schema.validate(peer, schema.discover.peer)) {
         peer.state = PeerState.DISCONNECTED;
         this.library.logic.peers.upsert(peer, true);

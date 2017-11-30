@@ -1,12 +1,13 @@
 import * as extend from 'extend';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
-import {constants, ILogger, JobsQueue, promiseToCB} from '../helpers/';
-import {PeersModule, TransportModule} from '../modules/';
-import {PeerType} from './peer';
-import {Peers} from './peers';
-import {TransactionLogic} from './transaction';
-import {IBaseTransaction} from './transactions/';
+import { constants, ILogger, JobsQueue, promiseToCB } from '../helpers/';
+import { PeersModule, TransportModule } from '../modules/';
+import { PeerType } from './peer';
+import { PeersLogic } from './peers';
+import { TransactionLogic } from './transaction';
+import { IBaseTransaction } from './transactions/';
+import { IBroadcasterLogic } from '../ioc/interfaces/logic/IBroadcasterLogic';
 
 // tslint:disable interface-over-type-literal
 export type BroadcastsType = {
@@ -20,7 +21,7 @@ export type BroadcastsType = {
 type BroadcastLibrary = {
   logger: ILogger,
   logic: {
-    peers: Peers,
+    peers: PeersLogic,
     transactions: TransactionLogic
   },
   config: {
@@ -44,7 +45,7 @@ export type BroadcastTask = {
 
 // tslint:enable interface-over-type-literal
 
-export class BroadcasterLogic {
+export class BroadcasterLogic implements IBroadcasterLogic {
   public queue: BroadcastTask[] = [];
   public config: {
     broadcasts: BroadcastsType,

@@ -1,16 +1,16 @@
 import { IKeypair } from '../../../../helpers';
-import { BasePeerType, Peer, SignedAndChainedBlockType, SignedBlockType } from '../../../../logic';
+import { BasePeerType, PeerLogic, SignedAndChainedBlockType, SignedBlockType } from '../../../../logic';
 import { IModule } from '../IModule';
 
 export interface IBlocksModuleProcess extends IModule {
   /**
    * Performs chain comparison with remote peer
    * WARNING: Can trigger chain recovery
-   * @param {Peer} peer
+   * @param {PeerLogic} peer
    * @param {number} height
    * @return {Promise<void>}
    */
-  getCommonBlock(peer: Peer, height: number): Promise<{ id: string, previousBlock: string, height: number } | void>;
+  getCommonBlock(peer: PeerLogic, height: number): Promise<{ id: string, previousBlock: string, height: number } | void>;
 
   /**
    * Loads full blocks from database, used when rebuilding blockchain, snapshotting.
@@ -23,10 +23,10 @@ export interface IBlocksModuleProcess extends IModule {
 
   /**
    * Query remote peer for block, process them and return last processed (and valid) block
-   * @param {Peer | BasePeerType} rawPeer
+   * @param {PeerLogic | BasePeerType} rawPeer
    * @return {Promise<SignedBlockType>}
    */
-  loadBlocksFromPeer(rawPeer: Peer | BasePeerType): Promise<SignedBlockType>;
+  loadBlocksFromPeer(rawPeer: PeerLogic | BasePeerType): Promise<SignedBlockType>;
 
   /**
    * Generates a new block
