@@ -30,7 +30,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
 
   constructor(public library: {
     account: AccountLogic,
-    logger: ILogger, schema: any, network: any, transaction: TransactionLogic
+    logger: ILogger, schema: any, io: SocketIO.Server, transaction: TransactionLogic
   }) {
     super(TransactionType.IN_TRANSFER);
   }
@@ -260,7 +260,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
   }
 
   public afterSave(tx: IBaseTransaction<MultisigAsset>): Promise<void> {
-    this.library.network.io.sockets.emit('multisignatures/change', tx);
+    this.library.io.sockets.emit('multisignatures/change', tx);
     return Promise.resolve();
   }
 

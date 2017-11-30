@@ -1,12 +1,13 @@
 import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
 import { Bus, Ed, ILogger, Sequence, TransactionType } from '../helpers/';
+import { IMultisignaturesModule } from '../ioc/interfaces/modules';
 import { AccountLogic, SignedAndChainedBlockType, TransactionLogic } from '../logic/';
 import { IBaseTransaction, MultisigAsset, MultiSignatureTransaction } from '../logic/transactions/';
 import { AccountsModule } from './accounts';
 import { TransactionsModule } from './transactions';
 
-export class MultisignaturesModule {
+export class MultisignaturesModule implements IMultisignaturesModule {
   private multiTx: MultiSignatureTransaction;
   private modules: {
     transactions: TransactionsModule,
@@ -16,7 +17,7 @@ export class MultisignaturesModule {
   constructor(public library: {
     logger: ILogger,
     db: IDatabase<any>,
-    network: any,
+    io: SocketIO.Server,
     schema: z_schema,
     ed: Ed,
     bus: Bus,
@@ -32,8 +33,8 @@ export class MultisignaturesModule {
       TransactionType.MULTI,
       new MultiSignatureTransaction({
         account    : this.library.logic.account,
+        io         : this.library.io,
         logger     : this.library.logger,
-        network    : this.library.network,
         schema     : this.library.schema,
         transaction: this.library.logic.transaction,
       })
@@ -105,7 +106,7 @@ export class MultisignaturesModule {
       throw new Error('Failed to verify signature');
     }
 
-    this.library.network.io.sockets.emit('multisignatures/signature/change', tx);
+    this.library.io.sockets.emit('multisignatures/signature/change', tx);
 
   }
 

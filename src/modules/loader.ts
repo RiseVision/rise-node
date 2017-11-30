@@ -2,9 +2,15 @@ import { IDatabase } from 'pg-promise';
 import * as promiseRetry from 'promise-retry';
 import z_schema from 'z-schema';
 import sql from '../../sql/loader';
-import { Bus, cbToPromise, constants, emptyCB, ILogger, JobsQueue, Sequence } from '../helpers/';
+import { Bus, cbToPromise, constants, ILogger, JobsQueue, Sequence } from '../helpers/';
+import { ILoaderModule } from '../ioc/interfaces/modules/';
 import {
-  AccountLogic, Peer, Peers, PeerType, SignedAndChainedBlockType, SignedBlockType,
+  AccountLogic,
+  Peer,
+  Peers,
+  PeerType,
+  SignedAndChainedBlockType,
+  SignedBlockType,
   TransactionLogic
 } from '../logic/';
 import { IBaseTransaction } from '../logic/transactions/';
@@ -35,7 +41,7 @@ export type LoaderLibrary = {
   config: AppConfig
 };
 
-export class LoaderModule {
+export class LoaderModule implements ILoaderModule {
 
   private network: { height: number, peers: Peer[] };
   private genesisBlock: SignedAndChainedBlockType = null;
@@ -64,14 +70,14 @@ export class LoaderModule {
         this.network.height > 0 &&
         Math.abs(this.network.height - this.modules.blocks.lastBlock.height) === 1)
     ) {
-      const {peers} = await this.modules.peers.list({});
-      this.network  = this.findGoodPeers(peers);
+      const { peers } = await this.modules.peers.list({});
+      this.network    = this.findGoodPeers(peers);
     }
     return this.network;
   }
 
   public async gerRandomPeer(): Promise<Peer> {
-    const {peers} = await this.getNework();
+    const { peers } = await this.getNework();
     return peers[Math.floor(Math.random() * peers.length)];
   }
 
@@ -105,7 +111,7 @@ export class LoaderModule {
           } catch (e) {
             retry(e);
           }
-        }, {retries: this.retries});
+        }, { retries: this.retries });
       } catch (e) {
         this.library.logger.log('Unconfirmed transactions loader error', e);
       }
@@ -118,7 +124,7 @@ export class LoaderModule {
           } catch (e) {
             retry(e);
           }
-        }, {retries: this.retries});
+        }, { retries: this.retries });
       } catch (e) {
         this.library.logger.log('Multisig pending transactions loader error', e);
       }
@@ -149,7 +155,7 @@ export class LoaderModule {
    * Detects orphaned blocks in `mem_accounts` and gets delegates.
    * Loads last block and emits a bus message blockchain is ready.
    */
-  public async loadBlockChain() {
+  public async loadBlockChain(): Promise<void> {
     const limit = Number(this.library.config.loading.loadPerIteration) || 1000;
     // const verify   = Boolean(this.library.config.loading.verifyOnLoading);
 
@@ -216,7 +222,8 @@ export class LoaderModule {
     const duplicatedDelegates = results[4][0].count > 0;
     if (duplicatedDelegates) {
       this.library.logger.error('Delegates table corrupted with duplicated entries');
-      return process.emit('exit', 1);
+      process.emit('exit', 1);
+      return;
     }
 
     const res = await this.library.db.task((t) => t.batch([
@@ -241,7 +248,7 @@ export class LoaderModule {
     }
   }
 
-  private async load(count: number, limitPerIteration: number, message?: string) {
+  public async load(count: number, limitPerIteration: number, message?: string) {
     let offset = 0;
     if (message) {
       this.library.logger.warn(message);

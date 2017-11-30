@@ -1,8 +1,9 @@
 import redis from 'redis';
 import { cbToPromise, cbToVoidPromise, emptyCB, ILogger, TransactionType } from '../helpers/';
+import { ICacheModule } from '../ioc/interfaces/modules/';
 import { IBaseTransaction } from '../logic/transactions/';
 
-export class Cache {
+export class Cache implements ICacheModule {
   private cacheReady: boolean;
 
   public constructor(library: { logger: ILogger }, public redisClient: redis.RedisClient,
