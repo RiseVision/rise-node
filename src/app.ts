@@ -40,7 +40,6 @@ import {
   MultisignaturesModule,
   PeersModule,
   RoundsModule,
-  SignaturesModule,
   SystemModule,
   TransactionsModule,
   TransportModule
@@ -296,13 +295,6 @@ async function boot(): Promise<() => Promise<void>> {
       db,
       io,
       logger,
-    }),
-    signatures   : new SignaturesModule({
-      balancesSequence,
-      ed,
-      logger,
-      logic: {transaction: transactionLogic},
-      schema,
     }),
     system       : new SystemModule({db, config: appConfig, logger, nonce}),
     transactions : new TransactionsModule({

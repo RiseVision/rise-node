@@ -8,7 +8,6 @@ export * from './loader';
 export * from './multisignatures';
 export * from './peers';
 export * from './rounds';
-export * from './signatures';
 export * from './system';
 export * from './transactions';
 export * from './transport';
