@@ -8,3 +8,5 @@ export * from './blocks/IBlocksModuleVerify';
 export * from './IDelegatesModule';
 export * from './ILoaderModule';
 export * from './IMultisignaturesModule';
+export * from './IPeersModule';
+export * from './IRoundsModule';

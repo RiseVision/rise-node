@@ -1,6 +1,7 @@
 import { IDatabase, ITask } from 'pg-promise';
 import roundsSQL from '../../sql/logic/rounds';
 import { Bus, constants, ILogger, Slots } from '../helpers/';
+import { IRoundsModule } from '../ioc/interfaces/modules/';
 import { RoundLogic, RoundLogicScope, SignedBlockType } from '../logic/';
 import { AppConfig } from '../types/genericTypes';
 import { address, publicKey } from '../types/sanityTypes';
@@ -16,7 +17,7 @@ export type RoundsLibrary = {
   config: AppConfig
 };
 
-export class RoundsModule {
+export class RoundsModule implements IRoundsModule {
   private loaded: boolean  = false;
   private ticking: boolean = false;
 
@@ -81,7 +82,7 @@ export class RoundsModule {
   /**
    * Deletes specific round from mem_rounds table
    */
-  public flush(round: number) {
+  public flush(round: number): Promise<void> {
     return this.library.db.none(roundsSQL.flush, { round })
       .catch((err) => {
         this.library.logger.error(err.stack);

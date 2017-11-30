@@ -40,7 +40,6 @@ import {
   MultisignaturesModule,
   PeersModule,
   RoundsModule,
-  ServerModule,
   SignaturesModule,
   SystemModule,
   TransactionsModule,
@@ -298,7 +297,6 @@ async function boot(): Promise<() => Promise<void>> {
       io,
       logger,
     }),
-    server       : new ServerModule(),
     signatures   : new SignaturesModule({
       balancesSequence,
       ed,

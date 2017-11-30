@@ -1,11 +1,12 @@
 import * as ip from 'ip';
 import * as _ from 'lodash';
 import * as pgpCreator from 'pg-promise';
-import { IDatabase, ITask } from 'pg-promise';
+import { IDatabase } from 'pg-promise';
 import * as shuffle from 'shuffle-array';
 import * as z_schema from 'z-schema';
 import peerSQL from '../../sql/peers';
 import { Bus, cbToPromise, constants, ILogger, JobsQueue } from '../helpers/';
+import { IPeersModule } from '../ioc/interfaces/modules/';
 import { Peer, Peers, PeerState, PeerType } from '../logic/';
 import schema from '../schema/peers';
 import { AppConfig } from '../types/genericTypes';
@@ -32,7 +33,7 @@ export type PeersLibrary = {
 // tslint:disable-next-line
 export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip?: string, port?: number, state?: PeerState };
 
-export class PeersModule {
+export class PeersModule implements IPeersModule {
   public modules: { transport: TransportModule, system: SystemModule };
 
   constructor(public library: PeersLibrary) {
@@ -64,6 +65,7 @@ export class PeersModule {
     // save on cleanup.
     return this.dbSave();
   }
+
   /**
    * Pings a peer
    */
@@ -101,7 +103,7 @@ export class PeersModule {
       this.library.logger.debug('Cannot remove frozen peer', peerIP + ':' + port);
       return false;
     } else {
-      return this.library.logic.peers.remove({ip: peerIP, port});
+      return this.library.logic.peers.remove({ ip: peerIP, port });
     }
   }
 
@@ -226,7 +228,7 @@ export class PeersModule {
     consensus     = isNaN(consensus) ? 0 : consensus;
 
     this.library.logger.debug(`Listing ${peersList.length} total peers`);
-    return {consensus, peers: peersList};
+    return { consensus, peers: peersList };
   }
 
   public async onBlockchainReady() {
