@@ -1,14 +1,15 @@
-import {BigNumber} from 'bignumber.js';
+import { BigNumber } from 'bignumber.js';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import z_schema from 'z-schema';
 import sql from '../../sql/logic/transactions';
-import {BigNum, constants, Ed, emptyCB, IKeypair, ILogger, Slots, TransactionType} from '../helpers/';
-import {RoundsModule} from '../modules/';
+import { BigNum, constants, Ed, emptyCB, IKeypair, ILogger, Slots, TransactionType } from '../helpers/';
+import { ITransactionLogic } from '../ioc/interfaces/logic/';
+import { RoundsModule } from '../modules/';
 import txSchema from '../schema/logic/transaction';
-import {AccountLogic, MemAccountsData} from './account';
+import { AccountLogic, MemAccountsData } from './account';
 import { SignedAndChainedBlockType, SignedBlockType } from './block';
-import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './transactions/';
+import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './transactions/';
 
 // tslint:disable-next-line
 export type TransactionLogicScope = {
@@ -20,7 +21,7 @@ export type TransactionLogicScope = {
   logger: ILogger
 };
 
-export class TransactionLogic {
+export class TransactionLogic implements ITransactionLogic {
   public dbTable  = 'trs';
   public dbFields = [
     'id',

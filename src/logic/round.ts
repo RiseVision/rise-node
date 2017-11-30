@@ -2,6 +2,7 @@ import * as pgp from 'pg-promise';
 import { ITask } from 'pg-promise';
 import roundSQL from '../../sql/logic/rounds';
 import { ILogger, RoundChanges } from '../helpers/';
+import { IRoundLogic } from '../ioc/interfaces/logic/';
 import { address, publicKey } from '../types/sanityTypes';
 
 // tslint:disable-next-line
@@ -27,7 +28,7 @@ export type RoundLogicScope = {
   }
 };
 
-export class RoundLogic {
+export class RoundLogic implements IRoundLogic {
 
   constructor(public scope: RoundLogicScope, public task: ITask<any>) {
     let reqProps = ['library', 'modules', 'block', 'round', 'backwards'];

@@ -4,3 +4,6 @@ export * from './IBlockReward';
 export * from './IBroadcasterLogic';
 export * from './IPeerLogic';
 export * from './IPeersLogic';
+export * from './IRoundLogic';
+export * from './ITransactionLogic';
+export * from './ITransactionPoolLogic';

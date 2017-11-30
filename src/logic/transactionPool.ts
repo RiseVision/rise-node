@@ -1,8 +1,10 @@
 import { Bus, constants, ILogger, JobsQueue, promiseToCB, TransactionType } from '../helpers/';
+import { ITransactionPoolLogic } from '../ioc/interfaces/logic/';
 import { AccountsModule, LoaderModule, TransactionsModule } from '../modules/';
 import { AppConfig } from '../types/genericTypes';
 import { TransactionLogic } from './transaction';
 import { IBaseTransaction } from './transactions/';
+
 // tslint:disable-next-line
 
 export class InnerTXQueue<T = { receivedAt: Date }> {
@@ -80,7 +82,7 @@ export class InnerTXQueue<T = { receivedAt: Date }> {
 
 }
 
-export class TransactionPool {
+export class TransactionPool implements ITransactionPoolLogic {
 
   public unconfirmed    = new InnerTXQueue();
   public bundled        = new InnerTXQueue();
