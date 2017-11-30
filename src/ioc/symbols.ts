@@ -1,9 +1,21 @@
 export const Symbols = {
   logic  : {
+    account     : Symbol('account'),
+    block       : Symbol('block'),
+    blockReward : Symbol('blockReward'),
+    broadcaster : Symbol('broadcaster'),
+    peer        : Symbol('peer'),
+    peers       : Symbol('peers'),
+    round       : Symbol('round'),
     transaction : Symbol('transaction'),
     transactions: {
-      vote: Symbol('voteTransaction'),
+      createmultisig : Symbol('createMultisigTx'),
+      delegate       : Symbol('delegateTx'),
+      secondSignature: Symbol('secondSignatureTx'),
+      send           : Symbol('sendTx'),
+      vote           : Symbol('voteTx'),
     },
+
   },
   modules: {
     accounts        : Symbol('accounts module'),
@@ -18,5 +30,7 @@ export const Symbols = {
     delegates       : Symbol('delegates module'),
     multisignatures : Symbol('multisignatures module'),
     system          : Symbol('system module'),
+    transactions    : Symbol('transactions module'),
+    transport       : Symbol('transport module'),
   },
 };

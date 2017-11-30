@@ -2,12 +2,12 @@ import * as extend from 'extend';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
 import { constants, ILogger, JobsQueue, promiseToCB } from '../helpers/';
-import { PeersModule, TransportModule } from '../modules/';
+import { IBroadcasterLogic } from '../ioc/interfaces/logic/';
+import { PeersModule, TransactionsModule, TransportModule } from '../modules/';
 import { PeerType } from './peer';
 import { PeersLogic } from './peers';
 import { TransactionLogic } from './transaction';
 import { IBaseTransaction } from './transactions/';
-import { IBroadcasterLogic } from '../ioc/interfaces/logic/IBroadcasterLogic';
 
 // tslint:disable interface-over-type-literal
 export type BroadcastsType = {
@@ -65,7 +65,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     path      : '/signatures',
   }];
 
-  public modules: { peers: PeersModule, transport: TransportModule, transactions: any };
+  public modules: { peers: PeersModule, transport: TransportModule, transactions: TransactionsModule };
 
   constructor(public library: BroadcastLibrary) {
     this.config = {
