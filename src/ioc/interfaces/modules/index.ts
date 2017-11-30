@@ -12,3 +12,4 @@ export * from './IPeersModule';
 export * from './IRoundsModule';
 export * from './ISystemModule';
 export * from './ITransactionsModule';
+export * from './ITransportModule';

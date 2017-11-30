@@ -3,6 +3,7 @@ import { IDatabase } from 'pg-promise';
 import * as popsicle from 'popsicle';
 import * as z_schema from 'z-schema';
 import { BigNum, Bus, cbToPromise, constants, ILogger, Sequence } from '../helpers/';
+import { ITransportModule } from '../ioc/interfaces/modules/';
 import {
   BasePeerType,
   BlockLogic,
@@ -22,6 +23,7 @@ import { SchemaValid, ValidateSchema } from './apis/baseAPIClass';
 import { PeersModule } from './peers';
 import { SystemModule } from './system';
 import { TransactionsModule } from './transactions';
+
 // import {DebugLog} from '../helpers/decorators/debugLog';
 
 // tslint:disable-next-line
@@ -42,7 +44,7 @@ export type TransportLibrary = {
   config: AppConfig
 };
 
-export class TransportModule {
+export class TransportModule implements ITransportModule {
   public schema: z_schema;
   public headers: PeerHeaders;
   public modules: { peers: PeersModule, multisignatures: any, transactions: TransactionsModule, system: SystemModule };
