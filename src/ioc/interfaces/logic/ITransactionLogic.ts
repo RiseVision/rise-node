@@ -36,7 +36,7 @@ export interface ITransactionLogic {
    * @returns {Buffer}
    */
   getBytes(tx: IBaseTransaction<any>,
-           skipSignature: boolean, skipSecondSignature: boolean): Buffer;
+           skipSignature?: boolean, skipSecondSignature?: boolean): Buffer;
 
   ready(tx: IBaseTransaction<any>, sender: MemAccountsData): boolean;
 

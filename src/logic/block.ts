@@ -2,7 +2,7 @@ import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import z_schema from 'z-schema';
 import { BigNum, constants, Ed, IKeypair } from '../helpers/';
-import { IBlockLogic } from '../ioc/interfaces/logic/';
+import { IBlockLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
 import logicBlockSchema from '../schema/logic/block';
 import { BlockRewardLogic } from './blockReward';
 import { TransactionLogic } from './transaction';
@@ -129,9 +129,9 @@ export class BlockLogic implements IBlockLogic {
   ];
 
   private blockReward = new BlockRewardLogic();
-  private scope: { ed: Ed, schema: any /*ZSchema*/, transaction: TransactionLogic };
+  private scope: { ed: Ed, schema: z_schema, transaction: ITransactionLogic };
 
-  constructor(config: { ed: Ed, schema: z_schema, transaction: TransactionLogic }) {
+  constructor(config: { ed: Ed, schema: z_schema, transaction: ITransactionLogic }) {
     this.scope = {
       ed         : config.ed,
       schema     : config.schema,
@@ -237,7 +237,7 @@ export class BlockLogic implements IBlockLogic {
    * Verifies block hash, generator block public key and block signature
    * @param {BlockType} block
    */
-  public verifySignature(block: SignedBlockType) {
+  public verifySignature(block: SignedBlockType): boolean {
     // console.log(block);
     // const res = new OldImplementation(this.scope.ed, this.scope.schema, this.scope.transaction, null)
     //  .verifySignature(block);

@@ -1,6 +1,6 @@
 import { Bus, constants, ILogger, JobsQueue, promiseToCB, TransactionType } from '../helpers/';
 import { ITransactionPoolLogic } from '../ioc/interfaces/logic/';
-import { AccountsModule, LoaderModule, TransactionsModule } from '../modules/';
+import { IAccountsModule, ILoaderModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { AppConfig } from '../types/genericTypes';
 import { TransactionLogic } from './transaction';
 import { IBaseTransaction } from './transactions/';
@@ -101,8 +101,11 @@ export class TransactionPool implements ITransactionPoolLogic {
   private bundledInterval: number;
   private bundleLimit: number;
   private processed: number = 0;
-  // TODO: Describe these.
-  private modules: { accounts: AccountsModule, transactions: TransactionsModule, loader: LoaderModule };
+  private modules: {
+    accounts: IAccountsModule,
+    transactions: ITransactionsModule,
+    loader: ILoaderModule
+  };
 
   constructor(transactionLogic: TransactionLogic,
               bus: Bus, logger: ILogger, config: AppConfig) {
@@ -132,7 +135,7 @@ export class TransactionPool implements ITransactionPoolLogic {
     );
   }
 
-  public bind(accounts, transactions: TransactionsModule, loader) {
+  public bind(accounts: IAccountsModule, transactions: ITransactionsModule, loader: ILoaderModule) {
     this.modules = { accounts, transactions, loader };
   }
 

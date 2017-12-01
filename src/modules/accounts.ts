@@ -1,16 +1,22 @@
 import * as crypto from 'crypto';
 import * as z_schema from 'z-schema';
 import { Ed, emptyCB, ILogger, Sequence, TransactionType } from '../helpers/';
-import { AccountFilterData, AccountLogic, MemAccountsData, TransactionLogic } from '../logic/';
-import { VoteTransaction } from '../logic/transactions/';
-import { DelegatesModule } from './delegates';
-import { RoundsModule } from './rounds';
-import { SystemModule } from './system';
-import { TransactionsModule } from './transactions';
 import { IAccountsModule } from '../ioc/interfaces/modules';
+import { AccountFilterData, MemAccountsData} from '../logic/';
+import { VoteTransaction } from '../logic/transactions/';
+import { IAccountLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 
 // tslint:disable-next-line
-type AccountLibrary = { ed: Ed, logger: ILogger, schema: z_schema, balancesSequence: Sequence, logic: { account: AccountLogic, transaction: TransactionLogic } }
+type AccountLibrary = {
+  ed: Ed,
+  logger: ILogger,
+  schema: z_schema,
+  balancesSequence: Sequence,
+  logic: {
+    account: IAccountLogic,
+    transaction: ITransactionLogic
+  }
+}
 
 export class AccountsModule implements IAccountsModule {
   private voteAsset: VoteTransaction;

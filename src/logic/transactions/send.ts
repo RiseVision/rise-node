@@ -1,16 +1,20 @@
 import { TransactionType } from '../../helpers/';
-import { AccountsModule, RoundsModule, SystemModule } from '../../modules/';
+import { IAccountsModule, IRoundsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
 export class SendTransaction extends BaseTransactionType<void> {
-  public modules: { accounts: AccountsModule, rounds: RoundsModule, system: SystemModule };
+  public modules: {
+    accounts: IAccountsModule,
+    rounds: IRoundsModule,
+    system: ISystemModule
+  };
 
   constructor() {
     super(TransactionType.SEND);
   }
 
-  public bind(accounts: AccountsModule, rounds: any, system: any) {
+  public bind(accounts: IAccountsModule, rounds: IRoundsModule, system: ISystemModule) {
     this.modules = { accounts, rounds, system };
   }
 

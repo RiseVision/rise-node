@@ -3,27 +3,21 @@ import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
 import sql from '../../../sql/blocks';
 import { catchToLoggerAndRemapError, constants, ForkType, IKeypair, ILogger, Sequence, Slots } from '../../helpers/';
+import { IBlockLogic, IPeersLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
+import {
+  IAccountsModule, IBlocksModule, IBlocksModuleChain, IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify,
+  IDelegatesModule,
+  ILoaderModule, IRoundsModule, ITransactionsModule, ITransportModule
+} from '../../ioc/interfaces/modules/';
 import {
   BasePeerType,
-  BlockLogic,
   PeerLogic,
-  PeersLogic,
   SignedAndChainedBlockType,
   SignedBlockType,
-  TransactionLogic
 } from '../../logic/';
 import { IBaseTransaction } from '../../logic/transactions/';
 import schema from '../../schema/blocks';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
-
-import { AccountsModule } from '../accounts';
-import { BlocksModule } from '../blocks';
-import { DelegatesModule } from '../delegates';
-import { LoaderModule } from '../loader';
-import { RoundsModule } from '../rounds';
-import { TransactionsModule } from '../transactions';
-import { TransportModule } from '../transport';
-import { IBlocksModuleProcess } from '../../ioc/interfaces/modules/blocks/IBlocksModuleProcess';
 
 // tslint:disable-next-line interface-over-type-literal
 export type BlocksModuleProcessLibrary = {
@@ -34,21 +28,24 @@ export type BlocksModuleProcessLibrary = {
   logger: ILogger,
   genesisblock: SignedAndChainedBlockType
   logic: {
-    block: BlockLogic,
-    peers: PeersLogic,
-    transaction: TransactionLogic
+    block: IBlockLogic,
+    peers: IPeersLogic,
+    transaction: ITransactionLogic
   }
 };
 
 export class BlocksModuleProcess implements IBlocksModuleProcess {
   private modules: {
-    accounts: AccountsModule,
-    blocks: BlocksModule,
-    delegates: DelegatesModule,
-    loader: LoaderModule,
-    rounds: RoundsModule,
-    transactions: TransactionsModule,
-    transport: TransportModule,
+    accounts: IAccountsModule,
+    blocks: IBlocksModule,
+    blocksUtils: IBlocksModuleUtils,
+    blocksChain: IBlocksModuleChain,
+    blocksVerify: IBlocksModuleVerify,
+    delegates: IDelegatesModule,
+    loader: ILoaderModule,
+    rounds: IRoundsModule,
+    transactions: ITransactionsModule,
+    transport: ITransportModule,
   };
   private loaded: boolean = false;
 
@@ -69,7 +66,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
    */
   // FIXME VOid return for recoverChain
   public async getCommonBlock(peer: PeerLogic, height: number): Promise<{ id: string, previousBlock: string, height: number } | void> {
-    const { ids }              = await this.modules.blocks.utils.getIdSequence(height);
+    const { ids }              = await this.modules.blocksUtils.getIdSequence(height);
     const { body: commonResp } = await this.modules.transport
       .getFromPeer<{ common: { id: string, previousBlock: string, height: number } }>(peer, {
         api   : `/blocks/common?ids=${ids.join(',')}`,
@@ -78,7 +75,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     // FIXME: Need better checking here, is base on 'common' property enough?
     if (!commonResp.common) {
       if (this.modules.transport.poorConsensus) {
-        return this.modules.blocks.chain.recoverChain();
+        return this.modules.blocksChain.recoverChain();
       } else {
         throw new Error(`Chain comparison failed with peer ${peer.string} using ids: ${ids.join(', ')}`);
       }
@@ -99,7 +96,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     if (!prevBlockRows.length || !prevBlockRows[0].count) {
       // Block does not exist  - comparison failed.
       if (this.modules.transport.poorConsensus) {
-        return this.modules.blocks.chain.recoverChain();
+        return this.modules.blocksChain.recoverChain();
       } else {
         throw new Error(`Chain comparison failed with peer: ${
           peer.string} using block ${JSON.stringify(commonResp.common)}`);
@@ -123,7 +120,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     this.library.logger.debug('Loading blocks offset', { limit, offset, verify });
 
     return this.library.dbSequence.addAndPromise(async () => {
-      const blocks: SignedAndChainedBlockType[] = this.modules.blocks.utils.readDbRows(
+      const blocks: SignedAndChainedBlockType[] = this.modules.blocksUtils.readDbRows(
         await this.library.db.query(sql.loadBlocksOffset, params)
           .catch(catchToLoggerAndRemapError('Blocks#loadBlocksOffset error', this.library.logger))
       );
@@ -138,7 +135,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         if (verify && block.id !== this.library.genesisblock.id) {
           // Sanity check of the block, if values are coherent.
           // No access to database.
-          const check = await this.modules.blocks.verify.verifyBlock(block);
+          const check = await this.modules.blocksVerify.verifyBlock(block);
 
           if (!check.verified) {
             this.library.logger.error(`Block ${block.id} verification failed`, check.errors.join(', '));
@@ -148,13 +145,13 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         }
 
         if (block.id === this.library.genesisblock.id) {
-          await this.modules.blocks.chain.applyGenesisBlock(block);
+          await this.modules.blocksChain.applyGenesisBlock(block);
         } else {
           // Apply block - broadcast: false, saveBlock: false
           // FIXME: Looks like we are missing some validations here, because applyBlock is
           // different than processBlock used elesewhere
           // - that need to be checked and adjusted to be consistent
-          await this.modules.blocks.chain.applyBlock(block, false, false);
+          await this.modules.blocksChain.applyBlock(block, false, false);
         }
 
         this.modules.blocks.lastBlock = block;
@@ -188,13 +185,13 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       throw new Error('Received invalid blocks data');
     }
 
-    const blocks = this.modules.blocks.utils.readDbRows(blocksFromPeer.blocks);
+    const blocks = this.modules.blocksUtils.readDbRows(blocksFromPeer.blocks);
     for (const block of blocks) {
       if (this.modules.blocks.isCleaning) {
         return lastValidBlock;
       }
       try {
-        await this.modules.blocks.verify.processBlock(block, false, true);
+        await this.modules.blocksVerify.processBlock(block, false, true);
         lastValidBlock = block;
         this.library.logger.info(`Block ${block.id} loaded from ${peer.string}`, `height: ${block.height}`);
       } catch (err) {
@@ -247,7 +244,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     });
 
     // Call process block to save and broadcast the newly forged block!
-    return this.modules.blocks.verify.processBlock(block, true, true);
+    return this.modules.blocksVerify.processBlock(block, true, true);
   }
 
   public async onReceiveBlock(block: SignedBlockType) {
@@ -293,6 +290,9 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     this.modules = {
       accounts    : scope.accounts,
       blocks      : scope.blocks,
+      blocksChain : scope.blocksChain,
+      blocksUtils : scope.blocksUtils,
+      blocksVerify: scope.blocksVerify,
       delegates   : scope.delegates,
       loader      : scope.loader,
       rounds      : scope.rounds,
@@ -309,7 +309,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
    * @param {SignedBlockType} block
    * @return {Promise<any>}
    */
-  receiveBlock(block: SignedBlockType) {
+  private receiveBlock(block: SignedBlockType) {
     this.library.logger.info([
       'Received new block id:', block.id,
       'height:', block.height,
@@ -321,13 +321,13 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     // Update last receipt
     this.modules.blocks.lastReceipt.update();
     // Start block processing - broadcast: true, saveBlock: true
-    return this.modules.blocks.verify.processBlock(block, true, true);
+    return this.modules.blocksVerify.processBlock(block, true, true);
   }
 
   /**
    * Receive block detected as fork cause 1: Consecutive height but different previous block id
    */
-  async receiveForkOne(block: SignedBlockType, lastBlock: SignedBlockType) {
+  private async receiveForkOne(block: SignedBlockType, lastBlock: SignedBlockType) {
     const tmpBlock = _.clone(block);
 
     // Fork: Consecutive height but different previous block id
@@ -340,14 +340,14 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       this.library.logger.info('Last block and parent loses');
       try {
         const tmpBlockN = this.library.logic.block.objectNormalize(tmpBlock);
-        const check     = this.modules.blocks.verify.verifyReceipt(tmpBlockN);
+        const check     = this.modules.blocksVerify.verifyReceipt(tmpBlockN);
         if (!check.verified) {
           this.library.logger.error(`Block ${tmpBlockN.id} verification failed`, check.errors.join(', '));
           throw new Error(check.errors[0]);
         }
         // Delete last 2 blocks
-        await this.modules.blocks.chain.deleteLastBlock();
-        await this.modules.blocks.chain.deleteLastBlock();
+        await this.modules.blocksChain.deleteLastBlock();
+        await this.modules.blocksChain.deleteLastBlock();
       } catch (err) {
         this.library.logger.error('Fork recovery failed', err);
         throw err;
@@ -358,7 +358,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   /**
    * Receive block detected as fork cause 5: Same height and previous block id, but different block id
    */
-  async receiveForkFive(block: SignedBlockType, lastBlock: SignedBlockType) {
+  private async receiveForkFive(block: SignedBlockType, lastBlock: SignedBlockType) {
     const tmpBlock = _.clone(block);
 
     // Fork: Same height and previous block id, but different block id
@@ -378,14 +378,14 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         const tmpBlockN = this.library.logic.block.objectNormalize(tmpBlock);
 
         // verify receipt of block
-        const check = this.modules.blocks.verify.verifyReceipt(tmpBlockN);
+        const check = this.modules.blocksVerify.verifyReceipt(tmpBlockN);
         if (!check.verified) {
           this.library.logger.error(`Block ${tmpBlockN.id} verification failed`, check.errors.join(', '));
           throw new Error(check.errors[0]);
         }
 
         // delete previous block
-        await this.modules.blocks.chain.deleteLastBlock();
+        await this.modules.blocksChain.deleteLastBlock();
 
         // Process new block (again);
         await this.receiveBlock(block);

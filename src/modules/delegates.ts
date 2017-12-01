@@ -14,17 +14,14 @@ import {
   Slots,
   TransactionType
 } from '../helpers/';
-import { IDelegatesModule } from '../ioc/interfaces/modules';
+import {
+  IAccountsModule, IBlocksModule, IBlocksModuleProcess, IDelegatesModule, ILoaderModule,
+  IRoundsModule, ITransactionsModule, ITransportModule
+} from '../ioc/interfaces/modules';
 import { BlockRewardLogic, MemAccountsData, SignedBlockType, TransactionLogic } from '../logic/';
 import { RegisterDelegateTransaction } from '../logic/transactions/';
 import { AppConfig } from '../types/genericTypes';
 import { publicKey } from '../types/sanityTypes';
-import { AccountsModule } from './accounts';
-import { BlocksModule } from './blocks';
-import { LoaderModule } from './loader';
-import { RoundsModule } from './rounds';
-import { TransactionsModule } from './transactions';
-import { TransportModule } from './transport';
 // tslint:disable-next-line interface-over-type-literal
 export type DelegatesModuleLibrary = {
   logger: ILogger
@@ -47,18 +44,19 @@ export class DelegatesModule implements IDelegatesModule {
   private keypairs: { [k: string]: IKeypair } = {};
   private loaded: boolean                     = false;
   private modules: {
-    blocks: BlocksModule,
-    accounts: AccountsModule
-    rounds: RoundsModule,
-    loader: LoaderModule,
-    transport: TransportModule,
-    transactions: TransactionsModule,
+    blocks: IBlocksModule,
+    blocksProcess: IBlocksModuleProcess,
+    accounts: IAccountsModule
+    rounds: IRoundsModule,
+    loader: ILoaderModule,
+    transport: ITransportModule,
+    transactions: ITransactionsModule,
   };
 
   constructor(public library: DelegatesModuleLibrary) {
     this.delegateRegistrationTx = this.library.logic.transaction.attachAssetType(
       TransactionType.DELEGATE,
-      new RegisterDelegateTransaction({ schema: this.library.schema })
+      new RegisterDelegateTransaction({schema: this.library.schema})
     );
   }
 
@@ -104,7 +102,7 @@ export class DelegatesModule implements IDelegatesModule {
    */
   public async fork(block: SignedBlockType, cause: ForkType) {
     this.library.logger.info('Fork', {
-      block   : { id: block.id, timestamp: block.timestamp, height: block.height, previousBlock: block.previousBlock },
+      block   : {id: block.id, timestamp: block.timestamp, height: block.height, previousBlock: block.previousBlock},
       cause,
       delegate: block.generatorPublicKey,
     });
@@ -163,7 +161,7 @@ export class DelegatesModule implements IDelegatesModule {
 
     const delegates = await this.modules.accounts.getAccounts({
         isDelegate: 1,
-        sort      : { vote: -1, publicKey: 1 },
+        sort      : {vote: -1, publicKey: 1},
       },
       ['username', 'address', 'publicKey', 'vote', 'missedblocks', 'producedblocks']
     );
@@ -192,11 +190,11 @@ export class DelegatesModule implements IDelegatesModule {
 
       crunchedDelegates.push({
         ... delegates[i],
-        ... { rank, approval, productivity },
+        ... {rank, approval, productivity},
       });
     }
 
-    const orderBy = OrderBy(query.orderBy, { quoteField: false });
+    const orderBy = OrderBy(query.orderBy, {quoteField: false});
 
     if (orderBy.error) {
       throw new Error(orderBy.error);
@@ -228,12 +226,13 @@ export class DelegatesModule implements IDelegatesModule {
 
   public onBind(scope) {
     this.modules = {
-      accounts    : scope.accounts,
-      blocks      : scope.blocks,
-      loader      : scope.loader,
-      rounds      : scope.rounds,
-      transactions: scope.transactions,
-      transport   : scope.transport,
+      accounts     : scope.accounts,
+      blocks       : scope.blocks,
+      blocksProcess: scope.blocksProcess,
+      loader       : scope.loader,
+      rounds       : scope.rounds,
+      transactions : scope.transactions,
+      transport    : scope.transport,
       // delegates   : scope.delegates,
     };
 
@@ -271,7 +270,7 @@ export class DelegatesModule implements IDelegatesModule {
     const rows = await this.modules.accounts.getAccounts({
       isDelegate: 1,
       limit     : Slots.delegates,
-      sort      : { vote: -1, publicKey: 1 },
+      sort      : {vote: -1, publicKey: 1},
     }, ['publicKey']);
     return rows.map((r) => r.publicKey);
   }
@@ -345,14 +344,14 @@ export class DelegatesModule implements IDelegatesModule {
 
     await this.library.sequence.addAndPromise(async () => {
       // updates consensus.
-      await this.modules.transport.getPeers({ limit: constants.maxPeers });
+      await this.modules.transport.getPeers({limit: constants.maxPeers});
 
       if (this.modules.transport.poorConsensus) {
         throw new Error(`Inadequate broadhash consensus ${this.modules.transport.consensus} %`);
       }
 
       // ok lets generate, save and broadcast the block
-      await this.modules.blocks.process.generateBlock(blockData.keypair, blockData.time);
+      await this.modules.blocksProcess.generateBlock(blockData.keypair, blockData.time);
 
     })
       .catch(catchToLoggerAndRemapError('Failed to generate block within delegate slot', this.library.logger));
@@ -367,7 +366,7 @@ export class DelegatesModule implements IDelegatesModule {
    * @return {Promise<void>}
    */
   private async checkDelegates(pk: publicKey, votes: string[], state: 'confirmed' | 'unconfirmed') {
-    const account = await this.modules.accounts.getAccount({ publicKey: pk });
+    const account = await this.modules.accounts.getAccount({publicKey: pk});
 
     if (!account) {
       throw new Error('Account not found');
@@ -391,7 +390,7 @@ export class DelegatesModule implements IDelegatesModule {
 
       const curPK = vote.substr(1);
 
-      if (!this.library.schema.validate(curPK, { format: 'publicKey', type: 'string' })) {
+      if (!this.library.schema.validate(curPK, {format: 'publicKey', type: 'string'})) {
         throw new Error('Invalid public key');
       }
 
@@ -404,7 +403,7 @@ export class DelegatesModule implements IDelegatesModule {
 
       // check voted (or unvoted) is actually a delegate.
       // TODO: This can be optimized as it's only effective when "Adding" a vote.
-      const del = await this.modules.accounts.getAccount({ publicKey: curPK, isDelegate: 1 });
+      const del = await this.modules.accounts.getAccount({publicKey: curPK, isDelegate: 1});
       if (!del) {
         throw new Error('Delegate not found');
       }
@@ -430,7 +429,7 @@ export class DelegatesModule implements IDelegatesModule {
 
     for (const secret of secrets) {
       const keypair = this.library.ed.makeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
-      const account = await this.modules.accounts.getAccount({ publicKey: keypair.publicKey.toString('hex') });
+      const account = await this.modules.accounts.getAccount({publicKey: keypair.publicKey.toString('hex')});
       if (!account) {
         throw new Error(`Account with publicKey: ${keypair.publicKey.toString('hex')} not found`);
       }

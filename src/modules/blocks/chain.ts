@@ -2,13 +2,15 @@ import * as _ from 'lodash';
 import { IDatabase, ITask } from 'pg-promise';
 import sql from '../../../sql/blocks';
 import { Bus, catchToLoggerAndRemapError, ILogger, Inserts, Sequence, TransactionType } from '../../helpers/';
+import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import { IBlocksModuleChain } from '../../ioc/interfaces/modules';
-import { BlockLogic, SignedAndChainedBlockType, SignedBlockType, TransactionLogic } from '../../logic/';
+import { SignedAndChainedBlockType, SignedBlockType } from '../../logic/';
 import { IConfirmedTransaction } from '../../logic/transactions/';
 import { AccountsModule } from '../accounts';
 import { BlocksModule } from '../blocks';
 import { RoundsModule } from '../rounds';
 import { TransactionsModule } from '../transactions';
+
 
 // tslint:disable-next-line interface-over-type-literal
 export type BlocksModuleChainLibrary = {
@@ -18,8 +20,8 @@ export type BlocksModuleChainLibrary = {
   bus: Bus,
   balancesSequence: Sequence,
   logic: {
-    block: BlockLogic,
-    transaction: TransactionLogic
+    block: IBlockLogic,
+    transaction: ITransactionLogic
   }
 };
 

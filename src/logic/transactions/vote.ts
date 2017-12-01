@@ -1,7 +1,8 @@
+import * as z_schema from 'z-schema';
 import { constants, Diff, emptyCB, ILogger, TransactionType } from '../../helpers/';
-import { DelegatesModule, RoundsModule, SystemModule } from '../../modules/';
+import { IAccountLogic } from '../../ioc/interfaces/logic';
+import { IDelegatesModule, IRoundsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import voteSchema from '../../schema/logic/transactions/vote';
-import { AccountLogic } from '../account';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
@@ -11,18 +12,22 @@ export type VoteAsset = {
 };
 
 export class VoteTransaction extends BaseTransactionType<VoteAsset> {
-  public modules: { delegates: DelegatesModule, rounds: RoundsModule, system: SystemModule };
+  public modules: {
+    delegates: IDelegatesModule,
+    rounds: IRoundsModule,
+    system: ISystemModule
+  };
   private dbTable  = 'votes';
   private dbFields = [
     'votes',
     'transactionId',
   ];
 
-  constructor(private library: { logger: ILogger, schema: any, account: AccountLogic }) {
+  constructor(private library: { logger: ILogger, schema: z_schema, account: IAccountLogic }) {
     super(TransactionType.VOTE);
   }
 
-  public bind(delegates: any, rounds: any, system: any) {
+  public bind(delegates: IDelegatesModule, rounds: IRoundsModule, system: ISystemModule) {
     this.modules = { delegates, rounds, system };
   }
 

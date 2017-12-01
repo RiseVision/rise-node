@@ -1,17 +1,15 @@
 import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
 import { Bus, Ed, ILogger, Sequence, TransactionType } from '../helpers/';
-import { IMultisignaturesModule } from '../ioc/interfaces/modules';
+import { IAccountsModule, IMultisignaturesModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { AccountLogic, SignedAndChainedBlockType, TransactionLogic } from '../logic/';
 import { IBaseTransaction, MultisigAsset, MultiSignatureTransaction } from '../logic/transactions/';
-import { AccountsModule } from './accounts';
-import { TransactionsModule } from './transactions';
 
 export class MultisignaturesModule implements IMultisignaturesModule {
   private multiTx: MultiSignatureTransaction;
   private modules: {
-    transactions: TransactionsModule,
-    accounts: AccountsModule,
+    transactions: ITransactionsModule,
+    accounts: IAccountsModule,
   };
 
   constructor(public library: {

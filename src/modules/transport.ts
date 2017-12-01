@@ -3,13 +3,16 @@ import { IDatabase } from 'pg-promise';
 import * as popsicle from 'popsicle';
 import * as z_schema from 'z-schema';
 import { BigNum, Bus, cbToPromise, constants, ILogger, Sequence } from '../helpers/';
-import { ITransportModule } from '../ioc/interfaces/modules/';
+import {
+  IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule,
+  ITransportModule
+} from '../ioc/interfaces/modules/';
 import {
   BasePeerType,
   BlockLogic,
   BroadcasterLogic,
-  PeerLogic,
   PeerHeaders,
+  PeerLogic,
   PeersLogic,
   PeerState,
   PeerType,
@@ -20,9 +23,6 @@ import { IBaseTransaction } from '../logic/transactions/';
 import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
 import { SchemaValid, ValidateSchema } from './apis/baseAPIClass';
-import { PeersModule } from './peers';
-import { SystemModule } from './system';
-import { TransactionsModule } from './transactions';
 
 // import {DebugLog} from '../helpers/decorators/debugLog';
 
@@ -47,7 +47,12 @@ export type TransportLibrary = {
 export class TransportModule implements ITransportModule {
   public schema: z_schema;
   public headers: PeerHeaders;
-  public modules: { peers: PeersModule, multisignatures: any, transactions: TransactionsModule, system: SystemModule };
+  public modules: {
+    peers: IPeersModule,
+    multisignatures: IMultisignaturesModule,
+    transactions: ITransactionsModule,
+    system: ISystemModule
+  };
   private broadcaster: BroadcasterLogic;
   private loaded: boolean = false;
 
@@ -239,7 +244,7 @@ export class TransportModule implements ITransportModule {
   public async receiveSignature(@SchemaValid(schema.signature, 'Invalid signature body')
                                   signature: { transaction: string, signature: string }): Promise<void> {
     try {
-      await cbToPromise((cb) => this.modules.multisignatures.processSignature(signature));
+      await this.modules.multisignatures.processSignature(signature);
     } catch (e) {
       throw new Error(`Error processing signature: ${e.message || e}`);
     }

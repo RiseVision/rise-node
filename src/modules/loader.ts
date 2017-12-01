@@ -2,8 +2,14 @@ import { IDatabase } from 'pg-promise';
 import * as promiseRetry from 'promise-retry';
 import z_schema from 'z-schema';
 import sql from '../../sql/loader';
-import { Bus, cbToPromise, constants, ILogger, JobsQueue, Sequence } from '../helpers/';
-import { ILoaderModule } from '../ioc/interfaces/modules/';
+import { Bus, constants, ILogger, JobsQueue, Sequence } from '../helpers/';
+import {
+  IBlocksModule, IBlocksModuleChain, IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify, ILoaderModule,
+  IMultisignaturesModule,
+  IPeersModule,
+  IRoundsModule, ISystemModule,
+  ITransactionsModule, ITransportModule
+} from '../ioc/interfaces/modules/';
 import {
   AccountLogic,
   PeerLogic,
@@ -16,11 +22,6 @@ import {
 import { IBaseTransaction } from '../logic/transactions/';
 import loaderSchema from '../schema/loader';
 import { AppConfig } from '../types/genericTypes';
-import { BlocksModule } from './blocks';
-import { PeersModule } from './peers';
-import { RoundsModule } from './rounds';
-import { TransactionsModule } from './transactions';
-import { TransportModule } from './transport';
 import Timer = NodeJS.Timer;
 
 // tslint:disable-next-line
@@ -54,10 +55,17 @@ export class LoaderModule implements ILoaderModule {
   private syncInterval                            = 1000;
 
   private modules: {
-    blocks: BlocksModule,
-    rounds: RoundsModule, system: any, transactions: TransactionsModule, transport: TransportModule,
-    peers: PeersModule,
-    multisignatures: any
+    blocks: IBlocksModule,
+    blocksChain: IBlocksModuleChain,
+    blocksProcess: IBlocksModuleProcess,
+    blocksUtils: IBlocksModuleUtils,
+    blocksVerify: IBlocksModuleVerify,
+    rounds: IRoundsModule,
+    system: ISystemModule,
+    transactions: ITransactionsModule,
+    transport: ITransportModule,
+    peers: IPeersModule,
+    multisignatures: IMultisignaturesModule
   };
 
   constructor(public library: LoaderLibrary) {
@@ -70,14 +78,14 @@ export class LoaderModule implements ILoaderModule {
         this.network.height > 0 &&
         Math.abs(this.network.height - this.modules.blocks.lastBlock.height) === 1)
     ) {
-      const { peers } = await this.modules.peers.list({});
-      this.network    = this.findGoodPeers(peers);
+      const {peers} = await this.modules.peers.list({});
+      this.network  = this.findGoodPeers(peers);
     }
     return this.network;
   }
 
   public async gerRandomPeer(): Promise<PeerLogic> {
-    const { peers } = await this.getNework();
+    const {peers} = await this.getNework();
     return peers[Math.floor(Math.random() * peers.length)];
   }
 
@@ -91,6 +99,10 @@ export class LoaderModule implements ILoaderModule {
   public async onBind(modules: any) {
     this.modules = {
       blocks         : modules.blocks,
+      blocksChain    : modules.blocksChain,
+      blocksProcess  : modules.blocksProcess,
+      blocksUtils    : modules.blocksUtils,
+      blocksVerify   : modules.blocksVerify,
       multisignatures: modules.multisignatures,
       peers          : modules.peers,
       rounds         : modules.rounds,
@@ -111,7 +123,7 @@ export class LoaderModule implements ILoaderModule {
           } catch (e) {
             retry(e);
           }
-        }, { retries: this.retries });
+        }, {retries: this.retries});
       } catch (e) {
         this.library.logger.log('Unconfirmed transactions loader error', e);
       }
@@ -124,7 +136,7 @@ export class LoaderModule implements ILoaderModule {
           } catch (e) {
             retry(e);
           }
-        }, { retries: this.retries });
+        }, {retries: this.retries});
       } catch (e) {
         this.library.logger.log('Multisig pending transactions loader error', e);
       }
@@ -240,7 +252,7 @@ export class LoaderModule implements ILoaderModule {
       return this.load(blocksCount, limit, 'No delegates found');
     }
     try {
-      this.lastblock = await this.modules.blocks.utils.loadLastBlock();
+      this.lastblock = await this.modules.blocksUtils.loadLastBlock();
       this.library.logger.info('Blockchain ready');
       await this.library.bus.message('blockchainReady');
     } catch (err) {
@@ -264,7 +276,7 @@ export class LoaderModule implements ILoaderModule {
         if (count > 1) {
           this.library.logger.info('Rebuilding blockchain, current block height: ' + (offset + 1));
         }
-        const lastBlock = await this.modules.blocks.process.loadBlocksOffset(limitPerIteration, offset, true/*verify*/);
+        const lastBlock = await this.modules.blocksProcess.loadBlocksOffset(limitPerIteration, offset, true/*verify*/);
         offset          = offset + limitPerIteration;
         this.lastblock  = lastBlock;
       }
@@ -274,7 +286,7 @@ export class LoaderModule implements ILoaderModule {
       this.library.logger.error(err);
       if (err.block) {
         this.library.logger.error('Blockchain failed at: ' + err.block.height);
-        await this.modules.blocks.chain.deleteAfterBlock(err.block.id);
+        await this.modules.blocksChain.deleteAfterBlock(err.block.id);
         this.library.logger.error('Blockchain clipped');
         await this.library.bus.message('blockchainReady');
       }
@@ -383,7 +395,7 @@ export class LoaderModule implements ILoaderModule {
         if (lastBlock.height !== 1) {
           this.library.logger.info('Looking for common block with: ' + randomPeer.string);
           try {
-            const commonBlock = await this.modules.blocks.process.getCommonBlock(randomPeer, lastBlock.height);
+            const commonBlock = await this.modules.blocksProcess.getCommonBlock(randomPeer, lastBlock.height);
             if (!commonBlock) {
               this.library.logger.error(`Failed to find common block with: ${randomPeer.string}`);
               return retry(new Error('Failed to find common block'));
@@ -398,7 +410,7 @@ export class LoaderModule implements ILoaderModule {
         // Now that we know that peer is reliable we can sync blocks with him!!
         this.blocksToSync = randomPeer.height;
         try {
-          const lastValidBlock: SignedBlockType = await this.modules.blocks.process.loadBlocksFromPeer(randomPeer);
+          const lastValidBlock: SignedBlockType = await this.modules.blocksProcess.loadBlocksFromPeer(randomPeer);
 
           loaded = lastValidBlock.id === lastBlock.id;
         } catch (err) {
@@ -484,10 +496,10 @@ export class LoaderModule implements ILoaderModule {
         for (const multiSigTX of signatures) {
           for (const signature of  multiSigTX.signatures) {
             try {
-              await cbToPromise((cb) => this.modules.multisignatures.processSignature({
+              this.modules.multisignatures.processSignature({
                 signature,
                 transaction: multiSigTX.transaction,
-              }, cb));
+              });
             } catch (err) {
               this.library.logger.warn(`Cannot process multisig signature for ${multiSigTX.transaction} `, err);
             }

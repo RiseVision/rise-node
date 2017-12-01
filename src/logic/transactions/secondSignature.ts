@@ -1,8 +1,9 @@
+import * as z_schema from 'z-schema';
 import { ILogger, TransactionType } from '../../helpers/';
-import { AccountsModule, SystemModule } from '../../modules/';
 import secondSignatureSchema from '../../schema/logic/transactions/secondSignature';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
+import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
 // tslint:disable-next-line interface-over-type-literal
 export type SecondSignatureAsset = {
   signature: {
@@ -12,18 +13,21 @@ export type SecondSignatureAsset = {
 
 export class SecondSignatureTransaction extends BaseTransactionType<SecondSignatureAsset> {
 
-  public modules: { accounts: AccountsModule, system: SystemModule };
+  public modules: {
+    accounts: IAccountsModule,
+    system: ISystemModule
+  };
   private dbTable  = 'signatures';
   private dbFields = [
     'publicKey',
     'transactionId',
   ];
 
-  constructor(public library: { logger: ILogger, schema: any }) {
+  constructor(public library: { logger: ILogger, schema: z_schema }) {
     super(TransactionType.SIGNATURE);
   }
 
-  public bind(accounts: any, system: any) {
+  public bind(accounts: IAccountsModule, system: ISystemModule) {
     this.modules = { accounts, system };
   }
 

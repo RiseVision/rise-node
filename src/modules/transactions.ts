@@ -2,7 +2,7 @@ import * as _ from 'lodash';
 import { IDatabase } from 'pg-promise';
 import txSQL from '../../sql/logic/transactions';
 import { Bus, constants, Ed, ILogger, OrderBy, Sequence, TransactionType } from '../helpers/';
-import { ITransactionsModule } from '../ioc/interfaces/modules/';
+import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules/';
 import { SignedBlockType, TransactionLogic, TransactionPool } from '../logic/';
 import { IBaseTransaction, IConfirmedTransaction, SendTransaction } from '../logic/transactions/';
 import { AppConfig } from '../types/genericTypes';
@@ -26,7 +26,7 @@ export type TransactionLibrary = {
 };
 
 export class TransactionsModule implements ITransactionsModule {
-  public modules: { accounts: AccountsModule };
+  public modules: { accounts: IAccountsModule };
   private transactionPool: TransactionPool;
   private sendAsset: SendTransaction;
 
@@ -233,8 +233,8 @@ export class TransactionsModule implements ITransactionsModule {
     this.modules = {
       accounts: modules.accounts,
     };
-    this.transactionPool.bind(this.modules.accounts, this, modules.loader as LoaderModule);
-    this.sendAsset.bind(this.modules.accounts, modules.rounds, modules.system as SystemModule);
+    this.transactionPool.bind(this.modules.accounts, this, modules.loader);
+    this.sendAsset.bind(this.modules.accounts, modules.rounds, modules.system);
   }
 
   public async list(filter): Promise<{ count: number, transactions: Array<IConfirmedTransaction<any>> }> {

@@ -38,20 +38,4 @@ export interface IBlocksModuleProcess extends IModule {
 
   onReceiveBlock(block: SignedBlockType): Promise<any>;
 
-  /**
-   * called by onReceiveBlock. Will update receipt on blocks module and call processBlock on verify Submodule
-   * @param {SignedBlockType} block
-   * @return {Promise<any>}
-   */
-  receiveBlock(block: SignedBlockType): Promise<any>;
-
-  /**
-   * Receive block detected as fork cause 1: Consecutive height but different previous block id
-   */
-  receiveForkOne(block: SignedBlockType, lastBlock: SignedBlockType): Promise<void>;
-
-  /**
-   * Receive block detected as fork cause 5: Same height and previous block id, but different block id
-   */
-  receiveForkFive(block: SignedBlockType, lastBlock: SignedBlockType): Promise<void>;
 }

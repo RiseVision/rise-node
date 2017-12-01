@@ -1,0 +1,8 @@
+IoC rewiring ok
+ - modules
+    - accounts
+    - cache
+    - delegates
+    - loader
+    - multisignatures
+    - peers

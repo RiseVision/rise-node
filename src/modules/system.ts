@@ -4,9 +4,8 @@ import { IDatabase } from 'pg-promise';
 import * as semver from 'semver';
 import sqlSystem from '../../sql/system';
 import { constants, ILogger } from '../helpers/';
-import { ISystemModule } from '../ioc/interfaces/modules/';
-import { BlocksModule } from './blocks';
-import { TransportModule } from './transport';
+import { IBlocksModule, ISystemModule, ITransportModule } from '../ioc/interfaces/modules/';
+
 // tslint:disable-next-line
 type SystemLibrary = { logger: ILogger, db: IDatabase<any>, nonce: any, config: { version: string, port: number, nethash: string } }
 // tslint:disable-next-line
@@ -24,7 +23,7 @@ const rcRegExp = /[a-z]+$/;
 export class SystemModule implements ISystemModule {
   public minVersion: string;
   public headers: PeerHeaders;
-  public modules: { blocks: BlocksModule, transport: TransportModule };
+  public modules: { blocks: IBlocksModule, transport: ITransportModule };
 
   private lastMinVer: string;
   private minVersionChar: string;

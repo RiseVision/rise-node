@@ -9,19 +9,20 @@ import {
   logCatchRewrite,
   Sequence,
   TransactionType
+
 } from '../../helpers/';
-import { BlockLogic, SignedAndChainedBlockType, SignedBlockType, TransactionLogic } from '../../logic/';
+import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
+import { IBlocksModule, IBlocksModuleUtils } from '../../ioc/interfaces/modules/';
+import { SignedAndChainedBlockType, SignedBlockType } from '../../logic/';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
 import { publicKey } from '../../types/sanityTypes';
-import { BlocksModule } from '../blocks';
-import { IBlocksModuleUtils } from '../../ioc/interfaces/modules/blocks/IBlocksModuleUtils';
 
 // tslint:disable-next-line
 export type BlocksModuleUtilsLibrary = {
   logger: ILogger,
   logic: {
-    block: BlockLogic,
-    transaction: TransactionLogic,
+    block: IBlockLogic,
+    transaction: ITransactionLogic,
   },
   db: IDatabase<any>,
   dbSequence: Sequence,
@@ -30,7 +31,7 @@ export type BlocksModuleUtilsLibrary = {
 
 export class BlocksModuleUtils implements IBlocksModuleUtils {
   public loaded = false;
-  private modules: { blocks: BlocksModule };
+  private modules: { blocks: IBlocksModule };
 
   public constructor(public library: BlocksModuleUtilsLibrary) {
     this.library.logger.trace('Blocks->Utils: Submodule initialized');

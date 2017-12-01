@@ -1,10 +1,10 @@
 import * as ByteBuffer from 'bytebuffer';
+import * as z_schema from 'z-schema';
 import { constants, Diff, emptyCB, ILogger, TransactionType } from '../../helpers/';
-import { AccountsModule, RoundsModule, SystemModule } from '../../modules/';
+import { IAccountLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
+import { IAccountsModule, IRoundsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import multiSigSchema from '../../schema/logic/transactions/multisignature';
-import { AccountLogic } from '../account';
 import { SignedBlockType } from '../block';
-import { TransactionLogic } from '../transaction';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
 // tslint:disable-next-line interface-over-type-literal
@@ -18,7 +18,12 @@ export type MultisigAsset = {
 
 export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset> {
 
-  public modules: { accounts: AccountsModule, rounds: RoundsModule, sharedApi: any, system: SystemModule };
+  public modules: {
+    accounts: IAccountsModule,
+    rounds: IRoundsModule,
+    sharedApi: any,
+    system: ISystemModule
+  };
   private unconfirmedSignatures: { [name: string]: true };
   private dbTable  = 'multisignatures';
   private dbFields = [
@@ -29,13 +34,16 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
   ];
 
   constructor(public library: {
-    account: AccountLogic,
-    logger: ILogger, schema: any, io: SocketIO.Server, transaction: TransactionLogic
+    account: IAccountLogic,
+    logger: ILogger,
+    schema: z_schema,
+    io: SocketIO.Server,
+    transaction: ITransactionLogic
   }) {
     super(TransactionType.IN_TRANSFER);
   }
 
-  public bind(accounts: AccountsModule, rounds: any, sharedApi: any, system: any) {
+  public bind(accounts: IAccountsModule, rounds: IRoundsModule, sharedApi: any, system: ISystemModule) {
     this.modules = { accounts, rounds, sharedApi, system };
   }
 
@@ -105,7 +113,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         if (Array.isArray(tx.signatures)) {
           for (let i = 0; i < tx.signatures.length && !valid; i++) {
             if (key[0] === '-' || key === '-') {
-              valid = this.library.transaction.verifySignature(tx, key.substring(1), tx.signature[i]);
+              valid = this.library.transaction.verifySignature(tx, key.substring(1), tx.signature[i], false);
             }
           }
         }

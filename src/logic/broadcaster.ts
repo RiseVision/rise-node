@@ -2,34 +2,21 @@ import * as extend from 'extend';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
 import { constants, ILogger, JobsQueue, promiseToCB } from '../helpers/';
-import { IBroadcasterLogic } from '../ioc/interfaces/logic/';
-import { PeersModule, TransactionsModule, TransportModule } from '../modules/';
+import { IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
+import { IPeersModule, ITransactionsModule, ITransportModule } from '../ioc/interfaces/modules';
+import { AppConfig } from '../types/genericTypes';
 import { PeerType } from './peer';
-import { PeersLogic } from './peers';
-import { TransactionLogic } from './transaction';
 import { IBaseTransaction } from './transactions/';
 
 // tslint:disable interface-over-type-literal
-export type BroadcastsType = {
-  broadcastInterval: number;
-  broadcastLimit: number;
-  parallelLimit: number;
-  releaseLimit: number;
-  relayLimit: number;
-};
 
 type BroadcastLibrary = {
   logger: ILogger,
   logic: {
-    peers: PeersLogic,
-    transactions: TransactionLogic
+    peers: IPeersLogic,
+    transactions: ITransactionLogic
   },
-  config: {
-    broadcasts: BroadcastsType,
-    forging: {
-      force: boolean
-    }
-  }
+  config: AppConfig
 };
 
 export type BroadcastTaskOptions = {
@@ -47,10 +34,8 @@ export type BroadcastTask = {
 
 export class BroadcasterLogic implements IBroadcasterLogic {
   public queue: BroadcastTask[] = [];
-  public config: {
-    broadcasts: BroadcastsType,
-    peerLimit: number
-  };
+  public config: AppConfig;
+
   public consensus: number;
   // Broadcast routes
   public routes                 = [{
@@ -65,13 +50,15 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     path      : '/signatures',
   }];
 
-  public modules: { peers: PeersModule, transport: TransportModule, transactions: TransactionsModule };
+  public modules: {
+    peers: IPeersModule,
+    transport: ITransportModule,
+    transactions: ITransactionsModule
+  };
+  private peerLimit = constants.maxPeers;
 
   constructor(public library: BroadcastLibrary) {
-    this.config = {
-      broadcasts: library.config.broadcasts,
-      peerLimit : constants.maxPeers,
-    };
+    this.config = library.config;
 
     if (this.library.config.forging.force) {
       this.consensus = undefined;
@@ -97,7 +84,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   }
 
   public async getPeers(params: { limit?: number, broadhash?: string }): Promise<PeerType[]> {
-    params.limit     = params.limit || this.config.peerLimit;
+    params.limit     = params.limit || this.peerLimit;
     params.broadhash = params.broadhash || null;
 
     const originalLimit = params.limit;
@@ -121,7 +108,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
                          },
                          options: any): Promise<{ peer: PeerType[] }> {
 
-    params.limit     = params.limit || this.config.peerLimit;
+    params.limit     = params.limit || this.peerLimit;
     params.broadhash = params.broadhash || null;
 
     let peers = params.peers;
@@ -131,7 +118,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
 
     this.library.logger.debug('Begin broadcast', options);
 
-    if (params.limit === this.config.peerLimit) {
+    if (params.limit === this.peerLimit) {
       peers = peers.slice(0, this.config.broadcasts.broadcastLimit);
     }
 

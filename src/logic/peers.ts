@@ -1,14 +1,14 @@
 'use strict';
 import * as _ from 'lodash';
 import { ILogger } from '../helpers';
-import { IPeersLogic } from '../ioc/interfaces/logic/';
+import { IPeerLogic, IPeersLogic } from '../ioc/interfaces/logic/';
 import { PeersModule } from '../modules/';
 import { BasePeerType, PeerLogic, PeerState, PeerType } from './peer';
 
 export class PeersLogic implements IPeersLogic {
   private library: { logger: ILogger };
 
-  private peers: { [peerIdentifier: string]: PeerLogic } = {};
+  private peers: { [peerIdentifier: string]: IPeerLogic } = {};
 
   private modules: { peers: PeersModule };
 
@@ -16,7 +16,7 @@ export class PeersLogic implements IPeersLogic {
     this.library = {logger};
   }
 
-  public create(peer: BasePeerType): PeerLogic {
+  public create(peer: BasePeerType): IPeerLogic {
     if (!(peer instanceof PeerLogic)) {
       return new PeerLogic(peer);
     }
@@ -114,7 +114,7 @@ export class PeersLogic implements IPeersLogic {
   }
 
   public list(normalize: true): PeerType[];
-  public list(normalize: false): PeerLogic[];
+  public list(normalize: false): IPeerLogic[];
   public list(normalize: boolean) {
     return Object.keys(this.peers)
       .map((k) => this.peers[k])

@@ -1,12 +1,11 @@
 import { IDatabase, ITask } from 'pg-promise';
 import roundsSQL from '../../sql/logic/rounds';
 import { Bus, constants, ILogger, Slots } from '../helpers/';
-import { IRoundsModule } from '../ioc/interfaces/modules/';
+import { IAccountsModule, IDelegatesModule, IRoundsModule } from '../ioc/interfaces/modules/';
 import { RoundLogic, RoundLogicScope, SignedBlockType } from '../logic/';
 import { AppConfig } from '../types/genericTypes';
 import { address, publicKey } from '../types/sanityTypes';
 import { AccountsModule } from './accounts';
-import { DelegatesModule } from './delegates';
 
 // tslint:disable-next-line
 export type RoundsLibrary = {
@@ -21,7 +20,7 @@ export class RoundsModule implements IRoundsModule {
   private loaded: boolean  = false;
   private ticking: boolean = false;
 
-  private modules: { delegates: DelegatesModule, accounts: AccountsModule };
+  private modules: { delegates: IDelegatesModule, accounts: IAccountsModule };
 
   constructor(private library: RoundsLibrary) {
   }

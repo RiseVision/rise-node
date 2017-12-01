@@ -1,5 +1,6 @@
+import * as z_schema from 'z-schema';
 import { removeEmptyObjKeys, TransactionType } from '../../helpers/';
-import { AccountsModule, SystemModule } from '../../modules/';
+import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import delegateSchema from '../../schema/logic/transactions/delegate';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
@@ -15,14 +16,14 @@ export type DelegateAsset = {
 
 export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAsset> {
 
-  public modules: { accounts: AccountsModule, system: SystemModule };
+  public modules: { accounts: IAccountsModule, system: ISystemModule };
   private dbTable  = 'delegates';
   private dbFields = [
     'username',
     'transactionId',
   ];
 
-  constructor(public library: { schema: any }) {
+  constructor(public library: { schema: z_schema }) {
     super(TransactionType.DAPP);
   }
 

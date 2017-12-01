@@ -6,12 +6,11 @@ import * as shuffle from 'shuffle-array';
 import * as z_schema from 'z-schema';
 import peerSQL from '../../sql/peers';
 import { Bus, cbToPromise, constants, ILogger, JobsQueue } from '../helpers/';
-import { IPeersModule } from '../ioc/interfaces/modules/';
+import { IPeersModule, ISystemModule, ITransportModule } from '../ioc/interfaces/modules/';
 import { PeerLogic, PeersLogic, PeerState, PeerType } from '../logic/';
 import schema from '../schema/peers';
 import { AppConfig } from '../types/genericTypes';
 import { SystemModule } from './system';
-import { TransportModule } from './transport';
 
 const pgp = pgpCreator();
 
@@ -34,7 +33,7 @@ export type PeersLibrary = {
 export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip?: string, port?: number, state?: PeerState };
 
 export class PeersModule implements IPeersModule {
-  public modules: { transport: TransportModule, system: SystemModule };
+  public modules: { transport: ITransportModule, system: ISystemModule };
 
   constructor(public library: PeersLibrary) {
   }

@@ -1,9 +1,11 @@
 import * as ByteBuffer from 'bytebuffer';
+import { IDatabase } from 'pg-promise';
 import * as validUrl from 'valid-url';
+import * as z_schema from 'z-schema';
 import dappSql from '../../../sql/logic/transactions/dapps';
 import { ILogger, removeEmptyObjKeys, TransactionType } from '../../helpers/';
 import { DappCategory } from '../../helpers/dappCategories';
-import { SystemModule } from '../../modules/';
+import { ISystemModule } from '../../ioc/interfaces/modules';
 import dappSchema from '../../schema/logic/transactions/dapp';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
@@ -22,7 +24,7 @@ export type DappAsset = {
 
 export class DappTransaction extends BaseTransactionType<DappAsset> {
 
-  public modules: { system: SystemModule };
+  public modules: { system: ISystemModule };
   private unconfirmedNames: { [name: string]: true };
   private unconfirmedLinks: { [link: string]: true };
   private dbTable  = 'dapps';
@@ -37,7 +39,11 @@ export class DappTransaction extends BaseTransactionType<DappAsset> {
     'transactionId',
   ];
 
-  constructor(public library: { db: any, logger: ILogger, schema: any, network: any }) {
+  constructor(public library: {
+    db: IDatabase<any>,
+    logger: ILogger,
+    schema: z_schema,
+    io: SocketIO.Server }) {
     super(TransactionType.DAPP);
   }
 
@@ -243,7 +249,7 @@ export class DappTransaction extends BaseTransactionType<DappAsset> {
   }
 
   public afterSave(tx: IBaseTransaction<DappAsset>): Promise<void> {
-    this.library.network.io.sockets.emit('dapps/change', {});
+    this.library.io.sockets.emit('dapps/change', {});
     return Promise.resolve();
   }
 

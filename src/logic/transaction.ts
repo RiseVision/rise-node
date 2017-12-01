@@ -5,7 +5,7 @@ import z_schema from 'z-schema';
 import sql from '../../sql/logic/transactions';
 import { BigNum, constants, Ed, emptyCB, IKeypair, ILogger, Slots, TransactionType } from '../helpers/';
 import { ITransactionLogic } from '../ioc/interfaces/logic/';
-import { RoundsModule } from '../modules/';
+import { IRoundsModule } from '../ioc/interfaces/modules';
 import txSchema from '../schema/logic/transaction';
 import { AccountLogic, MemAccountsData } from './account';
 import { SignedAndChainedBlockType, SignedBlockType } from './block';
@@ -39,7 +39,7 @@ export class TransactionLogic implements ITransactionLogic {
     'signatures',
   ];
 
-  public modules: { rounds: RoundsModule };
+  public modules: { rounds: IRoundsModule };
 
   private types: { [k: number]: BaseTransactionType<any> } = {};
 

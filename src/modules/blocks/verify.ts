@@ -2,13 +2,12 @@ import * as crypto from 'crypto';
 import { IDatabase } from 'pg-promise';
 import sql from '../../../sql/blocks';
 import { constants, ForkType, ILogger, Slots } from '../../helpers/';
+import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import { IBlocksModuleVerify } from '../../ioc/interfaces/modules/';
 import {
-  BlockLogic,
   BlockRewardLogic,
   SignedAndChainedBlockType,
   SignedBlockType,
-  TransactionLogic
 } from '../../logic/';
 import { IConfirmedTransaction } from '../../logic/transactions/';
 import { AccountsModule } from '../accounts';
@@ -21,8 +20,8 @@ export type BlocksModuleVerifyLibrary = {
   logger: ILogger,
   db: IDatabase<any>,
   logic: {
-    block: BlockLogic,
-    transaction: TransactionLogic
+    block: IBlockLogic,
+    transaction: ITransactionLogic
   }
 };
 

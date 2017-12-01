@@ -1,6 +1,6 @@
 import dappsSQL from '../../../sql/logic/transactions/dapps';
 import {cbToPromise, ILogger, TransactionType} from '../../helpers/';
-import {AccountsModule, RoundsModule, SystemModule} from '../../modules/';
+import { IAccountsModule, IRoundsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import outTransferSchema from '../../schema/logic/transactions/outTransfer';
 import {AccountLogic} from '../account';
 import {SignedBlockType} from '../block';
@@ -15,7 +15,12 @@ export type OutTransferAsset = {
 };
 
 export class OutTransferTransaction extends BaseTransactionType<OutTransferAsset> {
-  public modules: { accounts: AccountsModule, dapps: any, rounds: RoundsModule, system: SystemModule };
+  public modules: {
+    accounts: IAccountsModule,
+    dapps: any,
+    rounds: IRoundsModule,
+    system: ISystemModule,
+  };
 
   private unconfirmedOutTransfers: { [txID: string]: true } = {};
   private dbTable                                           = 'outtransfer';

@@ -33,7 +33,7 @@ export interface ISystemModule extends IModule {
    * Gets private variable `nonce`
    * @return {nonce}
    */
-  getNonce(): void;
+  getNonce(): string;
 
   /**
    * Gets private variable `nethash` and compares with input param.

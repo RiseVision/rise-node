@@ -30,7 +30,7 @@ export interface IBlockLogic {
    * Verifies block hash, generator block public key and block signature
    * @param {BlockType} block
    */
-  verifySignature(block: SignedBlockType): void;
+  verifySignature(block: SignedBlockType): boolean;
 
   /**
    * Creates db object transaction to `blocks` table.

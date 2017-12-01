@@ -1,6 +1,6 @@
 import dappSql from '../../../sql/logic/transactions/dapps';
 import {cbToPromise, ILogger, TransactionType} from '../../helpers/';
-import {AccountsModule, RoundsModule, SystemModule} from '../../modules/';
+import { IAccountsModule, IRoundsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import inTransferSchema from '../../schema/logic/transactions/inTransfer';
 import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
@@ -14,7 +14,13 @@ export type InTransferAsset = {
 
 export class InTranferTransaction extends BaseTransactionType<InTransferAsset> {
 
-  public modules: { accounts: AccountsModule, rounds: RoundsModule, sharedApi: any, system: SystemModule };
+  public modules: {
+    accounts: IAccountsModule,
+    rounds: IRoundsModule,
+    sharedApi: any,
+    system: ISystemModule,
+  };
+
   private dbTable  = 'intransfer';
   private dbFields = [
     'dappId',
