@@ -4,7 +4,6 @@ import { MemAccountsData, SignedBlockType } from '../../../logic';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from '../../../logic/transactions';
 
 export interface ITransactionLogic {
-  bindModules(modules: { rounds: any }): void;
 
   attachAssetType<K, T extends BaseTransactionType<K>>(type: TransactionType, instance: T): T;
 

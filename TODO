@@ -21,6 +21,7 @@ digraph G {
                 peerLogic
                 blockLogic
                 peersLogic -> peerLogic;
+                blockRewardLogic
                 broadcasterLogic;
                 roundLogic;
                 transactionPool;
@@ -43,7 +44,6 @@ digraph G {
                 peersModule
                 transactionsModule
                 transportModule
-                transactionModule
                 roundsModule
                 systemModule
                 loaderModule
@@ -51,13 +51,47 @@ digraph G {
 	}
 	accountsModule -> accountLogic
         accountsModule -> transactionLogic
+
+        blocksChainModule -> roundsModule
+        blocksChainModule -> transactionsModule
+        blocksChainModule -> accountsModule
+        blocksChainModule -> blocksModule
+        blocksChainModule -> blockLogic
+        blocksChainModule -> transactionLogic
+
+        blocksProcessModule -> accountsModule
+        blocksProcessModule -> blocksModule
+        blocksProcessModule -> blocksUtilsModule
+        blocksProcessModule -> blocksChainModule
+        blocksProcessModule -> blocksVerifyModule
+        blocksProcessModule -> delegatesModule
+        blocksProcessModule -> loaderModule
+        blocksProcessModule -> roundsModule
+        blocksProcessModule -> transactionsModule
+        blocksProcessModule -> transportModule
+        blocksProcessModule -> blockLogic
+        blocksProcessModule -> peersLogic
+        blocksProcessModule -> transactionLogic
+
+        blocksUtilsModule -> blocksModule
+        blocksUtilsModule -> blockLogic
+        blocksUtilsModule -> transactionLogic
+
+        blocksVerifyModule -> blocksModule
+        blocksVerifyModule -> delegatesModule
+        blocksVerifyModule -> transactionsModule
+        blocksVerifyModule -> accountsModule
+        blocksVerifyModule -> blockRewardLogic
+        blocksVerifyModule -> blockLogic
+        blocksVerifyModule -> transactionLogic
+
         delegatesModule -> accountsModule;
         delegatesModule -> blocksModule;
         delegatesModule -> blocksProcessModule;
         delegatesModule -> roundsModule;
         delegatesModule -> loaderModule;
         delegatesModule -> transportModule;
-        delegatesModule -> transactionModule;
+        delegatesModule -> transactionsModule;
         delegatesModule -> transactionLogic;
 
         loaderModule -> blocksModule

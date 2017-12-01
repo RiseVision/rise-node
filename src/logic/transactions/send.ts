@@ -1,4 +1,5 @@
 import { TransactionType } from '../../helpers/';
+import { IRoundsLogic } from '../../ioc/interfaces/logic';
 import { IAccountsModule, IRoundsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
@@ -10,7 +11,7 @@ export class SendTransaction extends BaseTransactionType<void> {
     system: ISystemModule
   };
 
-  constructor() {
+  constructor(private library: { rounds: IRoundsLogic }) {
     super(TransactionType.SEND);
   }
 
@@ -41,7 +42,7 @@ export class SendTransaction extends BaseTransactionType<void> {
       address  : tx.recipientId,
       balance  : tx.amount,
       blockId  : block.id,
-      round    : this.modules.rounds.calcRound(block.height),
+      round    : this.library.rounds.calcRound(block.height),
       u_balance: tx.amount,
     })
       .then(() => void 0);
@@ -55,7 +56,7 @@ export class SendTransaction extends BaseTransactionType<void> {
       address  : tx.recipientId,
       balance  : -tx.amount,
       blockId  : block.id,
-      round    : this.modules.rounds.calcRound(block.height),
+      round    : this.library.rounds.calcRound(block.height),
       u_balance: -tx.amount,
     })
       .then(() => void 0);

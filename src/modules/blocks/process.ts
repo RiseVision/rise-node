@@ -3,7 +3,7 @@ import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
 import sql from '../../../sql/blocks';
 import { catchToLoggerAndRemapError, constants, ForkType, IKeypair, ILogger, Sequence, Slots } from '../../helpers/';
-import { IBlockLogic, IPeersLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
+import { IBlockLogic, IPeersLogic, IRoundsLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
   IAccountsModule, IBlocksModule, IBlocksModuleChain, IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify,
   IDelegatesModule,
@@ -31,6 +31,7 @@ export type BlocksModuleProcessLibrary = {
     block: IBlockLogic,
     peers: IPeersLogic,
     transaction: ITransactionLogic
+    rounds: IRoundsLogic
   }
 };
 
@@ -275,7 +276,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
           this.library.logger.warn([
             'Discarded block that does not match with current chain:', block.id,
             'height:', block.height,
-            'round:', this.modules.rounds.calcRound(block.height),
+            'round:', this.library.logic.rounds.calcRound(block.height),
             'slot:', Slots.getSlotNumber(block.timestamp),
             'generator:', block.generatorPublicKey,
           ].join(' '));
@@ -313,7 +314,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     this.library.logger.info([
       'Received new block id:', block.id,
       'height:', block.height,
-      'round:', this.modules.rounds.calcRound(block.height),
+      'round:', this.library.logic.rounds.calcRound(block.height),
       'slot:', Slots.getSlotNumber(block.timestamp),
       'reward:', block.reward,
     ].join(' '));

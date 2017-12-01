@@ -25,10 +25,18 @@ import {
   middleware,
   promiseToCB,
   Sequence,
+  Slots,
   z_schema,
 } from './helpers/';
 
-import { AccountLogic, BlockLogic, PeersLogic, SignedAndChainedBlockType, TransactionLogic, } from './logic/';
+import {
+  AccountLogic,
+  BlockLogic,
+  PeersLogic,
+  RoundsLogic,
+  SignedAndChainedBlockType,
+  TransactionLogic,
+} from './logic/';
 
 import {
   AccountsModule,
@@ -78,7 +86,7 @@ if (program.peers) {
     appConfig.peers.list = program.peers.split(',')
       .map((peer) => {
         const [ip, port] = peer.split(':');
-        return {ip, port: port || appConfig.port};
+        return { ip, port: port || appConfig.port };
       });
   } else {
     appConfig.peers.list = [];
@@ -143,14 +151,14 @@ async function boot(): Promise<() => Promise<void>> {
 
   applyExpressLimits(app, appConfig);
 
-  app.use(compression({level: 9}));
+  app.use(compression({ level: 9 }));
   app.use(cors());
   app.options('*', cors());
 
   app.use(express.static(`${__dirname}/public`));
-  app.use(bodyParser.raw({limit: '2mb'}));
-  app.use(bodyParser.urlencoded({extended: true, limit: '2mb', parameterLimit: 5000}));
-  app.use(bodyParser.json({limit: '2mb'}));
+  app.use(bodyParser.raw({ limit: '2mb' }));
+  app.use(bodyParser.urlencoded({ extended: true, limit: '2mb', parameterLimit: 5000 }));
+  app.use(bodyParser.json({ limit: '2mb' }));
   app.use(methodOverride());
 
   app.use(middleware.logClientConnections(logger));
@@ -180,30 +188,33 @@ async function boot(): Promise<() => Promise<void>> {
   );
 
   // Logic loading.
-  const accountLogic     = new AccountLogic({db, logger, schema});
+  const roundsLogic      = new RoundsLogic(Slots);
+  const accountLogic     = new AccountLogic({ db, logger, schema });
   const transactionLogic = new TransactionLogic({
     account     : accountLogic,
     db,
     ed,
     genesisblock: genesisBlock,
     logger,
+    rounds      : roundsLogic,
     schema,
   });
 
-  const blockLogic = new BlockLogic({ed, schema, transaction: transactionLogic});
+  const blockLogic = new BlockLogic({ ed, schema, transaction: transactionLogic });
 
-  const peersLogic = new Peers(logger);
+  const peersLogic = new PeersLogic(logger);
 
   const logic = {
     account    : accountLogic,
     peers      : peersLogic,
+    rounds     : roundsLogic,
     transaction: transactionLogic,
   };
   // modules.
 
   const modules = {
-    accounts: new AccountsModule({ed, balancesSequence, logger, schema, logic}),
-    blocks  : new BlocksModule({logger}),
+    accounts: new AccountsModule({ ed, balancesSequence, logger, schema, logic }),
+    blocks  : new BlocksModule({ logger }),
 
     blocksChain: new BlocksSubModules.BlocksModuleChain({
       balancesSequence,
@@ -217,7 +228,7 @@ async function boot(): Promise<() => Promise<void>> {
       },
     }),
 
-    blocksProcess: new BlocksSubModules.BlocksModuleProcess({
+    blocksProcess  : new BlocksSubModules.BlocksModuleProcess({
       db,
       dbSequence,
       genesisblock: genesisBlock,
@@ -225,12 +236,13 @@ async function boot(): Promise<() => Promise<void>> {
       logic       : {
         block      : blockLogic,
         peers      : peersLogic,
+        rounds     : roundsLogic,
         transaction: transactionLogic,
       },
       schema,
       sequence    : mainSequence,
     }),
-    blocksUtils  : new BlocksSubModules.BlocksModuleUtils({
+    blocksUtils    : new BlocksSubModules.BlocksModuleUtils({
       db,
       dbSequence,
       genesisblock: genesisBlock,
@@ -240,7 +252,7 @@ async function boot(): Promise<() => Promise<void>> {
         transaction: transactionLogic,
       },
     }),
-    blocksVerify : new BlocksSubModules.BlocksModuleVerify({
+    blocksVerify   : new BlocksSubModules.BlocksModuleVerify({
       db,
       logger,
       logic: {
@@ -248,14 +260,14 @@ async function boot(): Promise<() => Promise<void>> {
         transaction: transactionLogic,
       },
     }),
-    cache        : new Cache({logger}, theCache.client, theCache.cacheEnabled),
-    delegates    : new DelegatesModule({
+    cache          : new Cache({ logger }, theCache.client, theCache.cacheEnabled),
+    delegates      : new DelegatesModule({
       balancesSequence,
       config          : appConfig,
       db, ed, io, logger, logic,
       schema, sequence: mainSequence,
     }),
-    loader       : new LoaderModule({
+    loader         : new LoaderModule({
       balancesSequence,
       bus,
       config      : appConfig,
@@ -275,29 +287,30 @@ async function boot(): Promise<() => Promise<void>> {
       genesisblock: genesisBlock,
       io,
       logger,
-      logic: { account: accountLogic, transaction: transactionLogic},
+      logic       : { account: accountLogic, transaction: transactionLogic },
       schema,
     }),
-    peers        : new PeersModule({
+    peers          : new PeersModule({
       build : versionBuild,
       bus,
       config: appConfig,
       db,
       lastCommit,
       logger,
-      logic : {peers: peersLogic},
+      logic : { peers: peersLogic },
       nonce,
       schema,
     }),
-    rounds       : new RoundsModule({
+    rounds         : new RoundsModule({
       bus,
       config: appConfig,
       db,
       io,
       logger,
+      logic,
     }),
-    system       : new SystemModule({db, config: appConfig, logger, nonce}),
-    transactions : new TransactionsModule({
+    system         : new SystemModule({ db, config: appConfig, logger, nonce }),
+    transactions   : new TransactionsModule({
       balancesSequence,
       bus,
       config      : appConfig,
@@ -305,10 +318,10 @@ async function boot(): Promise<() => Promise<void>> {
       ed,
       genesisblock: genesisBlock,
       logger,
-      logic       : {transaction: transactionLogic},
+      logic       : { transaction: transactionLogic },
       schema,
     }),
-    transport    : new TransportModule({
+    transport      : new TransportModule({
       balancesSequence, bus,
       config: appConfig,
       db, io, logger,
@@ -330,7 +343,7 @@ async function boot(): Promise<() => Promise<void>> {
   bus.modules = modules;
   await bus.message('bind', modules);
 
-  transactionLogic.bindModules(modules);
+  // transactionLogic.bindModules(modules);
   peersLogic.bindModules(modules);
 
   // listen http
@@ -375,6 +388,6 @@ boot()
     //  logger.fatal('System error', {message: err.message, stack: err.stack});
     // });
     exitHook.unhandledRejectionHandler((err) => {
-      logger.fatal('Unhandled Promise rejection', {message: err.message, stack: err.stack});
+      logger.fatal('Unhandled Promise rejection', { message: err.message, stack: err.stack });
     });
   });

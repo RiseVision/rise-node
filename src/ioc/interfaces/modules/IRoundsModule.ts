@@ -12,17 +12,6 @@ export interface IRoundsModule extends IModule {
   setSnapshotRounds(rounds: number): void;
 
   /**
-   * Return round calculated given the blockheight
-   * @return {number}
-   */
-  calcRound(height: number): number;
-
-  /**
-   * Gets inclusive range of round from given height
-   */
-  heightFromRound(round: number): { first: number, last: number };
-
-  /**
    * Deletes specific round from mem_rounds table
    */
   flush(round: number): Promise<void>;
@@ -35,4 +24,4 @@ export interface IRoundsModule extends IModule {
   backwardTick(block: SignedBlockType, previousBlock: SignedBlockType): Promise<void>;
 
   tick(block: SignedBlockType): Promise<void>;
-};
+}

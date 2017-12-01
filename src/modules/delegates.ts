@@ -14,11 +14,12 @@ import {
   Slots,
   TransactionType
 } from '../helpers/';
+import { IRoundsLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
   IAccountsModule, IBlocksModule, IBlocksModuleProcess, IDelegatesModule, ILoaderModule,
   IRoundsModule, ITransactionsModule, ITransportModule
 } from '../ioc/interfaces/modules';
-import { BlockRewardLogic, MemAccountsData, SignedBlockType, TransactionLogic } from '../logic/';
+import { BlockRewardLogic, MemAccountsData, SignedBlockType } from '../logic/';
 import { RegisterDelegateTransaction } from '../logic/transactions/';
 import { AppConfig } from '../types/genericTypes';
 import { publicKey } from '../types/sanityTypes';
@@ -32,7 +33,8 @@ export type DelegatesModuleLibrary = {
   schema: any
   balancesSequence: Sequence,
   logic: {
-    transaction: TransactionLogic
+    transaction: ITransactionLogic,
+    rounds: IRoundsLogic
   },
   config: AppConfig
 };
@@ -127,7 +129,7 @@ export class DelegatesModule implements IDelegatesModule {
    */
   public async generateDelegateList(height: number): Promise<publicKey[]> {
     const pkeys      = await this.getKeysSortByVote();
-    const seedSource = this.modules.rounds.calcRound(height).toString();
+    const seedSource = this.library.logic.rounds.calcRound(height).toString();
     let currentSeed  = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
 
     // Shuffle public keys.

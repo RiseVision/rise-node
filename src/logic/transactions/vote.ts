@@ -1,7 +1,7 @@
 import * as z_schema from 'z-schema';
 import { constants, Diff, emptyCB, ILogger, TransactionType } from '../../helpers/';
-import { IAccountLogic } from '../../ioc/interfaces/logic';
-import { IDelegatesModule, IRoundsModule, ISystemModule } from '../../ioc/interfaces/modules';
+import { IAccountLogic, IRoundsLogic } from '../../ioc/interfaces/logic';
+import { IDelegatesModule, ISystemModule } from '../../ioc/interfaces/modules';
 import voteSchema from '../../schema/logic/transactions/vote';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
@@ -14,7 +14,6 @@ export type VoteAsset = {
 export class VoteTransaction extends BaseTransactionType<VoteAsset> {
   public modules: {
     delegates: IDelegatesModule,
-    rounds: IRoundsModule,
     system: ISystemModule
   };
   private dbTable  = 'votes';
@@ -23,12 +22,12 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
     'transactionId',
   ];
 
-  constructor(private library: { logger: ILogger, schema: z_schema, account: IAccountLogic }) {
+  constructor(private library: { logger: ILogger, rounds: IRoundsLogic, schema: z_schema, account: IAccountLogic }) {
     super(TransactionType.VOTE);
   }
 
-  public bind(delegates: IDelegatesModule, rounds: IRoundsModule, system: ISystemModule) {
-    this.modules = { delegates, rounds, system };
+  public bind(delegates: IDelegatesModule, system: ISystemModule) {
+    this.modules = { delegates, system };
   }
 
   public calculateFee(tx: IBaseTransaction<VoteAsset>, sender: any, height: number): number {
@@ -79,7 +78,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
     return this.library.account.merge(sender.address, {
       blockId  : block.id,
       delegates: tx.asset.votes,
-      round    : this.modules.rounds.calcRound(block.height),
+      round    : this.library.rounds.calcRound(block.height),
     }, emptyCB);
   }
 
@@ -89,7 +88,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
     return this.library.account.merge(sender.address, {
       blockId  : block.id,
       delegates: invertedVotes,
-      round    : this.modules.rounds.calcRound(block.height),
+      round    : this.library.rounds.calcRound(block.height),
     }, emptyCB);
   }
 

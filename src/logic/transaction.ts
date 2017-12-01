@@ -4,7 +4,7 @@ import * as crypto from 'crypto';
 import z_schema from 'z-schema';
 import sql from '../../sql/logic/transactions';
 import { BigNum, constants, Ed, emptyCB, IKeypair, ILogger, Slots, TransactionType } from '../helpers/';
-import { ITransactionLogic } from '../ioc/interfaces/logic/';
+import { IRoundsLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
 import { IRoundsModule } from '../ioc/interfaces/modules';
 import txSchema from '../schema/logic/transaction';
 import { AccountLogic, MemAccountsData } from './account';
@@ -18,6 +18,7 @@ export type TransactionLogicScope = {
   schema: z_schema,
   genesisblock: SignedAndChainedBlockType,
   account: AccountLogic,
+  rounds: IRoundsLogic,
   logger: ILogger
 };
 
@@ -39,15 +40,9 @@ export class TransactionLogic implements ITransactionLogic {
     'signatures',
   ];
 
-  public modules: { rounds: IRoundsModule };
-
   private types: { [k: number]: BaseTransactionType<any> } = {};
 
   constructor(public scope: TransactionLogicScope) {
-  }
-
-  public bindModules(modules: { rounds: any }) {
-    this.modules = modules;
   }
 
   public attachAssetType<K, T extends BaseTransactionType<K>>(type: TransactionType, instance: T): T {
@@ -416,7 +411,7 @@ export class TransactionLogic implements ITransactionLogic {
     this.scope.logger.trace('Logic/Transaction->apply', {
       balance: -amountNumber,
       blockId: block.id,
-      round  : this.modules.rounds.calcRound(block.height),
+      round  : this.scope.rounds.calcRound(block.height),
       sender : sender.address,
     });
     await this.scope.account.merge(
@@ -424,7 +419,7 @@ export class TransactionLogic implements ITransactionLogic {
       {
         balance: -amountNumber,
         blockId: block.id,
-        round  : this.modules.rounds.calcRound(block.height),
+        round  : this.scope.rounds.calcRound(block.height),
       } as any, // TODO: round is not defined in typescript definition. Possible bug?
       // tslint:disable-next-line no-empty
       () => {
@@ -440,7 +435,7 @@ export class TransactionLogic implements ITransactionLogic {
         {
           balance: amountNumber,
           blockId: block.id,
-          round  : this.modules.rounds.calcRound(block.height),
+          round  : this.scope.rounds.calcRound(block.height),
         },
         // tslint:disable-next-line no-empty
         () => {
@@ -463,7 +458,7 @@ export class TransactionLogic implements ITransactionLogic {
     this.scope.logger.trace('Logic/Transaction->undo', {
       balance: amount,
       blockId: block.id,
-      round  : this.modules.rounds.calcRound(block.height),
+      round  : this.scope.rounds.calcRound(block.height),
       sender : sender.address,
     });
     const mergedSender = await this.scope.account.merge(
@@ -471,7 +466,7 @@ export class TransactionLogic implements ITransactionLogic {
       {
         balance: amount,
         blockId: block.id,
-        round  : this.modules.rounds.calcRound(block.height),
+        round  : this.scope.rounds.calcRound(block.height),
       },
       emptyCB
     );
@@ -485,7 +480,7 @@ export class TransactionLogic implements ITransactionLogic {
         {
           balance: -amount,
           blockId: block.id,
-          round  : this.modules.rounds.calcRound(block.height),
+          round  : this.scope.rounds.calcRound(block.height),
         },
         emptyCB
       );

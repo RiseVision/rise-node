@@ -4,6 +4,8 @@ import { IAccountsModule, IRoundsModule, ISystemModule } from '../../ioc/interfa
 import inTransferSchema from '../../schema/logic/transactions/inTransfer';
 import {SignedBlockType} from '../block';
 import {BaseTransactionType, IBaseTransaction, IConfirmedTransaction} from './baseTransactionType';
+import { IDatabase } from 'pg-promise';
+import { IRoundsLogic } from '../../ioc/interfaces/logic';
 
 // tslint:disable-next-line interface-over-type-literal
 export type InTransferAsset = {
@@ -16,7 +18,6 @@ export class InTranferTransaction extends BaseTransactionType<InTransferAsset> {
 
   public modules: {
     accounts: IAccountsModule,
-    rounds: IRoundsModule,
     sharedApi: any,
     system: ISystemModule,
   };
@@ -27,12 +28,12 @@ export class InTranferTransaction extends BaseTransactionType<InTransferAsset> {
     'transactionId',
   ];
 
-  constructor(public library: { db: any, logger: ILogger, schema: any, network: any }) {
+  constructor(public library: { db: IDatabase<any>, rounds: IRoundsLogic, logger: ILogger, schema: any, network: any }) {
     super(TransactionType.IN_TRANSFER);
   }
 
-  public bind(accounts: any, rounds: any, sharedApi: any, system: any) {
-    this.modules = { accounts, rounds, sharedApi, system };
+  public bind(accounts: any, sharedApi: any, system: any) {
+    this.modules = { accounts, sharedApi, system };
   }
 
   public calculateFee(tx: IBaseTransaction<InTransferAsset>, sender: any, height: number): number {
@@ -75,7 +76,7 @@ export class InTranferTransaction extends BaseTransactionType<InTransferAsset> {
           address  : res.authorId,
           balance  : tx.amount,
           blockId  : block.id,
-          round    : this.modules.rounds.calcRound(block.height),
+          round    : this.library.rounds.calcRound(block.height),
           u_balance: tx.amount,
         })
       )
@@ -89,7 +90,7 @@ export class InTranferTransaction extends BaseTransactionType<InTransferAsset> {
           address  : res.authorId,
           balance  : -tx.amount,
           blockId  : block.id,
-          round    : this.modules.rounds.calcRound(block.height),
+          round    : this.library.rounds.calcRound(block.height),
           u_balance: -tx.amount,
         }
       ))

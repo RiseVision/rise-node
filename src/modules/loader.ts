@@ -3,21 +3,20 @@ import * as promiseRetry from 'promise-retry';
 import z_schema from 'z-schema';
 import sql from '../../sql/loader';
 import { Bus, constants, ILogger, JobsQueue, Sequence } from '../helpers/';
+import { IAccountLogic, IPeersLogic, IRoundsLogic, ITransactionLogic } from '../ioc/interfaces/logic';
+
 import {
   IBlocksModule, IBlocksModuleChain, IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify, ILoaderModule,
   IMultisignaturesModule,
-  IPeersModule,
-  IRoundsModule, ISystemModule,
+  IPeersModule, IRoundsModule,
+  ISystemModule,
   ITransactionsModule, ITransportModule
 } from '../ioc/interfaces/modules/';
 import {
-  AccountLogic,
   PeerLogic,
-  PeersLogic,
   PeerType,
   SignedAndChainedBlockType,
   SignedBlockType,
-  TransactionLogic
 } from '../logic/';
 import { IBaseTransaction } from '../logic/transactions/';
 import loaderSchema from '../schema/loader';
@@ -35,9 +34,10 @@ export type LoaderLibrary = {
   genesisblock: SignedAndChainedBlockType;
   balancesSequence: Sequence;
   logic: {
-    transaction: TransactionLogic;
-    account: AccountLogic;
-    peers: PeersLogic
+    transaction: ITransactionLogic;
+    account: IAccountLogic;
+    peers: IPeersLogic
+    rounds: IRoundsLogic
   },
   config: AppConfig
 };
@@ -202,7 +202,7 @@ export class LoaderModule implements ILoaderModule {
       this.library.logger.info('Genesis block matches with database');
     }
 
-    const round = this.modules.rounds.calcRound(blocksCount);
+    const round = this.library.logic.rounds.calcRound(blocksCount);
 
     // Check if we are in verifySnapshot mode.
     if (this.library.config.loading.snapshot) {

@@ -1,6 +1,7 @@
 import { IDatabase, ITask } from 'pg-promise';
 import roundsSQL from '../../sql/logic/rounds';
 import { Bus, constants, ILogger, Slots } from '../helpers/';
+import { IRoundsLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule, IDelegatesModule, IRoundsModule } from '../ioc/interfaces/modules/';
 import { RoundLogic, RoundLogicScope, SignedBlockType } from '../logic/';
 import { AppConfig } from '../types/genericTypes';
@@ -14,6 +15,9 @@ export type RoundsLibrary = {
   bus: Bus,
   io: SocketIO.Server,
   config: AppConfig
+  logic: {
+    rounds: IRoundsLogic
+  }
 };
 
 export class RoundsModule implements IRoundsModule {
@@ -58,24 +62,6 @@ export class RoundsModule implements IRoundsModule {
    */
   public setSnapshotRounds(rounds: number) {
     this.library.config.loading.snapshot = rounds;
-  }
-
-  /**
-   * Return round calculated given the blockheight
-   * @return {number}
-   */
-  public calcRound(height: number) {
-    return Math.ceil(height / Slots.delegates);
-  }
-
-  /**
-   * Gets inclusive range of round from given height
-   */
-  public heightFromRound(round: number): { first: number, last: number } {
-    return {
-      first: round * Slots.delegates + 1,
-      last : (round + 1) * Slots.delegates,
-    };
   }
 
   /**
@@ -165,8 +151,8 @@ export class RoundsModule implements IRoundsModule {
                           backwards: boolean,
                           txGenerator: (ls: RoundLogicScope) => (t: ITask<any>) => Promise<any>,
                           afterTxPromise: () => Promise<any> = () => Promise.resolve(null)) {
-    const round     = this.calcRound(block.height);
-    const nextRound = this.calcRound(block.height + 1);
+    const round     = this.library.logic.rounds.calcRound(block.height);
+    const nextRound = this.library.logic.rounds.calcRound(block.height + 1);
 
     const finishRound = (
       (nextRound !== round) || (block.height === 1 || block.height === 101)
@@ -204,7 +190,7 @@ export class RoundsModule implements IRoundsModule {
    */
   private async getOutsiders(round: number, roundDelegates: publicKey[]): Promise<address[]> {
 
-    const { last: height }  = this.heightFromRound(round);
+    const height  = this.library.logic.rounds.lastInRound(round);
     const originalDelegates = await this.modules.delegates.generateDelegateList(height);
 
     return originalDelegates

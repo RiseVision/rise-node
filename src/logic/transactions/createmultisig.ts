@@ -1,7 +1,7 @@
 import * as ByteBuffer from 'bytebuffer';
 import * as z_schema from 'z-schema';
 import { constants, Diff, emptyCB, ILogger, TransactionType } from '../../helpers/';
-import { IAccountLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
+import { IAccountLogic, IRoundsLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import { IAccountsModule, IRoundsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import multiSigSchema from '../../schema/logic/transactions/multisignature';
 import { SignedBlockType } from '../block';
@@ -20,7 +20,6 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
 
   public modules: {
     accounts: IAccountsModule,
-    rounds: IRoundsModule,
     sharedApi: any,
     system: ISystemModule
   };
@@ -39,12 +38,13 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     schema: z_schema,
     io: SocketIO.Server,
     transaction: ITransactionLogic
+    roundsLogic: IRoundsLogic
   }) {
     super(TransactionType.IN_TRANSFER);
   }
 
-  public bind(accounts: IAccountsModule, rounds: IRoundsModule, sharedApi: any, system: ISystemModule) {
-    this.modules = { accounts, rounds, sharedApi, system };
+  public bind(accounts: IAccountsModule, sharedApi: any, system: ISystemModule) {
+    this.modules = { accounts, sharedApi, system };
   }
 
   public calculateFee(tx: IBaseTransaction<MultisigAsset>, sender: any, height: number): number {
@@ -160,7 +160,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         multilifetime  : tx.asset.multisignature.lifetime,
         multimin       : tx.asset.multisignature.min,
         multisignatures: tx.asset.multisignature.keysgroup,
-        round          : this.modules.rounds.calcRound(block.height),
+        round          : this.library.roundsLogic.calcRound(block.height),
       },
       emptyCB
     );
@@ -185,7 +185,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         multilifetime  : -tx.asset.multisignature.lifetime,
         multimin       : -tx.asset.multisignature.min,
         multisignatures: multiInvert,
-        round          : this.modules.rounds.calcRound(block.height),
+        round          : this.library.roundsLogic.calcRound(block.height),
       },
       emptyCB
     );
