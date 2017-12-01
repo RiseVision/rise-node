@@ -4,6 +4,7 @@ import roundSQL from '../../sql/logic/rounds';
 import { ILogger, RoundChanges } from '../helpers/';
 import { IRoundLogic } from '../ioc/interfaces/logic/';
 import { address, publicKey } from '../types/sanityTypes';
+import { IAccountsModule } from '../ioc/interfaces/modules';
 
 // tslint:disable-next-line
 export type RoundLogicScope = {
@@ -19,7 +20,7 @@ export type RoundLogicScope = {
     logger: ILogger
   },
   modules: {
-    accounts: any;
+    accounts: IAccountsModule;
   }
   block: {
     generatorPublicKey: publicKey;
@@ -58,7 +59,7 @@ export class RoundLogic implements IRoundLogic {
       producedblocks: (this.scope.backwards ? -1 : 1),
       publicKey     : this.scope.block.generatorPublicKey,
       round         : this.scope.round,
-    });
+    }).then(() => void 0);
   }
 
   /**

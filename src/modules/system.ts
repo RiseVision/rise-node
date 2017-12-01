@@ -7,7 +7,7 @@ import { constants, ILogger } from '../helpers/';
 import { IBlocksModule, ISystemModule, ITransportModule } from '../ioc/interfaces/modules/';
 
 // tslint:disable-next-line
-type SystemLibrary = { logger: ILogger, db: IDatabase<any>, nonce: any, config: { version: string, port: number, nethash: string } }
+type SystemLibrary = { logger: ILogger, db: IDatabase<any>, nonce: string, config: { version: string, port: number, nethash: string } }
 // tslint:disable-next-line
 type PeerHeaders = {
   os: string;

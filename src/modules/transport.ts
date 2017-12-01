@@ -58,12 +58,7 @@ export class TransportModule implements ITransportModule {
 
   constructor(public library: TransportLibrary) {
     this.broadcaster = new BroadcasterLogic({
-      config: {
-        broadcasts: this.library.config.broadcasts,
-        forging   : {
-          force: this.library.config.forging.force,
-        },
-      },
+      config: this.library.config,
       logger: this.library.logger,
       logic : {
         peers       : this.library.logic.peers,

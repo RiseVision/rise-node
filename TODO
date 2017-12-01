@@ -6,3 +6,112 @@ IoC rewiring ok
     - loader
     - multisignatures
     - peers
+
+
+Dependency chart http://www.webgraphviz.com/
+```
+digraph G {
+
+	subgraph cluster_0 {
+		style=filled;
+		color=lightgrey;
+		node [style=filled,color=white];
+		accountLogic;
+                transactionLogic;
+                peerLogic
+                blockLogic
+                peersLogic -> peerLogic;
+                broadcasterLogic;
+                roundLogic;
+                transactionPool;
+		label = "logic";
+	}
+
+	subgraph cluster_1 {
+		node [style=filled];
+		label = "modules";
+                accountsModule
+                blocksModule
+                blocksProcessModule
+                blocksChainModule
+                blocksUtilsModule
+                blocksVerifyModule
+                cacheModule
+                delegatesModule
+                delegatesModule
+                multisignaturesModule
+                peersModule
+                transactionsModule
+                transportModule
+                transactionModule
+                roundsModule
+                systemModule
+                loaderModule
+		color=blue
+	}
+	accountsModule -> accountLogic
+        accountsModule -> transactionLogic
+        delegatesModule -> accountsModule;
+        delegatesModule -> blocksModule;
+        delegatesModule -> blocksProcessModule;
+        delegatesModule -> roundsModule;
+        delegatesModule -> loaderModule;
+        delegatesModule -> transportModule;
+        delegatesModule -> transactionModule;
+        delegatesModule -> transactionLogic;
+
+        loaderModule -> blocksModule
+        loaderModule -> blocksChainModule
+        loaderModule -> blocksProcessModule
+        loaderModule -> blocksUtilsModule
+        loaderModule -> blocksVerifyModule
+        loaderModule -> roundsModule
+        loaderModule -> systemModule
+        loaderModule -> transactionsModule
+        loaderModule -> transportModule
+        loaderModule -> peersModule
+        loaderModule -> multisignaturesModule
+
+        loaderModule -> transactionLogic
+        loaderModule -> accountLogic
+        loaderModule -> peersLogic
+
+        multisignaturesModule -> accountsModule
+        multisignaturesModule -> transactionsModule
+        multisignaturesModule -> transactionLogic
+        multisignaturesModule -> accountLogic
+
+        peersModule -> transportModule
+        peersModule -> systemModule
+        peersModule -> peersLogic
+
+        roundsModule -> delegatesModule
+        roundsModule -> accountsModule
+        roundsModule -> roundLogic
+
+        systemModule -> blocksModule
+        systemModule -> transportModule
+        systemModule -> blocksModule
+
+        transactionsModule -> accountsModule
+        transactionsModule -> transactionLogic
+
+        transportModule -> peersModule
+        transportModule -> multisignaturesModule
+        transportModule -> transactionsModule
+        transportModule -> systemModule
+        transportModule -> blockLogic
+        transportModule -> transactionLogic
+        transportModule -> peersLogic
+        transportModule -> broadcasterLogic
+
+        broadcasterLogic -> peersModule
+        broadcasterLogic -> transportModule
+        broadcasterLogic -> transactionsModule
+
+        peersLogic -> peersModule
+        roundLogic -> accountsModule
+        transactionLogic -> roundsModule
+        transactionPool -> transactionLogic
+}
+```
