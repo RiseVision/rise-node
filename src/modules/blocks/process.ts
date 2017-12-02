@@ -5,16 +5,20 @@ import sql from '../../../sql/blocks';
 import { catchToLoggerAndRemapError, constants, ForkType, IKeypair, ILogger, Sequence, Slots } from '../../helpers/';
 import { IBlockLogic, IPeersLogic, IRoundsLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
-  IAccountsModule, IBlocksModule, IBlocksModuleChain, IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify,
+  IAccountsModule,
+  IBlocksModule,
+  IBlocksModuleChain,
+  IBlocksModuleProcess,
+  IBlocksModuleUtils,
+  IBlocksModuleVerify,
   IDelegatesModule,
-  ILoaderModule, IRoundsModule, ITransactionsModule, ITransportModule
+  IForkModule,
+  ILoaderModule,
+  IRoundsModule,
+  ITransactionsModule,
+  ITransportModule
 } from '../../ioc/interfaces/modules/';
-import {
-  BasePeerType,
-  PeerLogic,
-  SignedAndChainedBlockType,
-  SignedBlockType,
-} from '../../logic/';
+import { BasePeerType, PeerLogic, SignedAndChainedBlockType, SignedBlockType, } from '../../logic/';
 import { IBaseTransaction } from '../../logic/transactions/';
 import schema from '../../schema/blocks';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
@@ -42,7 +46,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     blocksUtils: IBlocksModuleUtils,
     blocksChain: IBlocksModuleChain,
     blocksVerify: IBlocksModuleVerify,
-    delegates: IDelegatesModule,
+    fork: IForkModule,
     loader: ILoaderModule,
     rounds: IRoundsModule,
     transactions: ITransactionsModule,
@@ -294,7 +298,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       blocksChain : scope.blocksChain,
       blocksUtils : scope.blocksUtils,
       blocksVerify: scope.blocksVerify,
-      delegates   : scope.delegates,
+      fork        : scope.fork,
       loader      : scope.loader,
       rounds      : scope.rounds,
       transactions: scope.transactions,
@@ -332,7 +336,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     const tmpBlock = _.clone(block);
 
     // Fork: Consecutive height but different previous block id
-    this.modules.delegates.fork(block, ForkType.TYPE_1);
+    await this.modules.fork.fork(block, ForkType.TYPE_1);
 
     // Keep the oldest block, or if both have same age, keep block with lower id
     if (block.timestamp > lastBlock.timestamp || (block.timestamp === lastBlock.timestamp && block.id > lastBlock.id)) {
@@ -363,7 +367,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     const tmpBlock = _.clone(block);
 
     // Fork: Same height and previous block id, but different block id
-    this.modules.delegates.fork(block, ForkType.TYPE_5);
+    await this.modules.fork.fork(block, ForkType.TYPE_5);
 
     // Check if delegate forged on more than one node
     if (block.generatorPublicKey === lastBlock.generatorPublicKey) {

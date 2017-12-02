@@ -2,22 +2,18 @@ import * as crypto from 'crypto';
 import { IDatabase } from 'pg-promise';
 import * as popsicle from 'popsicle';
 import * as z_schema from 'z-schema';
-import { BigNum, Bus, cbToPromise, constants, ILogger, Sequence } from '../helpers/';
+import { BigNum, Bus, constants, ILogger, Sequence } from '../helpers/';
+import { IBlockLogic, IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
   IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule,
   ITransportModule
 } from '../ioc/interfaces/modules/';
 import {
   BasePeerType,
-  BlockLogic,
-  BroadcasterLogic,
   PeerHeaders,
   PeerLogic,
-  PeersLogic,
   PeerState,
-  PeerType,
   SignedBlockType,
-  TransactionLogic
 } from '../logic/';
 import { IBaseTransaction } from '../logic/transactions/';
 import schema from '../schema/transport';
@@ -37,9 +33,10 @@ export type TransportLibrary = {
   io: SocketIO.Server,
   balancesSequence: Sequence,
   logic: {
-    block: BlockLogic,
-    transaction: TransactionLogic,
-    peers: PeersLogic
+    block: IBlockLogic,
+    broadcaster: IBroadcasterLogic
+    transaction: ITransactionLogic,
+    peers: IPeersLogic
   },
   config: AppConfig
 };
@@ -53,18 +50,11 @@ export class TransportModule implements ITransportModule {
     transactions: ITransactionsModule,
     system: ISystemModule
   };
-  private broadcaster: BroadcasterLogic;
+  private broadcaster: IBroadcasterLogic;
   private loaded: boolean = false;
 
   constructor(public library: TransportLibrary) {
-    this.broadcaster = new BroadcasterLogic({
-      config: this.library.config,
-      logger: this.library.logger,
-      logic : {
-        peers       : this.library.logic.peers,
-        transactions: this.library.logic.transaction,
-      },
-    });
+    this.broadcaster = this.library.logic.broadcaster;
     this.schema      = this.library.schema;
   }
 
@@ -80,14 +70,6 @@ export class TransportModule implements ITransportModule {
       return false;
     }
     return this.broadcaster.consensus < constants.minBroadhashConsensus;
-  }
-
-  /**
-   * Use broadcaster getPeers
-   * @deprecated
-   */
-  public async getPeers(params: { limit?: number, broadhash?: string }): Promise<PeerType[]> {
-    return this.broadcaster.getPeers(params);
   }
 
   // tslint:disable-next-line max-line-length
@@ -165,11 +147,6 @@ export class TransportModule implements ITransportModule {
     };
 
     this.headers = modules.system.headers;
-    this.broadcaster.bind(
-      modules.peers,
-      modules.transport,
-      modules.transactions
-    );
   }
 
   public onBlockchainReady() {

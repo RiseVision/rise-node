@@ -3,12 +3,8 @@ import { IDatabase } from 'pg-promise';
 import sql from '../../../sql/blocks';
 import { constants, ForkType, ILogger, Slots } from '../../helpers/';
 import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
-import { IBlocksModuleVerify } from '../../ioc/interfaces/modules/';
-import {
-  BlockRewardLogic,
-  SignedAndChainedBlockType,
-  SignedBlockType,
-} from '../../logic/';
+import { IBlocksModuleVerify, IForkModule } from '../../ioc/interfaces/modules/';
+import { BlockRewardLogic, SignedAndChainedBlockType, SignedBlockType, } from '../../logic/';
 import { IConfirmedTransaction } from '../../logic/transactions/';
 import { AccountsModule } from '../accounts';
 import { BlocksModule } from '../blocks';
@@ -31,6 +27,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   private modules: {
     blocks: BlocksModule,
     delegates: DelegatesModule,
+    fork: IForkModule,
     transactions: TransactionsModule,
     accounts: AccountsModule
   };
@@ -42,6 +39,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   public cleanup(): Promise<void> {
     return Promise.resolve();
   }
+
   /**
    * Verifies block before fork detection and return all possible errors related to block
    */
@@ -118,7 +116,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     // Check block slot.
     await this.modules.delegates.assertValidBlockSlot(block)
       .catch(async (err) => {
-        await this.modules.delegates.fork(block, ForkType.WRONG_FORGE_SLOT);
+        await this.modules.fork.fork(block, ForkType.WRONG_FORGE_SLOT);
         return Promise.reject(err);
       });
 
@@ -142,6 +140,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       accounts    : scope.accounts,
       blocks      : scope.blocks,
       delegates   : scope.delegates,
+      fork        : scope.fork,
       transactions: scope.transactions,
     };
 
@@ -272,7 +271,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
    */
   private async verifyForkOne(block: SignedBlockType, lastBlock: SignedBlockType): Promise<string[]> {
     if (block.previousBlock && block.previousBlock !== lastBlock.id) {
-      await this.modules.delegates.fork(block, ForkType.TYPE_1);
+      await this.modules.fork.fork(block, ForkType.TYPE_1);
       return [`Invalid previous block: ${block.previousBlock} expected ${lastBlock.id}`];
     }
     return [];
@@ -302,7 +301,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     // Check if db is in db already if so -> fork type 2.
     await this.library.logic.transaction.assertNonConfirmed(tx)
       .catch(async (err) => {
-        await this.modules.delegates.fork(block, ForkType.TX_ALREADY_CONFIRMED);
+        await this.modules.fork.fork(block, ForkType.TX_ALREADY_CONFIRMED);
         // undo the offending tx
         await this.modules.transactions.undoUnconfirmed(tx);
         this.modules.transactions.removeUnconfirmedTransaction(tx.id);

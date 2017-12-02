@@ -1,5 +1,4 @@
-declare const gc; // garbage collection if exposed.
-
+import { BroadcasterLogic } from './logic';
 import * as exitHook from 'async-exit-hook';
 import * as bodyParser from 'body-parser';
 import * as program from 'commander';
@@ -52,6 +51,8 @@ import {
   TransactionsModule,
   TransportModule
 } from './modules/';
+
+declare const gc; // garbage collection if exposed.
 
 // tslint:disable-next-line
 const genesisBlock: SignedAndChainedBlockType = require('../genesisBlock.json');
@@ -204,8 +205,17 @@ async function boot(): Promise<() => Promise<void>> {
 
   const peersLogic = new PeersLogic(logger);
 
-  const logic = {
+  const broadcasterLogic = new BroadcasterLogic({
+    config: appConfig,
+    logger,
+    logic : {
+      peers       : peersLogic,
+      transactions: transactionLogic,
+    },
+  });
+  const logic            = {
     account    : accountLogic,
+    broadcaster: broadcasterLogic,
     peers      : peersLogic,
     rounds     : roundsLogic,
     transaction: transactionLogic,
@@ -327,6 +337,7 @@ async function boot(): Promise<() => Promise<void>> {
       db, io, logger,
       logic : {
         block      : blockLogic,
+        broadcaster: broadcasterLogic,
         peers      : peersLogic,
         transaction: transactionLogic,
       },
@@ -345,6 +356,11 @@ async function boot(): Promise<() => Promise<void>> {
 
   // transactionLogic.bindModules(modules);
   peersLogic.bindModules(modules);
+  broadcasterLogic.bind(
+    modules.peers,
+    modules.transport,
+    modules.transactions
+  );
 
   // listen http
   await cbToPromise((cb) => server.listen(appConfig.port, appConfig.address, cb));

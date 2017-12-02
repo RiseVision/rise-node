@@ -3,7 +3,10 @@ import * as promiseRetry from 'promise-retry';
 import z_schema from 'z-schema';
 import sql from '../../sql/loader';
 import { Bus, constants, ILogger, JobsQueue, Sequence } from '../helpers/';
-import { IAccountLogic, IPeersLogic, IRoundsLogic, ITransactionLogic } from '../ioc/interfaces/logic';
+import {
+  IAccountLogic, IBroadcasterLogic, IPeersLogic, IRoundsLogic,
+  ITransactionLogic
+} from '../ioc/interfaces/logic';
 
 import {
   IBlocksModule, IBlocksModuleChain, IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify, ILoaderModule,
@@ -36,6 +39,7 @@ export type LoaderLibrary = {
   logic: {
     transaction: ITransactionLogic;
     account: IAccountLogic;
+    broadcaster: IBroadcasterLogic
     peers: IPeersLogic
     rounds: IRoundsLogic
   },
@@ -442,7 +446,7 @@ export class LoaderModule implements ILoaderModule {
 
     // Establish consensus. (internally)
     this.library.logger.debug('Establishing broadhash consensus before sync');
-    this.modules.transport.getPeers({limit: constants.maxPeers});
+    await this.library.logic.broadcaster.getPeers({limit: constants.maxPeers});
 
     await this.loadBlocksFromNetwork();
   }

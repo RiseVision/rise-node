@@ -14,7 +14,7 @@ import {
   Slots,
   TransactionType
 } from '../helpers/';
-import { IRoundsLogic, ITransactionLogic } from '../ioc/interfaces/logic';
+import { IBroadcasterLogic, IRoundsLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
   IAccountsModule, IBlocksModule, IBlocksModuleProcess, IDelegatesModule, ILoaderModule,
   IRoundsModule, ITransactionsModule, ITransportModule
@@ -34,7 +34,8 @@ export type DelegatesModuleLibrary = {
   balancesSequence: Sequence,
   logic: {
     transaction: ITransactionLogic,
-    rounds: IRoundsLogic
+    rounds: IRoundsLogic,
+    broadcaster: IBroadcasterLogic,
   },
   config: AppConfig
 };
@@ -94,32 +95,6 @@ export class DelegatesModule implements IDelegatesModule {
     Object.keys(this.keypairs)
       .filter((p) => typeof(pk) === 'undefined' || p === pk)
       .forEach((p) => delete this.enabledKeys[p]);
-  }
-
-  /**
-   * Inserts a fork into fork_stats table and emits a socket signal with the fork data
-   * @param {SignedBlockType} block
-   * @param {ForkType} cause
-   * @return {Promise<void>}
-   */
-  public async fork(block: SignedBlockType, cause: ForkType) {
-    this.library.logger.info('Fork', {
-      block   : {id: block.id, timestamp: block.timestamp, height: block.height, previousBlock: block.previousBlock},
-      cause,
-      delegate: block.generatorPublicKey,
-    });
-
-    const fork = {
-      blockHeight      : block.height,
-      blockId          : block.id,
-      blockTimestamp   : block.timestamp,
-      cause,
-      delegatePublicKey: block.generatorPublicKey,
-      previousBlock    : block.previousBlock,
-    };
-
-    await this.library.db.none(sql.insertFork, fork);
-    this.library.io.sockets.emit('delegates/fork', fork);
   }
 
   /**
@@ -346,7 +321,7 @@ export class DelegatesModule implements IDelegatesModule {
 
     await this.library.sequence.addAndPromise(async () => {
       // updates consensus.
-      await this.modules.transport.getPeers({limit: constants.maxPeers});
+      await this.library.logic.broadcaster.getPeers({limit: constants.maxPeers});
 
       if (this.modules.transport.poorConsensus) {
         throw new Error(`Inadequate broadhash consensus ${this.modules.transport.consensus} %`);

@@ -23,7 +23,7 @@ const rcRegExp = /[a-z]+$/;
 export class SystemModule implements ISystemModule {
   public minVersion: string;
   public headers: PeerHeaders;
-  public modules: { blocks: IBlocksModule, transport: ITransportModule };
+  public modules: { blocks: IBlocksModule };
 
   private lastMinVer: string;
   private minVersionChar: string;
@@ -46,10 +46,9 @@ export class SystemModule implements ISystemModule {
   /**
    * Assigns used modules to modules variable.
    */
-  public onBind(modules: { blocks: any, transport: any }) {
+  public onBind(modules: { blocks: any }) {
     this.modules = {
       blocks   : modules.blocks,
-      transport: modules.transport,
     };
   }
 

@@ -26,14 +26,6 @@ export interface IDelegatesModule extends IModule {
   disableForge(pk?: publicKey): void;
 
   /**
-   * Inserts a fork into fork_stats table and emits a socket signal with the fork data
-   * @param {SignedBlockType} block
-   * @param {ForkType} cause
-   * @return {Promise<void>}
-   */
-  fork(block: SignedBlockType, cause: ForkType): Promise<void>;
-
-  /**
    * Generate a randomized list for the round of which the given height is into.
    * @param {number} height blockheight.
    * @return {Promise<publicKey[]>}

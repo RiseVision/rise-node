@@ -113,7 +113,7 @@ digraph G {
         multisignaturesModule -> accountsModule
         multisignaturesModule -> transactionsModule
         multisignaturesModule -> transactionLogic
-        multisignaturesModule -> accountLogic
+        multisignaturesModule -> ccountLogic
 
         peersModule -> transportModule
         peersModule -> systemModule

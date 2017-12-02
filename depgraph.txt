@@ -40,9 +40,10 @@ digraph G {
                 cacheModule
                 delegatesModule
                 delegatesModule
+                forkModule
                 multisignaturesModule
                 peersModule
-                transactionsModulse
+                transactionsModule
                 transportModule
                 roundsModule
                 systemModule
@@ -64,7 +65,7 @@ digraph G {
         blocksProcessModule -> blocksUtilsModule
         blocksProcessModule -> blocksChainModule
         blocksProcessModule -> blocksVerifyModule
-        blocksProcessModule -> delegatesModule
+        blocksProcessModule -> forkModule
         blocksProcessModule -> loaderModule
         blocksProcessModule -> roundsModule
         blocksProcessModule -> transactionsModule
@@ -84,15 +85,17 @@ digraph G {
         blocksVerifyModule -> blockRewardLogic
         blocksVerifyModule -> blockLogic
         blocksVerifyModule -> transactionLogic
+        blocksVerifyModule -> forkModule
 
         delegatesModule -> accountsModule;
         delegatesModule -> blocksModule;
         delegatesModule -> blocksProcessModule;
-        delegatesModule -> roundsModule;
+        delegatesModule -> roundsLogic;
         delegatesModule -> loaderModule;
         delegatesModule -> transportModule;
         delegatesModule -> transactionsModule;
         delegatesModule -> transactionLogic;
+        delegatesModule -> broadcasterLogic;
 
         loaderModule -> blocksModule
         loaderModule -> blocksChainModule
@@ -109,6 +112,7 @@ digraph G {
         loaderModule -> transactionLogic
         loaderModule -> accountLogic
         loaderModule -> peersLogic
+        loaderModule -> broadcasterLogic
 
         multisignaturesModule -> accountsModule
         multisignaturesModule -> transactionsModule
@@ -123,8 +127,6 @@ digraph G {
         roundsModule -> accountsModule
         roundsModule -> roundLogic
 
-        systemModule -> blocksModule
-        systemModule -> transportModule
         systemModule -> blocksModule
 
         transactionsModule -> accountsModule

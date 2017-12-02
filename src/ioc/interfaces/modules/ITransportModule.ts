@@ -7,12 +7,6 @@ export interface ITransportModule extends IModule {
   readonly consensus: number;
   readonly poorConsensus: boolean;
 
-  /**
-   * Use broadcaster getPeers
-   * @deprecated
-   */
-  getPeers(params: { limit?: number, broadhash?: string }): Promise<PeerType[]>;
-
   getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: PeerLogic }>;
 
   getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] },

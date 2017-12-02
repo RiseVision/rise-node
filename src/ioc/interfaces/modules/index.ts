@@ -6,6 +6,7 @@ export * from './blocks/IBlocksModuleProcess';
 export * from './blocks/IBlocksModuleUtils';
 export * from './blocks/IBlocksModuleVerify';
 export * from './IDelegatesModule';
+export * from './IForkModule';
 export * from './ILoaderModule';
 export * from './IMultisignaturesModule';
 export * from './IPeersModule';

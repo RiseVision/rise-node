@@ -144,6 +144,7 @@ export class PeersModule implements IPeersModule {
 
   /**
    * Gets the peers using the given filter.
+   * if orderBy Is not specified then returned peers are shuffled.
    */
   public async getByFilter(filter: PeerFilter): Promise<PeerType[]> {
     const allowedFields = ['ip', 'port', 'state', 'os', 'version', 'broadhash', 'height', 'nonce'];

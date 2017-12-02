@@ -7,7 +7,6 @@ import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './
 export class SendTransaction extends BaseTransactionType<void> {
   public modules: {
     accounts: IAccountsModule,
-    rounds: IRoundsModule,
     system: ISystemModule
   };
 
@@ -15,8 +14,8 @@ export class SendTransaction extends BaseTransactionType<void> {
     super(TransactionType.SEND);
   }
 
-  public bind(accounts: IAccountsModule, rounds: IRoundsModule, system: ISystemModule) {
-    this.modules = { accounts, rounds, system };
+  public bind(accounts: IAccountsModule, system: ISystemModule) {
+    this.modules = { accounts, system };
   }
 
   public calculateFee(tx: IBaseTransaction<void>, sender: any, height: number): number {
