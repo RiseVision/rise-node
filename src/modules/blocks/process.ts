@@ -3,7 +3,7 @@ import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
 import sql from '../../../sql/blocks';
 import { catchToLoggerAndRemapError, constants, ForkType, IKeypair, ILogger, Sequence, Slots } from '../../helpers/';
-import { IBlockLogic, IPeersLogic, IRoundsLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
+import { IAppState, IBlockLogic, IPeersLogic, IRoundsLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
   IAccountsModule,
   IBlocksModule,
@@ -11,9 +11,7 @@ import {
   IBlocksModuleProcess,
   IBlocksModuleUtils,
   IBlocksModuleVerify,
-  IDelegatesModule,
   IForkModule,
-  ILoaderModule,
   IRoundsModule,
   ITransactionsModule,
   ITransportModule
@@ -32,6 +30,7 @@ export type BlocksModuleProcessLibrary = {
   logger: ILogger,
   genesisblock: SignedAndChainedBlockType
   logic: {
+    appState: IAppState,
     block: IBlockLogic,
     peers: IPeersLogic,
     transaction: ITransactionLogic
@@ -47,7 +46,6 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     blocksChain: IBlocksModuleChain,
     blocksVerify: IBlocksModuleVerify,
     fork: IForkModule,
-    loader: ILoaderModule,
     rounds: IRoundsModule,
     transactions: ITransactionsModule,
     transport: ITransportModule,
@@ -256,7 +254,8 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     return this.library.sequence.addAndPromise(async () => {
       // When client is not loaded, is syncing or round is ticking
       // Do not receive new blocks as client is not ready
-      if (!this.loaded || this.modules.loader.isSyncing || this.modules.rounds.isTicking()) {
+      if (!this.loaded || this.library.logic.appState.get('loader.isSyncing') ||
+        this.library.logic.appState.get('rounds.isTicking')) {
         this.library.logger.debug('Client not ready to receive block', block.id);
         return;
       }
@@ -299,7 +298,6 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       blocksUtils : scope.blocksUtils,
       blocksVerify: scope.blocksVerify,
       fork        : scope.fork,
-      loader      : scope.loader,
       rounds      : scope.rounds,
       transactions: scope.transactions,
       transport   : scope.transport,

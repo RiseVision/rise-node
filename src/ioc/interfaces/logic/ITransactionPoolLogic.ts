@@ -1,6 +1,11 @@
 import { IBaseTransaction } from '../../../logic/transactions';
+import { InnerTXQueue } from '../../../logic';
 
 export interface ITransactionPoolLogic {
+  readonly unconfirmed: InnerTXQueue;
+  readonly bundled: InnerTXQueue;
+  readonly queued: InnerTXQueue;
+  readonly multisignature: InnerTXQueue;
 
   /**
    * Queue a transaction or throws an error if it couldnt
@@ -44,7 +49,7 @@ export interface ITransactionPoolLogic {
    * unconfirmed transaction.
    */
   // tslint:disable-next-line
-  applyUnconfirmedList(txs: Array<IBaseTransaction<any> | string>): Promise<void>;
+  applyUnconfirmedList(txs?: Array<IBaseTransaction<any> | string>): Promise<void>;
 
   undoUnconfirmedList(): Promise<string[]>;
 

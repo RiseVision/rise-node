@@ -1,4 +1,3 @@
-import { BroadcasterLogic } from './logic';
 import * as exitHook from 'async-exit-hook';
 import * as bodyParser from 'body-parser';
 import * as program from 'commander';
@@ -30,11 +29,14 @@ import {
 
 import {
   AccountLogic,
+  AppState,
   BlockLogic,
+  BroadcasterLogic,
   PeersLogic,
   RoundsLogic,
   SignedAndChainedBlockType,
   TransactionLogic,
+  TransactionPool
 } from './logic/';
 
 import {
@@ -190,6 +192,7 @@ async function boot(): Promise<() => Promise<void>> {
 
   // Logic loading.
   const roundsLogic      = new RoundsLogic(Slots);
+  const appState         = new AppState();
   const accountLogic     = new AccountLogic({ db, logger, schema });
   const transactionLogic = new TransactionLogic({
     account     : accountLogic,
@@ -200,6 +203,13 @@ async function boot(): Promise<() => Promise<void>> {
     rounds      : roundsLogic,
     schema,
   });
+  const transactionPool = new TransactionPool(
+    transactionLogic,
+    appState,
+    bus,
+    logger,
+    appConfig
+  );
 
   const blockLogic = new BlockLogic({ ed, schema, transaction: transactionLogic });
 
@@ -215,6 +225,7 @@ async function boot(): Promise<() => Promise<void>> {
   });
   const logic            = {
     account    : accountLogic,
+    appState,
     broadcaster: broadcasterLogic,
     peers      : peersLogic,
     rounds     : roundsLogic,
@@ -244,6 +255,7 @@ async function boot(): Promise<() => Promise<void>> {
       genesisblock: genesisBlock,
       logger,
       logic       : {
+        appState,
         block      : blockLogic,
         peers      : peersLogic,
         rounds     : roundsLogic,
@@ -328,7 +340,7 @@ async function boot(): Promise<() => Promise<void>> {
       ed,
       genesisblock: genesisBlock,
       logger,
-      logic       : { transaction: transactionLogic },
+      logic       : { rounds: roundsLogic, transaction: transactionLogic, transactionPool },
       schema,
     }),
     transport      : new TransportModule({
@@ -362,6 +374,7 @@ async function boot(): Promise<() => Promise<void>> {
     modules.transactions
   );
 
+  transactionPool.bind(modules.accounts, modules.transactions);
   // listen http
   await cbToPromise((cb) => server.listen(appConfig.port, appConfig.address, cb));
   logger.info(`Server started: ${appConfig.address}:${appConfig.port}`);

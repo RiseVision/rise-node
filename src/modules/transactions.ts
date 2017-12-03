@@ -2,13 +2,11 @@ import * as _ from 'lodash';
 import { IDatabase } from 'pg-promise';
 import txSQL from '../../sql/logic/transactions';
 import { Bus, constants, Ed, ILogger, OrderBy, Sequence, TransactionType } from '../helpers/';
+import { IRoundsLogic, ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules/';
-import { SignedBlockType, TransactionLogic, TransactionPool } from '../logic/';
+import { SignedBlockType } from '../logic/';
 import { IBaseTransaction, IConfirmedTransaction, SendTransaction } from '../logic/transactions/';
 import { AppConfig } from '../types/genericTypes';
-import { AccountsModule } from './accounts';
-import { LoaderModule } from './loader';
-import { SystemModule } from './system';
 
 // tslint:disable-next-line
 export type TransactionLibrary = {
@@ -19,7 +17,9 @@ export type TransactionLibrary = {
   bus: Bus,
   balancesSequence: Sequence,
   logic: {
-    transaction: TransactionLogic,
+    transaction: ITransactionLogic,
+    rounds: IRoundsLogic,
+    transactionPool: ITransactionPoolLogic,
   },
   genesisblock: any,
   config: AppConfig
@@ -27,19 +27,14 @@ export type TransactionLibrary = {
 
 export class TransactionsModule implements ITransactionsModule {
   public modules: { accounts: IAccountsModule };
-  private transactionPool: TransactionPool;
+  private transactionPool: ITransactionPoolLogic;
   private sendAsset: SendTransaction;
 
   constructor(public library: TransactionLibrary) {
-    this.transactionPool = new TransactionPool(
-      this.library.logic.transaction,
-      this.library.bus,
-      this.library.logger,
-      this.library.config
-    );
+    this.transactionPool = this.library.logic.transactionPool;
     this.sendAsset       = this.library.logic.transaction.attachAssetType<void, SendTransaction>(
       TransactionType.SEND,
-      new SendTransaction()
+      new SendTransaction({ rounds: this.library.logic.rounds })
     );
   }
 
@@ -233,8 +228,7 @@ export class TransactionsModule implements ITransactionsModule {
     this.modules = {
       accounts: modules.accounts,
     };
-    this.transactionPool.bind(this.modules.accounts, this, modules.loader);
-    this.sendAsset.bind(this.modules.accounts, modules.rounds, modules.system);
+    this.sendAsset.bind(this.modules.accounts, modules.system);
   }
 
   public async list(filter): Promise<{ count: number, transactions: Array<IConfirmedTransaction<any>> }> {

@@ -1,5 +1,5 @@
 import { Slots } from '../helpers';
-import { IRoundsLogic } from '../ioc/interfaces/logic/IRoundsLogic';
+import { IRoundsLogic } from '../ioc/interfaces/logic/';
 
 export class RoundsLogic implements IRoundsLogic {
 

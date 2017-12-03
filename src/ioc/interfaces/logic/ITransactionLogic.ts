@@ -5,7 +5,7 @@ import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from '..
 
 export interface ITransactionLogic {
 
-  attachAssetType<K, T extends BaseTransactionType<K>>(type: TransactionType, instance: T): T;
+  attachAssetType<K, T extends BaseTransactionType<K>>(instance: T): T;
 
   /**
    * Creates and returns signature

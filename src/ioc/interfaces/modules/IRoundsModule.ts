@@ -2,10 +2,6 @@ import { SignedBlockType } from '../../../logic';
 import { IModule } from './IModule';
 
 export interface IRoundsModule extends IModule {
-  isLoaded(): void;
-
-  isTicking(): boolean;
-
   /**
    * Sets the snapshot rounds
    */

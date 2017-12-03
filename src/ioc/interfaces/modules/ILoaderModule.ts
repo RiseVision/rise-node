@@ -1,8 +1,6 @@
 import { PeerLogic } from '../../../logic';
 
 export interface ILoaderModule {
-  readonly isSyncing: boolean;
-
   getNework(): Promise<{ height: number; peers: PeerLogic[] }>;
 
   gerRandomPeer(): Promise<PeerLogic>;

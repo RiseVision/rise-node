@@ -4,7 +4,7 @@ import z_schema from 'z-schema';
 import sql from '../../sql/loader';
 import { Bus, constants, ILogger, JobsQueue, Sequence } from '../helpers/';
 import {
-  IAccountLogic, IBroadcasterLogic, IPeersLogic, IRoundsLogic,
+  IAccountLogic, IAppState, IBroadcasterLogic, IPeersLogic, IRoundsLogic,
   ITransactionLogic
 } from '../ioc/interfaces/logic';
 
@@ -37,6 +37,7 @@ export type LoaderLibrary = {
   genesisblock: SignedAndChainedBlockType;
   balancesSequence: Sequence;
   logic: {
+    appState: IAppState
     transaction: ITransactionLogic;
     account: IAccountLogic;
     broadcaster: IBroadcasterLogic
@@ -96,8 +97,8 @@ export class LoaderModule implements ILoaderModule {
   /**
    * Checks if we're syncing or not.
    */
-  public get isSyncing(): boolean {
-    return !!this.syncIntervalId;
+  private get isSyncing(): boolean {
+    return this.library.logic.appState.get('loader.isSyncing');
   }
 
   public async onBind(modules: any) {
@@ -372,6 +373,7 @@ export class LoaderModule implements ILoaderModule {
       this.library.logger.trace('Clearing sync interval');
       clearTimeout(this.syncIntervalId);
       this.syncIntervalId = null;
+      this.library.logic.appState.set('loader.isSyncing', false);
     }
     if (turnOn === true && !this.syncIntervalId) {
       this.library.logger.trace('Setting sync interval');
@@ -382,6 +384,7 @@ export class LoaderModule implements ILoaderModule {
           height: this.modules.blocks.lastBlock.height,
         });
       }, 1000);
+      this.library.logic.appState.set('loader.isSyncing', true);
     }
   }
 

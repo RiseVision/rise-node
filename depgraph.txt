@@ -5,6 +5,7 @@ digraph G {
 		color=lightgrey;
 		node [style=filled,color=white];
 		accountLogic;
+		appState;
                 transactionLogic;
                 peerLogic
                 blockLogic
@@ -66,8 +67,7 @@ digraph G {
         blocksProcessModule -> blocksChainModule
         blocksProcessModule -> blocksVerifyModule
         blocksProcessModule -> forkModule
-        blocksProcessModule -> loaderModule
-        blocksProcessModule -> roundsModule
+        blocksProcessModule -> appState
         blocksProcessModule -> transactionsModule
         blocksProcessModule -> transportModule
         blocksProcessModule -> blockLogic
@@ -126,11 +126,15 @@ digraph G {
         roundsModule -> delegatesModule
         roundsModule -> accountsModule
         roundsModule -> roundLogic
+        roundsModule -> appState
 
         systemModule -> blocksModule
 
         transactionsModule -> accountsModule
         transactionsModule -> transactionLogic
+        transactionsModule -> transactionPool
+        transactionsModule -> roundsLogic
+
 
         transportModule -> peersModule
         transportModule -> multisignaturesModule

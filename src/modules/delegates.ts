@@ -14,7 +14,7 @@ import {
   Slots,
   TransactionType
 } from '../helpers/';
-import { IBroadcasterLogic, IRoundsLogic, ITransactionLogic } from '../ioc/interfaces/logic';
+import { IAppState, IBroadcasterLogic, IRoundsLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
   IAccountsModule, IBlocksModule, IBlocksModuleProcess, IDelegatesModule, ILoaderModule,
   IRoundsModule, ITransactionsModule, ITransportModule
@@ -33,6 +33,7 @@ export type DelegatesModuleLibrary = {
   schema: any
   balancesSequence: Sequence,
   logic: {
+    appState: IAppState,
     transaction: ITransactionLogic,
     rounds: IRoundsLogic,
     broadcaster: IBroadcasterLogic,
@@ -50,7 +51,6 @@ export class DelegatesModule implements IDelegatesModule {
     blocks: IBlocksModule,
     blocksProcess: IBlocksModuleProcess,
     accounts: IAccountsModule
-    rounds: IRoundsModule,
     loader: ILoaderModule,
     transport: ITransportModule,
     transactions: ITransactionsModule,
@@ -207,7 +207,6 @@ export class DelegatesModule implements IDelegatesModule {
       blocks       : scope.blocks,
       blocksProcess: scope.blocksProcess,
       loader       : scope.loader,
-      rounds       : scope.rounds,
       transactions : scope.transactions,
       transport    : scope.transport,
       // delegates   : scope.delegates,
@@ -282,8 +281,8 @@ export class DelegatesModule implements IDelegatesModule {
    * @return {Promise<void>}
    */
   private async forge() {
-    if (!this.loaded || this.modules.loader.isSyncing ||
-      !this.modules.rounds.isLoaded() || this.modules.rounds.isTicking()) {
+    if (!this.loaded || this.library.logic.appState.get('loader.isSyncing') ||
+      !this.library.logic.appState.get('rounds.isLoaded') || this.library.logic.appState.get('rounds.isTicking')) {
 
       this.library.logger.debug('Client not ready to forge');
       return;

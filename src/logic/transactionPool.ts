@@ -1,6 +1,6 @@
 import { Bus, constants, ILogger, JobsQueue, promiseToCB, TransactionType } from '../helpers/';
-import { ITransactionPoolLogic } from '../ioc/interfaces/logic/';
-import { IAccountsModule, ILoaderModule, ITransactionsModule } from '../ioc/interfaces/modules';
+import { IAppState, ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic/';
+import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { AppConfig } from '../types/genericTypes';
 import { TransactionLogic } from './transaction';
 import { IBaseTransaction } from './transactions/';
@@ -93,7 +93,8 @@ export class TransactionPool implements ITransactionPoolLogic {
     logger: ILogger,
     bus: Bus,
     logic: {
-      transaction: TransactionLogic
+      appState: IAppState,
+      transaction: ITransactionLogic
     }
     config: AppConfig
   };
@@ -104,16 +105,15 @@ export class TransactionPool implements ITransactionPoolLogic {
   private modules: {
     accounts: IAccountsModule,
     transactions: ITransactionsModule,
-    loader: ILoaderModule
   };
 
-  constructor(transactionLogic: TransactionLogic,
+  constructor(transactionLogic: TransactionLogic, appState: IAppState,
               bus: Bus, logger: ILogger, config: AppConfig) {
     this.library = {
       bus,
       config,
       logger,
-      logic : { transaction: transactionLogic },
+      logic : { appState, transaction: transactionLogic },
     };
 
     this.bundledInterval = config.broadcasts.broadcastInterval;
@@ -135,8 +135,8 @@ export class TransactionPool implements ITransactionPoolLogic {
     );
   }
 
-  public bind(accounts: IAccountsModule, transactions: ITransactionsModule, loader: ILoaderModule) {
-    this.modules = { accounts, transactions, loader };
+  public bind(accounts: IAccountsModule, transactions: ITransactionsModule) {
+    this.modules = { accounts, transactions};
   }
 
   /**
@@ -162,7 +162,7 @@ export class TransactionPool implements ITransactionPoolLogic {
   }
 
   public fillPool(): Promise<void> {
-    if (this.modules.loader.isSyncing) {
+    if (this.library.logic.appState.get('loader.isSyncing')) {
       return Promise.resolve();
     }
 

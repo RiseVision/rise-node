@@ -1,7 +1,7 @@
 import { IDatabase, ITask } from 'pg-promise';
 import roundsSQL from '../../sql/logic/rounds';
 import { Bus, constants, ILogger, Slots } from '../helpers/';
-import { IRoundsLogic } from '../ioc/interfaces/logic/';
+import { IAppState, IRoundsLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule, IDelegatesModule, IRoundsModule } from '../ioc/interfaces/modules/';
 import { RoundLogic, RoundLogicScope, SignedBlockType } from '../logic/';
 import { AppConfig } from '../types/genericTypes';
@@ -16,25 +16,16 @@ export type RoundsLibrary = {
   io: SocketIO.Server,
   config: AppConfig
   logic: {
+    appState: IAppState,
     rounds: IRoundsLogic
   }
 };
 
 export class RoundsModule implements IRoundsModule {
-  private loaded: boolean  = false;
-  private ticking: boolean = false;
 
   private modules: { delegates: IDelegatesModule, accounts: IAccountsModule };
 
   constructor(private library: RoundsLibrary) {
-  }
-
-  public isLoaded() {
-    return this.loaded;
-  }
-
-  public isTicking() {
-    return this.ticking;
   }
 
   public onBind(scope: { accounts: AccountsModule, delegates: any }) {
@@ -49,11 +40,11 @@ export class RoundsModule implements IRoundsModule {
   }
 
   public onBlockchainReady() {
-    this.loaded = true;
+    this.library.logic.appState.set('rounds.isLoaded', true);
   }
 
   public cleanup() {
-    this.loaded = false;
+    this.library.logic.appState.set('rounds.isLoaded', false);
     return Promise.resolve();
   }
 
@@ -160,7 +151,7 @@ export class RoundsModule implements IRoundsModule {
 
     try {
       // Set ticking flag to true
-      this.ticking = true;
+      this.library.logic.appState.set('rounds.isTicking', true);
 
       const roundSums      = finishRound ? await this.sumRound(round) : null;
       const roundOutsiders = finishRound ? await this.getOutsiders(round, roundSums.roundDelegates) : null;
@@ -180,7 +171,7 @@ export class RoundsModule implements IRoundsModule {
     } catch (e) {
       this.library.logger.warn('Error while doing modules.rounds.backwardTick', e.message || e);
     } finally {
-      this.ticking = false;
+      this.library.logic.appState.set('rounds.isTicking', false);
     }
   }
 

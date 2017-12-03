@@ -1,4 +1,5 @@
 export * from './IAccountLogic';
+export * from './IAppState';
 export * from './IBlockLogic';
 export * from './IBlockReward';
 export * from './IBroadcasterLogic';
