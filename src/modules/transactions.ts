@@ -1,11 +1,11 @@
 import * as _ from 'lodash';
 import { IDatabase } from 'pg-promise';
 import txSQL from '../../sql/logic/transactions';
-import { Bus, constants, Ed, ILogger, OrderBy, Sequence, TransactionType } from '../helpers/';
+import { Bus, constants, Ed, ILogger, OrderBy, Sequence } from '../helpers/';
 import { IRoundsLogic, ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules/';
-import { SignedBlockType } from '../logic/';
-import { IBaseTransaction, IConfirmedTransaction, SendTransaction } from '../logic/transactions/';
+import { SignedAndChainedBlockType, SignedBlockType } from '../logic/';
+import { IBaseTransaction, IConfirmedTransaction } from '../logic/transactions/';
 import { AppConfig } from '../types/genericTypes';
 
 // tslint:disable-next-line
@@ -21,7 +21,7 @@ export type TransactionLibrary = {
     rounds: IRoundsLogic,
     transactionPool: ITransactionPoolLogic,
   },
-  genesisblock: any,
+  genesisblock: SignedAndChainedBlockType,
   config: AppConfig
 };
 
@@ -152,7 +152,7 @@ export class TransactionsModule implements ITransactionsModule {
   public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId: string }, sender: any): Promise<void> {
     this.library.logger.debug('Applying unconfirmed transaction', transaction.id);
 
-    if (!sender && transaction.blockId !== this.library.genesisblock.block.id) {
+    if (!sender && transaction.blockId !== this.library.genesisblock.id) {
       throw new Error('Invalid block id');
     } else {
       if (transaction.requesterPublicKey) {
