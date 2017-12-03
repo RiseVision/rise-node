@@ -6,7 +6,6 @@ import { AccountLogic, SignedAndChainedBlockType, TransactionLogic } from '../lo
 import { IBaseTransaction, MultisigAsset, MultiSignatureTransaction } from '../logic/transactions/';
 
 export class MultisignaturesModule implements IMultisignaturesModule {
-  private multiTx: MultiSignatureTransaction;
   private modules: {
     transactions: ITransactionsModule,
     accounts: IAccountsModule,
@@ -27,16 +26,6 @@ export class MultisignaturesModule implements IMultisignaturesModule {
     genesisblock: SignedAndChainedBlockType
   }) {
 
-    this.multiTx = this.library.logic.transaction.attachAssetType(
-      TransactionType.MULTI,
-      new MultiSignatureTransaction({
-        account    : this.library.logic.account,
-        io         : this.library.io,
-        logger     : this.library.logger,
-        schema     : this.library.schema,
-        transaction: this.library.logic.transaction,
-      })
-    );
   }
 
   /**

@@ -45,7 +45,7 @@ export class TransactionLogic implements ITransactionLogic {
   constructor(public scope: TransactionLogicScope) {
   }
 
-  public attachAssetType<K, T extends BaseTransactionType<K>>(instance: T): T {
+  public attachAssetType<K>(instance: BaseTransactionType<K>): BaseTransactionType<K> {
     if (!(instance instanceof BaseTransactionType)) {
       throw new Error('Invalid instance interface');
     }

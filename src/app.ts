@@ -38,6 +38,7 @@ import {
   TransactionLogic,
   TransactionPool
 } from './logic/';
+import * as TXs from './logic/transactions';
 
 import {
   AccountsModule,
@@ -203,7 +204,7 @@ async function boot(): Promise<() => Promise<void>> {
     rounds      : roundsLogic,
     schema,
   });
-  const transactionPool = new TransactionPool(
+  const transactionPool  = new TransactionPool(
     transactionLogic,
     appState,
     bus,
@@ -373,8 +374,58 @@ async function boot(): Promise<() => Promise<void>> {
     modules.transport,
     modules.transactions
   );
-
   transactionPool.bind(modules.accounts, modules.transactions);
+
+  // Register and create txtypes.
+  const txTypes = [
+    new TXs.SendTransaction({
+      modules: {
+        accounts: modules.accounts,
+        system  : modules.system,
+      },
+      rounds : logic.rounds,
+    }),
+    new TXs.VoteTransaction({
+      account: logic.account,
+      logger,
+      modules: {
+        delegates: modules.delegates,
+        system: modules.system,
+      },
+      rounds: logic.rounds,
+      schema,
+    }),
+    new TXs.SecondSignatureTransaction({
+      logger,
+      modules: {
+        accounts: modules.accounts,
+        system: modules.system,
+      },
+      schema,
+    }),
+    new TXs.RegisterDelegateTransaction({
+      modules: {
+        accounts: modules.accounts,
+        system: modules.system,
+      },
+      schema,
+    }),
+    new TXs.MultiSignatureTransaction({
+      account: logic.account,
+      io,
+      logger,
+      modules: {
+        accounts: modules.accounts,
+        system: modules.system,
+      },
+      roundsLogic: logic.rounds,
+      schema,
+      transaction: logic.transaction,
+    }),
+  ];
+  // Register them.
+  txTypes.forEach((txType) => logic.transaction.attachAssetType(txType as any));
+
   // listen http
   await cbToPromise((cb) => server.listen(appConfig.port, appConfig.address, cb));
   logger.info(`Server started: ${appConfig.address}:${appConfig.port}`);

@@ -12,26 +12,23 @@ export type VoteAsset = {
 };
 
 export class VoteTransaction extends BaseTransactionType<VoteAsset> {
-  public modules: {
-    delegates: IDelegatesModule,
-    system: ISystemModule
-  };
   private dbTable  = 'votes';
   private dbFields = [
     'votes',
     'transactionId',
   ];
 
-  constructor(private library: { logger: ILogger, rounds: IRoundsLogic, schema: z_schema, account: IAccountLogic }) {
+  constructor(private library: {
+    logger: ILogger, rounds: IRoundsLogic, schema: z_schema, account: IAccountLogic, modules: {
+      delegates: IDelegatesModule,
+      system: ISystemModule
+    }
+  }) {
     super(TransactionType.VOTE);
   }
 
-  public bind(delegates: IDelegatesModule, system: ISystemModule) {
-    this.modules = { delegates, system };
-  }
-
   public calculateFee(tx: IBaseTransaction<VoteAsset>, sender: any, height: number): number {
-    return this.modules.system.getFees(height).fees.vote;
+    return this.library.modules.system.getFees(height).fees.vote;
   }
 
   public async verify(tx: IBaseTransaction<VoteAsset> & { senderId: string }, sender: any): Promise<void> {
@@ -96,14 +93,14 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
    * Checks vote integrity of tx sender
    */
   public checkUnconfirmedDelegates(tx: IBaseTransaction<VoteAsset>): Promise<any> {
-    return this.modules.delegates.checkUnconfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
+    return this.library.modules.delegates.checkUnconfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
   }
 
   /**
    * Checks vote integrity of sender
    */
   public checkConfirmedDelegates(tx: IBaseTransaction<VoteAsset>): Promise<any> {
-    return this.modules.delegates.checkConfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
+    return this.library.modules.delegates.checkConfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
   }
 
   public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: any): Promise<void> {

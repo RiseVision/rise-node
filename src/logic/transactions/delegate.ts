@@ -16,23 +16,18 @@ export type DelegateAsset = {
 
 export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAsset> {
 
-  public modules: { accounts: IAccountsModule, system: ISystemModule };
   private dbTable  = 'delegates';
   private dbFields = [
     'username',
     'transactionId',
   ];
 
-  constructor(public library: { schema: z_schema }) {
+  constructor(public library: { modules: { accounts: IAccountsModule, system: ISystemModule }, schema: z_schema }) {
     super(TransactionType.DAPP);
   }
 
-  public bind(accounts: any, system: any) {
-    this.modules = { accounts, system };
-  }
-
   public calculateFee(tx: IBaseTransaction<DelegateAsset>, sender: any, height: number): number {
-    return this.modules.system.getFees(height).fees.delegate;
+    return this.library.modules.system.getFees(height).fees.delegate;
   }
 
   public getBytes(tx: IBaseTransaction<DelegateAsset>, skipSignature: boolean, skipSecondSignature: boolean): Buffer {
@@ -85,7 +80,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       throw new Error('Username can only contain alphanumeric characters with the exception of !@$&_.');
     }
 
-    const account = await this.modules.accounts.getAccount({ username });
+    const account = await this.library.modules.accounts.getAccount({ username });
     if (account) {
       throw new Error(`Username already exists: ${username}`);
     }
@@ -103,7 +98,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.u_username = tx.asset.delegate.username;
     }
 
-    return this.modules.accounts.setAccountAndGet(data)
+    return this.library.modules.accounts.setAccountAndGet(data)
       .then(() => void 0);
   }
 
@@ -119,7 +114,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.u_username = tx.asset.delegate.username;
     }
 
-    return this.modules.accounts.setAccountAndGet(data)
+    return this.library.modules.accounts.setAccountAndGet(data)
       .then(() => void 0);
   }
 
@@ -137,7 +132,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.u_username = tx.asset.delegate.username;
     }
 
-    return this.modules.accounts.setAccountAndGet(data)
+    return this.library.modules.accounts.setAccountAndGet(data)
       .then(() => void 0);
   }
 
@@ -152,7 +147,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.u_username = null;
     }
 
-    return this.modules.accounts.setAccountAndGet(data)
+    return this.library.modules.accounts.setAccountAndGet(data)
       .then(() => void 0);
   }
 

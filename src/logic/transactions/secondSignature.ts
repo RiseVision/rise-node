@@ -1,9 +1,9 @@
 import * as z_schema from 'z-schema';
 import { ILogger, TransactionType } from '../../helpers/';
+import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import secondSignatureSchema from '../../schema/logic/transactions/secondSignature';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
-import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
 // tslint:disable-next-line interface-over-type-literal
 export type SecondSignatureAsset = {
   signature: {
@@ -13,26 +13,21 @@ export type SecondSignatureAsset = {
 
 export class SecondSignatureTransaction extends BaseTransactionType<SecondSignatureAsset> {
 
-  public modules: {
-    accounts: IAccountsModule,
-    system: ISystemModule
-  };
   private dbTable  = 'signatures';
   private dbFields = [
     'publicKey',
     'transactionId',
   ];
 
-  constructor(public library: { logger: ILogger, schema: z_schema }) {
+  constructor(public library: {
+    logger: ILogger,
+    modules: { accounts: IAccountsModule, system: ISystemModule }, schema: z_schema
+  }) {
     super(TransactionType.SIGNATURE);
   }
 
-  public bind(accounts: IAccountsModule, system: ISystemModule) {
-    this.modules = { accounts, system };
-  }
-
   public calculateFee(tx: IBaseTransaction<SecondSignatureAsset>, sender: any, height: number): number {
-    return this.modules.system.getFees(height).fees.secondsignature;
+    return this.library.modules.system.getFees(height).fees.secondsignature;
   }
 
   public getBytes(tx: IBaseTransaction<SecondSignatureAsset>, skipSignature: boolean,
@@ -61,7 +56,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
 
   public async apply(tx: IConfirmedTransaction<SecondSignatureAsset>, block: SignedBlockType,
                      sender: any): Promise<void> {
-    return this.modules.accounts.setAccountAndGet({
+    return this.library.modules.accounts.setAccountAndGet({
       address          : sender.address,
       secondPublicKey  : tx.asset.signature.publicKey,
       secondSignature  : 1,
@@ -71,7 +66,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   }
 
   public undo(tx: IConfirmedTransaction<SecondSignatureAsset>, block: SignedBlockType, sender: any): Promise<void> {
-    return this.modules.accounts.setAccountAndGet({
+    return this.library.modules.accounts.setAccountAndGet({
       address          : sender.address,
       secondPublicKey  : null,
       secondSignature  : 0,
@@ -81,7 +76,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   }
 
   public applyUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>, sender: any): Promise<void> {
-    return this.modules.accounts.setAccountAndGet({
+    return this.library.modules.accounts.setAccountAndGet({
       address          : sender.address,
       u_secondSignature: 0,
     })
@@ -92,7 +87,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     if (sender.u_secondSignature || sender.secondSignature) {
       return Promise.reject('Second signature already enabled');
     }
-    return this.modules.accounts.setAccountAndGet({
+    return this.library.modules.accounts.setAccountAndGet({
       address          : sender.address,
       u_secondSignature: 1,
     })

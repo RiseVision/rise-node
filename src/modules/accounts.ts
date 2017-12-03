@@ -1,10 +1,9 @@
 import * as crypto from 'crypto';
 import * as z_schema from 'z-schema';
-import { Ed, emptyCB, ILogger, Sequence, TransactionType } from '../helpers/';
+import { Ed, emptyCB, ILogger, Sequence } from '../helpers/';
+import { IAccountLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule } from '../ioc/interfaces/modules';
-import { AccountFilterData, MemAccountsData} from '../logic/';
-import { VoteTransaction } from '../logic/transactions/';
-import { IAccountLogic, ITransactionLogic } from '../ioc/interfaces/logic';
+import { AccountFilterData, MemAccountsData } from '../logic/';
 
 // tslint:disable-next-line
 type AccountLibrary = {
@@ -14,30 +13,19 @@ type AccountLibrary = {
   balancesSequence: Sequence,
   logic: {
     account: IAccountLogic,
-    transaction: ITransactionLogic
   }
-}
+};
 
 export class AccountsModule implements IAccountsModule {
-  private voteAsset: VoteTransaction;
 
   constructor(public library: AccountLibrary) {
-    this.voteAsset = this.library.logic.transaction.attachAssetType(
-      TransactionType.VOTE,
-      new VoteTransaction({
-        account: this.library.logic.account,
-        logger : this.library.logger,
-        schema : this.library.schema,
-      })
-    );
   }
 
   public cleanup() {
     return Promise.resolve();
   }
 
-  public onBind(modules: { delegates: any, rounds: any, system: any, transactions: any }) {
-    this.voteAsset.bind(modules.delegates, modules.rounds, modules.system);
+  public onBind() {
   }
 
   public getAccount(filter: AccountFilterData, fields?: Array<(keyof MemAccountsData)>): Promise<MemAccountsData> {

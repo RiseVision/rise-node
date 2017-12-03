@@ -5,21 +5,13 @@ import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
 export class SendTransaction extends BaseTransactionType<void> {
-  public modules: {
-    accounts: IAccountsModule,
-    system: ISystemModule
-  };
 
-  constructor(private library: { rounds: IRoundsLogic }) {
+  constructor(private library: { rounds: IRoundsLogic, modules: {accounts: IAccountsModule, system: ISystemModule} }) {
     super(TransactionType.SEND);
   }
 
-  public bind(accounts: IAccountsModule, system: ISystemModule) {
-    this.modules = { accounts, system };
-  }
-
   public calculateFee(tx: IBaseTransaction<void>, sender: any, height: number): number {
-    return this.modules.system.getFees(height).fees.send;
+    return this.library.modules.system.getFees(height).fees.send;
   }
 
   public async verify(tx: IBaseTransaction<void>, sender: any): Promise<void> {
@@ -35,9 +27,9 @@ export class SendTransaction extends BaseTransactionType<void> {
   public async apply(tx: IConfirmedTransaction<void>, block: SignedBlockType,
                      sender: any): Promise<void> {
     // Create account if does not exist.
-    await this.modules.accounts.setAccountAndGet({ address: tx.recipientId });
+    await this.library.modules.accounts.setAccountAndGet({ address: tx.recipientId });
 
-    return this.modules.accounts.mergeAccountAndGet({
+    return this.library.modules.accounts.mergeAccountAndGet({
       address  : tx.recipientId,
       balance  : tx.amount,
       blockId  : block.id,
@@ -49,9 +41,9 @@ export class SendTransaction extends BaseTransactionType<void> {
 
   public async undo(tx: IConfirmedTransaction<void>, block: SignedBlockType, sender: any): Promise<void> {
     // Create account if does not exist.
-    await this.modules.accounts.setAccountAndGet({ address: tx.recipientId });
+    await this.library.modules.accounts.setAccountAndGet({ address: tx.recipientId });
 
-    return this.modules.accounts.mergeAccountAndGet({
+    return this.library.modules.accounts.mergeAccountAndGet({
       address  : tx.recipientId,
       balance  : -tx.amount,
       blockId  : block.id,

@@ -28,14 +28,9 @@ export type TransactionLibrary = {
 export class TransactionsModule implements ITransactionsModule {
   public modules: { accounts: IAccountsModule };
   private transactionPool: ITransactionPoolLogic;
-  private sendAsset: SendTransaction;
 
   constructor(public library: TransactionLibrary) {
     this.transactionPool = this.library.logic.transactionPool;
-    this.sendAsset       = this.library.logic.transaction.attachAssetType<void, SendTransaction>(
-      TransactionType.SEND,
-      new SendTransaction({ rounds: this.library.logic.rounds })
-    );
   }
 
   public cleanup() {
@@ -228,7 +223,6 @@ export class TransactionsModule implements ITransactionsModule {
     this.modules = {
       accounts: modules.accounts,
     };
-    this.sendAsset.bind(this.modules.accounts, modules.system);
   }
 
   public async list(filter): Promise<{ count: number, transactions: Array<IConfirmedTransaction<any>> }> {

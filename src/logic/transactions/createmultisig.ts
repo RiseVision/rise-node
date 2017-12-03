@@ -18,11 +18,6 @@ export type MultisigAsset = {
 
 export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset> {
 
-  public modules: {
-    accounts: IAccountsModule,
-    sharedApi: any,
-    system: ISystemModule
-  };
   private unconfirmedSignatures: { [name: string]: true };
   private dbTable  = 'multisignatures';
   private dbFields = [
@@ -36,6 +31,10 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     account: IAccountLogic,
     logger: ILogger,
     schema: z_schema,
+    modules: {
+      accounts: IAccountsModule,
+      system: ISystemModule
+    },
     io: SocketIO.Server,
     transaction: ITransactionLogic
     roundsLogic: IRoundsLogic
@@ -43,12 +42,8 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     super(TransactionType.IN_TRANSFER);
   }
 
-  public bind(accounts: IAccountsModule, sharedApi: any, system: ISystemModule) {
-    this.modules = { accounts, sharedApi, system };
-  }
-
   public calculateFee(tx: IBaseTransaction<MultisigAsset>, sender: any, height: number): number {
-    return this.modules.system.getFees(height).fees.multisignature;
+    return this.library.modules.system.getFees(height).fees.multisignature;
   }
 
   public getBytes(tx: IBaseTransaction<MultisigAsset>, skipSignature: boolean, skipSecondSignature: boolean): Buffer {
@@ -170,7 +165,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
       // index 0 has "+" or "-"
       const realKey = key.substr(1);
       const address = this.library.account.generateAddressByPublicKey(realKey);
-      await this.modules.accounts.setAccountAndGet({ address, publicKey: realKey });
+      await this.library.modules.accounts.setAccountAndGet({ address, publicKey: realKey });
     }
   }
 

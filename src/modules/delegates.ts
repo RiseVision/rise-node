@@ -34,7 +34,6 @@ export type DelegatesModuleLibrary = {
   balancesSequence: Sequence,
   logic: {
     appState: IAppState,
-    transaction: ITransactionLogic,
     rounds: IRoundsLogic,
     broadcaster: IBroadcasterLogic,
   },
@@ -44,7 +43,6 @@ export type DelegatesModuleLibrary = {
 export class DelegatesModule implements IDelegatesModule {
   public enabledKeys: { [k: string]: true }   = {};
   private blockReward: BlockRewardLogic       = new BlockRewardLogic();
-  private delegateRegistrationTx: RegisterDelegateTransaction;
   private keypairs: { [k: string]: IKeypair } = {};
   private loaded: boolean                     = false;
   private modules: {
@@ -57,10 +55,6 @@ export class DelegatesModule implements IDelegatesModule {
   };
 
   constructor(public library: DelegatesModuleLibrary) {
-    this.delegateRegistrationTx = this.library.logic.transaction.attachAssetType(
-      TransactionType.DELEGATE,
-      new RegisterDelegateTransaction({schema: this.library.schema})
-    );
   }
 
   public async checkConfirmedDelegates(pk: publicKey, votes: string[]) {
@@ -211,8 +205,6 @@ export class DelegatesModule implements IDelegatesModule {
       transport    : scope.transport,
       // delegates   : scope.delegates,
     };
-
-    this.delegateRegistrationTx.bind(this.modules.accounts, scope.system);
   }
 
   public async onBlockchainReady() {
