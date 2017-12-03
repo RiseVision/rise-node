@@ -1,26 +1,21 @@
 import * as crypto from 'crypto';
 import { IDatabase } from 'pg-promise';
-import sql from '../../sql/delegates';
 import {
   catchToLoggerAndRemapError,
   constants,
   Ed,
-  ForkType,
   IKeypair,
   ILogger,
   JobsQueue,
   OrderBy,
   Sequence,
   Slots,
-  TransactionType
 } from '../helpers/';
-import { IAppState, IBroadcasterLogic, IRoundsLogic, ITransactionLogic } from '../ioc/interfaces/logic';
+import { IAppState, IBroadcasterLogic, IRoundsLogic,  } from '../ioc/interfaces/logic';
 import {
-  IAccountsModule, IBlocksModule, IBlocksModuleProcess, IDelegatesModule, ILoaderModule,
-  IRoundsModule, ITransactionsModule, ITransportModule
+  IAccountsModule, IBlocksModule, IBlocksModuleProcess, IDelegatesModule, ITransactionsModule, ITransportModule
 } from '../ioc/interfaces/modules';
 import { BlockRewardLogic, MemAccountsData, SignedBlockType } from '../logic/';
-import { RegisterDelegateTransaction } from '../logic/transactions/';
 import { AppConfig } from '../types/genericTypes';
 import { publicKey } from '../types/sanityTypes';
 // tslint:disable-next-line interface-over-type-literal
@@ -49,7 +44,6 @@ export class DelegatesModule implements IDelegatesModule {
     blocks: IBlocksModule,
     blocksProcess: IBlocksModuleProcess,
     accounts: IAccountsModule
-    loader: ILoaderModule,
     transport: ITransportModule,
     transactions: ITransactionsModule,
   };
@@ -200,7 +194,6 @@ export class DelegatesModule implements IDelegatesModule {
       accounts     : scope.accounts,
       blocks       : scope.blocks,
       blocksProcess: scope.blocksProcess,
-      loader       : scope.loader,
       transactions : scope.transactions,
       transport    : scope.transport,
       // delegates   : scope.delegates,
