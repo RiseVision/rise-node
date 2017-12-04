@@ -41,6 +41,7 @@ digraph G {
                 cacheModule
                 delegatesModule
                 delegatesModule
+                forgeModule
                 forkModule
                 multisignaturesModule
                 peersModule
@@ -89,20 +90,22 @@ digraph G {
 
         delegatesModule -> accountsModule;
         delegatesModule -> blocksModule;
-        delegatesModule -> blocksProcessModule;
         delegatesModule -> roundsLogic;
-        delegatesModule -> loaderModule;
-        delegatesModule -> transportModule;
         delegatesModule -> transactionsModule;
-        delegatesModule -> transactionLogic;
-        delegatesModule -> broadcasterLogic;
+
+        forgeModule -> appState
+        forgeModule -> broadcasterLogic
+        forgeModule -> blocksModule
+        forgeModule -> accountsModule
+        forgeModule -> delegatesModule
+        forgeModule -> transactionsModule
+        forgeModule -> blocksProcess
 
         loaderModule -> blocksModule
         loaderModule -> blocksChainModule
         loaderModule -> blocksProcessModule
         loaderModule -> blocksUtilsModule
         loaderModule -> blocksVerifyModule
-        loaderModule -> roundsModule
         loaderModule -> systemModule
         loaderModule -> transactionsModule
         loaderModule -> transportModule
@@ -113,6 +116,7 @@ digraph G {
         loaderModule -> accountLogic
         loaderModule -> peersLogic
         loaderModule -> broadcasterLogic
+        loaderModule -> appState
 
         multisignaturesModule -> accountsModule
         multisignaturesModule -> transactionsModule
@@ -146,6 +150,7 @@ digraph G {
         transportModule -> broadcasterLogic
 
         broadcasterLogic -> peersModule
+        broadcasterLogic -> appState
         broadcasterLogic -> transportModule
         broadcasterLogic -> transactionsModule
 
