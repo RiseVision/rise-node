@@ -3,11 +3,6 @@ import { IModule } from './IModule';
 
 export interface IRoundsModule extends IModule {
   /**
-   * Sets the snapshot rounds
-   */
-  setSnapshotRounds(rounds: number): void;
-
-  /**
    * Deletes specific round from mem_rounds table
    */
   flush(round: number): Promise<void>;

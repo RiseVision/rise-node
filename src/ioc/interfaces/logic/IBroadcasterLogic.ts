@@ -1,7 +1,6 @@
 import { BroadcastTaskOptions, PeerType } from '../../../logic';
 
 export interface IBroadcasterLogic {
-  readonly consensus: number;
 
   getPeers(params: { limit?: number, broadhash?: string }): Promise<PeerType[]>;
 

@@ -3,7 +3,7 @@ import { IDatabase } from 'pg-promise';
 import * as popsicle from 'popsicle';
 import * as z_schema from 'z-schema';
 import { BigNum, Bus, constants, ILogger, Sequence } from '../helpers/';
-import { IBlockLogic, IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
+import { IAppState, IBlockLogic, IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
   IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule,
   ITransportModule
@@ -33,6 +33,7 @@ export type TransportLibrary = {
   io: SocketIO.Server,
   balancesSequence: Sequence,
   logic: {
+    appState: IAppState,
     block: IBlockLogic,
     broadcaster: IBroadcasterLogic
     transaction: ITransactionLogic,
@@ -56,20 +57,13 @@ export class TransportModule implements ITransportModule {
   constructor(public library: TransportLibrary) {
     this.broadcaster = this.library.logic.broadcaster;
     this.schema      = this.library.schema;
-  }
 
-  public get consensus() {
-    return this.broadcaster.consensus;
-  }
-
-  /**
-   * True or false depending if the consensus is too low
-   */
-  public get poorConsensus() {
-    if (typeof(this.broadcaster.consensus) === 'undefined') {
-      return false;
-    }
-    return this.broadcaster.consensus < constants.minBroadhashConsensus;
+    this.library.logic.appState.setComputed('node.poorConsensus', (a: IAppState) => {
+      if (typeof(a.get('node.consensus')) === 'undefined') {
+        return false;
+      }
+      return a.get('node.consensus') < constants.minBroadhashConsensus;
+    });
   }
 
   // tslint:disable-next-line max-line-length

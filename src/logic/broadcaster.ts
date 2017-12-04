@@ -2,7 +2,7 @@ import * as extend from 'extend';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
 import { constants, ILogger, JobsQueue, promiseToCB } from '../helpers/';
-import { IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
+import { IAppState, IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
 import { IPeersModule, ITransactionsModule, ITransportModule } from '../ioc/interfaces/modules';
 import { AppConfig } from '../types/genericTypes';
 import { PeerType } from './peer';
@@ -13,6 +13,7 @@ import { IBaseTransaction } from './transactions/';
 type BroadcastLibrary = {
   logger: ILogger,
   logic: {
+    appState: IAppState,
     peers: IPeersLogic,
     transactions: ITransactionLogic
   },
@@ -36,7 +37,6 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   public queue: BroadcastTask[] = [];
   public config: AppConfig;
 
-  public consensus: number;
   // Broadcast routes
   public routes                 = [{
     collection: 'transactions',
@@ -61,9 +61,9 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     this.config = library.config;
 
     if (this.library.config.forging.force) {
-      this.consensus = undefined;
+      this.library.logic.appState.set('node.consensus', undefined);
     } else {
-      this.consensus = 100;
+      this.library.logic.appState.set('node.consensus', 100);
     }
 
     JobsQueue.register(
@@ -92,7 +92,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     const { peers, consensus } = await this.modules.peers.list(params);
 
     if (originalLimit === constants.maxPeers) {
-      this.consensus = consensus;
+      this.library.logic.appState.set('node.consensus', consensus);
     }
     return peers;
   }

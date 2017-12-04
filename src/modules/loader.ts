@@ -65,7 +65,6 @@ export class LoaderModule implements ILoaderModule {
     blocksProcess: IBlocksModuleProcess,
     blocksUtils: IBlocksModuleUtils,
     blocksVerify: IBlocksModuleVerify,
-    rounds: IRoundsModule,
     system: ISystemModule,
     transactions: ITransactionsModule,
     transport: ITransportModule,
@@ -110,7 +109,6 @@ export class LoaderModule implements ILoaderModule {
       blocksVerify   : modules.blocksVerify,
       multisignatures: modules.multisignatures,
       peers          : modules.peers,
-      rounds         : modules.rounds,
       system         : modules.system,
       transactions   : modules.transactions,
       transport      : modules.transport,
@@ -218,7 +216,7 @@ export class LoaderModule implements ILoaderModule {
           // Normalize to previous round if we
           this.library.config.loading.snapshot = (round > 1) ? (round - 1) : 1;
         }
-        this.modules.rounds.setSnapshotRounds(this.library.config.loading.snapshot);
+        this.library.logic.appState.set('rounds.snapshot', this.library.config.loading.snapshot);
       }
       this.library.logger.info(`Snapshotting to end of round: ${this.library.config.loading.snapshot}`);
       return this.load(blocksCount, limit, 'Blocks Verification enabled');

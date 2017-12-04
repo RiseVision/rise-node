@@ -4,8 +4,6 @@ import { PeerRequestOptions } from '../../../modules';
 import { IModule } from './IModule';
 
 export interface ITransportModule extends IModule {
-  readonly consensus: number;
-  readonly poorConsensus: boolean;
 
   getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: PeerLogic }>;
 
