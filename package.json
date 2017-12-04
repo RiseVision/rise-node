@@ -6,6 +6,7 @@
     "start": "node app.js",
     "test-integration": "./node_modules/.bin/grunt tests/integration --verbose",
     "test-unit": "NODE_ENV=test mocha  --bail --require ts-node/register './tests/**/*.spec.js'",
+    "transpile": "shx rm -rf dist; tsc",
     "test-unit-cover": "NODE_ENV=test istanbul cover _mocha -- --bail --require ts-node/register './tests/**/*.spec.js' && istanbul-coveralls "
   },
   "author": "Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team, Rise Team",
@@ -92,6 +93,7 @@
     "moment": "=2.17.1",
     "reflect-metadata": "^0.1.10",
     "rewire": "^2.5.2",
+    "shx": "^0.2.2",
     "sinon": "=2.3.0",
     "supertest": "=3.0.0",
     "ts-node": "^3.3.0",
