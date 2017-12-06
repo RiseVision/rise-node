@@ -2,7 +2,7 @@
 import * as _ from 'lodash';
 import { ILogger } from '../helpers';
 import { IPeerLogic, IPeersLogic } from '../ioc/interfaces/logic/';
-import { PeersModule } from '../modules/';
+import { IPeersModule } from '../ioc/interfaces/modules';
 import { BasePeerType, PeerLogic, PeerState, PeerType } from './peer';
 
 export class PeersLogic implements IPeersLogic {
@@ -10,7 +10,7 @@ export class PeersLogic implements IPeersLogic {
 
   private peers: { [peerIdentifier: string]: IPeerLogic } = {};
 
-  private modules: { peers: PeersModule };
+  private modules: { peers: IPeersModule };
 
   constructor(logger: ILogger) {
     this.library = {logger};
