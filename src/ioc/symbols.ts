@@ -4,8 +4,9 @@ export const Symbols = {
     zschema: Symbol('z_schema'),
   },
   helpers: {
-    ed     : Symbol('ed'),
-    logger: Symbol('logger'),
+    constants: Symbol('constants'),
+    ed       : Symbol('ed'),
+    logger   : Symbol('logger'),
   },
   logic  : {
     account        : Symbol('account'),

@@ -1,8 +1,19 @@
+import { inject, injectable, postConstruct } from 'inversify';
 import { constants } from '../helpers/';
 import { IBlockReward } from '../ioc/interfaces/logic/';
+import { Symbols } from '../ioc/symbols';
 
+@injectable()
 export class BlockRewardLogic implements IBlockReward {
-  public rewards = constants.rewards;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constants;
+
+  private rewards: Array<{ height: number, reward: number }>;
+
+  @postConstruct()
+  public initRewards() {
+    this.rewards = constants.rewards;
+  }
 
   public calcMilestone(height: number) {
     height = this.parseHeight(height);

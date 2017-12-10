@@ -1,6 +1,6 @@
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
-import { inject } from 'inversify';
+import { inject, injectable } from 'inversify';
 import z_schema from 'z-schema';
 import { BigNum, constants, Ed, IKeypair } from '../helpers/';
 import { IBlockLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
@@ -37,6 +37,7 @@ export type SignedAndChainedBlockType = SignedBlockType & {
   height: number
 };
 
+@injectable()
 export class BlockLogic implements IBlockLogic {
   /**
    * Calculates block id.
