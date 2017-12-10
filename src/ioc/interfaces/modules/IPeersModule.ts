@@ -4,11 +4,6 @@ import { IModule } from './IModule';
 
 export interface IPeersModule extends IModule {
   /**
-   * Filters peers with private ips or same nonce
-   */
-  acceptable(peers: PeerType[]): PeerType[];
-
-  /**
    * Pings a peer
    */
   ping(peer: PeerLogic): Promise<void>;

@@ -45,21 +45,6 @@ export class PeersModule implements IPeersModule {
     };
   }
 
-  /**
-   * Filters peers with private ips or same nonce
-   */
-  public acceptable(peers: PeerType[]): PeerType[] {
-    return _(peers)
-      .uniqWith((a, b) => `${a.ip}${a.port}` === `${b.ip}${b.port}`)
-      .filter((peer) => {
-        if ((process.env.NODE_ENV || '').toUpperCase() === 'TEST') {
-          return peer.nonce !== this.modules.system.getNonce() && (peer.os !== 'lisk-js-api');
-        }
-        return !ip.isPrivate(peer.ip) && peer.nonce !== this.modules.system.getNonce() && (peer.os !== 'lisk-js-api');
-      })
-      .value();
-  }
-
   public cleanup() {
     // save on cleanup.
     return this.dbSave();
@@ -122,7 +107,7 @@ export class PeersModule implements IPeersModule {
     await cbToPromise((cb) => this.library.schema.validate(response.body, schema.discover.peers, cb));
 
     // Filter only acceptable peers.
-    const acceptablePeers = this.acceptable(response.body.peers);
+    const acceptablePeers = this.library.logic.peers.acceptable(response.body.peers);
 
     let discovered = 0;
     let rejected   = 0;
@@ -208,7 +193,7 @@ export class PeersModule implements IPeersModule {
       // and only same broadhash
       .filter((p) => options.broadhash === p.broadhash);
 
-    peersList = this.acceptable(peersList);
+    peersList = this.library.logic.peers.acceptable(peersList);
 
     const matchedBroadhash = peersList.length;
 
@@ -219,7 +204,7 @@ export class PeersModule implements IPeersModule {
         // but different broadhashes
         .filter((p) => options.broadhash !== p.broadhash);
 
-      unmatchedBroadPeers = this.acceptable(unmatchedBroadPeers);
+      unmatchedBroadPeers = this.library.logic.peers.acceptable(unmatchedBroadPeers);
       peersList           = peersList.concat(unmatchedBroadPeers);
     }
     peersList = peersList.slice(0, options.limit);
@@ -241,7 +226,7 @@ export class PeersModule implements IPeersModule {
   public async onPeersReady() {
     this.library.logger.trace('Peers ready');
 
-    JobsQueue.register('peersDiscoveryAndUpdate', async (cb) => {
+    JobsQueue.register('peersDiscoveryAndUpdate', async () => {
       try {
         await this.discover();
       } catch (err) {

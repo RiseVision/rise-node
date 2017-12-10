@@ -154,7 +154,7 @@ digraph G {
         broadcasterLogic -> transportModule
         broadcasterLogic -> transactionsModule
 
-        peersLogic -> peersModule
+        peersLogic -> systemModule
         roundLogic -> accountsModule
         transactionLogic -> roundsModule
         transactionPool -> transactionLogic

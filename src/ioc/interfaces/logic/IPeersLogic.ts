@@ -19,4 +19,11 @@ export interface IPeersLogic {
   list(normalize: false): PeerLogic[];
 
   list(normalize: boolean): any[];
+
+  /**
+   * Filters acceptable peers.
+   * @param {PeerType[]} peers
+   * @returns {PeerType[]}
+   */
+  acceptable(peers: PeerType[]): PeerType[];
 }
