@@ -1,13 +1,14 @@
 export const Symbols = {
   generic: {
     appConfig: Symbol('appConfig'),
-    db     : Symbol('db'),
-    zschema: Symbol('z_schema'),
+    db       : Symbol('db'),
+    zschema  : Symbol('z_schema'),
   },
   helpers: {
     constants: Symbol('constants'),
     ed       : Symbol('ed'),
     logger   : Symbol('logger'),
+    slots    : Symbol('slots'),
   },
   logic  : {
     account        : Symbol('account'),

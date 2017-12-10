@@ -3,8 +3,8 @@ import { ITask } from 'pg-promise';
 import roundSQL from '../../sql/logic/rounds';
 import { ILogger, RoundChanges } from '../helpers/';
 import { IRoundLogic } from '../ioc/interfaces/logic/';
-import { address, publicKey } from '../types/sanityTypes';
 import { IAccountsModule } from '../ioc/interfaces/modules';
+import { address, publicKey } from '../types/sanityTypes';
 
 // tslint:disable-next-line
 export type RoundLogicScope = {
@@ -29,6 +29,9 @@ export type RoundLogicScope = {
   }
 };
 
+// TODO: check if we can inversifyjs this.
+// This cannot be injected automatically cause it will need to be instantiated by
+// rounds module.
 export class RoundLogic implements IRoundLogic {
 
   constructor(public scope: RoundLogicScope, public task: ITask<any>) {

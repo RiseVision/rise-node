@@ -1,11 +1,13 @@
+import { inject, injectable } from 'inversify';
 import { Slots } from '../helpers';
 import { IRoundsLogic } from '../ioc/interfaces/logic/';
+import { Symbols } from '../ioc/symbols';
 
+@injectable()
 export class RoundsLogic implements IRoundsLogic {
 
-  constructor(private slots: typeof Slots) {
-  }
-
+  @inject(Symbols.helpers.slots)
+  private slots: typeof Slots;
   /**
    * Return round calculated given the blockheight
    * @return {number}
