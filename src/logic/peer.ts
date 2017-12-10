@@ -1,3 +1,4 @@
+import { injectable } from 'inversify';
 import * as ip from 'ip';
 import { IPeerLogic } from '../ioc/interfaces/logic/';
 
@@ -76,6 +77,7 @@ const properties = [
   'nonce',
 ];
 
+@injectable()
 export class PeerLogic implements PeerType, IPeerLogic {
   public ip: string;
   public port: number;
@@ -117,6 +119,7 @@ export class PeerLogic implements PeerType, IPeerLogic {
     return this;
   }
 
+  // tslint:disable-next-line max-line-length
   public normalize<T extends { dappid?: string | string[], height?: number, port?: number, state?: PeerState }>(peer: T): T {
     if (peer.dappid && !Array.isArray(peer.dappid)) {
       peer.dappid = [peer.dappid];
