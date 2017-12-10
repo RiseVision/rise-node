@@ -4,6 +4,7 @@ export * from './accounts';
 export * from './blocks';
 export * from './cache';
 export * from './delegates';
+export * from './forge';
 export * from './loader';
 export * from './multisignatures';
 export * from './peers';

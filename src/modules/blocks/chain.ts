@@ -11,7 +11,6 @@ import { BlocksModule } from '../blocks';
 import { RoundsModule } from '../rounds';
 import { TransactionsModule } from '../transactions';
 
-
 // tslint:disable-next-line interface-over-type-literal
 export type BlocksModuleChainLibrary = {
   logger: ILogger,

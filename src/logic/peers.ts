@@ -2,7 +2,7 @@
 import * as _ from 'lodash';
 import { ILogger } from '../helpers';
 import { IPeerLogic, IPeersLogic } from '../ioc/interfaces/logic/';
-import { IPeersModule } from '../ioc/interfaces/modules';
+import {ISystemModule} from '../ioc/interfaces/modules';
 import { BasePeerType, PeerLogic, PeerState, PeerType } from './peer';
 
 export class PeersLogic implements IPeersLogic {
@@ -10,7 +10,7 @@ export class PeersLogic implements IPeersLogic {
 
   private peers: { [peerIdentifier: string]: IPeerLogic } = {};
 
-  private modules: { peers: IPeersModule };
+  private modules: { system: ISystemModule };
 
   constructor(logger: ILogger) {
     this.library = {logger};
@@ -62,7 +62,7 @@ export class PeersLogic implements IPeersLogic {
       }
     } else {
       // insert peer!
-      if (!_.isEmpty(this.modules.peers.acceptable([thePeer]))) {
+      if (!_.isEmpty(this.acceptable([thePeer]))) {
         thePeer.updated            = Date.now();
         this.peers[thePeer.string] = thePeer;
         this.library.logger.debug('Inserted new peer', thePeer.string);
@@ -121,10 +121,25 @@ export class PeersLogic implements IPeersLogic {
       .map((peer) => normalize ? peer.object() : peer);
   }
 
-  public bindModules(modules: { peers: any }) {
+  public bindModules(modules: { system: any }) {
     this.modules = {
-      peers: modules.peers,
+      system: modules.system,
     };
+  }
+
+  /**
+   * Filters peers with private ips or same nonce
+   */
+  public acceptable(peers: PeerType[]): PeerType[] {
+    return _(peers)
+      .uniqWith((a, b) => `${a.ip}${a.port}` === `${b.ip}${b.port}`)
+      .filter((peer) => {
+        if ((process.env.NODE_ENV || '').toUpperCase() === 'TEST') {
+          return peer.nonce !== this.modules.system.getNonce() && (peer.os !== 'lisk-js-api');
+        }
+        return !ip.isPrivate(peer.ip) && peer.nonce !== this.modules.system.getNonce() && (peer.os !== 'lisk-js-api');
+      })
+      .value();
   }
 
 }

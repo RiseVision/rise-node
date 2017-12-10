@@ -49,13 +49,6 @@ export class RoundsModule implements IRoundsModule {
   }
 
   /**
-   * Sets the snapshot rounds
-   */
-  public setSnapshotRounds(rounds: number) {
-    this.library.config.loading.snapshot = rounds;
-  }
-
-  /**
    * Deletes specific round from mem_rounds table
    */
   public flush(round: number): Promise<void> {
@@ -97,7 +90,7 @@ export class RoundsModule implements IRoundsModule {
 
         const roundLogic    = new RoundLogic(roundLogicScope, task);
         const snapshotRound = (
-          this.library.config.loading.snapshot > 0 && this.library.config.loading.snapshot === roundLogicScope.round
+          this.getSnapshotRounds() > 0 && this.getSnapshotRounds() === roundLogicScope.round
         );
 
         return roundLogic.mergeBlockGenerator()
@@ -136,6 +129,13 @@ export class RoundsModule implements IRoundsModule {
           this.library.logger.trace('Round snapshot done');
         }
       });
+  }
+
+  /**
+   * gets the snapshot rounds
+   */
+  private getSnapshotRounds() {
+    return this.library.logic.appState.get('rounds.snapshot') || 0;
   }
 
   private async innerTick(block: SignedBlockType,

@@ -16,16 +16,6 @@ export interface IDelegatesModule extends IModule {
   checkUnconfirmedDelegates(pk: publicKey, votes: string[]): Promise<void>;
 
   /**
-   * enable forging for specific pk or all if pk is undefined
-   */
-  enableForge(pk?: publicKey | IKeypair): void;
-
-  /**
-   * disable forging for specific pk or all if pk is undefined
-   */
-  disableForge(pk?: publicKey): void;
-
-  /**
    * Generate a randomized list for the round of which the given height is into.
    * @param {number} height blockheight.
    * @return {Promise<publicKey[]>}

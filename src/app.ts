@@ -45,7 +45,7 @@ import {
   BlocksModule,
   BlocksSubModules,
   Cache,
-  DelegatesModule,
+  DelegatesModule, ForgeModule,
   LoaderModule,
   MultisignaturesModule,
   PeersModule,
@@ -220,6 +220,7 @@ async function boot(): Promise<() => Promise<void>> {
     config: appConfig,
     logger,
     logic : {
+      appState,
       peers       : peersLogic,
       transactions: transactionLogic,
     },
@@ -290,6 +291,11 @@ async function boot(): Promise<() => Promise<void>> {
       db, ed, io, logger, logic,
       schema, sequence: mainSequence,
     }),
+    forge   : new ForgeModule({
+      config          : appConfig,
+      ed, logger, logic,
+      sequence: mainSequence,
+    }),
     loader         : new LoaderModule({
       balancesSequence,
       bus,
@@ -349,6 +355,7 @@ async function boot(): Promise<() => Promise<void>> {
       config: appConfig,
       db, io, logger,
       logic : {
+        appState,
         block      : blockLogic,
         broadcaster: broadcasterLogic,
         peers      : peersLogic,

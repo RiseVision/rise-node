@@ -77,7 +77,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       });
     // FIXME: Need better checking here, is base on 'common' property enough?
     if (!commonResp.common) {
-      if (this.modules.transport.poorConsensus) {
+      if (this.library.logic.appState.getComputed('node.poorConsensus')) {
         return this.modules.blocksChain.recoverChain();
       } else {
         throw new Error(`Chain comparison failed with peer ${peer.string} using ids: ${ids.join(', ')}`);
@@ -98,7 +98,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
     if (!prevBlockRows.length || !prevBlockRows[0].count) {
       // Block does not exist  - comparison failed.
-      if (this.modules.transport.poorConsensus) {
+      if (this.library.logic.appState.getComputed('node.poorConsensus')) {
         return this.modules.blocksChain.recoverChain();
       } else {
         throw new Error(`Chain comparison failed with peer: ${
