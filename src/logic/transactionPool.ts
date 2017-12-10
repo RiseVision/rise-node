@@ -1,9 +1,10 @@
+import { inject, postConstruct } from 'inversify';
 import { Bus, constants, ILogger, JobsQueue, promiseToCB, TransactionType } from '../helpers/';
 import { IAppState, ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { AppConfig } from '../types/genericTypes';
-import { TransactionLogic } from './transaction';
 import { IBaseTransaction } from './transactions/';
+import { Symbols } from '../ioc/symbols';
 
 // tslint:disable-next-line
 
@@ -89,35 +90,31 @@ export class TransactionPool implements ITransactionPoolLogic {
   public queued         = new InnerTXQueue();
   public multisignature = new InnerTXQueue();
 
-  private library: {
-    logger: ILogger,
-    bus: Bus,
-    logic: {
-      appState: IAppState,
-      transaction: ITransactionLogic
-    }
-    config: AppConfig
-  };
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.helpers.bus)
+  private bus: Bus;
+  @inject(Symbols.logic.appState)
+  private appState: IAppState;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
+  @inject(Symbols.generic.appConfig)
+  private config: AppConfig;
+
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.transactions)
+  private transactionsModule: ITransactionsModule;
+
   private expiryInterval    = 30000;
   private bundledInterval: number;
   private bundleLimit: number;
   private processed: number = 0;
-  private modules: {
-    accounts: IAccountsModule,
-    transactions: ITransactionsModule,
-  };
 
-  constructor(transactionLogic: TransactionLogic, appState: IAppState,
-              bus: Bus, logger: ILogger, config: AppConfig) {
-    this.library = {
-      bus,
-      config,
-      logger,
-      logic : { appState, transaction: transactionLogic },
-    };
-
-    this.bundledInterval = config.broadcasts.broadcastInterval;
-    this.bundleLimit     = config.broadcasts.releaseLimit;
+  @postConstruct()
+  public afterConstruction() {
+    this.bundledInterval = this.config.broadcasts.broadcastInterval;
+    this.bundleLimit     = this.config.broadcasts.releaseLimit;
     JobsQueue.register(
       'transactionPoolNextBundle',
       (cb) => {
@@ -135,10 +132,6 @@ export class TransactionPool implements ITransactionPoolLogic {
     );
   }
 
-  public bind(accounts: IAccountsModule, transactions: ITransactionsModule) {
-    this.modules = { accounts, transactions};
-  }
-
   /**
    * Queue a transaction or throws an error if it couldnt
    */
@@ -154,7 +147,7 @@ export class TransactionPool implements ITransactionPoolLogic {
       queue = this.queued;
     }
 
-    if (queue.count >= this.library.config.transactions.maxTxsPerQueue) {
+    if (queue.count >= this.config.transactions.maxTxsPerQueue) {
       throw new Error('Transaction pool is full');
     } else {
       queue.add(tx, payload);
@@ -162,12 +155,12 @@ export class TransactionPool implements ITransactionPoolLogic {
   }
 
   public fillPool(): Promise<void> {
-    if (this.library.logic.appState.get('loader.isSyncing')) {
+    if (this.appState.get('loader.isSyncing')) {
       return Promise.resolve();
     }
 
     const unconfirmedCount = this.unconfirmed.count;
-    this.library.logger.debug(`Transaction pool size: ${unconfirmedCount}`);
+    this.logger.debug(`Transaction pool size: ${unconfirmedCount}`);
 
     const spare = constants.maxTxsPerBlock - unconfirmedCount;
     if (spare <= 0) {
@@ -206,13 +199,13 @@ export class TransactionPool implements ITransactionPoolLogic {
       limit = minLimit;
     }
 
-    const unconfirmed = this.modules.transactions.getUnconfirmedTransactionList(false, constants.maxTxsPerBlock);
+    const unconfirmed = this.transactionsModule.getUnconfirmedTransactionList(false, constants.maxTxsPerBlock);
     limit -= unconfirmed.length;
 
     const multisignatures = this.multisignature.list(false, constants.maxTxsPerBlock, ((t) => (t as any).ready));
     limit -= multisignatures.length;
 
-    const queued = this.modules.transactions.getQueuedTransactionList(false, limit);
+    const queued = this.transactionsModule.getQueuedTransactionList(false, limit);
     limit -= queued.length;
 
     return unconfirmed.concat(multisignatures).concat(queued);
@@ -237,7 +230,7 @@ export class TransactionPool implements ITransactionPoolLogic {
       if (seconds > timeOut) {
         ids.push(tx.id);
         this.removeUnconfirmedTransaction(tx.id);
-        this.library.logger.info(`Expired transaction: ${tx.id} received at: ${payload.receivedAt.toUTCString()}`);
+        this.logger.info(`Expired transaction: ${tx.id} received at: ${payload.receivedAt.toUTCString()}`);
       }
     }
     return ids;
@@ -261,10 +254,10 @@ export class TransactionPool implements ITransactionPoolLogic {
         try {
           this.queueTransaction(tx, true);
         } catch (e) {
-          this.library.logger.debug(`Failed to queue bundled transaction: ${tx.id}`, e);
+          this.logger.debug(`Failed to queue bundled transaction: ${tx.id}`, e);
         }
       } catch (e) {
-        this.library.logger.debug(`Failed to process / verify bundled transaction: ${tx.id}`, e);
+        this.logger.debug(`Failed to process / verify bundled transaction: ${tx.id}`, e);
         this.unconfirmed.remove(tx.id);
       }
     }
@@ -329,15 +322,15 @@ export class TransactionPool implements ITransactionPoolLogic {
           false
         );
         try {
-          await this.modules.transactions.applyUnconfirmed(
+          await this.transactionsModule.applyUnconfirmed(
             theTx as any, // TODO: check me.
             sender);
         } catch (e) {
-          this.library.logger.error(`Failed to apply unconfirmed transaction ${theTx.id}`, e);
+          this.logger.error(`Failed to apply unconfirmed transaction ${theTx.id}`, e);
           this.unconfirmed.remove(theTx.id);
         }
       } catch (e) {
-        this.library.logger.error(`Failed to process / verify unconfirmed transaction: ${theTx.id}`, e);
+        this.logger.error(`Failed to process / verify unconfirmed transaction: ${theTx.id}`, e);
         this.unconfirmed.remove(theTx.id);
       }
     }
@@ -351,10 +344,10 @@ export class TransactionPool implements ITransactionPoolLogic {
         continue;
       }
       ids.push(tx.id);
-      await this.modules.transactions.undoUnconfirmed(tx)
+      await this.transactionsModule.undoUnconfirmed(tx)
         .catch((err) => {
           if (err) {
-            this.library.logger.error(`Failed to undo unconfirmed transaction: ${tx.id}`, err);
+            this.logger.error(`Failed to undo unconfirmed transaction: ${tx.id}`, err);
             this.removeUnconfirmedTransaction(tx.id);
           }
         });
@@ -389,7 +382,7 @@ export class TransactionPool implements ITransactionPoolLogic {
       throw new Error('Missing transaction');
     }
 
-    const sender = await this.modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey });
+    const sender = await this.accountsModule.setAccountAndGet({ publicKey: transaction.senderPublicKey });
 
     const isMultisigAccount = Array.isArray(sender.multisignatures) && sender.multisignatures.length > 0;
     if (isMultisigAccount) {
@@ -399,20 +392,20 @@ export class TransactionPool implements ITransactionPoolLogic {
     let requester = null;
     if (sender && transaction.requesterPublicKey && isMultisigAccount) {
       // Fetch the requester
-      requester = await this.modules.accounts.getAccount({ publicKey: transaction.requesterPublicKey });
+      requester = await this.accountsModule.getAccount({ publicKey: transaction.requesterPublicKey });
     }
 
     // Process the transaction!
-    await this.library.logic.transaction.process(transaction, sender, requester);
+    await this.transactionLogic.process(transaction, sender, requester);
 
     // Normalize tx.
-    const normalizedTx = this.library.logic.transaction.objectNormalize(transaction);
+    const normalizedTx = this.transactionLogic.objectNormalize(transaction);
 
     // Verify the transaction
     // TODO: check why here we've to cast to any
-    await this.library.logic.transaction.verify(normalizedTx as any, sender, requester, null);
+    await this.transactionLogic.verify(normalizedTx as any, sender, requester, null);
 
-    await this.library.bus.message('unconfirmedTransaction', normalizedTx, broadcast);
+    await this.bus.message('unconfirmedTransaction', normalizedTx, broadcast);
     return sender;
   }
 

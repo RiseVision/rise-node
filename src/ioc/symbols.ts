@@ -6,6 +6,7 @@ export const Symbols = {
     zschema     : Symbol('z_schema'),
   },
   helpers: {
+    bus      : Symbol('bus'),
     constants: Symbol('constants'),
     ed       : Symbol('ed'),
     logger   : Symbol('logger'),
