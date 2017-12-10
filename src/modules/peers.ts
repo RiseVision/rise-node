@@ -5,10 +5,9 @@ import { IDatabase } from 'pg-promise';
 import * as shuffle from 'shuffle-array';
 import * as z_schema from 'z-schema';
 import peerSQL from '../../sql/peers';
-import { Bus, cbToPromise, constants, ILogger, JobsQueue } from '../helpers/';
+import { Bus, constants, ILogger } from '../helpers/';
 import { IPeersModule, ISystemModule, ITransportModule } from '../ioc/interfaces/modules/';
 import { PeerLogic, PeersLogic, PeerState, PeerType } from '../logic/';
-import schema from '../schema/peers';
 import { AppConfig } from '../types/genericTypes';
 import { SystemModule } from './system';
 
@@ -33,40 +32,20 @@ export type PeersLibrary = {
 export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip?: string, port?: number, state?: PeerState };
 
 export class PeersModule implements IPeersModule {
-  public modules: { transport: ITransportModule, system: ISystemModule };
+  public modules: { system: ISystemModule };
 
   constructor(public library: PeersLibrary) {
   }
 
-  public onBind(scope: { transport: any, system: SystemModule }) {
+  public onBind(scope: { system: SystemModule }) {
     this.modules = {
       system   : scope.system,
-      transport: scope.transport,
     };
   }
 
   public cleanup() {
     // save on cleanup.
     return this.dbSave();
-  }
-
-  /**
-   * Pings a peer
-   */
-  public async ping(peer: PeerLogic) {
-    this.library.logger.trace(`Pinging peer: ${peer.string}`);
-    try {
-      await this.modules.transport.getFromPeer(
-        peer,
-        {
-          api   : '/height',
-          method: 'GET',
-        }
-      );
-    } catch (err) {
-      this.library.logger.trace(`Ping peer failed: ${peer.string}`, err);
-      throw err;
-    }
   }
 
   /**
@@ -89,42 +68,6 @@ export class PeersModule implements IPeersModule {
     } else {
       return this.library.logic.peers.remove({ ip: peerIP, port });
     }
-  }
-
-  /**
-   * Discover peers by getting list and validates them
-   */
-  public async discover(): Promise<void> {
-    this.library.logger.trace('Peer->discover');
-    const response = await this.modules.transport.getFromRandomPeer<any>(
-      {},
-      {
-        api   : '/list',
-        method: 'GET',
-      }
-    );
-
-    await cbToPromise((cb) => this.library.schema.validate(response.body, schema.discover.peers, cb));
-
-    // Filter only acceptable peers.
-    const acceptablePeers = this.library.logic.peers.acceptable(response.body.peers);
-
-    let discovered = 0;
-    let rejected   = 0;
-    for (const rawPeer of acceptablePeers) {
-      const peer: PeerLogic = this.library.logic.peers.create(rawPeer);
-      if (this.library.schema.validate(peer, schema.discover.peer)) {
-        peer.state = PeerState.DISCONNECTED;
-        this.library.logic.peers.upsert(peer, true);
-        discovered++;
-      } else {
-        this.library.logger.warn(`Rejecting invalid peer: ${peer.string}`);
-        rejected++;
-      }
-    }
-
-    this.library.logger.trace(`Discovered ${discovered} peers - Rejected ${rejected}`);
-
   }
 
   /**
@@ -219,38 +162,7 @@ export class PeersModule implements IPeersModule {
   public async onBlockchainReady() {
     await this.insertSeeds();
     await this.dbLoad();
-    await this.discover();
     await this.library.bus.message('peersReady');
-  }
-
-  public async onPeersReady() {
-    this.library.logger.trace('Peers ready');
-
-    JobsQueue.register('peersDiscoveryAndUpdate', async () => {
-      try {
-        await this.discover();
-      } catch (err) {
-        this.library.logger.error('Discovering new peers failed', err);
-      }
-      let updated = 0;
-
-      const peers = this.library.logic.peers.list(false);
-      this.library.logger.trace('Updating peers', {count: peers.length});
-
-      for (const p of peers) {
-        if (p && p.state !== PeerState.BANNED && (!p.updated || Date.now() - p.updated > 3000)) {
-          this.library.logger.trace('Updating peer', p);
-          try {
-            await this.ping(p);
-          } catch (err) {
-            this.library.logger.debug(`Ping failed when updating peer ${p.string}`);
-          } finally {
-            updated++;
-          }
-        }
-      }
-    }, 5000);
-
   }
 
   private async dbSave() {
@@ -305,7 +217,6 @@ export class PeersModule implements IPeersModule {
 
   /**
    * Loads peers from db and calls ping on any peer.
-   * TODO: remove ping as it's useless since it does not really update anything
    */
   private async dbLoad() {
     this.library.logger.trace('Importing peers from database');
@@ -313,24 +224,11 @@ export class PeersModule implements IPeersModule {
       const rows  = await this.library.db.any(peerSQL.getAll);
       let updated = 0;
       for (const rawPeer of rows) {
-        let peer = this.library.logic.peers.create(rawPeer);
-        if (this.library.logic.peers.exists(peer)) {
-          peer = this.library.logic.peers.get(peer);
-          if (peer && peer.state !== PeerState.BANNED && Date.now() - peer.updated > 3000) {
-            try {
-              await this.ping(peer);
-              updated++;
-            } catch (err) {
-              // who cares!
-            }
-          }
-        } else {
-          try {
-            await this.ping(peer);
-            updated++;
-          } catch (err) {
-            // who cares
-          }
+        const peer = this.library.logic.peers.create(rawPeer);
+        if (!this.library.logic.peers.exists(peer)) {
+          // Update also sets the peer as connected.
+          this.update(peer);
+          updated++;
         }
       }
       this.library.logger.trace('Peers->dbLoad Peers discovered', {updated, total: rows.length});
@@ -353,7 +251,8 @@ export class PeersModule implements IPeersModule {
     await Promise.all(this.library.config.peers.list.map(async (seed) => {
       const peer = this.library.logic.peers.create(seed);
       this.library.logger.trace(`Processing seed peer ${peer.string}`);
-      await this.ping(peer);
+      // Sets the peer as connected. Seed can be offline but it will be removed later.
+      this.update(peer);
       updated++;
     }));
     this.library.logger.info('Peers->insertSeeds - Peers discovered', {

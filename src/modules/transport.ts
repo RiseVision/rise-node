@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import { IDatabase } from 'pg-promise';
 import * as popsicle from 'popsicle';
 import * as z_schema from 'z-schema';
-import { BigNum, Bus, constants, ILogger, Sequence } from '../helpers/';
+import { BigNum, Bus, cbToPromise, constants, ILogger, JobsQueue, Sequence } from '../helpers/';
 import { IAppState, IBlockLogic, IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
   IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule,
@@ -16,6 +16,7 @@ import {
   SignedBlockType,
 } from '../logic/';
 import { IBaseTransaction } from '../logic/transactions/';
+import peersSchema from '../schema/peers';
 import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
 import { SchemaValid, ValidateSchema } from './apis/baseAPIClass';
@@ -147,6 +148,35 @@ export class TransportModule implements ITransportModule {
     this.loaded = true;
   }
 
+   public async onPeersReady() {
+    this.library.logger.trace('Peers ready');
+    await this.discoverPeers();
+    JobsQueue.register('peersDiscoveryAndUpdate', async () => {
+      try {
+        await this.discoverPeers();
+      } catch (err) {
+        this.library.logger.error('Discovering new peers failed', err);
+      }
+      let updated = 0;
+
+      const peers = this.library.logic.peers.list(false);
+      this.library.logger.trace('Updating peers', {count: peers.length});
+
+      for (const p of peers) {
+        if (p && p.state !== PeerState.BANNED && (!p.updated || Date.now() - p.updated > 3000)) {
+          this.library.logger.trace('Updating peer', p);
+          try {
+            await this.pingPeer(p);
+          } catch (err) {
+            this.library.logger.debug(`Ping failed when updating peer ${p.string}`);
+          } finally {
+            updated++;
+          }
+        }
+      }
+    }, 5000);
+  }
+
   /**
    * Calls enqueue signatures and emits a signature change socket message
    * TODO: Eventually fixme
@@ -267,6 +297,25 @@ export class TransportModule implements ITransportModule {
   }
 
   /**
+   * Pings a peer
+   */
+  public async pingPeer(peer: PeerLogic): Promise<void> {
+    this.library.logger.trace(`Pinging peer: ${peer.string}`);
+    try {
+      await this.getFromPeer(
+        peer,
+        {
+          api   : '/height',
+          method: 'GET',
+        }
+      );
+    } catch (err) {
+      this.library.logger.trace(`Ping peer failed: ${peer.string}`, err);
+      throw err;
+    }
+  }
+
+  /**
    * Creates a sha256 hash sum from input object
    * The returned obj is not the sha256 but a manipulated number version of the sha256
    */
@@ -286,5 +335,41 @@ export class TransportModule implements ITransportModule {
   private removePeer(options: { code: string, peer: PeerLogic }, extraMessage: string) {
     this.library.logger.debug(`${options.code} Removing peer ${options.peer.string} ${extraMessage}`);
     this.modules.peers.remove(options.peer.ip, options.peer.port);
+  }
+
+  /**
+   * Discover peers by getting list and validates them
+   */
+  private async discoverPeers(): Promise<void> {
+    this.library.logger.trace('Transport->discoverPeers');
+    const response = await this.getFromRandomPeer<any>(
+      {},
+      {
+        api   : '/list',
+        method: 'GET',
+      }
+    );
+
+    await cbToPromise((cb) => this.library.schema.validate(response.body, peersSchema.discover.peers, cb));
+
+    // Filter only acceptable peers.
+    const acceptablePeers = this.library.logic.peers.acceptable(response.body.peers);
+
+    let discovered = 0;
+    let rejected   = 0;
+    for (const rawPeer of acceptablePeers) {
+      const peer: PeerLogic = this.library.logic.peers.create(rawPeer);
+      if (this.library.schema.validate(peer, peersSchema.discover.peer)) {
+        peer.state = PeerState.DISCONNECTED;
+        this.library.logic.peers.upsert(peer, true);
+        discovered++;
+      } else {
+        this.library.logger.warn(`Rejecting invalid peer: ${peer.string}`);
+        rejected++;
+      }
+    }
+
+    this.library.logger.trace(`Discovered ${discovered} peers - Rejected ${rejected}`);
+
   }
 }
