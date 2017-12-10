@@ -1,11 +1,12 @@
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
+import { inject } from 'inversify';
 import z_schema from 'z-schema';
 import { BigNum, constants, Ed, IKeypair } from '../helpers/';
 import { IBlockLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
+import { Symbols } from '../ioc/symbols';
 import logicBlockSchema from '../schema/logic/block';
 import { BlockRewardLogic } from './blockReward';
-import { TransactionLogic } from './transaction';
 import { IBaseTransaction, IConfirmedTransaction } from './transactions/';
 
 // import * as OldImplementation from './_block.js';
@@ -111,7 +112,7 @@ export class BlockLogic implements IBlockLogic {
     return bb.toBuffer() as any;
   }
 
-  public table = 'blocks';
+  public table    = 'blocks';
   public dbFields = [
     'id',
     'version',
@@ -127,17 +128,15 @@ export class BlockLogic implements IBlockLogic {
     'generatorPublicKey',
     'blockSignature',
   ];
+  @inject(Symbols.generic.zschema)
+  public zschema: z_schema;
 
-  private blockReward = new BlockRewardLogic();
-  private scope: { ed: Ed, schema: z_schema, transaction: ITransactionLogic };
-
-  constructor(config: { ed: Ed, schema: z_schema, transaction: ITransactionLogic }) {
-    this.scope = {
-      ed         : config.ed,
-      schema     : config.schema,
-      transaction: config.transaction,
-    };
-  }
+  @inject(Symbols.logic.blockReward)
+  private blockReward: BlockRewardLogic;
+  @inject(Symbols.helpers.ed)
+  private ed: Ed;
+  @inject(Symbols.logic.transaction)
+  private transaction: ITransactionLogic;
 
   /**
    * Use static method instead
@@ -186,7 +185,7 @@ export class BlockLogic implements IBlockLogic {
     const payloadHash       = crypto.createHash('sha256');
 
     for (const transaction of transactions) {
-      const bytes: Buffer = this.scope.transaction.getBytes(transaction);
+      const bytes: Buffer = this.transaction.getBytes(transaction);
 
       if (size + bytes.length > constants.maxPayloadLength) {
         break;
@@ -227,7 +226,7 @@ export class BlockLogic implements IBlockLogic {
    * @returns {string}
    */
   public sign(block: BlockType, key: IKeypair): string {
-    return this.scope.ed.sign(
+    return this.ed.sign(
       BlockLogic.getHash(block, false),
       key
     ).toString('hex');
@@ -239,10 +238,10 @@ export class BlockLogic implements IBlockLogic {
    */
   public verifySignature(block: SignedBlockType): boolean {
     // console.log(block);
-    // const res = new OldImplementation(this.scope.ed, this.scope.schema, this.scope.transaction, null)
+    // const res = new OldImplementation(this.ed, this.zschema, this.transaction, null)
     //  .verifySignature(block);
     // console.log(res);
-    return this.scope.ed.verify(
+    return this.ed.verify(
       BlockLogic.getHash(block, false),
       Buffer.from(block.blockSignature, 'hex'),
       Buffer.from(block.generatorPublicKey, 'hex')
@@ -294,18 +293,18 @@ export class BlockLogic implements IBlockLogic {
       }
     }
 
-    const report = this.scope.schema.validate(
+    const report = this.zschema.validate(
       block,
       this.schema
     );
     if (!report) {
-      throw new Error(`Failed to validate block schema: ${this.scope.schema
+      throw new Error(`Failed to validate block schema: ${this.zschema
         .getLastErrors().map((err) => err.message).join(', ')}`
       );
     }
 
     for (let i = 0; i < block.transactions.length; i++) {
-      block.transactions[i] = this.scope.transaction.objectNormalize(block.transactions[i]);
+      block.transactions[i] = this.transaction.objectNormalize(block.transactions[i]);
     }
 
     return block;
