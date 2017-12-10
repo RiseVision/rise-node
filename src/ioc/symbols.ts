@@ -1,5 +1,6 @@
 export const Symbols = {
   generic: {
+    appConfig: Symbol('appConfig'),
     db     : Symbol('db'),
     zschema: Symbol('z_schema'),
   },
