@@ -149,8 +149,12 @@ describe('helpers/promiseUtils', () => {
 
     describe('wait', () => {
 
-      it('should resolve promise', async () => {
-        await expect(wait(10)).to.be.fulfilled;
+      it('should resolve promise after given ms', async () => {
+        const msToWait = 20;
+        const timeStart = Date.now();
+        await expect(wait(msToWait)).to.be.fulfilled;
+        const timeEnd = Date.now();
+        expect(timeEnd - timeStart).to.be.greaterThan(msToWait - 1);
       });
     });
 });
