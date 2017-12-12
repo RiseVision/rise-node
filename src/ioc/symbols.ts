@@ -3,6 +3,7 @@ export const Symbols = {
     appConfig   : Symbol('appConfig'),
     db          : Symbol('db'),
     genesisBlock: Symbol('genesisBlock'),
+    nonce       : Symbol('nonce'),
     redisClient : Symbol('redisClient'),
     socketIO    : Symbol('socketIO'),
     zschema     : Symbol('z_schema'),
@@ -60,7 +61,7 @@ export const Symbols = {
   tags: {
     helpers: {
       balancesSequence: Symbol('balanceSequence'),
-      defaultSequence: Symbol('defaultSequence'),
+      defaultSequence : Symbol('defaultSequence'),
     },
   },
 };

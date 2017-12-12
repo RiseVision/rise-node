@@ -1,13 +1,15 @@
 import * as crypto from 'crypto';
+import { inject, injectable, postConstruct } from 'inversify';
 import * as os from 'os';
 import { IDatabase } from 'pg-promise';
 import * as semver from 'semver';
 import sqlSystem from '../../sql/system';
-import { constants, ILogger } from '../helpers/';
-import { IBlocksModule, ISystemModule, ITransportModule } from '../ioc/interfaces/modules/';
+import { constants as constantType } from '../helpers/';
+import { IBlocksModule, ISystemModule } from '../ioc/interfaces/modules/';
+import { Symbols } from '../ioc/symbols';
+import { AppConfig } from '../types/genericTypes';
 
 // tslint:disable-next-line
-type SystemLibrary = { logger: ILogger, db: IDatabase<any>, nonce: string, config: { version: string, port: number, nethash: string } }
 // tslint:disable-next-line
 type PeerHeaders = {
   os: string;
@@ -20,36 +22,42 @@ type PeerHeaders = {
 };
 const rcRegExp = /[a-z]+$/;
 
+@injectable()
 export class SystemModule implements ISystemModule {
   public minVersion: string;
   public headers: PeerHeaders;
-  public modules: { blocks: IBlocksModule };
-
   private lastMinVer: string;
   private minVersionChar: string;
 
-  constructor(public library: SystemLibrary) {
+  // Generic and helpers
+  @inject(Symbols.generic.appConfig)
+  private appConfig: AppConfig;
+  @inject(Symbols.generic.nonce)
+  private nonce: string;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantType;
+  @inject(Symbols.generic.db)
+  private db: IDatabase<any>;
+
+  // Modules
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
+
+  @postConstruct()
+  public postConstruct() {
     this.headers = {
-      broadhash: this.library.config.nethash,
+      broadhash: this.appConfig.nethash,
       height   : 1,
-      nethash  : this.library.config.nethash,
-      nonce    : this.library.nonce,
+      nethash  : this.appConfig.nethash,
+      nonce    : this.nonce,
       os       : `${os.platform()}${os.release()}`,
-      port     : this.library.config.port,
-      version  : this.library.config.version,
+      port     : this.appConfig.port,
+      version  : this.appConfig.version,
     };
   }
 
   public cleanup() {
     return Promise.resolve();
-  }
-  /**
-   * Assigns used modules to modules variable.
-   */
-  public onBind(modules: { blocks: any }) {
-    this.modules = {
-      blocks   : modules.blocks,
-    };
   }
 
   public getOS() {
@@ -103,12 +111,12 @@ export class SystemModule implements ISystemModule {
    * Gets private variable `minVersion`
    * @return {string}
    */
-  public getMinVersion(height: number = this.modules.blocks.lastBlock.height) {
+  public getMinVersion(height: number = this.blocksModule.lastBlock.height) {
 
     let minVer = '';
-    for (let i = constants.minVersion.length - 1; i >= 0 && minVer === ''; --i) {
-      if (height >= constants.minVersion[i].height) {
-        minVer = constants.minVersion[i].ver;
+    for (let i = this.constants.minVersion.length - 1; i >= 0 && minVer === ''; --i) {
+      if (height >= this.constants.minVersion[i].height) {
+        minVer = this.constants.minVersion[i].ver;
       }
     }
 
@@ -165,7 +173,7 @@ export class SystemModule implements ISystemModule {
    * @return {hash|setImmediateCallback} err | private nethash or new hash.
    */
   public async getBroadhash() {
-    const rows: Array<{ id: string }> = await this.library.db.query(sqlSystem.getBroadhash, { limit: 5 });
+    const rows: Array<{ id: string }> = await this.db.query(sqlSystem.getBroadhash, { limit: 5 });
     if (rows.length <= 1) {
       return this.headers.broadhash;
     }
@@ -176,7 +184,7 @@ export class SystemModule implements ISystemModule {
     return hash.toString('hex');
   }
 
-  public getFees(height: number = this.modules.blocks.lastBlock.height + 1): {
+  public getFees(height: number = this.blocksModule.lastBlock.height + 1): {
     fees: {
       send: number,
       vote: number,
@@ -188,17 +196,17 @@ export class SystemModule implements ISystemModule {
   } {
 
     let i;
-    for (i = constants.fees.length - 1; i > 0; i--) {
-      if (height >= constants.fees[i].height) {
+    for (i = this.constants.fees.length - 1; i > 0; i--) {
+      if (height >= this.constants.fees[i].height) {
         break;
       }
     }
 
     return {
-      fees      : constants.fees[i].fees,
-      fromHeight: constants.fees[i].height,
+      fees      : this.constants.fees[i].fees,
+      fromHeight: this.constants.fees[i].height,
       height,
-      toHeight  : i === constants.fees.length - 1 ? null : constants.fees[i + 1].height - 1,
+      toHeight  : i === this.constants.fees.length - 1 ? null : this.constants.fees[i + 1].height - 1,
     };
   }
 
@@ -207,6 +215,6 @@ export class SystemModule implements ISystemModule {
    */
   public async update() {
     this.headers.broadhash = await this.getBroadhash();
-    this.headers.height    = this.modules.blocks.lastBlock.height;
+    this.headers.height    = this.blocksModule.lastBlock.height;
   }
 }

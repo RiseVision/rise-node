@@ -136,7 +136,6 @@ digraph G {
         transactionsModule -> accountsModule
         transactionsModule -> transactionLogic
         transactionsModule -> transactionPool
-        transactionsModule -> roundsLogic
 
 
         transportModule -> peersModule
