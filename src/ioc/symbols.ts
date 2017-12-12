@@ -61,6 +61,7 @@ export const Symbols = {
   tags: {
     helpers: {
       balancesSequence: Symbol('balanceSequence'),
+      dbSequence      : Symbol('dbSequence'),
       defaultSequence : Symbol('defaultSequence'),
     },
   },

@@ -58,6 +58,7 @@ digraph G {
         blocksChainModule -> transactionsModule
         blocksChainModule -> accountsModule
         blocksChainModule -> blocksModule
+        blocksChainModule -> blocksUtilsModule
         blocksChainModule -> blockLogic
         blocksChainModule -> transactionLogic
 
@@ -67,25 +68,27 @@ digraph G {
         blocksProcessModule -> blocksChainModule
         blocksProcessModule -> blocksVerifyModule
         blocksProcessModule -> forkModule
-        blocksProcessModule -> appState
         blocksProcessModule -> transactionsModule
         blocksProcessModule -> transportModule
+        blocksProcessModule -> appState
         blocksProcessModule -> blockLogic
         blocksProcessModule -> peersLogic
         blocksProcessModule -> transactionLogic
+        blocksProcessModule -> roundsLogic
 
         blocksUtilsModule -> blocksModule
         blocksUtilsModule -> blockLogic
         blocksUtilsModule -> transactionLogic
 
         blocksVerifyModule -> blocksModule
+        blocksVerifyModule -> blocksChainModule
         blocksVerifyModule -> delegatesModule
+        blocksVerifyModule -> forkModule
         blocksVerifyModule -> transactionsModule
         blocksVerifyModule -> accountsModule
         blocksVerifyModule -> blockRewardLogic
         blocksVerifyModule -> blockLogic
         blocksVerifyModule -> transactionLogic
-        blocksVerifyModule -> forkModule
 
         delegatesModule -> accountsModule;
         delegatesModule -> blocksModule;

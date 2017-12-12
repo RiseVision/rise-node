@@ -1,53 +1,55 @@
+import { inject, injectable, tagged } from 'inversify';
 import * as _ from 'lodash';
 import { IDatabase, ITask } from 'pg-promise';
 import sql from '../../../sql/blocks';
 import { Bus, catchToLoggerAndRemapError, ILogger, Inserts, Sequence, TransactionType } from '../../helpers/';
 import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
-import { IBlocksModuleChain } from '../../ioc/interfaces/modules';
+import {
+  IAccountsModule, IBlocksModule, IBlocksModuleChain, IBlocksModuleUtils, IRoundsModule,
+  ITransactionsModule
+} from '../../ioc/interfaces/modules';
+import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType } from '../../logic/';
 import { IConfirmedTransaction } from '../../logic/transactions/';
-import { AccountsModule } from '../accounts';
-import { BlocksModule } from '../blocks';
-import { RoundsModule } from '../rounds';
-import { TransactionsModule } from '../transactions';
 
-// tslint:disable-next-line interface-over-type-literal
-export type BlocksModuleChainLibrary = {
-  logger: ILogger,
-  db: IDatabase<any>,
-  genesisblock: SignedAndChainedBlockType,
-  bus: Bus,
-  balancesSequence: Sequence,
-  logic: {
-    block: IBlockLogic,
-    transaction: ITransactionLogic
-  }
-};
-
+@injectable()
 export class BlocksModuleChain implements IBlocksModuleChain {
-  private modules: {
-    rounds: RoundsModule,
-    transactions: TransactionsModule,
-    accounts: AccountsModule,
-    blocks: BlocksModule
-  };
 
-  constructor(private library: BlocksModuleChainLibrary) {
-    library.logger.trace('Blocks->Chain: Submodule initialized.');
-  }
+  // Modules
+  @inject(Symbols.modules.rounds)
+  private roundsModule: IRoundsModule;
+  @inject(Symbols.modules.transactions)
+  private transactionsModule: ITransactionsModule;
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
+  @inject(Symbols.modules.blocksSubModules.utils)
+  private blocksModuleUtils: IBlocksModuleUtils;
+
+  // Generic
+  @inject(Symbols.generic.db)
+  private db: IDatabase<any>;
+  @inject(Symbols.generic.genesisBlock)
+  private genesisBlock: SignedAndChainedBlockType;
+
+  // Helpers
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.helpers.bus)
+  private bus: Bus;
+  @inject(Symbols.helpers.sequence)
+  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
+  private balancesSequence: Sequence;
+
+  // LOGIC
+  @inject(Symbols.logic.block)
+  private blockLogic: IBlockLogic;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
 
   public cleanup() {
     return Promise.resolve();
-  }
-
-  public onBind(scope) {
-    this.library.logger.trace('Blocks->Chain: Shared modules bind.');
-    this.modules = {
-      accounts    : scope.accounts,
-      blocks      : scope.blocks,
-      rounds      : scope.rounds,
-      transactions: scope.transactions,
-    };
   }
 
   /**
@@ -56,8 +58,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   public deleteBlock(blockId: string): Promise<void> {
     // Delete block with ID from blocks table
     // WARNING: DB_WRITE
-    return this.library.db.none(sql.deleteBlock, { id: blockId })
-      .catch(catchToLoggerAndRemapError<void>('Blocks#deleteBlock error', this.library.logger));
+    return this.db.none(sql.deleteBlock, { id: blockId })
+      .catch(catchToLoggerAndRemapError<void>('Blocks#deleteBlock error', this.logger));
   }
 
   /**
@@ -65,15 +67,15 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * @returns {Promise<SignedBlockType>}
    */
   public async deleteLastBlock(): Promise<SignedAndChainedBlockType> {
-    const lastBlock = this.modules.blocks.lastBlock;
-    this.library.logger.warn('Deleting last block', lastBlock);
+    const lastBlock = this.blocksModule.lastBlock;
+    this.logger.warn('Deleting last block', lastBlock);
 
     if (lastBlock.height === 1) {
       throw new Error('Cannot delete genesis block');
     }
     const newLastBlock            = await this.popLastBlock(lastBlock);
     // Set new "new" last block.
-    this.modules.blocks.lastBlock = newLastBlock;
+    this.blocksModule.lastBlock = newLastBlock;
     return newLastBlock;
   }
 
@@ -83,8 +85,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * @returns {Promise<void>}
    */
   public async deleteAfterBlock(blockId: string): Promise<void> {
-    return this.library.db.query(sql.deleteAfterBlock, { id: blockId })
-      .catch(catchToLoggerAndRemapError('Blocks#deleteAfterBlock error', this.library.logger));
+    return this.db.query(sql.deleteAfterBlock, { id: blockId })
+      .catch(catchToLoggerAndRemapError('Blocks#deleteAfterBlock error', this.logger));
   }
 
   /**
@@ -94,9 +96,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   public async recoverChain(): Promise<void> {
     try {
       const newLastBlock = await this.deleteLastBlock();
-      this.library.logger.error('Recovery complete, new last block', newLastBlock.id);
+      this.logger.error('Recovery complete, new last block', newLastBlock.id);
     } catch (err) {
-      this.library.logger.error('Recovery failed', err);
+      this.logger.error('Recovery failed', err);
       throw err;
     }
   }
@@ -106,11 +108,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * @returns {Promise<any>}
    */
   public async saveGenesisBlock() {
-    const rows    = await this.library.db.query(sql.getBlockId, { id: this.library.genesisblock.id })
-      .catch(catchToLoggerAndRemapError('Blocks#saveGenesisBlock error', this.library.logger));
+    const rows    = await this.db.query(sql.getBlockId, { id: this.genesisBlock.id })
+      .catch(catchToLoggerAndRemapError('Blocks#saveGenesisBlock error', this.logger));
     const blockId = rows.length && rows[0].id;
     if (!blockId) {
-      return this.saveBlock(this.library.genesisblock);
+      return this.saveBlock(this.genesisBlock);
     }
   }
 
@@ -123,7 +125,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     // This is a shitty sort. Does not take into account b and it's not ok
     block.transactions.sort((a) => a.type === TransactionType.VOTE ? 1 : 0);
 
-    const tracker = this.modules.blocks.utils.getBlockProgressLogger(
+    const tracker = this.blocksModuleUtils.getBlockProgressLogger(
       block.transactions.length,
       block.transactions.length / 100,
       'Genesis block loading'
@@ -134,26 +136,26 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
         // FIXME: Poor performance - every transaction cause SQL query to be executed
         // WARNING: DB_WRITE
-        const sender = await this.modules.accounts.setAccountAndGet({ publicKey: tx.senderPublicKey });
+        const sender = await this.accountsModule.setAccountAndGet({ publicKey: tx.senderPublicKey });
 
         // Apply tx.
-        await this.modules.transactions.applyUnconfirmed(tx, sender);
-        await this.modules.transactions.apply(tx, block, sender);
+        await this.transactionsModule.applyUnconfirmed(tx, sender);
+        await this.transactionsModule.apply(tx, block, sender);
 
         tracker.applyNext();
       }
     } catch (err) {
       // Genesis is not valid?
-      this.library.logger.error(err);
+      this.logger.error(err);
       process.exit(0);
     }
-    this.modules.blocks.lastBlock = block;
-    await this.modules.rounds.tick(block);
+    this.blocksModule.lastBlock = block;
+    await this.roundsModule.tick(block);
   }
 
   public async applyBlock(block: SignedAndChainedBlockType, broadcast: boolean, saveBlock: boolean) {
     // Prevent shutdown during database writes.
-    this.modules.blocks.isActive = true;
+    this.blocksModule.isActive = true;
 
     // Transactions to rewind in case of error.
     const appliedTransactions: { [k: string]: IConfirmedTransaction<any> } = {};
@@ -163,22 +165,22 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     // TODO: It should be possible to remove this call if we can guarantee that only
     // TODO: this function is processing transactions atomically. Then speed should be improved further.
     // TODO: Other possibility, when we rebuild from block chain this action should be moved out of the rebuild fn.
-    const unconfirmedTransactionIds = await this.modules.transactions.undoUnconfirmedList()
+    const unconfirmedTransactionIds = await this.transactionsModule.undoUnconfirmedList()
       .catch((err) => {
         // Fatal error, memory tables will be inconsistent
-        this.library.logger.error('Failed to undo unconfirmed list', err);
+        this.logger.error('Failed to undo unconfirmed list', err);
         return process.exit(0);
       });
 
     // Apply transaction to unconfirmed mem_accounts field
     try {
       for (const transaction of block.transactions) {
-        const sender = await this.modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey });
-        await this.modules.transactions.applyUnconfirmed(transaction, sender)
+        const sender = await this.accountsModule.setAccountAndGet({ publicKey: transaction.senderPublicKey });
+        await this.transactionsModule.applyUnconfirmed(transaction, sender)
           .catch((err) => {
-            this.library.logger.error(`Failed to apply transaction ${transaction.id} - ${err.message || err}`);
-            this.library.logger.error(err);
-            this.library.logger.error('Transaction', transaction);
+            this.logger.error(`Failed to apply transaction ${transaction.id} - ${err.message || err}`);
+            this.logger.error(err);
+            this.logger.error('Transaction', transaction);
             return Promise.reject(err);
           });
         appliedTransactions[transaction.id] = transaction;
@@ -195,9 +197,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       const appliedIds = Object.keys(appliedTransactions);
       for (const txID of appliedIds) {
         const transaction = appliedTransactions[txID];
-        const sender      = await this.modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey });
+        const sender      = await this.accountsModule.setAccountAndGet({ publicKey: transaction.senderPublicKey });
 
-        await this.library.logic.transaction.undoUnconfirmed(transaction, sender);
+        await this.transactionLogic.undoUnconfirmed(transaction, sender);
       }
     }
 
@@ -205,41 +207,41 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     // Apply transactions to confirmed mem_accounts fields.
     for (const tx of block.transactions) {
       try {
-        const sender = await this.modules.accounts.getAccount({ publicKey: tx.senderPublicKey });
-        await this.modules.transactions.apply(tx, block, sender);
+        const sender = await this.accountsModule.getAccount({ publicKey: tx.senderPublicKey });
+        await this.transactionsModule.apply(tx, block, sender);
 
       } catch (err) {
         // Fatal error, memory tables will be inconsistent
-        this.library.logger.error(`Failed to apply transaction: ${tx.id}`, err);
-        this.library.logger.error('Transaction', tx);
+        this.logger.error(`Failed to apply transaction: ${tx.id}`, err);
+        this.logger.error('Transaction', tx);
         return process.exit(0);
       }
 
       // Transaction applied, removed from the unconfirmed list.
-      this.modules.transactions.removeUnconfirmedTransaction(tx.id);
+      this.transactionsModule.removeUnconfirmedTransaction(tx.id);
     }
 
-    this.modules.blocks.lastBlock = block;
+    this.blocksModule.lastBlock = block;
     if (saveBlock) {
       try {
         await this.saveBlock(block);
       } catch (err) {
-        this.library.logger.error('Failed to save block...');
-        this.library.logger.error('Block', block);
+        this.logger.error('Failed to save block...');
+        this.logger.error('Block', block);
         return process.exit(0);
       }
-      this.library.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');
+      this.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');
     }
 
-    await this.library.bus.message('newBlock', block, broadcast);
+    await this.bus.message('newBlock', block, broadcast);
 
-    await this.modules.rounds.tick(block);
+    await this.roundsModule.tick(block);
 
     // restore the (yet) unconfirmed ids.
-    await this.modules.transactions.applyUnconfirmedIds(unconfirmedTransactionIds);
+    await this.transactionsModule.applyUnconfirmedIds(unconfirmedTransactionIds);
 
     // Shutdown now can happen
-    this.modules.blocks.isActive = false;
+    this.blocksModule.isActive = false;
     // Nullify large objects.
     // Prevents memory leak during synchronisation.
     // appliedTransactions = unconfirmedTransactionIds = block = null;
@@ -247,7 +249,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     // Finish here if snapshotting.
     // FIXME: Not the best place to do that
     // if (err === 'Snapshot finished') {
-    //   library.logger.info(err);
+    //   logger.info(err);
     //   process.emit('SIGTERM');
     // }
   }
@@ -260,9 +262,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   public async saveBlock(b: SignedBlockType) {
     // Prepare and execute SQL transaction
     // WARNING: DB_WRITE
-    await this.library.db.tx((t) => {
+    await this.db.tx((t) => {
       // Create bytea fields (buffers), and returns pseudo-row object promise-like
-      const promise = this.library.logic.block.dbSave(b);
+      const promise = this.blockLogic.dbSave(b);
       // Initialize insert helper
       const inserts = new Inserts(promise, promise.values);
 
@@ -281,7 +283,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       .catch(
         catchToLoggerAndRemapError(
           'Blocks#saveBlock error',
-          this.library.logger
+          this.logger
         )
       );
   }
@@ -304,7 +306,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         tx['blockId'] = block.id; // apply block id;
         return tx;
       })
-      .map((tx) => this.library.logic.transaction.dbSave(tx as any))
+      .map((tx) => this.transactionLogic.dbSave(tx as any))
       .reduce((a, b) => a.concat(b), []);
 
     // Group the saving things by table to batch sqls.
@@ -326,11 +328,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * @returns {Promise<void>}
    */
   private async afterSave(block: SignedBlockType) {
-    await this.library.bus.message('transactionsSaved', block.transactions);
+    await this.bus.message('transactionsSaved', block.transactions);
     // Execute afterSave callbacks for each transaction, depends on tx type
     // see: logic.outTransfer.afterSave, logic.dapp.afterSave
     for (const tx of  block.transactions) {
-      await this.library.logic.transaction.afterSave(tx);
+      await this.transactionLogic.afterSave(tx);
     }
   }
 
@@ -340,8 +342,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * @returns {Promise<SignedBlockType>}
    */
   private async popLastBlock(lb: SignedBlockType): Promise<SignedAndChainedBlockType> {
-    return this.library.balancesSequence.addAndPromise(async () => {
-      const b = await this.modules.blocks.utils.loadBlocksPart({ id: lb.previousBlock });
+    return this.balancesSequence.addAndPromise(async () => {
+      const b = await this.blocksModuleUtils.loadBlocksPart({ id: lb.previousBlock });
       if (b.length === 0) {
         throw new Error('previousBlock is null');
       }
@@ -350,24 +352,24 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       const txs = lb.transactions.reverse();
       try {
         for (const tx of txs) {
-          const sender = await this.modules.accounts.getAccount({ publicKey: tx.senderPublicKey });
+          const sender = await this.accountsModule.getAccount({ publicKey: tx.senderPublicKey });
           // Undoing confirmed tx - refresh confirmed balance (see: logic.transaction.undo, logic.transfer.undo)
           // WARNING: DB_WRITE
-          await this.modules.transactions.undo(tx as IConfirmedTransaction<any>, lb, sender);
+          await this.transactionsModule.undo(tx as IConfirmedTransaction<any>, lb, sender);
 
           // Undoing unconfirmed tx - refresh unconfirmed balance (see: logic.transaction.undoUnconfirmed)
           // WARNING: DB_WRITE
-          await this.modules.transactions.undoUnconfirmed(tx);
+          await this.transactionsModule.undoUnconfirmed(tx);
         }
       } catch (err) {
-        this.library.logger.error('Failed to undo transactions', err);
+        this.logger.error('Failed to undo transactions', err);
         process.exit(0);
       }
 
-      await this.modules.rounds.backwardTick(lb, previousBlock)
+      await this.roundsModule.backwardTick(lb, previousBlock)
         .catch((err) => {
           // Fatal error, memory tables will be inconsistent
-          this.library.logger.error('Failed to perform backwards tick', err);
+          this.logger.error('Failed to perform backwards tick', err);
 
           return process.exit(0);
         });
@@ -375,7 +377,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       await this.deleteBlock(lb.id)
         .catch((err) => {
           // Fatal error, memory tables will be inconsistent
-          this.library.logger.error('Failed to delete block', err);
+          this.logger.error('Failed to delete block', err);
           return process.exit(0);
         });
 
