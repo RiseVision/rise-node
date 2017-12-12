@@ -90,6 +90,8 @@ digraph G {
         delegatesModule -> accountsModule;
         delegatesModule -> blocksModule;
         delegatesModule -> roundsLogic;
+        delegatesModule -> appState;
+        delegatesModule -> blockRewardLogic;
         delegatesModule -> transactionsModule;
 
         forgeModule -> appState

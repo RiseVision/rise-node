@@ -1,47 +1,49 @@
 import * as crypto from 'crypto';
-import { IDatabase } from 'pg-promise';
+import { inject } from 'inversify';
+import * as z_schema from 'z-schema';
 import {
-  constants,
-  Ed,
+  constants as constantsType,
   ILogger,
   OrderBy,
-  Sequence,
   Slots,
 } from '../helpers/';
-import { IAppState, IBroadcasterLogic, IRoundsLogic, } from '../ioc/interfaces/logic';
+import { IAppState, IRoundsLogic, } from '../ioc/interfaces/logic';
 import {
-  IAccountsModule, IBlocksModule, IBlocksModuleProcess, IDelegatesModule, ITransactionsModule,
+  IAccountsModule, IBlocksModule, IDelegatesModule, ITransactionsModule,
 } from '../ioc/interfaces/modules';
+import { Symbols } from '../ioc/symbols';
 import { BlockRewardLogic, MemAccountsData, SignedBlockType } from '../logic/';
-import { AppConfig } from '../types/genericTypes';
 import { publicKey } from '../types/sanityTypes';
-// tslint:disable-next-line interface-over-type-literal
-export type DelegatesModuleLibrary = {
-  logger: ILogger
-  sequence: Sequence
-  ed: Ed,
-  db: IDatabase<any>
-  io: SocketIO.Server
-  schema: any
-  balancesSequence: Sequence,
-  logic: {
-    appState: IAppState,
-    rounds: IRoundsLogic
-  },
-  config: AppConfig
-};
 
 export class DelegatesModule implements IDelegatesModule {
-  private blockReward: BlockRewardLogic = new BlockRewardLogic();
+
+  @inject(Symbols.logic.blockReward)
+  private blockReward: BlockRewardLogic;
   private loaded: boolean               = false;
   private modules: {
     blocks: IBlocksModule,
     accounts: IAccountsModule
     transactions: ITransactionsModule,
   };
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.transactions)
+  private transactionsModule: ITransactionsModule;
 
-  constructor(public library: DelegatesModuleLibrary) {
-  }
+  @inject(Symbols.logic.appState)
+  private appState: IAppState;
+  @inject(Symbols.logic.rounds)
+  private roundsLogic: IRoundsLogic;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
+
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
 
   public async checkConfirmedDelegates(pk: publicKey, votes: string[]) {
     return this.checkDelegates(pk, votes, 'confirmed');
@@ -58,7 +60,7 @@ export class DelegatesModule implements IDelegatesModule {
    */
   public async generateDelegateList(height: number): Promise<publicKey[]> {
     const pkeys      = await this.getKeysSortByVote();
-    const seedSource = this.library.logic.rounds.calcRound(height).toString();
+    const seedSource = this.roundsLogic.calcRound(height).toString();
     let currentSeed  = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
 
     // Shuffle public keys.
@@ -97,7 +99,7 @@ export class DelegatesModule implements IDelegatesModule {
       ['username', 'address', 'publicKey', 'vote', 'missedblocks', 'producedblocks']
     );
 
-    const limit  = Math.min(constants.activeDelegates, query.limit || constants.activeDelegates);
+    const limit  = Math.min(this.constants.activeDelegates, query.limit || this.constants.activeDelegates);
     const offset = query.offset || 0;
 
     const count     = delegates.length;
@@ -150,7 +152,7 @@ export class DelegatesModule implements IDelegatesModule {
     const curSlot = Slots.getSlotNumber(block.timestamp);
     const delegId = delegates[curSlot % Slots.delegates];
     if (!(delegId && block.generatorPublicKey === delegId)) {
-      this.library.logger.error(`Expected generator ${delegId} Received generator: ${block.generatorPublicKey}`);
+      this.logger.error(`Expected generator ${delegId} Received generator: ${block.generatorPublicKey}`);
       throw new Error(`Failed to verify slot ${curSlot}`);
     }
   }
@@ -220,7 +222,7 @@ export class DelegatesModule implements IDelegatesModule {
 
       const curPK = vote.substr(1);
 
-      if (!this.library.schema.validate(curPK, {format: 'publicKey', type: 'string'})) {
+      if (!this.schema.validate(curPK, {format: 'publicKey', type: 'string'})) {
         throw new Error('Invalid public key');
       }
 
@@ -241,9 +243,9 @@ export class DelegatesModule implements IDelegatesModule {
 
     const total = existingVotes + additions - removals;
 
-    if (total > constants.maximumVotes) {
-      const exceeded = total - constants.maximumVotes;
-      throw new Error(`Maximum number of ${constants.maximumVotes} votes exceeded (${exceeded} too many)`);
+    if (total > this.constants.maximumVotes) {
+      const exceeded = total - this.constants.maximumVotes;
+      throw new Error(`Maximum number of ${this.constants.maximumVotes} votes exceeded (${exceeded} too many)`);
     }
   }
 }
