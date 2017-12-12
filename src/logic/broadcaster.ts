@@ -41,32 +41,31 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     path      : '/signatures',
   }];
 
-  @inject(Symbols.generic.appConfig)
-  private config: AppConfig;
-
+  // Modules
   @inject(Symbols.modules.peers)
   private peersModule: IPeersModule;
-
-  @inject(Symbols.logic.peers)
-  private peersLogic: IPeersLogic;
-
   @inject(Symbols.modules.transport)
   private transportModule: ITransportModule;
-
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
+  // Generics
+  @inject(Symbols.generic.appConfig)
+  private config: AppConfig;
 
+  // Helpers
   @inject(Symbols.helpers.constants)
   private constants: typeof constants;
-
-  @inject(Symbols.logic.appState)
-  private appState: IAppState;
-
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+
+  // Logic
+  @inject(Symbols.logic.peers)
+  private peersLogic: IPeersLogic;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
+  @inject(Symbols.logic.appState)
+  private appState: IAppState;
 
   @postConstruct()
   public afterConstruct() {
@@ -190,7 +189,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
         return true;
       } else {
         try {
-          this.transactionLogic.assertNonConfirmed(tx);
+          await this.transactionLogic.assertNonConfirmed(tx);
           return true;
         } catch (e) {
           // Tx is confirmed.
