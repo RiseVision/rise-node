@@ -3,6 +3,7 @@ export const Symbols = {
     appConfig   : Symbol('appConfig'),
     db          : Symbol('db'),
     genesisBlock: Symbol('genesisBlock'),
+    redisClient : Symbol('redisClient'),
     zschema     : Symbol('z_schema'),
   },
   helpers: {
@@ -10,6 +11,7 @@ export const Symbols = {
     constants: Symbol('constants'),
     ed       : Symbol('ed'),
     logger   : Symbol('logger'),
+    sequence : Symbol('sequence'),
     slots    : Symbol('slots'),
   },
   logic  : {
@@ -53,4 +55,10 @@ export const Symbols = {
     transactions    : Symbol('transactions module'),
     transport       : Symbol('transport module'),
   },
+
+  tags: {
+    helpers: {
+      balancesSequence: Symbol('balanceSequence')
+    }
+  }
 };

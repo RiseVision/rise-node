@@ -52,8 +52,7 @@ digraph G {
                 loaderModule
 		color=blue
 	}
-	accountsModule -> accountLogic
-        accountsModule -> transactionLogic
+	    accountsModule -> accountLogic
 
         blocksChainModule -> roundsModule
         blocksChainModule -> transactionsModule

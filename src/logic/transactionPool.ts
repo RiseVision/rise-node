@@ -2,9 +2,9 @@ import { inject, postConstruct } from 'inversify';
 import { Bus, constants, ILogger, JobsQueue, promiseToCB, TransactionType } from '../helpers/';
 import { IAppState, ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules';
+import { Symbols } from '../ioc/symbols';
 import { AppConfig } from '../types/genericTypes';
 import { IBaseTransaction } from './transactions/';
-import { Symbols } from '../ioc/symbols';
 
 // tslint:disable-next-line
 
