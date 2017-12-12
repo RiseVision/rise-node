@@ -1,47 +1,37 @@
+import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
 import * as pgpCreator from 'pg-promise';
 import { IDatabase } from 'pg-promise';
 import * as shuffle from 'shuffle-array';
-import * as z_schema from 'z-schema';
 import peerSQL from '../../sql/peers';
 import { Bus, constants, ILogger } from '../helpers/';
-import { IPeersModule, ISystemModule, ITransportModule } from '../ioc/interfaces/modules/';
-import { PeerLogic, PeersLogic, PeerState, PeerType } from '../logic/';
+import { IPeerLogic, IPeersLogic } from '../ioc/interfaces/logic/';
+import { IPeersModule } from '../ioc/interfaces/modules/';
+import { Symbols } from '../ioc/symbols';
+import { PeerState, PeerType } from '../logic/';
 import { AppConfig } from '../types/genericTypes';
-import { SystemModule } from './system';
 
 const pgp = pgpCreator();
 
 // tslint:disable-next-line
-export type PeersLibrary = {
-  logger: ILogger,
-  db: IDatabase<any>,
-  schema: z_schema,
-  bus: Bus,
-  nonce: string;
-  build: string;
-  lastCommit: string;
-  logic: {
-    peers: PeersLogic;
-  },
-  config: AppConfig
-};
-
-// tslint:disable-next-line
 export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip?: string, port?: number, state?: PeerState };
 
+@injectable()
 export class PeersModule implements IPeersModule {
-  public modules: { system: ISystemModule };
+  @inject(Symbols.modules.peers)
+  private systemModule;
 
-  constructor(public library: PeersLibrary) {
-  }
-
-  public onBind(scope: { system: SystemModule }) {
-    this.modules = {
-      system   : scope.system,
-    };
-  }
+  @inject(Symbols.generic.db)
+  private db: IDatabase<any>;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.helpers.bus)
+  private bus: Bus;
+  @inject(Symbols.logic.peers)
+  private peersLogic: IPeersLogic;
+  @inject(Symbols.generic.appConfig)
+  private appConfig: AppConfig;
 
   public cleanup() {
     // save on cleanup.
@@ -51,22 +41,22 @@ export class PeersModule implements IPeersModule {
   /**
    * Sets peer state to active and updates it to the list
    */
-  public update(peer: PeerLogic) {
+  public update(peer: IPeerLogic) {
     peer.state = PeerState.CONNECTED;
-    return this.library.logic.peers.upsert(peer, false);
+    return this.peersLogic.upsert(peer, false);
   }
 
   /**
    * Remove a peer from the list if its not one from config files
    */
   public remove(peerIP: string, port: number): boolean {
-    const frozenPeer = _.find(this.library.config.peers.list, (p) => p.ip === peerIP && p.port === port);
+    const frozenPeer = _.find(this.appConfig.peers.list, (p) => p.ip === peerIP && p.port === port);
     if (frozenPeer) {
       // FIXME: Keeping peer frozen is bad idea at all
-      this.library.logger.debug('Cannot remove frozen peer', peerIP + ':' + port);
+      this.logger.debug('Cannot remove frozen peer', peerIP + ':' + port);
       return false;
     } else {
-      return this.library.logic.peers.remove({ ip: peerIP, port });
+      return this.peersLogic.remove({ ip: peerIP, port });
     }
   }
 
@@ -86,7 +76,7 @@ export class PeersModule implements IPeersModule {
             // Descending
             (a[field] < b[field] ? 1 : -1);
 
-    const peers = this.library.logic.peers.list(true)
+    const peers = this.peersLogic.list(true)
       .filter((peer) => {
         let passed       = true;
         const filterKeys = Object.keys(filter);
@@ -127,7 +117,7 @@ export class PeersModule implements IPeersModule {
   // tslint:disable-next-line max-line-length
   public async list(options: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }): Promise<{ consensus: number, peers: PeerType[] }> {
     options.limit         = options.limit || constants.maxPeers;
-    options.broadhash     = options.broadhash || this.modules.system.broadhash;
+    options.broadhash     = options.broadhash || this.systemModule.broadhash;
     options.allowedStates = options.allowedStates || [PeerState.CONNECTED];
 
     let peersList = (await this.getByFilter({}))
@@ -136,7 +126,7 @@ export class PeersModule implements IPeersModule {
       // and only same broadhash
       .filter((p) => options.broadhash === p.broadhash);
 
-    peersList = this.library.logic.peers.acceptable(peersList);
+    peersList = this.peersLogic.acceptable(peersList);
 
     const matchedBroadhash = peersList.length;
 
@@ -147,7 +137,7 @@ export class PeersModule implements IPeersModule {
         // but different broadhashes
         .filter((p) => options.broadhash !== p.broadhash);
 
-      unmatchedBroadPeers = this.library.logic.peers.acceptable(unmatchedBroadPeers);
+      unmatchedBroadPeers = this.peersLogic.acceptable(unmatchedBroadPeers);
       peersList           = peersList.concat(unmatchedBroadPeers);
     }
     peersList = peersList.slice(0, options.limit);
@@ -155,20 +145,20 @@ export class PeersModule implements IPeersModule {
     let consensus = Math.round(matchedBroadhash / peersList.length * 1e2 * 1e2) / 1e2;
     consensus     = isNaN(consensus) ? 0 : consensus;
 
-    this.library.logger.debug(`Listing ${peersList.length} total peers`);
+    this.logger.debug(`Listing ${peersList.length} total peers`);
     return { consensus, peers: peersList };
   }
 
   public async onBlockchainReady() {
     await this.insertSeeds();
     await this.dbLoad();
-    await this.library.bus.message('peersReady');
+    await this.bus.message('peersReady');
   }
 
   private async dbSave() {
-    const peers = this.library.logic.peers.list(true);
+    const peers = this.peersLogic.list(true);
     if (peers.length === 0) {
-      this.library.logger.debug('Export peers to database failed: Peers list empty');
+      this.logger.debug('Export peers to database failed: Peers list empty');
       return;
     }
     const cs = new pgp.helpers.ColumnSet([
@@ -183,7 +173,7 @@ export class PeersModule implements IPeersModule {
 
     try {
       // Wrap sql queries in transaction and execute
-      await this.library.db.tx((t) => {
+      await this.db.tx((t) => {
         // Generating insert query
         const insertPeers = pgp.helpers.insert(peers, cs);
 
@@ -209,9 +199,9 @@ export class PeersModule implements IPeersModule {
 
         return t.batch(queries);
       });
-      this.library.logger.info('Peers exported to database');
+      this.logger.info('Peers exported to database');
     } catch (err) {
-      this.library.logger.error('Export peers to database failed', {error: err.message || err});
+      this.logger.error('Export peers to database failed', {error: err.message || err});
     }
   }
 
@@ -219,21 +209,21 @@ export class PeersModule implements IPeersModule {
    * Loads peers from db and calls ping on any peer.
    */
   private async dbLoad() {
-    this.library.logger.trace('Importing peers from database');
+    this.logger.trace('Importing peers from database');
     try {
-      const rows  = await this.library.db.any(peerSQL.getAll);
+      const rows  = await this.db.any(peerSQL.getAll);
       let updated = 0;
       for (const rawPeer of rows) {
-        const peer = this.library.logic.peers.create(rawPeer);
-        if (!this.library.logic.peers.exists(peer)) {
+        const peer = this.peersLogic.create(rawPeer);
+        if (!this.peersLogic.exists(peer)) {
           // Update also sets the peer as connected.
           this.update(peer);
           updated++;
         }
       }
-      this.library.logger.trace('Peers->dbLoad Peers discovered', {updated, total: rows.length});
+      this.logger.trace('Peers->dbLoad Peers discovered', {updated, total: rows.length});
     } catch (e) {
-      this.library.logger.error('Import peers from database failed', {error: e.message || e});
+      this.logger.error('Import peers from database failed', {error: e.message || e});
     }
   }
 
@@ -246,17 +236,17 @@ export class PeersModule implements IPeersModule {
   }
 
   private async insertSeeds() {
-    this.library.logger.trace('Peers->insertSeeds');
+    this.logger.trace('Peers->insertSeeds');
     let updated = 0;
-    await Promise.all(this.library.config.peers.list.map(async (seed) => {
-      const peer = this.library.logic.peers.create(seed);
-      this.library.logger.trace(`Processing seed peer ${peer.string}`);
+    await Promise.all(this.appConfig.peers.list.map(async (seed) => {
+      const peer = this.peersLogic.create(seed);
+      this.logger.trace(`Processing seed peer ${peer.string}`);
       // Sets the peer as connected. Seed can be offline but it will be removed later.
       this.update(peer);
       updated++;
     }));
-    this.library.logger.info('Peers->insertSeeds - Peers discovered', {
-      total: this.library.config.peers.list.length,
+    this.logger.info('Peers->insertSeeds - Peers discovered', {
+      total: this.appConfig.peers.list.length,
       updated,
     });
   }
