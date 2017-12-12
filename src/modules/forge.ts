@@ -1,51 +1,47 @@
 import * as crypto from 'crypto';
+import { inject } from 'inversify';
 import { catchToLoggerAndRemapError, constants, Ed, IKeypair, ILogger, JobsQueue, Sequence, Slots } from '../helpers';
 import { IAppState, IBroadcasterLogic } from '../ioc/interfaces/logic';
 import {
   IAccountsModule, IBlocksModule, IBlocksModuleProcess, IDelegatesModule,
   IForgeModule, ITransactionsModule
 } from '../ioc/interfaces/modules';
+import { Symbols } from '../ioc/symbols';
 import { AppConfig } from '../types/genericTypes';
 import { publicKey } from '../types/sanityTypes';
 
 export class ForgeModule implements IForgeModule {
   public enabledKeys: { [k: string]: true }   = {};
   private keypairs: { [k: string]: IKeypair } = {};
-  private modules: {
-    accounts: IAccountsModule,
-    blocks: IBlocksModule,
-    delegates: IDelegatesModule,
-    transactions: ITransactionsModule
-    blocksProcess: IBlocksModuleProcess,
-  };
 
-  constructor(private library: {
-    logger: ILogger,
-    sequence: Sequence,
-    config: AppConfig,
-    ed: Ed,
-    logic: {
-      appState: IAppState,
-      broadcaster: IBroadcasterLogic,
-    }
-  }) {
-  }
+  // modules
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
+  @inject(Symbols.modules.delegates)
+  private delegatesModule: IDelegatesModule;
+  @inject(Symbols.modules.transactions)
+  private transactionsModule: ITransactionsModule;
+  @inject(Symbols.modules.blocksSubModules.process)
+  private blocksProcessModule: IBlocksModuleProcess;
 
-  public onBind(modules: {
-    accounts: IAccountsModule,
-    blocks: IBlocksModule,
-    delegates: IDelegatesModule,
-    transactions: ITransactionsModule
-    blocksProcess: IBlocksModuleProcess,
-  }) {
-    this.modules = {
-      accounts     : modules.accounts,
-      blocks       : modules.blocks,
-      blocksProcess: modules.blocksProcess,
-      delegates    : modules.delegates,
-      transactions : modules.transactions,
-    };
-  }
+  // helpers
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.helpers.ed)
+  private ed: Ed;
+  @inject(Symbols.helpers.sequence)
+  private sequence: Sequence;
+
+  // logic
+  @inject(Symbols.logic.appState)
+  private appState: IAppState;
+  @inject(Symbols.logic.broadcaster)
+  private broadcasterLogic: IBroadcasterLogic;
+
+  @inject(Symbols.generic.appConfig)
+  private config: AppConfig;
 
   /**
    * enable forging for specific pk or all if pk is undefined
@@ -79,7 +75,7 @@ export class ForgeModule implements IForgeModule {
       async (cb) => {
         try {
           await this.forge();
-          await this.modules.transactions.fillPool();
+          await this.transactionsModule.fillPool();
         } finally {
           cb();
         }
@@ -93,11 +89,11 @@ export class ForgeModule implements IForgeModule {
    * @return {Promise<void>}
    */
   private async forge() {
-    if (this.library.logic.appState.get('loader.isSyncing') ||
-      !this.library.logic.appState.get('rounds.isLoaded') ||
-      this.library.logic.appState.get('rounds.isTicking')) {
+    if (this.appState.get('loader.isSyncing') ||
+      !this.appState.get('rounds.isLoaded') ||
+      this.appState.get('rounds.isTicking')) {
 
-      this.library.logger.debug('Client not ready to forge');
+      this.logger.debug('Client not ready to forge');
       return;
     }
 
@@ -107,44 +103,44 @@ export class ForgeModule implements IForgeModule {
 
       // If still no keypairs then no delegates were enabled.
       if (Object.keys(this.keypairs).length === 0) {
-        this.library.logger.debug('No delegates enabled');
+        this.logger.debug('No delegates enabled');
         return;
       }
     }
 
     const currentSlot = Slots.getSlotNumber();
-    const lastBlock   = this.modules.blocks.lastBlock;
+    const lastBlock   = this.blocksModule.lastBlock;
     if (currentSlot === Slots.getSlotNumber(lastBlock.timestamp)) {
-      this.library.logger.debug('Waiting for next delegate slot');
+      this.logger.debug('Waiting for next delegate slot');
       return;
     }
 
     const blockData = await this.getBlockSlotData(currentSlot, lastBlock.height + 1);
     if (blockData === null) {
-      this.library.logger.warn('Skipping delegate slot');
+      this.logger.warn('Skipping delegate slot');
       return;
     }
 
     if (Slots.getSlotNumber(blockData.time) !== Slots.getSlotNumber()) {
       // not current slot. skip
-      this.library.logger.debug(`Delegate slot ${Slots.getSlotNumber()}`);
+      this.logger.debug(`Delegate slot ${Slots.getSlotNumber()}`);
       return;
     }
 
-    await this.library.sequence.addAndPromise(async () => {
+    await this.sequence.addAndPromise(async () => {
       // updates consensus.
-      await this.library.logic.broadcaster.getPeers({limit: constants.maxPeers});
+      await this.broadcasterLogic.getPeers({limit: constants.maxPeers});
 
-      if (this.library.logic.appState.getComputed('node.poorConsensus')) {
-        throw new Error(`Inadequate broadhash consensus ${this.library.logic.appState
+      if (this.appState.getComputed('node.poorConsensus')) {
+        throw new Error(`Inadequate broadhash consensus ${this.appState
           .getComputed('node.poorConsensus')} %`);
       }
 
       // ok lets generate, save and broadcast the block
-      await this.modules.blocksProcess.generateBlock(blockData.keypair, blockData.time);
+      await this.blocksProcessModule.generateBlock(blockData.keypair, blockData.time);
 
     })
-      .catch(catchToLoggerAndRemapError('Failed to generate block within delegate slot', this.library.logger));
+      .catch(catchToLoggerAndRemapError('Failed to generate block within delegate slot', this.logger));
 
   }
 
@@ -152,24 +148,24 @@ export class ForgeModule implements IForgeModule {
    * Loads delegats from config and stores it on the private keypairs variable>
    */
   private async loadDelegates() {
-    const secrets: string[] = this.library.config.forging.secret;
+    const secrets: string[] = this.config.forging.secret;
     if (!secrets || !secrets.length) {
       return;
     }
-    this.library.logger.info(`Loading ${secrets.length} delegates from config`);
+    this.logger.info(`Loading ${secrets.length} delegates from config`);
 
     for (const secret of secrets) {
-      const keypair = this.library.ed.makeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
-      const account = await this.modules.accounts.getAccount({publicKey: keypair.publicKey.toString('hex')});
+      const keypair = this.ed.makeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
+      const account = await this.accountsModule.getAccount({publicKey: keypair.publicKey.toString('hex')});
       if (!account) {
         throw new Error(`Account with publicKey: ${keypair.publicKey.toString('hex')} not found`);
       }
 
       if (account.isDelegate) {
         this.keypairs[keypair.publicKey.toString('hex')] = keypair;
-        this.library.logger.info(`Forging enabled on account ${account.address}`);
+        this.logger.info(`Forging enabled on account ${account.address}`);
       } else {
-        this.library.logger.warn(`Account with public Key: ${account.publicKey} is not a delegate`);
+        this.logger.warn(`Account with public Key: ${account.publicKey} is not a delegate`);
       }
     }
     // Enable forging for all accounts
@@ -181,7 +177,7 @@ export class ForgeModule implements IForgeModule {
    *  returns null if no slots are found for any of the forging acounts.
    */
   private async getBlockSlotData(slot: number, height: number): Promise<{ time: number, keypair: IKeypair }> {
-    const pkeys = await this.modules.delegates.generateDelegateList(height);
+    const pkeys = await this.delegatesModule.generateDelegateList(height);
 
     const lastSlot = Slots.getLastSlot(slot);
 
