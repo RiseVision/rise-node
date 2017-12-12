@@ -77,7 +77,7 @@ export interface ITransactionLogic {
    * @returns {boolean} true
    */
   verifySignature(tx: IBaseTransaction<any>, publicKey: string, signature: string,
-                  isSecondSignature: boolean): boolean;
+                  isSecondSignature?: boolean): boolean;
 
   apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void>;
 

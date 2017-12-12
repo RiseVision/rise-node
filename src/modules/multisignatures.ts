@@ -1,32 +1,28 @@
-import { IDatabase } from 'pg-promise';
-import * as z_schema from 'z-schema';
-import { Bus, Ed, ILogger, Sequence, TransactionType } from '../helpers/';
+import { inject, injectable, tagged } from 'inversify';
+import { Bus, ILogger, Sequence, TransactionType } from '../helpers/';
+import { ITransactionLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule, IMultisignaturesModule, ITransactionsModule } from '../ioc/interfaces/modules';
-import { AccountLogic, SignedAndChainedBlockType, TransactionLogic } from '../logic/';
-import { IBaseTransaction, MultisigAsset, MultiSignatureTransaction } from '../logic/transactions/';
+import { Symbols } from '../ioc/symbols';
+import { IBaseTransaction, MultisigAsset } from '../logic/transactions/';
 
+@injectable()
 export class MultisignaturesModule implements IMultisignaturesModule {
-  private modules: {
-    transactions: ITransactionsModule,
-    accounts: IAccountsModule,
-  };
+  @inject(Symbols.modules.transactions)
+  private transactionsModule: ITransactionsModule;
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
 
-  constructor(public library: {
-    logger: ILogger,
-    db: IDatabase<any>,
-    io: SocketIO.Server,
-    schema: z_schema,
-    ed: Ed,
-    bus: Bus,
-    balancesSequence: Sequence,
-    logic: {
-      transaction: TransactionLogic
-      account: AccountLogic
-    }
-    genesisblock: SignedAndChainedBlockType
-  }) {
-
-  }
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.generic.socketIO)
+  private io: SocketIO.Server;
+  @inject(Symbols.helpers.bus)
+  private bus: Bus;
+  @inject(Symbols.helpers.sequence)
+  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
+  private balancesSequence: Sequence;
 
   /**
    * Gets the tx from the txID, verifies the given signature and
@@ -34,7 +30,7 @@ export class MultisignaturesModule implements IMultisignaturesModule {
    * @return {Promise<void>}
    */
   public async processSignature(tx: { signature: any, transaction: string }) {
-    const transaction = this.modules.transactions.getMultisignatureTransaction(tx.transaction);
+    const transaction = this.transactionsModule.getMultisignatureTransaction(tx.transaction);
     if (!transaction) {
       throw new Error('Transaction not found');
     }
@@ -47,13 +43,14 @@ export class MultisignaturesModule implements IMultisignaturesModule {
       await this.processNormalTxSignature(transaction, tx.signature);
     }
 
-    await this.library.balancesSequence.addAndPromise(async () => {
-      const multisigTx = this.modules.transactions.getMultisignatureTransaction(tx.transaction);
+    await this.balancesSequence.addAndPromise(async () => {
+      const multisigTx = this.transactionsModule
+        .getMultisignatureTransaction(tx.transaction);
       if (!multisigTx) {
         throw new Error('Transaction not found');
       }
 
-      const sender = await this.modules.accounts.getAccount({ address: multisigTx.senderId });
+      const sender = await this.accountsModule.getAccount({ address: multisigTx.senderId });
       if (!sender) {
         throw new Error('Sender not found');
       }
@@ -64,13 +61,13 @@ export class MultisignaturesModule implements IMultisignaturesModule {
       // TODO: Check if following line is needed
       // multisigTx.ready = this.multiTx.ready(multisigTx, sender);
 
-      await this.library.bus.message('signature', { transaction: tx.transaction, signature: tx.signature }, true);
+      await this.bus.message('signature', { transaction: tx.transaction, signature: tx.signature }, true);
       return null;
     });
   }
 
   private async processNormalTxSignature(tx: IBaseTransaction<any>, signature: string) {
-    const sender = await this.modules.accounts.getAccount({ address: tx.senderId });
+    const sender = await this.accountsModule.getAccount({ address: tx.senderId });
     if (!sender) {
       throw new Error('Multisignature account not found');
     }
@@ -86,14 +83,14 @@ export class MultisignaturesModule implements IMultisignaturesModule {
     }
     let verify = false;
     for (let i = 0; i < multisignatures.length && !verify; i++) {
-      verify = this.library.logic.transaction.verifySignature(tx, multisignatures[i], signature);
+      verify = this.transactionLogic.verifySignature(tx, multisignatures[i], signature);
     }
 
     if (!verify) {
       throw new Error('Failed to verify signature');
     }
 
-    this.library.io.sockets.emit('multisignatures/signature/change', tx);
+    this.io.sockets.emit('multisignatures/signature/change', tx);
 
   }
 
@@ -105,7 +102,7 @@ export class MultisignaturesModule implements IMultisignaturesModule {
     let verify = false;
     for (let i = 0; i < tx.asset.multisignature.keysgroup.length && !verify; i++) {
       const key = tx.asset.multisignature.keysgroup[i].substring(1);
-      verify    = this.library.logic.transaction.verifySignature(tx, key, signature);
+      verify    = this.transactionLogic.verifySignature(tx, key, signature);
     }
     if (!verify) {
       throw new Error('Failed to verify signature');
