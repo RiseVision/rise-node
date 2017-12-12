@@ -1,13 +1,15 @@
 import * as crypto from 'crypto';
+import { inject, postConstruct, tagged } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import * as popsicle from 'popsicle';
 import * as z_schema from 'z-schema';
-import { BigNum, Bus, cbToPromise, constants, ILogger, JobsQueue, Sequence } from '../helpers/';
+import { BigNum, Bus, cbToPromise, constants as constantsType, ILogger, JobsQueue, Sequence } from '../helpers/';
 import { IAppState, IBlockLogic, IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
   IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule,
   ITransportModule
 } from '../ioc/interfaces/modules/';
+import { Symbols } from '../ioc/symbols';
 import {
   BasePeerType,
   PeerHeaders,
@@ -25,45 +27,55 @@ import { SchemaValid, ValidateSchema } from './apis/baseAPIClass';
 
 // tslint:disable-next-line
 export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };
-// tslint:disable-next-line
-export type TransportLibrary = {
-  logger: ILogger,
-  db: IDatabase<any>,
-  bus: Bus,
-  schema: z_schema,
-  io: SocketIO.Server,
-  balancesSequence: Sequence,
-  logic: {
-    appState: IAppState,
-    block: IBlockLogic,
-    broadcaster: IBroadcasterLogic
-    transaction: ITransactionLogic,
-    peers: IPeersLogic
-  },
-  config: AppConfig
-};
 
 export class TransportModule implements ITransportModule {
+  // Modules
+  @inject(Symbols.modules.peers)
+  private peersModule: IPeersModule;
+  @inject(Symbols.modules.multisignatures)
+  private multisigModule: IMultisignaturesModule;
+  @inject(Symbols.modules.transactions)
+  private transactionModule: ITransactionsModule;
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
+
+  // Logic
+  @inject(Symbols.logic.appState)
+  private appState: IAppState;
+  @inject(Symbols.logic.broadcaster)
+  private broadcasterLogic: IBroadcasterLogic;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
+  @inject(Symbols.logic.peers)
+  private peersLogic: IPeersLogic;
+
+  // Generics
+  @inject(Symbols.generic.appConfig)
+  private appConfig: AppConfig;
+  @inject(Symbols.generic.socketIO)
+  private io: SocketIO.Server;
+  // tslint:disable-next-line member-ordering
+  @inject(Symbols.generic.zschema)
   public schema: z_schema;
-  public headers: PeerHeaders;
-  public modules: {
-    peers: IPeersModule,
-    multisignatures: IMultisignaturesModule,
-    transactions: ITransactionsModule,
-    system: ISystemModule
-  };
-  private broadcaster: IBroadcasterLogic;
+
+  // Helpers
+  @inject(Symbols.helpers.sequence)
+  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
+  private balancesSequence: Sequence;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
+
   private loaded: boolean = false;
 
-  constructor(public library: TransportLibrary) {
-    this.broadcaster = this.library.logic.broadcaster;
-    this.schema      = this.library.schema;
-
-    this.library.logic.appState.setComputed('node.poorConsensus', (a: IAppState) => {
+  @postConstruct()
+  public postConstructor() {
+    this.appState.setComputed('node.poorConsensus', (a: IAppState) => {
       if (typeof(a.get('node.consensus')) === 'undefined') {
         return false;
       }
-      return a.get('node.consensus') < constants.minBroadhashConsensus;
+      return a.get('node.consensus') < this.constants.minBroadhashConsensus;
     });
   }
 
@@ -73,12 +85,12 @@ export class TransportModule implements ITransportModule {
     if (options.api) {
       url = `/peer${options.api}`;
     }
-    const thePeer = this.library.logic.peers.create(peer);
+    const thePeer = this.peersLogic.create(peer);
     const req     = {
       body   : null,
-      headers: this.headers,
+      headers: this.systemModule.headers,
       method : options.method,
-      timeout: this.library.config.peers.options.timeout,
+      timeout: this.appConfig.peers.options.timeout,
       url    : `http://${peer.ip}:${peer.port}${url}`,
     };
 
@@ -100,18 +112,18 @@ export class TransportModule implements ITransportModule {
       return Promise.reject(new Error(`Invalid response headers ${JSON.stringify(headers)} ${req.method} ${req.url}`));
     }
 
-    if (!this.modules.system.networkCompatible(headers.nethash)) {
+    if (!this.systemModule.networkCompatible(headers.nethash)) {
       this.removePeer({ peer: thePeer, code: 'ENETHASH' }, `${req.method} ${req.url}`);
       return Promise.reject(new Error(`Peer is not on the same network ${headers.nethash} ${req.method} ${req.url}`));
     }
 
-    if (!this.modules.system.versionCompatible(headers.version)) {
+    if (!this.systemModule.versionCompatible(headers.version)) {
       this.removePeer({ peer: thePeer, code: `EVERSION ${headers.version}` }, `${req.method} ${req.url}`);
       // tslint:disable-next-line max-line-length
       return Promise.reject(new Error(`Peer is using incompatible version ${headers.version} ${req.method} ${req.url}`));
     }
 
-    this.modules.peers.update(thePeer);
+    this.peersModule.update(thePeer);
     return {
       body: res.body,
       peer: thePeer,
@@ -122,7 +134,7 @@ export class TransportModule implements ITransportModule {
   public async getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }, options: PeerRequestOptions) {
     config.limit         = 1;
     config.allowedStates = [PeerState.CONNECTED, PeerState.DISCONNECTED];
-    const { peers }      = await this.modules.peers.list(config);
+    const { peers }      = await this.peersModule.list(config);
     return this.getFromPeer<T>(peers[0], options);
   }
 
@@ -131,44 +143,31 @@ export class TransportModule implements ITransportModule {
     return Promise.resolve();
   }
 
-  public onBind(modules: any) {
-    this.modules = {
-      // blocks         : modules.blocks,
-      multisignatures: modules.multisignatures,
-      // dapps          : modules.dapps,
-      peers          : modules.peers,
-      system         : modules.system,
-      transactions   : modules.transactions,
-    };
-
-    this.headers = modules.system.headers;
-  }
-
   public onBlockchainReady() {
     this.loaded = true;
   }
 
    public async onPeersReady() {
-    this.library.logger.trace('Peers ready');
+    this.logger.trace('Peers ready');
     await this.discoverPeers();
     JobsQueue.register('peersDiscoveryAndUpdate', async () => {
       try {
         await this.discoverPeers();
       } catch (err) {
-        this.library.logger.error('Discovering new peers failed', err);
+        this.logger.error('Discovering new peers failed', err);
       }
       let updated = 0;
 
-      const peers = this.library.logic.peers.list(false);
-      this.library.logger.trace('Updating peers', {count: peers.length});
+      const peers = this.peersLogic.list(false);
+      this.logger.trace('Updating peers', {count: peers.length});
 
       for (const p of peers) {
         if (p && p.state !== PeerState.BANNED && (!p.updated || Date.now() - p.updated > 3000)) {
-          this.library.logger.trace('Updating peer', p);
+          this.logger.trace('Updating peer', p);
           try {
             await this.pingPeer(p);
           } catch (err) {
-            this.library.logger.debug(`Ping failed when updating peer ${p.string}`);
+            this.logger.debug(`Ping failed when updating peer ${p.string}`);
           } finally {
             updated++;
           }
@@ -182,9 +181,9 @@ export class TransportModule implements ITransportModule {
    * TODO: Eventually fixme
    */
   public onSignature(signature: { transaction: string, signature: string, relays?: number }, broadcast: boolean) {
-    if (broadcast && !this.broadcaster.maxRelays(signature)) {
-      this.broadcaster.enqueue({}, { api: '/signatures', data: { signature }, method: 'POST' });
-      this.library.io.sockets.emit('signature/change', signature);
+    if (broadcast && !this.broadcasterLogic.maxRelays(signature)) {
+      this.broadcasterLogic.enqueue({}, { api: '/signatures', data: { signature }, method: 'POST' });
+      this.io.sockets.emit('signature/change', signature);
     }
   }
 
@@ -194,9 +193,9 @@ export class TransportModule implements ITransportModule {
    * TODO: Eventually fixme
    */
   public onUnconfirmedTransaction(transaction: IBaseTransaction<any> & { relays?: number }, broadcast: boolean) {
-    if (broadcast && !this.broadcaster.maxRelays(transaction)) {
-      this.broadcaster.enqueue({}, { api: '/transactions', data: { transaction }, method: 'POST' });
-      this.library.io.sockets.emit('transactions/change', transaction);
+    if (broadcast && !this.broadcasterLogic.maxRelays(transaction)) {
+      this.broadcasterLogic.enqueue({}, { api: '/transactions', data: { transaction }, method: 'POST' });
+      this.io.sockets.emit('transactions/change', transaction);
     }
   }
 
@@ -208,14 +207,14 @@ export class TransportModule implements ITransportModule {
    */
   public async onNewBlock(block: SignedBlockType & { relays?: number }, broadcast: boolean) {
     if (broadcast) {
-      const broadhash = this.modules.system.broadhash;
+      const broadhash = this.systemModule.broadhash;
 
-      await this.modules.system.update();
-      if (!this.broadcaster.maxRelays(block)) {
-        await this.broadcaster.broadcast({ limit: constants.maxPeers, broadhash },
+      await this.systemModule.update();
+      if (!this.broadcasterLogic.maxRelays(block)) {
+        await this.broadcasterLogic.broadcast({ limit: this.constants.maxPeers, broadhash },
           { api: '/blocks', data: { block }, method: 'POST', immediate: true });
       }
-      this.library.io.sockets.emit('blocks/change', block);
+      this.io.sockets.emit('blocks/change', block);
     }
   }
 
@@ -228,7 +227,7 @@ export class TransportModule implements ITransportModule {
       try {
         await this.receiveSignature(signature);
       } catch (err) {
-        this.library.logger.debug(err, signature);
+        this.logger.debug(err, signature);
       }
     }
   }
@@ -240,7 +239,7 @@ export class TransportModule implements ITransportModule {
   public async receiveSignature(@SchemaValid(schema.signature, 'Invalid signature body')
                                   signature: { transaction: string, signature: string }): Promise<void> {
     try {
-      await this.modules.multisignatures.processSignature(signature);
+      await this.multisigModule.processSignature(signature);
     } catch (e) {
       throw new Error(`Error processing signature: ${e.message || e}`);
     }
@@ -255,7 +254,7 @@ export class TransportModule implements ITransportModule {
       try {
         await this.receiveTransaction(tx, peer, true, extraLogMessage);
       } catch (err) {
-        this.library.logger.debug(err, tx);
+        this.logger.debug(err, tx);
       }
     }
   }
@@ -268,9 +267,9 @@ export class TransportModule implements ITransportModule {
   // tslint:disable-next-line max-line-length
   public async receiveTransaction(transaction: IBaseTransaction<any>, peer: PeerLogic, bundled: boolean, extraLogMessage: string): Promise<string> {
     try {
-      transaction = this.library.logic.transaction.objectNormalize(transaction);
+      transaction = this.transactionLogic.objectNormalize(transaction);
     } catch (e) {
-      this.library.logger.debug('Transaction normalization failed', {
+      this.logger.debug('Transaction normalization failed', {
         err   : e.toString(),
         id    : transaction.id,
         module: 'transport',
@@ -281,9 +280,9 @@ export class TransportModule implements ITransportModule {
     }
 
     try {
-      await this.library.balancesSequence.addAndPromise(async () => {
-        this.library.logger.debug(`Received transaction ${transaction.id} from peer: ${peer.string}`);
-        await this.modules.transactions.processUnconfirmedTransaction(
+      await this.balancesSequence.addAndPromise(async () => {
+        this.logger.debug(`Received transaction ${transaction.id} from peer: ${peer.string}`);
+        await this.transactionModule.processUnconfirmedTransaction(
           transaction,
           true,
           bundled
@@ -291,7 +290,7 @@ export class TransportModule implements ITransportModule {
       });
       return transaction.id;
     } catch (err) {
-      this.library.logger.debug(`Transaction ${transaction.id} error ${err}`, transaction);
+      this.logger.debug(`Transaction ${transaction.id} error ${err}`, transaction);
       throw new Error(err);
     }
   }
@@ -300,7 +299,7 @@ export class TransportModule implements ITransportModule {
    * Pings a peer
    */
   public async pingPeer(peer: PeerLogic): Promise<void> {
-    this.library.logger.trace(`Pinging peer: ${peer.string}`);
+    this.logger.trace(`Pinging peer: ${peer.string}`);
     try {
       await this.getFromPeer(
         peer,
@@ -310,7 +309,7 @@ export class TransportModule implements ITransportModule {
         }
       );
     } catch (err) {
-      this.library.logger.trace(`Ping peer failed: ${peer.string}`, err);
+      this.logger.trace(`Ping peer failed: ${peer.string}`, err);
       throw err;
     }
   }
@@ -333,15 +332,15 @@ export class TransportModule implements ITransportModule {
    * Removes a peer by calling modules peer remove
    */
   private removePeer(options: { code: string, peer: PeerLogic }, extraMessage: string) {
-    this.library.logger.debug(`${options.code} Removing peer ${options.peer.string} ${extraMessage}`);
-    this.modules.peers.remove(options.peer.ip, options.peer.port);
+    this.logger.debug(`${options.code} Removing peer ${options.peer.string} ${extraMessage}`);
+    this.peersModule.remove(options.peer.ip, options.peer.port);
   }
 
   /**
    * Discover peers by getting list and validates them
    */
   private async discoverPeers(): Promise<void> {
-    this.library.logger.trace('Transport->discoverPeers');
+    this.logger.trace('Transport->discoverPeers');
     const response = await this.getFromRandomPeer<any>(
       {},
       {
@@ -350,26 +349,26 @@ export class TransportModule implements ITransportModule {
       }
     );
 
-    await cbToPromise((cb) => this.library.schema.validate(response.body, peersSchema.discover.peers, cb));
+    await cbToPromise((cb) => this.schema.validate(response.body, peersSchema.discover.peers, cb));
 
     // Filter only acceptable peers.
-    const acceptablePeers = this.library.logic.peers.acceptable(response.body.peers);
+    const acceptablePeers = this.peersLogic.acceptable(response.body.peers);
 
     let discovered = 0;
     let rejected   = 0;
     for (const rawPeer of acceptablePeers) {
-      const peer: PeerLogic = this.library.logic.peers.create(rawPeer);
-      if (this.library.schema.validate(peer, peersSchema.discover.peer)) {
+      const peer: PeerLogic = this.peersLogic.create(rawPeer);
+      if (this.schema.validate(peer, peersSchema.discover.peer)) {
         peer.state = PeerState.DISCONNECTED;
-        this.library.logic.peers.upsert(peer, true);
+        this.peersLogic.upsert(peer, true);
         discovered++;
       } else {
-        this.library.logger.warn(`Rejecting invalid peer: ${peer.string}`);
+        this.logger.warn(`Rejecting invalid peer: ${peer.string}`);
         rejected++;
       }
     }
 
-    this.library.logger.trace(`Discovered ${discovered} peers - Rejected ${rejected}`);
+    this.logger.trace(`Discovered ${discovered} peers - Rejected ${rejected}`);
 
   }
 }

@@ -1,8 +1,10 @@
 import 'reflect-metadata';
+import * as z_schema from 'z-schema';
 
+// TODO: Use typescript decorator metadata to determine if it's a promise or not.
 export function ValidateSchema(config: { isPromise: boolean } = { isPromise: true }) {
   // tslint:disable-next-line
-  return function (target: { schema: any }, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) {
+  return function (target: { schema: z_schema }, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) {
     // Do nothing for now.
     const old        = descriptor.value;
     // tslint: disable-next-line

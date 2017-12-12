@@ -142,7 +142,6 @@ digraph G {
         transportModule -> multisignaturesModule
         transportModule -> transactionsModule
         transportModule -> systemModule
-        transportModule -> blockLogic
         transportModule -> transactionLogic
         transportModule -> peersLogic
         transportModule -> broadcasterLogic
