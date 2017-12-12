@@ -1,3 +1,4 @@
+import { inject, injectable, postConstruct, tagged } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import * as promiseRetry from 'promise-retry';
 import z_schema from 'z-schema';
@@ -26,6 +27,8 @@ import loaderSchema from '../schema/loader';
 import { AppConfig } from '../types/genericTypes';
 import Timer = NodeJS.Timer;
 
+import { Symbols } from '../ioc/symbols';
+
 // tslint:disable-next-line
 export type LoaderLibrary = {
   logger: ILogger;
@@ -47,10 +50,10 @@ export type LoaderLibrary = {
   config: AppConfig
 };
 
+@injectable()
 export class LoaderModule implements ILoaderModule {
 
   private network: { height: number, peers: PeerLogic[] };
-  private genesisBlock: SignedAndChainedBlockType = null;
   private lastblock: SignedAndChainedBlockType    = null;
   private syncIntervalId: Timer                   = null;
   private blocksToSync: number                    = 0;
@@ -59,30 +62,77 @@ export class LoaderModule implements ILoaderModule {
   private retries: number                         = 5;
   private syncInterval                            = 1000;
 
-  private modules: {
-    blocks: IBlocksModule,
-    blocksChain: IBlocksModuleChain,
-    blocksProcess: IBlocksModuleProcess,
-    blocksUtils: IBlocksModuleUtils,
-    blocksVerify: IBlocksModuleVerify,
-    system: ISystemModule,
-    transactions: ITransactionsModule,
-    transport: ITransportModule,
-    peers: IPeersModule,
-    multisignatures: IMultisignaturesModule
-  };
+  // Modules
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
+  @inject(Symbols.modules.blocksSubModules.chain)
+  private blocksChainModule: IBlocksModuleChain;
+  @inject(Symbols.modules.blocksSubModules.process)
+  private blocksProcessModule: IBlocksModuleProcess;
+  @inject(Symbols.modules.blocksSubModules.utils)
+  private blocksUtilsModule: IBlocksModuleUtils;
+  @inject(Symbols.modules.blocksSubModules.verify)
+  private blocksVerifyModule: IBlocksModuleVerify;
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
+  @inject(Symbols.modules.transactions)
+  private transactionsModule: ITransactionsModule;
+  @inject(Symbols.modules.transport)
+  private transportModule: ITransportModule;
+  @inject(Symbols.modules.peers)
+  private peersModule: IPeersModule;
+  @inject(Symbols.modules.multisignatures)
+  private multisigModule: IMultisignaturesModule;
 
-  constructor(public library: LoaderLibrary) {
-    this.initialize();
-    this.genesisBlock = this.library.genesisblock;
+  // Helpers and generics
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.generic.db)
+  private db: IDatabase<any>;
+  @inject(Symbols.generic.socketIO)
+  private io: SocketIO.Server;
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
+  @inject(Symbols.helpers.sequence)
+  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence)
+  private sequence: Sequence;
+  @inject(Symbols.helpers.sequence)
+  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
+  private balancesSequence: Sequence;
+  @inject(Symbols.helpers.bus)
+  private bus: Bus;
+  @inject(Symbols.generic.genesisBlock)
+  private genesisBlock: SignedAndChainedBlockType;
+  @inject(Symbols.generic.appConfig)
+  private config: AppConfig;
+
+  @inject(Symbols.logic.appState)
+  private appState: IAppState;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
+  @inject(Symbols.logic.account)
+  private accountLogic: IAccountLogic;
+  @inject(Symbols.logic.broadcaster)
+  private broadcasterLogic: IBroadcasterLogic;
+  @inject(Symbols.logic.peers)
+  private peersLogic: IPeersLogic;
+  @inject(Symbols.logic.rounds)
+  private roundsLogic: IRoundsLogic;
+
+  @postConstruct()
+  public initialize() {
+    this.network = {
+      height: 0,
+      peers : [],
+    };
   }
 
   public async getNework() {
     if (!(
         this.network.height > 0 &&
-        Math.abs(this.network.height - this.modules.blocks.lastBlock.height) === 1)
+        Math.abs(this.network.height - this.blocksModule.lastBlock.height) === 1)
     ) {
-      const {peers} = await this.modules.peers.list({});
+      const {peers} = await this.peersModule.list({});
       this.network  = this.findGoodPeers(peers);
     }
     return this.network;
@@ -97,22 +147,7 @@ export class LoaderModule implements ILoaderModule {
    * Checks if we're syncing or not.
    */
   private get isSyncing(): boolean {
-    return this.library.logic.appState.get('loader.isSyncing');
-  }
-
-  public async onBind(modules: any) {
-    this.modules = {
-      blocks         : modules.blocks,
-      blocksChain    : modules.blocksChain,
-      blocksProcess  : modules.blocksProcess,
-      blocksUtils    : modules.blocksUtils,
-      blocksVerify   : modules.blocksVerify,
-      multisignatures: modules.multisignatures,
-      peers          : modules.peers,
-      system         : modules.system,
-      transactions   : modules.transactions,
-      transport      : modules.transport,
-    };
+    return this.appState.get('loader.isSyncing');
   }
 
   public async onPeersReady() {
@@ -128,7 +163,7 @@ export class LoaderModule implements ILoaderModule {
           }
         }, {retries: this.retries});
       } catch (e) {
-        this.library.logger.log('Unconfirmed transactions loader error', e);
+        this.logger.log('Unconfirmed transactions loader error', e);
       }
 
       // load multisignature transactions
@@ -141,7 +176,7 @@ export class LoaderModule implements ILoaderModule {
           }
         }, {retries: this.retries});
       } catch (e) {
-        this.library.logger.log('Multisig pending transactions loader error', e);
+        this.logger.log('Multisig pending transactions loader error', e);
       }
     }
 
@@ -171,11 +206,11 @@ export class LoaderModule implements ILoaderModule {
    * Loads last block and emits a bus message blockchain is ready.
    */
   public async loadBlockChain(): Promise<void> {
-    const limit = Number(this.library.config.loading.loadPerIteration) || 1000;
+    const limit = Number(this.config.loading.loadPerIteration) || 1000;
     // const verify   = Boolean(this.library.config.loading.verifyOnLoading);
 
     // Check memory tables.
-    const results = await this.library.db.task((t) => t.batch([
+    const results = await this.db.task((t) => t.batch([
       t.one(sql.countBlocks),
       t.query(sql.getGenesisBlock),
       t.one(sql.countMemAccounts),
@@ -184,7 +219,7 @@ export class LoaderModule implements ILoaderModule {
     ]));
 
     const blocksCount = results[0].count;
-    this.library.logger.info(`Blocks ${blocksCount}`);
+    this.logger.info(`Blocks ${blocksCount}`);
 
     if (blocksCount === 1) {
       // Load from start!
@@ -202,23 +237,23 @@ export class LoaderModule implements ILoaderModule {
       if (!matches) {
         throw new Error('Failed to match genesis block with database');
       }
-      this.library.logger.info('Genesis block matches with database');
+      this.logger.info('Genesis block matches with database');
     }
 
-    const round = this.library.logic.rounds.calcRound(blocksCount);
+    const round = this.roundsLogic.calcRound(blocksCount);
 
     // Check if we are in verifySnapshot mode.
-    if (this.library.config.loading.snapshot) {
-      this.library.logger.info('Snapshot mode enabled');
-      if (this.library.config.loading.snapshot >= round) {
-        this.library.config.loading.snapshot = round;
+    if (this.config.loading.snapshot) {
+      this.logger.info('Snapshot mode enabled');
+      if (this.config.loading.snapshot >= round) {
+        this.config.loading.snapshot = round;
         if ((blocksCount === 1) || (blocksCount % constants.activeDelegates > 0)) {
           // Normalize to previous round if we
-          this.library.config.loading.snapshot = (round > 1) ? (round - 1) : 1;
+          this.config.loading.snapshot = (round > 1) ? (round - 1) : 1;
         }
-        this.library.logic.appState.set('rounds.snapshot', this.library.config.loading.snapshot);
+        this.appState.set('rounds.snapshot', this.config.loading.snapshot);
       }
-      this.library.logger.info(`Snapshotting to end of round: ${this.library.config.loading.snapshot}`);
+      this.logger.info(`Snapshotting to end of round: ${this.config.loading.snapshot}`);
       return this.load(blocksCount, limit, 'Blocks Verification enabled');
     }
 
@@ -236,12 +271,12 @@ export class LoaderModule implements ILoaderModule {
 
     const duplicatedDelegates = results[4][0].count > 0;
     if (duplicatedDelegates) {
-      this.library.logger.error('Delegates table corrupted with duplicated entries');
+      this.logger.error('Delegates table corrupted with duplicated entries');
       process.emit('exit', 1);
       return;
     }
 
-    const res = await this.library.db.task((t) => t.batch([
+    const res = await this.db.task((t) => t.batch([
       t.none(sql.updateMemAccounts),
       t.query(sql.getOrphanedMemAccounts),
       t.query(sql.getDelegates),
@@ -255,9 +290,9 @@ export class LoaderModule implements ILoaderModule {
       return this.load(blocksCount, limit, 'No delegates found');
     }
     try {
-      this.lastblock = await this.modules.blocksUtils.loadLastBlock();
-      this.library.logger.info('Blockchain ready');
-      await this.library.bus.message('blockchainReady');
+      this.lastblock = await this.blocksUtilsModule.loadLastBlock();
+      this.logger.info('Blockchain ready');
+      await this.bus.message('blockchainReady');
     } catch (err) {
       return this.load(blocksCount, err.message || 'Failed to load last block');
     }
@@ -266,42 +301,35 @@ export class LoaderModule implements ILoaderModule {
   public async load(count: number, limitPerIteration: number, message?: string) {
     let offset = 0;
     if (message) {
-      this.library.logger.warn(message);
-      this.library.logger.warn('Recreating memory tables');
+      this.logger.warn(message);
+      this.logger.warn('Recreating memory tables');
     }
 
-    await this.library.logic.account.removeTables();
+    await this.accountLogic.removeTables();
 
-    await this.library.logic.account.createTables();
+    await this.accountLogic.createTables();
 
     try {
       while (count >= offset) {
         if (count > 1) {
-          this.library.logger.info('Rebuilding blockchain, current block height: ' + (offset + 1));
+          this.logger.info('Rebuilding blockchain, current block height: ' + (offset + 1));
         }
-        const lastBlock = await this.modules.blocksProcess.loadBlocksOffset(limitPerIteration, offset, true/*verify*/);
+        const lastBlock = await this.blocksProcessModule.loadBlocksOffset(limitPerIteration, offset, true/*verify*/);
         offset          = offset + limitPerIteration;
         this.lastblock  = lastBlock;
       }
-      this.library.logger.info('Blockchain ready');
-      await this.library.bus.message('blockchainReady');
+      this.logger.info('Blockchain ready');
+      await this.bus.message('blockchainReady');
     } catch (err) {
-      this.library.logger.error(err);
+      this.logger.error(err);
       if (err.block) {
-        this.library.logger.error('Blockchain failed at: ' + err.block.height);
-        await this.modules.blocksChain.deleteAfterBlock(err.block.id);
-        this.library.logger.error('Blockchain clipped');
-        await this.library.bus.message('blockchainReady');
+        this.logger.error('Blockchain failed at: ' + err.block.height);
+        await this.blocksChainModule.deleteAfterBlock(err.block.id);
+        this.logger.error('Blockchain clipped');
+        await this.bus.message('blockchainReady');
       }
     }
 
-  }
-
-  private initialize() {
-    this.network = {
-      height: 0,
-      peers : [],
-    };
   }
 
   /**
@@ -315,14 +343,14 @@ export class LoaderModule implements ILoaderModule {
   private findGoodPeers(peers: PeerType[]): {
     height: number, peers: PeerLogic[]
   } {
-    const lastBlockHeight: number = this.modules.blocks.lastBlock.height;
+    const lastBlockHeight: number = this.blocksModule.lastBlock.height;
 
-    this.library.logger.trace('Good peers - received', {count: peers.length});
+    this.logger.trace('Good peers - received', {count: peers.length});
 
     // Removing unreachable peers or heights below last block height
     peers = peers.filter((p) => p !== null && p.height >= lastBlockHeight);
 
-    this.library.logger.trace('Good peers - filtered', {count: peers.length});
+    this.logger.trace('Good peers - filtered', {count: peers.length});
 
     // No peers found
     if (peers.length === 0) {
@@ -352,10 +380,10 @@ export class LoaderModule implements ILoaderModule {
       // Performing histogram cut of peers too far from histogram maximum
       const peerObjs = peers
         .filter((peer) => peer && Math.abs(height - peer.height) < aggregation + 1)
-        .map((peer) => this.library.logic.peers.create(peer));
+        .map((peer) => this.peersLogic.create(peer));
 
-      this.library.logger.trace('Good peers - accepted', {count: peerObjs.length});
-      this.library.logger.debug('Good peers', peerObjs);
+      this.logger.trace('Good peers - accepted', {count: peerObjs.length});
+      this.logger.debug('Good peers', peerObjs);
 
       return {height, peers: peerObjs};
     }
@@ -368,21 +396,21 @@ export class LoaderModule implements ILoaderModule {
    */
   private syncTrigger(turnOn: boolean) {
     if (turnOn === false && this.syncIntervalId) {
-      this.library.logger.trace('Clearing sync interval');
+      this.logger.trace('Clearing sync interval');
       clearTimeout(this.syncIntervalId);
       this.syncIntervalId = null;
-      this.library.logic.appState.set('loader.isSyncing', false);
+      this.appState.set('loader.isSyncing', false);
     }
     if (turnOn === true && !this.syncIntervalId) {
-      this.library.logger.trace('Setting sync interval');
+      this.logger.trace('Setting sync interval');
       this.syncIntervalId = setTimeout(() => {
-        this.library.logger.trace('Sync trigger');
-        this.library.io.sockets.emit('loader/sync', {
+        this.logger.trace('Sync trigger');
+        this.io.sockets.emit('loader/sync', {
           blocks: this.blocksToSync,
-          height: this.modules.blocks.lastBlock.height,
+          height: this.blocksModule.lastBlock.height,
         });
       }, 1000);
-      this.library.logic.appState.set('loader.isSyncing', true);
+      this.appState.set('loader.isSyncing', true);
     }
   }
 
@@ -395,19 +423,19 @@ export class LoaderModule implements ILoaderModule {
     do {
       await promiseRetry(async (retry) => {
         const randomPeer                 = await this.gerRandomPeer();
-        const lastBlock: SignedBlockType = this.modules.blocks.lastBlock;
+        const lastBlock: SignedBlockType = this.blocksModule.lastBlock;
 
         if (lastBlock.height !== 1) {
-          this.library.logger.info('Looking for common block with: ' + randomPeer.string);
+          this.logger.info('Looking for common block with: ' + randomPeer.string);
           try {
-            const commonBlock = await this.modules.blocksProcess.getCommonBlock(randomPeer, lastBlock.height);
+            const commonBlock = await this.blocksProcessModule.getCommonBlock(randomPeer, lastBlock.height);
             if (!commonBlock) {
-              this.library.logger.error(`Failed to find common block with: ${randomPeer.string}`);
+              this.logger.error(`Failed to find common block with: ${randomPeer.string}`);
               return retry(new Error('Failed to find common block'));
             }
           } catch (err) {
-            this.library.logger.error(`Failed to find common block with: ${randomPeer.string}`);
-            this.library.logger.error(err.toString());
+            this.logger.error(`Failed to find common block with: ${randomPeer.string}`);
+            this.logger.error(err.toString());
             return retry(err);
           }
         }
@@ -415,12 +443,12 @@ export class LoaderModule implements ILoaderModule {
         // Now that we know that peer is reliable we can sync blocks with him!!
         this.blocksToSync = randomPeer.height;
         try {
-          const lastValidBlock: SignedBlockType = await this.modules.blocksProcess.loadBlocksFromPeer(randomPeer);
+          const lastValidBlock: SignedBlockType = await this.blocksProcessModule.loadBlocksFromPeer(randomPeer);
 
           loaded = lastValidBlock.id === lastBlock.id;
         } catch (err) {
-          this.library.logger.error(err.toString());
-          this.library.logger.error('Failed to load blocks from: ' + randomPeer.string);
+          this.logger.error(err.toString());
+          this.logger.error('Failed to load blocks from: ' + randomPeer.string);
           return retry(err);
         }
       });
@@ -435,35 +463,35 @@ export class LoaderModule implements ILoaderModule {
    * - Applies unconfirmed transactions
    */
   private async sync() {
-    this.library.logger.info('Starting sync');
-    await this.library.bus.message('syncStarted');
+    this.logger.info('Starting sync');
+    await this.bus.message('syncStarted');
 
     this.isActive = true;
     this.syncTrigger(true);
 
     // undo unconfirmedList
-    this.library.logger.debug('Undoing unconfirmed transactions before sync');
-    await this.modules.transactions.undoUnconfirmedList();
+    this.logger.debug('Undoing unconfirmed transactions before sync');
+    await this.transactionsModule.undoUnconfirmedList();
 
     // Establish consensus. (internally)
-    this.library.logger.debug('Establishing broadhash consensus before sync');
-    await this.library.logic.broadcaster.getPeers({limit: constants.maxPeers});
+    this.logger.debug('Establishing broadhash consensus before sync');
+    await this.broadcasterLogic.getPeers({limit: constants.maxPeers});
 
     await this.loadBlocksFromNetwork();
   }
 
   private async syncTimer() {
-    this.library.logger.trace('Setting sync timer');
+    this.logger.trace('Setting sync timer');
 
     JobsQueue.register('loaderSyncTimer', async (cb) => {
-      this.library.logger.trace('Sync timer trigger', {
-        last_receipt: this.modules.blocks.lastReceipt.get(),
+      this.logger.trace('Sync timer trigger', {
+        last_receipt: this.blocksModule.lastReceipt.get(),
         loaded      : this.loaded,
         syncing     : this.isSyncing,
       });
 
-      if (this.loaded && !this.isSyncing && this.modules.blocks.lastReceipt.isStale()) {
-        await this.library.sequence.addAndPromise(() => promiseRetry(async (retries) => {
+      if (this.loaded && !this.isSyncing && this.blocksModule.lastReceipt.isStale()) {
+        await this.sequence.addAndPromise(() => promiseRetry(async (retries) => {
           try {
             await this.sync();
           } catch (err) {
@@ -480,15 +508,15 @@ export class LoaderModule implements ILoaderModule {
    */
   private async loadSignatures() {
     const randomPeer = await this.gerRandomPeer();
-    this.library.logger.log(`Loading signatures from: ${randomPeer.string}`);
-    const res = await this.modules.transport.getFromPeer<any>(
+    this.logger.log(`Loading signatures from: ${randomPeer.string}`);
+    const res = await this.transportModule.getFromPeer<any>(
       randomPeer,
       {
         api   : '/signatures',
         method: 'GET',
       });
 
-    if (!this.library.schema.validate(res.body, loaderSchema.loadSignatures)) {
+    if (!this.schema.validate(res.body, loaderSchema.loadSignatures)) {
       throw new Error('Failed to validate /signatures schema');
     }
 
@@ -496,17 +524,16 @@ export class LoaderModule implements ILoaderModule {
     const {signatures}: { signatures: any[] } = res.body;
 
     // Process multisignature transactions and validate signatures in sequence
-    await
-      this.library.sequence.addAndPromise(async () => {
+    await this.sequence.addAndPromise(async () => {
         for (const multiSigTX of signatures) {
           for (const signature of  multiSigTX.signatures) {
             try {
-              this.modules.multisignatures.processSignature({
+              this.multisigModule.processSignature({
                 signature,
                 transaction: multiSigTX.transaction,
               });
             } catch (err) {
-              this.library.logger.warn(`Cannot process multisig signature for ${multiSigTX.transaction} `, err);
+              this.logger.warn(`Cannot process multisig signature for ${multiSigTX.transaction} `, err);
             }
           }
         }
@@ -520,13 +547,13 @@ export class LoaderModule implements ILoaderModule {
    */
   private async loadTransactions() {
     const peer = await this.gerRandomPeer();
-    this.library.logger.log(`Loading transactions from: ${peer.string}`);
-    const res = await this.modules.transport.getFromPeer<any>(peer, {
+    this.logger.log(`Loading transactions from: ${peer.string}`);
+    const res = await this.transportModule.getFromPeer<any>(peer, {
       api   : '/transactions',
       method: 'GET',
     });
 
-    if (!this.library.schema.validate(res.body, loaderSchema.loadTransactions)) {
+    if (!this.schema.validate(res.body, loaderSchema.loadTransactions)) {
       throw new Error('Cannot validate load transactions schema against peer');
     }
 
@@ -534,14 +561,14 @@ export class LoaderModule implements ILoaderModule {
     for (const tx of transactions) {
       try {
         // Perform validation and throw if error
-        this.library.logic.transaction.objectNormalize(tx);
+        this.transactionLogic.objectNormalize(tx);
       } catch (e) {
-        this.library.logger.debug('Transaction normalization failed', {err: e.toString(), module: 'loader', tx});
+        this.logger.debug('Transaction normalization failed', {err: e.toString(), module: 'loader', tx});
 
-        this.library.logger.warn(['Transaction', tx.id, 'is not valid, peer removed'].join(' '), peer.string);
+        this.logger.warn(['Transaction', tx.id, 'is not valid, peer removed'].join(' '), peer.string);
 
         // Remove invalid peer as a mechanism to discourage invalid processing.
-        this.modules.peers.remove(peer.ip, peer.port);
+        this.peersModule.remove(peer.ip, peer.port);
         throw e;
       }
     }
@@ -549,11 +576,11 @@ export class LoaderModule implements ILoaderModule {
     // Process unconfirmed transaction
     for (const tx of transactions) {
       await
-        this.library.balancesSequence.addAndPromise(async () => {
+        this.balancesSequence.addAndPromise(async () => {
           try {
-            await this.modules.transactions.processUnconfirmedTransaction(tx, false, true);
+            await this.transactionsModule.processUnconfirmedTransaction(tx, false, true);
           } catch (err) {
-            this.library.logger.debug(err);
+            this.logger.debug(err);
           }
         });
     }

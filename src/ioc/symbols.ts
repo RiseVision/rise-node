@@ -4,6 +4,7 @@ export const Symbols = {
     db          : Symbol('db'),
     genesisBlock: Symbol('genesisBlock'),
     redisClient : Symbol('redisClient'),
+    socketIO    : Symbol('socketIO'),
     zschema     : Symbol('z_schema'),
   },
   helpers: {
@@ -58,7 +59,8 @@ export const Symbols = {
 
   tags: {
     helpers: {
-      balancesSequence: Symbol('balanceSequence')
-    }
-  }
+      balancesSequence: Symbol('balanceSequence'),
+      defaultSequence: Symbol('defaultSequence'),
+    },
+  },
 };

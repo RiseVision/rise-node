@@ -1,13 +1,19 @@
+import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import sql from '../../sql/delegates';
 import { ForkType, ILogger } from '../helpers';
 import { IForkModule } from '../ioc/interfaces/modules/';
+import { Symbols } from '../ioc/symbols';
 import { SignedBlockType } from '../logic';
 
+@injectable()
 export class ForkModule implements IForkModule {
-
-  constructor(private library: {logger: ILogger, db: IDatabase<any>, io: SocketIO.Server}) {
-  }
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.generic.db)
+  private db: IDatabase<any>;
+  @inject(Symbols.generic.socketIO)
+  private io: SocketIO.Server;
 
   /**
    * Inserts a fork into fork_stats table and emits a socket signal with the fork data
@@ -16,7 +22,7 @@ export class ForkModule implements IForkModule {
    * @return {Promise<void>}
    */
   public async fork(block: SignedBlockType, cause: ForkType) {
-    this.library.logger.info('Fork', {
+    this.logger.info('Fork', {
       block   : { id: block.id, timestamp: block.timestamp, height: block.height, previousBlock: block.previousBlock },
       cause,
       delegate: block.generatorPublicKey,
@@ -31,7 +37,7 @@ export class ForkModule implements IForkModule {
       previousBlock    : block.previousBlock,
     };
 
-    await this.library.db.none(sql.insertFork, fork);
-    this.library.io.sockets.emit('delegates/fork', fork);
+    await this.db.none(sql.insertFork, fork);
+    this.io.sockets.emit('delegates/fork', fork);
   }
 }
