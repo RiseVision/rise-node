@@ -1,17 +1,21 @@
+import {inject, injectable} from 'inversify';
 import * as _ from 'lodash';
 import { Body, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
+import * as z_schema from 'z-schema';
 import schema from '../../schema/transactions';
+import { ITransactionsModule } from '../ioc/interfaces/modules';
+import { Symbols } from '../ioc/symbols';
 import { TransactionsModule } from '../transactions';
 import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
-// TODO : this is not possible to create due to limitation of routing-controllers
-// We'll need to set up dependency injection first to let this work properly.
 @JsonController('/transactions')
+@injectable()
 export class TransportAPI {
-  public schema: any;
+  @inject(Symbols.generic.zschema)
+  public schema: z_schema;
 
-  constructor(private transactionModule: TransactionsModule) {
-  }
+  @inject(Symbols.modules.transactions)
+  private transactionsModule: ITransactionsModule;
 
   @Get()
   public async getTransactions(@Body() body: any) {
