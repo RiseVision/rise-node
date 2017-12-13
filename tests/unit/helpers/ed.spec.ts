@@ -126,18 +126,21 @@ describe('helpers/ed', () => {
 
   describe('sodium input/output tests', () => {
     // LibSodium test input/outputs
-    const inputSeed        = Buffer.from('zSX0jgvyyaw8n+Z/Iv6lS7EI9pS7aesQUgxIsihjXfA=', 'base64');
-    const publicKeyBase64  = 'ZYhxb5yUFTDHTqvfCyexorrAoVJelgWjfmwLOBflj+M=';
-    const privateKeyBase64 = 'zSX0jgvyyaw8n+Z/Iv6lS7EI9pS7aesQUgxIsihjXfBliHFvnJQVMMdOq98LJ7GiusChUl6WBaN+bAs4F+WP4w==';
-    const messageHash      = '84c824f93d07657b8cd49fe2d4f96d06ab5eda4d29c3d3a4ea87e65fa8fc0732';
-    const signatureBase64  = 'ssmqse4xzs/ioFR/6ecPTYnVBePwXA93fzLNw9u3n82Hr7cPKjoEyuPWWxqJsibSl0hE+QloaxJfDQclSWGxBA==';
+    const inputSeedHex  = 'cd25f48e0bf2c9ac3c9fe67f22fea54bb108f694bb69eb10520c48b228635df0';
+    const publicKeyHex  = '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3';
+    const privateKeyHex = 'cd25f48e0bf2c9ac3c9fe67f22fea54bb108f694bb69eb10520c48b228635df0' +
+                          '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3';
+    const messageHash   = '84c824f93d07657b8cd49fe2d4f96d06ab5eda4d29c3d3a4ea87e65fa8fc0732';
+    const signatureHex  = 'b2c9aab1ee31cecfe2a0547fe9e70f4d89d505e3f05c0f777f32cdc3dbb79fcd' +
+                          '87afb70f2a3a04cae3d65b1a89b226d2974844f909686b125f0d07254961b104';
 
+    const inputSeed = Buffer.from(inputSeedHex, 'hex');
     const expectedOutputKeys: IKeypair = {
-      publicKey: Buffer.from(publicKeyBase64, 'base64'),
-      privateKey: Buffer.from(privateKeyBase64, 'base64'),
+      publicKey: Buffer.from(publicKeyHex, 'hex'),
+      privateKey: Buffer.from(privateKeyHex, 'hex'),
     };
     const inputMessage = Buffer.from(messageHash);
-    const expectedOutputSignature = Buffer.from(signatureBase64, 'base64');
+    const expectedOutputSignature = Buffer.from(signatureHex, 'hex');
 
     it('makeKeyPair should return the expected output', () => {
       const outputKeys = realEd.makeKeypair(inputSeed);
