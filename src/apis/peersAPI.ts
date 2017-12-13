@@ -1,16 +1,32 @@
-import { Controller, Get, QueryParams } from 'ts-express-decorators';
-import { PeerState } from '../../logic/';
-import peersSchema from '../../schema/peers';
-import { PeersModule } from '../peers';
+import { inject, injectable } from 'inversify';
+import { Get, JsonController, QueryParams } from 'routing-controllers';
+import * as z_schema from 'z-schema';
+import { IPeersModule, ISystemModule } from '../ioc/interfaces/modules';
+import { Symbols } from '../ioc/symbols';
+import { PeerState } from '../logic/';
+import peersSchema from '../schema/peers';
+import { AppConfig } from '../types/genericTypes';
 import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
-@Controller('/peers')
+@JsonController('/peers')
+@injectable()
 class PeersPublicAPI {
-  public schema: any;
+  // Generics
+  @inject(Symbols.generic.appConfig)
+  private appConfig: AppConfig;
+  // tslint:disable-next-line member-ordering
+  @inject(Symbols.generic.zschema)
+  public schema: z_schema;
+  @inject(Symbols.generic.lastCommit)
+  private lastCommit: string;
+  @inject(Symbols.generic.versionBuild)
+  private versionBuild: string;
 
-  constructor(private peersModule: PeersModule) {
-    this.schema = this.peersModule.library.schema;
-  }
+  // Modules
+  @inject(Symbols.modules.peers)
+  private peersModule: IPeersModule;
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
 
   @Get('/')
   @ValidateSchema()
@@ -56,10 +72,10 @@ class PeersPublicAPI {
   @Get('/version')
   public async version() {
     return {
-      build     : this.peersModule.library.build,
-      commit    : this.peersModule.library.lastCommit,
-      minVersion: this.peersModule.modules.system.getMinVersion(),
-      version   : this.peersModule.library.config.version,
+      build     : this.versionBuild,
+      commit    : this.lastCommit,
+      minVersion: this.systemModule.getMinVersion(),
+      version   : this.appConfig.version,
     };
   }
 

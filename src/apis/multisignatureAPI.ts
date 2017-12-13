@@ -1,22 +1,36 @@
+import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import { Get, JsonController, Post, Put, QueryParam } from 'routing-controllers';
-import sql from '../../../sql/multisignatures';
-import { catchToLoggerAndRemapError, ILogger } from '../../helpers/';
-import { TransactionLogic } from '../../logic/';
-import { AccountsModule } from '../accounts';
-import { TransactionsModule } from '../transactions';
+import * as z_schema from 'z-schema';
+import sql from '../../sql/multisignatures';
+import { catchToLoggerAndRemapError, ILogger} from '../helpers';
+import { ITransactionLogic } from '../ioc/interfaces/logic';
+import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules';
+import { Symbols } from '../ioc/symbols';
 import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 @JsonController('/multisignatures')
+@injectable()
 export class MultisignatureAPI {
-  public schema: any;
+  // Generics
+  @inject(Symbols.generic.zschema)
+  public schema: z_schema;
+  @inject(Symbols.generic.db)
   private db: IDatabase<any>;
+
+  // Helpers
+  @inject(Symbols.helpers.logger)
   private logger: ILogger;
-  private txLogic: TransactionLogic;
-  private modules: {
-    accounts: AccountsModule
-    transactions: TransactionsModule
-  };
+
+  // Logic
+  @inject(Symbols.logic.transaction)
+  private txLogic: ITransactionLogic;
+
+  // Modules
+  @inject(Symbols.modules.accounts)
+  private accounts: IAccountsModule;
+  @inject(Symbols.modules.transactions)
+  private transactions: ITransactionsModule;
 
   @Get('/accounts')
   @ValidateSchema()
@@ -27,15 +41,15 @@ export class MultisignatureAPI {
 
     const accountIds = Array.isArray(row.accountIds) ? row.accountIds : [];
     // Get all multisignature accounts associated to that have that publicKey as a signer.
-    const accounts   = await this.modules.accounts.getAccounts(
+    const accounts   = await this.accounts.getAccounts(
       { address: { $in: accountIds }, sort: 'balance' },
       ['address', 'balance', 'multisignatures', 'multilifetime', 'multimin']);
 
     const items = [];
     for (const account of accounts) {
-      const addresses        = account.multisignatures.map((pk) => this.modules.accounts
+      const addresses        = account.multisignatures.map((pk) => this.accounts
         .generateAddressByPublicKey(pk));
-      const multisigaccounts = await this.modules.accounts.getAccounts(
+      const multisigaccounts = await this.accounts.getAccounts(
         {
           address: { $in: addresses },
         },
@@ -51,7 +65,7 @@ export class MultisignatureAPI {
   @ValidateSchema()
   public async getPending(@SchemaValid({ format: 'publicKey', type: 'string' })
                           @QueryParam('publicKey', { required: true }) publicKey: string) {
-    const txs = this.modules.transactions.getMultisignatureTransactionList(false)
+    const txs = this.transactions.getMultisignatureTransactionList(false)
       .filter((tx) => tx.senderPublicKey === publicKey);
 
     const toRet = [];
@@ -72,7 +86,7 @@ export class MultisignatureAPI {
         signed = true;
       }
 
-      const sender = await this.modules.accounts.getAccount({ publicKey: tx.senderPublicKey });
+      const sender = await this.accounts.getAccount({ publicKey: tx.senderPublicKey });
       if (!sender) {
         throw new Error('Sender not found');
       }

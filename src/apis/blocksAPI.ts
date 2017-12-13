@@ -1,12 +1,15 @@
+import { inject, injectable, tagged } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import { Get, JsonController, QueryParam, QueryParams } from 'routing-controllers';
-import { PeersModule, TransportModule } from '../';
-import { constants, OrderBy, Sequence } from '../../helpers/';
-import { BlockLogic, BlockRewardLogic, SignedBlockType } from '../../logic/';
-import blocksSchema from '../../schema/blocks';
-import sql from '../../../sql/blocks';
-import { publicKey } from '../../types/sanityTypes';
-import { SystemModule } from '../system';
+import * as z_schema from 'z-schema';
+import sql from '../../sql/blocks';
+import { constants as constantsType, OrderBy, Sequence } from '../helpers';
+import { IBlockLogic, IBlockReward } from '../ioc/interfaces/logic';
+import { IBlocksModule, ISystemModule} from '../ioc/interfaces/modules';
+import { Symbols } from '../ioc/symbols';
+import { SignedBlockType } from '../logic';
+import blocksSchema from '../schema/blocks';
+import { publicKey } from '../types/sanityTypes';
 import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 // tslint:disable-next-line
@@ -25,19 +28,33 @@ type FilterType = {
 };
 
 @JsonController('/blocks')
+@injectable()
 export class BlocksAPI {
-  public schema: any;
+  // Modules
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
 
-  constructor(private transportModule: TransportModule, private blocksModule: any,
-              private systemModule: SystemModule,
-              private peersModule: PeersModule,
-              private dbSequence: Sequence,
-              private blockReward: BlockRewardLogic,
-              private transactionsModule: any,
-              private blockLogic: BlockLogic,
-              private db: IDatabase<any>) {
-    this.schema = transportModule.schema;
-  }
+  // Generic
+  // tslint:disable-next-line
+  @inject(Symbols.generic.zschema)
+  public schema: z_schema;
+  @inject(Symbols.generic.db)
+  private db: IDatabase<any>;
+
+  // Logic
+  @inject(Symbols.logic.blockReward)
+  private blockRewardLogic: IBlockReward;
+  @inject(Symbols.logic.block)
+  private blockLogic: IBlockLogic;
+
+  // Helpers
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
+  @inject(Symbols.helpers.sequence)
+  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence)
+  private dbSequence: Sequence;
 
   @Get('/')
   @ValidateSchema()
@@ -60,7 +77,7 @@ export class BlocksAPI {
 
   @Get('/getEpoch')
   public getEpoch() {
-    return { epoch: constants.epochTime };
+    return { epoch: this.constants.epochTime };
   }
 
   @Get('/getFee')
@@ -85,31 +102,31 @@ export class BlocksAPI {
 
   @Get('/getMilestone')
   public getMilestone() {
-    return { milestone: this.blockReward.calcMilestone(this.blocksModule.lastBlock.get().height) };
+    return { milestone: this.blockRewardLogic.calcMilestone(this.blocksModule.lastBlock.height) };
   }
 
   @Get('/getReward')
   public getReward() {
-    return { reward: this.blockReward.calcReward(this.blocksModule.lastBlock.get().height) };
+    return { reward: this.blockRewardLogic.calcReward(this.blocksModule.lastBlock.height) };
   }
 
   @Get('/getSupply')
   public getSupply() {
-    return { supply: this.blockReward.calcSupply(this.blocksModule.lastBlock.get().height) };
+    return { supply: this.blockRewardLogic.calcSupply(this.blocksModule.lastBlock.height) };
   }
 
   @Get('/getStatus')
   public getStatus() {
-    const lastBlock = this.blocksModule.lastBlock.get();
+    const lastBlock = this.blocksModule.lastBlock;
     return {
       broadhash: this.systemModule.broadhash,
-      epoch    : constants.epochTime,
+      epoch    : this.constants.epochTime,
       fee      : this.systemModule.getFees(lastBlock.height).fees.send,
       height   : lastBlock.height,
-      milestone: this.blockReward.calcMilestone(lastBlock.height),
+      milestone: this.blockRewardLogic.calcMilestone(lastBlock.height),
       nethash  : this.systemModule.getNethash(),
-      reward   : this.blockReward.calcReward(lastBlock.height),
-      supply   : this.blockReward.calcSupply(lastBlock.height),
+      reward   : this.blockRewardLogic.calcReward(lastBlock.height),
+      supply   : this.blockRewardLogic.calcSupply(lastBlock.height),
     };
   }
 
