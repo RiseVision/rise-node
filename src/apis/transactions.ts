@@ -10,7 +10,7 @@ import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 @JsonController('/transactions')
 @injectable()
-export class TransportAPI {
+export class TransactionsAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
 

@@ -32,6 +32,8 @@ import {
   MultiSignatureTransaction, RegisterDelegateTransaction, SecondSignatureTransaction, SendTransaction,
   VoteTransaction
 } from './logic/transactions';
+import { BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify } from './modules/blocks';
+import { ForkModule } from './modules/fork';
 
 declare const gc; // garbage collection if exposed.
 
@@ -167,6 +169,26 @@ async function boot(constants: typeof constantsType): Promise<() => Promise<void
   container.bind(Symbols.logic.transactions.delegate).to(RegisterDelegateTransaction).inSingletonScope();
   container.bind(Symbols.logic.transactions.secondSignature).to(SecondSignatureTransaction).inSingletonScope();
 
+  // Modules
+  container.bind(Symbols.modules.accounts).to(AccountsModule).inSingletonScope();
+  container.bind(Symbols.modules.blocks).to(BlocksModule).inSingletonScope();
+  container.bind(Symbols.modules.blocksSubModules.chain).to(BlocksModuleChain).inSingletonScope();
+  container.bind(Symbols.modules.blocksSubModules.process).to(BlocksModuleProcess).inSingletonScope();
+  container.bind(Symbols.modules.blocksSubModules.utils).to(BlocksModuleUtils).inSingletonScope();
+  container.bind(Symbols.modules.blocksSubModules.verify).to(BlocksModuleVerify).inSingletonScope();
+  container.bind(Symbols.modules.cache).to(Cache).inSingletonScope();
+  container.bind(Symbols.modules.delegates).to(DelegatesModule).inSingletonScope();
+  container.bind(Symbols.modules.forge).to(ForgeModule).inSingletonScope();
+  container.bind(Symbols.modules.fork).to(ForkModule).inSingletonScope();
+  container.bind(Symbols.modules.loader).to(LoaderModule).inSingletonScope();
+  container.bind(Symbols.modules.multisignatures).to(MultisignaturesModule).inSingletonScope();
+  container.bind(Symbols.modules.peers).to(PeersModule).inSingletonScope();
+  container.bind(Symbols.modules.rounds).to(RoundsModule).inSingletonScope();
+  container.bind(Symbols.modules.system).to(SystemModule).inSingletonScope();
+  container.bind(Symbols.modules.transactions).to(TransactionsModule).inSingletonScope();
+  container.bind(Symbols.modules.transport).to(TransportModule).inSingletonScope();
+
+  // HTTP APIs
 
   console.log(container.get<BlockRewardLogic>(Symbols.logic.blockReward));
 
