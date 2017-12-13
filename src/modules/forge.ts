@@ -3,8 +3,8 @@ import { inject } from 'inversify';
 import { catchToLoggerAndRemapError, constants, Ed, IKeypair, ILogger, JobsQueue, Sequence, Slots } from '../helpers';
 import { IAppState, IBroadcasterLogic } from '../ioc/interfaces/logic';
 import {
-  IAccountsModule, IBlocksModule, IBlocksModuleProcess, IDelegatesModule,
-  IForgeModule, ITransactionsModule
+  IAccountsModule, IBlocksModule, IBlocksModuleProcess, IDelegatesModule, IForgeModule,
+  ITransactionsModule
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { AppConfig } from '../types/genericTypes';
@@ -43,10 +43,12 @@ export class ForgeModule implements IForgeModule {
   @inject(Symbols.generic.appConfig)
   private config: AppConfig;
 
-  /**
-   * enable forging for specific pk or all if pk is undefined
-   */
-  public enableForge(pk?: publicKey | IKeypair) {
+  public getEnabledKeys() {
+    return Object.keys(this.enabledKeys)
+      .filter((pk) => this.enabledKeys[pk] === true);
+  }
+
+  public isForgeEnabledOn(pk?: publicKey | IKeypair) {
     let thePK: publicKey;
     if (typeof(pk) === 'object') {
       thePK                = pk.publicKey.toString('hex');
@@ -54,6 +56,15 @@ export class ForgeModule implements IForgeModule {
     } else {
       thePK = pk;
     }
+    return this.enabledKeys[thePK] === true;
+  }
+
+  /**
+   * enable forging for specific pk or all if pk is undefined
+   */
+  public enableForge(pk?: IKeypair) {
+    const thePK: publicKey = pk.publicKey.toString('hex');
+    this.keypairs[thePK] = pk;
 
     Object.keys(this.keypairs)
       .filter((p) => typeof(thePK) === 'undefined' || p === thePK)
@@ -129,7 +140,7 @@ export class ForgeModule implements IForgeModule {
 
     await this.sequence.addAndPromise(async () => {
       // updates consensus.
-      await this.broadcasterLogic.getPeers({limit: constants.maxPeers});
+      await this.broadcasterLogic.getPeers({ limit: constants.maxPeers });
 
       if (this.appState.getComputed('node.poorConsensus')) {
         throw new Error(`Inadequate broadhash consensus ${this.appState
@@ -156,7 +167,7 @@ export class ForgeModule implements IForgeModule {
 
     for (const secret of secrets) {
       const keypair = this.ed.makeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
-      const account = await this.accountsModule.getAccount({publicKey: keypair.publicKey.toString('hex')});
+      const account = await this.accountsModule.getAccount({ publicKey: keypair.publicKey.toString('hex') });
       if (!account) {
         throw new Error(`Account with publicKey: ${keypair.publicKey.toString('hex')} not found`);
       }

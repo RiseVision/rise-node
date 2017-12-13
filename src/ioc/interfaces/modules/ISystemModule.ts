@@ -45,7 +45,7 @@ export interface ISystemModule extends IModule {
    * Gets private variable `minVersion`
    * @return {string}
    */
-  getMinVersion(height: number): string;
+  getMinVersion(height?: number): string;
 
   /**
    * Checks version compatibility from input param against private values.

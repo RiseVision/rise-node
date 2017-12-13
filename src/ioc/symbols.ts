@@ -3,9 +3,11 @@ export const Symbols = {
     appConfig   : Symbol('appConfig'),
     db          : Symbol('db'),
     genesisBlock: Symbol('genesisBlock'),
+    lastCommit  : Symbol('lastCommit'),
     nonce       : Symbol('nonce'),
     redisClient : Symbol('redisClient'),
     socketIO    : Symbol('socketIO'),
+    versionBuild: Symbol('versionBuild'),
     zschema     : Symbol('z_schema'),
   },
   helpers: {
