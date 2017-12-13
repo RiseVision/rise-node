@@ -41,6 +41,9 @@ export class TransactionLogic implements ITransactionLogic {
   @inject(Symbols.helpers.ed)
   private ed: Ed;
 
+  @inject(Symbols.helpers.slots)
+  private slots: Slots;
+
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
 
@@ -376,7 +379,7 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     // Check timestamp
-    if (Slots.getSlotNumber(tx.timestamp) > Slots.getSlotNumber()) {
+    if (this.slots.getSlotNumber(tx.timestamp) > this.slots.getSlotNumber()) {
       throw new Error('Invalid transaction timestamp. Timestamp is in the future');
     }
 

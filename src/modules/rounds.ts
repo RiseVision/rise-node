@@ -20,6 +20,8 @@ export class RoundsModule implements IRoundsModule {
   // Helpers and generics
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  @inject(Symbols.helpers.slots)
+  private slots: Slots;
   @inject(Symbols.generic.db)
   private db: IDatabase<any>;
   @inject(Symbols.helpers.bus)
@@ -67,7 +69,7 @@ export class RoundsModule implements IRoundsModule {
       this.logger.debug('Performing backward tick');
       this.logger.trace(roundLogicScope);
 
-      const roundLogic = new RoundLogic(roundLogicScope, task);
+      const roundLogic = new RoundLogic(roundLogicScope, task, this.slots);
 
       return roundLogic.mergeBlockGenerator()
       // call backwardLand only if this was the last block in round.
@@ -86,7 +88,7 @@ export class RoundsModule implements IRoundsModule {
         this.logger.debug('Performing forward tick');
         this.logger.trace(roundLogicScope);
 
-        const roundLogic    = new RoundLogic(roundLogicScope, task);
+        const roundLogic    = new RoundLogic(roundLogicScope, task, this.slots);
         const snapshotRound = (
           this.getSnapshotRounds() > 0 && this.getSnapshotRounds() === roundLogicScope.round
         );
@@ -110,7 +112,7 @@ export class RoundsModule implements IRoundsModule {
       async () => {
         // Check if we are one block before last block of round, if yes - perform round snapshot
         // TODO: Check either logic or comment one of the 2 seems off.
-        if ((block.height + 1) % Slots.delegates === 0) {
+        if ((block.height + 1) % this.slots.delegates === 0) {
           this.logger.debug('Performing round snapshot...');
 
           await this.db.tx((t) => t.batch([

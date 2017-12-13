@@ -7,7 +7,7 @@ import { Symbols } from '../ioc/symbols';
 export class RoundsLogic implements IRoundsLogic {
 
   @inject(Symbols.helpers.slots)
-  private slots: typeof Slots;
+  private slots: Slots;
   /**
    * Return round calculated given the blockheight
    * @return {number}

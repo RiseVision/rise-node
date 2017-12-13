@@ -26,7 +26,7 @@ export const Symbols = {
     broadcaster    : Symbol('broadcaster'),
     peer           : Symbol('peer'),
     peers          : Symbol('peers'),
-    round          : Symbol('round'),
+    // round          : Symbol('round'),
     rounds         : Symbol('rounds'),
     transaction    : Symbol('transaction'),
     transactionPool: Symbol('transactionPool'),
