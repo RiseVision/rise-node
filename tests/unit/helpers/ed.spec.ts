@@ -4,6 +4,7 @@ import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
 import { Ed, IKeypair } from '../../../src/helpers';
 
+const realEd = new Ed();
 // tslint:disable no-unused-expression
 const RewireEd = rewire('../../../src/helpers/ed');
 const sodium = RewireEd.__get__('sodium_1');
@@ -62,7 +63,6 @@ describe('helpers/ed', () => {
   describe('sign', () => {
     let oldImplementation;
     let stub: SinonStub;
-    const realEd = new Ed();
     const hashBuf = new Buffer('hash');
     const outBuf = new Buffer('output');
     const keyPair = realEd.makeKeypair(new Buffer('12345678901234567890123456789012'));
@@ -124,4 +124,34 @@ describe('helpers/ed', () => {
 
   });
 
+  describe('sodium input/output tests', () => {
+    // LibSodium test input/outputs
+    const inputSeed        = Buffer.from('zSX0jgvyyaw8n+Z/Iv6lS7EI9pS7aesQUgxIsihjXfA=', 'base64');
+    const publicKeyBase64  = 'ZYhxb5yUFTDHTqvfCyexorrAoVJelgWjfmwLOBflj+M=';
+    const privateKeyBase64 = 'zSX0jgvyyaw8n+Z/Iv6lS7EI9pS7aesQUgxIsihjXfBliHFvnJQVMMdOq98LJ7GiusChUl6WBaN+bAs4F+WP4w==';
+    const messageHash      = '84c824f93d07657b8cd49fe2d4f96d06ab5eda4d29c3d3a4ea87e65fa8fc0732';
+    const signatureBase64  = 'ssmqse4xzs/ioFR/6ecPTYnVBePwXA93fzLNw9u3n82Hr7cPKjoEyuPWWxqJsibSl0hE+QloaxJfDQclSWGxBA==';
+
+    const expectedOutputKeys: IKeypair = {
+      publicKey: Buffer.from(publicKeyBase64, 'base64'),
+      privateKey: Buffer.from(privateKeyBase64, 'base64'),
+    };
+    const inputMessage = Buffer.from(messageHash);
+    const expectedOutputSignature = Buffer.from(signatureBase64, 'base64');
+
+    it('makeKeyPair should return the expected output', () => {
+      const outputKeys = realEd.makeKeypair(inputSeed);
+      expect(outputKeys).to.be.deep.equal(expectedOutputKeys);
+    });
+
+    it('sign should return the expected output', () => {
+      const outputSignature = realEd.sign(inputMessage, expectedOutputKeys);
+      expect(outputSignature).to.be.deep.equal(expectedOutputSignature);
+    });
+
+    it('verify should return the expected output', () => {
+      const isVerified = realEd.verify(inputMessage, expectedOutputSignature, expectedOutputKeys.publicKey);
+      expect(isVerified).to.be.true;
+    });
+  });
 });
