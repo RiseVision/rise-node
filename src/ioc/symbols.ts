@@ -2,6 +2,7 @@ export const Symbols = {
   generic: {
     appConfig   : Symbol('appConfig'),
     db          : Symbol('db'),
+    expressApp  : Symbol('expressApp'),
     genesisBlock: Symbol('genesisBlock'),
     lastCommit  : Symbol('lastCommit'),
     nonce       : Symbol('nonce'),

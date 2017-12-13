@@ -3,7 +3,7 @@ import { SignedBlockType } from '../logic/';
 import { IConfirmedTransaction } from '../logic/transactions/';
 
 export class Bus {
-  public modules: any = {};
+  public modules: any[];
 
   public message(event: 'bind', modules: any): Promise<void>;
   public message(event: 'finishRound', round: number): Promise<void>;
@@ -14,9 +14,7 @@ export class Bus {
   public message(event: 'unconfirmedTransaction', transaction: any, broadcast: any): Promise<void>;
   public async message(event: string, ...rest: any[]) {
     const methodToCall = `on${changeCase.pascalCase(event)}`;
-    const moduleKeys   = Object.keys(this.modules);
-    for (const m of moduleKeys) {
-      const module = this.modules[m];
+    for (const module of this.modules) {
       if (typeof(module[methodToCall]) === 'function') {
         const toRet = module[methodToCall].apply(module, rest);
         if (toRet instanceof Promise) {
