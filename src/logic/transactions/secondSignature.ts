@@ -1,6 +1,8 @@
+import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
-import { ILogger, TransactionType } from '../../helpers/';
+import { TransactionType } from '../../helpers/';
 import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
+import { Symbols } from '../../ioc/symbols';
 import secondSignatureSchema from '../../schema/logic/transactions/secondSignature';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
@@ -11,6 +13,7 @@ export type SecondSignatureAsset = {
   }
 };
 
+@injectable()
 export class SecondSignatureTransaction extends BaseTransactionType<SecondSignatureAsset> {
 
   private dbTable  = 'signatures';
@@ -19,15 +22,20 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     'transactionId',
   ];
 
-  constructor(public library: {
-    logger: ILogger,
-    modules: { accounts: IAccountsModule, system: ISystemModule }, schema: z_schema
-  }) {
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
+
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
+
+  constructor() {
     super(TransactionType.SIGNATURE);
   }
 
   public calculateFee(tx: IBaseTransaction<SecondSignatureAsset>, sender: any, height: number): number {
-    return this.library.modules.system.getFees(height).fees.secondsignature;
+    return this.systemModule.getFees(height).fees.secondsignature;
   }
 
   public getBytes(tx: IBaseTransaction<SecondSignatureAsset>, skipSignature: boolean,
@@ -49,14 +57,14 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     }
 
     if (!tx.asset.signature.publicKey ||
-      !this.library.schema.validate(tx.asset.signature.publicKey, { format: 'publicKey' })) {
+      !this.schema.validate(tx.asset.signature.publicKey, { format: 'publicKey' })) {
       throw new Error('Invalid public key');
     }
   }
 
   public async apply(tx: IConfirmedTransaction<SecondSignatureAsset>, block: SignedBlockType,
                      sender: any): Promise<void> {
-    return this.library.modules.accounts.setAccountAndGet({
+    return this.accountsModule.setAccountAndGet({
       address          : sender.address,
       secondPublicKey  : tx.asset.signature.publicKey,
       secondSignature  : 1,
@@ -66,7 +74,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   }
 
   public undo(tx: IConfirmedTransaction<SecondSignatureAsset>, block: SignedBlockType, sender: any): Promise<void> {
-    return this.library.modules.accounts.setAccountAndGet({
+    return this.accountsModule.setAccountAndGet({
       address          : sender.address,
       secondPublicKey  : null,
       secondSignature  : 0,
@@ -76,7 +84,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   }
 
   public applyUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>, sender: any): Promise<void> {
-    return this.library.modules.accounts.setAccountAndGet({
+    return this.accountsModule.setAccountAndGet({
       address          : sender.address,
       u_secondSignature: 0,
     })
@@ -87,7 +95,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     if (sender.u_secondSignature || sender.secondSignature) {
       return Promise.reject('Second signature already enabled');
     }
-    return this.library.modules.accounts.setAccountAndGet({
+    return this.accountsModule.setAccountAndGet({
       address          : sender.address,
       u_secondSignature: 1,
     })
@@ -95,9 +103,9 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   }
 
   public objectNormalize(tx: IBaseTransaction<SecondSignatureAsset>): IBaseTransaction<SecondSignatureAsset> {
-    const report = this.library.schema.validate(tx.asset.signature, secondSignatureSchema);
+    const report = this.schema.validate(tx.asset.signature, secondSignatureSchema);
     if (!report) {
-      throw new Error(`Failed to validate signature schema: ${this.library.schema.getLastErrors()
+      throw new Error(`Failed to validate signature schema: ${this.schema.getLastErrors()
         .map((err) => err.message).join(', ')}`);
     }
 
