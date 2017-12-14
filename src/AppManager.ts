@@ -7,15 +7,13 @@ import { Container } from 'inversify';
 import * as methodOverride from 'method-override';
 import * as socketIO from 'socket.io';
 import * as uuid from 'uuid';
+import {
+  applyExpressLimits, Bus, cache, cbToPromise, constants as constantsType, Database, Ed, ILogger, middleware,
+  Sequence, Slots, z_schema,
+} from './helpers/';
 import { ITransactionLogic } from './ioc/interfaces/logic';
 import { IBlocksModuleChain } from './ioc/interfaces/modules';
 import { Symbols } from './ioc/symbols';
-import {
-  applyExpressLimits, Bus, cache, cbToPromise, constants as constantsType, Database, Ed, ILogger, middleware, Sequence,
-  Slots,
-  z_schema,
-} from './helpers/';
-
 import {
   AccountLogic, AppState, BlockLogic, BlockRewardLogic, BroadcasterLogic, PeerLogic, PeersLogic, RoundsLogic,
   SignedAndChainedBlockType, TransactionLogic, TransactionPool
@@ -33,12 +31,12 @@ import { BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModule
 import { ForkModule } from './modules/fork';
 import { AppConfig } from './types/genericTypes';
 
-export class AppBootstrapper {
-  private container: Container = new Container();
-  private nonce: string        = uuid.v4();
-  private schema: z_schema     = new z_schema({});
-  private isCleaning = false;
+export class AppManager {
+  public container: Container = new Container();
 
+  private nonce: string    = uuid.v4();
+  private schema: z_schema = new z_schema({});
+  private isCleaning       = false;
   private server: http.Server;
 
   constructor(private appConfig: AppConfig,
@@ -51,11 +49,15 @@ export class AppBootstrapper {
 
   }
 
+  /**
+   * Starts the application
+   */
   public async boot() {
     this.logger.info('Booting');
     await this.initAppElements();
     await this.initExpress();
     await this.finishBoot();
+    this.logger.info('App Booted');
   }
 
   /**
@@ -80,6 +82,9 @@ export class AppBootstrapper {
     }
   }
 
+  /**
+   * Initialize http endpoints.
+   */
   private async initExpress() {
     const app = this.container.get<express.Application>(Symbols.generic.expressApp);
     applyExpressLimits(app, this.appConfig);
@@ -88,7 +93,7 @@ export class AppBootstrapper {
     app.use(cors());
     app.options('*', cors());
 
-    app.use(express.static(`${__dirname}/public`));
+    app.use(express.static(`${__dirname}/../public`));
     app.use(bodyParser.raw({ limit: '2mb' }));
     app.use(bodyParser.urlencoded({ extended: true, limit: '2mb', parameterLimit: 5000 }));
     app.use(bodyParser.json({ limit: '2mb' }));
@@ -109,8 +114,11 @@ export class AppBootstrapper {
     app.use(middleware.applyAPIAccessRules(this.appConfig));
   }
 
+  /**
+   * Initialize all app dependencies into the IoC container.
+   */
   private async initAppElements() {
-    const app      = express();
+    const app = express();
 
     this.server    = http.createServer(app);
     const io       = socketIO(this.server);
