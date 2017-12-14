@@ -1,6 +1,6 @@
 export * from './baseTransactionType';
 export * from './send';
-export * from './dapp';
+// export * from './dapp';
 export * from './delegate';
 export * from './inTransfer';
 export * from './outTransfer';

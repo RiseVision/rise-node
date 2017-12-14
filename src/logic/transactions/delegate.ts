@@ -1,6 +1,8 @@
+import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
 import { removeEmptyObjKeys, TransactionType } from '../../helpers/';
 import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
+import { Symbols } from '../../ioc/symbols';
 import delegateSchema from '../../schema/logic/transactions/delegate';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
@@ -13,7 +15,7 @@ export type DelegateAsset = {
     address?: string;
   }
 };
-
+@injectable()
 export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAsset> {
 
   private dbTable  = 'delegates';
@@ -22,12 +24,22 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     'transactionId',
   ];
 
-  constructor(public library: { modules: { accounts: IAccountsModule, system: ISystemModule }, schema: z_schema }) {
+  // Generic
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
+
+  // Modules
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
+
+  constructor() {
     super(TransactionType.DAPP);
   }
 
   public calculateFee(tx: IBaseTransaction<DelegateAsset>, sender: any, height: number): number {
-    return this.library.modules.system.getFees(height).fees.delegate;
+    return this.systemModule.getFees(height).fees.delegate;
   }
 
   public getBytes(tx: IBaseTransaction<DelegateAsset>, skipSignature: boolean, skipSecondSignature: boolean): Buffer {
@@ -72,15 +84,15 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       throw new Error('Username is too long. Maximum is 20 characters');
     }
 
-    if (this.library.schema.validate(tx.asset.delegate.username, { format: 'address' })) {
+    if (this.schema.validate(tx.asset.delegate.username, { format: 'address' })) {
       throw new Error('Username can not be a potential address');
     }
 
-    if (!this.library.schema.validate(tx.asset.delegate.username, { format: 'username' })) {
+    if (!this.schema.validate(tx.asset.delegate.username, { format: 'username' })) {
       throw new Error('Username can only contain alphanumeric characters with the exception of !@$&_.');
     }
 
-    const account = await this.library.modules.accounts.getAccount({ username });
+    const account = await this.accountsModule.getAccount({ username });
     if (account) {
       throw new Error(`Username already exists: ${username}`);
     }
@@ -98,7 +110,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.u_username = tx.asset.delegate.username;
     }
 
-    return this.library.modules.accounts.setAccountAndGet(data)
+    return this.accountsModule.setAccountAndGet(data)
       .then(() => void 0);
   }
 
@@ -114,7 +126,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.u_username = tx.asset.delegate.username;
     }
 
-    return this.library.modules.accounts.setAccountAndGet(data)
+    return this.accountsModule.setAccountAndGet(data)
       .then(() => void 0);
   }
 
@@ -132,7 +144,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.u_username = tx.asset.delegate.username;
     }
 
-    return this.library.modules.accounts.setAccountAndGet(data)
+    return this.accountsModule.setAccountAndGet(data)
       .then(() => void 0);
   }
 
@@ -147,16 +159,16 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.u_username = null;
     }
 
-    return this.library.modules.accounts.setAccountAndGet(data)
+    return this.accountsModule.setAccountAndGet(data)
       .then(() => void 0);
   }
 
   public objectNormalize(tx: IBaseTransaction<DelegateAsset>): IBaseTransaction<DelegateAsset> {
     removeEmptyObjKeys(tx.asset.delegate);
 
-    const report = this.library.schema.validate(tx.asset.delegate, delegateSchema);
+    const report = this.schema.validate(tx.asset.delegate, delegateSchema);
     if (!report) {
-      throw new Error(`Failed to validate delegate schema: ${this.library.schema.getLastErrors()
+      throw new Error(`Failed to validate delegate schema: ${this.schema.getLastErrors()
         .map((err) => err.message).join(', ')}`);
     }
 
