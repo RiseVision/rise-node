@@ -5,9 +5,9 @@ import * as express from 'express';
 import * as http from 'http';
 import { Container } from 'inversify';
 import * as methodOverride from 'method-override';
+import 'reflect-metadata';
 import * as socketIO from 'socket.io';
 import * as uuid from 'uuid';
-import 'reflect-metadata';
 import {
   applyExpressLimits, Bus, cache, cbToPromise, constants as constantsType, Database, Ed, ILogger, middleware,
   Sequence, Slots, z_schema,
@@ -31,6 +31,10 @@ import {
 import { BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify } from './modules/blocks/';
 import { ForkModule } from './modules/fork';
 import { AppConfig } from './types/genericTypes';
+//
+//
+// import {makeLoggerMiddleware} from 'inversify-logger-middleware';
+// const theLogger = makeLoggerMiddleware();
 
 export class AppManager {
   public container: Container = new Container();
@@ -47,7 +51,7 @@ export class AppManager {
               private genesisBlock: SignedAndChainedBlockType,
               private constants: typeof constantsType) {
     this.appConfig.nethash = genesisBlock.payloadHash;
-
+    // this.container.applyMiddleware(theLogger);
   }
 
   /**
@@ -201,9 +205,6 @@ export class AppManager {
   }
 
   private async finishBoot() {
-    const blocksChainModule = this.container.get<IBlocksModuleChain>(Symbols.modules.blocksSubModules.chain);
-    await blocksChainModule.saveGenesisBlock();
-
     const bus   = this.container.get<Bus>(Symbols.helpers.bus);
     bus.modules = this.getModules();
 
@@ -211,6 +212,9 @@ export class AppManager {
     const txLogic = this.container.get<ITransactionLogic>(Symbols.logic.transaction);
     const txs     = this.getElementsFromContainer<BaseTransactionType<any>>(Symbols.logic.transactions);
     txs.forEach((tx) => txLogic.attachAssetType(tx));
+
+    const blocksChainModule = this.container.get<IBlocksModuleChain>(Symbols.modules.blocksSubModules.chain);
+    await blocksChainModule.saveGenesisBlock();
 
     // Listen HTTP
     await cbToPromise((cb) => this.server.listen(this.appConfig.port, this.appConfig.address, cb));
@@ -222,7 +226,12 @@ export class AppManager {
   private getElementsFromContainer<T = any>(symbols: { [k: string]: symbol | { [k: string]: symbol } }): T[] {
     return Object
       .keys(symbols)
-      .map((k) => Array.isArray(Symbols.modules[k]) ? Symbols.modules[k] : [Symbols.modules[k]])
+      .map((k) => {
+        if (typeof(symbols[k]) === 'symbol') {
+          return [symbols[k]];
+        }
+        return this.getElementsFromContainer(symbols[k] as any);
+      })
       .reduce((a, b) => a.concat(b))
       .map((moduleSymbol) => this.container.get(moduleSymbol));
   }

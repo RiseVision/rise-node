@@ -104,8 +104,6 @@ export class TransactionPool implements ITransactionPoolLogic {
 
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
-  @inject(Symbols.modules.transactions)
-  private transactionsModule: ITransactionsModule;
 
   private expiryInterval    = 30000;
   private bundledInterval: number;
@@ -155,9 +153,9 @@ export class TransactionPool implements ITransactionPoolLogic {
     }
   }
 
-  public fillPool(): Promise<void> {
+  public async fillPool(): Promise<Array<IBaseTransaction<any>>> {
     if (this.appState.get('loader.isSyncing')) {
-      return Promise.resolve();
+      return Promise.resolve([]);
     }
 
     const unconfirmedCount = this.unconfirmed.count;
@@ -165,7 +163,7 @@ export class TransactionPool implements ITransactionPoolLogic {
 
     const spare = constants.maxTxsPerBlock - unconfirmedCount;
     if (spare <= 0) {
-      return Promise.resolve();
+      return Promise.resolve([]);
     }
 
     const multignatures = this.multisignature.list(
@@ -179,7 +177,7 @@ export class TransactionPool implements ITransactionPoolLogic {
     const txs = multignatures.concat(inQueue);
     txs.forEach((tx) => this.unconfirmed.add(tx));
 
-    return this.applyUnconfirmedList(txs);
+    return txs;
   }
 
   public transactionInPool(txID: string) {
@@ -200,13 +198,13 @@ export class TransactionPool implements ITransactionPoolLogic {
       limit = minLimit;
     }
 
-    const unconfirmed = this.transactionsModule.getUnconfirmedTransactionList(false, constants.maxTxsPerBlock);
+    const unconfirmed = this.unconfirmed.list(false, constants.maxTxsPerBlock);
     limit -= unconfirmed.length;
 
     const multisignatures = this.multisignature.list(false, constants.maxTxsPerBlock, ((t) => (t as any).ready));
     limit -= multisignatures.length;
 
-    const queued = this.transactionsModule.getQueuedTransactionList(false, limit);
+    const queued = this.queued.list(false, limit);
     limit -= queued.length;
 
     return unconfirmed.concat(multisignatures).concat(queued);
@@ -308,7 +306,7 @@ export class TransactionPool implements ITransactionPoolLogic {
    * unconfirmed transaction.
    */
   // tslint:disable-next-line
-  public async applyUnconfirmedList(txs: Array<IBaseTransaction<any> | string> = this.unconfirmed.list(true)): Promise<void> {
+  public async applyUnconfirmedList(txs: Array<IBaseTransaction<any> | string>, txModule: ITransactionsModule): Promise<void> {
     for (let theTx of txs) {
       if (!theTx) {
         continue; // move on the next item.
@@ -323,7 +321,7 @@ export class TransactionPool implements ITransactionPoolLogic {
           false
         );
         try {
-          await this.transactionsModule.applyUnconfirmed(
+          await txModule.applyUnconfirmed(
             theTx as any, // TODO: check me.
             sender);
         } catch (e) {
@@ -337,7 +335,7 @@ export class TransactionPool implements ITransactionPoolLogic {
     }
   }
 
-  public async undoUnconfirmedList(): Promise<string[]> {
+  public async undoUnconfirmedList(txModule: ITransactionsModule): Promise<string[]> {
     const ids: string[] = [];
     const txs           = this.unconfirmed.list(false);
     for (const tx of txs) {
@@ -345,7 +343,7 @@ export class TransactionPool implements ITransactionPoolLogic {
         continue;
       }
       ids.push(tx.id);
-      await this.transactionsModule.undoUnconfirmed(tx)
+      await txModule.undoUnconfirmed(tx)
         .catch((err) => {
           if (err) {
             this.logger.error(`Failed to undo unconfirmed transaction: ${tx.id}`, err);

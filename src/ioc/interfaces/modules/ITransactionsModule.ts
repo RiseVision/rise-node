@@ -56,11 +56,6 @@ export interface ITransactionsModule extends IModule {
                                 broadcast: boolean, bundled: boolean): Promise<void>;
 
   /**
-   * Gets unconfirmed transactions list and applies unconfirmed transactions.
-   */
-  applyUnconfirmedList(): Promise<void>;
-
-  /**
    * Applies unconfirmed list to unconfirmed Ids.
    */
   applyUnconfirmedIds(ids: string[]): Promise<void>;

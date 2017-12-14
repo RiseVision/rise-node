@@ -1,5 +1,6 @@
 import { IBaseTransaction } from '../../../logic/transactions';
 import { InnerTXQueue } from '../../../logic';
+import { ITransactionsModule } from '../modules';
 
 export interface ITransactionPoolLogic {
   readonly unconfirmed: InnerTXQueue;
@@ -12,7 +13,7 @@ export interface ITransactionPoolLogic {
    */
   queueTransaction(tx: IBaseTransaction<any>, bundled: boolean): void;
 
-  fillPool(): Promise<void>;
+  fillPool(): Promise<Array<IBaseTransaction<any>>>;
 
   transactionInPool(txID: string): boolean;
 
@@ -49,8 +50,8 @@ export interface ITransactionPoolLogic {
    * unconfirmed transaction.
    */
   // tslint:disable-next-line
-  applyUnconfirmedList(txs?: Array<IBaseTransaction<any> | string>): Promise<void>;
+  applyUnconfirmedList(txs: Array<IBaseTransaction<any> | string>, txModule: ITransactionsModule): Promise<void>;
 
-  undoUnconfirmedList(): Promise<string[]>;
+  undoUnconfirmedList(txModule: ITransactionsModule): Promise<string[]>;
 
 }

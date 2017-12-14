@@ -103,24 +103,17 @@ export class TransactionsModule implements ITransactionsModule {
   }
 
   /**
-   * Gets unconfirmed transactions list and applies unconfirmed transactions.
-   */
-  public applyUnconfirmedList(): Promise<void> {
-    return this.transactionPool.applyUnconfirmedList();
-  }
-
-  /**
    * Applies unconfirmed list to unconfirmed Ids.
    */
   public applyUnconfirmedIds(ids: string[]): Promise<void> {
-    return this.transactionPool.applyUnconfirmedList(ids);
+    return this.transactionPool.applyUnconfirmedList(ids, this);
   }
 
   /**
    * Undoes unconfirmed list from queue.
    */
   public undoUnconfirmedList(): Promise<string[]> {
-    return this.transactionPool.undoUnconfirmedList();
+    return this.transactionPool.undoUnconfirmedList(this);
   }
 
   /**
@@ -142,7 +135,7 @@ export class TransactionsModule implements ITransactionsModule {
   /**
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
-  public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId: string }, sender: any): Promise<void> {
+  public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: any): Promise<void> {
     this.logger.debug('Applying unconfirmed transaction', transaction.id);
 
     if (!sender && transaction.blockId !== this.genesisBlock.id) {
@@ -196,8 +189,9 @@ export class TransactionsModule implements ITransactionsModule {
   /**
    * Fills the pool.
    */
-  public fillPool(): Promise<void> {
-    return this.transactionPool.fillPool();
+  public async fillPool(): Promise<void> {
+    const newUnconfirmedTXs = await this.transactionPool.fillPool();
+    await this.transactionPool.applyUnconfirmedList(newUnconfirmedTXs, this);
   }
 
   /**
@@ -364,4 +358,5 @@ export class TransactionsModule implements ITransactionsModule {
 
     return {added, deleted};
   }
+
 }
