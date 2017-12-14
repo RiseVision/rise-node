@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import redis from 'redis';
+import { RedisClient } from 'redis';
 import { cbToPromise, cbToVoidPromise, emptyCB, ILogger, TransactionType } from '../helpers/';
 import { ICacheModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
@@ -15,7 +15,7 @@ export class Cache implements ICacheModule {
   @inject(Symbols.generic.appConfig)
   private config: AppConfig;
   @inject(Symbols.generic.redisClient)
-  private redisClient: redis.RedisClient;
+  private redisClient: RedisClient;
 
   get isConnected() {
     return this.config.cacheEnabled && this.redisClient && this.redisClient.connected;

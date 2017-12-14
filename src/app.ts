@@ -8,7 +8,6 @@ import {
 } from './helpers/';
 import { SignedAndChainedBlockType } from './logic/';
 
-
 declare const gc; // garbage collection if exposed.
 
 // tslint:disable-next-line
@@ -91,7 +90,9 @@ async function boot(constants: typeof constantsType): Promise<AppManager> {
 
 boot(constantsType)
   .catch((err) => {
-    logger.fatal('Error when instantiating', err);
+    logger.fatal('Error when instantiating', err.message);
+    logger.fatal('Error when instantiating', err.stack);
+    process.exit(1);
     return Promise.reject(err);
   })
   .then((manager) => {

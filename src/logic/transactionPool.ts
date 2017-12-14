@@ -1,4 +1,4 @@
-import { inject, postConstruct } from 'inversify';
+import { inject, injectable, postConstruct } from 'inversify';
 import { Bus, constants, ILogger, JobsQueue, promiseToCB, TransactionType } from '../helpers/';
 import { IAppState, ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules';
@@ -83,6 +83,7 @@ export class InnerTXQueue<T = { receivedAt: Date }> {
 
 }
 
+@injectable()
 export class TransactionPool implements ITransactionPoolLogic {
 
   public unconfirmed    = new InnerTXQueue();

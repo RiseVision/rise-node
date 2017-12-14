@@ -36,6 +36,8 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   // Helpers
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  @inject(Symbols.helpers.slots)
+  private slots: Slots;
 
   // Logic
   @inject(Symbols.logic.block)
@@ -273,10 +275,10 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   }
 
   private async verifyBlockSlot(block: SignedBlockType, lastBlock: SignedBlockType): Promise<string[]> {
-    const slotNumber = Slots.getSlotNumber(block.timestamp);
-    const lastSlot   = Slots.getSlotNumber(lastBlock.timestamp);
+    const slotNumber = this.slots.getSlotNumber(block.timestamp);
+    const lastSlot   = this.slots.getSlotNumber(lastBlock.timestamp);
 
-    if (slotNumber > Slots.getSlotNumber(Slots.getTime()) || slotNumber <= lastSlot) {
+    if (slotNumber > this.slots.getSlotNumber(this.slots.getTime()) || slotNumber <= lastSlot) {
       // if in future or in the past => error
       return ['Invalid block timestamp'];
     }

@@ -1,10 +1,10 @@
 import * as crypto from 'crypto';
 import { inject, postConstruct, tagged } from 'inversify';
-import { IDatabase } from 'pg-promise';
 import * as popsicle from 'popsicle';
 import * as z_schema from 'z-schema';
-import { BigNum, Bus, cbToPromise, constants as constantsType, ILogger, JobsQueue, Sequence } from '../helpers/';
-import { IAppState, IBlockLogic, IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
+import { SchemaValid, ValidateSchema } from '../apis/baseAPIClass';
+import { BigNum, cbToPromise, constants as constantsType, ILogger, JobsQueue, Sequence } from '../helpers/';
+import { IAppState, IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
   IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule,
   ITransportModule
@@ -21,9 +21,6 @@ import { IBaseTransaction } from '../logic/transactions/';
 import peersSchema from '../schema/peers';
 import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
-import { SchemaValid, ValidateSchema } from './apis/baseAPIClass';
-
-// import {DebugLog} from '../helpers/decorators/debugLog';
 
 // tslint:disable-next-line
 export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };

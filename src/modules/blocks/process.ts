@@ -59,6 +59,8 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence)
   private dbSequence: Sequence;
+  @inject(Symbols.helpers.slots)
+  private slots: Slots;
 
   // Logic
   @inject(Symbols.logic.appState)
@@ -298,7 +300,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
             'Discarded block that does not match with current chain:', block.id,
             'height:', block.height,
             'round:', this.roundsLogic.calcRound(block.height),
-            'slot:', Slots.getSlotNumber(block.timestamp),
+            'slot:', this.slots.getSlotNumber(block.timestamp),
             'generator:', block.generatorPublicKey,
           ].join(' '));
         }
@@ -317,7 +319,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       'Received new block id:', block.id,
       'height:', block.height,
       'round:', this.roundsLogic.calcRound(block.height),
-      'slot:', Slots.getSlotNumber(block.timestamp),
+      'slot:', this.slots.getSlotNumber(block.timestamp),
       'reward:', block.reward,
     ].join(' '));
 

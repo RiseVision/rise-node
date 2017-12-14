@@ -1,11 +1,12 @@
 import * as crypto from 'crypto';
-import { inject } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { Ed, emptyCB } from '../helpers/';
 import { IAccountLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { AccountFilterData, MemAccountsData } from '../logic/';
 
+@injectable()
 export class AccountsModule implements IAccountsModule {
   @inject(Symbols.helpers.ed)
   private ed: Ed;

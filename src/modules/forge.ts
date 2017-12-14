@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { inject } from 'inversify';
+import { inject, tagged } from 'inversify';
 import { catchToLoggerAndRemapError, constants, Ed, IKeypair, ILogger, JobsQueue, Sequence, Slots } from '../helpers';
 import { IAppState, IBroadcasterLogic } from '../ioc/interfaces/logic';
 import {
@@ -14,6 +14,27 @@ export class ForgeModule implements IForgeModule {
   public enabledKeys: { [k: string]: true }   = {};
   private keypairs: { [k: string]: IKeypair } = {};
 
+  // Generic
+  @inject(Symbols.generic.appConfig)
+  private config: AppConfig;
+
+  // helpers
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.helpers.ed)
+  private ed: Ed;
+  @inject(Symbols.helpers.sequence)
+  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence)
+  private sequence: Sequence;
+  @inject(Symbols.helpers.slots)
+  private slots: Slots;
+
+  // logic
+  @inject(Symbols.logic.appState)
+  private appState: IAppState;
+  @inject(Symbols.logic.broadcaster)
+  private broadcasterLogic: IBroadcasterLogic;
+
   // modules
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
@@ -25,23 +46,6 @@ export class ForgeModule implements IForgeModule {
   private transactionsModule: ITransactionsModule;
   @inject(Symbols.modules.blocksSubModules.process)
   private blocksProcessModule: IBlocksModuleProcess;
-
-  // helpers
-  @inject(Symbols.helpers.logger)
-  private logger: ILogger;
-  @inject(Symbols.helpers.ed)
-  private ed: Ed;
-  @inject(Symbols.helpers.sequence)
-  private sequence: Sequence;
-
-  // logic
-  @inject(Symbols.logic.appState)
-  private appState: IAppState;
-  @inject(Symbols.logic.broadcaster)
-  private broadcasterLogic: IBroadcasterLogic;
-
-  @inject(Symbols.generic.appConfig)
-  private config: AppConfig;
 
   public getEnabledKeys() {
     return Object.keys(this.enabledKeys)
@@ -119,9 +123,9 @@ export class ForgeModule implements IForgeModule {
       }
     }
 
-    const currentSlot = Slots.getSlotNumber();
+    const currentSlot = this.slots.getSlotNumber();
     const lastBlock   = this.blocksModule.lastBlock;
-    if (currentSlot === Slots.getSlotNumber(lastBlock.timestamp)) {
+    if (currentSlot === this.slots.getSlotNumber(lastBlock.timestamp)) {
       this.logger.debug('Waiting for next delegate slot');
       return;
     }
@@ -132,9 +136,9 @@ export class ForgeModule implements IForgeModule {
       return;
     }
 
-    if (Slots.getSlotNumber(blockData.time) !== Slots.getSlotNumber()) {
+    if (this.slots.getSlotNumber(blockData.time) !== this.slots.getSlotNumber()) {
       // not current slot. skip
-      this.logger.debug(`Delegate slot ${Slots.getSlotNumber()}`);
+      this.logger.debug(`Delegate slot ${this.slots.getSlotNumber()}`);
       return;
     }
 
@@ -190,15 +194,15 @@ export class ForgeModule implements IForgeModule {
   private async getBlockSlotData(slot: number, height: number): Promise<{ time: number, keypair: IKeypair }> {
     const pkeys = await this.delegatesModule.generateDelegateList(height);
 
-    const lastSlot = Slots.getLastSlot(slot);
+    const lastSlot = this.slots.getLastSlot(slot);
 
     for (let cs = slot; cs < lastSlot; cs++) {
-      const delegPos = cs % Slots.delegates;
+      const delegPos = cs % this.slots.delegates;
       const delegId  = pkeys[delegPos];
       if (delegId && this.enabledKeys[delegId]) {
         return {
           keypair: this.keypairs[delegId],
-          time   : Slots.getSlotTime(cs),
+          time   : this.slots.getSlotTime(cs),
         };
       }
     }

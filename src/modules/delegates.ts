@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { inject } from 'inversify';
+import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
 import {
   constants as constantsType,
@@ -15,35 +15,37 @@ import { Symbols } from '../ioc/symbols';
 import { BlockRewardLogic, MemAccountsData, SignedBlockType } from '../logic/';
 import { publicKey } from '../types/sanityTypes';
 
+@injectable()
 export class DelegatesModule implements IDelegatesModule {
+  private loaded: boolean               = false;
 
+  // Helpers
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.helpers.slots)
+  private slots: Slots;
+
+  // Generic
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
+
+  // Logic
+  @inject(Symbols.logic.appState)
+  private appState: IAppState;
   @inject(Symbols.logic.blockReward)
   private blockReward: BlockRewardLogic;
-  private loaded: boolean               = false;
-  private modules: {
-    blocks: IBlocksModule,
-    accounts: IAccountsModule
-    transactions: ITransactionsModule,
-  };
+  @inject(Symbols.logic.rounds)
+  private roundsLogic: IRoundsLogic;
+
+  // Modules
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
-
-  @inject(Symbols.logic.appState)
-  private appState: IAppState;
-  @inject(Symbols.logic.rounds)
-  private roundsLogic: IRoundsLogic;
-  @inject(Symbols.helpers.logger)
-  private logger: ILogger;
-
-  @inject(Symbols.generic.zschema)
-  private schema: z_schema;
-
-  @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
 
   public async checkConfirmedDelegates(pk: publicKey, votes: string[]) {
     return this.checkDelegates(pk, votes, 'confirmed');
@@ -92,7 +94,7 @@ export class DelegatesModule implements IDelegatesModule {
       throw new Error('Missing query argument');
     }
 
-    const delegates = await this.modules.accounts.getAccounts({
+    const delegates = await this.accountsModule.getAccounts({
         isDelegate: 1,
         sort      : {vote: -1, publicKey: 1},
       },
@@ -105,7 +107,7 @@ export class DelegatesModule implements IDelegatesModule {
     const count     = delegates.length;
     const realLimit = Math.min(offset + limit, count);
 
-    const lastBlock   = this.modules.blocks.lastBlock;
+    const lastBlock   = this.blocksModule.lastBlock;
     const totalSupply = this.blockReward.calcSupply(lastBlock.height);
 
     const crunchedDelegates: Array<MemAccountsData & { rank: number, approval: number, productivity: number }> = [];
@@ -118,7 +120,7 @@ export class DelegatesModule implements IDelegatesModule {
         100 - (delegates[i].missedblocks / ((delegates[i].producedblocks + delegates[i].missedblocks) / 100))
       ) || 0;
 
-      const outsider     = i + 1 > Slots.delegates;
+      const outsider     = i + 1 > this.slots.delegates;
       const productivity = (!outsider) ? Math.round(percent * 1e2) / 1e2 : 0;
 
       crunchedDelegates.push({
@@ -149,21 +151,12 @@ export class DelegatesModule implements IDelegatesModule {
   public async assertValidBlockSlot(block: SignedBlockType) {
     const delegates = await this.generateDelegateList(block.height);
 
-    const curSlot = Slots.getSlotNumber(block.timestamp);
-    const delegId = delegates[curSlot % Slots.delegates];
+    const curSlot = this.slots.getSlotNumber(block.timestamp);
+    const delegId = delegates[curSlot % this.slots.delegates];
     if (!(delegId && block.generatorPublicKey === delegId)) {
       this.logger.error(`Expected generator ${delegId} Received generator: ${block.generatorPublicKey}`);
       throw new Error(`Failed to verify slot ${curSlot}`);
     }
-  }
-
-  public onBind(scope) {
-    this.modules = {
-      accounts     : scope.accounts,
-      blocks       : scope.blocks,
-      transactions : scope.transactions,
-      // delegates   : scope.delegates,
-    };
   }
 
   public async onBlockchainReady() {
@@ -182,9 +175,9 @@ export class DelegatesModule implements IDelegatesModule {
    * Get delegates public keys sorted by descending vote.
    */
   private async getKeysSortByVote(): Promise<publicKey[]> {
-    const rows = await this.modules.accounts.getAccounts({
+    const rows = await this.accountsModule.getAccounts({
       isDelegate: 1,
-      limit     : Slots.delegates,
+      limit     : this.slots.delegates,
       sort      : {vote: -1, publicKey: 1},
     }, ['publicKey']);
     return rows.map((r) => r.publicKey);
@@ -198,7 +191,7 @@ export class DelegatesModule implements IDelegatesModule {
    * @return {Promise<void>}
    */
   private async checkDelegates(pk: publicKey, votes: string[], state: 'confirmed' | 'unconfirmed') {
-    const account = await this.modules.accounts.getAccount({publicKey: pk});
+    const account = await this.accountsModule.getAccount({publicKey: pk});
 
     if (!account) {
       throw new Error('Account not found');
@@ -235,7 +228,7 @@ export class DelegatesModule implements IDelegatesModule {
 
       // check voted (or unvoted) is actually a delegate.
       // TODO: This can be optimized as it's only effective when "Adding" a vote.
-      const del = await this.modules.accounts.getAccount({publicKey: curPK, isDelegate: 1});
+      const del = await this.accountsModule.getAccount({publicKey: curPK, isDelegate: 1});
       if (!del) {
         throw new Error('Delegate not found');
       }

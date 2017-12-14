@@ -7,6 +7,7 @@ import { Container } from 'inversify';
 import * as methodOverride from 'method-override';
 import * as socketIO from 'socket.io';
 import * as uuid from 'uuid';
+import 'reflect-metadata';
 import {
   applyExpressLimits, Bus, cache, cbToPromise, constants as constantsType, Database, Ed, ILogger, middleware,
   Sequence, Slots, z_schema,
