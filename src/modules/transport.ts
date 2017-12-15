@@ -1,10 +1,10 @@
 import * as crypto from 'crypto';
-import { inject, postConstruct, tagged } from 'inversify';
+import { inject, injectable, postConstruct, tagged } from 'inversify';
 import * as popsicle from 'popsicle';
 import * as z_schema from 'z-schema';
 import { SchemaValid, ValidateSchema } from '../apis/baseAPIClass';
 import { BigNum, cbToPromise, constants as constantsType, ILogger, JobsQueue, Sequence } from '../helpers/';
-import { IAppState, IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
+import { IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
   IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule,
   ITransportModule
@@ -25,6 +25,7 @@ import { AppConfig } from '../types/genericTypes';
 // tslint:disable-next-line
 export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };
 
+@injectable()
 export class TransportModule implements ITransportModule {
   // Modules
   @inject(Symbols.modules.peers)
@@ -77,7 +78,7 @@ export class TransportModule implements ITransportModule {
   }
 
   // tslint:disable-next-line max-line-length
-  public async getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: PeerLogic }> {
+  public async getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: IPeerLogic }> {
     let url = options.url;
     if (options.api) {
       url = `/peer${options.api}`;
@@ -160,9 +161,9 @@ export class TransportModule implements ITransportModule {
 
       for (const p of peers) {
         if (p && p.state !== PeerState.BANNED && (!p.updated || Date.now() - p.updated > 3000)) {
-          this.logger.trace('Updating peer', p);
+          this.logger.trace('Updating peer', p.string);
           try {
-            await this.pingPeer(p);
+            await p.pingAndUpdate();
           } catch (err) {
             this.logger.debug(`Ping failed when updating peer ${p.string}`);
           } finally {
@@ -245,7 +246,7 @@ export class TransportModule implements ITransportModule {
   @ValidateSchema()
   public async receiveTransactions(@SchemaValid(schema.transactions, 'Invalid transactions body')
                                      query: { transactions: any[] },
-                                   peer: PeerLogic,
+                                   peer: IPeerLogic,
                                    extraLogMessage: string) {
     for (const tx of  query.transactions) {
       try {
@@ -262,7 +263,7 @@ export class TransportModule implements ITransportModule {
    * @returns {Promise<void>}
    */
   // tslint:disable-next-line max-line-length
-  public async receiveTransaction(transaction: IBaseTransaction<any>, peer: PeerLogic, bundled: boolean, extraLogMessage: string): Promise<string> {
+  public async receiveTransaction(transaction: IBaseTransaction<any>, peer: IPeerLogic, bundled: boolean, extraLogMessage: string): Promise<string> {
     try {
       transaction = this.transactionLogic.objectNormalize(transaction);
     } catch (e) {
@@ -293,42 +294,9 @@ export class TransportModule implements ITransportModule {
   }
 
   /**
-   * Pings a peer
-   */
-  public async pingPeer(peer: PeerLogic): Promise<void> {
-    this.logger.trace(`Pinging peer: ${peer.string}`);
-    try {
-      await this.getFromPeer(
-        peer,
-        {
-          api   : '/height',
-          method: 'GET',
-        }
-      );
-    } catch (err) {
-      this.logger.trace(`Ping peer failed: ${peer.string}`, err);
-      throw err;
-    }
-  }
-
-  /**
-   * Creates a sha256 hash sum from input object
-   * The returned obj is not the sha256 but a manipulated number version of the sha256
-   */
-  private hashsum(obj: any): string {
-    const buf  = Buffer.from(JSON.stringify(obj), 'utf8');
-    const hash = crypto.createHash('sha256').update(buf).digest();
-    const tmp  = Buffer.alloc(8);
-    for (let i = 0; i < 8; i++) {
-      tmp[i] = hash[7 - i];
-    }
-    return BigNum.fromBuffer(tmp).toString();
-  }
-
-  /**
    * Removes a peer by calling modules peer remove
    */
-  private removePeer(options: { code: string, peer: PeerLogic }, extraMessage: string) {
+  private removePeer(options: { code: string, peer: IPeerLogic }, extraMessage: string) {
     this.logger.debug(`${options.code} Removing peer ${options.peer.string} ${extraMessage}`);
     this.peersModule.remove(options.peer.ip, options.peer.port);
   }
@@ -354,7 +322,7 @@ export class TransportModule implements ITransportModule {
     let discovered = 0;
     let rejected   = 0;
     for (const rawPeer of acceptablePeers) {
-      const peer: PeerLogic = this.peersLogic.create(rawPeer);
+      const peer: IPeerLogic = this.peersLogic.create(rawPeer);
       if (this.schema.validate(peer, peersSchema.discover.peer)) {
         peer.state = PeerState.DISCONNECTED;
         this.peersLogic.upsert(peer, true);

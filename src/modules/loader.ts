@@ -5,7 +5,7 @@ import z_schema from 'z-schema';
 import sql from '../../sql/loader';
 import { Bus, constants, ILogger, JobsQueue, Sequence } from '../helpers/';
 import {
-  IAccountLogic, IAppState, IBroadcasterLogic, IPeersLogic, IRoundsLogic,
+  IAccountLogic, IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, IRoundsLogic,
   ITransactionLogic
 } from '../ioc/interfaces/logic';
 
@@ -29,38 +29,17 @@ import Timer = NodeJS.Timer;
 
 import { Symbols } from '../ioc/symbols';
 
-// tslint:disable-next-line
-export type LoaderLibrary = {
-  logger: ILogger;
-  db: IDatabase<any>;
-  io: SocketIO.Server;
-  schema: z_schema;
-  sequence: Sequence;
-  bus: Bus;
-  genesisblock: SignedAndChainedBlockType;
-  balancesSequence: Sequence;
-  logic: {
-    appState: IAppState
-    transaction: ITransactionLogic;
-    account: IAccountLogic;
-    broadcaster: IBroadcasterLogic
-    peers: IPeersLogic
-    rounds: IRoundsLogic
-  },
-  config: AppConfig
-};
-
 @injectable()
 export class LoaderModule implements ILoaderModule {
 
-  private network: { height: number, peers: PeerLogic[] };
-  private lastblock: SignedAndChainedBlockType    = null;
-  private syncIntervalId: Timer                   = null;
-  private blocksToSync: number                    = 0;
-  private loaded: boolean                         = false;
-  private isActive: boolean                       = false;
-  private retries: number                         = 5;
-  private syncInterval                            = 1000;
+  private network: { height: number, peers: IPeerLogic[] };
+  private lastblock: SignedAndChainedBlockType = null;
+  private syncIntervalId: Timer                = null;
+  private blocksToSync: number                 = 0;
+  private loaded: boolean                      = false;
+  private isActive: boolean                    = false;
+  private retries: number                      = 5;
+  private syncInterval                         = 1000;
 
   // Modules
   @inject(Symbols.modules.blocks)
@@ -138,7 +117,7 @@ export class LoaderModule implements ILoaderModule {
     return this.network;
   }
 
-  public async gerRandomPeer(): Promise<PeerLogic> {
+  public async gerRandomPeer(): Promise<IPeerLogic> {
     const {peers} = await this.getNework();
     return peers[Math.floor(Math.random() * peers.length)];
   }
@@ -341,7 +320,7 @@ export class LoaderModule implements ILoaderModule {
    * Gets the list of good peers.
    */
   private findGoodPeers(peers: PeerType[]): {
-    height: number, peers: PeerLogic[]
+    height: number, peers: IPeerLogic[]
   } {
     const lastBlockHeight: number = this.blocksModule.lastBlock.height;
 
@@ -495,6 +474,7 @@ export class LoaderModule implements ILoaderModule {
           try {
             await this.sync();
           } catch (err) {
+            console.log(err);
             retries(err);
           }
         }, {retries: this.retries}));
@@ -525,20 +505,20 @@ export class LoaderModule implements ILoaderModule {
 
     // Process multisignature transactions and validate signatures in sequence
     await this.sequence.addAndPromise(async () => {
-        for (const multiSigTX of signatures) {
-          for (const signature of  multiSigTX.signatures) {
-            try {
-              this.multisigModule.processSignature({
-                signature,
-                transaction: multiSigTX.transaction,
-              });
-            } catch (err) {
-              this.logger.warn(`Cannot process multisig signature for ${multiSigTX.transaction} `, err);
-            }
+      for (const multiSigTX of signatures) {
+        for (const signature of  multiSigTX.signatures) {
+          try {
+            this.multisigModule.processSignature({
+              signature,
+              transaction: multiSigTX.transaction,
+            });
+          } catch (err) {
+            this.logger.warn(`Cannot process multisig signature for ${multiSigTX.transaction} `, err);
           }
         }
-        return void 0;
-      });
+      }
+      return void 0;
+    });
   }
 
   /**

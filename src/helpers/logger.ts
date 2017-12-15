@@ -3,6 +3,7 @@ import 'colors';
 import * as fs from 'fs';
 import * as tstrftime from 'strftime';
 import * as util from 'util';
+import * as CircularJSON from 'circular-json';
 
 const strftime = tstrftime.timezone('+0000');
 
@@ -82,7 +83,7 @@ export default (config: any = {}): ILogger => {
       }
 
       if (data && util.isObject(data)) {
-        logData.data = JSON.stringify(snipsecret(data));
+        logData.data = CircularJSON.stringify(snipsecret(data));
       } else {
         logData.data = data;
       }

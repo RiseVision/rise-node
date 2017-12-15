@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { inject, tagged } from 'inversify';
+import { inject, injectable, tagged } from 'inversify';
 import { catchToLoggerAndRemapError, constants, Ed, IKeypair, ILogger, JobsQueue, Sequence, Slots } from '../helpers';
 import { IAppState, IBroadcasterLogic } from '../ioc/interfaces/logic';
 import {
@@ -10,6 +10,7 @@ import { Symbols } from '../ioc/symbols';
 import { AppConfig } from '../types/genericTypes';
 import { publicKey } from '../types/sanityTypes';
 
+@injectable()
 export class ForgeModule implements IForgeModule {
   public enabledKeys: { [k: string]: true }   = {};
   private keypairs: { [k: string]: IKeypair } = {};

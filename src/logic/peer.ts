@@ -1,6 +1,9 @@
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
 import { IPeerLogic } from '../ioc/interfaces/logic/';
+import { ITransportModule } from '../ioc/interfaces/modules';
+import { Symbols } from '../ioc/symbols';
+import { PeerRequestOptions } from '../modules';
 
 export enum PeerState {
   BANNED       = 0,
@@ -76,7 +79,6 @@ const properties = [
   'updated',
   'nonce',
 ];
-
 @injectable()
 export class PeerLogic implements PeerType, IPeerLogic {
   public ip: string;
@@ -92,9 +94,8 @@ export class PeerLogic implements PeerType, IPeerLogic {
   public nonce: string;
   public string: string;
 
-  public constructor(peer: BasePeerType = {} as any) {
-    this.accept({ ...{}, ...peer });
-  }
+  @inject(Symbols.modules.transport)
+  private transportModule: ITransportModule;
 
   public accept(peer: BasePeerType) {
     // Normalize peer data
@@ -176,6 +177,16 @@ export class PeerLogic implements PeerType, IPeerLogic {
     }
 
     return copy;
+  }
+
+  public makeRequest<T>(requestOptions: PeerRequestOptions): Promise<T> {
+    return this.transportModule.getFromPeer<T>(this, requestOptions)
+      .then(({body}) => body);
+  }
+
+  public pingAndUpdate(): Promise<void> {
+    return this.transportModule.getFromPeer(this, {api: '/height', method: 'GET'})
+      .then(() => null);
   }
 
   public get nullable() {

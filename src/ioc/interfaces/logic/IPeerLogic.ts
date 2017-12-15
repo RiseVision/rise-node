@@ -1,4 +1,5 @@
 import { BasePeerType, PeerHeaders, PeerState, PeerType } from '../../../logic';
+import { PeerRequestOptions } from '../../../modules';
 
 export interface IPeerLogic {
   ip: string;
@@ -35,4 +36,11 @@ export interface IPeerLogic {
    * Create obj representation of this peer.
    */
   object(): PeerType;
+
+  makeRequest<T>(options: PeerRequestOptions): Promise<T>;
+
+  /**
+   * Pings peer and update itself using response headers (transportModule)
+   */
+  pingAndUpdate(): Promise<void>;
 }

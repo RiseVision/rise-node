@@ -16,10 +16,12 @@ export class PeersLogic implements IPeersLogic {
 
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
+  @inject(Symbols.logic.peerFactory)
+  private peersFactory: (bp: BasePeerType) => IPeerLogic;
 
   public create(peer: BasePeerType): IPeerLogic {
     if (!(peer instanceof PeerLogic)) {
-      return new PeerLogic(peer);
+      return this.peersFactory(peer);
     }
     return peer as any;
   }
@@ -81,7 +83,7 @@ export class PeersLogic implements IPeersLogic {
 
     Object.keys(this.peers)
       .map((key) => this.peers[key])
-      .forEach((p: PeerLogic) => {
+      .forEach((p: IPeerLogic) => {
         stats.total++;
 
         if (p.state === PeerState.CONNECTED) {

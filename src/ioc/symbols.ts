@@ -26,6 +26,7 @@ export const Symbols = {
     blockReward    : Symbol('blockRewardL'),
     broadcaster    : Symbol('broadcasterL'),
     peer           : Symbol('peerL'),
+    peerFactory    : Symbol('Factory<peerL>'),
     peers          : Symbol('peersL'),
     // round          : Symbol('round'),
     rounds         : Symbol('roundsL'),

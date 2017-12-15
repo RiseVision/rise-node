@@ -4,7 +4,10 @@ import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
 import sql from '../../../sql/blocks';
 import { catchToLoggerAndRemapError, constants, ForkType, IKeypair, ILogger, Sequence, Slots } from '../../helpers/';
-import { IAppState, IBlockLogic, IPeersLogic, IRoundsLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
+import {
+  IAppState, IBlockLogic, IPeerLogic, IPeersLogic, IRoundsLogic,
+  ITransactionLogic
+} from '../../ioc/interfaces/logic';
 import {
   IAccountsModule,
   IBlocksModule,
@@ -87,7 +90,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
    */
   // FIXME VOid return for recoverChain
   // tslint:disable-next-line max-line-length
-  public async getCommonBlock(peer: PeerLogic, height: number): Promise<{ id: string, previousBlock: string, height: number } | void> {
+  public async getCommonBlock(peer: IPeerLogic, height: number): Promise<{ id: string, previousBlock: string, height: number } | void> {
     const { ids }              = await this.blocksUtilsModule.getIdSequence(height);
     const { body: commonResp } = await this.transportModule
       .getFromPeer<{ common: { id: string, previousBlock: string, height: number } }>(peer, {
@@ -189,7 +192,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
    * @param {PeerLogic | BasePeerType} rawPeer
    * @return {Promise<SignedBlockType>}
    */
-  public async loadBlocksFromPeer(rawPeer: PeerLogic | BasePeerType): Promise<SignedBlockType> {
+  public async loadBlocksFromPeer(rawPeer: IPeerLogic | BasePeerType): Promise<SignedBlockType> {
     let lastValidBlock: SignedBlockType = this.blocksModule.lastBlock;
 
     // normalize Peer

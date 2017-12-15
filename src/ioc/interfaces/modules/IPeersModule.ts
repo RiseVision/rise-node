@@ -1,13 +1,14 @@
-import { PeerLogic, PeerState, PeerType } from '../../../logic';
+import { PeerState, PeerType } from '../../../logic';
 import { PeerFilter } from '../../../modules';
 import { IModule } from './IModule';
+import { IPeerLogic } from '../logic';
 
 export interface IPeersModule extends IModule {
 
   /**
    * Sets peer state to active and updates it to the list
    */
-  update(peer: PeerLogic): boolean;
+  update(peer: IPeerLogic): boolean;
 
   /**
    * Remove a peer from the list if its not one from config files

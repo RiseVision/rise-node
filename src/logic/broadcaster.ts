@@ -44,8 +44,6 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   // Modules
   @inject(Symbols.modules.peers)
   private peersModule: IPeersModule;
-  @inject(Symbols.modules.transport)
-  private transportModule: ITransportModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
@@ -128,7 +126,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     await PromiseThrottle.all(
       peers
         .map((p) => this.peersLogic.create(p))
-        .map((peer) => () => this.transportModule.getFromPeer(peer, options)
+        .map((peer) => () => peer.makeRequest(options)
           .catch((err) => {
             this.logger.debug(`Failed to broadcast to peer: ${peer.string}`, err);
             return null;

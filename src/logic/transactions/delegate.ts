@@ -35,7 +35,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
   private systemModule: ISystemModule;
 
   constructor() {
-    super(TransactionType.DAPP);
+    super(TransactionType.DELEGATE);
   }
 
   public calculateFee(tx: IBaseTransaction<DelegateAsset>, sender: any, height: number): number {

@@ -19,7 +19,7 @@ export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip
 
 @injectable()
 export class PeersModule implements IPeersModule {
-  @inject(Symbols.modules.peers)
+  @inject(Symbols.modules.system)
   private systemModule;
 
   @inject(Symbols.generic.db)
@@ -217,7 +217,8 @@ export class PeersModule implements IPeersModule {
         const peer = this.peersLogic.create(rawPeer);
         if (!this.peersLogic.exists(peer)) {
           // Update also sets the peer as connected.
-          this.update(peer);
+          await peer.pingAndUpdate();
+          // this.update(peer);
           updated++;
         }
       }
@@ -227,14 +228,6 @@ export class PeersModule implements IPeersModule {
     }
   }
 
-  /**
-   * Returns peers length when using the provided filter
-   */
-  private async countByFilter(filter: PeerFilter): Promise<number> {
-    const p = await this.getByFilter(filter);
-    return p.length;
-  }
-
   private async insertSeeds() {
     this.logger.trace('Peers->insertSeeds');
     let updated = 0;
@@ -242,7 +235,7 @@ export class PeersModule implements IPeersModule {
       const peer = this.peersLogic.create(seed);
       this.logger.trace(`Processing seed peer ${peer.string}`);
       // Sets the peer as connected. Seed can be offline but it will be removed later.
-      this.update(peer);
+      await peer.pingAndUpdate();
       updated++;
     }));
     this.logger.info('Peers->insertSeeds - Peers discovered', {

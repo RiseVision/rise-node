@@ -1,5 +1,6 @@
 import { IKeypair } from '../../../../helpers';
-import { BasePeerType, PeerLogic, SignedAndChainedBlockType, SignedBlockType } from '../../../../logic';
+import { BasePeerType, SignedAndChainedBlockType, SignedBlockType } from '../../../../logic';
+import { IPeerLogic } from '../../logic';
 import { IModule } from '../IModule';
 
 export interface IBlocksModuleProcess extends IModule {
@@ -10,7 +11,7 @@ export interface IBlocksModuleProcess extends IModule {
    * @param {number} height
    * @return {Promise<void>}
    */
-  getCommonBlock(peer: PeerLogic, height: number): Promise<{ id: string, previousBlock: string, height: number } | void>;
+  getCommonBlock(peer: IPeerLogic, height: number): Promise<{ id: string, previousBlock: string, height: number } | void>;
 
   /**
    * Loads full blocks from database, used when rebuilding blockchain, snapshotting.
@@ -26,7 +27,7 @@ export interface IBlocksModuleProcess extends IModule {
    * @param {PeerLogic | BasePeerType} rawPeer
    * @return {Promise<SignedBlockType>}
    */
-  loadBlocksFromPeer(rawPeer: PeerLogic | BasePeerType): Promise<SignedBlockType>;
+  loadBlocksFromPeer(rawPeer: IPeerLogic | BasePeerType): Promise<SignedBlockType>;
 
   /**
    * Generates a new block

@@ -1,9 +1,9 @@
-import { PeerLogic } from '../../../logic';
+import { IPeerLogic } from '../logic';
 
 export interface ILoaderModule {
-  getNework(): Promise<{ height: number; peers: PeerLogic[] }>;
+  getNework(): Promise<{ height: number; peers: IPeerLogic[] }>;
 
-  gerRandomPeer(): Promise<PeerLogic>;
+  gerRandomPeer(): Promise<IPeerLogic>;
 
   onPeersReady(): Promise<void>;
 

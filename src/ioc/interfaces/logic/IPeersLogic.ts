@@ -1,7 +1,8 @@
-import { BasePeerType, PeerLogic, PeerType } from '../../../logic';
+import { BasePeerType, PeerType } from '../../../logic';
+import { IPeerLogic } from './IPeerLogic';
 
 export interface IPeersLogic {
-  create(peer: BasePeerType): PeerLogic;
+  create(peer: BasePeerType): IPeerLogic;
 
   /**
    * Checks if peer is in list
@@ -16,7 +17,7 @@ export interface IPeersLogic {
 
   list(normalize: true): PeerType[];
 
-  list(normalize: false): PeerLogic[];
+  list(normalize: false): IPeerLogic[];
 
   list(normalize: boolean): any[];
 

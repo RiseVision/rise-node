@@ -9,14 +9,16 @@ import 'reflect-metadata';
 import * as socketIO from 'socket.io';
 import * as uuid from 'uuid';
 import {
-  applyExpressLimits, Bus, cache, cbToPromise, constants as constantsType, Database, Ed, ILogger, middleware,
+  applyExpressLimits, Bus, cache, catchToLoggerAndRemapError, cbToPromise, constants as constantsType, Database, Ed,
+  ILogger, middleware,
   Sequence, Slots, z_schema,
 } from './helpers/';
-import { ITransactionLogic } from './ioc/interfaces/logic';
-import { IBlocksModuleChain } from './ioc/interfaces/modules';
+import { IPeerLogic, IPeersLogic, ITransactionLogic } from './ioc/interfaces/logic';
+import { IBlocksModuleChain, ITransportModule } from './ioc/interfaces/modules';
 import { Symbols } from './ioc/symbols';
 import {
-  AccountLogic, AppState, BlockLogic, BlockRewardLogic, BroadcasterLogic, PeerLogic, PeersLogic, RoundsLogic,
+  AccountLogic, AppState, BasePeerType, BlockLogic, BlockRewardLogic, BroadcasterLogic, PeerLogic, PeersLogic,
+  RoundsLogic,
   SignedAndChainedBlockType, TransactionLogic, TransactionPool
 } from './logic/';
 import {
@@ -172,7 +174,14 @@ export class AppManager {
     this.container.bind(Symbols.logic.block).to(BlockLogic).inSingletonScope();
     this.container.bind(Symbols.logic.blockReward).to(BlockRewardLogic).inSingletonScope();
     this.container.bind(Symbols.logic.broadcaster).to(BroadcasterLogic).inSingletonScope();
-    this.container.bind(Symbols.logic.peer).to(PeerLogic).inSingletonScope();
+    this.container.bind(Symbols.logic.peer).to(PeerLogic);
+    this.container.bind(Symbols.logic.peerFactory).toFactory((ctx) => {
+      return (peer: BasePeerType) => {
+        const p = ctx.container.get<IPeerLogic>(Symbols.logic.peer);
+        p.accept({... {}, ...peer});
+        return p;
+      };
+    });
     this.container.bind(Symbols.logic.peers).to(PeersLogic).inSingletonScope();
     // this.container.bind(Symbols.logic.round).to(RoundLogic).inSingletonScope();
     this.container.bind(Symbols.logic.rounds).to(RoundsLogic).inSingletonScope();
@@ -221,19 +230,22 @@ export class AppManager {
     this.logger.info(`Server started: ${this.appConfig.address}:${this.appConfig.port}`);
 
     this.logger.info('Modules ready and launched');
+    const loaderModule = this.container.get<LoaderModule>(Symbols.modules.loader);
+    await loaderModule.loadBlockChain()
+      .catch(catchToLoggerAndRemapError('Cannot load blockchain', this.logger));
   }
 
   private getElementsFromContainer<T = any>(symbols: { [k: string]: symbol | { [k: string]: symbol } }): T[] {
     return Object
       .keys(symbols)
-      .map((k) => {
-        if (typeof(symbols[k]) === 'symbol') {
-          return [symbols[k]];
-        }
-        return this.getElementsFromContainer(symbols[k] as any);
-      })
-      .reduce((a, b) => a.concat(b))
-      .map((moduleSymbol) => this.container.get(moduleSymbol));
+      .filter((k) => typeof(symbols[k]) === 'symbol')
+      .map((k) => this.container.get(symbols[k] as symbol))
+      .concat(
+        Object.keys(symbols)
+          .filter((k) => typeof(symbols[k]) !== 'symbol')
+          .map<T[]>((k) => this.getElementsFromContainer(symbols[k] as any))
+          .reduce((a, b) => a.concat(b), [] as any)
+      ) as any; // FIXME ?
   }
 
   /**
