@@ -2,11 +2,11 @@ import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import { Get, JsonController, Post, Put, QueryParam } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import sql from '../../sql/multisignatures';
 import { catchToLoggerAndRemapError, ILogger} from '../helpers';
 import { ITransactionLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
+import sql from '../sql/multisignatures';
 import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 @JsonController('/multisignatures')

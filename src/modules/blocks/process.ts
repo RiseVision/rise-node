@@ -2,7 +2,6 @@ import { inject, injectable, tagged } from 'inversify';
 import * as _ from 'lodash';
 import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
-import sql from '../../../sql/blocks';
 import { catchToLoggerAndRemapError, constants, ForkType, IKeypair, ILogger, Sequence, Slots } from '../../helpers/';
 import {
   IAppState, IBlockLogic, IPeerLogic, IPeersLogic, IRoundsLogic,
@@ -23,6 +22,7 @@ import { Symbols } from '../../ioc/symbols';
 import { BasePeerType, PeerLogic, SignedAndChainedBlockType, SignedBlockType, } from '../../logic/';
 import { IBaseTransaction } from '../../logic/transactions/';
 import schema from '../../schema/blocks';
+import sql from '../../sql/blocks';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
 
 @injectable()

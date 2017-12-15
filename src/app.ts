@@ -87,21 +87,17 @@ async function boot(constants: typeof constantsType): Promise<AppManager> {
   await manager.boot();
   return manager;
 }
+exitHook.forceExitTimeout(15000);
+exitHook.unhandledRejectionHandler((err) => {
+  logger.fatal('Unhandled Promise rejection', { message: err.message, stack: err.stack });
+});
 
 boot(constantsType)
   .catch((err) => {
-    logger.fatal('Error when instantiating', err.message);
-    logger.fatal('Error when instantiating', err.stack);
+    logger.fatal('Error when instantiating', err);
     process.exit(1);
     return Promise.reject(err);
   })
   .then((manager) => {
-    exitHook.forceExitTimeout(15000);
     exitHook((cb) => promiseToCB(manager.tearDown(), cb));
-    // exitHook.uncaughtExceptionHandler((err) => {
-    //  logger.fatal('System error', {message: err.message, stack: err.stack});
-    // });
-    exitHook.unhandledRejectionHandler((err) => {
-      logger.fatal('Unhandled Promise rejection', { message: err.message, stack: err.stack });
-    });
   });

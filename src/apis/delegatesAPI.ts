@@ -4,7 +4,7 @@ import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import { Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import sql from '../../sql/delegates';
+import sql from '../sql/delegates';
 import { constants, Ed, ILogger, OrderBy, Slots } from '../helpers/';
 import { Symbols } from '../ioc/symbols';
 import schema from '../schema/delegates';
@@ -25,6 +25,8 @@ export class DelegatesAPI {
   private db: IDatabase<any>;
   @inject(Symbols.helpers.ed)
   private ed: Ed;
+  @inject(Symbols.helpers.slots)
+  private slots: Slots;
 
   @inject(Symbols.modules.delegates)
   private delegatesModule: IDelegatesModule;
@@ -174,13 +176,13 @@ export class DelegatesAPI {
 
     const activeDelegates = await this.delegatesModule.generateDelegateList(curBlock.height);
 
-    const currentBlockSlot = Slots.getSlotNumber(curBlock.timestamp);
-    const currentSlot      = Slots.getSlotNumber();
+    const currentBlockSlot = this.slots.getSlotNumber(curBlock.timestamp);
+    const currentSlot      = this.slots.getSlotNumber();
     const nextForgers      = [];
-    for (let i = 1; i <= Slots.delegates && i <= limit; i++) {
+    for (let i = 1; i <= this.slots.delegates && i <= limit; i++) {
       // This if looks a bit stupid to me.
-      if (activeDelegates[(currentSlot + i) % Slots.delegates]) {
-        nextForgers.push(activeDelegates[(currentSlot + i) % Slots.delegates]);
+      if (activeDelegates[(currentSlot + i) % this.slots.delegates]) {
+        nextForgers.push(activeDelegates[(currentSlot + i) % this.slots.delegates]);
       }
     }
 

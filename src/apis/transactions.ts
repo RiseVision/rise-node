@@ -2,10 +2,9 @@ import {inject, injectable} from 'inversify';
 import * as _ from 'lodash';
 import { Body, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import schema from '../../schema/transactions';
 import { ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { TransactionsModule } from '../transactions';
+import schema from '../schema/transactions';
 import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 @JsonController('/transactions')
@@ -37,7 +36,7 @@ export class TransactionsAPI {
       throw new Error('Schema invalid');
     }
 
-    const { transactions, count } = await this.transactionModule.list(body)
+    const { transactions, count } = await this.transactionsModule.list(body)
       .catch((err) => Promise.reject(new Error(`Failed to get transactions: ${err.message || err}`)));
 
     return { transactions, count };
@@ -45,13 +44,13 @@ export class TransactionsAPI {
 
   @Get('/count')
   public getCount(): Promise<{ confirmed: number, multisignature: number, queued: number, unconfirmed: number }> {
-    return this.transactionModule.count();
+    return this.transactionsModule.count();
   }
 
   @Get('/get')
   public async getTX(@QueryParam('id', { required: true }) id: string) {
     // Do validation on length?
-    const tx = await this.transactionModule.getByID(id);
+    const tx = await this.transactionsModule.getByID(id);
     return { transaction: tx };
   }
 
@@ -59,7 +58,7 @@ export class TransactionsAPI {
   @ValidateSchema()
   public getMultiSigs(@SchemaValid(schema.getPooledTransactions)
                       @QueryParams() params: { senderPublicKey?: string, address?: string }) {
-    const txs = this.transactionModule.getMultisignatureTransactionList(true);
+    const txs = this.transactionsModule.getMultisignatureTransactionList(true);
 
     return {
       count       : txs.length,
@@ -73,7 +72,7 @@ export class TransactionsAPI {
   @ValidateSchema()
   public async getMultiSig(@SchemaValid(schema.getPooledTransaction.properties.id)
                            @QueryParam('id') id: string) {
-    const transaction = this.transactionModule.getMultisignatureTransaction(id);
+    const transaction = this.transactionsModule.getMultisignatureTransaction(id);
     if (!transaction) {
       throw new Error('Transaction not found');
     }
@@ -84,7 +83,7 @@ export class TransactionsAPI {
   @ValidateSchema()
   public getQueuedTxs(@SchemaValid(schema.getPooledTransactions)
                       @QueryParams() params: { senderPublicKey?: string, address?: string }) {
-    const txs = this.transactionModule.getQueuedTransactionList(true);
+    const txs = this.transactionsModule.getQueuedTransactionList(true);
 
     return {
       count       : txs.length,
@@ -98,7 +97,7 @@ export class TransactionsAPI {
   @ValidateSchema()
   public async getQueuedTx(@SchemaValid(schema.getPooledTransaction.properties.id)
                            @QueryParam('id') id: string) {
-    const transaction = this.transactionModule.getQueuedTransaction(id);
+    const transaction = this.transactionsModule.getQueuedTransaction(id);
     if (!transaction) {
       throw new Error('Transaction not found');
     }
@@ -109,7 +108,7 @@ export class TransactionsAPI {
   @ValidateSchema()
   public getUnconfirmedTxs(@SchemaValid(schema.getPooledTransactions)
                            @QueryParams() params: { senderPublicKey?: string, address?: string }) {
-    const txs = this.transactionModule.getUnconfirmedTransactionList(true);
+    const txs = this.transactionsModule.getUnconfirmedTransactionList(true);
 
     return {
       count       : txs.length,
@@ -123,7 +122,7 @@ export class TransactionsAPI {
   @ValidateSchema()
   public async getUnconfirmedTx(@SchemaValid(schema.getPooledTransaction.properties.id)
                                 @QueryParam('id') id: string) {
-    const transaction = this.transactionModule.getUnconfirmedTransaction(id);
+    const transaction = this.transactionsModule.getUnconfirmedTransaction(id);
     if (!transaction) {
       throw new Error('Transaction not found');
     }

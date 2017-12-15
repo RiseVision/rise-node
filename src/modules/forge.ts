@@ -88,12 +88,12 @@ export class ForgeModule implements IForgeModule {
   public onBlockchainReady() {
     JobsQueue.register(
       'delegatesNextForge',
-      async (cb) => {
+      async () => {
         try {
           await this.forge();
           await this.transactionsModule.fillPool();
-        } finally {
-          cb();
+        } catch (err) {
+          this.logger.warn('Error in nextForge', err);
         }
       },
       1000);

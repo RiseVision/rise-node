@@ -1,7 +1,6 @@
 import { inject, injectable, tagged } from 'inversify';
 import * as _ from 'lodash';
 import { IDatabase } from 'pg-promise';
-import sql from '../../../sql/blocks';
 import {
   BlockProgressLogger,
   catchToLoggerAndRemapError,
@@ -16,6 +15,7 @@ import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import { IBlocksModule, IBlocksModuleUtils } from '../../ioc/interfaces/modules/';
 import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType } from '../../logic/';
+import sql from '../../sql/blocks';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
 import { publicKey } from '../../types/sanityTypes';
 

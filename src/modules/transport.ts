@@ -1,22 +1,16 @@
-import * as crypto from 'crypto';
 import { inject, injectable, postConstruct, tagged } from 'inversify';
 import * as popsicle from 'popsicle';
+import * as Throttle from 'promise-parallel-throttle';
 import * as z_schema from 'z-schema';
 import { SchemaValid, ValidateSchema } from '../apis/baseAPIClass';
-import { BigNum, cbToPromise, constants as constantsType, ILogger, JobsQueue, Sequence } from '../helpers/';
+import { cbToPromise, constants as constantsType, ILogger, JobsQueue, Sequence } from '../helpers/';
 import { IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
   IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule,
   ITransportModule
 } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
-import {
-  BasePeerType,
-  PeerHeaders,
-  PeerLogic,
-  PeerState,
-  SignedBlockType,
-} from '../logic/';
+import { BasePeerType, PeerHeaders, PeerState, SignedBlockType } from '../logic/';
 import { IBaseTransaction } from '../logic/transactions/';
 import peersSchema from '../schema/peers';
 import schema from '../schema/transport';
@@ -132,7 +126,7 @@ export class TransportModule implements ITransportModule {
   public async getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }, options: PeerRequestOptions) {
     config.limit         = 1;
     config.allowedStates = [PeerState.CONNECTED, PeerState.DISCONNECTED];
-    const {peers}        = await this.peersModule.list(config);
+    const { peers }      = await this.peersModule.list(config);
     return this.getFromPeer<T>(peers[0], options);
   }
 
@@ -147,30 +141,28 @@ export class TransportModule implements ITransportModule {
 
   public async onPeersReady() {
     this.logger.trace('Peers ready');
-    await this.discoverPeers();
+    // await this.discoverPeers();
     JobsQueue.register('peersDiscoveryAndUpdate', async () => {
       try {
         await this.discoverPeers();
       } catch (err) {
         this.logger.error('Discovering new peers failed', err);
       }
-      let updated = 0;
 
       const peers = this.peersLogic.list(false);
-      this.logger.trace('Updating peers', {count: peers.length});
+      this.logger.trace('Updating peers', { count: peers.length });
 
-      for (const p of peers) {
+      await Throttle.all(peers.map((p) => async () => {
         if (p && p.state !== PeerState.BANNED && (!p.updated || Date.now() - p.updated > 3000)) {
           this.logger.trace('Updating peer', p.string);
           try {
             await p.pingAndUpdate();
           } catch (err) {
             this.logger.debug(`Ping failed when updating peer ${p.string}`);
-          } finally {
-            updated++;
           }
         }
-      }
+      }), {maxInProgress: 50});
+      this.logger.trace('Updated Peers');
     }, 5000);
   }
 
@@ -319,21 +311,26 @@ export class TransportModule implements ITransportModule {
     // Filter only acceptable peers.
     const acceptablePeers = this.peersLogic.acceptable(response.body.peers);
 
-    let discovered = 0;
-    let rejected   = 0;
+    let discovered   = 0;
+    let alreadyKnown = 0;
+    let rejected     = 0;
     for (const rawPeer of acceptablePeers) {
       const peer: IPeerLogic = this.peersLogic.create(rawPeer);
       if (this.schema.validate(peer, peersSchema.discover.peer)) {
-        peer.state = PeerState.DISCONNECTED;
-        this.peersLogic.upsert(peer, true);
-        discovered++;
+        peer.state   = PeerState.DISCONNECTED;
+        const newOne = this.peersLogic.upsert(peer, true);
+        if (newOne) {
+          discovered++;
+        } else {
+          alreadyKnown++;
+        }
       } else {
         this.logger.warn(`Rejecting invalid peer: ${peer.string}`);
         rejected++;
       }
     }
 
-    this.logger.trace(`Discovered ${discovered} peers - Rejected ${rejected}`);
+    this.logger.debug(`Discovered ${discovered} peers - Rejected ${rejected} - AlreadyKnown ${alreadyKnown}`);
 
   }
 }

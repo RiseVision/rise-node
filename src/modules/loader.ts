@@ -2,7 +2,6 @@ import { inject, injectable, postConstruct, tagged } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import * as promiseRetry from 'promise-retry';
 import z_schema from 'z-schema';
-import sql from '../../sql/loader';
 import { Bus, constants, ILogger, JobsQueue, Sequence } from '../helpers/';
 import {
   IAccountLogic, IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, IRoundsLogic,
@@ -16,18 +15,17 @@ import {
   ISystemModule,
   ITransactionsModule, ITransportModule
 } from '../ioc/interfaces/modules/';
+import { Symbols } from '../ioc/symbols';
 import {
-  PeerLogic,
   PeerType,
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '../logic/';
 import { IBaseTransaction } from '../logic/transactions/';
 import loaderSchema from '../schema/loader';
+import sql from '../sql/loader';
 import { AppConfig } from '../types/genericTypes';
 import Timer = NodeJS.Timer;
-
-import { Symbols } from '../ioc/symbols';
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
@@ -464,7 +462,7 @@ export class LoaderModule implements ILoaderModule {
   private async syncTimer() {
     this.logger.trace('Setting sync timer');
 
-    JobsQueue.register('loaderSyncTimer', async (cb) => {
+    JobsQueue.register('loaderSyncTimer', async () => {
       this.logger.trace('Sync timer trigger', {
         last_receipt: this.blocksModule.lastReceipt.get(),
         loaded      : this.loaded,
@@ -481,7 +479,6 @@ export class LoaderModule implements ILoaderModule {
           }
         }, {retries: this.retries}));
       }
-      return setImmediate(cb);
     }, this.syncInterval);
   }
 

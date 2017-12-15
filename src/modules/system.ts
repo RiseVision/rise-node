@@ -3,10 +3,10 @@ import { inject, injectable, postConstruct } from 'inversify';
 import * as os from 'os';
 import { IDatabase } from 'pg-promise';
 import * as semver from 'semver';
-import sqlSystem from '../../sql/system';
 import { constants as constantType } from '../helpers/';
 import { IBlocksModule, ISystemModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
+import sqlSystem from '../sql/system';
 import { AppConfig } from '../types/genericTypes';
 
 // tslint:disable-next-line

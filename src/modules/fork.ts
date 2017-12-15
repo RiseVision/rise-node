@@ -1,10 +1,10 @@
 import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
-import sql from '../../sql/delegates';
 import { ForkType, ILogger } from '../helpers';
 import { IForkModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { SignedBlockType } from '../logic';
+import sql from '../sql/delegates';
 
 @injectable()
 export class ForkModule implements IForkModule {

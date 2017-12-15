@@ -1,7 +1,6 @@
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
-import sql from '../../../sql/blocks';
 import { constants, ForkType, ILogger, Slots } from '../../helpers/';
 import { IBlockLogic, IBlockReward, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
@@ -12,6 +11,7 @@ import {
 import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType, } from '../../logic/';
 import { IConfirmedTransaction } from '../../logic/transactions/';
+import sql from '../../sql/blocks';
 
 @injectable()
 export class BlocksModuleVerify implements IBlocksModuleVerify {

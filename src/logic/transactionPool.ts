@@ -116,17 +116,12 @@ export class TransactionPool implements ITransactionPoolLogic {
     this.bundleLimit     = this.config.broadcasts.releaseLimit;
     JobsQueue.register(
       'transactionPoolNextBundle',
-      (cb) => {
-        return promiseToCB(this.processBundled(), cb);
-      },
+      () => this.processBundled(),
       this.bundledInterval
     );
     JobsQueue.register(
       'transactionPoolNextExpiry',
-      (cb) => {
-        this.expireTransactions();
-        process.nextTick(cb);
-      },
+      () => Promise.resolve(this.expireTransactions()),
       this.expiryInterval
     );
   }

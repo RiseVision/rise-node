@@ -1,7 +1,6 @@
 import { inject, injectable, tagged } from 'inversify';
 import * as _ from 'lodash';
 import { IDatabase, ITask } from 'pg-promise';
-import sql from '../../../sql/blocks';
 import { Bus, catchToLoggerAndRemapError, ILogger, Inserts, Sequence, TransactionType } from '../../helpers/';
 import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
@@ -11,6 +10,7 @@ import {
 import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType } from '../../logic/';
 import { IConfirmedTransaction } from '../../logic/transactions/';
+import sql from '../../sql/blocks';
 
 @injectable()
 export class BlocksModuleChain implements IBlocksModuleChain {

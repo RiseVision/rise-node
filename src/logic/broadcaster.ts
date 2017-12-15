@@ -74,12 +74,11 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     }
     JobsQueue.register(
       'broadcasterNextRelease',
-      (cb) => promiseToCB(this.releaseQueue()
+      () => this.releaseQueue()
           .catch((err) => {
             this.logger.log('Broadcast timer', err);
             return;
           }),
-        cb),
       this.config.broadcasts.broadcastInterval
     );
   }

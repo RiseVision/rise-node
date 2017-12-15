@@ -1,9 +1,9 @@
 import * as pgp from 'pg-promise';
 import { ITask } from 'pg-promise';
-import roundSQL from '../../sql/logic/rounds';
 import { ILogger, RoundChanges, Slots } from '../helpers/';
 import { IRoundLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule } from '../ioc/interfaces/modules';
+import roundSQL from '../sql/logic/rounds';
 import { address, publicKey } from '../types/sanityTypes';
 
 // tslint:disable-next-line

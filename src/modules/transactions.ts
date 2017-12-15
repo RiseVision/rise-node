@@ -1,13 +1,13 @@
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
 import { IDatabase } from 'pg-promise';
-import txSQL from '../../sql/logic/transactions';
 import { constants, ILogger, OrderBy } from '../helpers/';
 import { ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType } from '../logic/';
 import { IBaseTransaction, IConfirmedTransaction } from '../logic/transactions/';
+import txSQL from '../sql/logic/transactions';
 
 @injectable()
 export class TransactionsModule implements ITransactionsModule {

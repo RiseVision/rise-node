@@ -1,9 +1,9 @@
-import * as z_schema from 'z-schema';
-import { Get, JsonController, QueryParam } from 'routing-controllers';
-import { SchemaValid, ValidateSchema } from './baseAPIClass';
 import { inject, injectable } from 'inversify';
-import { Symbols } from '../ioc/symbols';
+import { Get, JsonController, QueryParam } from 'routing-controllers';
+import * as z_schema from 'z-schema';
 import { ISystemModule } from '../ioc/interfaces/modules';
+import { Symbols } from '../ioc/symbols';
+import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 @JsonController('/signatures')
 @injectable()

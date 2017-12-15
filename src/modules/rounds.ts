@@ -1,11 +1,11 @@
 import { inject, injectable } from 'inversify';
 import { IDatabase, ITask } from 'pg-promise';
-import roundsSQL from '../../sql/logic/rounds';
 import { Bus, constants, ILogger, Slots } from '../helpers/';
 import { IAppState, IRoundsLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule, IDelegatesModule, IRoundsModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { RoundLogic, RoundLogicScope, SignedBlockType } from '../logic/';
+import roundsSQL from '../sql/logic/rounds';
 import { address, publicKey } from '../types/sanityTypes';
 
 @injectable()

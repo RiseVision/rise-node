@@ -14,13 +14,13 @@ export class Bus {
   public message(event: 'unconfirmedTransaction', transaction: any, broadcast: any): Promise<void>;
   public async message(event: string, ...rest: any[]) {
     const methodToCall = `on${changeCase.pascalCase(event)}`;
-    for (const module of this.modules) {
+    await Promise.all(this.modules.map(async (module) => {
       if (typeof(module[methodToCall]) === 'function') {
         const toRet = module[methodToCall].apply(module, rest);
         if (toRet instanceof Promise) {
           await toRet;
         }
       }
-    }
+    }));
   }
 }

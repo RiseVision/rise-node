@@ -4,12 +4,12 @@ import * as _ from 'lodash';
 import * as pgpCreator from 'pg-promise';
 import { IDatabase } from 'pg-promise';
 import * as shuffle from 'shuffle-array';
-import peerSQL from '../../sql/peers';
 import { Bus, constants, ILogger } from '../helpers/';
 import { IPeerLogic, IPeersLogic } from '../ioc/interfaces/logic/';
 import { IPeersModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { PeerState, PeerType } from '../logic/';
+import peerSQL from '../sql/peers';
 import { AppConfig } from '../types/genericTypes';
 
 const pgp = pgpCreator();
