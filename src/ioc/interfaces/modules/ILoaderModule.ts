@@ -5,10 +5,6 @@ export interface ILoaderModule {
 
   gerRandomPeer(): Promise<IPeerLogic>;
 
-  onPeersReady(): Promise<void>;
-
-  onBlockchainReady(): void;
-
   cleanup(): Promise<void>;
 
   /**

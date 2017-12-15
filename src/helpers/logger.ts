@@ -83,6 +83,9 @@ export default (config: any = {}): ILogger => {
       }
 
       if (data && util.isObject(data)) {
+        if (data instanceof Error) {
+          logData.data = { message: logData.data.message, error: logData.data.stack };
+        }
         logData.data = CircularJSON.stringify(snipsecret(data));
       } else {
         logData.data = data;

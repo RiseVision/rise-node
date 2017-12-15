@@ -132,7 +132,7 @@ export class TransportModule implements ITransportModule {
   public async getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }, options: PeerRequestOptions) {
     config.limit         = 1;
     config.allowedStates = [PeerState.CONNECTED, PeerState.DISCONNECTED];
-    const { peers }      = await this.peersModule.list(config);
+    const {peers}        = await this.peersModule.list(config);
     return this.getFromPeer<T>(peers[0], options);
   }
 
@@ -145,7 +145,7 @@ export class TransportModule implements ITransportModule {
     this.loaded = true;
   }
 
-   public async onPeersReady() {
+  public async onPeersReady() {
     this.logger.trace('Peers ready');
     await this.discoverPeers();
     JobsQueue.register('peersDiscoveryAndUpdate', async () => {

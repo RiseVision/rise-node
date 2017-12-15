@@ -138,6 +138,7 @@ export class LoaderModule implements ILoaderModule {
           try {
             await this.loadTransactions();
           } catch (e) {
+            this.logger.warn('Error loading transactions... Retrying... ', e);
             retry(e);
           }
         }, {retries: this.retries});
@@ -151,6 +152,7 @@ export class LoaderModule implements ILoaderModule {
           try {
             await this.loadSignatures();
           } catch (e) {
+            this.logger.warn('Error loading transactions... Retrying... ', e);
             retry(e);
           }
         }, {retries: this.retries});
@@ -474,7 +476,7 @@ export class LoaderModule implements ILoaderModule {
           try {
             await this.sync();
           } catch (err) {
-            console.log(err);
+            this.logger.warn('Error syncing... Retrying... ', err);
             retries(err);
           }
         }, {retries: this.retries}));
@@ -508,7 +510,7 @@ export class LoaderModule implements ILoaderModule {
       for (const multiSigTX of signatures) {
         for (const signature of  multiSigTX.signatures) {
           try {
-            this.multisigModule.processSignature({
+            await this.multisigModule.processSignature({
               signature,
               transaction: multiSigTX.transaction,
             });
