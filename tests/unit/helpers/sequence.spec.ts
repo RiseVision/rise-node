@@ -3,10 +3,9 @@ import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
 import { Sequence } from '../../../src/helpers/sequence';
 
-const onWarningStub = sinon.stub();
 const seqConfig = {
   onWarning: (curPending: number, warnLimit: number) => {
-    onWarningStub();
+    return;
   },
   warningLimit: 4,
 };
@@ -38,15 +37,11 @@ describe('helpers/sequence', () => {
 
     it('should return 1 before task done 0 after done', async () => {
       const sequence = new Sequence(seqConfig);
-      const clock = sinon.useFakeTimers();
       const worker = getPromiseWorker();
       const promise = sequence.addAndPromise(worker);
       expect(sequence.count()).to.be.eq(1);
-      clock.tick(20);
-      clock.restore();
-      await promise.then(() => {
-        expect(sequence.count()).to.be.eq(0);
-      });
+      await promise;
+      expect(sequence.count()).to.be.eq(0);
     });
 
     it('should return the number of tasks in the sequence', () => {
@@ -67,9 +62,8 @@ describe('helpers/sequence', () => {
     it('should resolve the task and return resolved value', async () => {
       const sequence = new Sequence(seqConfig);
       const worker = getPromiseWorker();
-      await sequence.addAndPromise(worker).then((val) => {
-        expect(val).to.be.eq('value');
-      });
+      const val = await sequence.addAndPromise(worker);
+      expect(val).to.be.eq('value');
     });
 
     it('should reject the task with the right error if rejects', async () => {
@@ -138,8 +132,19 @@ describe('helpers/sequence', () => {
     });
 
     it('should raise a warning when queued tasks reaches the limit', async () => {
-      // warning limit is 4
-      const sequence = new Sequence(seqConfig);
+      const onWarningStub = sinon.stub();
+      const cfg = {
+        onWarning: (curPending: number, warnLimit: number) => {
+          onWarningStub();
+        },
+        warningLimit: 4,
+      };
+      const sequence = new Sequence(cfg);
+      // warningLimit is 4. Add 2 tasks --> No warning
+      sequence.addAndPromise(() => Promise.resolve(1));
+      await sequence.addAndPromise(() => Promise.resolve(2));
+      expect(onWarningStub.called).to.be.false;
+      // warningLimit is 4. Add 5 tasks --> Warning!
       sequence.addAndPromise(() => Promise.resolve(1));
       sequence.addAndPromise(() => Promise.resolve(2));
       sequence.addAndPromise(() => Promise.resolve(3));
