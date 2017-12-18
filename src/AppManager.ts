@@ -10,6 +10,7 @@ import * as socketIO from 'socket.io';
 import * as uuid from 'uuid';
 import {
   applyExpressLimits, Bus, cache, catchToLoggerAndRemapError, cbToPromise, constants as constantsType, Database, Ed,
+  ExceptionsManager, IExceptionHandler,
   ILogger, middleware,
   Sequence, Slots, z_schema,
 } from './helpers/';
@@ -51,7 +52,8 @@ export class AppManager {
               private lastCommit: string,
               private versionBuild: string,
               private genesisBlock: SignedAndChainedBlockType,
-              private constants: typeof constantsType) {
+              private constants: typeof constantsType,
+              private excCreators: Array<(ex: ExceptionsManager) => void>) {
     this.appConfig.nethash = genesisBlock.payloadHash;
     // this.container.applyMiddleware(theLogger);
   }
@@ -95,14 +97,14 @@ export class AppManager {
     const app = this.container.get<express.Application>(Symbols.generic.expressApp);
     applyExpressLimits(app, this.appConfig);
 
-    app.use(compression({ level: 9 }));
+    app.use(compression({level: 9}));
     app.use(cors());
     app.options('*', cors());
 
     app.use(express.static(`${__dirname}/../public`));
-    app.use(bodyParser.raw({ limit: '2mb' }));
-    app.use(bodyParser.urlencoded({ extended: true, limit: '2mb', parameterLimit: 5000 }));
-    app.use(bodyParser.json({ limit: '2mb' }));
+    app.use(bodyParser.raw({limit: '2mb'}));
+    app.use(bodyParser.urlencoded({extended: true, limit: '2mb', parameterLimit: 5000}));
+    app.use(bodyParser.json({limit: '2mb'}));
     app.use(methodOverride());
 
     app.use(middleware.logClientConnections(this.logger));
@@ -153,6 +155,7 @@ export class AppManager {
     this.container.bind(Symbols.helpers.bus).toConstantValue(bus);
     this.container.bind(Symbols.helpers.constants).toConstantValue(this.constants);
     this.container.bind(Symbols.helpers.ed).toConstantValue(ed);
+    this.container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManager).inSingletonScope();
     this.container.bind(Symbols.helpers.logger).toConstantValue(this.logger);
     // this.container.bind(Symbols.helpers.sequence).toConstantValue();
     [Symbols.tags.helpers.dbSequence, Symbols.tags.helpers.defaultSequence, Symbols.tags.helpers.balancesSequence]
@@ -210,6 +213,11 @@ export class AppManager {
     this.container.bind(Symbols.modules.system).to(SystemModule).inSingletonScope();
     this.container.bind(Symbols.modules.transactions).to(TransactionsModule).inSingletonScope();
     this.container.bind(Symbols.modules.transport).to(TransportModule).inSingletonScope();
+
+    // Add exceptions by attaching exception handlers to the manager.
+    const exceptionsManager = this.container.get<ExceptionsManager>(Symbols.helpers.exceptionsManager);
+    this.excCreators
+      .forEach((exc) => exc(exceptionsManager));
   }
 
   private async finishBoot() {

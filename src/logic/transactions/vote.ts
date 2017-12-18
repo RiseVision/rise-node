@@ -1,12 +1,14 @@
 import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
-import { constants, Diff, emptyCB, TransactionType } from '../../helpers/';
+import { constants, Diff, emptyCB, ExceptionsList, ExceptionsManager, TransactionType } from '../../helpers/';
 import { IAccountLogic, IRoundsLogic } from '../../ioc/interfaces/logic';
 import { IDelegatesModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import voteSchema from '../../schema/logic/transactions/vote';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
+import { DebugLog } from '../../helpers/decorators/debugLog';
+import { RunThroughExceptions } from '../../helpers/decorators/exceptions';
 
 // tslint:disable-next-line interface-over-type-literal
 export type VoteAsset = {
@@ -23,6 +25,10 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
   // Generic
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
+
+  // tslint:disable-next-line member-ordering
+  @inject(Symbols.helpers.exceptionsManager)
+  public excManager: ExceptionsManager;
 
   // Logic
   @inject(Symbols.logic.account)
@@ -105,6 +111,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
   /**
    * Checks vote integrity of tx sender
    */
+  @RunThroughExceptions(ExceptionsList.voteTx_checkUnConfirmedDelegate)
   public checkUnconfirmedDelegates(tx: IBaseTransaction<VoteAsset>): Promise<any> {
     return this.delegatesModule.checkUnconfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
   }
@@ -112,6 +119,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
   /**
    * Checks vote integrity of sender
    */
+  @RunThroughExceptions(ExceptionsList.voteTx_checkUnConfirmedDelegate)
   public checkConfirmedDelegates(tx: IBaseTransaction<VoteAsset>): Promise<any> {
     return this.delegatesModule.checkConfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
   }

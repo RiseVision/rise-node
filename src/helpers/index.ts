@@ -13,6 +13,7 @@ export * from './checkIpInList';
 export * from './ed';
 export * from './httpApi';
 export * from './forkTypes';
+export * from './exceptionManager';
 export * from './genericUtils';
 export * from './git';
 export * from './inserts';

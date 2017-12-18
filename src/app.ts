@@ -2,6 +2,7 @@ import * as exitHook from 'async-exit-hook';
 import * as program from 'commander';
 import * as fs from 'fs';
 import { AppManager } from './AppManager';
+import { allExceptionCreator } from './exceptions';
 import {
   config as configCreator, constants as constantsType, getLastCommit, loggerCreator,
   promiseToCB,
@@ -82,7 +83,8 @@ async function boot(constants: typeof constantsType): Promise<AppManager> {
     lastCommit,
     versionBuild,
     genesisBlock,
-    constants
+    constants,
+    allExceptionCreator
   );
   await manager.boot();
   return manager;
