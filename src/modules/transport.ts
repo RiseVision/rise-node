@@ -15,6 +15,7 @@ import { IBaseTransaction } from '../logic/transactions/';
 import peersSchema from '../schema/peers';
 import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
+import { DebugLog } from '../helpers/decorators/debugLog';
 
 // tslint:disable-next-line
 export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };
@@ -138,7 +139,7 @@ export class TransportModule implements ITransportModule {
   public onBlockchainReady() {
     this.loaded = true;
   }
-
+  @DebugLog
   public async onPeersReady() {
     this.logger.trace('Peers ready');
     // await this.discoverPeers();

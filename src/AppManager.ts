@@ -63,8 +63,7 @@ export class AppManager {
     this.logger.info('Booting');
     await this.initAppElements();
     await this.initExpress();
-    await this.finishBoot();
-    this.logger.info('App Booted');
+    this.finishBoot(); // This promise is intentionally not awaited.
   }
 
   /**
@@ -81,8 +80,8 @@ export class AppManager {
 
     try {
       await Promise.all(modules
-        .filter((k) => typeof(modules[k].cleanup) === 'function')
-        .map((k) => modules[k].cleanup()));
+        .filter((module) => typeof(module.cleanup) === 'function')
+        .map((module) => module.cleanup()));
       this.logger.info('Cleaned up successfully');
     } catch (err) {
       this.logger.error(err);
@@ -229,10 +228,12 @@ export class AppManager {
     await cbToPromise((cb) => this.server.listen(this.appConfig.port, this.appConfig.address, cb));
     this.logger.info(`Server started: ${this.appConfig.address}:${this.appConfig.port}`);
 
-    this.logger.info('Modules ready and launched');
+    this.logger.info('Modules ready and launched. Loading Blockchain...');
     const loaderModule = this.container.get<LoaderModule>(Symbols.modules.loader);
     await loaderModule.loadBlockChain()
       .catch(catchToLoggerAndRemapError('Cannot load blockchain', this.logger));
+    this.logger.info('App Booted');
+
   }
 
   private getElementsFromContainer<T = any>(symbols: { [k: string]: symbol | { [k: string]: symbol } }): T[] {

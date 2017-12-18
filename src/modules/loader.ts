@@ -26,6 +26,7 @@ import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
 import { AppConfig } from '../types/genericTypes';
 import Timer = NodeJS.Timer;
+import { DebugLog } from '../helpers/decorators/debugLog';
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
@@ -127,6 +128,7 @@ export class LoaderModule implements ILoaderModule {
     return this.appState.get('loader.isSyncing');
   }
 
+  @DebugLog
   public async onPeersReady() {
     await this.syncTimer();
     if (this.loaded) {
@@ -459,6 +461,7 @@ export class LoaderModule implements ILoaderModule {
     await this.loadBlocksFromNetwork();
   }
 
+  @DebugLog
   private async syncTimer() {
     this.logger.trace('Setting sync timer');
 

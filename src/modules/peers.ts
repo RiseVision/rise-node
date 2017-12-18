@@ -169,7 +169,7 @@ export class PeersModule implements IPeersModule {
           return col.value ? Buffer.from(col.value, 'hex') : null;
         },
       },
-    ], {table: 'peers'});
+    ], { table: 'peers' });
 
     try {
       // Wrap sql queries in transaction and execute
@@ -201,7 +201,7 @@ export class PeersModule implements IPeersModule {
       });
       this.logger.info('Peers exported to database');
     } catch (err) {
-      this.logger.error('Export peers to database failed', {error: err.message || err});
+      this.logger.error('Export peers to database failed', { error: err.message || err });
     }
   }
 
@@ -213,18 +213,17 @@ export class PeersModule implements IPeersModule {
     try {
       const rows  = await this.db.any(peerSQL.getAll);
       let updated = 0;
-      for (const rawPeer of rows) {
-        const peer = this.peersLogic.create(rawPeer);
-        if (!this.peersLogic.exists(peer)) {
-          // Update also sets the peer as connected.
+      await Promise.all(rows
+        .map((rawPeer) => this.peersLogic.create(rawPeer))
+        .filter((peer) => !this.peersLogic.exists(peer))
+        .map(async (peer) => {
           await peer.pingAndUpdate();
-          // this.update(peer);
           updated++;
-        }
-      }
-      this.logger.trace('Peers->dbLoad Peers discovered', {updated, total: rows.length});
+        })
+      );
+      this.logger.trace('Peers->dbLoad Peers discovered', { updated, total: rows.length });
     } catch (e) {
-      this.logger.error('Import peers from database failed', {error: e.message || e});
+      this.logger.error('Import peers from database failed', { error: e.message || e });
     }
   }
 
