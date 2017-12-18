@@ -17,7 +17,7 @@ export default class MyBigNumb extends BigNumber {
    * @param {Buffer} buf
    * @param opts
    */
-  public static fromBuffer(buf: Buffer, opts: IToFromBufferOpts = {}) {
+  public static fromBuffer(buf: Buffer, opts: IToFromBufferOpts = {}): BigNumber {
 
     const endian = opts.endian || 'big';
 
@@ -49,7 +49,7 @@ export default class MyBigNumb extends BigNumber {
    * Exports bignumber to buffer.
    * @returns {Buffer}
    */
-  public toBuffer(opts?: IToFromBufferOpts) {
+  public toBuffer(opts: IToFromBufferOpts = {}) {
     const endian = opts.endian || 'big';
 
     let hex = this.toString(16);
