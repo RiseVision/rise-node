@@ -1,90 +1,60 @@
+import { inject, injectable } from 'inversify';
 import { IDatabase, ITask } from 'pg-promise';
-import roundsSQL from '../../sql/logic/rounds';
 import { Bus, constants, ILogger, Slots } from '../helpers/';
+import { IAppState, IRoundsLogic } from '../ioc/interfaces/logic/';
+import { IAccountsModule, IDelegatesModule, IRoundsModule } from '../ioc/interfaces/modules/';
+import { Symbols } from '../ioc/symbols';
 import { RoundLogic, RoundLogicScope, SignedBlockType } from '../logic/';
-import { AppConfig } from '../types/genericTypes';
+import roundsSQL from '../sql/logic/rounds';
 import { address, publicKey } from '../types/sanityTypes';
-import { AccountsModule } from './accounts';
-import { DelegatesModule } from './delegates';
 
-// tslint:disable-next-line
-export type RoundsLibrary = {
-  logger: ILogger,
-  db: IDatabase<any>,
-  bus: Bus,
-  io: SocketIO.Server,
-  config: AppConfig
-};
+@injectable()
+export class RoundsModule implements IRoundsModule {
 
-export class RoundsModule {
-  private loaded: boolean  = false;
-  private ticking: boolean = false;
+  // modules
+  @inject(Symbols.modules.delegates)
+  private delegatesModule: IDelegatesModule;
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
 
-  private modules: { delegates: DelegatesModule, accounts: AccountsModule };
+  // Helpers and generics
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.helpers.slots)
+  private slots: Slots;
+  @inject(Symbols.generic.db)
+  private db: IDatabase<any>;
+  @inject(Symbols.helpers.bus)
+  private bus: Bus;
+  @inject(Symbols.generic.socketIO)
+  private io: SocketIO.Server;
 
-  constructor(private library: RoundsLibrary) {
-  }
-
-  public isLoaded() {
-    return this.loaded;
-  }
-
-  public isTicking() {
-    return this.ticking;
-  }
-
-  public onBind(scope: { accounts: AccountsModule, delegates: any }) {
-    this.modules = {
-      accounts : scope.accounts,
-      delegates: scope.delegates,
-    };
-  }
+  // Logic
+  @inject(Symbols.logic.appState)
+  private appStateLogic: IAppState;
+  @inject(Symbols.logic.rounds)
+  private roundsLogic: IRoundsLogic;
 
   public onFinishRound(round: number) {
-    this.library.io.sockets.emit('rounds/change', { number: round });
+    this.io.sockets.emit('rounds/change', { number: round });
   }
 
   public onBlockchainReady() {
-    this.loaded = true;
+    this.appStateLogic.set('rounds.isLoaded', true);
   }
 
   public cleanup() {
-    this.loaded = false;
+    this.appStateLogic.set('rounds.isLoaded', false);
     return Promise.resolve();
-  }
-
-  /**
-   * Sets the snapshot rounds
-   */
-  public setSnapshotRounds(rounds: number) {
-    this.library.config.loading.snapshot = rounds;
-  }
-
-  /**
-   * Return round calculated given the blockheight
-   * @return {number}
-   */
-  public calcRound(height: number) {
-    return Math.ceil(height / Slots.delegates);
-  }
-
-  /**
-   * Gets inclusive range of round from given height
-   */
-  public heightFromRound(round: number): { first: number, last: number } {
-    return {
-      first: round * Slots.delegates + 1,
-      last : (round + 1) * Slots.delegates,
-    };
   }
 
   /**
    * Deletes specific round from mem_rounds table
    */
-  public flush(round: number) {
-    return this.library.db.none(roundsSQL.flush, { round })
+  public flush(round: number): Promise<void> {
+    return this.db.none(roundsSQL.flush, { round })
       .catch((err) => {
-        this.library.logger.error(err.stack);
+        this.logger.error(err.stack);
         return Promise.reject(new Error('Rounds#flush error'));
       });
   }
@@ -96,10 +66,10 @@ export class RoundsModule {
    */
   public backwardTick(block: SignedBlockType, previousBlock: SignedBlockType) {
     return this.innerTick(block, true, (roundLogicScope) => (task) => {
-      this.library.logger.debug('Performing backward tick');
-      this.library.logger.trace(roundLogicScope);
+      this.logger.debug('Performing backward tick');
+      this.logger.trace(roundLogicScope);
 
-      const roundLogic = new RoundLogic(roundLogicScope, task);
+      const roundLogic = new RoundLogic(roundLogicScope, task, this.slots);
 
       return roundLogic.mergeBlockGenerator()
       // call backwardLand only if this was the last block in round.
@@ -115,19 +85,19 @@ export class RoundsModule {
       false,
       (roundLogicScope) => (task) => {
 
-        this.library.logger.debug('Performing forward tick');
-        this.library.logger.trace(roundLogicScope);
+        this.logger.debug('Performing forward tick');
+        this.logger.trace(roundLogicScope);
 
-        const roundLogic    = new RoundLogic(roundLogicScope, task);
+        const roundLogic    = new RoundLogic(roundLogicScope, task, this.slots);
         const snapshotRound = (
-          this.library.config.loading.snapshot > 0 && this.library.config.loading.snapshot === roundLogicScope.round
+          this.getSnapshotRounds() > 0 && this.getSnapshotRounds() === roundLogicScope.round
         );
 
         return roundLogic.mergeBlockGenerator()
         // call land only if this was the last block in round.
           .then(() => roundLogicScope.finishRound
             ? roundLogic.land()
-              .then(() => this.library.bus.message('finishRound', roundLogicScope.round))
+              .then(() => this.bus.message('finishRound', roundLogicScope.round))
 
               // If this was the round of the snapshot lets truncate the blocks
               .then(() => snapshotRound
@@ -142,31 +112,38 @@ export class RoundsModule {
       async () => {
         // Check if we are one block before last block of round, if yes - perform round snapshot
         // TODO: Check either logic or comment one of the 2 seems off.
-        if ((block.height + 1) % Slots.delegates === 0) {
-          this.library.logger.debug('Performing round snapshot...');
+        if ((block.height + 1) % this.slots.delegates === 0) {
+          this.logger.debug('Performing round snapshot...');
 
-          await this.library.db.tx((t) => t.batch([
+          await this.db.tx((t) => t.batch([
               t.none(roundsSQL.clearRoundSnapshot),
               t.none(roundsSQL.performRoundSnapshot),
               t.none(roundsSQL.clearVotesSnapshot),
               t.none(roundsSQL.performVotesSnapshot),
             ])
           ).catch((err) => {
-            this.library.logger.error('Round snapshot failed', err);
+            this.logger.error('Round snapshot failed', err);
             return Promise.reject(err);
           });
 
-          this.library.logger.trace('Round snapshot done');
+          this.logger.trace('Round snapshot done');
         }
       });
+  }
+
+  /**
+   * gets the snapshot rounds
+   */
+  private getSnapshotRounds() {
+    return this.appStateLogic.get('rounds.snapshot') || 0;
   }
 
   private async innerTick(block: SignedBlockType,
                           backwards: boolean,
                           txGenerator: (ls: RoundLogicScope) => (t: ITask<any>) => Promise<any>,
                           afterTxPromise: () => Promise<any> = () => Promise.resolve(null)) {
-    const round     = this.calcRound(block.height);
-    const nextRound = this.calcRound(block.height + 1);
+    const round     = this.roundsLogic.calcRound(block.height);
+    const nextRound = this.roundsLogic.calcRound(block.height + 1);
 
     const finishRound = (
       (nextRound !== round) || (block.height === 1 || block.height === 101)
@@ -174,7 +151,7 @@ export class RoundsModule {
 
     try {
       // Set ticking flag to true
-      this.ticking = true;
+      this.appStateLogic.set('rounds.isTicking', true);
 
       const roundSums      = finishRound ? await this.sumRound(round) : null;
       const roundOutsiders = finishRound ? await this.getOutsiders(round, roundSums.roundDelegates) : null;
@@ -183,18 +160,22 @@ export class RoundsModule {
         backwards,
         block  : block as any, // TODO: ID and height are optional in SignedBlockType
         finishRound,
-        library: this.library,
-        modules: this.modules,
+        library: {
+          logger: this.logger,
+        },
+        modules: {
+          accounts: this.accountsModule,
+        },
         round,
         roundOutsiders,
         ...roundSums,
       };
-      await this.library.db.tx(txGenerator(roundLogicScope));
+      await this.db.tx(txGenerator(roundLogicScope));
       await afterTxPromise();
     } catch (e) {
-      this.library.logger.warn('Error while doing modules.rounds.backwardTick', e.message || e);
+      this.logger.warn('Error while doing modules.rounds.backwardTick', e.message || e);
     } finally {
-      this.ticking = false;
+      this.appStateLogic.set('rounds.isTicking', false);
     }
   }
 
@@ -204,18 +185,18 @@ export class RoundsModule {
    */
   private async getOutsiders(round: number, roundDelegates: publicKey[]): Promise<address[]> {
 
-    const { last: height }  = this.heightFromRound(round);
-    const originalDelegates = await this.modules.delegates.generateDelegateList(height);
+    const height  = this.roundsLogic.lastInRound(round);
+    const originalDelegates = await this.delegatesModule.generateDelegateList(height);
 
     return originalDelegates
       .filter((pk) => roundDelegates.indexOf(pk) === -1)
-      .map((pk) => this.modules.accounts.generateAddressByPublicKey(pk));
+      .map((pk) => this.accountsModule.generateAddressByPublicKey(pk));
   }
 
   // tslint:disable-next-line
   private async sumRound(round: number): Promise<{ roundFees: number, roundRewards: number[], roundDelegates: publicKey[] }> {
-    this.library.logger.debug('Summing round', round);
-    const rows = await this.library.db.query(
+    this.logger.debug('Summing round', round);
+    const rows = await this.db.query(
       roundsSQL.summedRound,
       {
         activeDelegates: constants.activeDelegates,
@@ -223,8 +204,8 @@ export class RoundsModule {
       }
     )
       .catch((err) => {
-        this.library.logger.error('Failed to sum round', round);
-        this.library.logger.error(err.stack);
+        this.logger.error('Failed to sum round', round);
+        this.logger.error(err.stack);
         return Promise.reject(err);
       });
 

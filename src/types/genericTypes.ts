@@ -97,3 +97,13 @@ export type AppConfig = {
   dapp: any,
   nethash: string
 };
+
+export type PeerHeaders = {
+  os: string;
+  version: string;
+  port: number;
+  height: number;
+  nethash: string;
+  broadhash: string;
+  nonce: string;
+};

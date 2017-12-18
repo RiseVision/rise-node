@@ -1,17 +1,24 @@
-import redis from 'redis';
+import { inject, injectable } from 'inversify';
+import { RedisClient } from 'redis';
 import { cbToPromise, cbToVoidPromise, emptyCB, ILogger, TransactionType } from '../helpers/';
+import { ICacheModule } from '../ioc/interfaces/modules/';
+import { Symbols } from '../ioc/symbols';
 import { IBaseTransaction } from '../logic/transactions/';
+import { AppConfig } from '../types/genericTypes';
 
-export class Cache {
+@injectable()
+export class Cache implements ICacheModule {
   private cacheReady: boolean;
 
-  public constructor(library: { logger: ILogger }, public redisClient: redis.RedisClient,
-                     public cacheEnabled: boolean) {
-
-  }
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.generic.appConfig)
+  private config: AppConfig;
+  @inject(Symbols.generic.redisClient)
+  private redisClient: RedisClient;
 
   get isConnected() {
-    return this.cacheEnabled && this.redisClient && this.redisClient.connected;
+    return this.config.cacheEnabled && this.redisClient && this.redisClient.connected;
   }
 
   public assertConnected(): Promise<void> {

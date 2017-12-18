@@ -1,4 +1,9 @@
+import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
+import { IPeerLogic } from '../ioc/interfaces/logic/';
+import { ITransportModule } from '../ioc/interfaces/modules';
+import { Symbols } from '../ioc/symbols';
+import { PeerRequestOptions } from '../modules';
 
 export enum PeerState {
   BANNED       = 0,
@@ -74,8 +79,8 @@ const properties = [
   'updated',
   'nonce',
 ];
-
-export class Peer implements PeerType {
+@injectable()
+export class PeerLogic implements PeerType, IPeerLogic {
   public ip: string;
   public port: number;
   public state: PeerState;
@@ -89,9 +94,8 @@ export class Peer implements PeerType {
   public nonce: string;
   public string: string;
 
-  public constructor(peer: BasePeerType = {} as any) {
-    this.accept({ ...{}, ...peer });
-  }
+  @inject(Symbols.modules.transport)
+  private transportModule: ITransportModule;
 
   public accept(peer: BasePeerType) {
     // Normalize peer data
@@ -116,6 +120,7 @@ export class Peer implements PeerType {
     return this;
   }
 
+  // tslint:disable-next-line max-line-length
   public normalize<T extends { dappid?: string | string[], height?: number, port?: number, state?: PeerState }>(peer: T): T {
     if (peer.dappid && !Array.isArray(peer.dappid)) {
       peer.dappid = [peer.dappid];
@@ -172,6 +177,16 @@ export class Peer implements PeerType {
     }
 
     return copy;
+  }
+
+  public makeRequest<T>(requestOptions: PeerRequestOptions): Promise<T> {
+    return this.transportModule.getFromPeer<T>(this, requestOptions)
+      .then(({body}) => body);
+  }
+
+  public pingAndUpdate(): Promise<void> {
+    return this.transportModule.getFromPeer(this, {api: '/height', method: 'GET'})
+      .then(() => null);
   }
 
   public get nullable() {

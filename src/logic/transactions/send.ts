@@ -1,21 +1,28 @@
+import { inject, injectable } from 'inversify';
 import { TransactionType } from '../../helpers/';
-import { AccountsModule, RoundsModule, SystemModule } from '../../modules/';
+import { IRoundsLogic } from '../../ioc/interfaces/logic';
+import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
+import { Symbols } from '../../ioc/symbols';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
+@injectable()
 export class SendTransaction extends BaseTransactionType<void> {
-  public modules: { accounts: AccountsModule, rounds: RoundsModule, system: SystemModule };
+
+  @inject(Symbols.logic.rounds)
+  private roundsLogic: IRoundsLogic;
+
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
 
   constructor() {
     super(TransactionType.SEND);
   }
 
-  public bind(accounts: AccountsModule, rounds: any, system: any) {
-    this.modules = { accounts, rounds, system };
-  }
-
   public calculateFee(tx: IBaseTransaction<void>, sender: any, height: number): number {
-    return this.modules.system.getFees(height).fees.send;
+    return this.systemModule.getFees(height).fees.send;
   }
 
   public async verify(tx: IBaseTransaction<void>, sender: any): Promise<void> {
@@ -31,13 +38,13 @@ export class SendTransaction extends BaseTransactionType<void> {
   public async apply(tx: IConfirmedTransaction<void>, block: SignedBlockType,
                      sender: any): Promise<void> {
     // Create account if does not exist.
-    await this.modules.accounts.setAccountAndGet({ address: tx.recipientId });
+    await this.accountsModule.setAccountAndGet({ address: tx.recipientId });
 
-    return this.modules.accounts.mergeAccountAndGet({
+    return this.accountsModule.mergeAccountAndGet({
       address  : tx.recipientId,
       balance  : tx.amount,
       blockId  : block.id,
-      round    : this.modules.rounds.calcRound(block.height),
+      round    : this.roundsLogic.calcRound(block.height),
       u_balance: tx.amount,
     })
       .then(() => void 0);
@@ -45,13 +52,13 @@ export class SendTransaction extends BaseTransactionType<void> {
 
   public async undo(tx: IConfirmedTransaction<void>, block: SignedBlockType, sender: any): Promise<void> {
     // Create account if does not exist.
-    await this.modules.accounts.setAccountAndGet({ address: tx.recipientId });
+    await this.accountsModule.setAccountAndGet({ address: tx.recipientId });
 
-    return this.modules.accounts.mergeAccountAndGet({
+    return this.accountsModule.mergeAccountAndGet({
       address  : tx.recipientId,
       balance  : -tx.amount,
       blockId  : block.id,
-      round    : this.modules.rounds.calcRound(block.height),
+      round    : this.roundsLogic.calcRound(block.height),
       u_balance: -tx.amount,
     })
       .then(() => void 0);

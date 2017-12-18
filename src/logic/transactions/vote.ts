@@ -1,7 +1,10 @@
-import { constants, Diff, emptyCB, ILogger, TransactionType } from '../../helpers/';
-import { DelegatesModule, RoundsModule, SystemModule } from '../../modules/';
+import { inject, injectable } from 'inversify';
+import * as z_schema from 'z-schema';
+import { constants, Diff, emptyCB, TransactionType } from '../../helpers/';
+import { IAccountLogic, IRoundsLogic } from '../../ioc/interfaces/logic';
+import { IDelegatesModule, ISystemModule } from '../../ioc/interfaces/modules';
+import { Symbols } from '../../ioc/symbols';
 import voteSchema from '../../schema/logic/transactions/vote';
-import { AccountLogic } from '../account';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
@@ -9,25 +12,36 @@ import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './
 export type VoteAsset = {
   votes: string[];
 };
-
+@injectable()
 export class VoteTransaction extends BaseTransactionType<VoteAsset> {
-  public modules: { delegates: DelegatesModule, rounds: RoundsModule, system: SystemModule };
   private dbTable  = 'votes';
   private dbFields = [
     'votes',
     'transactionId',
   ];
 
-  constructor(private library: { logger: ILogger, schema: any, account: AccountLogic }) {
+  // Generic
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
+
+  // Logic
+  @inject(Symbols.logic.account)
+  private accountLogic: IAccountLogic;
+  @inject(Symbols.logic.rounds)
+  private roundsLogic: IRoundsLogic;
+
+  // Module
+  @inject(Symbols.modules.delegates)
+  private delegatesModule: IDelegatesModule;
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
+
+  constructor() {
     super(TransactionType.VOTE);
   }
 
-  public bind(delegates: any, rounds: any, system: any) {
-    this.modules = { delegates, rounds, system };
-  }
-
   public calculateFee(tx: IBaseTransaction<VoteAsset>, sender: any, height: number): number {
-    return this.modules.system.getFees(height).fees.vote;
+    return this.systemModule.getFees(height).fees.vote;
   }
 
   public async verify(tx: IBaseTransaction<VoteAsset> & { senderId: string }, sender: any): Promise<void> {
@@ -71,20 +85,20 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
   public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType,
                      sender: any): Promise<void> {
     await this.checkConfirmedDelegates(tx);
-    return this.library.account.merge(sender.address, {
+    return this.accountLogic.merge(sender.address, {
       blockId  : block.id,
       delegates: tx.asset.votes,
-      round    : this.modules.rounds.calcRound(block.height),
+      round    : this.roundsLogic.calcRound(block.height),
     }, emptyCB);
   }
 
   public async undo(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: any): Promise<void> {
     this.objectNormalize(tx);
     const invertedVotes = Diff.reverse(tx.asset.votes);
-    return this.library.account.merge(sender.address, {
+    return this.accountLogic.merge(sender.address, {
       blockId  : block.id,
       delegates: invertedVotes,
-      round    : this.modules.rounds.calcRound(block.height),
+      round    : this.roundsLogic.calcRound(block.height),
     }, emptyCB);
   }
 
@@ -92,31 +106,31 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
    * Checks vote integrity of tx sender
    */
   public checkUnconfirmedDelegates(tx: IBaseTransaction<VoteAsset>): Promise<any> {
-    return this.modules.delegates.checkUnconfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
+    return this.delegatesModule.checkUnconfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
   }
 
   /**
    * Checks vote integrity of sender
    */
   public checkConfirmedDelegates(tx: IBaseTransaction<VoteAsset>): Promise<any> {
-    return this.modules.delegates.checkConfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
+    return this.delegatesModule.checkConfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
   }
 
   public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: any): Promise<void> {
     await this.checkUnconfirmedDelegates(tx);
-    return this.library.account.merge(sender.address, { u_delegates: tx.asset.votes }, emptyCB);
+    return this.accountLogic.merge(sender.address, { u_delegates: tx.asset.votes }, emptyCB);
   }
 
   public async undoUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: any): Promise<void> {
     this.objectNormalize(tx);
     const invertedVotes = Diff.reverse(tx.asset.votes);
-    return this.library.account.merge(sender.address, { u_delegates: invertedVotes }, emptyCB);
+    return this.accountLogic.merge(sender.address, { u_delegates: invertedVotes }, emptyCB);
   }
 
   public objectNormalize(tx: IBaseTransaction<VoteAsset>): IBaseTransaction<VoteAsset> {
-    const report = this.library.schema.validate(tx.asset, voteSchema);
+    const report = this.schema.validate(tx.asset, voteSchema);
     if (!report) {
-      throw new Error(`Failed to validate vote schema: ${this.library.schema.getLastErrors()
+      throw new Error(`Failed to validate vote schema: ${this.schema.getLastErrors()
         .map((err) => err.message).join(', ')}`);
     }
 
@@ -152,7 +166,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
     }
 
     const pkey = vote.substring(1);
-    if (!this.library.schema.validate(pkey, { format: 'publicKey' })) {
+    if (!this.schema.validate(pkey, { format: 'publicKey' })) {
       throw new Error('Invalid vote publicKey');
     }
   }

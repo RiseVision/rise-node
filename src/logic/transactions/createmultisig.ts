@@ -1,10 +1,12 @@
 import * as ByteBuffer from 'bytebuffer';
-import { constants, Diff, emptyCB, ILogger, TransactionType } from '../../helpers/';
-import { AccountsModule, RoundsModule, SystemModule } from '../../modules/';
+import { inject, injectable } from 'inversify';
+import * as z_schema from 'z-schema';
+import { constants, Diff, emptyCB, TransactionType } from '../../helpers/';
+import { IAccountLogic, IRoundsLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
+import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
+import { Symbols } from '../../ioc/symbols';
 import multiSigSchema from '../../schema/logic/transactions/multisignature';
-import { AccountLogic } from '../account';
 import { SignedBlockType } from '../block';
-import { TransactionLogic } from '../transaction';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
 // tslint:disable-next-line interface-over-type-literal
@@ -15,10 +17,9 @@ export type MultisigAsset = {
     keysgroup: string[];
   }
 };
-
+@injectable()
 export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset> {
 
-  public modules: { accounts: AccountsModule, rounds: RoundsModule, sharedApi: any, system: SystemModule };
   private unconfirmedSignatures: { [name: string]: true };
   private dbTable  = 'multisignatures';
   private dbFields = [
@@ -28,19 +29,32 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     'transactionId',
   ];
 
-  constructor(public library: {
-    account: AccountLogic,
-    logger: ILogger, schema: any, network: any, transaction: TransactionLogic
-  }) {
+  // Generics
+  @inject(Symbols.generic.socketIO)
+  private io: SocketIO.Server;
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
+
+  // Logic
+  @inject(Symbols.logic.account)
+  private accountLogic: IAccountLogic;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
+  @inject(Symbols.logic.rounds)
+  private roundsLogic: IRoundsLogic;
+
+  // Modules
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
+
+  constructor() {
     super(TransactionType.IN_TRANSFER);
   }
 
-  public bind(accounts: AccountsModule, rounds: any, sharedApi: any, system: any) {
-    this.modules = { accounts, rounds, sharedApi, system };
-  }
-
   public calculateFee(tx: IBaseTransaction<MultisigAsset>, sender: any, height: number): number {
-    return this.modules.system.getFees(height).fees.multisignature;
+    return this.systemModule.getFees(height).fees.multisignature;
   }
 
   public getBytes(tx: IBaseTransaction<MultisigAsset>, skipSignature: boolean, skipSecondSignature: boolean): Buffer {
@@ -105,7 +119,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         if (Array.isArray(tx.signatures)) {
           for (let i = 0; i < tx.signatures.length && !valid; i++) {
             if (key[0] === '-' || key === '-') {
-              valid = this.library.transaction.verifySignature(tx, key.substring(1), tx.signature[i]);
+              valid = this.transactionLogic.verifySignature(tx, key.substring(1), tx.signature[i], false);
             }
           }
         }
@@ -132,7 +146,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         throw new Error('Invalid math operator in multisignature keysgroup');
       }
 
-      if (!this.library.schema.validate(pubKey, { format: 'publicKey' })) {
+      if (!this.schema.validate(pubKey, { format: 'publicKey' })) {
         throw new Error('Invalid publicKey in multisignature keysgroup');
       }
     }
@@ -145,14 +159,14 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
 
   public async apply(tx: IConfirmedTransaction<MultisigAsset>, block: SignedBlockType, sender: any): Promise<void> {
     delete this.unconfirmedSignatures[sender.address];
-    await this.library.account.merge(
+    await this.accountLogic.merge(
       sender.address,
       {
         blockId        : block.id,
         multilifetime  : tx.asset.multisignature.lifetime,
         multimin       : tx.asset.multisignature.min,
         multisignatures: tx.asset.multisignature.keysgroup,
-        round          : this.modules.rounds.calcRound(block.height),
+        round          : this.roundsLogic.calcRound(block.height),
       },
       emptyCB
     );
@@ -161,8 +175,8 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     for (const key of tx.asset.multisignature.keysgroup) {
       // index 0 has "+" or "-"
       const realKey = key.substr(1);
-      const address = this.library.account.generateAddressByPublicKey(realKey);
-      await this.modules.accounts.setAccountAndGet({ address, publicKey: realKey });
+      const address = this.accountLogic.generateAddressByPublicKey(realKey);
+      await this.accountsModule.setAccountAndGet({ address, publicKey: realKey });
     }
   }
 
@@ -171,13 +185,13 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
 
     this.unconfirmedSignatures[sender.address] = true;
 
-    return this.library.account.merge(
+    return this.accountLogic.merge(
       sender.address, {
         blockId        : block.id,
         multilifetime  : -tx.asset.multisignature.lifetime,
         multimin       : -tx.asset.multisignature.min,
         multisignatures: multiInvert,
-        round          : this.modules.rounds.calcRound(block.height),
+        round          : this.roundsLogic.calcRound(block.height),
       },
       emptyCB
     );
@@ -189,7 +203,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     }
     this.unconfirmedSignatures[sender.address] = true;
 
-    return this.library.account.merge(
+    return this.accountLogic.merge(
       sender.address,
       {
         u_multilifetime  : tx.asset.multisignature.lifetime,
@@ -204,7 +218,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     const multiInvert = Diff.reverse(tx.asset.multisignature.keysgroup);
     delete this.unconfirmedSignatures[sender.address];
 
-    return this.library.account.merge(
+    return this.accountLogic.merge(
       sender.address,
       {
         u_multilifetime  : -tx.asset.multisignature.lifetime,
@@ -216,9 +230,9 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
   }
 
   public objectNormalize(tx: IBaseTransaction<MultisigAsset>): IBaseTransaction<MultisigAsset> {
-    const report = this.library.schema.validate(tx.asset.multisignature, multiSigSchema);
+    const report = this.schema.validate(tx.asset.multisignature, multiSigSchema);
     if (!report) {
-      throw new Error(`Failed to validate multisignature schema: ${this.library.schema.getLastErrors()
+      throw new Error(`Failed to validate multisignature schema: ${this.schema.getLastErrors()
         .map((err) => err.message).join(', ')}`);
     }
 
@@ -260,7 +274,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
   }
 
   public afterSave(tx: IBaseTransaction<MultisigAsset>): Promise<void> {
-    this.library.network.io.sockets.emit('multisignatures/change', tx);
+    this.io.sockets.emit('multisignatures/change', tx);
     return Promise.resolve();
   }
 

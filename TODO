@@ -1,0 +1,151 @@
+IoC rewiring ok
+ - modules
+    - accounts
+    - cache
+    - delegates
+    - loader
+    - multisignatures
+    - peers
+
+
+Dependency chart http://www.webgraphviz.com/
+```
+digraph G {
+
+	subgraph cluster_0 {
+		style=filled;
+		color=lightgrey;
+		node [style=filled,color=white];
+		accountLogic;
+                transactionLogic;
+                peerLogic
+                blockLogic
+                peersLogic -> peerLogic;
+                blockRewardLogic
+                broadcasterLogic;
+                roundLogic;
+                transactionPool;
+		label = "logic";
+	}
+
+	subgraph cluster_1 {
+		node [style=filled];
+		label = "modules";
+                accountsModule
+                blocksModule
+                blocksProcessModule
+                blocksChainModule
+                blocksUtilsModule
+                blocksVerifyModule
+                cacheModule
+                delegatesModule
+                delegatesModule
+                multisignaturesModule
+                peersModule
+                transactionsModule
+                transportModule
+                roundsModule
+                systemModule
+                loaderModule
+		color=blue
+	}
+	accountsModule -> accountLogic
+        accountsModule -> transactionLogic
+
+        blocksChainModule -> roundsModule
+        blocksChainModule -> transactionsModule
+        blocksChainModule -> accountsModule
+        blocksChainModule -> blocksModule
+        blocksChainModule -> blockLogic
+        blocksChainModule -> transactionLogic
+
+        blocksProcessModule -> accountsModule
+        blocksProcessModule -> blocksModule
+        blocksProcessModule -> blocksUtilsModule
+        blocksProcessModule -> blocksChainModule
+        blocksProcessModule -> blocksVerifyModule
+        blocksProcessModule -> delegatesModule
+        blocksProcessModule -> loaderModule
+        blocksProcessModule -> roundsModule
+        blocksProcessModule -> transactionsModule
+        blocksProcessModule -> transportModule
+        blocksProcessModule -> blockLogic
+        blocksProcessModule -> peersLogic
+        blocksProcessModule -> transactionLogic
+
+        blocksUtilsModule -> blocksModule
+        blocksUtilsModule -> blockLogic
+        blocksUtilsModule -> transactionLogic
+
+        blocksVerifyModule -> blocksModule
+        blocksVerifyModule -> delegatesModule
+        blocksVerifyModule -> transactionsModule
+        blocksVerifyModule -> accountsModule
+        blocksVerifyModule -> blockRewardLogic
+        blocksVerifyModule -> blockLogic
+        blocksVerifyModule -> transactionLogic
+
+        delegatesModule -> accountsModule;
+        delegatesModule -> blocksModule;
+        delegatesModule -> blocksProcessModule;
+        delegatesModule -> roundsModule;
+        delegatesModule -> loaderModule;
+        delegatesModule -> transportModule;
+        delegatesModule -> transactionsModule;
+        delegatesModule -> transactionLogic;
+
+        loaderModule -> blocksModule
+        loaderModule -> blocksChainModule
+        loaderModule -> blocksProcessModule
+        loaderModule -> blocksUtilsModule
+        loaderModule -> blocksVerifyModule
+        loaderModule -> roundsModule
+        loaderModule -> systemModule
+        loaderModule -> transactionsModule
+        loaderModule -> transportModule
+        loaderModule -> peersModule
+        loaderModule -> multisignaturesModule
+
+        loaderModule -> transactionLogic
+        loaderModule -> accountLogic
+        loaderModule -> peersLogic
+
+        multisignaturesModule -> accountsModule
+        multisignaturesModule -> transactionsModule
+        multisignaturesModule -> transactionLogic
+        multisignaturesModule -> ccountLogic
+
+        peersModule -> transportModule
+        peersModule -> systemModule
+        peersModule -> peersLogic
+
+        roundsModule -> delegatesModule
+        roundsModule -> accountsModule
+        roundsModule -> roundLogic
+
+        systemModule -> blocksModule
+        systemModule -> transportModule
+        systemModule -> blocksModule
+
+        transactionsModule -> accountsModule
+        transactionsModule -> transactionLogic
+
+        transportModule -> peersModule
+        transportModule -> multisignaturesModule
+        transportModule -> transactionsModule
+        transportModule -> systemModule
+        transportModule -> blockLogic
+        transportModule -> transactionLogic
+        transportModule -> peersLogic
+        transportModule -> broadcasterLogic
+
+        broadcasterLogic -> peersModule
+        broadcasterLogic -> transportModule
+        broadcasterLogic -> transactionsModule
+
+        peersLogic -> peersModule
+        roundLogic -> accountsModule
+        transactionLogic -> roundsModule
+        transactionPool -> transactionLogic
+}
+```

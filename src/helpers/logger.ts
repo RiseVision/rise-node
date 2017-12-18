@@ -1,4 +1,5 @@
 // tslint:disable no-console object-literal-sort-keys
+import * as CircularJSON from 'circular-json';
 import 'colors';
 import * as fs from 'fs';
 import * as tstrftime from 'strftime';
@@ -82,7 +83,10 @@ export default (config: any = {}): ILogger => {
       }
 
       if (data && util.isObject(data)) {
-        logData.data = JSON.stringify(snipsecret(data));
+        if (data instanceof Error) {
+          data = { message: data.message, error: data.stack };
+        }
+        logData.data = CircularJSON.stringify(snipsecret(data));
       } else {
         logData.data = data;
       }

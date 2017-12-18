@@ -1,10 +1,13 @@
 import * as crypto from 'crypto';
+import { inject, injectable } from 'inversify';
 import * as jsonSqlCreator from 'json-sql';
 import * as path from 'path';
 import * as pgp from 'pg-promise';
 import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
 import { BigNum, catchToLoggerAndRemapError, cback, emptyCB, ILogger, promiseToCB } from '../helpers/';
+import { IAccountLogic } from '../ioc/interfaces/';
+import { Symbols } from '../ioc/symbols';
 import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
 
@@ -55,7 +58,8 @@ export type AccountFilterData = {
   sort?: string | { [k: string]: -1 | 1 }
 };
 
-export class AccountLogic {
+@injectable()
+export class AccountLogic implements IAccountLogic {
   private table = 'mem_accounts';
 
   /**
@@ -84,12 +88,16 @@ export class AccountLogic {
    */
   private editable: string[];
 
-  private scope: { db: IDatabase<any>, schema: z_schema };
-  private library: { logger: ILogger };
+  @inject(Symbols.generic.db)
+  private db: IDatabase<any>;
 
-  constructor(config: { db: IDatabase<any>, schema: z_schema, logger: ILogger }) {
-    this.scope   = {db: config.db, schema: config.schema};
-    this.library = {logger: config.logger};
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
+
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+
+  constructor() {
     this.model   = accountsModelCreator(this.table);
 
     this.fields = this.model.map((field) => {
@@ -129,18 +137,10 @@ export class AccountLogic {
   /**
    * Creates memory tables related to accounts!
    */
-  public createTables(cb): Promise<void> {
+  public createTables(): Promise<void> {
     const sql = new pgp.QueryFile(path.join(process.cwd(), 'sql', 'memoryTables.sql'), {minify: true});
-    return promiseToCB<void>(
-      this.scope.db.query(sql)
-        .catch(catchToLoggerAndRemapError('Account#createTables error', this.library.logger)),
-      (err) => {
-        if (err) {
-          return cb(err);
-        }
-        cb();
-      }
-    );
+    return this.db.query(sql)
+      .catch(catchToLoggerAndRemapError('Account#createTables error', this.logger));
   }
 
   /**
@@ -153,7 +153,7 @@ export class AccountLogic {
    * @param cb
    * @returns {Promise<void>}
    */
-  public removeTables(cb): Promise<void> {
+  public removeTables(): Promise<void> {
     const fullQuery = [
       this.table,
       'mem_round',
@@ -170,11 +170,8 @@ export class AccountLogic {
     )
       .join('');
 
-    return promiseToCB(
-      this.scope.db.query(fullQuery)
-        .catch(catchToLoggerAndRemapError('Account#removeTables error', this.library.logger)),
-      cb
-    );
+    return this.db.query(fullQuery)
+      .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
   }
 
   /**
@@ -183,14 +180,14 @@ export class AccountLogic {
    * TODO: Describe account
    */
   public objectNormalize(account: any) {
-    const report: boolean = this.scope.schema.validate(account, {
+    const report: boolean = this.schema.validate(account, {
       id        : 'Account',
       object    : true,
       properties: this.filter,
     });
 
     if (!report) {
-      throw new Error(`Failed to validate account schema: ${this.scope.schema.getLastErrors()
+      throw new Error(`Failed to validate account schema: ${this.schema.getLastErrors()
         .map((err) => err.message).join(', ')}`);
     }
     return account;
@@ -200,7 +197,7 @@ export class AccountLogic {
    * Verifies validity of public Key
    * @param {string} publicKey
    */
-  public verifyPublicKey(publicKey: string, allowUndefined: boolean = true) {
+  public assertPublicKey(publicKey: string, allowUndefined: boolean = true) {
     if (typeof(publicKey) !== 'undefined') {
       if (typeof(publicKey) !== 'string') {
         throw new Error('Invalid public key, must be a string');
@@ -209,7 +206,7 @@ export class AccountLogic {
         throw new Error('Invalid public key, must be 64 characters long');
       }
 
-      if (!this.scope.schema.validate(publicKey, {format: 'hex'})) {
+      if (!this.schema.validate(publicKey, {format: 'hex'})) {
         throw new Error('Invalid public key, must be a hex string');
       }
     } else if (!allowUndefined) {
@@ -308,8 +305,8 @@ export class AccountLogic {
     });
 
     return promiseToCB(
-      this.scope.db.query(sql.query, sql.values)
-        .catch(catchToLoggerAndRemapError('Account#getAll error', this.library.logger)),
+      this.db.query(sql.query, sql.values)
+        .catch(catchToLoggerAndRemapError('Account#getAll error', this.logger)),
       cb
     );
   }
@@ -322,7 +319,7 @@ export class AccountLogic {
    */
   public set(address: string, fields: { [k: string]: any }, cb?: cback<any>) {
     return promiseToCB((async () => {
-        this.verifyPublicKey(fields.publicKey);
+        this.assertPublicKey(fields.publicKey);
         address        = String(address).toUpperCase();
         fields.address = address;
         const sql      = jsonSql.build({
@@ -333,8 +330,8 @@ export class AccountLogic {
           values        : this.toDB(fields),
         });
 
-        return this.scope.db.none(sql.query, sql.values)
-          .catch(catchToLoggerAndRemapError('Account#set error', this.library.logger));
+        return this.db.none(sql.query, sql.values)
+          .catch(catchToLoggerAndRemapError('Account#set error', this.logger));
       })(),
       cb
     );
@@ -362,7 +359,7 @@ export class AccountLogic {
     const tmpDiff           = JSON.parse(JSON.stringify(diff));
 
     address = address.toUpperCase();
-    this.verifyPublicKey(diff.publicKey);
+    this.assertPublicKey(diff.publicKey);
     for (const fieldName of this.editable) {
       if (typeof(diff[fieldName]) === 'undefined') {
         continue;
@@ -540,10 +537,10 @@ export class AccountLogic {
     }
 
     return promiseToCB(
-      this.scope.db.none(sqlQuery)
+      this.db.none(sqlQuery)
         .then(() => this.get({address}, emptyCB))
         .catch((err) => {
-          this.library.logger.error(err.stack);
+          this.logger.error(err.stack);
           return Promise.reject('Account#merge error');
         }),
       cb
@@ -563,15 +560,15 @@ export class AccountLogic {
       type     : 'remove',
     });
     return promiseToCB(
-      this.scope.db.none(sql.query, sql.values)
+      this.db.none(sql.query, sql.values)
         .then(() => address)
-        .catch(catchToLoggerAndRemapError('Account#remove error', this.library.logger)),
+        .catch(catchToLoggerAndRemapError('Account#remove error', this.logger)),
       cb
     );
   }
 
   public generateAddressByPublicKey(publicKey: string): string {
-    this.verifyPublicKey(publicKey, false);
+    this.assertPublicKey(publicKey, false);
 
     const hash = crypto.createHash('sha256')
       .update(new Buffer(publicKey, 'hex'))

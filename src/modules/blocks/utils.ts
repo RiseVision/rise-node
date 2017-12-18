@@ -1,38 +1,50 @@
+import { inject, injectable, tagged } from 'inversify';
 import * as _ from 'lodash';
 import { IDatabase } from 'pg-promise';
-import sql from '../../../sql/blocks';
 import {
+  BlockProgressLogger,
   catchToLoggerAndRemapError,
-  constants,
+  constants as constantType,
   ILogger,
   logCatchRewrite,
   Sequence,
   TransactionType
+
 } from '../../helpers/';
-import { BlockLogic, SignedAndChainedBlockType, SignedBlockType, TransactionLogic } from '../../logic/';
+import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
+import { IBlocksModule, IBlocksModuleUtils } from '../../ioc/interfaces/modules/';
+import { Symbols } from '../../ioc/symbols';
+import { SignedAndChainedBlockType, SignedBlockType } from '../../logic/';
+import sql from '../../sql/blocks';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
 import { publicKey } from '../../types/sanityTypes';
-import { BlocksModule } from '../blocks';
 
-// tslint:disable-next-line
-export type BlocksModuleUtilsLibrary = {
-  logger: ILogger,
-  logic: {
-    block: BlockLogic,
-    transaction: TransactionLogic,
-  },
-  db: IDatabase<any>,
-  dbSequence: Sequence,
-  genesisblock: SignedAndChainedBlockType
-};
+@injectable()
+export class BlocksModuleUtils implements IBlocksModuleUtils {
+  // Modules
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
 
-export class BlocksModuleUtils {
-  public loaded = false;
-  private modules: { blocks: BlocksModule };
+  // Generic
+  @inject(Symbols.generic.db)
+  private db: IDatabase<any>;
+  @inject(Symbols.generic.genesisBlock)
+  private genesisBlock: SignedAndChainedBlockType;
 
-  public constructor(public library: BlocksModuleUtilsLibrary) {
-    this.library.logger.trace('Blocks->Utils: Submodule initialized');
-  }
+  // Helpers
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.helpers.sequence)
+  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence)
+  private dbSequence: Sequence;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantType;
+
+  // Logic
+  @inject(Symbols.logic.block)
+  private blockLogic: IBlockLogic;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
 
   public readDbRows(rows: RawFullBlockListType[]): SignedAndChainedBlockType[] {
     const blocks = {};
@@ -43,12 +55,12 @@ export class BlocksModuleUtils {
     for (let i = 0, length = rows.length; i < length; i++) {
       // Normalize block
       // FIXME: Can have poor performance because it performs SHA256 hash calculation for each block
-      const block = this.library.logic.block.dbRead(rows[i]);
+      const block = this.blockLogic.dbRead(rows[i]);
 
       if (block) {
         // If block is not already in the list...
         if (!blocks[block.id]) {
-          if (block.id === this.library.genesisblock.id) {
+          if (block.id === this.genesisBlock.id) {
             // Generate fake signature for genesis block
             // tslint:disable-next-line
             block['generationSignature'] = (new Array(65)).join('0');
@@ -61,7 +73,7 @@ export class BlocksModuleUtils {
         }
 
         // Normalize transaction
-        const transaction             = this.library.logic.transaction.dbRead(rows[i]);
+        const transaction             = this.transactionLogic.dbRead(rows[i]);
         // Set empty object if there are no transactions in block
         blocks[block.id].transactions = blocks[block.id].transactions || {};
 
@@ -95,15 +107,15 @@ export class BlocksModuleUtils {
    * @return {Promise<SignedBlockType>}
    */
   public async loadLastBlock(): Promise<SignedAndChainedBlockType> {
-    return await this.library.dbSequence.addAndPromise(async () => {
-      const rows  = await this.library.db.query(sql.loadLastBlock);
+    return await this.dbSequence.addAndPromise(async () => {
+      const rows  = await this.db.query(sql.loadLastBlock);
       const block = this.readDbRows(rows)[0];
 
       // this is not correct. Ordering should always return consistent data so it should also account b
       // I'm not sure why this is needed though
       // FIXME PLEASE!
       block.transactions = block.transactions.sort((a, b) => {
-        if (block.id === this.library.genesisblock.id) {
+        if (block.id === this.genesisBlock.id) {
           if (a.type === TransactionType.VOTE) {
             return 1;
           }
@@ -114,10 +126,10 @@ export class BlocksModuleUtils {
         return 0;
       });
 
-      this.modules.blocks.lastBlock = block;
+      this.blocksModule.lastBlock = block;
       return block;
     })
-      .catch(logCatchRewrite(this.library.logger, 'Blocks#loadLastBlock error'));
+      .catch(logCatchRewrite(this.logger, 'Blocks#loadLastBlock error'));
   }
 
   /**
@@ -125,12 +137,12 @@ export class BlocksModuleUtils {
    * @param {number} height
    */
   public async getIdSequence(height: number): Promise<{ firstHeight: number, ids: string[] }> {
-    const lastBlock = this.modules.blocks.lastBlock;
+    const lastBlock = this.blocksModule.lastBlock;
     // Get IDs of first blocks of (n) last rounds, descending order
     // EXAMPLE: For height 2000000 (round 19802) we will get IDs of blocks at height: 1999902, 1999801, 1999700,
     // 1999599, 1999498
-    const rows = await this.library.db.query(sql.getIdSequence(), {
-      delegates: constants.activeDelegates,
+    const rows = await this.db.query(sql.getIdSequence(), {
+      delegates: this.constants.activeDelegates,
       height,
       limit    : 5,
     });
@@ -140,10 +152,10 @@ export class BlocksModuleUtils {
     }
 
     // Add genesis block at the end if the set doesn't contain it already
-    if (this.library.genesisblock && this.library.genesisblock) {
+    if (this.genesisBlock && this.genesisBlock) {
       const gb = {
-        height: this.library.genesisblock.height,
-        id    : this.library.genesisblock.id,
+        height: this.genesisBlock.height,
+        id    : this.genesisBlock.id,
       };
       if (!_.includes(rows, gb.id)) {
         rows.push(gb);
@@ -174,8 +186,8 @@ export class BlocksModuleUtils {
     } else if (filter.lastId) {
       params.lastId = filter.lastId;
     }
-    return await this.library.dbSequence.addAndPromise(async () => {
-      const rows = await this.library.db.query(sql.getHeightByLastId, { lastId: filter.lastId || null });
+    return await this.dbSequence.addAndPromise(async () => {
+      const rows = await this.db.query(sql.getHeightByLastId, { lastId: filter.lastId || null });
 
       const height = rows.length ? rows[0].height : 0;
       // Calculate max block height for database query
@@ -183,16 +195,16 @@ export class BlocksModuleUtils {
       params.limit  = height + (parseInt(`${filter.limit}`, 10) || 1);
       params.height = height;
 
-      return this.library.db.query(sql.loadBlocksData(filter), params);
+      return this.db.query(sql.loadBlocksData(filter), params);
     })
       .catch((err) => {
-        this.library.logger.error(err.stack);
+        this.logger.error(err.stack);
         return Promise.reject(new Error('Blocks#loadBlockData error'));
       });
   }
 
   public getBlockProgressLogger(txCount: number, logsFrequency: number, msg: string) {
-    return new BlockProgressLogger(txCount, logsFrequency, msg, this.library.logger);
+    return new BlockProgressLogger(txCount, logsFrequency, msg, this.logger);
   }
 
   /**
@@ -202,19 +214,19 @@ export class BlocksModuleUtils {
   public async aggregateBlockReward(filter: { generatorPublicKey: publicKey, start?: number, end?: number }): Promise<{ fees: number, rewards: number, count: number }> {
     const params: any         = {};
     params.generatorPublicKey = filter.generatorPublicKey;
-    params.delegates          = constants.activeDelegates;
+    params.delegates          = this.constants.activeDelegates;
 
     if (typeof(filter.start) !== 'undefined') {
-      params.start = filter.start - constants.epochTime.getTime() / 1000;
+      params.start = filter.start - this.constants.epochTime.getTime() / 1000;
     }
 
     if (typeof(filter.end) !== 'undefined') {
-      params.end = filter.end - constants.epochTime.getTime() / 1000;
+      params.end = filter.end - this.constants.epochTime.getTime() / 1000;
     }
 
     // Get calculated rewards
-    const [data] = await this.library.db.query(sql.aggregateBlocksReward(params), params)
-      .catch(catchToLoggerAndRemapError('Blocks#aggregateBlocksReward error', this.library.logger));
+    const [data] = await this.db.query(sql.aggregateBlocksReward(params), params)
+      .catch(catchToLoggerAndRemapError('Blocks#aggregateBlocksReward error', this.logger));
 
     if (data.delegate === null) {
       throw new Error('Account not found or is not a delegate');
@@ -222,49 +234,4 @@ export class BlocksModuleUtils {
     return { fees: data.fees || 0, rewards: data.rewards || 0, count: data.count || 0 };
   }
 
-  public onBind(scope: { blocks: any }) {
-    this.library.logger.trace('Blocks->Utils: Shared modules bind.');
-    this.modules = { blocks: scope.blocks };
-    this.loaded  = true;
-  }
-}
-
-// tslint:disable-next-line
-export class BlockProgressLogger {
-  private target: number;
-  private step: number;
-  private applied: number = 0;
-
-  constructor(txCount: number, logsFrequency: number, private msg: string, private logger: ILogger) {
-    this.target = txCount;
-    this.step   = Math.floor(txCount / logsFrequency);
-
-  }
-
-  public reset() {
-    this.applied = 0;
-  }
-
-  /**
-   * Increments applied transactions and logs the progress
-   * - For the first and last transaction
-   * - With given frequency
-   */
-  public applyNext() {
-    if (this.applied >= this.target) {
-      throw new Error('Cannot apply transaction over the limit: ' + this.target);
-    }
-    this.applied += 1;
-    if (this.applied === 1 || this.applied === this.target || this.applied % this.step === 1) {
-      this.log();
-    }
-  }
-
-  /**
-   * Logs the progress
-   */
-  private log() {
-    this.logger.info(this.msg, ((this.applied / this.target) * 100).toPrecision(4) + ' %' +
-      ': applied ' + this.applied + ' of ' + this.target + ' transactions');
-  }
 }

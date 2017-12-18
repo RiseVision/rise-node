@@ -1,21 +1,28 @@
+import { inject, injectable } from 'inversify';
 import { Body, Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
-import accountSchema from '../../schema/accounts';
-import { AccountsModule } from '../accounts';
+import * as z_schema from 'z-schema';
+import { IAccountsModule, IDelegatesModule, ISystemModule } from '../ioc/interfaces/modules';
+import { Symbols } from '../ioc/symbols';
+import accountSchema from '../schema/accounts';
 import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 @JsonController('/accounts')
+@injectable()
 class AccountsPublicAPI {
-  public schema: any;
-
-  constructor(private accounts: AccountsModule) {
-    this.schema = accounts.library.schema;
-  }
+  @inject(Symbols.generic.zschema)
+  public schema: z_schema;
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.delegates)
+  private delegatesModule: IDelegatesModule;
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
 
   @Get('/getBalance')
   @ValidateSchema()
   public async getBalance(@SchemaValid(accountSchema.getBalance)
                           @QueryParams() params: { address: string }) {
-    const account            = await this.accounts
+    const account            = await this.accountsModule
       .getAccount({ address: params.address });
     const balance            = account ? account.balance : 0;
     const unconfirmedBalance = account ? account.u_balance : 0;
@@ -26,7 +33,7 @@ class AccountsPublicAPI {
   @ValidateSchema()
   public async getPublickey(@SchemaValid(accountSchema.getPublicKey)
                             @QueryParams() params: { address: string }) {
-    const account = await this.accounts
+    const account = await this.accountsModule
       .getAccount({ address: params.address });
 
     return { publicKey: account.publicKey };
@@ -36,11 +43,11 @@ class AccountsPublicAPI {
   @ValidateSchema()
   public async getDelegates(@SchemaValid(accountSchema.getDelegates)
                             @QueryParams() params: { address: string }) {
-    const account = await this.accounts
+    const account = await this.accountsModule
       .getAccount({ address: params.address });
 
     if (account.delegates) {
-      const { delegates } = await this.accounts.modules.delegates.getDelegates({ orderBy: 'rank:desc' });
+      const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'rank:desc' });
       return {
         delegates: delegates.filter((d) => account.delegates.indexOf(d.publicKey) !== -1),
       };
@@ -53,7 +60,7 @@ class AccountsPublicAPI {
   public async getDelegatesFee(@SchemaValid(accountSchema.getDelegatesFee)
                                @QueryParams() params: { height: number }) {
     return {
-      fee: this.accounts.modules.system.getFees(params.height).fees.delegate,
+      fee: this.systemModule.getFees(params.height).fees.delegate,
     };
   }
 

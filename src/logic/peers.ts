@@ -1,23 +1,27 @@
-'use strict';
+import { inject, injectable } from 'inversify';
+import * as ip from 'ip';
 import * as _ from 'lodash';
 import { ILogger } from '../helpers';
-import {PeersModule} from '../modules/';
-import {BasePeerType, Peer, PeerState, PeerType} from './peer';
+import { IPeerLogic, IPeersLogic } from '../ioc/interfaces/logic/';
+import {ISystemModule} from '../ioc/interfaces/modules';
+import { Symbols } from '../ioc/symbols';
+import { BasePeerType, PeerLogic, PeerState, PeerType } from './peer';
 
-export class Peers {
-  private library: { logger: ILogger };
+@injectable()
+export class PeersLogic implements IPeersLogic {
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
 
-  private peers: { [peerIdentifier: string]: Peer } = {};
+  private peers: { [peerIdentifier: string]: IPeerLogic } = {};
 
-  private modules: { peers: PeersModule };
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
+  @inject(Symbols.logic.peerFactory)
+  private peersFactory: (bp: BasePeerType) => IPeerLogic;
 
-  constructor(logger: ILogger) {
-    this.library = {logger};
-  }
-
-  public create(peer: BasePeerType): Peer {
-    if (!(peer instanceof Peer)) {
-      return new Peer(peer);
+  public create(peer: BasePeerType): IPeerLogic {
+    if (!(peer instanceof PeerLogic)) {
+      return this.peersFactory(peer);
     }
     return peer as any;
   }
@@ -55,31 +59,31 @@ export class Peers {
       this.peers[thePeer.string].update(thePeer);
 
       if (Object.keys(diff).length) {
-        this.library.logger.debug(`Updated peer ${thePeer.string}`, diff);
+        this.logger.debug(`Updated peer ${thePeer.string}`, diff);
       } else {
-        this.library.logger.trace('Peer not changed', thePeer.string);
+        this.logger.trace('Peer not changed', thePeer.string);
       }
     } else {
       // insert peer!
-      if (!_.isEmpty(this.modules.peers.acceptable([thePeer]))) {
+      if (!_.isEmpty(this.acceptable([thePeer]))) {
         thePeer.updated            = Date.now();
         this.peers[thePeer.string] = thePeer;
-        this.library.logger.debug('Inserted new peer', thePeer.string);
+        this.logger.debug('Inserted new peer', thePeer.string);
       } else {
-        this.library.logger.debug('Rejecting unacceptable peer', thePeer.string);
+        this.logger.debug('Rejecting unacceptable peer', thePeer.string);
       }
     }
 
     const stats = {
-      alive: 0,
+      alive         : 0,
       emptyBroadhash: 0,
-      emptyHeight: 0,
-      total: 0,
+      emptyHeight   : 0,
+      total         : 0,
     };
 
     Object.keys(this.peers)
       .map((key) => this.peers[key])
-      .forEach((p: Peer) => {
+      .forEach((p: IPeerLogic) => {
         stats.total++;
 
         if (p.state === PeerState.CONNECTED) {
@@ -93,7 +97,7 @@ export class Peers {
         }
       });
 
-    this.library.logger.trace('PeerStats', stats);
+    this.logger.trace('PeerStats', stats);
 
     return true;
 
@@ -102,28 +106,37 @@ export class Peers {
   public remove(peer: BasePeerType): boolean {
     if (this.exists(peer)) {
       const thePeer = this.create(peer);
-      this.library.logger.info('Removed peer', thePeer.string);
-      this.library.logger.debug('Removed peer', {peer: this.peers[thePeer.string]});
+      this.logger.info('Removed peer', thePeer.string);
+      this.logger.debug('Removed peer', { peer: this.peers[thePeer.string] });
       delete this.peers[thePeer.string];
       return true;
     }
 
-    this.library.logger.debug('Failed to remove peer', {err: 'AREMOVED', peer});
+    this.logger.debug('Failed to remove peer', { err: 'AREMOVED', peer });
     return false;
   }
 
   public list(normalize: true): PeerType[];
-  public list(normalize: false): Peer[];
+  public list(normalize: false): IPeerLogic[];
   public list(normalize: boolean) {
     return Object.keys(this.peers)
       .map((k) => this.peers[k])
       .map((peer) => normalize ? peer.object() : peer);
   }
 
-  public bindModules(modules: { peers: any }) {
-    this.modules = {
-      peers: modules.peers,
-    };
+  /**
+   * Filters peers with private ips or same nonce
+   */
+  public acceptable(peers: PeerType[]): PeerType[] {
+    return _(peers)
+      .uniqWith((a, b) => `${a.ip}${a.port}` === `${b.ip}${b.port}`)
+      .filter((peer) => {
+        if ((process.env.NODE_ENV || '').toUpperCase() === 'TEST') {
+          return peer.nonce !== this.systemModule.getNonce() && (peer.os !== 'lisk-js-api');
+        }
+        return !ip.isPrivate(peer.ip) && peer.nonce !== this.systemModule.getNonce() && (peer.os !== 'lisk-js-api');
+      })
+      .value();
   }
 
 }

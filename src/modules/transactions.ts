@@ -1,45 +1,33 @@
+import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
 import { IDatabase } from 'pg-promise';
-import txSQL from '../../sql/logic/transactions';
-import { Bus, constants, Ed, ILogger, OrderBy, Sequence, TransactionType } from '../helpers/';
-import { SignedBlockType, TransactionLogic, TransactionPool } from '../logic/';
-import { IBaseTransaction, IConfirmedTransaction, SendTransaction } from '../logic/transactions/';
-import { AccountsModule } from './accounts';
-import { LoaderModule } from './loader';
-import { SystemModule } from './system';
-import { AppConfig } from '../types/genericTypes';
+import { constants, ILogger, OrderBy } from '../helpers/';
+import { ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic';
+import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules/';
+import { Symbols } from '../ioc/symbols';
+import { SignedAndChainedBlockType, SignedBlockType } from '../logic/';
+import { IBaseTransaction, IConfirmedTransaction } from '../logic/transactions/';
+import txSQL from '../sql/logic/transactions';
 
-// tslint:disable-next-line
-export type TransactionLibrary = {
-  logger: ILogger,
-  db: IDatabase<any>,
-  schema: any,
-  ed: Ed,
-  bus: Bus,
-  balancesSequence: Sequence,
-  logic: {
-    transaction: TransactionLogic,
-  },
-  genesisblock: any,
-  config: AppConfig
-};
+@injectable()
+export class TransactionsModule implements ITransactionsModule {
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
 
-export class TransactionsModule {
-  public modules: { accounts: AccountsModule };
-  private transactionPool: TransactionPool;
-  private sendAsset: SendTransaction;
+  @inject(Symbols.logic.transactionPool)
+  private transactionPool: ITransactionPoolLogic;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
 
-  constructor(public library: TransactionLibrary) {
-    this.transactionPool = new TransactionPool(
-      this.library.logic.transaction,
-      this.library.bus,
-      this.library.logger,
-      this.library.config
-    );
-    this.sendAsset       = this.library.logic.transaction.attachAssetType<void, SendTransaction>(
-      TransactionType.SEND,
-      new SendTransaction()
-    );
+  @inject(Symbols.generic.db)
+  private db: IDatabase<any>;
+  @inject(Symbols.generic.genesisBlock)
+  private genesisBlock: SignedAndChainedBlockType;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+
+  public cleanup() {
+    return Promise.resolve();
   }
 
   /**
@@ -115,60 +103,53 @@ export class TransactionsModule {
   }
 
   /**
-   * Gets unconfirmed transactions list and applies unconfirmed transactions.
-   */
-  public applyUnconfirmedList(): Promise<void> {
-    return this.transactionPool.applyUnconfirmedList();
-  }
-
-  /**
    * Applies unconfirmed list to unconfirmed Ids.
    */
   public applyUnconfirmedIds(ids: string[]): Promise<void> {
-    return this.transactionPool.applyUnconfirmedList(ids);
+    return this.transactionPool.applyUnconfirmedList(ids, this);
   }
 
   /**
    * Undoes unconfirmed list from queue.
    */
   public undoUnconfirmedList(): Promise<string[]> {
-    return this.transactionPool.undoUnconfirmedList();
+    return this.transactionPool.undoUnconfirmedList(this);
   }
 
   /**
    * Applies confirmed transaction.
    */
   public apply(transaction: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void> {
-    this.library.logger.debug('Applying confirmed transaction', transaction.id);
-    return this.library.logic.transaction.apply(transaction, block, sender);
+    this.logger.debug('Applying confirmed transaction', transaction.id);
+    return this.transactionLogic.apply(transaction, block, sender);
   }
 
   /**
    * Undoes confirmed transaction.
    */
   public undo(transaction: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void> {
-    this.library.logger.debug('Undoing confirmed transaction', transaction.id);
-    return this.library.logic.transaction.undo(transaction, block, sender);
+    this.logger.debug('Undoing confirmed transaction', transaction.id);
+    return this.transactionLogic.undo(transaction, block, sender);
   }
 
   /**
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
-  public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId: string }, sender: any): Promise<void> {
-    this.library.logger.debug('Applying unconfirmed transaction', transaction.id);
+  public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: any): Promise<void> {
+    this.logger.debug('Applying unconfirmed transaction', transaction.id);
 
-    if (!sender && transaction.blockId !== this.library.genesisblock.block.id) {
+    if (!sender && transaction.blockId !== this.genesisBlock.id) {
       throw new Error('Invalid block id');
     } else {
       if (transaction.requesterPublicKey) {
-        const requester = await this.modules.accounts.getAccount({ publicKey: transaction.requesterPublicKey });
+        const requester = await this.accountsModule.getAccount({publicKey: transaction.requesterPublicKey});
         if (!requester) {
           throw new Error('Requester not found');
         }
 
-        await this.library.logic.transaction.applyUnconfirmed(transaction, sender, requester);
+        await this.transactionLogic.applyUnconfirmed(transaction, sender, requester);
       } else {
-        await this.library.logic.transaction.applyUnconfirmed(transaction, sender);
+        await this.transactionLogic.applyUnconfirmed(transaction, sender);
       }
     }
   }
@@ -177,10 +158,10 @@ export class TransactionsModule {
    * Validates account and Undoes unconfirmed transaction.
    */
   public async undoUnconfirmed(transaction): Promise<void> {
-    this.library.logger.debug('Undoing unconfirmed transaction', transaction.id);
+    this.logger.debug('Undoing unconfirmed transaction', transaction.id);
 
-    const sender = await this.modules.accounts.getAccount({ publicKey: transaction.senderPublicKey });
-    await this.library.logic.transaction.undoUnconfirmed(transaction, sender);
+    const sender = await this.accountsModule.getAccount({publicKey: transaction.senderPublicKey});
+    await this.transactionLogic.undoUnconfirmed(transaction, sender);
   }
 
   /**
@@ -196,7 +177,7 @@ export class TransactionsModule {
   }
 
   public async count(): Promise<{ confirmed: number, multisignature: number, queued: number, unconfirmed: number }> {
-    const [res] = await this.library.db.query(txSQL.count);
+    const [res] = await this.db.query(txSQL.count);
     return {
       confirmed     : res.count,
       multisignature: this.transactionPool.multisignature.count,
@@ -208,8 +189,9 @@ export class TransactionsModule {
   /**
    * Fills the pool.
    */
-  public fillPool(): Promise<void> {
-    return this.transactionPool.fillPool();
+  public async fillPool(): Promise<void> {
+    const newUnconfirmedTXs = await this.transactionPool.fillPool();
+    await this.transactionPool.applyUnconfirmedList(newUnconfirmedTXs, this);
   }
 
   /**
@@ -217,19 +199,7 @@ export class TransactionsModule {
    * @return {boolean} True if `modules` is loaded.
    */
   public isLoaded() {
-    return !!this.modules;
-  }
-
-  /**
-   * Bound scope to this modules, txPool and send asset type.
-   * @param modules
-   */
-  public onBind(modules) {
-    this.modules = {
-      accounts: modules.accounts,
-    };
-    this.transactionPool.bind(this.modules.accounts, this, modules.loader as LoaderModule);
-    this.sendAsset.bind(this.modules.accounts, modules.rounds, modules.system as SystemModule);
+    return true;
   }
 
   public async list(filter): Promise<{ count: number, transactions: Array<IConfirmedTransaction<any>> }> {
@@ -341,44 +311,44 @@ export class TransactionsModule {
       throw new Error(orderBy.error);
     }
 
-    const rows = await this.library.db.query(txSQL.countList({ where }), params)
+    const rows = await this.db.query(txSQL.countList({where}), params)
       .catch((err) => {
-        this.library.logger.error(err.stack);
+        this.logger.error(err.stack);
         return Promise.reject(new Error('Transactions#list error'));
       });
 
     const count = rows.length ? rows[0].count : 0;
 
-    const txRows = await this.library.db.query(
-      txSQL.list({ where, sortField: orderBy.sortField, sortMethod: orderBy.sortMethod }),
+    const txRows = await this.db.query(
+      txSQL.list({where, sortField: orderBy.sortField, sortMethod: orderBy.sortMethod}),
       params
     ).catch((err) => {
-      this.library.logger.error(err.stack);
+      this.logger.error(err.stack);
       return Promise.reject(new Error('Transactions#list error'));
     });
 
     const transactions: Array<IConfirmedTransaction<any>> = txRows
-      .map((rawTX) => this.library.logic.transaction.dbRead(rawTX));
+      .map((rawTX) => this.transactionLogic.dbRead(rawTX));
 
-    return { count, transactions };
+    return {count, transactions};
   }
 
   /**
    * Get transaction by id
    */
   public async getByID<T = any>(id: string): Promise<IConfirmedTransaction<T>> {
-    const rows = await this.library.db.query(txSQL.getById, { id });
+    const rows = await this.db.query(txSQL.getById, {id});
     if (rows.length === 0) {
       throw new Error(`Transaction not found: ${id}`);
     }
-    return this.library.logic.transaction.dbRead(rows[0]);
+    return this.transactionLogic.dbRead(rows[0]);
   }
 
   /**
    * Get the Added and Deleted votes by tx id.
    */
   private async getVotesById(id: string): Promise<{ added: string[], deleted: string[] }> {
-    const rows = await this.library.db.query(txSQL.getVotesById, { id });
+    const rows = await this.db.query(txSQL.getVotesById, {id});
     if (rows.length === 0) {
       throw new Error(`Transaction not found: ${id}`);
     }
@@ -386,6 +356,7 @@ export class TransactionsModule {
     const added           = votes.filter((vote) => vote.substring(0, 1) === '+');
     const deleted         = votes.filter((vote) => vote.substring(0, 1) === '-');
 
-    return { added, deleted };
+    return {added, deleted};
   }
+
 }

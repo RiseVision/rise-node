@@ -1,3 +1,4 @@
+import { injectable, unmanaged } from 'inversify';
 import { TransactionType } from '../../helpers/';
 import { SignedBlockType } from '../block';
 
@@ -30,9 +31,10 @@ const emptyBuffer = new Buffer(0);
 /**
  * Describes a Base Transaction Object
  */
+@injectable()
 export abstract class BaseTransactionType<T> {
 
-  constructor(private txType: TransactionType) {
+  constructor(@unmanaged() private txType: TransactionType) {
   }
 
   public get type(): TransactionType {

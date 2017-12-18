@@ -1,11 +1,11 @@
 export * from './account';
+export * from './appState';
 export * from './block';
 export * from './blockReward';
 export * from './broadcaster';
 export * from './peer';
 export * from './peers';
 export * from './round';
+export * from './rounds';
 export * from './transaction';
 export * from './transactionPool';
-
-

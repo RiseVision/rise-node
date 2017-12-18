@@ -1,65 +1,51 @@
 import * as crypto from 'crypto';
-import { IDatabase } from 'pg-promise';
-import sql from '../../sql/delegates';
+import { inject, injectable } from 'inversify';
+import * as z_schema from 'z-schema';
 import {
-  catchToLoggerAndRemapError,
-  constants,
-  Ed,
-  ForkType,
-  IKeypair,
+  constants as constantsType,
   ILogger,
-  JobsQueue,
   OrderBy,
-  Sequence,
   Slots,
-  TransactionType
 } from '../helpers/';
-import { BlockRewardLogic, MemAccountsData, SignedBlockType, TransactionLogic } from '../logic/';
-import { RegisterDelegateTransaction } from '../logic/transactions/';
+import { IAppState, IRoundsLogic, } from '../ioc/interfaces/logic';
+import {
+  IAccountsModule, IBlocksModule, IDelegatesModule, ITransactionsModule,
+} from '../ioc/interfaces/modules';
+import { Symbols } from '../ioc/symbols';
+import { BlockRewardLogic, MemAccountsData, SignedBlockType } from '../logic/';
 import { publicKey } from '../types/sanityTypes';
-import { AccountsModule } from './accounts';
-import { BlocksModule } from './blocks';
-import { LoaderModule } from './loader';
-import { RoundsModule } from './rounds';
-import { TransactionsModule } from './transactions';
-import { TransportModule } from './transport';
-import { AppConfig } from '../types/genericTypes';
-// tslint:disable-next-line interface-over-type-literal
-export type DelegatesModuleLibrary = {
-  logger: ILogger
-  sequence: Sequence
-  ed: Ed,
-  db: IDatabase<any>
-  io: SocketIO.Server
-  schema: any
-  balancesSequence: Sequence,
-  logic: {
-    transaction: TransactionLogic
-  },
-  config: AppConfig
-};
 
-export class DelegatesModule {
-  public enabledKeys: { [k: string]: true }   = {};
-  private blockReward: BlockRewardLogic       = new BlockRewardLogic();
-  private delegateRegistrationTx: RegisterDelegateTransaction;
-  private keypairs: { [k: string]: IKeypair } = {};
-  private loaded: boolean                     = false;
-  private modules: {
-    blocks: BlocksModule,
-    accounts: AccountsModule
-    rounds: RoundsModule,
-    loader: LoaderModule,
-    transport: TransportModule,
-    transactions: TransactionsModule,
-  };
+@injectable()
+export class DelegatesModule implements IDelegatesModule {
+  private loaded: boolean               = false;
 
-  constructor(public library: DelegatesModuleLibrary) {
-    this.delegateRegistrationTx = this.library.logic.transaction.attachAssetType(
-      TransactionType.DELEGATE,
-      new RegisterDelegateTransaction({ schema: this.library.schema })
-    );
-  }
+  // Helpers
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.helpers.slots)
+  private slots: Slots;
+
+  // Generic
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
+
+  // Logic
+  @inject(Symbols.logic.appState)
+  private appState: IAppState;
+  @inject(Symbols.logic.blockReward)
+  private blockReward: BlockRewardLogic;
+  @inject(Symbols.logic.rounds)
+  private roundsLogic: IRoundsLogic;
+
+  // Modules
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.transactions)
+  private transactionsModule: ITransactionsModule;
 
   public async checkConfirmedDelegates(pk: publicKey, votes: string[]) {
     return this.checkDelegates(pk, votes, 'confirmed');
@@ -70,65 +56,13 @@ export class DelegatesModule {
   }
 
   /**
-   * enable forging for specific pk or all if pk is undefined
-   */
-  public enableForge(pk?: publicKey | IKeypair) {
-    let thePK: publicKey;
-    if (typeof(pk) === 'object') {
-      thePK                = pk.publicKey.toString('hex');
-      this.keypairs[thePK] = pk;
-    } else {
-      thePK = pk;
-    }
-
-    Object.keys(this.keypairs)
-      .filter((p) => typeof(thePK) === 'undefined' || p === thePK)
-      .forEach((p) => this.enabledKeys[p] = true);
-  }
-
-  /**
-   * disable forging for specific pk or all if pk is undefined
-   */
-  public disableForge(pk?: publicKey) {
-    Object.keys(this.keypairs)
-      .filter((p) => typeof(pk) === 'undefined' || p === pk)
-      .forEach((p) => delete this.enabledKeys[p]);
-  }
-
-  /**
-   * Inserts a fork into fork_stats table and emits a socket signal with the fork data
-   * @param {SignedBlockType} block
-   * @param {ForkType} cause
-   * @return {Promise<void>}
-   */
-  public async fork(block: SignedBlockType, cause: ForkType) {
-    this.library.logger.info('Fork', {
-      block   : { id: block.id, timestamp: block.timestamp, height: block.height, previousBlock: block.previousBlock },
-      cause,
-      delegate: block.generatorPublicKey,
-    });
-
-    const fork = {
-      blockHeight      : block.height,
-      blockId          : block.id,
-      blockTimestamp   : block.timestamp,
-      cause,
-      delegatePublicKey: block.generatorPublicKey,
-      previousBlock    : block.previousBlock,
-    };
-
-    await this.library.db.none(sql.insertFork, fork);
-    this.library.io.sockets.emit('delegates/fork', fork);
-  }
-
-  /**
    * Generate a randomized list for the round of which the given height is into.
    * @param {number} height blockheight.
    * @return {Promise<publicKey[]>}
    */
   public async generateDelegateList(height: number): Promise<publicKey[]> {
     const pkeys      = await this.getKeysSortByVote();
-    const seedSource = this.modules.rounds.calcRound(height).toString();
+    const seedSource = this.roundsLogic.calcRound(height).toString();
     let currentSeed  = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
 
     // Shuffle public keys.
@@ -160,20 +94,20 @@ export class DelegatesModule {
       throw new Error('Missing query argument');
     }
 
-    const delegates = await this.modules.accounts.getAccounts({
+    const delegates = await this.accountsModule.getAccounts({
         isDelegate: 1,
-        sort      : { vote: -1, publicKey: 1 },
+        sort      : {vote: -1, publicKey: 1},
       },
       ['username', 'address', 'publicKey', 'vote', 'missedblocks', 'producedblocks']
     );
 
-    const limit  = Math.min(constants.activeDelegates, query.limit || constants.activeDelegates);
+    const limit  = Math.min(this.constants.activeDelegates, query.limit || this.constants.activeDelegates);
     const offset = query.offset || 0;
 
     const count     = delegates.length;
     const realLimit = Math.min(offset + limit, count);
 
-    const lastBlock   = this.modules.blocks.lastBlock;
+    const lastBlock   = this.blocksModule.lastBlock;
     const totalSupply = this.blockReward.calcSupply(lastBlock.height);
 
     const crunchedDelegates: Array<MemAccountsData & { rank: number, approval: number, productivity: number }> = [];
@@ -186,16 +120,16 @@ export class DelegatesModule {
         100 - (delegates[i].missedblocks / ((delegates[i].producedblocks + delegates[i].missedblocks) / 100))
       ) || 0;
 
-      const outsider     = i + 1 > Slots.delegates;
+      const outsider     = i + 1 > this.slots.delegates;
       const productivity = (!outsider) ? Math.round(percent * 1e2) / 1e2 : 0;
 
       crunchedDelegates.push({
         ... delegates[i],
-        ... { rank, approval, productivity },
+        ... {rank, approval, productivity},
       });
     }
 
-    const orderBy = OrderBy(query.orderBy, { quoteField: false });
+    const orderBy = OrderBy(query.orderBy, {quoteField: false});
 
     if (orderBy.error) {
       throw new Error(orderBy.error);
@@ -214,45 +148,19 @@ export class DelegatesModule {
   /**
    * Assets that the block was signed by the correct delegate.
    */
-  public async validateBlockSlot(block: SignedBlockType) {
+  public async assertValidBlockSlot(block: SignedBlockType) {
     const delegates = await this.generateDelegateList(block.height);
 
-    const curSlot = Slots.getSlotNumber(block.timestamp);
-    const delegId = delegates[curSlot % Slots.delegates];
+    const curSlot = this.slots.getSlotNumber(block.timestamp);
+    const delegId = delegates[curSlot % this.slots.delegates];
     if (!(delegId && block.generatorPublicKey === delegId)) {
-      this.library.logger.error(`Expected generator ${delegId} Received generator: ${block.generatorPublicKey}`);
+      this.logger.error(`Expected generator ${delegId} Received generator: ${block.generatorPublicKey}`);
       throw new Error(`Failed to verify slot ${curSlot}`);
     }
   }
 
-  public onBind(scope) {
-    this.modules = {
-      accounts    : scope.accounts,
-      blocks      : scope.blocks,
-      loader      : scope.loader,
-      rounds      : scope.rounds,
-      transactions: scope.transactions,
-      transport   : scope.transport,
-      // delegates   : scope.delegates,
-    };
-
-    this.delegateRegistrationTx.bind(this.modules.accounts, scope.system);
-  }
-
   public async onBlockchainReady() {
     this.loaded = true;
-    await this.loadDelegates();
-    JobsQueue.register(
-      'delegatesNextForge',
-      async (cb) => {
-        try {
-          await this.forge();
-          await this.modules.transactions.fillPool();
-        } finally {
-          cb();
-        }
-      },
-      1000);
   }
 
   public async cleanup() {
@@ -267,95 +175,12 @@ export class DelegatesModule {
    * Get delegates public keys sorted by descending vote.
    */
   private async getKeysSortByVote(): Promise<publicKey[]> {
-    const rows = await this.modules.accounts.getAccounts({
+    const rows = await this.accountsModule.getAccounts({
       isDelegate: 1,
-      limit     : Slots.delegates,
-      sort      : { vote: -1, publicKey: 1 },
+      limit     : this.slots.delegates,
+      sort      : {vote: -1, publicKey: 1},
     }, ['publicKey']);
     return rows.map((r) => r.publicKey);
-  }
-
-  /**
-   *  Gets slot time and keypair of a forging enabled account
-   *  returns null if no slots are found for any of the forging acounts.
-   */
-  private async getBlockSlotData(slot: number, height: number): Promise<{ time: number, keypair: IKeypair }> {
-    const pkeys = await this.generateDelegateList(height);
-
-    const lastSlot = Slots.getLastSlot(slot);
-
-    for (let cs = slot; cs < lastSlot; cs++) {
-      const delegPos = cs % Slots.delegates;
-      const delegId  = pkeys[delegPos];
-      if (delegId && this.enabledKeys[delegId]) {
-        return {
-          keypair: this.keypairs[delegId],
-          time   : Slots.getSlotTime(cs),
-        };
-      }
-    }
-
-    return null;
-
-  }
-
-  /**
-   * Checks loading status, loads keypairs from config,
-   * check if we're in slot, checks consensus and generates a block
-   * @return {Promise<void>}
-   */
-  private async forge() {
-    if (!this.loaded || this.modules.loader.isSyncing ||
-      !this.modules.rounds.isLoaded() || this.modules.rounds.isTicking()) {
-
-      this.library.logger.debug('Client not ready to forge');
-      return;
-    }
-
-    // Check if delegates were loaded. and if not load delegates
-    if (Object.keys(this.keypairs).length === 0) {
-      await this.loadDelegates();
-
-      // If still no keypairs then no delegates were enabled.
-      if (Object.keys(this.keypairs).length === 0) {
-        this.library.logger.debug('No delegates enabled');
-        return;
-      }
-    }
-
-    const currentSlot = Slots.getSlotNumber();
-    const lastBlock   = this.modules.blocks.lastBlock;
-    if (currentSlot === Slots.getSlotNumber(lastBlock.timestamp)) {
-      this.library.logger.debug('Waiting for next delegate slot');
-      return;
-    }
-
-    const blockData = await this.getBlockSlotData(currentSlot, lastBlock.height + 1);
-    if (blockData === null) {
-      this.library.logger.warn('Skipping delegate slot');
-      return;
-    }
-
-    if (Slots.getSlotNumber(blockData.time) !== Slots.getSlotNumber()) {
-      // not current slot. skip
-      this.library.logger.debug(`Delegate slot ${Slots.getSlotNumber()}`);
-      return;
-    }
-
-    await this.library.sequence.addAndPromise(async () => {
-      // updates consensus.
-      await this.modules.transport.getPeers({ limit: constants.maxPeers });
-
-      if (this.modules.transport.poorConsensus) {
-        throw new Error(`Inadequate broadhash consensus ${this.modules.transport.consensus} %`);
-      }
-
-      // ok lets generate, save and broadcast the block
-      await this.modules.blocks.process.generateBlock(blockData.keypair, blockData.time);
-
-    })
-      .catch(catchToLoggerAndRemapError('Failed to generate block within delegate slot', this.library.logger));
-
   }
 
   /**
@@ -366,7 +191,7 @@ export class DelegatesModule {
    * @return {Promise<void>}
    */
   private async checkDelegates(pk: publicKey, votes: string[], state: 'confirmed' | 'unconfirmed') {
-    const account = await this.modules.accounts.getAccount({ publicKey: pk });
+    const account = await this.accountsModule.getAccount({publicKey: pk});
 
     if (!account) {
       throw new Error('Account not found');
@@ -390,7 +215,7 @@ export class DelegatesModule {
 
       const curPK = vote.substr(1);
 
-      if (!this.library.schema.validate(curPK, { format: 'publicKey', type: 'string' })) {
+      if (!this.schema.validate(curPK, {format: 'publicKey', type: 'string'})) {
         throw new Error('Invalid public key');
       }
 
@@ -403,7 +228,7 @@ export class DelegatesModule {
 
       // check voted (or unvoted) is actually a delegate.
       // TODO: This can be optimized as it's only effective when "Adding" a vote.
-      const del = await this.modules.accounts.getAccount({ publicKey: curPK, isDelegate: 1 });
+      const del = await this.accountsModule.getAccount({publicKey: curPK, isDelegate: 1});
       if (!del) {
         throw new Error('Delegate not found');
       }
@@ -411,37 +236,9 @@ export class DelegatesModule {
 
     const total = existingVotes + additions - removals;
 
-    if (total > constants.maximumVotes) {
-      const exceeded = total - constants.maximumVotes;
-      throw new Error(`Maximum number of ${constants.maximumVotes} votes exceeded (${exceeded} too many)`);
+    if (total > this.constants.maximumVotes) {
+      const exceeded = total - this.constants.maximumVotes;
+      throw new Error(`Maximum number of ${this.constants.maximumVotes} votes exceeded (${exceeded} too many)`);
     }
-  }
-
-  /**
-   * Loads delegats from config and stores it on the private keypairs variable>
-   */
-  private async loadDelegates() {
-    const secrets: string[] = this.library.config.forging.secret;
-    if (!secrets || !secrets.length) {
-      return;
-    }
-    this.library.logger.info(`Loading ${secrets.length} delegates from config`);
-
-    for (const secret of secrets) {
-      const keypair = this.library.ed.makeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
-      const account = await this.modules.accounts.getAccount({ publicKey: keypair.publicKey.toString('hex') });
-      if (!account) {
-        throw new Error(`Account with publicKey: ${keypair.publicKey.toString('hex')} not found`);
-      }
-
-      if (account.isDelegate) {
-        this.keypairs[keypair.publicKey.toString('hex')] = keypair;
-        this.library.logger.info(`Forging enabled on account ${account.address}`);
-      } else {
-        this.library.logger.warn(`Account with public Key: ${account.publicKey} is not a delegate`);
-      }
-    }
-    // Enable forging for all accounts
-    this.enableForge();
   }
 }

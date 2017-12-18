@@ -1,148 +1,68 @@
+import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
 import * as pgpCreator from 'pg-promise';
-import { IDatabase, ITask } from 'pg-promise';
+import { IDatabase } from 'pg-promise';
 import * as shuffle from 'shuffle-array';
-import * as z_schema from 'z-schema';
-import peerSQL from '../../sql/peers';
-import { Bus, cbToPromise, constants, ILogger, JobsQueue } from '../helpers/';
-import { Peer, Peers, PeerState, PeerType } from '../logic/';
-import schema from '../schema/peers';
+import { Bus, constants, ILogger } from '../helpers/';
+import { IPeerLogic, IPeersLogic } from '../ioc/interfaces/logic/';
+import { IPeersModule } from '../ioc/interfaces/modules/';
+import { Symbols } from '../ioc/symbols';
+import { PeerState, PeerType } from '../logic/';
+import peerSQL from '../sql/peers';
 import { AppConfig } from '../types/genericTypes';
-import { SystemModule } from './system';
-import { TransportModule } from './transport';
 
 const pgp = pgpCreator();
 
 // tslint:disable-next-line
-export type PeersLibrary = {
-  logger: ILogger,
-  db: IDatabase<any>,
-  schema: z_schema,
-  bus: Bus,
-  nonce: string;
-  build: string;
-  lastCommit: string;
-  logic: {
-    peers: Peers;
-  },
-  config: AppConfig
-};
-
-// tslint:disable-next-line
 export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip?: string, port?: number, state?: PeerState };
 
-export class PeersModule {
-  public modules: { transport: TransportModule, system: SystemModule };
+@injectable()
+export class PeersModule implements IPeersModule {
+  @inject(Symbols.modules.system)
+  private systemModule;
 
-  constructor(public library: PeersLibrary) {
-  }
-
-  public onBind(scope: { transport: any, system: SystemModule }) {
-    this.modules = {
-      system   : scope.system,
-      transport: scope.transport,
-    };
-  }
-
-  /**
-   * Filters peers with private ips or same nonce
-   */
-  public acceptable(peers: PeerType[]): PeerType[] {
-    return _(peers)
-      .uniqWith((a, b) => `${a.ip}${a.port}` === `${b.ip}${b.port}`)
-      .filter((peer) => {
-        if ((process.env.NODE_ENV || '').toUpperCase() === 'TEST') {
-          return peer.nonce !== this.modules.system.getNonce() && (peer.os !== 'lisk-js-api');
-        }
-        return !ip.isPrivate(peer.ip) && peer.nonce !== this.modules.system.getNonce() && (peer.os !== 'lisk-js-api');
-      })
-      .value();
-  }
+  @inject(Symbols.generic.db)
+  private db: IDatabase<any>;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.helpers.bus)
+  private bus: Bus;
+  @inject(Symbols.logic.peers)
+  private peersLogic: IPeersLogic;
+  @inject(Symbols.generic.appConfig)
+  private appConfig: AppConfig;
 
   public cleanup() {
     // save on cleanup.
     return this.dbSave();
   }
-  /**
-   * Pings a peer
-   */
-  public async ping(peer: Peer) {
-    this.library.logger.trace(`Pinging peer: ${peer.string}`);
-    try {
-      await this.modules.transport.getFromPeer(
-        peer,
-        {
-          api   : '/height',
-          method: 'GET',
-        }
-      );
-    } catch (err) {
-      this.library.logger.trace(`Ping peer failed: ${peer.string}`, err);
-      throw err;
-    }
-  }
 
   /**
    * Sets peer state to active and updates it to the list
    */
-  public update(peer: Peer) {
+  public update(peer: IPeerLogic) {
     peer.state = PeerState.CONNECTED;
-    return this.library.logic.peers.upsert(peer, false);
+    return this.peersLogic.upsert(peer, false);
   }
 
   /**
    * Remove a peer from the list if its not one from config files
    */
   public remove(peerIP: string, port: number): boolean {
-    const frozenPeer = _.find(this.library.config.peers.list, (p) => p.ip === peerIP && p.port === port);
+    const frozenPeer = _.find(this.appConfig.peers.list, (p) => p.ip === peerIP && p.port === port);
     if (frozenPeer) {
       // FIXME: Keeping peer frozen is bad idea at all
-      this.library.logger.debug('Cannot remove frozen peer', peerIP + ':' + port);
+      this.logger.debug('Cannot remove frozen peer', peerIP + ':' + port);
       return false;
     } else {
-      return this.library.logic.peers.remove({ip: peerIP, port});
+      return this.peersLogic.remove({ ip: peerIP, port });
     }
-  }
-
-  /**
-   * Discover peers by getting list and validates them
-   */
-  public async discover(): Promise<void> {
-    this.library.logger.trace('Peer->discover');
-    const response = await this.modules.transport.getFromRandomPeer<any>(
-      {},
-      {
-        api   : '/list',
-        method: 'GET',
-      }
-    );
-
-    await cbToPromise((cb) => this.library.schema.validate(response.body, schema.discover.peers, cb));
-
-    // Filter only acceptable peers.
-    const acceptablePeers = this.acceptable(response.body.peers);
-
-    let discovered = 0;
-    let rejected   = 0;
-    for (const rawPeer of acceptablePeers) {
-      const peer: Peer = this.library.logic.peers.create(rawPeer);
-      if (this.library.schema.validate(peer, schema.discover.peer)) {
-        peer.state = PeerState.DISCONNECTED;
-        this.library.logic.peers.upsert(peer, true);
-        discovered++;
-      } else {
-        this.library.logger.warn(`Rejecting invalid peer: ${peer.string}`);
-        rejected++;
-      }
-    }
-
-    this.library.logger.trace(`Discovered ${discovered} peers - Rejected ${rejected}`);
-
   }
 
   /**
    * Gets the peers using the given filter.
+   * if orderBy Is not specified then returned peers are shuffled.
    */
   public async getByFilter(filter: PeerFilter): Promise<PeerType[]> {
     const allowedFields = ['ip', 'port', 'state', 'os', 'version', 'broadhash', 'height', 'nonce'];
@@ -156,7 +76,7 @@ export class PeersModule {
             // Descending
             (a[field] < b[field] ? 1 : -1);
 
-    const peers = this.library.logic.peers.list(true)
+    const peers = this.peersLogic.list(true)
       .filter((peer) => {
         let passed       = true;
         const filterKeys = Object.keys(filter);
@@ -197,7 +117,7 @@ export class PeersModule {
   // tslint:disable-next-line max-line-length
   public async list(options: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }): Promise<{ consensus: number, peers: PeerType[] }> {
     options.limit         = options.limit || constants.maxPeers;
-    options.broadhash     = options.broadhash || this.modules.system.broadhash;
+    options.broadhash     = options.broadhash || this.systemModule.broadhash;
     options.allowedStates = options.allowedStates || [PeerState.CONNECTED];
 
     let peersList = (await this.getByFilter({}))
@@ -206,7 +126,7 @@ export class PeersModule {
       // and only same broadhash
       .filter((p) => options.broadhash === p.broadhash);
 
-    peersList = this.acceptable(peersList);
+    peersList = this.peersLogic.acceptable(peersList);
 
     const matchedBroadhash = peersList.length;
 
@@ -217,7 +137,7 @@ export class PeersModule {
         // but different broadhashes
         .filter((p) => options.broadhash !== p.broadhash);
 
-      unmatchedBroadPeers = this.acceptable(unmatchedBroadPeers);
+      unmatchedBroadPeers = this.peersLogic.acceptable(unmatchedBroadPeers);
       peersList           = peersList.concat(unmatchedBroadPeers);
     }
     peersList = peersList.slice(0, options.limit);
@@ -225,51 +145,20 @@ export class PeersModule {
     let consensus = Math.round(matchedBroadhash / peersList.length * 1e2 * 1e2) / 1e2;
     consensus     = isNaN(consensus) ? 0 : consensus;
 
-    this.library.logger.debug(`Listing ${peersList.length} total peers`);
-    return {consensus, peers: peersList};
+    this.logger.debug(`Listing ${peersList.length} total peers`);
+    return { consensus, peers: peersList };
   }
 
   public async onBlockchainReady() {
     await this.insertSeeds();
     await this.dbLoad();
-    await this.discover();
-    await this.library.bus.message('peersReady');
-  }
-
-  public async onPeersReady() {
-    this.library.logger.trace('Peers ready');
-
-    JobsQueue.register('peersDiscoveryAndUpdate', async (cb) => {
-      try {
-        await this.discover();
-      } catch (err) {
-        this.library.logger.error('Discovering new peers failed', err);
-      }
-      let updated = 0;
-
-      const peers = this.library.logic.peers.list(false);
-      this.library.logger.trace('Updating peers', {count: peers.length});
-
-      for (const p of peers) {
-        if (p && p.state !== PeerState.BANNED && (!p.updated || Date.now() - p.updated > 3000)) {
-          this.library.logger.trace('Updating peer', p);
-          try {
-            await this.ping(p);
-          } catch (err) {
-            this.library.logger.debug(`Ping failed when updating peer ${p.string}`);
-          } finally {
-            updated++;
-          }
-        }
-      }
-    }, 5000);
-
+    await this.bus.message('peersReady');
   }
 
   private async dbSave() {
-    const peers = this.library.logic.peers.list(true);
+    const peers = this.peersLogic.list(true);
     if (peers.length === 0) {
-      this.library.logger.debug('Export peers to database failed: Peers list empty');
+      this.logger.debug('Export peers to database failed: Peers list empty');
       return;
     }
     const cs = new pgp.helpers.ColumnSet([
@@ -280,11 +169,11 @@ export class PeersModule {
           return col.value ? Buffer.from(col.value, 'hex') : null;
         },
       },
-    ], {table: 'peers'});
+    ], { table: 'peers' });
 
     try {
       // Wrap sql queries in transaction and execute
-      await this.library.db.tx((t) => {
+      await this.db.tx((t) => {
         // Generating insert query
         const insertPeers = pgp.helpers.insert(peers, cs);
 
@@ -310,67 +199,46 @@ export class PeersModule {
 
         return t.batch(queries);
       });
-      this.library.logger.info('Peers exported to database');
+      this.logger.info('Peers exported to database');
     } catch (err) {
-      this.library.logger.error('Export peers to database failed', {error: err.message || err});
+      this.logger.error('Export peers to database failed', { error: err.message || err });
     }
   }
 
   /**
    * Loads peers from db and calls ping on any peer.
-   * TODO: remove ping as it's useless since it does not really update anything
    */
   private async dbLoad() {
-    this.library.logger.trace('Importing peers from database');
+    this.logger.trace('Importing peers from database');
     try {
-      const rows  = await this.library.db.any(peerSQL.getAll);
+      const rows  = await this.db.any(peerSQL.getAll);
       let updated = 0;
-      for (const rawPeer of rows) {
-        let peer = this.library.logic.peers.create(rawPeer);
-        if (this.library.logic.peers.exists(peer)) {
-          peer = this.library.logic.peers.get(peer);
-          if (peer && peer.state !== PeerState.BANNED && Date.now() - peer.updated > 3000) {
-            try {
-              await this.ping(peer);
-              updated++;
-            } catch (err) {
-              // who cares!
-            }
-          }
-        } else {
-          try {
-            await this.ping(peer);
-            updated++;
-          } catch (err) {
-            // who cares
-          }
-        }
-      }
-      this.library.logger.trace('Peers->dbLoad Peers discovered', {updated, total: rows.length});
+      await Promise.all(rows
+        .map((rawPeer) => this.peersLogic.create(rawPeer))
+        .filter((peer) => !this.peersLogic.exists(peer))
+        .map(async (peer) => {
+          await peer.pingAndUpdate();
+          updated++;
+        })
+      );
+      this.logger.trace('Peers->dbLoad Peers discovered', { updated, total: rows.length });
     } catch (e) {
-      this.library.logger.error('Import peers from database failed', {error: e.message || e});
+      this.logger.error('Import peers from database failed', { error: e.message || e });
     }
   }
 
-  /**
-   * Returns peers length when using the provided filter
-   */
-  private async countByFilter(filter: PeerFilter): Promise<number> {
-    const p = await this.getByFilter(filter);
-    return p.length;
-  }
-
   private async insertSeeds() {
-    this.library.logger.trace('Peers->insertSeeds');
+    this.logger.trace('Peers->insertSeeds');
     let updated = 0;
-    await Promise.all(this.library.config.peers.list.map(async (seed) => {
-      const peer = this.library.logic.peers.create(seed);
-      this.library.logger.trace(`Processing seed peer ${peer.string}`);
-      await this.ping(peer);
+    await Promise.all(this.appConfig.peers.list.map(async (seed) => {
+      const peer = this.peersLogic.create(seed);
+      this.logger.trace(`Processing seed peer ${peer.string}`);
+      // Sets the peer as connected. Seed can be offline but it will be removed later.
+      await peer.pingAndUpdate();
       updated++;
     }));
-    this.library.logger.info('Peers->insertSeeds - Peers discovered', {
-      total: this.library.config.peers.list.length,
+    this.logger.info('Peers->insertSeeds - Peers discovered', {
+      total: this.appConfig.peers.list.length,
       updated,
     });
   }

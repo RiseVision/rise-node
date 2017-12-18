@@ -1,7 +1,19 @@
-import {constants} from '../helpers/';
+import { inject, injectable, postConstruct } from 'inversify';
+import { constants } from '../helpers/';
+import { IBlockReward } from '../ioc/interfaces/logic/';
+import { Symbols } from '../ioc/symbols';
 
-export class BlockRewardLogic {
-  public rewards = constants.rewards;
+@injectable()
+export class BlockRewardLogic implements IBlockReward {
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constants;
+
+  private rewards: Array<{ height: number, reward: number }>;
+
+  @postConstruct()
+  public initRewards() {
+    this.rewards = constants.rewards;
+  }
 
   public calcMilestone(height: number) {
     height = this.parseHeight(height);
@@ -32,7 +44,7 @@ export class BlockRewardLogic {
     }
 
     // add current milestone
-    supply += (height - amountAccounted ) * this.rewards[milestone].reward;
+    supply += (height - amountAccounted) * this.rewards[milestone].reward;
 
     // const tha = new (require('./_blockReward.js'))().calcSupply(height);
     // if (supply !== tha) {

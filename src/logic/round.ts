@@ -1,7 +1,9 @@
 import * as pgp from 'pg-promise';
 import { ITask } from 'pg-promise';
-import roundSQL from '../../sql/logic/rounds';
-import { ILogger, RoundChanges } from '../helpers/';
+import { ILogger, RoundChanges, Slots } from '../helpers/';
+import { IRoundLogic } from '../ioc/interfaces/logic/';
+import { IAccountsModule } from '../ioc/interfaces/modules';
+import roundSQL from '../sql/logic/rounds';
 import { address, publicKey } from '../types/sanityTypes';
 
 // tslint:disable-next-line
@@ -18,7 +20,7 @@ export type RoundLogicScope = {
     logger: ILogger
   },
   modules: {
-    accounts: any;
+    accounts: IAccountsModule;
   }
   block: {
     generatorPublicKey: publicKey;
@@ -27,9 +29,11 @@ export type RoundLogicScope = {
   }
 };
 
-export class RoundLogic {
-
-  constructor(public scope: RoundLogicScope, public task: ITask<any>) {
+// TODO: check if we can inversifyjs this.
+// This cannot be injected automatically cause it will need to be instantiated by
+// rounds module.
+export class RoundLogic implements IRoundLogic {
+  constructor(public scope: RoundLogicScope, public task: ITask<any>, private slots: Slots) {
     let reqProps = ['library', 'modules', 'block', 'round', 'backwards'];
     if (scope.finishRound) {
       reqProps = reqProps.concat([
@@ -57,7 +61,7 @@ export class RoundLogic {
       producedblocks: (this.scope.backwards ? -1 : 1),
       publicKey     : this.scope.block.generatorPublicKey,
       round         : this.scope.round,
-    });
+    }).then(() => void 0);
   }
 
   /**
@@ -165,7 +169,7 @@ export class RoundLogic {
    * For each delegate in round calls mergeAccountAndGet with new Balance
    */
   public applyRound(): Promise<void> {
-    const roundChanges      = new RoundChanges(this.scope);
+    const roundChanges      = new RoundChanges(this.scope, this.slots);
     const queries: string[] = [];
 
     const delegates = this.scope.backwards ?

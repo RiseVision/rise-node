@@ -1,35 +1,16 @@
 import * as extend from 'extend';
+import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
-import {constants, ILogger, JobsQueue, promiseToCB} from '../helpers/';
-import {PeersModule, TransportModule} from '../modules/';
-import {PeerType} from './peer';
-import {Peers} from './peers';
-import {TransactionLogic} from './transaction';
-import {IBaseTransaction} from './transactions/';
+import { constants, ILogger, JobsQueue, promiseToCB } from '../helpers/';
+import { IAppState, IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
+import { IPeersModule, ITransactionsModule, ITransportModule } from '../ioc/interfaces/modules';
+import { Symbols } from '../ioc/symbols';
+import { AppConfig } from '../types/genericTypes';
+import { PeerType } from './peer';
+import { IBaseTransaction } from './transactions/';
 
 // tslint:disable interface-over-type-literal
-export type BroadcastsType = {
-  broadcastInterval: number;
-  broadcastLimit: number;
-  parallelLimit: number;
-  releaseLimit: number;
-  relayLimit: number;
-};
-
-type BroadcastLibrary = {
-  logger: ILogger,
-  logic: {
-    peers: Peers,
-    transactions: TransactionLogic
-  },
-  config: {
-    broadcasts: BroadcastsType,
-    forging: {
-      force: boolean
-    }
-  }
-};
 
 export type BroadcastTaskOptions = {
   immediate?: boolean;
@@ -43,16 +24,12 @@ export type BroadcastTask = {
 };
 
 // tslint:enable interface-over-type-literal
-
-export class BroadcasterLogic {
+@injectable()
+export class BroadcasterLogic implements IBroadcasterLogic {
   public queue: BroadcastTask[] = [];
-  public config: {
-    broadcasts: BroadcastsType,
-    peerLimit: number
-  };
-  public consensus: number;
+
   // Broadcast routes
-  public routes                 = [{
+  public routes = [{
     collection: 'transactions',
     method    : 'POST',
     object    : 'transaction',
@@ -64,47 +41,58 @@ export class BroadcasterLogic {
     path      : '/signatures',
   }];
 
-  public modules: { peers: PeersModule, transport: TransportModule, transactions: any };
+  // Modules
+  @inject(Symbols.modules.peers)
+  private peersModule: IPeersModule;
+  @inject(Symbols.modules.transactions)
+  private transactionsModule: ITransactionsModule;
 
-  constructor(public library: BroadcastLibrary) {
-    this.config = {
-      broadcasts: library.config.broadcasts,
-      peerLimit : constants.maxPeers,
-    };
+  // Generics
+  @inject(Symbols.generic.appConfig)
+  private config: AppConfig;
 
-    if (this.library.config.forging.force) {
-      this.consensus = undefined;
+  // Helpers
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constants;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+
+  // Logic
+  @inject(Symbols.logic.peers)
+  private peersLogic: IPeersLogic;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
+  @inject(Symbols.logic.appState)
+  private appState: IAppState;
+
+  @postConstruct()
+  public afterConstruct() {
+    if (this.config.forging.force) {
+      this.appState.set('node.consensus', undefined);
     } else {
-      this.consensus = 100;
+      this.appState.set('node.consensus', 100);
     }
-
     JobsQueue.register(
       'broadcasterNextRelease',
-      (cb) => promiseToCB(this.releaseQueue()
+      () => this.releaseQueue()
           .catch((err) => {
-            library.logger.log('Broadcast timer', err);
+            this.logger.log('Broadcast timer', err);
             return;
           }),
-        cb),
       this.config.broadcasts.broadcastInterval
     );
-
-  }
-
-  public bind(peers: any, transport: any, transactions: any) {
-    this.modules = { peers, transport, transactions };
   }
 
   public async getPeers(params: { limit?: number, broadhash?: string }): Promise<PeerType[]> {
-    params.limit     = params.limit || this.config.peerLimit;
+    params.limit     = params.limit || this.constants.maxPeers;
     params.broadhash = params.broadhash || null;
 
     const originalLimit = params.limit;
 
-    const { peers, consensus } = await this.modules.peers.list(params);
+    const { peers, consensus } = await this.peersModule.list(params);
 
-    if (originalLimit === constants.maxPeers) {
-      this.consensus = consensus;
+    if (originalLimit === this.constants.maxPeers) {
+      this.appState.set('node.consensus', consensus);
     }
     return peers;
   }
@@ -120,7 +108,7 @@ export class BroadcasterLogic {
                          },
                          options: any): Promise<{ peer: PeerType[] }> {
 
-    params.limit     = params.limit || this.config.peerLimit;
+    params.limit     = params.limit || this.constants.maxPeers;
     params.broadhash = params.broadhash || null;
 
     let peers = params.peers;
@@ -128,24 +116,24 @@ export class BroadcasterLogic {
       peers = await this.getPeers(params);
     }
 
-    this.library.logger.debug('Begin broadcast', options);
+    this.logger.debug('Begin broadcast', options);
 
-    if (params.limit === this.config.peerLimit) {
+    if (params.limit === this.constants.maxPeers) {
       peers = peers.slice(0, this.config.broadcasts.broadcastLimit);
     }
 
     await PromiseThrottle.all(
       peers
-        .map((p) => this.library.logic.peers.create(p))
-        .map((peer) => () => this.modules.transport.getFromPeer(peer, options)
+        .map((p) => this.peersLogic.create(p))
+        .map((peer) => () => peer.makeRequest(options)
           .catch((err) => {
-            this.library.logger.debug(`Failed to broadcast to peer: ${peer.string}`, err);
+            this.logger.debug(`Failed to broadcast to peer: ${peer.string}`, err);
             return null;
           })
         ),
       { maxInProgress: this.config.broadcasts.parallelLimit }
     );
-    this.library.logger.debug('End broadcast');
+    this.logger.debug('End broadcast');
     return { peer: peers };
   }
 
@@ -158,7 +146,7 @@ export class BroadcasterLogic {
     }
 
     if (Math.abs(object.relays) >= this.config.broadcasts.relayLimit) {
-      this.library.logger.debug('Broadcast relays exhausted', object);
+      this.logger.debug('Broadcast relays exhausted', object);
       return true;
     } else {
       object.relays++;
@@ -171,7 +159,7 @@ export class BroadcasterLogic {
    * Will include the ones with the immediate flag and transactions which are in pool or in unconfirmed state
    */
   private async filterQueue(): Promise<void> {
-    this.library.logger.debug(`Broadcast before filtering: ${this.queue.length}`);
+    this.logger.debug(`Broadcast before filtering: ${this.queue.length}`);
     const newQueue = [];
     for (const task of this.queue) {
       if (task.options.immediate) {
@@ -186,7 +174,7 @@ export class BroadcasterLogic {
     }
 
     this.queue = newQueue;
-    this.library.logger.debug(`Broadcasts after filtering: ${this.queue.length}`);
+    this.logger.debug(`Broadcasts after filtering: ${this.queue.length}`);
   }
 
   /**
@@ -194,11 +182,11 @@ export class BroadcasterLogic {
    */
   private async filterTransaction(tx: IBaseTransaction<any>): Promise<boolean> {
     if (typeof(tx) !== 'undefined') {
-      if (this.modules.transactions.transactionInPool(tx.id)) {
+      if (this.transactionsModule.transactionInPool(tx.id)) {
         return true;
       } else {
         try {
-          this.library.logic.transactions.assertNonConfirmed(tx);
+          await this.transactionLogic.assertNonConfirmed(tx);
           return true;
         } catch (e) {
           // Tx is confirmed.
@@ -242,9 +230,9 @@ export class BroadcasterLogic {
    * Release and broadcasts enqueued stuff
    */
   private async releaseQueue(): Promise<void> {
-    this.library.logger.debug('Releasing enqueued broadcasts');
+    this.logger.debug('Releasing enqueued broadcasts');
     if (this.queue.length === 0) {
-      this.library.logger.debug('Queue empty');
+      this.logger.debug('Queue empty');
       return;
     }
 
@@ -258,9 +246,9 @@ export class BroadcasterLogic {
       for (const brc of broadcasts) {
         await this.broadcast(extend({}, { peers }, brc.params), brc.options);
       }
-      this.library.logger.debug(`Broadcasts released ${broadcasts.length}`);
+      this.logger.debug(`Broadcasts released ${broadcasts.length}`);
     } catch (e) {
-      this.library.logger.debug('Failed to release broadcast queue', e);
+      this.logger.debug('Failed to release broadcast queue', e);
     }
 
   }

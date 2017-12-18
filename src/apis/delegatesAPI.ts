@@ -1,38 +1,51 @@
 import BigNumber from 'bignumber.js';
 import * as crypto from 'crypto';
+import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import { Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
-import { constants, Ed, ILogger, OrderBy, Slots } from '../../helpers/';
-import { TransactionLogic } from '../../logic/';
-import schema from '../../schema/delegates';
-import sql from '../../../sql/delegates';
-import { publicKey } from '../../types/sanityTypes';
-import { BlocksModule } from '../blocks';
-import { DelegatesModule } from '../delegates';
-import { AccountsModule, TransactionsModule } from '../index';
-import { SystemModule } from '../system';
+import * as z_schema from 'z-schema';
+import sql from '../sql/delegates';
+import { constants, Ed, ILogger, OrderBy, Slots } from '../helpers/';
+import { Symbols } from '../ioc/symbols';
+import schema from '../schema/delegates';
+import { publicKey } from '../types/sanityTypes';
 import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
+import {
+  IAccountsModule, IBlocksModule, IBlocksModuleUtils, IDelegatesModule, IForgeModule, ISystemModule,
+  ITransactionsModule
+} from '../ioc/interfaces/modules';
+
 @JsonController('/delegates')
+@injectable()
 export class DelegatesAPI {
-  public schema: any;
+  @inject(Symbols.generic.zschema)
+  public schema: z_schema;
+  @inject(Symbols.generic.db)
   private db: IDatabase<any>;
+  @inject(Symbols.helpers.ed)
   private ed: Ed;
-  private logger: ILogger;
-  private txLogic: TransactionLogic;
-  private modules: {
-    delegatesModule: DelegatesModule
-    transactions: TransactionsModule
-    system: SystemModule
-    blocks: BlocksModule
-    accounts: AccountsModule
-  };
+  @inject(Symbols.helpers.slots)
+  private slots: Slots;
+
+  @inject(Symbols.modules.delegates)
+  private delegatesModule: IDelegatesModule;
+  @inject(Symbols.modules.system)
+  private system: ISystemModule;
+  @inject(Symbols.modules.blocks)
+  private blocks: IBlocksModule;
+  @inject(Symbols.modules.blocksSubModules.utils)
+  private blocksUtils: IBlocksModuleUtils;
+  @inject(Symbols.modules.accounts)
+  private accounts: IAccountsModule;
+  @inject(Symbols.modules.forge)
+  private forgeModule: IForgeModule;
 
   @Get('/')
   @ValidateSchema()
   public async getDelegates(@SchemaValid(schema.getDelegates)
                             @QueryParams() data: { orderBy: string, limit: number, offset: number }) {
-    const d = await this.modules.delegatesModule.getDelegates(data);
+    const d = await this.delegatesModule.getDelegates(data);
     if (d.sortField) {
       if (['approval', 'productivity', 'rank', 'vote'].indexOf(d.sortField) > -1) {
         d.delegates.sort((a, b) => {
@@ -61,7 +74,7 @@ export class DelegatesAPI {
   @ValidateSchema()
   public async getFee(@SchemaValid(schema.getFee.properties.height)
                       @QueryParam('height', { required: true }) height: number) {
-    const f            = this.modules.system.getFees(height);
+    const f            = this.system.getFees(height);
     const { delegate } = f.fees;
     delete f.fees;
     return { ...f, ... { fee: delegate } };
@@ -74,7 +87,7 @@ export class DelegatesAPI {
                                   // tslint:disable-next-line max-line-length
                                   @QueryParams() params: { generatorPublicKey: publicKey, start?: number, end?: number }) {
     if (typeof(params.start) !== 'undefined' || typeof(params.end) !== 'undefined') {
-      const reward = await this.modules.blocks.utils.aggregateBlockReward({
+      const reward = await this.blocksUtils.aggregateBlockReward({
         end               : params.end,
         generatorPublicKey: params.generatorPublicKey,
         start             : params.start,
@@ -87,7 +100,7 @@ export class DelegatesAPI {
         rewards: reward.rewards,
       };
     } else {
-      const account = await this.modules.accounts
+      const account = await this.accounts
         .getAccount({ publicKey: params.generatorPublicKey }, ['fees', 'rewards']);
 
       if (!account) {
@@ -107,7 +120,7 @@ export class DelegatesAPI {
   @ValidateSchema()
   public async getDelegate(@SchemaValid(schema.getDelegate)
                            @QueryParams() params: { publicKey: publicKey, username: string }) {
-    const { delegates } = await this.modules.delegatesModule.getDelegates({ orderBy: 'username:asc' });
+    const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'username:asc' });
     const delegate      = delegates.find((d) => d.publicKey === params.publicKey || d.username === params.username);
     if (delegate) {
       return { delegate };
@@ -122,7 +135,7 @@ export class DelegatesAPI {
     const row       = await this.db.one(sql.getVoters, { publicKey: pk });
     const addresses = row.accountIds ? row.accountIds : [];
 
-    const accounts = await this.modules.accounts.getAccounts(
+    const accounts = await this.accounts.getAccounts(
       { address: { $in: addresses }, sort: 'balance' },
       ['address', 'balance', 'username', 'publicKey']);
 
@@ -159,17 +172,17 @@ export class DelegatesAPI {
 
   @Get('/getNextForgers')
   public async getNextForgers(@QueryParam('limit', { required: false }) limit: number = 10) {
-    const curBlock = this.modules.blocks.lastBlock;
+    const curBlock = this.blocks.lastBlock;
 
-    const activeDelegates = await this.modules.delegatesModule.generateDelegateList(curBlock.height);
+    const activeDelegates = await this.delegatesModule.generateDelegateList(curBlock.height);
 
-    const currentBlockSlot = Slots.getSlotNumber(curBlock.timestamp);
-    const currentSlot      = Slots.getSlotNumber();
+    const currentBlockSlot = this.slots.getSlotNumber(curBlock.timestamp);
+    const currentSlot      = this.slots.getSlotNumber();
     const nextForgers      = [];
-    for (let i = 1; i <= Slots.delegates && i <= limit; i++) {
+    for (let i = 1; i <= this.slots.delegates && i <= limit; i++) {
       // This if looks a bit stupid to me.
-      if (activeDelegates[(currentSlot + i) % Slots.delegates]) {
-        nextForgers.push(activeDelegates[(currentSlot + i) % Slots.delegates]);
+      if (activeDelegates[(currentSlot + i) % this.slots.delegates]) {
+        nextForgers.push(activeDelegates[(currentSlot + i) % this.slots.delegates]);
       }
     }
 
@@ -200,10 +213,10 @@ export class DelegatesAPI {
     if (pk) {
       return {
         delegates: [pk],
-        enabled  : !!this.modules.delegatesModule.enabledKeys[pk],
+        enabled  : this.forgeModule.isForgeEnabledOn(pk),
       };
     } else {
-      const delegates = Object.keys(this.modules.delegatesModule.enabledKeys);
+      const delegates = this.forgeModule.getEnabledKeys();
       return {
         delegates,
         enabled: delegates.length > 0,
@@ -225,11 +238,11 @@ export class DelegatesAPI {
       throw new Error('Invalid passphrase');
     }
 
-    if (this.modules.delegatesModule.enabledKeys[pk]) {
+    if (this.forgeModule.isForgeEnabledOn(pk)) {
       throw new Error('Forging is already enabled');
     }
 
-    const account = await this.modules.accounts.getAccount({ publicKey: pk });
+    const account = await this.accounts.getAccount({ publicKey: pk });
     if (!account) {
       throw new Error('Account not found');
     }
@@ -237,7 +250,7 @@ export class DelegatesAPI {
       throw new Error('Delegate not found');
     }
 
-    this.modules.delegatesModule.enableForge(kp);
+    this.forgeModule.enableForge(kp);
   }
 
   @Get('/forging/disable')
@@ -253,11 +266,11 @@ export class DelegatesAPI {
       throw new Error('Invalid passphrase');
     }
 
-    if (typeof(this.modules.delegatesModule.enabledKeys[pk]) === 'undefined') {
+    if (typeof(this.forgeModule.isForgeEnabledOn(pk)) === 'undefined') {
       throw new Error('Forging is already disabled');
     }
 
-    const account = await this.modules.accounts.getAccount({ publicKey: pk });
+    const account = await this.accounts.getAccount({ publicKey: pk });
     if (!account) {
       throw new Error('Account not found');
     }
@@ -265,7 +278,7 @@ export class DelegatesAPI {
       throw new Error('Delegate not found');
     }
 
-    this.modules.delegatesModule.disableForge(pk);
+    this.forgeModule.disableForge(pk);
   }
 
 }

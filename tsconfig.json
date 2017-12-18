@@ -4,11 +4,12 @@
     "module"                      : "commonjs",
     "emitDecoratorMetadata"       : true,
     "experimentalDecorators"      : true,
-    "sourceMap"                   : false,
     "allowJs"                     : true,
     "moduleResolution"            : "node",
     "outDir"                      : "dist",
     "allowSyntheticDefaultImports": true,
+    "inlineSourceMap"             : true,
+    "inlineSources"               : true,
     "lib"                         : [
       "dom",
       "es5",
@@ -19,6 +20,7 @@
   },
   "exclude"        : [
     "node_modules",
-    "tests"
+    "tests",
+    "dist"
   ]
 }

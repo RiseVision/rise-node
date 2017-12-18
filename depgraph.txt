@@ -1,0 +1,183 @@
+digraph G {
+
+	subgraph cluster_0 {
+		style=filled;
+		color=lightgrey;
+		node [style=filled,color=white];
+		accountLogic;
+		appState;
+                transactionLogic;
+                peerLogic
+                blockLogic
+                peersLogic -> peerLogic;
+                blockRewardLogic
+                broadcasterLogic;
+                roundLogic;
+                roundsLogic;
+                transactionPool;
+		label = "logic";
+	}
+
+	subgraph cluster_2 {
+	    color = green;
+  		node [style=filled];
+  		sendTx
+  		delegateTx
+  		multisigTx
+  		voteTx
+  		secondSignTx
+	    label = "txtypes"
+    }
+
+	subgraph cluster_1 {
+		node [style=filled];
+		label = "modules";
+                accountsModule
+                blocksModule
+                blocksProcessModule
+                blocksChainModule
+                blocksUtilsModule
+                blocksVerifyModule
+                cacheModule
+                delegatesModule
+                delegatesModule
+                forgeModule
+                forkModule
+                multisignaturesModule
+                peersModule
+                transactionsModule
+                transportModule
+                roundsModule
+                systemModule
+                loaderModule
+		color=blue
+	}
+	    accountsModule -> accountLogic
+
+        blocksChainModule -> roundsModule
+        blocksChainModule -> transactionsModule
+        blocksChainModule -> accountsModule
+        blocksChainModule -> blocksModule
+        blocksChainModule -> blocksUtilsModule
+        blocksChainModule -> blockLogic
+        blocksChainModule -> transactionLogic
+
+        blocksProcessModule -> accountsModule
+        blocksProcessModule -> blocksModule
+        blocksProcessModule -> blocksUtilsModule
+        blocksProcessModule -> blocksChainModule
+        blocksProcessModule -> blocksVerifyModule
+        blocksProcessModule -> forkModule
+        blocksProcessModule -> transactionsModule
+        blocksProcessModule -> transportModule
+        blocksProcessModule -> appState
+        blocksProcessModule -> blockLogic
+        blocksProcessModule -> peersLogic
+        blocksProcessModule -> transactionLogic
+        blocksProcessModule -> roundsLogic
+
+        blocksUtilsModule -> blocksModule
+        blocksUtilsModule -> blockLogic
+        blocksUtilsModule -> transactionLogic
+
+        blocksVerifyModule -> blocksModule
+        blocksVerifyModule -> blocksChainModule
+        blocksVerifyModule -> delegatesModule
+        blocksVerifyModule -> forkModule
+        blocksVerifyModule -> transactionsModule
+        blocksVerifyModule -> accountsModule
+        blocksVerifyModule -> blockRewardLogic
+        blocksVerifyModule -> blockLogic
+        blocksVerifyModule -> transactionLogic
+
+        delegatesModule -> accountsModule;
+        delegatesModule -> blocksModule;
+        delegatesModule -> roundsLogic;
+        delegatesModule -> appState;
+        delegatesModule -> blockRewardLogic;
+        delegatesModule -> transactionsModule;
+
+        forgeModule -> appState
+        forgeModule -> broadcasterLogic
+        forgeModule -> blocksModule
+        forgeModule -> accountsModule
+        forgeModule -> delegatesModule
+        forgeModule -> transactionsModule
+        forgeModule -> blocksProcess
+
+        loaderModule -> blocksModule
+        loaderModule -> blocksChainModule
+        loaderModule -> blocksProcessModule
+        loaderModule -> blocksUtilsModule
+        loaderModule -> blocksVerifyModule
+        loaderModule -> systemModule
+        loaderModule -> transactionsModule
+        loaderModule -> transportModule
+        loaderModule -> peersModule
+        loaderModule -> multisignaturesModule
+
+        loaderModule -> transactionLogic
+        loaderModule -> accountLogic
+        loaderModule -> peersLogic
+        loaderModule -> broadcasterLogic
+        loaderModule -> appState
+
+        multisignaturesModule -> accountsModule
+        multisignaturesModule -> transactionsModule
+        multisignaturesModule -> transactionLogic
+
+        peersModule -> systemModule
+        peersModule -> peersLogic
+
+        roundsModule -> delegatesModule
+        roundsModule -> accountsModule
+        roundsModule -> roundLogic
+        roundsModule -> appState
+
+        systemModule -> blocksModule
+
+        transactionsModule -> accountsModule
+        transactionsModule -> transactionLogic
+        transactionsModule -> transactionPool
+
+
+        transportModule -> peersModule
+        transportModule -> multisignaturesModule
+        transportModule -> transactionsModule
+        transportModule -> systemModule
+        transportModule -> transactionLogic
+        transportModule -> peersLogic
+        transportModule -> broadcasterLogic
+
+        broadcasterLogic -> peersModule
+        broadcasterLogic -> appState
+        broadcasterLogic -> transportModule
+        broadcasterLogic -> transactionsModule
+
+        peersLogic -> systemModule
+        roundLogic -> accountsModule
+        transactionLogic -> roundsModule
+        transactionPool -> transactionLogic
+
+
+        sendTx -> accountsModule
+        sendTx -> systemModule
+        sendTx -> roundsLogic
+
+        voteTx -> systemModule
+        voteTx -> delegatesModule
+        voteTx -> roundsLogic
+        voteTx -> accountLogic
+
+        secondSignTx -> accountsModule
+        secondSignTx -> systemModule
+
+        delegateTx -> accountsModule
+        delegateTx -> systemModule
+
+        multisigTx -> accountsModule
+        multisigTx -> systemModule
+        multisigTx -> transactionLogic
+        multisigTx -> roundsLogic
+        multisigTx -> accountLogic
+}
