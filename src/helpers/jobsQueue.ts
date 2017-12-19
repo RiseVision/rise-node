@@ -9,10 +9,10 @@ export class JobsQueue {
 
     const nextJob = async () => {
       await job();
-      setTimeout(nextJob, time);
+      this.jobs[name] = setTimeout(nextJob, time);
     };
 
-    nextJob();
+    this.jobs[name] = setImmediate(nextJob);
     return this.jobs[name];
   }
 }

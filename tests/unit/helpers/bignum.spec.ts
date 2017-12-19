@@ -13,13 +13,9 @@ describe('helpers/bignum', () => {
     });
 
     it('should throw error when buffer length and size are not multiples', () => {
-      try {
+      expect(() => {
         const bn = MyBigNumb.fromBuffer(Buffer.from('11223344556677889900ff', 'hex'), { size: 3 });
-        // tslint:disable no-unused-expression
-        expect(true).to.be.false;
-      } catch (e) {
-        expect(e).to.be.instanceOf(RangeError);
-      }
+      }).to.throw(Error, /multiple/);
     });
 
     it('should zero-pad chunks lower than 16', () => {
@@ -46,12 +42,9 @@ describe('helpers/bignum', () => {
 
     it('should throw an error if number is negative', () => {
       const bn = new MyBigNumb('-18223573544561351465');
-      try {
+      expect(() => {
         bn.toBuffer();
-        expect(true).to.be.false;
-      } catch (e) {
-        expect(e).to.be.instanceOf(Error);
-      }
+      }).to.throw(Error, /negative/);
     });
 
     it('should zero-pad', () => {
