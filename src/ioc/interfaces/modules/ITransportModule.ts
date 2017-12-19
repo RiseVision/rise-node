@@ -37,7 +37,7 @@ export interface ITransportModule extends IModule {
    */
   receiveSignature(signature: { transaction: string, signature: string }): Promise<void>;
 
-  receiveTransactions(query: { transactions: any[] },
+  receiveTransactions(query: { transactions: Array<IBaseTransaction<any>> },
                       peer: IPeerLogic,
                       extraLogMessage: string): Promise<void>;
 

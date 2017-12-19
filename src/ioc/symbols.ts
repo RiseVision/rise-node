@@ -1,4 +1,19 @@
 export const Symbols = {
+  api    : {
+    accounts          : Symbol('accountsAPI'),
+    blocks            : Symbol('blocksAPI'),
+    delegates         : Symbol('delegatesAPI'),
+    multisignatures   : Symbol('multisignaturesAPI'),
+    peers             : Symbol('peersAPI'),
+    signatures        : Symbol('signaturesAPI'),
+    successInterceptor: Symbol('successInterceptor'),
+    transactions      : Symbol('transactionsAPI'),
+    transport         : Symbol('transportAPI'),
+    utils: {
+      successInterceptor: Symbol('successInterceptor'),
+      validatePeerHeadersMiddleware: Symbol('validatePeerHeadersMiddleware'),
+    },
+  },
   generic: {
     appConfig   : Symbol('appConfig'),
     db          : Symbol('db'),
@@ -67,6 +82,13 @@ export const Symbols = {
       balancesSequence: Symbol('balanceSequence'),
       dbSequence      : Symbol('dbSequence'),
       defaultSequence : Symbol('defaultSequence'),
+    },
+  },
+
+  __others: {
+    metadata: {
+      // USed to decorate the class with the symbol attached to it.
+      classSymbol: Symbol('classSymbol'),
     },
   },
 };

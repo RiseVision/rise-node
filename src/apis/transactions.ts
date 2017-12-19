@@ -2,6 +2,7 @@ import {inject, injectable} from 'inversify';
 import * as _ from 'lodash';
 import { Body, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
+import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import schema from '../schema/transactions';
@@ -9,6 +10,7 @@ import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 @JsonController('/transactions')
 @injectable()
+@IoCSymbol(Symbols.api.transactions)
 export class TransactionsAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;

@@ -1,11 +1,12 @@
 import * as changeCase from 'change-case';
-import { SignedBlockType } from '../logic/';
+import { SignedAndChainedBlockType, SignedBlockType } from '../logic/';
 import { IConfirmedTransaction } from '../logic/transactions/';
 
 export class Bus {
   public modules: any[];
 
   public message(event: 'bind', modules: any): Promise<void>;
+  public message(event: 'receiveBlock', block: SignedAndChainedBlockType): Promise<void>;
   public message(event: 'finishRound', round: number): Promise<void>;
   public message(event: 'transactionsSaved', txs: Array<IConfirmedTransaction<any>>): Promise<void>;
   public message(event: 'blockchainReady' | 'syncStarted' | 'peersReady'): Promise<void>;

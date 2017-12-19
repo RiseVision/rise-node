@@ -238,7 +238,7 @@ export class TransportModule implements ITransportModule {
 
   @ValidateSchema()
   public async receiveTransactions(@SchemaValid(schema.transactions, 'Invalid transactions body')
-                                     query: { transactions: any[] },
+                                     query: { transactions: Array<IBaseTransaction<any>> },
                                    peer: IPeerLogic,
                                    extraLogMessage: string) {
     for (const tx of  query.transactions) {

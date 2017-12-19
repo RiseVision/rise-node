@@ -15,7 +15,7 @@ export function ValidateSchema(config: { isPromise: boolean } = { isPromise: tru
 
         for (const schemaToValidate of schemas) {
           if (!this.schema.validate(args[schemaToValidate.index], schemaToValidate.obj)) {
-            const errorMessage = schemaToValidate.errorString || this.schema.getLastErrors()[0].message;
+            const errorMessage = schemaToValidate.errorString || `${this.schema.getLastError().details[0].path} - ${this.schema.getLastErrors()[0].message}`;
             if (config.isPromise) {
               return Promise.reject(errorMessage);
             }

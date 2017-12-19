@@ -1,6 +1,7 @@
 import { inject, injectable } from 'inversify';
-import { Body, Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
+import { Body, Get, JsonController, Post, Put, QueryParams, UseInterceptor } from 'routing-controllers';
 import * as z_schema from 'z-schema';
+import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { IAccountsModule, IDelegatesModule, ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import accountSchema from '../schema/accounts';
@@ -8,7 +9,8 @@ import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 @JsonController('/accounts')
 @injectable()
-class AccountsPublicAPI {
+@IoCSymbol(Symbols.api.accounts)
+export class AccountsAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
   @inject(Symbols.modules.accounts)

@@ -1,6 +1,7 @@
 import { inject, injectable } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
+import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { IPeersModule, ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { PeerState } from '../logic/';
@@ -10,7 +11,8 @@ import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 @JsonController('/peers')
 @injectable()
-class PeersPublicAPI {
+@IoCSymbol(Symbols.api.peers)
+export class PeersAPI {
   // Generics
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;

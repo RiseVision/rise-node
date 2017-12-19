@@ -1,14 +1,15 @@
 import { inject, injectable, tagged } from 'inversify';
 import { IDatabase } from 'pg-promise';
-import { Get, JsonController, QueryParam, QueryParams } from 'routing-controllers';
+import { Get, JsonController, QueryParam, QueryParams, UseInterceptor } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import sql from '../sql/blocks';
 import { constants as constantsType, OrderBy, Sequence } from '../helpers';
+import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { IBlockLogic, IBlockReward } from '../ioc/interfaces/logic';
 import { IBlocksModule, ISystemModule} from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { SignedBlockType } from '../logic';
 import blocksSchema from '../schema/blocks';
+import sql from '../sql/blocks';
 import { publicKey } from '../types/sanityTypes';
 import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
@@ -28,6 +29,7 @@ type FilterType = {
 };
 
 @JsonController('/blocks')
+@IoCSymbol(Symbols.api.blocks)
 @injectable()
 export class BlocksAPI {
   // Modules

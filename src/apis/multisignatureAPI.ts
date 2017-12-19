@@ -3,6 +3,7 @@ import { IDatabase } from 'pg-promise';
 import { Get, JsonController, Post, Put, QueryParam } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { catchToLoggerAndRemapError, ILogger} from '../helpers';
+import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { ITransactionLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
@@ -11,6 +12,7 @@ import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 @JsonController('/multisignatures')
 @injectable()
+@IoCSymbol(Symbols.api.multisignatures)
 export class MultisignatureAPI {
   // Generics
   @inject(Symbols.generic.zschema)

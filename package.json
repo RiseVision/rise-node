@@ -28,7 +28,7 @@
     "ejs": "=2.5.5",
     "express": "=4.14.1",
     "express-domain-middleware": "=0.1.0",
-    "express-query-int": "=1.0.1",
+    "express-query-int": "^1.0.1",
     "express-rate-limit": "=2.6.0",
     "extend": "=3.0.0",
     "ip": "=1.1.5",
