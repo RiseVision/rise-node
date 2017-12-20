@@ -9,7 +9,7 @@ export class Bus {
   public message(event: 'receiveBlock', block: SignedAndChainedBlockType): Promise<void>;
   public message(event: 'finishRound', round: number): Promise<void>;
   public message(event: 'transactionsSaved', txs: Array<IConfirmedTransaction<any>>): Promise<void>;
-  public message(event: 'blockchainReady' | 'syncStarted' | 'peersReady'): Promise<void>;
+  public message(event: 'blockchainReady' | 'syncStarted' | 'syncFinished' | 'peersReady'): Promise<void>;
   public message(event: 'newBlock', block: SignedBlockType, broadcast: boolean): Promise<void>;
   public message(event: 'signature', ob: { transaction: string, signature: any }, broadcast: boolean): Promise<void>;
   public message(event: 'unconfirmedTransaction', transaction: any, broadcast: any): Promise<void>;

@@ -61,6 +61,11 @@ export interface ITransactionsModule extends IModule {
   applyUnconfirmedIds(ids: string[]): Promise<void>;
 
   /**
+   * Applies unconfirmed list
+   */
+  applyUnconfirmedList(): Promise<void>;
+
+  /**
    * Undoes unconfirmed list from queue.
    */
   undoUnconfirmedList(): Promise<string[]>;

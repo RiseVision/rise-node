@@ -139,7 +139,7 @@ export class TransportModule implements ITransportModule {
   public onBlockchainReady() {
     this.loaded = true;
   }
-  @DebugLog
+
   public async onPeersReady() {
     this.logger.trace('Peers ready');
     // await this.discoverPeers();
