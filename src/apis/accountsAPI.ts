@@ -9,7 +9,7 @@ import { SchemaValid, ValidateSchema } from './baseAPIClass';
 import { publicKey } from '../types/sanityTypes';
 import { isEmpty } from 'is-empty';
 
-@JsonController('/accounts')
+@JsonController('/api/accounts')
 @injectable()
 @IoCSymbol(Symbols.api.accounts)
 export class AccountsAPI {

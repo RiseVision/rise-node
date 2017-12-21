@@ -2,7 +2,6 @@ import * as bodyParser from 'body-parser';
 import * as compression from 'compression';
 import * as cors from 'cors';
 import * as express from 'express';
-import * as intQueryParser from 'express-query-int';
 import * as http from 'http';
 import { Container } from 'inversify';
 import * as methodOverride from 'method-override';
@@ -11,6 +10,8 @@ import { Action, useContainer as useContainerForHTTP, useExpressServer } from 'r
 import * as socketIO from 'socket.io';
 import * as uuid from 'uuid';
 import { allControllers, APIErrorHandler } from './apis';
+import { SuccessInterceptor } from './apis/utils/successInterceptor';
+import { ValidatePeerHeaders } from './apis/utils/validatePeerHeaders';
 import {
   applyExpressLimits, Bus, cache, catchToLoggerAndRemapError, cbToPromise, constants as constantsType, Database, Ed,
   ILogger, middleware,
@@ -36,8 +37,6 @@ import {
 import { BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify } from './modules/blocks/';
 import { ForkModule } from './modules/fork';
 import { AppConfig } from './types/genericTypes';
-import { SuccessInterceptor } from './apis/utils/successInterceptor';
-import { ValidatePeerHeaders } from './apis/utils/validatePeerHeaders';
 
 // import {makeLoggerMiddleware} from 'inversify-logger-middleware';
 // const theLogger = makeLoggerMiddleware();
@@ -108,7 +107,6 @@ export class AppManager {
     app.use(bodyParser.raw({ limit: '2mb' }));
     app.use(bodyParser.urlencoded({ extended: true, limit: '2mb', parameterLimit: 5000 }));
     app.use(bodyParser.json({ limit: '2mb' }));
-    app.use(intQueryParser());
     app.use(methodOverride());
 
     app.use(middleware.logClientConnections(this.logger));

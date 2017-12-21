@@ -15,7 +15,7 @@ import sql from '../sql/delegates';
 import { publicKey } from '../types/sanityTypes';
 import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
-@JsonController('/delegates')
+@JsonController('/api/delegates')
 @injectable()
 @IoCSymbol(Symbols.api.delegates)
 export class DelegatesAPI {
@@ -43,7 +43,7 @@ export class DelegatesAPI {
 
   @Get('/')
   @ValidateSchema()
-  public async getDelegates(@SchemaValid(schema.getDelegates)
+  public async getDelegates(@SchemaValid(schema.getDelegates, {castNumbers: true})
                             @QueryParams() data: { orderBy: string, limit: number, offset: number }) {
     const d = await this.delegatesModule.getDelegates(data);
     if (d.sortField) {
@@ -83,7 +83,7 @@ export class DelegatesAPI {
 
   @Get('/forging/getForgedByAccount')
   @ValidateSchema()
-  public async getForgedByAccount(@SchemaValid(schema.getForgedByAccount)
+  public async getForgedByAccount(@SchemaValid(schema.getForgedByAccount, {castNumbers: true})
                                   // tslint:disable-next-line max-line-length
                                   @QueryParams() params: { generatorPublicKey: publicKey, start?: number, end?: number }) {
     if (typeof(params.start) !== 'undefined' || typeof(params.end) !== 'undefined') {
@@ -144,7 +144,7 @@ export class DelegatesAPI {
 
   @Get('/search')
   @ValidateSchema()
-  public async search(@SchemaValid(schema.search)
+  public async search(@SchemaValid(schema.search, {castNumbers: true})
                       @QueryParams() params: { q: string, limit?: number, orderBy: string }) {
 
     const orderBy = OrderBy(params.orderBy, {

@@ -10,7 +10,7 @@ import { Symbols } from '../ioc/symbols';
 import sql from '../sql/multisignatures';
 import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
-@JsonController('/multisignatures')
+@JsonController('/api/multisignatures')
 @injectable()
 @IoCSymbol(Symbols.api.multisignatures)
 export class MultisignatureAPI {

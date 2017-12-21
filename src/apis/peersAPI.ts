@@ -9,7 +9,7 @@ import peersSchema from '../schema/peers';
 import { AppConfig } from '../types/genericTypes';
 import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
-@JsonController('/peers')
+@JsonController('/api/peers')
 @injectable()
 @IoCSymbol(Symbols.api.peers)
 export class PeersAPI {

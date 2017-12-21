@@ -6,7 +6,7 @@ import { ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
-@JsonController('/signatures')
+@JsonController('/api/signatures')
 @injectable()
 @IoCSymbol(Symbols.api.signatures)
 export class SignaturesAPI {

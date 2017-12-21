@@ -28,7 +28,7 @@ type FilterType = {
   orderBy?: string
 };
 
-@JsonController('/blocks')
+@JsonController('/api/blocks')
 @IoCSymbol(Symbols.api.blocks)
 @injectable()
 export class BlocksAPI {
@@ -60,14 +60,14 @@ export class BlocksAPI {
 
   @Get('/')
   @ValidateSchema()
-  public async getBlocks(@SchemaValid(blocksSchema.getBlocks)
+  public async getBlocks(@SchemaValid(blocksSchema.getBlocks, {castNumbers: true})
                          @QueryParams() filters) {
     return this.dbSequence.addAndPromise(() => this.list(filters));
   }
 
   @Get('/get')
   @ValidateSchema()
-  public async getBlock(@SchemaValid(blocksSchema.getBlock)
+  public async getBlock(@SchemaValid(blocksSchema.getBlock, {castNumbers: true})
                         @QueryParams() filters) {
     return this.dbSequence.addAndPromise((() => this.list(filters)));
   }
