@@ -234,7 +234,7 @@ export class TransactionLogic implements ITransactionLogic {
     const exceeded        = (tx['blockId'] !== this.genesisBlock.id && exceededBalance);
     return {
       error: exceeded ? `Account does not have enough currency: ${sender.address} balance: ${
-        (accountBalance || new BigNum(0)).div(Math.pow(10, 8))}` : null,
+        new BigNum(accountBalance || 0).div(Math.pow(10, 8))}` : null,
       exceeded,
     };
   }

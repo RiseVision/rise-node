@@ -8,15 +8,17 @@ export class Slots {
   private constants: typeof constantsType;
 
   /**
-   * Slot interval in seconds
-   */
-  public interval = 30;
-
-  /**
    * Active delegates
    */
   public get delegates() {
     return this.constants.activeDelegates;
+  }
+
+  /**
+   * Slot interval in seconds
+   */
+  private get interval() {
+    return this.constants.blockTime;
   }
 
   /**

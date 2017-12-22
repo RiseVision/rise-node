@@ -2,7 +2,7 @@ import { inject, injectable, postConstruct, tagged } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import * as promiseRetry from 'promise-retry';
 import z_schema from 'z-schema';
-import { Bus, constants, ILogger, JobsQueue, Sequence } from '../helpers/';
+import { Bus, constants as constantsType, ILogger, JobsQueue, Sequence } from '../helpers/';
 import {
   IAccountLogic, IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, IRoundsLogic,
   ITransactionLogic
@@ -26,7 +26,6 @@ import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
 import { AppConfig } from '../types/genericTypes';
 import Timer = NodeJS.Timer;
-import { DebugLog } from '../helpers/decorators/debugLog';
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
@@ -83,6 +82,8 @@ export class LoaderModule implements ILoaderModule {
   private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.generic.appConfig)
   private config: AppConfig;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
 
   @inject(Symbols.logic.appState)
   private appState: IAppState;
@@ -125,10 +126,9 @@ export class LoaderModule implements ILoaderModule {
    * Checks if we're syncing or not.
    */
   private get isSyncing(): boolean {
-    return this.appState.get('loader.isSyncing');
+    return this.appState.get('loader.isSyncing') || false;
   }
 
-  @DebugLog
   public async onPeersReady() {
     await this.syncTimer();
     if (this.loaded) {
@@ -228,7 +228,7 @@ export class LoaderModule implements ILoaderModule {
       this.logger.info('Snapshot mode enabled');
       if (this.config.loading.snapshot >= round) {
         this.config.loading.snapshot = round;
-        if ((blocksCount === 1) || (blocksCount % constants.activeDelegates > 0)) {
+        if ((blocksCount === 1) || (blocksCount % this.constants.activeDelegates > 0)) {
           // Normalize to previous round if we
           this.config.loading.snapshot = (round > 1) ? (round - 1) : 1;
         }
@@ -427,6 +427,8 @@ export class LoaderModule implements ILoaderModule {
           const lastValidBlock: SignedBlockType = await this.blocksProcessModule.loadBlocksFromPeer(randomPeer);
 
           loaded = lastValidBlock.id === lastBlock.id;
+          // update blocksmodule last receipt with last block timestamp!
+          this.blocksModule.lastReceipt.update(Math.floor(this.constants.epochTime.getTime() / 1000 + lastValidBlock.timestamp));
         } catch (err) {
           this.logger.error(err.toString());
           this.logger.error('Failed to load blocks from: ' + randomPeer.string);
@@ -450,18 +452,33 @@ export class LoaderModule implements ILoaderModule {
     this.isActive = true;
     this.syncTrigger(true);
 
-    // undo unconfirmedList
-    this.logger.debug('Undoing unconfirmed transactions before sync');
-    await this.transactionsModule.undoUnconfirmedList();
+    // Logic block of "real work"
+    {
+      // undo unconfirmedList
+      this.logger.debug('Undoing unconfirmed transactions before sync');
+      await this.transactionsModule.undoUnconfirmedList();
 
-    // Establish consensus. (internally)
-    this.logger.debug('Establishing broadhash consensus before sync');
-    await this.broadcasterLogic.getPeers({limit: constants.maxPeers});
+      // Establish consensus. (internally)
+      this.logger.debug('Establishing broadhash consensus before sync');
+      await this.broadcasterLogic.getPeers({ limit: this.constants.maxPeers });
 
-    await this.loadBlocksFromNetwork();
+      await this.loadBlocksFromNetwork();
+      await this.systemModule.update();
+
+      this.logger.debug('Establishing broadhash consensus after sync');
+      await this.broadcasterLogic.getPeers({ limit: this.constants.maxPeers });
+
+      await this.transactionsModule.applyUnconfirmedList();
+    }
+
+    this.isActive = false;
+    this.syncTrigger(false);
+    this.blocksToSync = 0;
+
+    this.logger.info('Finished sync');
+    await this.bus.message('syncFinished');
   }
 
-  @DebugLog
   private async syncTimer() {
     this.logger.trace('Setting sync timer');
 

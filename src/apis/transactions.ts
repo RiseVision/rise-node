@@ -1,14 +1,17 @@
 import {inject, injectable} from 'inversify';
 import * as _ from 'lodash';
-import { Body, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
+import { Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
+import { castFieldsToNumberUsingSchema } from '../helpers';
+import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import schema from '../schema/transactions';
 import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
-@JsonController('/transactions')
+@JsonController('/api/transactions')
 @injectable()
+@IoCSymbol(Symbols.api.transactions)
 export class TransactionsAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
@@ -17,8 +20,8 @@ export class TransactionsAPI {
   private transactionsModule: ITransactionsModule;
 
   @Get()
-  public async getTransactions(@Body() body: any) {
-    const params  = {};
+  public async getTransactions(@QueryParams() body: any) {
+    let params  = {};
     const pattern = /(and|or){1}:/i;
 
     // Filter out 'and:'/'or:' from params to perform schema validation
@@ -31,9 +34,10 @@ export class TransactionsAPI {
       }
       params[param] = value;
     });
+    params = castFieldsToNumberUsingSchema(schema.getTransactions, params);
 
     if (!this.schema.validate(params, schema.getTransactions)) {
-      throw new Error('Schema invalid');
+      throw new Error(`Schema invalid ${this.schema.getLastErrors()[0].path} - ${this.schema.getLastError().message}`);
     }
 
     const { transactions, count } = await this.transactionsModule.list(body)

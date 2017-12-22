@@ -110,6 +110,16 @@ export class TransactionsModule implements ITransactionsModule {
   }
 
   /**
+   * Applies unconfirmed list
+   */
+  public applyUnconfirmedList(): Promise<void> {
+    return this.transactionPool.applyUnconfirmedList(
+      this.transactionPool.unconfirmed.list(true),
+      this
+    );
+  }
+
+  /**
    * Undoes unconfirmed list from queue.
    */
   public undoUnconfirmedList(): Promise<string[]> {
@@ -142,7 +152,7 @@ export class TransactionsModule implements ITransactionsModule {
       throw new Error('Invalid block id');
     } else {
       if (transaction.requesterPublicKey) {
-        const requester = await this.accountsModule.getAccount({publicKey: transaction.requesterPublicKey});
+        const requester = await this.accountsModule.getAccount({ publicKey: transaction.requesterPublicKey });
         if (!requester) {
           throw new Error('Requester not found');
         }
@@ -160,7 +170,7 @@ export class TransactionsModule implements ITransactionsModule {
   public async undoUnconfirmed(transaction): Promise<void> {
     this.logger.debug('Undoing unconfirmed transaction', transaction.id);
 
-    const sender = await this.accountsModule.getAccount({publicKey: transaction.senderPublicKey});
+    const sender = await this.accountsModule.getAccount({ publicKey: transaction.senderPublicKey });
     await this.transactionLogic.undoUnconfirmed(transaction, sender);
   }
 
@@ -311,7 +321,7 @@ export class TransactionsModule implements ITransactionsModule {
       throw new Error(orderBy.error);
     }
 
-    const rows = await this.db.query(txSQL.countList({where}), params)
+    const rows = await this.db.query(txSQL.countList({ where }), params)
       .catch((err) => {
         this.logger.error(err.stack);
         return Promise.reject(new Error('Transactions#list error'));
@@ -320,7 +330,7 @@ export class TransactionsModule implements ITransactionsModule {
     const count = rows.length ? rows[0].count : 0;
 
     const txRows = await this.db.query(
-      txSQL.list({where, sortField: orderBy.sortField, sortMethod: orderBy.sortMethod}),
+      txSQL.list({ where, sortField: orderBy.sortField, sortMethod: orderBy.sortMethod }),
       params
     ).catch((err) => {
       this.logger.error(err.stack);
@@ -330,14 +340,14 @@ export class TransactionsModule implements ITransactionsModule {
     const transactions: Array<IConfirmedTransaction<any>> = txRows
       .map((rawTX) => this.transactionLogic.dbRead(rawTX));
 
-    return {count, transactions};
+    return { count, transactions };
   }
 
   /**
    * Get transaction by id
    */
   public async getByID<T = any>(id: string): Promise<IConfirmedTransaction<T>> {
-    const rows = await this.db.query(txSQL.getById, {id});
+    const rows = await this.db.query(txSQL.getById, { id });
     if (rows.length === 0) {
       throw new Error(`Transaction not found: ${id}`);
     }
@@ -348,7 +358,7 @@ export class TransactionsModule implements ITransactionsModule {
    * Get the Added and Deleted votes by tx id.
    */
   private async getVotesById(id: string): Promise<{ added: string[], deleted: string[] }> {
-    const rows = await this.db.query(txSQL.getVotesById, {id});
+    const rows = await this.db.query(txSQL.getVotesById, { id });
     if (rows.length === 0) {
       throw new Error(`Transaction not found: ${id}`);
     }
@@ -356,7 +366,7 @@ export class TransactionsModule implements ITransactionsModule {
     const added           = votes.filter((vote) => vote.substring(0, 1) === '+');
     const deleted         = votes.filter((vote) => vote.substring(0, 1) === '-');
 
-    return {added, deleted};
+    return { added, deleted };
   }
 
 }

@@ -6,15 +6,19 @@ import * as http from 'http';
 import { Container } from 'inversify';
 import * as methodOverride from 'method-override';
 import 'reflect-metadata';
+import { Action, useContainer as useContainerForHTTP, useExpressServer } from 'routing-controllers';
 import * as socketIO from 'socket.io';
 import * as uuid from 'uuid';
+import { allControllers, APIErrorHandler } from './apis';
+import { SuccessInterceptor } from './apis/utils/successInterceptor';
+import { ValidatePeerHeaders } from './apis/utils/validatePeerHeaders';
 import {
   applyExpressLimits, Bus, cache, catchToLoggerAndRemapError, cbToPromise, constants as constantsType, Database, Ed,
   ILogger, middleware,
   Sequence, Slots, z_schema,
 } from './helpers/';
-import { IPeerLogic, IPeersLogic, ITransactionLogic } from './ioc/interfaces/logic';
-import { IBlocksModuleChain, ITransportModule } from './ioc/interfaces/modules';
+import { IPeerLogic, ITransactionLogic } from './ioc/interfaces/logic';
+import { IBlocksModuleChain } from './ioc/interfaces/modules';
 import { Symbols } from './ioc/symbols';
 import {
   AccountLogic, AppState, BasePeerType, BlockLogic, BlockRewardLogic, BroadcasterLogic, PeerLogic, PeersLogic,
@@ -33,8 +37,7 @@ import {
 import { BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify } from './modules/blocks/';
 import { ForkModule } from './modules/fork';
 import { AppConfig } from './types/genericTypes';
-//
-//
+
 // import {makeLoggerMiddleware} from 'inversify-logger-middleware';
 // const theLogger = makeLoggerMiddleware();
 
@@ -45,6 +48,7 @@ export class AppManager {
   private schema: z_schema = new z_schema({});
   private isCleaning       = false;
   private server: http.Server;
+  private expressApp: express.Express;
 
   constructor(private appConfig: AppConfig,
               private logger: ILogger,
@@ -118,15 +122,38 @@ export class AppManager {
     app.use(middleware.attachResponseHeader('Content-Security-Policy', 'frame-ancestors \'none\''));
 
     app.use(middleware.applyAPIAccessRules(this.appConfig));
+
+    // Init HTTP Apis
+    const container = this.container;
+    useContainerForHTTP({
+        get(clz: any) {
+          const symbol = Reflect.getMetadata(Symbols.__others.metadata.classSymbol, clz);
+          if (symbol == null) {
+            return new clz();
+          }
+          return container
+            .get(symbol);
+        },
+      }
+    );
+    useExpressServer(
+      this.expressApp,
+      {
+        controllers        : allControllers,
+        defaultErrorHandler: false,
+        middlewares        : [APIErrorHandler],
+      }
+    );
+
   }
 
   /**
    * Initialize all app dependencies into the IoC container.
    */
   private async initAppElements() {
-    const app = express();
+    this.expressApp = express();
 
-    this.server    = http.createServer(app);
+    this.server    = http.createServer(this.expressApp);
     const io       = socketIO(this.server);
     const db       = await Database.connect(this.appConfig.db, this.logger);
     const theCache = await cache.connect(
@@ -137,10 +164,21 @@ export class AppManager {
     const ed       = new Ed();
     const bus      = new Bus();
 
+    // HTTP APIs
+    for (const controller of allControllers) {
+      const symbol = Reflect.getMetadata(
+        Symbols.__others.metadata.classSymbol,
+        controller
+      );
+      this.container.bind(symbol).to(controller).inSingletonScope();
+    }
+    this.container.bind(Symbols.api.utils.successInterceptor).to(SuccessInterceptor).inSingletonScope();
+    this.container.bind(Symbols.api.utils.validatePeerHeadersMiddleware).to(ValidatePeerHeaders).inSingletonScope();
+
     // Generics
     this.container.bind(Symbols.generic.appConfig).toConstantValue(this.appConfig);
     this.container.bind(Symbols.generic.db).toConstantValue(db);
-    this.container.bind(Symbols.generic.expressApp).toConstantValue(app);
+    this.container.bind(Symbols.generic.expressApp).toConstantValue(this.expressApp);
     this.container.bind(Symbols.generic.genesisBlock).toConstantValue(this.genesisBlock);
     this.container.bind(Symbols.generic.lastCommit).toConstantValue(this.lastCommit);
     this.container.bind(Symbols.generic.nonce).toConstantValue(this.nonce);

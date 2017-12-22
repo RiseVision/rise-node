@@ -19,7 +19,7 @@ import {
   ITransportModule
 } from '../../ioc/interfaces/modules/';
 import { Symbols } from '../../ioc/symbols';
-import { BasePeerType, PeerLogic, SignedAndChainedBlockType, SignedBlockType, } from '../../logic/';
+import { BasePeerType, SignedAndChainedBlockType, SignedBlockType, } from '../../logic/';
 import { IBaseTransaction } from '../../logic/transactions/';
 import schema from '../../schema/blocks';
 import sql from '../../sql/blocks';

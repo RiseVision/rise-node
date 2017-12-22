@@ -1,14 +1,18 @@
 import { inject, injectable } from 'inversify';
 import { Body, Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
+import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { IAccountsModule, IDelegatesModule, ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import accountSchema from '../schema/accounts';
 import { SchemaValid, ValidateSchema } from './baseAPIClass';
+import { publicKey } from '../types/sanityTypes';
+import { isEmpty } from 'is-empty';
 
-@JsonController('/accounts')
+@JsonController('/api/accounts')
 @injectable()
-class AccountsPublicAPI {
+@IoCSymbol(Symbols.api.accounts)
+export class AccountsAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
   @inject(Symbols.modules.accounts)
@@ -17,6 +21,33 @@ class AccountsPublicAPI {
   private delegatesModule: IDelegatesModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
+
+  @Get('/')
+  public async getAccount(@SchemaValid(accountSchema.getAccount)
+                          @QueryParams() query: { address?: string, publicKey?: publicKey }) {
+    if (isEmpty(query.address) && isEmpty(query.publicKey)) {
+      throw new Error('Missing required property: address or publicKey');
+    }
+
+    const address = !isEmpty(query.publicKey) ? this.accountsModule.generateAddressByPublicKey(query.publicKey) : query.address;
+    if (!isEmpty(query.address) && !isEmpty(query.publicKey) && address !== query.address) {
+      throw new Error('Account publicKey does not match address');
+    }
+    const accData = await this.accountsModule.getAccount(query);
+    return {
+      account: {
+        address             : accData.address,
+        balance             : accData.balance,
+        multisignatures     : accData.multisignatures || [],
+        publicKey           : accData.publicKey,
+        secondPublicKey     : accData.secondPublicKey,
+        secondSignature     : accData.secondSignature,
+        u_multisignatures   : accData.u_multisignatures || [],
+        unconfirmedBalance  : accData.u_balance,
+        unconfirmedSignature: accData.u_secondSignature,
+      },
+    };
+  }
 
   @Get('/getBalance')
   @ValidateSchema()

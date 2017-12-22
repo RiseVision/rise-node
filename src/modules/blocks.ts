@@ -2,11 +2,12 @@ import { inject, injectable } from 'inversify';
 import { constants, ILogger, wait } from '../helpers/';
 import { Symbols } from '../ioc/symbols';
 import { SignedAndChainedBlockType } from '../logic/';
+import { DebugLog } from '../helpers/decorators/debugLog';
 
 // TODO Eventually remove this module and use appState instead.
 @injectable()
 export class BlocksModule {
-  public lastReceipt: { get: () => number, isStale: () => boolean, update: () => void };
+  public lastReceipt: { get: () => number, isStale: () => boolean, update: (time?: number) => void };
   public isActive   = false;
   public lastBlock: SignedAndChainedBlockType;
   public isCleaning = false;
@@ -26,8 +27,8 @@ export class BlocksModule {
         const secondsAgo = Math.floor(Date.now() / 1000) - this.internalLastReceipt;
         return (secondsAgo > constants.blockReceiptTimeOut);
       },
-      update : () => {
-        this.internalLastReceipt = Math.floor(Date.now() / 1000);
+      update : (time: number = Math.floor(Date.now() / 1000)) => {
+        this.internalLastReceipt = time;
       },
     };
   }
