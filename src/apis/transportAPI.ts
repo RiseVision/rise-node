@@ -1,21 +1,21 @@
 import { Request } from 'express';
 import { inject, injectable } from 'inversify';
-import { Body, Get, JsonController, Post, QueryParam, QueryParams, Req, UseBefore } from 'routing-controllers';
+import { IDatabase } from 'pg-promise';
+import { Body, Get, JsonController, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { Bus, constants as constantsType } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
-import transportSchema from '../schema/transport';
-import transportSQL from '../sql/transport';
+import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { IBlockLogic, IPeersLogic } from '../ioc/interfaces/logic';
 import {
   IBlocksModule, IBlocksModuleUtils, IPeersModule, ITransactionsModule,
   ITransportModule
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { IBaseTransaction } from '../logic/transactions';
-import { SchemaValid, ValidateSchema } from './baseAPIClass';
-import { IDatabase } from 'pg-promise';
 import { SignedAndChainedBlockType } from '../logic';
+import { IBaseTransaction } from '../logic/transactions';
+import transportSchema from '../schema/transport';
+import transportSQL from '../sql/transport';
 import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
 
 @JsonController('/peer')
@@ -28,6 +28,7 @@ export class TransportAPI {
 
   @inject(Symbols.helpers.bus)
   private bus: Bus;
+  // tslint:disable-next-line member-ordering
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
   @inject(Symbols.helpers.constants)

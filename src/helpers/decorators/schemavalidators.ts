@@ -1,20 +1,25 @@
 import 'reflect-metadata';
 import * as z_schema from 'z-schema';
-import { castFieldsToNumberUsingSchema } from '../helpers';
+import { castFieldsToNumberUsingSchema } from '../';
 
-// TODO: Use typescript decorator metadata to determine if it's a promise or not.
+/**
+ * Method validator. It will validate arguments tagged with SchemaValid decorator.
+ */
 export function ValidateSchema() {
   // tslint:disable-next-line
   return function (target: { schema: z_schema }, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) {
     // Do nothing for now.
-    const old        = descriptor.value;
+    const old = descriptor.value;
     // tslint: disable-next-line
 
     const isPromise  = Reflect.getMetadata('design:returntype', target, propertyKey) === 'Promise';
     descriptor.value = function schemaValidator(...args) {
       if (Reflect.hasMetadata('__schema', target, propertyKey)) {
-        const schemas: Array<{ index: number, obj: any, opts: { errorString?: string, castNumbers?: boolean } }> = Reflect
-          .getMetadata('__schema', target, propertyKey);
+        const schemas: Array<{
+          index: number,
+          obj: any,
+          opts: { errorString?: string, castNumbers?: boolean }
+        }> = Reflect.getMetadata('__schema', target, propertyKey);
 
         for (const schemaToValidate of schemas) {
           if (schemaToValidate.opts.castNumbers) {
@@ -39,6 +44,11 @@ export function ValidateSchema() {
   };
 }
 
+/**
+ * Argument Decorator to be used with ValidateSchema
+ * @param schemaObj The schema object
+ * @param opts Options to override errors
+ */
 export function SchemaValid(schemaObj: any, opts: string | { errorString?: string, castNumbers?: boolean } = {}) {
   return (target: any, propertyKey: string | symbol, parameterIndex: number) => {
     const curSchema = Reflect.getMetadata('__schema', target, propertyKey) || [];

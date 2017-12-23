@@ -2,8 +2,8 @@ import { inject, injectable, postConstruct, tagged } from 'inversify';
 import * as popsicle from 'popsicle';
 import * as Throttle from 'promise-parallel-throttle';
 import * as z_schema from 'z-schema';
-import { SchemaValid, ValidateSchema } from '../apis/baseAPIClass';
 import { cbToPromise, constants as constantsType, ILogger, JobsQueue, Sequence } from '../helpers/';
+import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
   IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule,
@@ -15,7 +15,6 @@ import { IBaseTransaction } from '../logic/transactions/';
 import peersSchema from '../schema/peers';
 import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
-import { DebugLog } from '../helpers/decorators/debugLog';
 
 // tslint:disable-next-line
 export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };

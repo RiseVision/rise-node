@@ -2,9 +2,9 @@ import { inject, injectable } from 'inversify';
 import { Get, JsonController, QueryParam } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
+import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 @JsonController('/api/signatures')
 @injectable()

@@ -6,6 +6,7 @@ import { Get, JsonController, Put, QueryParam, QueryParams } from 'routing-contr
 import * as z_schema from 'z-schema';
 import { constants, Ed, OrderBy, Slots } from '../helpers/';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
+import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import {
   IAccountsModule, IBlocksModule, IBlocksModuleUtils, IDelegatesModule, IForgeModule, ISystemModule,
 } from '../ioc/interfaces/modules';
@@ -13,7 +14,6 @@ import { Symbols } from '../ioc/symbols';
 import schema from '../schema/delegates';
 import sql from '../sql/delegates';
 import { publicKey } from '../types/sanityTypes';
-import { SchemaValid, ValidateSchema } from './baseAPIClass';
 
 @JsonController('/api/delegates')
 @injectable()

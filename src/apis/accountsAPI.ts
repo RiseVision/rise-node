@@ -1,13 +1,13 @@
 import { inject, injectable } from 'inversify';
+import { isEmpty } from 'is-empty';
 import { Body, Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
+import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { IAccountsModule, IDelegatesModule, ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import accountSchema from '../schema/accounts';
-import { SchemaValid, ValidateSchema } from './baseAPIClass';
 import { publicKey } from '../types/sanityTypes';
-import { isEmpty } from 'is-empty';
 
 @JsonController('/api/accounts')
 @injectable()
@@ -29,7 +29,10 @@ export class AccountsAPI {
       throw new Error('Missing required property: address or publicKey');
     }
 
-    const address = !isEmpty(query.publicKey) ? this.accountsModule.generateAddressByPublicKey(query.publicKey) : query.address;
+    const address = !isEmpty(query.publicKey)
+      ? this.accountsModule.generateAddressByPublicKey(query.publicKey)
+      : query.address;
+
     if (!isEmpty(query.address) && !isEmpty(query.publicKey) && address !== query.address) {
       throw new Error('Account publicKey does not match address');
     }
