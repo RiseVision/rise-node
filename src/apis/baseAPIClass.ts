@@ -39,9 +39,12 @@ export function ValidateSchema() {
   };
 }
 
-export function SchemaValid(schemaObj: any, opts: { errorString?: string, castNumbers?: boolean } = {}) {
+export function SchemaValid(schemaObj: any, opts: string | { errorString?: string, castNumbers?: boolean } = {}) {
   return (target: any, propertyKey: string | symbol, parameterIndex: number) => {
     const curSchema = Reflect.getMetadata('__schema', target, propertyKey) || [];
+    if (typeof(opts) === 'string') {
+      opts = { errorString: opts };
+    }
     curSchema.push({ index: parameterIndex, obj: schemaObj, opts });
     Reflect.defineMetadata('__schema', curSchema, target, propertyKey);
   };
