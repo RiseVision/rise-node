@@ -27,8 +27,8 @@ export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
 
   public use(request: express.Request, response: any, next: (err?: any) => any) {
     castFieldsToNumberUsingSchema(
-      request.headers,
-      transportSchema.headers
+      transportSchema.headers,
+      request.headers
     );
     if (!this.schema.validate(request.headers, transportSchema.headers)) {
       this.removePeer(request);
