@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
 import {
-  constants as constantsType,
+  constants as constantsType, ExceptionsList, ExceptionsManager,
   ILogger,
   OrderBy,
   Slots,
@@ -14,6 +14,7 @@ import {
 import { Symbols } from '../ioc/symbols';
 import { BlockRewardLogic, MemAccountsData, SignedBlockType } from '../logic/';
 import { publicKey } from '../types/sanityTypes';
+import { RunThroughExceptions } from '../helpers/decorators/exceptions';
 
 @injectable()
 export class DelegatesModule implements IDelegatesModule {
@@ -22,6 +23,9 @@ export class DelegatesModule implements IDelegatesModule {
   // Helpers
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
+  // tslint:disable-next-line member-ordering
+  @inject(Symbols.helpers.exceptionsManager)
+  public excManager: ExceptionsManager;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.helpers.slots)
@@ -148,6 +152,7 @@ export class DelegatesModule implements IDelegatesModule {
   /**
    * Assets that the block was signed by the correct delegate.
    */
+  @RunThroughExceptions(ExceptionsList.assertValidSlot)
   public async assertValidBlockSlot(block: SignedBlockType) {
     const delegates = await this.generateDelegateList(block.height);
 
