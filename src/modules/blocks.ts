@@ -2,7 +2,6 @@ import { inject, injectable } from 'inversify';
 import { constants, ILogger, wait } from '../helpers/';
 import { Symbols } from '../ioc/symbols';
 import { SignedAndChainedBlockType } from '../logic/';
-import { DebugLog } from '../helpers/decorators/debugLog';
 
 // TODO Eventually remove this module and use appState instead.
 @injectable()

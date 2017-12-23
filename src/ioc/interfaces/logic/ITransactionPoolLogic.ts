@@ -1,5 +1,5 @@
-import { IBaseTransaction } from '../../../logic/transactions';
 import { InnerTXQueue } from '../../../logic';
+import { IBaseTransaction } from '../../../logic/transactions';
 import { ITransactionsModule } from '../modules';
 
 export interface ITransactionPoolLogic {

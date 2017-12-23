@@ -1,7 +1,7 @@
 import { PeerState, PeerType } from '../../../logic';
 import { PeerFilter } from '../../../modules';
-import { IModule } from './IModule';
 import { IPeerLogic } from '../logic';
+import { IModule } from './IModule';
 
 export interface IPeersModule extends IModule {
 

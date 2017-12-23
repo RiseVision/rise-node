@@ -21,7 +21,7 @@ export default {
       format: 'publicKey',
     },
     numberOfTransactions: {
-      type: 'integer'
+      type: 'integer',
     },
     payloadHash         : {
       type  : 'string',

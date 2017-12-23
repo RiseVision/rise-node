@@ -1,5 +1,5 @@
-import { publicKey } from '../../../types/sanityTypes';
 import { AccountFilterData, MemAccountsData } from '../../../logic';
+import { publicKey } from '../../../types/sanityTypes';
 import { IModule } from './IModule';
 
 export interface IAccountsModule extends IModule {
@@ -10,6 +10,7 @@ export interface IAccountsModule extends IModule {
   /**
    * Sets some data to specific account
    */
+  // tslint:disable-next-line max-line-length
   setAccountAndGet(data: ({ publicKey: string } | { address: string }) & { [k: string]: any }): Promise<MemAccountsData>;
 
   mergeAccountAndGetSQL(diff: any): string;

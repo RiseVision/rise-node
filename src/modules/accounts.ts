@@ -65,7 +65,7 @@ export class AccountsModule implements IAccountsModule {
    * @param {MemAccountsData} data
    * @returns {Promise<MemAccountsData>}
    */
-
+  // tslint:disable-next-line max-line-length
   public async setAccountAndGet(data: ({ publicKey: string } | { address: string }) & { [k: string]: any }): Promise<MemAccountsData> {
     if (!data.address && !data.publicKey) {
       throw new Error('Missing address and public key');

@@ -1,14 +1,14 @@
 import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
 import { constants, Diff, emptyCB, ExceptionsList, ExceptionsManager, TransactionType } from '../../helpers/';
+import { DebugLog } from '../../helpers/decorators/debugLog';
+import { RunThroughExceptions } from '../../helpers/decorators/exceptions';
 import { IAccountLogic, IRoundsLogic } from '../../ioc/interfaces/logic';
 import { IDelegatesModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import voteSchema from '../../schema/logic/transactions/vote';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
-import { DebugLog } from '../../helpers/decorators/debugLog';
-import { RunThroughExceptions } from '../../helpers/decorators/exceptions';
 
 // tslint:disable-next-line interface-over-type-literal
 export type VoteAsset = {
