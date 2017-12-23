@@ -8,8 +8,9 @@ import { IPeersModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import { BasePeerType } from '../../logic';
 import transportSchema from '../../schema/transport';
+import { castFieldsToNumberUsingSchema } from '../../helpers';
 
-@Middleware({type: 'before'})
+@Middleware({ type: 'before' })
 @injectable()
 @IoCSymbol(Symbols.api.utils.validatePeerHeadersMiddleware)
 export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
@@ -25,15 +26,20 @@ export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
   private peersModule: IPeersModule;
 
   public use(request: express.Request, response: any, next: (err?: any) => any) {
+    castFieldsToNumberUsingSchema(
+      request.headers,
+      transportSchema.headers
+    );
     if (!this.schema.validate(request.headers, transportSchema.headers)) {
       this.removePeer(request);
-      return next(new Error(`${this.schema.getLastError().message}`));
+      return next(new Error(`${this.schema.getLastError().details[0].path
+      } - ${this.schema.getLastErrors()[0].message}`));
     }
     if (!this.systemModule.networkCompatible(request.headers.nethash as string)) {
       this.removePeer(request);
       return next({
         expected: this.systemModule.getNethash(),
-        message: 'Request is made on the wrong network',
+        message : 'Request is made on the wrong network',
         received: request.headers.nethash,
       });
     }
@@ -42,7 +48,7 @@ export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
       this.removePeer(request);
       return next({
         expected: this.systemModule.getMinVersion(),
-        message: 'Request is made from incompatible version',
+        message : 'Request is made from incompatible version',
         received: request.headers.version,
       });
     }
@@ -57,6 +63,6 @@ export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
   }
 
   private computeBasePeerType(request: express.Request): BasePeerType {
-    return {ip: request.ip, port: parseInt(request.headers.port as string, 10)};
+    return { ip: request.ip, port: parseInt(request.headers.port as string, 10) };
   }
 }
