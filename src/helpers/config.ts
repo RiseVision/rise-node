@@ -1,11 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import configSchema from '../schema/config';
+import { AppConfig } from '../types/genericTypes';
 import constants from './constants';
 import {z_schema} from './z_schema';
-import { AppConfig } from '../types/genericTypes';
-
-// TODO: define return type.
+// tslint:disable no-console
 /**
  * Loads config from path
  * @param {string} configPath

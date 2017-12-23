@@ -9,8 +9,9 @@ export const Symbols = {
     successInterceptor: Symbol('successInterceptor'),
     transactions      : Symbol('transactionsAPI'),
     transport         : Symbol('transportAPI'),
-    utils: {
-      successInterceptor: Symbol('successInterceptor'),
+    utils             : {
+      errorHandler                 : Symbol('errorHandler'),
+      successInterceptor           : Symbol('successInterceptor'),
       validatePeerHeadersMiddleware: Symbol('validatePeerHeadersMiddleware'),
     },
   },

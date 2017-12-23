@@ -1,11 +1,11 @@
 import * as pgp from 'pg-promise';
-import { DebugLog } from './decorators/debugLog';
-
+// NOTE: rawType and _rawDBType are needed for pg-promise to call the toPostgres method.
 /**
  * Helper class for postgres inserts.
  */
 export class Inserts {
   public rawType = true;
+  // tslint:disable-next-line
   public _rawDBType = true;
   constructor(private record: { table: string, values: any, fields: string[] },
               private values: any,

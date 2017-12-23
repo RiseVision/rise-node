@@ -9,13 +9,13 @@
  * @return {Object} error | {sortField, sortMethod}.
  */
 export function OrderBy(orderBy: string,
-                                options: {
-                                  quoteField?: boolean,
-                                  sortField?: string,
-                                  sortMethod?: string,
-                                  sortFields?: string[],
-                                  fieldPrefix?: string | ((f: string) => string)
-                                }): { sortField: string, sortMethod: 'DESC' | 'ASC', error?: string } {
+                        options: {
+                          quoteField?: boolean,
+                          sortField?: string,
+                          sortMethod?: string,
+                          sortFields?: string[],
+                          fieldPrefix?: string | ((f: string) => string)
+                        }): { sortField: string, sortMethod: 'DESC' | 'ASC', error?: string } {
 
   options            = (typeof options === 'object') ? options : {};
   options.sortField  = options.sortField || null;

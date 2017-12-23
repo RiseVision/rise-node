@@ -1,4 +1,4 @@
-export type AppConfigDatabase = {
+export interface AppConfigDatabase {
   host: string,
   port: number,
   database: string,
@@ -8,9 +8,9 @@ export type AppConfigDatabase = {
   poolIdleTimeout: number,
   reapIntervalMillis: number,
   logEvents: string[]
-};
+}
 
-export type AppConfig = {
+export interface AppConfig {
   port: number,
   address: string,
   version: string,
@@ -96,9 +96,9 @@ export type AppConfig = {
 
   dapp: any,
   nethash: string
-};
+}
 
-export type PeerHeaders = {
+export interface PeerHeaders {
   os: string;
   version: string;
   port: number;
@@ -106,4 +106,4 @@ export type PeerHeaders = {
   nethash: string;
   broadhash: string;
   nonce: string;
-};
+}

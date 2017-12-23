@@ -1,6 +1,6 @@
-import { publicKey } from '../../../types/sanityTypes';
-import { AccountFilterData, MemAccountsData } from '../../../logic';
 import { cback } from '../../../helpers';
+import { AccountFilterData, MemAccountsData } from '../../../logic';
+import { publicKey } from '../../../types/sanityTypes';
 
 export interface IAccountLogic {
   objectNormalize(account: any);

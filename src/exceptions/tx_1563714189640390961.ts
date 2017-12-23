@@ -11,7 +11,7 @@ import { IBaseTransaction} from '../logic/transactions';
  */
 export default function exceptionTx14712341342146176146(excManager: ExceptionsManager) {
   const handler: IExceptionHandler<ITransactionLogic> = {
-    canHandle(obj: ITransactionLogic, amount: number, balanceKey: 'balance'|'u_balance', tx: IBaseTransaction<void>, sender: MemAccountsData) {
+    canHandle(obj: ITransactionLogic, amount: number, balanceKey: 'balance'|'u_balance', tx: IBaseTransaction<void>) {
       return tx.id === '1563714189640390961' &&
         tx.senderPublicKey === '0275d0ee6f100cd429bbdc8556e3d1f49cca610f093c2e51e02cf038e8813282' &&
         // tslint:disable-next-line
