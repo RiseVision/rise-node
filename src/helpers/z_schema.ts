@@ -116,7 +116,7 @@ export function castFieldsToNumberUsingSchema(schema: any, obj: any) {
   if (schema.type === 'integer') {
     return parseInt(obj, 10);
   } else if (schema.type === 'object') {
-    Object.keys(obj)
+    Object.keys(schema.properties)
       .forEach((k) => obj[k] = castFieldsToNumberUsingSchema(schema.properties[k], obj[k]));
   } else if (schema.type === 'array' && Array.isArray(obj)) {
     obj.forEach((item, idx) => {
