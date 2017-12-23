@@ -279,7 +279,6 @@ export class LoaderModule implements ILoaderModule {
     }
   }
 
-  @DebugLog
   public async load(count: number, limitPerIteration: number, message?: string) {
     let offset = 0;
     if (message) {

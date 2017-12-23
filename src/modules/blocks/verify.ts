@@ -295,7 +295,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     // Apply block id to the tx
     tx.blockId = block.id;
 
-    // Check if db is in db already if so -> fork type 2.
+    // Check if tx is in db already if so -> fork type 2.
     await this.transactionLogic.assertNonConfirmed(tx)
       .catch(async (err) => {
         await this.forkModule.fork(block, ForkType.TX_ALREADY_CONFIRMED);

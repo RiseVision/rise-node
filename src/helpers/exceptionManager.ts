@@ -2,6 +2,7 @@ import { injectable } from 'inversify';
 
 export const ExceptionsList = {
   assertValidSlot: Symbol('assertValidSlot'),
+  checkBalance: Symbol('checkBalance'),
   voteTx_checkConfirmedDelegate: Symbol('voteTx_checkConfirmedDelegate'),
   voteTx_checkUnConfirmedDelegate: Symbol('voteTx_checkUnConfirmedDelegate'),
 };

@@ -6,7 +6,7 @@ import * as http from 'http';
 import { Container } from 'inversify';
 import * as methodOverride from 'method-override';
 import 'reflect-metadata';
-import { Action, useContainer as useContainerForHTTP, useExpressServer } from 'routing-controllers';
+import { useContainer as useContainerForHTTP, useExpressServer } from 'routing-controllers';
 import * as socketIO from 'socket.io';
 import * as uuid from 'uuid';
 import { allControllers, APIErrorHandler } from './apis';
@@ -14,9 +14,7 @@ import { SuccessInterceptor } from './apis/utils/successInterceptor';
 import { ValidatePeerHeaders } from './apis/utils/validatePeerHeaders';
 import {
   applyExpressLimits, Bus, cache, catchToLoggerAndRemapError, cbToPromise, constants as constantsType, Database, Ed,
-  ExceptionsManager, IExceptionHandler,
-  ILogger, middleware,
-  Sequence, Slots, z_schema,
+  ExceptionsManager, ILogger, middleware, Sequence, Slots, z_schema,
 } from './helpers/';
 import { IPeerLogic, ITransactionLogic } from './ioc/interfaces/logic';
 import { IBlocksModuleChain } from './ioc/interfaces/modules';

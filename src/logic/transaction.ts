@@ -3,7 +3,11 @@ import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
 import z_schema from 'z-schema';
-import { BigNum, constants, Ed, emptyCB, IKeypair, ILogger, Slots } from '../helpers/';
+import {
+  BigNum, constants, Ed, emptyCB, ExceptionsList, ExceptionsManager, IKeypair, ILogger,
+  Slots
+} from '../helpers/';
+import { RunThroughExceptions } from '../helpers/decorators/exceptions';
 import { IAccountLogic, IRoundsLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
 import txSchema from '../schema/logic/transaction';
 import sql from '../sql/logic/transactions';
@@ -58,6 +62,10 @@ export class TransactionLogic implements ITransactionLogic {
 
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+
+  // tslint:disable-next-line member-ordering
+  @inject(Symbols.helpers.exceptionsManager)
+  public excManager: ExceptionsManager;
 
   public attachAssetType<K>(instance: BaseTransactionType<K>): BaseTransactionType<K> {
     if (!(instance instanceof BaseTransactionType)) {
@@ -226,8 +234,9 @@ export class TransactionLogic implements ITransactionLogic {
   /**
    * Checks if balanceKey is less than amount for sender
    */
+  @RunThroughExceptions(ExceptionsList.checkBalance)
   public checkBalance(amount: number | BigNumber, balanceKey: 'balance' | 'u_balance',
-                      tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: any) {
+                      tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: MemAccountsData) {
     const accountBalance  = sender[balanceKey].toString();
     const exceededBalance = new BigNum(accountBalance).lessThan(amount);
     // tslint:disable-next-line
@@ -243,7 +252,7 @@ export class TransactionLogic implements ITransactionLogic {
    * Performs some validation on the transaction and calls process
    * to the respective tx type.
    */
-  public async process<T = any>(tx: IBaseTransaction<T>, sender: any, requester: string): Promise<IBaseTransaction<T>> {
+  public async process<T = any>(tx: IBaseTransaction<T>, sender: MemAccountsData, requester: string): Promise<IBaseTransaction<T>> {
     this.assertKnownTransactionType(tx);
     if (!sender) {
       throw new Error('Missing sender');
