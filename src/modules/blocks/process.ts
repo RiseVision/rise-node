@@ -254,7 +254,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       }
 
       try {
-        this.transactionLogic.verify(tx, sender, null, previousBlock.height);
+        await this.transactionLogic.verify(tx, sender, null, previousBlock.height);
       } catch (err) {
         // TODO: why is error swallowed here? shouldn't we better handle this error?
         this.logger.error(err.stack);
