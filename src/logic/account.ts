@@ -384,7 +384,7 @@ export class AccountLogic implements IAccountLogic {
                   address,
                   amount : trueValue,
                   blockId: diff.blockId,
-                  round  : (diff as any).round, // TODO: Check why round is not here.
+                  round  : diff.round,
                 },
               });
             }
@@ -404,7 +404,7 @@ export class AccountLogic implements IAccountLogic {
                   address,
                   amount : trueValue,
                   blockId: diff.blockId,
-                  round  : (diff as any).round, // TODO: Check why round is not here.
+                  round  : diff.round,
                 },
               });
             }
@@ -441,7 +441,7 @@ export class AccountLogic implements IAccountLogic {
                       address,
                       blockId : diff.blockId,
                       delegate: theVal,
-                      round   : (diff as any).round, // TODO: Check why round is not here.
+                      round  : diff.round,
                     },
                   });
                 }
@@ -457,7 +457,7 @@ export class AccountLogic implements IAccountLogic {
                       address,
                       blockId : diff.blockId,
                       delegate: theVal,
-                      round   : (diff as any).round, // TODO: Check why round is not here.
+                      round  : diff.round,
                     },
                   });
                 }
