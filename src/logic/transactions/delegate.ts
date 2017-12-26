@@ -106,8 +106,8 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       vote        : 0,
     };
     if (tx.asset.delegate.username) {
-      data.username   = null;
-      data.u_username = tx.asset.delegate.username;
+      data.u_username = null;
+      data.username   = tx.asset.delegate.username;
     }
 
     return this.accountsModule.setAccountAndGet(data)

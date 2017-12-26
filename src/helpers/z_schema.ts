@@ -113,6 +113,9 @@ export {z_schema};
 // Exports
 
 export function castFieldsToNumberUsingSchema(schema: any, obj: any) {
+  if (typeof(obj) === 'undefined') {
+    return obj;
+  }
   if (schema.type === 'integer') {
     return parseInt(obj, 10);
   } else if (schema.type === 'object') {
