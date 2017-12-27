@@ -1,5 +1,7 @@
 import {expect} from 'chai';
-import {z_schema} from '../../../src/helpers';
+import * as sinon from 'sinon';
+import { SinonSpy } from 'sinon';
+import { castFieldsToNumberUsingSchema, z_schema } from '../../../src/helpers';
 
 // tslint:disable no-unused-expression
 describe('helpers/z_schema', () => {
@@ -225,6 +227,88 @@ describe('helpers/z_schema', () => {
     });
     it('should reject version subnumbers with more than 3 digits', () => {
       expect(validator.validate('1.22.3333', schema)).to.be.false;
+    });
+  });
+
+  describe('castFieldsToNumberUsingSchema', () => {
+    let parseIntSpy: SinonSpy;
+
+    beforeEach(() => {
+      parseIntSpy = sinon.spy(global, 'parseInt');
+    });
+
+    afterEach(() => {
+      parseIntSpy.restore();
+    });
+
+    it('should return the object untouched if schema.type is not "integer" (on scalars)', () => {
+      const schema = { type: 'string' };
+      const value  = '10000';
+      const retVal = castFieldsToNumberUsingSchema(schema, value);
+      expect(retVal).to.be.deep.eq(value);
+    });
+
+    it('should parse "integer" schema values to radix 10 integer', () => {
+      const schema = { type: 'integer' };
+      const value  = '10000';
+      const retVal = castFieldsToNumberUsingSchema(schema, value);
+      expect(parseIntSpy.called).to.be.true;
+      expect(retVal).to.be.eq(10000);
+      expect(retVal).to.not.be.eq(value);
+    });
+
+    it('should not try to cast undefined', () => {
+      const schema = { type: 'integer' };
+      const value  = undefined;
+      const retVal = castFieldsToNumberUsingSchema(schema, value);
+      expect(retVal).to.be.eq(undefined);
+      expect(parseIntSpy.called).to.be.false;
+    });
+
+    it('should process all levels of nested objects (recursion)', () => {
+      const schema = {
+        type      : 'object',
+        properties: {
+          value: {
+            type: 'integer',
+          },
+          child: {
+            type      : 'object',
+            properties: {
+              value: {
+                type: 'integer',
+              },
+            },
+          },
+        },
+      };
+      const value  = {
+        value: '50',
+        child: {
+          value: '100',
+        },
+      };
+      const retVal = castFieldsToNumberUsingSchema(schema, value);
+      expect(retVal).to.be.deep.eq({
+        value: 50,
+        child: {
+          value: 100,
+        },
+      });
+      expect(parseIntSpy.callCount).to.be.eq(2);
+    });
+
+    it('should process all items in Arrays', () => {
+      const schema = {
+        type : 'array',
+        items: {
+          type: 'integer',
+        },
+      };
+      const value  = ['10', '1000', '99999', '-1'];
+      const retVal = castFieldsToNumberUsingSchema(schema, value);
+      expect(retVal).to.be.deep.eq([10, 1000, 99999, -1]);
+      expect(parseIntSpy.callCount).to.be.eq(4);
     });
   });
 });
