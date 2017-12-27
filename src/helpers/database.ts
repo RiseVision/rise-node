@@ -39,7 +39,7 @@ export class Migrator {
   // tslint:disable-next-line max-line-length
   public async readPendingMigrations(lastMigration: BigNumber): Promise<Array<{ id: BigNumber, name: string, path: string }>> {
     const migrationsPath = path.join(process.cwd(), 'sql', 'migrations');
-    console.log(migrationsPath);
+
     function matchMigrationName(file) {
       const name = file.match(/_.+\.sql$/);
 

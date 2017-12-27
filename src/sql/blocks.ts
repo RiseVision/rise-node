@@ -12,7 +12,6 @@ export default {
     'generatorPublicKey',
   ],
 
-
   deleteBlock: 'DELETE FROM blocks WHERE "id" = ${id};',
 
   countList(params: { where: string[] }) {

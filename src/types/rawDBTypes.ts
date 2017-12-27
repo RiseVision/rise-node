@@ -1,4 +1,4 @@
-import {TransactionType} from '../helpers/transactionTypes';
+import {TransactionType} from '../helpers/';
 import {address, publicKey} from './sanityTypes';
 
 // tslint:disable-next-line
@@ -41,4 +41,3 @@ export type RawFullBlockListType = {
 
   // dapps left out.
 };
-

@@ -2,13 +2,13 @@ import * as express from 'express';
 import { inject, injectable } from 'inversify';
 import { ExpressMiddlewareInterface, Middleware } from 'routing-controllers';
 import * as z_schema from 'z-schema';
+import { castFieldsToNumberUsingSchema } from '../../helpers';
 import { IoCSymbol } from '../../helpers/decorators/iocSymbol';
 import { IPeersLogic } from '../../ioc/interfaces/logic';
 import { IPeersModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import { BasePeerType } from '../../logic';
 import transportSchema from '../../schema/transport';
-import { castFieldsToNumberUsingSchema } from '../../helpers';
 
 @Middleware({ type: 'before' })
 @injectable()

@@ -252,6 +252,7 @@ export class TransactionLogic implements ITransactionLogic {
    * Performs some validation on the transaction and calls process
    * to the respective tx type.
    */
+  // tslint:disable-next-line max-line-length
   public async process<T = any>(tx: IBaseTransaction<T>, sender: MemAccountsData, requester: string): Promise<IBaseTransaction<T>> {
     this.assertKnownTransactionType(tx);
     if (!sender) {

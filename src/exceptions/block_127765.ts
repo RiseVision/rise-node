@@ -1,8 +1,8 @@
-import { ExceptionsList, ExceptionsManager, IExceptionHandler } from '../helpers';
+import { ExceptionsList, ExceptionsManager } from '../helpers';
 import { IDelegatesModule } from '../ioc/interfaces/modules';
 import { SignedBlockType } from '../logic';
 // assertValidBlockSlot(block: SignedBlockType): Promise<void>;
-export default function (excManager: ExceptionsManager) {
+export default function block_127765(excManager: ExceptionsManager) {
   excManager.registerExceptionHandler(
     ExceptionsList.assertValidSlot,
     'block_127765',

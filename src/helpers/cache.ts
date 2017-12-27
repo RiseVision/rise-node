@@ -8,12 +8,15 @@ import { ILogger } from './logger';
  * @param {Object} logger
  * @param {Function} cb
  */
-export const connect = (cacheEnabled: boolean, config: redis.ClientOpts, logger: ILogger): Promise<{ client: redis.RedisClient, cacheEnabled: boolean }> => {
+export const connect = (cacheEnabled: boolean,
+                        config: redis.ClientOpts,
+                        logger: ILogger): Promise<{ client: redis.RedisClient, cacheEnabled: boolean }> => {
+
   return new Promise((resolve) => {
     let isRedisLoaded = false;
 
     if (!cacheEnabled) {
-      return resolve({cacheEnabled, client: null});
+      return resolve({ cacheEnabled, client: null });
     }
 
     // delete password key if it's value is null
@@ -27,7 +30,7 @@ export const connect = (cacheEnabled: boolean, config: redis.ClientOpts, logger:
 
       if (!isRedisLoaded) {
         isRedisLoaded = true;
-        return resolve({cacheEnabled, client});
+        return resolve({ cacheEnabled, client });
       }
     });
 
@@ -36,7 +39,7 @@ export const connect = (cacheEnabled: boolean, config: redis.ClientOpts, logger:
       // Only throw an error if cache was enabled in config but were unable to load it properly
       if (!isRedisLoaded) {
         isRedisLoaded = true;
-        return resolve({cacheEnabled, client: null});
+        return resolve({ cacheEnabled, client: null });
       }
     });
   });

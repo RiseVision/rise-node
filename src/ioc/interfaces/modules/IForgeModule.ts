@@ -1,5 +1,5 @@
-import { publicKey } from '../../../types/sanityTypes';
 import { IKeypair } from '../../../helpers';
+import { publicKey } from '../../../types/sanityTypes';
 
 export interface IForgeModule {
   /**

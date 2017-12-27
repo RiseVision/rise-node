@@ -11,6 +11,7 @@ export interface IBlocksModuleProcess extends IModule {
    * @param {number} height
    * @return {Promise<void>}
    */
+  // tslint:disable-next-line max-line-length
   getCommonBlock(peer: IPeerLogic, height: number): Promise<{ id: string, previousBlock: string, height: number } | void>;
 
   /**

@@ -129,7 +129,7 @@ export class AppManager {
         get(clz: any) {
           const symbol = Reflect.getMetadata(Symbols.__others.metadata.classSymbol, clz);
           if (symbol == null) {
-            return new clz();
+            throw new Error(`ERROR instantiating for HTTP ${symbol}`);
           }
           return container
             .get(symbol);
@@ -172,6 +172,7 @@ export class AppManager {
       );
       this.container.bind(symbol).to(controller).inSingletonScope();
     }
+    this.container.bind(Symbols.api.utils.errorHandler).to(APIErrorHandler).inSingletonScope();
     this.container.bind(Symbols.api.utils.successInterceptor).to(SuccessInterceptor).inSingletonScope();
     this.container.bind(Symbols.api.utils.validatePeerHeadersMiddleware).to(ValidatePeerHeaders).inSingletonScope();
 

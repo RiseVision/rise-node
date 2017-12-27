@@ -7,6 +7,7 @@ import {
   OrderBy,
   Slots,
 } from '../helpers/';
+import { RunThroughExceptions } from '../helpers/decorators/exceptions';
 import { IAppState, IRoundsLogic, } from '../ioc/interfaces/logic';
 import {
   IAccountsModule, IBlocksModule, IDelegatesModule, ITransactionsModule,
@@ -14,7 +15,6 @@ import {
 import { Symbols } from '../ioc/symbols';
 import { BlockRewardLogic, MemAccountsData, SignedBlockType } from '../logic/';
 import { publicKey } from '../types/sanityTypes';
-import { RunThroughExceptions } from '../helpers/decorators/exceptions';
 
 @injectable()
 export class DelegatesModule implements IDelegatesModule {

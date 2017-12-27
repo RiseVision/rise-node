@@ -23,5 +23,5 @@ export interface IAppState {
 
   get(what: 'rounds.snapshot'): number;
 
-  getComputed(what: 'node.poorConsensus'): boolean
+  getComputed(what: 'node.poorConsensus'): boolean;
 }

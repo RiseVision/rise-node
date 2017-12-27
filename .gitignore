@@ -20,3 +20,7 @@ sftp-config.json
 *.swp
 *.swo
 .idea/
+.devutils/backup_pre_fork.tar
+backup.tar
+blockchain.db.gz
+dist/

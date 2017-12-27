@@ -201,6 +201,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
         await this.transactionLogic.undoUnconfirmed(transaction, sender);
       }
+      throw err;
     }
 
     // Block and transactions are ok.

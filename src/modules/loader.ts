@@ -11,7 +11,7 @@ import {
 import {
   IBlocksModule, IBlocksModuleChain, IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify, ILoaderModule,
   IMultisignaturesModule,
-  IPeersModule, IRoundsModule,
+  IPeersModule,
   ISystemModule,
   ITransactionsModule, ITransportModule
 } from '../ioc/interfaces/modules/';
@@ -428,7 +428,8 @@ export class LoaderModule implements ILoaderModule {
 
           loaded = lastValidBlock.id === lastBlock.id;
           // update blocksmodule last receipt with last block timestamp!
-          this.blocksModule.lastReceipt.update(Math.floor(this.constants.epochTime.getTime() / 1000 + lastValidBlock.timestamp));
+          this.blocksModule.lastReceipt
+            .update(Math.floor(this.constants.epochTime.getTime() / 1000 + lastValidBlock.timestamp));
         } catch (err) {
           this.logger.error(err.toString());
           this.logger.error('Failed to load blocks from: ' + randomPeer.string);
