@@ -19,7 +19,6 @@ export interface ITransactionPoolLogic {
 
   /**
    * Gets unconfirmed, multisig and queued txs based on limit and reverse opts
-   * FIXME Parameters are not taken into account!
    */
   getMergedTransactionList(reverse: boolean, limit: number): Array<IBaseTransaction<any>>;
 

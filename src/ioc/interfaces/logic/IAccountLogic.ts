@@ -30,19 +30,13 @@ export interface IAccountLogic {
   /**
    * Get account information for specific fields and filtering criteria
    */
-  get(filter: AccountFilterData, cb?: cback<MemAccountsData>): Promise<MemAccountsData>;
-
-  get(filter: AccountFilterData, fields: Array<(keyof MemAccountsData)>,
-      cb?: cback<MemAccountsData>): Promise<MemAccountsData>;
+  get(filter: AccountFilterData, fields?: Array<(keyof MemAccountsData)>): Promise<MemAccountsData>;
 
   /**
    * Get accountS information for specific fields and filtering criteria.
    */
   getAll(filter: AccountFilterData,
-         cb: cback<any>): Promise<any[]>;
-
-  getAll(filter: AccountFilterData,
-         fields: Array<(keyof MemAccountsData)>, cb?: cback<any>): Promise<any[]>;
+         fields?: Array<(keyof MemAccountsData)>): Promise<any[]>;
 
   /**
    * Sets fields for specific address in mem_accounts table

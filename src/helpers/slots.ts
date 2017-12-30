@@ -37,18 +37,11 @@ export class Slots {
     return slot * this.interval;
   }
 
-  public getNextSlot() {
-    return this.getSlotNumber() + 1;
-  }
-
+  /**
+   * Basically adds the given slot number with the number of forging delegates
+   */
   public getLastSlot(nextSlot: number) {
-    // TODO: hmm? wtf is going on here? this is not last slot.
     return nextSlot + this.delegates;
-  }
-
-  public roundTime(date: Date) {
-    // TODO: hmm? wtf is going on here? this is not last slot.
-    return Math.floor(date.getTime() / 1000) * 1000;
   }
 
 }

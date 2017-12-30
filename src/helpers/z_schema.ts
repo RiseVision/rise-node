@@ -71,14 +71,7 @@ z_schema.registerFormat('signature', (str: string) => {
   if (str.length === 0) {
     return true;
   }
-
-  try {
-    // FIXME: See above.
-    const signature = Buffer.from(str, 'hex');
-    return signature.length === 64;
-  } catch (e) {
-    return false;
-  }
+  return /^[a-f0-9]{128}$/i.test(str);
 });
 
 z_schema.registerFormat('queryList', (obj: any) => {

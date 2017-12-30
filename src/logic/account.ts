@@ -98,7 +98,7 @@ export class AccountLogic implements IAccountLogic {
   private logger: ILogger;
 
   constructor() {
-    this.model   = accountsModelCreator(this.table);
+    this.model = accountsModelCreator(this.table);
 
     this.fields = this.model.map((field) => {
       const tmp: any = {};
@@ -138,7 +138,7 @@ export class AccountLogic implements IAccountLogic {
    * Creates memory tables related to accounts!
    */
   public createTables(): Promise<void> {
-    const sql = new pgp.QueryFile(path.join(process.cwd(), 'sql', 'memoryTables.sql'), {minify: true});
+    const sql = new pgp.QueryFile(path.join(process.cwd(), 'sql', 'memoryTables.sql'), { minify: true });
     return this.db.query(sql)
       .catch(catchToLoggerAndRemapError('Account#createTables error', this.logger));
   }
@@ -206,7 +206,7 @@ export class AccountLogic implements IAccountLogic {
         throw new Error('Invalid public key, must be 64 characters long');
       }
 
-      if (!this.schema.validate(publicKey, {format: 'hex'})) {
+      if (!this.schema.validate(publicKey, { format: 'hex' })) {
         throw new Error('Invalid public key, must be a hex string');
       }
     } else if (!allowUndefined) {
@@ -232,37 +232,16 @@ export class AccountLogic implements IAccountLogic {
   /**
    * Get account information for specific fields and filtering criteria
    */
-  public get(filter: AccountFilterData, cb?: cback<MemAccountsData>): Promise<MemAccountsData>;
-  public get(filter: AccountFilterData, fields: Array<(keyof MemAccountsData)>,
-             cb?: cback<MemAccountsData>): Promise<MemAccountsData>;
-  public get(filter: AccountFilterData, fields: Array<(keyof MemAccountsData)> | cback<MemAccountsData>,
-             cb?: cback<MemAccountsData>): Promise<MemAccountsData> {
-    if (typeof(fields) === 'function') {
-      cb     = fields;
-      fields = this.fields.map((field) => field.alias || field.field) as any;
-    }
-    return promiseToCB(
-      this.getAll(filter, fields as any) // TODO: check why i need to do as any here.
-        .then((res) => res[0]),
-      cb
-    );
+  // tslint:disable-next-line max-line-length
+  public get(filter: AccountFilterData, fields: Array<(keyof MemAccountsData)> = this.fields.map((field) => field.alias || field.field) as any): Promise<MemAccountsData> {
+    return this.getAll(filter, fields)
+      .then((res) => res[0]);
   }
 
   /**
    * Get accountS information for specific fields and filtering criteria.
    */
-  public getAll(filter: AccountFilterData,
-                cb: cback<any>): Promise<any[]>;
-  public getAll(filter: AccountFilterData,
-                fields: Array<(keyof MemAccountsData)>, cb?: cback<any>): Promise<any[]>;
-  public getAll(filter: AccountFilterData,
-                fields: Array<(keyof MemAccountsData)> | cback<any>,
-                cb?: cback<any>): Promise<MemAccountsData[]> {
-
-    if (typeof(fields) === 'function') {
-      cb = fields;
-    }
-
+  public getAll(filter: AccountFilterData, fields?: Array<(keyof MemAccountsData)>): Promise<MemAccountsData[]> {
     if (!Array.isArray(fields)) {
       fields = this.fields.map((field) => field.alias || field.field) as any;
     }
@@ -280,7 +259,7 @@ export class AccountLogic implements IAccountLogic {
     const offset: number = filter.offset > 0 ? filter.offset : undefined;
     const sort: any      = filter.sort ? filter.sort : undefined;
 
-    const condition: any = {...filter, ...{limit: undefined, offset: undefined, sort: undefined}};
+    const condition: any = { ...filter, ...{ limit: undefined, offset: undefined, sort: undefined } };
     if (typeof(filter.address) === 'string') {
       condition.address = {
         $upper: ['address', filter.address],
@@ -304,11 +283,8 @@ export class AccountLogic implements IAccountLogic {
       type  : 'select',
     });
 
-    return promiseToCB(
-      this.db.query(sql.query, sql.values)
-        .catch(catchToLoggerAndRemapError('Account#getAll error', this.logger)),
-      cb
-    );
+    return this.db.query(sql.query, sql.values)
+      .catch(catchToLoggerAndRemapError('Account#getAll error', this.logger));
   }
 
   /**
@@ -441,7 +417,7 @@ export class AccountLogic implements IAccountLogic {
                       address,
                       blockId : diff.blockId,
                       delegate: theVal,
-                      round  : diff.round,
+                      round   : diff.round,
                     },
                   });
                 }
@@ -457,7 +433,7 @@ export class AccountLogic implements IAccountLogic {
                       address,
                       blockId : diff.blockId,
                       delegate: theVal,
-                      round  : diff.round,
+                      round   : diff.round,
                     },
                   });
                 }
@@ -474,7 +450,7 @@ export class AccountLogic implements IAccountLogic {
     // All remove
       .map((el) => jsonSql.build({
         condition: {
-          dependentId: {$in: remove[el]},
+          dependentId: { $in: remove[el] },
           // tslint:disable-next-line
           accountId  : address,
         },
@@ -514,7 +490,7 @@ export class AccountLogic implements IAccountLogic {
 
     if (Object.keys(update).length > 0) {
       sqles.push(jsonSql.build({
-        condition: {address},
+        condition: { address },
         modifier : update,
         table    : this.table,
         type     : 'update',
@@ -533,12 +509,12 @@ export class AccountLogic implements IAccountLogic {
 
     if (sqlQuery.length === 0) {
       // Nothing to run return account
-      return this.get({address}, cb);
+      return this.get({ address });
     }
 
     return promiseToCB(
       this.db.none(sqlQuery)
-        .then(() => this.get({address}, emptyCB))
+        .then(() => this.get({ address }))
         .catch((err) => {
           this.logger.error(err.stack);
           return Promise.reject('Account#merge error');
@@ -555,7 +531,7 @@ export class AccountLogic implements IAccountLogic {
    */
   public remove(address: string, cb: cback<string>): Promise<string> {
     const sql = jsonSql.build({
-      condition: {address},
+      condition: { address },
       table    : this.table,
       type     : 'remove',
     });
