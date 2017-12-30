@@ -1,16 +1,20 @@
 import { ExceptionsList, ExceptionsManager, IExceptionHandler } from '../helpers';
 import { IBaseTransaction, VoteTransaction } from '../logic/transactions';
 import { VoteAsset } from '../logic/transactions';
+import { ITransactionLogic } from '../ioc/interfaces/logic';
 /**
  * This transaction was broadcasted with 14572759844663166621 in the same
  * block and it was not allowed to be included as it removes a vote that
  * was already removed in 14572759844663166621.
  *
+ * The solution here is just to not apply and applyUnconfirmed the tx as the old implementation
+ * basically applyUnconfirmed +rollbacl and appy +rollback but newer code broadcasts an error.
+ *
  * Affected block was: 441720
  */
 export default function exceptionTx14712341342146176146(excManager: ExceptionsManager) {
-  const handler: IExceptionHandler<VoteTransaction> = {
-    canHandle(obj: VoteTransaction, tx: IBaseTransaction<VoteAsset>) {
+  const handler: IExceptionHandler<ITransactionLogic> = {
+    canHandle(obj: ITransactionLogic, tx: IBaseTransaction<VoteAsset>) {
       return tx.id === '14712341342146176146' &&
         tx.senderPublicKey === '505a860f782db11937a1183732770878c45215567856670a9219c27ada80f22e' &&
         // tslint:disable-next-line
@@ -21,12 +25,12 @@ export default function exceptionTx14712341342146176146(excManager: ExceptionsMa
     },
   };
   excManager.registerExceptionHandler(
-    ExceptionsList.voteTx_checkUnConfirmedDelegate,
+    ExceptionsList.tx_apply,
     'tx_14712341342146176146',
     handler
   );
   excManager.registerExceptionHandler(
-    ExceptionsList.voteTx_checkConfirmedDelegate,
+    ExceptionsList.tx_applyUnconfirmed,
     'tx_14712341342146176146',
     handler
   );

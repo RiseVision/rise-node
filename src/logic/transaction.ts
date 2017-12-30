@@ -253,7 +253,7 @@ export class TransactionLogic implements ITransactionLogic {
    * to the respective tx type.
    */
   // tslint:disable-next-line max-line-length
-  public async process<T = any>(tx: IBaseTransaction<T>, sender: MemAccountsData, requester: string): Promise<IBaseTransaction<T>> {
+  public async process<T = any>(tx: IBaseTransaction<T>, sender: MemAccountsData, requester: MemAccountsData): Promise<IBaseTransaction<T>> {
     this.assertKnownTransactionType(tx);
     if (!sender) {
       throw new Error('Missing sender');
@@ -264,15 +264,14 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Invalid transaction id');
     }
 
-    // TODO: TS fix me
-    (tx as any).senderId = sender.address;
+    tx.senderId = sender.address;
 
     await this.types[tx.type].process(tx, sender);
     return tx;
   }
 
   public async verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: MemAccountsData,
-                      requester: any, height: number) {
+                      requester: MemAccountsData, height: number) {
     this.assertKnownTransactionType(tx);
     if (!sender) {
       throw new Error('Missing sender');
@@ -419,7 +418,8 @@ export class TransactionLogic implements ITransactionLogic {
     );
   }
 
-  public async apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void> {
+  @RunThroughExceptions(ExceptionsList.tx_apply)
+  public async apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: MemAccountsData): Promise<void> {
     if (!this.ready(tx, sender)) {
       throw new Error('Transaction is not ready');
     }
@@ -444,10 +444,9 @@ export class TransactionLogic implements ITransactionLogic {
         balance: -amountNumber,
         blockId: block.id,
         round  : this.roundsLogic.calcRound(block.height),
-      } as any, // TODO: round is not defined in typescript definition. Possible bug?
+      },
       // tslint:disable-next-line no-empty
-      () => {
-      } // If you don't pass cb then the sql string is returned.
+      emptyCB // If you don't pass cb then the sql string is returned.
     );
 
     try {
@@ -461,9 +460,7 @@ export class TransactionLogic implements ITransactionLogic {
           blockId: block.id,
           round  : this.roundsLogic.calcRound(block.height),
         },
-        // tslint:disable-next-line no-empty
-        () => {
-        }
+        emptyCB
       );
       // here it differs from original implementation which did not throw
       throw e;
@@ -474,7 +471,7 @@ export class TransactionLogic implements ITransactionLogic {
    * Merges account into sender address and calls undo to txtype
    * @returns {Promise<void>}
    */
-  public async undo(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void> {
+  public async undo(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: MemAccountsData): Promise<void> {
     const amount: number = new BigNum(tx.amount.toString())
       .plus(tx.fee.toString())
       .toNumber();
@@ -512,7 +509,9 @@ export class TransactionLogic implements ITransactionLogic {
     }
   }
 
-  public async applyUnconfirmed(tx: IBaseTransaction<any>, sender: any, requester?: any): Promise<void> {
+  @RunThroughExceptions(ExceptionsList.tx_applyUnconfirmed)
+  // tslint:disable-next-line max-line-length
+  public async applyUnconfirmed(tx: IBaseTransaction<any>, sender: MemAccountsData, requester?: MemAccountsData): Promise<void> {
     // FIXME propagate requester?
     const amount        = new BigNum(tx.amount.toString()).plus(tx.fee.toString());
     const senderBalance = this.checkBalance(amount, 'u_balance', tx, sender);
@@ -544,7 +543,7 @@ export class TransactionLogic implements ITransactionLogic {
    * Merges account into sender address with unconfirmed balance tx amount
    * Then calls undoUnconfirmed to the txType.
    */
-  public async undoUnconfirmed(tx: IBaseTransaction<any>, sender: any): Promise<void> {
+  public async undoUnconfirmed(tx: IBaseTransaction<any>, sender: MemAccountsData): Promise<void> {
     const amount: number = new BigNum(tx.amount.toString())
       .plus(tx.fee.toString())
       .toNumber();

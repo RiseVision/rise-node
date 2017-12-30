@@ -20,7 +20,7 @@ export interface ITransactionPoolLogic {
   /**
    * Gets unconfirmed, multisig and queued txs based on limit and reverse opts
    */
-  getMergedTransactionList(reverse: boolean, limit: number): Array<IBaseTransaction<any>>;
+  getMergedTransactionList(limit: number): Array<IBaseTransaction<any>>;
 
   expireTransactions(): string[];
 

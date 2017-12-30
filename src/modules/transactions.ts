@@ -82,8 +82,8 @@ export class TransactionsModule implements ITransactionsModule {
   /**
    * Gets unconfirmed, multisignature and queued transactions based on limit and reverse option.
    */
-  public getMergedTransactionList(reverse: boolean, limit?: number): Array<IBaseTransaction<any>> {
-    return this.transactionPool.getMergedTransactionList(reverse, limit);
+  public getMergedTransactionList(limit?: number): Array<IBaseTransaction<any>> {
+    return this.transactionPool.getMergedTransactionList(limit);
   }
 
   /**

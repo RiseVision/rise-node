@@ -41,7 +41,7 @@ export interface ITransactionsModule extends IModule {
   /**
    * Gets unconfirmed, multisignature and queued transactions based on limit and reverse option.
    */
-  getMergedTransactionList(reverse: boolean, limit?: number): Array<IBaseTransaction<any>>;
+  getMergedTransactionList(limit?: number): Array<IBaseTransaction<any>>;
 
   /**
    * Removes transaction from unconfirmed, queued and multisignature.
@@ -83,7 +83,7 @@ export interface ITransactionsModule extends IModule {
   /**
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
-  applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId: string }, sender: any): Promise<void>;
+  applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: any): Promise<void>;
 
   /**
    * Validates account and Undoes unconfirmed transaction.

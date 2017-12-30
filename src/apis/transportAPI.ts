@@ -85,7 +85,7 @@ export class TransportAPI {
 
   @Get('/transactions')
   public transactions() {
-    const transactions = this.transactionsModule.getMergedTransactionList(true, this.constants.maxSharedTxs);
+    const transactions = this.transactionsModule.getMergedTransactionList(this.constants.maxSharedTxs);
     return {transactions};
   }
 

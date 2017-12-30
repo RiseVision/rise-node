@@ -184,9 +184,8 @@ export class TransactionPool implements ITransactionPoolLogic {
 
   /**
    * Gets unconfirmed, multisig and queued txs based on limit and reverse opts
-   * FIXME Parameters are not taken into account!
    */
-  public getMergedTransactionList(reverse: boolean, limit: number) {
+  public getMergedTransactionList(limit: number) {
     const minLimit = (constants.maxTxsPerBlock + 2);
 
     if (limit <= minLimit || limit > constants.maxSharedTxs) {
@@ -317,7 +316,7 @@ export class TransactionPool implements ITransactionPoolLogic {
         );
         try {
           await txModule.applyUnconfirmed(
-            theTx as any, // TODO: check me.
+            theTx,
             sender);
         } catch (e) {
           this.logger.error(`Failed to apply unconfirmed transaction ${theTx.id}`, e);

@@ -331,8 +331,6 @@ export class AccountLogic implements IAccountLogic {
     const insertObject: any = {};
     const removeObject: any = {};
     const round: any        = [];
-    // TODO: REmove this as it's only used for debugging against older implementation later in code.
-    const tmpDiff           = JSON.parse(JSON.stringify(diff));
 
     address = address.toUpperCase();
     this.assertPublicKey(diff.publicKey);

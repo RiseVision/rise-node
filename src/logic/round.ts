@@ -70,7 +70,7 @@ export class RoundLogic implements IRoundLogic {
    */
   public updateMissedBlocks(): Promise<void> {
     if (this.scope.roundOutsiders.length === 0) {
-      return Promise.resolve(); // TODO: This was this.task
+      return Promise.resolve();
     }
 
     return this.task.none(
