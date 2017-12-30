@@ -1,7 +1,6 @@
 import BigNumber from 'bignumber.js';
 import { expect } from 'chai';
 import * as crypto from 'crypto';
-import { BigNum } from '../../../src/helpers';
 import MyBigNumb from '../../../src/helpers/bignum';
 
 describe('helpers/bignum', () => {
@@ -27,7 +26,7 @@ describe('helpers/bignum', () => {
       // In RISE, this function is used with SHA-256 hashes as input, like this:
       // 298060b98876a71d422b03ea601aee4625eb883bdd317e7556dbe4cbb0ab57d3
       const hash = crypto.createHash('sha256').update('Testing helpers/bignum.ts').digest();
-      const buf  = BigNum.fromBuffer(hash);
+      const buf  = MyBigNumb.fromBuffer(hash);
       expect(buf.toString(16)).to.be.deep.equal('298060b98876a71d422b03ea601aee4625eb883bdd317e7556dbe4cbb0ab57d3');
     });
 

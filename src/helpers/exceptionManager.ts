@@ -1,4 +1,5 @@
 import { injectable } from 'inversify';
+import 'reflect-metadata';
 
 export const ExceptionsList = {
   assertValidSlot: Symbol('assertValidSlot'),
