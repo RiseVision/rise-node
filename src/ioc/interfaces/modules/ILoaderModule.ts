@@ -3,7 +3,7 @@ import { IPeerLogic } from '../logic';
 export interface ILoaderModule {
   getNework(): Promise<{ height: number; peers: IPeerLogic[] }>;
 
-  gerRandomPeer(): Promise<IPeerLogic>;
+  getRandomPeer(): Promise<IPeerLogic>;
 
   cleanup(): Promise<void>;
 

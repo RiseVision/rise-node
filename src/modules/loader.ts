@@ -117,7 +117,7 @@ export class LoaderModule implements ILoaderModule {
     return this.network;
   }
 
-  public async gerRandomPeer(): Promise<IPeerLogic> {
+  public async getRandomPeer(): Promise<IPeerLogic> {
     const {peers} = await this.getNework();
     return peers[Math.floor(Math.random() * peers.length)];
   }
@@ -403,11 +403,11 @@ export class LoaderModule implements ILoaderModule {
 
     do {
       await promiseRetry(async (retry) => {
-        const randomPeer                 = await this.gerRandomPeer();
+        const randomPeer                 = await this.getRandomPeer();
         const lastBlock: SignedBlockType = this.blocksModule.lastBlock;
 
         if (lastBlock.height !== 1) {
-          this.logger.info('Looking for common block with: ' + randomPeer.string);
+          this.logger.info(`Looking for common block with: ${randomPeer.string}`);
           try {
             const commonBlock = await this.blocksProcessModule.getCommonBlock(randomPeer, lastBlock.height);
             if (!commonBlock) {
@@ -507,7 +507,7 @@ export class LoaderModule implements ILoaderModule {
    * Loads pending multisignature transactions
    */
   private async loadSignatures() {
-    const randomPeer = await this.gerRandomPeer();
+    const randomPeer = await this.getRandomPeer();
     this.logger.log(`Loading signatures from: ${randomPeer.string}`);
     const res = await this.transportModule.getFromPeer<any>(
       randomPeer,
@@ -546,7 +546,7 @@ export class LoaderModule implements ILoaderModule {
    * Validates each transaction from peer and eventually remove the peer if invalid.
    */
   private async loadTransactions() {
-    const peer = await this.gerRandomPeer();
+    const peer = await this.getRandomPeer();
     this.logger.log(`Loading transactions from: ${peer.string}`);
     const res = await this.transportModule.getFromPeer<any>(peer, {
       api   : '/transactions',
