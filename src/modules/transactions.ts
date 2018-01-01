@@ -90,7 +90,9 @@ export class TransactionsModule implements ITransactionsModule {
    * Removes transaction from unconfirmed, queued and multisignature.
    */
   public removeUnconfirmedTransaction(id: string) {
-    return this.transactionPool.unconfirmed.remove(id);
+    this.transactionPool.unconfirmed.remove(id);
+    this.transactionPool.queued.remove(id);
+    this.transactionPool.multisignature.remove(id);
   }
 
   /**

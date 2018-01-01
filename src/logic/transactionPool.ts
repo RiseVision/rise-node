@@ -161,18 +161,25 @@ export class TransactionPool implements ITransactionPoolLogic {
       return Promise.resolve([]);
     }
 
-    const multignatures = this.multisignature.list(
+    const multignatures = this.multisignature.listWithPayload(
       true,
       5,
       // tslint:disable-next-line
       (tx) => (tx as any)['ready']);
 
-    const inQueue = this.queued.list(true, Math.max(0, spare - multignatures.length));
+    const inQueue = this.queued.listWithPayload(true, Math.max(0, spare - multignatures.length));
 
-    const txs = multignatures.concat(inQueue);
-    txs.forEach((tx) => this.unconfirmed.add(tx));
+    const txsAndPayloads = multignatures.concat(inQueue);
+    txsAndPayloads.forEach(({tx, payload}) => {
+      // Remove the tx from either multisig or queued
+      this.multisignature.remove(tx.id);
+      this.queued.remove(tx.id);
 
-    return txs;
+      // Add to unconfirmed.
+      this.unconfirmed.add(tx, payload);
+    });
+
+    return txsAndPayloads.map(({tx}) => tx);
   }
 
   public transactionInPool(txID: string) {
@@ -217,6 +224,9 @@ export class TransactionPool implements ITransactionPoolLogic {
       if (!tx) {
         continue;
       }
+      if (typeof(payload) === 'undefined') {
+        console.log(tx, payload);
+      }
       const now     = Math.floor(Date.now() / 1000);
       const timeOut = this.txTimeout(tx);
       const seconds = now - Math.floor(payload.receivedAt.getTime() / 1000);
@@ -251,7 +261,7 @@ export class TransactionPool implements ITransactionPoolLogic {
         }
       } catch (e) {
         this.logger.debug(`Failed to process / verify bundled transaction: ${tx.id}`, e);
-        this.unconfirmed.remove(tx.id);
+        this.removeUnconfirmedTransaction(tx.id);
       }
     }
   }
@@ -320,11 +330,11 @@ export class TransactionPool implements ITransactionPoolLogic {
             sender);
         } catch (e) {
           this.logger.error(`Failed to apply unconfirmed transaction ${theTx.id}`, e);
-          this.unconfirmed.remove(theTx.id);
+          this.removeUnconfirmedTransaction(theTx.id);
         }
       } catch (e) {
         this.logger.error(`Failed to process / verify unconfirmed transaction: ${theTx.id}`, e);
-        this.unconfirmed.remove(theTx.id);
+        this.removeUnconfirmedTransaction(theTx.id);
       }
     }
   }
@@ -370,7 +380,7 @@ export class TransactionPool implements ITransactionPoolLogic {
    * Gets sender account verifies if its multisignature and evnetually gets requester
    * process transaaction and verifies it.
    */
-  private async processVerifyTransaction(transaction: IBaseTransaction<any>, broadcast: any) {
+  private async processVerifyTransaction(transaction: IBaseTransaction<any>, broadcast: boolean) {
     if (!transaction) {
       throw new Error('Missing transaction');
     }
