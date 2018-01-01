@@ -1,7 +1,7 @@
 import { Request } from 'express';
 import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
-import { Body, Get, JsonController, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
+import { BodyParam, Get, JsonController, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { Bus, constants as constantsType } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
@@ -90,16 +90,18 @@ export class TransportAPI {
   }
 
   @Post('/transactions')
-  public async postTransactions(@Body() body: any, @Req() req: Request) {
+  public async postTransactions(@BodyParam('transactions') txs: Array<IBaseTransaction<any>>,
+                                @BodyParam('transaction') tx: IBaseTransaction<any>,
+                                @Req() req: Request) {
     const thePeer = this.peersLogic.create({
       ip  : req.ip,
       port: parseInt(req.headers.port as string, 10),
     });
-    if (body.transactions) {
-      await this.transportModule.receiveTransactions(body, thePeer, `${req.method} ${req.url}`);
+    if (txs) {
+      await this.transportModule.receiveTransactions(txs, thePeer, `${req.method} ${req.url}`);
       return {};
-    } else if (body.transaction) {
-      await this.transportModule.receiveTransaction(body.transaction, thePeer, false, `${req.method} ${req.url}`);
+    } else if (tx) {
+      await this.transportModule.receiveTransaction(tx, thePeer, false, `${req.method} ${req.url}`);
 
     }
   }
@@ -125,7 +127,7 @@ export class TransportAPI {
   }
 
   @Post('/blocks')
-  public async postBlocks(@Body() block: SignedAndChainedBlockType, @Req() req: Request) {
+  public async postBlocks(@BodyParam('block') block: SignedAndChainedBlockType, @Req() req: Request) {
     try {
       block = this.blockLogic.objectNormalize(block);
     } catch (e) {
