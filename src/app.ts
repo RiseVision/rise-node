@@ -12,8 +12,6 @@ import { SignedAndChainedBlockType } from './logic/';
 declare const gc; // garbage collection if exposed.
 
 // tslint:disable-next-line
-const genesisBlock: SignedAndChainedBlockType = require('../genesisBlock.json');
-// tslint:disable-next-line
 const packageJson                             = require('../package.json');
 const versionBuild: string                    = fs.readFileSync(`${__dirname}/../build`, 'utf8');
 
@@ -24,7 +22,7 @@ if (typeof(gc) !== 'undefined') {
 
 program
   .version(packageJson)
-  .option('-c, --config <path>', 'config file path')
+  .option('-n, --net <network>', 'network: mainnet, testnet', 'mainnet')
   .option('-p, --port <port>', 'listening port number')
   .option('-a, --address <ip>', 'listening host name or ip')
   .option('-x, --peers [peers...]', 'peers list')
@@ -32,7 +30,10 @@ program
   .option('-s, --snapshot <round>', 'verify snapshot')
   .parse(process.argv);
 
-const appConfig = configCreator(program.config);
+// tslint:disable-next-line
+const genesisBlock: SignedAndChainedBlockType = require(`../etc/${program.net}/genesisBlock.json`);
+
+const appConfig = configCreator(`./etc/${program.net}/config.json`);
 if (program.port) {
   appConfig.port = program.port;
 }

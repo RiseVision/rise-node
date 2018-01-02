@@ -197,7 +197,7 @@ export class LoaderModule implements ILoaderModule {
 
     if (blocksCount === 1) {
       // Load from start!
-      return this.load(1, limit);
+      return this.load(1, limit, null, true);
     }
 
     const genesisBlock = results[1][0];
@@ -240,13 +240,13 @@ export class LoaderModule implements ILoaderModule {
     const missedBlocksInMemAccounts = !(results[2].count);
 
     if (missedBlocksInMemAccounts) {
-      return this.load(blocksCount, limit, 'Detected missed blocks in mem_accounts');
+      return this.load(blocksCount, limit, 'Detected missed blocks in mem_accounts', true);
     }
 
     const unapplied = results[3].filter((r) => r.round !== String(round));
     if (unapplied.length > 0) {
       // round is not applied.
-      return this.load(blocksCount, limit, 'Detected unapplied rounds in mem_round');
+      return this.load(blocksCount, limit, 'Detected unapplied rounds in mem_round', true);
     }
 
     const duplicatedDelegates = results[4][0].count > 0;
@@ -263,11 +263,11 @@ export class LoaderModule implements ILoaderModule {
     ]));
 
     if (res[1].length > 0) {
-      return this.load(blocksCount, limit, 'Detected orphaned blocks in mem_accounts');
+      return this.load(blocksCount, limit, 'Detected orphaned blocks in mem_accounts', true);
     }
 
     if (res[2].length === 0) {
-      return this.load(blocksCount, limit, 'No delegates found');
+      return this.load(blocksCount, limit, 'No delegates found', true);
     }
     try {
       this.lastblock = await this.blocksUtilsModule.loadLastBlock();
@@ -296,7 +296,7 @@ export class LoaderModule implements ILoaderModule {
           this.logger.info('Rebuilding blockchain, current block height: ' + (offset + 1));
         }
         const lastBlock = await this.blocksProcessModule.loadBlocksOffset(
-          Math.min(limitPerIteration, count - offset),
+          Math.min(limitPerIteration, 1 + count - offset), // exclusive limit
           offset,
           true/*verify*/
         );
