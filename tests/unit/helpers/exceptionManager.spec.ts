@@ -14,7 +14,6 @@ const getTestHandler = () => {
   };
 };
 const exceptionType  = Symbol('tests');
-;
 
 describe('helpers/exceptionManager', () => {
   describe('registerExceptionHandler', () => {
