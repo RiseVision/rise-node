@@ -63,10 +63,10 @@ export interface ITransactionLogic {
    * Performs some validation on the transaction and calls process
    * to the respective tx type.
    */
-  process<T = any>(tx: IBaseTransaction<T>, sender: any, requester: string): Promise<IBaseTransaction<T>>;
+  process<T = any>(tx: IBaseTransaction<T>, sender: MemAccountsData, requester: MemAccountsData): Promise<IBaseTransaction<T>>;
 
   verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: MemAccountsData,
-         requester: any, height: number): Promise<void>;
+         requester: MemAccountsData, height: number): Promise<void>;
 
   /**
    * Verifies the given signature (both first and second)
@@ -79,21 +79,21 @@ export interface ITransactionLogic {
   verifySignature(tx: IBaseTransaction<any>, publicKey: string, signature: string,
                   isSecondSignature?: boolean): boolean;
 
-  apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void>;
+  apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: MemAccountsData): Promise<void>;
 
   /**
    * Merges account into sender address and calls undo to txtype
    * @returns {Promise<void>}
    */
-  undo(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void>;
+  undo(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: MemAccountsData): Promise<void>;
 
-  applyUnconfirmed(tx: IBaseTransaction<any>, sender: any, requester?: any): Promise<void>;
+  applyUnconfirmed(tx: IBaseTransaction<any>, sender: MemAccountsData, requester?: MemAccountsData): Promise<void>;
 
   /**
    * Merges account into sender address with unconfirmed balance tx amount
    * Then calls undoUnconfirmed to the txType.
    */
-  undoUnconfirmed(tx: IBaseTransaction<any>, sender: any): Promise<void>;
+  undoUnconfirmed(tx: IBaseTransaction<any>, sender: MemAccountsData): Promise<void>;
 
   dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<{
     table: string, fields: string[], values: any

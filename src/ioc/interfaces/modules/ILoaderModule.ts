@@ -1,9 +1,12 @@
 import { IPeerLogic } from '../logic';
 
 export interface ILoaderModule {
+  readonly isSyncing: boolean;
+  readonly loaded: boolean;
+
   getNework(): Promise<{ height: number; peers: IPeerLogic[] }>;
 
-  gerRandomPeer(): Promise<IPeerLogic>;
+  getRandomPeer(): Promise<IPeerLogic>;
 
   cleanup(): Promise<void>;
 

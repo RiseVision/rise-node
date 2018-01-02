@@ -6,6 +6,7 @@ import { IAccountLogic, IRoundsLogic, ITransactionLogic } from '../../ioc/interf
 import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import multiSigSchema from '../../schema/logic/transactions/multisignature';
+import { MemAccountsData } from '../account';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
@@ -72,7 +73,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     return bb.toBuffer() as any;
   }
 
-  public async verify(tx: IBaseTransaction<MultisigAsset>, sender: any): Promise<void> {
+  public async verify(tx: IBaseTransaction<MultisigAsset>, sender: MemAccountsData): Promise<void> {
     if (!tx.asset || !tx.asset.multisignature) {
       throw new Error('Invalid transaction asset');
     }
@@ -133,7 +134,6 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     if (tx.asset.multisignature.keysgroup.indexOf(`+${sender.publicKey}`) !== -1) {
       throw new Error('Invalid multisignature keysgroup. Cannot contain sender');
     }
-    // TODO: Check secondPubliKey as well!
 
     for (const key of tx.asset.multisignature.keysgroup) {
       if (typeof(key) !== 'string') {

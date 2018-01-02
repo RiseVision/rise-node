@@ -9,18 +9,11 @@ import {
 } from '../ioc/interfaces/logic';
 
 import {
-  IBlocksModule, IBlocksModuleChain, IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify, ILoaderModule,
-  IMultisignaturesModule,
-  IPeersModule,
-  ISystemModule,
-  ITransactionsModule, ITransportModule
+  IBlocksModule, IBlocksModuleChain, IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify,
+  ILoaderModule, IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule, ITransportModule
 } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
-import {
-  PeerType,
-  SignedAndChainedBlockType,
-  SignedBlockType,
-} from '../logic/';
+import { PeerType, SignedAndChainedBlockType, SignedBlockType, } from '../logic/';
 import { IBaseTransaction } from '../logic/transactions/';
 import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
@@ -30,11 +23,11 @@ import Timer = NodeJS.Timer;
 @injectable()
 export class LoaderModule implements ILoaderModule {
 
+  public loaded: boolean                       = false;
   private network: { height: number, peers: IPeerLogic[] };
   private lastblock: SignedAndChainedBlockType = null;
   private syncIntervalId: Timer                = null;
   private blocksToSync: number                 = 0;
-  private loaded: boolean                      = false;
   private isActive: boolean                    = false;
   private retries: number                      = 5;
   private syncInterval                         = 1000;
@@ -111,21 +104,21 @@ export class LoaderModule implements ILoaderModule {
         this.network.height > 0 &&
         Math.abs(this.network.height - this.blocksModule.lastBlock.height) === 1)
     ) {
-      const {peers} = await this.peersModule.list({});
-      this.network  = this.findGoodPeers(peers);
+      const { peers } = await this.peersModule.list({});
+      this.network    = this.findGoodPeers(peers);
     }
     return this.network;
   }
 
-  public async gerRandomPeer(): Promise<IPeerLogic> {
-    const {peers} = await this.getNework();
+  public async getRandomPeer(): Promise<IPeerLogic> {
+    const { peers } = await this.getNework();
     return peers[Math.floor(Math.random() * peers.length)];
   }
 
   /**
    * Checks if we're syncing or not.
    */
-  private get isSyncing(): boolean {
+  public get isSyncing(): boolean {
     return this.appState.get('loader.isSyncing') || false;
   }
 
@@ -141,7 +134,7 @@ export class LoaderModule implements ILoaderModule {
             this.logger.warn('Error loading transactions... Retrying... ', e);
             retry(e);
           }
-        }, {retries: this.retries});
+        }, { retries: this.retries });
       } catch (e) {
         this.logger.log('Unconfirmed transactions loader error', e);
       }
@@ -155,7 +148,7 @@ export class LoaderModule implements ILoaderModule {
             this.logger.warn('Error loading transactions... Retrying... ', e);
             retry(e);
           }
-        }, {retries: this.retries});
+        }, { retries: this.retries });
       } catch (e) {
         this.logger.log('Multisig pending transactions loader error', e);
       }
@@ -234,8 +227,14 @@ export class LoaderModule implements ILoaderModule {
         }
         this.appState.set('rounds.snapshot', this.config.loading.snapshot);
       }
-      this.logger.info(`Snapshotting to end of round: ${this.config.loading.snapshot}`);
-      return this.load(blocksCount, limit, 'Blocks Verification enabled');
+      this.logger.info(`Snapshotting to end of round: ${this.config.loading.snapshot}`, blocksCount);
+      await this.load(
+        this.roundsLogic.lastInRound(this.config.loading.snapshot),
+        limit,
+        'Blocks Verification enabled',
+        false
+      );
+      process.exit(0);
     }
 
     const missedBlocksInMemAccounts = !(results[2].count);
@@ -279,8 +278,9 @@ export class LoaderModule implements ILoaderModule {
     }
   }
 
-  public async load(count: number, limitPerIteration: number, message?: string) {
-    let offset = 0;
+  public async load(count: number, limitPerIteration: number, message?: string, emitBlockchainReady?: boolean) {
+    let offset          = 0;
+    emitBlockchainReady = !!emitBlockchainReady;
     if (message) {
       this.logger.warn(message);
       this.logger.warn('Recreating memory tables');
@@ -295,12 +295,18 @@ export class LoaderModule implements ILoaderModule {
         if (count > 1) {
           this.logger.info('Rebuilding blockchain, current block height: ' + (offset + 1));
         }
-        const lastBlock = await this.blocksProcessModule.loadBlocksOffset(limitPerIteration, offset, true/*verify*/);
+        const lastBlock = await this.blocksProcessModule.loadBlocksOffset(
+          Math.min(limitPerIteration, count - offset),
+          offset,
+          true/*verify*/
+        );
         offset          = offset + limitPerIteration;
         this.lastblock  = lastBlock;
       }
-      this.logger.info('Blockchain ready');
-      await this.bus.message('blockchainReady');
+      if (emitBlockchainReady) {
+        this.logger.info('Blockchain ready');
+        await this.bus.message('blockchainReady');
+      }
     } catch (err) {
       this.logger.error(err);
       if (err.block) {
@@ -326,16 +332,16 @@ export class LoaderModule implements ILoaderModule {
   } {
     const lastBlockHeight: number = this.blocksModule.lastBlock.height;
 
-    this.logger.trace('Good peers - received', {count: peers.length});
+    this.logger.trace('Good peers - received', { count: peers.length });
 
     // Removing unreachable peers or heights below last block height
     peers = peers.filter((p) => p !== null && p.height >= lastBlockHeight);
 
-    this.logger.trace('Good peers - filtered', {count: peers.length});
+    this.logger.trace('Good peers - filtered', { count: peers.length });
 
     // No peers found
     if (peers.length === 0) {
-      return {height: 0, peers: []};
+      return { height: 0, peers: [] };
     } else {
       // Ordering the peers with descending height
       peers = peers.sort((a, b) => b.height - a.height);
@@ -363,10 +369,10 @@ export class LoaderModule implements ILoaderModule {
         .filter((peer) => peer && Math.abs(height - peer.height) < aggregation + 1)
         .map((peer) => this.peersLogic.create(peer));
 
-      this.logger.trace('Good peers - accepted', {count: peerObjs.length});
+      this.logger.trace('Good peers - accepted', { count: peerObjs.length });
       this.logger.debug('Good peers', peerObjs);
 
-      return {height, peers: peerObjs};
+      return { height, peers: peerObjs };
     }
   }
 
@@ -403,11 +409,11 @@ export class LoaderModule implements ILoaderModule {
 
     do {
       await promiseRetry(async (retry) => {
-        const randomPeer                 = await this.gerRandomPeer();
+        const randomPeer                 = await this.getRandomPeer();
         const lastBlock: SignedBlockType = this.blocksModule.lastBlock;
 
         if (lastBlock.height !== 1) {
-          this.logger.info('Looking for common block with: ' + randomPeer.string);
+          this.logger.info(`Looking for common block with: ${randomPeer.string}`);
           try {
             const commonBlock = await this.blocksProcessModule.getCommonBlock(randomPeer, lastBlock.height);
             if (!commonBlock) {
@@ -498,7 +504,7 @@ export class LoaderModule implements ILoaderModule {
             this.logger.warn('Error syncing... Retrying... ', err);
             retries(err);
           }
-        }, {retries: this.retries}));
+        }, { retries: this.retries }));
       }
     }, this.syncInterval);
   }
@@ -507,7 +513,7 @@ export class LoaderModule implements ILoaderModule {
    * Loads pending multisignature transactions
    */
   private async loadSignatures() {
-    const randomPeer = await this.gerRandomPeer();
+    const randomPeer = await this.getRandomPeer();
     this.logger.log(`Loading signatures from: ${randomPeer.string}`);
     const res = await this.transportModule.getFromPeer<any>(
       randomPeer,
@@ -521,7 +527,7 @@ export class LoaderModule implements ILoaderModule {
     }
 
     // FIXME: signatures array
-    const {signatures}: { signatures: any[] } = res.body;
+    const { signatures }: { signatures: any[] } = res.body;
 
     // Process multisignature transactions and validate signatures in sequence
     await this.sequence.addAndPromise(async () => {
@@ -546,7 +552,7 @@ export class LoaderModule implements ILoaderModule {
    * Validates each transaction from peer and eventually remove the peer if invalid.
    */
   private async loadTransactions() {
-    const peer = await this.gerRandomPeer();
+    const peer = await this.getRandomPeer();
     this.logger.log(`Loading transactions from: ${peer.string}`);
     const res = await this.transportModule.getFromPeer<any>(peer, {
       api   : '/transactions',
@@ -557,13 +563,13 @@ export class LoaderModule implements ILoaderModule {
       throw new Error('Cannot validate load transactions schema against peer');
     }
 
-    const {transactions}: { transactions: Array<IBaseTransaction<any>> } = res.body;
+    const { transactions }: { transactions: Array<IBaseTransaction<any>> } = res.body;
     for (const tx of transactions) {
       try {
         // Perform validation and throw if error
         this.transactionLogic.objectNormalize(tx);
       } catch (e) {
-        this.logger.debug('Transaction normalization failed', {err: e.toString(), module: 'loader', tx});
+        this.logger.debug('Transaction normalization failed', { err: e.toString(), module: 'loader', tx });
 
         this.logger.warn(['Transaction', tx.id, 'is not valid, peer removed'].join(' '), peer.string);
 

@@ -1,10 +1,11 @@
 import { injectable } from 'inversify';
+import 'reflect-metadata';
 
 export const ExceptionsList = {
-  assertValidSlot: Symbol('assertValidSlot'),
-  checkBalance: Symbol('checkBalance'),
-  voteTx_checkConfirmedDelegate: Symbol('voteTx_checkConfirmedDelegate'),
-  voteTx_checkUnConfirmedDelegate: Symbol('voteTx_checkUnConfirmedDelegate'),
+  assertValidSlot    : Symbol('assertValidSlot'),
+  checkBalance       : Symbol('checkBalance'),
+  tx_apply           : Symbol('tx_apply'),
+  tx_applyUnconfirmed: Symbol('tx_applyUnconfirmed'),
 };
 
 export interface IExceptionHandler<K> {

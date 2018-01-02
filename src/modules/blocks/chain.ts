@@ -178,7 +178,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         const sender = await this.accountsModule.setAccountAndGet({ publicKey: transaction.senderPublicKey });
         await this.transactionsModule.applyUnconfirmed(transaction, sender)
           .catch((err) => {
-            this.logger.error(`Failed to apply transaction ${transaction.id} - ${err.message || err}`);
+            this.logger.error(`Failed to applyUnconfirmed transaction ${transaction.id} - ${err.message || err}`);
             this.logger.error(err);
             this.logger.error('Transaction', transaction);
             return Promise.reject(err);
@@ -197,7 +197,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       const appliedIds = Object.keys(appliedTransactions);
       for (const txID of appliedIds) {
         const transaction = appliedTransactions[txID];
-        const sender      = await this.accountsModule.setAccountAndGet({ publicKey: transaction.senderPublicKey });
+        const sender      = await this.accountsModule.getAccount({ publicKey: transaction.senderPublicKey });
 
         await this.transactionLogic.undoUnconfirmed(transaction, sender);
       }
@@ -207,8 +207,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     // Block and transactions are ok.
     // Apply transactions to confirmed mem_accounts fields.
     for (const tx of block.transactions) {
+      const sender = await this.accountsModule.getAccount({ publicKey: tx.senderPublicKey });
       try {
-        const sender = await this.accountsModule.getAccount({ publicKey: tx.senderPublicKey });
         await this.transactionsModule.apply(tx, block, sender);
 
       } catch (err) {

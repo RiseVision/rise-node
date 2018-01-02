@@ -105,7 +105,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   public async broadcast(params: {
                            limit?: number, broadhash?: string,
                            peers?: PeerType[]
-                         },
+                         } = {},
                          options: any): Promise<{ peer: PeerType[] }> {
 
     params.limit     = params.limit || this.constants.maxPeers;
@@ -240,15 +240,14 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     let broadcasts = this.queue.splice(0, this.config.broadcasts.releaseLimit);
 
     broadcasts  = this.squashQueue(broadcasts);
-    const peers = this.getPeers({});
 
     try {
       for (const brc of broadcasts) {
-        await this.broadcast(extend({}, { peers }, brc.params), brc.options);
+        await this.broadcast(brc.params, brc.options);
       }
       this.logger.debug(`Broadcasts released ${broadcasts.length}`);
     } catch (e) {
-      this.logger.debug('Failed to release broadcast queue', e);
+      this.logger.warn('Failed to release broadcast queue', e);
     }
 
   }

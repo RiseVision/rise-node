@@ -17,7 +17,11 @@ export class APIErrorHandler implements ExpressErrorMiddlewareInterface {
     if (error instanceof Error) {
       error = error.message;
     }
-    this.logger.error('API error ' + req.url, error);
+    if (req.url.startsWith('/peer')) {
+      this.logger.warn(`Transport error [${req.ip}]: ${req.url}`, error);
+    } else {
+      this.logger.error('API error ' + req.url, error);
+    }
     res.status(500)
       .send({ success: false, error });
     next({ success: false, error });

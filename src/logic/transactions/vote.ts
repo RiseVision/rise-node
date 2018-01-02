@@ -1,12 +1,11 @@
 import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
-import { constants, Diff, emptyCB, ExceptionsList, ExceptionsManager, TransactionType } from '../../helpers/';
-import { DebugLog } from '../../helpers/decorators/debugLog';
-import { RunThroughExceptions } from '../../helpers/decorators/exceptions';
+import { constants, Diff, emptyCB, TransactionType } from '../../helpers/';
 import { IAccountLogic, IRoundsLogic } from '../../ioc/interfaces/logic';
 import { IDelegatesModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import voteSchema from '../../schema/logic/transactions/vote';
+import { MemAccountsData } from '../account';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
@@ -25,10 +24,6 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
   // Generic
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
-
-  // tslint:disable-next-line member-ordering
-  @inject(Symbols.helpers.exceptionsManager)
-  public excManager: ExceptionsManager;
 
   // Logic
   @inject(Symbols.logic.account)
@@ -88,8 +83,8 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
     return tx.asset.votes ? Buffer.from(tx.asset.votes.join(''), 'utf8') : null;
   }
 
-  public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType,
-                     sender: any): Promise<void> {
+  // tslint:disable-next-line max-line-length
+  public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: MemAccountsData): Promise<void> {
     await this.checkConfirmedDelegates(tx);
     return this.accountLogic.merge(sender.address, {
       blockId  : block.id,
@@ -98,7 +93,8 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
     }, emptyCB);
   }
 
-  public async undo(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: any): Promise<void> {
+  // tslint:disable-next-line max-line-length
+  public async undo(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: MemAccountsData): Promise<void> {
     this.objectNormalize(tx);
     const invertedVotes = Diff.reverse(tx.asset.votes);
     return this.accountLogic.merge(sender.address, {
@@ -111,7 +107,6 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
   /**
    * Checks vote integrity of tx sender
    */
-  @RunThroughExceptions(ExceptionsList.voteTx_checkUnConfirmedDelegate)
   public checkUnconfirmedDelegates(tx: IBaseTransaction<VoteAsset>): Promise<any> {
     return this.delegatesModule.checkUnconfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
   }
@@ -119,7 +114,6 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
   /**
    * Checks vote integrity of sender
    */
-  @RunThroughExceptions(ExceptionsList.voteTx_checkUnConfirmedDelegate)
   public checkConfirmedDelegates(tx: IBaseTransaction<VoteAsset>): Promise<any> {
     return this.delegatesModule.checkConfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
   }

@@ -226,6 +226,12 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         );
         throw err;
       }
+      // if (block.height % 5000 === 0) {
+      //   console.log('backupping');
+      //   await (require('child-process-promise').exec(`${__dirname}/../../../.devutils/dumpdb.sh`));
+      //   await (require('child-process-promise').exec(`mv ${__dirname}/../../../backup.tar ${__dirname}/../../../dumps/backup_${block.height}.tar`));
+      //
+      // }
     }
 
     return lastValidBlock;

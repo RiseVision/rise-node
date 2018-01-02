@@ -161,7 +161,7 @@ export class TransportModule implements ITransportModule {
             this.logger.debug(`Ping failed when updating peer ${p.string}`);
           }
         }
-      }), {maxInProgress: 50});
+      }), { maxInProgress: 50 });
       this.logger.trace('Updated Peers');
     }, 5000);
   }
@@ -236,11 +236,12 @@ export class TransportModule implements ITransportModule {
   }
 
   @ValidateSchema()
-  public async receiveTransactions(@SchemaValid(schema.transactions, 'Invalid transactions body')
-                                     query: { transactions: Array<IBaseTransaction<any>> },
+  // tslint:disable-next-line
+  public async receiveTransactions(@SchemaValid(schema.transactions.properties.transactions, 'Invalid transactions body')
+                                     transactions: Array<IBaseTransaction<any>>,
                                    peer: IPeerLogic,
                                    extraLogMessage: string) {
-    for (const tx of  query.transactions) {
+    for (const tx of transactions) {
       try {
         await this.receiveTransaction(tx, peer, true, extraLogMessage);
       } catch (err) {

@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import { isEmpty } from 'is-empty';
+import * as isEmpty from 'is-empty';
 import { Body, Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
@@ -23,6 +23,7 @@ export class AccountsAPI {
   private systemModule: ISystemModule;
 
   @Get('/')
+  @ValidateSchema()
   public async getAccount(@SchemaValid(accountSchema.getAccount)
                           @QueryParams() query: { address?: string, publicKey?: publicKey }) {
     if (isEmpty(query.address) && isEmpty(query.publicKey)) {
@@ -37,6 +38,9 @@ export class AccountsAPI {
       throw new Error('Account publicKey does not match address');
     }
     const accData = await this.accountsModule.getAccount(query);
+    if (!accData) {
+      throw new Error('Account not found');
+    }
     return {
       account: {
         address             : accData.address,

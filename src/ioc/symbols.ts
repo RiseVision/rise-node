@@ -3,6 +3,7 @@ export const Symbols = {
     accounts          : Symbol('accountsAPI'),
     blocks            : Symbol('blocksAPI'),
     delegates         : Symbol('delegatesAPI'),
+    loader            : Symbol('loader'),
     multisignatures   : Symbol('multisignaturesAPI'),
     peers             : Symbol('peersAPI'),
     signatures        : Symbol('signaturesAPI'),
