@@ -100,6 +100,8 @@ export default {
 
   loadLastBlock: 'SELECT * FROM full_blocks_list WHERE "b_height" = (SELECT MAX("height") FROM blocks) ORDER BY "b_height", "t_rowId"',
 
+  loadLastNBlockIds: 'SELECT "id" FROM blocks ORDER BY "height" DESC LIMIT ${limit}',
+
   // getGenesisBlockId: 'SELECT "id" FROM blocks WHERE "id" = ${id}',
 
   getBlockId: 'SELECT "id" FROM blocks WHERE "id" = ${id}',

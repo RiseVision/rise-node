@@ -13,7 +13,7 @@ import {
   IBlocksModuleChain,
   IBlocksModuleProcess,
   IBlocksModuleUtils,
-  IBlocksModuleVerify,
+  IBlocksModuleVerify, IDelegatesModule,
   IForkModule,
   ITransactionsModule,
   ITransportModule
@@ -30,6 +30,8 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   // Modules
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.delegates)
+  private delegatesModule: IDelegatesModule;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
   @inject(Symbols.modules.blocksSubModules.utils)
@@ -354,6 +356,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       this.logger.info('Last block and parent loses');
       try {
         const tmpBlockN = this.blockLogic.objectNormalize(tmpBlock);
+        await this.delegatesModule.assertValidBlockSlot(block);
         const check     = this.blocksVerifyModule.verifyReceipt(tmpBlockN);
         if (!check.verified) {
           this.logger.error(`Block ${tmpBlockN.id} verification failed`, check.errors.join(', '));

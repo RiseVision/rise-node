@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
-import { constants, ForkType, ILogger, Slots } from '../../helpers/';
+import { constants as constantsType, ForkType, ILogger, Slots } from '../../helpers/';
 import { IBlockLogic, IBlockReward, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
   IAccountsModule,
@@ -34,6 +34,8 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   private db: IDatabase<any>;
 
   // Helpers
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.helpers.slots)
@@ -46,6 +48,11 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   private blockRewardLogic: IBlockReward;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
+
+  /**
+   * Contains the last N block Ids used to perform validations
+   */
+  private lastNBlockIds: string[] = [];
 
   public cleanup(): Promise<void> {
     return Promise.resolve();
@@ -61,6 +68,8 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     const errors: string[] = [
       this.verifySignature(block),
       this.verifyPreviousBlock(block),
+      this.verifyBlockSlotWindow(block),
+      this.verifyBlockAgainstLastIds(block),
       this.verifyVersion(block),
       this.verifyReward(block),
       this.verifyId(block),
@@ -81,20 +90,20 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   public async verifyBlock(block: SignedBlockType): Promise<{ errors: string[], verified: boolean }> {
     const lastBlock: SignedBlockType = this.blocksModule.lastBlock;
 
-    const res = this.verifyReceipt(block);
-
     const errors = [
+      this.verifySignature(block),
+      this.verifyPreviousBlock(block),
+      this.verifyVersion(block),
+      this.verifyReward(block),
+      this.verifyId(block),
+      this.verifyPayload(block),
       await this.verifyForkOne(block, lastBlock),
       await this.verifyBlockSlot(block, lastBlock),
     ].reduce((a, b) => a.concat(b));
 
-    res.errors.reverse();
-    res.errors.concat.apply(res.errors, errors);
-    res.errors.reverse();
-
     return {
-      errors  : res.errors,
-      verified: res.errors.length === 0,
+      errors,
+      verified: errors.length === 0,
     };
   }
 
@@ -145,6 +154,42 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     return this.blocksChainModule.applyBlock(block as SignedAndChainedBlockType, broadcast, saveBlock);
   }
 
+  public async onBlockchainReady() {
+    const blockIds = await this.db.query(sql.loadLastNBlockIds, { limit: this.constants.blockSlotWindow });
+    this.lastNBlockIds = blockIds.map((b) => b.id);
+  }
+
+  public async onNewBlock(block: SignedBlockType) {
+    this.lastNBlockIds.push(block.id);
+    if (this.lastNBlockIds.length > this.constants.blockSlotWindow) {
+      this.lastNBlockIds.shift();
+    }
+  }
+
+  /**
+   * Verify block slot is not too in the past or in the future.
+   */
+  private verifyBlockSlotWindow(block: SignedBlockType): string[] {
+    const curSlot = this.slots.getSlotNumber();
+    const blockSlot = this.slots.getSlotNumber(block.timestamp);
+    const errors = [];
+    if (curSlot - blockSlot > this.constants.blockSlotWindow) {
+      errors.push('Block slot is too old');
+    }
+    if (curSlot < blockSlot) {
+      errors.push('Block slot is in the future');
+    }
+    return errors;
+  }
+  /**
+   * Verify that given block is not already within last known block ids.
+   */
+  private verifyBlockAgainstLastIds(block: SignedBlockType): string[] {
+    if (this.lastNBlockIds.indexOf(block.id) !== -1) {
+      return ['Block Already exists in the chain'];
+    }
+    return [];
+  }
   /**
    * Verifies block signature and returns an array populated with errors.
    * @param {SignedBlockType} block
@@ -212,7 +257,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
    */
   private verifyPayload(block: SignedBlockType): string[] {
     const errors: string[] = [];
-    if (block.payloadLength > constants.maxPayloadLength) {
+    if (block.payloadLength > this.constants.maxPayloadLength) {
       errors.push('Payload length is too long');
     }
 
@@ -220,7 +265,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       errors.push('Included transactions do not match block transactions count');
     }
 
-    if (block.transactions.length > constants.maxTxsPerBlock) {
+    if (block.transactions.length > this.constants.maxTxsPerBlock) {
       errors.push('Number of transactions exceeds maximum per block');
     }
 
