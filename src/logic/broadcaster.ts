@@ -89,9 +89,14 @@ export class BroadcasterLogic implements IBroadcasterLogic {
 
     const originalLimit = params.limit;
 
-    const { peers, consensus } = await this.peersModule.list(params);
+    const peersList = await this.peersModule.list(params);
+    const peers = peersList.peers;
+    let consensus = peersList.consensus;
 
     if (originalLimit === this.constants.maxPeers) {
+      if (this.config.forging.force) {
+        consensus = 100;
+      }
       this.appState.set('node.consensus', consensus);
     }
     return peers;

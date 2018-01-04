@@ -204,4 +204,8 @@ export class PeerLogic implements PeerType, IPeerLogic {
   public get properties() {
     return properties;
   }
+
+  public toLogObj() {
+    return JSON.stringify(this.object());
+  }
 }

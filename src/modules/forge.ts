@@ -1,6 +1,9 @@
 import * as crypto from 'crypto';
 import { inject, injectable, tagged } from 'inversify';
-import { catchToLoggerAndRemapError, constants, Ed, IKeypair, ILogger, JobsQueue, Sequence, Slots } from '../helpers';
+import {
+  catchToLoggerAndRemapError, constants as constantsType, Ed, IKeypair, ILogger, JobsQueue, Sequence,
+  Slots
+} from '../helpers';
 import { IAppState, IBroadcasterLogic } from '../ioc/interfaces/logic';
 import {
   IAccountsModule, IBlocksModule, IBlocksModuleProcess, IDelegatesModule, IForgeModule,
@@ -20,6 +23,8 @@ export class ForgeModule implements IForgeModule {
   private config: AppConfig;
 
   // helpers
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.helpers.ed)
@@ -68,8 +73,8 @@ export class ForgeModule implements IForgeModule {
    * enable forging for specific pk or all if pk is undefined
    */
   public enableForge(pk?: IKeypair) {
-    const thePK: publicKey = pk.publicKey.toString('hex');
-    this.keypairs[thePK] = pk;
+    const thePK: publicKey = typeof(pk) !== 'undefined' ? pk.publicKey.toString('hex') : undefined;
+    this.keypairs[thePK]   = pk;
 
     Object.keys(this.keypairs)
       .filter((p) => typeof(thePK) === 'undefined' || p === thePK)
@@ -85,18 +90,20 @@ export class ForgeModule implements IForgeModule {
       .forEach((p) => delete this.enabledKeys[p]);
   }
 
-  public onBlockchainReady() {
-    JobsQueue.register(
-      'delegatesNextForge',
-      async () => {
-        try {
-          await this.forge();
-          await this.transactionsModule.fillPool();
-        } catch (err) {
-          this.logger.warn('Error in nextForge', err);
-        }
-      },
-      1000);
+  public async onBlockchainReady() {
+    setTimeout( () => {
+      JobsQueue.register(
+        'delegatesNextForge',
+        async () => {
+          try {
+            await this.forge();
+            await this.transactionsModule.fillPool();
+          } catch (err) {
+            this.logger.warn('Error in nextForge', err);
+          }
+        },
+        1000);
+    }, 10000); // Register forging routine after 10seconds that blockchain is ready.
   }
 
   /**
@@ -145,11 +152,11 @@ export class ForgeModule implements IForgeModule {
 
     await this.sequence.addAndPromise(async () => {
       // updates consensus.
-      await this.broadcasterLogic.getPeers({ limit: constants.maxPeers });
+      await this.broadcasterLogic.getPeers({ limit: this.constants.maxPeers });
 
-      if (this.appState.getComputed('node.poorConsensus')) {
+      if (this.appState.getComputed('node.poorConsensus')  ) {
         throw new Error(`Inadequate broadhash consensus ${this.appState
-          .getComputed('node.poorConsensus')} %`);
+          .get('node.consensus')} %`);
       }
 
       // ok lets generate, save and broadcast the block

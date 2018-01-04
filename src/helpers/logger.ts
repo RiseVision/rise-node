@@ -7,7 +7,7 @@ import * as util from 'util';
 
 const strftime = tstrftime.timezone('+0000');
 
-type logFn = (message?: string|any, data?: string | any) => void;
+type logFn = (message?: string, data?: string | any) => void;
 
 export interface ILogger {
   none: logFn;
@@ -86,7 +86,10 @@ export default (config: any = {}): ILogger => {
         if (data instanceof Error) {
           data = { message: data.message, error: data.stack };
         }
-        logData.data = CircularJSON.stringify(snipsecret(data));
+        if (typeof(data.toLogObj) === 'function') {
+          logData.data = CircularJSON.stringify(snipsecret(data.toLogObj()));
+        }
+
       } else {
         logData.data = data;
       }

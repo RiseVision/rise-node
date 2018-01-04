@@ -2,7 +2,7 @@ import { inject, injectable, postConstruct, tagged } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import * as promiseRetry from 'promise-retry';
 import z_schema from 'z-schema';
-import { Bus, constants as constantsType, ILogger, JobsQueue, Sequence } from '../helpers/';
+import { Bus, constants as constantsType, ILogger, JobsQueue, Sequence, wait } from '../helpers/';
 import {
   IAccountLogic, IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, IRoundsLogic,
   ITransactionLogic
@@ -370,7 +370,7 @@ export class LoaderModule implements ILoaderModule {
         .map((peer) => this.peersLogic.create(peer));
 
       this.logger.trace('Good peers - accepted', { count: peerObjs.length });
-      this.logger.debug('Good peers', peerObjs);
+      this.logger.debug('Good peers', peerObjs.map((p) => p.string));
 
       return { height, peers: peerObjs };
     }
@@ -411,6 +411,12 @@ export class LoaderModule implements ILoaderModule {
       await promiseRetry(async (retry) => {
         const randomPeer                 = await this.getRandomPeer();
         const lastBlock: SignedBlockType = this.blocksModule.lastBlock;
+
+        if (typeof(randomPeer) === 'undefined') {
+          // This could happen when we received a block but we did not get the updated peer list.
+          await wait(1000);
+          return;
+        }
 
         if (lastBlock.height !== 1) {
           this.logger.info(`Looking for common block with: ${randomPeer.string}`);

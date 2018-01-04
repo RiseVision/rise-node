@@ -67,7 +67,7 @@ export class BlockLogic implements IBlockLogic {
 
     if (block.previousBlock) {
       const pb = new BigNum(block.previousBlock)
-        .toBuffer({size: 8});
+        .toBuffer({ size: 8 });
 
       for (let i = 0; i < 8; i++) {
         bb.writeByte(pb[i]);
@@ -202,8 +202,10 @@ export class BlockLogic implements IBlockLogic {
     }
 
     const block: SignedBlockType = {
-      blockSignature      : null,
+      blockSignature      : undefined,
       generatorPublicKey  : data.keypair.publicKey.toString('hex'),
+      height              : data.previousBlock.height + 1,
+      id                  : undefined,
       numberOfTransactions: blockTransactions.length,
       payloadHash         : payloadHash.digest().toString('hex'),
       payloadLength       : size,
@@ -214,7 +216,7 @@ export class BlockLogic implements IBlockLogic {
       totalFee,
       transactions        : blockTransactions,
       version             : 0,
-    } as any; // FIXME id is missing so it's not a SignedBlockType
+    };
 
     block.blockSignature = this.sign(block, data.keypair);
     return this.objectNormalize(block);
