@@ -67,7 +67,6 @@ export class RoundsModule implements IRoundsModule {
   public backwardTick(block: SignedBlockType, previousBlock: SignedBlockType) {
     return this.innerTick(block, true, (roundLogicScope) => (task) => {
       this.logger.debug('Performing backward tick');
-      this.logger.trace(roundLogicScope);
 
       const roundLogic = new RoundLogic(roundLogicScope, task, this.slots);
 
@@ -86,7 +85,6 @@ export class RoundsModule implements IRoundsModule {
       (roundLogicScope) => (task) => {
 
         this.logger.debug('Performing forward tick');
-        this.logger.trace(roundLogicScope);
 
         const roundLogic    = new RoundLogic(roundLogicScope, task, this.slots);
         const snapshotRound = (
