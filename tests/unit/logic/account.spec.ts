@@ -3,8 +3,8 @@ import * as jsonSqlCreator from 'json-sql';
 import * as path from 'path';
 import * as rewire from 'rewire';
 import * as sinon from 'sinon';
+import { SinonStub } from 'sinon';
 import { constants } from '../../../src/helpers';
-import { AccountLogic } from '../../../src/logic';
 import { DbStub, LoggerStub, ZSchemaStub } from '../../stubs';
 
 const RewireAccount = rewire('../../../src/logic/account');
@@ -314,6 +314,12 @@ const model = [
   },
 ];
 
+// tslint:disable no-unused-expression
+
+/**
+ * TODO: Better describe test cases
+ * TODO: Check if more test cases are needed
+ */
 describe('logic/account', () => {
   const originalPgp = RewireAccount.__get__('pgp');
   let pgp;
@@ -328,7 +334,7 @@ describe('logic/account', () => {
     dbStub                  = new DbStub();
     loggerStub              = new LoggerStub();
     zSchemaStub             = new ZSchemaStub();
-    account                 = new AccountLogic();
+    account                 = new RewireAccount.AccountLogic();
     // Inject the dependencies
     (account as any).db     = dbStub;
     (account as any).logger = loggerStub;
@@ -530,7 +536,7 @@ describe('logic/account', () => {
   });
 
   describe('account.createTables', () => {
-    const sqlPath = path.join(process.cwd(), 'src', 'sql', 'memoryTables.sql');
+    const sqlPath = path.join(process.cwd(), 'sql', 'memoryTables.sql');
 
     beforeEach(() => {
       sinon.stub(pgp, 'QueryFile');
@@ -549,16 +555,16 @@ describe('logic/account', () => {
       await account.createTables().then(() => {
         throw new Error('Expected method to reject.');
       }).catch((errorMessage) => {
-        // FIXME
-        // expect(pgp.QueryFile.called).to.be.true;
-        // expect(pgp.QueryFile.getCall(0).args.length).to.equal(2);
-        // expect(pgp.QueryFile.getCall(0).args[0]).to.equal(sqlPath);
-        // expect(pgp.QueryFile.getCall(0).args[1]).to.deep.equal({ minify: true });
-
+        // It should call QueryFile
+        expect(pgp.QueryFile.called).to.be.true;
+        expect(pgp.QueryFile.getCall(0).args.length).to.equal(2);
+        expect(pgp.QueryFile.getCall(0).args[0]).to.equal(sqlPath);
+        expect(pgp.QueryFile.getCall(0).args[1]).to.deep.equal({ minify: true });
+        // It should call db.query
         expect(dbStub.stubs.query.calledOnce).to.be.true;
         expect(dbStub.stubs.query.getCall(0).args.length).to.equal(1);
-        // expect(dbStub.stubs.query.getCall(0).args[0]).to.be.instanceof(pgp.QueryFile);
-
+        expect(dbStub.stubs.query.getCall(0).args[0]).to.be.instanceof(pgp.QueryFile);
+        // It should log the error
         expect(loggerStub.stubs.error.calledOnce).to.be.true;
         expect(loggerStub.stubs.error.getCall(0).args.length).to.equal(1);
         expect(loggerStub.stubs.error.getCall(0).args[0]).to.equal(
@@ -568,616 +574,587 @@ describe('logic/account', () => {
       });
     });
 
-    it('should handle sql success', () => {
+    it('should create tables', async () => {
       dbStub.stubConfig.query.resolve = true;
       dbStub.stubConfig.query.return = 'OK';
 
-      return account.createTables()
-        .then(() => {
-          // FIXME
-          // expect(pgp.QueryFile.calledOnce).to.be.true;
-          // expect(pgp.QueryFile.getCall(0).args.length).to.equal(2);
-          // expect(pgp.QueryFile.getCall(0).args[0]).to.equal(sqlPath);
-          // expect(pgp.QueryFile.getCall(0).args[1]).to.deep.equal({ minify: true });
+      await account.createTables();
 
-          expect(dbStub.stubs.query.calledOnce).to.be.true;
-          expect(dbStub.stubs.query.getCall(0).args.length).to.equal(1);
-          // expect(dbStub.stubs.query.getCall(0).args[0]).to.be.instanceof(pgp.QueryFile);
-        });
+      // It should call QueryFile with the right path
+      expect(pgp.QueryFile.calledOnce).to.be.true;
+      expect(pgp.QueryFile.getCall(0).args.length).to.equal(2);
+      expect(pgp.QueryFile.getCall(0).args[0]).to.equal(sqlPath);
+      expect(pgp.QueryFile.getCall(0).args[1]).to.deep.equal({ minify: true });
+      // It should call db.query
+      expect(dbStub.stubs.query.calledOnce).to.be.true;
+      expect(dbStub.stubs.query.getCall(0).args.length).to.equal(1);
+      expect(dbStub.stubs.query.getCall(0).args[0]).to.be.instanceof(pgp.QueryFile);
     });
   });
-  //
-  // describe("account.removeTables", () => {
-  //     var tables = [
-  //         table,
-  //         "mem_round",
-  //         "mem_accounts2delegates",
-  //         "mem_accounts2u_delegates",
-  //         "mem_accounts2multisignatures",
-  //         "mem_accounts2u_multisignatures"
-  //     ];
-  //     var sqles = tables.map((table) => {
-  //         var sql = jsonSql.build({
-  //             type: "remove",
-  //             table: table
-  //         });
-  //         return sql.query;
-  //     });
-  //
-  //     it("error", (done) => {
-  //         var error = { stack: "error" };
-  //
-  //         clock.restore();
-  //         scope.db.query.rejects(error);
-  //
-  //         account.removeTables(callback).then(() => {
-  //             done(new Error('Expected method to reject.'))
-  //         }).catch(() => {
-  //             expect(scope.db.query.calledOnce).to.be.true;
-  //             expect(scope.db.query.getCall(0).args.length).to.equal(1);
-  //             expect(scope.db.query.getCall(0).args[0]).to.deep.equal(sqles.join(""));
-  //
-  //             expect(scope.library.logger.error.calledOnce).to.be.true;
-  //             expect(scope.library.logger.error.getCall(0).args.length).to.equal(1);
-  //             expect(scope.library.logger.error.getCall(0).args[0]).to.equal(
-  //                 error.stack
-  //             );
-  //
-  //             expect(callback.calledOnce).to.be.true;
-  //             expect(callback.getCall(0).args.length).to.equal(1);
-  //             expect(callback.getCall(0).args[0]).to.equal(
-  //                 "Account#removeTables error"
-  //             );
-  //             done();
-  //
-  //         });
-  //     });
-  //
-  //     it("success", () => {
-  //         clock.restore();
-  //         scope.db.query.resolves();
-  //
-  //         account.removeTables(callback);
-  //
-  //         expect(scope.db.query.calledOnce).to.be.true;
-  //         expect(scope.db.query.getCall(0).args.length).to.equal(1);
-  //         expect(scope.db.query.getCall(0).args[0]).to.deep.equal(sqles.join(""));
-  //
-  //         setImmediate(() => {
-  //             setImmediate(() => {
-  //                 expect(callback.calledOnce).to.be.true;
-  //                 expect(callback.getCall(0).args.length).to.equal(0);
-  //                 done();
-  //             });
-  //         });
-  //     });
-  // });
-  //
-  // describe("account.objectNormalize", () => {
-  //     var accountData = {};
-  //
-  //     it("validation error", () => {
-  //         var errors = [{ message: "error 1" }, { message: "error 2" }];
-  //         var errorMessage =
-  //             "Failed to validate account schema: " +
-  //             errors
-  //             .map((error) => error.message )
-  //             .join(", ");
-  //
-  //         scope.schema.validate.returns(false);
-  //         scope.schema.getLastErrors.returns(errors);
-  //
-  //         expect(account.objectNormalize.bind(account, accountData)).to.throw(
-  //             errorMessage
-  //         );
-  //
-  //         expect(scope.schema.validate.calledOnce).to.be.true;
-  //         expect(scope.schema.validate.getCall(0).args.length).to.equal(2);
-  //         expect(scope.schema.validate.getCall(0).args[0]).to.equal(accountData);
-  //         expect(scope.schema.validate.getCall(0).args[1]).to.deep.equal({
-  //             id: "Account",
-  //             object: true,
-  //             properties: account.filter
-  //         });
-  //
-  //         expect(scope.schema.getLastErrors.calledOnce).to.be.true;
-  //         expect(scope.schema.getLastErrors.getCall(0).args.length).to.equal(0);
-  //     });
-  //
-  //     it("success", () => {
-  //         scope.schema.validate.returns(true);
-  //
-  //         expect(account.objectNormalize(accountData)).to.equal(accountData);
-  //
-  //         expect(scope.schema.validate.calledOnce).to.be.true;
-  //         expect(scope.schema.validate.getCall(0).args.length).to.equal(2);
-  //         expect(scope.schema.validate.getCall(0).args[0]).to.equal(accountData);
-  //         expect(scope.schema.validate.getCall(0).args[1]).to.deep.equal({
-  //             id: "Account",
-  //             object: true,
-  //             properties: account.filter
-  //         });
-  //     });
-  // });
-  //
-  // describe("account.verifyPublicKey", () => {
-  //     it("public key is not a string error", () => {
-  //         var error = "Invalid public key, must be a string";
-  //         expect(() => account.assertPublicKey(null)).to.throw(error);
-  //     });
-  //
-  //     it("public key is too short error", () => {
-  //         var error = "Invalid public key, must be 64 characters long";
-  //
-  //         expect(() => account.assertPublicKey('short string')).to.throw(error);
-  //
-  //     });
-  //
-  //     it("should call through schema hex validation.", () => {
-  //         scope.schema.validate = sinon.stub().returns(false);
-  //         var publicKey = '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da';
-  //         expect(() => account.assertPublicKey(publicKey)).to.throw('Invalid public key, must be a hex string');
-  //         expect(scope.schema.validate.calledOnce).is.true;
-  //         expect(scope.schema.validate.firstCall.args[0]).to.be.eq(publicKey);
-  //         expect(scope.schema.validate.firstCall.args[1]).to.be.deep.eq({format: 'hex'});
-  //     });
-  // });
-  //
-  // describe("account.toDB", () => {
-  //     it("test", () => {
-  //         var raw = {
-  //             publicKey:
-  //             "29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da",
-  //             address: "2841811297332056155r"
-  //         };
-  //
-  //         var result = account.toDB(raw);
-  //
-  //         expect(result.publicKey).to.deep.equal(new Buffer(raw.publicKey, "hex"));
-  //         expect(result.address).to.equal(raw.address.toUpperCase());
-  //     });
-  // });
-  //
-  // describe("account.get", () => {
-  //     var data = ["some data"],
-  //         filter = {};
-  //
-  //     beforeEach(() => {
-  //         sinon.stub(account, "getAll");
-  //         //
-  //     });
-  //
-  //     afterEach(() => {
-  //         account.getAll.restore();
-  //         //
-  //     });
-  //
-  //     it("without fields; getAll error", (done) => {
-  //         var error = "error";
-  //         var fields = account.fields.map((field) => field.alias || field.field );
-  //
-  //         account.getAll.returns(Promise.reject(error));
-  //
-  //         account.get(filter, callback).then(() => {
-  //             done(new Error("Should rejects"));
-  //         }).catch(err => {
-  //             expect(err).to.equal(error)
-  //             expect(account.getAll.calledOnce).to.be.true;
-  //             expect(account.getAll.getCall(0).args.length).to.equal(2);
-  //             expect(account.getAll.getCall(0).args[0]).to.equal(filter);
-  //             expect(account.getAll.getCall(0).args[1]).to.deep.equal(fields);
-  //             done();
-  //         });
-  //     });
-  //
-  //     it("with fields; getAll error", (done) => {
-  //         var error = "error";
-  //         var fields = {};
-  //
-  //         account.getAll.returns(Promise.reject(error));
-  //
-  //         account.get(filter, fields, callback).then(() => {
-  //             done(new Error("Should rejects"));
-  //         }).catch(err => {
-  //             expect(account.getAll.calledOnce).to.be.true;
-  //             expect(account.getAll.getCall(0).args.length).to.equal(2);
-  //             expect(account.getAll.getCall(0).args[0]).to.equal(filter);
-  //             expect(account.getAll.getCall(0).args[1]).to.equal(fields);
-  //
-  //             expect(callback.calledOnce).to.be.true;
-  //             expect(callback.getCall(0).args.length).to.equal(1);
-  //             expect(callback.getCall(0).args[0]).to.equal(error);
-  //             done();
-  //         });
-  //     });
-  //
-  //     it("without fields", (done) => {
-  //         var fields = account.fields.map((field) => field.alias || field.field);
-  //
-  //         account.getAll.returns(Promise.resolve(data));
-  //
-  //         account.get(filter, callback).then(() => {
-  //             expect(account.getAll.calledOnce).to.be.true;
-  //             expect(account.getAll.getCall(0).args.length).to.equal(2);
-  //             expect(account.getAll.getCall(0).args[0]).to.equal(filter);
-  //             expect(account.getAll.getCall(0).args[1]).to.deep.equal(fields);
-  //
-  //             expect(callback.calledOnce).to.be.true;
-  //
-  //             expect(callback.getCall(0).args.length).to.equal(2);
-  //             expect(callback.getCall(0).args[0]).to.equal(null);
-  //             expect(callback.getCall(0).args[1]).to.equal(data[0]);
-  //             done();
-  //         }).catch(err => {
-  //             done(new Error("Should resolves"));
-  //         });
-  //     });
-  //
-  //     it("with fields", (done) => {
-  //         var fields = {};
-  //
-  //         account.getAll.returns(Promise.resolve(data));
-  //
-  //         account.get(filter, fields, callback).then(() => {
-  //             expect(account.getAll.calledOnce).to.be.true;
-  //             expect(account.getAll.getCall(0).args.length).to.equal(2);
-  //             expect(account.getAll.getCall(0).args[0]).to.equal(filter);
-  //             expect(account.getAll.getCall(0).args[1]).to.equal(fields);
-  //
-  //             expect(callback.calledOnce).to.be.true;
-  //             expect(callback.getCall(0).args.length).to.equal(2);
-  //             expect(callback.getCall(0).args[0]).to.equal(null);
-  //             expect(callback.getCall(0).args[1]).to.equal(data[0]);
-  //             done();
-  //         }).catch(err => {
-  //             done(new Error("Should resolves"))
-  //         });
-  //     });
-  // });
-  //
-  // describe("account.getAll", () => {
-  //     var filter, fields, sql, shortSql, rows;
-  //
-  //     beforeEach(() => {
-  //         filter = {
-  //             limit: 4,
-  //             offset: 2,
-  //             sort: "username",
-  //             address: "2841811297332056155r"
-  //         };
-  //         fields = [];
-  //         sql =
-  //             'select "username", "isDelegate", "u_isDelegate", "secondSignature", "u_secondSignature", "u_username", UPPER("address") as "address", ENCODE("publicKey", \'hex\') as "publicKey", ENCODE("secondPublicKey", \'hex\') as "secondPublicKey", ("balance")::bigint as "balance", ("u_balance")::bigint as "u_balance", ("vote")::bigint as "vote", ("rate")::bigint as "rate", (SELECT ARRAY_AGG("dependentId") FROM mem_accounts2delegates WHERE "accountId" = a."address") as "delegates", (SELECT ARRAY_AGG("dependentId") FROM mem_accounts2u_delegates WHERE "accountId" = a."address") as "u_delegates", (SELECT ARRAY_AGG("dependentId") FROM mem_accounts2multisignatures WHERE "accountId" = a."address") as "multisignatures", (SELECT ARRAY_AGG("dependentId") FROM mem_accounts2u_multisignatures WHERE "accountId" = a."address") as "u_multisignatures", "multimin", "u_multimin", "multilifetime", "u_multilifetime", "blockId", "nameexist", "u_nameexist", "producedblocks", "missedblocks", ("fees")::bigint as "fees", ("rewards")::bigint as "rewards", "virgin" from "mem_accounts" as "a" where upper("address") = upper(${p1}) order by "username" limit 4 offset 2;';
-  //         shortSql =
-  //             'select * from "mem_accounts" as "a" where upper("address") = upper(${p1}) order by "username" limit 4 offset 2;';
-  //         rows = [];
-  //     });
-  //
-  //     it("without fields; error", (done) => {
-  //         var error = { stack: "error" };
-  //
-  //         scope.db.query.rejects(error);
-  //
-  //         account.getAll(filter, callback).then(() => {
-  //             done(new Error("Should rejects"));
-  //         }).catch(err => {
-  //             expect(scope.db.query.calledOnce).to.be.true;
-  //             expect(scope.db.query.getCall(0).args.length).to.equal(2);
-  //             expect(scope.db.query.getCall(0).args[0]).to.equal(sql);
-  //             expect(scope.db.query.getCall(0).args[1]).to.deep.equal({
-  //                 p1: "2841811297332056155r"
-  //             });
-  //
-  //             expect(scope.library.logger.error.calledOnce).to.be.true;
-  //             expect(scope.library.logger.error.getCall(0).args.length).to.equal(1);
-  //             expect(scope.library.logger.error.getCall(0).args[0]).to.equal(
-  //                 error.stack
-  //             );
-  //
-  //             expect(callback.calledOnce).to.be.true;
-  //             expect(callback.getCall(0).args.length).to.equal(1);
-  //             expect(callback.getCall(0).args[0]).to.equal("Account#getAll error");
-  //             done();
-  //         });
-  //     });
-  //
-  //     it("without fields; success", (done) => {
-  //         scope.db.query.resolves(rows);
-  //
-  //         account.getAll(filter, callback).then(() => {
-  //             expect(scope.db.query.calledOnce).to.be.true;
-  //             expect(scope.db.query.getCall(0).args.length).to.equal(2);
-  //             expect(scope.db.query.getCall(0).args[0]).to.equal(sql);
-  //             expect(scope.db.query.getCall(0).args[1]).to.deep.equal({
-  //                 p1: "2841811297332056155r"
-  //             });
-  //
-  //             expect(callback.calledOnce).to.be.true;
-  //             expect(callback.getCall(0).args.length).to.equal(2);
-  //             expect(callback.getCall(0).args[0]).to.equal(null);
-  //             expect(callback.getCall(0).args[1]).to.equal(rows);
-  //             done();
-  //         }).catch(err => {
-  //             done(new Error("Should rejects"));
-  //         });
-  //     });
-  //
-  //     it("with fields; error", (done) => {
-  //         var error = { stack: "error" };
-  //
-  //         scope.db.query.rejects(error);
-  //
-  //         account.getAll(filter, fields, callback).then(() => {
-  //             done(new Error("Should rejects"));
-  //         }).catch(err => {
-  //             expect(scope.db.query.calledOnce).to.be.true;
-  //             expect(scope.db.query.getCall(0).args.length).to.equal(2);
-  //             expect(scope.db.query.getCall(0).args[0]).to.equal(shortSql);
-  //             expect(scope.db.query.getCall(0).args[1]).to.deep.equal({
-  //                 p1: "2841811297332056155r"
-  //             });
-  //
-  //             expect(scope.library.logger.error.calledOnce).to.be.true;
-  //             expect(scope.library.logger.error.getCall(0).args.length).to.equal(1);
-  //             expect(scope.library.logger.error.getCall(0).args[0]).to.equal(
-  //                 error.stack
-  //             );
-  //
-  //             expect(callback.calledOnce).to.be.true;
-  //             expect(callback.getCall(0).args.length).to.equal(1);
-  //             expect(callback.getCall(0).args[0]).to.equal("Account#getAll error");
-  //             done();
-  //         });
-  //     });
-  //
-  //     it("with fields; success", () => {
-  //         clock.restore();
-  //
-  //
-  //         scope.db.query.resolves(rows);
-  //
-  //         account.getAll(filter, fields, callback);
-  //
-  //         expect(scope.db.query.calledOnce).to.be.true;
-  //         expect(scope.db.query.getCall(0).args.length).to.equal(2);
-  //         expect(scope.db.query.getCall(0).args[0]).to.equal(shortSql);
-  //         expect(scope.db.query.getCall(0).args[1]).to.deep.equal({
-  //             p1: "2841811297332056155r"
-  //         });
-  //
-  //         setImmediate(() => {
-  //             setImmediate(() => {
-  //                 expect(callback.calledOnce).to.be.true;
-  //                 expect(callback.getCall(0).args.length).to.equal(2);
-  //                 expect(callback.getCall(0).args[0]).to.equal(null);
-  //                 expect(callback.getCall(0).args[1]).to.equal(rows);
-  //                 done();
-  //             });
-  //         });
-  //     });
-  // });
-  //
-  // describe("account.set", () => {
-  //     var address = "2841811297332056155r";
-  //     var fields = {};
-  //     var sql =
-  //         'insert into "mem_accounts" ("address") values (${p1}) on conflict ("address") do update set "address" = ${p2};';
-  //     var values = { p1: "2841811297332056155R", p2: "2841811297332056155R" };
-  //
-  //     beforeEach(() => {
-  //         sinon.stub(account, "verifyPublicKey");
-  //     });
-  //
-  //     afterEach(() => {
-  //         account.assertPublicKey.restore();
-  //     });
-  //
-  //     // it("verify throws error", () => {
-  //     //   account.verifyPublicKey.throws("error");
-  //     //
-  //     //   expect(account.set.bind(account, address, fields, callback)).to.throw();
-  //     // });
-  //
-  //     it("error", () => {
-  //         var error = { stack: "error" };
-  //
-  //         account.assertPublicKey.returns(true);
-  //         scope.db.none.rejects(error);
-  //
-  //         return account.set(address, fields, callback)
-  //             .then(() => Promise.reject('should have failed'))
-  //             .catch((err) => expect(err).to.be.deep.eq('Account#set error'))
-  //             .then(() => {
-  //                 expect(scope.db.none.calledOnce).to.be.true;
-  //                 expect(scope.db.none.getCall(0).args.length).to.equal(2);
-  //                 expect(scope.db.none.getCall(0).args[0]).to.equal(sql);
-  //                 expect(scope.db.none.getCall(0).args[1]).to.deep.equal(values);
-  //             });
-  //
-  //     });
-  //
-  //     it("success", () => {
-  //         account.assertPublicKey.returns(true);
-  //         scope.db.none.resolves();
-  //
-  //         return account.set(address, fields, callback)
-  //             .then(() => {
-  //                 expect(scope.db.none.calledOnce).to.be.true;
-  //                 expect(scope.db.none.getCall(0).args.length).to.equal(2);
-  //                 expect(scope.db.none.getCall(0).args[0]).to.equal(sql);
-  //                 expect(scope.db.none.getCall(0).args[1]).to.deep.equal(values);
-  //                 expect(callback.calledOnce).to.be.true;
-  //
-  //                 expect(callback.getCall(0).args[1]).to.not.exist;
-  //             });
-  //     });
-  // });
-  //
-  // describe("account.merge", () => {
-  //     var address, diff, queries;
-  //
-  //     beforeEach(() => {
-  //         address = "2841811297332056155r";
-  //         diff = {
-  //             publicKey:
-  //             "29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da",
-  //             blockId: "11273313233467167051",
-  //             round: 2707,
-  //             balance: 300,
-  //             u_balance: -300,
-  //             multisignatures: [
-  //                 {
-  //                     action: "+",
-  //                     dependentId: "11995752116878847490R"
-  //                 },
-  //                 {
-  //                     action: "-",
-  //                     dependentId: "11995752116878847490R"
-  //                 }
-  //             ],
-  //             delegates: [
-  //                 [
-  //                     "+",
-  //                     "5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde"
-  //                 ],
-  //                 [
-  //                     "-",
-  //                     "5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde"
-  //                 ]
-  //             ]
-  //         };
-  //         queries =
-  //             'delete from "mem_accounts2delegates" where "dependentId" in (5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde) and "accountId" = \'2841811297332056155R\';insert into "mem_accounts2delegates" ("accountId", "dependentId") values (\'2841811297332056155R\', 5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde);delete from "mem_accounts2multisignatures" where "dependentId" = \'11995752116878847490R\';insert into "mem_accounts2multisignatures" ("dependentId") values (\'11995752116878847490R\');update "mem_accounts" set "balance" = "balance" + 300, "u_balance" = "u_balance" - 300, "virgin" = 0, "blockId" = \'11273313233467167051\' where "address" = \'2841811297332056155R\';INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT \'2841811297332056155R\', (300)::bigint, "dependentId", \'11273313233467167051\', 2707 FROM mem_accounts2delegates WHERE "accountId" = \'2841811297332056155R\';INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT \'2841811297332056155R\', (balance)::bigint, array[\'5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde\'], \'11273313233467167051\', 2707 FROM mem_accounts WHERE address = \'2841811297332056155R\';INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT \'2841811297332056155R\', (-balance)::bigint, array[\'5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde\'], \'11273313233467167051\', 2707 FROM mem_accounts WHERE address = \'2841811297332056155R\';';
-  //         sinon.stub(account, "verifyPublicKey");
-  //         account.assertPublicKey.returns(true);
-  //     });
-  //
-  //     afterEach(() => {
-  //         account.assertPublicKey.restore();
-  //     });
-  //
-  //     it("verify throws error", () => {
-  //         account.assertPublicKey.throws("error");
-  //
-  //         expect(account.merge.bind(account, address, diff, callback)).to.throw();
-  //     });
-  //
-  //     it("no queries", () => {
-  //         scope.db.query.returns(Promise.resolve([]));
-  //         return account.merge(address, {}, callback)
-  //             .then(() => {
-  //                 // console.log(scope.db.none.firstCall.args);
-  //                 expect(scope.db.none.called).to.be.false;
-  //                 // expect(callback.called).to.be.false;
-  //
-  //                 expect(callback.calledOnce).to.be.true;
-  //                 expect(callback.getCall(0).args.length).to.equal(2);
-  //                 expect(callback.getCall(0).args[0]).to.be.null;
-  //                 expect(callback.getCall(0).args[1]).to.be.undefined;
-  //             });
-  //
-  //
-  //     });
-  //
-  //     it("no callback", () => {
-  //         Account.__set__("pgp", originalPgp);
-  //
-  //         var testQueries = account.merge(address, diff);
-  //
-  //         expect(testQueries).to.equal(queries);
-  //     });
-  //
-  //     it("callback error", () => {
-  //         var error = { stack: "error" };
-  //         Account.__set__("pgp", originalPgp);
-  //         scope.db.none.rejects(error);
-  //
-  //         return account.merge(address, diff, callback)
-  //             .then(() => Promise.reject('Should have failed'))
-  //             .catch((err) => expect(err).to.be.eq('Account#merge error'))
-  //             .then(() => {
-  //                 expect(scope.db.none.calledOnce).to.be.true;
-  //                 expect(scope.db.none.getCall(0).args.length).to.equal(1);
-  //                 expect(scope.db.none.getCall(0).args[0]).to.equal(queries);
-  //                 expect(scope.library.logger.error.calledOnce).to.be.true;
-  //                 expect(scope.library.logger.error.getCall(0).args.length).to.equal(1);
-  //                 expect(scope.library.logger.error.getCall(0).args[0]).to.equal(
-  //                     error.stack
-  //                 );
-  //
-  //                 expect(callback.calledOnce).to.be.true;
-  //                 expect(callback.getCall(0).args.length).to.equal(1);
-  //                 expect(callback.getCall(0).args[0]).to.equal("Account#merge error");
-  //             });
-  //     });
-  //
-  //     it("callback success", () => {
-  //         clock.restore();
-  //         Account.__set__("pgp", originalPgp);
-  //         scope.db.none.returns(Promise.resolve());
-  //         scope.db.query.returns(Promise.resolve([]));
-  //         return account.merge(address, diff, callback)
-  //             .then(() => {
-  //                 expect(scope.db.none.calledOnce).to.be.true;
-  //                 expect(scope.db.none.getCall(0).args.length).to.equal(1);
-  //                 expect(scope.db.none.getCall(0).args[0]).to.equal(queries);
-  //                 expect(callback.calledOnce).to.be.true;
-  //                 expect(callback.getCall(0).args.length).to.equal(2);
-  //                 expect(callback.getCall(0).args[0]).to.be.null;
-  //                 expect(callback.getCall(0).args[1]).to.be.undefined;
-  //             });
-  //     });
-  //
-  // });
-  //
-  // describe("account.remove", () => {
-  //     var address = "2841811297332056155R";
-  //     var queries = 'delete from "mem_accounts" where "address" = ${p1};';
-  //     var values = { p1: "2841811297332056155R" };
-  //
-  //     it("promise rejects", (done) => {
-  //         var error = { stack: "error" };
-  //         scope.db.none.rejects(error);
-  //
-  //         account.remove(address, callback).then(() => {
-  //             done(new Error("Should rejects"));
-  //         }).catch(err => {
-  //             expect(scope.db.none.calledOnce).to.be.true;
-  //             expect(scope.db.none.getCall(0).args.length).to.equal(2);
-  //             expect(scope.db.none.getCall(0).args[0]).to.equal(queries);
-  //             expect(scope.db.none.getCall(0).args[1]).to.deep.equal(values);
-  //
-  //             expect(scope.library.logger.error.calledOnce).to.be.true;
-  //             expect(scope.library.logger.error.getCall(0).args.length).to.equal(1);
-  //             expect(scope.library.logger.error.getCall(0).args[0]).to.equal(
-  //                 error.stack
-  //             );
-  //
-  //             expect(callback.calledOnce).to.be.true;
-  //             expect(callback.getCall(0).args.length).to.equal(1);
-  //             expect(callback.getCall(0).args[0]).to.equal("Account#remove error");
-  //             done();
-  //         });
-  //     });
-  //
-  //     it("promise resolves", (done) => {
-  //         scope.db.none.resolves();
-  //
-  //         account.remove(address, callback).then((addr) => {
-  //             expect(scope.db.none.calledOnce).to.be.true;
-  //             expect(scope.db.none.getCall(0).args.length).to.equal(2);
-  //             expect(scope.db.none.getCall(0).args[0]).to.equal(queries);
-  //             expect(scope.db.none.getCall(0).args[1]).to.deep.equal(values);
-  //
-  //             expect(callback.calledOnce).to.be.true;
-  //             expect(callback.getCall(0).args.length).to.equal(2);
-  //             expect(callback.getCall(0).args[0]).to.equal(null);
-  //             expect(callback.getCall(0).args[1]).to.equal(address);
-  //             expect(addr).to.equal(address);
-  //             done();
-  //         }).catch(err => {
-  //             done(new Error("Should resolves"));
-  //         });
-  //     });
-  // });
+
+  describe('account.removeTables', () => {
+    const tables = [
+      table,
+      'mem_round',
+      'mem_accounts2delegates',
+      'mem_accounts2u_delegates',
+      'mem_accounts2multisignatures',
+      'mem_accounts2u_multisignatures',
+    ];
+
+    const sqles = tables.map((tbl) => {
+      const sql = jsonSql.build({
+        type : 'remove',
+        table: tbl,
+      });
+      return sql.query;
+    });
+
+    it('should handle errors', async () => {
+      const error = new Error('error');
+
+      dbStub.stubConfig.query.resolve = false;
+      dbStub.stubConfig.query.return  = error;
+
+      await account.removeTables().then(() => {
+        throw new Error('Expected method to reject.');
+      }).catch((errorMessage) => {
+        // It should call db.query with the right query
+        expect(dbStub.stubs.query.calledOnce).to.be.true;
+        expect(dbStub.stubs.query.getCall(0).args.length).to.equal(1);
+        expect(dbStub.stubs.query.getCall(0).args[0]).to.deep.equal(sqles.join(''));
+        // It should log the error
+        expect(loggerStub.stubs.error.calledOnce).to.be.true;
+        expect(loggerStub.stubs.error.getCall(0).args.length).to.equal(1);
+        expect(loggerStub.stubs.error.getCall(0).args[0]).to.equal(
+          error.stack
+        );
+        expect(errorMessage).to.equal('Account#removeTables error');
+      });
+    });
+
+    it('should remove tables', async () => {
+
+      dbStub.stubConfig.query.resolve = true;
+      dbStub.stubConfig.query.return  = 'OK';
+
+      await account.removeTables();
+
+      // It should call db.query with the right query
+      expect(dbStub.stubs.query.calledOnce).to.be.true;
+      expect(dbStub.stubs.query.getCall(0).args.length).to.equal(1);
+      expect(dbStub.stubs.query.getCall(0).args[0]).to.deep.equal(sqles.join(''));
+
+    });
+  });
+
+  describe('account.objectNormalize', () => {
+    const accountData = {};
+
+    it('should handle validation error', () => {
+      const errors       = [{ message: 'error 1' }, { message: 'error 2' }];
+      const errorMessage =
+            'Failed to validate account schema: ' +
+            errors
+              .map((error) => error.message)
+              .join(', ');
+
+      zSchemaStub.stubConfig.validate.return = false;
+      zSchemaStub.stubConfig.getLastErrors.return = errors;
+      // it should throw an error as expected
+      expect(account.objectNormalize.bind(account, accountData)).to.throw(
+        errorMessage
+      );
+      // it should call validate correctly
+      expect(zSchemaStub.stubs.validate.calledOnce).to.be.true;
+      expect(zSchemaStub.stubs.validate.getCall(0).args.length).to.equal(2);
+      expect(zSchemaStub.stubs.validate.getCall(0).args[0]).to.equal(accountData);
+      expect(zSchemaStub.stubs.validate.getCall(0).args[1]).to.deep.equal({
+        id        : 'Account',
+        object    : true,
+        properties: account.filter,
+      });
+      // it should call getLastErrors
+      expect(zSchemaStub.stubs.getLastErrors.calledOnce).to.be.true;
+      expect(zSchemaStub.stubs.getLastErrors.getCall(0).args.length).to.equal(0);
+    });
+
+    it('should normalize object', () => {
+      zSchemaStub.stubConfig.validate.return = true;
+      // it should not modify the object
+      expect(account.objectNormalize(accountData)).to.equal(accountData);
+      // it should call validate correctly
+      expect(zSchemaStub.stubs.validate.calledOnce).to.be.true;
+      expect(zSchemaStub.stubs.validate.getCall(0).args.length).to.equal(2);
+      expect(zSchemaStub.stubs.validate.getCall(0).args[0]).to.equal(accountData);
+      expect(zSchemaStub.stubs.validate.getCall(0).args[1]).to.deep.equal({
+        id        : 'Account',
+        object    : true,
+        properties: account.filter,
+      });
+    });
+  });
+
+  describe('account.assertPublicKey', () => {
+    it('public key is not a string error', () => {
+      const error = 'Invalid public key, must be a string';
+      expect(() => account.assertPublicKey(null)).to.throw(error);
+    });
+
+    it('public key is too short error', () => {
+      const error = 'Invalid public key, must be 64 characters long';
+      expect(() => account.assertPublicKey('short string')).to.throw(error);
+    });
+
+    it('should call through schema hex validation.', () => {
+      zSchemaStub.stubConfig.validate.return = false;
+      const publicKey         = '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da';
+      expect(() => account.assertPublicKey(publicKey)).to.throw('Invalid public key, must be a hex string');
+      expect(zSchemaStub.stubs.validate.calledOnce).is.true;
+      expect(zSchemaStub.stubs.validate.firstCall.args[0]).to.be.eq(publicKey);
+      expect(zSchemaStub.stubs.validate.firstCall.args[1]).to.be.deep.eq({ format: 'hex' });
+    });
+  });
+
+  describe('account.toDB', () => {
+    it('should convert correctly', () => {
+      const raw = {
+        publicKey:
+          '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da',
+        address  : '2841811297332056155r',
+      };
+
+      const result = account.toDB(raw);
+
+      expect(result.publicKey).to.deep.equal(new Buffer(raw.publicKey, 'hex'));
+      expect(result.address).to.equal(raw.address.toUpperCase());
+    });
+  });
+
+  describe('account.get', () => {
+    const data   = ['some data'];
+    const filter = {};
+
+    beforeEach(() => {
+      sinon.stub(account, 'getAll');
+    });
+
+    afterEach(() => {
+      account.getAll.restore();
+    });
+
+    it('without fields; getAll error', async () => {
+      const error  = 'error';
+      const fields = account.fields.map((field) => field.alias || field.field);
+
+      account.getAll.returns(Promise.reject(error));
+
+      await account.get(filter).then(() => {
+        throw new Error('Should reject');
+      }).catch((err) => {
+        expect(err).to.equal(error);
+        expect(account.getAll.calledOnce).to.be.true;
+        expect(account.getAll.getCall(0).args.length).to.equal(2);
+        expect(account.getAll.getCall(0).args[0]).to.equal(filter);
+        expect(account.getAll.getCall(0).args[1]).to.deep.equal(fields);
+      });
+    });
+
+    it('with fields; getAll error', async () => {
+      const error  = 'error';
+      const fields = {};
+
+      account.getAll.returns(Promise.reject(error));
+
+      await account.get(filter, fields).then(() => {
+        throw new Error('Should reject');
+      }).catch((err) => {
+        expect(err).to.equal(error);
+        expect(account.getAll.calledOnce).to.be.true;
+        expect(account.getAll.getCall(0).args.length).to.equal(2);
+        expect(account.getAll.getCall(0).args[0]).to.equal(filter);
+        expect(account.getAll.getCall(0).args[1]).to.equal(fields);
+      });
+    });
+
+    it('without fields', async () => {
+      const fields = account.fields.map((field) => field.alias || field.field);
+
+      account.getAll.returns(Promise.resolve(data));
+
+      const retVal = await account.get(filter).catch(() => {
+        throw new Error('Should resolve');
+      });
+
+      expect(account.getAll.calledOnce).to.be.true;
+      expect(account.getAll.getCall(0).args.length).to.equal(2);
+      expect(account.getAll.getCall(0).args[0]).to.equal(filter);
+      expect(account.getAll.getCall(0).args[1]).to.deep.equal(fields);
+      expect(retVal).to.equal(data[0]);
+    });
+
+    it('with fields', async () => {
+      const fields = {};
+
+      account.getAll.returns(Promise.resolve(data));
+
+      const retVal = await account.get(filter, fields).catch(() => {
+        throw new Error('Should resolve');
+      });
+
+      expect(account.getAll.calledOnce).to.be.true;
+      expect(account.getAll.getCall(0).args.length).to.equal(2);
+      expect(account.getAll.getCall(0).args[0]).to.equal(filter);
+      expect(account.getAll.getCall(0).args[1]).to.equal(fields);
+      expect(retVal).to.equal(data[0]);
+    });
+  });
+
+  describe('account.getAll', () => {
+    let filter: any;
+    let fields: any[];
+    let sql: string;
+    let shortSql: string;
+    let rows: any[];
+
+    beforeEach(() => {
+      filter   = {
+        limit  : 4,
+        offset : 2,
+        sort   : 'username',
+        address: '2841811297332056155r',
+      };
+      fields   = [];
+      sql      = 'select "username", "isDelegate", "u_isDelegate", "secondSignature", "u_secondSignature", ' +
+                 '"u_username", UPPER("address") as "address", ENCODE("publicKey", \'hex\') as "publicKey", ' +
+                 'ENCODE("secondPublicKey", \'hex\') as "secondPublicKey", ("balance")::bigint as "balance", ' +
+                 '("u_balance")::bigint as "u_balance", ("vote")::bigint as "vote", ("rate")::bigint as "rate", ' +
+                 '(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2delegates WHERE "accountId" = a."address") ' +
+                 'as "delegates", (SELECT ARRAY_AGG("dependentId") FROM mem_accounts2u_delegates WHERE "accountId" = ' +
+                 'a."address") as "u_delegates", (SELECT ARRAY_AGG("dependentId") FROM mem_accounts2multisignatures ' +
+                 'WHERE "accountId" = a."address") as "multisignatures", (SELECT ARRAY_AGG("dependentId") FROM ' +
+                 'mem_accounts2u_multisignatures WHERE "accountId" = a."address") as "u_multisignatures", "multimin",' +
+                 ' "u_multimin", "multilifetime", "u_multilifetime", "blockId", "nameexist", "u_nameexist", ' +
+                 '"producedblocks", "missedblocks", ("fees")::bigint as "fees", ("rewards")::bigint as "rewards", ' +
+                 '"virgin" from "mem_accounts" as "a" where upper("address") = upper(${p1}) order by "username" limit' +
+                 ' 4 offset 2;';
+      shortSql = 'select * from "mem_accounts" as "a" where upper("address") = upper(${p1}) order by "username" ' +
+                 'limit 4 offset 2;';
+      rows     = [];
+    });
+
+    it('without fields; error', async () => {
+      const error = new Error('error');
+
+      dbStub.stubConfig.query.resolve = false;
+      dbStub.stubConfig.query.return = error;
+
+      await account.getAll(filter).then(() => {
+        throw new Error('Should reject');
+      }).catch(() => {
+        expect(dbStub.stubs.query.calledOnce).to.be.true;
+        expect(dbStub.stubs.query.getCall(0).args.length).to.equal(2);
+        expect(dbStub.stubs.query.getCall(0).args[0]).to.equal(sql);
+        expect(dbStub.stubs.query.getCall(0).args[1]).to.deep.equal({
+          p1: '2841811297332056155r',
+        });
+
+        expect(loggerStub.stubs.error.calledOnce).to.be.true;
+        expect(loggerStub.stubs.error.getCall(0).args.length).to.equal(1);
+        expect(loggerStub.stubs.error.getCall(0).args[0]).to.equal(
+          error.stack
+        );
+      });
+    });
+
+    it('without fields; success', async () => {
+      dbStub.stubConfig.query.resolve = true;
+      dbStub.stubConfig.query.return = rows;
+
+      const retVal = await account.getAll(filter).catch( () => {
+        throw new Error('Should rejects');
+      });
+
+      expect(dbStub.stubs.query.calledOnce).to.be.true;
+      expect(dbStub.stubs.query.getCall(0).args.length).to.equal(2);
+      expect(dbStub.stubs.query.getCall(0).args[0]).to.equal(sql);
+      expect(dbStub.stubs.query.getCall(0).args[1]).to.deep.equal({
+        p1: '2841811297332056155r',
+      });
+      expect(retVal).to.be.deep.equal(rows);
+    });
+
+    it('with fields; error', async () => {
+      const error = new Error('error');
+
+      dbStub.stubConfig.query.resolve = false;
+      dbStub.stubConfig.query.return = error;
+
+      await account.getAll(filter, fields).then(() => {
+        throw new Error('Should reject');
+      }).catch(() => {
+        expect(dbStub.stubs.query.calledOnce).to.be.true;
+        expect(dbStub.stubs.query.getCall(0).args.length).to.equal(2);
+        expect(dbStub.stubs.query.getCall(0).args[0]).to.equal(shortSql);
+        expect(dbStub.stubs.query.getCall(0).args[1]).to.deep.equal({
+          p1: '2841811297332056155r',
+        });
+
+        expect(loggerStub.stubs.error.calledOnce).to.be.true;
+        expect(loggerStub.stubs.error.getCall(0).args.length).to.equal(1);
+        expect(loggerStub.stubs.error.getCall(0).args[0]).to.equal(
+          error.stack
+        );
+      });
+    });
+
+    it('with fields; success', async () => {
+      dbStub.stubConfig.query.resolve = true;
+      dbStub.stubConfig.query.return = rows;
+
+      const retVal = await account.getAll(filter, fields);
+
+      expect(dbStub.stubs.query.calledOnce).to.be.true;
+      expect(dbStub.stubs.query.getCall(0).args.length).to.equal(2);
+      expect(dbStub.stubs.query.getCall(0).args[0]).to.equal(shortSql);
+      expect(dbStub.stubs.query.getCall(0).args[1]).to.deep.equal({
+        p1: '2841811297332056155r',
+      });
+      expect(retVal).to.be.deep.eq(rows);
+    });
+  });
+
+  describe('account.set', () => {
+    const address = '2841811297332056155r';
+    const fields  = {};
+    const sql     = 'insert into "mem_accounts" ("address") values (${p1}) on conflict ("address") do update set ' +
+                    '"address" = ${p2};';
+    const values  = { p1: '2841811297332056155R', p2: '2841811297332056155R' };
+    let callback: SinonStub;
+
+    beforeEach(() => {
+      sinon.stub(account, 'assertPublicKey');
+      callback = sinon.stub();
+    });
+
+    afterEach(() => {
+      account.assertPublicKey.restore();
+    });
+
+    it('should handle errors', async () => {
+      const error = new Error('error');
+
+      account.assertPublicKey.returns(true);
+      dbStub.stubConfig.none.resolve = false;
+      dbStub.stubConfig.none.return = error;
+
+      await account.set(address, fields)
+        .then(() => {
+          throw new Error('should have failed');
+        }).catch((err) =>  {
+          expect(err).to.be.deep.eq('Account#set error');
+          expect(dbStub.stubs.none.calledOnce).to.be.true;
+          expect(dbStub.stubs.none.getCall(0).args.length).to.equal(2);
+          expect(dbStub.stubs.none.getCall(0).args[0]).to.equal(sql);
+          expect(dbStub.stubs.none.getCall(0).args[1]).to.deep.equal(values);
+        });
+    });
+
+    it('should set data', async () => {
+      account.assertPublicKey.returns(true);
+      dbStub.stubConfig.none.resolve = true;
+
+      await account.set(address, fields, callback);
+
+      expect(dbStub.stubs.none.calledOnce).to.be.true;
+      expect(dbStub.stubs.none.getCall(0).args.length).to.equal(2);
+      expect(dbStub.stubs.none.getCall(0).args[0]).to.equal(sql);
+      expect(dbStub.stubs.none.getCall(0).args[1]).to.deep.equal(values);
+      expect(callback.calledOnce).to.be.true;
+      expect(callback.getCall(0).args[1]).to.not.exist;
+    });
+  });
+
+  describe('account.merge', () => {
+    let address: string;
+    let diff: any;
+    let queries: string;
+    let callback: SinonStub;
+
+    beforeEach(() => {
+      address = '2841811297332056155r';
+      diff    = {
+        publicKey      :
+          '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da',
+        blockId        : '11273313233467167051',
+        round          : 2707,
+        balance        : 300,
+        u_balance      : -300,
+        multisignatures: [
+          {
+            action     : '+',
+            dependentId: '11995752116878847490R',
+          },
+          {
+            action     : '-',
+            dependentId: '11995752116878847490R',
+          },
+        ],
+        delegates      : [
+          [
+            '+',
+            '5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde',
+          ],
+          [
+            '-',
+            '5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde',
+          ],
+        ],
+      };
+      queries = 'delete from "mem_accounts2delegates" where "dependentId" in ' +
+                '(5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde) and "accountId" ' +
+                '= \'2841811297332056155R\';insert into "mem_accounts2delegates" ("accountId", "dependentId") ' +
+                'values (\'2841811297332056155R\', 5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde);' +
+                'delete from "mem_accounts2multisignatures" where "dependentId" = \'11995752116878847490R\';' +
+                'insert into "mem_accounts2multisignatures" ("dependentId") values (\'11995752116878847490R\');' +
+                'update "mem_accounts" set "balance" = "balance" + 300, "u_balance" = "u_balance" - 300, "virgin" ' +
+                '= 0, "blockId" = \'11273313233467167051\' where "address" = \'2841811297332056155R\';' +
+                'INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT ' +
+                '\'2841811297332056155R\', (300)::bigint, "dependentId", \'11273313233467167051\', 2707 FROM ' +
+                'mem_accounts2delegates WHERE "accountId" = \'2841811297332056155R\';INSERT INTO mem_round ' +
+                '("address", "amount", "delegate", "blockId", "round") SELECT \'2841811297332056155R\', ' +
+                '(balance)::bigint, array[\'5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde\'],' +
+                ' \'11273313233467167051\', 2707 FROM mem_accounts WHERE address = \'2841811297332056155R\';INSERT ' +
+                'INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT ' +
+                '\'2841811297332056155R\', (-balance)::bigint, ' +
+                'array[\'5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde\'],' +
+                ' \'11273313233467167051\', 2707 FROM mem_accounts WHERE address = \'2841811297332056155R\';';
+
+      sinon.stub(account, 'assertPublicKey');
+      account.assertPublicKey.returns(true);
+      callback = sinon.stub();
+    });
+
+    afterEach(() => {
+      account.assertPublicKey.restore();
+    });
+
+    it('should throw if verify throws error', () => {
+      account.assertPublicKey.throws('error');
+
+      expect(account.merge.bind(account, address, diff, callback)).to.throw();
+    });
+
+    it('should handle no queries passed', async () => {
+      sinon.stub(account, 'get');
+
+      dbStub.stubConfig.query.resolve = true;
+      dbStub.stubConfig.query.return = [];
+
+      await account.merge(address, {}, callback);
+
+      expect(dbStub.stubs.none.called).to.be.false;
+
+      expect(account.get.calledOnce).to.be.true;
+      expect(account.get.getCall(0).args.length).to.equal(1);
+      expect(account.get.getCall(0).args[0]).to.deep.equal({ address: address.toUpperCase() });
+
+      account.get.restore();
+    });
+
+    it('should handle no callback passed', async () => {
+      RewireAccount.__set__('pgp', originalPgp);
+
+      const testQueries =  await account.merge(address, diff);
+
+      expect(testQueries).to.equal(queries);
+    });
+
+    it('should call callback correctly on error', async () => {
+      const error = new Error('error');
+      RewireAccount.__set__('pgp', originalPgp);
+      dbStub.stubConfig.none.resolve = false;
+      dbStub.stubConfig.none.return = error;
+
+      await account.merge(address, diff, callback)
+        .then(() => {
+          throw new Error('Should have failed');
+        })
+        .catch((err) => {
+          expect(err).to.be.eq('Account#merge error');
+          expect(dbStub.stubs.none.calledOnce).to.be.true;
+          expect(dbStub.stubs.none.getCall(0).args.length).to.equal(1);
+          expect(dbStub.stubs.none.getCall(0).args[0]).to.equal(queries);
+          expect(loggerStub.stubs.error.calledOnce).to.be.true;
+          expect(loggerStub.stubs.error.getCall(0).args.length).to.equal(1);
+          expect(loggerStub.stubs.error.getCall(0).args[0]).to.equal(
+            error.stack
+          );
+
+          expect(callback.calledOnce).to.be.true;
+          expect(callback.getCall(0).args.length).to.equal(1);
+          expect(callback.getCall(0).args[0]).to.equal('Account#merge error');
+        });
+    });
+
+    it('Should callback on success', async () => {
+      RewireAccount.__set__('pgp', originalPgp);
+      dbStub.stubConfig.none.resolve = true;
+      dbStub.stubConfig.none.return = undefined;
+      dbStub.stubConfig.query.resolve = true;
+      dbStub.stubConfig.query.return = [];
+
+      await account.merge(address, diff, callback);
+
+      expect(dbStub.stubs.none.calledOnce).to.be.true;
+      expect(dbStub.stubs.none.getCall(0).args.length).to.equal(1);
+      expect(dbStub.stubs.none.getCall(0).args[0]).to.equal(queries);
+      expect(callback.calledOnce).to.be.true;
+      expect(callback.getCall(0).args.length).to.equal(2);
+      expect(callback.getCall(0).args[0]).to.be.null;
+      expect(callback.getCall(0).args[1]).to.be.undefined;
+    });
+
+  });
+
+  describe('account.remove', () => {
+    const address = '2841811297332056155R';
+    const queries = 'delete from "mem_accounts" where "address" = ${p1};';
+    const values  = { p1: '2841811297332056155R' };
+
+    it('handle promise rejection', async () => {
+      const error = new Error('error');
+      dbStub.stubConfig.none.resolve = false;
+      dbStub.stubConfig.none.return = error;
+
+      await account.remove(address).then(() => {
+        throw new Error('Should reject');
+      }).catch(() => {
+        expect(dbStub.stubs.none.calledOnce).to.be.true;
+        expect(dbStub.stubs.none.getCall(0).args.length).to.equal(2);
+        expect(dbStub.stubs.none.getCall(0).args[0]).to.equal(queries);
+        expect(dbStub.stubs.none.getCall(0).args[1]).to.deep.equal(values);
+
+        expect(loggerStub.stubs.error.calledOnce).to.be.true;
+        expect(loggerStub.stubs.error.getCall(0).args.length).to.equal(1);
+        expect(loggerStub.stubs.error.getCall(0).args[0]).to.equal(
+          error.stack
+        );
+      });
+    });
+
+    it('handle promise fulfillment', async () => {
+      dbStub.stubConfig.none.resolve = true;
+
+      const addr = await account.remove(address).catch(() => {
+        throw new Error('Should resolve');
+      });
+
+      expect(dbStub.stubs.none.calledOnce).to.be.true;
+      expect(dbStub.stubs.none.getCall(0).args.length).to.equal(2);
+      expect(dbStub.stubs.none.getCall(0).args[0]).to.equal(queries);
+      expect(dbStub.stubs.none.getCall(0).args[1]).to.deep.equal(values);
+      expect(addr).to.equal(address);
+    });
+  });
 });
