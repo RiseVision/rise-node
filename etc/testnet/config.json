@@ -12,7 +12,7 @@
     "db": {
         "host": "localhost",
         "port": 5432,
-        "database": "rise_db",
+        "database": "rise_testnet_db",
         "user": "rise",
         "password": "password",
         "poolSize": 95,
