@@ -90,8 +90,14 @@ export class TransportModule implements ITransportModule {
       req.body = options.data;
     }
 
-    const res = await popsicle.request(req)
-      .use(popsicle.plugins.parse(['json'], false));
+    let res;
+    try {
+      res = await popsicle.request(req)
+        .use(popsicle.plugins.parse(['json'], false));
+    } catch (err) {
+      this.removePeer({peer: thePeer, code: 'HTTPERROR'}, err.message);
+      return Promise.reject(err);
+    }
 
     if (res.status !== 200) {
       this.removePeer({ peer: thePeer, code: `ERESPONSE ${res.status}` }, `${req.method} ${req.url}`);
@@ -158,7 +164,7 @@ export class TransportModule implements ITransportModule {
           try {
             await p.pingAndUpdate();
           } catch (err) {
-            this.logger.debug(`Ping failed when updating peer ${p.string}`);
+            this.logger.debug(`Ping failed when updating peer ${p.string}`, err);
           }
         }
       }), { maxInProgress: 50 });
