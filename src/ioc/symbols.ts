@@ -11,9 +11,10 @@ export const Symbols = {
     transactions      : Symbol('transactionsAPI'),
     transport         : Symbol('transportAPI'),
     utils             : {
-      errorHandler                 : Symbol('errorHandler'),
-      successInterceptor           : Symbol('successInterceptor'),
-      validatePeerHeadersMiddleware: Symbol('validatePeerHeadersMiddleware'),
+      errorHandler                    : Symbol('errorHandler'),
+      successInterceptor              : Symbol('successInterceptor'),
+      validatePeerHeadersMiddleware   : Symbol('validatePeerHeadersMiddleware'),
+      attachPeerHeaderToResponseObject: Symbol('attachPeerHeaderToResponseObject'),
     },
   },
   generic: {

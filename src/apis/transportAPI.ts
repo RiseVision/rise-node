@@ -16,12 +16,14 @@ import { SignedAndChainedBlockType } from '../logic';
 import { IBaseTransaction } from '../logic/transactions';
 import transportSchema from '../schema/transport';
 import transportSQL from '../sql/transport';
+import { AttachPeerHeaders } from './utils/attachPeerHeaders';
 import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
 
 @JsonController('/peer')
 @injectable()
 @IoCSymbol(Symbols.api.transport)
 @UseBefore(ValidatePeerHeaders)
+@UseBefore(AttachPeerHeaders)
 export class TransportAPI {
   @inject(Symbols.generic.db)
   private db: IDatabase<any>;
