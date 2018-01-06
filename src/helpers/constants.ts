@@ -48,7 +48,7 @@ export default {
   addressLength                : 208,
   blockHeaderLength            : 248,
   blockSlotWindow              : 5, // window of which a slot could be accepted.
-  blockTime                    : 30,
+  blockTime                    : 27,
   blockReceiptTimeOut          : 30 * 2, // 2 blocks
   confirmationLength           : 77,
   epochTime                    : new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
