@@ -91,10 +91,10 @@ export default {
   requestLength                : 104,
   rewards                      : [
     { height: 1, reward: 0 },
-    { height: 10, reward: 1500000000 },
+    { height: 10, reward: 150000000 },
     { height: 11, reward: 30000000 },
     { height: 12, reward: 20000000 },
-    { height: 13, reward: 1500000000 },
+    { height: 13, reward: 150000000 },
     { height: 1054080, reward: 1200000000 },
     { height: 1054080 * 2, reward: 900000000 },
     { height: 1054080 * 3, reward: 600000000 },
