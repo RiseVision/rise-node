@@ -17,7 +17,7 @@ export class RoundChanges {
   public at(index: number): { balance: number, fees: number, feesRemaining: number, rewards: number } {
     const fees          = new Bignum(this.roundFees.toPrecision(15)).dividedBy(this.slots.delegates).floor();
     const feesRemaining = new Bignum(this.roundFees.toPrecision(15)).minus(fees.times(this.slots.delegates));
-    const rewards       = new Bignum(this.roundRewards[index].toPrecision(15)).floor() || 0;
+    const rewards       = this.roundRewards[index] ? new Bignum(this.roundRewards[index].toPrecision(15)).floor() : 0;
 
     return {
       balance      : Number(fees.add(rewards).toFixed()),
