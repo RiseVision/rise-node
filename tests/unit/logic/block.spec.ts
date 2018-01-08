@@ -21,6 +21,7 @@ const dummyKeypair = ed.makeKeypair(
   crypto.createHash('sha256').update(passphrase, 'utf8').digest()
 );
 
+// tslint:disable no-unused-expression
 describe('logic/block', () => {
   let dummyBlock;
   let dummyTransactions;
@@ -122,24 +123,24 @@ describe('logic/block', () => {
     });
 
     it('should call blockReward.calcReward', () => {
-      const newBlock = instance.create(data);
+      instance.create(data);
       expect(blockRewardLogicStub.stubs.calcReward.calledOnce).to.be.true;
     });
 
     it('should call transaction.getBytes per each tx', () => {
-      const newBlock = instance.create(data);
+      instance.create(data);
       expect(transactionLogicStub.stubs.getBytes.callCount).to.equal(2);
     });
 
     it('should call crypto.createHash', () => {
-      const newBlock = instance.create(data);
+      instance.create(data);
       expect(createHashSpy.called).to.be.true;
     });
 
     it('should call this.sign and this.objectNormalize', () => {
       const signSpy = sinon.spy(instance, 'sign');
       const objectNormalizeSpy = sinon.spy(instance, 'objectNormalize');
-      const newBlock = instance.create(data);
+      instance.create(data);
       expect(signSpy.called).to.be.true;
       expect(objectNormalizeSpy.called).to.be.true;
       signSpy.restore();
@@ -155,7 +156,7 @@ describe('logic/block', () => {
 
     it('should call ed.sign', () => {
       const signSpy = sinon.spy(ed, 'sign');
-      const blockSignature = instance.sign(dummyBlock, dummyKeypair);
+      instance.sign(dummyBlock, dummyKeypair);
       expect(signSpy.calledOnce).to.be.true;
       signSpy.restore();
     });
@@ -184,7 +185,7 @@ describe('logic/block', () => {
     });
 
     it('should call crypto.createHash', () => {
-      const hash = BlockLogic.getHash(dummyBlock);
+      BlockLogic.getHash(dummyBlock);
       expect(createHashSpy.calledOnce).to.be.true;
     });
   });
@@ -202,149 +203,160 @@ describe('logic/block', () => {
     it('should call BlockLogic.getHash', () => {
       const signed = instance.create(data);
       const getHashSpy = sinon.spy(BlockLogic, 'getHash');
-      const verified = instance.verifySignature(signed);
+      instance.verifySignature(signed);
       expect(getHashSpy.calledOnce).to.be.true;
       expect(getHashSpy.firstCall.args[0]).to.be.deep.eq(signed);
       getHashSpy.restore();
     });
   });
 
-  // describe("dbSave", () => {
-  //   it("returns an object", () => {
-  //     clock.tick();
-  //     var instance = callback.args[0][1];
-  //     var data = instance.dbSave(dummyBlock);
-  //     expect(data).to.be.an.instanceof(Object);
-  //     expect(data.table).to.equal("blocks");
-  //     expect(data.fields).to.be.equalTo([
-  //       "id",
-  //       "version",
-  //       "timestamp",
-  //       "height",
-  //       "previousBlock",
-  //       "numberOfTransactions",
-  //       "totalAmount",
-  //       "totalFee",
-  //       "reward",
-  //       "payloadLength",
-  //       "payloadHash",
-  //       "generatorPublicKey",
-  //       "blockSignature"
-  //     ]);
-  //     expect(data.values).to.have.all.keys([
-  //       "id",
-  //       "version",
-  //       "timestamp",
-  //       "height",
-  //       "previousBlock",
-  //       "numberOfTransactions",
-  //       "totalAmount",
-  //       "totalFee",
-  //       "reward",
-  //       "payloadLength",
-  //       "payloadHash",
-  //       "generatorPublicKey",
-  //       "blockSignature"
-  //     ]);
-  //   });
-  // });
-  //
-  // describe("dbSave() with wrong parameters", () => {
-  //   it("returns an exception", () => {
-  //     clock.tick();
-  //     var instance = callback.args[0][1];
-  //     wrongBlock = {};
-  //     var error = () => {
-  //       instance.dbSave(wrongBlock);
-  //     };
-  //     expect(error).to.throw();
-  //   });
-  // });
-  //
-  // describe("objectNormalize", () => {
-  //   it("returns a normalized block", () => {
-  //     clock.tick();
-  //     var instance = callback.args[0][1];
-  //     dummyBlock.foo = null;
-  //     dummyBlock.bar;
-  //     var block = instance.objectNormalize(dummyBlock);
-  //     expect(block).to.be.an.instanceof(Object);
-  //     expect(block.foo).to.be.undefined;
-  //     expect(block.bar).to.be.undefined;
-  //     expect(block.greeting).to.be.undefined;
-  //   });
-  // });
-  //
-  // describe("objectNormalize() with a bad block schema", () => {
-  //   // it("throws an exception", () => {
-  //   //   clock.tick();
-  //   //   var instance = callback.args[0][1];
-  //   //   dummyBlock.greeting = "Hello World!";
-  //   //   var throwError = () => {
-  //   //     instance.objectNormalize(dummyBlock);
-  //   //   };
-  //   //   expect(throwError).to.throw("Failed to validate block schema");
-  //   // });
-  // });
-  //
-  // describe("[static] getId", () => {
-  //   it("returns an id string", () => {
-  //     expect(Block.BlockLogic.getId(dummyBlock)).to.equal("1931531116681750305");
-  //   });
-  // });
-  //
-  // // TODO: This test is temporarely commented, because calculateFee() seems to be dead code. Waiting for a decision to be taken
-  // // describe('calculateFee()', function () {
-  // //   it('returns an integer', function () {
-  // //     var instance = callback.args[0][1]
-  // //     var fees = instance.calculateFee({})
-  // //     expect(fees).to.satisfy(Number.isInteger)
-  // //     expect(fees).to.equal(10000000)
-  // //   })
-  // // })
-  //
-  // describe("dbRead", () => {
-  //   it("returns an object", () => {
-  //     clock.tick();
-  //     var instance = callback.args[0][1];
-  //     var raw = {
-  //       b_id: 10,
-  //       b_version: 11,
-  //       b_timestamp: Date.now(),
-  //       b_height: 12,
-  //       b_previousBlock: 9,
-  //       b_numberOfTransactions: 1,
-  //       b_totalAmount: 0,
-  //       b_totalFee: 100,
-  //       b_reward: 50,
-  //       b_payloadLength: 13,
-  //       b_payloadHash: 14,
-  //       b_generatorPublicKey:
-  //         "c950f1e6c91485d2e6932fbd689bba636f73970557fe644cd901a438f74883c5",
-  //       b_blockSignature: 16,
-  //       b_confirmations: 1
-  //     };
-  //     var block = instance.dbRead(raw);
-  //     expect(block).to.be.instanceof(Object);
-  //     expect(block).to.have.all.keys([
-  //       "id",
-  //       "version",
-  //       "timestamp",
-  //       "height",
-  //       "previousBlock",
-  //       "numberOfTransactions",
-  //       "totalAmount",
-  //       "totalFee",
-  //       "reward",
-  //       "payloadLength",
-  //       "payloadHash",
-  //       "generatorPublicKey",
-  //       "generatorId",
-  //       "blockSignature",
-  //       "confirmations",
-  //       "totalForged"
-  //     ]);
-  //     expect(block.totalForged).to.equal("150");
-  //   });
-  // });
+  describe('dbSave', () => {
+    it('should return a specific object', () => {
+      const result = instance.dbSave(dummyBlock);
+      expect(result).to.be.an.instanceof(Object);
+      expect(result.table).to.equal('blocks');
+      expect(result.fields).to.be.equalTo([
+        'id',
+        'version',
+        'timestamp',
+        'height',
+        'previousBlock',
+        'numberOfTransactions',
+        'totalAmount',
+        'totalFee',
+        'reward',
+        'payloadLength',
+        'payloadHash',
+        'generatorPublicKey',
+        'blockSignature',
+      ]);
+      expect(result.values).to.have.all.keys([
+        'id',
+        'version',
+        'timestamp',
+        'height',
+        'previousBlock',
+        'numberOfTransactions',
+        'totalAmount',
+        'totalFee',
+        'reward',
+        'payloadLength',
+        'payloadHash',
+        'generatorPublicKey',
+        'blockSignature',
+      ]);
+    });
+  });
+
+  describe('dbSave() with wrong parameters', () => {
+    it('should throw an exception if invalid object is passed', () => {
+      const wrongBlock = {};
+      expect(() => {
+        instance.dbSave(wrongBlock);
+      }).to.throw();
+    });
+  });
+
+  describe('objectNormalize', () => {
+    it('should return a normalized block', () => {
+      dummyBlock.foo = null;
+      dummyBlock.bar = undefined;
+      const block = instance.objectNormalize(dummyBlock);
+      expect(block).to.be.an.instanceof(Object);
+      expect(block.foo).to.be.undefined;
+      expect(block.bar).to.be.undefined;
+      expect(block.greeting).to.be.undefined;
+    });
+
+    it('should call zschema.validate', () => {
+      instance.objectNormalize(dummyBlock);
+      expect(zschemastub.stubs.validate.called).to.be.true;
+    });
+  });
+
+  describe('objectNormalize() with a bad block schema', () => {
+    it('should throw an exception if schema validation fails', () => {
+      zschemastub.stubConfig.validate.return = false;
+      dummyBlock.greeting = 'Hello World!';
+      expect(() => {
+        instance.objectNormalize(dummyBlock);
+      }).to.throw(/Failed to validate block schema/);
+    });
+  });
+
+  describe('[static] getId', () => {
+    it('should returns an id string', () => {
+      expect(BlockLogic.getId(dummyBlock)).to.equal('1931531116681750305');
+    });
+
+    it('should call crypto.createHash', () => {
+      BlockLogic.getId(dummyBlock);
+      expect(createHashSpy.called).to.be.true;
+    });
+
+    it('should call BlockLogic.getBytes with block', () => {
+      const getBytesSpy = sinon.spy(BlockLogic, 'getBytes');
+      BlockLogic.getId(dummyBlock);
+      expect(getBytesSpy.called).to.be.true;
+      expect(getBytesSpy.firstCall.args[0]).to.be.deep.equal(dummyBlock);
+      getBytesSpy.restore();
+    });
+  });
+
+  describe('dbRead', () => {
+    const raw = {
+      b_id: 10,
+      b_version: 11,
+      b_timestamp: Date.now(),
+      b_height: 12,
+      b_previousBlock: 9,
+      b_numberOfTransactions: 1,
+      b_totalAmount: 0,
+      b_totalFee: 100,
+      b_reward: 50,
+      b_payloadLength: 13,
+      b_payloadHash: 14,
+      b_generatorPublicKey: 'c950f1e6c91485d2e6932fbd689bba636f73970557fe644cd901a438f74883c5',
+      b_blockSignature: 16,
+      b_confirmations: 1,
+    };
+
+    it('should return a specific format', () => {
+      const block = instance.dbRead(raw);
+      expect(block).to.be.instanceof(Object);
+      expect(block).to.have.all.keys([
+        'id',
+        'version',
+        'timestamp',
+        'height',
+        'previousBlock',
+        'numberOfTransactions',
+        'totalAmount',
+        'totalFee',
+        'reward',
+        'payloadLength',
+        'payloadHash',
+        'generatorPublicKey',
+        'generatorId',
+        'blockSignature',
+        'confirmations',
+        'totalForged',
+      ]);
+      expect(block.totalForged).to.equal('150');
+    });
+
+    it('should call this.getAddressByPublicKey with b_generatorPublicKey', () => {
+      const getAddressByPublicKeySpy = sinon.spy(instance, 'getAddressByPublicKey');
+      instance.dbRead(raw);
+      expect(getAddressByPublicKeySpy.called).to.be.true;
+      expect(getAddressByPublicKeySpy.firstCall.args[0]).to.be.eq(raw.b_generatorPublicKey);
+      getAddressByPublicKeySpy.restore();
+    });
+
+    it('should call parseInt on 9 fields', () => {
+      const parseIntSpy = sinon.spy(global, 'parseInt');
+      instance.dbRead(raw);
+      expect(parseIntSpy.callCount).to.be.eq(9);
+    });
+  });
 });
