@@ -3,15 +3,24 @@ import * as rewire from 'rewire';
 import * as sinon from 'sinon';
 import { SinonSpy } from 'sinon';
 import { PeerLogic, PeerState, PeerType } from '../../../src/logic';
+import { TransportModuleStub } from '../../stubs';
 
 const expect          = chai.expect;
 const RewirePeerLogic = rewire('../../../src/logic/peer.ts');
 
 // tslint:disable no-unused-expression
 describe('logic/peer', () => {
+  let instance;
+  let transportModuleStub: TransportModuleStub;
+  beforeEach(() => {
+    transportModuleStub = new TransportModuleStub();
+    instance = new PeerLogic();
+    (instance as any).transportModule = transportModuleStub;
+  });
+
   describe('properties', () => {
     it('should have the correct value', () => {
-      expect(new PeerLogic().properties).to.deep.equal([
+      expect(instance.properties).to.deep.equal([
         'ip',
         'port',
         'state',
@@ -29,13 +38,13 @@ describe('logic/peer', () => {
 
   describe('immutable', () => {
     it('should have the correct value', () => {
-      expect(new PeerLogic().immutable).to.deep.equal(['ip', 'port', 'string']);
+      expect(instance.immutable).to.deep.equal(['ip', 'port', 'string']);
     });
   });
 
   describe('headers', () => {
     it('should have the correct value', () => {
-      expect(new PeerLogic().headers).to.deep.equal([
+      expect(instance.headers).to.deep.equal([
         'os',
         'version',
         'dappid',
@@ -49,7 +58,7 @@ describe('logic/peer', () => {
 
   describe('nullable', () => {
     it('should have the correct value', () => {
-      expect(new PeerLogic().nullable).to.deep.equal([
+      expect(instance.nullable).to.deep.equal([
         'os',
         'version',
         'dappid',
@@ -63,12 +72,14 @@ describe('logic/peer', () => {
   });
 
   describe('PeerState', () => {
-    it('BANNEd should be equal to 0 ', () => {
+    it('BANNED should be equal to 0 ', () => {
       expect(PeerState.BANNED).to.be.eq(0);
     });
+
     it('DISCONNECTED should be equal to 1 ', () => {
       expect(PeerState.DISCONNECTED).to.be.eq(1);
     });
+
     it('CONNECTED should be equal to 2 ', () => {
       expect(PeerState.CONNECTED).to.be.eq(2);
     });
@@ -76,7 +87,6 @@ describe('logic/peer', () => {
 
   describe('accept', () => {
     let peer: PeerType;
-    let instance: PeerLogic;
 
     beforeEach(() => {
       peer     = {
@@ -92,7 +102,6 @@ describe('logic/peer', () => {
         updated  : 0,
         nonce    : 'nonce',
       };
-      instance = new PeerLogic();
     });
 
     it('should set instance.string to ip:port string', () => {
@@ -127,7 +136,6 @@ describe('logic/peer', () => {
 
   describe('normalize', () => {
     let peer;
-    let instance: PeerLogic;
     let parseIntSpy: SinonSpy;
 
     beforeEach(() => {
@@ -144,7 +152,6 @@ describe('logic/peer', () => {
         updated  : '',
         nonce    : '',
       };
-      instance = new PeerLogic();
       instance.accept(peer);
       parseIntSpy = sinon.spy(instance, 'parseInt');
     });
@@ -273,13 +280,13 @@ describe('logic/peer', () => {
 
   describe('parseInt', () => {
     it('should return fallback if val is first parameter is not a number', () => {
-      const retVal = new PeerLogic().parseInt(null, 100);
+      const retVal = instance.parseInt(null, 100);
       expect(retVal).to.equal(100);
     });
 
     it('should parse integer from string', () => {
       const parseIntSpy = sinon.spy(global, 'parseInt');
-      const retVal      = new PeerLogic().parseInt('200' as any, 100);
+      const retVal      = instance.parseInt('200' as any, 100);
       expect(retVal).to.equal(200);
       expect(parseIntSpy.called).to.be.true;
       parseIntSpy.restore();
@@ -287,7 +294,7 @@ describe('logic/peer', () => {
 
     it('should parse integer from float', () => {
       const parseIntSpy = sinon.spy(global, 'parseInt');
-      const retVal      = new PeerLogic().parseInt(2.2, 100);
+      const retVal      = instance.parseInt(2.2, 100);
       expect(retVal).to.equal(2);
       expect(parseIntSpy.called).to.be.true;
       parseIntSpy.restore();
@@ -295,12 +302,10 @@ describe('logic/peer', () => {
   });
 
   describe('applyHeaders', () => {
-    let instance: PeerLogic;
     let normalizeSpy: SinonSpy;
     let updateSpy: SinonSpy;
 
     beforeEach(() => {
-      instance     = new PeerLogic();
       normalizeSpy = sinon.spy(instance, 'normalize');
       updateSpy    = sinon.spy(instance, 'update');
     });
@@ -327,7 +332,6 @@ describe('logic/peer', () => {
   });
 
   describe('update', () => {
-    let instance: PeerLogic;
     const initialPeerObj = {
       ip       : '1.2.3.4',
       port     : 5555,
@@ -342,7 +346,6 @@ describe('logic/peer', () => {
       nonce    : 'nonce',
     };
     beforeEach(() => {
-      instance = new PeerLogic();
       instance.accept(initialPeerObj);
     });
 
@@ -388,7 +391,6 @@ describe('logic/peer', () => {
 
   describe('object', () => {
     it('returns only supported properties', () => {
-      const instance     = new PeerLogic();
       const peer         = {
         ip        : '127.0.0.1',
         port      : '1010',
@@ -446,18 +448,56 @@ describe('logic/peer', () => {
   });
 
   describe('makeRequest', () => {
-    it('should call transportModule.getFromPeer');
-    it('should return a promise');
-    it('should fullfill with object.body from promise');
+    it('should call transportModule.getFromPeer', () => {
+      instance.makeRequest({});
+      expect(transportModuleStub.stubs.getFromPeer.called).to.be.true;
+    });
+
+    it('should return a promise', () => {
+      const retVal = instance.makeRequest({});
+      expect(retVal).to.be.instanceOf(Promise);
+    });
+
+    it('should pass first parameter to getFromPeer as second parameter', () => {
+      const requestOptions = {api: '/what', url: 'test'};
+      instance.makeRequest(requestOptions);
+      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[1]).to.be.deep.equal(requestOptions);
+    });
+
+    it('should fullfill with object.body from promise', async () => {
+      const expected =  { body: 'body', peer: {}};
+      transportModuleStub.stubConfig.getFromPeer.return = expected;
+      const retVal = await instance.makeRequest({});
+      expect(retVal).to.be.deep.equal(expected.body);
+    });
   });
 
   describe('pingAndUpdate', () => {
-    it('should call transportModule.getFromPeer');
-    it('should return a promise');
+    it('should call transportModule.getFromPeer', () => {
+      instance.pingAndUpdate();
+      expect(transportModuleStub.stubs.getFromPeer.called).to.be.true;
+      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[1]).to.be.deep.equal({api: '/height', method: 'GET'});
+    });
+
+    it('should return a promise', () => {
+      const retVal = instance.pingAndUpdate();
+      expect(retVal).to.be.instanceOf(Promise);
+    });
   });
 
   describe('toLogObj', () => {
-    it('should call JSON.stringify');
-    it('should call instance.object');
+    it('should call JSON.stringify', () => {
+      const stringifySpy = sinon.spy(JSON, 'stringify');
+      instance.toLogObj();
+      expect(stringifySpy.called).to.be.true;
+      stringifySpy.restore();
+    });
+
+    it('should call instance.object', () => {
+      const objectSpy = sinon.spy(instance, 'object');
+      instance.toLogObj();
+      expect(objectSpy.called).to.be.true;
+      objectSpy.restore();
+    });
   });
 });
