@@ -67,7 +67,10 @@ export class AppManager {
   public async boot() {
     this.logger.info('Booting');
     await this.initAppElements();
-    await this.initExpress();
+    if (!this.appConfig.loading.snapshot) {
+      // Do not load HTTP Api if we're verifying a snapshot.
+      await this.initExpress();
+    }
     this.finishBoot(); // This promise is intentionally not awaited.
   }
 
