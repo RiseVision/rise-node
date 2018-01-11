@@ -219,21 +219,32 @@ export class LoaderModule implements ILoaderModule {
     // Check if we are in verifySnapshot mode.
     if (this.config.loading.snapshot) {
       this.logger.info('Snapshot mode enabled');
+
       if (this.config.loading.snapshot >= round) {
         this.config.loading.snapshot = round;
         if ((blocksCount === 1) || (blocksCount % this.constants.activeDelegates > 0)) {
           // Normalize to previous round if we
           this.config.loading.snapshot = (round > 1) ? (round - 1) : 1;
         }
-        this.appState.set('rounds.snapshot', this.config.loading.snapshot);
       }
+      this.appState.set('rounds.snapshot', this.config.loading.snapshot);
+
       this.logger.info(`Snapshotting to end of round: ${this.config.loading.snapshot}`, blocksCount);
+      const lastBlock = this.roundsLogic.lastInRound(this.config.loading.snapshot);
+
       await this.load(
-        this.roundsLogic.lastInRound(this.config.loading.snapshot),
+        lastBlock,
         limit,
         'Blocks Verification enabled',
         false
       );
+
+      if (this.blocksModule.lastBlock.height !== lastBlock) {
+        // tslint:disable-next-line max-line-length
+        this.logger.error(`LastBlock height does not expected block. Expected: ${lastBlock} - Received: ${this.blocksModule.lastBlock.height}`);
+        process.exit(1);
+      }
+      // await this.blocksChainModule.deleteAfterBlock(this.blocksModule.lastBlock.id);
       process.exit(0);
     }
 
@@ -314,6 +325,8 @@ export class LoaderModule implements ILoaderModule {
         await this.blocksChainModule.deleteAfterBlock(err.block.id);
         this.logger.error('Blockchain clipped');
         await this.bus.message('blockchainReady');
+      } else {
+        throw err;
       }
     }
 

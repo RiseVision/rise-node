@@ -27,10 +27,10 @@ export class RoundsLogic implements IRoundsLogic {
   }
 
   public firstInRound(round: number): number {
-    return round * this.slots.delegates + 1;
+    return (round - 1) * this.slots.delegates + 1;
   }
 
   public lastInRound(round: number): number {
-    return (round + 1) * this.slots.delegates;
+    return round * this.slots.delegates;
   }
 }
