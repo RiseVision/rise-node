@@ -67,10 +67,7 @@ export class AppManager {
   public async boot() {
     this.logger.info('Booting');
     await this.initAppElements();
-    if (!this.appConfig.loading.snapshot) {
-      // Do not load HTTP Api if we're verifying a snapshot.
-      await this.initExpress();
-    }
+    await this.initExpress();
     this.finishBoot(); // This promise is intentionally not awaited.
   }
 
@@ -275,7 +272,9 @@ export class AppManager {
     await blocksChainModule.saveGenesisBlock();
 
     // Listen HTTP
-    await cbToPromise((cb) => this.server.listen(this.appConfig.port, this.appConfig.address, cb));
+    if (!this.appConfig.loading.snapshot) {
+      await cbToPromise((cb) => this.server.listen(this.appConfig.port, this.appConfig.address, cb));
+    }
     this.logger.info(`Server started: ${this.appConfig.address}:${this.appConfig.port}`);
 
     this.logger.info('Modules ready and launched. Loading Blockchain...');

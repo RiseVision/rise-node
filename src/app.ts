@@ -93,7 +93,7 @@ if (program.log) {
 }
 
 if (program.snapshot) {
-  if (typeof(program.snapshot) !== 'number') {
+  if (typeof(program.snapshot) === 'number') {
     appConfig.loading.snapshot = Math.abs(Math.floor(program.snapshot));
   } else {
     appConfig.loading.snapshot = true;
@@ -137,7 +137,8 @@ exitHook.unhandledRejectionHandler((err) => {
 
 boot(constantsType)
   .catch((err) => {
-    logger.fatal('Error when instantiating', err);
+    logger.fatal('Error when instantiating');
+    logger.fatal(err);
     process.exit(1);
     return Promise.reject(err);
   })
