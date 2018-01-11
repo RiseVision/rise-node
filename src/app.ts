@@ -28,7 +28,7 @@ program
   .option('-a, --address <ip>', 'listening host name or ip')
   .option('-x, --peers [peers...]', 'peers list')
   .option('-l, --log <level>', 'log level')
-  .option('-s, --snapshot <round>', 'verify snapshot')
+  .option('-s, --snapshot [round]', 'verify snapshot')
   .option('-c, --config <path>', 'Specify custom config path')
   .option('-o, --override-config <item>', 'Override single config item', (opt, opts) => {
     if (typeof(opts) === 'undefined') {
@@ -93,7 +93,11 @@ if (program.log) {
 }
 
 if (program.snapshot) {
-  appConfig.loading.snapshot = Math.abs(Math.floor(program.snapshot));
+  if (typeof(program.snapshot) !== 'number') {
+    appConfig.loading.snapshot = Math.abs(Math.floor(program.snapshot));
+  } else {
+    appConfig.loading.snapshot = true;
+  }
 }
 
 const logger = loggerCreator({

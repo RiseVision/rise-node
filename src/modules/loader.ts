@@ -219,7 +219,10 @@ export class LoaderModule implements ILoaderModule {
     // Check if we are in verifySnapshot mode.
     if (this.config.loading.snapshot) {
       this.logger.info('Snapshot mode enabled');
-
+      if (typeof(this.config.loading.snapshot) === 'boolean') {
+        // threat "true" as "highest round possible"
+        this.config.loading.snapshot = round;
+      }
       if (this.config.loading.snapshot >= round) {
         this.config.loading.snapshot = round;
         if ((blocksCount === 1) || (blocksCount % this.constants.activeDelegates > 0)) {
