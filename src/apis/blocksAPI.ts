@@ -72,6 +72,12 @@ export class BlocksAPI {
     return this.dbSequence.addAndPromise((() => this.list(filters)));
   }
 
+  @Get('/getHeight')
+  @ValidateSchema()
+  public async getHeight() {
+    return { height: this.blocksModule.lastBlock.height };
+  }
+
   @Get('/getBroadhash')
   public async getBroadHash() {
     return this.systemModule.getBroadhash();
