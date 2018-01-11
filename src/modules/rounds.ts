@@ -1,6 +1,6 @@
 import { inject, injectable } from 'inversify';
 import { IDatabase, ITask } from 'pg-promise';
-import { Bus, constants, ILogger, Slots } from '../helpers/';
+import { Bus, constants as constantsType, ILogger, Slots } from '../helpers/';
 import { IAppState, IRoundsLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule, IDelegatesModule, IRoundsModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
@@ -20,6 +20,8 @@ export class RoundsModule implements IRoundsModule {
   // Helpers and generics
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
   @inject(Symbols.helpers.slots)
   private slots: Slots;
   @inject(Symbols.generic.db)
@@ -197,7 +199,7 @@ export class RoundsModule implements IRoundsModule {
     const rows = await this.db.query(
       roundsSQL.summedRound,
       {
-        activeDelegates: constants.activeDelegates,
+        activeDelegates: this.constants.activeDelegates,
         round,
       }
     )
