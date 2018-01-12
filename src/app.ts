@@ -69,7 +69,7 @@ if (program.overrideConfig) {
     if (typeof(oldValue) === 'number') {
       jp.value(appConfig, item.path, parseFloat(item.val));
     } else {
-      jp.value(appConfig, item.path, parseFloat(item.val));
+      jp.value(appConfig, item.path, item.val);
     }
     // tslint:disable-next-line
     console.warn(`Replaced config ${item.path}: ${oldValue} -> ${item.val}`);
