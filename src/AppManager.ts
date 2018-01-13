@@ -272,7 +272,9 @@ export class AppManager {
     await blocksChainModule.saveGenesisBlock();
 
     // Listen HTTP
-    await cbToPromise((cb) => this.server.listen(this.appConfig.port, this.appConfig.address, cb));
+    if (!this.appConfig.loading.snapshot) {
+      await cbToPromise((cb) => this.server.listen(this.appConfig.port, this.appConfig.address, cb));
+    }
     this.logger.info(`Server started: ${this.appConfig.address}:${this.appConfig.port}`);
 
     this.logger.info('Modules ready and launched. Loading Blockchain...');

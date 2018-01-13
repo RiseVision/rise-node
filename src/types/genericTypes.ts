@@ -90,7 +90,7 @@ export interface AppConfig {
 
   loading: {
     verifyOnLoading: false,
-    snapshot?: number,
+    snapshot?: number|true,
     loadPerIteration: number,
   };
 

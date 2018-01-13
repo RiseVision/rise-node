@@ -68,6 +68,11 @@ export default (config: any = {}): ILogger => {
 
   Object.keys(config.levels).forEach((name: string) => {
     function log(message, data) {
+      if (config.levels[config.errorLevel] > config.levels[name] &&
+        (!config.echo || config.levels[config.echo] > config.levels[name])) {
+        // DO not process any further if error level does not need to be processed.
+        return;
+      }
       const logData = {
         data     : null,
         level    : name,
@@ -88,6 +93,8 @@ export default (config: any = {}): ILogger => {
         }
         if (typeof(data.toLogObj) === 'function') {
           logData.data = CircularJSON.stringify(snipsecret(data.toLogObj()));
+        } else {
+          logData.data = CircularJSON.stringify(snipsecret(data));
         }
 
       } else {

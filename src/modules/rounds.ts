@@ -1,6 +1,6 @@
 import { inject, injectable } from 'inversify';
 import { IDatabase, ITask } from 'pg-promise';
-import { Bus, constants, ILogger, Slots } from '../helpers/';
+import { Bus, constants as constantsType, ILogger, Slots } from '../helpers/';
 import { IAppState, IRoundsLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule, IDelegatesModule, IRoundsModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
@@ -20,6 +20,8 @@ export class RoundsModule implements IRoundsModule {
   // Helpers and generics
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
   @inject(Symbols.helpers.slots)
   private slots: Slots;
   @inject(Symbols.generic.db)
@@ -78,7 +80,6 @@ export class RoundsModule implements IRoundsModule {
   }
 
   public async tick(block: SignedBlockType) {
-    let finishSnapshot = false;
     return this.innerTick(
       block,
       false,
@@ -100,7 +101,6 @@ export class RoundsModule implements IRoundsModule {
               // If this was the round of the snapshot lets truncate the blocks
               .then(() => snapshotRound
                 ? roundLogic.truncateBlocks()
-                  .then(() => finishSnapshot = true)
                 : null
               )
             : null
@@ -144,14 +144,22 @@ export class RoundsModule implements IRoundsModule {
     const nextRound = this.roundsLogic.calcRound(block.height + 1);
 
     const finishRound = (
-      (nextRound !== round) || (block.height === 1 || block.height === 101)
+      (nextRound !== round) || (block.height === 1)
     );
-
+    // if (finishRound) {
+    //   console.log('finishround', block.height);
+    // }
     try {
       // Set ticking flag to true
       this.appStateLogic.set('rounds.isTicking', true);
+      let roundSums      = finishRound ? await this.sumRound(round) : null;
+      if (block.height === 1 && roundSums.roundDelegates.length !== 1) {
+        // in round 1 (and height=1) and when verifying snapshot delegates are there (and created in 2nd round #1)
+        // so roundDelegates are 101 not 1 (genesis generator) causing genesis to have an extra block accounted.
+        // so we fix this glitch by monkeypatching the value and set roundDelegates to the correct genesis generator.
+        roundSums = { roundFees: 0, roundRewards: [0], roundDelegates: [block.generatorPublicKey] };
+      }
 
-      const roundSums      = finishRound ? await this.sumRound(round) : null;
       const roundOutsiders = finishRound ? await this.getOutsiders(round, roundSums.roundDelegates) : null;
 
       const roundLogicScope: RoundLogicScope = {
@@ -171,7 +179,7 @@ export class RoundsModule implements IRoundsModule {
       await this.db.tx(txGenerator(roundLogicScope));
       await afterTxPromise();
     } catch (e) {
-      this.logger.warn('Error while doing modules.rounds.backwardTick', e.message || e);
+      this.logger.warn(`Error while doing modules.innerTick [backwards=${backwards}]`, e.message || e);
     } finally {
       this.appStateLogic.set('rounds.isTicking', false);
     }
@@ -197,7 +205,7 @@ export class RoundsModule implements IRoundsModule {
     const rows = await this.db.query(
       roundsSQL.summedRound,
       {
-        activeDelegates: constants.activeDelegates,
+        activeDelegates: this.constants.activeDelegates,
         round,
       }
     )

@@ -1,6 +1,7 @@
 import * as exitHook from 'async-exit-hook';
 import * as program from 'commander';
 import * as fs from 'fs';
+import * as jp from 'jsonpath';
 import { AppManager } from './AppManager';
 import { allExceptionCreator } from './exceptions';
 import {
@@ -27,19 +28,54 @@ program
   .option('-a, --address <ip>', 'listening host name or ip')
   .option('-x, --peers [peers...]', 'peers list')
   .option('-l, --log <level>', 'log level')
-  .option('-s, --snapshot <round>', 'verify snapshot')
+  .option('-s, --snapshot [round]', 'verify snapshot')
+  .option('-c, --config <path>', 'Specify custom config path')
+  .option('-o, --override-config <item>', 'Override single config item', (opt, opts) => {
+    if (typeof(opts) === 'undefined') {
+      opts = [];
+    }
+    const [path, val] = opt.split('=');
+    if (typeof(path) === 'undefined' || typeof(val) === 'undefined') {
+      // tslint:disable-next-line
+      console.warn('Invalid format for invalid config. Correct is -> jsonpath=value');
+      return opts;
+    }
+    try {
+      jp.parse(path);
+    } catch (e) {
+      // tslint:disable-next-line
+      console.warn('JSONPath is invalid', e);
+    }
+    opts.push({path, val});
+    return opts;
+  })
   .parse(process.argv);
 
 // tslint:disable-next-line
 const genesisBlock: SignedAndChainedBlockType = require(`../etc/${program.net}/genesisBlock.json`);
 
-const appConfig = configCreator(`./etc/${program.net}/config.json`);
+const appConfig = configCreator(program.config ? program.config : `./etc/${program.net}/config.json`);
 if (program.port) {
   appConfig.port = program.port;
 }
 if (program.address) {
   appConfig.address = program.address;
 }
+
+if (program.overrideConfig) {
+  for (const item of program.overrideConfig as Array<{path: string, val: string}>) {
+    const oldValue = jp.value(appConfig, item.path);
+
+    if (typeof(oldValue) === 'number') {
+      jp.value(appConfig, item.path, parseFloat(item.val));
+    } else {
+      jp.value(appConfig, item.path, item.val);
+    }
+    // tslint:disable-next-line
+    console.warn(`Replaced config ${item.path}: ${oldValue} -> ${item.val}`);
+  }
+}
+
 if (program.peers) {
   if (typeof (program.peers) === 'string') {
     appConfig.peers.list = program.peers.split(',')
@@ -57,7 +93,11 @@ if (program.log) {
 }
 
 if (program.snapshot) {
-  appConfig.loading.snapshot = Math.abs(Math.floor(program.snapshot));
+  if (typeof(program.snapshot) === 'number') {
+    appConfig.loading.snapshot = Math.abs(Math.floor(program.snapshot));
+  } else {
+    appConfig.loading.snapshot = true;
+  }
 }
 
 const logger = loggerCreator({
@@ -97,7 +137,8 @@ exitHook.unhandledRejectionHandler((err) => {
 
 boot(constantsType)
   .catch((err) => {
-    logger.fatal('Error when instantiating', err);
+    logger.fatal('Error when instantiating');
+    logger.fatal(err);
     process.exit(1);
     return Promise.reject(err);
   })
