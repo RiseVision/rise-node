@@ -179,7 +179,7 @@ export class RoundsModule implements IRoundsModule {
       await this.db.tx(txGenerator(roundLogicScope));
       await afterTxPromise();
     } catch (e) {
-      this.logger.warn('Error while doing modules.rounds.backwardTick', e.message || e);
+      this.logger.warn(`Error while doing modules.innerTick [backwards=${backwards}]`, e.message || e);
     } finally {
       this.appStateLogic.set('rounds.isTicking', false);
     }
