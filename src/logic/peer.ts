@@ -60,7 +60,7 @@ const headers = [
   'nonce',
 ];
 
-const newVar = [
+const immutable = [
   'ip',
   'port',
   'string',
@@ -198,7 +198,7 @@ export class PeerLogic implements PeerType, IPeerLogic {
   }
 
   public get immutable() {
-    return newVar;
+    return immutable;
   }
 
   public get properties() {
