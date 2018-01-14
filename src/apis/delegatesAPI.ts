@@ -2,7 +2,7 @@ import BigNumber from 'bignumber.js';
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
-import { Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
+import { Body, Get, JsonController, Post, Put, QueryParam, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { constants, Ed, OrderBy, Slots } from '../helpers/';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
@@ -225,10 +225,10 @@ export class DelegatesAPI {
 
   }
 
-  @Get('/forging/enable')
+  @Post('/forging/enable')
   @ValidateSchema()
   public async forgingEnable(@SchemaValid(schema.disableForging)
-                             @QueryParams() params: { secret: string, publicKey: string }) {
+                             @Body() params: { secret: string, publicKey: string }) {
     const kp = this.ed.makeKeypair(crypto
       .createHash('sha256').update(params.secret, 'utf8')
       .digest());
@@ -253,10 +253,10 @@ export class DelegatesAPI {
     this.forgeModule.enableForge(kp);
   }
 
-  @Get('/forging/disable')
+  @Post('/forging/disable')
   @ValidateSchema()
   public async forgingDisable(@SchemaValid(schema.disableForging)
-                              @QueryParams() params: { secret: string, publicKey: string }) {
+                              @Body() params: { secret: string, publicKey: string }) {
     const kp = this.ed.makeKeypair(crypto
       .createHash('sha256').update(params.secret, 'utf8')
       .digest());
