@@ -13,8 +13,8 @@ import { SignedAndChainedBlockType } from './logic/';
 declare const gc; // garbage collection if exposed.
 
 // tslint:disable-next-line
-const packageJson                             = require('../package.json');
-const versionBuild: string                    = fs.readFileSync(`${__dirname}/../build`, 'utf8');
+const packageJson          = require('../package.json');
+const versionBuild: string = fs.readFileSync(`${__dirname}/../build`, 'utf8');
 
 // if gc is exposed call it every minute
 if (typeof(gc) !== 'undefined') {
@@ -29,7 +29,8 @@ program
   .option('-x, --peers [peers...]', 'peers list')
   .option('-l, --log <level>', 'log level')
   .option('-s, --snapshot [round]', 'verify snapshot')
-  .option('-c, --config <path>', 'Specify custom config path')
+  .option('-c, --config <path>', 'custom config path')
+  .option('-ec, --extra-config <path>', 'partial override config path')
   .option('-o, --override-config <item>', 'Override single config item', (opt, opts) => {
     if (typeof(opts) === 'undefined') {
       opts = [];
@@ -46,7 +47,7 @@ program
       // tslint:disable-next-line
       console.warn('JSONPath is invalid', e);
     }
-    opts.push({path, val});
+    opts.push({ path, val });
     return opts;
   })
   .parse(process.argv);
@@ -54,7 +55,17 @@ program
 // tslint:disable-next-line
 const genesisBlock: SignedAndChainedBlockType = require(`../etc/${program.net}/genesisBlock.json`);
 
-const appConfig = configCreator(program.config ? program.config : `./etc/${program.net}/config.json`);
+let extraConfig = {};
+if (program.extraConfig) {
+  // tslint:disable-next-line no-var-requires
+  extraConfig = require(program.extraConfig);
+}
+
+const appConfig = {
+  ...configCreator(program.config ? program.config : `./etc/${program.net}/config.json`),
+  ...extraConfig,
+};
+
 if (program.port) {
   appConfig.port = program.port;
 }
@@ -63,7 +74,7 @@ if (program.address) {
 }
 
 if (program.overrideConfig) {
-  for (const item of program.overrideConfig as Array<{path: string, val: string}>) {
+  for (const item of program.overrideConfig as Array<{ path: string, val: string }>) {
     const oldValue = jp.value(appConfig, item.path);
 
     if (typeof(oldValue) === 'number') {
@@ -130,6 +141,7 @@ async function boot(constants: typeof constantsType): Promise<AppManager> {
   await manager.boot();
   return manager;
 }
+
 exitHook.forceExitTimeout(15000);
 exitHook.unhandledRejectionHandler((err) => {
   logger.fatal('Unhandled Promise rejection', { message: err.message, stack: err.stack });
