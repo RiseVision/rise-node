@@ -1,5 +1,6 @@
 import * as exitHook from 'async-exit-hook';
 import * as program from 'commander';
+import * as extend from 'extend';
 import * as fs from 'fs';
 import * as jp from 'jsonpath';
 import { AppManager } from './AppManager';
@@ -61,10 +62,10 @@ if (program.extraConfig) {
   extraConfig = require(program.extraConfig);
 }
 
-const appConfig = {
+const appConfig = extend(true, {
   ...configCreator(program.config ? program.config : `./etc/${program.net}/config.json`),
   ...extraConfig,
-};
+});
 
 if (program.port) {
   appConfig.port = program.port;
@@ -72,6 +73,7 @@ if (program.port) {
 if (program.address) {
   appConfig.address = program.address;
 }
+console.log(appConfig.forging);
 
 if (program.overrideConfig) {
   for (const item of program.overrideConfig as Array<{ path: string, val: string }>) {
