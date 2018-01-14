@@ -73,7 +73,6 @@ if (program.port) {
 if (program.address) {
   appConfig.address = program.address;
 }
-console.log(appConfig.forging);
 
 if (program.overrideConfig) {
   for (const item of program.overrideConfig as Array<{ path: string, val: string }>) {
