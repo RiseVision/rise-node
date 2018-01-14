@@ -30,7 +30,7 @@ program
   .option('-l, --log <level>', 'log level')
   .option('-s, --snapshot [round]', 'verify snapshot')
   .option('-c, --config <path>', 'custom config path')
-  .option('-ec, --extra-config <path>', 'partial override config path')
+  .option('-e, --extra-config <path>', 'partial override config path')
   .option('-o, --override-config <item>', 'Override single config item', (opt, opts) => {
     if (typeof(opts) === 'undefined') {
       opts = [];
