@@ -1,0 +1,503 @@
+import * as chai from 'chai';
+import * as rewire from 'rewire';
+import * as sinon from 'sinon';
+import { SinonSpy } from 'sinon';
+import { PeerLogic, PeerState, PeerType } from '../../../src/logic';
+import { TransportModuleStub } from '../../stubs';
+
+const expect          = chai.expect;
+const RewirePeerLogic = rewire('../../../src/logic/peer.ts');
+
+// tslint:disable no-unused-expression
+describe('logic/peer', () => {
+  let instance;
+  let transportModuleStub: TransportModuleStub;
+  beforeEach(() => {
+    transportModuleStub = new TransportModuleStub();
+    instance = new PeerLogic();
+    (instance as any).transportModule = transportModuleStub;
+  });
+
+  describe('properties', () => {
+    it('should have the correct value', () => {
+      expect(instance.properties).to.deep.equal([
+        'ip',
+        'port',
+        'state',
+        'os',
+        'version',
+        'dappid',
+        'broadhash',
+        'height',
+        'clock',
+        'updated',
+        'nonce',
+      ]);
+    });
+  });
+
+  describe('immutable', () => {
+    it('should have the correct value', () => {
+      expect(instance.immutable).to.deep.equal(['ip', 'port', 'string']);
+    });
+  });
+
+  describe('headers', () => {
+    it('should have the correct value', () => {
+      expect(instance.headers).to.deep.equal([
+        'os',
+        'version',
+        'dappid',
+        'broadhash',
+        'height',
+        'nonce',
+      ]);
+
+    });
+  });
+
+  describe('nullable', () => {
+    it('should have the correct value', () => {
+      expect(instance.nullable).to.deep.equal([
+        'os',
+        'version',
+        'dappid',
+        'broadhash',
+        'height',
+        'clock',
+        'updated',
+      ]);
+
+    });
+  });
+
+  describe('PeerState', () => {
+    it('BANNED should be equal to 0 ', () => {
+      expect(PeerState.BANNED).to.be.eq(0);
+    });
+
+    it('DISCONNECTED should be equal to 1 ', () => {
+      expect(PeerState.DISCONNECTED).to.be.eq(1);
+    });
+
+    it('CONNECTED should be equal to 2 ', () => {
+      expect(PeerState.CONNECTED).to.be.eq(2);
+    });
+  });
+
+  describe('accept', () => {
+    let peer: PeerType;
+
+    beforeEach(() => {
+      peer     = {
+        ip       : '1.2.3.4',
+        port     : 5555,
+        state    : PeerState.CONNECTED,
+        os       : 'ubuntu',
+        version  : '1.0',
+        dappid   : '',
+        broadhash: '',
+        height   : 9999,
+        clock    : 1,
+        updated  : 0,
+        nonce    : 'nonce',
+      };
+    });
+
+    it('should set instance.string to ip:port string', () => {
+      peer.ip   = '127.0.0.1';
+      peer.port = 1010;
+      instance.accept(peer);
+      expect(instance.string).to.deep.equal('127.0.0.1:1010');
+    });
+
+    it('should call ip.fromLong and set instance.string to ip:port from a long ip', () => {
+      const ip          = RewirePeerLogic.__get__('ip');
+      const fromLongSpy = sinon.spy(ip, 'fromLong');
+      peer.ip           = '2130706433';
+      peer.port         = 1010;
+      instance.accept(peer);
+      expect(fromLongSpy.called).to.be.true;
+      expect(instance.string).to.deep.equal('127.0.0.1:1010');
+      fromLongSpy.restore();
+    });
+
+    it('should call normalize', () => {
+      const normalizeSpy = sinon.spy(instance, 'normalize');
+      instance.accept(peer);
+      expect(normalizeSpy.called).to.be.true;
+    });
+
+    it('should return the instance', () => {
+      const retVal = instance.accept(peer);
+      expect(retVal).to.be.deep.equal(instance);
+    });
+  });
+
+  describe('normalize', () => {
+    let peer;
+    let parseIntSpy: SinonSpy;
+
+    beforeEach(() => {
+      peer     = {
+        ip       : '127.0.0.1',
+        port     : '1010',
+        state    : '2',
+        os       : '',
+        version  : '',
+        dappid   : '',
+        broadhash: '',
+        height   : '',
+        clock    : '',
+        updated  : '',
+        nonce    : '',
+      };
+      instance.accept(peer);
+      parseIntSpy = sinon.spy(instance, 'parseInt');
+    });
+
+    afterEach(() => {
+      parseIntSpy.restore();
+    });
+
+    it('should call parseInt correctly when no height and dappid are passed', () => {
+      const expectedPeer = {
+        ip       : '127.0.0.1',
+        port     : 1010,
+        state    : 2,
+        os       : '',
+        version  : '',
+        dappid   : '',
+        broadhash: '',
+        height   : '',
+        clock    : '',
+        updated  : '',
+        nonce    : '',
+      };
+
+      const normalized = instance.normalize(Object.assign({}, peer));
+
+      expect(parseIntSpy.calledTwice).to.be.true;
+      expect(parseIntSpy.firstCall.args.length).to.equal(2);
+      expect(parseIntSpy.firstCall.args[0]).to.equal(instance.port);
+      expect(parseIntSpy.firstCall.args[1]).to.equal(0);
+      expect(parseIntSpy.getCall(1).args.length).to.equal(2);
+      expect(parseIntSpy.getCall(1).args[0]).to.equal(instance.state);
+      expect(parseIntSpy.getCall(1).args[1]).to.equal(PeerState.DISCONNECTED);
+      expect(normalized).to.deep.equal(expectedPeer);
+    });
+
+    it('should call parseInt correctly when no height is passed', () => {
+      const expectedPeer = {
+        ip       : '127.0.0.1',
+        port     : 1010,
+        state    : 2,
+        os       : '',
+        version  : '',
+        broadhash: '',
+        height   : '',
+        clock    : '',
+        updated  : '',
+        nonce    : '',
+        dappid   : ['dappId'],
+      };
+
+      peer.dappid = 'dappId';
+
+      const normalized = instance.normalize(Object.assign({}, peer));
+
+      expect(parseIntSpy.calledTwice).to.be.true;
+      expect(parseIntSpy.firstCall.args.length).to.equal(2);
+      expect(parseIntSpy.firstCall.args[0]).to.equal(peer.port);
+      expect(parseIntSpy.firstCall.args[1]).to.equal(0);
+      expect(parseIntSpy.getCall(1).args.length).to.equal(2);
+      expect(parseIntSpy.getCall(1).args[0]).to.equal(peer.state);
+      expect(parseIntSpy.getCall(1).args[1]).to.equal(PeerState.DISCONNECTED);
+      expect(normalized).to.deep.equal(expectedPeer);
+    });
+
+    it('should return unmuted dappIds array in peer obj without height', () => {
+      const expectedPeer = {
+        ip       : '127.0.0.1',
+        port     : 1010,
+        state    : 2,
+        os       : '',
+        version  : '',
+        broadhash: '',
+        height   : '',
+        clock    : '',
+        updated  : '',
+        nonce    : '',
+        dappid   : ['dappId', 'dappId2'],
+      };
+
+      peer.dappid = ['dappId', 'dappId2'];
+
+      const normalized = instance.normalize(Object.assign({}, peer));
+
+      expect(parseIntSpy.calledTwice).to.be.true;
+      expect(parseIntSpy.firstCall.args.length).to.equal(2);
+      expect(parseIntSpy.firstCall.args[0]).to.equal(peer.port);
+      expect(parseIntSpy.firstCall.args[1]).to.equal(0);
+      expect(parseIntSpy.getCall(1).args.length).to.equal(2);
+      expect(parseIntSpy.getCall(1).args[0]).to.equal(peer.state);
+      expect(parseIntSpy.getCall(1).args[1]).to.equal(PeerState.DISCONNECTED);
+      expect(normalized).to.deep.equal(expectedPeer);
+    });
+
+    it('should return unmuted dappIds array in peer obj with height', () => {
+      const expectedPeer = {
+        ip       : '127.0.0.1',
+        port     : 1010,
+        state    : 2,
+        os       : '',
+        version  : '',
+        broadhash: '',
+        height   : 50,
+        clock    : '',
+        updated  : '',
+        nonce    : '',
+        dappid   : ['dappId', 'dappId2'],
+      };
+      peer.dappid        = ['dappId', 'dappId2'];
+      peer.height        = '50';
+
+      const normalized = instance.normalize(Object.assign({}, peer));
+
+      expect(parseIntSpy.calledThrice).to.be.true;
+      expect(parseIntSpy.firstCall.args.length).to.equal(2);
+      expect(parseIntSpy.firstCall.args[0]).to.equal(peer.height);
+      expect(parseIntSpy.firstCall.args[1]).to.equal(1);
+      expect(parseIntSpy.getCall(1).args.length).to.equal(2);
+      expect(parseIntSpy.getCall(1).args[0]).to.equal(peer.port);
+      expect(parseIntSpy.getCall(1).args[1]).to.equal(0);
+      expect(parseIntSpy.getCall(2).args.length).to.equal(2);
+      expect(parseIntSpy.getCall(2).args[0]).to.equal(peer.state);
+      expect(parseIntSpy.getCall(2).args[1]).to.equal(PeerState.DISCONNECTED);
+      expect(normalized).to.deep.equal(expectedPeer);
+    });
+  });
+
+  describe('parseInt', () => {
+    it('should return fallback if val is first parameter is not a number', () => {
+      const retVal = instance.parseInt(null, 100);
+      expect(retVal).to.equal(100);
+    });
+
+    it('should parse integer from string', () => {
+      const parseIntSpy = sinon.spy(global, 'parseInt');
+      const retVal      = instance.parseInt('200' as any, 100);
+      expect(retVal).to.equal(200);
+      expect(parseIntSpy.called).to.be.true;
+      parseIntSpy.restore();
+    });
+
+    it('should parse integer from float', () => {
+      const parseIntSpy = sinon.spy(global, 'parseInt');
+      const retVal      = instance.parseInt(2.2, 100);
+      expect(retVal).to.equal(2);
+      expect(parseIntSpy.called).to.be.true;
+      parseIntSpy.restore();
+    });
+  });
+
+  describe('applyHeaders', () => {
+    let normalizeSpy: SinonSpy;
+    let updateSpy: SinonSpy;
+
+    beforeEach(() => {
+      normalizeSpy = sinon.spy(instance, 'normalize');
+      updateSpy    = sinon.spy(instance, 'update');
+    });
+
+    afterEach(() => {
+      normalizeSpy.restore();
+      updateSpy.restore();
+    });
+
+    it('should call normalize and update', () => {
+      const retVal = instance.applyHeaders(undefined);
+      expect(retVal).to.deep.equal({ port: 0, state: 1 });
+      expect(normalizeSpy.called).to.be.true;
+      expect(updateSpy.calledOnce).to.be.true;
+    });
+
+    it('should return headers', () => {
+      const header = { something: 'header' };
+      const retVal = instance.applyHeaders(header as any);
+      expect(retVal).to.deep.equal({ port: 0, state: 1, something: 'header' });
+      expect(normalizeSpy.called).to.be.true;
+      expect(updateSpy.calledOnce).to.be.true;
+    });
+  });
+
+  describe('update', () => {
+    const initialPeerObj = {
+      ip       : '1.2.3.4',
+      port     : 5555,
+      state    : PeerState.CONNECTED,
+      os       : 'ubuntu',
+      version  : '1.0',
+      dappid   : '',
+      broadhash: '',
+      height   : 9999,
+      clock    : 1,
+      updated  : 0,
+      nonce    : 'nonce',
+    };
+    beforeEach(() => {
+      instance.accept(initialPeerObj);
+    });
+
+    it('should not update null or undefined properties', () => {
+      instance.update({
+        os     : undefined,
+        version: null,
+      } as any);
+      expect(instance.os).to.be.equal(initialPeerObj.os);
+      expect(instance.version).to.be.equal(initialPeerObj.version);
+    });
+
+    it('should update non-null, non-undefined and non-immutable properties', () => {
+      instance.update({
+        os     : 'newOs',
+        version: 'newVersion',
+      } as any);
+      expect(instance.os).to.be.equal('newOs');
+      expect(instance.version).to.be.equal('newVersion');
+    });
+
+    it('should not update immutable properties', () => {
+      instance.update({
+        ip    : '255.255.255.255',
+        port  : '9876',
+        string: '1.1.1.1:80',
+      } as any);
+      expect(instance.ip).to.be.equal(initialPeerObj.ip);
+      expect(instance.port).to.be.equal(initialPeerObj.port);
+      expect(instance.string).to.be.equal(initialPeerObj.ip + ':' + initialPeerObj.port);
+    });
+
+    it('should call normalize', () => {
+      const normalizeSpy = sinon.spy(instance, 'normalize');
+      instance.update({
+        os     : 'newOs',
+        version: 'newVersion',
+      } as any);
+      expect(normalizeSpy.called).to.be.true;
+      normalizeSpy.restore();
+    });
+  });
+
+  describe('object', () => {
+    it('returns only supported properties', () => {
+      const peer         = {
+        ip        : '127.0.0.1',
+        port      : '1010',
+        state     : '2',
+        os        : 'some',
+        version   : 'some',
+        dappid    : 'some',
+        broadhash : 'some',
+        height    : 'some',
+        clock     : 'some',
+        updated   : 'some',
+        nonce     : 'some',
+        excluded  : true, // <- this field shouldn't show in the result
+        nullable  : [
+          'os',
+          'version',
+          'dappid',
+          'broadhash',
+          'height',
+          'clock',
+          'updated',
+        ],
+        properties: [
+          'ip',
+          'port',
+          'state',
+          'os',
+          'version',
+          'dappid',
+          'broadhash',
+          'height',
+          'clock',
+          'updated',
+          'nonce',
+        ],
+      };
+      const expectedPeer = {
+        ip       : '127.0.0.1',
+        port     : '1010',
+        state    : '2',
+        os       : 'some',
+        version  : 'some',
+        dappid   : 'some',
+        broadhash: 'some',
+        height   : 'some',
+        clock    : 'some',
+        updated  : 'some',
+        nonce    : 'some',
+      };
+
+      const retVal = instance.object.call(peer);
+
+      expect(retVal).to.deep.equal(expectedPeer);
+    });
+  });
+
+  describe('makeRequest', () => {
+    it('should call transportModule.getFromPeer', () => {
+      instance.makeRequest({});
+      expect(transportModuleStub.stubs.getFromPeer.called).to.be.true;
+    });
+
+    it('should return a promise', () => {
+      const retVal = instance.makeRequest({});
+      expect(retVal).to.be.instanceOf(Promise);
+    });
+
+    it('should pass first parameter to getFromPeer as second parameter', () => {
+      const requestOptions = {api: '/what', url: 'test'};
+      instance.makeRequest(requestOptions);
+      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[1]).to.be.deep.equal(requestOptions);
+    });
+
+    it('should fullfill with object.body from promise', async () => {
+      const expected =  { body: 'body', peer: {}};
+      transportModuleStub.stubConfig.getFromPeer.return = expected;
+      const retVal = await instance.makeRequest({});
+      expect(retVal).to.be.deep.equal(expected.body);
+    });
+  });
+
+  describe('pingAndUpdate', () => {
+    it('should call transportModule.getFromPeer', () => {
+      instance.pingAndUpdate();
+      expect(transportModuleStub.stubs.getFromPeer.called).to.be.true;
+      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[1]).to.be.deep.equal({api: '/height', method: 'GET'});
+    });
+
+    it('should return a promise', () => {
+      const retVal = instance.pingAndUpdate();
+      expect(retVal).to.be.instanceOf(Promise);
+    });
+  });
+
+  describe('toLogObj', () => {
+    it('should call JSON.stringify', () => {
+      const stringifySpy = sinon.spy(JSON, 'stringify');
+      instance.toLogObj();
+      expect(stringifySpy.called).to.be.true;
+      stringifySpy.restore();
+    });
+
+    it('should call instance.object', () => {
+      const objectSpy = sinon.spy(instance, 'object');
+      instance.toLogObj();
+      expect(objectSpy.called).to.be.true;
+      objectSpy.restore();
+    });
+  });
+});
