@@ -1,6 +1,6 @@
 {
   "name": "Rise-node",
-  "version": "0.1.2",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "start": "node app.js",
@@ -9,7 +9,7 @@
     "transpile": "shx rm -rf dist; tsc",
     "test-unit-cover": "NODE_ENV=test istanbul cover _mocha -- --bail --require ts-node/register './tests/**/*.spec.js' && istanbul-coveralls "
   },
-  "author": "Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team, Rise Team",
+  "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
   "license": "GPL-3.0",
   "dependencies": {
     "@types/valid-url": "^1.0.2",
