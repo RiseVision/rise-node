@@ -1,20 +1,23 @@
 import { inject, injectable } from 'inversify';
-import { constants, ILogger, wait } from '../helpers/';
+import { constants as constantsType, ILogger, wait } from '../helpers/';
+import { IBlocksModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { SignedAndChainedBlockType } from '../logic/';
 
 // TODO Eventually remove this module and use appState instead.
 @injectable()
-export class BlocksModule {
+export class BlocksModule implements IBlocksModule {
   public lastReceipt: { get: () => number, isStale: () => boolean, update: (time?: number) => void };
   public isActive   = false;
   public lastBlock: SignedAndChainedBlockType;
   public isCleaning = false;
   private internalLastReceipt: number;
-  private loaded    = false;
 
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+
   constructor() {
     this.lastReceipt = {
       get    : () => this.internalLastReceipt,
@@ -24,7 +27,7 @@ export class BlocksModule {
         }
         // Current time in seconds - lastReceipt (seconds)
         const secondsAgo = Math.floor(Date.now() / 1000) - this.internalLastReceipt;
-        return (secondsAgo > constants.blockReceiptTimeOut);
+        return (secondsAgo > this.constants.blockReceiptTimeOut);
       },
       update : (time: number = Math.floor(Date.now() / 1000)) => {
         this.internalLastReceipt = time;
@@ -32,21 +35,12 @@ export class BlocksModule {
     };
   }
 
-  public async onBind(): Promise<void> {
-    this.loaded  = true;
-  }
-
   public async cleanup() {
-    this.loaded     = false;
     this.isCleaning = true;
     while (this.isActive) {
       this.logger.info('Waiting for block processing to finish');
-      await wait(10000);
+      await wait(1000);
     }
-  }
-
-  public isLoaded() {
-    return this.loaded;
   }
 
 }
