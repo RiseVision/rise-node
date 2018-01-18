@@ -1,60 +1,18 @@
-import * as sinon from 'sinon';
+import { injectable } from 'inversify';
 
-export default class DbStub {
-  public stubConfig: {
-    query: {
-      resolve: boolean,
-      return: any
-    },
-    none: {
-      resolve: boolean,
-      return: any
-    },
-  };
+import { BaseStubClass } from './BaseStubClass';
+import { stubMethod } from './stubDecorator';
 
-  public stubs;
+// tslint:disable no-empty
 
-  constructor() {
-    this.stubReset();
-  }
+@injectable()
+export default class DbStub extends BaseStubClass /*implements IDatabase<any>*/ {
 
-  public stubReset() {
-    this.stubs = {
-      query: sinon.stub(),
-      none: sinon.stub(),
-    };
-    this.stubConfig = {
-      query: {
-        resolve: true,
-        return: null,
-      },
-      none: {
-        resolve: true,
-        return: null,
-      },
-    };
-  }
+  @stubMethod
+  public query() {}
 
-  /**
-   * Stubbed methods begin here
-   */
-  public query(...args) {
-    this.stubs.query.apply(this, args);
-    if (this.stubConfig.query.resolve) {
-      return Promise.resolve(this.stubConfig.query.return);
-    } else {
-      return Promise.reject(this.stubConfig.query.return);
-    }
-  }
-
-  public none(...args) {
-    this.stubs.none.apply(this, args);
-    if (this.stubConfig.none.resolve) {
-      return Promise.resolve(this.stubConfig.none.return);
-    } else {
-      return Promise.reject(this.stubConfig.none.return);
-    }
-  }
+  @stubMethod
+  public none() {}
 
   // TODO Add more methods when needed
 }

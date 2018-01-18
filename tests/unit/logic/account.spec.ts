@@ -26,11 +26,13 @@ describe('logic/account', () => {
   let dbStub: DbStub;
   let loggerStub: LoggerStub;
   let zSchemaStub: ZSchemaStub;
+  before(() => {
+    dbStub                  = new DbStub();
+  })
 
   beforeEach(() => {
     pgp = { QueryFile: () => { return; } };
     RewireAccount.__set__('pgp', pgp);
-    dbStub                  = new DbStub();
     loggerStub              = new LoggerStub();
     zSchemaStub             = new ZSchemaStub();
     account                 = new RewireAccount.AccountLogic();
@@ -38,6 +40,7 @@ describe('logic/account', () => {
     (account as any).db     = dbStub;
     (account as any).logger = loggerStub;
     (account as any).schema = zSchemaStub;
+    dbStub.reset();
   });
 
   afterEach(() => {
@@ -244,8 +247,7 @@ describe('logic/account', () => {
     it('should handle sql error', async () => {
       const error = new Error('error');
 
-      dbStub.stubConfig.query.resolve = false;
-      dbStub.stubConfig.query.return = error;
+      dbStub.enqueueResponse('query', Promise.reject(error));
 
       await account.createTables().then(() => {
         throw new Error('Expected method to reject.');
@@ -270,8 +272,7 @@ describe('logic/account', () => {
     });
 
     it('should create tables', async () => {
-      dbStub.stubConfig.query.resolve = true;
-      dbStub.stubConfig.query.return = 'OK';
+      dbStub.enqueueResponse('query', Promise.resolve('OK'));
 
       await account.createTables();
 
@@ -307,9 +308,7 @@ describe('logic/account', () => {
 
     it('should handle errors', async () => {
       const error = new Error('error');
-
-      dbStub.stubConfig.query.resolve = false;
-      dbStub.stubConfig.query.return  = error;
+      dbStub.enqueueResponse('query', Promise.reject(error));
 
       await account.removeTables().then(() => {
         throw new Error('Expected method to reject.');
@@ -329,9 +328,7 @@ describe('logic/account', () => {
     });
 
     it('should remove tables', async () => {
-
-      dbStub.stubConfig.query.resolve = true;
-      dbStub.stubConfig.query.return  = 'OK';
+      dbStub.enqueueResponse('query', Promise.resolve('OK'));
 
       await account.removeTables();
 
@@ -541,8 +538,7 @@ describe('logic/account', () => {
     it('without fields; error', async () => {
       const error = new Error('error');
 
-      dbStub.stubConfig.query.resolve = false;
-      dbStub.stubConfig.query.return = error;
+      dbStub.enqueueResponse('query', Promise.reject(error));
 
       await account.getAll(filter).then(() => {
         throw new Error('Should reject');
@@ -563,8 +559,7 @@ describe('logic/account', () => {
     });
 
     it('without fields; success', async () => {
-      dbStub.stubConfig.query.resolve = true;
-      dbStub.stubConfig.query.return = rows;
+      dbStub.enqueueResponse('query', Promise.resolve(rows));
 
       const retVal = await account.getAll(filter).catch( () => {
         throw new Error('Should rejects');
@@ -582,8 +577,7 @@ describe('logic/account', () => {
     it('with fields; error', async () => {
       const error = new Error('error');
 
-      dbStub.stubConfig.query.resolve = false;
-      dbStub.stubConfig.query.return = error;
+      dbStub.enqueueResponse('query', Promise.reject(error));
 
       await account.getAll(filter, fields).then(() => {
         throw new Error('Should reject');
@@ -604,8 +598,7 @@ describe('logic/account', () => {
     });
 
     it('with fields; success', async () => {
-      dbStub.stubConfig.query.resolve = true;
-      dbStub.stubConfig.query.return = rows;
+      dbStub.enqueueResponse('query', Promise.resolve(rows));
 
       const retVal = await account.getAll(filter, fields);
 
@@ -640,8 +633,7 @@ describe('logic/account', () => {
       const error = new Error('error');
 
       account.assertPublicKey.returns(true);
-      dbStub.stubConfig.none.resolve = false;
-      dbStub.stubConfig.none.return = error;
+      dbStub.enqueueResponse('none', Promise.reject(error));
 
       await account.set(address, fields)
         .then(() => {
@@ -657,7 +649,7 @@ describe('logic/account', () => {
 
     it('should set data', async () => {
       account.assertPublicKey.returns(true);
-      dbStub.stubConfig.none.resolve = true;
+      dbStub.enqueueResponse('none', Promise.resolve());
 
       await account.set(address, fields, callback);
 
@@ -743,8 +735,7 @@ describe('logic/account', () => {
     it('should handle no queries passed', async () => {
       sinon.stub(account, 'get');
 
-      dbStub.stubConfig.query.resolve = true;
-      dbStub.stubConfig.query.return = [];
+      dbStub.enqueueResponse('query', Promise.resolve([]));
 
       await account.merge(address, {}, callback);
 
@@ -768,8 +759,7 @@ describe('logic/account', () => {
     it('should call callback correctly on error', async () => {
       const error = new Error('error');
       RewireAccount.__set__('pgp', originalPgp);
-      dbStub.stubConfig.none.resolve = false;
-      dbStub.stubConfig.none.return = error;
+      dbStub.enqueueResponse('none', Promise.reject(error));
 
       await account.merge(address, diff, callback)
         .then(() => {
@@ -794,10 +784,8 @@ describe('logic/account', () => {
 
     it('Should callback on success', async () => {
       RewireAccount.__set__('pgp', originalPgp);
-      dbStub.stubConfig.none.resolve = true;
-      dbStub.stubConfig.none.return = undefined;
-      dbStub.stubConfig.query.resolve = true;
-      dbStub.stubConfig.query.return = [];
+      dbStub.enqueueResponse('none', Promise.resolve());
+      dbStub.enqueueResponse('query', Promise.resolve([]));
 
       await account.merge(address, diff, callback);
 
@@ -819,8 +807,7 @@ describe('logic/account', () => {
 
     it('handle promise rejection', async () => {
       const error = new Error('error');
-      dbStub.stubConfig.none.resolve = false;
-      dbStub.stubConfig.none.return = error;
+      dbStub.enqueueResponse('none', Promise.reject(error));
 
       await account.remove(address).then(() => {
         throw new Error('Should reject');
@@ -839,7 +826,7 @@ describe('logic/account', () => {
     });
 
     it('handle promise fulfillment', async () => {
-      dbStub.stubConfig.none.resolve = true;
+      dbStub.enqueueResponse('none', Promise.resolve());
 
       const addr = await account.remove(address).catch(() => {
         throw new Error('Should resolve');
