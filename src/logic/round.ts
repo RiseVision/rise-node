@@ -29,8 +29,7 @@ export type RoundLogicScope = {
   }
 };
 
-// TODO: check if we can inversifyjs this.
-// This cannot be injected automatically cause it will need to be instantiated by
+// This cannot be injected directly as it needs to be created.
 // rounds module.
 export class RoundLogic implements IRoundLogic {
   constructor(public scope: RoundLogicScope, public task: ITask<any>, private slots: Slots) {

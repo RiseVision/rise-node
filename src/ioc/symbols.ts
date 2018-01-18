@@ -11,10 +11,10 @@ export const Symbols = {
     transactions      : Symbol('transactionsAPI'),
     transport         : Symbol('transportAPI'),
     utils             : {
+      attachPeerHeaderToResponseObject: Symbol('attachPeerHeaderToResponseObject'),
       errorHandler                    : Symbol('errorHandler'),
       successInterceptor              : Symbol('successInterceptor'),
       validatePeerHeadersMiddleware   : Symbol('validatePeerHeadersMiddleware'),
-      attachPeerHeaderToResponseObject: Symbol('attachPeerHeaderToResponseObject'),
     },
   },
   generic: {
@@ -47,7 +47,7 @@ export const Symbols = {
     peer           : Symbol('peerL'),
     peerFactory    : Symbol('Factory<peerL>'),
     peers          : Symbol('peersL'),
-    // round          : Symbol('round'),
+    round          : Symbol('round'),
     rounds         : Symbol('roundsL'),
     transaction    : Symbol('transactionL'),
     transactionPool: Symbol('transactionPoolL'),
