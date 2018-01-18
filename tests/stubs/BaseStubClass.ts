@@ -1,9 +1,11 @@
+import { injectable } from 'inversify';
 import 'reflect-metadata';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 
 export const stubMetadataSymbol = Symbol('stubs');
 
+@injectable()
 export class BaseStubClass {
   public stubs: { [method: string]: SinonStub };
   public sandbox: SinonSandbox = sinon.sandbox.create();
