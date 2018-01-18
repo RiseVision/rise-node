@@ -22,6 +22,7 @@ import { IBlocksModuleChain } from './ioc/interfaces/modules';
 import { Symbols } from './ioc/symbols';
 import {
   AccountLogic, AppState, BasePeerType, BlockLogic, BlockRewardLogic, BroadcasterLogic, PeerLogic, PeersLogic,
+  RoundLogic,
   RoundsLogic,
   SignedAndChainedBlockType, TransactionLogic, TransactionPool
 } from './logic/';
@@ -224,7 +225,7 @@ export class AppManager {
       };
     });
     this.container.bind(Symbols.logic.peers).to(PeersLogic).inSingletonScope();
-    // this.container.bind(Symbols.logic.round).to(RoundLogic).inSingletonScope();
+    this.container.bind(Symbols.logic.round).toConstructor(RoundLogic);
     this.container.bind(Symbols.logic.rounds).to(RoundsLogic).inSingletonScope();
     this.container.bind(Symbols.logic.transaction).to(TransactionLogic).inSingletonScope();
     this.container.bind(Symbols.logic.transactionPool).to(TransactionPool).inSingletonScope();
