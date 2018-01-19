@@ -25,7 +25,7 @@ export class Cache implements ICacheModule {
     if (!this.isConnected) {
       return Promise.reject('Cache unavailable');
     }
-    Promise.resolve();
+    return Promise.resolve();
   }
 
   public async assertConnectedAndReady(): Promise<void> {
@@ -87,20 +87,12 @@ export class Cache implements ICacheModule {
    * @param {Broadcast} broadcast
    * @param {Function} cb
    */
-  public async onNewBlock(block, broadcast, cb) {
-    cb = cb || emptyCB;
-
-    try {
-      await this.assertConnectedAndReady();
-      const toRemove = ['/api/blocks*', '/api/transactions*'];
-      for (const pattern of toRemove) {
-        await this.removeByPattern(pattern);
-      }
-      cb();
-    } catch (e) {
-      cb(e);
+  public async onNewBlock(block, broadcast) {
+    await this.assertConnectedAndReady();
+    const toRemove = ['/api/blocks*', '/api/transactions*'];
+    for (const pattern of toRemove) {
+      await this.removeByPattern(pattern);
     }
-
   }
 
   /**

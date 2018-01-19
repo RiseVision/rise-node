@@ -7,19 +7,11 @@ import { constants as constantType } from '../helpers/';
 import { IBlocksModule, ISystemModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import sqlSystem from '../sql/system';
-import { AppConfig } from '../types/genericTypes';
+import { AppConfig, PeerHeaders } from '../types/genericTypes';
 
 // tslint:disable-next-line
 // tslint:disable-next-line
-type PeerHeaders = {
-  os: string;
-  version: string;
-  port: number;
-  height: number;
-  nethash: string;
-  broadhash: string;
-  nonce: string;
-};
+
 const rcRegExp = /[a-z]+$/;
 
 @injectable()
@@ -191,7 +183,7 @@ export class SystemModule implements ISystemModule {
       secondsignature: number,
       delegate: number,
       multisignature: number,
-      dapp
+      dapp: number
     }, fromHeight: number, height: number, toHeight: number
   } {
 

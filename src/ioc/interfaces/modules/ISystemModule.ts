@@ -7,21 +7,21 @@ export interface ISystemModule extends IModule {
   headers: PeerHeaders;
   readonly broadhash: string;
 
-  getOS(): void;
+  getOS(): string;
 
-  getVersion(): void;
+  getVersion(): string;
 
   /**
    * Gets private variable `port`
    * @return {number}
    */
-  getPort(): void;
+  getPort(): number;
 
   /**
    * Gets private variable `height`
    * @return {number}
    */
-  getHeight(): void;
+  getHeight(): number;
 
   /**
    * Gets private variable `nethash`
@@ -63,7 +63,7 @@ export interface ISystemModule extends IModule {
    */
   getBroadhash(): Promise<string>;
 
-  getFees(height: number): {
+  getFees(height?: number): {
     fees: {
       send: number,
       vote: number,

@@ -1,5 +1,7 @@
+import {injectable} from 'inversify';
 import * as sinon from 'sinon';
 
+@injectable()
 export default class LoggerStub {
   public stubs;
 
