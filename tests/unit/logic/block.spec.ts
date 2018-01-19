@@ -1,5 +1,6 @@
 import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
+import 'chai-arrays';
 import * as crypto from 'crypto';
 import * as rewire from 'rewire';
 import * as sinon from 'sinon';
@@ -8,7 +9,7 @@ import { Ed } from '../../../src/helpers';
 import { BlockLogic } from '../../../src/logic';
 import { BlockRewardLogicStub, TransactionLogicStub, ZSchemaStub } from '../../stubs';
 
-// FIXME problem with import of this library
+// tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
 
 const { expect } = chai;
@@ -357,6 +358,7 @@ describe('logic/block', () => {
       const parseIntSpy = sinon.spy(global, 'parseInt');
       instance.dbRead(raw);
       expect(parseIntSpy.callCount).to.be.eq(9);
+      parseIntSpy.restore();
     });
   });
 });
