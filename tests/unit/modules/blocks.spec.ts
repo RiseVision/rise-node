@@ -1,11 +1,15 @@
 import { expect } from 'chai';
-import 'chai-as-promised';
+import * as chai from 'chai';
+// import 'chai-as-promised';
+import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { IBlocksModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { BlocksModule } from '../../../src/modules';
 import { LoggerStub } from '../../stubs';
+
+chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression
 describe('modules/blocks', () => {
@@ -42,18 +46,24 @@ describe('modules/blocks', () => {
       await instB.cleanup();
       expect(inst.isCleaning).to.be.true;
     });
-    it('should wait until isActive is false and then return', () => {
+    it('should wait until isActive is false and then return', async () => {
       const timers   = sinon.useFakeTimers();
       instB.isActive = true;
-      const p        = instB.cleanup();
-      expect(p).to.not.be.fulfilled;
+      const stub = sinon.stub();
+      const p = instB.cleanup()
+        .then(stub)
+        .catch(stub);
 
+      expect(stub.called).is.false;
       timers.tick(10000);
-      expect(p).to.not.be.fulfilled;
-
+      expect(stub.called).is.false;
       instB.isActive = false;
       timers.tick(10000);
-      expect(p).to.be.fulfilled;
+      await p;
+
+      expect(stub.called).is.true;
+      expect(stub.callCount).is.eq(1);
+
       timers.restore();
     });
   });

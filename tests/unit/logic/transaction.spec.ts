@@ -208,6 +208,7 @@ describe('logic/transaction', () => {
         if (noAssert) { byteBufferStub.noAssert = noAssert; }
         return byteBufferStub;
       });
+      byteBufferStub.enqueueResponse('toBuffer', new Buffer(10));
     });
 
     afterEach(() => {

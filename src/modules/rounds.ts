@@ -4,7 +4,7 @@ import { Bus, constants as constantsType, ILogger, Slots } from '../helpers/';
 import { IAppState, IRoundLogicNewable, IRoundsLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule, IDelegatesModule, IRoundsModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
-import { RoundLogic, RoundLogicScope, SignedBlockType } from '../logic/';
+import { RoundLogicScope, SignedBlockType } from '../logic/';
 import roundsSQL from '../sql/logic/rounds';
 import { address, publicKey } from '../types/sanityTypes';
 
@@ -72,7 +72,7 @@ export class RoundsModule implements IRoundsModule {
     return this.innerTick(block, true, (roundLogicScope) => (task) => {
       this.logger.debug('Performing backward tick');
 
-      const roundLogic = new RoundLogic(roundLogicScope, task, this.slots);
+      const roundLogic = new this.RoundLogic(roundLogicScope, task, this.slots);
 
       return roundLogic.mergeBlockGenerator()
       // call backwardLand only if this was the last block in round.

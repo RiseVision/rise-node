@@ -43,8 +43,5 @@ export default class ByteBufferStub extends BaseStubClass {
   @stubMethod
   public toBuffer() {}
 
-  public reset() {
-    this.sandbox.reset();
-  }
   // TODO Add more methods when needed
 }
