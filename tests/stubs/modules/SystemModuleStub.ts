@@ -1,34 +1,78 @@
-import * as sinon from 'sinon';
+import { injectable } from 'inversify';
+import { ISystemModule } from '../../../src/ioc/interfaces/modules';
+import { BaseStubClass } from '../BaseStubClass';
+import { PeerHeaders } from '../../../src/types/genericTypes';
+import { stubMethod } from '../stubDecorator';
 
-export default class SystemModuleStub {
-  public stubConfig: {
-    getNonce: {
-      return: any
-    }
-  };
+@injectable()
+export class SystemModuleStub extends BaseStubClass implements ISystemModule {
+  public minVersion: string;
+  public headers: PeerHeaders;
+  public broadhash: string;
 
-  public stubs;
-
-  constructor() {
-    this.stubReset();
+  @stubMethod()
+  public getOS(): string {
+    return undefined;
   }
 
-  public stubReset() {
-    this.stubs = {
-      getNonce: sinon.stub(),
-    };
-    this.stubConfig = {
-      getNonce: {return: {}, },
-    };
+  @stubMethod()
+  public getVersion(): string {
+    return undefined;
   }
 
-  /**
-   * Stubbed methods begin here
-   */
+  @stubMethod()
+  public getPort(): number {
+    return undefined;
+  }
 
-  public getNonce(...args) {
-    this.stubs.getNonce.apply(this, args);
-    return this.stubConfig.getNonce.return;
+  @stubMethod()
+  public getHeight(): number {
+    return undefined;
+  }
+
+  @stubMethod()
+  public getNethash(): string {
+    return undefined;
+  }
+
+  @stubMethod(true)
+  public getNonce(): string {
+    return 'nonce';
+  }
+
+  @stubMethod()
+  public networkCompatible(nethash: string): boolean {
+    return undefined;
+  }
+
+  @stubMethod()
+  public getMinVersion(height?: number): string {
+    return undefined;
+  }
+
+  @stubMethod()
+  public versionCompatible(version): boolean {
+    return undefined;
+  }
+
+  @stubMethod()
+  public getBroadhash(): Promise<string> {
+    return undefined;
+  }
+
+  @stubMethod()
+  public getFees(height?: number): { fees: { send: number; vote: number; secondsignature: number; delegate: number; multisignature: number; dapp }; fromHeight: number; height: number; toHeight: number } {
+    return undefined;
+  }
+
+  @stubMethod()
+  public update(): Promise<void> {
+    return undefined;
+  }
+
+  @stubMethod()
+  public cleanup(): Promise<void> {
+    return undefined;
   }
 
 }

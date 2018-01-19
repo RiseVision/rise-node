@@ -11,54 +11,54 @@ import { stubMethod } from '../stubDecorator';
 @injectable()
 export default class AccountLogicStub extends BaseStubClass implements IAccountLogic {
 
-  @stubMethod
+  @stubMethod()
   public merge(address: string, diff: any, cb?: cback<any>): any {
 
   }
 
-  @stubMethod
+  @stubMethod()
   public objectNormalize(account: any) {
   }
 
-  @stubMethod
+  @stubMethod()
   public createTables(): Promise<void> {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public removeTables(): Promise<void> {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public assertPublicKey(pk: publicKey, allowUndefined?: boolean) {
   }
 
-  @stubMethod
+  @stubMethod()
   public toDB(raw: any): any {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public get(filter: AccountFilterData, fields?: Array<keyof MemAccountsData>): Promise<MemAccountsData> {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public getAll(filter: AccountFilterData, fields?: Array<keyof MemAccountsData>): Promise<any[]> {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public set(address: string, fields: { [p: string]: any }, cb?: cback<any>) {
   }
 
-  @stubMethod
+  @stubMethod()
   public remove(address: string, cb: cback<string>): Promise<string> {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public generateAddressByPublicKey(pk: publicKey): string {
     return undefined;
   }

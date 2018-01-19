@@ -40,7 +40,7 @@ export default class ByteBufferStub extends BaseStubClass {
   @spyMethod
   public flip() {}
 
-  @stubMethod
+  @stubMethod()
   public toBuffer() {}
 
   // TODO Add more methods when needed

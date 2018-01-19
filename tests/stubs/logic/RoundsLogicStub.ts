@@ -8,7 +8,7 @@ import { stubMethod } from '../stubDecorator';
 @injectable()
 export default class RoundsLogicStub extends BaseStubClass {
 
-  @stubMethod
+  @stubMethod()
   public calcRound() {}
 
   // TODO Add more methods when needed

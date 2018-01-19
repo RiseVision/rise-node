@@ -4,7 +4,7 @@ import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 
 export const stubMetadataSymbol = Symbol('stubs');
-export const spyMetadataSymbol = Symbol('spies');
+export const spyMetadataSymbol  = Symbol('spies');
 
 @injectable()
 export class BaseStubClass {
@@ -13,13 +13,15 @@ export class BaseStubClass {
   public sandbox: SinonSandbox = sinon.sandbox.create();
 
   private nextResponses: { [method: string]: any[] } = {};
-  private methods: string[];
+  private stubConfigs: Array<{ method: string, withDefaultAllowed: boolean }>;
   private spyMethods: string[];
 
+  private oldImplementations: { [k: string]: () => {} } = {};
+
   constructor() {
-    this.methods = Reflect.getMetadata(stubMetadataSymbol, this);
-    this.spyMethods = Reflect.getMetadata(spyMetadataSymbol, this);
-    if (!Array.isArray(this.methods) || this.methods.length === 0) {
+    this.stubConfigs = Reflect.getMetadata(stubMetadataSymbol, this);
+    this.spyMethods  = Reflect.getMetadata(spyMetadataSymbol, this);
+    if (!Array.isArray(this.stubConfigs) || this.stubConfigs.length === 0) {
       throw new Error('no methods defined in stubclass');
     }
     if (!Array.isArray(this.spyMethods)) {
@@ -28,11 +30,13 @@ export class BaseStubClass {
     this.stubs   = this.stubs || {};
     this.spies   = this.spies || {};
     this.sandbox = sinon.sandbox.create();
-    for (const method of this.methods) {
-      this.stubs[method] = this.sandbox.stub(this, method as any);
+    for (const c of this.stubConfigs) {
+      this.oldImplementations[c.method] = this[c.method];
+      this.stubs[c.method] = this.sandbox.stub(this, c.method as any);
     }
 
     for (const method of this.spyMethods) {
+      this.oldImplementations[method] = this[method];
       this.spies[method] = this.sandbox.spy(this, method as any);
     }
 
@@ -54,12 +58,16 @@ export class BaseStubClass {
   public reset() {
     this.nextResponses = {};
     this.sandbox.reset();
-    for (const method of this.methods) {
-      this.stubs[method].callsFake(() => {
-        if (!Array.isArray(this.nextResponses[method]) || this.nextResponses[method].length === 0) {
-          throw new Error(`Please enqueue a response for ${method}`);
+
+    for (const c of this.stubConfigs) {
+      this.stubs[c.method].callsFake((...args) => {
+        if (!Array.isArray(this.nextResponses[c.method]) || this.nextResponses[c.method].length === 0) {
+          if (c.withDefaultAllowed) {
+            return this.oldImplementations[c.method].apply(this, args);
+          }
+          throw new Error(`Please enqueue a response for ${c.method}`);
         }
-        return this.nextResponses[method].shift();
+        return this.nextResponses[c.method].shift();
       });
     }
   }

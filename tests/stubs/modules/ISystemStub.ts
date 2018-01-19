@@ -10,67 +10,67 @@ export class ISystemStub extends BaseStubClass implements ISystemModule {
   public headers: PeerHeaders;
   public broadhash: string;
 
-  @stubMethod
+  @stubMethod()
   public getOS(): string {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public getVersion(): string {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public getPort(): number {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public getHeight(): number {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public getNethash(): string {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public getNonce(): string {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public networkCompatible(nethash: string) {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public getMinVersion(height?: number) {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public versionCompatible(version) {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public getBroadhash() {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public getFees(height?: number) {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public update(): Promise<void> {
     return undefined;
   }
 
-  @stubMethod
+  @stubMethod()
   public cleanup(): Promise<void> {
     return undefined;
   }

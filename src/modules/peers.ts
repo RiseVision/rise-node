@@ -19,19 +19,26 @@ export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip
 
 @injectable()
 export class PeersModule implements IPeersModule {
-  @inject(Symbols.modules.system)
-  private systemModule;
 
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
-  @inject(Symbols.helpers.logger)
-  private logger: ILogger;
-  @inject(Symbols.helpers.bus)
-  private bus: Bus;
-  @inject(Symbols.logic.peers)
-  private peersLogic: IPeersLogic;
+  // Generic
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
+  @inject(Symbols.generic.db)
+  private db: IDatabase<any>;
+
+  // Helpers
+  @inject(Symbols.helpers.bus)
+  private bus: Bus;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+
+  // Logic
+  @inject(Symbols.logic.peers)
+  private peersLogic: IPeersLogic;
+
+  // Modules
+  @inject(Symbols.modules.system)
+  private systemModule;
 
   public cleanup() {
     // save on cleanup.

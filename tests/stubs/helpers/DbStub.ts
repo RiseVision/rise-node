@@ -8,10 +8,10 @@ import { stubMethod } from '../stubDecorator';
 @injectable()
 export default class DbStub extends BaseStubClass /*implements IDatabase<any>*/ {
 
-  @stubMethod
+  @stubMethod()
   public query() {}
 
-  @stubMethod
+  @stubMethod()
   public none() {}
 
   // TODO Add more methods when needed

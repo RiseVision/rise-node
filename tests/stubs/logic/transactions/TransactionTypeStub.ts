@@ -18,43 +18,43 @@ export default class TransactionTypeStub extends BaseStubClass {
     return this.txType;
   }
 
-  @stubMethod
+  @stubMethod()
   public calculateFee() {}
 
-  @stubMethod
+  @stubMethod()
   public verify() {}
 
-  @stubMethod
+  @stubMethod()
   public process() {}
 
-  @stubMethod
+  @stubMethod()
   public getBytes() {}
 
-  @stubMethod
+  @stubMethod()
   public apply() {}
 
-  @stubMethod
+  @stubMethod()
   public applyUnconfirmed() {}
 
-  @stubMethod
+  @stubMethod()
   public undo() {}
 
-  @stubMethod
+  @stubMethod()
   public undoUnconfirmed() {}
 
-  @stubMethod
+  @stubMethod()
   public objectNormalize() {}
 
-  @stubMethod
+  @stubMethod()
   public dbRead() {}
 
-  @stubMethod
+  @stubMethod()
   public dbSave() {}
 
-  @stubMethod
+  @stubMethod()
   public afterSave() {}
 
-  @stubMethod
+  @stubMethod()
   public ready() {}
 
 }

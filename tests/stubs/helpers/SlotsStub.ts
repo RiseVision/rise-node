@@ -8,7 +8,7 @@ import { stubMethod } from '../stubDecorator';
 @injectable()
 export default class SlotsStub extends BaseStubClass {
 
-  @stubMethod
+  @stubMethod()
   public getSlotNumber() {}
 
   // TODO Add more methods when needed

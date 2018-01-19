@@ -1,4 +1,5 @@
 // Helpers
+import { BusStub } from './helpers/BusStub';
 import DbStub from './helpers/DbStub';
 import EdStub from './helpers/EdStub';
 import LoggerStub from './helpers/LoggerStub';
@@ -9,6 +10,7 @@ import ZSchemaStub from './helpers/ZSchemaStub';
 import AccountLogicStub from './logic/AccountLogicStub';
 import BlockRewardLogicStub from './logic/BlockRewardLogicStub';
 import PeerLogicStub from './logic/PeerLogicStub';
+import { PeersLogicStub } from './logic/PeersLogicStub';
 import RoundsLogicStub from './logic/RoundsLogicStub';
 import TransactionLogicStub from './logic/TransactionLogicStub';
 
@@ -18,7 +20,7 @@ import TransactionTypeStub from './logic/transactions/TransactionTypeStub';
 // Modules
 import IBlocksStub from './modules/IBlocksStub';
 import ISystemStub from './modules/ISystemStub';
-import SystemModuleStub from './modules/SystemModuleStub';
+import { SystemModuleStub } from './modules/SystemModuleStub';
 import TransportModuleStub from './modules/TransportModuleStub';
 
 // Modules
@@ -28,12 +30,14 @@ export {
   AccountLogicStub,
   ByteBufferStub,
   BlockRewardLogicStub,
+  BusStub,
   DbStub,
   EdStub,
   IBlocksStub,
   ISystemStub,
   LoggerStub,
   PeerLogicStub,
+  PeersLogicStub,
   RoundsLogicStub,
   SlotsStub,
   SystemModuleStub,

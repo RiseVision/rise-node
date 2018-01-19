@@ -8,10 +8,10 @@ import { stubMethod } from '../stubDecorator';
 @injectable()
 export default class EdStub extends BaseStubClass {
 
-  @stubMethod
+  @stubMethod()
   public sign() {}
 
-  @stubMethod
+  @stubMethod()
   public verify() {}
 
   // TODO Add more methods when needed

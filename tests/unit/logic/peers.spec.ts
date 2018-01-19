@@ -235,7 +235,7 @@ describe('logic/peers', () => {
     });
 
     it('should filter out peers with same ip', () => {
-      systemModuleStub.stubConfig.getNonce.return = 'otherValue';
+      systemModuleStub.enqueueResponse('getNonce', 'otherValue');
       const peer1 = new PeerLogicStub();
       const peer2 = new PeerLogicStub();
       peer1.ip = '8.8.8.8';
@@ -245,7 +245,8 @@ describe('logic/peers', () => {
     });
 
     it('should filter out peers with my same nonce', () => {
-      systemModuleStub.stubConfig.getNonce.return = 'systemNonce';
+      systemModuleStub.enqueueResponse('getNonce', 'systemNonce');
+
       peerLogicStub.ip = '8.8.8.8';
       peerLogicStub.nonce = 'systemNonce';
       const retVal = instance.acceptable([peerLogicStub]);
