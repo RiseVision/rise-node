@@ -34,13 +34,8 @@ export class AccountsModule implements IAccountsModule {
    * @returns {Promise<MemAccountsData>}
    */
   // tslint:disable-next-line max-line-length
-  public async setAccountAndGet(data: ({ publicKey: string } | { address: string }) & OptionalsMemAccounts ): Promise<MemAccountsData> {
-    if (!data.address && !data.publicKey) {
-      throw new Error('Missing address and public key');
-    }
-    if (!data.address) {
-      data.address = this.accountLogic.generateAddressByPublicKey(data.publicKey);
-    }
+  public async setAccountAndGet(data: ({ publicKey: string } | { address: string }) & OptionalsMemAccounts): Promise<MemAccountsData> {
+    data = this.fixAndCheckInputParams(data);
     // no need to reset address!
     const {address} = data;
     delete data.address;
@@ -50,12 +45,7 @@ export class AccountsModule implements IAccountsModule {
   }
 
   public mergeAccountAndGetSQL(diff: any): string {
-    if (!diff.address && !diff.publicKey) {
-      throw new Error('Missing address and public key');
-    }
-    if (!diff.address) {
-      diff.address = this.accountLogic.generateAddressByPublicKey(diff.publicKey);
-    }
+    diff = this.fixAndCheckInputParams(diff);
     const {address} = diff;
     delete diff.address;
     return this.accountLogic.merge(address, diff);
@@ -68,12 +58,7 @@ export class AccountsModule implements IAccountsModule {
    */
 
   public async mergeAccountAndGet(diff: any): Promise<MemAccountsData> {
-    if (!diff.address && !diff.publicKey) {
-      throw new Error('Missing address and public key');
-    }
-    if (!diff.address) {
-      diff.address = this.accountLogic.generateAddressByPublicKey(diff.publicKey);
-    }
+    diff = this.fixAndCheckInputParams(diff);
     const {address} = diff;
     delete diff.address;
 
@@ -85,5 +70,15 @@ export class AccountsModule implements IAccountsModule {
    */
   public generateAddressByPublicKey(pk: string) {
     return this.accountLogic.generateAddressByPublicKey(pk);
+  }
+
+  private fixAndCheckInputParams<T extends { address?: string, publicKey?: string } = any>(what: T): T {
+    if (!what.address && !what.publicKey) {
+      throw new Error('Missing address and public key');
+    }
+    if (!what.address) {
+      what.address = this.accountLogic.generateAddressByPublicKey(what.publicKey);
+    }
+    return what;
   }
 }
