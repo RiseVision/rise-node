@@ -1,8 +1,11 @@
-export class JobsQueue {
-  public static jobs: { [k: string]: NodeJS.Timer } = {};
+import { injectable } from 'inversify';
+import { IJobsQueue } from '../ioc/interfaces/helpers';
 
-  public static register(name: string, job: () => Promise<any>, time: number) {
-    // TODO: Maybe there is a bug here as this.jobs[name] could be set asynchronously depending by how job is defined
+@injectable()
+export class JobsQueue implements IJobsQueue {
+  public jobs: { [k: string]: NodeJS.Timer } = {};
+
+  public register(name: string, job: () => Promise<any>, time: number) {
     if (this.jobs[name]) {
       throw new Error('Synchronous job ' + name + ' already registered');
     }

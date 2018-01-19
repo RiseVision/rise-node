@@ -1,10 +1,10 @@
-import * as extend from 'extend';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
-import { constants, ILogger, JobsQueue, promiseToCB } from '../helpers/';
+import { constants, ILogger} from '../helpers/';
+import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
-import { IPeersModule, ITransactionsModule, ITransportModule } from '../ioc/interfaces/modules';
+import { IPeersModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { AppConfig } from '../types/genericTypes';
 import { PeerType } from './peer';
@@ -41,12 +41,6 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     path      : '/signatures',
   }];
 
-  // Modules
-  @inject(Symbols.modules.peers)
-  private peersModule: IPeersModule;
-  @inject(Symbols.modules.transactions)
-  private transactionsModule: ITransactionsModule;
-
   // Generics
   @inject(Symbols.generic.appConfig)
   private config: AppConfig;
@@ -54,6 +48,8 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   // Helpers
   @inject(Symbols.helpers.constants)
   private constants: typeof constants;
+  @inject(Symbols.helpers.jobsQueue)
+  private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
@@ -65,6 +61,12 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   @inject(Symbols.logic.appState)
   private appState: IAppState;
 
+  // Modules
+  @inject(Symbols.modules.peers)
+  private peersModule: IPeersModule;
+  @inject(Symbols.modules.transactions)
+  private transactionsModule: ITransactionsModule;
+
   @postConstruct()
   public afterConstruct() {
     if (this.config.forging.force) {
@@ -72,7 +74,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     } else {
       this.appState.set('node.consensus', 100);
     }
-    JobsQueue.register(
+    this.jobsQueue.register(
       'broadcasterNextRelease',
       () => this.releaseQueue()
           .catch((err) => {

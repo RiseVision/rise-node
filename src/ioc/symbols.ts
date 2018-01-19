@@ -34,6 +34,7 @@ export const Symbols = {
     constants        : Symbol('constants'),
     ed               : Symbol('ed'),
     exceptionsManager: Symbol('exceptionsManager'),
+    jobsQueue        : Symbol('jobsQueue'),
     logger           : Symbol('logger'),
     sequence         : Symbol('sequence'),
     slots            : Symbol('slots'),

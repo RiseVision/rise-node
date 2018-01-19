@@ -15,7 +15,7 @@ import { SuccessInterceptor } from './apis/utils/successInterceptor';
 import { ValidatePeerHeaders } from './apis/utils/validatePeerHeaders';
 import {
   applyExpressLimits, Bus, cache, catchToLoggerAndRemapError, cbToPromise, constants as constantsType, Database, Ed,
-  ExceptionsManager, ILogger, middleware, Sequence, Slots, z_schema,
+  ExceptionsManager, ILogger, JobsQueue, middleware, Sequence, Slots, z_schema,
 } from './helpers/';
 import { IPeerLogic, ITransactionLogic } from './ioc/interfaces/logic';
 import { IBlocksModuleChain } from './ioc/interfaces/modules';
@@ -196,6 +196,7 @@ export class AppManager {
     this.container.bind(Symbols.helpers.constants).toConstantValue(this.constants);
     this.container.bind(Symbols.helpers.ed).toConstantValue(ed);
     this.container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManager).inSingletonScope();
+    this.container.bind(Symbols.helpers.jobsQueue).to(JobsQueue).inSingletonScope();
     this.container.bind(Symbols.helpers.logger).toConstantValue(this.logger);
     // this.container.bind(Symbols.helpers.sequence).toConstantValue();
     [Symbols.tags.helpers.dbSequence, Symbols.tags.helpers.defaultSequence, Symbols.tags.helpers.balancesSequence]

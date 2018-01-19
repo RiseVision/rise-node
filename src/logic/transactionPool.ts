@@ -1,5 +1,6 @@
 import { inject, injectable, postConstruct } from 'inversify';
-import { Bus, constants, ILogger, JobsQueue, promiseToCB, TransactionType } from '../helpers/';
+import { Bus, constants, ILogger, TransactionType } from '../helpers/';
+import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
@@ -91,16 +92,23 @@ export class TransactionPool implements ITransactionPoolLogic {
   public queued         = new InnerTXQueue();
   public multisignature = new InnerTXQueue();
 
-  @inject(Symbols.helpers.logger)
-  private logger: ILogger;
+  // generic
+  @inject(Symbols.generic.appConfig)
+  private config: AppConfig;
+
+  // Helpers
   @inject(Symbols.helpers.bus)
   private bus: Bus;
+  @inject(Symbols.helpers.jobsQueue)
+  private jobsQueue: IJobsQueue;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+
+  // Logic
   @inject(Symbols.logic.appState)
   private appState: IAppState;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
-  @inject(Symbols.generic.appConfig)
-  private config: AppConfig;
 
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
@@ -114,12 +122,12 @@ export class TransactionPool implements ITransactionPoolLogic {
   public afterConstruction() {
     this.bundledInterval = this.config.broadcasts.broadcastInterval;
     this.bundleLimit     = this.config.broadcasts.releaseLimit;
-    JobsQueue.register(
+    this.jobsQueue.register(
       'transactionPoolNextBundle',
       () => this.processBundled(),
       this.bundledInterval
     );
-    JobsQueue.register(
+    this.jobsQueue.register(
       'transactionPoolNextExpiry',
       () => Promise.resolve(this.expireTransactions()),
       this.expiryInterval
@@ -223,9 +231,6 @@ export class TransactionPool implements ITransactionPoolLogic {
       const { tx, payload } = txP;
       if (!tx) {
         continue;
-      }
-      if (typeof(payload) === 'undefined') {
-        console.log(tx, payload);
       }
       const now     = Math.floor(Date.now() / 1000);
       const timeOut = this.txTimeout(tx);

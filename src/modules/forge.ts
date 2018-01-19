@@ -1,9 +1,10 @@
 import * as crypto from 'crypto';
 import { inject, injectable, tagged } from 'inversify';
 import {
-  catchToLoggerAndRemapError, constants as constantsType, Ed, IKeypair, ILogger, JobsQueue, Sequence,
+  catchToLoggerAndRemapError, constants as constantsType, Ed, IKeypair, ILogger, Sequence,
   Slots
 } from '../helpers';
+import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic } from '../ioc/interfaces/logic';
 import {
   IAccountsModule, IBlocksModule, IBlocksModuleProcess, IDelegatesModule, IForgeModule,
@@ -25,6 +26,8 @@ export class ForgeModule implements IForgeModule {
   // helpers
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
+  @inject(Symbols.helpers.jobsQueue)
+  private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.helpers.ed)
@@ -92,7 +95,7 @@ export class ForgeModule implements IForgeModule {
 
   public async onBlockchainReady() {
     setTimeout( () => {
-      JobsQueue.register(
+      this.jobsQueue.register(
         'delegatesNextForge',
         async () => {
           try {
@@ -197,7 +200,7 @@ export class ForgeModule implements IForgeModule {
 
   /**
    *  Gets slot time and keypair of a forging enabled account
-   *  returns null if no slots are found for any of the forging acounts.
+   *  returns null if no slots are found for any of the forging accounts.
    */
   private async getBlockSlotData(slot: number, height: number): Promise<{ time: number, keypair: IKeypair }> {
     const pkeys = await this.delegatesModule.generateDelegateList(height);
