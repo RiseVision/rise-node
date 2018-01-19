@@ -14,8 +14,41 @@ import { IModelField, IModelFilter } from './models/modelField';
 const jsonSql = jsonSqlCreator();
 
 jsonSql.setDialect('postgresql');
+
 // tslint:disable-next-line
-export type MemAccountsData = {
+export type OptionalsMemAccounts = {
+  username?: string;
+  isDelegate?: number;
+  u_isDelegate?: number;
+  secondSignature?: number;
+  u_secondSignature?: number;
+  u_username?: string;
+  address?: string;
+  publicKey?: string;
+  secondPublicKey?: string;
+  balance?: number;
+  u_balance?: number;
+  vote?: number;
+  rate?: number;
+  delegates?: string;
+  u_delegates?: string;
+  multisignatures?: string[];
+  u_multisignatures?: string[];
+  multimin?: number;
+  u_multimin?: number;
+  multilifetime?: number;
+  u_multilifetime?: number;
+  blockId?: string;
+  nameexist?: number;
+  u_nameexist?: number;
+  producedblocks?: number;
+  missedblocks?: number;
+  fees?: number;
+  rewards?: number;
+  virgin?: number;
+};
+// tslint:disable-next-line
+export type MemAccountsData = OptionalsMemAccounts & {
   username: string;
   isDelegate: number;
   u_isDelegate: number;

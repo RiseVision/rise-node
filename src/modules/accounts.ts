@@ -1,15 +1,13 @@
-import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
-import { Ed, emptyCB } from '../helpers/';
+import { emptyCB } from '../helpers/';
 import { IAccountLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { AccountFilterData, MemAccountsData } from '../logic/';
+import { OptionalsMemAccounts } from '../logic';
 
 @injectable()
 export class AccountsModule implements IAccountsModule {
-  @inject(Symbols.helpers.ed)
-  private ed: Ed;
 
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
@@ -31,42 +29,12 @@ export class AccountsModule implements IAccountsModule {
   }
 
   /**
-   * Avoid using this.
-   * @deprecated
-   */
-  public async openAccount(secret: string): Promise<MemAccountsData> {
-    const hash      = crypto.createHash('sha256').update(secret, 'utf8').digest();
-    const keypair   = this.ed.makeKeypair(hash);
-    const publicKey = keypair.publicKey.toString('hex');
-
-    const account = await this.getAccount({publicKey});
-    if (account) {
-      if (account.publicKey === null) {
-        account.publicKey = publicKey;
-      }
-      return account;
-    } else {
-      return {
-        address          : this.accountLogic.generateAddressByPublicKey(publicKey),
-        balance          : 0,
-        multisignatures  : null,
-        publicKey,
-        secondPublicKey  : null,
-        secondSignature  : 0,
-        u_balance        : 0,
-        u_multisignatures: null,
-        u_secondSignature: 0,
-      } as any;
-    }
-  }
-
-  /**
    * Sets some data to specific account
    * @param {MemAccountsData} data
    * @returns {Promise<MemAccountsData>}
    */
   // tslint:disable-next-line max-line-length
-  public async setAccountAndGet(data: ({ publicKey: string } | { address: string }) & { [k: string]: any }): Promise<MemAccountsData> {
+  public async setAccountAndGet(data: ({ publicKey: string } | { address: string }) & OptionalsMemAccounts ): Promise<MemAccountsData> {
     if (!data.address && !data.publicKey) {
       throw new Error('Missing address and public key');
     }
