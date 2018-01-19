@@ -1,7 +1,7 @@
 import { injectable } from 'inversify';
 
-import { BaseStubClass } from './BaseStubClass';
-import { stubMethod } from './stubDecorator';
+import { BaseStubClass } from '../BaseStubClass';
+import { stubMethod } from '../stubDecorator';
 
 // tslint:disable no-empty
 

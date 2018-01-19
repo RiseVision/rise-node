@@ -7,9 +7,7 @@ import { constants as constantsType } from '../../../src/helpers/';
 import { ISystemModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { SystemModule } from '../../../src/modules';
-import DbStub from '../../stubs/DbStub';
-import LoggerStub from '../../stubs/LoggerStub';
-import { IBlocksStub } from '../../stubs/modules/IBlocksStub';
+import { DbStub, IBlocksStub, LoggerStub } from '../../stubs';
 
 // tslint:disable no-unused-expression
 describe('modules/system', () => {

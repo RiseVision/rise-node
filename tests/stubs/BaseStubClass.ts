@@ -1,27 +1,39 @@
 import { injectable } from 'inversify';
 import 'reflect-metadata';
 import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
+import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 
 export const stubMetadataSymbol = Symbol('stubs');
+export const spyMetadataSymbol = Symbol('spies');
 
 @injectable()
 export class BaseStubClass {
   public stubs: { [method: string]: SinonStub };
+  public spies: { [method: string]: SinonSpy };
   public sandbox: SinonSandbox = sinon.sandbox.create();
 
   private nextResponses: { [method: string]: any[] } = {};
   private methods: string[];
+  private spyMethods: string[];
 
   constructor() {
     this.methods = Reflect.getMetadata(stubMetadataSymbol, this);
+    this.spyMethods = Reflect.getMetadata(spyMetadataSymbol, this);
     if (!Array.isArray(this.methods) || this.methods.length === 0) {
       throw new Error('no methods defined in stubclass');
     }
+    if (!Array.isArray(this.spyMethods)) {
+      this.spyMethods = [];
+    }
     this.stubs   = this.stubs || {};
+    this.spies   = this.spies || {};
     this.sandbox = sinon.sandbox.create();
     for (const method of this.methods) {
       this.stubs[method] = this.sandbox.stub(this, method as any);
+    }
+
+    for (const method of this.spyMethods) {
+      this.spies[method] = this.sandbox.spy(this, method as any);
     }
 
     this.reset();

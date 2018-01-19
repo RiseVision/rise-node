@@ -5,7 +5,7 @@ import * as sinon from 'sinon';
 import { IBlocksModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { BlocksModule } from '../../../src/modules';
-import LoggerStub from '../../stubs/LoggerStub';
+import { LoggerStub } from '../../stubs';
 
 // tslint:disable no-unused-expression
 describe('modules/blocks', () => {

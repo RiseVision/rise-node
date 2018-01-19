@@ -6,7 +6,7 @@ import { SignedAndChainedBlockType } from '../../../src/logic';
 import { BlocksModule } from '../../../src/modules';
 
 @injectable()
-export class IBlocksStub implements IBlocksModule {
+export default class IBlocksStub implements IBlocksModule {
   public lastReceipt: { get: () => number; isStale: () => boolean; update: (time?: number) => void };
   public lastBlock: SignedAndChainedBlockType;
   public isActive: boolean;
