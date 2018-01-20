@@ -14,5 +14,8 @@ export default class DbStub extends BaseStubClass /*implements IDatabase<any>*/ 
   @stubMethod()
   public none() {}
 
+  @stubMethod()
+  public one() {}
+
   // TODO Add more methods when needed
 }

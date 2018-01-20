@@ -1,11 +1,16 @@
 import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
 import * as rewire from 'rewire';
 import * as sinon from 'sinon';
+import { SinonSandbox } from 'sinon';
 import { BigNum, IKeypair, TransactionType } from '../../../src/helpers';
 import { TransactionLogic } from '../../../src/logic';
 import { IBaseTransaction, SendTransaction } from '../../../src/logic/transactions';
-import { AccountLogicStub, DbStub, EdStub, LoggerStub, RoundsLogicStub, SlotsStub, ZSchemaStub } from '../../stubs';
+import { AccountLogicStub, DbStub, EdStub, ExceptionsManagerStub, LoggerStub,
+         RoundsLogicStub, SlotsStub, ZSchemaStub } from '../../stubs';
 import ByteBufferStub from '../../stubs/utils/ByteBufferStub';
+
+chai.use(chaiAsPromised);
 
 // tslint:disable-next-line no-var-requires
 const genesisBlock      = require('../../../etc/mainnet/genesisBlock.json');
@@ -23,7 +28,10 @@ describe('logic/transaction', () => {
   let accountLogicStub: AccountLogicStub;
   let roundsLogicStub: RoundsLogicStub;
   let loggerStub: LoggerStub;
+  let excManagerStub: ExceptionsManagerStub;
   let sendTransaction: SendTransaction;
+  let sandbox: SinonSandbox;
+  let sender: any;
 
   let tx: IBaseTransaction<any>;
   const sampleBuffer = Buffer.from('35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892', 'hex');
@@ -44,6 +52,8 @@ describe('logic/transaction', () => {
     accountLogicStub = new AccountLogicStub();
     roundsLogicStub  = new RoundsLogicStub();
     loggerStub       = new LoggerStub();
+    loggerStub       = new LoggerStub();
+    excManagerStub   = new ExceptionsManagerStub();
     sendTransaction  = new SendTransaction();
 
     instance = new RewireTransaction.TransactionLogic();
@@ -58,6 +68,7 @@ describe('logic/transaction', () => {
     (instance as any).accountLogic = accountLogicStub;
     (instance as any).roundsLogic  = roundsLogicStub;
     (instance as any).logger       = loggerStub;
+    (instance as any).excManager   = excManagerStub;
 
     tx = {
       type           : TransactionType.SEND,
@@ -73,7 +84,17 @@ describe('logic/transaction', () => {
       asset          : {},
     };
 
+    sender = {
+      balance: 10000000,
+      address: '1233456789012345R',
+    };
+
     edStub.stubs.sign.returns(sampleBuffer);
+    sandbox = sinon.sandbox.create();
+  });
+
+  afterEach(() => {
+    sandbox.reset();
   });
 
   describe('attachAssetType', () => {
@@ -93,22 +114,20 @@ describe('logic/transaction', () => {
 
   describe('sign', () => {
     it('should call getHash', () => {
-      const getHashSpy = sinon.spy(instance, 'getHash');
+      const getHashSpy = sandbox.spy(instance, 'getHash');
       instance.sign(keyPair, tx);
       expect(getHashSpy.calledOnce).to.be.true;
       expect(getHashSpy.firstCall.args.length).to.be.equal(1);
       expect(getHashSpy.firstCall.args[0]).to.be.deep.equal(tx);
-      getHashSpy.restore();
     });
 
     it('should call ed.sign', () => {
-      const getHashSpy = sinon.spy(instance, 'getHash');
+      const getHashSpy = sandbox.spy(instance, 'getHash');
       instance.sign(keyPair, tx);
       expect(edStub.stubs.sign.calledOnce).to.be.true;
       expect(edStub.stubs.sign.firstCall.args.length).to.be.equal(2);
       expect(edStub.stubs.sign.firstCall.args[0]).to.be.deep.equal(getHashSpy.firstCall.returnValue);
       expect(edStub.stubs.sign.firstCall.args[1]).to.be.deep.equal(keyPair);
-      getHashSpy.restore();
     });
 
     it('should return a hex string', () => {
@@ -119,24 +138,22 @@ describe('logic/transaction', () => {
 
   describe('multiSign', () => {
     it('should call getHash', () => {
-      const getHashSpy = sinon.spy(instance, 'getHash');
+      const getHashSpy = sandbox.spy(instance, 'getHash');
       instance.multiSign(keyPair, tx);
       expect(getHashSpy.calledOnce).to.be.true;
       expect(getHashSpy.firstCall.args.length).to.be.equal(3);
       expect(getHashSpy.firstCall.args[0]).to.be.deep.equal(tx);
       expect(getHashSpy.firstCall.args[1]).to.be.true;
       expect(getHashSpy.firstCall.args[2]).to.be.true;
-      getHashSpy.restore();
     });
 
     it('should call ed.sign', () => {
-      const getHashSpy = sinon.spy(instance, 'getHash');
+      const getHashSpy = sandbox.spy(instance, 'getHash');
       instance.multiSign(keyPair, tx);
       expect(edStub.stubs.sign.calledOnce).to.be.true;
       expect(edStub.stubs.sign.firstCall.args.length).to.be.equal(2);
       expect(edStub.stubs.sign.firstCall.args[0]).to.be.deep.equal(getHashSpy.firstCall.returnValue);
       expect(edStub.stubs.sign.firstCall.args[1]).to.be.deep.equal(keyPair);
-      getHashSpy.restore();
     });
 
     it('should return a hex string', () => {
@@ -147,19 +164,17 @@ describe('logic/transaction', () => {
 
   describe('getId', () => {
     it('should call getHash', () => {
-      const getHashSpy = sinon.spy(instance, 'getHash');
+      const getHashSpy = sandbox.spy(instance, 'getHash');
       instance.getId(tx);
       expect(getHashSpy.calledOnce).to.be.true;
       expect(getHashSpy.firstCall.args[0]).to.be.deep.equal(tx);
-      getHashSpy.restore();
     });
 
     it('should call BigNum.fromBuffer', () => {
       const RewBigNum        = RewireTransaction.__get__('_1').BigNum;
-      const fromBufferSpy = sinon.spy(RewBigNum, 'fromBuffer');
+      const fromBufferSpy = sandbox.spy(RewBigNum, 'fromBuffer');
       instance.getId(tx);
       expect(fromBufferSpy.calledOnce).to.be.true;
-      fromBufferSpy.restore();
     });
 
     it('should return a string', () => {
@@ -172,23 +187,22 @@ describe('logic/transaction', () => {
   describe('getHash', () => {
     it('should call crypto.createHash', () => {
       const crypto        = RewireTransaction.__get__('crypto');
-      const createHashSpy = sinon.spy(crypto, 'createHash');
+      const createHashSpy = sandbox.spy(crypto, 'createHash');
       instance.getHash(tx);
       expect(createHashSpy.calledOnce).to.be.true;
       expect(createHashSpy.firstCall.args.length).to.be.equal(1);
       expect(createHashSpy.firstCall.args[0]).to.be.equal('sha256');
-      createHashSpy.restore();
     });
 
     it('should call this.getBytes', () => {
-      const getBytesSpy = sinon.spy(instance, 'getBytes');
+      const getBytesSpy = sandbox.spy(instance, 'getBytes');
       instance.getHash(tx, true, false);
       expect(getBytesSpy.calledOnce).to.be.true;
       expect(getBytesSpy.firstCall.args[0]).to.be.deep.equal(tx);
       expect(getBytesSpy.firstCall.args[1]).to.be.deep.equal(true);
       expect(getBytesSpy.firstCall.args[2]).to.be.deep.equal(false);
-      getBytesSpy.restore();
     });
+
     it('should return a Buffer', () => {
       const retVal = instance.getHash(tx);
       expect(retVal).to.be.instanceOf(Buffer);
@@ -224,13 +238,12 @@ describe('logic/transaction', () => {
     });
 
     it('should call getBytes from the right txType', () => {
-      const getBytesSpy = sinon.spy(sendTransaction, 'getBytes');
+      const getBytesSpy = sandbox.spy(sendTransaction, 'getBytes');
       instance.getBytes(tx, true, false);
       expect(getBytesSpy.calledOnce).to.be.true;
       expect(getBytesSpy.firstCall.args[0]).to.be.deep.equal(tx);
       expect(getBytesSpy.firstCall.args[1]).to.be.deep.equal(true);
       expect(getBytesSpy.firstCall.args[2]).to.be.deep.equal(false);
-      getBytesSpy.restore();
     });
 
     it('should create a ByteBuffer of the right length', () => {
@@ -349,46 +362,143 @@ describe('logic/transaction', () => {
     });
 
     it('should return a Buffer', () => {
+      byteBufferStub.stubs.toBuffer.returns(sampleBuffer);
       const retVal = instance.getBytes(tx, true, true);
       expect(retVal).to.be.instanceOf(Buffer);
     });
   });
 
   describe('ready', () => {
-    it('should call assertKnownTransactionType');
-    it('should return false if !sender');
-    it('should call txType.ready and return');
+    it('should call assertKnownTransactionType', () => {
+      const akttStub = sandbox.stub(instance, 'assertKnownTransactionType');
+      instance.ready(tx, {} as any);
+      expect(akttStub.calledOnce).to.be.true;
+    });
+    it('should return false if !sender', () => {
+      const retVal = instance.ready(tx, undefined);
+      expect(retVal).to.be.false;
+    });
+    it('should call txType.ready and return', () => {
+      const txTypeReadyStub = sandbox.stub(sendTransaction, 'ready').returns('OK');
+      const retVal = instance.ready(tx, {} as any);
+      expect(txTypeReadyStub.calledOnce).to.be.true;
+      expect(retVal).to.be.eq('OK');
+    });
   });
 
   describe('assertKnownTransactionType', () => {
-    it('should throw if invalid txtype');
-    it('should not throw if OK');
+    it('should throw if invalid txtype', () => {
+      tx.type = 999999;
+      expect(() => {
+        instance.assertKnownTransactionType(tx);
+      }).to.throw(/Unknown transaction type/);
+    });
+
+    it('should not throw if OK', () => {
+      expect(() => {
+        instance.assertKnownTransactionType(tx);
+      }).not.to.throw();
+    });
   });
 
   describe('countById', () => {
-    it('should call db.one');
-    it('should throw and log if db.one throws');
-    it('should return the count');
+    it('should call db.one', async () => {
+      dbStub.stubs.one.returns({});
+      await instance.countById(tx);
+      expect(dbStub.stubs.one.calledOnce).to.be.true;
+      expect(dbStub.stubs.one.firstCall.args[1]).to.be.deep.equal({id: tx.id});
+    });
+
+    it('should throw and log if db.one throws', async () => {
+      const e = new Error('dbStub.one Error');
+      dbStub.stubs.one.throws(e);
+      await expect(instance.countById(tx)).to.be.rejectedWith('Transaction#countById error');
+      expect(loggerStub.stubs.error.calledOnce).to.be.true;
+      expect(loggerStub.stubs.error.firstCall.args[0]).to.be.deep.equal(e.stack);
+    });
+
+    it('should return the count', async () => {
+      dbStub.stubs.one.returns({ count: 100 });
+      const count = await instance.countById(tx);
+      expect(count).to.be.equal(100);
+    });
   });
 
   describe('assertNonConfirmed', () => {
-    it('should call countById');
-    it('should throw if count > 0');
+    it('should call countById', async () => {
+      const countByIdStub = sandbox.stub(instance, 'countById').returns(0);
+      await instance.assertNonConfirmed(tx);
+      expect(countByIdStub.calledOnce).to.be.true;
+    });
+
+    it('should throw if count > 0', async () => {
+      sandbox.stub(instance, 'countById').returns(100);
+      await expect(instance.assertNonConfirmed(tx)).to.be.rejectedWith(/Transaction is already confirmed/);
+    });
   });
 
   describe('checkBalance', () => {
-    it('should call countById');
-    it('should return error:null if OK');
-    it('should return error if balance exceeded');
-    it('should allow to exceed balance only for genesisBlock');
+    it('should return error:null if OK', () => {
+      const retVal = instance.checkBalance(1000, 'balance', tx, sender as any);
+      expect(retVal.error).to.be.eq(null);
+    });
+
+    it('should return error if balance exceeded', () => {
+      // Pass an amount greater than sender balance.
+      const retVal = instance.checkBalance(sender.balance + 1, 'balance', tx, sender as any);
+      expect(retVal.error).to.match(/Account does not have enough currency/);
+    });
+    it('should allow to exceed balance only for genesisBlock', () => {
+      // tslint:disable-next-line
+      tx['blockId'] = genesisBlock.id;
+      // Pass an amount greater than sender balance.
+      const retVal = instance.checkBalance(sender.balance + 1, 'balance', tx, sender as any);
+      expect(retVal.error).to.be.equal(null);
+    });
   });
 
   describe('process', () => {
-    it('should call assertKnownTransactionType');
-    it('should throw if Missing sender');
-    it('should throw if Invalid transaction id');
-    it('should call getId');
-    it('should call process on the right txType');
+    let txTypeProcessStub;
+
+    beforeEach(() => {
+      txTypeProcessStub = sandbox.stub(sendTransaction, 'process').resolves();
+    });
+
+    it('should call assertKnownTransactionType', async () => {
+      const akttStub = sandbox.stub(instance, 'assertKnownTransactionType');
+      await instance.process(tx, sender, {} as any);
+      expect(akttStub.calledOnce).to.be.true;
+      expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx);
+    });
+    it('should throw if Missing sender', async () => {
+      await expect(instance.process(tx, undefined, {} as any)).to.be.rejectedWith('Missing sender');
+    });
+
+    it('should throw if Invalid transaction id', async () => {
+      sandbox.stub(instance, 'getId').returns('unlikelyId');
+      await expect(instance.process(tx, sender, {} as any)).to.be.rejectedWith('Invalid transaction id');
+    });
+
+    it('should call getId', async () => {
+      const getIdSpy = sandbox.spy(instance, 'getId');
+      await instance.process(tx, sender, {} as any);
+      expect(getIdSpy.calledOnce).to.be.true;
+      expect(getIdSpy.firstCall.args[0]).to.be.deep.eq(tx);
+    });
+
+    it('should call process on the right txType', async () => {
+      await instance.process(tx, sender, {} as any);
+      expect(txTypeProcessStub.calledOnce).to.be.true;
+      expect(txTypeProcessStub.firstCall.args[0]).to.be.deep.equal(tx);
+      expect(txTypeProcessStub.firstCall.args[1]).to.be.deep.equal(sender);
+    });
+
+    it('should return the tx with senderId added', async () => {
+      const retVal = await instance.process(tx, sender, {} as any);
+      const expectedRetVal = Object.assign({}, tx);
+      expectedRetVal.senderId = sender.address;
+      expect(retVal).to.be.deep.equal(expectedRetVal);
+    });
   });
 
   describe('verify', () => {

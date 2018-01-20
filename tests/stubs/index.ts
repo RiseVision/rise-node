@@ -2,6 +2,7 @@
 import { BusStub } from './helpers/BusStub';
 import DbStub from './helpers/DbStub';
 import EdStub from './helpers/EdStub';
+import { ExceptionsManagerStub } from './helpers/ExceptionsManagerStub';
 import LoggerStub from './helpers/LoggerStub';
 import SlotsStub from './helpers/SlotsStub';
 import ZSchemaStub from './helpers/ZSchemaStub';
@@ -33,6 +34,7 @@ export {
   BusStub,
   DbStub,
   EdStub,
+  ExceptionsManagerStub,
   IBlocksStub,
   ISystemStub,
   LoggerStub,
