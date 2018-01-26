@@ -3,9 +3,11 @@ import { BusStub } from './helpers/BusStub';
 import DbStub from './helpers/DbStub';
 import EdStub from './helpers/EdStub';
 import { ExceptionsManagerStub } from './helpers/ExceptionsManagerStub';
+import JobsQueueStub from './helpers/jobsQueueStub';
 import LoggerStub from './helpers/LoggerStub';
 import SlotsStub from './helpers/SlotsStub';
 import ZSchemaStub from './helpers/ZSchemaStub';
+import AccountsModuleStub from './modules/AccountsModuleStub';
 
 // Logic
 import AccountLogicStub from './logic/AccountLogicStub';
@@ -29,6 +31,7 @@ import ByteBufferStub from './utils/ByteBufferStub';
 
 export {
   AccountLogicStub,
+  AccountsModuleStub,
   ByteBufferStub,
   BlockRewardLogicStub,
   BusStub,
@@ -37,6 +40,7 @@ export {
   ExceptionsManagerStub,
   IBlocksStub,
   ISystemStub,
+  JobsQueueStub,
   LoggerStub,
   PeerLogicStub,
   PeersLogicStub,

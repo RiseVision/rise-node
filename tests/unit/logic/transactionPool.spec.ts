@@ -3,7 +3,9 @@ import * as chai from 'chai';
 const assertArrays = require('chai-arrays');
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
-import { InnerTXQueue, TransactionLogic } from '../../../src/logic';
+import { InnerTXQueue, TransactionPool} from '../../../src/logic';
+
+import { AccountsModuleStub, JobsQueueStub, LoggerStub, TransactionLogicStub } from '../../stubs';
 
 chai.use(assertArrays);
 const expect = chai.expect;
@@ -203,10 +205,66 @@ describe('logic/transactionPool - InnerTXQueue', () => {
 });
 
 describe('logic/transactionPool - TransactionPool', () => {
+  let sandbox: SinonSandbox;
+  let instance: TransactionPool;
+  let fakeBus: {message: SinonStub};
+  let fakeAppState: {get: SinonStub};
+  let jqStub: JobsQueueStub;
+  let loggerStub: LoggerStub;
+  let transactionLogicStub: TransactionLogicStub;
+  let accountsModuleStub = new AccountsModuleStub();
+
+  beforeEach(() => {
+    sandbox = sinon.sandbox.create();
+    instance = new TransactionPool();
+    fakeBus = {message: sandbox.stub()};
+    fakeAppState = {get: sandbox.stub()};
+    jqStub = new JobsQueueStub();
+    loggerStub = new LoggerStub();
+    transactionLogicStub = new TransactionLogicStub();
+    accountsModuleStub = new AccountsModuleStub();
+
+    // dependencies
+    (instance as any).bus = fakeBus;
+    (instance as any).jobsQueue = jqStub;
+    (instance as any).logger = loggerStub;
+    (instance as any).appState = fakeAppState;
+    (instance as any).transactionLogic = transactionLogicStub;
+    (instance as any).accountsModule = accountsModuleStub;
+    (instance as any).config = {
+      broadcasts: {
+        broadcastInterval: 1500,
+        bundleLimig: 100,
+      },
+      transactions: {
+        maxTxsPerQueue: 100,
+      },
+    };
+    instance.afterConstruction();
+    // we preserve behavior of the inner queues
+    const spiedQueues = {};
+    ['unconfirmed', 'bundled', 'queued', 'multisignature'].forEach((queueName) => {
+      if (typeof spiedQueues[queueName] === 'undefined') {
+        spiedQueues[queueName] = {};
+      }
+      ['has', 'remove', 'add', 'get', 'reindex', 'list', 'listWithPayload'].forEach((method: string) => {
+        spiedQueues[queueName][method] = sandbox.spy(instance[queueName], method);
+      });
+    });
+  });
+
+  afterEach(() => {
+    sandbox.restore();
+  });
+
   describe('afterConstruction', () => {
-    it('should call jobsQueue.register for NextBundle and NextExpiry');
-    it('should call processBundled() at defined interval');
-    it('should call expireTransactions() at defined interval');
+    it('should call jobsQueue.register for NextBundle and NextExpiry', () => {
+      // afterConstruction has been already called here
+      expect(jqStub.stubs.register.called).to.be.true;
+      expect(jqStub.stubs.register.callCount).to.be.equal(2);
+      expect(jqStub.stubs.register.firstCall.args[0]).to.be.equal('transactionPoolNextBundle');
+      expect(jqStub.stubs.register.secondCall.args[0]).to.be.equal('transactionPoolNextExpiry');
+    });
   });
 
   describe('queueTransaction', () => {
@@ -243,37 +301,71 @@ describe('logic/transactionPool - TransactionPool', () => {
     it('should call txTimeout() for each transaction');
     it('should call removeUnconfirmedTransaction when a tx is expired');
     it('should call logger.info when an expired tx is removed');
+    it('should return an array of IDs');
   });
 
   describe('processBundled', () => {
-    it('');
+    it('should call list with reverse and limit on bundled queue');
+    it('should call remove on bundled for each tx');
+    it('should call processVerifyTransaction for each valid tx');
+    it('should call queueTransaction for each valid tx if processVerifyTransaction did not throw');
+    it('should not call queueTransaction for each valid tx if processVerifyTransaction throws');
+    it('should call logger.debug if queueTransaction fails');
+    it('should call logger.debug if processVerifyTransaction throws');
+    it('should call removeUnconfirmedTransaction if processVerifyTransaction fails');
   });
 
   describe('receiveTransactions', () => {
-    it('');
+    it('should return a promise');
+    it('should call processNewTransaction for each of the passed txs');
   });
 
   describe('processNewTransaction', () => {
-    it('');
+    it('should return a promise');
+    it('should call transactionInPool');
+    it('should reject if transaction is in pool');
+    it('should call reindexAllQueues if more than 1000 txs were processed');
+    it('should call queueTransaction if bundled is true');
+    it('should call processVerifyTransaction');
+    it('should call queueTransaction');
+    it('should not call queueTransaction if processVerifyTransaction throwed');
   });
 
   describe('applyUnconfirmedList', () => {
-    it('');
+    it('should call get on unconfirmed queue');
+    it('should call processVerifyTransaction for each valid tx');
+    it('should call applyUnconfirmed on txModule for each valid tx if processVerifyTransaction did not throw');
+    it('should not call applyUnconfirmed on txModule for each valid tx if processVerifyTransaction throws');
+    it('should call logger.error if applyUnconfirmed fails');
+    it('should call logger.error if processVerifyTransaction throws');
+    it('should call removeUnconfirmedTransaction if processVerifyTransaction fails');
+    it('should call removeUnconfirmedTransaction if applyUnconfirmed fails');
+
   });
 
   describe('undoUnconfirmedList', () => {
-    it('');
+    it('should return an array of ids');
+    it('should call list on unconfirmed queue');
+    it('should call undoUnconfirmed on txModule for each tx');
+    it('should call logger.error if undoUnconfirmed throws');
+    it('should call removeUnconfirmedTransaction if undoUnconfirmed throws');
   });
 
   describe('reindexAllQueues', () => {
-    it('');
-  });
-
-  describe('allQueues', () => {
-    it('');
+    it('should call reindex on all queues');
   });
 
   describe('removeUnconfirmedTransaction', () => {
-    it('');
+    it('should call remove on unconfirmed, queued and multisignature');
+  });
+
+  describe('processVerifyTransaction', () => {
+    it('should throw if !transaction');
+    it('should call accountsModule.setAccountAndGet');
+    it('should call accountsModule.getAccount');
+    it('should call transactionLogic.process');
+    it('should call transactionLogic.objectNormalize');
+    it('should call transactionLogic.verify');
+    it('should call bus.message');
   });
 });
