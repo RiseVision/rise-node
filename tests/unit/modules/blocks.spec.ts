@@ -80,9 +80,24 @@ describe('modules/blocks', () => {
     });
 
     describe('.isStale', () => {
-      it('should return boolean');
-      it('should return true if never updated');
-      it('should return true if updated was call more than 10secs ago (see before)');
+      it('should return boolean', () => {
+        expect(inst.lastReceipt.isStale()).to.be.a('boolean');
+      });
+      it('should return true if never updated', () => {
+        expect(inst.lastReceipt.isStale()).is.true;
+      });
+      it('should return true if updated was call more than 10secs ago (see before)', () => {
+        const t = sinon.useFakeTimers();
+        inst.lastReceipt.update();
+        t.tick(10000);
+        expect(inst.lastReceipt.isStale()).is.true;
+        t.restore();
+      });
+
+      it('should return false if just updated', () => {
+        inst.lastReceipt.update();
+        expect(inst.lastReceipt.isStale()).is.false;
+      });
     });
 
     describe('.update', () => {
