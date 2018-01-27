@@ -95,7 +95,6 @@ describe('logic/peer', () => {
         state    : PeerState.CONNECTED,
         os       : 'ubuntu',
         version  : '1.0',
-        dappid   : '',
         broadhash: '',
         height   : 9999,
         clock    : 1,
