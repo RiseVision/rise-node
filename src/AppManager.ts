@@ -44,12 +44,12 @@ import { AppConfig } from './types/genericTypes';
 
 export class AppManager {
   public container: Container = new Container();
+  public expressApp: express.Express;
 
   private nonce: string    = uuid.v4();
   private schema: z_schema = new z_schema({});
   private isCleaning       = false;
   private server: http.Server;
-  private expressApp: express.Express;
 
   constructor(private appConfig: AppConfig,
               private logger: ILogger,
@@ -92,12 +92,15 @@ export class AppManager {
     } catch (err) {
       this.logger.error(err);
     }
+
+    this.server.close();
+
   }
 
   /**
    * Initialize http endpoints.
    */
-  private async initExpress() {
+  public async initExpress() {
     const app = this.container.get<express.Application>(Symbols.generic.expressApp);
     applyExpressLimits(app, this.appConfig);
 
@@ -152,7 +155,7 @@ export class AppManager {
   /**
    * Initialize all app dependencies into the IoC container.
    */
-  private async initAppElements() {
+  public async initAppElements() {
     this.expressApp = express();
 
     this.server    = http.createServer(this.expressApp);
@@ -261,7 +264,7 @@ export class AppManager {
       .forEach((exc) => exc(exceptionsManager));
   }
 
-  private async finishBoot() {
+  public async finishBoot() {
     const bus   = this.container.get<Bus>(Symbols.helpers.bus);
     bus.modules = this.getModules();
 
