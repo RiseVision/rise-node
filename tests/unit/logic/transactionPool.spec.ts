@@ -3,8 +3,9 @@ import * as chai from 'chai';
 const assertArrays = require('chai-arrays');
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
+import { TransactionType } from '../../../src/helpers';
 import { InnerTXQueue, TransactionPool} from '../../../src/logic';
-
+import { IBaseTransaction } from '../../../src/logic/transactions';
 import { AccountsModuleStub, JobsQueueStub, LoggerStub, TransactionLogicStub } from '../../stubs';
 
 chai.use(assertArrays);
@@ -212,7 +213,16 @@ describe('logic/transactionPool - TransactionPool', () => {
   let jqStub: JobsQueueStub;
   let loggerStub: LoggerStub;
   let transactionLogicStub: TransactionLogicStub;
-  let accountsModuleStub = new AccountsModuleStub();
+  let accountsModuleStub: AccountsModuleStub;
+  let tx: IBaseTransaction<any>;
+  let tx2: IBaseTransaction<any>;
+  let tx3: IBaseTransaction<any>;
+  let spiedQueues: {
+    'unconfirmed': { [k in keyof InnerTXQueue]?: SinonSpy },
+    'bundled': { [k in keyof InnerTXQueue]?: SinonSpy },
+    'queued': { [k in keyof InnerTXQueue]?: SinonSpy },
+    'multisignature': { [k in keyof InnerTXQueue]?: SinonSpy }
+  };
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
@@ -237,12 +247,17 @@ describe('logic/transactionPool - TransactionPool', () => {
         bundleLimig: 100,
       },
       transactions: {
-        maxTxsPerQueue: 100,
+        maxTxsPerQueue: 2,
       },
     };
     instance.afterConstruction();
-    // we preserve behavior of the inner queues
-    const spiedQueues = {};
+    spiedQueues = {
+      unconfirmed: {},
+      bundled: {},
+      queued: {},
+      multisignature: {},
+    };
+    // we preserve behavior of the inner queues but we spy on all methods.
     ['unconfirmed', 'bundled', 'queued', 'multisignature'].forEach((queueName) => {
       if (typeof spiedQueues[queueName] === 'undefined') {
         spiedQueues[queueName] = {};
@@ -251,6 +266,27 @@ describe('logic/transactionPool - TransactionPool', () => {
         spiedQueues[queueName][method] = sandbox.spy(instance[queueName], method);
       });
     });
+
+    tx = {
+      type           : TransactionType.SEND,
+      amount         : 108910891000000,
+      fee            : 10,
+      timestamp      : 0,
+      recipientId    : '15256762582730568272R',
+      senderId       : '1233456789012345R',
+      senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
+      signature      : 'f8fbf9b8433bf1bbea971dc8b14c6772d33c7dd285d84c5e6c984b10c4141e9f' +
+                       'a56ace902b910e05e98b55898d982b3d5b9bf8bd897083a7d1ca1d5028703e03',
+      id             : '8139741256612355994',
+      asset          : {},
+    };
+
+    // Clone the tx to separate objects with different IDs
+    tx2 = Object.assign({}, tx);
+    tx2.id = 'tx2';
+
+    tx3 = Object.assign({}, tx);
+    tx3.id = 'tx3';
   });
 
   afterEach(() => {
@@ -268,18 +304,100 @@ describe('logic/transactionPool - TransactionPool', () => {
   });
 
   describe('queueTransaction', () => {
-    it('should add the tx to bundled queue if this.bundled');
-    it('should add the tx to multisignature queue if que is MULTI or if it has signatures');
-    it('should else add the tx to queued queue');
-    it('should throw if pool is full');
+    it('should add the tx to bundled queue if bundled is true', () => {
+      instance.queueTransaction(tx, true);
+      expect(spiedQueues.bundled.add.calledOnce).to.be.true;
+      expect(spiedQueues.multisignature.add.calledOnce).to.be.false;
+      expect(spiedQueues.queued.add.calledOnce).to.be.false;
+      expect(spiedQueues.bundled.add.firstCall.args[0]).to.be.deep.equal(tx);
+      expect(spiedQueues.bundled.add.firstCall.args[1].receivedAt).to.be.instanceof(Date);
+    });
+
+    it('should add the tx to multisignature queue if tx.type is MULTI', () => {
+      tx.type = TransactionType.MULTI;
+      instance.queueTransaction(tx, false);
+      expect(spiedQueues.multisignature.add.calledOnce).to.be.true;
+      expect(spiedQueues.bundled.add.calledOnce).to.be.false;
+      expect(spiedQueues.queued.add.calledOnce).to.be.false;
+      expect(spiedQueues.multisignature.add.firstCall.args[0]).to.be.deep.equal(tx);
+      expect(spiedQueues.multisignature.add.firstCall.args[1].receivedAt).to.be.instanceof(Date);
+    });
+
+    it('should add the tx to multisignature queue tx has signatures', () => {
+      tx.signatures = ['a', 'b'];
+      instance.queueTransaction(tx, false);
+      expect(spiedQueues.multisignature.add.calledOnce).to.be.true;
+      expect(spiedQueues.bundled.add.calledOnce).to.be.false;
+      expect(spiedQueues.queued.add.calledOnce).to.be.false;
+      expect(spiedQueues.multisignature.add.firstCall.args[0]).to.be.deep.equal(tx);
+      expect(spiedQueues.multisignature.add.firstCall.args[1].receivedAt).to.be.instanceof(Date);
+    });
+
+    it('should else add the tx to queued queue', () => {
+      instance.queueTransaction(tx, false);
+      expect(spiedQueues.queued.add.calledOnce).to.be.true;
+      expect(spiedQueues.bundled.add.calledOnce).to.be.false;
+      expect(spiedQueues.multisignature.add.calledOnce).to.be.false;
+      expect(spiedQueues.queued.add.firstCall.args[0]).to.be.deep.equal(tx);
+      expect(spiedQueues.queued.add.firstCall.args[1].receivedAt).to.be.instanceof(Date);
+    });
+
+    it('should throw if pool is full', () => {
+      instance.queueTransaction(tx, false);
+      spiedQueues.queued.add.reset();
+      instance.queueTransaction(tx2, false);
+      spiedQueues.queued.add.reset();
+      expect(() => {
+        instance.queueTransaction(tx3, false);
+      }).to.throw('Transaction pool is full');
+      expect(spiedQueues.bundled.add.called).to.be.false;
+      expect(spiedQueues.multisignature.add.called).to.be.false;
+      expect(spiedQueues.queued.add.called).to.be.false;
+    });
   });
 
   describe('fillPool', () => {
-    it('should resolve with empty array if appState.loader.isSyncing');
-    it('should call logger.debug');
-    it('should resolve with empty array if no spare space');
-    it('should call listWithPayload on multisignature queue');
-    it('should call listWithPayload on queued queue');
+    it('should resolve with empty array if appState.loader.isSyncing', async () => {
+      fakeAppState.get.returns(true);
+      const retVal = await instance.fillPool();
+      expect(retVal).to.be.equalTo([]);
+      // Make sure it returned immediately
+      expect(loggerStub.stubs.debug.called).to.be.false;
+    });
+
+    it('should call logger.debug', async () => {
+      await instance.fillPool();
+      expect(loggerStub.stubs.debug.called).to.be.true;
+      expect(loggerStub.stubs.debug.args[0]).to.match(/Transaction pool size/);
+    });
+
+    it('should resolve with empty array if no spare space', async () => {
+      (instance.unconfirmed as any).index = {};
+      const bigIndex = {};
+      for (let i = 0; i < 100; i++) {
+        bigIndex['tx' + i] = i;
+      }
+      const retVal = await instance.fillPool();
+      expect(retVal).to.be.equalTo([]);
+      // In this case logger.debug is called
+      expect(loggerStub.stubs.debug.called).to.be.true;
+      expect(loggerStub.stubs.debug.args[0]).to.match(/Transaction pool size/);
+    });
+
+    it('should call listWithPayload on multisignature queue', async () => {
+      await instance.fillPool();
+      expect(spiedQueues.multisignature.listWithPayload.called).to.be.true;
+      expect(spiedQueues.multisignature.listWithPayload.firstCall.args[0]).to.be.true;
+      expect(spiedQueues.multisignature.listWithPayload.firstCall.args[1]).to.be.equal(5);
+      expect(spiedQueues.multisignature.listWithPayload.firstCall.args[2]).to.be.instanceof(Function);
+    });
+
+    it('should call listWithPayload on queued queue', async () => {
+      await instance.fillPool();
+      expect(spiedQueues.queued.listWithPayload.called).to.be.true;
+      expect(spiedQueues.queued.listWithPayload.firstCall.args[0]).to.be.true;
+    });
+
     it('should call remove on multisignature queue for each multisig or queued tx');
     it('should call remove on queued queue for each multisig or queued tx');
     it('should call add on unconfirmed queue for each multisig or queued tx');
