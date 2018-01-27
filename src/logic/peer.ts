@@ -33,7 +33,7 @@ export interface PeerType extends BasePeerType {
   state: PeerState;
   os: string;
   version: string;
-  dappid: string | string[];
+  // dappid: string | string[];
   broadhash: string;
   height: number;
   clock: number;

@@ -4,7 +4,7 @@ import * as _ from 'lodash';
 import * as pgpCreator from 'pg-promise';
 import { IDatabase } from 'pg-promise';
 import * as shuffle from 'shuffle-array';
-import { Bus, constants, ILogger } from '../helpers/';
+import { Bus, constants as constantsType, ILogger } from '../helpers/';
 import { IPeerLogic, IPeersLogic } from '../ioc/interfaces/logic/';
 import { IPeersModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
@@ -15,7 +15,7 @@ import { AppConfig } from '../types/genericTypes';
 const pgp = pgpCreator();
 
 // tslint:disable-next-line
-export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip?: string, port?: number, state?: PeerState };
+export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip?: string, port?: number, broadhash?: string, state?: PeerState };
 
 @injectable()
 export class PeersModule implements IPeersModule {
@@ -27,6 +27,8 @@ export class PeersModule implements IPeersModule {
   private db: IDatabase<any>;
 
   // Helpers
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
   @inject(Symbols.helpers.bus)
   private bus: Bus;
   @inject(Symbols.helpers.logger)
@@ -90,12 +92,8 @@ export class PeersModule implements IPeersModule {
         for (let i = 0; i < filterKeys.length && passed; i++) {
           const key   = filterKeys[i];
           const value = filter[key];
-          if (key === 'dappid' && (peer[key] === null || (Array.isArray(peer[key]) &&
-              !_.includes(peer[key], String(value))))) {
-            passed = false;
-          }
           // Every filter field need to be in allowed fields, exists and match value
-          if (_.includes(allowedFields, key) && !(peer[key] !== undefined && peer[key] === value)) {
+          if (_.includes(allowedFields, key) && !(typeof(peer[key]) !== 'undefined' && peer[key] === value)) {
             passed = false;
           }
         }
@@ -123,17 +121,16 @@ export class PeersModule implements IPeersModule {
    */
   // tslint:disable-next-line max-line-length
   public async list(options: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }): Promise<{ consensus: number, peers: PeerType[] }> {
-    options.limit         = options.limit || constants.maxPeers;
+    options.limit         = options.limit || this.constants.maxPeers;
     options.broadhash     = options.broadhash || this.systemModule.broadhash;
     options.allowedStates = options.allowedStates || [PeerState.CONNECTED];
 
-    let peersList = (await this.getByFilter({}))
-    // only matching states
-      .filter((p) => options.allowedStates.indexOf(p.state) !== -1)
-      // and only same broadhash
-      .filter((p) => options.broadhash === p.broadhash);
+    let peersList = (await this.getByFilter({ broadhash: options.broadhash }))
+      // only matching states
+      .filter((p) => options.allowedStates.indexOf(p.state) !== -1);
 
     peersList = this.peersLogic.acceptable(peersList);
+    peersList = peersList.slice(0, options.limit);
 
     const matchedBroadhash = peersList.length;
 
@@ -146,10 +143,11 @@ export class PeersModule implements IPeersModule {
 
       unmatchedBroadPeers = this.peersLogic.acceptable(unmatchedBroadPeers);
       peersList           = peersList.concat(unmatchedBroadPeers);
+      peersList = peersList.slice(0, options.limit);
     }
-    peersList = peersList.slice(0, options.limit);
 
     let consensus = Math.round(matchedBroadhash / peersList.length * 1e2 * 1e2) / 1e2;
+
     consensus     = isNaN(consensus) ? 0 : consensus;
 
     this.logger.debug(`Listing ${peersList.length} total peers`);
@@ -190,20 +188,6 @@ export class PeersModule implements IPeersModule {
           // Insert all peers
           t.none(insertPeers),
         ];
-
-        // Inserting dapps peers
-        _.each(peers, (peer) => {
-          if (peer.dappid) {
-            // If there are dapps on peer - push separately for every dapp
-            _.each(peer.dappid, (dappid) => {
-              const dappPeer  = peer;
-              dappPeer.dappid = dappid;
-              // TODO: unused dappPeer.
-              queries.push(t.none(peerSQL.addDapp, peer));
-            });
-          }
-        });
-
         return t.batch(queries);
       });
       this.logger.info('Peers exported to database');
