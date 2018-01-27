@@ -7,6 +7,7 @@ import { TransactionType } from '../../../src/helpers';
 import { InnerTXQueue, TransactionPool} from '../../../src/logic';
 import { IBaseTransaction } from '../../../src/logic/transactions';
 import { AccountsModuleStub, JobsQueueStub, LoggerStub, TransactionLogicStub } from '../../stubs';
+import logger from '../../../src/helpers/logger';
 
 chai.use(assertArrays);
 const expect = chai.expect;
@@ -217,6 +218,34 @@ describe('logic/transactionPool - TransactionPool', () => {
   let tx: IBaseTransaction<any>;
   let tx2: IBaseTransaction<any>;
   let tx3: IBaseTransaction<any>;
+
+  const addMixedTransactionsAndFillPool = () => {
+    const allTxs = [];
+    // Add 50 txs to various queues
+    for (let i = 0; i < 50; i++) {
+      if (i === 24) {
+        instance.fillPool();
+      }
+      const newTx = Object.assign({}, tx);
+      newTx.id = 'tx_' + i;
+      if (i < 12) {
+        newTx.type = TransactionType.MULTI;
+        newTx.asset = {
+          multisignature: {
+            timeout: 2,
+          },
+        };
+      }
+      (newTx as any).ready = (i % 2 === 0);
+      const bundled = (i >= 12 && i < 25);
+      instance.queueTransaction(newTx, bundled);
+      allTxs.push(newTx);
+    }
+    sandbox.reset();
+    loggerStub.stubReset();
+    return allTxs;
+  };
+
   let spiedQueues: {
     'unconfirmed': { [k in keyof InnerTXQueue]?: SinonSpy },
     'bundled': { [k in keyof InnerTXQueue]?: SinonSpy },
@@ -244,10 +273,10 @@ describe('logic/transactionPool - TransactionPool', () => {
     (instance as any).config = {
       broadcasts: {
         broadcastInterval: 1500,
-        bundleLimig: 100,
+        releaseLimit: 100,
       },
       transactions: {
-        maxTxsPerQueue: 2,
+        maxTxsPerQueue: 50,
       },
     };
     instance.afterConstruction();
@@ -287,6 +316,7 @@ describe('logic/transactionPool - TransactionPool', () => {
 
     tx3 = Object.assign({}, tx);
     tx3.id = 'tx3';
+    sandbox.reset();
   });
 
   afterEach(() => {
@@ -343,6 +373,7 @@ describe('logic/transactionPool - TransactionPool', () => {
     });
 
     it('should throw if pool is full', () => {
+      (instance as any).config.transactions.maxTxsPerQueue = 2;
       instance.queueTransaction(tx, false);
       spiedQueues.queued.add.reset();
       instance.queueTransaction(tx2, false);
@@ -357,6 +388,18 @@ describe('logic/transactionPool - TransactionPool', () => {
   });
 
   describe('fillPool', () => {
+    const addFillPoolTxs = () => {
+      // tx and tx2 go to multisignature queue
+      tx.type = TransactionType.MULTI;
+      (tx as any).ready = true;
+      instance.queueTransaction(tx, false);
+      tx2.type = TransactionType.MULTI;
+      (tx2 as any).ready = true;
+      instance.queueTransaction(tx2, false);
+      // tx3 goes to queued queue
+      instance.queueTransaction(tx3, false);
+    };
+
     it('should resolve with empty array if appState.loader.isSyncing', async () => {
       fakeAppState.get.returns(true);
       const retVal = await instance.fillPool();
@@ -396,41 +439,202 @@ describe('logic/transactionPool - TransactionPool', () => {
       await instance.fillPool();
       expect(spiedQueues.queued.listWithPayload.called).to.be.true;
       expect(spiedQueues.queued.listWithPayload.firstCall.args[0]).to.be.true;
+      expect(spiedQueues.queued.listWithPayload.firstCall.args[1]).to.be.equal(25);
     });
 
-    it('should call remove on multisignature queue for each multisig or queued tx');
-    it('should call remove on queued queue for each multisig or queued tx');
-    it('should call add on unconfirmed queue for each multisig or queued tx');
-    it('should return an array of transactions');
+    it('should call remove on multisignature queue for each multisig or queued tx', async () => {
+      addFillPoolTxs();
+      await instance.fillPool();
+      expect(spiedQueues.multisignature.remove.callCount).to.be.equal(3);
+      expect(spiedQueues.multisignature.remove.firstCall.args[0]).to.be.equal(tx2.id);
+      expect(spiedQueues.multisignature.remove.secondCall.args[0]).to.be.equal(tx.id);
+      expect(spiedQueues.multisignature.remove.thirdCall.args[0]).to.be.equal(tx3.id);
+    });
+
+    it('should call remove on queued queue for each multisig or queued tx', async () => {
+      addFillPoolTxs();
+      await instance.fillPool();
+      expect(spiedQueues.queued.remove.callCount).to.be.equal(3);
+      expect(spiedQueues.queued.remove.firstCall.args[0]).to.be.equal(tx2.id);
+      expect(spiedQueues.queued.remove.secondCall.args[0]).to.be.equal(tx.id);
+      expect(spiedQueues.queued.remove.thirdCall.args[0]).to.be.equal(tx3.id);
+    });
+
+    it('should call add on unconfirmed queue for each multisig or queued tx', async () => {
+      addFillPoolTxs();
+      await instance.fillPool();
+      expect(spiedQueues.unconfirmed.add.callCount).to.be.equal(3);
+      expect(spiedQueues.unconfirmed.add.firstCall.args[0]).to.be.deep.equal(tx2);
+      expect(spiedQueues.unconfirmed.add.secondCall.args[0]).to.be.deep.equal(tx);
+      expect(spiedQueues.unconfirmed.add.thirdCall.args[0]).to.be.deep.equal(tx3);
+    });
+
+    it('should return an array of transactions', async () => {
+      addFillPoolTxs();
+      const retVal = await instance.fillPool();
+      expect(Array.isArray(retVal)).to.be.true;
+      expect(retVal).to.be.equalTo([tx2, tx, tx3]);
+    });
   });
 
   describe('transactionInPool', () => {
-    it('should return true if tx is in any of the queues');
-    it('should return false if tx not found');
+    it('should return true if tx is in any of the queues', () => {
+      instance.queueTransaction(tx, false);
+      expect(instance.transactionInPool(tx.id)).to.be.true;
+    });
+
+    it('should return false if tx not found', () => {
+      instance.queueTransaction(tx, false);
+      expect(instance.transactionInPool(tx2.id)).to.be.false;
+    });
   });
 
   describe('getMergedTransactionList', () => {
-    it('should call list on the 3 queues');
-    it('should return all the txs in a merged array');
+    it('should call list on the 3 queues', () => {
+      addMixedTransactionsAndFillPool();
+      instance.getMergedTransactionList(30);
+      expect(spiedQueues.unconfirmed.list.called).to.be.true;
+      expect(spiedQueues.multisignature.list.called).to.be.true;
+      expect(spiedQueues.queued.list.called).to.be.true;
+    });
+
+    it('should return all the txs in a merged array', () => {
+      addMixedTransactionsAndFillPool();
+      const retVal = instance.getMergedTransactionList(30);
+      const expectedIDs = [ 'tx_10', 'tx_8', 'tx_6', 'tx_4', 'tx_2', 'tx_0', 'tx_25', 'tx_26', 'tx_27', 'tx_28',
+        'tx_29', 'tx_30', 'tx_31', 'tx_32', 'tx_33', 'tx_34', 'tx_35', 'tx_36', 'tx_37', 'tx_38', 'tx_39', 'tx_40',
+        'tx_41', 'tx_42', 'tx_43', 'tx_44', 'tx_45', 'tx_46', 'tx_47', 'tx_48' ];
+
+      expect(Array.isArray(retVal)).to.be.true;
+      expect(retVal.length).to.be.equal(expectedIDs.length);
+      expect(retVal.map((t) => t.id)).to.be.equalTo(expectedIDs);
+    });
+
+    it('should respect passed limit unless less than minimum', () => {
+      addMixedTransactionsAndFillPool();
+      const retVal = instance.getMergedTransactionList(30);
+      expect(retVal.length).to.be.equal(30);
+      const retVal2 = instance.getMergedTransactionList(10);
+      expect(retVal2.length).to.be.equal(27);
+    });
   });
 
   describe('expireTransactions', () => {
-    it('should call listWithPayload (reversed) on the 3 queues');
-    it('should call txTimeout() for each transaction');
-    it('should call removeUnconfirmedTransaction when a tx is expired');
-    it('should call logger.info when an expired tx is removed');
-    it('should return an array of IDs');
+    const oldDateNow = Date.now;
+    beforeEach(() => {
+      addMixedTransactionsAndFillPool();
+      const timeInFuture = Date.now() + (24 * 60 * 60 * 1000);
+      Date.now = () => timeInFuture;
+    });
+    afterEach(() => {
+      Date.now = oldDateNow;
+    });
+
+    it('should call listWithPayload (reversed) on the 3 queues', () => {
+      instance.expireTransactions();
+      expect(spiedQueues.unconfirmed.list.calledOnce).to.be.true;
+      expect(spiedQueues.unconfirmed.list.firstCall.args[0]).to.be.true;
+      expect(spiedQueues.queued.list.calledOnce).to.be.true;
+      expect(spiedQueues.queued.list.firstCall.args[0]).to.be.true;
+      expect(spiedQueues.multisignature.list.calledOnce).to.be.true;
+      expect(spiedQueues.multisignature.list.firstCall.args[0]).to.be.true;
+    });
+
+    it('should call txTimeout() for each transaction', () => {
+      const txTimeoutSpy = sandbox.spy(instance as any, 'txTimeout');
+      instance.expireTransactions();
+      expect(txTimeoutSpy.called).to.be.true;
+      expect(txTimeoutSpy.callCount).to.be.equal(37);
+    });
+
+    it('should call removeUnconfirmedTransaction when a tx is expired', () => {
+      const removeUnconfirmedTransactionSpy = sandbox.spy(instance as any, 'removeUnconfirmedTransaction');
+      instance.expireTransactions();
+      expect(removeUnconfirmedTransactionSpy.called).to.be.true;
+      expect(removeUnconfirmedTransactionSpy.callCount).to.be.equal(25);
+    });
+
+    it('should call logger.info when an expired tx is removed', () => {
+      instance.expireTransactions();
+      expect(loggerStub.stubs.info.called).to.be.true;
+      expect(loggerStub.stubs.info.callCount).to.be.equal(25);
+    });
+
+    it('should return an array of IDs', () => {
+      const retVal = instance.expireTransactions();
+      expect(Array.isArray(retVal)).to.be.true;
+      expect(retVal).to.be.equalTo(['tx_49', 'tx_48', 'tx_47', 'tx_46', 'tx_45', 'tx_44', 'tx_43', 'tx_42', 'tx_41',
+        'tx_40', 'tx_39', 'tx_38', 'tx_37', 'tx_36', 'tx_35', 'tx_34',  'tx_33', 'tx_32', 'tx_31', 'tx_30', 'tx_29',
+        'tx_28', 'tx_27', 'tx_26', 'tx_25' ]);
+    });
   });
 
   describe('processBundled', () => {
-    it('should call list with reverse and limit on bundled queue');
-    it('should call remove on bundled for each tx');
-    it('should call processVerifyTransaction for each valid tx');
-    it('should call queueTransaction for each valid tx if processVerifyTransaction did not throw');
-    it('should not call queueTransaction for each valid tx if processVerifyTransaction throws');
-    it('should call logger.debug if queueTransaction fails');
-    it('should call logger.debug if processVerifyTransaction throws');
-    it('should call removeUnconfirmedTransaction if processVerifyTransaction fails');
+    beforeEach(() => {
+      addMixedTransactionsAndFillPool();
+    });
+
+    it('should call list with reverse and limit on bundled queue', async () => {
+      await instance.processBundled();
+      expect(spiedQueues.bundled.list.calledOnce).to.be.true;
+      expect(spiedQueues.bundled.list.firstCall.args[0]).to.be.true;
+      expect(spiedQueues.bundled.list.firstCall.args[1]).to.be.equal((instance as any).config.broadcasts.releaseLimit);
+    });
+
+    it('should call remove on bundled for each tx', async () => {
+      const bundledCount = instance.bundled.count;
+      await instance.processBundled();
+      expect(spiedQueues.bundled.remove.called).to.be.true;
+      expect(spiedQueues.bundled.remove.callCount).to.be.equal(bundledCount);
+    });
+
+    it('should call processVerifyTransaction for each valid tx', async () => {
+      const bundledCount = instance.bundled.count;
+      const processVerifyTransactionSpy = sandbox.spy(instance as any, 'processVerifyTransaction');
+      await instance.processBundled();
+      expect(processVerifyTransactionSpy.called).to.be.true;
+      expect(processVerifyTransactionSpy.callCount).to.be.equal(bundledCount);
+    });
+
+    it('should call queueTransaction for each valid tx if processVerifyTransaction does not throw', async () => {
+      const bundledCount = instance.bundled.count;
+      const queueTransactionSpy = sandbox.spy(instance as any, 'queueTransaction');
+      sandbox.stub(instance as any, 'processVerifyTransaction').resolves(true);
+      await instance.processBundled();
+      expect(queueTransactionSpy.called).to.be.true;
+      expect(queueTransactionSpy.callCount).to.be.equal(bundledCount);
+    });
+
+    it('should not call queueTransaction for each valid tx if processVerifyTransaction throws', async () => {
+      const queueTransactionSpy = sandbox.spy(instance as any, 'queueTransaction');
+      sandbox.stub(instance as any, 'processVerifyTransaction').rejects('err');
+      await instance.processBundled();
+      expect(queueTransactionSpy.called).to.be.false;
+    });
+
+    it('should call logger.debug if queueTransaction fails', async () => {
+      const queueTransactionStub = sandbox.stub(instance as any, 'queueTransaction').throws('err');
+      sandbox.stub(instance as any, 'processVerifyTransaction').resolves(true);
+      await instance.processBundled();
+      expect(queueTransactionStub.called).to.be.true;
+      expect(loggerStub.stubs.debug.called).to.be.true;
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.match(/Failed to queue/);
+    });
+
+    it('should call logger.debug if processVerifyTransaction throws', async () => {
+      sandbox.stub(instance as any, 'processVerifyTransaction').throws('err');
+      await instance.processBundled();
+      expect(loggerStub.stubs.debug.called).to.be.true;
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.match(/Failed to process/);
+    });
+
+    it('should call removeUnconfirmedTransaction if processVerifyTransaction fails', async () => {
+      const removeUnconfirmedTransactionSpy = sandbox.spy(instance as any, 'removeUnconfirmedTransaction');
+      sandbox.stub(instance as any, 'processVerifyTransaction').throws('err');
+      await instance.processBundled();
+      expect(removeUnconfirmedTransactionSpy.called).to.be.true;
+      expect(removeUnconfirmedTransactionSpy.firstCall.args[0]).to.match(/^tx_/);
+    });
   });
 
   describe('receiveTransactions', () => {
