@@ -15,7 +15,18 @@ export const checkPubKey = (paramName: string, baseUrl: string) => {
       });
   });
 };
-
+export const checkReturnObjKeyVal = (objKey: string, expectedValue: any, path: string) => {
+  it(`should return .${objKey} with ${expectedValue}`, async () => {
+    return supertest(initializer.appManager.expressApp)
+      .get(path)
+      .expect(200)
+      .then((response) => {
+        expect(response.body.success).is.true;
+        expect(response.body).to.haveOwnProperty(objKey);
+        expect(response.body[objKey]).to.be.deep.eq(expectedValue);
+      });
+  });
+};
 export const checkRequiredParam = (paramName: string, validUrl: string) => {
   it(`should throw if ${paramName} is not provided`, async () => {
     const theURLOBJ = url.parse(validUrl, true);
