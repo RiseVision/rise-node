@@ -221,12 +221,12 @@ describe('logic/transactionPool - TransactionPool', () => {
   let tx2: IBaseTransaction<any>;
   let tx3: IBaseTransaction<any>;
 
-  const addMixedTransactionsAndFillPool = () => {
+  const addMixedTransactionsAndFillPool = async () => {
     const allTxs = [];
     // Add 50 txs to various queues
     for (let i = 0; i < 50; i++) {
       if (i === 24) {
-        instance.fillPool();
+        await instance.fillPool();
       }
       const newTx = Object.assign({}, tx);
       newTx.id = 'tx_' + i;
@@ -258,7 +258,7 @@ describe('logic/transactionPool - TransactionPool', () => {
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
     instance = new TransactionPool();
-    fakeBus = {message: sandbox.stub()};
+    fakeBus = {message: sandbox.stub().resolves()};
     fakeAppState = {get: sandbox.stub()};
     jqStub = new JobsQueueStub();
     loggerStub = new LoggerStub();
@@ -492,16 +492,16 @@ describe('logic/transactionPool - TransactionPool', () => {
   });
 
   describe('getMergedTransactionList', () => {
-    it('should call list on the 3 queues', () => {
-      addMixedTransactionsAndFillPool();
+    it('should call list on the 3 queues', async () => {
+      await addMixedTransactionsAndFillPool();
       instance.getMergedTransactionList(30);
       expect(spiedQueues.unconfirmed.list.called).to.be.true;
       expect(spiedQueues.multisignature.list.called).to.be.true;
       expect(spiedQueues.queued.list.called).to.be.true;
     });
 
-    it('should return all the txs in a merged array', () => {
-      addMixedTransactionsAndFillPool();
+    it('should return all the txs in a merged array', async () => {
+      await addMixedTransactionsAndFillPool();
       const retVal = instance.getMergedTransactionList(30);
       const expectedIDs = [ 'tx_10', 'tx_8', 'tx_6', 'tx_4', 'tx_2', 'tx_0', 'tx_25', 'tx_26', 'tx_27', 'tx_28',
         'tx_29', 'tx_30', 'tx_31', 'tx_32', 'tx_33', 'tx_34', 'tx_35', 'tx_36', 'tx_37', 'tx_38', 'tx_39', 'tx_40',
@@ -512,8 +512,8 @@ describe('logic/transactionPool - TransactionPool', () => {
       expect(retVal.map((t) => t.id)).to.be.equalTo(expectedIDs);
     });
 
-    it('should respect passed limit unless less than minimum', () => {
-      addMixedTransactionsAndFillPool();
+    it('should respect passed limit unless less than minimum', async () => {
+      await addMixedTransactionsAndFillPool();
       const retVal = instance.getMergedTransactionList(30);
       expect(retVal.length).to.be.equal(30);
       const retVal2 = instance.getMergedTransactionList(10);
@@ -523,8 +523,8 @@ describe('logic/transactionPool - TransactionPool', () => {
 
   describe('expireTransactions', () => {
     const oldDateNow = Date.now;
-    beforeEach(() => {
-      addMixedTransactionsAndFillPool();
+    beforeEach(async () => {
+      await addMixedTransactionsAndFillPool();
       const timeInFuture = Date.now() + (24 * 60 * 60 * 1000);
       Date.now = () => timeInFuture;
     });
@@ -572,8 +572,8 @@ describe('logic/transactionPool - TransactionPool', () => {
   });
 
   describe('processBundled', () => {
-    beforeEach(() => {
-      addMixedTransactionsAndFillPool();
+    beforeEach(async () => {
+      await addMixedTransactionsAndFillPool();
     });
 
     it('should call list with reverse and limit on bundled queue', async () => {
@@ -691,7 +691,7 @@ describe('logic/transactionPool - TransactionPool', () => {
     });
 
     it('should reject if transaction is in pool', async () => {
-      const allTxs = addMixedTransactionsAndFillPool();
+      const allTxs = await addMixedTransactionsAndFillPool();
       await expect(instance.processNewTransaction(allTxs[0], false, false)).to.be.
       rejectedWith(/Transaction is already processed/);
     });
@@ -761,8 +761,8 @@ describe('logic/transactionPool - TransactionPool', () => {
     let txModuleStub: TransactionsModuleStub;
     const unconfirmedIds = [ 'tx_10', 'tx_8', 'tx_6', 'tx_4', 'tx_2' ];
 
-    beforeEach(() => {
-      addMixedTransactionsAndFillPool();
+    beforeEach(async () => {
+      await addMixedTransactionsAndFillPool();
       txModuleStub = new TransactionsModuleStub();
     });
 
@@ -841,28 +841,190 @@ describe('logic/transactionPool - TransactionPool', () => {
   });
 
   describe('undoUnconfirmedList', () => {
-    it('should return an array of ids');
-    it('should call list on unconfirmed queue');
-    it('should call undoUnconfirmed on txModule for each tx');
-    it('should call logger.error if undoUnconfirmed throws');
-    it('should call removeUnconfirmedTransaction if undoUnconfirmed throws');
+    let txModuleStub: TransactionsModuleStub;
+    const unconfirmedIds = [ 'tx_10', 'tx_8', 'tx_6', 'tx_4', 'tx_2' ];
+
+    beforeEach(async () => {
+      await addMixedTransactionsAndFillPool();
+      txModuleStub = new TransactionsModuleStub();
+    });
+
+    it('should return an array of ids', async () => {
+      txModuleStub.stubs.undoUnconfirmed.resolves(true);
+      const retVal = await instance.undoUnconfirmedList(txModuleStub);
+      expect(retVal).to.be.equalTo(unconfirmedIds);
+    });
+
+    it('should call list on unconfirmed queue', async () => {
+      txModuleStub.stubs.undoUnconfirmed.resolves(true);
+      await instance.undoUnconfirmedList(txModuleStub);
+      expect(spiedQueues.unconfirmed.list.calledOnce).to.be.true;
+      expect(spiedQueues.unconfirmed.list.firstCall.args[0]).to.be.false;
+    });
+
+    it('should call undoUnconfirmed on txModule for each tx', async () => {
+      txModuleStub.stubs.undoUnconfirmed.resolves(true);
+      await instance.undoUnconfirmedList(txModuleStub);
+      expect(txModuleStub.stubs.undoUnconfirmed.callCount).to.be.equal(unconfirmedIds.length);
+      expect(txModuleStub.stubs.undoUnconfirmed.firstCall.args[0]).to.be.
+      deep.equal(instance.unconfirmed.get(unconfirmedIds[0]));
+    });
+
+    it('should call logger.error if undoUnconfirmed rejects', async () => {
+      txModuleStub.stubs.undoUnconfirmed.rejects('err');
+      await instance.undoUnconfirmedList(txModuleStub);
+      expect(loggerStub.stubs.error.callCount).to.be.equal(unconfirmedIds.length);
+      expect(loggerStub.stubs.error.firstCall.args[0]).to.match(/Failed to undo unconfirmed transaction/);
+    });
+
+    it('should call removeUnconfirmedTransaction if undoUnconfirmed throws',  async () => {
+      const removeUnconfirmedTransactionSpy = sandbox.spy(instance as any, 'removeUnconfirmedTransaction');
+      txModuleStub.stubs.undoUnconfirmed.rejects('err');
+      await instance.undoUnconfirmedList(txModuleStub);
+      expect(removeUnconfirmedTransactionSpy.callCount).to.be.equal(unconfirmedIds.length);
+      expect(removeUnconfirmedTransactionSpy.firstCall.args[0]).to.be.equal(unconfirmedIds[0]);
+    });
   });
 
   describe('reindexAllQueues', () => {
-    it('should call reindex on all queues');
+    it('should call reindex on all queues', () => {
+      (instance as any).reindexAllQueues();
+      expect(spiedQueues.unconfirmed.reindex.calledOnce).to.be.true;
+      expect(spiedQueues.bundled.reindex.calledOnce).to.be.true;
+      expect(spiedQueues.queued.reindex.calledOnce).to.be.true;
+      expect(spiedQueues.multisignature.reindex.calledOnce).to.be.true;
+    });
   });
 
   describe('removeUnconfirmedTransaction', () => {
-    it('should call remove on unconfirmed, queued and multisignature');
+    it('should call remove on unconfirmed, queued and multisignature', async () => {
+      await addMixedTransactionsAndFillPool();
+      (instance as any).removeUnconfirmedTransaction('tx_10');
+      expect(spiedQueues.unconfirmed.remove.calledOnce).to.be.true;
+      expect(spiedQueues.queued.remove.calledOnce).to.be.true;
+      expect(spiedQueues.multisignature.remove.calledOnce).to.be.true;
+      expect(spiedQueues.unconfirmed.remove.firstCall.args[0]).to.be.equal('tx_10');
+      expect(spiedQueues.queued.remove.firstCall.args[0]).to.be.equal('tx_10');
+      expect(spiedQueues.multisignature.remove.firstCall.args[0]).to.be.equal('tx_10');
+    });
   });
 
   describe('processVerifyTransaction', () => {
-    it('should throw if !transaction');
-    it('should call accountsModule.setAccountAndGet');
-    it('should call accountsModule.getAccount');
-    it('should call transactionLogic.process');
-    it('should call transactionLogic.objectNormalize');
-    it('should call transactionLogic.verify');
-    it('should call bus.message');
+    const sender = {
+      publicKey: 'senderPublicKey',
+      multisignatures: [],
+    };
+
+    const requester = {
+      publicKey: 'requesterPublicKey',
+      multisignatures: [],
+    };
+
+    beforeEach(() => {
+      sender.multisignatures = [];
+    });
+
+    it('should reject if !transaction', async () => {
+      await expect((instance as any).processVerifyTransaction(false, false)).to.be.
+        rejectedWith('Missing transaction');
+    });
+
+    it('should call accountsModule.setAccountAndGet', async () => {
+      accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
+      await (instance as any).processVerifyTransaction(tx, false);
+      expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
+      const expectedParam = {publicKey: tx.senderPublicKey};
+      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.be.deep.equal(expectedParam);
+    });
+
+    it('should call accountsModule.getAccount if sender && requesterPublicKey && sender.multisignatures', async () => {
+      accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
+      accountsModuleStub.stubs.getAccount.resolves(requester);
+      sender.multisignatures = ['a', 'b'];
+      tx.requesterPublicKey = 'requesterPublicKey';
+      await (instance as any).processVerifyTransaction(tx, false);
+      expect(accountsModuleStub.stubs.getAccount.calledOnce).to.be.true;
+      const expectedParam = {publicKey: tx.requesterPublicKey};
+      expect(accountsModuleStub.stubs.getAccount.firstCall.args[0]).to.be.deep.equal(expectedParam);
+    });
+
+    it('should NOT call accountsModule.getAccount if !sender', async () => {
+      // sender = false;
+      accountsModuleStub.stubs.setAccountAndGet.resolves(false);
+      accountsModuleStub.stubs.getAccount.resolves(requester);
+      sender.multisignatures = ['a', 'b'];
+      tx.requesterPublicKey = 'requesterPublicKey';
+      await (instance as any).processVerifyTransaction(tx, false);
+      expect(accountsModuleStub.stubs.getAccount.notCalled).to.be.true;
+    });
+
+    it('should NOT call accountsModule.getAccount if !requesterPublicKey', async () => {
+      tx.requesterPublicKey = undefined;
+      accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
+      accountsModuleStub.stubs.getAccount.resolves(requester);
+      sender.multisignatures = ['a', 'b'];
+      await (instance as any).processVerifyTransaction(tx, false);
+      expect(accountsModuleStub.stubs.getAccount.notCalled).to.be.true;
+    });
+
+    it('should NOT call accountsModule.getAccount if !sender.multisignatures', async () => {
+      delete sender.multisignatures;
+      accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
+      accountsModuleStub.stubs.getAccount.resolves(requester);
+      tx.requesterPublicKey = 'requesterPublicKey';
+      await (instance as any).processVerifyTransaction(tx, false);
+      expect(accountsModuleStub.stubs.getAccount.notCalled).to.be.true;
+    });
+
+    it('should call transactionLogic.process', async () => {
+      accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
+      accountsModuleStub.stubs.getAccount.resolves(requester);
+      sender.multisignatures = ['a', 'b'];
+      tx.requesterPublicKey = 'requesterPublicKey';
+      // Will have a valid requester
+      await (instance as any).processVerifyTransaction(tx, false);
+      expect(transactionLogicStub.stubs.process.calledOnce).to.be.true;
+      expect(transactionLogicStub.stubs.process.firstCall.args[0]).to.be.deep.equal(tx);
+      expect(transactionLogicStub.stubs.process.firstCall.args[1]).to.be.deep.equal(sender);
+      expect(transactionLogicStub.stubs.process.firstCall.args[2]).to.be.deep.equal(requester);
+    });
+
+    it('should call transactionLogic.objectNormalize', async () => {
+      accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
+      await (instance as any).processVerifyTransaction(tx, false);
+      expect(transactionLogicStub.stubs.objectNormalize.calledOnce).to.be.true;
+      expect(transactionLogicStub.stubs.objectNormalize.firstCall.args[0]).to.be.deep.equal(tx);
+    });
+
+    it('should call transactionLogic.verify', async () => {
+      const normalizedTx = Object.assign({}, tx as any);
+      normalizedTx.normalized = true;
+      transactionLogicStub.stubConfig.objectNormalize.return = normalizedTx;
+      accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
+      await (instance as any).processVerifyTransaction(tx, false);
+      expect(transactionLogicStub.stubs.verify.calledOnce).to.be.true;
+      expect(transactionLogicStub.stubs.verify.firstCall.args[0]).to.be.deep.equal(normalizedTx);
+      expect(transactionLogicStub.stubs.verify.firstCall.args[1]).to.be.deep.equal(sender);
+      expect(transactionLogicStub.stubs.verify.firstCall.args[2]).to.be.null;
+      expect(transactionLogicStub.stubs.verify.firstCall.args[3]).to.be.null;
+    });
+
+    it('should call bus.message', async () => {
+      const normalizedTx = Object.assign({}, tx as any);
+      normalizedTx.normalized = true;
+      transactionLogicStub.stubConfig.objectNormalize.return = normalizedTx;
+      accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
+      await (instance as any).processVerifyTransaction(tx, false);
+      expect(fakeBus.message.calledOnce).to.be.true;
+      expect(fakeBus.message.firstCall.args[0]).to.be.deep.equal('unconfirmedTransaction');
+      expect(fakeBus.message.firstCall.args[1]).to.be.deep.equal(normalizedTx);
+      expect(fakeBus.message.firstCall.args[2]).to.be.false;
+    });
+
+    it('should return the sender', async () => {
+      accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
+      const retVal = await (instance as any).processVerifyTransaction(tx, false);
+      expect(retVal).to.be.deep.equal(sender);
+    });
   });
 });
