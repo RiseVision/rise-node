@@ -1,4 +1,5 @@
 import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
 import * as sinon from 'sinon';
@@ -6,9 +7,10 @@ import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import { TransactionType } from '../../../src/helpers';
 import { InnerTXQueue, TransactionPool} from '../../../src/logic';
 import { IBaseTransaction } from '../../../src/logic/transactions';
-import { AccountsModuleStub, JobsQueueStub, LoggerStub, TransactionLogicStub } from '../../stubs';
-import logger from '../../../src/helpers/logger';
+import { AccountsModuleStub, JobsQueueStub, LoggerStub,
+         TransactionLogicStub, TransactionsModuleStub } from '../../stubs';
 
+chai.use(chaiAsPromised);
 chai.use(assertArrays);
 const expect = chai.expect;
 
@@ -638,30 +640,203 @@ describe('logic/transactionPool - TransactionPool', () => {
   });
 
   describe('receiveTransactions', () => {
-    it('should return a promise');
-    it('should call processNewTransaction for each of the passed txs');
+    let processNewTransactionStub: SinonStub;
+
+    beforeEach(() => {
+      processNewTransactionStub = sandbox.stub(instance, 'processNewTransaction').resolves();
+    });
+
+    afterEach(() => {
+      processNewTransactionStub.restore();
+    });
+
+    it('should return a promise', () => {
+      const retVal = instance.receiveTransactions([tx, tx2, tx3], false, false);
+      expect(retVal).to.be.instanceof(Promise);
+    });
+
+    it('should call processNewTransaction for each of the passed txs', async () => {
+      await instance.receiveTransactions([tx, tx2], false, false);
+      expect(processNewTransactionStub.callCount).to.be.equal(2);
+      expect(processNewTransactionStub.firstCall.args[0]).to.be.deep.equal(tx);
+      expect(processNewTransactionStub.firstCall.args[1]).to.be.false;
+      expect(processNewTransactionStub.firstCall.args[2]).to.be.false;
+      expect(processNewTransactionStub.secondCall.args[0]).to.be.deep.equal(tx2);
+      expect(processNewTransactionStub.secondCall.args[1]).to.be.false;
+      expect(processNewTransactionStub.secondCall.args[2]).to.be.false;
+    });
   });
 
   describe('processNewTransaction', () => {
-    it('should return a promise');
-    it('should call transactionInPool');
-    it('should reject if transaction is in pool');
-    it('should call reindexAllQueues if more than 1000 txs were processed');
-    it('should call queueTransaction if bundled is true');
-    it('should call processVerifyTransaction');
-    it('should call queueTransaction');
-    it('should not call queueTransaction if processVerifyTransaction throwed');
+    let processVerifyTransactionStub: SinonStub;
+
+    beforeEach(() => {
+      processVerifyTransactionStub = sandbox.stub(instance as any, 'processVerifyTransaction').resolves();
+    });
+
+    afterEach(() => {
+      processVerifyTransactionStub.restore();
+    });
+
+    it('should return a promise', () => {
+      const retVal = instance.processNewTransaction(tx, false, false);
+      expect(retVal).to.be.instanceof(Promise);
+    });
+
+    it('should call transactionInPool', async () => {
+      const transactionInPoolSpy = sandbox.spy(instance, 'transactionInPool');
+      await instance.processNewTransaction(tx, false, false);
+      expect(transactionInPoolSpy.calledOnce).to.be.true;
+      expect(transactionInPoolSpy.firstCall.args[0]).to.be.equal(tx.id);
+    });
+
+    it('should reject if transaction is in pool', async () => {
+      const allTxs = addMixedTransactionsAndFillPool();
+      await expect(instance.processNewTransaction(allTxs[0], false, false)).to.be.
+      rejectedWith(/Transaction is already processed/);
+    });
+
+    it('should call reindexAllQueues if more than 1000 txs were processed', async () => {
+      const reindexallQueuesSpy = sandbox.spy(instance as any, 'reindexAllQueues');
+      (instance as any).processed = 1000;
+      await instance.processNewTransaction(tx, false, false);
+      expect(reindexallQueuesSpy.calledOnce).to.be.true;
+      expect((instance as any).processed).to.be.equal(1);
+    });
+
+    it('should call queueTransaction if bundled is true', async () => {
+      // we make processVerifyTransaction reject in order to stop execution before next call of queueTransaction
+      processVerifyTransactionStub.rejects();
+      const queueTransactionSpy = sandbox.spy(instance, 'queueTransaction');
+      try {
+        await instance.processNewTransaction(tx, false, true);
+      } catch (e) {
+        void(0);
+      }
+      expect(queueTransactionSpy.calledOnce).to.be.true;
+      expect(queueTransactionSpy.firstCall.args[0]).to.be.deep.equal(tx);
+      expect(queueTransactionSpy.firstCall.args[1]).to.be.true;
+    });
+
+    it('should not call queueTransaction if bundled is false', async () => {
+      // we make processVerifyTransaction reject in order to stop execution before next call of queueTransaction
+      processVerifyTransactionStub.rejects();
+      const queueTransactionSpy = sandbox.spy(instance, 'queueTransaction');
+      try {
+        await instance.processNewTransaction(tx, false, false);
+      } catch (e) {
+        void(0);
+      }
+      expect(queueTransactionSpy.notCalled).to.be.true;
+    });
+
+    it('should call processVerifyTransaction', async () => {
+      await instance.processNewTransaction(tx, false, false);
+      expect(processVerifyTransactionStub.calledOnce).to.be.true;
+      expect(processVerifyTransactionStub.firstCall.args[0]).to.be.deep.equal(tx);
+      expect(processVerifyTransactionStub.firstCall.args[1]).to.be.false;
+    });
+
+    it('should call queueTransaction', async () => {
+      const queueTransactionSpy = sandbox.spy(instance, 'queueTransaction');
+      await instance.processNewTransaction(tx, false, false);
+      expect(queueTransactionSpy.calledOnce).to.be.true;
+      expect(queueTransactionSpy.firstCall.args[0]).to.be.deep.equal(tx);
+      expect(queueTransactionSpy.firstCall.args[1]).to.be.false;
+    });
+
+    it('should not call queueTransaction if processVerifyTransaction rejected', async () => {
+      processVerifyTransactionStub.rejects();
+      const queueTransactionSpy = sandbox.spy(instance, 'queueTransaction');
+      try {
+        await instance.processNewTransaction(tx, false, false);
+      } catch (e) {
+        void(0);
+      }
+      expect(queueTransactionSpy.notCalled).to.be.true;
+    });
   });
 
   describe('applyUnconfirmedList', () => {
-    it('should call get on unconfirmed queue');
-    it('should call processVerifyTransaction for each valid tx');
-    it('should call applyUnconfirmed on txModule for each valid tx if processVerifyTransaction did not throw');
-    it('should not call applyUnconfirmed on txModule for each valid tx if processVerifyTransaction throws');
-    it('should call logger.error if applyUnconfirmed fails');
-    it('should call logger.error if processVerifyTransaction throws');
-    it('should call removeUnconfirmedTransaction if processVerifyTransaction fails');
-    it('should call removeUnconfirmedTransaction if applyUnconfirmed fails');
+    let txModuleStub: TransactionsModuleStub;
+    const unconfirmedIds = [ 'tx_10', 'tx_8', 'tx_6', 'tx_4', 'tx_2' ];
+
+    beforeEach(() => {
+      addMixedTransactionsAndFillPool();
+      txModuleStub = new TransactionsModuleStub();
+    });
+
+    it('should call get on unconfirmed queue if string ids are passed', async () => {
+      await instance.applyUnconfirmedList(unconfirmedIds, txModuleStub);
+      expect(spiedQueues.unconfirmed.get.called).to.be.true;
+      expect(spiedQueues.unconfirmed.get.callCount).to.be.equal(unconfirmedIds.length);
+      expect(spiedQueues.unconfirmed.get.firstCall.args[0]).to.be.equal(unconfirmedIds[0]);
+      expect(spiedQueues.unconfirmed.get.secondCall.args[0]).to.be.equal(unconfirmedIds[1]);
+    });
+
+    it('should call processVerifyTransaction for each valid tx', async () => {
+      const processVerifyTransactionSpy = sandbox.spy(instance as any, 'processVerifyTransaction');
+      await instance.applyUnconfirmedList(unconfirmedIds, txModuleStub);
+      expect(processVerifyTransactionSpy.called).to.be.true;
+      expect(processVerifyTransactionSpy.callCount).to.be.equal(unconfirmedIds.length);
+      expect(processVerifyTransactionSpy.firstCall.args[0].id).to.be.equal(unconfirmedIds[0]);
+      expect(processVerifyTransactionSpy.firstCall.args[1]).to.be.false;
+      expect(processVerifyTransactionSpy.secondCall.args[0].id).to.be.equal(unconfirmedIds[1]);
+      expect(processVerifyTransactionSpy.secondCall.args[1]).to.be.false;
+    });
+
+    it('should call applyUnconfirmed on txModule for each tx if processVerifyTransaction did not throw', async () => {
+      txModuleStub.stubs.applyUnconfirmed.resolves();
+      sandbox.stub(instance as any, 'processVerifyTransaction').resolves('theSender');
+      await instance.applyUnconfirmedList(unconfirmedIds, txModuleStub);
+      expect(txModuleStub.stubs.applyUnconfirmed.called).to.be.true;
+      expect(txModuleStub.stubs.applyUnconfirmed.callCount).to.be.equal(unconfirmedIds.length);
+      expect(txModuleStub.stubs.applyUnconfirmed.firstCall.args[0].id).to.be.equal(unconfirmedIds[0]);
+      expect(txModuleStub.stubs.applyUnconfirmed.firstCall.args[1]).to.be.equal('theSender');
+      expect(txModuleStub.stubs.applyUnconfirmed.secondCall.args[0].id).to.be.equal(unconfirmedIds[1]);
+      expect(txModuleStub.stubs.applyUnconfirmed.secondCall.args[1]).to.be.equal('theSender');
+    });
+
+    it('should not call applyUnconfirmed on txModule for each tx if processVerifyTransaction rejects', async () => {
+      txModuleStub.stubs.applyUnconfirmed.resolves();
+      sandbox.stub(instance as any, 'processVerifyTransaction').rejects('err');
+      await instance.applyUnconfirmedList(unconfirmedIds, txModuleStub);
+      expect(txModuleStub.stubs.applyUnconfirmed.notCalled).to.be.true;
+    });
+
+    it('should call logger.error if applyUnconfirmed rejects', async () => {
+      sandbox.stub(instance as any, 'processVerifyTransaction').resolves();
+      txModuleStub.stubs.applyUnconfirmed.rejects('err');
+      await instance.applyUnconfirmedList(unconfirmedIds, txModuleStub);
+      expect(loggerStub.stubs.error.callCount).to.be.equal(unconfirmedIds.length);
+      expect(loggerStub.stubs.error.firstCall.args[0]).to.match(/Failed to apply unconfirmed transaction/);
+    });
+
+    it('should call logger.error if processVerifyTransaction rejects', async () => {
+      sandbox.stub(instance as any, 'processVerifyTransaction').rejects();
+      txModuleStub.stubs.applyUnconfirmed.resolves('');
+      await instance.applyUnconfirmedList(unconfirmedIds, txModuleStub);
+      expect(loggerStub.stubs.error.callCount).to.be.equal(unconfirmedIds.length);
+      expect(loggerStub.stubs.error.firstCall.args[0]).to.match(/Failed to process \/ verify unconfirmed transaction/);
+    });
+
+    it('should call removeUnconfirmedTransaction if processVerifyTransaction rejects', async () => {
+      const removeUnconfirmedTransactionSpy = sandbox.spy(instance as any, 'removeUnconfirmedTransaction');
+      sandbox.stub(instance as any, 'processVerifyTransaction').rejects();
+      txModuleStub.stubs.applyUnconfirmed.resolves('');
+      await instance.applyUnconfirmedList(unconfirmedIds, txModuleStub);
+      expect(removeUnconfirmedTransactionSpy.callCount).to.be.equal(unconfirmedIds.length);
+      expect(removeUnconfirmedTransactionSpy.firstCall.args[0]).to.be.equal(unconfirmedIds[0]);
+    });
+
+    it('should call removeUnconfirmedTransaction if applyUnconfirmed rejects', async () => {
+      const removeUnconfirmedTransactionSpy = sandbox.spy(instance as any, 'removeUnconfirmedTransaction');
+      sandbox.stub(instance as any, 'processVerifyTransaction').resolves();
+      txModuleStub.stubs.applyUnconfirmed.rejects('err');
+      await instance.applyUnconfirmedList(unconfirmedIds, txModuleStub);
+      expect(removeUnconfirmedTransactionSpy.callCount).to.be.equal(unconfirmedIds.length);
+      expect(removeUnconfirmedTransactionSpy.firstCall.args[0]).to.be.equal(unconfirmedIds[0]);
+    });
 
   });
 
