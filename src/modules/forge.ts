@@ -56,7 +56,7 @@ export class ForgeModule implements IForgeModule {
   @inject(Symbols.modules.blocksSubModules.process)
   private blocksProcessModule: IBlocksModuleProcess;
 
-  public getEnabledKeys() {
+  public getEnabledKeys(): publicKey[] {
     return Object.keys(this.enabledKeys)
       .filter((pk) => this.enabledKeys[pk] === true);
   }

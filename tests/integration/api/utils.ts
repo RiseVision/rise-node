@@ -27,6 +27,39 @@ export const checkReturnObjKeyVal = (objKey: string, expectedValue: any, path: s
       });
   });
 };
+export const checkEnumParam = (paramName: string, allowedValues: string[], validUrl: string) => {
+  for (const value of allowedValues) {
+    it(`should allow ${paramName} to be ${value}`, async () => {
+      const theURLOBJ = url.parse(validUrl, true);
+      delete theURLOBJ.query[paramName];
+      delete theURLOBJ.search;
+      delete theURLOBJ.path;
+      delete theURLOBJ.href;
+      theURLOBJ.query[paramName] = value;
+      return supertest(initializer.appManager.expressApp)
+        .get(url.format(theURLOBJ))
+        .expect(200)
+        .then((response) => {
+          expect(response.body.success).is.true;
+        });
+    });
+  }
+
+  it(`should disallow anything not included in allowed params for ${paramName}`, async () => {
+    const theURLOBJ = url.parse(validUrl, true);
+    delete theURLOBJ.query[paramName];
+    delete theURLOBJ.search;
+    delete theURLOBJ.path;
+    delete theURLOBJ.href;
+    theURLOBJ.query[paramName] = 'ahahahaha';
+    return supertest(initializer.appManager.expressApp)
+      .get(url.format(theURLOBJ))
+      .expect(500)
+      .then((response) => {
+        expect(response.body.success).is.false;
+      });
+  });
+}
 export const checkRequiredParam = (paramName: string, validUrl: string) => {
   it(`should throw if ${paramName} is not provided`, async () => {
     const theURLOBJ = url.parse(validUrl, true);
@@ -59,10 +92,16 @@ export const checkRequiredParam = (paramName: string, validUrl: string) => {
 //
 // }
 
-export const checkIntParam = (paramName: string, baseUrl: string, constraints: { min?: number, max?: string | number } = {}) => {
+export const checkIntParam = (paramName: string, validURL: string, constraints: { min?: number, max?: string | number } = {}) => {
   it(`should throw if ${paramName} is given as string`, async () => {
+    const theURLOBJ = url.parse(validURL, true);
+    delete theURLOBJ.query[paramName];
+    delete theURLOBJ.search;
+    delete theURLOBJ.path;
+    delete theURLOBJ.href;
+    theURLOBJ.query[paramName] = 'ahah';
     return supertest(initializer.appManager.expressApp)
-      .get(`${baseUrl}?${paramName}=ahaha`)
+      .get(url.format(theURLOBJ))
       .expect(500)
       .then((response) => {
         expect(response.body.success).is.false;
@@ -72,8 +111,14 @@ export const checkIntParam = (paramName: string, baseUrl: string, constraints: {
 
   if (typeof(constraints.min) !== 'undefined') {
     it(`Should throw if ${constraints.min - 1} is passed for ${paramName}`, async () => {
+      const theURLOBJ = url.parse(validURL, true);
+      delete theURLOBJ.query[paramName];
+      delete theURLOBJ.search;
+      delete theURLOBJ.path;
+      delete theURLOBJ.href;
+      theURLOBJ.query[paramName] = `${constraints.min - 1}`;
       return supertest(initializer.appManager.expressApp)
-        .get(`${baseUrl}?${paramName}=${constraints.min - 1}`)
+        .get(url.format(theURLOBJ))
         .expect(500)
         .then((response) => {
           expect(response.body.success).is.false;
@@ -85,8 +130,14 @@ export const checkIntParam = (paramName: string, baseUrl: string, constraints: {
   if (typeof(constraints.max) !== 'undefined') {
     const outOfRangeValue = new BigNumber(constraints.max).add(1).toString();
     it(`Should throw if ${outOfRangeValue} is passed for ${paramName}`, async () => {
+      const theURLOBJ = url.parse(validURL, true);
+      delete theURLOBJ.query[paramName];
+      delete theURLOBJ.search;
+      delete theURLOBJ.path;
+      delete theURLOBJ.href;
+      theURLOBJ.query[paramName] = outOfRangeValue;
       return supertest(initializer.appManager.expressApp)
-        .get(`${baseUrl}?${paramName}=${outOfRangeValue}`)
+        .get(url.format(theURLOBJ))
         .expect(500)
         .then((response) => {
           expect(response.body.success).is.false;

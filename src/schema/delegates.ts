@@ -50,6 +50,7 @@ export default {
     properties: {
       publicKey: {
         type: 'string',
+        format: 'publicKey',
       },
       username : {
         type     : 'string',

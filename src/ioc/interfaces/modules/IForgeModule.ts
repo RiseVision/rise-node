@@ -6,7 +6,7 @@ export interface IForgeModule {
    * Returns the enabled publicKeys
    * @return {string[]}
    */
-  getEnabledKeys(): string[];
+  getEnabledKeys(): publicKey[];
   /**
    * Checks if publicKey is enabled to forge
    * @return boolean true if forging is enabled for such pk false otherwise
