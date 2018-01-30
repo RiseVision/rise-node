@@ -32,7 +32,7 @@ import {
 } from './logic/transactions';
 
 import {
-  AccountsModule, BlocksModule, Cache, DelegatesModule, ForgeModule, LoaderModule, MultisignaturesModule,
+  AccountsModule, BlocksModule, Cache, DelegatesModule, DummyCache, ForgeModule, LoaderModule, MultisignaturesModule,
   PeersModule, RoundsModule, SystemModule, TransactionsModule, TransportModule
 } from './modules/';
 import { BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify } from './modules/blocks/';
@@ -246,7 +246,11 @@ export class AppManager {
     this.container.bind(Symbols.modules.blocksSubModules.process).to(BlocksModuleProcess).inSingletonScope();
     this.container.bind(Symbols.modules.blocksSubModules.utils).to(BlocksModuleUtils).inSingletonScope();
     this.container.bind(Symbols.modules.blocksSubModules.verify).to(BlocksModuleVerify).inSingletonScope();
-    this.container.bind(Symbols.modules.cache).to(Cache).inSingletonScope();
+    if (this.appConfig.cacheEnabled) {
+      this.container.bind(Symbols.modules.cache).to(Cache).inSingletonScope();
+    } else {
+      this.container.bind(Symbols.modules.cache).to(DummyCache).inSingletonScope();
+    }
     this.container.bind(Symbols.modules.delegates).to(DelegatesModule).inSingletonScope();
     this.container.bind(Symbols.modules.forge).to(ForgeModule).inSingletonScope();
     this.container.bind(Symbols.modules.fork).to(ForkModule).inSingletonScope();
