@@ -1,10 +1,12 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { JobsQueueStub, LoggerStub, PeersLogicStub, PeersModuleStub,
-         TransactionLogicStub, TransactionsModuleStub } from '../../stubs';
+import { BroadcasterLogic, BroadcastTaskOptions } from '../../../src/logic';
+import {
+  JobsQueueStub, LoggerStub, PeersLogicStub, PeersModuleStub,
+  TransactionLogicStub, TransactionsModuleStub
+} from '../../stubs';
 import { constants } from './../../../src/helpers/';
-import { BroadcasterLogic, BroadcastTaskOptions } from './../../../src/logic/broadcaster';
 
 // tslint:disable no-unused-expression
 describe('logic/broadcaster', () => {
@@ -15,15 +17,15 @@ describe('logic/broadcaster', () => {
   let loggerStub: LoggerStub;
   let peersLogicStub: PeersLogicStub;
   let transactionLogicStub: TransactionLogicStub;
-  let fakeAppState: {set: SinonStub};
+  let fakeAppState: { set: SinonStub };
   let peersModuleStub: PeersModuleStub;
   let transactionsModuleStub: TransactionsModuleStub;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create({
+    sandbox                = sinon.sandbox.create({
       useFakeTimers: true,
     });
-    fakeConfig = {
+    fakeConfig             = {
       broadcasts: {
         broadcastInterval: 1,
         broadcastLimit   : 2,
@@ -35,24 +37,24 @@ describe('logic/broadcaster', () => {
         force: false,
       },
     };
-    jobsQueueStub = new JobsQueueStub();
-    fakeAppState = {set: sandbox.stub()};
-    loggerStub = new LoggerStub();
-    peersLogicStub = new PeersLogicStub();
-    transactionLogicStub = new TransactionLogicStub();
-    peersModuleStub = new PeersModuleStub();
+    jobsQueueStub          = new JobsQueueStub();
+    fakeAppState           = { set: sandbox.stub() };
+    loggerStub             = new LoggerStub();
+    peersLogicStub         = new PeersLogicStub();
+    transactionLogicStub   = new TransactionLogicStub();
+    peersModuleStub        = new PeersModuleStub();
     transactionsModuleStub = new TransactionsModuleStub();
 
     // Dependency injection
-    instance = new BroadcasterLogic();
-    (instance as any).config = fakeConfig;
-    (instance as any).constants = constants;
-    (instance as any).jobsQueue = jobsQueueStub;
-    (instance as any).logger = loggerStub;
-    (instance as any).peersLogic = peersLogicStub;
-    (instance as any).transactionLogic = transactionLogicStub;
-    (instance as any).appState = fakeAppState;
-    (instance as any).peersModule = peersModuleStub;
+    instance                             = new BroadcasterLogic();
+    (instance as any).config             = fakeConfig;
+    (instance as any).constants          = constants;
+    (instance as any).jobsQueue          = jobsQueueStub;
+    (instance as any).logger             = loggerStub;
+    (instance as any).peersLogic         = peersLogicStub;
+    (instance as any).transactionLogic   = transactionLogicStub;
+    (instance as any).appState           = fakeAppState;
+    (instance as any).peersModule        = peersModuleStub;
     (instance as any).transactionsModule = transactionsModuleStub;
   });
 
@@ -242,7 +244,7 @@ describe('logic/broadcaster', () => {
       createdPeers.forEach((peer, index) => {
         expect(loggerStub.stubs.debug.getCall(index + 1).args.length).to.be.equal(2);
         expect(loggerStub.stubs.debug.getCall(index + 1).args[0]).to.be.
-        equal(`Failed to broadcast to peer: ${peer.string}`);
+         equal(`Failed to broadcast to peer: ${peer.string}`);
         expect(loggerStub.stubs.debug.getCall(index + 1).args[1]).to.be.equal(error);
       });
 
@@ -261,15 +263,15 @@ describe('logic/broadcaster', () => {
 
     it('should call peer.makeRequest per each created peer instance', async () => {
       peersLogicStub.stubs.create.reset();
-      const stubs = [];
+      const stubs              = [];
       let makeRequestCallCount = 0;
       peersLogicStub.stubs.create.callsFake((p) => {
         const peer = {
-          makeRequest: sandbox.stub().callsFake((o) => {
+          makeRequest: sandbox.stub().callsFake(() => {
             makeRequestCallCount++;
             return Promise.resolve();
           }),
-          peer: p,
+          peer       : p,
         };
         stubs.push(peer);
         return peer;
@@ -312,7 +314,7 @@ describe('logic/broadcaster', () => {
     });
 
     it('should return true if relays is greater', () => {
-      obj.relays = fakeConfig.broadcasts.relayLimit;
+      obj.relays   = fakeConfig.broadcasts.relayLimit;
       const result = instance.maxRelays(obj);
       expect(loggerStub.stubs.debug.calledOnce).to.be.true;
       expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(2);
@@ -321,306 +323,264 @@ describe('logic/broadcaster', () => {
       expect(result).to.be.true;
     });
 
-    it('return false if relays is less', () => {
+    it('should return false if relays is less', () => {
       const result = instance.maxRelays(obj);
       expect(obj.relays).to.be.equal(fakeConfig.broadcasts.relayLimit);
       expect(result).to.be.false;
     });
   });
 
-  // describe('filterQueue', () => {
-  //   let task: any;
-  //   let length: any;
-  //   let filterStub: any;
-  //
-  //   beforeEach(() => {
-  //     task = {
-  //       options: {
-  //         immediate: true,
-  //         data     : {
-  //           transaction: 'transaction'
-  //         }
-  //       }
-  //     };
-  //
-  //     instance.queue.push(task);
-  //     length = instance.queue.length;
-  //
-  //     filterStub = sandbox.stub((instance as any), 'filterTransaction');
-  //     filterStub.resolves(true);
-  //   });
-  //
-  //   it('logger.debug is called', async () => {
-  //     await (instance as any).filterQueue();
-  //
-  //     expect(library.logger.debug.calledTwice).to.be.true;
-  //     expect(library.logger.debug.firstCall.args.length).to.be.equal(1);
-  //     expect(library.logger.debug.firstCall.args[0]).to.be.equal(`Broadcast before filtering: ${length}`);
-  //     expect(library.logger.debug.secondCall.args.length).to.be.equal(1);
-  //     expect(library.logger.debug.secondCall.args[0]).to.be.equal(`Broadcasts after filtering: ${instance.queue.length}`);
-  //   });
-  //
-  //   it('immediate true', async () => {
-  //     await (instance as any).filterQueue();
-  //
-  //     expect(instance.queue).to.be.deep.equal([task]);
-  //   });
-  //
-  //   it('immediate false; data true; filter true', async () => {
-  //     task.options.immediate = false;
-  //
-  //     await (instance as any).filterQueue();
-  //
-  //     expect(instance.queue).to.be.deep.equal([task]);
-  //   });
-  //
-  //   it('immediate false; data true; filter false', async () => {
-  //     task.options.immediate = false;
-  //     filterStub.resolves(false);
-  //
-  //     await (instance as any).filterQueue();
-  //
-  //     expect(instance.queue).to.be.deep.equal([]);
-  //   });
-  //
-  //   it('immediate false; data false', async () => {
-  //     task.options.immediate = false;
-  //     task.options.data      = false;
-  //
-  //     await (instance as any).filterQueue();
-  //
-  //     expect(instance.queue).to.be.deep.equal([task]);
-  //   });
-  // });
-  //
-  // describe('filterTransaction', () => {
-  //   let tx;
-  //
-  //   beforeEach(() => {
-  //     tx = { id: 'id' };
-  //   });
-  //
-  //   it('tx undefined; false is returned', async () => {
-  //     const result = await (instance as any).filterTransaction();
-  //
-  //     expect(modules.transactions.transactionInPool.called).to.be.false;
-  //     expect(result).to.be.false;
-  //   });
-  //
-  //   it('tx is in pool; true is returned', async () => {
-  //     modules.transactions.transactionInPool.returns(true);
-  //     const result = await (instance as any).filterTransaction(tx);
-  //
-  //     expect(modules.transactions.transactionInPool.calledOnce).to.be.true;
-  //     expect(modules.transactions.transactionInPool.firstCall.args.length).to.be.equal(1);
-  //     expect(modules.transactions.transactionInPool.firstCall.args[0]).to.be.equal(tx.id);
-  //
-  //     expect(library.logic.transactions.assertNonConfirmed.called).to.be.false;
-  //
-  //     expect(result).to.be.true;
-  //   });
-  //
-  //   it('tx is not in pool; assert doesn\'t throw error', async () => {
-  //     modules.transactions.transactionInPool.returns(false);
-  //
-  //     const result = await (instance as any).filterTransaction(tx);
-  //
-  //     expect(modules.transactions.transactionInPool.calledOnce).to.be.true;
-  //     expect(modules.transactions.transactionInPool.firstCall.args.length).to.be.equal(1);
-  //     expect(modules.transactions.transactionInPool.firstCall.args[0]).to.be.equal(tx.id);
-  //
-  //     expect(library.logic.transactions.assertNonConfirmed.calledOnce).to.be.true;
-  //     expect(library.logic.transactions.assertNonConfirmed.firstCall.args.length).to.be.equal(1);
-  //     expect(library.logic.transactions.assertNonConfirmed.firstCall.args[0]).to.be.equal(tx);
-  //
-  //     expect(result).to.be.true;
-  //   });
-  //
-  //   it('tx is not in pool; assert throws error', async () => {
-  //     modules.transactions.transactionInPool.returns(false);
-  //     library.logic.transactions.assertNonConfirmed.throws(new Error());
-  //
-  //     const result = await (instance as any).filterTransaction(tx);
-  //
-  //     expect(modules.transactions.transactionInPool.calledOnce).to.be.true;
-  //     expect(modules.transactions.transactionInPool.firstCall.args.length).to.be.equal(1);
-  //     expect(modules.transactions.transactionInPool.firstCall.args[0]).to.be.equal(tx.id);
-  //
-  //     expect(library.logic.transactions.assertNonConfirmed.calledOnce).to.be.true;
-  //     expect(library.logic.transactions.assertNonConfirmed.firstCall.args.length).to.be.equal(1);
-  //     expect(library.logic.transactions.assertNonConfirmed.firstCall.args[0]).to.be.equal(tx);
-  //
-  //     expect(result).to.be.false;
-  //   });
-  // });
-  //
-  // describe('squashQueue', () => {
-  //   let routes;
-  //   let broadcasts;
-  //
-  //   beforeEach(() => {
-  //     routes     = [{
-  //       path      : 'type1',
-  //       collection: 'collection1',
-  //       object    : 'object1',
-  //       method    : 'method1'
-  //     }, {
-  //       path      : 'type2',
-  //       collection: 'collection2',
-  //       object    : 'object2',
-  //       method    : 'method2'
-  //     }];
-  //     broadcasts = [{
-  //       options: { api: 'type1', data: { object1: 'object1' } }
-  //     }, {
-  //       options: { api: 'type2', data: { object2: 'object2' } }
-  //     }, {
-  //       options: { api: 'type1', data: { object1: 'object1' } }
-  //     }];
-  //
-  //     instance.routes = routes;
-  //   });
-  //
-  //   it('compare result', () => {
-  //     const result = (instance as any).squashQueue(broadcasts);
-  //
-  //     expect(result).to.be.deep.equal([{
-  //       options: {
-  //         api      : routes[0]['path'],
-  //         data     : {
-  //           [routes[0]['collection']]: [
-  //             broadcasts[0].options.data.object1,
-  //             broadcasts[2].options.data.object1
-  //           ]
-  //         },
-  //         immediate: false,
-  //         method   : routes[0]['method']
-  //       }
-  //     }, {
-  //       options: {
-  //         api      : routes[1]['path'],
-  //         data     : {
-  //           [routes[1]['collection']]: [
-  //             broadcasts[1].options.data.object2
-  //           ]
-  //         },
-  //         immediate: false,
-  //         method   : routes[1]['method']
-  //       }
-  //     }]);
-  //   });
-  // });
-  //
-  // describe('releaseQueue', () => {
-  //   let queue;
-  //   let broadcasts;
-  //   let peers;
-  //
-  //   let filterQueueStub;
-  //   let squashQueueStub;
-  //   let getPeersStub;
-  //   let broadcastStub;
-  //
-  //   beforeEach(() => {
-  //     queue      = [{}, {}];
-  //     broadcasts = [{
-  //       params : { name: 'params1' },
-  //       options: 'options1'
-  //     }, {
-  //       params : { name: 'params2' },
-  //       options: 'options2'
-  //     }];
-  //     peers      = [{ some: 'some1' }, { some: 'some2' }];
-  //
-  //     instance.queue = queue;
-  //
-  //     filterQueueStub = sandbox.stub(instance as any, 'filterQueue');
-  //     squashQueueStub = sandbox.stub(instance as any, 'squashQueue');
-  //     getPeersStub    = sandbox.stub(instance as any, 'getPeers');
-  //     broadcastStub   = sandbox.stub(instance as any, 'broadcast');
-  //
-  //     squashQueueStub.returns(broadcasts);
-  //     getPeersStub.returns(peers);
-  //     broadcastStub.resolves();
-  //   });
-  //
-  //   it('library logger debug is called first time', async () => {
-  //     await (instance as any).releaseQueue();
-  //
-  //     expect(library.logger.debug.callCount).to.be.at.least(1);
-  //     expect(library.logger.debug.firstCall.args.length).to.be.equal(1);
-  //     expect(library.logger.debug.firstCall.args[0]).to.be.equal('Releasing enqueued broadcasts');
-  //   });
-  //
-  //   it('if queue.length == 0 filterQueue is not called', async () => {
-  //     instance.queue = [];
-  //
-  //     const result = await (instance as any).releaseQueue();
-  //
-  //     expect(library.logger.debug.callCount).to.be.equal(2);
-  //     expect(library.logger.debug.secondCall.args.length).to.be.equal(1);
-  //     expect(library.logger.debug.secondCall.args[0]).to.be.equal('Queue empty');
-  //
-  //     expect(result).to.be.undefined;
-  //
-  //     expect(filterQueueStub.called).to.be.false;
-  //   });
-  //
-  //   it('filterQueue is called', async () => {
-  //     await (instance as any).releaseQueue();
-  //
-  //     expect(filterQueueStub.calledOnce).to.be.true;
-  //     expect(filterQueueStub.firstCall.args.length).to.be.equal(0);
-  //   });
-  //
-  //   it('squashQueue is called', async () => {
-  //     await (instance as any).releaseQueue();
-  //
-  //     expect(squashQueueStub.calledOnce).to.be.true;
-  //     expect(squashQueueStub.firstCall.args.length).to.be.equal(1);
-  //     expect(squashQueueStub.firstCall.args[0]).to.be.deep.equal([{}, {}]);
-  //   });
-  //
-  //   it('getPeers is called', async () => {
-  //     await (instance as any).releaseQueue();
-  //
-  //     expect(getPeersStub.calledOnce).to.be.true;
-  //     expect(getPeersStub.firstCall.args.length).to.be.equal(1);
-  //     expect(getPeersStub.firstCall.args[0]).to.be.deep.equal({});
-  //   });
-  //
-  //   it('broadcast is called', async () => {
-  //     await (instance as any).releaseQueue();
-  //
-  //     expect(broadcastStub.callCount).to.be.equal(broadcasts.length);
-  //     broadcasts.forEach((broadcast, index) => {
-  //       expect(broadcastStub.getCall(index).args.length).to.be.equal(2);
-  //       expect(broadcastStub.getCall(index).args[0]).to.be.deep.equal({
-  //         peers: peers,
-  //         name : broadcast.params.name
-  //       });
-  //       expect(broadcastStub.getCall(index).args[1]).to.be.equal(broadcast.options);
-  //     });
-  //   });
-  //
-  //   it('fail; logger.debug is called', async () => {
-  //     const error = new Error('error');
-  //     broadcastStub.rejects(error);
-  //
-  //     await (instance as any).releaseQueue();
-  //
-  //     expect(library.logger.debug.calledTwice).to.be.true;
-  //     expect(library.logger.debug.secondCall.args.length).to.be.equal(2);
-  //     expect(library.logger.debug.secondCall.args[0]).to.be.equal('Failed to release broadcast queue');
-  //     expect(library.logger.debug.secondCall.args[1]).to.be.equal(error);
-  //   });
-  //
-  //   it('success; logger.debug is called', async () => {
-  //     await (instance as any).releaseQueue();
-  //
-  //     expect(library.logger.debug.calledTwice).to.be.true;
-  //     expect(library.logger.debug.secondCall.args.length).to.be.equal(1);
-  //     expect(library.logger.debug.secondCall.args[0]).to.be.equal(`Broadcasts released ${broadcasts.length}`);
-  //   });
-  // });
+  describe('filterQueue', () => {
+    let task: any;
+    let length: number;
+    let filterStub: SinonStub;
+
+    beforeEach(() => {
+      task = {
+        options: {
+          immediate: true,
+          data     : {
+            transaction: 'transaction',
+          },
+        },
+      };
+
+      instance.queue.push(task);
+      length = instance.queue.length;
+
+      filterStub = sandbox.stub((instance as any), 'filterTransaction');
+      filterStub.resolves(true);
+    });
+
+    it('should call logger.debug', async () => {
+      await (instance as any).filterQueue();
+      expect(loggerStub.stubs.debug.calledTwice).to.be.true;
+      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal(`Broadcast before filtering: ${length}`);
+      expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.
+      equal(`Broadcasts after filtering: ${instance.queue.length}`);
+    });
+
+    it('should behave correctly when options.immediate=true', async () => {
+      await (instance as any).filterQueue();
+      expect(instance.queue).to.be.deep.equal([task]);
+    });
+
+    it('should behave correctly when options.immediate false; data true; filter true', async () => {
+      task.options.immediate = false;
+      await (instance as any).filterQueue();
+      expect(instance.queue).to.be.deep.equal([task]);
+    });
+
+    it('should behave correctly when immediate false; data true; filter false', async () => {
+      task.options.immediate = false;
+      filterStub.resolves(false);
+      await (instance as any).filterQueue();
+      expect(instance.queue).to.be.deep.equal([]);
+    });
+
+    it('should behave correctly when immediate false; data false', async () => {
+      task.options.immediate = false;
+      task.options.data      = false;
+      await (instance as any).filterQueue();
+      expect(instance.queue).to.be.deep.equal([task]);
+    });
+  });
+
+  describe('filterTransaction', () => {
+    let tx;
+
+    beforeEach(() => {
+      tx = { id: 'id' };
+    });
+
+    it('should return false when tx undefined', async () => {
+      const result = await (instance as any).filterTransaction();
+      expect(transactionsModuleStub.stubs.transactionInPool.called).to.be.false;
+      expect(result).to.be.false;
+    });
+
+    it('should return true when tx is in pool', async () => {
+      transactionsModuleStub.stubs.transactionInPool.returns(true);
+      const result = await (instance as any).filterTransaction(tx);
+      expect(transactionsModuleStub.stubs.transactionInPool.calledOnce).to.be.true;
+      expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args.length).to.be.equal(1);
+      expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args[0]).to.be.equal(tx.id);
+      expect(transactionLogicStub.stubs.assertNonConfirmed.called).to.be.false;
+      expect(result).to.be.true;
+    });
+
+    it('should behave correctly when tx is not in pool and assert does not throw error', async () => {
+      transactionsModuleStub.stubs.transactionInPool.returns(false);
+      const result = await (instance as any).filterTransaction(tx);
+      expect(transactionsModuleStub.stubs.transactionInPool.calledOnce).to.be.true;
+      expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args.length).to.be.equal(1);
+      expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args[0]).to.be.equal(tx.id);
+      expect(transactionLogicStub.stubs.assertNonConfirmed.calledOnce).to.be.true;
+      expect(transactionLogicStub.stubs.assertNonConfirmed.firstCall.args.length).to.be.equal(1);
+      expect(transactionLogicStub.stubs.assertNonConfirmed.firstCall.args[0]).to.be.equal(tx);
+      expect(result).to.be.true;
+    });
+
+    it('should behave correctly when tx is not in pool; assert throws error', async () => {
+      transactionsModuleStub.stubs.transactionInPool.returns(false);
+      transactionLogicStub.stubs.assertNonConfirmed.throws(new Error());
+      const result = await (instance as any).filterTransaction(tx);
+      expect(transactionsModuleStub.stubs.transactionInPool.calledOnce).to.be.true;
+      expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args.length).to.be.equal(1);
+      expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args[0]).to.be.equal(tx.id);
+      expect(transactionLogicStub.stubs.assertNonConfirmed.calledOnce).to.be.true;
+      expect(transactionLogicStub.stubs.assertNonConfirmed.firstCall.args.length).to.be.equal(1);
+      expect(transactionLogicStub.stubs.assertNonConfirmed.firstCall.args[0]).to.be.equal(tx);
+      expect(result).to.be.false;
+    });
+  });
+
+  describe('squashQueue', () => {
+    let routes;
+    let broadcasts;
+
+    beforeEach(() => {
+      routes     = [{
+        path      : 'type1',
+        collection: 'collection1',
+        object    : 'object1',
+        method    : 'method1',
+      }, {
+        path      : 'type2',
+        collection: 'collection2',
+        object    : 'object2',
+        method    : 'method2',
+      }];
+      broadcasts = [{
+        options: { api: 'type1', data: { object1: 'object1' } },
+      }, {
+        options: { api: 'type2', data: { object2: 'object2' } },
+      }, {
+        options: { api: 'type1', data: { object1: 'object1' } },
+      }];
+
+      instance.routes = routes;
+    });
+
+    it('should return the expected result', () => {
+      const result = (instance as any).squashQueue(broadcasts);
+
+      expect(result).to.be.deep.equal([{
+        options: {
+          api      : routes[0].path,
+          data     : {
+            [routes[0].collection]: [
+              broadcasts[0].options.data.object1,
+              broadcasts[2].options.data.object1,
+            ],
+          },
+          immediate: false,
+          method   : routes[0].method,
+        },
+      }, {
+        options: {
+          api      : routes[1].path,
+          data     : {
+            [routes[1].collection]: [
+              broadcasts[1].options.data.object2,
+            ],
+          },
+          immediate: false,
+          method   : routes[1].method,
+        },
+      }]);
+    });
+  });
+
+  describe('releaseQueue', () => {
+    let queue;
+    let broadcasts;
+    let peers;
+
+    let filterQueueStub: SinonStub;
+    let squashQueueStub: SinonStub;
+    let broadcastStub: SinonStub;
+
+    beforeEach(() => {
+      queue      = [{}, {}];
+      broadcasts = [{
+        params : { name: 'params1' },
+        options: 'options1',
+      }, {
+        params : { name: 'params2' },
+        options: 'options2',
+      }];
+      peers      = [{ some: 'some1' }, { some: 'some2' }];
+
+      instance.queue = queue;
+
+      filterQueueStub = sandbox.stub(instance as any, 'filterQueue');
+      squashQueueStub = sandbox.stub(instance as any, 'squashQueue');
+      broadcastStub   = sandbox.stub(instance as any, 'broadcast');
+
+      squashQueueStub.returns(broadcasts);
+      broadcastStub.resolves();
+    });
+
+    it('should call logger.debug at first time', async () => {
+      await (instance as any).releaseQueue();
+      expect(loggerStub.stubs.debug.callCount).to.be.at.least(1);
+      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Releasing enqueued broadcasts');
+    });
+
+    it('should not call filterQueue if queue.length == 0', async () => {
+      instance.queue = [];
+      const result   = await (instance as any).releaseQueue();
+      expect(loggerStub.stubs.debug.callCount).to.be.equal(2);
+      expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal('Queue empty');
+      expect(result).to.be.undefined;
+      expect(filterQueueStub.called).to.be.false;
+    });
+
+    it('should call filterQueue if queue is not empty', async () => {
+      await (instance as any).releaseQueue();
+      expect(filterQueueStub.calledOnce).to.be.true;
+      expect(filterQueueStub.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should call squashQueue', async () => {
+      await (instance as any).releaseQueue();
+      expect(squashQueueStub.calledOnce).to.be.true;
+      expect(squashQueueStub.firstCall.args.length).to.be.equal(1);
+      expect(squashQueueStub.firstCall.args[0]).to.be.deep.equal([{}, {}]);
+    });
+
+    it('should call broadcast', async () => {
+      await (instance as any).releaseQueue();
+      expect(broadcastStub.callCount).to.be.equal(broadcasts.length);
+      broadcasts.forEach((broadcast, index) => {
+        expect(broadcastStub.getCall(index).args.length).to.be.equal(2);
+        expect(broadcastStub.getCall(index).args[0]).to.be.deep.equal({
+          name: broadcast.params.name,
+        });
+        expect(broadcastStub.getCall(index).args[1]).to.be.equal(broadcast.options);
+      });
+    });
+
+    it('should call logger.debug on fail', async () => {
+      const error = new Error('error');
+      broadcastStub.rejects(error);
+      await (instance as any).releaseQueue();
+      expect(loggerStub.stubs.warn.calledOnce).to.be.true;
+      expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Failed to release broadcast queue');
+      expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.equal(error);
+    });
+
+    it('should call logger.debug on success', async () => {
+      await (instance as any).releaseQueue();
+      expect(loggerStub.stubs.debug.calledTwice).to.be.true;
+      expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal(`Broadcasts released ${broadcasts.length}`);
+    });
+  });
 });
