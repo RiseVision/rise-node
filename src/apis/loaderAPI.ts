@@ -1,10 +1,10 @@
-import { constants as constantsType } from '../helpers/';
-import { IoCSymbol } from '../helpers/decorators/iocSymbol';
-import { Symbols } from '../ioc/symbols';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController } from 'routing-controllers';
-import { IBlocksModule, ILoaderModule, ISystemModule } from '../ioc/interfaces/modules';
+import { constants as constantsType } from '../helpers/';
+import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { IAppState } from '../ioc/interfaces/logic';
+import { IBlocksModule, ILoaderModule, ISystemModule } from '../ioc/interfaces/modules';
+import { Symbols } from '../ioc/symbols';
 
 @JsonController('/api/loader/status')
 @IoCSymbol(Symbols.api.loader)
