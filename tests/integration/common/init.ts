@@ -9,7 +9,7 @@ import {
   IBlocksModule, IBlocksModuleChain,
   IBlocksModuleProcess,
   IDelegatesModule,
-  IForgeModule
+  ITransactionsModule
 } from '../../../src/ioc/interfaces/modules';
 import { getKeypairByPkey } from './utils';
 
@@ -52,6 +52,7 @@ export class IntegrationTestInitializer {
 
   public async rawMineBlocks(howMany: number): Promise<number> {
     const blockModule     = this.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
+    const txModule        = this.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
     const blockProcess    = this.appManager.container.get<IBlocksModuleProcess>(Symbols.modules.blocksSubModules.process);
     const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
     const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
@@ -61,6 +62,7 @@ export class IntegrationTestInitializer {
       const theSlot    = height + i + 1;
       const delegateId = delegates[theSlot % slots.delegates];
       const kp         = getKeypairByPkey(delegateId);
+      await txModule.fillPool();
       await blockProcess.generateBlock(
         kp,
         slots.getSlotTime(theSlot)

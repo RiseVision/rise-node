@@ -21,7 +21,9 @@ export const checkReturnObjKeyVal = (objKey: string, expectedValue: any, path: s
       .get(path)
       .expect(200)
       .then((response) => {
-        expect(response.body.success).is.true;
+        if (objKey !== 'success') {
+          expect(response.body.success).is.true;
+        }
         expect(response.body).to.haveOwnProperty(objKey);
         expect(response.body[objKey]).to.be.deep.eq(expectedValue);
       });

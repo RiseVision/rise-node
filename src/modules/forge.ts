@@ -99,8 +99,8 @@ export class ForgeModule implements IForgeModule {
         'delegatesNextForge',
         async () => {
           try {
-            await this.forge();
             await this.transactionsModule.fillPool();
+            await this.forge();
           } catch (err) {
             this.logger.warn('Error in nextForge', err);
           }
