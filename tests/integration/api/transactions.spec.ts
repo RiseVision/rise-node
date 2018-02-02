@@ -93,6 +93,14 @@ describe('api/transactions', () => {
 
     });
 
+    it('should disallow an unknown query parameter', async () => {
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/transactions?hey=brooother')
+        .expect(500)
+        .then((resp) => {
+          expect(resp.body.error).to.contain('Additional properties not allowed');
+        });
+    });
     describe('type filter', () => {
       it('should filter only send tx');
       it('should filter only vote tx', async () => {

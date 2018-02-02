@@ -181,6 +181,7 @@ export default {
         minimum: 0,
       },
     },
+    additionalProperties: false,
   },
   getTransaction       : {
     id        : 'transactions.getTransaction',
