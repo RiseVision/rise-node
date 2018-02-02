@@ -4,7 +4,7 @@ import { Get, JsonController, Put, QueryParam, QueryParams } from 'routing-contr
 import * as z_schema from 'z-schema';
 import { castFieldsToNumberUsingSchema } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
-import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { assertValidSchema, SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import schema from '../schema/transactions';
@@ -21,10 +21,8 @@ export class TransactionsAPI {
 
   @Get()
   public async getTransactions(@QueryParams() body: any) {
-    let params  = {};
     const pattern = /(and|or){1}:/i;
 
-    // Filter out 'and:'/'or:' from params to perform schema validation
     _.each(body, (value, key) => {
       const param = String(key).replace(pattern, '');
       // Dealing with array-like parameters (csv comma separated)
@@ -32,13 +30,10 @@ export class TransactionsAPI {
         value     = String(value).split(',');
         body[key] = value;
       }
-      params[param] = value;
+      // params[param] = value;
     });
-    params = castFieldsToNumberUsingSchema(schema.getTransactions, params);
-
-    if (!this.schema.validate(params, schema.getTransactions)) {
-      throw new Error(`Schema invalid ${this.schema.getLastErrors()[0].path} - ${this.schema.getLastError().message}`);
-    }
+    body = castFieldsToNumberUsingSchema(schema.getTransactions, body);
+    assertValidSchema(this.schema, body, { obj: schema.getTransactions, opts: {}});
 
     const { transactions, count } = await this.transactionsModule.list(body)
       .catch((err) => Promise.reject(new Error(`Failed to get transactions: ${err.message || err}`)));

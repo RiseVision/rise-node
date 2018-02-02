@@ -29,19 +29,31 @@ export function ValidateSchema() {
             );
           }
 
-          if (!this.schema.validate(args[schemaToValidate.index], schemaToValidate.obj)) {
-            const errorMessage = schemaToValidate.opts.errorString ||
-              `${this.schema.getLastError().details[0].path} - ${this.schema.getLastErrors()[0].message}`;
+          try {
+            assertValidSchema(this.schema, args[schemaToValidate.index], schemaToValidate.obj);
+          } catch (err) {
             if (isPromise) {
-              return Promise.reject(errorMessage);
+              return Promise.reject(err.message);
             }
-            throw new Error(errorMessage);
+            throw err;
           }
+
         }
       }
       return old.apply(this, args);
     };
   };
+}
+
+export function assertValidSchema(schema: z_schema,
+                                  objToValidate: any,
+                                  schemaToValidate: { obj: any, opts: { errorString?: string } }) {
+  if (!schema.validate(objToValidate, schemaToValidate.obj)) {
+    const errorMessage = schemaToValidate.opts.errorString ||
+      `${schema.getLastError().details[0].path} - ${schema.getLastErrors()[0].message}`;
+    throw new Error(errorMessage);
+  }
+
 }
 
 /**
@@ -53,9 +65,9 @@ export function SchemaValid(schemaObj: any, opts: string | { errorString?: strin
   return (target: any, propertyKey: string | symbol, parameterIndex: number) => {
     const curSchema = Reflect.getMetadata('__schema', target, propertyKey) || [];
     if (typeof(opts) === 'string') {
-      opts = { errorString: opts };
+      opts = {errorString: opts};
     }
-    curSchema.push({ index: parameterIndex, obj: schemaObj, opts });
+    curSchema.push({index: parameterIndex, obj: schemaObj, opts});
     Reflect.defineMetadata('__schema', curSchema, target, propertyKey);
   };
 }

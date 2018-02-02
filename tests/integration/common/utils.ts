@@ -9,6 +9,7 @@ import initializer from './init';
 import { ISystemModule, ITransactionsModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
+import { IBaseTransaction, VoteAsset } from '../../../src/logic/transactions';
 
 const delegates = require('../genesisDelegates.json');
 
@@ -40,13 +41,49 @@ export const confirmTransactions = async (txs: Array<ITransaction<any>>, confirm
     expect(txModule.transactionInPool(tx.id)).is.false; // (`TX ${tx.id} is still in pool :(`);
   }
 };
+export const createRandomWallet  = (): LiskWallet => {
+  return new dposOffline.wallets.LiskLikeWallet(uuid.v4(), 'R');
+};
 
-export const createRandomAccountWithFunds = async (howMany: number = 1000): Promise<{ wallet: LiskWallet, txID: string }> => {
-  const systemModule    = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
-  const d               = delegates[Math.floor(Math.random() * delegates.length)];
-  const recipientWallet = new dposOffline.wallets.LiskLikeWallet(uuid.v4(), 'R');
-  const senderWallet    = new dposOffline.wallets.LiskLikeWallet(d.secret, 'R');
-  const t               = new dposOffline.transactions.SendTx();
+export const createVoteTransaction = async (confirmations: number, from: LiskWallet, to: publicKey, add: boolean): Promise<ITransaction> => {
+  const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
+  const t            = new dposOffline.transactions.VoteTx({
+    votes: [`${add ? '+' : '-'}${to}`],
+  });
+  t.set('amount', 0);
+  t.set('fee', systemModule.getFees().fees.vote);
+  t.set('timestamp', 0);
+  t.set('recipientId', from.address);
+  const tx = t.sign(from);
+  if (confirmations > 0) {
+    await confirmTransactions([tx], confirmations);
+  }
+  return tx;
+};
+
+export const createSendTransaction = async (confirmations: number, amount: number, from: LiskWallet, dest: string): Promise<ITransaction> => {
+  const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
+  const t            = new dposOffline.transactions.SendTx();
+  t.set('amount', amount);
+  t.set('fee', systemModule.getFees().fees.send);
+  t.set('timestamp', 0);
+  t.set('recipientId', dest);
+  const tx = t.sign(from);
+  if (confirmations > 0) {
+    await confirmTransactions([tx], confirmations);
+  }
+  return tx;
+};
+
+export const getRandomDelegateWallet = (): LiskWallet => {
+  const d = delegates[Math.floor(Math.random() * delegates.length)];
+  return new dposOffline.wallets.LiskLikeWallet(d.secret, 'R');
+}
+
+export const createRandomAccountWithFunds = async (howMany: number = 1000, recipientWallet: LiskWallet = createRandomWallet()): Promise<{ wallet: LiskWallet, txID: string }> => {
+  const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
+  const senderWallet = getRandomDelegateWallet();
+  const t            = new dposOffline.transactions.SendTx();
   t.set('amount', howMany);
   t.set('fee', systemModule.getFees().fees.send);
   t.set('timestamp', 0);

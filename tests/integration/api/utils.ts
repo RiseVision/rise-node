@@ -4,6 +4,18 @@ import * as supertest from 'supertest';
 import initializer from '../common/init';
 import * as url from 'url';
 
+
+export const checkAddress = (paramName: string, baseUrl: string) => {
+  it(`should throw if ${paramName} is not a valid address`, async () => {
+    return supertest(initializer.appManager.expressApp)
+      .get(`${baseUrl}?${paramName}=1`)
+      .expect(500)
+      .then((response) => {
+        expect(response.body.success).is.false;
+        expect(response.body.error).to.contain(`${paramName} - Object didn't pass validation for format address`);
+      });
+  });
+};
 export const checkPubKey = (paramName: string, baseUrl: string) => {
   it(`should throw if ${paramName} is not a valid publicKey`, async () => {
     return supertest(initializer.appManager.expressApp)

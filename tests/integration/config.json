@@ -72,8 +72,8 @@
         "maxTxsPerQueue": 1000
     },
     "forging": {
-        "force": true,
-        "secret": [
+        "force": false,
+        "_secret": [
             "fluid slim diary sniff device cotton fun wonder jar submit gentle during",
             "buddy clay absurd crunch charge hood gaze embark awesome diesel sniff tribe",
             "diamond grain object regular enact tool gadget recipe cactus neutral nominee exile",
