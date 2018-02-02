@@ -1,9 +1,7 @@
 import { expect } from 'chai';
-
 import * as supertest from 'supertest';
 import initializer from '../common/init';
 import { checkPubKey, checkRequiredParam, checkReturnObjKeyVal } from './utils';
-import { createRandomAccountWithFunds } from '../common/utils';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/multisignatures', () => {
