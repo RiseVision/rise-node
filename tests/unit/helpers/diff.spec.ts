@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { merge, reverse } from '../../../src/helpers/diff';
+// tslint:disable no-string-literal no-unused-expression
 
 describe('helpers/diff', () => {
   describe('merge', () => {
@@ -24,6 +25,9 @@ describe('helpers/diff', () => {
       const arrCopy = ['a', 'b', 'c'];
       merge(arr, ['-a', '-b', '+d']);
       expect(arr).to.be.deep.eq(arrCopy);
+    });
+    it('should return null if all elements gets removed', () => {
+      expect(merge(['a', 'b'], ['-a', '-b'])).to.be.null;
     });
   });
 
