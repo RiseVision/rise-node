@@ -7,7 +7,7 @@
     "test-integration": "NODE_ENV=test mocha  --bail --require ts-node/register './tests/integration/**/*.spec.ts'",
     "test-unit": "NODE_ENV=test mocha  --bail --require ts-node/register './tests/unit/**/*.spec.ts'",
     "transpile": "shx rm -rf dist; tsc",
-    "test-unit-cover": "NODE_ENV=test istanbul cover _mocha -- --bail --require ts-node/register './tests/**/*.spec.js' && istanbul-coveralls "
+    "test-unit-cover": "NODE_ENV=test istanbul cover _mocha -- --bail --require ts-node/register './tests/**/*.spec.ts' && istanbul-coveralls "
   },
   "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
   "license": "GPL-3.0",

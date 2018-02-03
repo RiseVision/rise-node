@@ -23,7 +23,7 @@ import TransactionTypeStub from './logic/transactions/TransactionTypeStub';
 
 // Modules
 import IBlocksStub from './modules/IBlocksStub';
-import ISystemStub from './modules/ISystemStub';
+import { ISystemStub } from './modules/ISystemStub';
 import { PeersModuleStub } from './modules/PeersModuleStub';
 import { SystemModuleStub } from './modules/SystemModuleStub';
 import TransportModuleStub from './modules/TransportModuleStub';
