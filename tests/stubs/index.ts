@@ -8,6 +8,7 @@ import LoggerStub from './helpers/LoggerStub';
 import SlotsStub from './helpers/SlotsStub';
 import ZSchemaStub from './helpers/ZSchemaStub';
 import AccountsModuleStub from './modules/AccountsModuleStub';
+import { TransactionsModuleStub } from './modules/TransactionsModuleStub';
 
 // Logic
 import AccountLogicStub from './logic/AccountLogicStub';
@@ -23,6 +24,7 @@ import TransactionTypeStub from './logic/transactions/TransactionTypeStub';
 // Modules
 import IBlocksStub from './modules/IBlocksStub';
 import ISystemStub from './modules/ISystemStub';
+import { PeersModuleStub } from './modules/PeersModuleStub';
 import { SystemModuleStub } from './modules/SystemModuleStub';
 import TransportModuleStub from './modules/TransportModuleStub';
 
@@ -44,10 +46,12 @@ export {
   LoggerStub,
   PeerLogicStub,
   PeersLogicStub,
+  PeersModuleStub,
   RoundsLogicStub,
   SlotsStub,
   SystemModuleStub,
   TransactionLogicStub,
+  TransactionsModuleStub,
   TransactionTypeStub,
   TransportModuleStub,
   ZSchemaStub,

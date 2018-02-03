@@ -382,8 +382,8 @@ export class TransactionPool implements ITransactionPoolLogic {
   }
 
   /**
-   * Gets sender account verifies if its multisignature and evnetually gets requester
-   * process transaaction and verifies it.
+   * Gets sender account verifies if its multisignature and eventually gets requester
+   * process transaction and verifies it.
    */
   private async processVerifyTransaction(transaction: IBaseTransaction<any>, broadcast: boolean) {
     if (!transaction) {
