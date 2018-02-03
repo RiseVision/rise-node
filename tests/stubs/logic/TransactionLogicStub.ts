@@ -16,6 +16,9 @@ export default class TransactionLogicStub {
       resolve: boolean,
       return: any
     },
+    verifySignature: {
+      return: any
+    },
     assertNonConfirmed: {
       resolve: boolean,
       return: any
@@ -34,6 +37,7 @@ export default class TransactionLogicStub {
       objectNormalize: sinon.stub(),
       process: sinon.stub(),
       verify: sinon.stub(),
+      verifySignature: sinon.stub(),
       assertNonConfirmed: sinon.stub(),
     };
     this.stubConfig = {
@@ -41,6 +45,7 @@ export default class TransactionLogicStub {
       objectNormalize: {return: null },
       process: {return: null, resolve: true },
       verify: {return: null, resolve: true },
+      verifySignature: {return: true },
       assertNonConfirmed: {return: null, resolve: true },
     };
   }
@@ -75,6 +80,11 @@ export default class TransactionLogicStub {
     } else {
       return Promise.reject(this.stubConfig.verify.return);
     }
+  }
+
+  public verifySignature(...args) {
+    this.stubs.verifySignature.apply(this, args);
+    return this.stubConfig.verifySignature.return;
   }
 
   public assertNonConfirmed(...args) {
