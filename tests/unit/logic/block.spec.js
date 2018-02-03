@@ -226,18 +226,6 @@ describe("logic/block", function() {
     });
   });
 
-  describe("objectNormalize() with a bad block schema", function() {
-    it("throws an exception", function() {
-      clock.tick();
-      var instance = callback.args[0][1];
-      dummyBlock.greeting = "Hello World!";
-      var throwError = function() {
-        instance.objectNormalize(dummyBlock);
-      };
-      expect(throwError).to.throw("Failed to validate block schema");
-    });
-  });
-
   describe("getId", function() {
     it("returns an id string", function() {
       clock.tick();
