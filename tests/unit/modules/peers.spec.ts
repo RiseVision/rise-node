@@ -9,8 +9,9 @@ import { Symbols } from '../../../src/ioc/symbols';
 import { PeersModule } from '../../../src/modules';
 import { createContainer } from '../../utils/containerCreator';
 import { BasePeerType, PeerLogic, PeerState } from '../../../src/logic';
-import { PeersLogicStub, SystemModuleStub } from '../../stubs';
+import { BusStub, PeersLogicStub, SystemModuleStub } from '../../stubs';
 import { createFakePeer, createFakePeers } from '../../utils/fakePeersFactory';
+import DbStub from '../../stubs/helpers/DbStub';
 
 // tslint:disable no-unused-expression
 describe('modules/peers', () => {
@@ -221,6 +222,15 @@ describe('modules/peers', () => {
       expect(target).to.haveOwnProperty('peers');
       expect(target.peers).to.be.an('array');
     });
+    it('should not concat unmatchedbroadhash if limit is matching the matching peers length', async () => {
+      firstPeers = createFakePeers(10);
+      secondPeers = [createFakePeer()];
+      peersLogicStub.enqueueResponse('acceptable', firstPeers);
+      const t = await inst.list({limit: 10});
+      expect(t.peers.length).to.be.eq(10);
+      expect(t.peers).to.be.deep.eq(firstPeers);
+      expect(peersLogicStub.stubs.acceptable.calledOnce).is.true;
+    });
     it('should call getByFilter with broadhash filter', async () => {
       const systemModule     = container.get<SystemModuleStub>(Symbols.modules.system);
       systemModule.broadhash = 'broadhashhh';
@@ -241,7 +251,7 @@ describe('modules/peers', () => {
       expect(res.peers).to.be.empty;
     });
     it('should concat unmatched broadhash peers and truncate with limit.', async () => {
-      firstPeers = createFakePeers(5);
+      firstPeers  = createFakePeers(5);
       secondPeers = createFakePeers(10).map((item) => {
         item.broadhash = 'unmatched';
         return item;
@@ -260,26 +270,80 @@ describe('modules/peers', () => {
         expect(res.consensus).to.be.eq(0);
       });
       it('should return 100 if all matching broadhash', async () => {
-        firstPeers = createFakePeers(20);
+        firstPeers  = createFakePeers(20);
         secondPeers = [];
         peersLogicStub.stubs.acceptable.callsFake((w) => w);
-        const res = await inst.list({ });
+        const res = await inst.list({});
         expect(res.consensus).to.be.eq(100);
       });
       it('should return 25 if 25 matched and 100 did not on limit 100', async () => {
-        firstPeers = createFakePeers(25);
+        firstPeers  = createFakePeers(25);
         secondPeers = createFakePeers(100);
         peersLogicStub.stubs.acceptable.callsFake((w) => w);
         const res = await inst.list({ limit: 100 });
         expect(res.consensus).to.be.eq(25);
       });
       it('should return 33.33 if 25 matched and 50 did not on limit 100', async () => {
-        firstPeers = createFakePeers(25);
+        firstPeers  = createFakePeers(25);
         secondPeers = createFakePeers(50);
         peersLogicStub.stubs.acceptable.callsFake((w) => w);
         const res = await inst.list({ limit: 100 });
         expect(res.consensus).to.be.eq(33.33);
       });
+    });
+  });
+
+  // NON interface tests
+
+  describe('.cleanup', () => {
+    it('should not save anything if no peers known', async () => {
+      const dbStub = container.get<DbStub>(Symbols.generic.db);
+      peersLogicStub.enqueueResponse('list', []);
+      await inst.cleanup();
+      expect(dbStub.stubs.tx.called).is.false;
+    });
+    it('should save peers to database with single tx after cleaning peers table', async () => {
+      const dbStub = container.get<DbStub>(Symbols.generic.db);
+      const taskStub = {
+        batch: sinon.stub(),
+        none: sinon.stub(),
+      };
+      dbStub.stubs.tx.callsArgWith(0, taskStub);
+      const fakePeers = [createFakePeer(), createFakePeer()];
+      peersLogicStub.enqueueResponse('list', fakePeers);
+      await inst.cleanup();
+      expect(dbStub.stubs.tx.called).is.true;
+      expect(taskStub.batch.called).is.true;
+      expect(taskStub.none.firstCall.args[0]).to.be.eq('DELETE FROM peers');
+      expect(taskStub.none.secondCall.args[0]).to.contain(fakePeers[0].ip);
+      expect(taskStub.none.secondCall.args[0]).to.contain(fakePeers[1].ip);
+    });
+  });
+
+  describe('.onBlockchainReady', () => {
+    let pingStub: SinonStub;
+    let busStub: BusStub;
+    beforeEach(() => {
+      pingStub = sinon.stub().returns(Promise.resolve());
+      const dbStub = container.get<DbStub>(Symbols.generic.db);
+      dbStub.enqueueResponse('any', ['a']);
+      peersLogicStub.enqueueResponse('create', {pingAndUpdate: pingStub});
+      peersLogicStub.enqueueResponse('create', {pingAndUpdate: pingStub});
+      peersLogicStub.enqueueResponse('create', {pingAndUpdate: pingStub});
+      peersLogicStub.enqueueResponse('exists', false);
+
+      busStub = container.get<BusStub>(Symbols.helpers.bus);
+      busStub.enqueueResponse('message', '');
+    });
+    it('should load peers from db and config and call pingUpdate on all of them', async () => {
+      await instR.onBlockchainReady();
+      expect(pingStub.callCount).to.be.eq(3);
+      expect(peersLogicStub.stubs.create.callCount).to.be.eq(3);
+    });
+    it('should call broadcast peersReady', async () => {
+      await instR.onBlockchainReady();
+      expect(busStub.stubs.message.called).is.true;
+      expect(busStub.stubs.message.firstCall.args[0]).to.be.eq('peersReady');
     });
   });
 });
