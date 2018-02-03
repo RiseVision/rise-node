@@ -30,7 +30,7 @@ export function ValidateSchema() {
           }
 
           try {
-            assertValidSchema(this.schema, args[schemaToValidate.index], schemaToValidate.obj);
+            assertValidSchema(this.schema, args[schemaToValidate.index], schemaToValidate);
           } catch (err) {
             if (isPromise) {
               return Promise.reject(err.message);
