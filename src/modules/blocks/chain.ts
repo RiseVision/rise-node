@@ -16,16 +16,16 @@ import sql from '../../sql/blocks';
 export class BlocksModuleChain implements IBlocksModuleChain {
 
   // Modules
-  @inject(Symbols.modules.rounds)
-  private roundsModule: IRoundsModule;
-  @inject(Symbols.modules.transactions)
-  private transactionsModule: ITransactionsModule;
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
   @inject(Symbols.modules.blocksSubModules.utils)
   private blocksModuleUtils: IBlocksModuleUtils;
+  @inject(Symbols.modules.rounds)
+  private roundsModule: IRoundsModule;
+  @inject(Symbols.modules.transactions)
+  private transactionsModule: ITransactionsModule;
 
   // Generic
   @inject(Symbols.generic.db)
