@@ -42,10 +42,7 @@ export function merge(source: string[], diff: string[]) {
       res.push(publicKey);
     }
     if (math === '-') {
-      index = -1;
-      if (res) {
-        index = res.indexOf(publicKey);
-      }
+      index = res.indexOf(publicKey);
       if (index === -1) {
         return false;
       }

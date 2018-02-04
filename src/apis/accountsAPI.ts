@@ -62,8 +62,8 @@ export class AccountsAPI {
                           @QueryParams() params: { address: string }) {
     const account            = await this.accountsModule
       .getAccount({ address: params.address });
-    const balance            = account ? account.balance : 0;
-    const unconfirmedBalance = account ? account.u_balance : 0;
+    const balance            = account ? account.balance : '0';
+    const unconfirmedBalance = account ? account.u_balance : '0';
     return { balance, unconfirmedBalance };
   }
 
@@ -73,7 +73,9 @@ export class AccountsAPI {
                             @QueryParams() params: { address: string }) {
     const account = await this.accountsModule
       .getAccount({ address: params.address });
-
+    if (!account) {
+      throw new Error('Account not found');
+    }
     return { publicKey: account.publicKey };
   }
 
@@ -83,7 +85,9 @@ export class AccountsAPI {
                             @QueryParams() params: { address: string }) {
     const account = await this.accountsModule
       .getAccount({ address: params.address });
-
+    if (!account) {
+      throw new Error('Account not found');
+    }
     if (account.delegates) {
       const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'rank:desc' });
       return {

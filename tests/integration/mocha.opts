@@ -1,1 +1,1 @@
---timeout 1200s
+--timeout 1200s --require ts-node/register --require './common/init.ts'

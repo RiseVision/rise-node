@@ -56,7 +56,7 @@ export class ForgeModule implements IForgeModule {
   @inject(Symbols.modules.blocksSubModules.process)
   private blocksProcessModule: IBlocksModuleProcess;
 
-  public getEnabledKeys() {
+  public getEnabledKeys(): publicKey[] {
     return Object.keys(this.enabledKeys)
       .filter((pk) => this.enabledKeys[pk] === true);
   }
@@ -99,8 +99,8 @@ export class ForgeModule implements IForgeModule {
         'delegatesNextForge',
         async () => {
           try {
-            await this.forge();
             await this.transactionsModule.fillPool();
+            await this.forge();
           } catch (err) {
             this.logger.warn('Error in nextForge', err);
           }

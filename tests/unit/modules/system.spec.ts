@@ -65,6 +65,7 @@ describe('modules/system', () => {
     it('should return ^0.1.3 for height 3', () => {
       expect(inst.getMinVersion(3)).to.be.eq('^0.1.3');
     });
+    it('should ')
     it('should return ^0.1.3 for default height taken from blocksModule', () => {
       const blocksModule = container.get<IBlocksStub>(Symbols.modules.blocks);
       const origStub     = sinon.stub().returns(10);
@@ -200,5 +201,54 @@ describe('modules/system', () => {
       .forEach((what) => it(`should contain ${what}`, () => {
         expect(inst.headers).to.haveOwnProperty(what);
       }));
+  });
+
+  // instance methods
+  describe('.cleanup', () => {
+    it('should return promise', async () => {
+      expect(instB.cleanup()).to.be.instanceof(Promise);
+    });
+  });
+
+  describe('getOS', () => {
+    it('should return headers.os', () => {
+      expect(inst.getOS()).to.be.deep.eq(inst.headers.os);
+    });
+  });
+
+  describe('getVersion', () => {
+    it('should return headers.version', () => {
+      expect(inst.getVersion()).to.be.deep.eq(inst.headers.version);
+    });
+  });
+
+  describe('getPort', () => {
+    it('should return headers.port', () => {
+      expect(inst.getPort()).to.be.deep.eq(inst.headers.port);
+    });
+  });
+
+  describe('getHeight', () => {
+    it('should return headers.height', () => {
+      expect(inst.getHeight()).to.be.deep.eq(inst.headers.height);
+    });
+  });
+
+  describe('getNethash', () => {
+    it('should return headers.nethash', () => {
+      expect(inst.getNethash()).to.be.deep.eq(inst.headers.nethash);
+    });
+  });
+
+  describe('getNonce', () => {
+    it('should return headers.nonce', () => {
+      expect(inst.getNonce()).to.be.deep.eq(inst.headers.nonce);
+    });
+  });
+
+  describe('get broadhash', () => {
+    it('should return headers.broadhash', () => {
+      expect(inst.broadhash).to.be.deep.eq(inst.headers.broadhash);
+    });
   });
 });

@@ -18,7 +18,7 @@ export class Cache implements ICacheModule {
   private redisClient: RedisClient;
 
   get isConnected() {
-    return this.config.cacheEnabled && this.redisClient && this.redisClient.connected;
+    return this.redisClient && this.redisClient.connected;
   }
 
   public assertConnected(): Promise<void> {
@@ -56,7 +56,7 @@ export class Cache implements ICacheModule {
     let keys;
     let cursor = 0;
     do {
-      const res = await cbToPromise<any>((cb) => this.redisClient.scan(`${cursor}`, 'MATCH', pattern, cb), true);
+      const res = await cbToPromise<any>((cb) => this.redisClient.scan(`${cursor}`, 'MATCH', pattern, cb));
       cursor    = Number(res[0]);
       keys      = res[1];
       if (keys.length > 0) {
@@ -143,4 +143,50 @@ export class Cache implements ICacheModule {
   public onSyncFinished() {
     this.cacheReady = true;
   }
+}
+
+// tslint:disable-next-line
+@injectable()
+export class DummyCache implements ICacheModule {
+
+  get isConnected(): any {
+    throw new Error('Cache not enabled');
+  }
+
+  public assertConnected(): Promise<void> {
+    return Promise.reject('Cache not enabled');
+  }
+
+  public assertConnectedAndReady(): Promise<void> {
+    return Promise.reject('Cache not enabled');
+  }
+
+  public cleanup(): Promise<void> {
+    return Promise.reject('Cache not enabled');
+  }
+
+  public deleteJsonForKey(k: string | string[]): Promise<void> {
+    return Promise.reject('Cache not enabled');
+  }
+
+  public flushDb(): Promise<void> {
+    return Promise.reject('Cache not enabled');
+  }
+
+  public getObjFromKey<T>(k: string): Promise<T> {
+    return Promise.reject('Cache not enabled');
+  }
+
+  public quit(): Promise<void> {
+    return Promise.reject('Cache not enabled');
+  }
+
+  public removeByPattern(pattern: string): Promise<void> {
+    return Promise.reject('Cache not enabled');
+  }
+
+  public setObjFromKey<T>(k: string, value: any): Promise<void> {
+    return Promise.reject('Cache not enabled');
+  }
+
 }

@@ -4,8 +4,9 @@ import { PeerState, PeerType } from '../../src/logic';
 export const createFakePeer = (item: any = {}): PeerType => {
   return {
     state    : item.state || PeerState.CONNECTED,
-    ip       : item.ip || '1.1.1.1',
-    port     : item.port || 1111,
+    ip       : item.ip || `1.1.${Math.ceil(Math.random() * 255)}.${
+      Math.ceil(Math.random() * 255)}`,
+    port     : item.port || Math.ceil(Math.random() * 65535),
     os       : item.os || 'linux',
     version  : item.version || '1.0.1',
     broadhash: item.broadhash || 'broadhash1',

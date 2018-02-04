@@ -32,7 +32,7 @@ export class PeersAPI {
 
   @Get('/')
   @ValidateSchema()
-  public async getPeers(@SchemaValid(peersSchema.getPeers)
+  public async getPeers(@SchemaValid(peersSchema.getPeers, { castNumbers: true })
                         @QueryParams() params: any) {
     try {
       const peers = await this.peersModule.getByFilter(params);
@@ -44,7 +44,7 @@ export class PeersAPI {
 
   @Get('/get')
   @ValidateSchema()
-  public async getPeer(@SchemaValid(peersSchema.getPeer)
+  public async getPeer(@SchemaValid(peersSchema.getPeer, { castNumbers: true })
                        @QueryParams() params: { ip: string, port: number }) {
     try {
       const peers = await this.peersModule.getByFilter(params);
@@ -61,9 +61,9 @@ export class PeersAPI {
   @Get('/count')
   public async count() {
     try {
-      const connected    = await this.peersModule.getByFilter({ state: PeerState.CONNECTED });
-      const disconnected = await this.peersModule.getByFilter({ state: PeerState.DISCONNECTED });
-      const banned       = await this.peersModule.getByFilter({ state: PeerState.BANNED });
+      const connected    = (await this.peersModule.getByFilter({ state: PeerState.CONNECTED })).length;
+      const disconnected = (await this.peersModule.getByFilter({ state: PeerState.DISCONNECTED })).length;
+      const banned       = (await this.peersModule.getByFilter({ state: PeerState.BANNED })).length;
 
       return { connected, disconnected, banned };
     } catch (e) {
