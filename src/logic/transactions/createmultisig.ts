@@ -107,9 +107,10 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
       throw new Error('Account already has multisignatures enabled');
     }
 
-    if (!tx.recipientId) {
+    if (tx.recipientId) {
       throw new Error('Invalid recipient');
     }
+
     if (tx.amount !== 0) {
       throw new Error('Invalid transaction amount');
     }
@@ -119,8 +120,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         let valid = false;
         if (Array.isArray(tx.signatures)) {
           for (let i = 0; i < tx.signatures.length && !valid; i++) {
-            // TODO: Check if this is correct
-            if (key[0] === '+' || key === '-') {
+            if (key[0] === '+' || key[0] === '-') {
               valid = this.transactionLogic.verifySignature(tx, key.substring(1), tx.signatures[i], false);
             }
           }

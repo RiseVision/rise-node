@@ -62,7 +62,6 @@ describe('logic/transactions/createmultisig', () => {
       amount         : 0,
       fee            : 10,
       timestamp      : 0,
-      recipientId    : '15256762582730568272R',
       senderId       : '1233456789012345R',
       senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
       signatures     : ['sig1', 'sig2'],
@@ -211,7 +210,7 @@ describe('logic/transactions/createmultisig', () => {
     });
 
     it('should throw when recipientId is invalid', async () => {
-      delete tx.recipientId;
+      tx.recipientId = '15256762582730568272R';
       await expect(instance.verify(tx, sender)).to.be.rejectedWith('Invalid recipient');
     });
 
