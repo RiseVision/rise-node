@@ -9,7 +9,7 @@ import initializer from './init';
 import { ISystemModule, ITransactionsModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
-import { IBaseTransaction, VoteAsset } from '../../../src/logic/transactions';
+import * as txCrafter from '../../utils/txCrafter';
 
 const delegates = require('../genesisDelegates.json');
 
@@ -47,14 +47,11 @@ export const createRandomWallet  = (): LiskWallet => {
 
 export const createVoteTransaction = async (confirmations: number, from: LiskWallet, to: publicKey, add: boolean): Promise<ITransaction> => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
-  const t            = new dposOffline.transactions.VoteTx({
-    votes: [`${add ? '+' : '-'}${to}`],
+  const tx           = txCrafter.createVoteTransaction(from, systemModule.getFees().fees.vote, {
+    asset: {
+      votes: [`${add ? '+' : '-'}${to}`],
+    },
   });
-  t.set('amount', 0);
-  t.set('fee', systemModule.getFees().fees.vote);
-  t.set('timestamp', 0);
-  t.set('recipientId', from.address);
-  const tx = t.sign(from);
   if (confirmations > 0) {
     await confirmTransactions([tx], confirmations);
   }
@@ -63,12 +60,7 @@ export const createVoteTransaction = async (confirmations: number, from: LiskWal
 
 export const createSendTransaction = async (confirmations: number, amount: number, from: LiskWallet, dest: string): Promise<ITransaction> => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
-  const t            = new dposOffline.transactions.SendTx();
-  t.set('amount', amount);
-  t.set('fee', systemModule.getFees().fees.send);
-  t.set('timestamp', 0);
-  t.set('recipientId', dest);
-  const tx = t.sign(from);
+  const tx           = txCrafter.createSendTransaction(from, dest, systemModule.getFees().fees.send);
   if (confirmations > 0) {
     await confirmTransactions([tx], confirmations);
   }

@@ -10,25 +10,28 @@ import BlocksModuleStub from '../stubs/modules/BlocksModuleStub';
 import { BlocksSubmoduleUtilsStub } from '../stubs/modules/blocks/BlocksSubmoduleUtilsStub';
 import TransactionLogicStub from '../stubs/logic/TransactionLogicStub';
 import { BlockLogicStub } from '../stubs/logic/BlockLogicStub';
+import EdStub from '../stubs/helpers/EdStub';
 
-export const createContainer = (... what: symbol[]): Container => {
+export const createContainer = (...what: symbol[]): Container => {
   const container = new Container();
   for (const w of what) {
     if (Symbols.generic.db === w) {
       container.bind(w).to(DbStub).inSingletonScope();
     } else if (Symbols.generic.genesisBlock === w) {
-      container.bind(w).to(require(`${__dirname}/../integration/genesisBlock.json`)).inSingletonScope();
+      container.bind(w).toConstantValue(require(`${__dirname}/../integration/genesisBlock.json`));
     }
     // Helpers
     // tslint:disable-next-line
 
-    else if (Symbols.helpers.constants === w ) {
+    else if (Symbols.helpers.constants === w) {
       container.bind(w).toConstantValue(JSON.parse(JSON.stringify(constants)));
-    } else if (Symbols.helpers.bus === w ) {
+    } else if (Symbols.helpers.bus === w) {
       container.bind(w).to(BusStub).inSingletonScope();
-    } else if (Symbols.helpers.logger === w ) {
+    } else if (Symbols.helpers.ed === w) {
+      container.bind(w).to(EdStub).inSingletonScope();
+    } else if (Symbols.helpers.logger === w) {
       container.bind(w).to(LoggerStub).inSingletonScope();
-    } else if (Symbols.helpers.sequence) {
+    } else if (Symbols.helpers.sequence === w) {
       container.bind(w).to(SequenceStub).inSingletonScope().whenTargetTagged(
         Symbols.helpers.sequence,
         Symbols.tags.helpers.defaultSequence
@@ -44,21 +47,20 @@ export const createContainer = (... what: symbol[]): Container => {
     }
     // LOGIC
     // tslint:disable-next-line
-    else if (Symbols.logic.block === w ) {
+    else if (Symbols.logic.block === w) {
       container.bind(w).to(BlockLogicStub).inSingletonScope();
-    } else if (Symbols.logic.peers === w ) {
+    } else if (Symbols.logic.peers === w) {
       container.bind(w).to(PeersLogicStub).inSingletonScope();
     } else if (Symbols.logic.transaction === w) {
       container.bind(w).to(TransactionLogicStub).inSingletonScope();
     }
-
     // Modules
     // tslint:disable-next-line
     else if (Symbols.modules.accounts === w) {
       container.bind(w).to(AccountsModuleStub).inSingletonScope();
-    } else if (Symbols.modules.blocks === w ) {
+    } else if (Symbols.modules.blocks === w) {
       container.bind(w).to(BlocksModuleStub).inSingletonScope();
-    } else if (Symbols.modules.blocksSubModules.utils === w ) {
+    } else if (Symbols.modules.blocksSubModules.utils === w) {
       container.bind(w).to(BlocksSubmoduleUtilsStub).inSingletonScope();
     } else if (Symbols.modules.rounds === w) {
       container.bind(w).to(RoundsModuleStub).inSingletonScope();

@@ -413,6 +413,7 @@ describe('logic/broadcaster', () => {
 
     it('should behave correctly when tx is not in pool and assert does not throw error', async () => {
       transactionsModuleStub.stubs.transactionInPool.returns(false);
+      transactionLogicStub.stubs.assertNonConfirmed.resolves();
       const result = await (instance as any).filterTransaction(tx);
       expect(transactionsModuleStub.stubs.transactionInPool.calledOnce).to.be.true;
       expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args.length).to.be.equal(1);

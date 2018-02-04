@@ -1,8 +1,10 @@
+import { injectable } from 'inversify';
 import { IPeerLogic, IPeersLogic } from '../../../src/ioc/interfaces/logic';
 import { BasePeerType, PeerType } from '../../../src/logic';
 import { BaseStubClass } from '../BaseStubClass';
 import { stubMethod } from '../stubDecorator';
 
+@injectable()
 export class PeersLogicStub extends BaseStubClass implements IPeersLogic {
   @stubMethod()
   public create(peer: BasePeerType): IPeerLogic {

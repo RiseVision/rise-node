@@ -1,14 +1,19 @@
-import { injectable } from 'inversify';
-import { BlockProgressLogger } from '../../../../src/helpers';
+import { injectable, inject } from 'inversify';
+import { BlockProgressLogger, ILogger } from '../../../../src/helpers';
 import { IBlocksModuleUtils } from '../../../../src/ioc/interfaces/modules';
 import { SignedAndChainedBlockType } from '../../../../src/logic';
 import { RawFullBlockListType } from '../../../../src/types/rawDBTypes';
 import { publicKey } from '../../../../src/types/sanityTypes';
 import { BaseStubClass } from '../../BaseStubClass';
-import { stubMethod } from '../../stubDecorator';
+import { spyMethod, stubMethod } from '../../stubDecorator';
+import { Symbols } from '../../../../src/ioc/symbols';
 
 @injectable()
 export class BlocksSubmoduleUtilsStub extends BaseStubClass implements IBlocksModuleUtils {
+
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+
   @stubMethod()
   public readDbRows(rows: RawFullBlockListType[]): SignedAndChainedBlockType[] {
     return undefined;
@@ -34,9 +39,9 @@ export class BlocksSubmoduleUtilsStub extends BaseStubClass implements IBlocksMo
     return undefined;
   }
 
-  @stubMethod()
+  @spyMethod
   public getBlockProgressLogger(txCount: number, logsFrequency: number, msg: string): BlockProgressLogger {
-    return undefined;
+    return new BlockProgressLogger(txCount, logsFrequency, msg, this.logger);
   }
 
   @stubMethod()

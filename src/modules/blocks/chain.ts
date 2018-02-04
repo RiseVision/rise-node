@@ -4,7 +4,11 @@ import { IDatabase, ITask } from 'pg-promise';
 import { Bus, catchToLoggerAndRemapError, ILogger, Inserts, Sequence, TransactionType } from '../../helpers/';
 import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
-  IAccountsModule, IBlocksModule, IBlocksModuleChain, IBlocksModuleUtils, IRoundsModule,
+  IAccountsModule,
+  IBlocksModule,
+  IBlocksModuleChain,
+  IBlocksModuleUtils,
+  IRoundsModule,
   ITransactionsModule
 } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
@@ -34,10 +38,10 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   private genesisBlock: SignedAndChainedBlockType;
 
   // Helpers
-  @inject(Symbols.helpers.logger)
-  private logger: ILogger;
   @inject(Symbols.helpers.bus)
   private bus: Bus;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
   private balancesSequence: Sequence;
@@ -73,7 +77,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     if (lastBlock.height === 1) {
       throw new Error('Cannot delete genesis block');
     }
-    const newLastBlock            = await this.popLastBlock(lastBlock);
+    const newLastBlock          = await this.popLastBlock(lastBlock);
     // Set new "new" last block.
     this.blocksModule.lastBlock = newLastBlock;
     return newLastBlock;
@@ -122,8 +126,17 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * @returns {Promise<void>}
    */
   public async applyGenesisBlock(block: SignedAndChainedBlockType) {
-    // This is a shitty sort. Does not take into account b and it's not ok
-    block.transactions.sort((a) => a.type === TransactionType.VOTE ? 1 : 0);
+    // Order vote transactions to be at the end of processing.
+    block.transactions.sort((a, b) => {
+      if (a.type !== b.type) {
+        if (a.type === TransactionType.VOTE) {
+          return 1;
+        } else if (b.type === TransactionType.VOTE) {
+          return -1;
+        }
+      }
+      return 0;
+    });
 
     const tracker = this.blocksModuleUtils.getBlockProgressLogger(
       block.transactions.length,
