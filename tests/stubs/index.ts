@@ -17,6 +17,8 @@ import PeerLogicStub from './logic/PeerLogicStub';
 import { PeersLogicStub } from './logic/PeersLogicStub';
 import RoundsLogicStub from './logic/RoundsLogicStub';
 import TransactionLogicStub from './logic/TransactionLogicStub';
+import AppStateStub from "./logic/AppStateLogicStub";
+
 
 // Logic / Transactions
 import TransactionTypeStub from './logic/transactions/TransactionTypeStub';
@@ -58,5 +60,6 @@ export {
   TransportModuleStub,
   ZSchemaStub,
   RedisClientStub,
-  SocketIOStub
+  SocketIOStub,
+  AppStateStub
 };
