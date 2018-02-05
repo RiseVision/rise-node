@@ -263,6 +263,7 @@ describe('modules/cache', () => {
                 expect(ret).to.be.an('string');
                 expect(ret).to.be.equal(redisResult);
             });
+
         });
 
         describe('.removeByPattern', () => {
@@ -330,6 +331,7 @@ describe('modules/cache', () => {
                 expect(deleteJsonForKeyStub.getCall(1).args.length).to.be.equal(1);
                 expect(deleteJsonForKeyStub.getCall(1).args[0]).to.be.equal(resArrays[2][1]);
             });
+
         });
 
         describe('.flushDb', () => {
@@ -366,6 +368,7 @@ describe('modules/cache', () => {
                 expect(ret).to.be.an('string');
                 expect(ret).to.be.equal(redisResult);
             });
+
         });
 
         describe('.cleanup', () => {
@@ -394,6 +397,7 @@ describe('modules/cache', () => {
 
                 expect(quitStub.callCount).to.be.equal(0);
             });
+
         });
 
         describe('.quit', () => {
@@ -430,6 +434,7 @@ describe('modules/cache', () => {
                 expect(ret).to.be.an('string');
                 expect(ret).to.be.equal(redisResult);
             });
+
         });
 
         describe('.onNewBlock', () => {
@@ -460,6 +465,7 @@ describe('modules/cache', () => {
                 expect(removeByPatternStub.firstCall.args.length).to.be.equal(1);
                 expect(removeByPatternStub.secondCall.args.length).to.be.equal(1);
             });
+
         });
 
         describe('.onFinishRound', () => {
@@ -523,6 +529,7 @@ describe('modules/cache', () => {
                 expect(spyHelper.callback.firstCall.args.length).to.be.equal(1);
                 expect(spyHelper.callback.firstCall.args[0]).to.be.equal(error);
             });
+            
         });
 
         describe('.onTransactionsSaved', () => {
