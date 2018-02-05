@@ -31,6 +31,10 @@ import { PeersModuleStub } from './modules/PeersModuleStub';
 import { SystemModuleStub } from './modules/SystemModuleStub';
 import TransportModuleStub from './modules/TransportModuleStub';
 
+//Modules/blocks
+import BlocksModuleChain from "./modules/blocks/BlocksModuleChainStub";
+import BlocksModuleProcessStub from "./modules/blocks/BlocksModuleProcessStub";
+
 // Modules
 import ByteBufferStub from './utils/ByteBufferStub';
 import RedisClientStub from './utils/RedisClientStub';
@@ -63,5 +67,7 @@ export {
   RedisClientStub,
   SocketIOStub,
     IAppStateStub,
-    BroadcasterLogicStub
+    BroadcasterLogicStub,
+    BlocksModuleChain,
+    BlocksModuleProcessStub
 };

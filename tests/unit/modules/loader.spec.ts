@@ -10,7 +10,8 @@ import {
     DbStub, LoggerStub, AccountLogicStub, BusStub, JobsQueueStub,
     ZSchemaStub, PeersLogicStub, TransactionLogicStub, IBlocksStub,
     PeersModuleStub, SystemModuleStub, TransactionsModuleStub, RoundsLogicStub,
-    TransportModuleStub, SocketIOStub, IAppStateStub
+    TransportModuleStub, SocketIOStub, IAppStateStub, BroadcasterLogicStub,
+    BlocksModuleChain, BlocksModuleProcessStub
 } from '../../stubs'
 import {Container} from "inversify";
 import {constants as constantsType} from "../../../src/helpers";
@@ -60,15 +61,15 @@ describe('modules/loader', () => {
         // Logic
         container.bind(Symbols.logic.account).to(AccountLogicStub).inSingletonScope();
         container.bind(Symbols.logic.appState).to(IAppStateStub).inSingletonScope();
-        // container.bind(Symbols.logic.broadcaster).to().inSingletonScope();
+        container.bind(Symbols.logic.broadcaster).to(BroadcasterLogicStub).inSingletonScope();
         container.bind(Symbols.logic.peers).to(PeersLogicStub).inSingletonScope();
         container.bind(Symbols.logic.transaction).to(TransactionLogicStub).inSingletonScope();
         container.bind(Symbols.logic.rounds).to(RoundsLogicStub).inSingletonScope();
 
         //Modules
         container.bind(Symbols.modules.blocks).to(IBlocksStub).inSingletonScope();
-        // container.bind(Symbols.modules.blocksSubModules.chain).to().inSingletonScope();
-        // container.bind(Symbols.modules.blocksSubModules.process).to().inSingletonScope();
+        container.bind(Symbols.modules.blocksSubModules.chain).to(BlocksModuleChain).inSingletonScope();
+        container.bind(Symbols.modules.blocksSubModules.process).to(BlocksModuleProcessStub).inSingletonScope();
         // container.bind(Symbols.modules.blocksSubModules.utils).to().inSingletonScope();
         // container.bind(Symbols.modules.blocksSubModules.verify).to().inSingletonScope();
         // container.bind(Symbols.modules.multisignatures).to().inSingletonScope();
