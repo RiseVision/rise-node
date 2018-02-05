@@ -4,14 +4,15 @@ import * as chaiAsPromised from 'chai-as-promised';
 import {SinonSandbox} from 'sinon';
 import * as sinon from 'sinon';
 import * as rewire from 'rewire';
-import {LoaderModule, SystemModule} from '../../../src/modules'
+import {LoaderModule} from '../../../src/modules'
 import {Symbols} from '../../../src/ioc/symbols';
 import {
     DbStub, LoggerStub, AccountLogicStub, BusStub, JobsQueueStub,
     ZSchemaStub, PeersLogicStub, TransactionLogicStub, IBlocksStub,
     PeersModuleStub, SystemModuleStub, TransactionsModuleStub, RoundsLogicStub,
     TransportModuleStub, SocketIOStub, IAppStateStub, BroadcasterLogicStub,
-    BlocksModuleChain, BlocksModuleProcessStub
+    BlocksModuleChain, BlocksModuleProcessStub, BlocksModuleUtilsStub,
+    BlocksModuleVerifyStub, MultisignaturesModuleStub
 } from '../../stubs'
 import {Container} from "inversify";
 import {constants as constantsType} from "../../../src/helpers";
@@ -20,7 +21,7 @@ const genesisBlock = require('../../../etc/mainnet/genesisBlock.json');
 
 chai.use(chaiAsPromised);
 
-const LoaderCache = rewire('../../../src/modules/loader');
+const LoaderModuleRewire = rewire('../../../src/modules/loader');
 
 describe('modules/loader', () => {
 
@@ -70,9 +71,9 @@ describe('modules/loader', () => {
         container.bind(Symbols.modules.blocks).to(IBlocksStub).inSingletonScope();
         container.bind(Symbols.modules.blocksSubModules.chain).to(BlocksModuleChain).inSingletonScope();
         container.bind(Symbols.modules.blocksSubModules.process).to(BlocksModuleProcessStub).inSingletonScope();
-        // container.bind(Symbols.modules.blocksSubModules.utils).to().inSingletonScope();
-        // container.bind(Symbols.modules.blocksSubModules.verify).to().inSingletonScope();
-        // container.bind(Symbols.modules.multisignatures).to().inSingletonScope();
+        container.bind(Symbols.modules.blocksSubModules.utils).to(BlocksModuleUtilsStub).inSingletonScope();
+        container.bind(Symbols.modules.blocksSubModules.verify).to(BlocksModuleVerifyStub).inSingletonScope();
+        container.bind(Symbols.modules.multisignatures).to(MultisignaturesModuleStub).inSingletonScope();
         container.bind(Symbols.modules.peers).to(PeersModuleStub).inSingletonScope();
         container.bind(Symbols.modules.system).to(SystemModuleStub).inSingletonScope();
         container.bind(Symbols.modules.transactions).to(TransactionsModuleStub).inSingletonScope();

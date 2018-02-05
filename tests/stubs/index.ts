@@ -30,15 +30,19 @@ import { ISystemStub } from './modules/ISystemStub';
 import { PeersModuleStub } from './modules/PeersModuleStub';
 import { SystemModuleStub } from './modules/SystemModuleStub';
 import TransportModuleStub from './modules/TransportModuleStub';
+import MultisignaturesModuleStub from "./modules/MultisignaturesModuleStub";
 
 //Modules/blocks
 import BlocksModuleChain from "./modules/blocks/BlocksModuleChainStub";
 import BlocksModuleProcessStub from "./modules/blocks/BlocksModuleProcessStub";
+import BlocksModuleUtilsStub from "./modules/blocks/BlocksModuleUtilsStub";
+import BlocksModuleVerifyStub from "./modules/blocks/BlocksModuleVerifyStub";
 
 // Modules
 import ByteBufferStub from './utils/ByteBufferStub';
 import RedisClientStub from './utils/RedisClientStub';
 import SocketIOStub from "./utils/SocketIOStub";
+
 
 export {
   AccountLogicStub,
@@ -69,5 +73,8 @@ export {
     IAppStateStub,
     BroadcasterLogicStub,
     BlocksModuleChain,
-    BlocksModuleProcessStub
+    BlocksModuleProcessStub,
+    BlocksModuleUtilsStub,
+    BlocksModuleVerifyStub,
+    MultisignaturesModuleStub,
 };
