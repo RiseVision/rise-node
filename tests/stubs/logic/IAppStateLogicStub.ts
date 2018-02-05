@@ -4,7 +4,7 @@ import { stubMethod } from '../stubDecorator';
 import {IAppState} from "../../../src/ioc/interfaces/logic";
 
 @injectable()
-export default class AppStateStub extends BaseStubClass implements IAppState {
+export default class IAppStateStub extends BaseStubClass implements IAppState {
     @stubMethod()
     public set(): string {
         return undefined;
