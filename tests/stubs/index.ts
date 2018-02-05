@@ -30,6 +30,7 @@ import TransportModuleStub from './modules/TransportModuleStub';
 
 // Modules
 import ByteBufferStub from './utils/ByteBufferStub';
+import RedisClientStub from './utils/RedisClientStub';
 
 export {
   AccountLogicStub,
@@ -55,4 +56,5 @@ export {
   TransactionTypeStub,
   TransportModuleStub,
   ZSchemaStub,
+  RedisClientStub,
 };
