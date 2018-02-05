@@ -4,16 +4,18 @@ import * as chaiAsPromised from 'chai-as-promised';
 import {SinonSandbox} from 'sinon';
 import * as sinon from 'sinon';
 import * as rewire from 'rewire';
-import {LoaderModule} from '../../../src/modules'
+import {LoaderModule, SystemModule} from '../../../src/modules'
 import {Symbols} from '../../../src/ioc/symbols';
 import {
     DbStub, LoggerStub, AccountLogicStub, BusStub, JobsQueueStub,
     ZSchemaStub, PeersLogicStub, TransactionLogicStub, IBlocksStub,
     PeersModuleStub, SystemModuleStub, TransactionsModuleStub, RoundsLogicStub,
-    TransportModuleStub
+    TransportModuleStub, SocketIOStub
 } from '../../stubs'
 import {Container} from "inversify";
 import {constants as constantsType} from "../../../src/helpers";
+
+const genesisBlock = require('../../../etc/mainnet/genesisBlock.json');
 
 chai.use(chaiAsPromised);
 
@@ -43,8 +45,8 @@ describe('modules/loader', () => {
         // Generic
         container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
         container.bind(Symbols.generic.db).to(DbStub).inSingletonScope();
-        // container.bind(SSymbols.generic.genesisBlock).toConstantValue(); //etc/testnet
-        // container.bind(Symbols.generic.socketIO).to();
+        container.bind(Symbols.generic.genesisBlock).toConstantValue(genesisBlock);
+        container.bind(Symbols.generic.socketIO).to(SocketIOStub);
 
         // Helpers
         // container.bind(Symbols.helpers.sequence).to();
@@ -75,14 +77,19 @@ describe('modules/loader', () => {
         container.bind(Symbols.modules.transactions).to(TransactionsModuleStub).inSingletonScope();
         container.bind(Symbols.modules.transport).to(TransportModuleStub).inSingletonScope();
 
+        container.bind(Symbols.modules.loader).to(LoaderModule);
+
     });
 
     beforeEach(() => {
+        instance = container.get(Symbols.modules.loader);
+
+        instance.initialize();
 
     });
 
     describe('.initialize', () => {
-        it('should set inst.network in default value', () => {
+        it('should set instance.network in default value', () => {
 
         });
 

@@ -31,6 +31,7 @@ import TransportModuleStub from './modules/TransportModuleStub';
 // Modules
 import ByteBufferStub from './utils/ByteBufferStub';
 import RedisClientStub from './utils/RedisClientStub';
+import SocketIOStub from "./utils/SocketIOStub";
 
 export {
   AccountLogicStub,
@@ -57,4 +58,5 @@ export {
   TransportModuleStub,
   ZSchemaStub,
   RedisClientStub,
+  SocketIOStub
 };
