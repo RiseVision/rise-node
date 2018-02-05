@@ -166,7 +166,8 @@ describe('logic/transactions/createmultisig', () => {
 
   describe('verify', () => {
     beforeEach(() => {
-      transactionLogicStub.stubConfig.verifySignature.return = true;
+      transactionLogicStub.enqueueResponse('verifySignature', true);
+      transactionLogicStub.enqueueResponse('verifySignature', true);
     });
 
     it('should throw when !tx.asset || !tx.asset.multisignature', async () => {
@@ -228,10 +229,13 @@ describe('logic/transactions/createmultisig', () => {
     it('should call transactionLogic.verifySignature on all signatures and keys', async () => {
       await instance.verify(tx, sender);
       expect(transactionLogicStub.stubs.verifySignature.called).to.be.true;
+      expect(transactionLogicStub.stubs.verifySignature.callCount).to.be.eq(2);
     });
 
     it('should throw if signature verification fails', async () => {
-      transactionLogicStub.stubConfig.verifySignature.return = false;
+      transactionLogicStub.reset();
+      transactionLogicStub.enqueueResponse('verifySignature', false);
+      transactionLogicStub.enqueueResponse('verifySignature', false);
       await expect(instance.verify(tx, sender)).to.be.
       rejectedWith('Failed to verify signature in multisignature keysgroup');
     });
