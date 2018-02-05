@@ -294,6 +294,11 @@ describe('modules/blocks/chain', () => {
       await inst.applyGenesisBlock({transactions: voteTxs.concat(sendTxs)} as any);
       expect(roundsModule.stubs.tick.called).is.true;
     });
+    it('should fail and process.exit if one tx fail to apply', async () => {
+      txModule.stubs.applyUnconfirmed.rejects();
+      await inst.applyGenesisBlock({transactions: voteTxs.concat(sendTxs)} as any);
+      expect(processExitStub.called).is.true;
+    });
   });
 
   describe('applyBlock', () => {
@@ -492,6 +497,15 @@ describe('modules/blocks/chain', () => {
       for (let i = 0; i < 5; i++) {
         expect(txLogic.stubs.afterSave.getCall(i).args[0]).to.be.deep.eq(transactions[i]);
       }
+    });
+    it('should work even if block does not have any transaction', async () => {
+      const txStub = {
+        batch: sinon.stub().resolves(),
+        none : sinon.stub(),
+      };
+      dbStub.stubs.tx.reset();
+      dbStub.stubs.tx.callsArgWith(0, txStub);
+      await inst.saveBlock({transactions: []} as any);
     });
   });
 
