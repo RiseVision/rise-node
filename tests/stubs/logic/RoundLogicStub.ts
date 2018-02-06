@@ -1,67 +1,18 @@
-import { IRoundLogic } from '../../../src/ioc/interfaces/logic';
+import { injectable } from 'inversify';
+
 import { BaseStubClass } from '../BaseStubClass';
 import { stubMethod } from '../stubDecorator';
 
-export class RoundLogicStub extends BaseStubClass implements IRoundLogic {
+// tslint:disable no-empty
 
-  @stubMethod
-  public mergeBlockGenerator(): Promise<void> {
-    return undefined;
-  }
+@injectable()
+export default class RoundsLogicStub extends BaseStubClass {
 
-  @stubMethod
-  public updateMissedBlocks(): Promise<void> {
-    return undefined;
-  }
+    @stubMethod()
+    public calcRound() {}
 
-  @stubMethod
-  public getVotes(): Promise<Array<{ delegate: string; amount: number }>> {
-    return undefined;
-  }
+    @stubMethod()
+    public lastInRound() {}
 
-  @stubMethod
-  public updateVotes(): Promise<void> {
-    return undefined;
-  }
-
-  @stubMethod
-  public markBlockId(): Promise<void> {
-    return undefined;
-  }
-
-  @stubMethod
-  public flushRound(): Promise<void> {
-    return undefined;
-  }
-
-  @stubMethod
-  public truncateBlocks(): Promise<null> {
-    return undefined;
-  }
-
-  @stubMethod
-  public restoreRoundSnapshot(): Promise<null> {
-    return undefined;
-  }
-
-  @stubMethod
-  public restoreVotesSnapshot(): Promise<null> {
-    return undefined;
-  }
-
-  @stubMethod
-  public applyRound(): Promise<void> {
-    return undefined;
-  }
-
-  @stubMethod
-  public land(): Promise<void> {
-    return undefined;
-  }
-
-  @stubMethod
-  public backwardLand(): Promise<void> {
-    return undefined;
-  }
-
+    // TODO Add more methods when needed
 }
