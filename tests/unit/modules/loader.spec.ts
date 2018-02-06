@@ -99,6 +99,10 @@ describe('modules/loader', () => {
         container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = {height: 1} as any;
     });
 
+    afterEach(() => {
+        sandbox.restore();
+    });
+
     describe('.initialize', () => {
         it('should set instance.network to default value after the creation of the object', () => {
             expect((instance as any).network).to.be.deep.equal({
@@ -241,6 +245,28 @@ describe('modules/loader', () => {
     });
 
     describe('.getRandomPeer', () => {
+
+        let getNetworkStub;
+        let peers: PeerType[];
+
+        beforeEach(() => {
+            peers = createFakePeers(3);
+
+            getNetworkStub = sandbox.stub(instance as any, 'getNework');
+            getNetworkStub.returns({peers});
+        });
+
+        it('should call instance.getNetwork', async () => {
+            await instance.getRandomPeer();
+
+            expect(getNetworkStub.calledOnce).to.be.true;
+        });
+
+        it('should return random peer', async () => {
+            let ret = await instance.getRandomPeer();
+
+            expect(peers).to.include(ret);
+        });
 
     });
 
