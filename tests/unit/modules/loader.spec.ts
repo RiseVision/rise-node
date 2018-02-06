@@ -113,17 +113,21 @@ describe('modules/loader', () => {
 
         let peersModuleStub;
         let peersLogicStub;
-        let peers: PeerType[] = createFakePeers(2);
+        let peers: PeerType[];
         let loggerStub: LoggerStub;
 
         beforeEach(() => {
+            peers = createFakePeers(2);
+            peers[0].height = 3;
+
             peersModuleStub = container.get(Symbols.modules.peers);
             peersLogicStub = container.get(Symbols.logic.peers);
             loggerStub = container.get(Symbols.helpers.logger);
+
+            peersLogicStub.reset();
             loggerStub.stubReset();
 
-            peersLogicStub.enqueueResponse('create', peers[0]);
-            peersLogicStub.enqueueResponse('create', peers[1]);
+            peersLogicStub.stubs.create.callsFake(peer => peer);
         });
 
         it('should return unchanged instance.network if (network.height <= 0 and Math.abs(expressive) === 1)', async () => {
@@ -213,9 +217,27 @@ describe('modules/loader', () => {
 
             let ret = await instance.getNework();
 
-            expect(ret).to.be.deep.equal({height: 0, peers});
+            expect(ret).to.be.deep.equal({height: 2, peers});
         });
 
+        it('should return a sorted peersArray', async () => {
+            peers[1].height += 3;
+            peersModuleStub.enqueueResponse('list', {peers});
+
+            let ret = await instance.getNework();
+
+            expect(ret).to.be.deep.equal({height: 4, peers: [peers[1], peers[0]]});
+        });
+
+        it('should return instance.network with one item in peersArray(check .findGoodPeers second .filter)', async () => {
+            peers[0].height = 10;
+            peersModuleStub.enqueueResponse('list', {peers});
+
+            let ret = await instance.getNework();
+
+            expect(ret).to.be.deep.equal({height: 10, peers: [peers[0]]});
+            expect(peersLogicStub.stubs.create.calledOnce).to.be.true;
+        });
     });
 
     describe('.getRandomPeer', () => {
