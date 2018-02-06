@@ -104,13 +104,14 @@ describe('modules/loader', () => {
     });
 
     describe('.initialize', () => {
+
         it('should set instance.network to default value after the creation of the object', () => {
             expect((instance as any).network).to.be.deep.equal({
                 height: 0,
                 peers: [],
             });
-
         });
+
     });
 
     describe('.getNework', () => {
@@ -204,7 +205,6 @@ describe('modules/loader', () => {
 
             expect(ret).to.be.deep.equal({height: 0, peers: []});
             expect((instance as any).network).to.be.deep.equal({height: 0, peers: []});
-
         });
 
         it('should return instance.network with empty peersArray prop if each of peersModule.list() peers has height < lastBlock.height ', async () => {
@@ -242,6 +242,7 @@ describe('modules/loader', () => {
             expect(ret).to.be.deep.equal({height: 10, peers: [peers[0]]});
             expect(peersLogicStub.stubs.create.calledOnce).to.be.true;
         });
+
     });
 
     describe('.getRandomPeer', () => {
@@ -272,6 +273,34 @@ describe('modules/loader', () => {
 
     describe('get .isSyncing', () => {
 
+        let appStateStub;
+
+        beforeEach(() => {
+            appStateStub = container.get(Symbols.logic.appState);
+            appStateStub.reset();
+        });
+
+        it('should call appState.get', () => {
+            appStateStub.enqueueResponse('get', true);
+            instance.isSyncing;
+
+            expect(appStateStub.stubs.get.calledOnce).to.be.true;
+        });
+
+        it('should return loader.isSyncing state', () => {
+            appStateStub.enqueueResponse('get', true);
+            let ret = instance.isSyncing;
+
+            expect(ret).to.be.true;
+        });
+
+        it('should return false if appState.get returned undefined', () => {
+            appStateStub.enqueueResponse('get', undefined);
+            let ret = instance.isSyncing;
+
+            expect(ret).to.be.false;
+        });
+
     });
 
     describe('.onPeersReady', () => {
@@ -280,9 +309,22 @@ describe('modules/loader', () => {
 
     describe('.onBlockchainReady', () => {
 
+        it('should set instance.loaded in true', () => {
+            instance.onBlockchainReady();
+
+            expect((instance as any).loaded).to.be.true;
+        });
+
     });
 
     describe('.cleanup', () => {
+
+        it('should set instance.loaded in true and returned a promise.resolve', () => {
+            let ret = instance.cleanup();
+
+            expect((instance as any).loaded).to.be.false;
+            expect(ret).to.be.deep.equal(Promise.resolve());
+        });
 
     });
 
@@ -292,7 +334,20 @@ describe('modules/loader', () => {
 
     describe('.load', () => {
 
+        it('should call logger.warn twice if message exist');
+        it('should not call logger.warn twice if message is not exist');
+        it('should call accountLogic.removeTables');
+        it('should call accountLogic.createTables');
+        it('should call logger.info count > 1');
+        it('should call blocksProcessModule.loadBlocksOffset');
+        it('should call logger.info and bus.message if emitBlockchainReady exist');
+        it('should call logger.error if throw error');
+        it('should call logger.error twice if throw error and error.block exist');
+        it('should call blocksChainModule.deleteAfterBlock if throw error and error.block exist');
+        it('should call bus.message if throw error and error.block exist');
+        it('should throw error if throw error and error.block is not exist');
+
+        //TODO add some value check
     });
 
-})
-;
+});
