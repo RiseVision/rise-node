@@ -17,10 +17,9 @@ import {
 import {Container} from "inversify";
 import {constants as constantsType} from "../../../src/helpers";
 
-const genesisBlock = require('../../../etc/mainnet/genesisBlock.json');
-
 chai.use(chaiAsPromised);
 
+const genesisBlock = require('../../../etc/mainnet/genesisBlock.json');
 const LoaderModuleRewire = rewire('../../../src/modules/loader');
 
 describe('modules/loader', () => {
@@ -28,7 +27,6 @@ describe('modules/loader', () => {
     let instance: LoaderModule;
     let container: Container;
     let constants: typeof constantsType;
-
     const appConfig = {
         loading: {
             loadPerIteration: 10,
@@ -44,6 +42,7 @@ describe('modules/loader', () => {
             epochTime: new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
             maxPeers: 100,
         } as any;
+
         // Generic
         container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
         container.bind(Symbols.generic.db).to(DbStub).inSingletonScope();
@@ -51,12 +50,12 @@ describe('modules/loader', () => {
         container.bind(Symbols.generic.socketIO).to(SocketIOStub);
 
         // Helpers
-        // container.bind(Symbols.helpers.sequence).to();
+        //TODO container.bind(Symbols.helpers.sequence).to();
         container.bind(Symbols.helpers.bus).to(BusStub).inSingletonScope();
         container.bind(Symbols.helpers.constants).toConstantValue(constants);
         container.bind(Symbols.helpers.jobsQueue).to(JobsQueueStub).inSingletonScope();
         container.bind(Symbols.helpers.logger).to(LoggerStub);
-        // container.bind(Symbols.helpers.sequence).to();
+        //TODO container.bind(Symbols.helpers.sequence).to();
         container.bind(Symbols.generic.zschema).to(ZSchemaStub).inSingletonScope();
 
         // Logic
@@ -80,21 +79,9 @@ describe('modules/loader', () => {
         container.bind(Symbols.modules.transport).to(TransportModuleStub).inSingletonScope();
 
         container.bind(Symbols.modules.loader).to(LoaderModule);
-
-    });
-
-    beforeEach(() => {
-        instance = container.get(Symbols.modules.loader);
-
-        instance.initialize();
-
     });
 
     describe('.initialize', () => {
-        it('should set instance.network in default value', () => {
-
-        });
 
     });
-
 });
