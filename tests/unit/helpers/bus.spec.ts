@@ -125,6 +125,18 @@ describe('helpers/bus', () => {
             expect(stub.args[0][0]).to.be.deep.eq({the: 'block'});
             expect(stub2.calledOnce).is.true;
             expect(stub2.args[0][0]).to.be.deep.eq({the: 'block'});
+            expect(stub.calledBefore(stub2)).is.true;
+            expect(stub2.calledAfter(stub)).is.true;
+        });
+    });
+
+    describe('Without listeners available', () => {
+        it('success', async () => {
+            stub2 = sandbox.stub().resolves();
+            instance.modules = [{onUnconfirmedTransaction: stub}, {onUnconfirmedTransaction: stub2}];
+            await instance.message('receiveBlock', {the: 'block'} as any);
+            expect(stub.called).is.false;
+            expect(stub2.called).is.false;
         });
     });
 });
