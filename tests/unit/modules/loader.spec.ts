@@ -12,7 +12,7 @@ import {
     PeersModuleStub, SystemModuleStub, TransactionsModuleStub, RoundsLogicStub,
     TransportModuleStub, SocketIOStub, IAppStateStub, BroadcasterLogicStub,
     BlocksModuleChain, BlocksModuleProcessStub, BlocksModuleUtilsStub,
-    BlocksModuleVerifyStub, MultisignaturesModuleStub
+    BlocksModuleVerifyStub, MultisignaturesModuleStub, SequenceStub
 } from '../../stubs'
 import {Container} from "inversify";
 import {constants as constantsType, Sequence} from "../../../src/helpers";
@@ -50,22 +50,18 @@ describe('modules/loader', () => {
         container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
         container.bind(Symbols.generic.db).to(DbStub).inSingletonScope();
         container.bind(Symbols.generic.genesisBlock).toConstantValue(genesisBlock);
-        container.bind(Symbols.generic.socketIO).to(SocketIOStub);
+        container.bind(Symbols.generic.socketIO).to(SocketIOStub).inSingletonScope();
 
         // Helpers
         container.bind(Symbols.helpers.sequence)
-            .toConstantValue(new Sequence({
-                onWarning: sinon.stub()
-            }))
+            .to(SequenceStub)
             .whenTargetTagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence);
         container.bind(Symbols.helpers.bus).to(BusStub).inSingletonScope();
         container.bind(Symbols.helpers.constants).toConstantValue(constants);
         container.bind(Symbols.helpers.jobsQueue).to(JobsQueueStub).inSingletonScope();
         container.bind(Symbols.helpers.logger).to(LoggerStub).inSingletonScope();
         container.bind(Symbols.helpers.sequence)
-            .toConstantValue(new Sequence({
-                onWarning: sinon.stub()
-            }))
+            .to(SequenceStub)
             .whenTargetTagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence);
         container.bind(Symbols.generic.zschema).to(ZSchemaStub).inSingletonScope();
 

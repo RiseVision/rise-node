@@ -9,6 +9,7 @@ import SlotsStub from './helpers/SlotsStub';
 import ZSchemaStub from './helpers/ZSchemaStub';
 import AccountsModuleStub from './modules/AccountsModuleStub';
 import { TransactionsModuleStub } from './modules/TransactionsModuleStub';
+import {SequenceStub} from "./helpers/SequenceStub";
 
 // Logic
 import AccountLogicStub from './logic/AccountLogicStub';
@@ -77,4 +78,5 @@ export {
     BlocksModuleUtilsStub,
     BlocksModuleVerifyStub,
     MultisignaturesModuleStub,
+    SequenceStub
 };
