@@ -1,103 +1,119 @@
-import * as sinon from 'sinon';
 import { injectable } from 'inversify';
+import { BaseStubClass } from '../BaseStubClass';
+import { ITransactionLogic } from '../../../src/ioc/interfaces/logic';
+import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from '../../../src/logic/transactions';
+import { MemAccountsData, SignedBlockType } from '../../../src/logic';
+import BigNumber from 'bignumber.js';
+import { IKeypair } from '../../../src/helpers';
+import { stubMethod } from '../stubDecorator';
 
 @injectable()
-export default class TransactionLogicStub {
-  public stubConfig: {
-    getBytes: {
-      return: any
-    },
-    objectNormalize: {
-      return: any
-    },
-    process: {
-      resolve: boolean,
-      return: any
-    },
-    verify: {
-      resolve: boolean,
-      return: any
-    },
-    verifySignature: {
-      return: any
-    },
-    assertNonConfirmed: {
-      resolve: boolean,
-      return: any
-    },
-  };
-
-  public stubs;
-
-  constructor() {
-    this.stubReset();
-  }
-
-  public stubReset() {
-    this.stubs = {
-      getBytes: sinon.stub(),
-      objectNormalize: sinon.stub(),
-      process: sinon.stub(),
-      verify: sinon.stub(),
-      verifySignature: sinon.stub(),
-      assertNonConfirmed: sinon.stub(),
-    };
-    this.stubConfig = {
-      getBytes:   {return: null },
-      objectNormalize: {return: null },
-      process: {return: null, resolve: true },
-      verify: {return: null, resolve: true },
-      verifySignature: {return: true },
-      assertNonConfirmed: {return: null, resolve: true },
-    };
-  }
-
-  /**
-   * Stubbed methods begin here
-   */
-
-  public getBytes(...args) {
-    this.stubs.getBytes.apply(this, args);
-    return this.stubConfig.getBytes.return;
-  }
-
-  public objectNormalize(...args) {
-    this.stubs.objectNormalize.apply(this, args);
-    return this.stubConfig.objectNormalize.return;
-  }
-
-  public process(...args) {
-    this.stubs.process.apply(this, args);
-    if (this.stubConfig.process.resolve) {
-      return Promise.resolve(this.stubConfig.process.return);
-    } else {
-      return Promise.reject(this.stubConfig.process.return);
+export default class TransactionLogicStub extends BaseStubClass implements ITransactionLogic {
+    @stubMethod()
+    public afterSave(tx: IBaseTransaction<any>): Promise<void> {
+        return undefined;
     }
-  }
 
-  public verify(...args) {
-    this.stubs.verify.apply(this, args);
-    if (this.stubConfig.verify.resolve) {
-      return Promise.resolve(this.stubConfig.verify.return);
-    } else {
-      return Promise.reject(this.stubConfig.verify.return);
+    @stubMethod()
+    public apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: MemAccountsData): Promise<void> {
+        return undefined;
     }
-  }
 
-  public verifySignature(...args) {
-    this.stubs.verifySignature.apply(this, args);
-    return this.stubConfig.verifySignature.return;
-  }
-
-  public assertNonConfirmed(...args) {
-    this.stubs.assertNonConfirmed.apply(this, args);
-    if (this.stubConfig.assertNonConfirmed.resolve) {
-      return Promise.resolve(this.stubConfig.assertNonConfirmed.return);
-    } else {
-      return Promise.reject(this.stubConfig.assertNonConfirmed.return);
+    @stubMethod()
+    public applyUnconfirmed(tx: IBaseTransaction<any>, sender: MemAccountsData, requester?: MemAccountsData): Promise<void> {
+        return undefined;
     }
-  }
 
-  // TODO rewrite with decorators.
-  // TODO stub all methods
+    @stubMethod()
+    public assertKnownTransactionType(tx: IBaseTransaction<any>): void {
+    }
+
+    @stubMethod()
+    public assertNonConfirmed(tx: IBaseTransaction<any>): Promise<void> {
+        return undefined;
+    }
+
+    @stubMethod()
+    public attachAssetType<K>(instance: BaseTransactionType<K>): BaseTransactionType<K> {
+        return undefined;
+    }
+
+    @stubMethod()
+    public checkBalance(amount: number | BigNumber, balanceKey, tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: any): { error: string; exceeded: boolean } {
+        return undefined;
+    }
+
+    @stubMethod()
+    public countById(tx: IBaseTransaction<any>): Promise<number> {
+        return undefined;
+    }
+
+    @stubMethod()
+    public dbRead(raw: any): IConfirmedTransaction<any> {
+        return undefined;
+    }
+
+    @stubMethod()
+    public dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<{ table: string; fields: string[]; values: any }> {
+        return undefined;
+    }
+
+    @stubMethod()
+    public getBytes(tx: IBaseTransaction<any>, skipSignature?: boolean, skipSecondSignature?: boolean): Buffer {
+        return undefined;
+    }
+
+    @stubMethod()
+    public getHash(tx: IBaseTransaction<any>, skipSign: boolean, skipSecondSign: boolean): Buffer {
+        return undefined;
+    }
+
+    @stubMethod()
+    public getId(tx: IBaseTransaction<any>): string {
+        return "";
+    }
+
+    @stubMethod()
+    public multiSign(keypair: IKeypair, tx: IBaseTransaction<any>): void {
+    }
+
+    @stubMethod()
+    public objectNormalize(tx: IBaseTransaction<any>): IBaseTransaction<any> {
+        return undefined;
+    }
+
+    @stubMethod()
+    public process<T>(tx: IBaseTransaction<T>, sender: MemAccountsData, requester: MemAccountsData): Promise<IBaseTransaction<T>> {
+        return undefined;
+    }
+
+    @stubMethod()
+    public ready(tx: IBaseTransaction<any>, sender: MemAccountsData): boolean {
+        return false;
+    }
+
+    @stubMethod()
+    public sign(keypair: IKeypair, tx: IBaseTransaction<any>): void {
+    }
+
+    @stubMethod()
+    public undo(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: MemAccountsData): Promise<void> {
+        return undefined;
+    }
+
+    @stubMethod()
+    public undoUnconfirmed(tx: IBaseTransaction<any>, sender: MemAccountsData): Promise<void> {
+        return undefined;
+    }
+
+    @stubMethod()
+    public verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: MemAccountsData, requester: MemAccountsData, height: number): Promise<void> {
+        return undefined;
+    }
+
+    @stubMethod()
+    public verifySignature(tx: IBaseTransaction<any>, publicKey: string, signature: string, isSecondSignature?: boolean): boolean {
+        return false;
+    }
+
 }

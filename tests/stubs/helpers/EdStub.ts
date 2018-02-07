@@ -6,7 +6,7 @@ import { stubMethod } from '../stubDecorator';
 // tslint:disable no-empty
 
 @injectable()
-export default class EdStub extends BaseStubClass {
+export default class EdStub extends BaseStubClass  {
 
   @stubMethod()
   public sign() {}

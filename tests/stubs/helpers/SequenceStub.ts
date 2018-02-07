@@ -1,11 +1,24 @@
-import {BaseStubClass} from '../BaseStubClass';
-import {stubMethod} from '../stubDecorator';
 
+import { injectable } from 'inversify';
+import { Sequence } from '../../../src/helpers';
+import { BaseStubClass } from '../BaseStubClass';
+import { spyMethod, stubMethod } from '../stubDecorator';
+
+@injectable()
 export class SequenceStub extends BaseStubClass {
-    @stubMethod()
-    public addAndPromise<T>(worker: () => Promise<T>): Promise<T> {
-        return undefined;
-    }
+  private realImplementation: Sequence = new Sequence({});
 
-    // TODO Add more methods when needed
+  @spyMethod
+  public addAndPromise(w) {
+    return this.realImplementation.addAndPromise(w);
+  }
+
+  @spyMethod
+  public count() {
+    return this.realImplementation.count();
+  }
+
+  @stubMethod()
+  public ____noiop() {
+  }
 }

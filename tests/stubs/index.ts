@@ -26,7 +26,8 @@ import {BroadcasterLogicStub} from "./logic/BroadcasterLogicStub";
 import TransactionTypeStub from './logic/transactions/TransactionTypeStub';
 
 // Modules
-import IBlocksStub from './modules/IBlocksStub';
+import { DelegatesModuleStub } from './modules/DelegatesModuleStub';
+import IBlocksStub from './modules/BlocksModuleStub';
 import { ISystemStub } from './modules/ISystemStub';
 import { PeersModuleStub } from './modules/PeersModuleStub';
 import { SystemModuleStub } from './modules/SystemModuleStub';
@@ -52,6 +53,7 @@ export {
   BlockRewardLogicStub,
   BusStub,
   DbStub,
+  DelegatesModuleStub,
   EdStub,
   ExceptionsManagerStub,
   IBlocksStub,

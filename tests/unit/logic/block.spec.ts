@@ -99,7 +99,8 @@ describe('logic/block', () => {
 
     // Default stub configuration
     blockRewardLogicStub.stubConfig.calcReward.return = 100000;
-    transactionLogicStub.stubConfig.getBytes.return = buffer;
+    transactionLogicStub.stubs.getBytes.returns(buffer);
+    transactionLogicStub.stubs.objectNormalize.returns(null);
 
     data = {
       keypair: dummyKeypair,

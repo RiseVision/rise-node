@@ -922,6 +922,9 @@ describe('logic/transactionPool - TransactionPool', () => {
 
     beforeEach(() => {
       sender.multisignatures = [];
+      transactionLogicStub.enqueueResponse('process', Promise.resolve());
+      transactionLogicStub.enqueueResponse('objectNormalize', null);
+      transactionLogicStub.enqueueResponse('verify', null);
     });
 
     it('should reject if !transaction', async () => {
@@ -931,6 +934,7 @@ describe('logic/transactionPool - TransactionPool', () => {
 
     it('should call accountsModule.setAccountAndGet', async () => {
       accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
+
       await (instance as any).processVerifyTransaction(tx, false);
       expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
       const expectedParam = {publicKey: tx.senderPublicKey};
@@ -999,7 +1003,7 @@ describe('logic/transactionPool - TransactionPool', () => {
     it('should call transactionLogic.verify', async () => {
       const normalizedTx = Object.assign({}, tx as any);
       normalizedTx.normalized = true;
-      transactionLogicStub.stubConfig.objectNormalize.return = normalizedTx;
+      transactionLogicStub.stubs.objectNormalize.returns(normalizedTx);
       accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
       await (instance as any).processVerifyTransaction(tx, false);
       expect(transactionLogicStub.stubs.verify.calledOnce).to.be.true;
@@ -1012,7 +1016,7 @@ describe('logic/transactionPool - TransactionPool', () => {
     it('should call bus.message', async () => {
       const normalizedTx = Object.assign({}, tx as any);
       normalizedTx.normalized = true;
-      transactionLogicStub.stubConfig.objectNormalize.return = normalizedTx;
+      transactionLogicStub.stubs.objectNormalize.returns(normalizedTx);
       accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
       await (instance as any).processVerifyTransaction(tx, false);
       expect(fakeBus.message.calledOnce).to.be.true;
