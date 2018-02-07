@@ -22,8 +22,11 @@ import TransactionLogicStub from './logic/TransactionLogicStub';
 import TransactionTypeStub from './logic/transactions/TransactionTypeStub';
 
 // Modules
-import { DelegatesModuleStub } from './modules/DelegatesModuleStub';
 import IBlocksStub from './modules/BlocksModuleStub';
+import { BlocksSubmoduleChainStub } from './modules/blocks/BlocksSubmoduleChainStub';
+import { BlocksSubmoduleUtilsStub } from './modules/blocks/BlocksSubmoduleUtilsStub';
+import { BlocksSubmoduleVerifyStub } from './modules/blocks/BlocksSubmoduleVerifyStub';
+import { DelegatesModuleStub } from './modules/DelegatesModuleStub';
 import { ISystemStub } from './modules/ISystemStub';
 import { PeersModuleStub } from './modules/PeersModuleStub';
 import { SystemModuleStub } from './modules/SystemModuleStub';
@@ -37,6 +40,9 @@ export {
   AccountsModuleStub,
   ByteBufferStub,
   BlockRewardLogicStub,
+  BlocksSubmoduleUtilsStub,
+  BlocksSubmoduleVerifyStub,
+  BlocksSubmoduleChainStub,
   BusStub,
   DbStub,
   DelegatesModuleStub,
