@@ -14,6 +14,7 @@ describe('helpers/bus', () => {
     let sandbox: SinonSandbox;
     let instance: Bus;
     let stub: any;
+    let stub2: any;
 
     beforeEach(() => {
         instance = new Bus();
@@ -27,68 +28,68 @@ describe('helpers/bus', () => {
     });
 
     describe('receiveBlock', () => {
-        it('success', () => {
+        it('success', async () => {
             instance.modules = [{onReceiveBlock: stub}];
-            instance.message('receiveBlock', {the: 'block'} as any);
+            await instance.message('receiveBlock', {the: 'block'} as any);
             expect(stub.calledOnce).is.true;
             expect(stub.args[0][0]).to.be.deep.eq({the: 'block'});
         });
     });
 
     describe('finishRound', () => {
-        it('success', () => {
+        it('success', async () => {
             instance.modules = [{onFinishRound: stub}];
-            instance.message('finishRound', 10);
+            await instance.message('finishRound', 10);
             expect(stub.calledOnce).is.true;
             expect(stub.args[0][0]).to.equal(10);
         });
     });
 
     describe('transactionsSaved', () => {
-        it('success', () => {
+        it('success', async () => {
             instance.modules = [{onTransactionsSaved: stub}];
-            instance.message('transactionsSaved', [1, 2, 3] as any);
+            await instance.message('transactionsSaved', [1, 2, 3] as any);
             expect(stub.calledOnce).is.true;
             expect(stub.args[0][0]).to.be.equalTo([1, 2, 3]);
         });
     });
 
     describe('blockchainReady', () => {
-        it('success', () => {
+        it('success', async () => {
             instance.modules = [{onBlockchainReady: stub}];
-            instance.message('blockchainReady');
+            await instance.message('blockchainReady');
             expect(stub.calledOnce).is.true;
         });
     });
 
     describe('syncStarted', () => {
-        it('success', () => {
+        it('success', async () => {
             instance.modules = [{onSyncStarted: stub}];
-            instance.message('syncStarted');
+            await instance.message('syncStarted');
             expect(stub.calledOnce).is.true;
         });
     });
 
     describe('syncFinished', () => {
-        it('success', () => {
+        it('success', async () => {
             instance.modules = [{onSyncFinished: stub}];
-            instance.message('syncFinished');
+            await instance.message('syncFinished');
             expect(stub.calledOnce).is.true;
         });
     });
 
     describe('peersReady', () => {
-        it('success', () => {
+        it('success', async () => {
             instance.modules = [{onPeersReady: stub}];
-            instance.message('peersReady');
+            await instance.message('peersReady');
             expect(stub.calledOnce).is.true;
         });
     });
 
     describe('newBlock', () => {
-        it('success', () => {
+        it('success', async () => {
             instance.modules = [{onNewBlock: stub}];
-            instance.message('newBlock', {foo: 'bar'} as any, true);
+            await instance.message('newBlock', {foo: 'bar'} as any, true);
             expect(stub.calledOnce).is.true;
             expect(stub.args[0][0]).to.deep.equal({foo: 'bar'});
             expect(stub.args[0][1]).to.be.true;
@@ -96,9 +97,9 @@ describe('helpers/bus', () => {
     });
 
     describe('signature', () => {
-        it('success', () => {
+        it('success', async () => {
             instance.modules = [{onSignature: stub}];
-            instance.message('signature', {transaction: 'foo', signature: 123}, true);
+            await instance.message('signature', {transaction: 'foo', signature: 123}, true);
             expect(stub.calledOnce).is.true;
             expect(stub.args[0][0]).to.deep.equal({transaction: 'foo', signature: 123});
             expect(stub.args[0][1]).to.be.true;
@@ -106,12 +107,24 @@ describe('helpers/bus', () => {
     });
 
     describe('unconfirmedTransaction', () => {
-        it('success', () => {
+        it('success', async () => {
             instance.modules = [{onUnconfirmedTransaction: stub}];
-            instance.message('unconfirmedTransaction', 'abc', true);
+            await instance.message('unconfirmedTransaction', 'abc', true);
             expect(stub.calledOnce).is.true;
             expect(stub.args[0][0]).to.equal('abc');
             expect(stub.args[0][1]).to.be.true;
+        });
+    });
+
+    describe('Testing multiple listeners', () => {
+        it('success', async () => {
+            stub2 = sandbox.stub().resolves();
+            instance.modules = [{onReceiveBlock: stub}, {onReceiveBlock: stub2}];
+            await instance.message('receiveBlock', {the: 'block'} as any);
+            expect(stub.calledOnce).is.true;
+            expect(stub.args[0][0]).to.be.deep.eq({the: 'block'});
+            expect(stub2.calledOnce).is.true;
+            expect(stub2.args[0][0]).to.be.deep.eq({the: 'block'});
         });
     });
 });
