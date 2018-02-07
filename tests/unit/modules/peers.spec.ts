@@ -73,7 +73,6 @@ describe('modules/peers', () => {
   describe('.getByFilter', () => {
     const fields = ['ip', 'port', 'state', 'os', 'version', 'broadhash', 'height', 'nonce'];
 
-
     it('should call peersLogic.list with true', async () => {
       peersLogicStub.enqueueResponse('list', []);
       await inst.getByFilter({});
