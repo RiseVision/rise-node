@@ -1,6 +1,5 @@
 import { injectable } from 'inversify';
 import * as sinon from 'sinon';
-import { injectable } from 'inversify';
 
 @injectable()
 export default class ZSchemaStub {
