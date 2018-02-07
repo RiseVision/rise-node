@@ -25,6 +25,7 @@ import { SlotsStub } from '../stubs/helpers/SlotsStub';
 import { AppStateStub } from '../stubs/logic/AppStateStub';
 import RoundsLogicStub from '../stubs/logic/RoundsLogicStub';
 import { ForkModuleStub } from '../stubs/modules/ForkModuleStub';
+import { BlocksSubmoduleProcessStub } from '../stubs/modules/blocks/BlocksSubmoduleProcessStub';
 
 export const createContainer = (): Container => {
   const container = new Container();
@@ -63,6 +64,7 @@ export const createContainer = (): Container => {
   container.bind(Symbols.modules.accounts).to(AccountsModuleStub).inSingletonScope();
   container.bind(Symbols.modules.blocks).to(BlocksModuleStub).inSingletonScope();
   container.bind(Symbols.modules.blocksSubModules.chain).to(BlocksSubmoduleChainStub).inSingletonScope();
+  container.bind(Symbols.modules.blocksSubModules.process).to(BlocksSubmoduleProcessStub).inSingletonScope();
   container.bind(Symbols.modules.blocksSubModules.utils).to(BlocksSubmoduleUtilsStub).inSingletonScope();
   container.bind(Symbols.modules.blocksSubModules.verify).to(BlocksSubmoduleVerifyStub).inSingletonScope();
   container.bind(Symbols.modules.delegates).to(DelegatesModuleStub).inSingletonScope();
