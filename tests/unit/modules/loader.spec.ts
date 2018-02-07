@@ -334,20 +334,183 @@ describe('modules/loader', () => {
 
     describe('.load', () => {
 
-        it('should call logger.warn twice if message exist');
-        it('should not call logger.warn twice if message is not exist');
-        it('should call accountLogic.removeTables');
-        it('should call accountLogic.createTables');
-        it('should call logger.info count > 1');
-        it('should call blocksProcessModule.loadBlocksOffset');
-        it('should call logger.info and bus.message if emitBlockchainReady exist');
-        it('should call logger.error if throw error');
-        it('should call logger.error twice if throw error and error.block exist');
-        it('should call blocksChainModule.deleteAfterBlock if throw error and error.block exist');
-        it('should call bus.message if throw error and error.block exist');
-        it('should throw error if throw error and error.block is not exist');
+        let count;
+        let limitPerIteration;
+        let message;
+        let emitBlockchainReady;
 
-        //TODO add some value check
+        let loggerStub;
+        let busStub;
+        let accountLogicStub;
+        let blocksProcessModuleStub;
+        let blocksChainModuleStub;
+
+        let lastBlock;
+        let error;
+
+        beforeEach(() => {
+            count = 2;
+            limitPerIteration = 3;
+            message = 'message';
+            emitBlockchainReady = true;
+            lastBlock = {data: "data"};
+            error = {
+                block: {
+                    height: 1,
+                    id: 1
+                }
+            };
+
+            loggerStub = container.get<LoggerStub>(Symbols.helpers.logger)
+            busStub = container.get<BusStub>(Symbols.helpers.bus);
+            accountLogicStub = container.get<AccountLogicStub>(Symbols.logic.account)
+            blocksProcessModuleStub = container.get<BlocksModuleProcessStub>(Symbols.modules.blocksSubModules.process);
+            blocksChainModuleStub = container.get<BlocksModuleChain>(Symbols.modules.blocksSubModules.chain)
+
+            busStub.reset();
+            accountLogicStub.reset();
+            blocksProcessModuleStub.reset();
+            blocksChainModuleStub.reset();
+            loggerStub.stubReset();
+
+            accountLogicStub.enqueueResponse('removeTables', {});
+            accountLogicStub.enqueueResponse('createTables', {});
+            blocksProcessModuleStub.enqueueResponse('loadBlocksOffset', lastBlock)
+        });
+
+        it('should call logger.warn twice if message exist', async () => {
+            await instance.load(count, limitPerIteration, message);
+
+            expect(loggerStub.stubs.warn.calledTwice).to.be.true;
+
+            expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(1);
+            expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal(message);
+
+            expect(loggerStub.stubs.warn.secondCall.args.length).to.be.equal(1);
+            expect(loggerStub.stubs.warn.secondCall.args[0]).to.be.equal('Recreating memory tables');
+        });
+
+        it('should not call logger.warn if message is not exist', async () => {
+            await instance.load(count, limitPerIteration);
+
+            expect(loggerStub.stubs.warn.notCalled).to.be.true;
+        });
+
+        it('should call accountLogic.removeTables', async () => {
+            await instance.load(count, limitPerIteration);
+
+            expect(accountLogicStub.stubs.removeTables.calledOnce).to.be.true;
+        });
+
+        it('should call accountLogic.createTables', async () => {
+            await instance.load(count, limitPerIteration);
+
+            expect(accountLogicStub.stubs.createTables.calledOnce).to.be.true;
+        });
+
+        it('should call logger.info count > 1', async () => {
+            await instance.load(count, limitPerIteration);
+
+            expect(loggerStub.stubs.info.calledOnce).to.be.true;
+
+            expect(loggerStub.stubs.info.firstCall.args.length).to.be.equal(1);
+            expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal('Rebuilding blockchain, current block height: ' + 1);
+        });
+
+        it('should call blocksProcessModule.loadBlocksOffset', async () => {
+            await instance.load(count, limitPerIteration);
+
+            expect(blocksProcessModuleStub.stubs.loadBlocksOffset.calledOnce).to.be.true;
+
+            expect(blocksProcessModuleStub.stubs.loadBlocksOffset.firstCall.args.length).to.be.equal(3);
+            expect(blocksProcessModuleStub.stubs.loadBlocksOffset.firstCall.args[0]).to.be.equal(3);
+            expect(blocksProcessModuleStub.stubs.loadBlocksOffset.firstCall.args[1]).to.be.equal(0);
+            expect(blocksProcessModuleStub.stubs.loadBlocksOffset.firstCall.args[2]).to.be.equal(true);
+        });
+
+        it('should call logger.info and bus.message if emitBlockchainReady exist', async () => {
+            busStub.enqueueResponse('message', '');
+
+            await instance.load(count, limitPerIteration, message, emitBlockchainReady);
+
+            expect(loggerStub.stubs.info.calledTwice).to.be.true;
+            expect(loggerStub.stubs.info.secondCall.args.length).to.be.equal(1);
+            expect(loggerStub.stubs.info.secondCall.args[0]).to.be.equal('Blockchain ready');
+
+            expect(busStub.stubs.message.calledOnce).to.be.true;
+            expect(busStub.stubs.message.firstCall.args.length).to.be.equal(1);
+            expect(busStub.stubs.message.firstCall.args[0]).to.be.equal('blockchainReady');
+        });
+
+        it('should not call logger.info if count <= 1', async () => {
+            await instance.load(1, limitPerIteration);
+
+            expect(loggerStub.stubs.info.notCalled).to.be.true;
+        });
+
+        it('should be no iterations if count less than offset( < 0)', async () => {
+            await instance.load(-1, limitPerIteration);
+
+            expect(blocksProcessModuleStub.stubs.loadBlocksOffset.notCalled).to.be.true;
+        });
+
+        it('should call logger.error if throw error', async () => {
+            loggerStub.stubs.info.throws(error);
+            busStub.enqueueResponse('message', '');
+            blocksChainModuleStub.enqueueResponse('deleteAfterBlock', {});
+
+            await instance.load(count, limitPerIteration, message, emitBlockchainReady);
+
+            expect(loggerStub.stubs.error.called).to.be.true;
+            expect(loggerStub.stubs.error.firstCall.args.length).to.be.equal(1);
+            expect(loggerStub.stubs.error.firstCall.args[0]).to.be.deep.equal(error);
+        });
+
+        it('should call logger.error twice if throw error and error.block exist', async () => {
+            loggerStub.stubs.info.throws(error);
+            busStub.enqueueResponse('message', '');
+            blocksChainModuleStub.enqueueResponse('deleteAfterBlock', {});
+
+            await instance.load(count, limitPerIteration, message, emitBlockchainReady);
+
+            expect(loggerStub.stubs.error.calledThrice).to.be.true;
+            expect(loggerStub.stubs.error.secondCall.args.length).to.be.equal(1);
+            expect(loggerStub.stubs.error.secondCall.args[0]).to.be.deep.equal('Blockchain failed at: ' + error.block.height);
+
+            expect(loggerStub.stubs.error.thirdCall.args.length).to.be.equal(1);
+            expect(loggerStub.stubs.error.thirdCall.args[0]).to.be.deep.equal('Blockchain clipped');
+        });
+
+        it('should call blocksChainModule.deleteAfterBlock if throw error and error.block exist', async () => {
+            loggerStub.stubs.info.throws(error);
+            busStub.enqueueResponse('message', '');
+            blocksChainModuleStub.enqueueResponse('deleteAfterBlock', {});
+
+            await instance.load(count, limitPerIteration, message, emitBlockchainReady);
+
+            expect(blocksChainModuleStub.stubs.deleteAfterBlock.calledOnce).to.be.true;
+            expect(blocksChainModuleStub.stubs.deleteAfterBlock.firstCall.args.length).to.be.equal(1);
+            expect(blocksChainModuleStub.stubs.deleteAfterBlock.firstCall.args[0]).to.be.equal(error.block.id);
+        });
+
+        it('should call bus.message if throw error and error.block exist', async () => {
+            loggerStub.stubs.info.throws(error);
+            busStub.enqueueResponse('message', '');
+            blocksChainModuleStub.enqueueResponse('deleteAfterBlock', {});
+
+            await instance.load(count, limitPerIteration, message, emitBlockchainReady);
+
+            expect(busStub.stubs.message.calledOnce).to.be.true;
+            expect(busStub.stubs.message.firstCall.args.length).to.be.equal(1);
+            expect(busStub.stubs.message.firstCall.args[0]).to.be.equal('blockchainReady');
+        });
+
+        it('should throw error if throw error and error.block is not exist', async () => {
+            delete error.block;
+            loggerStub.stubs.info.throws(error);
+
+            expect(instance.load(count, limitPerIteration)).to.be.rejectedWith(error);
+        });
+
     });
-
 });
