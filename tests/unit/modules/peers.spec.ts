@@ -25,14 +25,7 @@ describe('modules/peers', () => {
     },
   };
   beforeEach(() => {
-    container = createContainer(
-      Symbols.generic.db,
-      Symbols.helpers.bus,
-      Symbols.helpers.constants,
-      Symbols.helpers.logger,
-      Symbols.logic.peers,
-      Symbols.modules.system
-    );
+    container = createContainer();
     container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
     container.bind(Symbols.modules.peers).to(PeersModule);
 

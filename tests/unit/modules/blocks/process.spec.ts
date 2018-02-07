@@ -33,25 +33,7 @@ describe('modules/blocks/process', () => {
   let container: Container;
   let processExitStub: SinonStub;
   beforeEach(() => {
-    container = createContainer(
-      Symbols.generic.db,
-      Symbols.generic.genesisBlock,
-
-      Symbols.helpers.bus,
-      Symbols.helpers.logger,
-      Symbols.helpers.sequence,
-
-      Symbols.logic.block,
-      Symbols.logic.transaction,
-
-      Symbols.modules.accounts,
-      Symbols.modules.blocks,
-      Symbols.modules.blocksSubModules.utils,
-      Symbols.modules.blocksSubModules.chain,
-      Symbols.modules.blocksSubModules.verify,
-      Symbols.modules.rounds,
-      Symbols.modules.transactions
-    );
+    container = createContainer();
     container.bind(Symbols.modules.blocksSubModules.chain).to(BlocksModuleChain);
     processExitStub = sinon.stub(process, 'exit');
 

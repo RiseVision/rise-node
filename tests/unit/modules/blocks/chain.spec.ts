@@ -3,9 +3,9 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import { Container } from 'inversify';
+import * as shuffle from 'shuffle-array';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
-import * as shuffle from 'shuffle-array';
 import { IBlocksModuleChain } from '../../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../../src/ioc/symbols';
 import { IBaseTransaction } from '../../../../src/logic/transactions';
@@ -35,24 +35,8 @@ describe('modules/blocks/chain', () => {
   let container: Container;
   let processExitStub: SinonStub;
   beforeEach(() => {
-    container = createContainer(
-      Symbols.generic.db,
-      Symbols.generic.genesisBlock,
-
-      Symbols.helpers.bus,
-      Symbols.helpers.logger,
-      Symbols.helpers.sequence,
-
-      Symbols.logic.block,
-      Symbols.logic.transaction,
-
-      Symbols.modules.accounts,
-      Symbols.modules.blocks,
-      Symbols.modules.blocksSubModules.utils,
-      Symbols.modules.rounds,
-      Symbols.modules.transactions
-    );
-    container.bind(Symbols.modules.blocksSubModules.chain).to(BlocksModuleChain);
+    container = createContainer();
+    container.rebind(Symbols.modules.blocksSubModules.chain).to(BlocksModuleChain);
     processExitStub = sinon.stub(process, 'exit');
 
     inst = instR = container.get(Symbols.modules.blocksSubModules.chain);

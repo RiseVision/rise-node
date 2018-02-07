@@ -2,16 +2,32 @@ import { injectable } from 'inversify';
 
 import { BaseStubClass } from '../BaseStubClass';
 import { stubMethod } from '../stubDecorator';
+import { ISlots } from '../../../src/ioc/interfaces/helpers';
 
 // tslint:disable no-empty
 
 @injectable()
-export default class SlotsStub extends BaseStubClass {
+export class SlotsStub extends BaseStubClass implements ISlots {
+
+  readonly delegates: number = 100;
 
   @stubMethod(true)
   public getSlotNumber() {
     return 1;
   }
 
-  // TODO Add more methods when needed
+  @stubMethod()
+  public getLastSlot(nextSlot: number): any {
+  }
+
+  @stubMethod()
+  public getSlotTime(slot: number): number {
+    return 0;
+  }
+
+  @stubMethod()
+  public getTime(time: number): number {
+    return 0;
+  }
+
 }
