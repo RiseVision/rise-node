@@ -455,7 +455,6 @@ describe('modules/loader', () => {
         it('should throw error if there are failed to match genesis block with database(bad blockSignature value)');
         it('should call roundsLogic.calcRound');
         it('should call logger.info with snapshot info');
-        //TODO проверки loading.snapshot штуки 3-4
         it('should call appState.set if instance.config.loading.snapshot is not exist');
         it('should call logger.info with "Snapshotting to end of round" if instance.config.loading.snapshot is not exist');
         it('should call roundsLogic.lastInRound if instance.config.loading.snapshot is not exist');
