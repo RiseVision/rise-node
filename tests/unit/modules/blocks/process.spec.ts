@@ -11,6 +11,7 @@ import { createContainer } from '../../../utils/containerCreator';
 import TransportModuleStub from '../../../stubs/modules/TransportModuleStub';
 import { IAppState } from '../../../../src/ioc/interfaces/logic';
 import { AppStateStub } from '../../../stubs/logic/AppStateStub';
+import ZSchemaStub from '../../../stubs/helpers/ZSchemaStub';
 
 chai.use(chaiAsPromised);
 
@@ -35,6 +36,7 @@ describe('modules/blocks/process', () => {
   let appState: AppStateStub;
   let blocksChain: BlocksSubmoduleChainStub;
   let blocksUtils: BlocksSubmoduleUtilsStub;
+  let schemaStub: ZSchemaStub;
   let transportModule: TransportModuleStub;
   // let txModule: TransactionsModuleStub;
   // let txLogic: TransactionLogicStub;
@@ -54,7 +56,7 @@ describe('modules/blocks/process', () => {
     transportModule = container.get(Symbols.modules.transport);
     // dbStub  = container.get(Symbols.generic.db);
     // busStub = container.get(Symbols.helpers.bus);
-
+    schemaStub = container.get(Symbols.generic.zschema);
   });
 
   describe('getCommonBlock', () => {
@@ -107,7 +109,13 @@ describe('modules/blocks/process', () => {
           .be.rejectedWith('Chain comparison failed');
       });
     });
-    it('should validate schema agains peer response');
+    it('should fail if peer response is not valid', async () => {
+      transportModule.enqueueResponse('getFromPeer', Promise.resolve({ body: { common: '1' } }));
+      schemaStub.enqueueResponse('validate', false);
+      schemaStub.enqueueResponse('getLastErrors', []);
+
+      await expect(inst.getCommonBlock({peer: 'peer'} as any, 10)).to.be.rejectedWith('Cannot validate commonblock response');
+    });
     it('should check response against db to avoid malicious peers');
     it('should trigger recoverChain if returned commonblock does not return anything from db and poor consensus');
     it('should throw error if returned commonblock does not return anything from db and poor consensus');

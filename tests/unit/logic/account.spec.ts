@@ -351,8 +351,8 @@ describe('logic/account', () => {
               .map((error) => error.message)
               .join(', ');
 
-      zSchemaStub.stubConfig.validate.return = false;
-      zSchemaStub.stubConfig.getLastErrors.return = errors;
+      zSchemaStub.enqueueResponse('validate', false);
+      zSchemaStub.enqueueResponse('getLastErrors', errors);
       // it should throw an error as expected
       expect(account.objectNormalize.bind(account, accountData)).to.throw(
         errorMessage
@@ -372,7 +372,7 @@ describe('logic/account', () => {
     });
 
     it('should normalize object', () => {
-      zSchemaStub.stubConfig.validate.return = true;
+      zSchemaStub.enqueueResponse('validate', true);
       // it should not modify the object
       expect(account.objectNormalize(accountData)).to.equal(accountData);
       // it should call validate correctly
@@ -399,7 +399,7 @@ describe('logic/account', () => {
     });
 
     it('should call through schema hex validation.', () => {
-      zSchemaStub.stubConfig.validate.return = false;
+      zSchemaStub.enqueueResponse('validate', false);
       const publicKey         = '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da';
       expect(() => account.assertPublicKey(publicKey)).to.throw('Invalid public key, must be a hex string');
       expect(zSchemaStub.stubs.validate.calledOnce).is.true;
