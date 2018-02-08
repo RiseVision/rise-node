@@ -15,7 +15,6 @@ import {
     BlocksModuleVerifyStub, MultisignaturesModuleStub, SequenceStub
 } from '../../stubs'
 import {Container} from "inversify";
-import {constants as constantsType, Sequence} from "../../../src/helpers";
 import {createFakePeers} from '../../utils/fakePeersFactory';
 import {PeerType} from "../../../src/logic";
 
@@ -28,14 +27,18 @@ describe('modules/loader', () => {
     let instance: LoaderModule;
     let container: Container;
     let sandbox: SinonSandbox;
-    let constants: typeof constantsType;
-    const appConfig = {
+    let constants = {
+        activeDelegates: 1,
+        epochTime: new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
+        maxPeers: 100,
+    } as any;
+    let appConfig = {
         loading: {
             loadPerIteration: 10,
             snapshot: false,
         }
     };
-    const genesisBlock = {
+    let genesisBlock = {
         id: 10,
         payloadHash: Buffer.from('10').toString('hex'),
         blockSignature: Buffer.from('10').toString('hex')
@@ -44,11 +47,6 @@ describe('modules/loader', () => {
     before(() => {
         container = new Container();
 
-        constants = {
-            activeDelegates: 1,
-            epochTime: new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
-            maxPeers: 100,
-        } as any;
 
         // Generic
         container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
@@ -100,7 +98,22 @@ describe('modules/loader', () => {
     });
 
     afterEach(() => {
-
+        constants = {
+            activeDelegates: 1,
+            epochTime: new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
+            maxPeers: 100,
+        } as any;
+        appConfig = {
+            loading: {
+                loadPerIteration: 10,
+                snapshot: false,
+            }
+        };
+        genesisBlock = {
+            id: 10,
+            payloadHash: Buffer.from('10').toString('hex'),
+            blockSignature: Buffer.from('10').toString('hex')
+        };
         sandbox.restore();
     });
 
@@ -340,6 +353,7 @@ describe('modules/loader', () => {
         let countDuplicatedDelegatesObj;
         let res;
         let missedBlocksInMemAccountsObj;
+        let lastBlock;
 
         let dbStub: DbStub;
         let roundsLogicStub: RoundsLogicStub;
@@ -360,7 +374,7 @@ describe('modules/loader', () => {
 
             round = 5;
             loadResult = {data: 'data'};
-
+            lastBlock = 1;
             blocksCountObj = {count: 2};
             genBlock = {
                 id: 10,
@@ -378,12 +392,15 @@ describe('modules/loader', () => {
                 [countDuplicatedDelegatesObj]
             ];
 
+            (container.get(Symbols.generic.appConfig) as any).loading.loadPerIteration = 10;
+            (container.get(Symbols.helpers.constants) as any).activeDelegates = constants.activeDelegates;
+
             res = [[], [], [{}]];
 
             processExitStub = sinon.stub(process, 'exit');
             loadStub = sandbox.stub(instance, 'load').resolves(loadResult);
             roundsLogicStub.enqueueResponse('calcRound', round);
-            roundsLogicStub.enqueueResponse('lastInRound', round);
+            roundsLogicStub.enqueueResponse('lastInRound', lastBlock);
             appStateStub.enqueueResponse('set', {});
             dbStub.enqueueResponse('task', Promise.resolve(results));
             dbStub.enqueueResponse('task', Promise.resolve(res));
@@ -432,7 +449,7 @@ describe('modules/loader', () => {
 
         it('should set limit in default value if config.loading.loadPerIteration is not exist', async () => {
             blocksCountObj.count = 1;
-            appConfig.loading.loadPerIteration = null;
+            (container.get(Symbols.generic.appConfig) as any).loading.loadPerIteration = null;
 
             await instance.loadBlockChain();
             expect(loadStub.calledOnce).to.be.true;
@@ -449,22 +466,203 @@ describe('modules/loader', () => {
         });
 
         it('should throw error if there are failed to match genesis block with database(bad id value)', async () => {
+            dbStub.reset();
+            results[1][0].id = null;
+            dbStub.enqueueResponse('task', Promise.resolve(results));
+            dbStub.enqueueResponse('task', Promise.resolve(res));
+
+            expect(instance.loadBlockChain()).to.be.rejectedWith('Failed to match genesis block with database');
         });
 
-        it('should throw error if there are failed to match genesis block with database(bad payloadHash value)');
-        it('should throw error if there are failed to match genesis block with database(bad blockSignature value)');
-        it('should call roundsLogic.calcRound');
-        it('should call logger.info with snapshot info');
-        it('should call appState.set if instance.config.loading.snapshot is not exist');
-        it('should call logger.info with "Snapshotting to end of round" if instance.config.loading.snapshot is not exist');
-        it('should call roundsLogic.lastInRound if instance.config.loading.snapshot is not exist');
-        it('should call instance.load if instance.config.loading.snapshot is not exist');
-        it('should call process.exit if instance.config.loading.snapshot is not exist');
-        it('should call logger.error and process.exit lastBlock.height !== (finded) lastBlock');
-        it('should check if instance.config.loading.snapshot is undefined');
-        it('should return instance.load if has been detected missed blocks in mem_accounts');
-        it('should return instance.load if has been detected unapplied rounds in mem_round');
-        it('should call logger.error and proccess.emit if has been delegates table corrupted with duplicate entries and return after');
+        it('should throw error if there are failed to match genesis block with database(bad payloadHash value)', async () => {
+            dbStub.reset();
+            results[1][0].payloadHash = Buffer.from('uganda');
+            dbStub.enqueueResponse('task', Promise.resolve(results));
+            dbStub.enqueueResponse('task', Promise.resolve(res));
+
+            expect(instance.loadBlockChain()).to.be.rejectedWith('Failed to match genesis block with database');
+        });
+
+        it('should throw error if there are failed to match genesis block with database(bad blockSignature value)', async () => {
+            dbStub.reset();
+            results[1][0].blockSignature = Buffer.from('uganda');
+            dbStub.enqueueResponse('task', Promise.resolve(results));
+            dbStub.enqueueResponse('task', Promise.resolve(res));
+
+            expect(instance.loadBlockChain()).to.be.rejectedWith('Failed to match genesis block with database');
+        });
+
+        it('should call roundsLogic.calcRound', async () => {
+            await instance.loadBlockChain();
+
+            expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;
+            expect(roundsLogicStub.stubs.calcRound.firstCall.args.length).to.be.equal(1);
+            expect(roundsLogicStub.stubs.calcRound.firstCall.args[0]).to.be.equal(blocksCountObj.count);
+        });
+
+        it('should check if genesisBlock does not dinded in DB', async () => {
+            dbStub.reset();
+            results[1][0] = null;
+            dbStub.enqueueResponse('task', Promise.resolve(results));
+            dbStub.enqueueResponse('task', Promise.resolve(res));
+
+            await instance.loadBlockChain();
+
+            expect(loggerStub.stubs.info.getCall(0).calledBefore(
+                roundsLogicStub.stubs.calcRound.getCall(0)
+            )).is.true;
+
+        });
+
+        describe('Check verifySnapshot mode(this.config.loading.snapshot is exist)', async () => {
+
+            beforeEach(() => {
+                (container.get(Symbols.generic.appConfig) as any).loading.snapshot = true;
+            });
+
+            it('should call logger.info with snapshot mode enabled', async () => {
+                await instance.loadBlockChain();
+
+                expect(loggerStub.stubs.info.callCount).to.be.equal(5);
+
+                expect(loggerStub.stubs.info.getCall(2).args.length).to.be.equal(1);
+                expect(loggerStub.stubs.info.getCall(2).args[0]).to.be.equal('Snapshot mode enabled');
+            });
+
+            it('should call appState.set', async () => {
+                await instance.loadBlockChain();
+
+                expect(appStateStub.stubs.set.calledOnce).to.be.true;
+                expect(appStateStub.stubs.set.firstCall.args.length).to.be.equal(2);
+                expect(appStateStub.stubs.set.firstCall.args[0]).to.be.equal('rounds.snapshot');
+                expect(appStateStub.stubs.set.firstCall.args[1]).to.be.equal(round);
+            });
+
+            it('should check if config.loading.snapshot is number(with normalize to previous round, blocksCount % this.constants.activeDelegates > 0(round<1))', async () => {
+                (container.get(Symbols.helpers.constants) as any).activeDelegates = 5;
+
+                await instance.loadBlockChain();
+
+                expect(appStateStub.stubs.set.firstCall.args[1]).to.be.equal(round - 1);
+            });
+
+            it('should check if config.loading.snapshot is number(with normalize to previous round, blocksCount % this.constants.activeDelegates > 0(round=0))', async () => {
+                (container.get(Symbols.helpers.constants) as any).activeDelegates = 5;
+                roundsLogicStub.reset();
+                roundsLogicStub.enqueueResponse('calcRound', 0);
+                roundsLogicStub.enqueueResponse('lastInRound', lastBlock);
+
+                await instance.loadBlockChain();
+
+                expect(appStateStub.stubs.set.calledOnce).to.be.true;
+                expect(appStateStub.stubs.set.firstCall.args.length).to.be.equal(2);
+                expect(appStateStub.stubs.set.firstCall.args[1]).to.be.equal(1);
+            });
+
+            it('should check if config.loading.snapshot is number and less that round', async () => {
+                let newSnapshot = round - 2;
+                (container.get(Symbols.generic.appConfig) as any).loading.snapshot = newSnapshot;
+
+                await instance.loadBlockChain();
+
+                expect(appStateStub.stubs.set.calledOnce).to.be.true;
+                expect(appStateStub.stubs.set.firstCall.args.length).to.be.equal(2);
+                expect(appStateStub.stubs.set.firstCall.args[1]).to.be.equal(newSnapshot);
+            });
+
+            it('should call logger.info with "Snapshotting to end of round"', async () => {
+                await instance.loadBlockChain();
+
+                expect(loggerStub.stubs.info.callCount).to.be.equal(5);
+                expect(loggerStub.stubs.info.getCall(3).args.length).to.be.equal(2);
+                expect(loggerStub.stubs.info.getCall(3).args[0]).to.be.equal('Snapshotting to end of round: 5');
+                expect(loggerStub.stubs.info.getCall(3).args[1]).to.be.equal(blocksCountObj.count);
+            });
+
+            it('should call roundsLogic.lastInRound', async () => {
+                await instance.loadBlockChain();
+
+                expect(roundsLogicStub.stubs.lastInRound.calledOnce).to.be.true;
+                expect(roundsLogicStub.stubs.lastInRound.firstCall.args.length).to.be.equal(1);
+                expect(roundsLogicStub.stubs.lastInRound.firstCall.args[0]).to.be.equal(round);
+            });
+
+            it('should call instance.load', async () => {
+                await instance.loadBlockChain();
+
+                expect(loadStub.calledOnce).to.be.true;
+                expect(loadStub.firstCall.args.length).to.be.equal(4);
+                expect(loadStub.firstCall.args[0]).to.be.equal(lastBlock);
+                expect(loadStub.firstCall.args[1]).to.be.equal(appConfig.loading.loadPerIteration);
+                expect(loadStub.firstCall.args[2]).to.be.equal('Blocks Verification enabled');
+                expect(loadStub.firstCall.args[3]).to.be.equal(false);
+            });
+
+            it('should call process.exit', async () => {
+                await instance.loadBlockChain();
+
+                expect(processExitStub.calledOnce).to.be.true;
+                expect(processExitStub.firstCall.args[0]).to.be.equal(0);
+            });
+
+            it('should call logger.error and process.exit lastBlock.height !== (finded) lastBlock', async () => {
+                container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = {height: 11} as any;
+
+                await instance.loadBlockChain();
+
+                expect(loggerStub.stubs.error.calledOnce).to.be.true;
+                expect(loggerStub.stubs.error.firstCall.args.length).to.be.equal(1);
+                expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal(`LastBlock height does not expected block. Expected: ${lastBlock} - Received: ${11}`);
+
+                expect(processExitStub.callCount).to.be.equal(2);
+                expect(processExitStub.firstCall.args[0]).to.be.equal(1);
+            });
+        });
+
+        it('should check if instance.config.loading.snapshot is undefined(not Check verifySnapshot mode)', async () => {
+            await instance.loadBlockChain();
+
+            expect(processExitStub.notCalled).to.be.true;
+        });
+
+        it('should return instance.load if has been detected missed blocks in mem_accounts', async () => {
+            dbStub.reset();
+            results[2].count = 0;
+            dbStub.enqueueResponse('task', Promise.resolve(results));
+
+            let ret = await instance.loadBlockChain();
+
+            expect(loadStub.calledOnce).to.be.true;
+            expect(loadStub.firstCall.args.length).to.be.equal(4);
+            expect(loadStub.firstCall.args[0]).to.be.equal(2);
+            expect(loadStub.firstCall.args[1]).to.be.equal(10);
+            expect(loadStub.firstCall.args[2]).to.be.equal('Detected missed blocks in mem_accounts');
+            expect(loadStub.firstCall.args[3]).to.be.equal(true);
+
+            expect(ret).to.be.deep.equal(loadResult);
+        });
+
+        it('should return instance.load if has been detected unapplied rounds in mem_round', async () => {
+            dbStub.reset();
+            results[3][0].round = 'uganda';
+            dbStub.enqueueResponse('task', Promise.resolve(results));
+
+            let ret = await instance.loadBlockChain();
+
+            expect(loadStub.calledOnce).to.be.true;
+            expect(loadStub.firstCall.args.length).to.be.equal(4);
+            expect(loadStub.firstCall.args[0]).to.be.equal(2);
+            expect(loadStub.firstCall.args[1]).to.be.equal(10);
+            expect(loadStub.firstCall.args[2]).to.be.equal('Detected unapplied rounds in mem_round');
+            expect(loadStub.firstCall.args[3]).to.be.equal(true);
+
+            expect(ret).to.be.deep.equal(loadResult);
+        });
+
+        it('should call logger.error and proccess.emit if has been delegates table corrupted with duplicate entries and return after', async () => {
+         
+        });
+
         it('should call db.task second time');
         it('should return instance.laod if res[1].length > 0');
         it('should return instance.laod if res[2].length === 0');
