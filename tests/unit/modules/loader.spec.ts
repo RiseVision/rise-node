@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import {SinonSandbox} from 'sinon';
+import {SinonSandbox, SinonStub} from 'sinon';
 import * as sinon from 'sinon';
 import * as rewire from 'rewire';
 import {LoaderModule} from '../../../src/modules'
@@ -21,7 +21,6 @@ import {PeerType} from "../../../src/logic";
 
 chai.use(chaiAsPromised);
 
-const genesisBlock = require('../../../etc/mainnet/genesisBlock.json');
 const LoaderModuleRewire = rewire('../../../src/modules/loader');
 
 describe('modules/loader', () => {
@@ -33,8 +32,13 @@ describe('modules/loader', () => {
     const appConfig = {
         loading: {
             loadPerIteration: 10,
-            snapshot: true,
+            snapshot: false,
         }
+    };
+    const genesisBlock = {
+        id: 10,
+        payloadHash: Buffer.from('10').toString('hex'),
+        blockSignature: Buffer.from('10').toString('hex')
     };
 
     before(() => {
@@ -96,6 +100,7 @@ describe('modules/loader', () => {
     });
 
     afterEach(() => {
+
         sandbox.restore();
     });
 
@@ -280,7 +285,7 @@ describe('modules/loader', () => {
             appStateStub.enqueueResponse('get', true);
             instance.isSyncing;
 
-            expect(appStateStub.stubs.get.calledOnce).to.be.true;
+            expect(appStateStub.stubs.get.calledOnce).to.true;
         });
 
         it('should return loader.isSyncing state', () => {
@@ -326,6 +331,148 @@ describe('modules/loader', () => {
 
     describe('.loadBlockChain', () => {
 
+        let results;
+        let genBlock;
+        let loadResult;
+        let blocksCountObj;
+        let unappliedArray;
+        let round;
+        let countDuplicatedDelegatesObj;
+        let res;
+        let missedBlocksInMemAccountsObj;
+
+        let dbStub: DbStub;
+        let roundsLogicStub: RoundsLogicStub;
+        let appStateStub: IAppStateStub;
+        let blocksUtilsModuleStub: BlocksModuleUtilsStub;
+        let busStub: BusStub;
+        let loggerStub: LoggerStub;
+        let loadStub: SinonStub;
+        let processExitStub: SinonStub;
+
+        beforeEach(() => {
+            dbStub = container.get<DbStub>(Symbols.generic.db);
+            roundsLogicStub = container.get<RoundsLogicStub>(Symbols.logic.rounds);
+            appStateStub = container.get<IAppStateStub>(Symbols.logic.appState);
+            blocksUtilsModuleStub = container.get<BlocksModuleUtilsStub>(Symbols.modules.blocksSubModules.utils);
+            busStub = container.get<BusStub>(Symbols.helpers.bus);
+            loggerStub = container.get<LoggerStub>(Symbols.helpers.logger)
+
+            round = 5;
+            loadResult = {data: 'data'};
+
+            blocksCountObj = {count: 2};
+            genBlock = {
+                id: 10,
+                payloadHash: Buffer.from('10'),
+                blockSignature: Buffer.from('10')
+            };
+            missedBlocksInMemAccountsObj = {count: 2};
+            unappliedArray = [{round: '5'}, {round: '5'}];
+            countDuplicatedDelegatesObj = {count: 0};
+            results = [
+                blocksCountObj,
+                [genBlock],
+                missedBlocksInMemAccountsObj,
+                unappliedArray,
+                [countDuplicatedDelegatesObj]
+            ];
+
+            res = [[], [], [{}]];
+
+            processExitStub = sinon.stub(process, 'exit');
+            loadStub = sandbox.stub(instance, 'load').resolves(loadResult);
+            roundsLogicStub.enqueueResponse('calcRound', round);
+            roundsLogicStub.enqueueResponse('lastInRound', round);
+            appStateStub.enqueueResponse('set', {});
+            dbStub.enqueueResponse('task', Promise.resolve(results));
+            dbStub.enqueueResponse('task', Promise.resolve(res));
+            blocksUtilsModuleStub.enqueueResponse('loadLastBlock', Promise.resolve({}));
+            busStub.enqueueResponse('message', Promise.resolve({}));
+        });
+
+        afterEach(() => {
+            processExitStub.restore();
+            dbStub.reset();
+            roundsLogicStub.reset();
+            appStateStub.reset();
+            loggerStub.stubReset();
+        });
+
+        it('should call db.task', async () => {
+            await instance.loadBlockChain();
+
+            expect(dbStub.stubs.task.called).to.be.true;
+            expect(dbStub.stubs.task.firstCall.args.length).to.be.equal(1);
+            expect(dbStub.stubs.task.firstCall.args[0]).to.be.a('function');
+        });
+
+        it('should call logger.info with blocks count info', async () => {
+            await instance.loadBlockChain();
+
+            expect(loggerStub.stubs.info.called).to.be.true;
+            expect(loggerStub.stubs.info.firstCall.args.length).to.be.equal(1);
+            expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal(`Blocks ${blocksCountObj.count}`);
+        });
+
+        it('should return instance.load if blocks count is 1', async () => {
+            blocksCountObj.count = 1;
+
+            let ret = await instance.loadBlockChain();
+
+            expect(loadStub.calledOnce).to.be.true;
+            expect(loadStub.firstCall.args.length).to.be.equal(4);
+            expect(loadStub.firstCall.args[0]).to.be.equal(1);
+            expect(loadStub.firstCall.args[1]).to.be.equal(10);
+            expect(loadStub.firstCall.args[2]).to.be.equal(null);
+            expect(loadStub.firstCall.args[3]).to.be.equal(true);
+
+            expect(ret).to.be.deep.equal(loadResult);
+        });
+
+        it('should set limit in default value if config.loading.loadPerIteration is not exist', async () => {
+            blocksCountObj.count = 1;
+            appConfig.loading.loadPerIteration = null;
+
+            await instance.loadBlockChain();
+            expect(loadStub.calledOnce).to.be.true;
+            expect(loadStub.firstCall.args.length).to.be.equal(4);
+            expect(loadStub.firstCall.args[1]).to.be.equal(1000);
+        });
+
+        it('should call logger.info with genesis block info', async () => {
+            await instance.loadBlockChain();
+
+            expect(loggerStub.stubs.info.called).to.be.true;
+            expect(loggerStub.stubs.info.getCall(1).args.length).to.be.equal(1);
+            expect(loggerStub.stubs.info.getCall(1).args[0]).to.be.equal('Genesis block matches with database');
+        });
+
+        it('should throw error if there are failed to match genesis block with database(bad id value)', async () => {
+        });
+
+        it('should throw error if there are failed to match genesis block with database(bad payloadHash value)');
+        it('should throw error if there are failed to match genesis block with database(bad blockSignature value)');
+        it('should call roundsLogic.calcRound');
+        it('should call logger.info with snapshot info');
+        //TODO проверки loading.snapshot штуки 3-4
+        it('should call appState.set if instance.config.loading.snapshot is not exist');
+        it('should call logger.info with "Snapshotting to end of round" if instance.config.loading.snapshot is not exist');
+        it('should call roundsLogic.lastInRound if instance.config.loading.snapshot is not exist');
+        it('should call instance.load if instance.config.loading.snapshot is not exist');
+        it('should call process.exit if instance.config.loading.snapshot is not exist');
+        it('should call logger.error and process.exit lastBlock.height !== (finded) lastBlock');
+        it('should check if instance.config.loading.snapshot is undefined');
+        it('should return instance.load if has been detected missed blocks in mem_accounts');
+        it('should return instance.load if has been detected unapplied rounds in mem_round');
+        it('should call logger.error and proccess.emit if has been delegates table corrupted with duplicate entries and return after');
+        it('should call db.task second time');
+        it('should return instance.laod if res[1].length > 0');
+        it('should return instance.laod if res[2].length === 0');
+        it('should call blocksUtilsModule.loadLastBlock');
+        it('should call logger.info with blockchain ready info');
+        it('should call bus.message');
+        it('should return instance.load if throw');
     });
 
     describe('.load', () => {
