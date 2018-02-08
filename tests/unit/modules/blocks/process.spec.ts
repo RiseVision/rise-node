@@ -6,12 +6,15 @@ import * as sinon from 'sinon';
 import { IBlocksModuleProcess } from '../../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../../src/ioc/symbols';
 import { BlocksModuleProcess } from '../../../../src/modules/blocks/';
-import { BlocksSubmoduleChainStub, BlocksSubmoduleUtilsStub } from '../../../stubs';
+import { BlocksSubmoduleChainStub, BlocksSubmoduleUtilsStub, BlocksSubmoduleVerifyStub } from '../../../stubs';
 import { createContainer } from '../../../utils/containerCreator';
 import TransportModuleStub from '../../../stubs/modules/TransportModuleStub';
-import { IAppState } from '../../../../src/ioc/interfaces/logic';
 import { AppStateStub } from '../../../stubs/logic/AppStateStub';
 import ZSchemaStub from '../../../stubs/helpers/ZSchemaStub';
+import DbStub from '../../../stubs/helpers/DbStub';
+import { SequenceStub } from '../../../stubs/helpers/SequenceStub';
+import BlocksModuleStub from '../../../stubs/modules/BlocksModuleStub';
+import { SignedAndChainedBlockType } from '../../../../src/logic';
 
 chai.use(chaiAsPromised);
 
@@ -35,28 +38,38 @@ describe('modules/blocks/process', () => {
   // let blocksModule: BlocksModuleStub;
   let appState: AppStateStub;
   let blocksChain: BlocksSubmoduleChainStub;
+  let blockVerify: BlocksSubmoduleVerifyStub;
+  let blocksModule: BlocksModuleStub;
   let blocksUtils: BlocksSubmoduleUtilsStub;
+  // let txModule: TransactionsModuleStub;
+  let dbSequence: SequenceStub;
+  let dbStub: DbStub;
   let schemaStub: ZSchemaStub;
   let transportModule: TransportModuleStub;
-  // let txModule: TransactionsModuleStub;
   // let txLogic: TransactionLogicStub;
   // let blockLogic: BlockLogicStub;
   // let roundsModule: RoundsModuleStub;
-  // let dbStub: DbStub;
   // let busStub: BusStub;
   beforeEach(() => {
-    appState = container.get(Symbols.logic.appState);
+    appState     = container.get(Symbols.logic.appState);
     // accountsModule = container.get(Symbols.modules.accounts);
-    blocksUtils = container.get(Symbols.modules.blocksSubModules.utils);
-    blocksChain   = container.get(Symbols.modules.blocksSubModules.chain);
+    blocksModule = container.get(Symbols.modules.blocks);
+    blocksUtils  = container.get(Symbols.modules.blocksSubModules.utils);
+    blockVerify  = container.get(Symbols.modules.blocksSubModules.verify);
+    blocksChain  = container.get(Symbols.modules.blocksSubModules.chain);
     // roundsModule   = container.get(Symbols.modules.rounds);
     // txModule       = container.get(Symbols.modules.transactions);
     // txLogic        = container.get(Symbols.logic.transaction);
     // blockLogic     = container.get(Symbols.logic.block);
     transportModule = container.get(Symbols.modules.transport);
-    // dbStub  = container.get(Symbols.generic.db);
+    dbStub          = container.get(Symbols.generic.db);
+    dbSequence      = container.getTagged(
+      Symbols.helpers.sequence,
+      Symbols.helpers.sequence,
+      Symbols.tags.helpers.dbSequence
+    );
     // busStub = container.get(Symbols.helpers.bus);
-    schemaStub = container.get(Symbols.generic.zschema);
+    schemaStub      = container.get(Symbols.generic.zschema);
   });
 
   describe('getCommonBlock', () => {
@@ -114,25 +127,194 @@ describe('modules/blocks/process', () => {
       schemaStub.enqueueResponse('validate', false);
       schemaStub.enqueueResponse('getLastErrors', []);
 
-      await expect(inst.getCommonBlock({peer: 'peer'} as any, 10)).to.be.rejectedWith('Cannot validate commonblock response');
+      await expect(inst.getCommonBlock({ peer: 'peer' } as any, 10))
+        .to.be.rejectedWith('Cannot validate commonblock response');
     });
-    it('should check response against db to avoid malicious peers');
-    it('should trigger recoverChain if returned commonblock does not return anything from db and poor consensus');
-    it('should throw error if returned commonblock does not return anything from db and poor consensus');
+    it('should check response against db to avoid malicious peers', async () => {
+      transportModule.enqueueResponse('getFromPeer', Promise.resolve({
+        body: {
+          common: {
+            height       : 1,
+            id           : 'id',
+            previousBlock: 'pb',
+          },
+        }
+      }));
+      dbStub.enqueueResponse('query', Promise.resolve([{ count: 1 }]));
+      await inst.getCommonBlock({ p: 'p' } as any, 10);
+      expect(dbStub.stubs.query.calledOnce).is.true;
+      expect(dbStub.stubs.query.firstCall.args[0]).is
+        .eq('SELECT COUNT("id")::int FROM blocks WHERE "id" = ${id} AND "previousBlock" = ${previousBlock} AND "height" = ${height}');
+      expect(dbStub.stubs.query.firstCall.args[1]).is.deep.eq({
+        height       : 1,
+        id           : 'id',
+        previousBlock: 'pb',
+      });
+    });
+    it('should trigger recoverChain if returned commonblock does not return anything from db and poor consensus', async () => {
+      transportModule.enqueueResponse('getFromPeer', Promise.resolve({
+        body: {
+          common: {},
+        },
+      }));
+      dbStub.enqueueResponse('query', Promise.resolve([]));
+      appState.enqueueResponse('getComputed', true); // poor consensus
+      blocksChain.enqueueResponse('recoverChain', Promise.resolve());
+
+      await inst.getCommonBlock({ p: 'p' } as any, 10);
+      expect(blocksChain.stubs.recoverChain.calledOnce).is.true;
+      expect(appState.stubs.getComputed.calledOnce).is.true;
+      expect(appState.stubs.getComputed.firstCall.args[0]).is.eq('node.poorConsensus');
+
+    });
+    it('should throw error if returned commonblock does not return anything from db and NOT poor consensus', async () => {
+      transportModule.enqueueResponse('getFromPeer', Promise.resolve({
+        body: {
+          common: {},
+        },
+      }));
+      dbStub.enqueueResponse('query', Promise.resolve([]));
+      appState.enqueueResponse('getComputed', false); // poor consensus
+
+      await expect(inst.getCommonBlock({ p: 'p' } as any, 10)).to.be.rejectedWith('Chain comparison failed with peer');
+    });
   });
 
   describe('loadBlocksOffset', () => {
+    describe('db query', () => {
+      it('should be done accounting offset>0', async () => {
+        dbStub.enqueueResponse('query', Promise.resolve([]));
+        blocksUtils.enqueueResponse('readDbRows', []);
+        await inst.loadBlocksOffset(10, 5, true);
 
+        expect(dbStub.stubs.query.firstCall.args[1]).to.be.deep.eq({
+          limit : 10 /* limit */ + 5,
+          offset: 5,
+        });
+      });
+      it('should be done accounting offset=0', async () => {
+        dbStub.enqueueResponse('query', Promise.resolve([]));
+        blocksUtils.enqueueResponse('readDbRows', []);
+        await inst.loadBlocksOffset(10, 0, true);
+
+        expect(dbStub.stubs.query.firstCall.args[1]).to.be.deep.eq({
+          limit : 10 /* limit */ + 0,
+          offset: 0,
+        });
+      });
+      it('should be done accounting offset=undefined', async () => {
+        dbStub.enqueueResponse('query', Promise.resolve([]));
+        blocksUtils.enqueueResponse('readDbRows', []);
+        await inst.loadBlocksOffset(10, undefined, true);
+
+        expect(dbStub.stubs.query.firstCall.args[1]).to.be.deep.eq({
+          limit : 10 /* limit */ + 0,
+          offset: 0,
+        });
+      });
+    });
+
+    it('should parse db rows using blocksUtilsModule', async () => {
+      dbStub.enqueueResponse('query', Promise.resolve(['a' /*dummy*/]));
+      blocksUtils.enqueueResponse('readDbRows', []);
+      await inst.loadBlocksOffset(10, 0, true);
+
+      expect(blocksUtils.stubs.readDbRows.calledOnce).is.true;
+      expect(blocksUtils.stubs.readDbRows.firstCall.args[0]).is.deep.eq(['a']);
+    });
+
+    describe('with blocks', () => {
+      beforeEach(() => {
+        dbStub.enqueueResponse('query', Promise.resolve([]));
+        blocksUtils.enqueueResponse('readDbRows', [{ id: '1' }, { id: '2' }]);
+        blocksChain.enqueueResponse('applyBlock', Promise.resolve());
+        blocksChain.enqueueResponse('applyBlock', Promise.resolve());
+      });
+      it('if verify=true it should call blockVerifyModule on each block', async () => {
+        // 2 blocks
+        blockVerify.enqueueResponse('verifyBlock', Promise.resolve({ verified: true }));
+        blockVerify.enqueueResponse('verifyBlock', Promise.resolve({ verified: true }));
+        await inst.loadBlocksOffset(10, 0, true);
+        expect(blockVerify.stubs.verifyBlock.callCount).eq(2);
+      });
+      it('if verify=true it should call blockVerify and stop processing if one is not verified', async () => {
+        blockVerify.enqueueResponse('verifyBlock', Promise.resolve({ verified: false, errors: ['ERROR'] }));
+        await expect(inst.loadBlocksOffset(10, 0, true)).to.be.rejectedWith('ERROR');
+        expect(blockVerify.stubs.verifyBlock.calledOnce).is.true;
+      });
+      it('should call applyGenesisBlock if blockid is same as genesis', async () => {
+        const genesis: SignedAndChainedBlockType = container.get(Symbols.generic.genesisBlock);
+        blocksUtils.reset();
+        blocksUtils.enqueueResponse('readDbRows', [genesis]);
+        blocksChain.enqueueResponse('applyGenesisBlock', Promise.resolve());
+        await inst.loadBlocksOffset(10, 0, false);
+        expect(blocksChain.stubs.applyGenesisBlock.calledOnce).is.true;
+      });
+      it('should call applyBlock twice', async () => {
+        await inst.loadBlocksOffset(10, 0, false);
+        expect(blocksChain.stubs.applyBlock.callCount).is.eq(2);
+      });
+      it('should set lastBlock in blocksModule', async () => {
+        await inst.loadBlocksOffset(10, 0, false);
+        expect(blocksModule.lastBlock).to.be.deep.eq({id: '2'});
+      });
+      it('should return lastBlock', async () => {
+        expect(await inst.loadBlocksOffset(10, 0, false)).to.be.deep.eq({id: '2'});
+      });
+      it('should set lastBlock to last successfully processed even if one fails', async () => {
+        blocksChain.stubs.applyBlock.onCall(1).rejects();
+        try {
+          await inst.loadBlocksOffset(10, 0, false);
+        } catch (e) {
+
+        }
+        expect(blocksModule.lastBlock).to.be.deep.eq({id: '1'});
+      });
+    });
   });
 
   describe('loadBlocksFromPeer', () => {
-
+    it('should transport.getFromPeer with correct api and method');
+    it('should validate response against schema');
+    it('should read returned data through utilsModule');
+    it('should call processBlock on each block');
+    it('should throw if one processBlock fails');
+    it('should return the last validBlock');
+    it('should not process anything if blocksModule is cleaning');
   });
 
   describe('generateBlock', () => {
+    it('should get unconfirmed transactions list');
+    it('should throw if one account does not exist');
+    it('should not verify tx if tx is not ready');
+    it('should verify every tx');
+    it('should call blockLogic.create with all ready(and verified) transactions');
+    it('should call verify.processBlock with the generated block with broadcast=true and saveBlock=true');
   });
 
   describe('onReceiveBlock', () => {
+    describe('all ok', () => {
+      it('should update lastReceipt');
+      it('should verify.processBlock with broadcast=true and saveBlock=true');
+    });
+    describe('fork 1 if consequent blocks but diff prevblock', () => {
+      it('should call forkModule.fork with ForkType.TYPE_1');
+      it('should go through verification if timestamp is < than last known');
+      it('should go through verification if timestamp == last known but blockid < last known');
+      it('should not delete lastBlock if verifyReceipt fails');
+      it('should call deleteLastBlock twice if verification goes through');
+    });
+
+    describe('fork 5 if same prevblock and height but different blockid', () => {
+      it('should call forkModule.fork with ForkType.TYPE_5');
+      it('should go thorough verification if received block has lower timestamp (older)');
+      it('should go thorough verification if same timestamp but received block has lower id');
+      it('should throw error if verifyReceipt fails');
+      it('should deleteLastBlock if verifyReceipt suceeds');
+      it('should update blocksModule receipt if verifyReceipt suceeds');
+      it('should call verifyModule.process with new block and broadcast=true, saveBlock=true if all good');
+    });
+
   });
 
 });
