@@ -7,6 +7,7 @@ import { stubMethod } from '../stubDecorator';
 
 @injectable()
 export default class SlotsStub extends BaseStubClass {
+  public delegates = 101;
 
   @stubMethod(true)
   public getSlotNumber() {
