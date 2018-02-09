@@ -319,50 +319,7 @@ describe('modules/loader', () => {
 
   });
 
-  describe('.onPeersReady', () => {
-
-    let syncTimerStub: SinonStub;
-    let loadTransactionsStub: SinonStub;
-    let loadSignaturesStub: SinonStub;
-    let promiseRetrySpy: SinonSpy;
-    let promiseRetryOrigin;
-    let loggerStub: LoggerStub;
-
-    before(() => {
-      promiseRetryOrigin = LoaderModuleRewire.__get__('promiseRetry');
-      promiseRetrySpy = sinon.spy(promiseRetryOrigin);
-      LoaderModuleRewire.__set__('promiseRetry', promiseRetrySpy);
-    });
-
-    beforeEach(() => {
-      loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
-
-      instance.loaded = true;
-
-      syncTimerStub = sandbox.stub(instance as any, 'syncTimer').resolves({});
-      loadTransactionsStub = sandbox.stub(instance as any, 'loadTransactions').resolves({});
-      loadSignaturesStub = sandbox.stub(instance as any, 'loadSignatures').resolves({});
-    });
-
-    after(() => {
-      LoaderModuleRewire.__set__('promiseRetry', promiseRetryOrigin);
-    });
-
-    it('should call instance.syncTimer', async () => {
-      await instance.onPeersReady();
-//TODO
-      // expect(syncTimerStub.calledOnce).to.be.true;
-      // expect(promiseRetrySpy.calledTwice).to.be.true;
-    });
-
-    it('should call promiseRetry', async () => {
-      await instance.onPeersReady();
-
-      expect(syncTimerStub.calledOnce).to.be.true;
-    });
-
-  });
-
+ 
   describe('.loadTransactions', () => {
 
     let getRandomPeerStub: SinonStub;
@@ -462,9 +419,11 @@ describe('modules/loader', () => {
       expect(schemaStub.stubs.validate.firstCall.args[1]).to.be.equal(loaderSchema.loadSignatures);
     });
 
-    it('should throw if failed to validate');
+    it('should throw if failed to validate', async () => {
+      schemaStub.stubs.validate.returns(false);
 
-    it('should call multisigModule.processSignature if cycle');
+      expect((instance as any).loadSignatures()).to.be.rejectedWith('Failed to validate /signatures schema');
+    });
 
   });
 
