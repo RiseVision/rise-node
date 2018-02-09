@@ -29,15 +29,15 @@ describe('helpers/blocksProgressLogger', () => {
 
   describe('Constructor', () => {
     it('Checking target and step', () => {
-      expect(instance.target).to.equal(10);
-      expect(instance.step).to.equal(5);
+      expect(instance['target']).to.equal(10);
+      expect(instance['step']).to.equal(5);
     });
   });
 
   describe('reset', () => {
     it('success', () => {
       instance.reset();
-      expect(instance.applied).to.equal(0);
+      expect(instance['applied']).to.equal(0);
     });
   });
 
@@ -50,7 +50,7 @@ describe('helpers/blocksProgressLogger', () => {
     });
 
     it('this.applied === this.target', () => {
-      instance.applied = 9;
+      instance['applied'] = 9;
       instance.applyNext();
       expect(loggerStub.calledOnce).to.be.true;
       expect(loggerStub.args[0][0]).to.equal('My message');
@@ -58,7 +58,7 @@ describe('helpers/blocksProgressLogger', () => {
     });
 
     it('this.applied % this.step === 1', () => {
-      instance.applied = 5;
+      instance['applied'] = 5;
       instance.applyNext();
       expect(loggerStub.calledOnce).to.be.true;
       expect(loggerStub.args[0][0]).to.equal('My message');
@@ -66,14 +66,14 @@ describe('helpers/blocksProgressLogger', () => {
     });
 
     it('this.applied >= this.target', () => {
-      instance.applied = 11;
+      instance['applied'] = 11;
       expect(() => instance.applyNext()).to.throw(
         'Cannot apply transaction over the limit'
       );
     });
 
     it('Rest of cases', () => {
-      instance.applied = 1;
+      instance['applied'] = 1;
       instance.applyNext();
       expect(loggerStub.called).to.be.false;
     });
