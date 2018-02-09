@@ -3,7 +3,7 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import {Container} from 'inversify';
 import * as rewire from 'rewire';
-import {SinonSandbox, SinonStub} from 'sinon';
+import {SinonSandbox, SinonSpy, SinonStub} from 'sinon';
 import * as sinon from 'sinon';
 import {Symbols} from '../../../src/ioc/symbols';
 import {PeerType} from '../../../src/logic';
@@ -17,6 +17,7 @@ import {
   TransactionsModuleStub, TransportModuleStub, ZSchemaStub
 } from '../../stubs';
 import {createFakePeers} from '../../utils/fakePeersFactory';
+import loaderSchema from '../../../src/schema/loader';
 
 chai.use(chaiAsPromised);
 
@@ -49,7 +50,6 @@ describe('modules/loader', () => {
 
   before(() => {
     container = new Container();
-
     // Generic
     container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
     container.bind(Symbols.generic.db).to(DbStub).inSingletonScope();
@@ -321,17 +321,300 @@ describe('modules/loader', () => {
 
   describe('.onPeersReady', () => {
 
-    describe('.syncTimer', () => {
+    let syncTimerStub: SinonStub;
+    let loadTransactionsStub: SinonStub;
+    let loadSignaturesStub: SinonStub;
+    let promiseRetrySpy: SinonSpy;
+    let promiseRetryOrigin;
+    let loggerStub: LoggerStub;
 
+    before(() => {
+      promiseRetryOrigin = LoaderModuleRewire.__get__('promiseRetry');
+      promiseRetrySpy = sinon.spy(promiseRetryOrigin);
+      LoaderModuleRewire.__set__('promiseRetry', promiseRetrySpy);
     });
 
-    describe('.loadTransactions', () => {
+    beforeEach(() => {
+      loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
 
+      instance.loaded = true;
+
+      syncTimerStub = sandbox.stub(instance as any, 'syncTimer').resolves({});
+      loadTransactionsStub = sandbox.stub(instance as any, 'loadTransactions').resolves({});
+      loadSignaturesStub = sandbox.stub(instance as any, 'loadSignatures').resolves({});
     });
 
-    describe('.loadSignatures', () => {
-
+    after(() => {
+      LoaderModuleRewire.__set__('promiseRetry', promiseRetryOrigin);
     });
+
+    it('should call instance.syncTimer', async () => {
+      await instance.onPeersReady();
+//TODO
+      // expect(syncTimerStub.calledOnce).to.be.true;
+      // expect(promiseRetrySpy.calledTwice).to.be.true;
+    });
+
+    it('should call promiseRetry', async () => {
+      await instance.onPeersReady();
+
+      expect(syncTimerStub.calledOnce).to.be.true;
+    });
+
+  });
+
+  describe('.loadTransactions', () => {
+
+    let getRandomPeerStub: SinonStub;
+    let loggerStub: LoggerStub;
+    let transportModuleStub: TransportModuleStub;
+    let schemaStub: ZSchemaStub;
+    let sequenceStub: SequenceStub;
+    let multisigModuleStub: MultisignaturesModuleStub;
+
+    let res;
+    let randomPeer;
+
+    beforeEach(() => {
+      randomPeer = {string: 'string'};
+      res = {
+        body:
+          {
+            signatures:
+              [
+                {
+                  signatures: [
+                    {
+                      signature: 'sig11',
+                    },
+                  ],
+                  transaction: 'tr11',
+                },
+                {
+                  signatures: [
+                    {
+                      signature: 'sig22',
+                    },
+                  ],
+                  transaction: 'tr22',
+                },
+              ],
+          },
+      };
+
+      container.get<TransportModuleStub>(Symbols.modules.transport).stubConfig.getFromPeer.return = res;
+
+      getRandomPeerStub = sandbox.stub(instance as any, 'getRandomPeer').resolves({});
+
+      loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
+      transportModuleStub = container.get<TransportModuleStub>(Symbols.modules.transport);
+      schemaStub = container.get<ZSchemaStub>(Symbols.generic.zschema);
+      sequenceStub = container.getTagged<SequenceStub>(Symbols.helpers.sequence,
+        Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence);
+      multisigModuleStub = container.get<MultisignaturesModuleStub>(Symbols.modules.multisignatures);
+
+      getRandomPeerStub.resolves(randomPeer);
+      schemaStub.stubs.validate.returns(true);
+      multisigModuleStub.enqueueResponse('processSignature', {});
+    });
+
+    afterEach(() => {
+      loggerStub.stubReset();
+      schemaStub.stubReset();
+      transportModuleStub.stubReset();
+      sequenceStub.reset();
+      multisigModuleStub.reset();
+    });
+
+    it('should call instance.getRandomPeer', async () => {
+      await (instance as any).loadSignatures();
+
+      expect(getRandomPeerStub.calledOnce).to.be.true;
+      expect(getRandomPeerStub.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should call logger.log', async () => {
+      await (instance as any).loadSignatures();
+
+      expect(loggerStub.stubs.log.calledOnce).to.be.true;
+      expect(loggerStub.stubs.log.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.log.firstCall.args[0]).to.be.equal(`Loading signatures from: ${randomPeer.string}`);
+    });
+
+    it('should call transportModule.getFromPeer', async () => {
+      await (instance as any).loadSignatures();
+
+      expect(transportModuleStub.stubs.getFromPeer.calledOnce).to.be.true;
+      expect(transportModuleStub.stubs.getFromPeer.firstCall.args.length).to.be.equal(2);
+      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[0]).to.be.deep.equal(randomPeer);
+      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[1]).to.be.deep.equal({
+        api: '/signatures',
+        method: 'GET',
+      });
+    });
+
+    it('should call schema.validate', async () => {
+      await (instance as any).loadSignatures();
+
+      expect(schemaStub.stubs.validate.calledOnce).to.be.true;
+      expect(schemaStub.stubs.validate.firstCall.args.length).to.be.equal(2);
+      expect(schemaStub.stubs.validate.firstCall.args[0]).to.be.deep.equal(res.body);
+      expect(schemaStub.stubs.validate.firstCall.args[1]).to.be.equal(loaderSchema.loadSignatures);
+    });
+
+    it('should throw if failed to validate');
+
+    it('should call multisigModule.processSignature if cycle');
+
+  });
+
+  describe('.loadSignatures', () => {
+
+  });
+
+  describe('.syncTimer', () => {
+
+  });
+
+  describe('.sync', () => {
+
+    let busStub: BusStub;
+    let transactionsModuleStub: TransactionsModuleStub;
+    let broadcasterLogicStub: BroadcasterLogicStub;
+    let systemModuleStub: SystemModuleStub;
+    let loggerStub: LoggerStub;
+    let syncTriggerStub: SinonStub;
+    let loadBlocksFromNetworkStub: SinonStub;
+
+    beforeEach(() => {
+      syncTriggerStub = sandbox.stub(instance as any, 'syncTrigger');
+      loadBlocksFromNetworkStub = sandbox.stub(instance as any, 'loadBlocksFromNetwork');
+
+      busStub = container.get<BusStub>(Symbols.helpers.bus);
+      transactionsModuleStub = container.get<TransactionsModuleStub>(Symbols.modules.transactions);
+      broadcasterLogicStub = container.get<BroadcasterLogicStub>(Symbols.logic.broadcaster);
+      systemModuleStub = container.get<SystemModuleStub>(Symbols.modules.system);
+      loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
+
+      busStub.enqueueResponse('message', Promise.resolve());
+      busStub.enqueueResponse('message', Promise.resolve());
+      broadcasterLogicStub.enqueueResponse('getPeers', Promise.resolve());
+      broadcasterLogicStub.enqueueResponse('getPeers', Promise.resolve());
+      transactionsModuleStub.enqueueResponse('undoUnconfirmedList', Promise.resolve());
+      transactionsModuleStub.enqueueResponse('applyUnconfirmedList', Promise.resolve());
+      systemModuleStub.enqueueResponse('update', Promise.resolve());
+    });
+
+    afterEach(() => {
+      loggerStub.stubReset();
+      busStub.reset();
+      transactionsModuleStub.reset();
+      broadcasterLogicStub.reset();
+      systemModuleStub.reset();
+    });
+
+    it('call logger.info methods', async () => {
+      await  (instance as any).sync();
+
+      expect(loggerStub.stubs.info.callCount).to.be.equal(2);
+
+      expect(loggerStub.stubs.info.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal('Starting sync');
+
+      expect(loggerStub.stubs.info.secondCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.info.secondCall.args[0]).to.be.equal('Finished sync');
+    });
+
+    it('call logger.debug methods', async () => {
+      await  (instance as any).sync();
+
+      expect(loggerStub.stubs.debug.callCount).to.be.equal(3);
+
+      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Undoing unconfirmed transactions before sync');
+
+      expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal('Establishing broadhash consensus before sync');
+
+      expect(loggerStub.stubs.debug.thirdCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.thirdCall.args[0]).to.be.equal('Establishing broadhash consensus after sync');
+    });
+
+    it('call logger.debug methods', async () => {
+      await  (instance as any).sync();
+
+      expect(loggerStub.stubs.debug.callCount).to.be.equal(3);
+
+      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Undoing unconfirmed transactions before sync');
+
+      expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal('Establishing broadhash consensus before sync');
+
+      expect(loggerStub.stubs.debug.thirdCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.thirdCall.args[0]).to.be.equal('Establishing broadhash consensus after sync');
+    });
+
+    it('call bus"s methods', async () => {
+      await  (instance as any).sync();
+
+      expect(busStub.stubs.message.calledTwice).to.be.true;
+
+      expect(busStub.stubs.message.firstCall.args.length).to.be.equal(1);
+      expect(busStub.stubs.message.firstCall.args[0]).to.be.equal('syncStarted');
+
+      expect(busStub.stubs.message.secondCall.args.length).to.be.equal(1);
+      expect(busStub.stubs.message.secondCall.args[0]).to.be.equal('syncFinished');
+    });
+
+    it('call transactionsModule methods', async () => {
+      await  (instance as any).sync();
+
+      expect(transactionsModuleStub.stubs.undoUnconfirmedList.calledOnce).to.be.true;
+      expect(transactionsModuleStub.stubs.undoUnconfirmedList.firstCall.args.length).to.be.equal(0);
+
+      expect(transactionsModuleStub.stubs.applyUnconfirmedList.calledOnce).to.be.true;
+      expect(transactionsModuleStub.stubs.applyUnconfirmedList.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('call broadcasterLogic methods', async () => {
+      await  (instance as any).sync();
+
+      expect(broadcasterLogicStub.stubs.getPeers.calledTwice).to.be.true;
+
+      expect(broadcasterLogicStub.stubs.getPeers.firstCall.args.length).to.be.equal(1);
+      expect(broadcasterLogicStub.stubs.getPeers.firstCall.args[0]).to.be.deep.equal({limit: constants.maxPeers});
+
+      expect(broadcasterLogicStub.stubs.getPeers.secondCall.args.length).to.be.equal(1);
+      expect(broadcasterLogicStub.stubs.getPeers.secondCall.args[0]).to.be.deep.equal({limit: constants.maxPeers});
+    });
+
+    it('call instance.syncTrigger', async () => {
+      await  (instance as any).sync();
+
+      expect(syncTriggerStub.calledTwice).to.be.true;
+
+      expect(syncTriggerStub.firstCall.args.length).to.be.equal(1);
+      expect(syncTriggerStub.firstCall.args[0]).to.be.true;
+
+      expect(syncTriggerStub.secondCall.args.length).to.be.equal(1);
+      expect(syncTriggerStub.secondCall.args[0]).to.be.false;
+    });
+
+    it('check instance field', async () => {
+      await  (instance as any).sync();
+
+      expect((instance as any).isActive).to.be.false;
+      expect((instance as any).blocksToSync).to.be.equal(0);
+    });
+
+  });
+
+  describe('.syncTrigger', () => {
+
+  });
+
+  describe('loadBlocksFromNetwork', () => {
 
   });
 
