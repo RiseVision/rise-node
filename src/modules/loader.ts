@@ -105,7 +105,7 @@ export class LoaderModule implements ILoaderModule {
     };
   }
 
-  public async getNework() {
+  public async getNetwork() {
     if (!(
         this.network.height > 0 &&
         Math.abs(this.network.height - this.blocksModule.lastBlock.height) === 1)
@@ -117,7 +117,7 @@ export class LoaderModule implements ILoaderModule {
   }
 
   public async getRandomPeer(): Promise<IPeerLogic> {
-    const { peers } = await this.getNework();
+    const { peers } = await this.getNetwork();
     return peers[Math.floor(Math.random() * peers.length)];
   }
 
