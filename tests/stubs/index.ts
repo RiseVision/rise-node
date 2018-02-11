@@ -24,6 +24,7 @@ import { BroadcasterLogicStub } from './logic/BroadcasterLogicStub';
 // Logic / Transactions
 import TransactionTypeStub from './logic/transactions/TransactionTypeStub';
 // Modules
+import BlocksModuleStub from './modules/BlocksModuleStub';
 import { BlocksSubmoduleChainStub } from './modules/blocks/BlocksSubmoduleChainStub';
 import { BlocksSubmoduleUtilsStub } from './modules/blocks/BlocksSubmoduleUtilsStub';
 import { BlocksSubmoduleVerifyStub } from './modules/blocks/BlocksSubmoduleVerifyStub';
@@ -45,6 +46,7 @@ export {
   AppStateStub,
   ByteBufferStub,
   BlockRewardLogicStub,
+  BlocksModuleStub,
   BlocksSubmoduleUtilsStub,
   BlocksSubmoduleVerifyStub,
   BlocksSubmoduleChainStub,

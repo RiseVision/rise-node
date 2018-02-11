@@ -154,7 +154,6 @@ export class DelegatesAPI {
   public async search(@SchemaValid(schema.search, { castNumbers: true })
                       @QueryParams() params: { q: string, limit?: number, orderBy: string }) {
 
-    console.log('limit', params);
     const orderBy = OrderBy(params.orderBy, {
       sortField : 'username',
       sortFields: sql.sortFields,

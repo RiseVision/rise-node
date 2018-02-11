@@ -213,7 +213,6 @@ describe('modules/loader', () => {
       peersModuleStub.enqueueResponse('list', { peers });
 
       await instance.getNework();
-      console.log(peersLogicStub.stubs.create.callCount);
       expect(peersLogicStub.stubs.create.called).to.be.true;
     });
 
