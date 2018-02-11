@@ -13,6 +13,7 @@ import { SequenceStub } from './helpers/SequenceStub';
 import { SlotsStub } from './helpers/SlotsStub';
 // Logic
 import AccountLogicStub from './logic/AccountLogicStub';
+import { AppStateStub } from './logic/AppStateStub';
 import BlockRewardLogicStub from './logic/BlockRewardLogicStub';
 import PeerLogicStub from './logic/PeerLogicStub';
 import { PeersLogicStub } from './logic/PeersLogicStub';
@@ -41,6 +42,7 @@ import SocketIOStub from './utils/SocketIOStub';
 export {
   AccountLogicStub,
   AccountsModuleStub,
+  AppStateStub,
   ByteBufferStub,
   BlockRewardLogicStub,
   BlocksSubmoduleUtilsStub,
