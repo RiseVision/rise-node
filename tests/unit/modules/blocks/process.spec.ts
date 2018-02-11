@@ -6,7 +6,12 @@ import * as sinon from 'sinon';
 import { IBlocksModuleProcess } from '../../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../../src/ioc/symbols';
 import { BlocksModuleProcess } from '../../../../src/modules/blocks/';
-import { BlocksSubmoduleChainStub, BlocksSubmoduleUtilsStub, BlocksSubmoduleVerifyStub } from '../../../stubs';
+import {
+  BlocksSubmoduleChainStub,
+  BlocksSubmoduleUtilsStub,
+  BlocksSubmoduleVerifyStub,
+  PeersLogicStub
+} from '../../../stubs';
 import { createContainer } from '../../../utils/containerCreator';
 import TransportModuleStub from '../../../stubs/modules/TransportModuleStub';
 import { AppStateStub } from '../../../stubs/logic/AppStateStub';
@@ -15,6 +20,7 @@ import DbStub from '../../../stubs/helpers/DbStub';
 import { SequenceStub } from '../../../stubs/helpers/SequenceStub';
 import BlocksModuleStub from '../../../stubs/modules/BlocksModuleStub';
 import { SignedAndChainedBlockType } from '../../../../src/logic';
+import { createFakePeer } from '../../../utils/fakePeersFactory';
 
 chai.use(chaiAsPromised);
 
@@ -46,6 +52,7 @@ describe('modules/blocks/process', () => {
   let dbStub: DbStub;
   let schemaStub: ZSchemaStub;
   let transportModule: TransportModuleStub;
+  let peersLogic: PeersLogicStub;
   // let txLogic: TransactionLogicStub;
   // let blockLogic: BlockLogicStub;
   // let roundsModule: RoundsModuleStub;
@@ -70,6 +77,7 @@ describe('modules/blocks/process', () => {
     );
     // busStub = container.get(Symbols.helpers.bus);
     schemaStub      = container.get(Symbols.generic.zschema);
+    peersLogic      = container.get(Symbols.logic.peers);
   });
 
   describe('getCommonBlock', () => {
@@ -256,10 +264,10 @@ describe('modules/blocks/process', () => {
       });
       it('should set lastBlock in blocksModule', async () => {
         await inst.loadBlocksOffset(10, 0, false);
-        expect(blocksModule.lastBlock).to.be.deep.eq({id: '2'});
+        expect(blocksModule.lastBlock).to.be.deep.eq({ id: '2' });
       });
       it('should return lastBlock', async () => {
-        expect(await inst.loadBlocksOffset(10, 0, false)).to.be.deep.eq({id: '2'});
+        expect(await inst.loadBlocksOffset(10, 0, false)).to.be.deep.eq({ id: '2' });
       });
       it('should set lastBlock to last successfully processed even if one fails', async () => {
         blocksChain.stubs.applyBlock.onCall(1).rejects();
@@ -268,19 +276,97 @@ describe('modules/blocks/process', () => {
         } catch (e) {
 
         }
-        expect(blocksModule.lastBlock).to.be.deep.eq({id: '1'});
+        expect(blocksModule.lastBlock).to.be.deep.eq({ id: '1' });
       });
     });
   });
 
   describe('loadBlocksFromPeer', () => {
-    it('should transport.getFromPeer with correct api and method');
-    it('should validate response against schema');
-    it('should read returned data through utilsModule');
-    it('should call processBlock on each block');
-    it('should throw if one processBlock fails');
-    it('should return the last validBlock');
-    it('should not process anything if blocksModule is cleaning');
+    let fakePeer;
+    beforeEach(() => {
+      fakePeer = createFakePeer();
+      peersLogic.enqueueResponse('create', fakePeer);
+
+    });
+    it('should transport.getFromPeer with correct api and method', async () => {
+      transportModule.enqueueResponse('getFromPeer', Promise.resolve({ body: {} }));
+      blocksUtils.enqueueResponse('readDbRows', []);
+      blocksModule.lastBlock = { id: '1' } as any;
+      await inst.loadBlocksFromPeer(null);
+      expect(transportModule.stubs.getFromPeer.calledOnce).is.true;
+      expect(transportModule.stubs.getFromPeer.firstCall.args[0]).is.deep.eq(fakePeer);
+      expect(transportModule.stubs.getFromPeer.firstCall.args[1]).is.deep.eq({
+        api   : '/blocks?lastBlockId=1',
+        method: 'GET',
+      });
+    });
+    it('should validate response against schema', async () => {
+      transportModule.enqueueResponse('getFromPeer', Promise.resolve({ body: { blocks: ['1', '2', '3'] } }));
+      blocksUtils.enqueueResponse('readDbRows', []);
+      blocksModule.lastBlock = { id: '1' } as any;
+      schemaStub.enqueueResponse('validate', false);
+
+      await expect(inst.loadBlocksFromPeer(null))
+        .to.rejectedWith('Received invalid blocks data');
+
+      expect(schemaStub.stubs.validate.calledOnce).is.true;
+      expect(schemaStub.stubs.validate.firstCall.args[0]).is.deep.eq(['1', '2', '3']);
+    });
+    it('should read returned data through utilsModule', async () => {
+      transportModule.enqueueResponse('getFromPeer', Promise.resolve({ body: { blocks: ['1', '2', '3'] } }));
+      blocksUtils.enqueueResponse('readDbRows', []);
+      blockVerify.stubs.processBlock.resolves();
+      blocksModule.lastBlock = { id: '1' } as any;
+
+      await inst.loadBlocksFromPeer(null);
+
+      expect(blocksUtils.stubs.readDbRows.calledOnce).is.true;
+      expect(blocksUtils.stubs.readDbRows.firstCall.args[0]).is.deep.eq(['1', '2', '3']);
+    });
+    it('should call processBlock on each block', async () => {
+      transportModule.enqueueResponse('getFromPeer', Promise.resolve({ body: { blocks: [] } }));
+      blocksUtils.enqueueResponse('readDbRows', ['1', '2', '3']);
+      blockVerify.stubs.processBlock.resolves();
+      blocksModule.lastBlock = { id: '1' } as any;
+
+      await inst.loadBlocksFromPeer(null);
+      expect(blockVerify.stubs.processBlock.callCount).is.eq(3);
+      expect(blockVerify.stubs.processBlock.getCall(0).args[0]).to.be.deep.eq('1');
+      expect(blockVerify.stubs.processBlock.getCall(1).args[0]).to.be.deep.eq('2');
+      expect(blockVerify.stubs.processBlock.getCall(2).args[0]).to.be.deep.eq('3');
+      expect(blockVerify.stubs.processBlock.getCall(0).args[1]).to.be.deep.eq(false);
+      expect(blockVerify.stubs.processBlock.getCall(0).args[2]).to.be.deep.eq(true);
+    });
+    it('should throw if one processBlock fails', async () => {
+      transportModule.enqueueResponse('getFromPeer', Promise.resolve({ body: { blocks: [] } }));
+      blocksUtils.enqueueResponse('readDbRows', ['1', '2', '3']);
+      blockVerify.stubs.processBlock.resolves();
+      blockVerify.stubs.processBlock.onCall(2).rejects();
+      blocksModule.lastBlock = { id: '1' } as any;
+
+      await expect(inst.loadBlocksFromPeer(null)).to.be.rejected;
+      expect(blockVerify.stubs.processBlock.callCount).is.eq(3);
+
+    });
+    it('should return the last validBlock', async () => {
+      transportModule.enqueueResponse('getFromPeer', Promise.resolve({ body: { blocks: [] } }));
+      blocksUtils.enqueueResponse('readDbRows', ['1', '2', '3']);
+      blockVerify.stubs.processBlock.resolves();
+      blocksModule.lastBlock = { id: '1' } as any;
+
+      expect(await inst.loadBlocksFromPeer(null)).to.be.eq('3');
+    });
+    it('should not process anything if blocksModule is cleaning', async () => {
+      transportModule.enqueueResponse('getFromPeer', Promise.resolve({ body: { blocks: [] } }));
+      blocksUtils.enqueueResponse('readDbRows', ['1', '2', '3']);
+      blockVerify.stubs.processBlock.resolves();
+      blocksModule.lastBlock = { id: '1' } as any;
+      blocksModule.isCleaning = true;
+
+      expect(await inst.loadBlocksFromPeer(null)).to.be.deep.eq({id: '1'});
+      expect(blockVerify.stubs.processBlock.called).is.false;
+    });
+
   });
 
   describe('generateBlock', () => {
