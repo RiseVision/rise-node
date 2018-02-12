@@ -1,13 +1,14 @@
-import {expect} from 'chai';
+import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import {Container} from 'inversify';
+import { Container } from 'inversify';
 import * as rewire from 'rewire';
-import {SinonSandbox, SinonSpy, SinonStub} from 'sinon';
+import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
-import {Symbols} from '../../../src/ioc/symbols';
-import {PeerType} from '../../../src/logic';
-import {LoaderModule} from '../../../src/modules';
+import { Symbols } from '../../../src/ioc/symbols';
+import { PeerType } from '../../../src/logic';
+import { LoaderModule } from '../../../src/modules';
+import loaderSchema from '../../../src/schema/loader';
 import {
   AccountLogicStub, BlocksModuleChain, BlocksModuleProcessStub, BlocksModuleUtilsStub, BlocksModuleVerifyStub,
   BroadcasterLogicStub, BusStub, DbStub, IAppStateStub,
@@ -16,8 +17,7 @@ import {
   SocketIOStub, SystemModuleStub, TransactionLogicStub,
   TransactionsModuleStub, TransportModuleStub, ZSchemaStub
 } from '../../stubs';
-import {createFakePeers} from '../../utils/fakePeersFactory';
-import loaderSchema from '../../../src/schema/loader';
+import { createFakePeers } from '../../utils/fakePeersFactory';
 
 chai.use(chaiAsPromised);
 
@@ -31,21 +31,21 @@ describe('modules/loader', () => {
   let instance: LoaderModule;
   let container: Container;
   let sandbox: SinonSandbox;
-  let constants = {
+  let constants    = {
     activeDelegates: 1,
-    epochTime: new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
-    maxPeers: 100,
+    epochTime      : new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
+    maxPeers       : 100,
   } as any;
-  let appConfig = {
+  let appConfig    = {
     loading: {
       loadPerIteration: 10,
-      snapshot: false,
+      snapshot        : false,
     },
   };
   let genesisBlock = {
     blockSignature: Buffer.from('10').toString('hex'),
-    id: 10,
-    payloadHash: Buffer.from('10').toString('hex'),
+    id            : 10,
+    payloadHash   : Buffer.from('10').toString('hex'),
   };
 
   before(() => {
@@ -93,28 +93,28 @@ describe('modules/loader', () => {
   });
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox  = sinon.sandbox.create();
     instance = container.get(Symbols.modules.loader);
 
-    container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = {height: 1} as any;
+    container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = { height: 1 } as any;
   });
 
   afterEach(() => {
-    constants = {
+    constants    = {
       activeDelegates: 1,
-      epochTime: new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
-      maxPeers: 100,
+      epochTime      : new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
+      maxPeers       : 100,
     } as any;
-    appConfig = {
+    appConfig    = {
       loading: {
         loadPerIteration: 10,
-        snapshot: false,
+        snapshot        : false,
       },
     };
     genesisBlock = {
       blockSignature: Buffer.from('10').toString('hex'),
-      id: 10,
-      payloadHash: Buffer.from('10').toString('hex'),
+      id            : 10,
+      payloadHash   : Buffer.from('10').toString('hex'),
     };
     sandbox.restore();
   });
@@ -124,7 +124,7 @@ describe('modules/loader', () => {
     it('should set instance.network to default value after the creation of the object', () => {
       expect((instance as any).network).to.be.deep.equal({
         height: 0,
-        peers: [],
+        peers : [],
       });
     });
 
@@ -138,12 +138,12 @@ describe('modules/loader', () => {
     let loggerStub: LoggerStub;
 
     beforeEach(() => {
-      peers = createFakePeers(2);
+      peers           = createFakePeers(2);
       peers[0].height = 3;
 
       peersModuleStub = container.get(Symbols.modules.peers);
-      peersLogicStub = container.get(Symbols.logic.peers);
-      loggerStub = container.get(Symbols.helpers.logger);
+      peersLogicStub  = container.get(Symbols.logic.peers);
+      loggerStub      = container.get(Symbols.helpers.logger);
 
       peersLogicStub.reset();
       loggerStub.stubReset();
@@ -152,23 +152,23 @@ describe('modules/loader', () => {
     });
 
     it('should return unchanged instance.network if (network.height <= 0 and Math.abs(expressive) === 1)', async () => {
-      container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = {height: 0} as any;
-      (instance as any).network = {
+      container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = { height: 0 } as any;
+      (instance as any).network                                    = {
         height: 1,
-        peers: [],
+        peers : [],
       };
 
       const result = await instance.getNework();
 
-      expect(result).to.be.deep.equal({height: 1, peers: []});
+      expect(result).to.be.deep.equal({ height: 1, peers: [] });
     });
 
     it('should call instance.peersModule.list if instance.network.height > 0', async () => {
       (instance as any).network = {
         height: 1,
-        peers: [],
+        peers : [],
       };
-      peersModuleStub.enqueueResponse('list', {peers});
+      peersModuleStub.enqueueResponse('list', { peers });
 
       await instance.getNework();
 
@@ -176,7 +176,7 @@ describe('modules/loader', () => {
     });
 
     it('should call instance.logger.trace methods', async () => {
-      peersModuleStub.enqueueResponse('list', {peers});
+      peersModuleStub.enqueueResponse('list', { peers });
 
       await instance.getNework();
 
@@ -184,19 +184,19 @@ describe('modules/loader', () => {
 
       expect(loggerStub.stubs.trace.getCall(0).args.length).to.be.equal(2);
       expect(loggerStub.stubs.trace.getCall(0).args[0]).to.be.equal('Good peers - received');
-      expect(loggerStub.stubs.trace.getCall(0).args[1]).to.be.deep.equal({count: peers.length});
+      expect(loggerStub.stubs.trace.getCall(0).args[1]).to.be.deep.equal({ count: peers.length });
 
       expect(loggerStub.stubs.trace.getCall(1).args.length).to.be.equal(2);
       expect(loggerStub.stubs.trace.getCall(1).args[0]).to.be.equal('Good peers - filtered');
-      expect(loggerStub.stubs.trace.getCall(1).args[1]).to.be.deep.equal({count: peers.length});
+      expect(loggerStub.stubs.trace.getCall(1).args[1]).to.be.deep.equal({ count: peers.length });
 
       expect(loggerStub.stubs.trace.getCall(2).args.length).to.be.equal(2);
       expect(loggerStub.stubs.trace.getCall(2).args[0]).to.be.equal('Good peers - accepted');
-      expect(loggerStub.stubs.trace.getCall(2).args[1]).to.be.deep.equal({count: 2});
+      expect(loggerStub.stubs.trace.getCall(2).args[1]).to.be.deep.equal({ count: 2 });
     });
 
     it('should call instance.logger.debug methods', async () => {
-      peersModuleStub.enqueueResponse('list', {peers});
+      peersModuleStub.enqueueResponse('list', { peers });
 
       await instance.getNework();
 
@@ -207,7 +207,7 @@ describe('modules/loader', () => {
     });
 
     it('should call instance peersLogic.create', async () => {
-      peersModuleStub.enqueueResponse('list', {peers});
+      peersModuleStub.enqueueResponse('list', { peers });
 
       await instance.getNework();
 
@@ -215,47 +215,47 @@ describe('modules/loader', () => {
     });
 
     it('should return instance.network with empty peersArray prop if each of peersModule.list() peers is null', async () => {
-      peersModuleStub.enqueueResponse('list', {peers: [null, null]});
+      peersModuleStub.enqueueResponse('list', { peers: [null, null] });
 
       const ret = await instance.getNework();
 
-      expect(ret).to.be.deep.equal({height: 0, peers: []});
-      expect((instance as any).network).to.be.deep.equal({height: 0, peers: []});
+      expect(ret).to.be.deep.equal({ height: 0, peers: [] });
+      expect((instance as any).network).to.be.deep.equal({ height: 0, peers: [] });
     });
 
     it('should return instance.network with empty peersArray prop if each of peersModule.list() peers has height < lastBlock.height ', async () => {
       container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock.height = 5;
-      peersModuleStub.enqueueResponse('list', {peers});
+      peersModuleStub.enqueueResponse('list', { peers });
 
       const ret = await instance.getNework();
 
-      expect(ret).to.be.deep.equal({height: 0, peers: []});
+      expect(ret).to.be.deep.equal({ height: 0, peers: [] });
     });
 
     it('should return instance.network with two peers in  peersArray prop', async () => {
-      peersModuleStub.enqueueResponse('list', {peers});
+      peersModuleStub.enqueueResponse('list', { peers });
 
       const ret = await instance.getNework();
 
-      expect(ret).to.be.deep.equal({height: 2, peers});
+      expect(ret).to.be.deep.equal({ height: 2, peers });
     });
 
     it('should return a sorted peersArray', async () => {
       peers[1].height += 3;
-      peersModuleStub.enqueueResponse('list', {peers});
+      peersModuleStub.enqueueResponse('list', { peers });
 
       const ret = await instance.getNework();
 
-      expect(ret).to.be.deep.equal({height: 4, peers: [peers[1], peers[0]]});
+      expect(ret).to.be.deep.equal({ height: 4, peers: [peers[1], peers[0]] });
     });
 
     it('should return instance.network with one item in peersArray(check .findGoodPeers second .filter)', async () => {
       peers[0].height = 10;
-      peersModuleStub.enqueueResponse('list', {peers});
+      peersModuleStub.enqueueResponse('list', { peers });
 
       const ret = await instance.getNework();
 
-      expect(ret).to.be.deep.equal({height: 10, peers: [peers[0]]});
+      expect(ret).to.be.deep.equal({ height: 10, peers: [peers[0]] });
       expect(peersLogicStub.stubs.create.calledOnce).to.be.true;
     });
 
@@ -270,7 +270,7 @@ describe('modules/loader', () => {
       peers = createFakePeers(3);
 
       getNetworkStub = sandbox.stub(instance as any, 'getNework');
-      getNetworkStub.returns({peers});
+      getNetworkStub.returns({ peers });
     });
 
     it('should call instance.getNetwork', async () => {
@@ -319,8 +319,42 @@ describe('modules/loader', () => {
 
   });
 
- 
-  describe('.loadTransactions', () => {
+  describe('.onPeersReady', () => {
+
+    let syncTimerStub: SinonStub;
+    let loadTransactionsStub: SinonStub;
+    let loadSignaturesStub: SinonStub;
+    let promiseRetrySpy: SinonSpy;
+    let promiseRetryOrigin;
+    let loggerStub: LoggerStub;
+
+    before(() => {
+      promiseRetryOrigin = LoaderModuleRewire.__get__('promiseRetry');
+      promiseRetrySpy    = sinon.spy(promiseRetryOrigin);
+      LoaderModuleRewire.__set__('promiseRetry', promiseRetrySpy);
+    });
+
+    beforeEach(() => {
+      loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
+
+      instance.loaded = true;
+
+      syncTimerStub        = sandbox.stub(instance as any, 'syncTimer').resolves({});
+      loadTransactionsStub = sandbox.stub(instance as any, 'loadTransactions').resolves({});
+      loadSignaturesStub   = sandbox.stub(instance as any, 'loadSignatures').resolves({});
+    });
+
+    after(() => {
+      LoaderModuleRewire.__set__('promiseRetry', promiseRetryOrigin);
+    });
+
+    it('should call instance.syncTimer');
+
+    it('should call promiseRetry');
+
+  });
+
+  describe('.loadSignatures', () => {
 
     let getRandomPeerStub: SinonStub;
     let loggerStub: LoggerStub;
@@ -333,14 +367,14 @@ describe('modules/loader', () => {
     let randomPeer;
 
     beforeEach(() => {
-      randomPeer = {string: 'string'};
-      res = {
+      randomPeer = { string: 'string' };
+      res        = {
         body:
           {
             signatures:
               [
                 {
-                  signatures: [
+                  signatures : [
                     {
                       signature: 'sig11',
                     },
@@ -348,7 +382,7 @@ describe('modules/loader', () => {
                   transaction: 'tr11',
                 },
                 {
-                  signatures: [
+                  signatures : [
                     {
                       signature: 'sig22',
                     },
@@ -359,19 +393,16 @@ describe('modules/loader', () => {
           },
       };
 
-      container.get<TransportModuleStub>(Symbols.modules.transport).stubConfig.getFromPeer.return = res;
-
-      getRandomPeerStub = sandbox.stub(instance as any, 'getRandomPeer').resolves({});
-
-      loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
+      loggerStub          = container.get<LoggerStub>(Symbols.helpers.logger);
       transportModuleStub = container.get<TransportModuleStub>(Symbols.modules.transport);
-      schemaStub = container.get<ZSchemaStub>(Symbols.generic.zschema);
-      sequenceStub = container.getTagged<SequenceStub>(Symbols.helpers.sequence,
+      schemaStub          = container.get<ZSchemaStub>(Symbols.generic.zschema);
+      sequenceStub        = container.getTagged<SequenceStub>(Symbols.helpers.sequence,
         Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence);
-      multisigModuleStub = container.get<MultisignaturesModuleStub>(Symbols.modules.multisignatures);
+      multisigModuleStub  = container.get<MultisignaturesModuleStub>(Symbols.modules.multisignatures);
 
-      getRandomPeerStub.resolves(randomPeer);
-      schemaStub.stubs.validate.returns(true);
+      transportModuleStub.stubConfig.getFromPeer.return = res;
+      getRandomPeerStub                                 = sandbox.stub(instance as any, 'getRandomPeer').resolves(randomPeer);
+      multisigModuleStub.enqueueResponse('processSignature', {});
       multisigModuleStub.enqueueResponse('processSignature', {});
     });
 
@@ -405,7 +436,7 @@ describe('modules/loader', () => {
       expect(transportModuleStub.stubs.getFromPeer.firstCall.args.length).to.be.equal(2);
       expect(transportModuleStub.stubs.getFromPeer.firstCall.args[0]).to.be.deep.equal(randomPeer);
       expect(transportModuleStub.stubs.getFromPeer.firstCall.args[1]).to.be.deep.equal({
-        api: '/signatures',
+        api   : '/signatures',
         method: 'GET',
       });
     });
@@ -419,15 +450,238 @@ describe('modules/loader', () => {
       expect(schemaStub.stubs.validate.firstCall.args[1]).to.be.equal(loaderSchema.loadSignatures);
     });
 
-    it('should throw if failed to validate', async () => {
-      schemaStub.stubs.validate.returns(false);
+    it('should throw if validate was failed ', async () => {
+      schemaStub.stubConfig.validate.return = false;
 
       expect((instance as any).loadSignatures()).to.be.rejectedWith('Failed to validate /signatures schema');
     });
 
+    it('should call multisigModule.processSignature', async () => {
+      await (instance as any).loadSignatures();
+
+      expect(multisigModuleStub.stubs.processSignature.calledTwice).to.be.true;
+
+      expect(multisigModuleStub.stubs.processSignature.firstCall.args.length).to.be.deep.equal(1);
+      expect(multisigModuleStub.stubs.processSignature.firstCall.args[0]).to.be.deep.equal({
+        signature  : { signature: 'sig11' },
+        transaction: 'tr11',
+      });
+
+      expect(multisigModuleStub.stubs.processSignature.secondCall.args.length).to.be.deep.equal(1);
+      expect(multisigModuleStub.stubs.processSignature.secondCall.args[0]).to.be.deep.equal({
+        signature  : { signature: 'sig22' },
+        transaction: 'tr22',
+      });
+    });
+
+    it('should call logger.warn if multisigModule.processSignature throw error', async () => {
+      const error = 'error';
+
+      multisigModuleStub.stubs.processSignature.rejects(error);
+      await (instance as any).loadSignatures();
+
+      expect(loggerStub.stubs.warn.calledTwice).to.be.true;
+
+      expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Cannot process multisig signature for tr11 ');
+      expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.deep.equal({ name: error });
+
+      expect(loggerStub.stubs.warn.secondCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.warn.secondCall.args[0]).to.be.equal('Cannot process multisig signature for tr22 ');
+      expect(loggerStub.stubs.warn.secondCall.args[1]).to.be.deep.equal({ name: error });
+
+    });
+
   });
 
-  describe('.loadSignatures', () => {
+  describe('.loadTransactions', () => {
+    let getRandomPeerStub: SinonStub;
+    let loggerStub: LoggerStub;
+    let transportModuleStub: TransportModuleStub;
+    let schemaStub: ZSchemaStub;
+    let sequenceStub: SequenceStub;
+    let transactionLogicStub: TransactionLogicStub;
+    let transactionsModuleStub: TransactionsModuleStub;
+    let peersModuleStub: PeersModuleStub;
+
+    let res;
+    let peer;
+    let tx1;
+    let tx2;
+
+    beforeEach(() => {
+      peer = { string: 'string', ip: '127.0.0.uganda', port: 65488 };
+      tx1  = { id: 1 };
+      tx2  = { id: 2 };
+      res  = {
+        body:
+          {
+            transactions:
+              [tx1, tx2],
+          },
+      };
+
+      transactionLogicStub   = container.get<TransactionLogicStub>(Symbols.logic.transaction);
+      transactionsModuleStub = container.get<TransactionsModuleStub>(Symbols.modules.transactions);
+      peersModuleStub        = container.get<PeersModuleStub>(Symbols.modules.peers);
+      loggerStub             = container.get<LoggerStub>(Symbols.helpers.logger);
+      transportModuleStub    = container.get<TransportModuleStub>(Symbols.modules.transport);
+      schemaStub             = container.get<ZSchemaStub>(Symbols.generic.zschema);
+      sequenceStub           = container.getTagged<SequenceStub>(
+        Symbols.helpers.sequence,
+        Symbols.helpers.sequence,
+        Symbols.tags.helpers.balancesSequence);
+
+      transportModuleStub.stubConfig.getFromPeer.return = res;
+      getRandomPeerStub                                 = sandbox.stub(instance as any, 'getRandomPeer').resolves(peer);
+      transactionLogicStub.enqueueResponse('objectNormalize', {});
+      transactionLogicStub.enqueueResponse('objectNormalize', {});
+      transactionsModuleStub.enqueueResponse('processUnconfirmedTransaction', {});
+      transactionsModuleStub.enqueueResponse('processUnconfirmedTransaction', {});
+    });
+
+    afterEach(() => {
+      transactionLogicStub.reset();
+      transactionsModuleStub.reset();
+      peersModuleStub.reset();
+      loggerStub.stubReset();
+      schemaStub.stubReset();
+      transportModuleStub.stubReset();
+      sequenceStub.reset();
+    });
+
+    it('should call instance.getRandomPeer', async () => {
+      await (instance as any).loadTransactions();
+
+      expect(getRandomPeerStub.calledOnce).to.be.true;
+      expect(getRandomPeerStub.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should call logger.log', async () => {
+      await (instance as any).loadTransactions();
+
+      expect(loggerStub.stubs.log.calledOnce).to.be.true;
+      expect(loggerStub.stubs.log.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.log.firstCall.args[0]).to.be.equal(`Loading transactions from: ${peer.string}`);
+    });
+
+    it('should call transportModule.getFromPeer', async () => {
+      await (instance as any).loadTransactions();
+
+      expect(transportModuleStub.stubs.getFromPeer.calledOnce).to.be.true;
+      expect(transportModuleStub.stubs.getFromPeer.firstCall.args.length).to.be.equal(2);
+      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[0]).to.be.deep.equal(peer);
+      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[1]).to.be.deep.equal({
+        api   : '/transactions',
+        method: 'GET',
+      });
+    });
+
+    it('should call schema.validate', async () => {
+      await (instance as any).loadTransactions();
+
+      expect(schemaStub.stubs.validate.calledOnce).to.be.true;
+      expect(schemaStub.stubs.validate.firstCall.args.length).to.be.equal(2);
+      expect(schemaStub.stubs.validate.firstCall.args[0]).to.be.deep.equal(res.body);
+      expect(schemaStub.stubs.validate.firstCall.args[1]).to.be.equal(loaderSchema.loadTransactions);
+    });
+
+    it('should throw if validate was failed ', async () => {
+      schemaStub.stubConfig.validate.return = false;
+
+      expect((instance as any).loadTransactions()).to.be.rejectedWith('Cannot validate load transactions schema against peer');
+    });
+
+    it('should call transactionLogic.objectNormalize for each tx', async () => {
+      await (instance as any).loadTransactions();
+
+      expect(transactionLogicStub.stubs.objectNormalize.calledTwice).to.be.true;
+
+      expect(transactionLogicStub.stubs.objectNormalize.firstCall.args.length).to.be.equal(1);
+      expect(transactionLogicStub.stubs.objectNormalize.firstCall.args[0]).to.be.deep.equal(tx1);
+
+      expect(transactionLogicStub.stubs.objectNormalize.secondCall.args.length).to.be.equal(1);
+      expect(transactionLogicStub.stubs.objectNormalize.secondCall.args[0]).to.be.deep.equal(tx2);
+    });
+
+    describe('transactionLogic.objectNormalize throw error', () => {
+
+      let error;
+
+      beforeEach(() => {
+        error = new Error('error');
+        transactionLogicStub.stubs.objectNormalize.throws(error);
+        peersModuleStub.enqueueResponse('remove', {});
+        peersModuleStub.enqueueResponse('remove', {});
+      });
+
+      it('should throw error', async () => {
+        await expect((instance as any).loadTransactions()).to.be.rejectedWith(error);
+      });
+
+      it('should call logger.debug', async () => {
+        await expect((instance as any).loadTransactions()).to.be.rejectedWith(error);
+
+        expect(loggerStub.stubs.debug.calledOnce).to.be.true;
+        expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(2);
+        expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Transaction normalization failed');
+        expect(loggerStub.stubs.debug.firstCall.args[1]).to.be.deep.equal({
+          err   : error.toString(),
+          module: 'loader',
+          tx    : tx1
+        });
+      });
+
+      it('should call logger.warn', async () => {
+        await expect((instance as any).loadTransactions()).to.be.rejectedWith(error);
+
+        expect(loggerStub.stubs.warn.calledOnce).to.be.true;
+        expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
+        expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Transaction 1 is not valid, peer removed');
+        expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.deep.equal(peer.string);
+      });
+
+      it('should peersModule.remove', async () => {
+        await expect((instance as any).loadTransactions()).to.be.rejectedWith(error);
+
+        expect(peersModuleStub.stubs.remove.calledOnce).to.be.true;
+        expect(peersModuleStub.stubs.remove.firstCall.args.length).to.be.equal(2);
+        expect(peersModuleStub.stubs.remove.firstCall.args[0]).to.be.equal(peer.ip);
+        expect(peersModuleStub.stubs.remove.firstCall.args[1]).to.be.equal(peer.port);
+      });
+    });
+
+    it('should call transactionsModule.processUnconfirmedTransaction for each tx', async () => {
+      await (instance as any).loadTransactions();
+
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.calledTwice).to.be.true;
+
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.firstCall.args.length).to.be.equal(3);
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.firstCall.args[0]).to.deep.equal(tx1);
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.firstCall.args[1]).to.be.false;
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.firstCall.args[2]).to.be.true;
+
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.secondCall.args.length).to.be.equal(3);
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.secondCall.args[0]).to.deep.equal(tx2);
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.secondCall.args[1]).to.be.false;
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.secondCall.args[2]).to.be.true;
+    });
+
+    it('should call logger.debug if transactionsModule.processUnconfirmedTransaction throw error', async () => {
+      let error = new Error('error');
+      transactionsModuleStub.reset();
+      transactionsModuleStub.stubs.processUnconfirmedTransaction.rejects(error);
+
+      await (instance as any).loadTransactions();
+
+      expect(loggerStub.stubs.debug.calledTwice).to.be.true;
+
+      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal(error);
+
+      expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal(error);
+    });
 
   });
 
@@ -446,14 +700,14 @@ describe('modules/loader', () => {
     let loadBlocksFromNetworkStub: SinonStub;
 
     beforeEach(() => {
-      syncTriggerStub = sandbox.stub(instance as any, 'syncTrigger');
+      syncTriggerStub           = sandbox.stub(instance as any, 'syncTrigger');
       loadBlocksFromNetworkStub = sandbox.stub(instance as any, 'loadBlocksFromNetwork');
 
-      busStub = container.get<BusStub>(Symbols.helpers.bus);
+      busStub                = container.get<BusStub>(Symbols.helpers.bus);
       transactionsModuleStub = container.get<TransactionsModuleStub>(Symbols.modules.transactions);
-      broadcasterLogicStub = container.get<BroadcasterLogicStub>(Symbols.logic.broadcaster);
-      systemModuleStub = container.get<SystemModuleStub>(Symbols.modules.system);
-      loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
+      broadcasterLogicStub   = container.get<BroadcasterLogicStub>(Symbols.logic.broadcaster);
+      systemModuleStub       = container.get<SystemModuleStub>(Symbols.modules.system);
+      loggerStub             = container.get<LoggerStub>(Symbols.helpers.logger);
 
       busStub.enqueueResponse('message', Promise.resolve());
       busStub.enqueueResponse('message', Promise.resolve());
@@ -542,10 +796,10 @@ describe('modules/loader', () => {
       expect(broadcasterLogicStub.stubs.getPeers.calledTwice).to.be.true;
 
       expect(broadcasterLogicStub.stubs.getPeers.firstCall.args.length).to.be.equal(1);
-      expect(broadcasterLogicStub.stubs.getPeers.firstCall.args[0]).to.be.deep.equal({limit: constants.maxPeers});
+      expect(broadcasterLogicStub.stubs.getPeers.firstCall.args[0]).to.be.deep.equal({ limit: constants.maxPeers });
 
       expect(broadcasterLogicStub.stubs.getPeers.secondCall.args.length).to.be.equal(1);
-      expect(broadcasterLogicStub.stubs.getPeers.secondCall.args[0]).to.be.deep.equal({limit: constants.maxPeers});
+      expect(broadcasterLogicStub.stubs.getPeers.secondCall.args[0]).to.be.deep.equal({ limit: constants.maxPeers });
     });
 
     it('call instance.syncTrigger', async () => {
@@ -622,26 +876,26 @@ describe('modules/loader', () => {
     let processEmitStub: SinonStub;
 
     beforeEach(() => {
-      dbStub = container.get<DbStub>(Symbols.generic.db);
-      roundsLogicStub = container.get<RoundsLogicStub>(Symbols.logic.rounds);
-      appStateStub = container.get<IAppStateStub>(Symbols.logic.appState);
+      dbStub                = container.get<DbStub>(Symbols.generic.db);
+      roundsLogicStub       = container.get<RoundsLogicStub>(Symbols.logic.rounds);
+      appStateStub          = container.get<IAppStateStub>(Symbols.logic.appState);
       blocksUtilsModuleStub = container.get<BlocksModuleUtilsStub>(Symbols.modules.blocksSubModules.utils);
-      busStub = container.get<BusStub>(Symbols.helpers.bus);
-      loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
+      busStub               = container.get<BusStub>(Symbols.helpers.bus);
+      loggerStub            = container.get<LoggerStub>(Symbols.helpers.logger);
 
-      round = 5;
-      loadResult = {data: 'data'};
-      lastBlock = 1;
-      blocksCountObj = {count: 2};
-      genBlock = {
+      round                        = 5;
+      loadResult                   = { data: 'data' };
+      lastBlock                    = 1;
+      blocksCountObj               = { count: 2 };
+      genBlock                     = {
         blockSignature: Buffer.from('10'),
-        id: 10,
-        payloadHash: Buffer.from('10'),
+        id            : 10,
+        payloadHash   : Buffer.from('10'),
       };
-      missedBlocksInMemAccountsObj = {count: 2};
-      unappliedArray = [{round: '5'}, {round: '5'}];
-      countDuplicatedDelegatesObj = {count: 0};
-      results = [
+      missedBlocksInMemAccountsObj = { count: 2 };
+      unappliedArray               = [{ round: '5' }, { round: '5' }];
+      countDuplicatedDelegatesObj  = { count: 0 };
+      results                      = [
         blocksCountObj,
         [genBlock],
         missedBlocksInMemAccountsObj,
@@ -650,13 +904,13 @@ describe('modules/loader', () => {
       ];
 
       (container.get(Symbols.generic.appConfig) as any).loading.loadPerIteration = 10;
-      (container.get(Symbols.helpers.constants) as any).activeDelegates = constants.activeDelegates;
+      (container.get(Symbols.helpers.constants) as any).activeDelegates          = constants.activeDelegates;
 
       res = [[], [], [{}]];
 
       processExitStub = sandbox.stub(process, 'exit');
       processEmitStub = sandbox.stub(process, 'emit');
-      loadStub = sandbox.stub(instance, 'load').resolves(loadResult);
+      loadStub        = sandbox.stub(instance, 'load').resolves(loadResult);
       roundsLogicStub.enqueueResponse('calcRound', round);
       roundsLogicStub.enqueueResponse('lastInRound', lastBlock);
       appStateStub.enqueueResponse('set', {});
@@ -708,7 +962,7 @@ describe('modules/loader', () => {
     });
 
     it('should set limit in default value if config.loading.loadPerIteration is not exist', async () => {
-      blocksCountObj.count = 1;
+      blocksCountObj.count                                                       = 1;
       (container.get(Symbols.generic.appConfig) as any).loading.loadPerIteration = null;
 
       await instance.loadBlockChain();
@@ -821,7 +1075,7 @@ describe('modules/loader', () => {
       });
 
       it('should check if config.loading.snapshot is number and less that round', async () => {
-        const newSnapshot = round - 2;
+        const newSnapshot                                                  = round - 2;
         (container.get(Symbols.generic.appConfig) as any).loading.snapshot = newSnapshot;
 
         await instance.loadBlockChain();
@@ -867,7 +1121,7 @@ describe('modules/loader', () => {
       });
 
       it('should call logger.error and process.exit lastBlock.height !== (finded) lastBlock', async () => {
-        container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = {height: 11} as any;
+        container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = { height: 11 } as any;
 
         await instance.loadBlockChain();
 
@@ -1008,7 +1262,7 @@ describe('modules/loader', () => {
     });
 
     it('should return instance.load if throw', async () => {
-      const error = {message: 'msg'};
+      const error = { message: 'msg' };
       blocksUtilsModuleStub.reset();
       blocksUtilsModuleStub.enqueueResponse('loadLastBlock', Promise.reject(error));
 
@@ -1052,23 +1306,23 @@ describe('modules/loader', () => {
     let error;
 
     beforeEach(() => {
-      count = 2;
-      limitPerIteration = 3;
-      message = 'message';
+      count               = 2;
+      limitPerIteration   = 3;
+      message             = 'message';
       emitBlockchainReady = true;
-      lastBlock = {data: 'data'};
-      error = {
+      lastBlock           = { data: 'data' };
+      error               = {
         block: {
           height: 1,
-          id: 1,
+          id    : 1,
         },
       };
 
-      loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
-      busStub = container.get<BusStub>(Symbols.helpers.bus);
-      accountLogicStub = container.get<AccountLogicStub>(Symbols.logic.account);
+      loggerStub              = container.get<LoggerStub>(Symbols.helpers.logger);
+      busStub                 = container.get<BusStub>(Symbols.helpers.bus);
+      accountLogicStub        = container.get<AccountLogicStub>(Symbols.logic.account);
       blocksProcessModuleStub = container.get<BlocksModuleProcessStub>(Symbols.modules.blocksSubModules.process);
-      blocksChainModuleStub = container.get<BlocksModuleChain>(Symbols.modules.blocksSubModules.chain);
+      blocksChainModuleStub   = container.get<BlocksModuleChain>(Symbols.modules.blocksSubModules.chain);
 
       busStub.reset();
       accountLogicStub.reset();

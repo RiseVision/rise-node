@@ -1,14 +1,14 @@
-import {expect} from 'chai';
+import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import {Container} from 'inversify';
+import { Container } from 'inversify';
 import * as rewire from 'rewire';
 import * as sinon from 'sinon';
-import {SinonSandbox} from 'sinon';
-import {cbToPromise, TransactionType} from '../../../src/helpers';
-import {Symbols} from '../../../src/ioc/symbols';
-import {Cache, DummyCache} from '../../../src/modules';
-import {LoggerStub, RedisClientStub} from '../../stubs';
+import { SinonSandbox } from 'sinon';
+import { cbToPromise, TransactionType } from '../../../src/helpers';
+import { Symbols } from '../../../src/ioc/symbols';
+import { Cache, DummyCache } from '../../../src/modules';
+import { LoggerStub, RedisClientStub } from '../../stubs';
 
 const RewireCache = rewire('../../../src/modules/cache');
 
@@ -30,9 +30,9 @@ describe('modules/cache', () => {
   let JSONrewireOrigin;
 
   before(() => {
-    JSONrewireOrigin = RewireCache.__get__('JSON');
+    JSONrewireOrigin          = RewireCache.__get__('JSON');
     rewireCacheHelpersImports = RewireCache.__get__('_1');
-    container = new Container();
+    container                 = new Container();
     container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
     container.bind(Symbols.generic.redisClient).to(RedisClientStub).inSingletonScope();
     container.bind(Symbols.helpers.logger).to(LoggerStub);
@@ -42,22 +42,22 @@ describe('modules/cache', () => {
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
 
-    cache = container.get(Symbols.modules.cache);
+    cache           = container.get(Symbols.modules.cache);
     redisClientStub = container.get(Symbols.generic.redisClient);
     cache.onSyncFinished();
 
     dummyCache = new DummyCache();
 
     spyHelper = {
-      cache: {
-        assertConnected: sandbox.spy(cache, 'assertConnected'),
+      cache       : {
+        assertConnected        : sandbox.spy(cache, 'assertConnected'),
         assertConnectedAndReady: sandbox.spy(cache, 'assertConnectedAndReady'),
       },
-      callback: sandbox.spy(),
+      callback    : sandbox.spy(),
       promiseUtils: {
-        cbToPromise: sandbox.spy(rewireCacheHelpersImports, 'cbToPromise'),
+        cbToPromise    : sandbox.spy(rewireCacheHelpersImports, 'cbToPromise'),
         cbToVoidPromise: sandbox.spy(rewireCacheHelpersImports, 'cbToVoidPromise'),
-        emptyCB: sandbox.spy(rewireCacheHelpersImports, 'emptyCB'),
+        emptyCB        : sandbox.spy(rewireCacheHelpersImports, 'emptyCB'),
       },
     };
   });
@@ -71,7 +71,7 @@ describe('modules/cache', () => {
     describe('get .isConnected', () => {
 
       afterEach(() => {
-        (cache as any).redisClient = redisClientStub;
+        (cache as any).redisClient           = redisClientStub;
         (cache as any).redisClient.connected = true;
       });
 
@@ -137,7 +137,7 @@ describe('modules/cache', () => {
       let parseStub;
 
       beforeEach(() => {
-        k = 'str';
+        k         = 'str';
         keyString = '{"data":10}';
         keyObject = JSON.parse(keyString);
 
@@ -186,8 +186,8 @@ describe('modules/cache', () => {
       let stringifyStub;
 
       beforeEach(() => {
-        k = 'str';
-        valueObject = {data: 100};
+        k           = 'str';
+        valueObject = { data: 100 };
         valueString = JSON.stringify(valueObject);
         redisResult = 'ok';
 
@@ -234,7 +234,7 @@ describe('modules/cache', () => {
       let redisResult;
 
       beforeEach(() => {
-        k = 'str';
+        k           = 'str';
         redisResult = 'ok';
 
         redisClientStub.stubs.del.callsArgWith(1, null, redisResult);
@@ -277,9 +277,9 @@ describe('modules/cache', () => {
       let deleteJsonForKeyStub;
 
       beforeEach(() => {
-        pattern = 'pattern';
-        keys = 'keys';
-        cursor = 0;
+        pattern   = 'pattern';
+        keys      = 'keys';
+        cursor    = 0;
         resArrays = [[1, keys], [2, ''], [-1, keys]];
 
         deleteJsonForKeyStub = sandbox.stub(cache, 'deleteJsonForKey').resolves(1);
@@ -446,7 +446,7 @@ describe('modules/cache', () => {
       let broadcast;
 
       beforeEach(() => {
-        block = 'block';
+        block     = 'block';
         broadcast = 'broadcast';
 
         removeByPatternStub = sandbox.stub(cache, 'removeByPattern');
@@ -538,26 +538,26 @@ describe('modules/cache', () => {
 
       const transactions = [
         {
-          amount: 10000000000000000,
-          asset: 1,
-          fee: 0,
-          id: '1465651642158264047',
-          recipientId: '16313739661670634666L',
+          amount         : 10000000000000000,
+          asset          : 1,
+          fee            : 0,
+          id             : '1465651642158264047',
+          recipientId    : '16313739661670634666L',
           senderPublicKey: 'c96dec3595ff6041c3bd28b76b8cf75dce8225173d1bd00241624ee89b50f2a8',
-          signature: 'd8103d0ea2004c3dea8076a6a22c6db8bae4e478e3c9186ff6090dc05',
-          timestamp: 0,
-          type: TransactionType.DELEGATE,
+          signature      : 'd8103d0ea2004c3dea8076a6a22c6db8bae4e478e3c9186ff6090dc05',
+          timestamp      : 0,
+          type           : TransactionType.DELEGATE,
         },
         {
-          amount: 100,
-          asset: 1,
-          fee: 0,
-          id: '9314232245035524467',
-          recipientId: '16313739661670634666L',
+          amount         : 100,
+          asset          : 1,
+          fee            : 0,
+          id             : '9314232245035524467',
+          recipientId    : '16313739661670634666L',
           senderPublicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f',
-          signature: 'd8103d0ea2004c3dea8076a6a22c6db8bae9e478e3c9186ff6090dc05',
-          timestamp: 0,
-          type: TransactionType.DAPP,
+          signature      : 'd8103d0ea2004c3dea8076a6a22c6db8bae9e478e3c9186ff6090dc05',
+          timestamp      : 0,
+          type           : TransactionType.DAPP,
         },
       ];
 
@@ -690,7 +690,7 @@ describe('modules/cache', () => {
     });
 
     it('.deleteJsonForKey should rejected with Cache not enabled msg', async () => {
-      const str = 'string';
+      const str   = 'string';
       const value = 5;
 
       await expect(dummyCache.setObjFromKey(str, value)).to.rejectedWith('Cache not enabled');
