@@ -1,4 +1,4 @@
-import { BigNumber } from 'bignumber.js';
+import {BigNumber} from 'bignumber.js';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as fs from 'fs';
@@ -6,8 +6,9 @@ import * as path from 'path';
 import * as pgPromise from 'pg-promise';
 import * as rewire from 'rewire';
 import * as sinon from 'sinon';
-import { SinonSandbox } from 'sinon';
+import {SinonSandbox} from 'sinon';
 import MyBigNumb from '../../../src/helpers/bignum';
+
 const database = rewire('../../../src/helpers/database');
 
 // tslint:disable-next-line no-var-requires
@@ -33,13 +34,13 @@ describe('helpers/database', () => {
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
-    pgOptions = { pgNative: true, noLocking: true, noWarnings: true };
+    pgOptions = {pgNative: true, noLocking: true, noWarnings: true};
     pgp = pgPromise(pgOptions);
     revertPgPromise = database.__set__('pgPromise', () => pgp);
-    appConfig = { logEvents: [], user: 'abc', password: '123' };
+    appConfig = {logEvents: [], user: 'abc', password: '123'};
     db = pgp(appConfig);
-    dbOneStub = sandbox.stub(db, 'one').resolves({ to_regclass: true });
-    dbQueryStub = sandbox.stub(db, 'query').resolves([{ id: 24 }]);
+    dbOneStub = sandbox.stub(db, 'one').resolves({to_regclass: true});
+    dbQueryStub = sandbox.stub(db, 'query').resolves([{id: 24}]);
     pathJoinSpy = sandbox.spy(path, 'join');
 
     fsReadDirSyncStub = sandbox
@@ -54,7 +55,7 @@ describe('helpers/database', () => {
       ]);
     fsStatSyncStub = sandbox
       .stub(fs, 'statSync')
-      .returns({ isFile: (fullpath: string) => true });
+      .returns({isFile: (fullpath: string) => true});
     migrator = new database.Migrator(pgp, db);
   });
 
@@ -184,17 +185,13 @@ describe('helpers/database', () => {
       expect(checkMigrationsSpy.calledOnce).to.be.true;
       expect(checkMigrationsSpy.calledBefore(getLastMigrationSpy)).to.be.true;
       expect(getLastMigrationSpy.calledOnce).to.be.true;
-      expect(getLastMigrationSpy.calledBefore(readPendingMigrationsSpy)).to.be
-        .true;
+      expect(getLastMigrationSpy.calledBefore(readPendingMigrationsSpy)).to.be.true;
       expect(readPendingMigrationsSpy.calledOnce).to.be.true;
-      expect(readPendingMigrationsSpy.calledBefore(applyPendingMigrationsSpy))
-        .to.be.true;
+      expect(readPendingMigrationsSpy.calledBefore(applyPendingMigrationsSpy)).to.be.true;
       expect(applyPendingMigrationsSpy.calledOnce).to.be.true;
-      expect(applyPendingMigrationsSpy.calledBefore(insertAppliedMigrationsSpy))
-        .to.be.true;
+      expect(applyPendingMigrationsSpy.calledBefore(insertAppliedMigrationsSpy)).to.be.true;
       expect(insertAppliedMigrationsSpy.calledOnce).to.be.true;
-      expect(insertAppliedMigrationsSpy.calledBefore(applyRuntimeQueryFileSpy))
-        .to.be.true;
+      expect(insertAppliedMigrationsSpy.calledBefore(applyRuntimeQueryFileSpy)).to.be.true;
       expect(applyRuntimeQueryFileSpy.calledOnce).to.be.true;
 
       MigratorRevert();
