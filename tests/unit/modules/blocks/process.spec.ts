@@ -10,6 +10,7 @@ import {
   BlocksSubmoduleChainStub,
   BlocksSubmoduleUtilsStub,
   BlocksSubmoduleVerifyStub,
+  DelegatesModuleStub,
   PeersLogicStub
 } from '../../../stubs';
 import { createContainer } from '../../../utils/containerCreator';
@@ -21,6 +22,9 @@ import { SequenceStub } from '../../../stubs/helpers/SequenceStub';
 import BlocksModuleStub from '../../../stubs/modules/BlocksModuleStub';
 import { SignedAndChainedBlockType } from '../../../../src/logic';
 import { createFakePeer } from '../../../utils/fakePeersFactory';
+import RoundsLogicStub from '../../../stubs/logic/RoundsLogicStub';
+import { ForkModuleStub } from '../../../stubs/modules/ForkModuleStub';
+import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
 
 chai.use(chaiAsPromised);
 
@@ -43,31 +47,39 @@ describe('modules/blocks/process', () => {
   // let accountsModule: AccountsModuleStub;
   // let blocksModule: BlocksModuleStub;
   let appState: AppStateStub;
+  let blockLogic: BlockLogicStub;
   let blocksChain: BlocksSubmoduleChainStub;
   let blockVerify: BlocksSubmoduleVerifyStub;
   let blocksModule: BlocksModuleStub;
   let blocksUtils: BlocksSubmoduleUtilsStub;
+  let delegates: DelegatesModuleStub;
+  let fork: ForkModuleStub;
   // let txModule: TransactionsModuleStub;
   let dbSequence: SequenceStub;
   let dbStub: DbStub;
   let schemaStub: ZSchemaStub;
   let transportModule: TransportModuleStub;
   let peersLogic: PeersLogicStub;
+  let roundsStub: RoundsLogicStub;
   // let txLogic: TransactionLogicStub;
   // let blockLogic: BlockLogicStub;
   // let roundsModule: RoundsModuleStub;
   // let busStub: BusStub;
   beforeEach(() => {
     appState     = container.get(Symbols.logic.appState);
+    blockLogic   = container.get(Symbols.logic.block);
     // accountsModule = container.get(Symbols.modules.accounts);
     blocksModule = container.get(Symbols.modules.blocks);
     blocksUtils  = container.get(Symbols.modules.blocksSubModules.utils);
     blockVerify  = container.get(Symbols.modules.blocksSubModules.verify);
     blocksChain  = container.get(Symbols.modules.blocksSubModules.chain);
+    delegates    = container.get(Symbols.modules.delegates);
+    fork         = container.get(Symbols.modules.fork);
     // roundsModule   = container.get(Symbols.modules.rounds);
     // txModule       = container.get(Symbols.modules.transactions);
     // txLogic        = container.get(Symbols.logic.transaction);
     // blockLogic     = container.get(Symbols.logic.block);
+    roundsStub      = container.get(Symbols.logic.rounds);
     transportModule = container.get(Symbols.modules.transport);
     dbStub          = container.get(Symbols.generic.db);
     dbSequence      = container.getTagged(
@@ -360,10 +372,10 @@ describe('modules/blocks/process', () => {
       transportModule.enqueueResponse('getFromPeer', Promise.resolve({ body: { blocks: [] } }));
       blocksUtils.enqueueResponse('readDbRows', ['1', '2', '3']);
       blockVerify.stubs.processBlock.resolves();
-      blocksModule.lastBlock = { id: '1' } as any;
+      blocksModule.lastBlock  = { id: '1' } as any;
       blocksModule.isCleaning = true;
 
-      expect(await inst.loadBlocksFromPeer(null)).to.be.deep.eq({id: '1'});
+      expect(await inst.loadBlocksFromPeer(null)).to.be.deep.eq({ id: '1' });
       expect(blockVerify.stubs.processBlock.called).is.false;
     });
 
@@ -379,16 +391,98 @@ describe('modules/blocks/process', () => {
   });
 
   describe('onReceiveBlock', () => {
+    it('should return and do nothing if loader.isSyncing', async () => {
+      appState.stubs.get.callsFake((what) => {
+        if (what === 'loader.isSyncing') {
+          return true;
+        }
+        return false;
+      });
+      await inst.onReceiveBlock({ id: '1' } as any);
+      expect(appState.stubs.get.calledWith('loader.isSyncing')).is.true;
+    });
+    it('should return and do nothing if loader.isTicking', async () => {
+      appState.stubs.get.callsFake((what) => {
+        if (what === 'rounds.isTicking') {
+          return true;
+        }
+        return false;
+      });
+      await inst.onReceiveBlock({ id: '1' } as any);
+      expect(appState.stubs.get.calledWith('rounds.isTicking')).is.true;
+    });
     describe('all ok', () => {
-      it('should update lastReceipt');
-      it('should verify.processBlock with broadcast=true and saveBlock=true');
+      const block = { previousBlock: '1', height: 11 } as any;
+      beforeEach(() => {
+        blocksModule.lastBlock = { id: '1', height: 10 } as any;
+        appState.stubs.get.returns(false);
+        roundsStub.stubs.calcRound.returns('');
+        blockVerify.enqueueResponse('processBlock', Promise.resolve());
+      });
+      it('should update lastReceipt', async () => {
+        await inst.onReceiveBlock(block);
+        expect(blocksModule.spies.lastReceipt.update.called).is.true;
+      });
+      it('should verify.processBlock with broadcast=true and saveBlock=true', async () => {
+        await inst.onReceiveBlock(block);
+        expect(blockVerify.stubs.processBlock.called).is.true;
+        expect(blockVerify.stubs.processBlock.firstCall.args[0]).is.deep.eq(block);
+        expect(blockVerify.stubs.processBlock.firstCall.args[1]).is.deep.eq(true);
+        expect(blockVerify.stubs.processBlock.firstCall.args[2]).is.deep.eq(true);
+
+      });
     });
     describe('fork 1 if consequent blocks but diff prevblock', () => {
-      it('should call forkModule.fork with ForkType.TYPE_1');
-      it('should go through verification if timestamp is < than last known');
-      it('should go through verification if timestamp == last known but blockid < last known');
-      it('should not delete lastBlock if verifyReceipt fails');
-      it('should call deleteLastBlock twice if verification goes through');
+      let block: any;
+      beforeEach(() => {
+        block                  = { previousBlock: '3', height: 11, timestamp: 2 } as any;
+        blocksModule.lastBlock = { id: '1', height: 10, timestamp: 1 } as any;
+        fork.enqueueResponse('fork', Promise.resolve());
+        appState.stubs.get.returns(false);
+        blockLogic.enqueueResponse('objectNormalize', { after: 'normalization' });
+        delegates.enqueueResponse('assertValidBlockSlot', Promise.resolve());
+        blockVerify.enqueueResponse('verifyReceipt', { verified: true });
+        blocksChain.enqueueResponse('deleteLastBlock', Promise.resolve());
+        blocksChain.enqueueResponse('deleteLastBlock', Promise.resolve());
+      });
+      it('should call forkModule.fork with ForkType.TYPE_1', async () => {
+        await inst.onReceiveBlock(block);
+        expect(fork.stubs.fork.calledOnce).is.true;
+      });
+      it('should go through verification if timestamp is < than last known', async () => {
+        block.timestamp                  = 1;
+        blocksModule.lastBlock.timestamp = 2;
+        await inst.onReceiveBlock(block);
+        expect(blockVerify.stubs.verifyReceipt.called).is.true;
+        // should be called with normalization output
+        expect(blockVerify.stubs.verifyReceipt.firstCall.args[0]).is.deep.eq({ after: 'normalization' });
+      });
+      it('should go through verification if timestamp == last known but blockid < last known', async () => {
+        block.timestamp                  = 1;
+        blocksModule.lastBlock.timestamp = 1;
+        block.id                         = '1';
+        blocksModule.lastBlock.id        = '2';
+        await inst.onReceiveBlock(block);
+        expect(blockVerify.stubs.verifyReceipt.called).is.true;
+      });
+      it('should not delete lastBlock if verifyReceipt fails', async () => {
+        block.timestamp                  = 1;
+        blocksModule.lastBlock.timestamp = 2;
+        blockVerify.stubs.verifyReceipt.returns({ verified: false, errors: ['ERROR'] });
+        try {
+          await inst.onReceiveBlock(block);
+        } catch (e) {
+          expect(e.message).to.be.eq('ERROR');
+        }
+        expect(blocksChain.stubs.deleteLastBlock.called).is.false;
+
+      });
+      it('should call deleteLastBlock twice if verification goes through', async () => {
+        block.timestamp                  = 1;
+        blocksModule.lastBlock.timestamp = 2;
+        await inst.onReceiveBlock(block);
+        expect(blocksChain.stubs.deleteLastBlock.callCount).is.eq(2);
+      });
     });
 
     describe('fork 5 if same prevblock and height but different blockid', () => {
