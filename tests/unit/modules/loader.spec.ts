@@ -324,33 +324,42 @@ describe('modules/loader', () => {
     let syncTimerStub: SinonStub;
     let loadTransactionsStub: SinonStub;
     let loadSignaturesStub: SinonStub;
-    let promiseRetrySpy: SinonSpy;
-    let promiseRetryOrigin;
     let loggerStub: LoggerStub;
-
-    before(() => {
-      promiseRetryOrigin = LoaderModuleRewire.__get__('promiseRetry');
-      promiseRetrySpy    = sinon.spy(promiseRetryOrigin);
-      LoaderModuleRewire.__set__('promiseRetry', promiseRetrySpy);
-    });
+    let error;
 
     beforeEach(() => {
+      error = new Error('error');
+
       loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
 
-      instance.loaded = true;
-
-      syncTimerStub        = sandbox.stub(instance as any, 'syncTimer').resolves({});
       loadTransactionsStub = sandbox.stub(instance as any, 'loadTransactions').resolves({});
       loadSignaturesStub   = sandbox.stub(instance as any, 'loadSignatures').resolves({});
+      syncTimerStub        = sandbox.stub(instance as any, 'syncTimer').resolves({});
+
+      instance.loaded = true;
     });
 
-    after(() => {
-      LoaderModuleRewire.__set__('promiseRetry', promiseRetryOrigin);
+    it('should call instance.syncTimer', async () => {
+      await instance.onPeersReady();
+
+      expect(syncTimerStub.calledOnce).to.be.true;
+      expect(syncTimerStub.firstCall.args.length).to.be.equal(0);
     });
 
-    it('should call instance.syncTimer');
+    it('should call instance.loadTransaction', async () => {
+      await instance.onPeersReady();
 
-    it('should call promiseRetry');
+      expect(loadTransactionsStub.calledOnce).to.be.true;
+      expect(loadTransactionsStub.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should call logger.waarn when instancce.loadTransactions throw error');
+    it('should call logger.log when promiseRetry throw error');
+    it('should call instance.loadSignature');
+    it('should call logger.warn when promiseRetry(second call) throw error');
+    it('should call logger.log when promiseRetry(second call) throw error');
+
+
 
   });
 
@@ -628,7 +637,7 @@ describe('modules/loader', () => {
         expect(loggerStub.stubs.debug.firstCall.args[1]).to.be.deep.equal({
           err   : error.toString(),
           module: 'loader',
-          tx    : tx1
+          tx    : tx1,
         });
       });
 
@@ -668,7 +677,7 @@ describe('modules/loader', () => {
     });
 
     it('should call logger.debug if transactionsModule.processUnconfirmedTransaction throw error', async () => {
-      let error = new Error('error');
+      const error = new Error('error');
       transactionsModuleStub.reset();
       transactionsModuleStub.stubs.processUnconfirmedTransaction.rejects(error);
 
@@ -827,7 +836,7 @@ describe('modules/loader', () => {
 
   });
 
-  describe('loadBlocksFromNetwork', () => {
+  describe('.loadBlocksFromNetwork', () => {
 
   });
 
