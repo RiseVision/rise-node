@@ -1165,7 +1165,6 @@ describe('logic/transaction', () => {
       akttStub                               = sandbox.stub(instance, 'assertKnownTransactionType').returns(true);
       txTypeObjectNormalizeStub              = sandbox.stub(sendTransaction, 'objectNormalize')
         .returns('txType objectNormalize');
-      zSchemaStub.stubConfig.validate.return = true;
     });
 
     it('should call assertKnownTransactionType', () => {
@@ -1191,7 +1190,8 @@ describe('logic/transaction', () => {
     });
 
     it('should throw if validation fails', () => {
-      zSchemaStub.stubConfig.validate.return = false;
+      zSchemaStub.enqueueResponse('getLastErrors', []);
+      zSchemaStub.enqueueResponse('validate', false);
       expect(() => {
         instance.objectNormalize(tx);
       }).to.throw(/Failed to validate transaction schema/);

@@ -261,7 +261,7 @@ describe('logic/transactions/createmultisig', () => {
     });
 
     it('should call schema.validate on the pubKey', async () => {
-      zSchemaStub.stubConfig.validate.return = true;
+      zSchemaStub.enqueueResponse('validate', true);
       await instance.verify(tx, sender);
       expect(zSchemaStub.stubs.validate.callCount).to.be.equal(tx.asset.multisignature.keysgroup.length);
       expect(zSchemaStub.stubs.validate.firstCall.args[0]).to.be.
@@ -270,7 +270,7 @@ describe('logic/transactions/createmultisig', () => {
     });
 
     it('should throw if pubKey is invalid', async () => {
-      zSchemaStub.stubConfig.validate.return = false;
+      zSchemaStub.enqueueResponse('validate', false);
       await expect(instance.verify(tx, sender)).to.be.rejectedWith('Invalid publicKey in multisignature keysgroup');
     });
 
@@ -440,9 +440,6 @@ describe('logic/transactions/createmultisig', () => {
   });
 
   describe('objectNormalize', () => {
-    beforeEach(() => {
-      zSchemaStub.stubConfig.validate.return = true;
-    });
 
     it('should call schema.validate', () => {
       instance.objectNormalize(tx);
@@ -451,14 +448,16 @@ describe('logic/transactions/createmultisig', () => {
     });
 
     it('should throw if validation fails', () => {
-      zSchemaStub.stubConfig.validate.return = false;
+      zSchemaStub.enqueueResponse('validate', false);
+      zSchemaStub.enqueueResponse('getLastErrors', []);
+
       expect(() => {
         instance.objectNormalize(tx);
       }).to.throw(/Failed to validate multisignature schema/);
     });
 
     it('should return the tx', () => {
-      zSchemaStub.stubConfig.validate.return = true;
+      zSchemaStub.enqueueResponse('validate', true);
       const retVal                           = instance.objectNormalize(tx);
       expect(retVal).to.be.deep.equal(tx);
     });

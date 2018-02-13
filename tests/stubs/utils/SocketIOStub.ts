@@ -2,7 +2,7 @@ import {injectable} from 'inversify';
 
 import {BaseStubClass} from '../BaseStubClass';
 import {stubMethod} from '../stubDecorator';
-import * as sinon from "sinon";
+import * as sinon from 'sinon';
 
 // tslint:disable no-empty
 

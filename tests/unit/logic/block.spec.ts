@@ -278,7 +278,8 @@ describe('logic/block', () => {
 
   describe('objectNormalize() with a bad block schema', () => {
     it('should throw an exception if schema validation fails', () => {
-      zschemastub.stubConfig.validate.return = false;
+      zschemastub.enqueueResponse('getLastErrors', []);
+      zschemastub.enqueueResponse('validate', false);
       dummyBlock.greeting = 'Hello World!';
       expect(() => {
         instance.objectNormalize(dummyBlock);

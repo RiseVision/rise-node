@@ -1,9 +1,10 @@
 import { inject, injectable } from 'inversify';
 import { Symbols } from '../ioc/symbols';
 import constantsType from './constants';
+import { ISlots } from '../ioc/interfaces/helpers/ISlots';
 
 @injectable()
-export class Slots {
+export class Slots implements ISlots {
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
 

@@ -1,28 +1,47 @@
-import { expect } from 'chai';
 import * as chai from 'chai';
+import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as rewire from 'rewire';
-import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import { Symbols } from '../../../src/ioc/symbols';
-import { PeerType } from '../../../src/logic';
 import { LoaderModule } from '../../../src/modules';
-import loaderSchema from '../../../src/schema/loader';
 import {
-  AccountLogicStub, BlocksModuleChain, BlocksModuleProcessStub, BlocksModuleUtilsStub, BlocksModuleVerifyStub,
-  BroadcasterLogicStub, BusStub, DbStub, IAppStateStub,
-  IBlocksStub, JobsQueueStub, LoggerStub, MultisignaturesModuleStub,
-  PeersLogicStub, PeersModuleStub, RoundsLogicStub, SequenceStub,
-  SocketIOStub, SystemModuleStub, TransactionLogicStub,
-  TransactionsModuleStub, TransportModuleStub, ZSchemaStub
+  AccountLogicStub,
+  BlocksSubmoduleChainStub,
+  BlocksSubmoduleUtilsStub,
+  BlocksSubmoduleVerifyStub,
+  BroadcasterLogicStub,
+  BusStub,
+  DbStub,
+  IAppStateStub,
+  IBlocksStub,
+  JobsQueueStub,
+  LoggerStub,
+  MultisignaturesModuleStub,
+  PeersLogicStub,
+  PeersModuleStub,
+  RoundsLogicStub,
+  SequenceStub,
+  SocketIOStub,
+  SystemModuleStub,
+  TransactionLogicStub,
+  TransactionsModuleStub,
+  TransportModuleStub,
+  ZSchemaStub
 } from '../../stubs';
+
+import { PeerType } from '../../../src/logic';
+import loaderSchema from '../../../src/schema/loader';
+import { BlocksSubmoduleProcessStub } from '../../stubs/modules/blocks/BlocksSubmoduleProcessStub';
 import { createFakePeers } from '../../utils/fakePeersFactory';
 
 chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression
 // tslint:disable no-unused-expression max-line-length
+// tslint:disable no-unused-expression object-literal-sort-keys
 
 const LoaderModuleRewire = rewire('../../../src/modules/loader');
 
@@ -43,13 +62,15 @@ describe('modules/loader', () => {
     },
   };
   let genesisBlock = {
-    blockSignature: Buffer.from('10').toString('hex'),
     id            : 10,
+    blockSignature: Buffer.from('10').toString('hex'),
     payloadHash   : Buffer.from('10').toString('hex'),
+
   };
 
   before(() => {
     container = new Container();
+
     // Generic
     container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
     container.bind(Symbols.generic.db).to(DbStub).inSingletonScope();
@@ -79,10 +100,10 @@ describe('modules/loader', () => {
 
     // Modules
     container.bind(Symbols.modules.blocks).to(IBlocksStub).inSingletonScope();
-    container.bind(Symbols.modules.blocksSubModules.chain).to(BlocksModuleChain).inSingletonScope();
-    container.bind(Symbols.modules.blocksSubModules.process).to(BlocksModuleProcessStub).inSingletonScope();
-    container.bind(Symbols.modules.blocksSubModules.utils).to(BlocksModuleUtilsStub).inSingletonScope();
-    container.bind(Symbols.modules.blocksSubModules.verify).to(BlocksModuleVerifyStub).inSingletonScope();
+    container.bind(Symbols.modules.blocksSubModules.chain).to(BlocksSubmoduleChainStub).inSingletonScope();
+    container.bind(Symbols.modules.blocksSubModules.process).to(BlocksSubmoduleProcessStub).inSingletonScope();
+    container.bind(Symbols.modules.blocksSubModules.utils).to(BlocksSubmoduleUtilsStub).inSingletonScope();
+    container.bind(Symbols.modules.blocksSubModules.verify).to(BlocksSubmoduleVerifyStub).inSingletonScope();
     container.bind(Symbols.modules.multisignatures).to(MultisignaturesModuleStub).inSingletonScope();
     container.bind(Symbols.modules.peers).to(PeersModuleStub).inSingletonScope();
     container.bind(Symbols.modules.system).to(SystemModuleStub).inSingletonScope();
@@ -359,485 +380,6 @@ describe('modules/loader', () => {
     it('should call logger.warn when promiseRetry(second call) throw error');
     it('should call logger.log when promiseRetry(second call) throw error');
 
-
-
-  });
-
-  describe('.loadSignatures', () => {
-
-    let getRandomPeerStub: SinonStub;
-    let loggerStub: LoggerStub;
-    let transportModuleStub: TransportModuleStub;
-    let schemaStub: ZSchemaStub;
-    let sequenceStub: SequenceStub;
-    let multisigModuleStub: MultisignaturesModuleStub;
-
-    let res;
-    let randomPeer;
-
-    beforeEach(() => {
-      randomPeer = { string: 'string' };
-      res        = {
-        body:
-          {
-            signatures:
-              [
-                {
-                  signatures : [
-                    {
-                      signature: 'sig11',
-                    },
-                  ],
-                  transaction: 'tr11',
-                },
-                {
-                  signatures : [
-                    {
-                      signature: 'sig22',
-                    },
-                  ],
-                  transaction: 'tr22',
-                },
-              ],
-          },
-      };
-
-      loggerStub          = container.get<LoggerStub>(Symbols.helpers.logger);
-      transportModuleStub = container.get<TransportModuleStub>(Symbols.modules.transport);
-      schemaStub          = container.get<ZSchemaStub>(Symbols.generic.zschema);
-      sequenceStub        = container.getTagged<SequenceStub>(Symbols.helpers.sequence,
-        Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence);
-      multisigModuleStub  = container.get<MultisignaturesModuleStub>(Symbols.modules.multisignatures);
-
-      transportModuleStub.stubConfig.getFromPeer.return = res;
-      getRandomPeerStub                                 = sandbox.stub(instance as any, 'getRandomPeer').resolves(randomPeer);
-      multisigModuleStub.enqueueResponse('processSignature', {});
-      multisigModuleStub.enqueueResponse('processSignature', {});
-    });
-
-    afterEach(() => {
-      loggerStub.stubReset();
-      schemaStub.stubReset();
-      transportModuleStub.stubReset();
-      sequenceStub.reset();
-      multisigModuleStub.reset();
-    });
-
-    it('should call instance.getRandomPeer', async () => {
-      await (instance as any).loadSignatures();
-
-      expect(getRandomPeerStub.calledOnce).to.be.true;
-      expect(getRandomPeerStub.firstCall.args.length).to.be.equal(0);
-    });
-
-    it('should call logger.log', async () => {
-      await (instance as any).loadSignatures();
-
-      expect(loggerStub.stubs.log.calledOnce).to.be.true;
-      expect(loggerStub.stubs.log.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.log.firstCall.args[0]).to.be.equal(`Loading signatures from: ${randomPeer.string}`);
-    });
-
-    it('should call transportModule.getFromPeer', async () => {
-      await (instance as any).loadSignatures();
-
-      expect(transportModuleStub.stubs.getFromPeer.calledOnce).to.be.true;
-      expect(transportModuleStub.stubs.getFromPeer.firstCall.args.length).to.be.equal(2);
-      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[0]).to.be.deep.equal(randomPeer);
-      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[1]).to.be.deep.equal({
-        api   : '/signatures',
-        method: 'GET',
-      });
-    });
-
-    it('should call schema.validate', async () => {
-      await (instance as any).loadSignatures();
-
-      expect(schemaStub.stubs.validate.calledOnce).to.be.true;
-      expect(schemaStub.stubs.validate.firstCall.args.length).to.be.equal(2);
-      expect(schemaStub.stubs.validate.firstCall.args[0]).to.be.deep.equal(res.body);
-      expect(schemaStub.stubs.validate.firstCall.args[1]).to.be.equal(loaderSchema.loadSignatures);
-    });
-
-    it('should throw if validate was failed ', async () => {
-      schemaStub.stubConfig.validate.return = false;
-
-      expect((instance as any).loadSignatures()).to.be.rejectedWith('Failed to validate /signatures schema');
-    });
-
-    it('should call multisigModule.processSignature', async () => {
-      await (instance as any).loadSignatures();
-
-      expect(multisigModuleStub.stubs.processSignature.calledTwice).to.be.true;
-
-      expect(multisigModuleStub.stubs.processSignature.firstCall.args.length).to.be.deep.equal(1);
-      expect(multisigModuleStub.stubs.processSignature.firstCall.args[0]).to.be.deep.equal({
-        signature  : { signature: 'sig11' },
-        transaction: 'tr11',
-      });
-
-      expect(multisigModuleStub.stubs.processSignature.secondCall.args.length).to.be.deep.equal(1);
-      expect(multisigModuleStub.stubs.processSignature.secondCall.args[0]).to.be.deep.equal({
-        signature  : { signature: 'sig22' },
-        transaction: 'tr22',
-      });
-    });
-
-    it('should call logger.warn if multisigModule.processSignature throw error', async () => {
-      const error = 'error';
-
-      multisigModuleStub.stubs.processSignature.rejects(error);
-      await (instance as any).loadSignatures();
-
-      expect(loggerStub.stubs.warn.calledTwice).to.be.true;
-
-      expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
-      expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Cannot process multisig signature for tr11 ');
-      expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.deep.equal({ name: error });
-
-      expect(loggerStub.stubs.warn.secondCall.args.length).to.be.equal(2);
-      expect(loggerStub.stubs.warn.secondCall.args[0]).to.be.equal('Cannot process multisig signature for tr22 ');
-      expect(loggerStub.stubs.warn.secondCall.args[1]).to.be.deep.equal({ name: error });
-
-    });
-
-  });
-
-  describe('.loadTransactions', () => {
-    let getRandomPeerStub: SinonStub;
-    let loggerStub: LoggerStub;
-    let transportModuleStub: TransportModuleStub;
-    let schemaStub: ZSchemaStub;
-    let sequenceStub: SequenceStub;
-    let transactionLogicStub: TransactionLogicStub;
-    let transactionsModuleStub: TransactionsModuleStub;
-    let peersModuleStub: PeersModuleStub;
-
-    let res;
-    let peer;
-    let tx1;
-    let tx2;
-
-    beforeEach(() => {
-      peer = { string: 'string', ip: '127.0.0.uganda', port: 65488 };
-      tx1  = { id: 1 };
-      tx2  = { id: 2 };
-      res  = {
-        body:
-          {
-            transactions:
-              [tx1, tx2],
-          },
-      };
-
-      transactionLogicStub   = container.get<TransactionLogicStub>(Symbols.logic.transaction);
-      transactionsModuleStub = container.get<TransactionsModuleStub>(Symbols.modules.transactions);
-      peersModuleStub        = container.get<PeersModuleStub>(Symbols.modules.peers);
-      loggerStub             = container.get<LoggerStub>(Symbols.helpers.logger);
-      transportModuleStub    = container.get<TransportModuleStub>(Symbols.modules.transport);
-      schemaStub             = container.get<ZSchemaStub>(Symbols.generic.zschema);
-      sequenceStub           = container.getTagged<SequenceStub>(
-        Symbols.helpers.sequence,
-        Symbols.helpers.sequence,
-        Symbols.tags.helpers.balancesSequence);
-
-      transportModuleStub.stubConfig.getFromPeer.return = res;
-      getRandomPeerStub                                 = sandbox.stub(instance as any, 'getRandomPeer').resolves(peer);
-      transactionLogicStub.enqueueResponse('objectNormalize', {});
-      transactionLogicStub.enqueueResponse('objectNormalize', {});
-      transactionsModuleStub.enqueueResponse('processUnconfirmedTransaction', {});
-      transactionsModuleStub.enqueueResponse('processUnconfirmedTransaction', {});
-    });
-
-    afterEach(() => {
-      transactionLogicStub.reset();
-      transactionsModuleStub.reset();
-      peersModuleStub.reset();
-      loggerStub.stubReset();
-      schemaStub.stubReset();
-      transportModuleStub.stubReset();
-      sequenceStub.reset();
-    });
-
-    it('should call instance.getRandomPeer', async () => {
-      await (instance as any).loadTransactions();
-
-      expect(getRandomPeerStub.calledOnce).to.be.true;
-      expect(getRandomPeerStub.firstCall.args.length).to.be.equal(0);
-    });
-
-    it('should call logger.log', async () => {
-      await (instance as any).loadTransactions();
-
-      expect(loggerStub.stubs.log.calledOnce).to.be.true;
-      expect(loggerStub.stubs.log.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.log.firstCall.args[0]).to.be.equal(`Loading transactions from: ${peer.string}`);
-    });
-
-    it('should call transportModule.getFromPeer', async () => {
-      await (instance as any).loadTransactions();
-
-      expect(transportModuleStub.stubs.getFromPeer.calledOnce).to.be.true;
-      expect(transportModuleStub.stubs.getFromPeer.firstCall.args.length).to.be.equal(2);
-      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[0]).to.be.deep.equal(peer);
-      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[1]).to.be.deep.equal({
-        api   : '/transactions',
-        method: 'GET',
-      });
-    });
-
-    it('should call schema.validate', async () => {
-      await (instance as any).loadTransactions();
-
-      expect(schemaStub.stubs.validate.calledOnce).to.be.true;
-      expect(schemaStub.stubs.validate.firstCall.args.length).to.be.equal(2);
-      expect(schemaStub.stubs.validate.firstCall.args[0]).to.be.deep.equal(res.body);
-      expect(schemaStub.stubs.validate.firstCall.args[1]).to.be.equal(loaderSchema.loadTransactions);
-    });
-
-    it('should throw if validate was failed ', async () => {
-      schemaStub.stubConfig.validate.return = false;
-
-      expect((instance as any).loadTransactions()).to.be.rejectedWith('Cannot validate load transactions schema against peer');
-    });
-
-    it('should call transactionLogic.objectNormalize for each tx', async () => {
-      await (instance as any).loadTransactions();
-
-      expect(transactionLogicStub.stubs.objectNormalize.calledTwice).to.be.true;
-
-      expect(transactionLogicStub.stubs.objectNormalize.firstCall.args.length).to.be.equal(1);
-      expect(transactionLogicStub.stubs.objectNormalize.firstCall.args[0]).to.be.deep.equal(tx1);
-
-      expect(transactionLogicStub.stubs.objectNormalize.secondCall.args.length).to.be.equal(1);
-      expect(transactionLogicStub.stubs.objectNormalize.secondCall.args[0]).to.be.deep.equal(tx2);
-    });
-
-    describe('transactionLogic.objectNormalize throw error', () => {
-
-      let error;
-
-      beforeEach(() => {
-        error = new Error('error');
-        transactionLogicStub.stubs.objectNormalize.throws(error);
-        peersModuleStub.enqueueResponse('remove', {});
-        peersModuleStub.enqueueResponse('remove', {});
-      });
-
-      it('should throw error', async () => {
-        await expect((instance as any).loadTransactions()).to.be.rejectedWith(error);
-      });
-
-      it('should call logger.debug', async () => {
-        await expect((instance as any).loadTransactions()).to.be.rejectedWith(error);
-
-        expect(loggerStub.stubs.debug.calledOnce).to.be.true;
-        expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(2);
-        expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Transaction normalization failed');
-        expect(loggerStub.stubs.debug.firstCall.args[1]).to.be.deep.equal({
-          err   : error.toString(),
-          module: 'loader',
-          tx    : tx1,
-        });
-      });
-
-      it('should call logger.warn', async () => {
-        await expect((instance as any).loadTransactions()).to.be.rejectedWith(error);
-
-        expect(loggerStub.stubs.warn.calledOnce).to.be.true;
-        expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
-        expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Transaction 1 is not valid, peer removed');
-        expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.deep.equal(peer.string);
-      });
-
-      it('should peersModule.remove', async () => {
-        await expect((instance as any).loadTransactions()).to.be.rejectedWith(error);
-
-        expect(peersModuleStub.stubs.remove.calledOnce).to.be.true;
-        expect(peersModuleStub.stubs.remove.firstCall.args.length).to.be.equal(2);
-        expect(peersModuleStub.stubs.remove.firstCall.args[0]).to.be.equal(peer.ip);
-        expect(peersModuleStub.stubs.remove.firstCall.args[1]).to.be.equal(peer.port);
-      });
-    });
-
-    it('should call transactionsModule.processUnconfirmedTransaction for each tx', async () => {
-      await (instance as any).loadTransactions();
-
-      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.calledTwice).to.be.true;
-
-      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.firstCall.args.length).to.be.equal(3);
-      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.firstCall.args[0]).to.deep.equal(tx1);
-      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.firstCall.args[1]).to.be.false;
-      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.firstCall.args[2]).to.be.true;
-
-      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.secondCall.args.length).to.be.equal(3);
-      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.secondCall.args[0]).to.deep.equal(tx2);
-      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.secondCall.args[1]).to.be.false;
-      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.secondCall.args[2]).to.be.true;
-    });
-
-    it('should call logger.debug if transactionsModule.processUnconfirmedTransaction throw error', async () => {
-      const error = new Error('error');
-      transactionsModuleStub.reset();
-      transactionsModuleStub.stubs.processUnconfirmedTransaction.rejects(error);
-
-      await (instance as any).loadTransactions();
-
-      expect(loggerStub.stubs.debug.calledTwice).to.be.true;
-
-      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal(error);
-
-      expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal(error);
-    });
-
-  });
-
-  describe('.syncTimer', () => {
-
-  });
-
-  describe('.sync', () => {
-
-    let busStub: BusStub;
-    let transactionsModuleStub: TransactionsModuleStub;
-    let broadcasterLogicStub: BroadcasterLogicStub;
-    let systemModuleStub: SystemModuleStub;
-    let loggerStub: LoggerStub;
-    let syncTriggerStub: SinonStub;
-    let loadBlocksFromNetworkStub: SinonStub;
-
-    beforeEach(() => {
-      syncTriggerStub           = sandbox.stub(instance as any, 'syncTrigger');
-      loadBlocksFromNetworkStub = sandbox.stub(instance as any, 'loadBlocksFromNetwork');
-
-      busStub                = container.get<BusStub>(Symbols.helpers.bus);
-      transactionsModuleStub = container.get<TransactionsModuleStub>(Symbols.modules.transactions);
-      broadcasterLogicStub   = container.get<BroadcasterLogicStub>(Symbols.logic.broadcaster);
-      systemModuleStub       = container.get<SystemModuleStub>(Symbols.modules.system);
-      loggerStub             = container.get<LoggerStub>(Symbols.helpers.logger);
-
-      busStub.enqueueResponse('message', Promise.resolve());
-      busStub.enqueueResponse('message', Promise.resolve());
-      broadcasterLogicStub.enqueueResponse('getPeers', Promise.resolve());
-      broadcasterLogicStub.enqueueResponse('getPeers', Promise.resolve());
-      transactionsModuleStub.enqueueResponse('undoUnconfirmedList', Promise.resolve());
-      transactionsModuleStub.enqueueResponse('applyUnconfirmedList', Promise.resolve());
-      systemModuleStub.enqueueResponse('update', Promise.resolve());
-    });
-
-    afterEach(() => {
-      loggerStub.stubReset();
-      busStub.reset();
-      transactionsModuleStub.reset();
-      broadcasterLogicStub.reset();
-      systemModuleStub.reset();
-    });
-
-    it('call logger.info methods', async () => {
-      await  (instance as any).sync();
-
-      expect(loggerStub.stubs.info.callCount).to.be.equal(2);
-
-      expect(loggerStub.stubs.info.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal('Starting sync');
-
-      expect(loggerStub.stubs.info.secondCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.info.secondCall.args[0]).to.be.equal('Finished sync');
-    });
-
-    it('call logger.debug methods', async () => {
-      await  (instance as any).sync();
-
-      expect(loggerStub.stubs.debug.callCount).to.be.equal(3);
-
-      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Undoing unconfirmed transactions before sync');
-
-      expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal('Establishing broadhash consensus before sync');
-
-      expect(loggerStub.stubs.debug.thirdCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.thirdCall.args[0]).to.be.equal('Establishing broadhash consensus after sync');
-    });
-
-    it('call logger.debug methods', async () => {
-      await  (instance as any).sync();
-
-      expect(loggerStub.stubs.debug.callCount).to.be.equal(3);
-
-      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Undoing unconfirmed transactions before sync');
-
-      expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal('Establishing broadhash consensus before sync');
-
-      expect(loggerStub.stubs.debug.thirdCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.thirdCall.args[0]).to.be.equal('Establishing broadhash consensus after sync');
-    });
-
-    it('call bus"s methods', async () => {
-      await  (instance as any).sync();
-
-      expect(busStub.stubs.message.calledTwice).to.be.true;
-
-      expect(busStub.stubs.message.firstCall.args.length).to.be.equal(1);
-      expect(busStub.stubs.message.firstCall.args[0]).to.be.equal('syncStarted');
-
-      expect(busStub.stubs.message.secondCall.args.length).to.be.equal(1);
-      expect(busStub.stubs.message.secondCall.args[0]).to.be.equal('syncFinished');
-    });
-
-    it('call transactionsModule methods', async () => {
-      await  (instance as any).sync();
-
-      expect(transactionsModuleStub.stubs.undoUnconfirmedList.calledOnce).to.be.true;
-      expect(transactionsModuleStub.stubs.undoUnconfirmedList.firstCall.args.length).to.be.equal(0);
-
-      expect(transactionsModuleStub.stubs.applyUnconfirmedList.calledOnce).to.be.true;
-      expect(transactionsModuleStub.stubs.applyUnconfirmedList.firstCall.args.length).to.be.equal(0);
-    });
-
-    it('call broadcasterLogic methods', async () => {
-      await  (instance as any).sync();
-
-      expect(broadcasterLogicStub.stubs.getPeers.calledTwice).to.be.true;
-
-      expect(broadcasterLogicStub.stubs.getPeers.firstCall.args.length).to.be.equal(1);
-      expect(broadcasterLogicStub.stubs.getPeers.firstCall.args[0]).to.be.deep.equal({ limit: constants.maxPeers });
-
-      expect(broadcasterLogicStub.stubs.getPeers.secondCall.args.length).to.be.equal(1);
-      expect(broadcasterLogicStub.stubs.getPeers.secondCall.args[0]).to.be.deep.equal({ limit: constants.maxPeers });
-    });
-
-    it('call instance.syncTrigger', async () => {
-      await  (instance as any).sync();
-
-      expect(syncTriggerStub.calledTwice).to.be.true;
-
-      expect(syncTriggerStub.firstCall.args.length).to.be.equal(1);
-      expect(syncTriggerStub.firstCall.args[0]).to.be.true;
-
-      expect(syncTriggerStub.secondCall.args.length).to.be.equal(1);
-      expect(syncTriggerStub.secondCall.args[0]).to.be.false;
-    });
-
-    it('check instance field', async () => {
-      await  (instance as any).sync();
-
-      expect((instance as any).isActive).to.be.false;
-      expect((instance as any).blocksToSync).to.be.equal(0);
-    });
-
-  });
-
-  describe('.syncTrigger', () => {
-
-  });
-
-  describe('.loadBlocksFromNetwork', () => {
-
   });
 
   describe('.onBlockchainReady', () => {
@@ -877,7 +419,7 @@ describe('modules/loader', () => {
     let dbStub: DbStub;
     let roundsLogicStub: RoundsLogicStub;
     let appStateStub: IAppStateStub;
-    let blocksUtilsModuleStub: BlocksModuleUtilsStub;
+    let blocksUtilsModuleStub: BlocksSubmoduleUtilsStub;
     let busStub: BusStub;
     let loggerStub: LoggerStub;
     let loadStub: SinonStub;
@@ -888,7 +430,7 @@ describe('modules/loader', () => {
       dbStub                = container.get<DbStub>(Symbols.generic.db);
       roundsLogicStub       = container.get<RoundsLogicStub>(Symbols.logic.rounds);
       appStateStub          = container.get<IAppStateStub>(Symbols.logic.appState);
-      blocksUtilsModuleStub = container.get<BlocksModuleUtilsStub>(Symbols.modules.blocksSubModules.utils);
+      blocksUtilsModuleStub = container.get<BlocksSubmoduleUtilsStub>(Symbols.modules.blocksSubModules.utils);
       busStub               = container.get<BusStub>(Symbols.helpers.bus);
       loggerStub            = container.get<LoggerStub>(Symbols.helpers.logger);
 
@@ -994,7 +536,7 @@ describe('modules/loader', () => {
       dbStub.enqueueResponse('task', Promise.resolve(results));
       dbStub.enqueueResponse('task', Promise.resolve(res));
 
-      expect(instance.loadBlockChain()).to.be.rejectedWith('Failed to match genesis block with database');
+      await expect(instance.loadBlockChain()).to.be.rejectedWith('Failed to match genesis block with database');
     });
 
     it('should throw if there are failed to match genesis block with database(bad payloadHash value)', async () => {
@@ -1003,7 +545,7 @@ describe('modules/loader', () => {
       dbStub.enqueueResponse('task', Promise.resolve(results));
       dbStub.enqueueResponse('task', Promise.resolve(res));
 
-      expect(instance.loadBlockChain()).to.be.rejectedWith('Failed to match genesis block with database');
+      await expect(instance.loadBlockChain()).to.be.rejectedWith('Failed to match genesis block with database');
     });
 
     it('should throw if there are failed to match genesis block with database(bad blockSignature value)', async () => {
@@ -1012,7 +554,7 @@ describe('modules/loader', () => {
       dbStub.enqueueResponse('task', Promise.resolve(results));
       dbStub.enqueueResponse('task', Promise.resolve(res));
 
-      expect(instance.loadBlockChain()).to.be.rejectedWith('Failed to match genesis block with database');
+      await   expect(instance.loadBlockChain()).to.be.rejectedWith('Failed to match genesis block with database');
     });
 
     it('should call roundsLogic.calcRound', async () => {
@@ -1330,18 +872,20 @@ describe('modules/loader', () => {
       loggerStub              = container.get<LoggerStub>(Symbols.helpers.logger);
       busStub                 = container.get<BusStub>(Symbols.helpers.bus);
       accountLogicStub        = container.get<AccountLogicStub>(Symbols.logic.account);
-      blocksProcessModuleStub = container.get<BlocksModuleProcessStub>(Symbols.modules.blocksSubModules.process);
-      blocksChainModuleStub   = container.get<BlocksModuleChain>(Symbols.modules.blocksSubModules.chain);
+      blocksProcessModuleStub = container.get<BlocksSubmoduleProcessStub>(Symbols.modules.blocksSubModules.process);
+      blocksChainModuleStub   = container.get<BlocksSubmoduleChainStub>(Symbols.modules.blocksSubModules.chain);
 
+      accountLogicStub.enqueueResponse('removeTables', {});
+      accountLogicStub.enqueueResponse('createTables', {});
+      blocksProcessModuleStub.enqueueResponse('loadBlocksOffset', lastBlock);
+    });
+
+    afterEach(() => {
       busStub.reset();
       accountLogicStub.reset();
       blocksProcessModuleStub.reset();
       blocksChainModuleStub.reset();
       loggerStub.stubReset();
-
-      accountLogicStub.enqueueResponse('removeTables', {});
-      accountLogicStub.enqueueResponse('createTables', {});
-      blocksProcessModuleStub.enqueueResponse('loadBlocksOffset', lastBlock);
     });
 
     it('should call logger.warn twice if message exist', async () => {
@@ -1475,7 +1019,487 @@ describe('modules/loader', () => {
       delete error.block;
       loggerStub.stubs.info.throws(error);
 
-      expect(instance.load(count, limitPerIteration)).to.be.rejectedWith(error);
+      await expect(instance.load(count, limitPerIteration)).to.be.rejectedWith(error);
+    });
+
+  });
+
+  describe('.sync', () => {
+
+    let busStub: BusStub;
+    let transactionsModuleStub: TransactionsModuleStub;
+    let broadcasterLogicStub: BroadcasterLogicStub;
+    let systemModuleStub: SystemModuleStub;
+    let loggerStub: LoggerStub;
+    let syncTriggerStub: SinonStub;
+    let loadBlocksFromNetworkStub: SinonStub;
+
+    beforeEach(() => {
+      syncTriggerStub           = sandbox.stub(instance as any, 'syncTrigger');
+      loadBlocksFromNetworkStub = sandbox.stub(instance as any, 'loadBlocksFromNetwork');
+
+      busStub                = container.get<BusStub>(Symbols.helpers.bus);
+      transactionsModuleStub = container.get<TransactionsModuleStub>(Symbols.modules.transactions);
+      broadcasterLogicStub   = container.get<BroadcasterLogicStub>(Symbols.logic.broadcaster);
+      systemModuleStub       = container.get<SystemModuleStub>(Symbols.modules.system);
+      loggerStub             = container.get<LoggerStub>(Symbols.helpers.logger);
+
+      busStub.enqueueResponse('message', Promise.resolve());
+      busStub.enqueueResponse('message', Promise.resolve());
+      transactionsModuleStub.enqueueResponse('undoUnconfirmedList', Promise.resolve());
+      transactionsModuleStub.enqueueResponse('applyUnconfirmedList', Promise.resolve());
+      broadcasterLogicStub.enqueueResponse('getPeers', Promise.resolve());
+      broadcasterLogicStub.enqueueResponse('getPeers', Promise.resolve());
+      systemModuleStub.enqueueResponse('update', Promise.resolve());
+    });
+
+    afterEach(() => {
+      loggerStub.stubReset();
+      busStub.reset();
+      transactionsModuleStub.reset();
+      broadcasterLogicStub.reset();
+      systemModuleStub.reset();
+    });
+
+    it('call logger.info methods', async () => {
+      await  (instance as any).sync();
+
+      expect(loggerStub.stubs.info.callCount).to.be.equal(2);
+
+      expect(loggerStub.stubs.info.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal('Starting sync');
+
+      expect(loggerStub.stubs.info.secondCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.info.secondCall.args[0]).to.be.equal('Finished sync');
+    });
+
+    it('call logger.debug methods', async () => {
+      await  (instance as any).sync();
+
+      expect(loggerStub.stubs.debug.callCount).to.be.equal(3);
+
+      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Undoing unconfirmed transactions before sync');
+
+      expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal('Establishing broadhash consensus before sync');
+
+      expect(loggerStub.stubs.debug.thirdCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.thirdCall.args[0]).to.be.equal('Establishing broadhash consensus after sync');
+    });
+
+    it('call logger.debug methods', async () => {
+      await  (instance as any).sync();
+
+      expect(loggerStub.stubs.debug.callCount).to.be.equal(3);
+
+      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Undoing unconfirmed transactions before sync');
+
+      expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal('Establishing broadhash consensus before sync');
+
+      expect(loggerStub.stubs.debug.thirdCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.thirdCall.args[0]).to.be.equal('Establishing broadhash consensus after sync');
+    });
+
+    it('call bus"s methods', async () => {
+      await  (instance as any).sync();
+
+      expect(busStub.stubs.message.calledTwice).to.be.true;
+
+      expect(busStub.stubs.message.firstCall.args.length).to.be.equal(1);
+      expect(busStub.stubs.message.firstCall.args[0]).to.be.equal('syncStarted');
+
+      expect(busStub.stubs.message.secondCall.args.length).to.be.equal(1);
+      expect(busStub.stubs.message.secondCall.args[0]).to.be.equal('syncFinished');
+    });
+
+    it('call transactionsModule methods', async () => {
+      await  (instance as any).sync();
+
+      expect(transactionsModuleStub.stubs.undoUnconfirmedList.calledOnce).to.be.true;
+      expect(transactionsModuleStub.stubs.undoUnconfirmedList.firstCall.args.length).to.be.equal(0);
+
+      expect(transactionsModuleStub.stubs.applyUnconfirmedList.calledOnce).to.be.true;
+      expect(transactionsModuleStub.stubs.applyUnconfirmedList.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('call broadcasterLogic methods', async () => {
+      await  (instance as any).sync();
+
+      expect(broadcasterLogicStub.stubs.getPeers.calledTwice).to.be.true;
+
+      expect(broadcasterLogicStub.stubs.getPeers.firstCall.args.length).to.be.equal(1);
+      expect(broadcasterLogicStub.stubs.getPeers.firstCall.args[0]).to.be.deep.equal({ limit: constants.maxPeers });
+
+      expect(broadcasterLogicStub.stubs.getPeers.secondCall.args.length).to.be.equal(1);
+      expect(broadcasterLogicStub.stubs.getPeers.secondCall.args[0]).to.be.deep.equal({ limit: constants.maxPeers });
+    });
+
+    it('call instance.syncTrigger', async () => {
+      await  (instance as any).sync();
+
+      expect(syncTriggerStub.calledTwice).to.be.true;
+
+      expect(syncTriggerStub.firstCall.args.length).to.be.equal(1);
+      expect(syncTriggerStub.firstCall.args[0]).to.be.true;
+
+      expect(syncTriggerStub.secondCall.args.length).to.be.equal(1);
+      expect(syncTriggerStub.secondCall.args[0]).to.be.false;
+    });
+
+    it('check instance field', async () => {
+      await  (instance as any).sync();
+
+      expect((instance as any).isActive).to.be.false;
+      expect((instance as any).blocksToSync).to.be.equal(0);
+    });
+
+  });
+
+  describe('.syncTrigger', () => {
+
+  });
+
+  describe('.loadBlocksFromNetwork', () => {
+
+  });
+
+  describe('.syncTimer', () => {
+
+  });
+
+  describe('.loadSignatures', () => {
+
+    let getRandomPeerStub: SinonStub;
+    let loggerStub: LoggerStub;
+    let transportModuleStub: TransportModuleStub;
+    let schemaStub: ZSchemaStub;
+    let sequenceStub: SequenceStub;
+    let multisigModuleStub: MultisignaturesModuleStub;
+
+    let res;
+    let randomPeer;
+
+    beforeEach(() => {
+      randomPeer = { string: 'string' };
+      res        = {
+        body:
+          {
+            signatures:
+              [
+                {
+                  signatures : [
+                    {
+                      signature: 'sig11',
+                    },
+                  ],
+                  transaction: 'tr11',
+                },
+                {
+                  signatures : [
+                    {
+                      signature: 'sig22',
+                    },
+                  ],
+                  transaction: 'tr22',
+                },
+              ],
+          },
+      };
+
+      loggerStub          = container.get<LoggerStub>(Symbols.helpers.logger);
+      transportModuleStub = container.get<TransportModuleStub>(Symbols.modules.transport);
+      schemaStub          = container.get<ZSchemaStub>(Symbols.generic.zschema);
+      sequenceStub        = container.getTagged<SequenceStub>(Symbols.helpers.sequence,
+        Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence);
+      multisigModuleStub  = container.get<MultisignaturesModuleStub>(Symbols.modules.multisignatures);
+
+      getRandomPeerStub = sandbox.stub(instance as any, 'getRandomPeer').resolves(randomPeer);
+      transportModuleStub.enqueueResponse('getFromPeer', res);
+      multisigModuleStub.enqueueResponse('processSignature', {});
+      multisigModuleStub.enqueueResponse('processSignature', {});
+    });
+
+    afterEach(() => {
+      loggerStub.stubReset();
+      schemaStub.reset();
+      transportModuleStub.reset();
+      sequenceStub.reset();
+      multisigModuleStub.reset();
+    });
+
+    it('should call instance.getRandomPeer', async () => {
+      await (instance as any).loadSignatures();
+
+      expect(getRandomPeerStub.calledOnce).to.be.true;
+      expect(getRandomPeerStub.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should call logger.log', async () => {
+      await (instance as any).loadSignatures();
+
+      expect(loggerStub.stubs.log.calledOnce).to.be.true;
+      expect(loggerStub.stubs.log.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.log.firstCall.args[0]).to.be.equal(`Loading signatures from: ${randomPeer.string}`);
+    });
+
+    it('should call transportModule.getFromPeer', async () => {
+      await (instance as any).loadSignatures();
+
+      expect(transportModuleStub.stubs.getFromPeer.calledOnce).to.be.true;
+      expect(transportModuleStub.stubs.getFromPeer.firstCall.args.length).to.be.equal(2);
+      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[0]).to.be.deep.equal(randomPeer);
+      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[1]).to.be.deep.equal({
+        api   : '/signatures',
+        method: 'GET',
+      });
+    });
+
+    it('should call schema.validate', async () => {
+      await (instance as any).loadSignatures();
+
+      expect(schemaStub.stubs.validate.calledOnce).to.be.true;
+      expect(schemaStub.stubs.validate.firstCall.args.length).to.be.equal(2);
+      expect(schemaStub.stubs.validate.firstCall.args[0]).to.be.deep.equal(res.body);
+      expect(schemaStub.stubs.validate.firstCall.args[1]).to.be.equal(loaderSchema.loadSignatures);
+    });
+
+    it('should throw if validate was failed ', async () => {
+      schemaStub.reset();
+      schemaStub.enqueueResponse('validate', false);
+
+      await expect((instance as any).loadSignatures()).to.be.rejectedWith('Failed to validate /signatures schema');
+    });
+
+    it('should call multisigModule.processSignature', async () => {
+      await (instance as any).loadSignatures();
+
+      expect(multisigModuleStub.stubs.processSignature.calledTwice).to.be.true;
+
+      expect(multisigModuleStub.stubs.processSignature.firstCall.args.length).to.be.deep.equal(1);
+      expect(multisigModuleStub.stubs.processSignature.firstCall.args[0]).to.be.deep.equal({
+        signature  : { signature: 'sig11' },
+        transaction: 'tr11',
+      });
+
+      expect(multisigModuleStub.stubs.processSignature.secondCall.args.length).to.be.deep.equal(1);
+      expect(multisigModuleStub.stubs.processSignature.secondCall.args[0]).to.be.deep.equal({
+        signature  : { signature: 'sig22' },
+        transaction: 'tr22',
+      });
+    });
+
+    it('should call logger.warn if multisigModule.processSignature throw error', async () => {
+      const error = 'error';
+
+      multisigModuleStub.stubs.processSignature.rejects(error);
+      await (instance as any).loadSignatures();
+
+      expect(loggerStub.stubs.warn.calledTwice).to.be.true;
+
+      expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Cannot process multisig signature for tr11 ');
+      expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.deep.equal({ name: error });
+
+      expect(loggerStub.stubs.warn.secondCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.warn.secondCall.args[0]).to.be.equal('Cannot process multisig signature for tr22 ');
+      expect(loggerStub.stubs.warn.secondCall.args[1]).to.be.deep.equal({ name: error });
+
+    });
+
+  });
+
+  describe('.loadTransactions', () => {
+    let getRandomPeerStub: SinonStub;
+    let loggerStub: LoggerStub;
+    let transportModuleStub: TransportModuleStub;
+    let schemaStub: ZSchemaStub;
+    let sequenceStub: SequenceStub;
+    let transactionLogicStub: TransactionLogicStub;
+    let transactionsModuleStub: TransactionsModuleStub;
+    let peersModuleStub: PeersModuleStub;
+
+    let res;
+    let peer;
+    let tx1;
+    let tx2;
+
+    beforeEach(() => {
+      peer = { string: 'string', ip: '127.0.0.uganda', port: 65488 };
+      tx1  = { id: 1 };
+      tx2  = { id: 2 };
+      res  = {
+        body:
+          {
+            transactions:
+              [tx1, tx2],
+          },
+      };
+
+      transactionLogicStub   = container.get<TransactionLogicStub>(Symbols.logic.transaction);
+      transactionsModuleStub = container.get<TransactionsModuleStub>(Symbols.modules.transactions);
+      peersModuleStub        = container.get<PeersModuleStub>(Symbols.modules.peers);
+      loggerStub             = container.get<LoggerStub>(Symbols.helpers.logger);
+      transportModuleStub    = container.get<TransportModuleStub>(Symbols.modules.transport);
+      schemaStub             = container.get<ZSchemaStub>(Symbols.generic.zschema);
+      sequenceStub           = container.getTagged<SequenceStub>(
+        Symbols.helpers.sequence,
+        Symbols.helpers.sequence,
+        Symbols.tags.helpers.balancesSequence);
+
+      getRandomPeerStub = sandbox.stub(instance as any, 'getRandomPeer').resolves(peer);
+      transportModuleStub.enqueueResponse('getFromPeer', res);
+      transactionLogicStub.enqueueResponse('objectNormalize', {});
+      transactionLogicStub.enqueueResponse('objectNormalize', {});
+      transactionsModuleStub.enqueueResponse('processUnconfirmedTransaction', {});
+      transactionsModuleStub.enqueueResponse('processUnconfirmedTransaction', {});
+    });
+
+    afterEach(() => {
+      transactionLogicStub.reset();
+      transactionsModuleStub.reset();
+      peersModuleStub.reset();
+      loggerStub.stubReset();
+      schemaStub.reset();
+      transportModuleStub.reset();
+      sequenceStub.reset();
+    });
+
+    it('should call instance.getRandomPeer', async () => {
+      await (instance as any).loadTransactions();
+
+      expect(getRandomPeerStub.calledOnce).to.be.true;
+      expect(getRandomPeerStub.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should call logger.log', async () => {
+      await (instance as any).loadTransactions();
+
+      expect(loggerStub.stubs.log.calledOnce).to.be.true;
+      expect(loggerStub.stubs.log.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.log.firstCall.args[0]).to.be.equal(`Loading transactions from: ${peer.string}`);
+    });
+
+    it('should call transportModule.getFromPeer', async () => {
+      await (instance as any).loadTransactions();
+
+      expect(transportModuleStub.stubs.getFromPeer.calledOnce).to.be.true;
+      expect(transportModuleStub.stubs.getFromPeer.firstCall.args.length).to.be.equal(2);
+      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[0]).to.be.deep.equal(peer);
+      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[1]).to.be.deep.equal({
+        api   : '/transactions',
+        method: 'GET',
+      });
+    });
+
+    it('should call schema.validate', async () => {
+      await (instance as any).loadTransactions();
+
+      expect(schemaStub.stubs.validate.calledOnce).to.be.true;
+      expect(schemaStub.stubs.validate.firstCall.args.length).to.be.equal(2);
+      expect(schemaStub.stubs.validate.firstCall.args[0]).to.be.deep.equal(res.body);
+      expect(schemaStub.stubs.validate.firstCall.args[1]).to.be.equal(loaderSchema.loadTransactions);
+    });
+
+    it('should throw if validate was failed ', async () => {
+      schemaStub.reset();
+      schemaStub.enqueueResponse('validate', false);
+
+      await expect((instance as any).loadTransactions()).to.be.rejectedWith('Cannot validate load transactions schema against peer');
+    });
+
+    it('should call transactionLogic.objectNormalize for each tx', async () => {
+      await (instance as any).loadTransactions();
+
+      expect(transactionLogicStub.stubs.objectNormalize.calledTwice).to.be.true;
+
+      expect(transactionLogicStub.stubs.objectNormalize.firstCall.args.length).to.be.equal(1);
+      expect(transactionLogicStub.stubs.objectNormalize.firstCall.args[0]).to.be.deep.equal(tx1);
+
+      expect(transactionLogicStub.stubs.objectNormalize.secondCall.args.length).to.be.equal(1);
+      expect(transactionLogicStub.stubs.objectNormalize.secondCall.args[0]).to.be.deep.equal(tx2);
+    });
+
+    describe('transactionLogic.objectNormalize throw error', () => {
+
+      let error;
+
+      beforeEach(() => {
+        error = new Error('error');
+        transactionLogicStub.stubs.objectNormalize.throws(error);
+        peersModuleStub.enqueueResponse('remove', {});
+        peersModuleStub.enqueueResponse('remove', {});
+      });
+
+      it('should throw error', async () => {
+        await expect((instance as any).loadTransactions()).to.be.rejectedWith(error);
+      });
+
+      it('should call logger.debug', async () => {
+        await expect((instance as any).loadTransactions()).to.be.rejectedWith(error);
+
+        expect(loggerStub.stubs.debug.calledOnce).to.be.true;
+        expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(2);
+        expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Transaction normalization failed');
+        expect(loggerStub.stubs.debug.firstCall.args[1]).to.be.deep.equal({
+          err   : error.toString(),
+          module: 'loader',
+          tx    : tx1,
+        });
+      });
+
+      it('should call logger.warn', async () => {
+        await expect((instance as any).loadTransactions()).to.be.rejectedWith(error);
+
+        expect(loggerStub.stubs.warn.calledOnce).to.be.true;
+        expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
+        expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Transaction 1 is not valid, peer removed');
+        expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.deep.equal(peer.string);
+      });
+
+      it('should peersModule.remove', async () => {
+        await expect((instance as any).loadTransactions()).to.be.rejectedWith(error);
+
+        expect(peersModuleStub.stubs.remove.calledOnce).to.be.true;
+        expect(peersModuleStub.stubs.remove.firstCall.args.length).to.be.equal(2);
+        expect(peersModuleStub.stubs.remove.firstCall.args[0]).to.be.equal(peer.ip);
+        expect(peersModuleStub.stubs.remove.firstCall.args[1]).to.be.equal(peer.port);
+      });
+    });
+
+    it('should call transactionsModule.processUnconfirmedTransaction for each tx', async () => {
+      await (instance as any).loadTransactions();
+
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.calledTwice).to.be.true;
+
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.firstCall.args.length).to.be.equal(3);
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.firstCall.args[0]).to.deep.equal(tx1);
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.firstCall.args[1]).to.be.false;
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.firstCall.args[2]).to.be.true;
+
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.secondCall.args.length).to.be.equal(3);
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.secondCall.args[0]).to.deep.equal(tx2);
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.secondCall.args[1]).to.be.false;
+      expect(transactionsModuleStub.stubs.processUnconfirmedTransaction.secondCall.args[2]).to.be.true;
+    });
+
+    it('should call logger.debug if transactionsModule.processUnconfirmedTransaction throw error', async () => {
+      const error = new Error('error');
+      transactionsModuleStub.reset();
+      transactionsModuleStub.stubs.processUnconfirmedTransaction.rejects(error);
+
+      await (instance as any).loadTransactions();
+
+      expect(loggerStub.stubs.debug.calledTwice).to.be.true;
+
+      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal(error);
+
+      expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal(error);
+
     });
 
   });
