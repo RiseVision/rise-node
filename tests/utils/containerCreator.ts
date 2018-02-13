@@ -3,7 +3,7 @@ import { constants } from '../../src/helpers';
 import { Symbols } from '../../src/ioc/symbols';
 import {
   BlocksSubmoduleChainStub, BlocksSubmoduleVerifyStub,
-  BusStub, DelegatesModuleStub,
+  BusStub, DelegatesModuleStub, ExceptionsManagerStub,
   LoggerStub,
   PeersLogicStub,
   SystemModuleStub,
@@ -26,6 +26,8 @@ import { AppStateStub } from '../stubs/logic/AppStateStub';
 import RoundsLogicStub from '../stubs/logic/RoundsLogicStub';
 import { ForkModuleStub } from '../stubs/modules/ForkModuleStub';
 import { BlocksSubmoduleProcessStub } from '../stubs/modules/blocks/BlocksSubmoduleProcessStub';
+import BlockRewardLogicStub from '../stubs/logic/BlockRewardLogicStub';
+import AccountLogicStub from '../stubs/logic/AccountLogicStub';
 
 export const createContainer = (): Container => {
   const container = new Container();
@@ -38,6 +40,7 @@ export const createContainer = (): Container => {
   container.bind(Symbols.helpers.constants).toConstantValue({...{}, ...constants});
   container.bind(Symbols.helpers.bus).to(BusStub).inSingletonScope();
   container.bind(Symbols.helpers.ed).to(EdStub).inSingletonScope();
+  container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManagerStub).inSingletonScope();
   container.bind(Symbols.helpers.logger).to(LoggerStub).inSingletonScope();
   container.bind(Symbols.helpers.sequence).to(SequenceStub).inSingletonScope().whenTargetTagged(
     Symbols.helpers.sequence,
@@ -54,8 +57,10 @@ export const createContainer = (): Container => {
   container.bind(Symbols.helpers.slots).to(SlotsStub).inSingletonScope();
 
   // LOGIC
+  container.bind(Symbols.logic.account).to(AccountLogicStub).inSingletonScope();
   container.bind(Symbols.logic.appState).to(AppStateStub).inSingletonScope();
   container.bind(Symbols.logic.block).to(BlockLogicStub).inSingletonScope();
+  container.bind(Symbols.logic.blockReward).to(BlockRewardLogicStub).inSingletonScope();
   container.bind(Symbols.logic.peers).to(PeersLogicStub).inSingletonScope();
   container.bind(Symbols.logic.transaction).to(TransactionLogicStub).inSingletonScope();
   container.bind(Symbols.logic.rounds).to(RoundsLogicStub).inSingletonScope();
