@@ -105,21 +105,19 @@ export class LoaderModule implements ILoaderModule {
     };
   }
 
-  public async getNework() {
+  public async getNetwork() {
     if (!(
         this.network.height > 0 &&
         Math.abs(this.network.height - this.blocksModule.lastBlock.height) === 1)
     ) {
       const { peers } = await this.peersModule.list({});
-      console.log(peers, 'p');
       this.network    = this.findGoodPeers(peers);
     }
     return this.network;
   }
 
   public async getRandomPeer(): Promise<IPeerLogic> {
-    const { peers } = await this.getNework();
-    console.log(peers);
+    const { peers } = await this.getNetwork();
     return peers[Math.floor(Math.random() * peers.length)];
   }
 
