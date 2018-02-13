@@ -348,9 +348,11 @@ describe('logic/block', () => {
       expect(block.totalForged).to.equal('150');
     });
 
-    it('should call this.getAddressByPublicKey with b_generatorPublicKey', () => {
-      const getAddressByPublicKeySpy = sinon.spy(instance, 'getAddressByPublicKey');
-      instance.dbRead(raw);
+    it('should not call this.getAddressByPublicKey with b_generatorPublicKey until generatorId is read', () => {
+      const getAddressByPublicKeySpy = sinon.spy(BlockLogic as any, 'getAddressByPublicKey');
+      const result = instance.dbRead(raw);
+      expect(getAddressByPublicKeySpy.called).to.be.false;
+      result.generatorId;
       expect(getAddressByPublicKeySpy.called).to.be.true;
       expect(getAddressByPublicKeySpy.firstCall.args[0]).to.be.eq(raw.b_generatorPublicKey);
       getAddressByPublicKeySpy.restore();

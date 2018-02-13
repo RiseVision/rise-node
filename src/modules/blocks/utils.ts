@@ -53,7 +53,6 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     // over transactions list.
     for (let i = 0, length = rows.length; i < length; i++) {
       // Normalize block
-      // FIXME: Can have poor performance because it performs SHA256 hash calculation for each block
       const block = this.blockLogic.dbRead(rows[i]);
 
       if (block) {

@@ -113,6 +113,20 @@ export class BlockLogic implements IBlockLogic {
     return bb.toBuffer() as any;
   }
 
+  private static getAddressByPublicKey(publicKey: Buffer | string) {
+    if (typeof(publicKey) === 'string') {
+      publicKey = new Buffer(publicKey, 'hex');
+    }
+    const publicKeyHash = crypto.createHash('sha256')
+      .update(publicKey).digest();
+    const temp          = Buffer.alloc(8);
+
+    for (let i = 0; i < 8; i++) {
+      temp[i] = publicKeyHash[7 - i];
+    }
+    return `${BigNum.fromBuffer(temp).toString()}R`;
+  }
+
   public table    = 'blocks';
   public dbFields = [
     'id',
@@ -320,8 +334,10 @@ export class BlockLogic implements IBlockLogic {
       const block       = {
         blockSignature      : rawBlock.b_blockSignature,
         confirmations       : parseInt(rawBlock.b_confirmations, 10),
-        generatorId         : this.getAddressByPublicKey(rawBlock.b_generatorPublicKey),
-        generatorPublicKey  : rawBlock.b_generatorPublicKey,
+        get generatorId() {
+          return BlockLogic.getAddressByPublicKey(rawBlock.b_generatorPublicKey);
+        },
+        generatorPublicKey: rawBlock.b_generatorPublicKey,
         height              : parseInt(rawBlock.b_height, 10),
         id                  : rawBlock.b_id,
         numberOfTransactions: parseInt(rawBlock.b_numberOfTransactions, 10),
@@ -340,17 +356,4 @@ export class BlockLogic implements IBlockLogic {
     }
   }
 
-  private getAddressByPublicKey(publicKey: Buffer | string) {
-    if (typeof(publicKey) === 'string') {
-      publicKey = new Buffer(publicKey, 'hex');
-    }
-    const publicKeyHash = crypto.createHash('sha256')
-      .update(publicKey).digest();
-    const temp          = Buffer.alloc(8);
-
-    for (let i = 0; i < 8; i++) {
-      temp[i] = publicKeyHash[7 - i];
-    }
-    return `${BigNum.fromBuffer(temp).toString()}R`;
-  }
 }
