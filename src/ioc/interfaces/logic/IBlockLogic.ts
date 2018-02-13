@@ -1,6 +1,7 @@
 import { IKeypair } from '../../../helpers';
 import { BlockType, SignedAndChainedBlockType, SignedBlockType } from '../../../logic';
 import { IBaseTransaction } from '../../../logic/transactions';
+import { RawFullBlockListType } from '../../../types/rawDBTypes';
 
 export interface IBlockLogic {
   table: string;
@@ -46,5 +47,5 @@ export interface IBlockLogic {
    */
   objectNormalize<T extends BlockType>(block: T): T;
 
-  dbRead(rawBlock: any): SignedBlockType;
+  dbRead(rawBlock: RawFullBlockListType): SignedBlockType;
 }

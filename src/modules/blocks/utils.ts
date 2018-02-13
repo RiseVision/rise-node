@@ -1,5 +1,4 @@
 import { inject, injectable, tagged } from 'inversify';
-import * as _ from 'lodash';
 import { IDatabase } from 'pg-promise';
 import {
   BlockProgressLogger,
@@ -110,7 +109,6 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     return await this.dbSequence.addAndPromise(async () => {
       const rows  = await this.db.query(sql.loadLastBlock);
       const block = this.readDbRows(rows)[0];
-
       // this is not correct. Ordering should always return consistent data so it should also account b
       // I'm not sure why this is needed though
       // FIXME PLEASE!
@@ -141,7 +139,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     // Get IDs of first blocks of (n) last rounds, descending order
     // EXAMPLE: For height 2000000 (round 19802) we will get IDs of blocks at height: 1999902, 1999801, 1999700,
     // 1999599, 1999498
-    const rows = await this.db.query(sql.getIdSequence(), {
+    const rows = await this.db.query<{ id: string, height: number }[]>(sql.getIdSequence(), {
       delegates: this.constants.activeDelegates,
       height,
       limit    : 5,
@@ -152,18 +150,17 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     }
 
     // Add genesis block at the end if the set doesn't contain it already
-    if (this.genesisBlock && this.genesisBlock) {
-      const gb = {
-        height: this.genesisBlock.height,
-        id    : this.genesisBlock.id,
-      };
-      if (!_.includes(rows, gb.id)) {
-        rows.push(gb);
+    if (this.genesisBlock) {
+      if (!rows.find((v) => v.id === this.genesisBlock.id)) {
+        rows.push({
+          height: this.genesisBlock.height,
+          id    : this.genesisBlock.id,
+        });
       }
     }
 
     // Add last block at the beginning if the set doesn't contain it already
-    if (lastBlock && !_.includes(rows, lastBlock.id)) {
+    if (lastBlock && !rows.find((v) => v.id === lastBlock.id)) {
       rows.unshift({
         height: lastBlock.height,
         id    : lastBlock.id,
@@ -172,13 +169,12 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
 
     const ids: string[] = rows.map((r) => r.id);
 
-    return { firstHeight: rows[0].height, ids };
+    return {firstHeight: rows[0].height, ids};
   }
 
   // tslint:disable-next-line max-line-length
   public async loadBlocksData(filter: { limit?: number, id?: string, lastId?: string }): Promise<RawFullBlockListType[]> {
     const params: any = { limit: filter.limit || 1 };
-    // FIXME: filter.id is not used
     if (filter.id && filter.lastId) {
       throw new Error('Invalid filter: Received both id and lastId');
     } else if (filter.id) {
@@ -187,9 +183,12 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
       params.lastId = filter.lastId;
     }
     return await this.dbSequence.addAndPromise(async () => {
-      const rows = await this.db.query(sql.getHeightByLastId, { lastId: filter.lastId || null });
+      const res = await this.db.oneOrNone<{height: number}>(
+        sql.getHeightByLastId,
+        { lastId: filter.lastId || filter.id || null }
+        );
 
-      const height = rows.length ? rows[0].height : 0;
+      const height = res !== null ? res.height : 0;
       // Calculate max block height for database query
 
       params.limit  = height + (parseInt(`${filter.limit}`, 10) || 1);
@@ -197,10 +196,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
 
       return this.db.query(sql.loadBlocksData(filter), params);
     })
-      .catch((err) => {
-        this.logger.error(err.stack);
-        return Promise.reject(new Error('Blocks#loadBlockData error'));
-      });
+      .catch(catchToLoggerAndRemapError('Blocks#loadBlockData error', this.logger));
   }
 
   public getBlockProgressLogger(txCount: number, logsFrequency: number, msg: string) {
@@ -225,10 +221,12 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     }
 
     // Get calculated rewards
-    const [data] = await this.db.query(sql.aggregateBlocksReward(params), params)
-      .catch(catchToLoggerAndRemapError('Blocks#aggregateBlocksReward error', this.logger));
+    // tslint:disable-next-line
+    type dbDataType = {delegate: 1, fees: number, rewards: number, count: number};
+    const data: dbDataType = await this.db.oneOrNone<dbDataType>(sql.aggregateBlocksReward(params), params)
+      .catch(catchToLoggerAndRemapError<dbDataType>('Blocks#aggregateBlocksReward error', this.logger));
 
-    if (data.delegate === null) {
+    if (data && data.delegate === null) {
       throw new Error('Account not found or is not a delegate');
     }
     return { fees: data.fees || 0, rewards: data.rewards || 0, count: data.count || 0 };

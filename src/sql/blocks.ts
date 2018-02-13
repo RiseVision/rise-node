@@ -76,7 +76,7 @@ export default {
 
   countByRowId: 'SELECT COUNT("rowId")::int FROM blocks',
 
-  getHeightByLastId: 'SELECT "height" FROM blocks WHERE "id" = ${lastId}',
+  getHeightByLastId: 'SELECT "height" FROM blocks WHERE "id" = ${id}',
 
   loadBlocksData(params: { id?: string, lastId?: string }) {
     let limitPart;
