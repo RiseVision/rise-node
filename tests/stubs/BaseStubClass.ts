@@ -65,7 +65,7 @@ export class BaseStubClass {
           if (c.withDefaultAllowed) {
             return this.oldImplementations[c.method].apply(this, args);
           }
-          throw new Error(`Please enqueue a response for ${c.method}`);
+          throw new Error(`Please enqueue a response for ${this.constructor.name}.${c.method}`);
         }
         return this.nextResponses[c.method].shift();
       });
