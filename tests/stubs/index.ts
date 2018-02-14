@@ -26,6 +26,7 @@ import TransactionTypeStub from './logic/transactions/TransactionTypeStub';
 // Modules
 import BlocksModuleStub from './modules/BlocksModuleStub';
 import { BlocksSubmoduleChainStub } from './modules/blocks/BlocksSubmoduleChainStub';
+import { BlocksSubmoduleProcessStub } from './modules/blocks/BlocksSubmoduleProcessStub';
 import { BlocksSubmoduleUtilsStub } from './modules/blocks/BlocksSubmoduleUtilsStub';
 import { BlocksSubmoduleVerifyStub } from './modules/blocks/BlocksSubmoduleVerifyStub';
 import { DelegatesModuleStub } from './modules/DelegatesModuleStub';
@@ -35,7 +36,7 @@ import { PeersModuleStub } from './modules/PeersModuleStub';
 import { SystemModuleStub } from './modules/SystemModuleStub';
 import TransportModuleStub from './modules/TransportModuleStub';
 import MultisignaturesModuleStub from './modules/MultisignaturesModuleStub';
-// Modules
+// Utils
 import ByteBufferStub from './utils/ByteBufferStub';
 import RedisClientStub from './utils/RedisClientStub';
 import SocketIOStub from './utils/SocketIOStub';
@@ -47,9 +48,10 @@ export {
   ByteBufferStub,
   BlockRewardLogicStub,
   BlocksModuleStub,
+  BlocksSubmoduleChainStub,
+  BlocksSubmoduleProcessStub,
   BlocksSubmoduleUtilsStub,
   BlocksSubmoduleVerifyStub,
-  BlocksSubmoduleChainStub,
   BusStub,
   DbStub,
   DelegatesModuleStub,
