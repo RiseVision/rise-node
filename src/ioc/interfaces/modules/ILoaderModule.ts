@@ -4,7 +4,7 @@ export interface ILoaderModule {
   readonly isSyncing: boolean;
   readonly loaded: boolean;
 
-  getNework(): Promise<{ height: number; peers: IPeerLogic[] }>;
+  getNetwork(): Promise<{ height: number; peers: IPeerLogic[] }>;
 
   getRandomPeer(): Promise<IPeerLogic>;
 

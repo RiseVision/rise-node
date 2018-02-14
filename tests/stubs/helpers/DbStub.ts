@@ -9,22 +9,32 @@ import { stubMethod } from '../stubDecorator';
 export default class DbStub extends BaseStubClass /*implements IDatabase<any>*/ {
 
   @stubMethod()
-  public query() {}
+  public query() {
+  }
 
   @stubMethod()
-  public none() {}
+  public none() {
+  }
 
   @stubMethod()
-  public one() {}
+  public one() {
+  }
 
   @stubMethod()
-  public any() {}
+  public any() {
+  }
 
   @stubMethod()
-  public tx() {}
+  public tx() {
+  }
 
-    @stubMethod()
-    public task() {}
+  @stubMethod()
+  public task() {
+  }
 
+  @stubMethod()
+  public oneOrNone(){
+
+  }
   // TODO Add more methods when needed
 }

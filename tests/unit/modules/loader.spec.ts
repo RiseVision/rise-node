@@ -156,7 +156,7 @@ describe('modules/loader', () => {
 
   });
 
-  describe('.getNework', () => {
+  describe('.getNetwork', () => {
 
     let peersModuleStub;
     let peersLogicStub;
@@ -184,7 +184,7 @@ describe('modules/loader', () => {
         peers : [],
       };
 
-      const result = await instance.getNework();
+      let result = await instance.getNetwork();
 
       expect(result).to.be.deep.equal({ height: 1, peers: [] });
     });
@@ -196,7 +196,7 @@ describe('modules/loader', () => {
       };
       peersModuleStub.enqueueResponse('list', { peers });
 
-      await instance.getNework();
+      await instance.getNetwork();
 
       expect(peersModuleStub.stubs.list.calledOnce).to.be.true;
     });
@@ -204,7 +204,7 @@ describe('modules/loader', () => {
     it('should call instance.logger.trace methods', async () => {
       peersModuleStub.enqueueResponse('list', { peers });
 
-      await instance.getNework();
+      await instance.getNetwork();
 
       expect(loggerStub.stubs.trace.callCount).to.be.equal(3);
 
@@ -224,7 +224,7 @@ describe('modules/loader', () => {
     it('should call instance.logger.debug methods', async () => {
       peersModuleStub.enqueueResponse('list', { peers });
 
-      await instance.getNework();
+      await instance.getNetwork();
 
       expect(loggerStub.stubs.debug.callCount).to.be.equal(1);
       expect(loggerStub.stubs.debug.getCall(0).args.length).to.be.equal(2);
@@ -235,15 +235,14 @@ describe('modules/loader', () => {
     it('should call instance peersLogic.create', async () => {
       peersModuleStub.enqueueResponse('list', { peers });
 
-      await instance.getNework();
-
+      await instance.getNetwork();
       expect(peersLogicStub.stubs.create.called).to.be.true;
     });
 
     it('should return instance.network with empty peersArray prop if each of peersModule.list() peers is null', async () => {
       peersModuleStub.enqueueResponse('list', { peers: [null, null] });
 
-      const ret = await instance.getNework();
+      let ret = await instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 0, peers: [] });
       expect((instance as any).network).to.be.deep.equal({ height: 0, peers: [] });
@@ -253,7 +252,7 @@ describe('modules/loader', () => {
       container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock.height = 5;
       peersModuleStub.enqueueResponse('list', { peers });
 
-      const ret = await instance.getNework();
+      let ret = await instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 0, peers: [] });
     });
@@ -261,7 +260,7 @@ describe('modules/loader', () => {
     it('should return instance.network with two peers in  peersArray prop', async () => {
       peersModuleStub.enqueueResponse('list', { peers });
 
-      const ret = await instance.getNework();
+      let ret = await instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 2, peers });
     });
@@ -270,7 +269,7 @@ describe('modules/loader', () => {
       peers[1].height += 3;
       peersModuleStub.enqueueResponse('list', { peers });
 
-      const ret = await instance.getNework();
+      let ret = await instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 4, peers: [peers[1], peers[0]] });
     });
@@ -279,7 +278,7 @@ describe('modules/loader', () => {
       peers[0].height = 10;
       peersModuleStub.enqueueResponse('list', { peers });
 
-      const ret = await instance.getNework();
+      let ret = await instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 10, peers: [peers[0]] });
       expect(peersLogicStub.stubs.create.calledOnce).to.be.true;
@@ -295,7 +294,7 @@ describe('modules/loader', () => {
     beforeEach(() => {
       peers = createFakePeers(3);
 
-      getNetworkStub = sandbox.stub(instance as any, 'getNework');
+      getNetworkStub = sandbox.stub(instance as any, 'getNetwork');
       getNetworkStub.returns({ peers });
     });
 
