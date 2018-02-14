@@ -155,10 +155,7 @@ describe('modules/delegates', () => {
       // Copy the original accounts so we can safely manipulate them
       const delegates = testAccounts.slice();
       // Create an array of publicKeys
-      keys            = [];
-      delegates.forEach((el) => {
-        keys.push(el.publicKey);
-      });
+      keys            = delegates.map((d) => d.publicKey);
       getKeysSortByVoteStub = sandbox.stub(instance as any, 'getKeysSortByVote');
       getKeysSortByVoteStub.resolves(keys);
       keysCopy = keys.slice();
@@ -213,6 +210,17 @@ describe('modules/delegates', () => {
       getKeysSortByVoteStub.resolves(keysCopy);
       const retVal2 = await instance.generateDelegateList(height);
       expect(retVal1).to.be.deep.equal(retVal2);
+    });
+
+    it('should return consistent data with precomputed i/o', async () => {
+      const pk = new Array(101).fill(null).map((a, idx) => (idx).toString(16));
+      getKeysSortByVoteStub.resolves(pk);
+      expect(await instance.generateDelegateList(10)).to.be.deep.eq(
+        ['1', '41', '3f', '0', '42', '5a', '11', 'd', 'b', '8', '31', '5c', '4f', '1c', '15', '32', '3d', '25', '2f', '13', '46', '56', '29', '61', '58', '33', '38', '1f', '3a', '47', '17', '9', '43', 'e', '2b', '36', '37', '24', 'a', '30', '14', '4e', '48', '5d', '2', '28', '2d', '39', '64', '26', '3c', '3e', '19', '23', '1e', '44', '34', '57', '2a', '3b', '5', '1a', '27', '2c', 'f', '59', '6', '40', '4b', '45', '4c', '1d', '7', '49', '4a', '53', '2e', '18', '4', '60', '54', '10', '5e', '12', '50', '1b', '21', '16', '5b', '3', '20', '62', '55', '22', '52', '5f', 'c', '35', '4d', '63', '51']
+      );
+      expect(await instance.generateDelegateList(1000)).to.be.deep.eq(
+        ['41', '59', '2c', '1', '6', '20', '25', '1c', '5c', 'b', '26', '55', '60', '3a', '56', '3c', '1a', '24', '39', '13', '4c', '21', '4e', '35', '5b', '3e', '34', '9', '2a', '1d', '61', '8', '40', '15', '5d', '1e', '44', '37', '31', '64', '46', '4', '7', '22', '3f', '14', '28', '57', '51', 'a', '5', '27', '33', '36', '17', '4b', '19', '16', '48', '3b', '5a', '38', '30', '2', '32', '3', '11', 'f', '53', '45', '2e', '47', 'd', '49', '4a', '12', '2d', '58', '42', 'c', '50', '3d', '52', '2f', '54', '1f', 'e', '29', '62', '0', '43', '4d', '1b', '2b', '5e', '5f', '4f', '23', '18', '63', '10']
+      );
     });
   });
 

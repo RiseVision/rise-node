@@ -35,7 +35,7 @@ export const createContainer = (): Container => {
     .toConstantValue(require(`${__dirname}/../integration/genesisBlock.json`));
   container.bind(Symbols.generic.zschema).to(ZSchemaStub).inSingletonScope();
 
-  container.bind(Symbols.helpers.constants).toConstantValue(JSON.parse(JSON.stringify(constants)));
+  container.bind(Symbols.helpers.constants).toConstantValue({...{}, ...constants});
   container.bind(Symbols.helpers.bus).to(BusStub).inSingletonScope();
   container.bind(Symbols.helpers.ed).to(EdStub).inSingletonScope();
   container.bind(Symbols.helpers.logger).to(LoggerStub).inSingletonScope();
