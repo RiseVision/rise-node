@@ -51,6 +51,7 @@ describe('modules/loader', () => {
   let instance: LoaderModule;
   let container: Container;
   let sandbox: SinonSandbox;
+  let retryStub: SinonStub;
   let constants    = {
     activeDelegates: 1,
     epochTime      : new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
@@ -68,8 +69,10 @@ describe('modules/loader', () => {
     payloadHash   : Buffer.from('10').toString('hex'),
 
   };
+  let promiseRetryStub;
 
   before(() => {
+    sandbox   = sinon.sandbox.create();
     container = new Container();
 
     // Generic
@@ -113,13 +116,17 @@ describe('modules/loader', () => {
     container.bind(Symbols.modules.transactions).to(TransactionsModuleStub).inSingletonScope();
     container.bind(Symbols.modules.transport).to(TransportModuleStub).inSingletonScope();
 
-    container.bind(Symbols.modules.loader).to(LoaderModule);
+    container.bind(Symbols.modules.loader).to(LoaderModuleRewire.LoaderModule);
     instance = container.get(Symbols.modules.loader);
+
 
   });
 
   beforeEach(() => {
-    sandbox  = sinon.sandbox.create();
+    retryStub        = sandbox.stub();
+    promiseRetryStub = sandbox.stub().callsArgWith(0, retryStub);
+    LoaderModuleRewire.__set__('promiseRetry', promiseRetryStub);
+
     instance = container.get(Symbols.modules.loader);
 
     container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock = { height: 1 } as any;
@@ -375,6 +382,20 @@ describe('modules/loader', () => {
       expect(syncTimerStub.firstCall.args.length).to.be.equal(0);
     });
 
+    it('should call promiseRetry', async () => {
+      await instance.onPeersReady();
+
+      expect(promiseRetryStub.calledTwice).to.be.true;
+
+      expect(promiseRetryStub.firstCall.args.length).to.be.equal(2);
+      expect(promiseRetryStub.firstCall.args[0]).to.be.a('function');
+      expect(promiseRetryStub.firstCall.args[1]).to.be.deep.equal({ retries: 5 });
+
+      expect(promiseRetryStub.secondCall.args.length).to.be.equal(2);
+      expect(promiseRetryStub.secondCall.args[0]).to.be.a('function');
+      expect(promiseRetryStub.secondCall.args[1]).to.be.deep.equal({ retries: 5 });
+    });
+
     it('should call instance.loadTransaction', async () => {
       await instance.onPeersReady();
 
@@ -383,10 +404,7 @@ describe('modules/loader', () => {
     });
 
     it('should call logger.warn when instancce.loadTransactions throw error', async () => {
-      loadTransactionsStub.reset();
-      loadTransactionsStub
-        .onCall(0).rejects(error)
-        .onCall(1).resolves({});
+      loadTransactionsStub.rejects(error);
 
       await instance.onPeersReady();
 
@@ -394,6 +412,10 @@ describe('modules/loader', () => {
       expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
       expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Error loading transactions... Retrying... ');
       expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.equal(error);
+
+      expect(retryStub.calledOnce).to.be.true;
+      expect(retryStub.firstCall.args.length).to.be.equal(1);
+      expect(retryStub.firstCall.args[0]).to.be.equal(error);
     });
 
     it('should call instance.loadSignature', async () => {
@@ -404,10 +426,7 @@ describe('modules/loader', () => {
     });
 
     it('should call logger.warn when instance.promiseRetry throw error', async () => {
-      loadSignaturesStub.reset();
-      loadSignaturesStub
-        .onCall(0).rejects(error)
-        .onCall(1).resolves({});
+      loadSignaturesStub.rejects(error);
 
       await instance.onPeersReady();
 
@@ -415,6 +434,10 @@ describe('modules/loader', () => {
       expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
       expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Error loading transactions... Retrying... ');
       expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.equal(error);
+
+      expect(retryStub.calledOnce).to.be.true;
+      expect(retryStub.firstCall.args.length).to.be.equal(1);
+      expect(retryStub.firstCall.args[0]).to.be.equal(error);
     });
 
     it('should not call instance.loadTransaction if instance.loaded is null', async () => {
@@ -1349,6 +1372,103 @@ describe('modules/loader', () => {
       expect(loggerStub.stubs.warn.secondCall.args[0]).to.be.equal('Cannot process multisig signature for tr22 ');
       expect(loggerStub.stubs.warn.secondCall.args[1]).to.be.deep.equal({ name: error });
 
+    });
+
+  });
+
+  describe('.syncTimer', () => {
+
+    let jobsQueueStub: JobsQueueStub;
+    let blocksModuleStub: BlocksModuleStub;
+    let loggerStub: LoggerStub;
+    let appState: IAppStateStub;
+    let syncStub: SinonStub;
+    let addAndPromiseStub: SinonStub;
+
+    let last_receipt;
+
+    before(() => {
+      // (instance as  any).sequence.addAndPromise.restore();
+    });
+
+    beforeEach(() => {
+      last_receipt = 'last_receipt';
+
+      jobsQueueStub                             = container.get<JobsQueueStub>(Symbols.helpers.jobsQueue);
+      blocksModuleStub                          = container.get<BlocksModuleStub>(Symbols.modules.blocks);
+      loggerStub                                = container.get<LoggerStub>(Symbols.helpers.logger);
+      appState                                  = container.get<IAppStateStub>(Symbols.logic.appState);
+      syncStub                                  = sandbox.stub(instance as any, 'sync').resolves({});
+      addAndPromiseStub                         = sandbox.stub().callsArg(0);
+      (instance as  any).sequence.addAndPromise = addAndPromiseStub;
+
+      jobsQueueStub.stubs.register.callsArg(1);
+
+      appState.enqueueResponse('get', true);
+      appState.enqueueResponse('get', false);
+
+      (instance as any).loaded              = true;
+      (blocksModuleStub as any).lastReceipt = {
+        get    : sandbox.stub().returns(last_receipt),
+        isStale: sandbox.stub().returns(true),
+      };
+
+    });
+
+    afterEach(() => {
+      appState.reset();
+      loggerStub.stubReset();
+      jobsQueueStub.reset();
+      blocksModuleStub.cleanup();
+    });
+
+    it('should call logger.trace', async () => {
+      await (instance as any).syncTimer();
+
+      expect(loggerStub.stubs.trace.calledTwice).to.be.true;
+
+      expect(loggerStub.stubs.trace.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.trace.firstCall.args[0]).to.be.equal('Setting sync timer');
+
+      expect(loggerStub.stubs.trace.secondCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.trace.secondCall.args[0]).to.be.equal('Sync timer trigger');
+      expect(loggerStub.stubs.trace.secondCall.args[1]).to.be.deep.equal({
+        last_receipt,
+        loaded : true,
+        syncing: true,
+      });
+    });
+
+    it('should call jobsQueue.register', async () => {
+      await (instance as any).syncTimer();
+
+      expect(jobsQueueStub.stubs.register.calledOnce).to.be.true;
+      expect(jobsQueueStub.stubs.register.firstCall.args.length).to.be.equal(3);
+      expect(jobsQueueStub.stubs.register.firstCall.args[0]).to.be.equal('loaderSyncTimer');
+      expect(jobsQueueStub.stubs.register.firstCall.args[1]).to.be.a('function');
+      expect(jobsQueueStub.stubs.register.firstCall.args[2]).to.be
+        .equal(1000);
+    });
+
+    it('should call blocksModule.lastReceipt.get', async () => {
+      await (instance as any).syncTimer();
+
+      expect((blocksModuleStub as any).lastReceipt.get.calledOnce).to.be.true;
+      expect((blocksModuleStub as any).lastReceipt.get.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should call blocksModule.lastReceipt.isStale', async () => {
+      await (instance as any).syncTimer();
+
+      expect((blocksModuleStub as any).lastReceipt.isStale.calledOnce).to.be.true;
+      expect((blocksModuleStub as any).lastReceipt.isStale.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should call instance.sync', async () => {
+      await (instance as any).syncTimer();
+
+      expect(syncStub.calledOnce).to.be.true;
+      expect(syncStub.firstCall.args.length).to.be.equal(0);
     });
 
   });
