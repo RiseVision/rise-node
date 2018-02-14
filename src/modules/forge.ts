@@ -77,7 +77,9 @@ export class ForgeModule implements IForgeModule {
    */
   public enableForge(pk?: IKeypair) {
     const thePK: publicKey = typeof(pk) !== 'undefined' ? pk.publicKey.toString('hex') : undefined;
-    this.keypairs[thePK]   = pk;
+    if (typeof thePK !== 'undefined') {
+      this.keypairs[thePK]   = pk;
+    }
 
     Object.keys(this.keypairs)
       .filter((p) => typeof(thePK) === 'undefined' || p === thePK)
