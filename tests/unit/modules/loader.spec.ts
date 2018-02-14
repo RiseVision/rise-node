@@ -9,14 +9,14 @@ import { Symbols } from '../../../src/ioc/symbols';
 import { LoaderModule } from '../../../src/modules';
 import {
   AccountLogicStub,
+  AppStateStub,
   BlocksSubmoduleChainStub,
   BlocksSubmoduleUtilsStub,
   BlocksSubmoduleVerifyStub,
   BroadcasterLogicStub,
+  BlocksModuleStub,
   BusStub,
   DbStub,
-  IAppStateStub,
-  IBlocksStub,
   JobsQueueStub,
   LoggerStub,
   MultisignaturesModuleStub,
@@ -29,7 +29,8 @@ import {
   TransactionLogicStub,
   TransactionsModuleStub,
   TransportModuleStub,
-  ZSchemaStub
+  ZSchemaStub,
+  IAppStateStub
 } from '../../stubs';
 
 import { PeerType } from '../../../src/logic';
@@ -76,30 +77,32 @@ describe('modules/loader', () => {
     container.bind(Symbols.generic.db).to(DbStub).inSingletonScope();
     container.bind(Symbols.generic.genesisBlock).toConstantValue(genesisBlock);
     container.bind(Symbols.generic.socketIO).to(SocketIOStub).inSingletonScope();
-
-    // Helpers
-    container.bind(Symbols.helpers.sequence)
-      .to(SequenceStub)
-      .whenTargetTagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence);
-    container.bind(Symbols.helpers.bus).to(BusStub).inSingletonScope();
-    container.bind(Symbols.helpers.constants).toConstantValue(constants);
-    container.bind(Symbols.helpers.jobsQueue).to(JobsQueueStub).inSingletonScope();
-    container.bind(Symbols.helpers.logger).to(LoggerStub).inSingletonScope();
-    container.bind(Symbols.helpers.sequence)
-      .to(SequenceStub)
-      .whenTargetTagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence);
     container.bind(Symbols.generic.zschema).to(ZSchemaStub).inSingletonScope();
 
+    // Helpers
+    container.bind(Symbols.helpers.constants).toConstantValue(constants);
+    container.bind(Symbols.helpers.bus).to(BusStub).inSingletonScope();
+    container.bind(Symbols.helpers.jobsQueue).to(JobsQueueStub).inSingletonScope();
+    container.bind(Symbols.helpers.logger).to(LoggerStub).inSingletonScope();
+    container.bind(Symbols.helpers.sequence).to(SequenceStub).inSingletonScope().whenTargetTagged(
+      Symbols.helpers.sequence,
+      Symbols.tags.helpers.balancesSequence
+    );
+    container.bind(Symbols.helpers.sequence).to(SequenceStub).inSingletonScope().whenTargetTagged(
+      Symbols.helpers.sequence,
+      Symbols.tags.helpers.defaultSequence
+    );
+
     // Logic
+    container.bind(Symbols.logic.appState).to(AppStateStub).inSingletonScope();
     container.bind(Symbols.logic.account).to(AccountLogicStub).inSingletonScope();
-    container.bind(Symbols.logic.appState).to(IAppStateStub).inSingletonScope();
     container.bind(Symbols.logic.broadcaster).to(BroadcasterLogicStub).inSingletonScope();
     container.bind(Symbols.logic.peers).to(PeersLogicStub).inSingletonScope();
     container.bind(Symbols.logic.transaction).to(TransactionLogicStub).inSingletonScope();
     container.bind(Symbols.logic.rounds).to(RoundsLogicStub).inSingletonScope();
 
     // Modules
-    container.bind(Symbols.modules.blocks).to(IBlocksStub).inSingletonScope();
+    container.bind(Symbols.modules.blocks).to(BlocksModuleStub).inSingletonScope();
     container.bind(Symbols.modules.blocksSubModules.chain).to(BlocksSubmoduleChainStub).inSingletonScope();
     container.bind(Symbols.modules.blocksSubModules.process).to(BlocksSubmoduleProcessStub).inSingletonScope();
     container.bind(Symbols.modules.blocksSubModules.utils).to(BlocksSubmoduleUtilsStub).inSingletonScope();
@@ -111,13 +114,15 @@ describe('modules/loader', () => {
     container.bind(Symbols.modules.transport).to(TransportModuleStub).inSingletonScope();
 
     container.bind(Symbols.modules.loader).to(LoaderModule);
+    instance = container.get(Symbols.modules.loader);
+
   });
 
   beforeEach(() => {
     sandbox  = sinon.sandbox.create();
     instance = container.get(Symbols.modules.loader);
 
-    container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = { height: 1 } as any;
+    container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock = { height: 1 } as any;
   });
 
   afterEach(() => {
@@ -173,8 +178,8 @@ describe('modules/loader', () => {
     });
 
     it('should return unchanged instance.network if (network.height <= 0 and Math.abs(expressive) === 1)', async () => {
-      container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = { height: 0 } as any;
-      (instance as any).network                                    = {
+      container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock = { height: 0 } as any;
+      (instance as any).network                                         = {
         height: 1,
         peers : [],
       };
@@ -245,7 +250,7 @@ describe('modules/loader', () => {
     });
 
     it('should return instance.network with empty peersArray prop if each of peersModule.list() peers has height < lastBlock.height ', async () => {
-      container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock.height = 5;
+      container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock.height = 5;
       peersModuleStub.enqueueResponse('list', { peers });
 
       const ret = await instance.getNework();
@@ -360,6 +365,10 @@ describe('modules/loader', () => {
       instance.loaded = true;
     });
 
+    afterEach(() => {
+      loggerStub.stubReset();
+    });
+
     it('should call instance.syncTimer', async () => {
       await instance.onPeersReady();
 
@@ -374,11 +383,49 @@ describe('modules/loader', () => {
       expect(loadTransactionsStub.firstCall.args.length).to.be.equal(0);
     });
 
-    it('should call logger.waarn when instancce.loadTransactions throw error');
-    it('should call logger.log when promiseRetry throw error');
-    it('should call instance.loadSignature');
-    it('should call logger.warn when promiseRetry(second call) throw error');
-    it('should call logger.log when promiseRetry(second call) throw error');
+    it('should call logger.warn when instancce.loadTransactions throw error', async () => {
+      loadTransactionsStub.reset();
+      loadTransactionsStub
+        .onCall(0).rejects(error)
+        .onCall(1).resolves({});
+
+      await instance.onPeersReady();
+
+      expect(loggerStub.stubs.warn.calledOnce).to.be.true;
+      expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Error loading transactions... Retrying... ');
+      expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.equal(error);
+    });
+
+    it('should call instance.loadSignature', async () => {
+      await instance.onPeersReady();
+
+      expect(loadSignaturesStub.calledOnce).to.be.true;
+      expect(loadSignaturesStub.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should call logger.warn when instance.promiseRetry throw error', async () => {
+      loadSignaturesStub.reset();
+      loadSignaturesStub
+        .onCall(0).rejects(error)
+        .onCall(1).resolves({});
+
+      await instance.onPeersReady();
+
+      expect(loggerStub.stubs.warn.calledOnce).to.be.true;
+      expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Error loading transactions... Retrying... ');
+      expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.equal(error);
+    });
+
+    it('should not call instance.loadTransaction if instance.loaded is null', async () => {
+      instance.loaded = false;
+
+      await instance.onPeersReady();
+
+      expect(loadTransactionsStub.notCalled).to.be.true;
+
+    });
 
   });
 
@@ -418,7 +465,7 @@ describe('modules/loader', () => {
 
     let dbStub: DbStub;
     let roundsLogicStub: RoundsLogicStub;
-    let appStateStub: IAppStateStub;
+    let appStateStub: AppStateStub;
     let blocksUtilsModuleStub: BlocksSubmoduleUtilsStub;
     let busStub: BusStub;
     let loggerStub: LoggerStub;
@@ -429,7 +476,7 @@ describe('modules/loader', () => {
     beforeEach(() => {
       dbStub                = container.get<DbStub>(Symbols.generic.db);
       roundsLogicStub       = container.get<RoundsLogicStub>(Symbols.logic.rounds);
-      appStateStub          = container.get<IAppStateStub>(Symbols.logic.appState);
+      appStateStub          = container.get<AppStateStub>(Symbols.logic.appState);
       blocksUtilsModuleStub = container.get<BlocksSubmoduleUtilsStub>(Symbols.modules.blocksSubModules.utils);
       busStub               = container.get<BusStub>(Symbols.helpers.bus);
       loggerStub            = container.get<LoggerStub>(Symbols.helpers.logger);
@@ -672,7 +719,7 @@ describe('modules/loader', () => {
       });
 
       it('should call logger.error and process.exit lastBlock.height !== (finded) lastBlock', async () => {
-        container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = { height: 11 } as any;
+        container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock = { height: 11 } as any;
 
         await instance.loadBlockChain();
 
@@ -1163,10 +1210,6 @@ describe('modules/loader', () => {
   });
 
   describe('.loadBlocksFromNetwork', () => {
-
-  });
-
-  describe('.syncTimer', () => {
 
   });
 
