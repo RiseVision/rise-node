@@ -144,7 +144,7 @@ describe('modules/blocks/verify', () => {
             expect(res.errors).to.contain('Payload length is too long');
           });
           it('error if transactions.length is != than block.numberOftransactions', async () => {
-            block.numberOfTransactions = block.numberOfTransactions+1;
+            block.numberOfTransactions = block.numberOfTransactions + 1;
 
             const res = await inst[what](block);
             expect(res.errors).to.contain('Included transactions do not match block transactions count');
@@ -157,8 +157,8 @@ describe('modules/blocks/verify', () => {
           });
           it('error if duplicate transaction', async () => {
             txLogic.stubs.getBytes.returns(Buffer.alloc(10));
-            const txs = createRandomTransactions({send: 10});
-            block                  = createFakeBlock({
+            const txs = createRandomTransactions({ send: 10 });
+            block     = createFakeBlock({
               previousBlock: { id: '1', height: 100 } as any,
               timestamp    : block.timestamp,
               transactions : txs.concat([txs[0]]),
@@ -169,8 +169,8 @@ describe('modules/blocks/verify', () => {
           it('error if tx.getBytes returns error', async () => {
             txLogic.stubs.getBytes.returns(Buffer.alloc(10));
             txLogic.stubs.getBytes.onCall(1).throws(new Error('meow'));
-            const txs = createRandomTransactions({send: 10});
-            block                  = createFakeBlock({
+            const txs = createRandomTransactions({ send: 10 });
+            block     = createFakeBlock({
               previousBlock: { id: '1', height: 100 } as any,
               timestamp    : block.timestamp,
               transactions : txs,
@@ -180,8 +180,8 @@ describe('modules/blocks/verify', () => {
           });
           it('error if computed payload hex is diff from advertised block.payloadHash', async () => {
             txLogic.stubs.getBytes.returns(Buffer.alloc(10));
-            const txs = createRandomTransactions({send: 10});
-            block                  = createFakeBlock({
+            const txs = createRandomTransactions({ send: 10 });
+            block     = createFakeBlock({
               previousBlock: { id: '1', height: 100 } as any,
               timestamp    : block.timestamp,
               transactions : txs,
@@ -191,46 +191,112 @@ describe('modules/blocks/verify', () => {
           });
           it('should return error computed totalAmount differs block.totalAmount', async () => {
             txLogic.stubs.getBytes.returns(Buffer.alloc(10));
-            const txs = createRandomTransactions({send: 10});
-            block                  = createFakeBlock({
+            const txs         = createRandomTransactions({ send: 10 });
+            block             = createFakeBlock({
               previousBlock: { id: '1', height: 100 } as any,
               timestamp    : block.timestamp,
               transactions : txs,
             });
             block.totalAmount = block.totalAmount + 1;
-            const res = await inst[what](block);
+            const res         = await inst[what](block);
             expect(res.errors).to.contain('Invalid total amount');
           });
           it('should return error if computed totalFee differs block.totalFee', async () => {
             txLogic.stubs.getBytes.returns(Buffer.alloc(10));
-            const txs = createRandomTransactions({send: 10});
-            block                  = createFakeBlock({
+            const txs      = createRandomTransactions({ send: 10 });
+            block          = createFakeBlock({
               previousBlock: { id: '1', height: 100 } as any,
               timestamp    : block.timestamp,
               transactions : txs,
             });
             block.totalFee = block.totalFee + 1;
-            const res = await inst[what](block);
+            const res      = await inst[what](block);
             expect(res.errors).to.contain('Invalid total fee');
           });
         });
       });
     });
   });
+
   describe('verifyReceipt', () => {
-    it('error if blockslot is in the past of more than blockSlotWindow');
-    it('error if blockslot is in the future');
-    it('error if block is already known between lastBlocks');
+    let block: SignedBlockType;
+    beforeEach(() => {
+      const constants        = container.get<any>(Symbols.helpers.constants);
+      block                  = createFakeBlock({
+        timestamp    : 101 * constants.blockTime,
+        previousBlock: { id: '1', height: 100 } as any
+      });
+      blocksModule.lastBlock = { id: '1', height: 100 } as any;
+    });
+    it('error if blockslot is in the past of more than blockSlotWindow', () => {
+      const constants = container.get<any>(Symbols.helpers.constants);
+      slots.stubs.getSlotNumber.onFirstCall().returns(100);
+      slots.stubs.getSlotNumber.onSecondCall().returns(100 - constants.blockSlotWindow - 1);
+      const res = inst.verifyReceipt(block);
+      expect(res.verified).is.false;
+      expect(res.errors).to.contain('Block slot is too old');
+    });
+    it('error if blockslot is in the future', () => {
+      slots.stubs.getSlotNumber.onFirstCall().returns(100);
+      slots.stubs.getSlotNumber.onSecondCall().returns(101);
+      const res = inst.verifyReceipt(block);
+      expect(res.verified).is.false;
+      expect(res.errors).to.contain('Block slot is in the future');
+    });
+    it('error if block is already known between lastBlocks', async () => {
+      await instReal.onNewBlock(block);
+      const res = inst.verifyReceipt(block);
+      expect(res.verified).is.false;
+      expect(res.errors).to.contain('Block Already exists in the chain');
+    });
   });
 
   describe('verifyBlock', () => {
-    it('error if block is in fork 1');
-    it('error if slotNumber is in the future');
-    it('error if slotNumber is before lastBlock slot');
+    let block: SignedBlockType;
+    beforeEach(() => {
+      const constants        = container.get<any>(Symbols.helpers.constants);
+      block                  = createFakeBlock({
+        timestamp    : 101 * constants.blockTime,
+        previousBlock: { id: '2', height: 100 } as any
+      });
+      blocksModule.lastBlock = { id: '1', height: 100 } as any;
+
+    });
+    it('error if block is in fork 1', async () => {
+      slots.enqueueResponse('getTime', 0);
+      const res = await inst.verifyBlock(block);
+      expect(res.verified).is.false;
+      expect(res.errors).to.contain('Invalid previous block: 2 expected 1');
+    });
+    it('error if slotNumber is in the future', async () => {
+      slots.enqueueResponse('getTime', 0);
+      slots.stubs.getSlotNumber.onFirstCall().returns(1); // provided block slot
+      slots.stubs.getSlotNumber.onSecondCall().returns(0); // last block slot
+      slots.stubs.getSlotNumber.onThirdCall().returns(0); // cur slot
+      const res = await inst.verifyBlock(block);
+      expect(res.verified).is.false;
+      expect(res.errors).to.contain('Invalid block timestamp');
+    });
+    it('error if slotNumber is before lastBlock slot', async () => {
+      slots.enqueueResponse('getTime', 0);
+      slots.stubs.getSlotNumber.onFirstCall().returns(1); // provided block slot
+      slots.stubs.getSlotNumber.onSecondCall().returns(2); // last block slot
+      slots.stubs.getSlotNumber.onThirdCall().returns(2); // cur slot
+      const res = await inst.verifyBlock(block);
+      expect(res.verified).is.false;
+      expect(res.errors).to.contain('Invalid block timestamp');
+    });
   });
 
   describe('processBlock', () => {
-
+    it('rejects if blocksModule is cleaning');
+    it('should verifyBlock after normalization');
+    it('should throw if verifyBlock exposes block verification error');
+    it('should throw if block already exists in db');
+    it('should throw if delegate.blockSlot is wrong');
+    it('should fork 3 if delegate.blockSlot is wrong');
+    it('should check all transactions in block');
+    it('should call blocksChain.applyBlock propagating broadcast and saveblock values if all ok');
   });
 
 });
