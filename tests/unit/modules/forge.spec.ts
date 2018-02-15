@@ -603,16 +603,59 @@ describe('modules/forge', () => {
   });
 
   describe('getBlockSlotData', () => {
-    it('should call delegatesModule.generateDelegateList');
-    it('should call slots.getLastSlot');
+    const delegates = {
+      puk1: {publicKey: 'puk1', privateKey: 'prk1'},
+      puk2: {publicKey: 'puk2', privateKey: 'prk2'},
+    };
+
+    beforeEach(() => {
+      delegatesModuleStub.enqueueResponse('generateDelegateList', Object.keys(delegates));
+      slotsStub.enqueueResponse('getLastSlot', 2);
+      slotsStub.enqueueResponse('getSlotTime', 1000);
+    });
+
+    it('should call delegatesModule.generateDelegateList', async () => {
+      await instance.getBlockSlotData(0, 12345);
+      expect(delegatesModuleStub.stubs.generateDelegateList.calledOnce).to.be.true;
+      expect(delegatesModuleStub.stubs.generateDelegateList.firstCall.args[0]).to.be.equal(12345);
+    });
+
+    it('should call slots.getLastSlot', async () => {
+      await instance.getBlockSlotData(0, 12345);
+      expect(slotsStub.stubs.getLastSlot.calledOnce).to.be.true;
+      expect(slotsStub.stubs.getLastSlot.firstCall.args[0]).to.be.equal(0);
+    });
 
     describe('if a valid delegate is found in the list and it is enabled to forge', () => {
-      it('should call slots.getSlotTime i');
-      it('should return an object with keypair and slotTime');
+      beforeEach(() => {
+        instance.enabledKeys.puk2 = true;
+        instance.keypairs.puk2 = delegates.puk2;
+      });
+
+      it('should call slots.getSlotTime for the slot corresponding to the enabled delegate', async () => {
+        await instance.getBlockSlotData(0, 12345);
+        expect(slotsStub.stubs.getSlotTime.callCount).to.be.eq(1);
+        expect(slotsStub.stubs.getSlotTime.firstCall.args[0]).to.be.equal(1);
+      });
+
+      it('should return an object with keypair and slotTime', async () => {
+        const retVal = await instance.getBlockSlotData(0, 12345);
+        expect(retVal).to.be.deep.eq({
+          keypair: delegates.puk2,
+          time: 1000,
+        });
+      });
     });
 
     describe('else', () => {
-      it('should return null');
+      it('should return null', async () => {
+        const retVal = await instance.getBlockSlotData(0, 12345);
+        expect(retVal).to.be.null;
+      });
+      it('should NOT call slots.getSlotTime', async () => {
+        await instance.getBlockSlotData(0, 12345);
+        expect(slotsStub.stubs.getSlotTime.notCalled).to.be.true;
+      });
     });
   });
 });
