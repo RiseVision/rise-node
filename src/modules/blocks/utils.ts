@@ -20,9 +20,6 @@ import { publicKey } from '../../types/sanityTypes';
 
 @injectable()
 export class BlocksModuleUtils implements IBlocksModuleUtils {
-  // Modules
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
 
   // Generic
   @inject(Symbols.generic.db)
@@ -31,19 +28,23 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   private genesisBlock: SignedAndChainedBlockType;
 
   // Helpers
-  @inject(Symbols.helpers.logger)
-  private logger: ILogger;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantType;
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence)
   private dbSequence: Sequence;
-  @inject(Symbols.helpers.constants)
-  private constants: typeof constantType;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
 
   // Logic
   @inject(Symbols.logic.block)
   private blockLogic: IBlockLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
+
+  // Modules
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
 
   public readDbRows(rows: RawFullBlockListType[]): SignedAndChainedBlockType[] {
     const blocks = {};
