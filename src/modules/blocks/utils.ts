@@ -138,7 +138,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     // Get IDs of first blocks of (n) last rounds, descending order
     // EXAMPLE: For height 2000000 (round 19802) we will get IDs of blocks at height: 1999902, 1999801, 1999700,
     // 1999599, 1999498
-    const rows = await this.db.query<{ id: string, height: number }[]>(sql.getIdSequence(), {
+    const rows = await this.db.query<Array<{ id: string, height: number }>>(sql.getIdSequence(), {
       delegates: this.constants.activeDelegates,
       height,
       limit    : 5,
