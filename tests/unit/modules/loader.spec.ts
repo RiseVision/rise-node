@@ -52,6 +52,7 @@ describe('modules/loader', () => {
   let container: Container;
   let sandbox: SinonSandbox;
   let retryStub: SinonStub;
+  let addAndPromiseStub: SinonStub;
   let constants    = {
     activeDelegates: 1,
     epochTime      : new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
@@ -123,9 +124,12 @@ describe('modules/loader', () => {
   });
 
   beforeEach(() => {
-    retryStub        = sandbox.stub();
-    promiseRetryStub = sandbox.stub().callsArgWith(0, retryStub);
+    retryStub         = sandbox.stub();
+    addAndPromiseStub = sandbox.stub().callsArg(0);
+    promiseRetryStub  = sandbox.stub().callsArgWith(0, retryStub);
+
     LoaderModuleRewire.__set__('promiseRetry', promiseRetryStub);
+    (instance as  any).sequence.addAndPromise = addAndPromiseStub;
 
     instance = container.get(Symbols.modules.loader);
 
@@ -1383,24 +1387,22 @@ describe('modules/loader', () => {
     let loggerStub: LoggerStub;
     let appState: IAppStateStub;
     let syncStub: SinonStub;
-    let addAndPromiseStub: SinonStub;
 
     let last_receipt;
 
     before(() => {
-      // (instance as  any).sequence.addAndPromise.restore();
+      (instance as  any).sequence.addAndPromise.restore();
     });
 
     beforeEach(() => {
       last_receipt = 'last_receipt';
 
-      jobsQueueStub                             = container.get<JobsQueueStub>(Symbols.helpers.jobsQueue);
-      blocksModuleStub                          = container.get<BlocksModuleStub>(Symbols.modules.blocks);
-      loggerStub                                = container.get<LoggerStub>(Symbols.helpers.logger);
-      appState                                  = container.get<IAppStateStub>(Symbols.logic.appState);
-      syncStub                                  = sandbox.stub(instance as any, 'sync').resolves({});
-      addAndPromiseStub                         = sandbox.stub().callsArg(0);
-      (instance as  any).sequence.addAndPromise = addAndPromiseStub;
+      jobsQueueStub    = container.get<JobsQueueStub>(Symbols.helpers.jobsQueue);
+      blocksModuleStub = container.get<BlocksModuleStub>(Symbols.modules.blocks);
+      loggerStub       = container.get<LoggerStub>(Symbols.helpers.logger);
+      appState         = container.get<IAppStateStub>(Symbols.logic.appState);
+      syncStub         = sandbox.stub(instance as any, 'sync').resolves({});
+
 
       jobsQueueStub.stubs.register.callsArg(1);
 
@@ -1469,6 +1471,42 @@ describe('modules/loader', () => {
 
       expect(syncStub.calledOnce).to.be.true;
       expect(syncStub.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should call logger.warn if instance.sync throw error', async () => {
+      let error = new Error();
+      syncStub.rejects(error);
+
+      await (instance as any).syncTimer();
+
+      expect(loggerStub.stubs.warn.calledOnce).to.be.true;
+
+    });
+
+    it('should not call instance.sync if instance.loaded is false', async () => {
+      (instance as any).loaded = false;
+
+      await (instance as any).syncTimer();
+
+      expect(syncStub.notCalled).to.be.true;
+    });
+
+    it('should not call instance.sync if !instance.isSyncing is false', async () => {
+      appState.reset();
+      appState.enqueueResponse('get', true);
+      appState.enqueueResponse('get', true);
+
+      await (instance as any).syncTimer();
+
+      expect(syncStub.notCalled).to.be.true;
+    });
+
+    it('should not call instance.sync if blocksModule.lastReceipt.isStale return false', async () => {
+      (blocksModuleStub as any).lastReceipt.isStale.returns(false);
+
+      await (instance as any).syncTimer();
+
+      expect(syncStub.notCalled).to.be.true;
     });
 
   });
