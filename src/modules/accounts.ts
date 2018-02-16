@@ -3,8 +3,8 @@ import { emptyCB } from '../helpers/';
 import { IAccountLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { AccountFilterData, MemAccountsData } from '../logic/';
 import { OptionalsMemAccounts } from '../logic';
+import { AccountFilterData, MemAccountsData } from '../logic/';
 
 @injectable()
 export class AccountsModule implements IAccountsModule {
@@ -53,7 +53,7 @@ export class AccountsModule implements IAccountsModule {
 
   /**
    * merge some data on the account
-   * @param {MemAccountsData} data
+   * @param {MemAccountsData} diff
    * @returns {Promise<MemAccountsData>}
    */
 
