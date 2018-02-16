@@ -4,7 +4,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as rewire from 'rewire';
 import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
+import { SinonFakeTimers, SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import { Symbols } from '../../../src/ioc/symbols';
 import { LoaderModule } from '../../../src/modules';
 import {
@@ -33,7 +33,7 @@ import {
   IAppStateStub
 } from '../../stubs';
 
-import { PeerType } from '../../../src/logic';
+import { PeerType, SignedAndChainedBlockType, SignedBlockType } from '../../../src/logic';
 import loaderSchema from '../../../src/schema/loader';
 import { BlocksSubmoduleProcessStub } from '../../stubs/modules/blocks/BlocksSubmoduleProcessStub';
 import { createFakePeers } from '../../utils/fakePeersFactory';
@@ -71,6 +71,7 @@ describe('modules/loader', () => {
 
   };
   let promiseRetryStub;
+  let promiseRetryOrigin;
 
   before(() => {
     sandbox   = sinon.sandbox.create();
@@ -119,21 +120,17 @@ describe('modules/loader', () => {
 
     container.bind(Symbols.modules.loader).to(LoaderModuleRewire.LoaderModule);
     instance = container.get(Symbols.modules.loader);
-
-
   });
 
   beforeEach(() => {
-    retryStub         = sandbox.stub();
-    addAndPromiseStub = sandbox.stub().callsArg(0);
-    promiseRetryStub  = sandbox.stub().callsArgWith(0, retryStub);
-
+    retryStub          = sandbox.stub();
+    promiseRetryStub   = sandbox.stub().callsArgWith(0, retryStub).resolves(Promise.resolve());
+    promiseRetryOrigin = LoaderModuleRewire.__get__('promiseRetry');
     LoaderModuleRewire.__set__('promiseRetry', promiseRetryStub);
-    (instance as  any).sequence.addAndPromise = addAndPromiseStub;
 
     instance = container.get(Symbols.modules.loader);
 
-    container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock = { height: 1 } as any;
+    container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock = { height: 1, id: 1 } as any;
   });
 
   afterEach(() => {
@@ -154,6 +151,10 @@ describe('modules/loader', () => {
       payloadHash   : Buffer.from('10').toString('hex'),
     };
     sandbox.restore();
+  });
+
+  after(() => {
+    LoaderModuleRewire.__set__('promiseRetry', promiseRetryOrigin);
   });
 
   describe('.initialize', () => {
@@ -420,6 +421,21 @@ describe('modules/loader', () => {
       expect(retryStub.calledOnce).to.be.true;
       expect(retryStub.firstCall.args.length).to.be.equal(1);
       expect(retryStub.firstCall.args[0]).to.be.equal(error);
+    });
+
+    it('should call logger.log when promiseRetry throw error(twice)', async () => {
+      promiseRetryStub.rejects(error);
+
+      await instance.onPeersReady();
+
+      expect(loggerStub.stubs.log.calledTwice).to.be.true;
+      expect(loggerStub.stubs.log.firstCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.log.firstCall.args[0]).to.be.equal('Unconfirmed transactions loader error');
+      expect(loggerStub.stubs.log.firstCall.args[1]).to.be.equal(error);
+
+      expect(loggerStub.stubs.log.secondCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.log.secondCall.args[0]).to.be.equal('Multisig pending transactions loader error');
+      expect(loggerStub.stubs.log.secondCall.args[1]).to.be.equal(error);
     });
 
     it('should call instance.loadSignature', async () => {
@@ -1231,11 +1247,55 @@ describe('modules/loader', () => {
 
   });
 
-  describe('.syncTrigger', () => {
-
-  });
-
   describe('.loadBlocksFromNetwork', () => {
+//TODO
+    let getRandomPeerStub: SinonStub;
+    let waitStub: SinonStub;
+    let loggerStub: LoggerStub;
+    let blocksProcessModuleStub: BlocksSubmoduleProcessStub;
+    let blocksModuleStub: BlocksModuleStub;
+
+    let randomPeer;
+    let commonBlock;
+    let lastValidBlock;
+
+    beforeEach(() => {
+      randomPeer     = { string: 'string', height: 2 };
+      commonBlock    = {};
+      lastValidBlock = { height: 1, id: 1 } as any;
+
+      blocksModuleStub        = container.get<BlocksModuleStub>(Symbols.modules.blocks);
+      loggerStub              = container.get<LoggerStub>(Symbols.helpers.logger);
+      blocksProcessModuleStub = container.get<BlocksSubmoduleProcessStub>(Symbols.modules.blocksSubModules.process);
+
+      getRandomPeerStub = sandbox.stub(instance as any, 'getRandomPeer').resolves(randomPeer);
+      waitStub          = sandbox.stub();
+      blocksProcessModuleStub.enqueueResponse('loadBlocksFromPeer', lastValidBlock);
+      blocksProcessModuleStub.enqueueResponse('loadBlocksFromPeer', lastValidBlock);
+      LoaderModuleRewire.__set__('_1.wait', waitStub);
+    });
+
+    it('should call promiseRetry');
+
+    it('should call wait and return after');
+
+    describe('lastBlock.height !== 1', () => {
+
+      beforeEach(() => {
+        container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock = { height: 1, id: 2 } as any;
+      });
+
+      it('should call logger.info');
+      it('should call blocksProcessModule.getCommonBlock');
+      it('should call logger.error and return after if commonBlock is null');
+      it('should call logger.error twice and return after if blocksProcessModule.getCommonBlock thro error');
+    });
+
+    it('should call blocksProcessModule.loadBlocksFromPeer');
+    it('should call blocksModule.lastReceipt.update');
+    it('should call logger.error twice and return after if blocksProcessModule.loadBlocksFromPeer thro error');
+    it('should start second iterate in the cycle if lastValidBlock.id === lastBlock.id');
+
 
   });
 
@@ -1376,137 +1436,6 @@ describe('modules/loader', () => {
       expect(loggerStub.stubs.warn.secondCall.args[0]).to.be.equal('Cannot process multisig signature for tr22 ');
       expect(loggerStub.stubs.warn.secondCall.args[1]).to.be.deep.equal({ name: error });
 
-    });
-
-  });
-
-  describe('.syncTimer', () => {
-
-    let jobsQueueStub: JobsQueueStub;
-    let blocksModuleStub: BlocksModuleStub;
-    let loggerStub: LoggerStub;
-    let appState: IAppStateStub;
-    let syncStub: SinonStub;
-
-    let last_receipt;
-
-    before(() => {
-      (instance as  any).sequence.addAndPromise.restore();
-    });
-
-    beforeEach(() => {
-      last_receipt = 'last_receipt';
-
-      jobsQueueStub    = container.get<JobsQueueStub>(Symbols.helpers.jobsQueue);
-      blocksModuleStub = container.get<BlocksModuleStub>(Symbols.modules.blocks);
-      loggerStub       = container.get<LoggerStub>(Symbols.helpers.logger);
-      appState         = container.get<IAppStateStub>(Symbols.logic.appState);
-      syncStub         = sandbox.stub(instance as any, 'sync').resolves({});
-
-
-      jobsQueueStub.stubs.register.callsArg(1);
-
-      appState.enqueueResponse('get', true);
-      appState.enqueueResponse('get', false);
-
-      (instance as any).loaded              = true;
-      (blocksModuleStub as any).lastReceipt = {
-        get    : sandbox.stub().returns(last_receipt),
-        isStale: sandbox.stub().returns(true),
-      };
-
-    });
-
-    afterEach(() => {
-      appState.reset();
-      loggerStub.stubReset();
-      jobsQueueStub.reset();
-      blocksModuleStub.cleanup();
-    });
-
-    it('should call logger.trace', async () => {
-      await (instance as any).syncTimer();
-
-      expect(loggerStub.stubs.trace.calledTwice).to.be.true;
-
-      expect(loggerStub.stubs.trace.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.trace.firstCall.args[0]).to.be.equal('Setting sync timer');
-
-      expect(loggerStub.stubs.trace.secondCall.args.length).to.be.equal(2);
-      expect(loggerStub.stubs.trace.secondCall.args[0]).to.be.equal('Sync timer trigger');
-      expect(loggerStub.stubs.trace.secondCall.args[1]).to.be.deep.equal({
-        last_receipt,
-        loaded : true,
-        syncing: true,
-      });
-    });
-
-    it('should call jobsQueue.register', async () => {
-      await (instance as any).syncTimer();
-
-      expect(jobsQueueStub.stubs.register.calledOnce).to.be.true;
-      expect(jobsQueueStub.stubs.register.firstCall.args.length).to.be.equal(3);
-      expect(jobsQueueStub.stubs.register.firstCall.args[0]).to.be.equal('loaderSyncTimer');
-      expect(jobsQueueStub.stubs.register.firstCall.args[1]).to.be.a('function');
-      expect(jobsQueueStub.stubs.register.firstCall.args[2]).to.be
-        .equal(1000);
-    });
-
-    it('should call blocksModule.lastReceipt.get', async () => {
-      await (instance as any).syncTimer();
-
-      expect((blocksModuleStub as any).lastReceipt.get.calledOnce).to.be.true;
-      expect((blocksModuleStub as any).lastReceipt.get.firstCall.args.length).to.be.equal(0);
-    });
-
-    it('should call blocksModule.lastReceipt.isStale', async () => {
-      await (instance as any).syncTimer();
-
-      expect((blocksModuleStub as any).lastReceipt.isStale.calledOnce).to.be.true;
-      expect((blocksModuleStub as any).lastReceipt.isStale.firstCall.args.length).to.be.equal(0);
-    });
-
-    it('should call instance.sync', async () => {
-      await (instance as any).syncTimer();
-
-      expect(syncStub.calledOnce).to.be.true;
-      expect(syncStub.firstCall.args.length).to.be.equal(0);
-    });
-
-    it('should call logger.warn if instance.sync throw error', async () => {
-      let error = new Error();
-      syncStub.rejects(error);
-
-      await (instance as any).syncTimer();
-
-      expect(loggerStub.stubs.warn.calledOnce).to.be.true;
-
-    });
-
-    it('should not call instance.sync if instance.loaded is false', async () => {
-      (instance as any).loaded = false;
-
-      await (instance as any).syncTimer();
-
-      expect(syncStub.notCalled).to.be.true;
-    });
-
-    it('should not call instance.sync if !instance.isSyncing is false', async () => {
-      appState.reset();
-      appState.enqueueResponse('get', true);
-      appState.enqueueResponse('get', true);
-
-      await (instance as any).syncTimer();
-
-      expect(syncStub.notCalled).to.be.true;
-    });
-
-    it('should not call instance.sync if blocksModule.lastReceipt.isStale return false', async () => {
-      (blocksModuleStub as any).lastReceipt.isStale.returns(false);
-
-      await (instance as any).syncTimer();
-
-      expect(syncStub.notCalled).to.be.true;
     });
 
   });
@@ -1700,6 +1629,256 @@ describe('modules/loader', () => {
       expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal(error);
 
+    });
+
+  });
+
+  describe('.syncTrigger', () => {
+
+    let clearTimeoutSpy: SinonSpy;
+    let setTimeoutSpy: SinonSpy;
+    let loggerStub: LoggerStub;
+    let appStateStub: AppStateStub;
+    let socketIoStub: SocketIOStub;
+
+    beforeEach(() => {
+      loggerStub   = container.get<LoggerStub>(Symbols.helpers.logger);
+      appStateStub = container.get<AppStateStub>(Symbols.logic.appState);
+      socketIoStub = container.get<SocketIOStub>(Symbols.generic.socketIO);
+
+      clearTimeoutSpy = sandbox.spy(clearTimeout);
+      setTimeoutSpy   = sandbox.spy(setTimeout);
+      LoaderModuleRewire.__set__('clearTimeout', clearTimeoutSpy);
+      LoaderModuleRewire.__set__('setTimeout', setTimeoutSpy);
+
+      appStateStub.enqueueResponse('set', {});
+    });
+
+    afterEach(() => {
+      loggerStub.stubReset();
+      appStateStub.reset();
+      (instance as any).syncIntervalId = null;
+      clearTimeoutSpy.reset();
+      setTimeoutSpy.reset();
+    });
+
+    describe('if turnOn==false && this.syncIntervalId', () => {
+
+      let syncIntervalId: NodeJS.Timer;
+
+      beforeEach(() => {
+        syncIntervalId                   = {
+          ref  : () => {
+          },
+          unref: () => {
+          },
+        };
+        (instance as any).syncIntervalId = syncIntervalId;
+      });
+
+      it('should call logger.trace', () => {
+        (instance as any).syncTrigger(false);
+
+        expect(loggerStub.stubs.trace.calledOnce).to.be.true;
+        expect(loggerStub.stubs.trace.firstCall.args.length).to.be.equal(1);
+        expect(loggerStub.stubs.trace.firstCall.args[0]).to.be.equal('Clearing sync interval');
+      });
+
+      it('should call clearTimeout', () => {
+        (instance as any).syncTrigger(false);
+
+        expect(clearTimeoutSpy.calledOnce).to.be.true;
+        expect(clearTimeoutSpy.firstCall.args.length).to.be.equal(1);
+        expect(clearTimeoutSpy.firstCall.args[0]).to.be.equal(syncIntervalId);
+
+        expect((instance as any).syncIntervalId).to.be.null;
+      });
+
+      it('should call appState.set', async () => {
+        (instance as any).syncTrigger(false);
+
+        expect(appStateStub.stubs.set.calledOnce).to.be.true;
+        expect(appStateStub.stubs.set.firstCall.args.length).to.be.equal(2);
+        expect(appStateStub.stubs.set.firstCall.args[0]).to.be.equal('loader.isSyncing');
+        expect(appStateStub.stubs.set.firstCall.args[1]).to.be.equal(false);
+      });
+
+    });
+
+    describe('turnOn === true && !this.syncIntervalId', () => {
+
+      it('should call logger.trace', () => {
+        (instance as any).syncTrigger(true);
+
+        expect(loggerStub.stubs.trace.calledOnce).to.be.true;
+        expect(loggerStub.stubs.trace.firstCall.args.length).to.be.equal(1);
+        expect(loggerStub.stubs.trace.firstCall.args[0]).to.be.equal('Setting sync interval');
+      });
+
+      it('should call setTimeout', () => {
+        (instance as any).syncTrigger(true);
+
+        expect(setTimeoutSpy.calledOnce).to.be.true;
+        expect(setTimeoutSpy.firstCall.args.length).to.be.equal(2);
+        expect(setTimeoutSpy.firstCall.args[0]).to.be.a('function');
+        expect(setTimeoutSpy.firstCall.args[1]).to.be.equal(1000);
+      });
+
+      it('should call appState.set', async () => {
+        (instance as any).syncTrigger(true);
+
+        expect(appStateStub.stubs.set.calledOnce).to.be.true;
+        expect(appStateStub.stubs.set.firstCall.args.length).to.be.equal(2);
+        expect(appStateStub.stubs.set.firstCall.args[0]).to.be.equal('loader.isSyncing');
+        expect(appStateStub.stubs.set.firstCall.args[1]).to.be.equal(true);
+      });
+
+      it('should call setTimeout"s callback');
+
+    });
+
+    it('check if turnOn === false && !this.syncIntervalId', () => {
+      (instance as any).syncTrigger(false);
+
+      expect(loggerStub.stubs.trace.notCalled).to.be.true;
+    });
+
+    it('check if turnOn === true && this.syncIntervalId', () => {
+      (instance as any).syncIntervalId = {
+        ref  : () => {
+        },
+        unref: () => {
+        },
+      };
+
+      (instance as any).syncTrigger(true);
+
+      expect(loggerStub.stubs.trace.notCalled).to.be.true;
+
+    });
+
+  });
+
+  describe('.syncTimer', () => {
+
+    let jobsQueueStub: JobsQueueStub;
+    let blocksModuleStub: BlocksModuleStub;
+    let loggerStub: LoggerStub;
+    let appState: IAppStateStub;
+    let syncStub: SinonStub;
+
+    let last_receipt;
+
+    before(() => {
+      (instance as  any).sequence.addAndPromise.restore();
+    });
+
+    beforeEach(() => {
+      last_receipt = 'last_receipt';
+
+      jobsQueueStub                             = container.get<JobsQueueStub>(Symbols.helpers.jobsQueue);
+      blocksModuleStub                          = container.get<BlocksModuleStub>(Symbols.modules.blocks);
+      loggerStub                                = container.get<LoggerStub>(Symbols.helpers.logger);
+      appState                                  = container.get<IAppStateStub>(Symbols.logic.appState);
+      syncStub                                  = sandbox.stub(instance as any, 'sync').resolves(Promise.resolve({}));
+      addAndPromiseStub                         = sandbox.stub().callsArg(0).resolves(Promise.resolve({}));
+      (instance as  any).sequence.addAndPromise = addAndPromiseStub;
+
+      jobsQueueStub.stubs.register.callsArg(1);
+
+      appState.enqueueResponse('get', true);
+      appState.enqueueResponse('get', false);
+
+      (instance as any).loaded              = true;
+      (blocksModuleStub as any).lastReceipt = {
+        get    : sandbox.stub().returns(last_receipt),
+        isStale: sandbox.stub().returns(true),
+      };
+
+    });
+
+    afterEach(() => {
+      appState.reset();
+      loggerStub.stubReset();
+      jobsQueueStub.reset();
+      blocksModuleStub.cleanup();
+    });
+
+    it('should call logger.trace', async () => {
+      await (instance as any).syncTimer();
+
+      expect(loggerStub.stubs.trace.calledTwice).to.be.true;
+
+      expect(loggerStub.stubs.trace.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.trace.firstCall.args[0]).to.be.equal('Setting sync timer');
+
+      expect(loggerStub.stubs.trace.secondCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.trace.secondCall.args[0]).to.be.equal('Sync timer trigger');
+      expect(loggerStub.stubs.trace.secondCall.args[1]).to.be.deep.equal({
+        last_receipt,
+        loaded : true,
+        syncing: true,
+      });
+    });
+
+    it('should call jobsQueue.register', async () => {
+      await (instance as any).syncTimer();
+
+      expect(jobsQueueStub.stubs.register.calledOnce).to.be.true;
+      expect(jobsQueueStub.stubs.register.firstCall.args.length).to.be.equal(3);
+      expect(jobsQueueStub.stubs.register.firstCall.args[0]).to.be.equal('loaderSyncTimer');
+      expect(jobsQueueStub.stubs.register.firstCall.args[1]).to.be.a('function');
+      expect(jobsQueueStub.stubs.register.firstCall.args[2]).to.be
+        .equal(1000);
+    });
+
+    it('should call blocksModule.lastReceipt.get', async () => {
+      await (instance as any).syncTimer();
+
+      expect((blocksModuleStub as any).lastReceipt.get.calledOnce).to.be.true;
+      expect((blocksModuleStub as any).lastReceipt.get.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should call blocksModule.lastReceipt.isStale', async () => {
+      await (instance as any).syncTimer();
+
+      expect((blocksModuleStub as any).lastReceipt.isStale.calledOnce).to.be.true;
+      expect((blocksModuleStub as any).lastReceipt.isStale.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should call instance.sync', async () => {
+      await (instance as any).syncTimer();
+
+      expect(syncStub.calledOnce).to.be.true;
+      expect(syncStub.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should call logger.warn if instance.sync throw error');
+
+    it('should not call instance.sync if instance.loaded is false', async () => {
+      (instance as any).loaded = false;
+
+      await (instance as any).syncTimer();
+
+      expect(syncStub.notCalled).to.be.true;
+    });
+
+    it('should not call instance.sync if !instance.isSyncing is false', async () => {
+      appState.reset();
+      appState.enqueueResponse('get', true);
+      appState.enqueueResponse('get', true);
+
+      await (instance as any).syncTimer();
+
+      expect(syncStub.notCalled).to.be.true;
+    });
+
+    it('should not call instance.sync if blocksModule.lastReceipt.isStale return false', async () => {
+      (blocksModuleStub as any).lastReceipt.isStale.returns(false);
+
+      await (instance as any).syncTimer();
+
+      expect(syncStub.notCalled).to.be.true;
     });
 
   });
