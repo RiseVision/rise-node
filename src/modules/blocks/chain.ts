@@ -19,18 +19,6 @@ import sql from '../../sql/blocks';
 @injectable()
 export class BlocksModuleChain implements IBlocksModuleChain {
 
-  // Modules
-  @inject(Symbols.modules.accounts)
-  private accountsModule: IAccountsModule;
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.blocksSubModules.utils)
-  private blocksModuleUtils: IBlocksModuleUtils;
-  @inject(Symbols.modules.rounds)
-  private roundsModule: IRoundsModule;
-  @inject(Symbols.modules.transactions)
-  private transactionsModule: ITransactionsModule;
-
   // Generic
   @inject(Symbols.generic.db)
   private db: IDatabase<any>;
@@ -51,6 +39,18 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   private blockLogic: IBlockLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
+
+  // Modules
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
+  @inject(Symbols.modules.blocksSubModules.utils)
+  private blocksModuleUtils: IBlocksModuleUtils;
+  @inject(Symbols.modules.rounds)
+  private roundsModule: IRoundsModule;
+  @inject(Symbols.modules.transactions)
+  private transactionsModule: ITransactionsModule;
 
   public cleanup() {
     return Promise.resolve();
