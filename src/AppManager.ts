@@ -208,7 +208,7 @@ export class AppManager {
         this.container.bind(Symbols.helpers.sequence)
           .toConstantValue(new Sequence({
             onWarning(current) {
-              self.logger.warn(`${sequenceTag} queue`, current);
+              self.logger.warn(`${sequenceTag.toString()} queue`, current);
             },
           }))
           .whenTargetTagged(Symbols.helpers.sequence, sequenceTag);
