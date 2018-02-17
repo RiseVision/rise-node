@@ -1,10 +1,10 @@
 import { inject, injectable } from 'inversify';
 import { IDatabase, ITask } from 'pg-promise';
 import { Bus, constants as constantsType, ILogger, Slots } from '../helpers/';
-import { IAppState, IRoundsLogic } from '../ioc/interfaces/logic/';
+import { IAppState, IRoundLogicNewable, IRoundsLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule, IDelegatesModule, IRoundsModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
-import { RoundLogic, RoundLogicScope, SignedBlockType } from '../logic/';
+import { RoundLogicScope, SignedBlockType } from '../logic/';
 import roundsSQL from '../sql/logic/rounds';
 import { address, publicKey } from '../types/sanityTypes';
 
@@ -36,6 +36,8 @@ export class RoundsModule implements IRoundsModule {
   private appStateLogic: IAppState;
   @inject(Symbols.logic.rounds)
   private roundsLogic: IRoundsLogic;
+  @inject(Symbols.logic.round)
+  private RoundLogic: IRoundLogicNewable;
 
   public onFinishRound(round: number) {
     this.io.sockets.emit('rounds/change', { number: round });
@@ -70,7 +72,7 @@ export class RoundsModule implements IRoundsModule {
     return this.innerTick(block, true, (roundLogicScope) => (task) => {
       this.logger.debug('Performing backward tick');
 
-      const roundLogic = new RoundLogic(roundLogicScope, task, this.slots);
+      const roundLogic = new this.RoundLogic(roundLogicScope, task, this.slots);
 
       return roundLogic.mergeBlockGenerator()
       // call backwardLand only if this was the last block in round.
@@ -86,8 +88,7 @@ export class RoundsModule implements IRoundsModule {
       (roundLogicScope) => (task) => {
 
         this.logger.debug('Performing forward tick');
-
-        const roundLogic    = new RoundLogic(roundLogicScope, task, this.slots);
+        const roundLogic    = new this.RoundLogic(roundLogicScope, task, this.slots);
         const snapshotRound = (
           this.getSnapshotRounds() > 0 && this.getSnapshotRounds() === roundLogicScope.round
         );
@@ -178,10 +179,11 @@ export class RoundsModule implements IRoundsModule {
       };
       await this.db.tx(txGenerator(roundLogicScope));
       await afterTxPromise();
+      this.appStateLogic.set('rounds.isTicking', false);
     } catch (e) {
       this.logger.warn(`Error while doing modules.innerTick [backwards=${backwards}]`, e.message || e);
-    } finally {
       this.appStateLogic.set('rounds.isTicking', false);
+      throw e;
     }
   }
 

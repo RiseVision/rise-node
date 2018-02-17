@@ -1,4 +1,13 @@
+import { ITask } from 'pg-promise';
+import { Slots } from '../../../helpers';
+import { RoundLogicScope } from '../../../logic';
+
+export interface IRoundLogicNewable {
+  new (scope: RoundLogicScope, task: ITask<any>, slots: Slots): IRoundLogic;
+}
+
 export interface IRoundLogic {
+
   /**
    * Adds or remove the blocks to the generator account.
    * @returns {Promise<void>}

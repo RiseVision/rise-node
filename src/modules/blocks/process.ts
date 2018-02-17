@@ -2,7 +2,8 @@ import { inject, injectable, tagged } from 'inversify';
 import * as _ from 'lodash';
 import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
-import { catchToLoggerAndRemapError, constants, ForkType, IKeypair, ILogger, Sequence, Slots } from '../../helpers/';
+import { catchToLoggerAndRemapError, constants, ForkType, IKeypair, ILogger, Sequence } from '../../helpers/';
+import { ISlots } from '../../ioc/interfaces/helpers';
 import {
   IAppState, IBlockLogic, IPeerLogic, IPeersLogic, IRoundsLogic,
   ITransactionLogic
@@ -65,7 +66,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence)
   private dbSequence: Sequence;
   @inject(Symbols.helpers.slots)
-  private slots: Slots;
+  private slots: ISlots;
 
   // Logic
   @inject(Symbols.logic.appState)
@@ -263,11 +264,12 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
       try {
         await this.transactionLogic.verify(tx, sender, null, previousBlock.height);
+        ready.push(tx);
       } catch (err) {
         // TODO: why is error swallowed here? shouldn't we better handle this error?
         this.logger.error(err.stack);
       }
-      ready.push(tx);
+
     }
 
     const block = this.blockLogic.create({

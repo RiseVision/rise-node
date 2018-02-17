@@ -52,6 +52,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
 
   constructor() {
     super(TransactionType.IN_TRANSFER);
+    this.unconfirmedSignatures = {};
   }
 
   public calculateFee(tx: IBaseTransaction<MultisigAsset>, sender: any, height: number): number {
@@ -108,8 +109,8 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
 
     if (tx.recipientId) {
       throw new Error('Invalid recipient');
-
     }
+
     if (tx.amount !== 0) {
       throw new Error('Invalid transaction amount');
     }
@@ -119,14 +120,14 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         let valid = false;
         if (Array.isArray(tx.signatures)) {
           for (let i = 0; i < tx.signatures.length && !valid; i++) {
-            if (key[0] === '-' || key === '-') {
-              valid = this.transactionLogic.verifySignature(tx, key.substring(1), tx.signature[i], false);
+            if (key[0] === '+' || key[0] === '-') {
+              valid = this.transactionLogic.verifySignature(tx, key.substring(1), tx.signatures[i], false);
             }
           }
         }
 
         if (!valid) {
-          throw new Error('Failed to verify signature in multisgnature keysgroup');
+          throw new Error('Failed to verify signature in multisignature keysgroup');
         }
       }
     }

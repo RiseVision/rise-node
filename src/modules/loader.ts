@@ -2,7 +2,8 @@ import { inject, injectable, postConstruct, tagged } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import * as promiseRetry from 'promise-retry';
 import z_schema from 'z-schema';
-import { Bus, constants as constantsType, ILogger, JobsQueue, Sequence, wait } from '../helpers/';
+import { Bus, constants as constantsType, ILogger, Sequence, wait } from '../helpers/';
+import { IJobsQueue } from '../ioc/interfaces/helpers';
 import {
   IAccountLogic, IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, IRoundsLogic,
   ITransactionLogic
@@ -32,6 +33,48 @@ export class LoaderModule implements ILoaderModule {
   private retries: number                      = 5;
   private syncInterval                         = 1000;
 
+  // Generic
+  @inject(Symbols.generic.appConfig)
+  private config: AppConfig;
+  @inject(Symbols.generic.db)
+  private db: IDatabase<any>;
+  @inject(Symbols.generic.genesisBlock)
+  private genesisBlock: SignedAndChainedBlockType;
+  @inject(Symbols.generic.socketIO)
+  private io: SocketIO.Server;
+
+  // Helpers
+  @inject(Symbols.helpers.sequence)
+  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
+  private balancesSequence: Sequence;
+  @inject(Symbols.helpers.bus)
+  private bus: Bus;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
+  @inject(Symbols.helpers.jobsQueue)
+  private jobsQueue: IJobsQueue;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.helpers.sequence)
+  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence)
+  private sequence: Sequence;
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
+
+  // Logic
+  @inject(Symbols.logic.account)
+  private accountLogic: IAccountLogic;
+  @inject(Symbols.logic.appState)
+  private appState: IAppState;
+  @inject(Symbols.logic.broadcaster)
+  private broadcasterLogic: IBroadcasterLogic;
+  @inject(Symbols.logic.peers)
+  private peersLogic: IPeersLogic;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
+  @inject(Symbols.logic.rounds)
+  private roundsLogic: IRoundsLogic;
+
   // Modules
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
@@ -43,53 +86,16 @@ export class LoaderModule implements ILoaderModule {
   private blocksUtilsModule: IBlocksModuleUtils;
   @inject(Symbols.modules.blocksSubModules.verify)
   private blocksVerifyModule: IBlocksModuleVerify;
+  @inject(Symbols.modules.multisignatures)
+  private multisigModule: IMultisignaturesModule;
+  @inject(Symbols.modules.peers)
+  private peersModule: IPeersModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
   @inject(Symbols.modules.transport)
   private transportModule: ITransportModule;
-  @inject(Symbols.modules.peers)
-  private peersModule: IPeersModule;
-  @inject(Symbols.modules.multisignatures)
-  private multisigModule: IMultisignaturesModule;
-
-  // Helpers and generics
-  @inject(Symbols.helpers.logger)
-  private logger: ILogger;
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
-  @inject(Symbols.generic.socketIO)
-  private io: SocketIO.Server;
-  @inject(Symbols.generic.zschema)
-  private schema: z_schema;
-  @inject(Symbols.helpers.sequence)
-  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence)
-  private sequence: Sequence;
-  @inject(Symbols.helpers.sequence)
-  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
-  private balancesSequence: Sequence;
-  @inject(Symbols.helpers.bus)
-  private bus: Bus;
-  @inject(Symbols.generic.genesisBlock)
-  private genesisBlock: SignedAndChainedBlockType;
-  @inject(Symbols.generic.appConfig)
-  private config: AppConfig;
-  @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
-
-  @inject(Symbols.logic.appState)
-  private appState: IAppState;
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
-  @inject(Symbols.logic.account)
-  private accountLogic: IAccountLogic;
-  @inject(Symbols.logic.broadcaster)
-  private broadcasterLogic: IBroadcasterLogic;
-  @inject(Symbols.logic.peers)
-  private peersLogic: IPeersLogic;
-  @inject(Symbols.logic.rounds)
-  private roundsLogic: IRoundsLogic;
 
   @postConstruct()
   public initialize() {
@@ -99,7 +105,7 @@ export class LoaderModule implements ILoaderModule {
     };
   }
 
-  public async getNework() {
+  public async getNetwork() {
     if (!(
         this.network.height > 0 &&
         Math.abs(this.network.height - this.blocksModule.lastBlock.height) === 1)
@@ -111,7 +117,7 @@ export class LoaderModule implements ILoaderModule {
   }
 
   public async getRandomPeer(): Promise<IPeerLogic> {
-    const { peers } = await this.getNework();
+    const { peers } = await this.getNetwork();
     return peers[Math.floor(Math.random() * peers.length)];
   }
 
@@ -511,7 +517,7 @@ export class LoaderModule implements ILoaderModule {
   private async syncTimer() {
     this.logger.trace('Setting sync timer');
 
-    JobsQueue.register('loaderSyncTimer', async () => {
+    this.jobsQueue.register('loaderSyncTimer', async () => {
       this.logger.trace('Sync timer trigger', {
         last_receipt: this.blocksModule.lastReceipt.get(),
         loaded      : this.loaded,

@@ -8,7 +8,12 @@ import { constants, Ed, OrderBy, Slots } from '../helpers/';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import {
-  IAccountsModule, IBlocksModule, IBlocksModuleUtils, IDelegatesModule, IForgeModule, ISystemModule,
+  IAccountsModule,
+  IBlocksModule,
+  IBlocksModuleUtils,
+  IDelegatesModule,
+  IForgeModule,
+  ISystemModule,
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import schema from '../schema/delegates';
@@ -43,7 +48,7 @@ export class DelegatesAPI {
 
   @Get('/')
   @ValidateSchema()
-  public async getDelegates(@SchemaValid(schema.getDelegates, {castNumbers: true})
+  public async getDelegates(@SchemaValid(schema.getDelegates, { castNumbers: true })
                             @QueryParams() data: { orderBy: string, limit: number, offset: number }) {
     const d = await this.delegatesModule.getDelegates(data);
     if (d.sortField) {
@@ -72,9 +77,9 @@ export class DelegatesAPI {
 
   @Get('/fee')
   @ValidateSchema()
-  public async getFee(@SchemaValid(schema.getFee.properties.height)
-                      @QueryParam('height', { required: true }) height: number) {
-    const f            = this.system.getFees(height);
+  public async getFee(@SchemaValid(schema.getFee, { castNumbers: true })
+                      @QueryParams() params: { height?: number }) {
+    const f            = this.system.getFees(params.height);
     const { delegate } = f.fees;
     delete f.fees;
     return { ...f, ... { fee: delegate } };
@@ -83,7 +88,7 @@ export class DelegatesAPI {
 
   @Get('/forging/getForgedByAccount')
   @ValidateSchema()
-  public async getForgedByAccount(@SchemaValid(schema.getForgedByAccount, {castNumbers: true})
+  public async getForgedByAccount(@SchemaValid(schema.getForgedByAccount, { castNumbers: true })
                                   // tslint:disable-next-line max-line-length
                                   @QueryParams() params: { generatorPublicKey: publicKey, start?: number, end?: number }) {
     if (typeof(params.start) !== 'undefined' || typeof(params.end) !== 'undefined') {
@@ -120,6 +125,8 @@ export class DelegatesAPI {
   @ValidateSchema()
   public async getDelegate(@SchemaValid(schema.getDelegate)
                            @QueryParams() params: { publicKey: publicKey, username: string }) {
+    // FIXME: Delegates returned are automatically limited by maxDelegates. This means that a delegate cannot be found
+    // if ranked (username) below the desired value.
     const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'username:asc' });
     const delegate      = delegates.find((d) => d.publicKey === params.publicKey || d.username === params.username);
     if (delegate) {
@@ -130,9 +137,9 @@ export class DelegatesAPI {
 
   @Get('/voters')
   @ValidateSchema()
-  public async getVoters(@SchemaValid(schema.getVoters.properties.publicKey)
-                         @QueryParam('publicKey') pk: string) {
-    const row       = await this.db.one(sql.getVoters, { publicKey: pk });
+  public async getVoters(@SchemaValid(schema.getVoters)
+                         @QueryParams() params: { publicKey: publicKey }) {
+    const row       = await this.db.one(sql.getVoters, { publicKey: params.publicKey });
     const addresses = row.accountIds ? row.accountIds : [];
 
     const accounts = await this.accounts.getAccounts(
@@ -144,7 +151,7 @@ export class DelegatesAPI {
 
   @Get('/search')
   @ValidateSchema()
-  public async search(@SchemaValid(schema.search, {castNumbers: true})
+  public async search(@SchemaValid(schema.search, { castNumbers: true })
                       @QueryParams() params: { q: string, limit?: number, orderBy: string }) {
 
     const orderBy = OrderBy(params.orderBy, {
@@ -202,18 +209,18 @@ export class DelegatesAPI {
   // internal stuff.
   @Get('/forging/status')
   @ValidateSchema()
-  public getForgingStatus(@SchemaValid(schema.forgingStatus.properties.publicKey)
-                          @QueryParam('publicKey') pk: publicKey) {
+  public getForgingStatus(@SchemaValid(schema.forgingStatus)
+                          @QueryParams() params: { publicKey: publicKey }) {
     // TODO: Add middleware
     /*
     		if (!checkIpInList(library.config.forging.access.whiteList, req.ip)) {
 			return setImmediate(cb, 'Access denied');
 		}
      */
-    if (pk) {
+    if (params.publicKey) {
       return {
-        delegates: [pk],
-        enabled  : this.forgeModule.isForgeEnabledOn(pk),
+        delegates: [params.publicKey],
+        enabled  : this.forgeModule.isForgeEnabledOn(params.publicKey),
       };
     } else {
       const delegates = this.forgeModule.getEnabledKeys();

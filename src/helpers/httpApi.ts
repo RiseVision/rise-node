@@ -1,4 +1,4 @@
-import { Application, NextFunction, Request, Response, Router } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { AppConfig } from '../types/genericTypes';
 import { checkIpInList } from './checkIpInList';
 import { ILogger } from './logger';
@@ -36,18 +36,18 @@ export const middleware = {
     return (req: Request, res: Response, next: NextFunction) => {
       if (req.url.match(/^\/peer[\/]?.*/)) {
         const internalApiAllowed = config.peers.enabled && !checkIpInList(config.peers.access.blackList,
-          req.ip, false);
+          req.ip);
         rejectDisallowed(internalApiAllowed, config.peers.enabled);
       } else {
         const publicApiAllowed = config.api.enabled && (config.api.access.public ||
-          checkIpInList(config.api.access.whiteList, req.ip, false));
+          checkIpInList(config.api.access.whiteList, req.ip));
         rejectDisallowed(publicApiAllowed, config.api.enabled);
       }
 
       function rejectDisallowed(apiAllowed, isEnabled) {
         return apiAllowed ? next() : isEnabled ?
-          res.status(403).send({success: false, error: 'API access denied'}) :
-          res.status(500).send({success: false, error: 'API access disabled'});
+          res.status(403).send({ success: false, error: 'API access denied' }) :
+          res.status(500).send({ success: false, error: 'API access disabled' });
       }
     };
   },

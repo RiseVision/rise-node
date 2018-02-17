@@ -1,5 +1,4 @@
 import * as ip from 'ip';
-import * as _ from 'lodash';
 
 /**
  * Checks if ip address is in list (e.g. whitelist, blacklist).
@@ -7,19 +6,9 @@ import * as _ from 'lodash';
  * @function
  * @param  list - An array of ip addresses or ip subnets.
  * @param {string} addr - The ip address to check if in array.
- * @param {boolean} returnListIsEmpty - The return value, if list is empty.
  * @return {boolean} True if ip is in the list, false otherwise.
  */
-export function checkIpInList(list: any[] & { _subNets?: SubnetInfo[] }, addr: string,
-                              returnListIsEmpty: boolean): boolean {
-
-  if (!_.isBoolean(returnListIsEmpty)) {
-    returnListIsEmpty = true;
-  }
-
-  if (!_.isArray(list) || list.length === 0) {
-    return returnListIsEmpty;
-  }
+export function checkIpInList(list: string[] & { _subNets?: SubnetInfo[] }, addr: string): boolean {
 
   if (!list._subNets) { // First call, create subnet list
     list._subNets = [];
@@ -36,10 +25,6 @@ export function checkIpInList(list: any[] & { _subNets?: SubnetInfo[] }, addr: s
         console.error('CheckIpInList:', err.toString());
       }
     }
-  }
-
-  if (list._subNets.length === 0) {
-    return returnListIsEmpty;
   }
 
   // Check subnets

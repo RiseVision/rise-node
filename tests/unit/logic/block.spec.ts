@@ -1,5 +1,6 @@
 import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
+import 'chai-arrays';
 import * as crypto from 'crypto';
 import * as rewire from 'rewire';
 import * as sinon from 'sinon';
@@ -8,7 +9,7 @@ import { Ed } from '../../../src/helpers';
 import { BlockLogic } from '../../../src/logic';
 import { BlockRewardLogicStub, TransactionLogicStub, ZSchemaStub } from '../../stubs';
 
-// FIXME problem with import of this library
+// tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
 
 const { expect } = chai;
@@ -98,7 +99,8 @@ describe('logic/block', () => {
 
     // Default stub configuration
     blockRewardLogicStub.stubConfig.calcReward.return = 100000;
-    transactionLogicStub.stubConfig.getBytes.return = buffer;
+    transactionLogicStub.stubs.getBytes.returns(buffer);
+    transactionLogicStub.stubs.objectNormalize.returns(null);
 
     data = {
       keypair: dummyKeypair,
@@ -276,7 +278,8 @@ describe('logic/block', () => {
 
   describe('objectNormalize() with a bad block schema', () => {
     it('should throw an exception if schema validation fails', () => {
-      zschemastub.stubConfig.validate.return = false;
+      zschemastub.enqueueResponse('getLastErrors', []);
+      zschemastub.enqueueResponse('validate', false);
       dummyBlock.greeting = 'Hello World!';
       expect(() => {
         instance.objectNormalize(dummyBlock);
@@ -345,9 +348,11 @@ describe('logic/block', () => {
       expect(block.totalForged).to.equal('150');
     });
 
-    it('should call this.getAddressByPublicKey with b_generatorPublicKey', () => {
-      const getAddressByPublicKeySpy = sinon.spy(instance, 'getAddressByPublicKey');
-      instance.dbRead(raw);
+    it('should not call this.getAddressByPublicKey with b_generatorPublicKey until generatorId is read', () => {
+      const getAddressByPublicKeySpy = sinon.spy(BlockLogic as any, 'getAddressByPublicKey');
+      const result = instance.dbRead(raw);
+      expect(getAddressByPublicKeySpy.called).to.be.false;
+      result.generatorId;
       expect(getAddressByPublicKeySpy.called).to.be.true;
       expect(getAddressByPublicKeySpy.firstCall.args[0]).to.be.eq(raw.b_generatorPublicKey);
       getAddressByPublicKeySpy.restore();
@@ -357,6 +362,7 @@ describe('logic/block', () => {
       const parseIntSpy = sinon.spy(global, 'parseInt');
       instance.dbRead(raw);
       expect(parseIntSpy.callCount).to.be.eq(9);
+      parseIntSpy.restore();
     });
   });
 });

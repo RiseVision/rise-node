@@ -154,7 +154,7 @@ describe('helpers/promiseUtils', () => {
         const timeStart = Date.now();
         await expect(wait(msToWait)).to.be.fulfilled;
         const timeEnd = Date.now();
-        expect(timeEnd - timeStart).to.be.greaterThan(msToWait - 1);
+        expect(timeEnd - timeStart).to.be.gte(msToWait - 1);
       });
     });
 });

@@ -5,7 +5,7 @@ export function DebugLog(target: any, method: string, descriptor: TypedPropertyD
   // Do nothing for now.
   const old        = descriptor.value;
   // tslint: disable-next-line
-  descriptor.value = async function debugLogWrap(...args) {
+  descriptor.value = function debugLogWrap(...args) {
     const now = Date.now();
     console.log(`-> ${this.constructor.name}.${method} with ${args.length} args -> ${CircularJSON.stringify(args)}`);
     const toRet = old.apply(this, args);

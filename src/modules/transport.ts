@@ -2,8 +2,9 @@ import { inject, injectable, postConstruct, tagged } from 'inversify';
 import * as popsicle from 'popsicle';
 import * as Throttle from 'promise-parallel-throttle';
 import * as z_schema from 'z-schema';
-import { cbToPromise, constants as constantsType, ILogger, JobsQueue, Sequence } from '../helpers/';
+import { cbToPromise, constants as constantsType, ILogger, Sequence } from '../helpers/';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
   IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule,
@@ -21,26 +22,6 @@ export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | '
 
 @injectable()
 export class TransportModule implements ITransportModule {
-  // Modules
-  @inject(Symbols.modules.peers)
-  private peersModule: IPeersModule;
-  @inject(Symbols.modules.multisignatures)
-  private multisigModule: IMultisignaturesModule;
-  @inject(Symbols.modules.transactions)
-  private transactionModule: ITransactionsModule;
-  @inject(Symbols.modules.system)
-  private systemModule: ISystemModule;
-
-  // Logic
-  @inject(Symbols.logic.appState)
-  private appState: IAppState;
-  @inject(Symbols.logic.broadcaster)
-  private broadcasterLogic: IBroadcasterLogic;
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
-  @inject(Symbols.logic.peers)
-  private peersLogic: IPeersLogic;
-
   // Generics
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
@@ -54,10 +35,32 @@ export class TransportModule implements ITransportModule {
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
   private balancesSequence: Sequence;
+  @inject(Symbols.helpers.jobsQueue)
+  private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
+
+  // Logic
+  @inject(Symbols.logic.appState)
+  private appState: IAppState;
+  @inject(Symbols.logic.broadcaster)
+  private broadcasterLogic: IBroadcasterLogic;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
+  @inject(Symbols.logic.peers)
+  private peersLogic: IPeersLogic;
+
+  // Modules
+  @inject(Symbols.modules.peers)
+  private peersModule: IPeersModule;
+  @inject(Symbols.modules.multisignatures)
+  private multisigModule: IMultisignaturesModule;
+  @inject(Symbols.modules.transactions)
+  private transactionModule: ITransactionsModule;
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
 
   private loaded: boolean = false;
 
@@ -148,7 +151,7 @@ export class TransportModule implements ITransportModule {
   public async onPeersReady() {
     this.logger.trace('Peers ready');
     // await this.discoverPeers();
-    JobsQueue.register('peersDiscoveryAndUpdate', async () => {
+    this.jobsQueue.register('peersDiscoveryAndUpdate', async () => {
       try {
         await this.discoverPeers();
       } catch (err) {

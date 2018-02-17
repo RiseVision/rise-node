@@ -1,4 +1,4 @@
-// tslint:disable object-literal-sort-keys
+// tslint:disable object-literal-sort-keys object-literal-key-quotes
 import constants from '../helpers/constants';
 
 export default {
@@ -6,138 +6,182 @@ export default {
     id        : 'transactions.getTransactions',
     type      : 'object',
     properties: {
-      blockId            : {
+      'and:blockId'         : {
         type     : 'string',
         format   : 'id',
         minLength: 1,
         maxLength: 20,
       },
-      type               : {
+      blockId               : {
+        type     : 'string',
+        format   : 'id',
+        minLength: 1,
+        maxLength: 20,
+      },
+      'and:type'            : {
         type   : 'integer',
         minimum: 0,
         maximum: 10,
       },
-      senderId           : {
+      type                  : {
+        type   : 'integer',
+        minimum: 0,
+        maximum: 10,
+      },
+      'and:senderId'        : {
         type     : 'string',
         format   : 'address',
         minLength: 1,
         maxLength: 22,
       },
-      senderPublicKey    : {
+      senderId              : {
+        type     : 'string',
+        format   : 'address',
+        minLength: 1,
+        maxLength: 22,
+      },
+      'and:senderPublicKey' : {
         type  : 'string',
         format: 'publicKey',
       },
-      ownerPublicKey     : {
+      senderPublicKey       : {
         type  : 'string',
         format: 'publicKey',
       },
-      ownerAddress       : {
+      'and:recipientId'     : {
         type     : 'string',
         format   : 'address',
         minLength: 1,
         maxLength: 22,
       },
-      recipientId        : {
+      recipientId           : {
         type     : 'string',
         format   : 'address',
         minLength: 1,
         maxLength: 22,
       },
-      amount             : {
-        type   : 'integer',
-        minimum: 0,
-        maximum: constants.fixedPoint,
-      },
-      fee                : {
-        type   : 'integer',
-        minimum: 0,
-        maximum: constants.fixedPoint,
-      },
-      senderPublicKeys   : {
+      senderPublicKeys      : {
         type    : 'array',
         minItems: 1,
-        items : {
+        items   : {
           type  : 'string',
           format: 'publicKey',
         },
       },
-      recipientPublicKeys: {
+      recipientPublicKeys   : {
         type    : 'array',
         minItems: 1,
-        items : {
+        items   : {
           type  : 'string',
           format: 'publicKey',
         },
       },
-      senderIds          : {
+      senderIds             : {
         type    : 'array',
         minItems: 1,
-        items : {
+        items   : {
           type     : 'string',
           format   : 'address',
           minLength: 1,
           maxLength: 22,
         },
       },
-      recipientIds       : {
+      recipientIds          : {
         type    : 'array',
         minItems: 1,
-        items : {
+        items   : {
           type     : 'string',
           format   : 'address',
           minLength: 1,
           maxLength: 22,
         },
       },
-      fromHeight         : {
+      'and:fromHeight'      : {
         type   : 'integer',
         minimum: 1,
       },
-      toHeight           : {
+      fromHeight            : {
         type   : 'integer',
         minimum: 1,
       },
-      fromTimestamp      : {
+      'and:toHeight'        : {
+        type   : 'integer',
+        minimum: 1,
+      },
+      toHeight              : {
+        type   : 'integer',
+        minimum: 1,
+      },
+      'and:fromTimestamp'   : {
         type   : 'integer',
         minimum: 0,
       },
-      toTimestamp        : {
+      fromTimestamp         : {
+        type   : 'integer',
+        minimum: 0,
+      },
+      'and:toTimestamp'     : {
         type   : 'integer',
         minimum: 1,
       },
-      fromUnixTime       : {
+      toTimestamp           : {
+        type   : 'integer',
+        minimum: 1,
+      },
+      'and:fromUnixTime'    : {
         type   : 'integer',
         minimum: (constants.epochTime.getTime() / 1000),
       },
-      toUnixTime         : {
+      fromUnixTime          : {
+        type   : 'integer',
+        minimum: (constants.epochTime.getTime() / 1000),
+      },
+      'and:toUnixTime'      : {
         type   : 'integer',
         minimum: (constants.epochTime.getTime() / 1000 + 1),
       },
-      minAmount          : {
+      toUnixTime            : {
+        type   : 'integer',
+        minimum: (constants.epochTime.getTime() / 1000 + 1),
+      },
+      'and:minAmount'       : {
         type   : 'integer',
         minimum: 0,
       },
-      maxAmount          : {
+      minAmount             : {
+        type   : 'integer',
+        minimum: 0,
+      },
+      'and:maxAmount'       : {
         type   : 'integer',
         minimum: 1,
       },
-      minConfirmations   : {
+      maxAmount             : {
+        type   : 'integer',
+        minimum: 1,
+      },
+      'and:minConfirmations': {
         type   : 'integer',
         minimum: 0,
       },
-      orderBy            : {
+      minConfirmations      : {
+        type   : 'integer',
+        minimum: 0,
+      },
+      orderBy               : {
         type: 'string',
       },
-      limit              : {
+      limit                 : {
         type   : 'integer',
         minimum: 1,
         maximum: 1000,
       },
-      offset             : {
+      offset                : {
         type   : 'integer',
         minimum: 0,
       },
     },
+    additionalProperties: false,
   },
   getTransaction       : {
     id        : 'transactions.getTransaction',

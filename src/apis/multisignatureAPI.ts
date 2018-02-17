@@ -1,6 +1,6 @@
 import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
-import { Get, JsonController, Post, Put, QueryParam } from 'routing-controllers';
+import { Get, JsonController, Post, Put, QueryParam, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { catchToLoggerAndRemapError, ILogger} from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
@@ -8,7 +8,9 @@ import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidat
 import { ITransactionLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
+import multisigSchema from '../schema/multisignatures';
 import sql from '../sql/multisignatures';
+import { publicKey as pkType } from '../types/sanityTypes';
 
 @JsonController('/api/multisignatures')
 @injectable()
@@ -36,8 +38,9 @@ export class MultisignatureAPI {
 
   @Get('/accounts')
   @ValidateSchema()
-  public async getAccounts(@SchemaValid({ format: 'publicKey', type: 'string' })
-                           @QueryParam('publicKey', { required: true }) publicKey: string) {
+  public async getAccounts(@SchemaValid(multisigSchema.getAccounts)
+                           @QueryParams() params: { publicKey: pkType }) {
+    const { publicKey } = params;
     const row = await this.db.one(sql.getAccountIds, { publicKey })
       .catch(catchToLoggerAndRemapError('Multisignature#getAccountIds error', this.logger));
 
@@ -65,8 +68,9 @@ export class MultisignatureAPI {
 
   @Get('/pending')
   @ValidateSchema()
-  public async getPending(@SchemaValid({ format: 'publicKey', type: 'string' })
-                          @QueryParam('publicKey', { required: true }) publicKey: string) {
+  public async getPending(@SchemaValid(multisigSchema.pending)
+                          @QueryParams() params: { publicKey: pkType }) {
+    const { publicKey } = params;
     const txs = this.transactions.getMultisignatureTransactionList(false)
       .filter((tx) => tx.senderPublicKey === publicKey);
 

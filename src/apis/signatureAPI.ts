@@ -1,10 +1,11 @@
 import { inject, injectable } from 'inversify';
-import { Get, JsonController, QueryParam } from 'routing-controllers';
+import { Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
+import sigSchema from '../schema/signatures';
 
 @JsonController('/api/signatures')
 @injectable()
@@ -17,11 +18,17 @@ export class SignaturesAPI {
 
   @Get('/fee')
   @ValidateSchema()
-  public fees(@QueryParam('height', { required: true }) @SchemaValid({ type: 'integer', minimum: 1 })height: number) {
-    const feesForHeight = this.system.getFees(height);
-    const { fees }      = feesForHeight;
+  public fees(@SchemaValid(sigSchema.getFee, {castNumbers: true})
+              @QueryParams()
+                params: { height?: number }) {
+    const feesForHeight = this.system.getFees(params.height);
+    const {fees}        = feesForHeight;
     delete feesForHeight.fees;
-    return { ...feesForHeight, ...{ fee: fees.secondsignature } };
+    return {...feesForHeight, ...{fee: fees.secondsignature}};
   }
 
+  @Put('/')
+  public addSignature() {
+    return Promise.reject('Method is now deprecated');
+  }
 }

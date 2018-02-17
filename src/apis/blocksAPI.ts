@@ -1,12 +1,12 @@
 import { inject, injectable, tagged } from 'inversify';
 import { IDatabase } from 'pg-promise';
-import { Get, JsonController, QueryParam, QueryParams } from 'routing-controllers';
+import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { constants as constantsType, OrderBy, Sequence } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { IBlockLogic, IBlockReward } from '../ioc/interfaces/logic';
-import { IBlocksModule, ISystemModule} from '../ioc/interfaces/modules';
+import { IBlocksModule, ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { SignedBlockType } from '../logic';
 import blocksSchema from '../schema/blocks';
@@ -60,16 +60,23 @@ export class BlocksAPI {
 
   @Get('/')
   @ValidateSchema()
-  public async getBlocks(@SchemaValid(blocksSchema.getBlocks, {castNumbers: true})
+  public async getBlocks(@SchemaValid(blocksSchema.getBlocks, { castNumbers: true })
                          @QueryParams() filters) {
     return this.dbSequence.addAndPromise(() => this.list(filters));
   }
 
   @Get('/get')
   @ValidateSchema()
-  public async getBlock(@SchemaValid(blocksSchema.getBlock, {castNumbers: true})
-                        @QueryParams() filters) {
-    return this.dbSequence.addAndPromise((() => this.list(filters)));
+  public async getBlock(@SchemaValid(blocksSchema.getBlock, { castNumbers: true })
+                        @QueryParams() filters: { id: string }) {
+    const block = await this.dbSequence.addAndPromise(async () => {
+      const rows = await this.db.query(sql.getById, { id: filters.id });
+      if (rows.length === 0) {
+        throw new Error('Block not found');
+      }
+      return this.blockLogic.dbRead(rows[0]);
+    });
+    return { block };
   }
 
   @Get('/getHeight')
@@ -80,7 +87,7 @@ export class BlocksAPI {
 
   @Get('/getBroadhash')
   public async getBroadHash() {
-    return this.systemModule.getBroadhash();
+    return { broadhash: await this.systemModule.getBroadhash() };
   }
 
   @Get('/getEpoch')
@@ -90,17 +97,17 @@ export class BlocksAPI {
 
   @Get('/getFee')
   @ValidateSchema()
-  public getFee(@SchemaValid(blocksSchema.getFee.properties.height)
-                @QueryParam('height', { required: true }) height: number) {
-    const fees = this.systemModule.getFees(height);
-    return { fee: fees.fees.send, fromHeight: fees.fromHeight, toHeight: fees.toHeight, height };
+  public getFee(@SchemaValid(blocksSchema.getFee, { castNumbers: true })
+                @QueryParams() params: { height: number }) {
+    const fees = this.systemModule.getFees(params.height);
+    return { fee: fees.fees.send, fromHeight: fees.fromHeight, toHeight: fees.toHeight, height: fees.height };
   }
 
   @Get('/getFees')
   @ValidateSchema()
-  public getFees(@SchemaValid(blocksSchema.getFees.properties.height)
-                 @QueryParam('height', { required: true }) height: number) {
-    return this.systemModule.getFees(height);
+  public getFees(@SchemaValid(blocksSchema.getFees, { castNumbers: true })
+                 @QueryParams() params: { height: number }) {
+    return this.systemModule.getFees(params.height);
   }
 
   @Get('/getNethash')

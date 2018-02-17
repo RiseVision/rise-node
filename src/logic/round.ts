@@ -29,8 +29,7 @@ export type RoundLogicScope = {
   }
 };
 
-// TODO: check if we can inversifyjs this.
-// This cannot be injected automatically cause it will need to be instantiated by
+// This cannot be injected directly as it needs to be created.
 // rounds module.
 export class RoundLogic implements IRoundLogic {
   constructor(public scope: RoundLogicScope, public task: ITask<any>, private slots: Slots) {
@@ -91,7 +90,7 @@ export class RoundLogic implements IRoundLogic {
   }
 
   /**
-   * Update votes for thie round
+   * Update votes for the round
    */
   public updateVotes(): Promise<void> {
     return this.getVotes()
@@ -138,7 +137,7 @@ export class RoundLogic implements IRoundLogic {
   }
 
   /**
-   * REmove blocks higher than this block height
+   * Remove blocks higher than this block height
    */
   public truncateBlocks() {
     return this.task.none(
@@ -158,7 +157,7 @@ export class RoundLogic implements IRoundLogic {
 
   /**
    * Performed when rollbacking last block of a round.
-   * It restores the round snapshot from sql
+   * It restores the votes snapshot from sql
    */
   public restoreVotesSnapshot() {
     this.scope.library.logger.debug('Restoring mem_accounts.vote snapshot...');
