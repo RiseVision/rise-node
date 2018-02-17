@@ -202,12 +202,13 @@ export class AppManager {
     this.container.bind(Symbols.helpers.jobsQueue).to(JobsQueue).inSingletonScope();
     this.container.bind(Symbols.helpers.logger).toConstantValue(this.logger);
     // this.container.bind(Symbols.helpers.sequence).toConstantValue();
+    const self = this;
     [Symbols.tags.helpers.dbSequence, Symbols.tags.helpers.defaultSequence, Symbols.tags.helpers.balancesSequence]
       .forEach((sequenceTag) => {
         this.container.bind(Symbols.helpers.sequence)
           .toConstantValue(new Sequence({
             onWarning(current) {
-              this.logger.warn(`${sequenceTag} queue`, current);
+              self.logger.warn(`${sequenceTag} queue`, current);
             },
           }))
           .whenTargetTagged(Symbols.helpers.sequence, sequenceTag);
