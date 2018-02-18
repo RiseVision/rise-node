@@ -107,7 +107,7 @@ export class PeersLogic implements IPeersLogic {
     if (this.exists(peer)) {
       const thePeer = this.create(peer);
       this.logger.info('Removed peer', thePeer.string);
-      this.logger.debug('Removed peer', { peer: this.peers[thePeer.string] });
+      // this.logger.debug('Removed peer', this.peers[thePeer.string]);
       delete this.peers[thePeer.string];
       return true;
     }
