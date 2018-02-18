@@ -5,7 +5,7 @@ import * as rewire from 'rewire';
 import { SinonFakeTimers, SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { catchToLoggerAndRemapError, constants } from '../../../src/helpers';
-
+import { ForgeModule } from '../../../src/modules';
 import {
   AccountsModuleStub,
   AppStateStub,
@@ -244,26 +244,70 @@ describe('modules/forge', () => {
   });
 
   describe('onBlockchainReady', () => {
+    // We cannot use rewire here due to incompatibility with FakeTimers.
+    let inst: ForgeModule;
+    let forgeStub: SinonStub;
     beforeEach(() => {
       jobsQueueStub.stubs.register.resolves();
+      transactionsModuleStub.stubs.fillPool.resolves();
+      inst = new ForgeModule();
+      // Immediately execute the jobsQueue Job for testing it
+      jobsQueueStub.stubs.register.callsFake((k, t) => {
+        t();
+      });
+      (inst as any).jobsQueue = jobsQueueStub;
+      (inst as any).transactionsModule = transactionsModuleStub;
+      (inst as any).logger = loggerStub;
+      forgeStub = sandbox.stub(inst as any, 'forge');
     });
 
-    // FIXME - Cannot test this method because clock.tick is not doing its job.
-    // hours_wasted_counter = 2
-    it('should call jobsQueue.register after 10 seconds'
-      // , async () => {
-      // const p = instance.onBlockchainReady();
-      // expect(jobsQueueStub.stubs.register.notCalled).to.be.true;
-      // clock.tick(10100);
-      // await p;
-      // expect(jobsQueueStub.stubs.register.called).to.be.true;
-      // }
-    );
+    it('should call jobsQueue.register after 10 seconds', async () => {
+      const p = inst.onBlockchainReady();
+      expect(jobsQueueStub.stubs.register.notCalled).to.be.true;
+      clock.tick(10100);
+      await p;
+      expect(jobsQueueStub.stubs.register.called).to.be.true;
+      expect(jobsQueueStub.stubs.register.firstCall.args[0]).to.be.equal('delegatesNextForge');
+      expect(jobsQueueStub.stubs.register.firstCall.args[1]).to.be.a('function');
+      expect(jobsQueueStub.stubs.register.firstCall.args[2]).to.be.equal(1000);
+    });
 
-    it('should call transactionsModule.fillPool in scheduled job');
-    it('should call this.forge in scheduled job');
-    it('should call logger.warn in scheduled job if transactionsModule.fillPool throws');
-    it('should call logger.warn in scheduled job if this.forge throws');
+    it('should call transactionsModule.fillPool in scheduled job', async () => {
+      const p = inst.onBlockchainReady();
+      clock.tick(10100);
+      await p;
+      expect(transactionsModuleStub.stubs.fillPool.calledOnce).to.be.true;
+    });
+
+    it('should call this.forge in scheduled job', async () => {
+      const p = inst.onBlockchainReady();
+      clock.tick(10100);
+      await p;
+      expect(forgeStub.calledOnce).to.be.true;
+    });
+
+    it('should call logger.warn in scheduled job if transactionsModule.fillPool throws', async () => {
+      const expectedError = new Error('err');
+      transactionsModuleStub.stubs.fillPool.throws(expectedError);
+      const p = inst.onBlockchainReady();
+      clock.tick(10100);
+      await p;
+      expect(forgeStub.notCalled).to.be.true;
+      expect(loggerStub.stubs.warn.calledOnce).to.be.true;
+      expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Error in nextForge');
+      expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.deep.equal(expectedError);
+    });
+
+    it('should call logger.warn in scheduled job if this.forge throws', async () => {
+      const expectedError = new Error('err');
+      forgeStub.throws(expectedError);
+      const p = inst.onBlockchainReady();
+      clock.tick(500000);
+      await p;
+      expect(loggerStub.stubs.warn.calledOnce).to.be.true;
+      expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Error in nextForge');
+      expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.deep.equal(expectedError);
+    });
   });
 
   describe('forge', () => {
@@ -272,6 +316,7 @@ describe('modules/forge', () => {
       // We stub instance.loadDelegates to assert that function returns
       loadDelegatesStub = sandbox.stub(instance as any, 'loadDelegates');
     });
+
     describe('When not ready to forge', () => {
       it('should call appState.get', async () => {
         appStateStub.enqueueResponse('get', true);
@@ -652,6 +697,7 @@ describe('modules/forge', () => {
         const retVal = await instance.getBlockSlotData(0, 12345);
         expect(retVal).to.be.null;
       });
+
       it('should NOT call slots.getSlotTime', async () => {
         await instance.getBlockSlotData(0, 12345);
         expect(slotsStub.stubs.getSlotTime.notCalled).to.be.true;
