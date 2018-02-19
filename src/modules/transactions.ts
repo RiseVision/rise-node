@@ -13,18 +13,16 @@ import txSQL from '../sql/logic/transactions';
 export class TransactionsModule implements ITransactionsModule {
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
-
-  @inject(Symbols.logic.transactionPool)
-  private transactionPool: ITransactionPoolLogic;
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
-
   @inject(Symbols.generic.db)
   private db: IDatabase<any>;
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  @inject(Symbols.logic.transactionPool)
+  private transactionPool: ITransactionPoolLogic;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
 
   public cleanup() {
     return Promise.resolve();
