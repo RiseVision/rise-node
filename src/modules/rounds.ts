@@ -11,33 +11,33 @@ import { address, publicKey } from '../types/sanityTypes';
 @injectable()
 export class RoundsModule implements IRoundsModule {
 
-  // modules
-  @inject(Symbols.modules.delegates)
-  private delegatesModule: IDelegatesModule;
-  @inject(Symbols.modules.accounts)
-  private accountsModule: IAccountsModule;
-
   // Helpers and generics
-  @inject(Symbols.helpers.logger)
-  private logger: ILogger;
-  @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
-  @inject(Symbols.helpers.slots)
-  private slots: Slots;
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
   @inject(Symbols.helpers.bus)
   private bus: Bus;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
+  @inject(Symbols.generic.db)
+  private db: IDatabase<any>;
   @inject(Symbols.generic.socketIO)
   private io: SocketIO.Server;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.helpers.slots)
+  private slots: Slots;
 
   // Logic
   @inject(Symbols.logic.appState)
   private appStateLogic: IAppState;
-  @inject(Symbols.logic.rounds)
-  private roundsLogic: IRoundsLogic;
   @inject(Symbols.logic.round)
   private RoundLogic: IRoundLogicNewable;
+  @inject(Symbols.logic.rounds)
+  private roundsLogic: IRoundsLogic;
+
+  // modules
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.delegates)
+  private delegatesModule: IDelegatesModule;
 
   public onFinishRound(round: number) {
     this.io.sockets.emit('rounds/change', { number: round });
