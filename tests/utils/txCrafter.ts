@@ -3,7 +3,7 @@ import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
 import { generateAccount } from './accountsUtils';
 
-export const createRandomTransactions = (config: { send?: number, vote?: number } = {}) => {
+export const createRandomTransactions = (config: { send?: number, vote?: number } = {}): Array<ITransaction> => {
   const send = config.send || 0;
   const vote = config.vote || 0;
 

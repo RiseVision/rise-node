@@ -220,7 +220,7 @@ describe('modules/utils', () => {
     it('should query height by id.', async () => {
       await inst.loadBlocksData({id: '1'});
       expect(dbStub.stubs.oneOrNone.firstCall.args[1]).to.be.deep.eq({
-        lastId: '1',
+        id: '1',
       });
     });
     it('should query db correctly based on input and height output', async () => {
