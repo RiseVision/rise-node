@@ -44,10 +44,10 @@ export class DelegatesModule implements IDelegatesModule {
   private roundsLogic: IRoundsLogic;
 
   // Modules
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
