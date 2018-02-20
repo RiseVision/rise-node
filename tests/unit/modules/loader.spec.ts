@@ -117,6 +117,7 @@ describe('modules/loader', () => {
     container.bind(Symbols.modules.transport).to(TransportModuleStub).inSingletonScope();
 
     container.bind(Symbols.modules.loader).to(LoaderModuleRewire.LoaderModule);
+
     instance = container.get(Symbols.modules.loader);
   });
 
@@ -125,10 +126,9 @@ describe('modules/loader', () => {
     promiseRetryStub = sandbox.stub().callsFake(sandbox.spy((w) => Promise.resolve(w(retryStub))));
     LoaderModuleRewire.__set__('promiseRetry', promiseRetryStub);
 
-    (instance as  any).sequence = {
-      addAndPromise: sandbox.spy((w) => Promise.resolve(w())),
-    };
 
+    (instance as any).jobsQueue.register                              = sandbox.stub().callsFake((val, fn) => fn());
+    (instance as  any).sequence.addAndPromise                         = sandbox.stub().callsFake(w => Promise.resolve(w()));
     instance                                                          = container.get(Symbols.modules.loader);
     container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock = { height: 1, id: 1 } as any;
   });
@@ -1896,8 +1896,6 @@ describe('modules/loader', () => {
 
       (container.get<BlocksModuleStub>(Symbols.modules.blocks) as any).lastReceipt = lastReceiptStubs;
 
-      jobsQueueStub.stubs.register.callsArg(1);
-
       appState.enqueueResponse('get', true);
       appState.enqueueResponse('get', false);
 
@@ -1928,13 +1926,14 @@ describe('modules/loader', () => {
     });
 
     it('should call jobsQueue.register', async () => {
+      let jobsQueueRegisterStub = (instance as any).jobsQueue.register;
       await (instance as any).syncTimer();
 
-      expect(jobsQueueStub.stubs.register.calledOnce).to.be.true;
-      expect(jobsQueueStub.stubs.register.firstCall.args.length).to.be.equal(3);
-      expect(jobsQueueStub.stubs.register.firstCall.args[0]).to.be.equal('loaderSyncTimer');
-      expect(jobsQueueStub.stubs.register.firstCall.args[1]).to.be.a('function');
-      expect(jobsQueueStub.stubs.register.firstCall.args[2]).to.be
+      expect(jobsQueueRegisterStub.calledOnce).to.be.true;
+      expect(jobsQueueRegisterStub.firstCall.args.length).to.be.equal(3);
+      expect(jobsQueueRegisterStub.firstCall.args[0]).to.be.equal('loaderSyncTimer');
+      expect(jobsQueueRegisterStub.firstCall.args[1]).to.be.a('function');
+      expect(jobsQueueRegisterStub.firstCall.args[2]).to.be
         .equal(1000);
     });
 
@@ -1952,17 +1951,33 @@ describe('modules/loader', () => {
       expect(lastReceiptStubs.isStale.firstCall.args.length).to.be.equal(0);
     });
 
-    //should find way to call .syncTimer with sync call of callbacks
-    it('should call instance.sync');
+    it('should call instance.sync', async () => {
+      await (instance as any).syncTimer();
 
-    it('should call logger.warn if instance.sync throw error');
+      process.nextTick(() => {
+        expect(syncStub.calledOnce).to.be.true;
+        expect(syncStub.firstCall.args.length).to.be.equal(0);
+      });
+
+    });
+
+    it('should call logger.warn if instance.sync throw error', async () => {
+      syncStub.rejects({});
+
+      await (instance as any).syncTimer();
+
+      process.nextTick(() => {
+        expect(retryStub.calledOnce).to.be.true;
+        expect(loggerStub.stubs.warn.calledOnce).to.be.true;
+      });
+    });
 
     it('should not call instance.sync if instance.loaded is false', async () => {
       (instance as any).loaded = false;
 
       await (instance as any).syncTimer();
 
-      expect(syncStub.notCalled).to.be.true;
+      expect(retryStub.notCalled).to.be.true;
     });
 
     it('should not call instance.sync if !instance.isSyncing is false', async () => {
