@@ -185,7 +185,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     return await this.dbSequence.addAndPromise(async () => {
       const res = await this.db.oneOrNone<{height: number}>(
         sql.getHeightByLastId,
-        { lastId: filter.lastId || filter.id || null }
+        { id: filter.lastId || filter.id || null }
         );
 
       const height = res !== null ? res.height : 0;
