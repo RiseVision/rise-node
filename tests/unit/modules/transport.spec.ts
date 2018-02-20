@@ -45,6 +45,7 @@ describe('src/modules/transport.ts', () => {
     sandbox   = sinon.sandbox.create();
     container = createContainer();
     container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
+    container.bind(Symbols.modules.peers).to(PeersModuleStub).inSingletonScope();
     container.rebind(Symbols.modules.transport).to(TransportModule);
   });
 

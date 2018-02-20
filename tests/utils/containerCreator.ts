@@ -7,7 +7,6 @@ import {
   ExceptionsManagerStub,
   LoggerStub,
   PeersLogicStub,
-  PeersModuleStub,
   SystemModuleStub,
   TransactionsModuleStub,
 } from '../stubs';
@@ -29,10 +28,10 @@ import { BlocksSubmoduleUtilsStub } from '../stubs/modules/blocks/BlocksSubmodul
 import BlocksModuleStub from '../stubs/modules/BlocksModuleStub';
 import { ForgeModuleStub } from '../stubs/modules/ForgeModuleStub';
 import { ForkModuleStub } from '../stubs/modules/ForkModuleStub';
+import MultisignaturesModuleStub from '../stubs/modules/MultisignaturesModuleStub';
 import { RoundsModuleStub } from '../stubs/modules/RoundsModuleStub';
 import TransportModuleStub from '../stubs/modules/TransportModuleStub';
 import SocketIOStub from '../stubs/utils/SocketIOStub';
-import MultisignaturesModuleStub from '../stubs/modules/MultisignaturesModuleStub';
 
 export const createContainer = (): Container => {
   const container = new Container();
@@ -43,7 +42,7 @@ export const createContainer = (): Container => {
   container.bind(Symbols.generic.socketIO).to(SocketIOStub).inSingletonScope();
   container.bind(Symbols.generic.zschema).to(ZSchemaStub).inSingletonScope();
 
-  container.bind(Symbols.helpers.constants).toConstantValue({...{}, ...constants});
+  container.bind(Symbols.helpers.constants).toConstantValue({ ...{}, ...constants });
   container.bind(Symbols.helpers.bus).to(BusStub).inSingletonScope();
   container.bind(Symbols.helpers.ed).to(EdStub).inSingletonScope();
   container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManagerStub).inSingletonScope();
@@ -51,15 +50,15 @@ export const createContainer = (): Container => {
   container.bind(Symbols.helpers.logger).to(LoggerStub).inSingletonScope();
   container.bind(Symbols.helpers.sequence).to(SequenceStub).inSingletonScope().whenTargetTagged(
     Symbols.helpers.sequence,
-    Symbols.tags.helpers.defaultSequence
+    Symbols.tags.helpers.defaultSequence,
   );
   container.bind(Symbols.helpers.sequence).to(SequenceStub).inSingletonScope().whenTargetTagged(
     Symbols.helpers.sequence,
-    Symbols.tags.helpers.balancesSequence
+    Symbols.tags.helpers.balancesSequence,
   );
   container.bind(Symbols.helpers.sequence).to(SequenceStub).inSingletonScope().whenTargetTagged(
     Symbols.helpers.sequence,
-    Symbols.tags.helpers.dbSequence
+    Symbols.tags.helpers.dbSequence,
   );
   container.bind(Symbols.helpers.slots).to(SlotsStub).inSingletonScope();
 
@@ -86,7 +85,6 @@ export const createContainer = (): Container => {
   container.bind(Symbols.modules.multisignatures).to(MultisignaturesModuleStub).inSingletonScope();
   container.bind(Symbols.modules.rounds).to(RoundsModuleStub).inSingletonScope();
   container.bind(Symbols.modules.system).to(SystemModuleStub).inSingletonScope();
-  container.bind(Symbols.modules.peers).to(PeersModuleStub).inSingletonScope();
   container.bind(Symbols.modules.transport).to(TransportModuleStub).inSingletonScope();
   container.bind(Symbols.modules.transactions).to(TransactionsModuleStub).inSingletonScope();
 
