@@ -2,13 +2,13 @@
 import { AccountsAPI } from './accountsAPI';
 import { BlocksAPI } from './blocksAPI';
 import { DelegatesAPI } from './delegatesAPI';
+import { LoaderAPI } from './loaderAPI';
 import { MultisignatureAPI } from './multisignatureAPI';
 import { PeersAPI } from './peersAPI';
 import { SignaturesAPI } from './signatureAPI';
 import { TransactionsAPI } from './transactions';
 import { TransportAPI } from './transportAPI';
 import './utils/successInterceptor';
-import { LoaderAPI } from './loaderAPI';
 
 export * from './accountsAPI';
 export * from './blocksAPI';
