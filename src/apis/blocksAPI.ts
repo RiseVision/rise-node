@@ -32,24 +32,12 @@ type FilterType = {
 @IoCSymbol(Symbols.api.blocks)
 @injectable()
 export class BlocksAPI {
-  // Modules
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.system)
-  private systemModule: ISystemModule;
 
   // Generic
-  // tslint:disable-next-line
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
   @inject(Symbols.generic.db)
   private db: IDatabase<any>;
-
-  // Logic
-  @inject(Symbols.logic.blockReward)
-  private blockRewardLogic: IBlockReward;
-  @inject(Symbols.logic.block)
-  private blockLogic: IBlockLogic;
 
   // Helpers
   @inject(Symbols.helpers.constants)
@@ -57,6 +45,18 @@ export class BlocksAPI {
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence)
   private dbSequence: Sequence;
+
+  // Logic
+  @inject(Symbols.logic.blockReward)
+  private blockRewardLogic: IBlockReward;
+  @inject(Symbols.logic.block)
+  private blockLogic: IBlockLogic;
+
+  // Modules
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
 
   @Get('/')
   @ValidateSchema()
