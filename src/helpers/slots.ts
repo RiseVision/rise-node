@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
+import { ISlots } from '../ioc/interfaces/helpers/ISlots';
 import { Symbols } from '../ioc/symbols';
 import constantsType from './constants';
-import { ISlots } from '../ioc/interfaces/helpers/ISlots';
 
 @injectable()
 export class Slots implements ISlots {
