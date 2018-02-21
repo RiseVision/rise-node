@@ -1,4 +1,3 @@
-// tslint:disable-next-line
 import { ILogger } from './index';
 
 export class BlockProgressLogger {
