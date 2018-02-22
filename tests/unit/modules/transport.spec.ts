@@ -580,12 +580,73 @@ describe('src/modules/transport.ts', () => {
 
   describe('onNewBlock', () => {
 
-    it('should call systemModule.update');
-    it('should call broadcasterLogic.maxRelays');
-    it('should call this.broadcasterLogic.broadcast');
-    it('should call io.sockets.emit');
-    it('should not call broadcasterLogic.broadcast if broadcasterLogic.maxRelays returns true');
-    it('check if broadcast is false');
+    let broadcast;
+    let block;
+
+    beforeEach(() => {
+      block                                = {};
+      broadcast                            = true;
+      (inst as any).systemModule.broadhash = 'broadhash';
+      systemModule.enqueueResponse('update', Promise.resolve());
+      broadcasterLogic.enqueueResponse('maxRelays', false);
+      broadcasterLogic.enqueueResponse('broadcast', false);
+    });
+
+    it('should call systemModule.update', async () => {
+      await inst.onNewBlock(block, broadcast);
+
+      expect(systemModule.stubs.update.calledOnce).to.be.true;
+      expect(systemModule.stubs.update.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should call broadcasterLogic.maxRelays', async () => {
+      await inst.onNewBlock(block, broadcast);
+
+      expect(broadcasterLogic.stubs.maxRelays.calledOnce).to.be.true;
+      expect(broadcasterLogic.stubs.maxRelays.firstCall.args.length).to.be.equal(1);
+      expect(broadcasterLogic.stubs.maxRelays.firstCall.args[0]).to.be.deep.equal(block);
+    });
+
+    it('should call broadcasterLogic.broadcast', async () => {
+      await inst.onNewBlock(block, broadcast);
+
+      expect(broadcasterLogic.stubs.broadcast.calledOnce).to.be.true;
+      expect(broadcasterLogic.stubs.broadcast.firstCall.args.length).to.be.equal(2);
+      expect(broadcasterLogic.stubs.broadcast.firstCall.args[0]).to.be.deep.equal({
+        limit: constants.maxPeers, broadhash: 'broadhash',
+      });
+      expect(broadcasterLogic.stubs.broadcast.firstCall.args[1]).to.be.deep.equal({
+        api : '/blocks',
+        data: { block }, method: 'POST', immediate: true,
+      });
+    });
+
+    it('should call io.sockets.emit', async () => {
+      await inst.onNewBlock(block, broadcast);
+
+      expect(io.sockets.emit.calledOnce).to.be.true;
+      expect(io.sockets.emit.firstCall.args.length).to.be.equal(2);
+      expect(io.sockets.emit.firstCall.args[0]).to.be.deep.equal('blocks/change');
+      expect(io.sockets.emit.firstCall.args[1]).to.be.deep.equal(block);
+    });
+
+    it('should not call broadcasterLogic.broadcast if broadcasterLogic.maxRelays returns true', async () => {
+      broadcasterLogic.reset();
+      broadcasterLogic.enqueueResponse('maxRelays', true);
+
+      await inst.onNewBlock(block, broadcast);
+
+      expect(broadcasterLogic.stubs.broadcast.notCalled).to.be.true;
+    });
+
+    it('check if broadcast is false', () => {
+      broadcast = false;
+
+      inst.onNewBlock(block, broadcast);
+
+      expect(broadcasterLogic.stubs.enqueue.notCalled).to.be.true;
+    });
+
   });
 
   describe('receiveSignatures', () => {
