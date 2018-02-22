@@ -1,5 +1,5 @@
 import BigNumber from 'bignumber.js';
-import { IKeypair, TransactionType } from '../../../helpers';
+import { IKeypair } from '../../../helpers';
 import { MemAccountsData, SignedBlockType } from '../../../logic';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from '../../../logic/transactions';
 
@@ -63,6 +63,7 @@ export interface ITransactionLogic {
    * Performs some validation on the transaction and calls process
    * to the respective tx type.
    */
+  // tslint:disable max-line-length
   process<T = any>(tx: IBaseTransaction<T>, sender: MemAccountsData, requester: MemAccountsData): Promise<IBaseTransaction<T>>;
 
   verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: MemAccountsData,
