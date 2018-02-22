@@ -22,11 +22,12 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     'transactionId',
   ];
 
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
 
-  @inject(Symbols.modules.accounts)
-  private accountsModule: IAccountsModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 

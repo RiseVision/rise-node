@@ -39,10 +39,10 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
   // Logic
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
   @inject(Symbols.logic.rounds)
   private roundsLogic: IRoundsLogic;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
 
   // Modules
   @inject(Symbols.modules.accounts)

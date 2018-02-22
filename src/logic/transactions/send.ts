@@ -9,11 +9,12 @@ import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './
 @injectable()
 export class SendTransaction extends BaseTransactionType<void> {
 
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+
   @inject(Symbols.logic.rounds)
   private roundsLogic: IRoundsLogic;
 
-  @inject(Symbols.modules.accounts)
-  private accountsModule: IAccountsModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 

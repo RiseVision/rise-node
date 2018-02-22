@@ -20,6 +20,7 @@ import { Symbols } from '../ioc/symbols';
 
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
+
   public dbTable  = 'trs';
   public dbFields = [
     'id',
@@ -37,7 +38,11 @@ export class TransactionLogic implements ITransactionLogic {
     'signatures',
   ];
 
-  private types: { [k: number]: BaseTransactionType<any> } = {};
+  @inject(Symbols.helpers.exceptionsManager)
+  public excManager: ExceptionsManager;
+
+  @inject(Symbols.logic.account)
+  private accountLogic: IAccountLogic;
 
   @inject(Symbols.generic.db)
   private db: IDatabase<any>;
@@ -45,27 +50,22 @@ export class TransactionLogic implements ITransactionLogic {
   @inject(Symbols.helpers.ed)
   private ed: Ed;
 
-  @inject(Symbols.helpers.slots)
-  private slots: Slots;
-
-  @inject(Symbols.generic.zschema)
-  private schema: z_schema;
-
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
-
-  @inject(Symbols.logic.account)
-  private accountLogic: IAccountLogic;
-
-  @inject(Symbols.logic.rounds)
-  private roundsLogic: IRoundsLogic;
 
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
-  // tslint:disable-next-line member-ordering
-  @inject(Symbols.helpers.exceptionsManager)
-  public excManager: ExceptionsManager;
+  @inject(Symbols.logic.rounds)
+  private roundsLogic: IRoundsLogic;
+
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
+
+  @inject(Symbols.helpers.slots)
+  private slots: Slots;
+
+  private types: { [k: number]: BaseTransactionType<any> } = {};
 
   public attachAssetType<K>(instance: BaseTransactionType<K>): BaseTransactionType<K> {
     if (!(instance instanceof BaseTransactionType)) {
