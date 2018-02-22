@@ -1763,23 +1763,28 @@ describe('modules/loader', () => {
     let socketIoStub: SocketIOStub;
     let inst: LoaderModule;
 
+    before(() => {
+      container.rebind(Symbols.modules.loader).to(LoaderModule);
+    });
+
     beforeEach(() => {
-      inst = new LoaderModule();
-
-      loggerStub   = new LoggerStub();
-      appStateStub = new AppStateStub();
-      socketIoStub = new SocketIOStub();
-
-      (inst as any).logger       = loggerStub;
-      (inst as any).appState     = appStateStub;
-      (inst as any).io           = socketIoStub;
-      (inst as any).blocksModule = { lastBlock: { height: 10 } };
+      inst         = container.get(Symbols.modules.loader);
+      appStateStub = container.get(Symbols.logic.appState);
+      loggerStub   = container.get(Symbols.helpers.logger);
+      socketIoStub = container.get(Symbols.generic.socketIO);
 
       appStateStub.enqueueResponse('set', {});
     });
 
     afterEach(() => {
+      loggerStub.stubReset();
+      socketIoStub.stubReset();
+      appStateStub.reset();
       (inst as any).syncIntervalId = null;
+    });
+
+    after(() => {
+      container.rebind(Symbols.modules.loader).to(LoaderModuleRewire.LoaderModule);
     });
 
     describe('if turnOn==false && this.syncIntervalId', () => {
@@ -1885,11 +1890,11 @@ describe('modules/loader', () => {
     beforeEach(() => {
       last_receipt = 'last_receipt';
 
-      jobsQueueStub    = container.get<JobsQueueStub>(Symbols.helpers.jobsQueue);
       lastReceiptStubs = {
         get    : sandbox.stub().returns(last_receipt),
         isStale: sandbox.stub().returns(true),
       };
+      jobsQueueStub    = container.get<JobsQueueStub>(Symbols.helpers.jobsQueue);
       loggerStub       = container.get<LoggerStub>(Symbols.helpers.logger);
       appState         = container.get<IAppStateStub>(Symbols.logic.appState);
       syncStub         = sandbox.stub(instance as any, 'sync').resolves(Promise.resolve({}));
@@ -1952,6 +1957,7 @@ describe('modules/loader', () => {
     });
 
     it('should call instance.sync', async () => {
+
       await (instance as any).syncTimer();
 
       process.nextTick(() => {
@@ -1980,7 +1986,7 @@ describe('modules/loader', () => {
       expect(retryStub.notCalled).to.be.true;
     });
 
-    it('should not call instance.sync if !instance.isSyncing is false', async () => {
+    it('should not call instance.synTc if !instance.isSyncing is false', async () => {
       appState.reset();
       appState.enqueueResponse('get', true);
       appState.enqueueResponse('get', true);
