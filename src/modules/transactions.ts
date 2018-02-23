@@ -354,19 +354,4 @@ export class TransactionsModule implements ITransactionsModule {
     return this.transactionLogic.dbRead(rows[0]);
   }
 
-  /**
-   * Get the Added and Deleted votes by tx id.
-   */
-  private async getVotesById(id: string): Promise<{ added: string[], deleted: string[] }> {
-    const rows = await this.db.query(txSQL.getVotesById, { id });
-    if (rows.length === 0) {
-      throw new Error(`Transaction not found: ${id}`);
-    }
-    const votes: string[] = rows[0].votes.split(',');
-    const added           = votes.filter((vote) => vote.substring(0, 1) === '+');
-    const deleted         = votes.filter((vote) => vote.substring(0, 1) === '-');
-
-    return { added, deleted };
-  }
-
 }
