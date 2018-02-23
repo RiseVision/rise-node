@@ -208,7 +208,7 @@ export class AccountLogic implements IAccountLogic {
 
   /**
    * Runs the account through schema validation and eventually throw if not valid
-   * @param account
+   * @param {any} account
    * TODO: Describe account
    */
   public objectNormalize(account: any) {
@@ -352,11 +352,24 @@ export class AccountLogic implements IAccountLogic {
    * based on field balance or delegates.
    * @param {string} address
    * @param {MemAccountsData} diff
-   * @param {cback<any>} cb
    * @returns {Promise<any>}
    */
   public merge(address: string, diff: any): string;
+
+  /**
+   * @param {string} address
+   * @param diff
+   * @param {cback<any>} cb
+   * @returns {Promise<any>}
+   */
   public merge(address: string, diff: any, cb: cback<any>): Promise<any>;
+
+  /**
+   * @param {string} address
+   * @param diff
+   * @param {cback<any>} cb
+   * @returns {any}
+   */
   public merge(address: string, diff: any, cb?: cback<any>) {
     const update: any       = {};
     const remove: any       = {};

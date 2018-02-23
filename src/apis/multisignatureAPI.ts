@@ -1,6 +1,6 @@
 import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
-import { Get, JsonController, Post, Put, QueryParam, QueryParams } from 'routing-controllers';
+import { Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { catchToLoggerAndRemapError, ILogger} from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';

@@ -13,7 +13,9 @@ export function profilePromise(snap: number  = 100) {
       totalElapsed += after - pre;
       count ++;
       if (count % snap === 0) {
-        fs.appendFileSync(`${__dirname}/../../../prof_${target.constructor.name}_${method}.txt`, `${count} - ${totalElapsed / count}\n`);
+        fs.appendFileSync(
+          `${__dirname}/../../../prof_${target.constructor.name}_${method}.txt`,
+          `${count} - ${totalElapsed / count}\n`);
       }
     };
   };
