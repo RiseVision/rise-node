@@ -298,9 +298,8 @@ export class LoaderModule implements ILoaderModule {
     }
   }
 
-  public async load(count: number, limitPerIteration: number, message?: string, emitBlockchainReady?: boolean) {
+  public async load(count: number, limitPerIteration: number, message?: string, emitBlockchainReady = false) {
     let offset          = 0;
-    emitBlockchainReady = !!emitBlockchainReady;
     if (message) {
       this.logger.warn(message);
       this.logger.warn('Recreating memory tables');
