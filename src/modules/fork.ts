@@ -8,12 +8,12 @@ import sql from '../sql/delegates';
 
 @injectable()
 export class ForkModule implements IForkModule {
-  @inject(Symbols.helpers.logger)
-  private logger: ILogger;
   @inject(Symbols.generic.db)
   private db: IDatabase<any>;
   @inject(Symbols.generic.socketIO)
   private io: SocketIO.Server;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
 
   /**
    * Inserts a fork into fork_stats table and emits a socket signal with the fork data

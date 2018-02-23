@@ -6,7 +6,6 @@ import { ILogger } from './logger';
  * @param {Boolean} cacheEnabled
  * @param {Object} config - Redis configuration
  * @param {Object} logger
- * @param {Function} cb
  */
 export const connect = (cacheEnabled: boolean,
                         config: redis.ClientOpts,

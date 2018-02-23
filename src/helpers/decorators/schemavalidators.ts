@@ -6,12 +6,9 @@ import { castFieldsToNumberUsingSchema } from '../';
  * Method validator. It will validate arguments tagged with SchemaValid decorator.
  */
 export function ValidateSchema() {
-  // tslint:disable-next-line
-  return function (target: { schema: z_schema }, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) {
+  return (target: { schema: z_schema }, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) => {
     // Do nothing for now.
     const old = descriptor.value;
-    // tslint: disable-next-line
-
     const isPromise  = Reflect.getMetadata('design:returntype', target, propertyKey) === 'Promise';
     descriptor.value = function schemaValidator(...args) {
       if (Reflect.hasMetadata('__schema', target, propertyKey)) {

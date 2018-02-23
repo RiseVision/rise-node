@@ -52,11 +52,19 @@ export interface IAccountLogic {
    * based on field balance or delegates.
    * @param {string} address
    * @param {MemAccountsData} diff
-   * @param {cback<any>} cb
    * @returns {Promise<any>}
    */
   merge(address: string, diff: any): string;
 
+  /**
+   * Updates account from mem_account with diff data belongings to an editable field
+   * Inserts into mem_round "address", "amount", "delegate", "blockId", "round"
+   * based on field balance or delegates.
+   * @param {string} address
+   * @param {MemAccountsData} diff
+   * @param {cback<any>} cb
+   * @returns {Promise<any>}
+   */
   merge(address: string, diff: any, cb: cback<any>): Promise<any>;
 
   /**

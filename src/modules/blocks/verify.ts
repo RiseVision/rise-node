@@ -15,19 +15,6 @@ import sql from '../../sql/blocks';
 
 @injectable()
 export class BlocksModuleVerify implements IBlocksModuleVerify {
-  // Modules
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.blocksSubModules.chain)
-  private blocksChainModule: IBlocksModuleChain;
-  @inject(Symbols.modules.delegates)
-  private delegatesModule: IDelegatesModule;
-  @inject(Symbols.modules.fork)
-  private forkModule: IForkModule;
-  @inject(Symbols.modules.transactions)
-  private transactionsModule: ITransactionsModule;
-  @inject(Symbols.modules.accounts)
-  private accountsModule: IAccountsModule;
 
   // Generics
   @inject(Symbols.generic.db)
@@ -48,6 +35,20 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   private blockRewardLogic: IBlockReward;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
+
+  // Modules
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.blocksSubModules.chain)
+  private blocksChainModule: IBlocksModuleChain;
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
+  @inject(Symbols.modules.delegates)
+  private delegatesModule: IDelegatesModule;
+  @inject(Symbols.modules.fork)
+  private forkModule: IForkModule;
+  @inject(Symbols.modules.transactions)
+  private transactionsModule: ITransactionsModule;
 
   /**
    * Contains the last N block Ids used to perform validations

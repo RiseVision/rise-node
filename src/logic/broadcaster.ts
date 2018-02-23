@@ -54,12 +54,12 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   private logger: ILogger;
 
   // Logic
+  @inject(Symbols.logic.appState)
+  private appState: IAppState;
   @inject(Symbols.logic.peers)
   private peersLogic: IPeersLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
-  @inject(Symbols.logic.appState)
-  private appState: IAppState;
 
   // Modules
   @inject(Symbols.modules.peers)

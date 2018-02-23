@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import { Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
+import { Get, JsonController, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
