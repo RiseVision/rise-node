@@ -17,6 +17,7 @@ import { AppStateStub } from './logic/AppStateStub';
 import BlockRewardLogicStub from './logic/BlockRewardLogicStub';
 import PeerLogicStub from './logic/PeerLogicStub';
 import { PeersLogicStub } from './logic/PeersLogicStub';
+import RoundLogicStub from './logic/RoundsLogicStub';
 import RoundsLogicStub from './logic/RoundsLogicStub';
 import TransactionLogicStub from './logic/TransactionLogicStub';
 import IAppStateStub from './logic/IAppStateLogicStub';
@@ -64,6 +65,7 @@ export {
   PeerLogicStub,
   PeersLogicStub,
   PeersModuleStub,
+  RoundLogicStub,
   RoundsLogicStub,
   SlotsStub,
   SystemModuleStub,
