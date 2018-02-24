@@ -26,25 +26,24 @@ import { publicKey } from '../types/sanityTypes';
 export class DelegatesAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
-  @inject(Symbols.helpers.ed)
-  private ed: Ed;
-  @inject(Symbols.helpers.slots)
-  private slots: Slots;
-
-  @inject(Symbols.modules.delegates)
-  private delegatesModule: IDelegatesModule;
-  @inject(Symbols.modules.system)
-  private system: ISystemModule;
+  @inject(Symbols.modules.accounts)
+  private accounts: IAccountsModule;
   @inject(Symbols.modules.blocks)
   private blocks: IBlocksModule;
   @inject(Symbols.modules.blocksSubModules.utils)
   private blocksUtils: IBlocksModuleUtils;
-  @inject(Symbols.modules.accounts)
-  private accounts: IAccountsModule;
+  @inject(Symbols.generic.db)
+  private db: IDatabase<any>;
+  @inject(Symbols.modules.delegates)
+  private delegatesModule: IDelegatesModule;
+  @inject(Symbols.helpers.ed)
+  private ed: Ed;
   @inject(Symbols.modules.forge)
   private forgeModule: IForgeModule;
+  @inject(Symbols.helpers.slots)
+  private slots: Slots;
+  @inject(Symbols.modules.system)
+  private system: ISystemModule;
 
   @Get('/')
   @ValidateSchema()

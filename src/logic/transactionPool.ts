@@ -112,10 +112,9 @@ export class TransactionPool implements ITransactionPoolLogic {
 
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
-
-  private expiryInterval    = 30000;
   private bundledInterval: number;
   private bundleLimit: number;
+  private expiryInterval    = 30000;
   private processed: number = 0;
 
   @postConstruct()

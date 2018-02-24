@@ -58,7 +58,6 @@ export interface ISystemModule extends IModule {
    * Gets private nethash or creates a new one, based on input param and data.
    * @implements {library.db.query}
    * @implements {crypto.createHash}
-   * @param {*} cb
    * @return {hash|setImmediateCallback} err | private nethash or new hash.
    */
   getBroadhash(): Promise<string>;

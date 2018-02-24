@@ -26,12 +26,12 @@ export class ForgeModule implements IForgeModule {
   // helpers
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
+  @inject(Symbols.helpers.ed)
+  private ed: Ed;
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
-  @inject(Symbols.helpers.ed)
-  private ed: Ed;
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence)
   private sequence: Sequence;
@@ -49,12 +49,12 @@ export class ForgeModule implements IForgeModule {
   private accountsModule: IAccountsModule;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
+  @inject(Symbols.modules.blocksSubModules.process)
+  private blocksProcessModule: IBlocksModuleProcess;
   @inject(Symbols.modules.delegates)
   private delegatesModule: IDelegatesModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
-  @inject(Symbols.modules.blocksSubModules.process)
-  private blocksProcessModule: IBlocksModuleProcess;
 
   public getEnabledKeys(): publicKey[] {
     return Object.keys(this.enabledKeys)
@@ -77,7 +77,9 @@ export class ForgeModule implements IForgeModule {
    */
   public enableForge(pk?: IKeypair) {
     const thePK: publicKey = typeof(pk) !== 'undefined' ? pk.publicKey.toString('hex') : undefined;
-    this.keypairs[thePK]   = pk;
+    if (typeof thePK !== 'undefined') {
+      this.keypairs[thePK]   = pk;
+    }
 
     Object.keys(this.keypairs)
       .filter((p) => typeof(thePK) === 'undefined' || p === thePK)

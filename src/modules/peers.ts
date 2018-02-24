@@ -27,10 +27,10 @@ export class PeersModule implements IPeersModule {
   private db: IDatabase<any>;
 
   // Helpers
-  @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
   @inject(Symbols.helpers.bus)
   private bus: Bus;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 

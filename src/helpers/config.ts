@@ -3,7 +3,7 @@ import * as path from 'path';
 import configSchema from '../schema/config';
 import { AppConfig } from '../types/genericTypes';
 import constants from './constants';
-import {z_schema} from './z_schema';
+import {z_schema as ZSchema} from './z_schema';
 // tslint:disable no-console
 /**
  * Loads config from path
@@ -20,7 +20,7 @@ export default function config(configPath: string): AppConfig {
     configData = JSON.parse(configData);
   }
 
-  const validator = new z_schema({});
+  const validator = new ZSchema({});
   const valid     = validator.validate(configData, configSchema.config);
 
   if (!valid) {

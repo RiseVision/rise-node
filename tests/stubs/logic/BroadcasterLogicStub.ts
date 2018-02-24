@@ -8,22 +8,22 @@ import {IBroadcasterLogic} from "../../../src/ioc/interfaces/logic";
 export class BroadcasterLogicStub extends BaseStubClass implements IBroadcasterLogic {
 
     @stubMethod()
-    getPeers(params: { limit?: number; broadhash?: string }): Promise<PeerType[]> {
+    public getPeers(params: { limit?: number; broadhash?: string }): Promise<PeerType[]> {
         return undefined;
     }
 
     @stubMethod()
-    enqueue(params: any, options: BroadcastTaskOptions): number {
+    public enqueue(params: any, options: BroadcastTaskOptions): number {
         return undefined;
     }
 
     @stubMethod()
-    broadcast(params: { limit?: number; broadhash?: string; peers?: PeerType[] }, options: any): Promise<{ peer: PeerType[] }> {
+    public broadcast(params: { limit?: number; broadhash?: string; peers?: PeerType[] }, options: any): Promise<{ peer: PeerType[] }> {
         return undefined;
     }
 
     @stubMethod()
-    maxRelays(object: { relays?: number }): boolean {
+    public maxRelays(object: { relays?: number }): boolean {
         return undefined;
     }
 
