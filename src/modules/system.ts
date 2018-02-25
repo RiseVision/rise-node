@@ -16,20 +16,20 @@ const rcRegExp = /[a-z]+$/;
 
 @injectable()
 export class SystemModule implements ISystemModule {
-  public minVersion: string;
   public headers: PeerHeaders;
+  public minVersion: string;
   private lastMinVer: string;
   private minVersionChar: string;
 
   // Generic and helpers
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
-  @inject(Symbols.generic.nonce)
-  private nonce: string;
   @inject(Symbols.helpers.constants)
   private constants: typeof constantType;
   @inject(Symbols.generic.db)
   private db: IDatabase<any>;
+  @inject(Symbols.generic.nonce)
+  private nonce: string;
 
   // Modules
   @inject(Symbols.modules.blocks)
@@ -161,7 +161,6 @@ export class SystemModule implements ISystemModule {
    * Gets private nethash or creates a new one, based on input param and data.
    * @implements {library.db.query}
    * @implements {crypto.createHash}
-   * @param {*} cb
    * @return {hash|setImmediateCallback} err | private nethash or new hash.
    */
   public async getBroadhash() {

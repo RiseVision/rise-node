@@ -1,4 +1,3 @@
-import { ForkType, IKeypair } from '../../../helpers';
 import { MemAccountsData, SignedBlockType } from '../../../logic';
 import { publicKey } from '../../../types/sanityTypes';
 import { IModule } from './IModule';

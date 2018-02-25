@@ -11,15 +11,14 @@ import { Symbols } from '../ioc/symbols';
 @injectable()
 export class LoaderAPI {
 
-  @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
   @inject(Symbols.logic.appState)
   private appState: IAppState;
-
-  @inject(Symbols.modules.loader)
-  private loaderModule: ILoaderModule;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
+  @inject(Symbols.modules.loader)
+  private loaderModule: ILoaderModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 

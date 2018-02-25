@@ -112,10 +112,9 @@ export class TransactionPool implements ITransactionPoolLogic {
 
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
-
-  private expiryInterval    = 30000;
   private bundledInterval: number;
   private bundleLimit: number;
+  private expiryInterval    = 30000;
   private processed: number = 0;
 
   @postConstruct()
@@ -260,7 +259,7 @@ export class TransactionPool implements ITransactionPoolLogic {
           true
         );
         try {
-          this.queueTransaction(tx, true);
+          this.queueTransaction(tx, false /* After processing the tx becomes unbundled */);
         } catch (e) {
           this.logger.debug(`Failed to queue bundled transaction: ${tx.id}`, e);
         }

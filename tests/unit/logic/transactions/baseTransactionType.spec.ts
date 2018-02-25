@@ -84,4 +84,52 @@ describe('logic/transactions/baseTransactionType', () => {
       expect(instance.ready(tx, sender)).to.be.false;
     });
   });
+
+  describe('verify', () => {
+    it('should resolve', () => {
+      expect(instance.verify(tx, sender)).to.be.fulfilled;
+    });
+  });
+
+  describe('process', () => {
+    it('should resolve', () => {
+      expect(instance.process(tx, sender)).to.be.fulfilled;
+    });
+  });
+
+  describe('getBytes', () => {
+    it('should return emptyBuffer', () => {
+      expect(instance.getBytes(tx, false, false)).to.be.deep.equal(new Buffer(0));
+    });
+  });
+
+  describe('apply', () => {
+    it('should resolve', () => {
+      expect(instance.apply(tx, {} as any, sender)).to.be.fulfilled;
+    });
+  });
+
+  describe('applyUnconfirmed', () => {
+    it('should resolve', () => {
+      expect(instance.applyUnconfirmed(tx, sender)).to.be.fulfilled;
+    });
+  });
+
+  describe('undo', () => {
+    it('should resolve', () => {
+      expect(instance.undo(tx, {} as any, sender)).to.be.fulfilled;
+    });
+  });
+
+  describe('undoUnconfirmed', () => {
+    it('should resolve', () => {
+      expect(instance.undoUnconfirmed(tx, sender)).to.be.fulfilled;
+    });
+  });
+
+  describe('afterSave', () => {
+    it('should resolve', () => {
+      expect(instance.afterSave(tx)).to.be.fulfilled;
+    });
+  });
 });

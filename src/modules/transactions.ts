@@ -13,18 +13,16 @@ import txSQL from '../sql/logic/transactions';
 export class TransactionsModule implements ITransactionsModule {
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
-
-  @inject(Symbols.logic.transactionPool)
-  private transactionPool: ITransactionPoolLogic;
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
-
   @inject(Symbols.generic.db)
   private db: IDatabase<any>;
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  @inject(Symbols.logic.transactionPool)
+  private transactionPool: ITransactionPoolLogic;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
 
   public cleanup() {
     return Promise.resolve();
@@ -354,21 +352,6 @@ export class TransactionsModule implements ITransactionsModule {
       throw new Error(`Transaction not found: ${id}`);
     }
     return this.transactionLogic.dbRead(rows[0]);
-  }
-
-  /**
-   * Get the Added and Deleted votes by tx id.
-   */
-  private async getVotesById(id: string): Promise<{ added: string[], deleted: string[] }> {
-    const rows = await this.db.query(txSQL.getVotesById, { id });
-    if (rows.length === 0) {
-      throw new Error(`Transaction not found: ${id}`);
-    }
-    const votes: string[] = rows[0].votes.split(',');
-    const added           = votes.filter((vote) => vote.substring(0, 1) === '+');
-    const deleted         = votes.filter((vote) => vote.substring(0, 1) === '-');
-
-    return { added, deleted };
   }
 
 }

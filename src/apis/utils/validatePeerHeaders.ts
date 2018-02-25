@@ -15,15 +15,14 @@ import transportSchema from '../../schema/transport';
 @IoCSymbol(Symbols.api.utils.validatePeerHeadersMiddleware)
 export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
 
-  @inject(Symbols.generic.zschema)
-  private schema: z_schema;
   @inject(Symbols.logic.peers)
   private peersLogic: IPeersLogic;
-
-  @inject(Symbols.modules.system)
-  private systemModule: ISystemModule;
   @inject(Symbols.modules.peers)
   private peersModule: IPeersModule;
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
 
   public use(request: express.Request, response: any, next: (err?: any) => any) {
     castFieldsToNumberUsingSchema(

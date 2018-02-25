@@ -1,15 +1,9 @@
 import {injectable} from 'inversify';
-
-import {BaseStubClass} from '../BaseStubClass';
-import {stubMethod} from '../stubDecorator';
 import * as sinon from 'sinon';
 
 // tslint:disable no-empty
-
 @injectable()
-export default class SocketIOStub /*implements IDatabase<any>*/ {
-
-
+export default class SocketIOStub {
     public sockets;
 
     constructor() {
@@ -18,9 +12,8 @@ export default class SocketIOStub /*implements IDatabase<any>*/ {
 
     public stubReset() {
         this.sockets = {
-            emit: sinon.stub()
+            emit: sinon.stub(),
         };
     }
-
     // TODO Add more methods when needed
 }
