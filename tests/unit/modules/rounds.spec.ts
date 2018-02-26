@@ -145,6 +145,7 @@ describe('modules/rounds', () => {
     roundLogicStub.stubs.backwardLand.resolves();
     roundLogicStub.stubs.markBlockId.resolves();
     roundLogicStub.stubs.truncateBlocks.resolves();
+    roundLogicStub.stubs.land.resolves();
     busStub.stubs.message.returns(void 0);
   });
 
@@ -342,7 +343,11 @@ describe('modules/rounds', () => {
       });
 
       describe('then, if this was the last block in round', () => {
-        it('should call roundLogic.land');
+        it('should call roundLogic.land', async () => {
+          roundLogicScope.finishRound = true;
+          await doCall();
+          expect(roundLogicStub.stubs.land.calledOnce).to.be.true;
+        });
         it('should then call bus.message');
         it('should then call roundLogic.truncateBlocks if snapshotRound is true');
       });
