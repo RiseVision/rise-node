@@ -4,7 +4,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import constants from '../../../src/helpers';
+import { constants } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { SignedBlockType } from '../../../src/logic';
 import { RoundsModule } from '../../../src/modules';
