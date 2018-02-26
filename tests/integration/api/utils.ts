@@ -27,10 +27,11 @@ export const checkPubKey = (paramName: string, baseUrl: string) => {
       });
   });
 };
-export const checkReturnObjKeyVal = (objKey: string, expectedValue: any, path: string) => {
+export const checkReturnObjKeyVal = (objKey: string, expectedValue: any, path: string, headers: any = {}) => {
   it(`should return .${objKey} with ${expectedValue}`, async () => {
     return supertest(initializer.appManager.expressApp)
       .get(path)
+      .set(headers)
       .expect(200)
       .then((response) => {
         if (objKey !== 'success') {
