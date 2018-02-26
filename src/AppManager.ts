@@ -53,7 +53,6 @@ export class AppManager {
 
   constructor(private appConfig: AppConfig,
               private logger: ILogger,
-              private lastCommit: string,
               private versionBuild: string,
               private genesisBlock: SignedAndChainedBlockType,
               private constants: typeof constantsType,
@@ -187,7 +186,6 @@ export class AppManager {
     this.container.bind(Symbols.generic.db).toConstantValue(db);
     this.container.bind(Symbols.generic.expressApp).toConstantValue(this.expressApp);
     this.container.bind(Symbols.generic.genesisBlock).toConstantValue(this.genesisBlock);
-    this.container.bind(Symbols.generic.lastCommit).toConstantValue(this.lastCommit);
     this.container.bind(Symbols.generic.nonce).toConstantValue(this.nonce);
     this.container.bind(Symbols.generic.redisClient).toConstantValue(theCache.client);
     this.container.bind(Symbols.generic.socketIO).toConstantValue(io);
