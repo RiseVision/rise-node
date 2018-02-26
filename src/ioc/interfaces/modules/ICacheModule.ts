@@ -1,5 +1,4 @@
 import { RedisClient } from 'redis';
-import { IBaseTransaction } from '../../../logic/transactions';
 import { IModule } from './IModule';
 
 export interface ICacheModule extends IModule {

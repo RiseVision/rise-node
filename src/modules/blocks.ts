@@ -7,14 +7,13 @@ import { SignedAndChainedBlockType } from '../logic/';
 // TODO Eventually remove this module and use appState instead.
 @injectable()
 export class BlocksModule implements IBlocksModule {
-  public lastReceipt: { get: () => number, isStale: () => boolean, update: (time?: number) => void };
   public isActive   = false;
-  public lastBlock: SignedAndChainedBlockType;
   public isCleaning = false;
-  private internalLastReceipt: number;
-
+  public lastBlock: SignedAndChainedBlockType;
+  public lastReceipt: { get: () => number, isStale: () => boolean, update: (time?: number) => void };
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
+  private internalLastReceipt: number;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 

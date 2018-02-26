@@ -25,13 +25,13 @@ import Timer = NodeJS.Timer;
 export class LoaderModule implements ILoaderModule {
 
   public loaded: boolean                       = false;
-  private network: { height: number, peers: IPeerLogic[] };
-  private lastblock: SignedAndChainedBlockType = null;
-  private syncIntervalId: Timer                = null;
   private blocksToSync: number                 = 0;
   private isActive: boolean                    = false;
+  private lastblock: SignedAndChainedBlockType = null;
+  private network: { height: number, peers: IPeerLogic[] };
   private retries: number                      = 5;
   private syncInterval                         = 1000;
+  private syncIntervalId: Timer                = null;
 
   // Generic
   @inject(Symbols.generic.appConfig)
@@ -55,11 +55,11 @@ export class LoaderModule implements ILoaderModule {
   private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence)
   private sequence: Sequence;
-  @inject(Symbols.generic.zschema)
-  private schema: z_schema;
 
   // Logic
   @inject(Symbols.logic.account)
@@ -70,16 +70,16 @@ export class LoaderModule implements ILoaderModule {
   private broadcasterLogic: IBroadcasterLogic;
   @inject(Symbols.logic.peers)
   private peersLogic: IPeersLogic;
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
   @inject(Symbols.logic.rounds)
   private roundsLogic: IRoundsLogic;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
 
   // Modules
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
   @inject(Symbols.modules.blocksSubModules.chain)
   private blocksChainModule: IBlocksModuleChain;
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
   @inject(Symbols.modules.blocksSubModules.process)
   private blocksProcessModule: IBlocksModuleProcess;
   @inject(Symbols.modules.blocksSubModules.utils)
@@ -298,9 +298,8 @@ export class LoaderModule implements ILoaderModule {
     }
   }
 
-  public async load(count: number, limitPerIteration: number, message?: string, emitBlockchainReady?: boolean) {
+  public async load(count: number, limitPerIteration: number, message?: string, emitBlockchainReady = false) {
     let offset          = 0;
-    emitBlockchainReady = !!emitBlockchainReady;
     if (message) {
       this.logger.warn(message);
       this.logger.warn('Recreating memory tables');

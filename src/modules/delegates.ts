@@ -20,6 +20,10 @@ import { publicKey } from '../types/sanityTypes';
 export class DelegatesModule implements IDelegatesModule {
   private loaded: boolean               = false;
 
+  // Generic
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
+
   // Helpers
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
@@ -31,10 +35,6 @@ export class DelegatesModule implements IDelegatesModule {
   @inject(Symbols.helpers.slots)
   private slots: Slots;
 
-  // Generic
-  @inject(Symbols.generic.zschema)
-  private schema: z_schema;
-
   // Logic
   @inject(Symbols.logic.appState)
   private appState: IAppState;
@@ -44,10 +44,10 @@ export class DelegatesModule implements IDelegatesModule {
   private roundsLogic: IRoundsLogic;
 
   // Modules
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 

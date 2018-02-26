@@ -7,22 +7,21 @@ import { IBaseTransaction, MultisigAsset } from '../logic/transactions/';
 
 @injectable()
 export class MultisignaturesModule implements IMultisignaturesModule {
-  @inject(Symbols.modules.transactions)
-  private transactionsModule: ITransactionsModule;
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
-
-  @inject(Symbols.helpers.logger)
-  private logger: ILogger;
-  @inject(Symbols.generic.socketIO)
-  private io: SocketIO.Server;
-  @inject(Symbols.helpers.bus)
-  private bus: Bus;
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
   private balancesSequence: Sequence;
+  @inject(Symbols.helpers.bus)
+  private bus: Bus;
+  @inject(Symbols.generic.socketIO)
+  private io: SocketIO.Server;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
+  @inject(Symbols.modules.transactions)
+  private transactionsModule: ITransactionsModule;
 
   /**
    * Gets the tx from the txID, verifies the given signature and

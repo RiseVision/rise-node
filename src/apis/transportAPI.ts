@@ -25,32 +25,28 @@ import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
 @UseBefore(ValidatePeerHeaders)
 @UseBefore(AttachPeerHeaders)
 export class TransportAPI {
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
-
-  @inject(Symbols.helpers.bus)
-  private bus: Bus;
-  // tslint:disable-next-line member-ordering
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
-  @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
-
-  @inject(Symbols.logic.peers)
-  private peersLogic: IPeersLogic;
   @inject(Symbols.logic.block)
   private blockLogic: IBlockLogic;
-
-  @inject(Symbols.modules.transport)
-  private transportModule: ITransportModule;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
   @inject(Symbols.modules.blocksSubModules.utils)
   private blocksModuleUtils: IBlocksModuleUtils;
+  @inject(Symbols.helpers.bus)
+  private bus: Bus;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
+  @inject(Symbols.generic.db)
+  private db: IDatabase<any>;
+  @inject(Symbols.logic.peers)
+  private peersLogic: IPeersLogic;
   @inject(Symbols.modules.peers)
   private peersModule: IPeersModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
+  @inject(Symbols.modules.transport)
+  private transportModule: ITransportModule;
 
   @Get('/height')
   public height() {

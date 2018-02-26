@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as pgp from 'pg-promise';
 import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
-import { BigNum, catchToLoggerAndRemapError, cback, emptyCB, ILogger, promiseToCB } from '../helpers/';
+import { BigNum, catchToLoggerAndRemapError, cback, ILogger, promiseToCB } from '../helpers/';
 import { IAccountLogic } from '../ioc/interfaces/';
 import { Symbols } from '../ioc/symbols';
 import { accountsModelCreator } from './models/account';
@@ -124,11 +124,11 @@ export class AccountLogic implements IAccountLogic {
   @inject(Symbols.generic.db)
   private db: IDatabase<any>;
 
-  @inject(Symbols.generic.zschema)
-  private schema: z_schema;
-
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
 
   constructor() {
     this.model = accountsModelCreator(this.table);
@@ -183,7 +183,6 @@ export class AccountLogic implements IAccountLogic {
    * - mem_accounts2u_delegates
    * - mem_accounts2multisignatures
    * - mem_accounts2u_multisignatures
-   * @param cb
    * @returns {Promise<void>}
    */
   public removeTables(): Promise<void> {
@@ -209,7 +208,7 @@ export class AccountLogic implements IAccountLogic {
 
   /**
    * Runs the account through schema validation and eventually throw if not valid
-   * @param account
+   * @param {any} account
    * TODO: Describe account
    */
   public objectNormalize(account: any) {
@@ -229,6 +228,7 @@ export class AccountLogic implements IAccountLogic {
   /**
    * Verifies validity of public Key
    * @param {string} publicKey
+   * @param {boolean} allowUndefined
    */
   public assertPublicKey(publicKey: string, allowUndefined: boolean = true) {
     if (typeof(publicKey) !== 'undefined') {
@@ -352,11 +352,24 @@ export class AccountLogic implements IAccountLogic {
    * based on field balance or delegates.
    * @param {string} address
    * @param {MemAccountsData} diff
-   * @param {cback<any>} cb
    * @returns {Promise<any>}
    */
   public merge(address: string, diff: any): string;
+
+  /**
+   * @param {string} address
+   * @param diff
+   * @param {cback<any>} cb
+   * @returns {Promise<any>}
+   */
   public merge(address: string, diff: any, cb: cback<any>): Promise<any>;
+
+  /**
+   * @param {string} address
+   * @param diff
+   * @param {cback<any>} cb
+   * @returns {any}
+   */
   public merge(address: string, diff: any, cb?: cback<any>) {
     const update: any       = {};
     const remove: any       = {};

@@ -1,6 +1,6 @@
 import { inject, injectable } from 'inversify';
 import { RedisClient } from 'redis';
-import { cbToPromise, cbToVoidPromise, emptyCB, ILogger, TransactionType } from '../helpers/';
+import { cbToPromise, cbToVoidPromise, ILogger, TransactionType } from '../helpers/';
 import { ICacheModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { IBaseTransaction } from '../logic/transactions/';
@@ -9,11 +9,10 @@ import { AppConfig } from '../types/genericTypes';
 @injectable()
 export class Cache implements ICacheModule {
   private cacheReady: boolean;
-
-  @inject(Symbols.helpers.logger)
-  private logger: ILogger;
   @inject(Symbols.generic.appConfig)
   private config: AppConfig;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
   @inject(Symbols.generic.redisClient)
   private redisClient: RedisClient;
 
@@ -83,11 +82,8 @@ export class Cache implements ICacheModule {
 
   /**
    * This function will be triggered on new block, it will clear all cache entires.
-   * @param {Block} block
-   * @param {Broadcast} broadcast
-   * @param {Function} cb
    */
-  public async onNewBlock(block, broadcast) {
+  public async onNewBlock() {
     await this.assertConnectedAndReady();
     const toRemove = ['/api/blocks*', '/api/transactions*'];
     for (const pattern of toRemove) {
@@ -97,36 +93,21 @@ export class Cache implements ICacheModule {
 
   /**
    * This function will be triggered when a round finishes, it will clear all cache entires.
-   * @param {Round} round
-   * @param {Function} cb
    */
-  public async onFinishRound(round, cb) {
-    cb = cb || emptyCB;
-    try {
-      await this.assertConnectedAndReady();
-      await this.removeByPattern('/api/delegates*');
-      cb();
-    } catch (e) {
-      cb(e);
-    }
+  public async onFinishRound() {
+    await this.assertConnectedAndReady();
+    await this.removeByPattern('/api/delegates*');
   }
 
   /**
    * This function will be triggered when transactions are processed, it will clear all cache entires if there is a
    * delegate type transaction.
-   * @param {Transactions[]} transactions
-   * @param {Function} cb
+   * @param {Array} transactions
    */
-  public async onTransactionsSaved(transactions: Array<IBaseTransaction<any>>, cb) {
-    cb = cb || emptyCB;
-    try {
-      await this.assertConnectedAndReady();
-      if (!!transactions.find((tx) => tx.type === TransactionType.DELEGATE)) {
-        await this.removeByPattern('/api/delegates*');
-      }
-      cb();
-    } catch (e) {
-      cb(e);
+  public async onTransactionsSaved(transactions: Array<IBaseTransaction<any>>) {
+    await this.assertConnectedAndReady();
+    if (!!transactions.find((tx) => tx.type === TransactionType.DELEGATE)) {
+      await this.removeByPattern('/api/delegates*');
     }
   }
 
