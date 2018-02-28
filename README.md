@@ -73,6 +73,9 @@ git clone -b testnet https://github.com/RiseVision/rise-node.git
 ```
 
 ## Authors
+- Roman Bystrimovich <roman.bystrimovich@gmail.com>
+- Jose Antonio Arenal Guidos <jguidos@hotmail.com>
+- Alessio Scarapazzi <me@alessio.rocks>
 - Andrea B. <vekexasia+crypto@gmail.com>
 - Jan <lepetitjan@icloud.com>
 - Mariusz Serek <mariusz@serek.net>
