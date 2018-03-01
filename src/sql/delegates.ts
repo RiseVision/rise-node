@@ -16,7 +16,7 @@ export default {
 
   count: 'SELECT COUNT(*)::int FROM delegates',
 
-  search(params: { sortField: string, sortMethod: string, q: number|string, limit?: number }) {
+  search(params: { sortField: string, sortMethod: string, q: number|string, limit: number }) {
     const sql = [
       'WITH',
       'supply AS (SELECT calcSupply((SELECT height FROM blocks ORDER BY height DESC LIMIT 1))::numeric),',
