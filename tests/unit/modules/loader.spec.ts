@@ -1763,15 +1763,16 @@ describe('modules/loader', () => {
     let socketIoStub: SocketIOStub;
     let inst: LoaderModule;
 
-    before(() => {
-      container.rebind(Symbols.modules.loader).to(LoaderModule);
-    });
-
     beforeEach(() => {
-      inst         = container.get(Symbols.modules.loader);
-      appStateStub = container.get(Symbols.logic.appState);
-      loggerStub   = container.get(Symbols.helpers.logger);
-      socketIoStub = container.get(Symbols.generic.socketIO);
+      inst         = new LoaderModule();
+      appStateStub = new AppStateStub();
+      loggerStub   = new LoggerStub();
+      socketIoStub = new SocketIOStub();
+
+      (inst as any).appState     = appStateStub;
+      (inst as any).logger       = loggerStub;
+      (inst as any).io           = socketIoStub;
+      (inst as any).blocksModule = { lastBlock: { height: 1 } };
 
       appStateStub.enqueueResponse('set', {});
     });
@@ -1781,10 +1782,6 @@ describe('modules/loader', () => {
       socketIoStub.stubReset();
       appStateStub.reset();
       (inst as any).syncIntervalId = null;
-    });
-
-    after(() => {
-      container.rebind(Symbols.modules.loader).to(LoaderModuleRewire.LoaderModule);
     });
 
     describe('if turnOn==false && this.syncIntervalId', () => {
@@ -1842,15 +1839,17 @@ describe('modules/loader', () => {
       });
 
       it('should call setTimeout"s callback', () => {
-        const timers = sinon.useFakeTimers();
+        const timers = sinon.useFakeTimers(Date.now());
 
         (inst as any).syncTrigger(true);
 
         expect(loggerStub.stubs.trace.calledWith('Sync trigger')).to.be.false;
 
-        timers.tick(2000);
+        timers.tick(1000);
+
 
         expect(loggerStub.stubs.trace.calledWith('Sync trigger')).to.be.true;
+        timers.restore();
       });
 
     });
