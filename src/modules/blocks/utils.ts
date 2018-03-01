@@ -20,9 +20,6 @@ import { publicKey } from '../../types/sanityTypes';
 
 @injectable()
 export class BlocksModuleUtils implements IBlocksModuleUtils {
-  // Modules
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
 
   // Generic
   @inject(Symbols.generic.db)
@@ -31,19 +28,23 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   private genesisBlock: SignedAndChainedBlockType;
 
   // Helpers
-  @inject(Symbols.helpers.logger)
-  private logger: ILogger;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantType;
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence)
   private dbSequence: Sequence;
-  @inject(Symbols.helpers.constants)
-  private constants: typeof constantType;
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
 
   // Logic
   @inject(Symbols.logic.block)
   private blockLogic: IBlockLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
+
+  // Modules
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
 
   public readDbRows(rows: RawFullBlockListType[]): SignedAndChainedBlockType[] {
     const blocks = {};
@@ -138,7 +139,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     // Get IDs of first blocks of (n) last rounds, descending order
     // EXAMPLE: For height 2000000 (round 19802) we will get IDs of blocks at height: 1999902, 1999801, 1999700,
     // 1999599, 1999498
-    const rows = await this.db.query<{ id: string, height: number }[]>(sql.getIdSequence(), {
+    const rows = await this.db.query<Array<{ id: string, height: number }>>(sql.getIdSequence(), {
       delegates: this.constants.activeDelegates,
       height,
       limit    : 5,

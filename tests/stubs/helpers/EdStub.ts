@@ -14,5 +14,8 @@ export default class EdStub extends BaseStubClass  {
   @stubMethod()
   public verify() {}
 
+  @stubMethod()
+  public makeKeypair() {}
+
   // TODO Add more methods when needed
 }

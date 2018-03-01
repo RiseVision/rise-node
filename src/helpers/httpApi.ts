@@ -7,9 +7,6 @@ export const middleware = {
   /**
    * Logs api client connections.
    * @param {Logger} logger
-   * @param {Object} req
-   * @param {Object} res
-   * @param {Function} next
    */
   logClientConnections(logger: ILogger) {
     return (req: Request, res: Response, next: NextFunction) => {

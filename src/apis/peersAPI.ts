@@ -16,11 +16,11 @@ export class PeersAPI {
   // Generics
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
+  @inject(Symbols.generic.lastCommit)
+  private lastCommit: string;
   // tslint:disable-next-line member-ordering
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
-  @inject(Symbols.generic.lastCommit)
-  private lastCommit: string;
   @inject(Symbols.generic.versionBuild)
   private versionBuild: string;
 

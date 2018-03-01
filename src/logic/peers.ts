@@ -9,15 +9,17 @@ import { BasePeerType, PeerLogic, PeerState, PeerType } from './peer';
 
 @injectable()
 export class PeersLogic implements IPeersLogic {
+
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
   private peers: { [peerIdentifier: string]: IPeerLogic } = {};
 
-  @inject(Symbols.modules.system)
-  private systemModule: ISystemModule;
   @inject(Symbols.logic.peerFactory)
   private peersFactory: (bp: BasePeerType) => IPeerLogic;
+
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
 
   public create(peer: BasePeerType): IPeerLogic {
     if (!(peer instanceof PeerLogic)) {

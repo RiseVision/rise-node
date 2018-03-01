@@ -28,43 +28,24 @@ import { RawFullBlockListType } from '../../types/rawDBTypes';
 
 @injectable()
 export class BlocksModuleProcess implements IBlocksModuleProcess {
-  // Modules
-  @inject(Symbols.modules.accounts)
-  private accountsModule: IAccountsModule;
-  @inject(Symbols.modules.delegates)
-  private delegatesModule: IDelegatesModule;
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.blocksSubModules.utils)
-  private blocksUtilsModule: IBlocksModuleUtils;
-  @inject(Symbols.modules.blocksSubModules.chain)
-  private blocksChainModule: IBlocksModuleChain;
-  @inject(Symbols.modules.blocksSubModules.verify)
-  private blocksVerifyModule: IBlocksModuleVerify;
-  @inject(Symbols.modules.fork)
-  private forkModule: IForkModule;
-  @inject(Symbols.modules.transactions)
-  private transactionsModule: ITransactionsModule;
-  @inject(Symbols.modules.transport)
-  private transportModule: ITransportModule;
 
   // Generics
   @inject(Symbols.generic.db)
   private db: IDatabase<any>;
-  @inject(Symbols.generic.zschema)
-  private schema: z_schema;
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
 
   // Helpers
+  @inject(Symbols.helpers.sequence)
+  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence)
+  private dbSequence: Sequence;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence)
   private sequence: Sequence;
-  @inject(Symbols.helpers.sequence)
-  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence)
-  private dbSequence: Sequence;
   @inject(Symbols.helpers.slots)
   private slots: ISlots;
 
@@ -75,10 +56,30 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   private blockLogic: IBlockLogic;
   @inject(Symbols.logic.peers)
   private peersLogic: IPeersLogic;
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
   @inject(Symbols.logic.rounds)
   private roundsLogic: IRoundsLogic;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
+
+  // Modules
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
+  @inject(Symbols.modules.blocksSubModules.chain)
+  private blocksChainModule: IBlocksModuleChain;
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
+  @inject(Symbols.modules.blocksSubModules.utils)
+  private blocksUtilsModule: IBlocksModuleUtils;
+  @inject(Symbols.modules.blocksSubModules.verify)
+  private blocksVerifyModule: IBlocksModuleVerify;
+  @inject(Symbols.modules.delegates)
+  private delegatesModule: IDelegatesModule;
+  @inject(Symbols.modules.fork)
+  private forkModule: IForkModule;
+  @inject(Symbols.modules.transactions)
+  private transactionsModule: ITransactionsModule;
+  @inject(Symbols.modules.transport)
+  private transportModule: ITransportModule;
 
   public cleanup() {
     return Promise.resolve();
@@ -229,12 +230,14 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         );
         throw err;
       }
+      // tslint:disable max-line-length
       // if (block.height % 5000 === 0) {
       //   console.log('backupping');
       //   await (require('child-process-promise').exec(`${__dirname}/../../../.devutils/dumpdb.sh`));
       //   await (require('child-process-promise').exec(`mv ${__dirname}/../../../backup.tar ${__dirname}/../../../dumps/backup_${block.height}.tar`));
       //
       // }
+      // tslint:enable max-line-length
     }
 
     return lastValidBlock;

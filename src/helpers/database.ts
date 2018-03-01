@@ -89,11 +89,9 @@ export class Migrator {
   /**
    * Executes 'runtime.sql' file, that set peers clock to null and state to 1.
    * @method
-   * @param {function} waterCb - Callback function
    * @return {function} waterCb with error
    */
   public applyRuntimeQueryFile() {
-    const dirname = path.basename(__dirname) === 'helpers' ? path.join(__dirname, '..') : __dirname;
     const sql     = new (this.pgp).QueryFile(path.join(process.cwd(), 'sql', 'runtime.sql'), { minify: true });
     return this.db.query(sql);
   }
