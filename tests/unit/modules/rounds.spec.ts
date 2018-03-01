@@ -4,7 +4,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
-import constants from '../../../src/helpers';
+import { constants } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { RoundLogicScope, SignedBlockType } from '../../../src/logic';
 import { RoundsModule } from '../../../src/modules';
@@ -666,7 +666,7 @@ describe('modules/rounds', () => {
 
     describe('anything trows in main try block', () => {
       it('should call logger.warn, call appStateLogic.set and throw the catched error', async () => {
-        const theError = new Error('test');
+        const theError  = new Error('test');
         const backwards = true;
         dbStub.stubs.tx.rejects(theError);
         await expect((instance as any).innerTick(block, backwards, txGeneratorStub, afterTxPromiseStub)).to.be
@@ -683,19 +683,100 @@ describe('modules/rounds', () => {
   });
 
   describe('getOutsiders', () => {
-    it('should call roundsLogic.lastInRound');
-    it('should remove roundDelegates');
-    it('should call accountsModule.generateAddressByPublicKey for each of the outsiders');
-    it('should return an array of addresses');
+    let round: number;
+    let roundDelegates: string[];
+
+    beforeEach(() => {
+      round          = 99;
+      roundDelegates = ['key1', 'key2'];
+      roundsLogicStub.stubs.lastInRound.returns(19532);
+      delegatesModuleStub.stubs.generateDelegateList.returns(['outsider1', 'outsider2', ...roundDelegates]);
+      accountsModuleStub.stubs.generateAddressByPublicKey.callsFake((pk) => {
+        return 'addr_' + pk;
+      });
+    });
+
+    it('should call roundsLogic.lastInRound', async () => {
+      await (instance as any).getOutsiders(round, roundDelegates);
+      expect(roundsLogicStub.stubs.lastInRound.calledOnce).to.be.true;
+      expect(roundsLogicStub.stubs.lastInRound.firstCall.args[0]).to.be.equal(round);
+    });
+
+    it('should remove roundDelegates', async () => {
+      // Let's leave our array intact after filter.
+      accountsModuleStub.stubs.generateAddressByPublicKey.callsFake((pk) => {
+        return pk;
+      });
+      const retVal = await (instance as any).getOutsiders(round, roundDelegates);
+      expect(retVal).to.be.deep.equal(['outsider1', 'outsider2']);
+    });
+    it('should call accountsModule.generateAddressByPublicKey for each of the outsiders', async () => {
+      await (instance as any).getOutsiders(round, roundDelegates);
+      expect(accountsModuleStub.stubs.generateAddressByPublicKey.callCount).to.be.equal(2);
+      expect(accountsModuleStub.stubs.generateAddressByPublicKey.firstCall.args[0]).to.be.equal('outsider1');
+      expect(accountsModuleStub.stubs.generateAddressByPublicKey.secondCall.args[0]).to.be.equal('outsider2');
+    });
+
+    it('should return an array of addresses', async () => {
+      const retVal = await (instance as any).getOutsiders(round, roundDelegates);
+      expect(Array.isArray(retVal)).to.be.true;
+      expect(retVal).to.be.deep.equal(['addr_outsider1', 'addr_outsider2']);
+    });
   });
 
   describe('sumRound', () => {
-    it('should call logger.debug');
-    it('should call db.query');
-    it('should call logger.error twice and reject if db.query rejects');
-    it('should floor rewards');
-    it('should floor fees');
-    it('should return an object with rewards, fees and delegates');
-  });
+    let summedRound;
+    let round;
 
+    beforeEach(() => {
+      round       = 99;
+      summedRound = [
+        {
+          rewards  : [1, 0.5, 3.99],
+          fees     : 12.33,
+          delegates: ['d1', 'd2', 'd3'],
+        },
+      ];
+      dbStub.stubs.query.resolves(summedRound);
+    });
+
+    it('should call logger.debug', async () => {
+      await (instance as any).sumRound(round);
+      expect(loggerStub.stubs.debug.calledOnce).to.be.true;
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Summing round');
+      expect(loggerStub.stubs.debug.firstCall.args[1]).to.be.equal(round);
+    });
+
+    it('should call db.query', async () => {
+      await (instance as any).sumRound(round);
+      expect(dbStub.stubs.query.calledOnce).to.be.true;
+      expect(dbStub.stubs.query.firstCall.args[0]).to.be.deep.equal(sql.summedRound);
+      expect(dbStub.stubs.query.firstCall.args[1]).to.be.deep.equal({
+        activeDelegates: constants.activeDelegates,
+        round,
+      });
+    });
+
+    it('should call logger.error twice and reject if db.query rejects', async () => {
+      const theError = new Error('test');
+      dbStub.stubs.query.rejects(theError);
+      await expect((instance as any).sumRound(round)).to.be.rejectedWith(theError);
+      expect(loggerStub.stubs.error.calledTwice).to.be.true;
+      expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal('Failed to sum round');
+      expect(loggerStub.stubs.error.firstCall.args[1]).to.be.equal(round);
+      expect(loggerStub.stubs.error.secondCall.args[0]).to.be.deep.equal(theError.stack);
+    });
+
+    it('should return an object with floored rewards, floored fees and delegates', async () => {
+      const retVal = await (instance as any).sumRound(round);
+      expect(retVal.roundRewards).not.to.be.undefined;
+      expect(retVal.roundFees).not.to.be.undefined;
+      expect(retVal.roundDelegates).not.to.be.undefined;
+      expect(retVal).to.be.deep.equal({
+        roundRewards  : [1, 0, 3],
+        roundFees     : 12,
+        roundDelegates: ['d1', 'd2', 'd3'],
+      });
+    });
+  });
 });
