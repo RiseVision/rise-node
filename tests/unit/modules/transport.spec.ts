@@ -47,7 +47,7 @@ describe('src/modules/transport.ts', () => {
   };
 
   before(() => {
-    sandbox                   = sinon.sandbox.create();
+    sandbox = sinon.sandbox.create();
   });
 
   beforeEach(() => {
@@ -441,25 +441,172 @@ describe('src/modules/transport.ts', () => {
 
   describe('onPeersReady', () => {
 
-    it('should call logger.trace');
-    it('should call jobsQueue.register');
-    it('should call discoverPeers');
-    it('should call logger.error if discoverPeers throw');
-    it('should call peersLogic.list');
-    it('should call logger.trace with count info');
-    it('should call Throttle.all');
-    describe('Throttle.all callback(for each peer in peers)', () => {
-      it('should call logger.trace');
-      it('should call pingAndUpdate(check on p.updated is false)');
-      it('should call pingAndUpdate(check on Date.now() - p.updated > 3000)');
-      it('should call logger.debug if pingAndUpdate throw');
-      describe('false in condition of Throttle.all"s callback', () => {
-        it('p in null');
-        it('p.state === PeerState.BANNED');
-        it('p.update is true and (Date.now() - p.updated) <= 3000');
+    let ThrottleStub;
+    let peers;
+    let discoverPeersStub: SinonStub;
+
+    beforeEach(() => {
+      peers = [{
+        pingAndUpdate: sandbox.stub(),
+        state        : PeerState.CONNECTED,
+        string       : 'string',
+        updated      : false,
+      }];
+
+      ThrottleStub = {
+        all: sandbox.stub().callsFake((fkArray) => {
+          const promiseArray = [];
+          for (const fk of fkArray) {
+            promiseArray.push(fk());
+          }
+          return Promise.all(promiseArray);
+        }),
+      };
+      rewireTransportModule.__set__('Throttle', ThrottleStub);
+
+      jobsQueue.stubs.register.callsArg(1);
+      discoverPeersStub = sandbox.stub(inst as any, 'discoverPeers');
+      peersLogic.enqueueResponse('list', peers);
+    });
+
+    it('should call logger.trace', async () => {
+      await inst.onPeersReady();
+
+      // use to async call of jobsQueue.register callback
+      process.nextTick(() => {
+        const loggerTraceStub = logger.stubs.trace;
+
+        expect(loggerTraceStub.callCount).to.be.equal(4);
+
+        expect(loggerTraceStub.getCall(0).args.length).to.be.equal(1);
+        expect(loggerTraceStub.getCall(0).args[0]).to.be.equal('Peers ready');
+
+        expect(loggerTraceStub.getCall(1).args.length).to.be.equal(2);
+        expect(loggerTraceStub.getCall(1).args[0]).to.be.equal('Updating peers');
+        expect(loggerTraceStub.getCall(1).args[1]).to.be.deep.equal({ count: peers.length });
+
+        expect(loggerTraceStub.getCall(2).args.length).to.be.equal(2);
+        expect(loggerTraceStub.getCall(2).args[0]).to.be.equal('Updating peer');
+        expect(loggerTraceStub.getCall(2).args[1]).to.be.equal(peers[0].string);
+
+        expect(loggerTraceStub.getCall(3).args.length).to.be.equal(1);
+        expect(loggerTraceStub.getCall(3).args[0]).to.be.equal('Updated Peers');
+      });
+
+    });
+
+    it('should call jobsQueue.register', async () => {
+      await inst.onPeersReady();
+
+      expect(jobsQueue.stubs.register.calledOnce).to.be.true;
+      expect(jobsQueue.stubs.register.firstCall.args.length).to.be.equal(3);
+      expect(jobsQueue.stubs.register.firstCall.args[0]).to.be.equal('peersDiscoveryAndUpdate');
+      expect(jobsQueue.stubs.register.firstCall.args[1]).to.be.a('function');
+      expect(jobsQueue.stubs.register.firstCall.args[2]).to.be.equal(5000);
+    });
+
+    it('should call discoverPeers', async () => {
+      await inst.onPeersReady();
+
+      expect(discoverPeersStub.calledOnce).to.be.true;
+      expect(discoverPeersStub.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should logger.error if discoverPeers throw', async () => {
+      const error = new Error('error');
+      discoverPeersStub.rejects(error);
+
+      await inst.onPeersReady();
+
+      process.nextTick(() => {
+        expect(logger.stubs.error.calledOnce).to.be.true;
+        expect(logger.stubs.error.firstCall.args.length).to.be.equal(2);
+        expect(logger.stubs.error.firstCall.args[0]).to.be.equal('Discovering new peers failed');
+        expect(logger.stubs.error.firstCall.args[1]).to.be.equal(error.message);
       });
     });
-    it('should call logger.trace');
+
+    it('should call peersLogic.list', async () => {
+      await inst.onPeersReady();
+
+      expect(peersLogic.stubs.list.calledOnce).to.be.true;
+      expect(peersLogic.stubs.list.firstCall.args.length).to.be.equal(1);
+      expect(peersLogic.stubs.list.firstCall.args[0]).to.be.equal(false);
+    });
+
+    it('should call Throttle.all', async () => {
+      await inst.onPeersReady();
+
+      expect(ThrottleStub.all.calledOnce).to.be.true;
+      expect(ThrottleStub.all.firstCall.args.length).to.be.equal(2);
+      expect(ThrottleStub.all.firstCall.args[0]).to.be.a('array');
+      expect(ThrottleStub.all.firstCall.args[1]).to.be.deep.equal({ maxInProgress: 50 });
+    });
+
+    describe('Throttle.all callback(for each peer in peers)', () => {
+
+      it('should call pingAndUpdate(check on p.updated is false)', async () => {
+        await inst.onPeersReady();
+
+        expect(peers[0].pingAndUpdate.calledOnce).to.be.true;
+        expect(peers[0].pingAndUpdate.firstCall.args.length).to.be.equal(0);
+      });
+
+      it('should call pingAndUpdate(check on Date.now() - p.updated > 3000)', async () => {
+        peers[0].updated = Date.now() - 3001;
+
+        await inst.onPeersReady();
+
+        expect(peers[0].pingAndUpdate.calledOnce).to.be.true;
+        expect(peers[0].pingAndUpdate.firstCall.args.length).to.be.equal(0);
+      });
+
+      it('should call logger.debug if pingAndUpdate throw', async () => {
+        const error = new Error('error');
+        peers[0].pingAndUpdate.rejects(error);
+
+        await inst.onPeersReady();
+
+        process.nextTick(() => {
+          expect(logger.stubs.error.calledOnce).to.be.true;
+          expect(logger.stubs.error.firstCall.args.length).to.be.equal(2);
+          expect(logger.stubs.error.firstCall.args[0]).to.be.equal('Ping failed when updating peer string');
+          expect(logger.stubs.error.firstCall.args[1]).to.be.equal(error.message);
+        });
+      });
+
+      describe('false in condition of Throttle.all"s callback', () => {
+        it('p in null', async () => {
+          peers[0] = null;
+
+          await inst.onPeersReady();
+
+          process.nextTick(() => {
+            expect(logger.stubs.trace.callCount).to.be.equal(3);
+          });
+        });
+
+        it('p.state === PeerState.BANNED', async () => {
+          peers[0].state = PeerState.BANNED;
+
+          await inst.onPeersReady();
+
+          process.nextTick(() => {
+            expect(logger.stubs.trace.callCount).to.be.equal(3);
+          });
+        });
+
+        it('p.update is true and (Date.now() - p.updated) <= 3000', async () => {
+          peers[0].update = Date.now() - 2000;
+
+          await inst.onPeersReady();
+
+          process.nextTick(() => {
+            expect(logger.stubs.trace.callCount).to.be.equal(3);
+          });
+        });
+      });
+    });
 
   });
 
@@ -617,11 +764,14 @@ describe('src/modules/transport.ts', () => {
       expect(broadcasterLogic.stubs.broadcast.calledOnce).to.be.true;
       expect(broadcasterLogic.stubs.broadcast.firstCall.args.length).to.be.equal(2);
       expect(broadcasterLogic.stubs.broadcast.firstCall.args[0]).to.be.deep.equal({
-        limit: constants.maxPeers, broadhash: 'broadhash',
+        broadhash: 'broadhash',
+        limit    : constants.maxPeers,
       });
       expect(broadcasterLogic.stubs.broadcast.firstCall.args[1]).to.be.deep.equal({
-        api : '/blocks',
-        data: { block }, method: 'POST', immediate: true,
+        api      : '/blocks',
+        data     : { block },
+        immediate: true,
+        method   : 'POST',
       });
     });
 
@@ -742,7 +892,7 @@ describe('src/modules/transport.ts', () => {
 
       expect(logger.stubs.debug.calledOnce).to.be.true;
       expect(logger.stubs.debug.firstCall.args.length).to.be.equal(1);
-      expect(logger.stubs.debug.firstCall.args[0]).to.be.equal(`Received transaction 1999 from peer: string`);
+      expect(logger.stubs.debug.firstCall.args[0]).to.be.equal('Received transaction 1999 from peer: string');
     });
 
     it('should call transactionModule.processUnconfirmedTransaction', async () => {
@@ -756,13 +906,13 @@ describe('src/modules/transport.ts', () => {
     });
 
     it('should return transaction.id if success', async () => {
-      let ret = await inst.receiveTransaction(transaction, peer, bundled, extraLogMessage);
+      const ret = await inst.receiveTransaction(transaction, peer, bundled, extraLogMessage);
 
       expect(ret).to.be.equal(transaction.id);
     });
 
     it('should logger.debug if balancesSequence.addAndPromise throw', async () => {
-      let error = Error('error');
+      const error = Error('error');
       transactionModule.stubs.processUnconfirmedTransaction.rejects(error);
 
       await  expect(inst.receiveTransaction(transaction, peer, bundled, extraLogMessage)).to.be.rejectedWith(error.message);
@@ -772,7 +922,7 @@ describe('src/modules/transport.ts', () => {
       expect(logger.stubs.debug.secondCall.args[0]).to.be.equal('Transaction 1999 error Error: error');
     });
     it('should throw error if balancesSequence.addAndPromise throw', async () => {
-      let error = Error('error');
+      const error = Error('error');
       transactionModule.stubs.processUnconfirmedTransaction.rejects(error);
 
       await  expect(inst.receiveTransaction(transaction, peer, bundled, extraLogMessage)).to.be.rejectedWith(error.message);
