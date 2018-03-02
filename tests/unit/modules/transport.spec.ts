@@ -4,7 +4,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as Throttle from 'promise-parallel-throttle';
 import * as rewire from 'rewire';
-import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { Symbols } from '../../../src/ioc/symbols';
 import { PeerState } from '../../../src/logic';
@@ -172,7 +172,6 @@ describe('src/modules/transport.ts', () => {
 
     let popsicleStub;
     let popsicleUseStub;
-
     let removePeerStub: SinonStub;
 
     beforeEach(() => {
@@ -382,7 +381,6 @@ describe('src/modules/transport.ts', () => {
         peer: thePeer,
       });
     });
-
   });
 
   describe('getFromRandomPeer', () => {
@@ -399,6 +397,7 @@ describe('src/modules/transport.ts', () => {
       result  = 'hehehe';
       config  = {};
       peers   = [{}];
+
       peersModule.enqueueResponse('list', Promise.resolve({ peers }));
       getFromPeerStub = sandbox.stub(inst, 'getFromPeer').returns(result);
     });
@@ -492,7 +491,6 @@ describe('src/modules/transport.ts', () => {
         expect(loggerTraceStub.getCall(3).args.length).to.be.equal(1);
         expect(loggerTraceStub.getCall(3).args[0]).to.be.equal('Updated Peers');
       });
-
     });
 
     it('should call jobsQueue.register', async () => {
@@ -576,6 +574,7 @@ describe('src/modules/transport.ts', () => {
       });
 
       describe('false in condition of Throttle.all"s callback', () => {
+
         it('p in null', async () => {
           peers[0] = null;
 
@@ -607,7 +606,6 @@ describe('src/modules/transport.ts', () => {
         });
       });
     });
-
   });
 
   describe('onSignature', () => {
@@ -671,6 +669,7 @@ describe('src/modules/transport.ts', () => {
   });
 
   describe('onUnconfirmedTransaction', () => {
+
     let broadcast;
     let transaction;
 
@@ -800,28 +799,118 @@ describe('src/modules/transport.ts', () => {
 
       expect(broadcasterLogic.stubs.enqueue.notCalled).to.be.true;
     });
-
   });
 
   describe('receiveSignatures', () => {
 
-    // what about decorators?
-    it('should call receiveSignature');
-    it('should call logger.debug if receiveSignature throw error');
+    let receiveSignatureStub: SinonStub;
+    let query;
+
+    beforeEach(() => {
+      query                = {
+        signatures:
+          [{ transaction: 'transaction', signature: 'signature' }],
+      };
+      receiveSignatureStub = sandbox.stub(inst as any, 'receiveSignature');
+    });
+
+    it('should call receiveSignature', async () => {
+      await inst.receiveSignatures(query);
+
+      expect(receiveSignatureStub.calledOnce).to.be.true;
+      expect(receiveSignatureStub.firstCall.args.length).to.be.equal(1);
+      expect(receiveSignatureStub.firstCall.args[0]).to.be.deep.equal(query.signatures[0]);
+    });
+
+    it('should call logger.debug if receiveSignature throw error', async () => {
+      const error = new Error('error');
+      receiveSignatureStub.rejects(error);
+
+      await inst.receiveSignatures(query);
+
+      expect(logger.stubs.debug.calledOnce).to.be.true;
+      expect(logger.stubs.debug.firstCall.args.length).to.be.equal(2);
+      expect(logger.stubs.debug.firstCall.args[0]).to.be.equal(error);
+      expect(logger.stubs.debug.firstCall.args[1]).to.be.deep.equal(query.signatures[0]);
+    });
   });
 
   describe('receiveSignature', () => {
 
+    let signature;
+
+    beforeEach(() => {
+      signature = { transaction: 'transaction', signature: 'signature' };
+
+      multisigModule.enqueueResponse('processSignature', Promise.resolve());
+    });
+
+    it('should call multisigModule.processSignature', async () => {
+      await inst.receiveSignature(signature);
+
+      expect(multisigModule.stubs.processSignature.calledOnce).to.be.true;
+      expect(multisigModule.stubs.processSignature.firstCall.args.length).to.be.equal(1);
+      expect(multisigModule.stubs.processSignature.firstCall.args[0]).to.be.deep.equal(signature);
+    });
+
+    it('should throw error multisigModule.processSignature throw error', async () => {
+      const error = new Error('error');
+      multisigModule.reset();
+      multisigModule.enqueueResponse('processSignature', Promise.reject(error));
+
+      await  expect(inst.receiveSignature(signature)).to.be.rejectedWith('Error processing signature: error');
+    });
   });
 
   describe('receiveTransactions', () => {
 
-    let removePeerStub: SinonStub;
+    let transactions;
+    let peer;
+    let extraLogMessage;
+
+    let receiveTransactionStub: SinonStub;
+
+    beforeEach(() => {
+      transactions    = [{}];
+      peer            = {};
+      extraLogMessage = 'extraLogMessage';
+
+      receiveTransactionStub = sandbox.stub(inst as any, 'receiveTransaction');
+    });
+
+    it('should call multisigModule.processSignature', async () => {
+      await inst.receiveTransactions(transactions, peer, extraLogMessage);
+
+      expect(receiveTransactionStub.calledOnce).to.be.true;
+      expect(receiveTransactionStub.firstCall.args.length).to.be.equal(4);
+      expect(receiveTransactionStub.firstCall.args[0]).to.be.deep.equal(transactions[0]);
+      expect(receiveTransactionStub.firstCall.args[1]).to.be.deep.equal(peer);
+      expect(receiveTransactionStub.firstCall.args[2]).to.be.equal(true);
+      expect(receiveTransactionStub.firstCall.args[3]).to.be.equal(extraLogMessage);
+
+    });
+
+    it('should throw error multisigModule.processSignature throw error', async () => {
+      const error = new Error('error');
+      receiveTransactionStub.rejects(error);
+
+      await inst.receiveTransactions(transactions, peer, extraLogMessage);
+
+      expect(logger.stubs.debug.calledOnce).to.be.true;
+      expect(logger.stubs.debug.firstCall.args.length).to.be.equal(2);
+      expect(logger.stubs.debug.firstCall.args[0]).to.be.equal(error);
+      expect(logger.stubs.debug.firstCall.args[1]).to.be.deep.equal(transactions[0]);
+    });
+  });
+
+  describe('receiveTransaction', () => {
 
     let transaction;
     let peer;
     let bundled;
     let extraLogMessage;
+
+    let removePeerStub: SinonStub;
 
     beforeEach(() => {
       transaction     = { id: 1999 };
@@ -929,10 +1018,6 @@ describe('src/modules/transport.ts', () => {
     });
   });
 
-  describe('receiveTransaction', () => {
-
-  });
-
   describe('removePeer', () => {
 
     let options;
@@ -970,11 +1055,11 @@ describe('src/modules/transport.ts', () => {
 
   describe('discoverPeers', () => {
 
-    let getFromRandomPeerStub: SinonStub;
-
     let response;
     let acceptablePeers;
     let peer;
+
+    let getFromRandomPeerStub: SinonStub;
 
     beforeEach(() => {
       response        = {
@@ -1091,5 +1176,4 @@ describe('src/modules/transport.ts', () => {
       expect(logger.stubs.debug.firstCall.args[0]).to.be.equal('Discovered 0 peers - Rejected 0 - AlreadyKnown 1');
     });
   });
-
 });
