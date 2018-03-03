@@ -4,7 +4,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as rewire from 'rewire';
 import * as sinon from 'sinon';
-import { SinonSandbox, SinonSpy, SinonStub, SinonFakeTimers } from 'sinon';
+import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import { Symbols } from '../../../src/ioc/symbols';
 import { LoaderModule } from '../../../src/modules';
 import {
@@ -32,7 +32,7 @@ import {
   ZSchemaStub,
   IAppStateStub,
 } from '../../stubs';
-
+ 
 import { PeerType } from '../../../src/logic';
 import loaderSchema from '../../../src/schema/loader';
 import { BlocksSubmoduleProcessStub } from '../../stubs/modules/blocks/BlocksSubmoduleProcessStub';
