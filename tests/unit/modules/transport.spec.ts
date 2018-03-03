@@ -41,7 +41,6 @@ describe('src/modules/transport.ts', () => {
   let inst: TransportModule;
   let container: Container;
   let sandbox: SinonSandbox;
-
   const appConfig = {
     peers: { options: { timeout: 1000, }, },
   };
