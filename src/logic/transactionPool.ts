@@ -259,7 +259,7 @@ export class TransactionPool implements ITransactionPoolLogic {
           true
         );
         try {
-          this.queueTransaction(tx, true);
+          this.queueTransaction(tx, false /* After processing the tx becomes unbundled */);
         } catch (e) {
           this.logger.debug(`Failed to queue bundled transaction: ${tx.id}`, e);
         }
