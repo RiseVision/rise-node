@@ -15,11 +15,13 @@ import { SlotsStub } from './helpers/SlotsStub';
 import AccountLogicStub from './logic/AccountLogicStub';
 import { AppStateStub } from './logic/AppStateStub';
 import BlockRewardLogicStub from './logic/BlockRewardLogicStub';
+import { InnerTXQueueStub } from './logic/InnerTXQueueStub';
 import PeerLogicStub from './logic/PeerLogicStub';
 import { PeersLogicStub } from './logic/PeersLogicStub';
 import { RoundLogicStub } from './logic/RoundLogicStub';
 import RoundsLogicStub from './logic/RoundsLogicStub';
 import TransactionLogicStub from './logic/TransactionLogicStub';
+import { TransactionPoolStub } from './logic/TransactionPoolStub';
 import IAppStateStub from './logic/IAppStateLogicStub';
 import { BroadcasterLogicStub } from './logic/BroadcasterLogicStub';
 // Logic / Transactions
@@ -59,6 +61,7 @@ export {
   EdStub,
   ExceptionsManagerStub,
   IBlocksStub,
+  InnerTXQueueStub,
   ISystemStub,
   JobsQueueStub,
   LoggerStub,
@@ -71,6 +74,7 @@ export {
   SystemModuleStub,
   TransactionLogicStub,
   TransactionsModuleStub,
+  TransactionPoolStub,
   TransactionTypeStub,
   TransportModuleStub,
   ZSchemaStub,

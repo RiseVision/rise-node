@@ -7,6 +7,7 @@ import {
   LoggerStub,
   PeersLogicStub,
   SystemModuleStub,
+  TransactionPoolStub,
   TransactionsModuleStub
 } from '../stubs';
 import DbStub from '../stubs/helpers/DbStub';
@@ -63,6 +64,7 @@ export const createContainer = (): Container => {
   container.bind(Symbols.logic.blockReward).to(BlockRewardLogicStub).inSingletonScope();
   container.bind(Symbols.logic.peers).to(PeersLogicStub).inSingletonScope();
   container.bind(Symbols.logic.transaction).to(TransactionLogicStub).inSingletonScope();
+  container.bind(Symbols.logic.transactionPool).to(TransactionPoolStub).inSingletonScope();
   container.bind(Symbols.logic.rounds).to(RoundsLogicStub).inSingletonScope();
 
   // Modules
