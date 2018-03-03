@@ -134,7 +134,7 @@ describe('logic/transaction', () => {
     });
 
     it('should add the instance to the types array and return instance', () => {
-      // We need a valid object to avoid the error, easy to instanciate real code.
+      // We need a valid object to avoid the error, easy to instantiate real code.
       const txType = new SendTransaction();
       instance.attachAssetType(txType);
       expect((instance as any).types[txType.type]).to.be.deep.equal(txType);
