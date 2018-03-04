@@ -22,7 +22,6 @@ export const Symbols = {
     db          : Symbol('db'),
     expressApp  : Symbol('expressApp'),
     genesisBlock: Symbol('genesisBlock'),
-    lastCommit  : Symbol('lastCommit'),
     nonce       : Symbol('nonce'),
     redisClient : Symbol('redisClient'),
     socketIO    : Symbol('socketIO'),

@@ -178,7 +178,6 @@ describe('api/peers', () => {
 
   describe('/version', () => {
     checkReturnObjKeyVal('build', 'integration-version', '/api/peers/version');
-    checkReturnObjKeyVal('commit', 'integration-testing', '/api/peers/version');
     checkReturnObjKeyVal('minVersion', '^0.1.0', '/api/peers/version');
     checkReturnObjKeyVal('version', '0.1.0', '/api/peers/version');
   });

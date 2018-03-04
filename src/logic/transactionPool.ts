@@ -213,7 +213,6 @@ export class TransactionPool implements ITransactionPoolLogic {
     limit -= multisignatures.length;
 
     const queued = this.queued.list(false, limit);
-    limit -= queued.length;
 
     return unconfirmed.concat(multisignatures).concat(queued);
   }

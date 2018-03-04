@@ -125,7 +125,7 @@ export class TransportAPI {
   }
 
   @Post('/blocks')
-  public async postBlocks(@BodyParam('block') block: SignedAndChainedBlockType, @Req() req: Request) {
+  public async postBlock(@BodyParam('block') block: SignedAndChainedBlockType, @Req() req: Request) {
     try {
       block = this.blockLogic.objectNormalize(block);
     } catch (e) {

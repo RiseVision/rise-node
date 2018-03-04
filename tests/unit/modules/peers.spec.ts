@@ -315,7 +315,10 @@ describe('modules/peers', () => {
   describe('.onBlockchainReady', () => {
     let pingStub: SinonStub;
     let busStub: BusStub;
+    let oldEnv: string;
     beforeEach(() => {
+      oldEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 't';
       pingStub = sinon.stub().returns(Promise.resolve());
       const dbStub = container.get<DbStub>(Symbols.generic.db);
       dbStub.enqueueResponse('any', ['a']);
@@ -327,6 +330,9 @@ describe('modules/peers', () => {
       busStub = container.get<BusStub>(Symbols.helpers.bus);
       busStub.enqueueResponse('message', '');
     });
+    afterEach(() => {
+      process.env.NODE_ENV = oldEnv;
+    })
     it('should load peers from db and config and call pingUpdate on all of them', async () => {
       await instR.onBlockchainReady();
       expect(pingStub.callCount).to.be.eq(3);
