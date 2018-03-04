@@ -8,7 +8,7 @@
     "test-unit": "mocha  --bail --require ts-node/register './tests/unit/**/*.spec.ts'",
     "test-all": "NODE_ENV=test mocha  --bail --require ts-node/register './tests/unit/**/*.spec.ts' './tests/integration/**/*.spec.ts'",
     "transpile": "shx rm -rf dist; tsc",
-    "test-unit-cover": "nyc -e '.ts' -x 'tests/**' -r lcov npm run test-unit && cat ./coverage/lcov.info | coveralls",
+    "test-cover-unit": "nyc -e '.ts' -x 'tests/**' -r lcov npm run test-unit && cat ./coverage/lcov.info | coveralls",
     "test-cover-all": "nyc -e '.ts' -x 'tests/**' -r lcov npm run test-all && cat ./coverage/lcov.info | coveralls"
   },
   "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
