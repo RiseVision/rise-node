@@ -20,11 +20,11 @@ describe('modules/accounts', () => {
     container = new Container();
     container.bind<IAccountLogic>(Symbols.logic.account).to(AccountLogicStub).inSingletonScope();
     container.bind<IAccountsModule>(Symbols.modules.accounts).to(AccountsModule).inSingletonScope();
-    accountLogicStub = container.get(Symbols.logic.account);
+    accountLogicStub = container.get<any>(Symbols.logic.account);
   });
   beforeEach(() => {
     accountLogicStub.reset();
-    accountModule = container.get(Symbols.modules.accounts);
+    accountModule = container.get<any>(Symbols.modules.accounts);
   });
   describe('.getAccount', () => {
     it('should call accountLogic.get', async () => {

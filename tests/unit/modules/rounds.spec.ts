@@ -335,10 +335,11 @@ describe('modules/rounds', () => {
       });
 
       it('should return from mergeBlockGenerator', async () => {
-        const expectedPromise = Promise.resolve('mergeBlockGenerator done');
+        const expectedPromise = Promise.reject('mergeBlockGenerator done');
         roundLogicStub.stubs.mergeBlockGenerator.returns(expectedPromise);
         const retVal = doCall();
-        expect(retVal).to.be.deep.equal(expectedPromise);
+        expect(retVal).to.be.an.instanceof(Promise);
+        expect(retVal).to.be.be.rejectedWith('mergeBlockGenerator done');
       });
 
       describe('then, if this was the last block in round', () => {

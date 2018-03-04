@@ -22,7 +22,6 @@ describe('helpers/inserts', () => {
 
   afterEach(() => {
     sandbox.restore();
-    sandbox.reset();
   });
 
   describe('constructor()', () => {

@@ -39,7 +39,6 @@ describe('helpers/httpApi', () => {
 
   afterEach(() => {
     sandbox.restore();
-    sandbox.reset();
   });
 
   describe('logClientConnections()', () => {

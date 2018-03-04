@@ -24,7 +24,7 @@ describe('modules/blocks', () => {
   });
 
   beforeEach(() => {
-    inst = instB = container.get(Symbols.modules.blocks);
+    inst = instB = container.get<any>(Symbols.modules.blocks);
   });
   describe('instance fields', () => {
     it('should have lastReceipt', () => {

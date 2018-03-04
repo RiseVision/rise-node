@@ -26,8 +26,8 @@ describe('modules/peers', () => {
   };
   beforeEach(() => {
     container = createContainer();
-    container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
-    container.bind(Symbols.modules.peers).to(PeersModule);
+    container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
+    container.rebind(Symbols.modules.peers).to(PeersModule);
 
     inst = instR = container.get(Symbols.modules.peers);
     peersLogicStub = container.get(Symbols.logic.peers);

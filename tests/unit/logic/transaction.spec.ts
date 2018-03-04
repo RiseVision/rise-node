@@ -719,7 +719,7 @@ describe('logic/transaction', () => {
     });
 
     it('should throw if amount is > totalAmout', async () => {
-      (tx.amount as any) = '10999999991000001';
+      (tx as any).amount = '10999999991000001';
       await expect(instance.verify(tx, sender, requester, 1)).to.be.rejectedWith('Invalid transaction amount');
     });
 
@@ -729,7 +729,7 @@ describe('logic/transaction', () => {
     });
 
     it('should throw if amount is written in exponential notation', async () => {
-      (tx.amount as any) = '10e3';
+      (tx as any).amount = '10e3';
       await expect(instance.verify(tx, sender, requester, 1)).to.be.rejectedWith('Invalid transaction amount');
     });
 

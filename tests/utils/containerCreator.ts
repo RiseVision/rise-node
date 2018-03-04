@@ -6,7 +6,7 @@ import {
   BroadcasterLogicStub, BusStub, DelegatesModuleStub,
   ExceptionsManagerStub,
   LoggerStub,
-  PeersLogicStub,
+  PeersLogicStub, PeersModuleStub,
   SystemModuleStub,
   TransactionsModuleStub,
 } from '../stubs';
@@ -36,6 +36,8 @@ import SocketIOStub from '../stubs/utils/SocketIOStub';
 export const createContainer = (): Container => {
   const container = new Container();
   // Generics
+  container.bind(Symbols.generic.appConfig)
+    .toConstantValue(require(`${__dirname}/../integration/config.json`));
   container.bind(Symbols.generic.db).to(DbStub).inSingletonScope();
   container.bind(Symbols.generic.genesisBlock)
     .toConstantValue(require(`${__dirname}/../integration/genesisBlock.json`));
@@ -83,6 +85,7 @@ export const createContainer = (): Container => {
   container.bind(Symbols.modules.forge).to(ForgeModuleStub).inSingletonScope();
   container.bind(Symbols.modules.fork).to(ForkModuleStub).inSingletonScope();
   container.bind(Symbols.modules.multisignatures).to(MultisignaturesModuleStub).inSingletonScope();
+  container.bind(Symbols.modules.peers).to(PeersModuleStub).inSingletonScope();
   container.bind(Symbols.modules.rounds).to(RoundsModuleStub).inSingletonScope();
   container.bind(Symbols.modules.system).to(SystemModuleStub).inSingletonScope();
   container.bind(Symbols.modules.transport).to(TransportModuleStub).inSingletonScope();

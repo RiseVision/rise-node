@@ -119,7 +119,7 @@ describe('logic/round', () => {
       scope.roundOutsiders = [];
       const instanceTest   = new RewireRound.RoundLogic(scope, task);
       const ar             = await instanceTest.updateMissedBlocks();
-      expect(ar).to.be.empty;
+      expect(ar).to.be.undefined;
       expect(task.none.notCalled).to.equal(true);
     });
 

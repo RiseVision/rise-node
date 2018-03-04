@@ -9,7 +9,7 @@ export const createFakePeer = (item: any = {}): PeerType => {
     port     : item.port || Math.ceil(Math.random() * 65535),
     os       : item.os || 'linux',
     version  : item.version || '1.0.1',
-    broadhash: item.broadhash || 'broadhash1',
+    broadhash: item.broadhash || 'aa',
     height   : item.height || 1,
     clock    : item.clock || 1,
     updated  : item.updated || 1,
