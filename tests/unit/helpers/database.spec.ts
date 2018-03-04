@@ -3,6 +3,7 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as monitor from 'pg-monitor';
 import * as pgPromise from 'pg-promise';
 import * as rewire from 'rewire';
 import * as sinon from 'sinon';
@@ -195,6 +196,7 @@ describe('helpers/database', () => {
       expect(applyRuntimeQueryFileSpy.calledOnce).to.be.true;
 
       MigratorRevert();
+      monitor.detach();
     });
   });
 });

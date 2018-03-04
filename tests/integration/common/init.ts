@@ -96,7 +96,6 @@ export class IntegrationTestInitializer {
     return blockModule.lastBlock.height;
   }
 
-
   public setup() {
     const s = this;
     before(function () {
@@ -114,7 +113,6 @@ export class IntegrationTestInitializer {
         echo    : 'error',
         filename: '/dev/null',
       }),
-      'integration-testing',
       'integration-version',
       require('../genesisBlock.json'),
       constants,

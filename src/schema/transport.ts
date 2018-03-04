@@ -24,6 +24,7 @@ export default {
       },
       nethash  : {
         type     : 'string',
+        minLength: 64,
         maxLength: 64,
       },
       broadhash: {
@@ -35,9 +36,9 @@ export default {
         minimum: 1,
       },
       nonce    : {
-        type   : 'string',
-        minimum: 16,
-        max    : 16,
+        type     : 'string',
+        minLength: 16,
+        maxLength: 36,
       },
     },
     required  : ['port', 'version', 'nethash'],

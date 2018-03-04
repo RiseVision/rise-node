@@ -29,6 +29,7 @@ export const createSendTransaction = (from: LiskWallet, recipient: string, fee: 
 
 export const createVoteTransaction = (from: LiskWallet, fee: number, obj: any = {}): ITransaction => {
   const t = new dposOffline.transactions.VoteTx(obj.asset)
+    .withRecipientId(from.address)
     .withTimestamp(0);
   Object.keys(obj).forEach((k) => t.set(k as any, obj[k]));
   return t.withFees(fee).sign(from);

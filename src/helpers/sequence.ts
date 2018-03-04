@@ -1,17 +1,5 @@
-interface ITask {
-  isPromise: false;
-  args: any[];
-
-  worker(...args: any[]): void;
-
-  worker(...args: any[]): Promise<any>;
-
-  done(err: Error, res: any): void;
-}
 
 interface IPromiseTask {
-  isPromise: true;
-
   worker(): Promise<any>;
 }
 
@@ -20,7 +8,7 @@ interface IPromiseTask {
  * Calls __tick with 3
  */
 export class Sequence {
-  private sequence: Array<ITask | IPromiseTask> = [];
+  private sequence: IPromiseTask[] = [];
   private config: {
     onWarning: (curPending: number, warnLimit: number) => void,
     warningLimit: number
@@ -48,7 +36,6 @@ export class Sequence {
   public addAndPromise<T>(worker: () => Promise<T>): Promise<T> {
     return new Promise((resolve, reject) => {
       const task: IPromiseTask = {
-        isPromise: true,
         worker() {
           return worker()
             .then(resolve)
@@ -57,44 +44,20 @@ export class Sequence {
       };
       this.sequence.push(task);
     });
-
-  }
-
-  public add(worker, args?: any[] | ((err: Error, res: any) => void), done?: (err: Error, res: any) => void) {
-    if (!done && args && typeof(args) === 'function') {
-      done = args;
-      args = undefined;
-    }
-    if (worker && typeof(worker) === 'function') {
-      const task: ITask = { isPromise: false, worker, done, args: null };
-      if (Array.isArray(args)) {
-        task.args = args;
-      }
-      this.sequence.push(task);
-    }
   }
 
   private tick(cb) {
-    const task: ITask|IPromiseTask = this.sequence.shift();
+    const task: IPromiseTask = this.sequence.shift();
     if (!task) {
       return setImmediate(cb);
     }
-    if (task.isPromise === true) {
-      return task.worker()
-        .then((res) => cb())
-        .catch((err) => cb());
-    } else {
-      let args = [(err, res) => {
-        if (task.done) {
-          setImmediate(task.done, err, res);
-        }
-        setImmediate(cb);
-      }];
-      if (task.args) {
-        args = args.concat(task.args);
-      }
-      task.worker.apply(task.worker, args);
-    }
+    return task.worker()
+      .then(() => cb())
+      .catch((err) => {
+        // tslint:disable-next-line
+        console.error('ERROR in handler.', err);
+        cb();
+      });
   }
 
   private nextSequenceTick() {

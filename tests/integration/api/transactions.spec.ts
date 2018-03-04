@@ -240,6 +240,7 @@ describe('api/transactions', () => {
     checkReturnObjKeyVal('queued', 0, '/api/transactions/count');
     checkReturnObjKeyVal('multisignature', 0, '/api/transactions/count');
     describe('with some txs', () => {
+      initializer.createBlocks(1, 'each');
       beforeEach(async () => {
         const txs: Array<IBaseTransaction<any>> = [];
         for (let i = 0; i < 5; i++) {

@@ -15,7 +15,6 @@ export * from './httpApi';
 export * from './forkTypes';
 export * from './exceptionManager';
 export * from './genericUtils';
-export * from './git';
 export * from './inserts';
 export * from './jobsQueue';
 export * from './logger';
