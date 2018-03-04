@@ -4,7 +4,6 @@ import * as cors from 'cors';
 import * as express from 'express';
 import * as http from 'http';
 import { Container } from 'inversify';
-import * as methodOverride from 'method-override';
 import 'reflect-metadata';
 import { useContainer as useContainerForHTTP, useExpressServer } from 'routing-controllers';
 import * as socketIO from 'socket.io';
@@ -111,7 +110,6 @@ export class AppManager {
     app.use(bodyParser.raw({limit: '2mb'}));
     app.use(bodyParser.urlencoded({extended: true, limit: '2mb', parameterLimit: 5000}));
     app.use(bodyParser.json({limit: '2mb'}));
-    app.use(methodOverride());
 
     app.use(middleware.logClientConnections(this.logger));
     // Disallow inclusion in iframe.
