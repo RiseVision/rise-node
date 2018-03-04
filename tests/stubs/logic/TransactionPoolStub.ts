@@ -1,9 +1,9 @@
 import { injectable } from 'inversify';
-import { ITransactionsModule } from '../../../src/ioc/interfaces/modules';
 import { IBaseTransaction } from '../../../src/logic/transactions';
 import { BaseStubClass } from '../BaseStubClass';
-import { stubMethod } from '../stubDecorator';
+import { ITransactionsModule } from '../../../src/ioc/interfaces/modules';
 import { InnerTXQueueStub } from './InnerTXQueueStub';
+import { stubMethod } from '../stubDecorator';
 
 @injectable()
 export class TransactionPoolStub extends BaseStubClass {
@@ -20,8 +20,8 @@ export class TransactionPoolStub extends BaseStubClass {
     this.multisignature = new InnerTXQueueStub();
   }
 
-  @stubMethod(true)
-  public queueTransaction(tx: IBaseTransaction<any>, bundled: boolean): void {
+  @stubMethod()
+  public queueTransaction(tx: IBaseTransaction<any>, bundled: boolean) {
     return;
   }
 
@@ -31,7 +31,7 @@ export class TransactionPoolStub extends BaseStubClass {
   }
 
   @stubMethod()
-  public transactionInPool(txID: string): boolean {
+  public transactionInPool(txID: string) {
     return undefined;
   }
 
