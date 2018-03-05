@@ -481,11 +481,11 @@ describe('modules/loader', () => {
 
   describe('.cleanup', () => {
 
-    it('should set instance.loaded in true and returned a promise.resolve', () => {
+    it('should set instance.loaded in true and returned a promise.resolve', async () => {
       const ret = instance.cleanup();
 
       expect((instance as any).loaded).to.be.false;
-      expect(ret).to.be.deep.equal(Promise.resolve());
+      await expect(ret).to.be.fulfilled;
     });
 
   });

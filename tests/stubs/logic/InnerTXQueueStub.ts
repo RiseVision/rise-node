@@ -5,13 +5,10 @@ import { stubMethod } from '../stubDecorator';
 
 @injectable()
 export class InnerTXQueueStub<T = { receivedAt: Date }> extends BaseStubClass {
-  @stubMethod()
-  public has(id: string) {
-    return undefined;
-  }
+  public count = 0;
 
   @stubMethod()
-  public get count() {
+  public has(id: string) {
     return undefined;
   }
 

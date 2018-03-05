@@ -1,9 +1,9 @@
 import { injectable } from 'inversify';
+import { ITransactionsModule } from '../../../src/ioc/interfaces/modules';
 import { IBaseTransaction } from '../../../src/logic/transactions';
 import { BaseStubClass } from '../BaseStubClass';
-import { ITransactionsModule } from '../../../src/ioc/interfaces/modules';
-import { InnerTXQueueStub } from './InnerTXQueueStub';
 import { stubMethod } from '../stubDecorator';
+import { InnerTXQueueStub } from './InnerTXQueueStub';
 
 @injectable()
 export class TransactionPoolStub extends BaseStubClass {
