@@ -12,4 +12,8 @@ export default class ZSchemaStub extends BaseStubClass {
   @stubMethod()
   public getLastErrors() {
   }
+
+  @stubMethod()
+  public getLastError() {
+  }
 }
