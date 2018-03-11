@@ -26,7 +26,6 @@ describe('helpers/decorators/iocSymbol', () => {
 
   afterEach(() => {
     sandbox.restore();
-    sandbox.reset();
   });
 
   describe('IoCSymbol()', () => {

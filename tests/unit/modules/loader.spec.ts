@@ -485,7 +485,8 @@ describe('modules/loader', () => {
       const ret = instance.cleanup();
 
       expect((instance as any).loaded).to.be.false;
-      await expect(ret).to.be.fulfilled;
+      expect(ret).to.be.an.instanceof(Promise);
+      await ret; // should resolve;
     });
 
   });
@@ -1345,10 +1346,12 @@ describe('modules/loader', () => {
         expect(loggerStub.stubs.error.calledOnce).to.be.true;
         expect(loggerStub.stubs.error.firstCall.args.length).to.be.equal(1);
         expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal('Failed to find common block with: string');
+        expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal('Failed to find common block with: string');
 
         expect(retryStub.calledOnce).to.be.true;
         expect(retryStub.firstCall.args.length).to.be.equal(1);
-        expect(retryStub.firstCall.args[0]).to.be.deep.equal(new Error('Failed to find common block'));
+        expect(retryStub.firstCall.args[0]).to.be.instanceof(Error);
+        expect(retryStub.firstCall.args[0].message).to.be.deep.equal('Failed to find common block');
       });
 
       it('should call logger.error twice and return after if blocksProcessModule.getCommonBlock thro error', async () => {
@@ -1553,11 +1556,13 @@ describe('modules/loader', () => {
 
       expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
       expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Cannot process multisig signature for tr11 ');
-      expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.deep.equal({ name: error });
+      expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.instanceof(Error);
+      expect(loggerStub.stubs.warn.firstCall.args[1].name).to.be.deep.equal(error);
 
       expect(loggerStub.stubs.warn.secondCall.args.length).to.be.equal(2);
       expect(loggerStub.stubs.warn.secondCall.args[0]).to.be.equal('Cannot process multisig signature for tr22 ');
-      expect(loggerStub.stubs.warn.secondCall.args[1]).to.be.deep.equal({ name: error });
+      expect(loggerStub.stubs.warn.secondCall.args[1]).to.be.instanceof(Error);
+      expect(loggerStub.stubs.warn.secondCall.args[1].name).to.be.deep.equal(error);
 
     });
 

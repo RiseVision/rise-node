@@ -101,7 +101,7 @@ describe('modules/cache', () => {
       it('should return resolved promise if connection is established', async () => {
         const res = await cache.assertConnected();
 
-        expect(res).to.empty;
+        expect(res).to.be.undefined;
       });
 
       it('should return rejected promise if there is no connection', async () => {

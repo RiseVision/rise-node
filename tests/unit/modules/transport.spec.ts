@@ -51,8 +51,7 @@ describe('src/modules/transport.ts', () => {
 
   beforeEach(() => {
     container = createContainer();
-    container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
-    container.bind(Symbols.modules.peers).to(PeersModuleStub).inSingletonScope();
+    container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
     container.rebind(Symbols.modules.transport).to(rewireTransportModule.TransportModule);
   });
 

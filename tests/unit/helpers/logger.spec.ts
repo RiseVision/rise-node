@@ -31,7 +31,6 @@ describe('helpers/logger', () => {
 
   afterEach(() => {
     sandbox.restore();
-    sandbox.reset();
   });
 
   describe('none()', () => {

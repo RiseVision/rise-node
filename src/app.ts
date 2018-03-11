@@ -3,6 +3,7 @@ import * as program from 'commander';
 import * as extend from 'extend';
 import * as fs from 'fs';
 import * as jp from 'jsonpath';
+import 'source-map-support/register';
 import { AppManager } from './AppManager';
 import { allExceptionCreator } from './exceptions';
 import {

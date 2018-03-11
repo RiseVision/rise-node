@@ -27,18 +27,6 @@ export class BaseStubClass {
     if (!Array.isArray(this.spyMethods)) {
       this.spyMethods = [];
     }
-    this.stubs   = this.stubs || {};
-    this.spies   = this.spies || {};
-    this.sandbox = sinon.sandbox.create();
-    for (const c of this.stubConfigs) {
-      this.oldImplementations[c.method] = this[c.method];
-      this.stubs[c.method] = this.sandbox.stub(this, c.method as any);
-    }
-
-    for (const method of this.spyMethods) {
-      this.oldImplementations[method] = this[method];
-      this.spies[method] = this.sandbox.spy(this, method as any);
-    }
 
     this.reset();
   }
@@ -57,7 +45,19 @@ export class BaseStubClass {
 
   public reset() {
     this.nextResponses = {};
-    this.sandbox.reset();
+    this.sandbox.restore();
+    this.stubs   = this.stubs || {};
+    this.spies   = this.spies || {};
+    this.sandbox = sinon.sandbox.create();
+    for (const c of this.stubConfigs) {
+      this.oldImplementations[c.method] = this[c.method];
+      this.stubs[c.method] = this.sandbox.stub(this, c.method as any);
+    }
+
+    for (const method of this.spyMethods) {
+      this.oldImplementations[method] = this[method];
+      this.spies[method] = this.sandbox.spy(this, method as any);
+    }
 
     for (const c of this.stubConfigs) {
       this.stubs[c.method].callsFake((...args) => {

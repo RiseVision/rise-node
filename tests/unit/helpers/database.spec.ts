@@ -62,7 +62,6 @@ describe('helpers/database', () => {
 
   afterEach(() => {
     sandbox.restore();
-    sandbox.reset();
     revertPgPromise();
   });
 

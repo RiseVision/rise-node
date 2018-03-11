@@ -33,7 +33,6 @@ describe('helpers/request-limiter', () => {
 
   afterEach(() => {
     sandbox.restore();
-    sandbox.reset();
   });
 
   describe('applyLimits()', () => {
