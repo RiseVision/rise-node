@@ -48,10 +48,7 @@ describe('apis/transportAPI', () => {
   beforeEach(() => {
     container = createContainer();
     const constants = container.get<any>(Symbols.helpers.constants);
-    container
-      .bind(Symbols.modules.peers)
-      .to(PeersModuleStub)
-      .inSingletonScope();
+
     peersModuleStub = container.get(Symbols.modules.peers);
     peersModuleStub.enqueueResponse('list', {
       consensus: 123,
