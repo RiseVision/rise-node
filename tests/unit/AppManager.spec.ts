@@ -174,7 +174,6 @@ describe('AppManager', () => {
     let applyExpressLimitsStub: SinonStub;
     let compressionStub: SinonStub;
     let corsStub: SinonStub;
-    let methodOverrideStub: SinonStub;
     let useContainerForHTTPStub: SinonStub;
     let useExpressServerStub: SinonStub;
     let getMetadataSpy: SinonSpy;
@@ -188,7 +187,6 @@ describe('AppManager', () => {
         'compression'                           : RewiredAppManager.__get__('compression'),
         'cors'                                  : RewiredAppManager.__get__('cors'),
         'bodyParser'                            : RewiredAppManager.__get__('bodyParser'),
-        'methodOverride'                        : RewiredAppManager.__get__('methodOverride'),
         '_1.middleware'                         : RewiredAppManager.__get__('_1.middleware'),
         'Reflect.getMetadata'                   : RewiredAppManager.__get__('Reflect.getMetadata'),
         'routing_controllers_1.useContainer'    : RewiredAppManager.__get__('routing_controllers_1.useContainer'),
@@ -216,7 +214,6 @@ describe('AppManager', () => {
       applyExpressLimitsStub  = sandbox.stub();
       compressionStub         = sandbox.stub().returns('compression');
       corsStub                = sandbox.stub().returns('cors');
-      methodOverrideStub      = sandbox.stub().returns('methodOverride');
       useContainerForHTTPStub = sandbox.stub();
       useExpressServerStub    = sandbox.stub();
       getMetadataSpy          = sandbox.spy(RewiredAppManager.__get__('Reflect'), 'getMetadata');
@@ -226,7 +223,6 @@ describe('AppManager', () => {
       RewiredAppManager.__set__('compression', compressionStub);
       RewiredAppManager.__set__('cors', corsStub);
       RewiredAppManager.__set__('bodyParser', fakeBodyParser);
-      RewiredAppManager.__set__('methodOverride', methodOverrideStub);
       RewiredAppManager.__set__('_1.middleware', fakeMiddleware);
       RewiredAppManager.__set__('routing_controllers_1.useContainer', useContainerForHTTPStub);
       RewiredAppManager.__set__('routing_controllers_1.useExpressServer', useExpressServerStub);
@@ -309,19 +305,12 @@ describe('AppManager', () => {
       expect(fakeApp.use.getCall(5).args[0]).to.be.equal('json');
     });
 
-    it('should use methodOverride', async () => {
-      await instance.initExpress();
-      expect(methodOverrideStub.calledOnce).to.be.true;
-      expect(methodOverrideStub.firstCall.args.length).to.be.equal(0);
-      expect(fakeApp.use.getCall(6).args[0]).to.be.equal('methodOverride');
-    });
-
     it('should use logClientConnections middleware', async () => {
       await instance.initExpress();
       expect(fakeMiddleware.logClientConnections.calledOnce).to.be.true;
       expect(fakeMiddleware.logClientConnections.firstCall.args.length).to.be.equal(1);
       expect(fakeMiddleware.logClientConnections.firstCall.args[0]).to.be.deep.equal(loggerStub);
-      expect(fakeApp.use.getCall(7).args[0]).to.be.equal('logClientConnections');
+      expect(fakeApp.use.getCall(6).args[0]).to.be.equal('logClientConnections');
     });
 
     it('should use attachResponseHeader middleware twice', async () => {
@@ -333,8 +322,8 @@ describe('AppManager', () => {
       expect(fakeMiddleware.attachResponseHeader.secondCall.args.length).to.be.equal(2);
       expect(fakeMiddleware.attachResponseHeader.secondCall.args[0]).to.be.equal('Content-Security-Policy');
       expect(fakeMiddleware.attachResponseHeader.secondCall.args[1]).to.be.equal('frame-ancestors \'none\'');
+      expect(fakeApp.use.getCall(7).args[0]).to.be.equal('attachResponseHeader');
       expect(fakeApp.use.getCall(8).args[0]).to.be.equal('attachResponseHeader');
-      expect(fakeApp.use.getCall(9).args[0]).to.be.equal('attachResponseHeader');
     });
 
     it('should use applyAPIAccessRules middleware', async () => {
@@ -342,7 +331,7 @@ describe('AppManager', () => {
       expect(fakeMiddleware.applyAPIAccessRules.calledOnce).to.be.true;
       expect(fakeMiddleware.applyAPIAccessRules.firstCall.args.length).to.be.equal(1);
       expect(fakeMiddleware.applyAPIAccessRules.firstCall.args[0]).to.be.deep.equal(appConfig);
-      expect(fakeApp.use.getCall(10).args[0]).to.be.equal('applyAPIAccessRules');
+      expect(fakeApp.use.getCall(9).args[0]).to.be.equal('applyAPIAccessRules');
     });
 
     it('should call useContainerForHTTP', async () => {
