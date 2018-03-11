@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as rewire from 'rewire';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
-import { allControllers } from '../../src/apis';
+import { allControllers, APIErrorHandler } from '../../src/apis';
 import { AppManager } from '../../src/AppManager';
 import { ExceptionsManager } from '../../src/helpers';
 import constants from '../../src/helpers/constants';
@@ -13,7 +13,9 @@ import { Symbols } from '../../src/ioc/symbols';
 import { SignedAndChainedBlockType } from '../../src/logic';
 import { DummyCache } from '../../src/modules';
 import { AppConfig } from '../../src/types/genericTypes';
-import { LoggerStub } from '../stubs';
+import { BlocksSubmoduleChainStub, BusStub, LoggerStub } from '../stubs';
+import TransactionLogicStub from '../stubs/logic/TransactionLogicStub';
+import { LoaderModuleStub } from '../stubs/modules/LoaderModuleStub';
 import { ContainerStub } from '../stubs/utils/ContainerStub';
 import { createContainer } from '../utils/containerCreator';
 
@@ -27,7 +29,6 @@ describe('AppManager', () => {
   let loggerStub: LoggerStub;
   let appConfig: AppConfig;
   let genesisBlock: SignedAndChainedBlockType;
-  let allExceptionCreator: Array<(exc: ExceptionsManager) => void>;
   let allStubsContainer: Container;
   let containerStub: ContainerStub;
   let serverStub;
@@ -36,7 +37,6 @@ describe('AppManager', () => {
     loggerStub        = new LoggerStub();
     allStubsContainer = createContainer();
     allStubsContainer.bind(Symbols.modules.cache).toConstantValue({});
-    allStubsContainer.bind(Symbols.modules.loader).toConstantValue({});
     allStubsContainer.bind(Symbols.modules.peers).toConstantValue({});
     appConfig    = JSON.parse(fs.readFileSync(path.resolve('etc/mainnet/config.json'), 'utf8'));
     genesisBlock = JSON.parse(fs.readFileSync(path.resolve('etc/mainnet/genesisBlock.json'), 'utf8'));
@@ -166,26 +166,233 @@ describe('AppManager', () => {
   });
 
   describe('initExpress', () => {
-    it('should get express from container');
-    it('should call applyExpressLimits'); // rewire
-    it('should use compression middleware'); // rewire
-    it('should use cors middleware'); // rewire
-    it('should use cors for all options'); // rewire
-    it('should use static middleware for ../public'); // rewire
-    it('should use bodyParser.raw'); // rewire
-    it('should use bodyParser.urlendoced'); // rewire
-    it('should use bodyParser.json'); // rewire
-    it('should use methodOverride middleware'); // rewire
-    it('should use logClientConnections middleware'); // rewire
-    it('should use attachResponseHeader middleware twice'); // rewire
-    it('should use attachResponseHeader applyAPIAccessRules'); // rewire
-    it('should call useContainerForHTTP'); // rewire
-    describe('iocContainer.get', () => {
-      it('should call Reflect.getMetadata'); // rewire
-      it('should throw if null metadata returned'); // rewire
-      it('should call container.get'); // rewire
+    let expressStub: any;
+    let fakeApp: { use: SinonStub, options: SinonStub };
+    let fakeBodyParser: { raw: SinonStub, urlencoded: SinonStub, json: SinonStub };
+    let fakeMiddleware:
+          { logClientConnections: SinonStub, attachResponseHeader: SinonStub, applyAPIAccessRules: SinonStub };
+    let applyExpressLimitsStub: SinonStub;
+    let compressionStub: SinonStub;
+    let corsStub: SinonStub;
+    let methodOverrideStub: SinonStub;
+    let useContainerForHTTPStub: SinonStub;
+    let useExpressServerStub: SinonStub;
+    let getMetadataSpy: SinonSpy;
+
+    let toRestore;
+
+    before(() => {
+      toRestore = {
+        'express'                               : RewiredAppManager.__get__('express'),
+        '_1.applyExpressLimits'                 : RewiredAppManager.__get__('_1.applyExpressLimits'),
+        'compression'                           : RewiredAppManager.__get__('compression'),
+        'cors'                                  : RewiredAppManager.__get__('cors'),
+        'bodyParser'                            : RewiredAppManager.__get__('bodyParser'),
+        'methodOverride'                        : RewiredAppManager.__get__('methodOverride'),
+        '_1.middleware'                         : RewiredAppManager.__get__('_1.middleware'),
+        'Reflect.getMetadata'                   : RewiredAppManager.__get__('Reflect.getMetadata'),
+        'routing_controllers_1.useContainer'    : RewiredAppManager.__get__('routing_controllers_1.useContainer'),
+        'routing_controllers_1.useExpressServer': RewiredAppManager.__get__('routing_controllers_1.useExpressServer'),
+      };
     });
-    it('should call useExpressServer'); // rewire
+
+    beforeEach(() => {
+      fakeApp        = {
+        use    : sandbox.stub(),
+        options: sandbox.stub(),
+      };
+      expressStub    = { static: sandbox.stub().returns('static') };
+      fakeBodyParser = {
+        raw       : sandbox.stub().returns('raw'),
+        urlencoded: sandbox.stub().returns('urlencoded'),
+        json      : sandbox.stub().returns('json'),
+      };
+      fakeMiddleware = {
+        logClientConnections: sandbox.stub().returns('logClientConnections'),
+        attachResponseHeader: sandbox.stub().returns('attachResponseHeader'),
+        applyAPIAccessRules : sandbox.stub().returns('applyAPIAccessRules'),
+      };
+
+      applyExpressLimitsStub  = sandbox.stub();
+      compressionStub         = sandbox.stub().returns('compression');
+      corsStub                = sandbox.stub().returns('cors');
+      methodOverrideStub      = sandbox.stub().returns('methodOverride');
+      useContainerForHTTPStub = sandbox.stub();
+      useExpressServerStub    = sandbox.stub();
+      getMetadataSpy          = sandbox.spy(RewiredAppManager.__get__('Reflect'), 'getMetadata');
+
+      RewiredAppManager.__set__('express', expressStub);
+      RewiredAppManager.__set__('_1.applyExpressLimits', applyExpressLimitsStub);
+      RewiredAppManager.__set__('compression', compressionStub);
+      RewiredAppManager.__set__('cors', corsStub);
+      RewiredAppManager.__set__('bodyParser', fakeBodyParser);
+      RewiredAppManager.__set__('methodOverride', methodOverrideStub);
+      RewiredAppManager.__set__('_1.middleware', fakeMiddleware);
+      RewiredAppManager.__set__('routing_controllers_1.useContainer', useContainerForHTTPStub);
+      RewiredAppManager.__set__('routing_controllers_1.useExpressServer', useExpressServerStub);
+
+      containerStub = new ContainerStub(sandbox);
+      containerStub.get.callsFake((s) => (s === Symbols.generic.expressApp) ? fakeApp : s.toString());
+
+      instance = new RewiredAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
+
+      (instance as any).container = containerStub;
+    });
+
+    after(() => {
+      Object.keys(toRestore).forEach((key) => {
+        RewiredAppManager.__set__(key, toRestore[key]);
+      });
+    });
+
+    it('should get express from container', async () => {
+      await instance.initExpress();
+      expect(containerStub.get.calledOnce).to.be.true;
+      expect(containerStub.get.firstCall.args.length).to.be.equal(1);
+      expect(containerStub.get.firstCall.args[0]).to.be.equal(Symbols.generic.expressApp);
+    });
+
+    it('should call applyExpressLimits', async () => {
+      await instance.initExpress();
+      expect(applyExpressLimitsStub.calledOnce).to.be.true;
+      expect(applyExpressLimitsStub.firstCall.args.length).to.be.equal(2);
+      expect(applyExpressLimitsStub.firstCall.args[0]).to.be.deep.equal(fakeApp);
+      expect(applyExpressLimitsStub.firstCall.args[1]).to.be.deep.equal(appConfig);
+    });
+
+    it('should use compression middleware', async () => {
+      await instance.initExpress();
+      expect(compressionStub.calledOnce).to.be.true;
+      expect(compressionStub.firstCall.args.length).to.be.equal(1);
+      expect(compressionStub.firstCall.args[0]).to.be.deep.equal({ level: 9 });
+      expect(fakeApp.use.getCall(0).args[0]).to.be.equal('compression');
+    });
+
+    it('should use cors middleware', async () => {
+      await instance.initExpress();
+      expect(corsStub.calledTwice).to.be.true;
+      expect(corsStub.firstCall.args.length).to.be.equal(0);
+      expect(fakeApp.use.getCall(1).args[0]).to.be.equal('cors');
+      expect(fakeApp.options.firstCall.args[0]).to.be.equal('*');
+      expect(fakeApp.options.firstCall.args[1]).to.be.equal('cors');
+    });
+
+    it('should use static middleware for ../public', async () => {
+      await instance.initExpress();
+      expect(expressStub.static.calledOnce).to.be.true;
+      expect(expressStub.static.firstCall.args[0]).to.match(/\.\.\/public$/);
+      expect(fakeApp.use.getCall(2).args[0]).to.be.equal('static');
+    });
+
+    it('should use bodyParser.raw', async () => {
+      await instance.initExpress();
+      expect(fakeBodyParser.raw.calledOnce).to.be.true;
+      expect(fakeBodyParser.raw.firstCall.args.length).to.be.equal(1);
+      expect(fakeBodyParser.raw.firstCall.args[0]).to.be.deep.equal({ limit: '2mb' });
+      expect(fakeApp.use.getCall(3).args[0]).to.be.equal('raw');
+    });
+
+    it('should use bodyParser.urlencoded', async () => {
+      await instance.initExpress();
+      expect(fakeBodyParser.urlencoded.calledOnce).to.be.true;
+      expect(fakeBodyParser.urlencoded.firstCall.args.length).to.be.equal(1);
+      expect(fakeBodyParser.urlencoded.firstCall.args[0]).to.be.deep
+        .equal({ extended: true, limit: '2mb', parameterLimit: 5000 });
+      expect(fakeApp.use.getCall(4).args[0]).to.be.equal('urlencoded');
+    });
+
+    it('should use bodyParser.json', async () => {
+      await instance.initExpress();
+      expect(fakeBodyParser.json.calledOnce).to.be.true;
+      expect(fakeBodyParser.json.firstCall.args.length).to.be.equal(1);
+      expect(fakeBodyParser.json.firstCall.args[0]).to.be.deep.equal({ limit: '2mb' });
+      expect(fakeApp.use.getCall(5).args[0]).to.be.equal('json');
+    });
+
+    it('should use methodOverride', async () => {
+      await instance.initExpress();
+      expect(methodOverrideStub.calledOnce).to.be.true;
+      expect(methodOverrideStub.firstCall.args.length).to.be.equal(0);
+      expect(fakeApp.use.getCall(6).args[0]).to.be.equal('methodOverride');
+    });
+
+    it('should use logClientConnections middleware', async () => {
+      await instance.initExpress();
+      expect(fakeMiddleware.logClientConnections.calledOnce).to.be.true;
+      expect(fakeMiddleware.logClientConnections.firstCall.args.length).to.be.equal(1);
+      expect(fakeMiddleware.logClientConnections.firstCall.args[0]).to.be.deep.equal(loggerStub);
+      expect(fakeApp.use.getCall(7).args[0]).to.be.equal('logClientConnections');
+    });
+
+    it('should use attachResponseHeader middleware twice', async () => {
+      await instance.initExpress();
+      expect(fakeMiddleware.attachResponseHeader.calledTwice).to.be.true;
+      expect(fakeMiddleware.attachResponseHeader.firstCall.args.length).to.be.equal(2);
+      expect(fakeMiddleware.attachResponseHeader.firstCall.args[0]).to.be.equal('X-Frame-Options');
+      expect(fakeMiddleware.attachResponseHeader.firstCall.args[1]).to.be.equal('DENY');
+      expect(fakeMiddleware.attachResponseHeader.secondCall.args.length).to.be.equal(2);
+      expect(fakeMiddleware.attachResponseHeader.secondCall.args[0]).to.be.equal('Content-Security-Policy');
+      expect(fakeMiddleware.attachResponseHeader.secondCall.args[1]).to.be.equal('frame-ancestors \'none\'');
+      expect(fakeApp.use.getCall(8).args[0]).to.be.equal('attachResponseHeader');
+      expect(fakeApp.use.getCall(9).args[0]).to.be.equal('attachResponseHeader');
+    });
+
+    it('should use applyAPIAccessRules middleware', async () => {
+      await instance.initExpress();
+      expect(fakeMiddleware.applyAPIAccessRules.calledOnce).to.be.true;
+      expect(fakeMiddleware.applyAPIAccessRules.firstCall.args.length).to.be.equal(1);
+      expect(fakeMiddleware.applyAPIAccessRules.firstCall.args[0]).to.be.deep.equal(appConfig);
+      expect(fakeApp.use.getCall(10).args[0]).to.be.equal('applyAPIAccessRules');
+    });
+
+    it('should call useContainerForHTTP', async () => {
+      await instance.initExpress();
+      expect(useContainerForHTTPStub.calledOnce).to.be.true;
+      expect(useContainerForHTTPStub.firstCall.args.length).to.be.equal(1);
+      expect(useContainerForHTTPStub.firstCall.args[0].get).to.be.a('function');
+    });
+
+    describe('iocContainer.get', () => {
+      const metadataSymbol = Symbol('testiocContainer.get');
+      let fakeGet: (clz: any) => any;
+      beforeEach(async () => {
+        await instance.initExpress();
+        fakeGet = useContainerForHTTPStub.firstCall.args[0].get;
+        Reflect.defineMetadata(Symbols.__others.metadata.classSymbol, metadataSymbol, LoggerStub);
+      });
+
+      it('should call Reflect.getMetadata', () => {
+        fakeGet(LoggerStub);
+        expect(getMetadataSpy.calledOnce).to.be.true;
+        expect(getMetadataSpy.firstCall.args.length).to.be.equal(2);
+        expect(getMetadataSpy.firstCall.args[0]).to.be.equal(Symbols.__others.metadata.classSymbol);
+        expect(getMetadataSpy.firstCall.args[1]).to.be.equal(LoggerStub);
+      });
+
+      it('should throw if null metadata returned', () => {
+        expect(() => {
+          fakeGet(String);
+        }).to.throw('ERROR instantiating for HTTP undefined');
+      });
+
+      it('should call container.get', () => {
+        fakeGet(LoggerStub);
+        expect(containerStub.get.calledTwice).to.be.true;
+        expect(containerStub.get.secondCall.args.length).to.be.equal(1);
+        expect(containerStub.get.secondCall.args[0]).to.be.equal(metadataSymbol);
+      });
+    });
+    it('should call useExpressServer', async () => {
+      await instance.initExpress();
+      expect(useExpressServerStub.calledOnce).to.be.true;
+      expect(useExpressServerStub.firstCall.args.length).to.be.equal(2);
+      expect(useExpressServerStub.firstCall.args[0]).to.be.deep.equal((instance as any).expressApp);
+      expect(useExpressServerStub.firstCall.args[1]).to.be.deep.equal({
+        controllers        : allControllers,
+        defaultErrorHandler: false,
+        middlewares        : [APIErrorHandler],
+      });
+    });
   });
 
   describe('initAppElements', () => {
@@ -203,14 +410,14 @@ describe('AppManager', () => {
 
     before(() => {
       toRestore = {
-        'express': RewiredAppManager.__get__('express'),
-        'http.createServer': RewiredAppManager.__get__('http.createServer'),
-        'socketIO': RewiredAppManager.__get__('socketIO'),
+        'express'            : RewiredAppManager.__get__('express'),
+        'http.createServer'  : RewiredAppManager.__get__('http.createServer'),
+        'socketIO'           : RewiredAppManager.__get__('socketIO'),
         '_1.Database.connect': RewiredAppManager.__get__('_1.Database.connect'),
-        '_1.cache.connect': RewiredAppManager.__get__('_1.cache.connect'),
-        '_1.Sequence': RewiredAppManager.__get__('_1.Sequence'),
-        '_1.Ed': RewiredAppManager.__get__('_1.Ed'),
-        '_1.Bus': RewiredAppManager.__get__('_1.Bus'),
+        '_1.cache.connect'   : RewiredAppManager.__get__('_1.cache.connect'),
+        '_1.Sequence'        : RewiredAppManager.__get__('_1.Sequence'),
+        '_1.Ed'              : RewiredAppManager.__get__('_1.Ed'),
+        '_1.Bus'             : RewiredAppManager.__get__('_1.Bus'),
         'Reflect.getMetadata': RewiredAppManager.__get__('Reflect.getMetadata'),
       };
     });
@@ -764,7 +971,7 @@ describe('AppManager', () => {
 
     it('should call all exceptionCreators passing exceptionsManager', async () => {
       await instance.initAppElements();
-      const exceptionsManager = containerStub.get(Symbols.helpers.exceptionsManager);;
+      const exceptionsManager = containerStub.get(Symbols.helpers.exceptionsManager);
       excCreators.forEach((creator) => {
         expect(creator.calledOnce).to.be.true;
         expect(creator.firstCall.args.length).to.be.equal(1);
@@ -774,26 +981,226 @@ describe('AppManager', () => {
   });
 
   describe('finishBoot', () => {
-    it('should call container.get for helpers.bus');
-    it('should call getModules()');
-    it('should call container.get for logic.transaction');
-    it('should call txLogic.attachAssetType for each returned transaction type');
-    it('should call container.get for modules.blocksSubmodules.chain');
-    it('should call blocksChainModule.saveGenesisBlock');
-    it('should call cbToPromise if not loading snapshot'); // rewire
-    it('should NOT call cbToPromise if loading snapshot'); // rewire
-    it('should call logger.info three times');
-    it('should call container.get for modules.loader');
-    it('should call loaderModule.loadBlockChain');
-    it('should call catchToLoggerAndRemapError if loadBlockChain throws'); // rewire
+    let cbToPromiseStub: SinonStub;
+    let catchToLoggerAndRemapErrorStub: SinonStub;
+    let listenStub: SinonStub;
+    let getModulesSpy: SinonSpy;
+    let busStub: BusStub;
+    let transactionLogicStub: TransactionLogicStub;
+    let blocksSubmoduleChainStub: BlocksSubmoduleChainStub;
+    let loaderModuleStub: LoaderModuleStub;
+    let toRestore;
+
+    before(() => {
+      toRestore = {
+        '_1.cbToPromise'               : RewiredAppManager.__get__('_1.cbToPromise'),
+        '_1.catchToLoggerAndRemapError': RewiredAppManager.__get__('_1.catchToLoggerAndRemapError'),
+      };
+    });
+
+    beforeEach(() => {
+      cbToPromiseStub                = sandbox.stub().callsFake((fn) => {
+        fn(() => 'cbToPromiseCallbackRetVal');
+        return Promise.resolve();
+      });
+      catchToLoggerAndRemapErrorStub = sandbox.stub().returns('server');
+      busStub                        = allStubsContainer.get(Symbols.helpers.bus);
+      transactionLogicStub           = allStubsContainer.get(Symbols.logic.transaction);
+      blocksSubmoduleChainStub       = allStubsContainer.get(Symbols.modules.blocksSubModules.chain);
+      loaderModuleStub               = allStubsContainer.get(Symbols.modules.loader);
+      listenStub                     = sandbox.stub();
+
+      RewiredAppManager.__set__('_1.cbToPromise', cbToPromiseStub);
+      RewiredAppManager.__set__('_1.catchToLoggerAndRemapError', catchToLoggerAndRemapErrorStub);
+
+      instance      = new RewiredAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
+      getModulesSpy = sandbox.spy(instance as any, 'getModules');
+
+      containerStub = new ContainerStub(sandbox);
+      containerStub.get.callsFake((s) => {
+        let retVal: any;
+        try {
+          retVal = allStubsContainer.get(s);
+        } catch (e) {
+          retVal = { stubNotFound: true, symbol: s };
+        }
+        return retVal;
+      });
+      (instance as any).container = containerStub;
+      (instance as any).server    = { listen: listenStub };
+
+      transactionLogicStub.stubs.attachAssetType.returns(true);
+      blocksSubmoduleChainStub.stubs.saveGenesisBlock.resolves();
+      loaderModuleStub.stubs.loadBlockChain.resolves();
+    });
+
+    afterEach(() => {
+      [busStub, transactionLogicStub, blocksSubmoduleChainStub, loaderModuleStub].forEach((stub: any) => {
+        if (typeof stub.reset !== 'undefined') {
+          stub.reset();
+        }
+        if (typeof stub.stubReset !== 'undefined') {
+          stub.stubReset();
+        }
+      });
+    });
+
+    after(() => {
+      Object.keys(toRestore).forEach((key) => {
+        RewiredAppManager.__set__(key, toRestore[key]);
+      });
+    });
+
+    it('should call container.get for helpers.bus', async () => {
+      await instance.finishBoot();
+      expect(containerStub.get.called).to.be.true;
+      expect(containerStub.get.firstCall.args[0]).to.be.equal(Symbols.helpers.bus);
+    });
+
+    it('should call getModules() and set them into bus.modules', async () => {
+      await instance.finishBoot();
+      expect(getModulesSpy.calledOnce).to.be.true;
+      expect(getModulesSpy.firstCall.args.length).to.be.equal(0);
+      expect((busStub as any).modules).to.be.deep.equal(getModulesSpy.firstCall.returnValue);
+    });
+
+    it('should call container.get for  logic.transaction', async () => {
+      await instance.finishBoot();
+      const firstArgForAllCalls = containerStub.get.getCalls().map((call) => call.args[0]);
+      expect(firstArgForAllCalls.indexOf(Symbols.logic.transaction) !== -1).to.be.true;
+    });
+
+    it('should call container.get for all logic.transactions', async () => {
+      await instance.finishBoot();
+      const firstArgForAllCalls = containerStub.get.getCalls().map((call) => call.args[0]);
+      Object.keys(Symbols.logic.transactions).forEach((k) => {
+        const s = Symbols.logic.transactions[k];
+        expect(firstArgForAllCalls.indexOf(s) !== -1).to.be.true;
+      });
+    });
+
+    it('should call txLogic.attachAssetType for each returned transaction type', async () => {
+      await instance.finishBoot();
+      Object.keys(Symbols.logic.transactions).forEach((k, idx) => {
+        expect(transactionLogicStub.stubs.attachAssetType.getCall(idx).args[0]).to.be.deep.equal({
+          stubNotFound: true,
+          symbol      : Symbols.logic.transactions[k],
+        });
+      });
+    });
+
+    it('should call container.get for modules.blocksSubmodules.chain', async () => {
+      await instance.finishBoot();
+      const firstArgForAllCalls = containerStub.get.getCalls().map((call) => call.args[0]);
+      expect(firstArgForAllCalls.indexOf(Symbols.modules.blocksSubModules.chain) !== -1).to.be.true;
+    });
+
+    it('should call blocksChainModule.saveGenesisBlock', async () => {
+      await instance.finishBoot();
+      expect(blocksSubmoduleChainStub.stubs.saveGenesisBlock.calledOnce).to.be.true;
+      expect(blocksSubmoduleChainStub.stubs.saveGenesisBlock.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should call cbToPromise if not loading snapshot, which calls server.listen', async () => {
+      appConfig.loading.snapshot = undefined;
+      await instance.finishBoot();
+      expect(cbToPromiseStub.calledOnce).to.be.true;
+      expect(cbToPromiseStub.firstCall.args.length).to.be.equal(1);
+      expect(cbToPromiseStub.firstCall.args[0]).to.be.a('function');
+      expect(listenStub.calledOnce).to.be.true;
+      expect(listenStub.firstCall.args[0]).to.be.equal(appConfig.port);
+      expect(listenStub.firstCall.args[1]).to.be.equal(appConfig.address);
+      expect(listenStub.firstCall.args[2]).to.be.a('function');
+      expect(listenStub.firstCall.args[2]()).to.be.equal('cbToPromiseCallbackRetVal');
+    });
+
+    it('should NOT call cbToPromise if loading snapshot', async () => {
+      appConfig.loading.snapshot = true;
+      await instance.finishBoot();
+      expect(cbToPromiseStub.notCalled).to.be.true;
+    });
+
+    it('should call logger.info three times', async () => {
+      appConfig.loading.snapshot = undefined;
+      await instance.finishBoot();
+      expect(loggerStub.stubs.info.callCount).to.be.equal(3);
+      expect(loggerStub.stubs.info.getCall(0).args[0]).to.be
+        .equal(`Server started: ${appConfig.address}:${appConfig.port}`);
+      expect(loggerStub.stubs.info.getCall(1).args[0]).to.be
+        .equal('Modules ready and launched. Loading Blockchain...');
+      expect(loggerStub.stubs.info.getCall(2).args[0]).to.be
+        .equal('App Booted');
+    });
+
+    it('should call container.get for modules.loader', async () => {
+      await instance.finishBoot();
+      const firstArgForAllCalls = containerStub.get.getCalls().map((call) => call.args[0]);
+      expect(firstArgForAllCalls.indexOf(Symbols.modules.loader) !== -1).to.be.true;
+    });
+
+    it('should call loaderModule.loadBlockChain', async () => {
+      await instance.finishBoot();
+      expect(loaderModuleStub.stubs.loadBlockChain.calledOnce).to.be.true;
+      expect(loaderModuleStub.stubs.loadBlockChain.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should call catchToLoggerAndRemapError', async () => {
+      await instance.finishBoot();
+      expect(catchToLoggerAndRemapErrorStub.called).to.be.true;
+      expect(catchToLoggerAndRemapErrorStub.firstCall.args.length).to.be.equal(2);
+      expect(catchToLoggerAndRemapErrorStub.firstCall.args[0]).to.be.equal('Cannot load blockchain');
+      expect(catchToLoggerAndRemapErrorStub.firstCall.args[1]).to.be.deep.equal(loggerStub);
+    });
   });
 
   describe('getElementsFromContainer', () => {
-    it('should call container.get for all levels of symbols array');
-    it('should return the expected elements');
+    const symbols = {
+      s0  : Symbol('s0'),
+      test: {
+        s1    : Symbol('s1'),
+        child1: {
+          s3: Symbol('s3'),
+        },
+        child2: Symbol('s2'),
+      },
+    };
+
+    beforeEach(() => {
+      instance      = new RewiredAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
+      containerStub = new ContainerStub(sandbox);
+      containerStub.get.callsFake((s) => s.toString());
+      (instance as any).container = containerStub;
+    });
+
+    it('should call container.get for all levels of symbols array', () => {
+      (instance as any).getElementsFromContainer(symbols);
+      expect(containerStub.get.callCount).to.be.equal(4);
+      expect(containerStub.get.getCall(0).args[0]).to.be.equal(symbols.s0);
+      expect(containerStub.get.getCall(1).args[0]).to.be.equal(symbols.test.s1);
+      expect(containerStub.get.getCall(2).args[0]).to.be.equal(symbols.test.child2);
+      expect(containerStub.get.getCall(3).args[0]).to.be.equal(symbols.test.child1.s3);
+    });
+
+    it('should return the expected elements', () => {
+      const elements = (instance as any).getElementsFromContainer(symbols);
+      expect(elements).to.be.deep.equal(['Symbol(s0)', 'Symbol(s1)', 'Symbol(s2)', 'Symbol(s3)']);
+    });
   });
 
   describe('getModules', () => {
-    it('should call getelementsFromContainer');
+    let getElementsFromContainerStub: SinonStub;
+    beforeEach(() => {
+      instance = new RewiredAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
+
+      containerStub                = new ContainerStub(sandbox);
+      (instance as any).container  = containerStub;
+      getElementsFromContainerStub = sandbox.stub(instance as any, 'getElementsFromContainer');
+    });
+
+    it('should call getelementsFromContainer', () => {
+      (instance as any).getModules();
+      expect(getElementsFromContainerStub.calledOnce).to.be.true;
+      expect(getElementsFromContainerStub.firstCall.args[0]).to.be.deep.equal(Symbols.modules);
+    });
   });
 });
