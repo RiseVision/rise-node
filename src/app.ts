@@ -3,10 +3,11 @@ import * as program from 'commander';
 import * as extend from 'extend';
 import * as fs from 'fs';
 import * as jp from 'jsonpath';
+import 'source-map-support/register';
 import { AppManager } from './AppManager';
 import { allExceptionCreator } from './exceptions';
 import {
-  config as configCreator, constants as constantsType, getLastCommit, loggerCreator,
+  config as configCreator, constants as constantsType, loggerCreator,
   promiseToCB,
 } from './helpers/';
 import { SignedAndChainedBlockType } from './logic/';
@@ -118,13 +119,6 @@ const logger = loggerCreator({
   filename  : appConfig.logFileName,
 });
 
-let lastCommit: string;
-try {
-  lastCommit = getLastCommit();
-} catch (err) {
-  logger.debug('Cannot get last git commit', err.message);
-}
-
 /**
  * Takes care of bootstrapping the application
  * Returns cleanup function
@@ -133,7 +127,6 @@ async function boot(constants: typeof constantsType): Promise<AppManager> {
   const manager = new AppManager(
     appConfig,
     logger,
-    lastCommit,
     versionBuild,
     genesisBlock,
     constants,

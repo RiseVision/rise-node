@@ -24,7 +24,6 @@ describe('helpers/blocksProgressLogger', () => {
 
   afterEach(() => {
     sandbox.restore();
-    sandbox.reset();
   });
 
   describe('Constructor', () => {

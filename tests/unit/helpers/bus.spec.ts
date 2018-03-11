@@ -24,7 +24,6 @@ describe('helpers/bus', () => {
 
     afterEach(() => {
         sandbox.restore();
-        sandbox.reset();
     });
 
     describe('receiveBlock', () => {

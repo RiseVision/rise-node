@@ -60,7 +60,7 @@ export const createVoteTransaction = async (confirmations: number, from: LiskWal
 
 export const createSendTransaction = async (confirmations: number, amount: number, from: LiskWallet, dest: string): Promise<ITransaction> => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
-  const tx           = txCrafter.createSendTransaction(from, dest, systemModule.getFees().fees.send);
+  const tx           = txCrafter.createSendTransaction(from, dest, systemModule.getFees().fees.send, { amount });
   if (confirmations > 0) {
     await confirmTransactions([tx], confirmations);
   }

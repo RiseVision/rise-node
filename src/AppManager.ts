@@ -4,7 +4,6 @@ import * as cors from 'cors';
 import * as express from 'express';
 import * as http from 'http';
 import { Container } from 'inversify';
-import * as methodOverride from 'method-override';
 import 'reflect-metadata';
 import { useContainer as useContainerForHTTP, useExpressServer } from 'routing-controllers';
 import * as socketIO from 'socket.io';
@@ -53,7 +52,6 @@ export class AppManager {
 
   constructor(private appConfig: AppConfig,
               private logger: ILogger,
-              private lastCommit: string,
               private versionBuild: string,
               private genesisBlock: SignedAndChainedBlockType,
               private constants: typeof constantsType,
@@ -112,7 +110,6 @@ export class AppManager {
     app.use(bodyParser.raw({limit: '2mb'}));
     app.use(bodyParser.urlencoded({extended: true, limit: '2mb', parameterLimit: 5000}));
     app.use(bodyParser.json({limit: '2mb'}));
-    app.use(methodOverride());
 
     app.use(middleware.logClientConnections(this.logger));
     // Disallow inclusion in iframe.
@@ -187,7 +184,6 @@ export class AppManager {
     this.container.bind(Symbols.generic.db).toConstantValue(db);
     this.container.bind(Symbols.generic.expressApp).toConstantValue(this.expressApp);
     this.container.bind(Symbols.generic.genesisBlock).toConstantValue(this.genesisBlock);
-    this.container.bind(Symbols.generic.lastCommit).toConstantValue(this.lastCommit);
     this.container.bind(Symbols.generic.nonce).toConstantValue(this.nonce);
     this.container.bind(Symbols.generic.redisClient).toConstantValue(theCache.client);
     this.container.bind(Symbols.generic.socketIO).toConstantValue(io);
