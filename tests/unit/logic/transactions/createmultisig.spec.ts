@@ -94,7 +94,6 @@ describe('logic/transactions/createmultisig', () => {
 
   afterEach(() => {
     sandbox.restore();
-    sandbox.reset();
   });
 
   describe('calculateFee', () => {

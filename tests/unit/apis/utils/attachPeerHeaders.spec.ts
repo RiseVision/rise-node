@@ -36,7 +36,6 @@ describe('apis/utils/attachPeerHeaders', () => {
 
   afterEach(() => {
     sandbox.restore();
-    sandbox.reset();
   });
 
   describe('use()', () => {

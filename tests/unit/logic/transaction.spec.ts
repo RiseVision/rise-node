@@ -123,7 +123,6 @@ describe('logic/transaction', () => {
 
   afterEach(() => {
     sandbox.restore();
-    sandbox.reset();
   });
 
   describe('attachAssetType', () => {

@@ -43,7 +43,6 @@ describe('apis/utils/errorHandler', () => {
 
   afterEach(() => {
     sandbox.restore();
-    sandbox.reset();
   });
 
   describe('error()', () => {

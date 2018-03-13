@@ -192,7 +192,7 @@ describe('modules/peers', () => {
       getByFilterStub.onFirstCall().callsFake(() => firstPeers);
       getByFilterStub.onSecondCall().callsFake(() => secondPeers);
     });
-    afterEach(() => s.reset());
+    afterEach(() => s.resetHistory());
     after(() => s.restore());
 
     it('should return consensus number', async () => {

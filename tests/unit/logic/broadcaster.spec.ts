@@ -59,7 +59,6 @@ describe('logic/broadcaster', () => {
   });
 
   afterEach(() => {
-    sandbox.reset();
     sandbox.restore();
   });
 
@@ -262,7 +261,7 @@ describe('logic/broadcaster', () => {
     });
 
     it('should call peer.makeRequest per each created peer instance', async () => {
-      peersLogicStub.stubs.create.reset();
+      peersLogicStub.stubs.create.resetBehavior();
       const stubs              = [];
       let makeRequestCallCount = 0;
       peersLogicStub.stubs.create.callsFake((p) => {

@@ -76,7 +76,6 @@ describe('logic/transactions/delegate', () => {
 
   afterEach(() => {
     sandbox.restore();
-    sandbox.reset();
   });
 
   describe('calculateFee', () => {
