@@ -115,7 +115,6 @@ describe('modules/delegates', () => {
   });
 
   afterEach(() => {
-    sandbox.reset();
     sandbox.restore();
   });
 

@@ -95,7 +95,7 @@ describe('logic/transactionPool - InnerTXQueue', () => {
   describe('get', () => {
     it('should call has()', () => {
       addTransactions(instance);
-      hasSpy.reset();
+      hasSpy.resetHistory();
       instance.get('tx2');
       expect(hasSpy.calledOnce).to.be.true;
       expect(hasSpy.firstCall.args[0]).to.be.equal('tx2');
@@ -243,7 +243,7 @@ describe('logic/transactionPool - TransactionPool', () => {
       instance.queueTransaction(newTx, bundled);
       allTxs.push(newTx);
     }
-    sandbox.reset();
+    sandbox.resetHistory();
     loggerStub.stubReset();
     return allTxs;
   };
@@ -318,7 +318,7 @@ describe('logic/transactionPool - TransactionPool', () => {
 
     tx3 = Object.assign({}, tx);
     tx3.id = 'tx3';
-    sandbox.reset();
+    sandbox.resetHistory();
   });
 
   afterEach(() => {
@@ -377,9 +377,9 @@ describe('logic/transactionPool - TransactionPool', () => {
     it('should throw if pool is full', () => {
       (instance as any).config.transactions.maxTxsPerQueue = 2;
       instance.queueTransaction(tx, false);
-      spiedQueues.queued.add.reset();
+      spiedQueues.queued.add.resetHistory();
       instance.queueTransaction(tx2, false);
-      spiedQueues.queued.add.reset();
+      spiedQueues.queued.add.resetHistory();
       expect(() => {
         instance.queueTransaction(tx3, false);
       }).to.throw('Transaction pool is full');

@@ -189,7 +189,7 @@ export class TransactionPool implements ITransactionPoolLogic {
     return txsAndPayloads.map(({tx}) => tx);
   }
 
-  public transactionInPool(txID: string) {
+  public transactionInPool(txID: string): boolean {
     return this.allQueues
       .map((queue) => queue.has(txID))
       .filter((isInQueue) => isInQueue)
@@ -199,7 +199,7 @@ export class TransactionPool implements ITransactionPoolLogic {
   /**
    * Gets unconfirmed, multisig and queued txs based on limit and reverse opts
    */
-  public getMergedTransactionList(limit: number) {
+  public getMergedTransactionList(limit: number): Array<IBaseTransaction<any>> {
     const minLimit = (constants.maxTxsPerBlock + 2);
 
     if (limit <= minLimit || limit > constants.maxSharedTxs) {
@@ -245,7 +245,7 @@ export class TransactionPool implements ITransactionPoolLogic {
   /**
    * Picks bundled transactions, verifies them and then enqueue them
    */
-  public async processBundled() {
+  public async processBundled(): Promise<void> {
     const bundledTxs = this.bundled.list(true, this.bundleLimit);
     for (const tx of bundledTxs) {
       if (!tx) {

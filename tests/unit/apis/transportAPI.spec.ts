@@ -101,7 +101,6 @@ describe('apis/transportAPI', () => {
 
   afterEach(() => {
     sandbox.restore();
-    sandbox.reset();
   });
 
   describe('height()', () => {

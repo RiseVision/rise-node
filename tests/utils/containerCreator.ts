@@ -8,6 +8,7 @@ import {
   LoggerStub,
   PeersLogicStub, PeersModuleStub,
   SystemModuleStub,
+  TransactionPoolStub,
   TransactionsModuleStub,
 } from '../stubs';
 import DbStub from '../stubs/helpers/DbStub';
@@ -28,6 +29,7 @@ import { BlocksSubmoduleUtilsStub } from '../stubs/modules/blocks/BlocksSubmodul
 import BlocksModuleStub from '../stubs/modules/BlocksModuleStub';
 import { ForgeModuleStub } from '../stubs/modules/ForgeModuleStub';
 import { ForkModuleStub } from '../stubs/modules/ForkModuleStub';
+import { LoaderModuleStub } from '../stubs/modules/LoaderModuleStub';
 import MultisignaturesModuleStub from '../stubs/modules/MultisignaturesModuleStub';
 import { RoundsModuleStub } from '../stubs/modules/RoundsModuleStub';
 import TransportModuleStub from '../stubs/modules/TransportModuleStub';
@@ -71,6 +73,7 @@ export const createContainer = (): Container => {
   container.bind(Symbols.logic.blockReward).to(BlockRewardLogicStub).inSingletonScope();
   container.bind(Symbols.logic.peers).to(PeersLogicStub).inSingletonScope();
   container.bind(Symbols.logic.transaction).to(TransactionLogicStub).inSingletonScope();
+  container.bind(Symbols.logic.transactionPool).to(TransactionPoolStub).inSingletonScope();
   container.bind(Symbols.logic.rounds).to(RoundsLogicStub).inSingletonScope();
   container.bind(Symbols.logic.broadcaster).to(BroadcasterLogicStub).inSingletonScope();
 
@@ -84,6 +87,7 @@ export const createContainer = (): Container => {
   container.bind(Symbols.modules.delegates).to(DelegatesModuleStub).inSingletonScope();
   container.bind(Symbols.modules.forge).to(ForgeModuleStub).inSingletonScope();
   container.bind(Symbols.modules.fork).to(ForkModuleStub).inSingletonScope();
+  container.bind(Symbols.modules.loader).to(LoaderModuleStub).inSingletonScope();
   container.bind(Symbols.modules.multisignatures).to(MultisignaturesModuleStub).inSingletonScope();
   container.bind(Symbols.modules.peers).to(PeersModuleStub).inSingletonScope();
   container.bind(Symbols.modules.rounds).to(RoundsModuleStub).inSingletonScope();

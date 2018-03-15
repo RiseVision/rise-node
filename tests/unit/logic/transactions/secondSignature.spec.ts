@@ -71,7 +71,6 @@ describe('logic/transactions/secondSignature', () => {
 
   afterEach(() => {
     sandbox.restore();
-    sandbox.reset();
   });
 
   describe('calculateFee', () => {

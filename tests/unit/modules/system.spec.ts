@@ -65,7 +65,6 @@ describe('modules/system', () => {
     it('should return ^0.1.3 for height 3', () => {
       expect(inst.getMinVersion(3)).to.be.eq('^0.1.3');
     });
-    it('should ')
     it('should return ^0.1.3 for default height taken from blocksModule', () => {
       const blocksModule = container.get<IBlocksStub>(Symbols.modules.blocks);
       const origStub     = sinon.stub().returns(10);
