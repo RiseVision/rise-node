@@ -1271,7 +1271,7 @@ describe('modules/loader', () => {
     afterEach(() => {
       loggerStub.stubReset();
       blocksProcessModuleStub.reset();
-      blocksModuleStub.sandbox.reset();
+      blocksModuleStub.sandbox.resetHistory();
     });
 
     it('should call promiseRetry', async () => {

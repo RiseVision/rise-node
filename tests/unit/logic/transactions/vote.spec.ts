@@ -83,7 +83,6 @@ describe('logic/transactions/vote', () => {
 
   afterEach(() => {
     sandbox.restore();
-    sandbox.reset();
   });
 
   describe('calculateFee', () => {

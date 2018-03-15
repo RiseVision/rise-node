@@ -334,14 +334,6 @@ describe('modules/rounds', () => {
         expect(roundLogicStubConstructorSpy.firstCall.args[2]).to.be.deep.equal((instance as any).slots);
       });
 
-      it('should return from mergeBlockGenerator', async () => {
-        const expectedPromise = Promise.reject('mergeBlockGenerator done');
-        roundLogicStub.stubs.mergeBlockGenerator.returns(expectedPromise);
-        const retVal = doCall();
-        expect(retVal).to.be.an.instanceof(Promise);
-        expect(retVal).to.be.be.rejectedWith('mergeBlockGenerator done');
-      });
-
       describe('then, if this was the last block in round', () => {
         beforeEach(() => {
           roundLogicScope.finishRound = true;

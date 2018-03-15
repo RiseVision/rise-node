@@ -121,7 +121,6 @@ describe('modules/forge', () => {
   });
 
   afterEach(() => {
-    sandbox.reset();
     sandbox.restore();
   });
 

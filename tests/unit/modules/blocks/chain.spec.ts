@@ -25,7 +25,6 @@ import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
 import { TransactionType } from '../../../../src/helpers';
 
-
 chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression
@@ -193,7 +192,7 @@ describe('modules/blocks/chain', () => {
     });
     it('should throw error if deleteLastBlock throws', async () => {
       sinon.stub(inst, 'deleteLastBlock').returns(Promise.reject('error'));
-      expect(inst.recoverChain()).to.be.rejectedWith('error');
+      await expect(inst.recoverChain()).to.be.rejectedWith('error');
     });
   });
 
@@ -438,10 +437,11 @@ describe('modules/blocks/chain', () => {
         batch: sinon.stub().resolves(),
         none : sinon.stub(),
       };
-      dbStub.stubs.tx.reset();
+      dbStub.stubs.tx.resetBehavior();
+      dbStub.stubs.tx.resetHistory();
       dbStub.stubs.tx.callsArgWith(0, txStub);
       // simulate another table for clustering
-      txLogic.stubs.dbSave.onCall(3).returns({table: 'vote_table', values: {id: '1'}, fields: ['id']})
+      txLogic.stubs.dbSave.onCall(3).returns({table: 'vote_table', values: {id: '1'}, fields: ['id']});
 
       const transactions = createRandomTransactions({send: 5, vote: 3});
       await inst.saveBlock({transactions} as any);
@@ -455,7 +455,8 @@ describe('modules/blocks/chain', () => {
         batch: sinon.stub().resolves(),
         none : sinon.stub(),
       };
-      dbStub.stubs.tx.reset();
+      dbStub.stubs.tx.resetHistory();
+      dbStub.stubs.tx.resetBehavior();
       dbStub.stubs.tx.callsArgWith(0, txStub);
 
       const transactions = createRandomTransactions({send: 5, vote: 3});
@@ -487,7 +488,8 @@ describe('modules/blocks/chain', () => {
         batch: sinon.stub().resolves(),
         none : sinon.stub(),
       };
-      dbStub.stubs.tx.reset();
+      dbStub.stubs.tx.resetHistory();
+      dbStub.stubs.tx.resetBehavior();
       dbStub.stubs.tx.callsArgWith(0, txStub);
       await inst.saveBlock({transactions: []} as any);
     });
@@ -508,7 +510,7 @@ describe('modules/blocks/chain', () => {
       expect(stub.called).is.true;
       expect(stub.calledOnce).is.true;
 
-      stub.reset();
+      stub.resetHistory();
       dbStub.enqueueResponse('query', Promise.resolve([{id: 'aaa'}]));
       await inst.saveGenesisBlock();
       expect(stub.called).is.false;

@@ -111,7 +111,7 @@ describe('logic/block', () => {
   });
 
   afterEach(() => {
-    callback.reset();
+    callback.resetHistory();
     createHashSpy.restore();
   });
 
