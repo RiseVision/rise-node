@@ -1,21 +1,20 @@
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import * as crypto from 'crypto';
 import { Container } from 'inversify';
 import * as rewire from 'rewire';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { DelegatesAPI } from '../../../src/apis/delegatesAPI';
 import { Symbols } from '../../../src/ioc/symbols';
-import sql from '../../../src/sql/delegates';
 import {
-  AccountsModuleStub, BlocksModuleStub, BlocksSubmoduleUtilsStub, DbStub,
-  DelegatesModuleStub, EdStub, SlotsStub,
-  SystemModuleStub, ZSchemaStub,
+AccountsModuleStub, BlocksModuleStub, BlocksSubmoduleUtilsStub, DbStub,
+DelegatesModuleStub, EdStub, SlotsStub,
+SystemModuleStub, ZSchemaStub,
 } from '../../stubs';
 import { ForgeModuleStub } from '../../stubs/modules/ForgeModuleStub';
 import { createContainer } from '../../utils/containerCreator';
-import { constants } from '../../../src/helpers';
 
 chai.use(chaiAsPromised);
 
@@ -38,6 +37,9 @@ describe('apis/blocksAPI', () => {
   let forgeModule: ForgeModuleStub;
   let slots: SlotsStub;
   let system: SystemModuleStub;
+  let sql;
+  let cryptoCreateHashSpy;
+  let rewiredCrypto;
 
   beforeEach(() => {
     sandbox   = sinon.sandbox.create();
@@ -54,6 +56,10 @@ describe('apis/blocksAPI', () => {
     forgeModule     = container.get(Symbols.modules.forge);
     slots           = container.get(Symbols.helpers.slots);
     system          = container.get(Symbols.modules.system);
+
+    rewiredCrypto       = DelegatesAPIRewire.__get__('crypto');
+    cryptoCreateHashSpy = sandbox.spy(rewiredCrypto, 'createHash');
+    sql                 = DelegatesAPIRewire.__get__('delegates_2.default');
 
     instance = container.get(Symbols.api.delegates);
   });
@@ -231,6 +237,7 @@ describe('apis/blocksAPI', () => {
 
       expect(f).to.not.have.property('fees');
     });
+
     it('success', async () => {
       const ret = await instance.getFee(params);
 
@@ -239,6 +246,7 @@ describe('apis/blocksAPI', () => {
         otherField: 'KNOCK',
       });
     });
+
   });
 
   describe('getForgedByAccount', () => {
@@ -256,8 +264,8 @@ describe('apis/blocksAPI', () => {
           rewards: 5,
         };
         params = {
-          generatorPublicKey: 'generatorPublicKey',
           end               : 10,
+          generatorPublicKey: 'generatorPublicKey',
           start             : 0,
         };
         blocksUtils.enqueueResponse('aggregateBlockReward', Promise.resolve(reward));
@@ -449,7 +457,6 @@ describe('apis/blocksAPI', () => {
     let OrderByStub: SinonStub;
     let sqlSearchSpy: SinonSpy;
     let params;
-    let sql;
     let orderBy;
     let constants;
 
@@ -459,16 +466,15 @@ describe('apis/blocksAPI', () => {
         sortMethod: 'sortMethod',
       };
       params    = {
-        q      : 'query',
-        orderBy: 'username',
         limit  : 5,
+        orderBy: 'username',
+        q      : 'query',
       };
       constants = { activeDelegates: 10 };
 
       OrderByStub = sandbox.stub().returns(orderBy);
       DelegatesAPIRewire.__set__('_1', { OrderBy: OrderByStub, constants });
 
-      sql          = DelegatesAPIRewire.__get__('delegates_2.default');
       sqlSearchSpy = sandbox.spy(sql, 'search');
 
       db.enqueueResponse('query', Promise.resolve({}));
@@ -544,25 +550,335 @@ describe('apis/blocksAPI', () => {
 
   describe('count', () => {
 
+    it('should call db.one', async () => {
+      db.enqueueResponse('one', { count: 1 });
+
+      await instance.count();
+
+      expect(db.stubs.one.calledOnce).to.be.true;
+      expect(db.stubs.one.firstCall.args.length).to.be.equal(1);
+      expect(db.stubs.one.firstCall.args[0]).to.be.equal(sql.count);
+    });
+
+    it('success', async () => {
+      db.enqueueResponse('one', { count: 1 });
+
+      const ret = await instance.count();
+
+      expect(ret).to.be.deep.equal({ count: 1 });
+    });
+
   });
 
   describe('getNextForgers', () => {
+
+    let limit;
+    let activeDelegates;
+    let currentSlot;
+    let currentBlockSlot;
+
+    beforeEach(() => {
+      limit            = 3;
+      activeDelegates  = [{ del: 1 }, { del: 2 }, { del: 3 }];
+      currentSlot      = 1;
+      currentBlockSlot = 1;
+      (blocks as any).lastBlock = { height: 5, timestamp: 2 };
+
+      delegatesModule.enqueueResponse('generateDelegateList', Promise.resolve(activeDelegates));
+      slots.enqueueResponse('getSlotNumber', currentSlot);
+      slots.enqueueResponse('getSlotNumber', currentBlockSlot);
+    });
+
+    it('should call delegatesModule.generateDelegateList', async () => {
+      await instance.getNextForgers(limit);
+
+      expect(delegatesModule.stubs.generateDelegateList.calledOnce).to.be.true;
+      expect(delegatesModule.stubs.generateDelegateList.firstCall.args.length).to.be.equal(1);
+      expect(delegatesModule.stubs.generateDelegateList.firstCall.args[0]).to.be.equal(blocks.lastBlock.height);
+    });
+
+    it('should call slots.getSlotNumber twice', async () => {
+      await instance.getNextForgers(limit);
+
+      expect(slots.stubs.getSlotNumber.calledTwice).to.be.true;
+
+      expect(slots.stubs.getSlotNumber.firstCall.args.length).to.be.equal(1);
+      expect(slots.stubs.getSlotNumber.firstCall.args[0]).to.be.equal(blocks.lastBlock.timestamp);
+
+      expect(slots.stubs.getSlotNumber.secondCall.args.length).to.be.equal(0);
+    });
+
+    it('success', async () => {
+      const ret = await instance.getNextForgers(limit);
+
+      expect(ret).to.be.deep.equal({
+        currentBlock    : { height: 5, timestamp: 2 },
+        currentBlockSlot: 1,
+        currentSlot     : 1,
+        delegates       : [{ del: 3 }],
+      });
+    });
+
+    it('should return empty delegates array if limit = 0', async () => {
+      limit     = 0;
+      const ret = await instance.getNextForgers(limit);
+
+      expect(ret).to.be.deep.equal({
+        currentBlock    : { height: 5, timestamp: 2 },
+        currentBlockSlot: 1,
+        currentSlot     : 1,
+        delegates       : [],
+      });
+    });
+
+    it('should return empty delegates array if slots.delegates < 1', async () => {
+      (slots as any).delegates = 0;
+      const ret       = await instance.getNextForgers(limit);
+
+      expect(ret).to.be.deep.equal({
+        currentBlock    : { height: 5, timestamp: 2 },
+        currentBlockSlot: 1,
+        currentSlot     : 1,
+        delegates       : [],
+      });
+    });
 
   });
 
   describe('createDelegate', () => {
 
+    it('should return a rejected promise', async () => {
+      expect(instance.createDelegate()).to.be.rejectedWith('Method deprecated');
+    });
+
   });
 
   describe('getForgingStatus', () => {
+
+    let params;
+    let enabled;
+    let delegates;
+
+    beforeEach(() => {
+      params    = { publicKey: 'publicKey' };
+      enabled   = true;
+      delegates = [{}, {}];
+
+      forgeModule.enqueueResponse('isForgeEnabledOn', enabled);
+      forgeModule.enqueueResponse('getEnabledKeys', delegates);
+    });
+
+    it('param.publucKey', () => {
+      const ret = instance.getForgingStatus(params);
+
+      expect(ret).to.be.deep.equal({ delegates: [params.publicKey], enabled: true });
+
+      expect(forgeModule.stubs.isForgeEnabledOn.calledOnce).to.be.true;
+      expect(forgeModule.stubs.isForgeEnabledOn.firstCall.args.length).to.be.equal(1);
+      expect(forgeModule.stubs.isForgeEnabledOn.firstCall.args[0]).to.be.equal(params.publicKey);
+    });
+
+    it('!param.publucKey', () => {
+      delete params.publicKey;
+      const ret = instance.getForgingStatus(params);
+
+      expect(forgeModule.stubs.getEnabledKeys.calledOnce).to.be.true;
+      expect(forgeModule.stubs.getEnabledKeys.firstCall.args.length).to.be.equal(0);
+
+      expect(ret).to.be.deep.equal({ delegates, enabled: true });
+    });
 
   });
 
   describe('forgingEnable', () => {
 
+    let params;
+    let kp;
+    let publicKey;
+    let account;
+    let hash;
+
+    beforeEach(() => {
+      account   = { isDelegate: true };
+      publicKey = 'publicKey';
+      params    = {
+        publicKey,
+        secret: 'secret',
+      };
+      kp        = { publicKey };
+      hash      = rewiredCrypto.createHash('sha256').update('secret', 'utf8')
+        .digest();
+
+      ed.enqueueResponse('makeKeypair', kp);
+      forgeModule.enqueueResponse('isForgeEnabledOn', false);
+      forgeModule.enqueueResponse('enableForge', {});
+      accounts.enqueueResponse('getAccount', account);
+    });
+
+    it('should call ed.makeKeypair', async () => {
+      await instance.forgingEnable(params);
+
+      expect(ed.stubs.makeKeypair.calledOnce).to.be.true;
+      expect(ed.stubs.makeKeypair.firstCall.args.length).to.be.equal(1);
+      expect(ed.stubs.makeKeypair.firstCall.args[0]).to.be.deep.equal(hash);
+    });
+
+    it('should call crypto.createHash', async () => {
+      await instance.forgingEnable(params);
+
+      // the first call in beforeEach hook
+      expect(cryptoCreateHashSpy.calledTwice).to.be.true;
+      expect(cryptoCreateHashSpy.secondCall.args.length).to.be.equal(1);
+      expect(cryptoCreateHashSpy.secondCall.args[0]).to.be.equal('sha256');
+    });
+
+    it('should throw error if params.publicKey isn"t undefined and pk !== params.publicKey', async () => {
+      ed.reset();
+      ed.enqueueResponse('makeKeypair', { publicKey: 'sss' });
+
+      await expect(instance.forgingEnable(params)).to.be.rejectedWith('Invalid passphrase');
+    });
+
+    it('should call forgeModule.isForgeEnabledOn', async () => {
+      await instance.forgingEnable(params);
+
+      expect(forgeModule.stubs.isForgeEnabledOn.calledOnce).to.be.true;
+      expect(forgeModule.stubs.isForgeEnabledOn.firstCall.args.length).to.be.equal(1);
+      expect(forgeModule.stubs.isForgeEnabledOn.firstCall.args[0]).to.be.deep.equal('publicKey');
+    });
+
+    it('should throw error if forgeModule.isForgeEnabledOn returns true', async () => {
+      forgeModule.reset();
+      forgeModule.enqueueResponse('isForgeEnabledOn', true);
+
+      await expect(instance.forgingEnable(params)).to.be.rejectedWith('Forging is already enabled');
+    });
+
+    it('should call accounts.getAccount', async () => {
+      await instance.forgingEnable(params);
+
+      expect(accounts.stubs.getAccount.calledOnce).to.be.true;
+      expect(accounts.stubs.getAccount.firstCall.args.length).to.be.equal(1);
+      expect(accounts.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({ publicKey: 'publicKey' });
+    });
+
+    it('should throw error if account not found', async () => {
+      accounts.reset();
+      accounts.enqueueResponse('getAccount', false);
+
+      await expect(instance.forgingEnable(params)).to.be.rejectedWith('Account not found');
+    });
+
+    it('should throw error if delegate not found', async () => {
+      accounts.reset();
+      accounts.enqueueResponse('getAccount', {});
+
+      await expect(instance.forgingEnable(params)).to.be.rejectedWith('Delegate not found');
+    });
+
+    it('should call forgeModule.enableForge', async () => {
+      await instance.forgingEnable(params);
+
+      expect(forgeModule.stubs.enableForge.calledOnce).to.be.true;
+      expect(forgeModule.stubs.enableForge.firstCall.args.length).to.be.equal(1);
+      expect(forgeModule.stubs.enableForge.firstCall.args[0]).to.be.deep.equal({ publicKey: 'publicKey' });
+    });
+
   });
 
   describe('forgingDisable', () => {
+
+    let params;
+    let kp;
+    let publicKey;
+    let account;
+    let hash;
+
+    beforeEach(() => {
+      account   = { isDelegate: true };
+      publicKey = 'publicKey';
+      params    = {
+        publicKey,
+        secret: 'secret',
+      };
+      kp        = { publicKey };
+      hash      = rewiredCrypto.createHash('sha256').update('secret', 'utf8')
+        .digest();
+
+      ed.enqueueResponse('makeKeypair', kp);
+      forgeModule.enqueueResponse('isForgeEnabledOn', false);
+      forgeModule.enqueueResponse('disableForge', {});
+      accounts.enqueueResponse('getAccount', account);
+    });
+
+    it('should call ed.makeKeypair', async () => {
+      await instance.forgingDisable(params);
+
+      expect(ed.stubs.makeKeypair.calledOnce).to.be.true;
+      expect(ed.stubs.makeKeypair.firstCall.args.length).to.be.equal(1);
+      expect(ed.stubs.makeKeypair.firstCall.args[0]).to.be.deep.equal(hash);
+    });
+
+    it('should call crypto.createHash', async () => {
+      await instance.forgingDisable(params);
+
+      // the first call in beforeEach hook
+      expect(cryptoCreateHashSpy.calledTwice).to.be.true;
+      expect(cryptoCreateHashSpy.secondCall.args.length).to.be.equal(1);
+      expect(cryptoCreateHashSpy.secondCall.args[0]).to.be.equal('sha256');
+    });
+
+    it('should throw error if params.publicKey isn"t undefined and pk !== params.publicKey', async () => {
+      ed.reset();
+      ed.enqueueResponse('makeKeypair', { publicKey: 'sss' });
+
+      await expect(instance.forgingDisable(params)).to.be.rejectedWith('Invalid passphrase');
+    });
+
+    it('should call forgeModule.isForgeEnabledOn', async () => {
+      await instance.forgingDisable(params);
+
+      expect(forgeModule.stubs.isForgeEnabledOn.calledOnce).to.be.true;
+      expect(forgeModule.stubs.isForgeEnabledOn.firstCall.args.length).to.be.equal(1);
+      expect(forgeModule.stubs.isForgeEnabledOn.firstCall.args[0]).to.be.deep.equal('publicKey');
+    });
+
+    it('should throw error if forgeModule.isForgeEnabledOn returns undefined', async () => {
+      forgeModule.reset();
+      forgeModule.enqueueResponse('isForgeEnabledOn', undefined);
+
+      await expect(instance.forgingDisable(params)).to.be.rejectedWith('Forging is already disabled');
+    });
+
+    it('should call accounts.getAccount', async () => {
+      await instance.forgingDisable(params);
+
+      expect(accounts.stubs.getAccount.calledOnce).to.be.true;
+      expect(accounts.stubs.getAccount.firstCall.args.length).to.be.equal(1);
+      expect(accounts.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({ publicKey: 'publicKey' });
+    });
+
+    it('should throw error if account not found', async () => {
+      accounts.reset();
+      accounts.enqueueResponse('getAccount', false);
+
+      await expect(instance.forgingDisable(params)).to.be.rejectedWith('Account not found');
+    });
+
+    it('should throw error if delegate not found', async () => {
+      accounts.reset();
+      accounts.enqueueResponse('getAccount', {});
+
+      await expect(instance.forgingDisable(params)).to.be.rejectedWith('Delegate not found');
+    });
+
+    it('should call forgeModule.disableForge', async () => {
+      await instance.forgingDisable(params);
+
+      expect(forgeModule.stubs.disableForge.calledOnce).to.be.true;
+      expect(forgeModule.stubs.disableForge.firstCall.args.length).to.be.equal(1);
+      expect(forgeModule.stubs.disableForge.firstCall.args[0]).to.be.deep.equal('publicKey');
+    });
 
   });
 
