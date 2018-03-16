@@ -138,7 +138,7 @@ describe('apis/blocksAPI', () => {
   describe('getHeight', () => {
 
     it('success', async () => {
-      blocksModule.lastBlock = { height: 5 };
+      blocksModule.lastBlock = { height: 5 } as any;
 
       const ret = await instance.getHeight();
 
@@ -246,7 +246,7 @@ describe('apis/blocksAPI', () => {
   describe('getMilestone', () => {
 
     it('should call blockRewardLogic.calcMilestone and return object', () => {
-      blocksModule.lastBlock = { height: 5 };
+      blocksModule.lastBlock = { height: 5 } as any;
 
       const ret = instance.getMilestone();
 
@@ -262,7 +262,7 @@ describe('apis/blocksAPI', () => {
   describe('getReward', () => {
 
     it('should call blockRewardLogic.calcReward and return object', () => {
-      blocksModule.lastBlock = { height: 5 };
+      blocksModule.lastBlock = { height: 5 } as any;
 
       const ret = instance.getReward();
 
@@ -278,7 +278,7 @@ describe('apis/blocksAPI', () => {
   describe('getSupply', () => {
 
     it('should call blockRewardLogic.calcSupply and return object', () => {
-      blocksModule.lastBlock = { height: 5 };
+      blocksModule.lastBlock = { height: 5 } as any;
 
       const ret = instance.getSupply();
 
@@ -297,7 +297,7 @@ describe('apis/blocksAPI', () => {
 
     beforeEach(() => {
       fee                    = { fees: { send: 'send' } };
-      blocksModule.lastBlock = { height: 5 };
+      blocksModule.lastBlock = { height: 5 } as any;
       systemModule.broadhash = 'broadhash';
       systemModule.enqueueResponse('getFees', fee);
       systemModule.enqueueResponse('getNethash', 1);
@@ -393,7 +393,7 @@ describe('apis/blocksAPI', () => {
       const doCall = async (fltr) => {
         params = null;
         where  = null;
-        await instance.list(fltr);
+        await instance['list'](fltr);
         if (db.stubs.query.called) {
           params = db.stubs.query.firstCall.args[1];
         }
@@ -513,7 +513,7 @@ describe('apis/blocksAPI', () => {
     describe('OrderBy', async () => {
 
       it('should call OrderBy', async () => {
-        await instance.list(filter);
+        await instance['list'](filter);
 
         expect(OrderBySpy.calledOnce).to.be.true;
         expect(OrderBySpy.firstCall.args.length).to.be.equal(2);
@@ -540,7 +540,7 @@ describe('apis/blocksAPI', () => {
       it('check if filter.orderBy is exist', async () => {
         filter.orderBy = 'height';
 
-        await instance.list(filter);
+        await instance['list'](filter);
 
         expect(OrderBySpy.calledOnce).to.be.true;
         expect(OrderBySpy.firstCall.args.length).to.be.equal(2);
@@ -550,13 +550,13 @@ describe('apis/blocksAPI', () => {
       it('should throw error if OrderBy retuns error state', async () => {
         filter.orderBy = 'MDAAAAVOTENTOPASHALKA';
 
-        await expect(instance.list(filter)).to.be.rejectedWith(OrderBySpy.firstCall.returnValue.error);
+        await expect(instance['list'](filter)).to.be.rejectedWith(OrderBySpy.firstCall.returnValue.error);
       });
 
     });
 
     it('should call db.query twice', async () => {
-      await instance.list(filter);
+      await instance['list'](filter);
 
       expect(db.stubs.query.calledTwice).to.be.true;
 
@@ -576,7 +576,7 @@ describe('apis/blocksAPI', () => {
     });
 
     it('should call sql.countList', async () => {
-      await instance.list(filter);
+      await instance['list'](filter);
 
       expect(countListSpy.calledOnce).to.be.true;
       expect(countListSpy.firstCall.args.length).to.be.equal(1);
@@ -586,7 +586,7 @@ describe('apis/blocksAPI', () => {
     });
 
     it('should call sql.list', async () => {
-      await instance.list(filter);
+      await instance['list'](filter);
 
       expect(db.stubs.query.calledTwice).to.be.true;
 
@@ -600,7 +600,7 @@ describe('apis/blocksAPI', () => {
     });
 
     it('should call blockLogic.dbRead for each row', async () => {
-      await instance.list(filter);
+      await instance['list'](filter);
 
       expect(blockLogic.stubs.dbRead.calledTwice).to.be.true;
 
@@ -612,7 +612,7 @@ describe('apis/blocksAPI', () => {
     });
 
     it('success', async () => {
-      const ret = await instance.list(filter);
+      const ret = await instance['list'](filter);
 
       expect(ret).to.be.deep.equal({ blocks: blockRows, count: 10 });
     });

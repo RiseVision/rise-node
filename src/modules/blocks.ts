@@ -7,8 +7,6 @@ import { SignedAndChainedBlockType } from '../logic/';
 // TODO Eventually remove this module and use appState instead.
 @injectable()
 export class BlocksModule implements IBlocksModule {
-  public isActive   = false;
-  public isCleaning = false;
   public lastBlock: SignedAndChainedBlockType;
   public lastReceipt: { get: () => number, isStale: () => boolean, update: (time?: number) => void };
   @inject(Symbols.helpers.constants)
@@ -34,12 +32,8 @@ export class BlocksModule implements IBlocksModule {
     };
   }
 
-  public async cleanup() {
-    this.isCleaning = true;
-    while (this.isActive) {
-      this.logger.info('Waiting for block processing to finish');
-      await wait(1000);
-    }
+  public cleanup() {
+    return Promise.resolve();
   }
 
 }

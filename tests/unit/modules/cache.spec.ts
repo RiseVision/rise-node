@@ -577,8 +577,8 @@ describe('modules/cache', () => {
       await expect(dummyCache.assertConnectedAndReady()).to.rejectedWith('Cache not enabled');
     });
 
-    it('.cleanup should rejected with Cache not enabled msg', async () => {
-      await expect(dummyCache.cleanup()).to.rejectedWith('Cache not enabled');
+    it('.cleanup should resolved as there is nothing to cleanup', async () => {
+      await dummyCache.cleanup();
     });
 
     it('.deleteJsonForKey should rejected with Cache not enabled msg', async () => {

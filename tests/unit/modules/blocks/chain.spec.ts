@@ -318,11 +318,11 @@ describe('modules/blocks/chain', () => {
       dbStub.stubs.tx.returns(Promise.resolve());
       busStub.enqueueResponse('message', Promise.resolve());
     });
-    it('should set blockModule.isActive to true to prevent shutdowns', async () => {
+    it('should set .isProcessing to true to prevent shutdowns', async () => {
       const p = inst.applyBlock({transactions: allTxs} as any, false, false);
-      expect(blocksModule.isActive).to.be.true;
+      expect(inst['isProcessing']).to.be.true;
       await p;
-      expect(blocksModule.isActive).to.be.false;
+      expect(inst['isProcessing']).to.be.false;
     });
     it('should undo all unconfirmed transactions', async () => {
       await inst.applyBlock({transactions: allTxs} as any, false, false);
@@ -523,6 +523,26 @@ describe('modules/blocks/chain', () => {
     });
     it('should resolve', () => {
       return expect(inst.cleanup()).to.be.fulfilled;
+    });
+    it('should wait until isProcessing is false and then return', async () => {
+      const timers   = sinon.useFakeTimers();
+      inst['isProcessing'] = true;
+      const stub = sinon.stub();
+      const p = inst.cleanup()
+        .then(stub)
+        .catch(stub);
+
+      expect(stub.called).is.false;
+      timers.tick(10000);
+      expect(stub.called).is.false;
+      inst['isProcessing'] = false;
+      timers.tick(10000);
+      await p;
+
+      expect(stub.called).is.true;
+      expect(stub.callCount).is.eq(1);
+
+      timers.restore();
     });
   });
 });

@@ -160,7 +160,7 @@ describe('apis/transactionsAPI', () => {
 
   describe('getTX()', () => {
     it('success', async () => {
-      result = await instance.getTX(123);
+      result = await instance.getTX('123');
       expect(result).to.deep.equal({ transaction: { id: 456 } });
     });
   });
