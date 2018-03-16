@@ -1,6 +1,6 @@
 language: node_js
 node_js:
-  - '6'
+  - '8'
 sudo: required
 addons:
   postgresql: "9.6"
@@ -12,7 +12,7 @@ before_script:
   - psql -c "CREATE USER test WITH PASSWORD 'test';" -U postgres
 script:
   - npm run test-integration
-  - npm run test-cover-unit
+#  - npm run test-cover-unit
 cache:
   directories:
     - node_modules

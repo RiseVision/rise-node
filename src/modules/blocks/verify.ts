@@ -144,7 +144,8 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     // check transactions
     for (const tx of block.transactions) {
       // It will throw if tx is not valid somehow.
-      await this.checkTransaction(block, tx);
+      // FIXME ? wrong type for tx detected by TS
+      await this.checkTransaction(block, tx as any);
     }
 
     // if nothing has thrown till here then block is valid and can be applied.

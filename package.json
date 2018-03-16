@@ -87,6 +87,7 @@
     "moment": "=2.21.0",
     "mute": "^2.0.6",
     "nyc": "^11.5.0",
+    "proxyquire": "^2.0.0",
     "reflect-metadata": "^0.1.10",
     "rewire": "^3.0.2",
     "shx": "^0.2.2",
