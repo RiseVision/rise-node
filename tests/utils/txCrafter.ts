@@ -34,3 +34,11 @@ export const createVoteTransaction = (from: LiskWallet, fee: number, obj: any = 
   Object.keys(obj).forEach((k) => t.set(k as any, obj[k]));
   return t.withFees(fee).sign(from);
 };
+
+export const createRegDelegateTX = (from: LiskWallet, fee: number, obj: any = {}): ITransaction => {
+  const t = new dposOffline.transactions.DelegateTx(obj.asset)
+    // .withRecipientId(from.address)
+    .withTimestamp(0);
+  Object.keys(obj).forEach((k) => t.set(k as any, obj[k]));
+  return t.withFees(fee).sign(from);
+};
