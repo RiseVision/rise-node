@@ -376,12 +376,12 @@ describe('modules/blocks/process', () => {
 
       expect(await inst.loadBlocksFromPeer(null)).to.be.eq('3');
     });
-    it('should not process anything if blocksModule is cleaning', async () => {
+    it('should not process anything if is cleaning', async () => {
       transportModule.enqueueResponse('getFromPeer', Promise.resolve({body: {blocks: []}}));
       blocksUtils.enqueueResponse('readDbRows', ['1', '2', '3']);
       blockVerify.stubs.processBlock.resolves();
       blocksModule.lastBlock  = {id: '1'} as any;
-      blocksModule.isCleaning = true;
+      await inst.cleanup();
 
       expect(await inst.loadBlocksFromPeer(null)).to.be.deep.eq({id: '1'});
       expect(blockVerify.stubs.processBlock.called).is.false;
