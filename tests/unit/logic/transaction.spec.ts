@@ -1,6 +1,7 @@
+import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as rewire from 'rewire';
+import * as crypto from 'crypto';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { BigNum, IKeypair, TransactionType } from '../../../src/helpers';
@@ -10,14 +11,15 @@ import {
   AccountLogicStub, DbStub, EdStub, ExceptionsManagerStub, LoggerStub,
   RoundsLogicStub, SlotsStub, ZSchemaStub
 } from '../../stubs';
-import ByteBufferStub from '../../stubs/utils/ByteBufferStub';
 
 chai.use(chaiAsPromised);
 
+const helpers          = {
+  Bigum: BigNum as any,
+};
 // tslint:disable-next-line no-var-requires
-const genesisBlock      = require('../../../etc/mainnet/genesisBlock.json');
-const expect            = chai.expect;
-const RewireTransaction = rewire('../../../src/logic/transaction.ts');
+const genesisBlock     = require('../../../etc/mainnet/genesisBlock.json');
+const expect           = chai.expect;
 
 // tslint:disable no-unused-expression
 describe('logic/transaction', () => {
@@ -60,7 +62,7 @@ describe('logic/transaction', () => {
     excManagerStub   = new ExceptionsManagerStub();
     sendTransaction  = new SendTransaction();
 
-    instance = new RewireTransaction.TransactionLogic();
+    instance = new TransactionLogic();
     instance.attachAssetType(sendTransaction);
 
     // inject dependencies
@@ -199,8 +201,7 @@ describe('logic/transaction', () => {
     });
 
     it('should call BigNum.fromBuffer', () => {
-      const RewBigNum     = RewireTransaction.__get__('_1').BigNum;
-      const fromBufferSpy = sandbox.spy(RewBigNum, 'fromBuffer');
+      const fromBufferSpy = sandbox.spy(BigNum, 'fromBuffer');
       instance.getId(tx);
       expect(fromBufferSpy.calledOnce).to.be.true;
     });
@@ -214,7 +215,6 @@ describe('logic/transaction', () => {
 
   describe('getHash', () => {
     it('should call crypto.createHash', () => {
-      const crypto        = RewireTransaction.__get__('crypto');
       const createHashSpy = sandbox.spy(crypto, 'createHash');
       instance.getHash(tx);
       expect(createHashSpy.calledOnce).to.be.true;
@@ -238,29 +238,31 @@ describe('logic/transaction', () => {
   });
 
   describe('getBytes', () => {
-    let origByteBuffer;
-    let byteBufferStub;
+    let sequence: any[];
+    let lastBB: any;
+    const toRestore = {} as any;
+    before(() => {
+      toRestore.writeByte = ByteBuffer.prototype.writeByte;
+      toRestore.writeInt  = ByteBuffer.prototype.writeInt;
+      toRestore.writeLong = (ByteBuffer.prototype as any).writeLong;
+      toRestore.flip      = ByteBuffer.prototype.flip;
+    });
     beforeEach(() => {
-      byteBufferStub = new ByteBufferStub();
-      origByteBuffer = RewireTransaction.__get__('ByteBuffer');
-      // We need to fake the behavior of new ByteBuffer(...) to be able to test calls to methods.
-      RewireTransaction.__set__('ByteBuffer', (capacity?: number, littleEndian?: boolean, noAssert?: boolean) => {
-        if (capacity) {
-          byteBufferStub.capacity = capacity;
-        }
-        if (littleEndian) {
-          byteBufferStub.littleEndian = littleEndian;
-        }
-        if (noAssert) {
-          byteBufferStub.noAssert = noAssert;
-        }
-        return byteBufferStub;
-      });
-      byteBufferStub.enqueueResponse('toBuffer', new Buffer(10));
+      sequence                                = [];
+      (ByteBuffer.prototype as any).writeByte = function(b) {
+        sequence.push(b);
+        lastBB = this;
+      };
+      (ByteBuffer.prototype as any).writeInt  = (b) => sequence.push(b);
+      (ByteBuffer.prototype as any).writeLong = (b) => sequence.push(b);
+      ByteBuffer.prototype.flip               = sandbox.stub();
     });
 
-    afterEach(() => {
-      RewireTransaction.__set__('ByteBuffer', origByteBuffer);
+    after(() => {
+      (ByteBuffer.prototype as any).writeByte = toRestore.writeByte;
+      (ByteBuffer.prototype as any).writeInt  = toRestore.writeInt;
+      (ByteBuffer.prototype as any).writeLong = toRestore.writeLong;
+      ByteBuffer.prototype.flip               = toRestore.flip;
     });
 
     it('should throw an error if wrong tx type', () => {
@@ -282,25 +284,25 @@ describe('logic/transaction', () => {
 
     it('should create a ByteBuffer of the right length', () => {
       instance.getBytes(tx, true, false);
-      expect(byteBufferStub.capacity).to.be.equal(213);
+      expect(lastBB.capacity()).to.be.equal(213);
     });
 
     it('should add the type as first byte of the ByteBuffer', () => {
       instance.getBytes(tx, true, false);
-      expect(byteBufferStub.sequence[0]).to.be.equal(tx.type);
+      expect(sequence[0]).to.be.equal(tx.type);
     });
 
     it('should add the timestamp to the ByteBuffer via writeInt', () => {
       tx.timestamp = Date.now();
       instance.getBytes(tx, true, false);
-      expect(byteBufferStub.sequence[1]).to.be.equal(tx.timestamp);
+      expect(sequence[1]).to.be.equal(tx.timestamp);
     });
 
     it('should add the senderPublicKey to the ByteBuffer', () => {
       const senderPublicKeyBuffer = Buffer.from(tx.senderPublicKey, 'hex');
       instance.getBytes(tx);
       for (let i = 0; i < senderPublicKeyBuffer.length; i++) {
-        expect(byteBufferStub.sequence[2 + i]).to.be.equal(senderPublicKeyBuffer[i]);
+        expect(sequence[2 + i]).to.be.equal(senderPublicKeyBuffer[i]);
       }
     });
 
@@ -310,7 +312,7 @@ describe('logic/transaction', () => {
       instance.getBytes(tx);
       for (let i = 0; i < requesterPublicKeyBuffer.length; i++) {
         // We always get here after 34 writes to the ByteBuffer
-        expect(byteBufferStub.sequence[34 + i]).to.be.equal(requesterPublicKeyBuffer[i]);
+        expect(sequence[34 + i]).to.be.equal(requesterPublicKeyBuffer[i]);
       }
     });
 
@@ -320,7 +322,7 @@ describe('logic/transaction', () => {
       const recBuf    = new BigNum(recipient).toBuffer({ size: 8 });
       instance.getBytes(tx);
       for (let i = 0; i < recBuf.length; i++) {
-        expect(byteBufferStub.sequence[34 + i]).to.be.equal(recBuf[i]);
+        expect(sequence[34 + i]).to.be.equal(recBuf[i]);
       }
     });
 
@@ -328,15 +330,13 @@ describe('logic/transaction', () => {
       tx.recipientId = undefined;
       instance.getBytes(tx);
       for (let i = 34; i < 42; i++) {
-        expect(byteBufferStub.sequence[i]).to.be.equal(0);
+        expect(sequence[i]).to.be.equal(0);
       }
     });
 
     it('should add the amount to the ByteBuffer via writeLong', () => {
       instance.getBytes(tx);
-      expect(byteBufferStub.sequence[42]).to.be.equal(tx.amount);
-      expect(byteBufferStub.spies.writeLong.calledOnce).to.be.true;
-      expect(byteBufferStub.spies.writeLong.firstCall.args[0]).to.be.equal(tx.amount);
+      expect(sequence[42]).to.be.equal(tx.amount);
     });
 
     it('should add the asset bytes to the ByteBuffer if not empty', () => {
@@ -345,7 +345,7 @@ describe('logic/transaction', () => {
       getBytesStub.returns(sampleBuffer);
       instance.getBytes(tx);
       for (let i = 0; i < sampleBuffer.length; i++) {
-        expect(byteBufferStub.sequence[43 + i]).to.be.equal(sampleBuffer[i]);
+        expect(sequence[43 + i]).to.be.equal(sampleBuffer[i]);
       }
       getBytesStub.restore();
     });
@@ -355,7 +355,7 @@ describe('logic/transaction', () => {
       const sigBuf = Buffer.from(tx.signature, 'hex');
       for (let i = 0; i < sigBuf.length; i++) {
         // tx.asset is empty so we start from 43
-        expect(byteBufferStub.sequence[43 + i]).to.be.equal(sigBuf[i]);
+        expect(sequence[43 + i]).to.be.equal(sigBuf[i]);
       }
     });
 
@@ -364,7 +364,7 @@ describe('logic/transaction', () => {
       const sigBuf = Buffer.from(tx.signature, 'hex');
       for (let i = 0; i < sigBuf.length; i++) {
         // tx.asset is empty so we start from 43
-        expect(byteBufferStub.sequence[43 + i]).to.be.equal(undefined);
+        expect(sequence[43 + i]).to.be.equal(undefined);
       }
     });
 
@@ -375,7 +375,7 @@ describe('logic/transaction', () => {
       const sigBuf = Buffer.from(tx.signSignature, 'hex');
       for (let i = 0; i < sigBuf.length; i++) {
         // tx.asset is empty so we start from 43
-        expect(byteBufferStub.sequence[107 + i]).to.be.equal(sigBuf[i]);
+        expect(sequence[107 + i]).to.be.equal(sigBuf[i]);
       }
     });
 
@@ -386,22 +386,20 @@ describe('logic/transaction', () => {
       const sigBuf = Buffer.from(tx.signSignature, 'hex');
       for (let i = 0; i < sigBuf.length; i++) {
         // tx.asset is empty so we start from 43
-        expect(byteBufferStub.sequence[107 + i]).to.be.equal(undefined);
+        expect(sequence[107 + i]).to.be.equal(undefined);
       }
     });
 
     it('should flip the ByteBuffer', () => {
       instance.getBytes(tx, true, true);
-      expect(byteBufferStub.spies.flip.calledOnce).to.be.true;
+      expect(lastBB.flip.calledOnce).to.be.true;
     });
 
     it('should return a Buffer', () => {
-      byteBufferStub.stubs.toBuffer.returns(sampleBuffer);
       const retVal = instance.getBytes(tx, true, true);
       expect(retVal).to.be.instanceOf(Buffer);
     });
   });
-
   describe('ready', () => {
     it('should call assertKnownTransactionType', () => {
       const akttStub = sandbox.stub(instance, 'assertKnownTransactionType');
@@ -1161,9 +1159,9 @@ describe('logic/transaction', () => {
     let txTypeObjectNormalizeStub: SinonStub;
 
     beforeEach(() => {
-      tx.senderId                            = sender.address;
-      akttStub                               = sandbox.stub(instance, 'assertKnownTransactionType').returns(true);
-      txTypeObjectNormalizeStub              = sandbox.stub(sendTransaction, 'objectNormalize')
+      tx.senderId               = sender.address;
+      akttStub                  = sandbox.stub(instance, 'assertKnownTransactionType').returns(true);
+      txTypeObjectNormalizeStub = sandbox.stub(sendTransaction, 'objectNormalize')
         .returns('txType objectNormalize');
     });
 
