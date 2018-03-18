@@ -291,8 +291,8 @@ describe('modules/blocks/verify', () => {
   });
 
   describe('processBlock', () => {
-    it('rejects if blocksModule is cleaning', async () => {
-      blocksModule.isCleaning = true;
+    it('rejects if is cleaning', async () => {
+      await inst.cleanup();
       await expect(inst.processBlock(null, true, true))
         .to.be.rejectedWith('Cleaning up');
     });
