@@ -7,9 +7,10 @@ import { IAccountsModule, IBlocksModule, ISystemModule, ITransactionsModule } fr
 import { Symbols } from '../../src/ioc/symbols';
 import initializer from './common/init';
 import {
+  confirmTransactions,
   createRandomAccountWithFunds,
   createRandomWallet,
-  createRegDelegateTransaction,
+  createRegDelegateTransaction, createSecondSignTransaction,
   createSendTransaction,
   createVoteTransaction,
   getRandomDelegateWallet
@@ -144,6 +145,48 @@ describe('highlevel checks', () => {
         expect(blocksModule.lastBlock.height).to.be.eq(4);
         expect(blocksModule.lastBlock.transactions.length).to.be.eq(1);
       });
+
+      it('should not be allowed to add & remove within same transaction (user did not confirmed vote)', async () => {
+        const delegate = getRandomDelegateWallet();
+        // Add vote
+        await createVoteTransaction(1, senderAccount, delegate.publicKey, true, {
+          asset: {
+            votes: [
+              `+${delegate.publicKey}`,
+              `-${delegate.publicKey}`,
+            ],
+          },
+        });
+
+        // Account should show no delegate.
+        const acc = await accModule.getAccount({ address: senderAccount.address });
+        expect(acc.delegates).is.null;
+
+        expect(blocksModule.lastBlock.transactions).is.empty;
+      });
+
+      it('should not be allowed to remove and readd vote in same tx', async () => {
+        const delegate = getRandomDelegateWallet();
+
+        await createVoteTransaction(1, senderAccount, delegate.publicKey, true);
+        // remove and readd
+        await createVoteTransaction(1, senderAccount, delegate.publicKey, true, {
+          asset: {
+            votes: [
+              `-${delegate.publicKey}`,
+              `+${delegate.publicKey}`,
+            ],
+          },
+        });
+
+        // Account should show delegate.
+        const acc = await accModule.getAccount({ address: senderAccount.address });
+        expect(acc.delegates).to.contain(delegate.publicKey);
+
+        // Tx should be included
+        expect(blocksModule.lastBlock.transactions).is.not.empty;
+        expect(blocksModule.lastBlock.height).is.eq(4);
+      });
     });
     describe('delegate', () => {
       it('should allow registering a delegate', async () => {
@@ -209,6 +252,39 @@ describe('highlevel checks', () => {
         expect(acc.username).is.eq('meow');
 
         expect(await accModule.getAccount({ username: 'vekexasia' })).is.undefined;
+        expect(blocksModule.lastBlock.transactions.length).is.eq(1);
+      });
+    });
+
+    describe('secondSignature', () => {
+      it('should allow secondSignature creation', async () => {
+        const pk = createRandomWallet().publicKey;
+        const tx = await createSecondSignTransaction(1, senderAccount, pk);
+        const acc = await accModule.getAccount({ address: senderAccount.address });
+        expect(acc.secondPublicKey).to.be.eq(pk);
+        expect(acc.secondSignature).to.be.eq(1);
+      });
+      it('should not allow 2 second signature in 2 diff blocks', async () => {
+        const pk = createRandomWallet().publicKey;
+        const pk2 = createRandomWallet().publicKey;
+        const tx = await createSecondSignTransaction(1, senderAccount, pk);
+        const tx2 = await createSecondSignTransaction(1, senderAccount, pk2);
+        const acc = await accModule.getAccount({ address: senderAccount.address });
+        expect(acc.secondPublicKey).to.be.eq(pk);
+        expect(acc.secondSignature).to.be.eq(1);
+        expect(blocksModule.lastBlock.transactions).is.empty;
+      });
+      it('should not allow 2 second signature in same block', async () => {
+        const pk = createRandomWallet().publicKey;
+        const pk2 = createRandomWallet().publicKey;
+        const txs = [
+          await createSecondSignTransaction(0, senderAccount, pk),
+          await createSecondSignTransaction(0, senderAccount, pk2),
+        ];
+        await confirmTransactions(txs, 1);
+        const acc = await accModule.getAccount({ address: senderAccount.address });
+        expect(acc.secondPublicKey).to.be.eq(pk2);
+        expect(acc.secondSignature).to.be.eq(1);
         expect(blocksModule.lastBlock.transactions.length).is.eq(1);
       });
     });

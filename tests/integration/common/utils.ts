@@ -65,6 +65,24 @@ export const createVoteTransaction = async (confirmations: number, from: LiskWal
   return tx;
 };
 
+export const createSecondSignTransaction = async (confirmations: number, from: LiskWallet, pk: publicKey) => {
+  const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
+  const tx = txCrafter.create2ndSigTX(
+    from,
+    systemModule.getFees().fees.secondsignature,
+    {
+      asset: {
+        signature: {
+          publicKey: pk,
+        },
+      },
+    });
+  if (confirmations > 0) {
+    await confirmTransactions([tx], confirmations);
+  }
+  return tx;
+};
+
 export const createRegDelegateTransaction = async (confirmations: number, from: LiskWallet, name: string, obj: any = {}): Promise<ITransaction> => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
   const tx           = txCrafter.createRegDelegateTX(from, systemModule.getFees().fees.delegate, {
