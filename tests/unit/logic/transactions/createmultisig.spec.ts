@@ -520,7 +520,7 @@ describe('logic/transactions/createmultisig', () => {
 
   describe('ready', () => {
     it('return false if tx.signatures is not an array', () => {
-      tx.signatures = [];
+      tx.signatures = {};
       expect(instance.ready(tx, sender)).to.be.false;
     });
 
