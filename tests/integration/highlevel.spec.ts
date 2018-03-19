@@ -183,8 +183,8 @@ describe('highlevel checks', () => {
         const acc = await accModule.getAccount({ address: senderAccount.address });
         expect(acc.delegates).to.contain(delegate.publicKey);
 
-        // Tx should be included
-        expect(blocksModule.lastBlock.transactions).is.not.empty;
+        // Tx should not be included
+        expect(blocksModule.lastBlock.transactions).is.empty;
         expect(blocksModule.lastBlock.height).is.eq(4);
       });
     });
