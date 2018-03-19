@@ -455,6 +455,14 @@ describe('logic/transactions/createmultisig', () => {
       }).to.throw(/Failed to validate multisignature schema/);
     });
 
+    it('should throw with errors message if validation fails', () => {
+      zSchemaStub.enqueueResponse('validate', false);
+      zSchemaStub.enqueueResponse('getLastErrors', [{message: '1'}, {message: '2'}]);
+      expect(() => {
+        instance.objectNormalize(tx);
+      }).to.throw('Failed to validate multisignature schema: 1, 2');
+    });
+
     it('should return the tx', () => {
       zSchemaStub.enqueueResponse('validate', true);
       const retVal                           = instance.objectNormalize(tx);
