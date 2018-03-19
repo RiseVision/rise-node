@@ -302,6 +302,14 @@ describe('logic/transactions/delegate', () => {
       }).to.throw(/Failed to validate delegate schema/);
     });
 
+    it('should throw with errors message if validation fails', () => {
+      (instance as any).schema.getLastErrors = () => [{message: '1'}, {message: '2'}];
+      zSchemaStub.validate.returns(false);
+      expect(() => {
+        instance.objectNormalize(tx);
+      }).to.throw('Failed to validate delegate schema: 1, 2');
+    });
+
     it('should return the tx', () => {
       const retVal = instance.objectNormalize(tx);
       expect(retVal).to.be.deep.equal(tx);
