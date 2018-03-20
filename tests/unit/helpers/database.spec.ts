@@ -197,5 +197,26 @@ describe('helpers/database', () => {
       MigratorRevert();
       monitor.detach();
     });
+
+    it('monitor.log', async()=>{
+      database.__set__('Migrator', function Migrator() {
+        return migrator;
+      });
+      const fakeILogger: any = {
+        log: sandbox.stub(),
+      };
+      const monitor = database.__get__('monitor');
+      const info = {event: 'event', text: 'text', display: true};
+
+      await database.connect(appConfig as any, fakeILogger);
+      monitor.log('msg', info);
+
+      expect(fakeILogger.log.calledOnce).to.be.true;
+      expect(fakeILogger.log.firstCall.args.length).to.be.equal(2);
+      expect(fakeILogger.log.firstCall.args[0]).to.be.equal(info.event);
+      expect(fakeILogger.log.firstCall.args[1]).to.be.equal(info.text);
+
+      expect(info.display).to.be.false;
+    });
   });
 });
