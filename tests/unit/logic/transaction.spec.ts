@@ -801,6 +801,9 @@ describe('logic/transaction', () => {
       expect(getHashStub.firstCall.args[1]).to.be.equal(true);
       expect(getHashStub.firstCall.args[2]).to.be.equal(true);
     });
+    it('should call false if signature is null', ()=>{
+      expect(instance.verifySignature(tx, tx.senderPublicKey, null)).to.be.false;
+    });
   });
 
   describe('apply', () => {
