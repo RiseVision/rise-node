@@ -127,6 +127,14 @@ describe('logic/broadcaster', () => {
       expect(fakeAppState.set.firstCall.args[1]).to.be.equal(consensus);
     });
 
+    it('should set consensus in 100 if limit is constants.maxPeers and config.forging.force is true', async () => {
+      (instance as any).config.forging.force = true;
+      await instance.getPeers({ limit: constants.maxPeers });
+      expect(fakeAppState.set.calledOnce).to.be.true;
+      expect(fakeAppState.set.firstCall.args[0]).to.be.equal('node.consensus');
+      expect(fakeAppState.set.firstCall.args[1]).to.be.equal(100);
+    });
+
     it('should return the right value', async () => {
       const result = await instance.getPeers({ limit: constants.maxPeers });
       expect(result).to.be.equal(peers);
