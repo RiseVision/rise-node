@@ -3,6 +3,7 @@ import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
 import { PeersLogic } from '../../../src/logic';
 import { LoggerStub, PeerLogicStub, SystemModuleStub } from '../../stubs';
+import { PeerLogic } from '../../../src/logic/peer';
 
 const expect = chai.expect;
 
@@ -32,6 +33,12 @@ describe('logic/peers', () => {
       expect(peersFactoryStub.called).to.be.true;
       expect(peersFactoryStub.firstCall.args[0]).to.be.deep.equal(peerObj);
       expect(retVal).to.be.deep.equal(peerLogicStub);
+    });
+    it('should not call peersFactory peer is instanceof PeerLogic', () => {
+      const peerObj = new PeerLogic();
+      const retVal = instance.create(peerObj);
+      expect(peersFactoryStub.notCalled).to.be.true;
+      expect(retVal).to.be.deep.equal(peerObj);
     });
   });
 
@@ -164,6 +171,22 @@ describe('logic/peers', () => {
         alive         : 1,
         emptyBroadhash: 0,
         emptyHeight   : 0,
+        total         : 1,
+      });
+    });
+
+    it('should call logger.trace with PeerStats without height and broadhash fields', () => {
+      delete (peerLogicStub as any).height;
+      delete (peerLogicStub as any).broadhash;
+      existsStub.returns(false);
+      acceptableStub.returns([peerLogicStub]);
+      instance.upsert(peerLogicStub, false);
+      expect(loggerStub.stubs.trace.calledOnce).to.equal(true);
+      expect(loggerStub.stubs.trace.firstCall.args[0]).to.equal('PeerStats');
+      expect(loggerStub.stubs.trace.firstCall.args[1]).to.deep.equal({
+        alive         : 1,
+        emptyBroadhash: 1,
+        emptyHeight   : 1,
         total         : 1,
       });
     });
