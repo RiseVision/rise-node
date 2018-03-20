@@ -21,4 +21,8 @@ describe('helpers/checkIpInList', () => {
     expect(list['_subNets']).to.be.an('array');
     expect(list['_subNets'].length).to.be.eq(list.length);
   });
+  it('true if the founded ip is v6', () => {
+    const list = ['::ffff:127.0.0.1', '10.0.0.0/8'];
+    expect(checkIpInList(list, '::ffff:127.0.0.1')).to.be.true;
+  });
 });
