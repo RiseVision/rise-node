@@ -143,7 +143,7 @@ export class DummyCache implements ICacheModule {
   }
 
   public cleanup(): Promise<void> {
-    return Promise.reject('Cache not enabled');
+    return Promise.resolve();
   }
 
   public deleteJsonForKey(k: string | string[]): Promise<void> {

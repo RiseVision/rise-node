@@ -81,7 +81,10 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   @inject(Symbols.modules.transport)
   private transportModule: ITransportModule;
 
+  private isCleaning: boolean = false;
+
   public cleanup() {
+    this.isCleaning = true;
     return Promise.resolve();
   }
 
@@ -158,7 +161,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       // Cycle through every block and apply it.
       for (const block of blocks) {
         // Stop Processing if node is shutting down
-        if (this.blocksModule.isCleaning) {
+        if (this.isCleaning) {
           return;
         }
         this.logger.debug('Processing block', block.id);
@@ -217,7 +220,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
     const blocks = this.blocksUtilsModule.readDbRows(blocksFromPeer.blocks);
     for (const block of blocks) {
-      if (this.blocksModule.isCleaning) {
+      if (this.isCleaning) {
         return lastValidBlock;
       }
       try {

@@ -48,6 +48,9 @@ describe('logic/blockReward', () => {
     it('should return correct block height', () => {
       expect(instance.calcMilestone(1)).to.equal(0);
     });
+    it('should return 0 index if correct block not found', () => {
+      expect(instance.calcMilestone(0)).to.equal(0);
+    });
   });
 
   describe('calcReward', () => {

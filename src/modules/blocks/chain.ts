@@ -1,7 +1,7 @@
 import { inject, injectable, tagged } from 'inversify';
 import * as _ from 'lodash';
 import { IDatabase, ITask } from 'pg-promise';
-import { Bus, catchToLoggerAndRemapError, ILogger, Inserts, Sequence, TransactionType } from '../../helpers/';
+import { Bus, catchToLoggerAndRemapError, ILogger, Inserts, Sequence, TransactionType, wait } from '../../helpers/';
 import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
   IAccountsModule,
@@ -52,8 +52,20 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
-  public cleanup() {
-    return Promise.resolve();
+  /**
+   * Lock for processing.
+   * @type {boolean}
+   */
+  private isCleaning: boolean = false;
+
+  private isProcessing: boolean = false;
+
+  public async cleanup() {
+    this.isCleaning = true;
+    while (this.isProcessing) {
+      this.logger.info('Waiting for block processing to finish');
+      await wait(1000);
+    }
   }
 
   /**
@@ -167,8 +179,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   }
 
   public async applyBlock(block: SignedAndChainedBlockType, broadcast: boolean, saveBlock: boolean) {
+    if (this.isCleaning) {
+      return; // Avoid processing a new block if it is cleaning.
+    }
     // Prevent shutdown during database writes.
-    this.blocksModule.isActive = true;
+    this.isProcessing = true;
 
     // Transactions to rewind in case of error.
     const appliedTransactions: { [k: string]: IConfirmedTransaction<any> } = {};
@@ -254,11 +269,15 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     // restore the (yet) unconfirmed ids.
     await this.transactionsModule.applyUnconfirmedIds(unconfirmedTransactionIds);
 
-    // Shutdown now can happen
-    this.blocksModule.isActive = false;
     // Nullify large objects.
     // Prevents memory leak during synchronisation.
     // appliedTransactions = unconfirmedTransactionIds = block = null;
+    // if (saveBlock && block.height % 5000 === 0 && process.env.AUTODUMP === 'true') {
+    //  await require('child-process-promise')
+    //    .exec(`${__dirname}/../../../.devutils/dumpdb.sh`);
+    //  await require('child-process-promise')
+    //    .exec(`mv ${__dirname}/../../../backup.tar ${__dirname}/../../../backups/backup_${block.height}.tar`);
+    // }
     block = null;
     // Finish here if snapshotting.
     // FIXME: Not the best place to do that
@@ -266,6 +285,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     //   logger.info(err);
     //   process.emit('SIGTERM');
     // }
+    this.isProcessing = false;
   }
 
   /**
