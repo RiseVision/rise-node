@@ -1,20 +1,13 @@
 import { expect } from 'chai';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import * as supertest from 'supertest';
-import { constants, TransactionType } from '../../../src/helpers';
 import { IPeersLogic, ITransactionPoolLogic } from '../../../src/ioc/interfaces/logic';
-import { IPeersModule, ITransactionsModule } from '../../../src/ioc/interfaces/modules';
+import { IBlocksModule, IPeersModule, ITransactionsModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
-import { IBaseTransaction } from '../../../src/logic/transactions';
 
 import initializer from '../common/init';
-import {
-  createRandomAccountWithFunds, createRandomWallet,
-  createSendTransaction,
-  createVoteTransaction,
-  getRandomDelegateWallet
-} from '../common/utils';
-import { checkAddress, checkIntParam, checkPubKey, checkReturnObjKeyVal } from './utils';
+import { createRandomAccountWithFunds, createRandomWallet, createSendTransaction } from '../common/utils';
+import { checkReturnObjKeyVal } from './utils';
 
 // tslint:disable no-unused-expression max-line-length
 const headers = {
@@ -198,10 +191,42 @@ describe('api/transport', () => {
   });
 
   describe('/transactions [POST]', () => {
+    let account: LiskWallet;
+    let blocksModule: IBlocksModule;
+    let txModule: ITransactionsModule;
+    let txPool: ITransactionPoolLogic;
+    beforeEach(async () => {
+      blocksModule = initializer.appManager.container.get(Symbols.modules.blocks);
+      txModule     = initializer.appManager.container.get(Symbols.modules.transactions);
+      txPool       = initializer.appManager.container.get(Symbols.logic.transactionPool);
+      const {wallet} = await createRandomAccountWithFunds(Math.pow(10, 8));
+      account = wallet;
+    });
+    afterEach(async () => {
+      await initializer.rawDeleteBlocks(blocksModule.lastBlock.height - 1);
+    });
     checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
       .post('/peer/transactions'));
-    it('should enqueue transaction');
-    it('should enqueue bundled transactions');
+    it('should enqueue transaction', async () => {
+      const tx = await createSendTransaction(0, 1, account, createRandomWallet().address);
+      const res = await supertest(initializer.appManager.expressApp)
+        .post('/peer/transactions')
+        .set(headers)
+        .send({transaction: tx})
+        .expect(200);
+      // console.log(await txModule.getByID(tx.id));
+      expect(txPool.transactionInPool(tx.id)).is.true;
+    });
+    it('should enqueue bundled transactions', async () => {
+      const tx = await createSendTransaction(0, 1, account, createRandomWallet().address);
+      const res = await supertest(initializer.appManager.expressApp)
+        .post('/peer/transactions')
+        .set(headers)
+        .send({transactions: [tx, tx]})
+        .expect(200);
+      // console.log(await txModule.getByID(tx.id));
+      expect(txPool.transactionInPool(tx.id)).is.true;
+    });
     it('should validate transactions');
     it('should validate transaction');
   });
