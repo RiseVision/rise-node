@@ -2,21 +2,24 @@ import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
-import * as rewire from 'rewire';
+import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
-import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as helpers from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { LoaderModule } from '../../../src/modules';
 import {
   AccountLogicStub,
   AppStateStub,
+  BlocksModuleStub,
   BlocksSubmoduleChainStub,
+  BlocksSubmoduleProcessStub,
   BlocksSubmoduleUtilsStub,
   BlocksSubmoduleVerifyStub,
   BroadcasterLogicStub,
-  BlocksModuleStub,
   BusStub,
   DbStub,
+  IAppStateStub,
   JobsQueueStub,
   LoggerStub,
   MultisignaturesModuleStub,
@@ -30,21 +33,26 @@ import {
   TransactionsModuleStub,
   TransportModuleStub,
   ZSchemaStub,
-  IAppStateStub,
 } from '../../stubs';
- 
+
 import { PeerType } from '../../../src/logic';
 import loaderSchema from '../../../src/schema/loader';
-import { BlocksSubmoduleProcessStub } from '../../stubs/modules/blocks/BlocksSubmoduleProcessStub';
 import { createFakePeers } from '../../utils/fakePeersFactory';
 
 chai.use(chaiAsPromised);
+
+let promiseRetryStub: any;
 
 // tslint:disable no-unused-expression
 // tslint:disable no-unused-expression max-line-length
 // tslint:disable no-unused-expression object-literal-sort-keys
 
-const LoaderModuleRewire = rewire('../../../src/modules/loader');
+const LoaderModuleRewire = proxyquire('../../../src/modules/loader',  {
+  'promise-retry': (...args) => {
+    return promiseRetryStub.apply(this, args);
+  },
+
+});
 
 describe('modules/loader', () => {
 
@@ -69,7 +77,6 @@ describe('modules/loader', () => {
     payloadHash   : Buffer.from('10').toString('hex'),
 
   };
-  let promiseRetryStub;
 
   before(() => {
     sandbox   = sinon.sandbox.create();
@@ -89,11 +96,11 @@ describe('modules/loader', () => {
     container.bind(Symbols.helpers.logger).to(LoggerStub).inSingletonScope();
     container.bind(Symbols.helpers.sequence).to(SequenceStub).inSingletonScope().whenTargetTagged(
       Symbols.helpers.sequence,
-      Symbols.tags.helpers.balancesSequence,
+      Symbols.tags.helpers.balancesSequence
     );
     container.bind(Symbols.helpers.sequence).to(SequenceStub).inSingletonScope().whenTargetTagged(
       Symbols.helpers.sequence,
-      Symbols.tags.helpers.defaultSequence,
+      Symbols.tags.helpers.defaultSequence
     );
 
     // Logic
@@ -124,11 +131,9 @@ describe('modules/loader', () => {
   beforeEach(() => {
     retryStub        = sandbox.stub();
     promiseRetryStub = sandbox.stub().callsFake(sandbox.spy((w) => Promise.resolve(w(retryStub))));
-    LoaderModuleRewire.__set__('promiseRetry', promiseRetryStub);
-
 
     (instance as any).jobsQueue.register                              = sandbox.stub().callsFake((val, fn) => fn());
-    (instance as  any).sequence.addAndPromise                         = sandbox.stub().callsFake(w => Promise.resolve(w()));
+    (instance as  any).sequence.addAndPromise                         = sandbox.stub().callsFake((w) => Promise.resolve(w()));
     instance                                                          = container.get(Symbols.modules.loader);
     container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock = { height: 1, id: 1 } as any;
   });
@@ -194,7 +199,7 @@ describe('modules/loader', () => {
         peers : [],
       };
 
-      let result = await instance.getNetwork();
+      const result = await instance.getNetwork();
 
       expect(result).to.be.deep.equal({ height: 1, peers: [] });
     });
@@ -252,7 +257,7 @@ describe('modules/loader', () => {
     it('should return instance.network with empty peersArray prop if each of peersModule.list() peers is null', async () => {
       peersModuleStub.enqueueResponse('list', { peers: [null, null] });
 
-      let ret = await instance.getNetwork();
+      const ret = await instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 0, peers: [] });
       expect((instance as any).network).to.be.deep.equal({ height: 0, peers: [] });
@@ -262,7 +267,7 @@ describe('modules/loader', () => {
       container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock.height = 5;
       peersModuleStub.enqueueResponse('list', { peers });
 
-      let ret = await instance.getNetwork();
+      const ret = await instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 0, peers: [] });
     });
@@ -270,7 +275,7 @@ describe('modules/loader', () => {
     it('should return instance.network with two peers in  peersArray prop', async () => {
       peersModuleStub.enqueueResponse('list', { peers });
 
-      let ret = await instance.getNetwork();
+      const ret = await instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 2, peers });
     });
@@ -279,7 +284,7 @@ describe('modules/loader', () => {
       peers[1].height += 3;
       peersModuleStub.enqueueResponse('list', { peers });
 
-      let ret = await instance.getNetwork();
+      const ret = await instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 4, peers: [peers[1], peers[0]] });
     });
@@ -288,7 +293,7 @@ describe('modules/loader', () => {
       peers[0].height = 10;
       peersModuleStub.enqueueResponse('list', { peers });
 
-      let ret = await instance.getNetwork();
+      const ret = await instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 10, peers: [peers[0]] });
       expect(peersLogicStub.stubs.create.calledOnce).to.be.true;
@@ -406,7 +411,7 @@ describe('modules/loader', () => {
       expect(loadTransactionsStub.firstCall.args.length).to.be.equal(0);
     });
 
-    it('should call logger.warn when instancce.loadTransactions throw error', async () => {
+    it('should call logger.warn when instance.loadTransactions throw error', async () => {
       loadTransactionsStub.rejects(error);
 
       await instance.onPeersReady();
@@ -662,7 +667,7 @@ describe('modules/loader', () => {
       await instance.loadBlockChain();
 
       expect(loggerStub.stubs.info.getCall(0).calledBefore(
-        roundsLogicStub.stubs.calcRound.getCall(0),
+        roundsLogicStub.stubs.calcRound.getCall(0)
       )).is.true;
 
     });
@@ -841,7 +846,7 @@ describe('modules/loader', () => {
       expect(dbStub.stubs.task.secondCall.args[0]).to.be.a('function');
     });
 
-    it('should return instance.laod if res[1].length > 0', async () => {
+    it('should return instance.load if res[1].length > 0', async () => {
       dbStub.reset();
       res[1].push({});
       dbStub.enqueueResponse('task', Promise.resolve(results));
@@ -859,7 +864,7 @@ describe('modules/loader', () => {
       expect(ret).to.be.deep.equal(loadResult);
     });
 
-    it('should return instance.laod if res[2].length === 0', async () => {
+    it('should return instance.load if res[2].length === 0', async () => {
       dbStub.reset();
       res[2].pop();
       dbStub.enqueueResponse('task', Promise.resolve(results));
@@ -1285,8 +1290,7 @@ describe('modules/loader', () => {
     it('should call wait if typeof(randomPeer) === undefined', async () => {
       getRandomPeerStub.onCall(0).resolves(undefined);
       getRandomPeerStub.onCall(1).resolves(randomPeer);
-      let waitStub = sandbox.stub();
-      LoaderModuleRewire.__set__('_1.wait', waitStub);
+      const waitStub = sandbox.stub(helpers, 'wait');
 
       await (instance as any).loadBlocksFromNetwork();
 
@@ -1355,7 +1359,7 @@ describe('modules/loader', () => {
       });
 
       it('should call logger.error twice and return after if blocksProcessModule.getCommonBlock thro error', async () => {
-        let error = new Error('error');
+        const error = new Error('error');
         blocksProcessModuleStub.enqueueResponse('getCommonBlock', Promise.reject(error));
 
         await (instance as any).loadBlocksFromNetwork();
@@ -1390,7 +1394,7 @@ describe('modules/loader', () => {
     });
 
     it('should call logger.error twice and return after if blocksProcessModule.loadBlocksFromPeer thro error', async () => {
-      let error = new Error('error');
+      const error = new Error('error');
       blocksProcessModuleStub.reset();
       blocksProcessModuleStub.enqueueResponse('loadBlocksFromPeer', Promise.reject(error));
       blocksProcessModuleStub.enqueueResponse('loadBlocksFromPeer', Promise.resolve(lastValidBlock));
@@ -1795,10 +1799,8 @@ describe('modules/loader', () => {
 
       beforeEach(() => {
         syncIntervalId               = {
-          ref  : () => {
-          },
-          unref: () => {
-          },
+          ref  : () => void(0),
+          unref: () => void(0),
         };
         (inst as any).syncIntervalId = syncIntervalId;
       });
@@ -1852,7 +1854,6 @@ describe('modules/loader', () => {
 
         timers.tick(1000);
 
-
         expect(loggerStub.stubs.trace.calledWith('Sync trigger')).to.be.true;
         timers.restore();
       });
@@ -1867,10 +1868,8 @@ describe('modules/loader', () => {
 
     it('check if turnOn === true && this.syncIntervalId', () => {
       (inst as any).syncIntervalId = {
-        ref  : () => {
-        },
-        unref: () => {
-        },
+        ref  : () => void(0),
+        unref: () => void(0),
       };
 
       (inst as any).syncTrigger(true);
@@ -1889,13 +1888,13 @@ describe('modules/loader', () => {
     let appState: IAppStateStub;
     let syncStub: SinonStub;
 
-    let last_receipt;
+    let lastReceipt;
 
     beforeEach(() => {
-      last_receipt = 'last_receipt';
+      lastReceipt = 'lastReceipt';
 
       lastReceiptStubs = {
-        get    : sandbox.stub().returns(last_receipt),
+        get    : sandbox.stub().returns(lastReceipt),
         isStale: sandbox.stub().returns(true),
       };
       jobsQueueStub    = container.get<JobsQueueStub>(Symbols.helpers.jobsQueue);
@@ -1928,14 +1927,14 @@ describe('modules/loader', () => {
       expect(loggerStub.stubs.trace.secondCall.args.length).to.be.equal(2);
       expect(loggerStub.stubs.trace.secondCall.args[0]).to.be.equal('Sync timer trigger');
       expect(loggerStub.stubs.trace.secondCall.args[1]).to.be.deep.equal({
-        last_receipt: last_receipt,
+        last_receipt: lastReceipt,
         loaded      : true,
         syncing     : true,
       });
     });
 
     it('should call jobsQueue.register', async () => {
-      let jobsQueueRegisterStub = (instance as any).jobsQueue.register;
+      const jobsQueueRegisterStub = (instance as any).jobsQueue.register;
       await (instance as any).syncTimer();
 
       expect(jobsQueueRegisterStub.calledOnce).to.be.true;

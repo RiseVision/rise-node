@@ -1,9 +1,10 @@
 'use strict';
+import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as rewire from 'rewire';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy } from 'sinon';
+import * as helpers from '../../../../src/helpers';
 import { TransactionType } from '../../../../src/helpers';
 import { MultiSignatureTransaction } from '../../../../src/logic/transactions';
 import {
@@ -17,8 +18,6 @@ const assertArrays = require('chai-arrays');
 const expect = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
-
-const rewiredMultiSignatureTransaction = rewire('../../../../src/logic/transactions/createmultisig');
 
 // tslint:disable no-unused-expression
 describe('logic/transactions/createmultisig', () => {
@@ -79,7 +78,7 @@ describe('logic/transactions/createmultisig', () => {
       id    : '13191140260435645922',
     };
 
-    instance = new rewiredMultiSignatureTransaction.MultiSignatureTransaction();
+    instance = new MultiSignatureTransaction();
 
     (instance as any).io               = socketIOStub;
     (instance as any).schema           = zSchemaStub;
@@ -105,32 +104,32 @@ describe('logic/transactions/createmultisig', () => {
   });
 
   describe('getBytes', () => {
-    const originalByteBuffer = rewiredMultiSignatureTransaction.__get__('ByteBuffer');
-    const expectedBuffer     = Buffer.from('');
-    let byteBufferStub: ByteBufferStub;
-    let bbStubCreator;
+    const expectedBuffer = Buffer.from('');
+    let sequence: any[];
+    let lastBB: any;
+    const toRestore      = {} as any;
 
+    before(() => {
+      toRestore.writeByte = ByteBuffer.prototype.writeByte;
+      toRestore.toBuffer  = ByteBuffer.prototype.toBuffer;
+      toRestore.flip      = ByteBuffer.prototype.flip;
+    });
     beforeEach(() => {
-      byteBufferStub = new ByteBufferStub();
-      byteBufferStub.stubs.toBuffer.returns(expectedBuffer);
-      const creatorFn = (capacity?: number, littleEndian?: boolean, noAssert?: boolean) => {
-        if (capacity) {
-          byteBufferStub.capacity = capacity;
-        }
-        if (littleEndian) {
-          byteBufferStub.littleEndian = littleEndian;
-        }
-        if (noAssert) {
-          byteBufferStub.noAssert = noAssert;
-        }
-        return byteBufferStub;
+      lastBB = false;
+      sequence                                = [];
+      (ByteBuffer.prototype as any).writeByte = function(b) {
+        sequence.push(b);
+        lastBB = this;
       };
-      bbStubCreator   = sandbox.spy(creatorFn);
-      rewiredMultiSignatureTransaction.__set__('ByteBuffer', bbStubCreator);
+      ByteBuffer.prototype.flip               = sandbox.stub();
+      ByteBuffer.prototype.toBuffer           = sandbox.stub().returns(expectedBuffer);
     });
 
-    afterEach(() => {
-      rewiredMultiSignatureTransaction.__set__('ByteBuffer', originalByteBuffer);
+    after(() => {
+      (ByteBuffer.prototype as any).writeByte = toRestore.writeByte;
+      (ByteBuffer.prototype as any).writeInt  = toRestore.writeInt;
+      (ByteBuffer.prototype as any).writeLong = toRestore.writeLong;
+      ByteBuffer.prototype.flip               = toRestore.flip;
     });
 
     it('should call Buffer.from', () => {
@@ -143,22 +142,19 @@ describe('logic/transactions/createmultisig', () => {
 
     it('should create a ByteBuffer', () => {
       instance.getBytes(tx, false, false);
-      expect(bbStubCreator.calledOnce).to.be.true;
-      expect(bbStubCreator.firstCall.args[0]).to.be.at.least(2);
-      expect(bbStubCreator.firstCall.args[1]).to.be.true;
+      expect(lastBB).to.be.instanceof(ByteBuffer);
     });
 
     it('should write bytes to bytebuffer', () => {
       instance.getBytes(tx, false, false);
-      expect(byteBufferStub.spies.writeByte.called).to.be.true;
-      expect(byteBufferStub.sequence[0]).to.be.equal(tx.asset.multisignature.min);
-      expect(byteBufferStub.sequence[1]).to.be.equal(tx.asset.multisignature.lifetime);
-      expect(byteBufferStub.spies.flip.calledOnce).to.be.true;
+      expect(sequence[0]).to.be.equal(tx.asset.multisignature.min);
+      expect(sequence[1]).to.be.equal(tx.asset.multisignature.lifetime);
+      expect(lastBB.flip.calledOnce).to.be.true;
     });
 
     it('should call toBuffer and return a Buffer', () => {
       const retVal = instance.getBytes(tx, false, false);
-      expect(byteBufferStub.stubs.toBuffer.calledOnce).to.be.true;
+      expect(lastBB.toBuffer.calledOnce).to.be.true;
       expect(retVal).to.be.deep.equal(expectedBuffer);
     });
   });
@@ -178,14 +174,12 @@ describe('logic/transactions/createmultisig', () => {
 
     it('should throw when asset.multisignature.keygroup is not an array', async () => {
       tx.asset.multisignature.keysgroup = null;
-      await expect(instance.verify(tx, sender)).to.be.
-      rejectedWith('Invalid multisignature keysgroup. Must be an array');
+      await expect(instance.verify(tx, sender)).to.be.rejectedWith('Invalid multisignature keysgroup. Must be an array');
     });
 
     it('should throw when asset.multisignature.keygroup is empty', async () => {
       tx.asset.multisignature.keysgroup = [];
-      await expect(instance.verify(tx, sender)).to.be.
-      rejectedWith('Invalid multisignature keysgroup. Must not be empty');
+      await expect(instance.verify(tx, sender)).to.be.rejectedWith('Invalid multisignature keysgroup. Must not be empty');
     });
 
     it('should throw when min and max are incompatible with constants', async () => {
@@ -195,8 +189,7 @@ describe('logic/transactions/createmultisig', () => {
 
     it('should throw when min is more than keysgroup length', async () => {
       tx.asset.multisignature.min = tx.asset.multisignature.keysgroup.length + 1;
-      await expect(instance.verify(tx, sender)).to.be.
-      rejectedWith('Invalid multisignature min. Must be less than or equal to keysgroup size');
+      await expect(instance.verify(tx, sender)).to.be.rejectedWith('Invalid multisignature min. Must be less than or equal to keysgroup size');
     });
 
     it('should throw when lifetime is incompatible with constants', async () => {
@@ -235,14 +228,12 @@ describe('logic/transactions/createmultisig', () => {
       transactionLogicStub.reset();
       transactionLogicStub.enqueueResponse('verifySignature', false);
       transactionLogicStub.enqueueResponse('verifySignature', false);
-      await expect(instance.verify(tx, sender)).to.be.
-      rejectedWith('Failed to verify signature in multisignature keysgroup');
+      await expect(instance.verify(tx, sender)).to.be.rejectedWith('Failed to verify signature in multisignature keysgroup');
     });
 
     it('should throw if keysgroup contains the sender', async () => {
       tx.asset.multisignature.keysgroup[0] = '+' + sender.publicKey;
-      await expect(instance.verify(tx, sender)).to.be.
-      rejectedWith('Invalid multisignature keysgroup. Cannot contain sender');
+      await expect(instance.verify(tx, sender)).to.be.rejectedWith('Invalid multisignature keysgroup. Cannot contain sender');
     });
 
     it('should throw if keysgroup contains an invalid key', async () => {
@@ -263,8 +254,7 @@ describe('logic/transactions/createmultisig', () => {
       zSchemaStub.enqueueResponse('validate', true);
       await instance.verify(tx, sender);
       expect(zSchemaStub.stubs.validate.callCount).to.be.equal(tx.asset.multisignature.keysgroup.length);
-      expect(zSchemaStub.stubs.validate.firstCall.args[0]).to.be.
-      equal(tx.asset.multisignature.keysgroup[0].substring(1));
+      expect(zSchemaStub.stubs.validate.firstCall.args[0]).to.be.equal(tx.asset.multisignature.keysgroup[0].substring(1));
       expect(zSchemaStub.stubs.validate.firstCall.args[1]).to.be.deep.equal({ format: 'publicKey' });
     });
 
@@ -275,8 +265,7 @@ describe('logic/transactions/createmultisig', () => {
 
     it('should throw if duplicate pubKey is found', async () => {
       tx.asset.multisignature.keysgroup[1] = tx.asset.multisignature.keysgroup[0];
-      await expect(instance.verify(tx, sender)).to.be.
-      rejectedWith('Encountered duplicate public key in multisignature keysgroup');
+      await expect(instance.verify(tx, sender)).to.be.rejectedWith('Encountered duplicate public key in multisignature keysgroup');
     });
 
     it('should resolve on successful execution', async () => {
@@ -313,10 +302,8 @@ describe('logic/transactions/createmultisig', () => {
 
     it('should call accountLogic.generateAddressByPublicKey for each key', async () => {
       await instance.apply(tx, block, sender);
-      expect(accountLogicStub.stubs.generateAddressByPublicKey.callCount).to.be.
-      equal(tx.asset.multisignature.keysgroup.length);
-      expect(accountLogicStub.stubs.generateAddressByPublicKey.firstCall.args[0]).to.be.
-      equal(tx.asset.multisignature.keysgroup[0].substring(1));
+      expect(accountLogicStub.stubs.generateAddressByPublicKey.callCount).to.be.equal(tx.asset.multisignature.keysgroup.length);
+      expect(accountLogicStub.stubs.generateAddressByPublicKey.firstCall.args[0]).to.be.equal(tx.asset.multisignature.keysgroup[0].substring(1));
     });
 
     it('should call accountsModule.setAccountAndGet for each key', async () => {
@@ -330,7 +317,6 @@ describe('logic/transactions/createmultisig', () => {
   });
 
   describe('undo', () => {
-    let rewiredHelpers;
     let reverseSpy: SinonSpy;
 
     beforeEach(() => {
@@ -338,8 +324,7 @@ describe('logic/transactions/createmultisig', () => {
       roundsLogicStub.stubs.calcRound.returns(123);
       accountLogicStub.stubs.generateAddressByPublicKey.returns('123123124125R');
       accountsModuleStub.stubs.setAccountAndGet.resolves();
-      rewiredHelpers = rewiredMultiSignatureTransaction.__get__('_1');
-      reverseSpy     = sandbox.spy(rewiredHelpers.Diff, 'reverse');
+      reverseSpy = sandbox.spy(helpers.Diff, 'reverse');
     });
 
     afterEach(() => {
@@ -402,13 +387,11 @@ describe('logic/transactions/createmultisig', () => {
   });
 
   describe('undoUnconfirmed', () => {
-    let rewiredHelpers;
     let reverseSpy: SinonSpy;
 
     beforeEach(() => {
       accountLogicStub.stubs.merge.returns(true);
-      rewiredHelpers = rewiredMultiSignatureTransaction.__get__('_1');
-      reverseSpy     = sandbox.spy(rewiredHelpers.Diff, 'reverse');
+      reverseSpy = sandbox.spy(helpers.Diff, 'reverse');
     });
 
     afterEach(() => {
@@ -457,7 +440,7 @@ describe('logic/transactions/createmultisig', () => {
 
     it('should return the tx', () => {
       zSchemaStub.enqueueResponse('validate', true);
-      const retVal                           = instance.objectNormalize(tx);
+      const retVal = instance.objectNormalize(tx);
       expect(retVal).to.be.deep.equal(tx);
     });
   });
@@ -490,13 +473,17 @@ describe('logic/transactions/createmultisig', () => {
 
   describe('dbSave', () => {
     it('should return the expected object', () => {
-      expect(instance.dbSave(tx)).to.be.deep.equal({ table: 'multisignatures',
-        fields: [ 'min', 'lifetime', 'keysgroup', 'transactionId' ],
-        values:
-          { min: 2,
-            lifetime: 33,
-            keysgroup: '+key1,+key2',
-            transactionId: '8139741256612355994' } }
+      expect(instance.dbSave(tx)).to.be.deep.equal({
+          table : 'multisignatures',
+          fields: ['min', 'lifetime', 'keysgroup', 'transactionId'],
+          values:
+            {
+              min          : 2,
+              lifetime     : 33,
+              keysgroup    : '+key1,+key2',
+              transactionId: '8139741256612355994'
+            }
+        }
       );
     });
   });
@@ -518,7 +505,7 @@ describe('logic/transactions/createmultisig', () => {
 
     it('return false if no sender.multisignatures and signatures arrays lengths are not the same', () => {
       sender.multisignatures = ['1', '2', '3'];
-      tx.signatures = ['1', '2'];
+      tx.signatures          = ['1', '2'];
       expect(instance.ready(tx, sender)).to.be.false;
     });
 
@@ -528,7 +515,7 @@ describe('logic/transactions/createmultisig', () => {
     });
 
     it('return true if tx.signatures are more or equal to the sender.multimin', () => {
-      tx.signatures = ['1', '2', '3'];
+      tx.signatures   = ['1', '2', '3'];
       sender.multimin = 2;
       expect(instance.ready(tx, sender)).to.be.false;
     });

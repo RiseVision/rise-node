@@ -1,9 +1,10 @@
 import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as rewire from 'rewire';
+import * as crypto from 'crypto';
 import { SinonFakeTimers, SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
+import * as helpers from '../../../src/helpers';
 import { catchToLoggerAndRemapError, constants } from '../../../src/helpers';
 import { ForgeModule } from '../../../src/modules';
 import {
@@ -22,7 +23,6 @@ import {
 import { CreateHashSpy } from '../../stubs/utils/CreateHashSpy';
 
 chai.use(chaiAsPromised);
-const rewiredForgeModule = rewire('../../../src/modules/forge');
 
 // tslint:disable no-unused-expression
 describe('modules/forge', () => {
@@ -70,7 +70,7 @@ describe('modules/forge', () => {
       }),
     };
 
-    instance = new rewiredForgeModule.ForgeModule();
+    instance = new ForgeModule();
     instance = instance as any;
 
     instance.enabledKeys         = {};
@@ -89,7 +89,6 @@ describe('modules/forge', () => {
     instance.transactionsModule  = transactionsModuleStub;
     instance.blocksProcessModule = blocksProcessModuleStub;
 
-    const crypto               = rewiredForgeModule.__get__('crypto');
     createHashSpy              = new CreateHashSpy(crypto, sandbox);
     blocksModuleStub.lastBlock = {
       height              : 12422,
@@ -493,7 +492,6 @@ describe('modules/forge', () => {
         getBlockSlotDataStub = sandbox.stub(instance, 'getBlockSlotData').resolves({ time: 11111, keypair: {} });
         broadcasterLogicStub.enqueueResponse('getPeers', Promise.resolve());
         blocksProcessModuleStub.enqueueResponse('generateBlock', Promise.resolve());
-        const helpers = rewiredForgeModule.__get__('helpers_1');
         catcherStub   = sandbox.stub(helpers, 'catchToLoggerAndRemapError');
         catcherStub.callsFake((rejectString) => {
           return (err: Error) => {
