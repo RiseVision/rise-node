@@ -288,6 +288,25 @@ describe('modules/blocks/verify', () => {
       expect(res.verified).is.false;
       expect(res.errors).to.contain('Invalid block timestamp');
     });
+    it('previsious block is valid(check of Fork type 1)', async ()=>{
+      slots.enqueueResponse('getTime', 0);
+      block.previousBlock = (inst as any).blocksModule.lastBlock.id;
+      slots.stubs.getSlotNumber.onFirstCall().returns(1); // provided block slot
+      slots.stubs.getSlotNumber.onSecondCall().returns(2); // last block slot
+      slots.stubs.getSlotNumber.onThirdCall().returns(2); // cur slot
+      const res = await inst.verifyBlock(block);
+      expect(res.verified).is.false;
+      expect(res.errors).to.be.not.contain('Invalid previous block: 2 expected 1');
+    });
+    it('block timestamp is valid', async ()=>{
+      slots.enqueueResponse('getTime', 0);
+      slots.stubs.getSlotNumber.onFirstCall().returns(1); // provided block slot
+      slots.stubs.getSlotNumber.onSecondCall().returns(0); // last block slot
+      slots.stubs.getSlotNumber.onThirdCall().returns(2); // cur slot
+      const res = await inst.verifyBlock(block);
+      expect(res.verified).is.false;
+      expect(res.errors).to.be.not.contain('Invalid block timestamp');
+    });
   });
 
   describe('processBlock', () => {
