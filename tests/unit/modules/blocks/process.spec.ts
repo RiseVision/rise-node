@@ -626,8 +626,7 @@ describe('modules/blocks/process', () => {
       });
     });
 
-    it('Block already processed where block.id === lastBlock.id',async ()=>{
-      const loggerStub    = container.get(Symbols.helpers.logger);
+    it('Block already processed where block.id === lastBlock.id', async () => {
       blocksModule.lastBlock = {id: '1', height: 10, timestamp: 1} as any;
       appState.stubs.get.returns(false);
       await inst.onReceiveBlock({id: '1'} as any);
@@ -635,7 +634,7 @@ describe('modules/blocks/process', () => {
       expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Block already processed');
       expect(loggerStub.stubs.debug.firstCall.args[1]).to.be.equal('1');
     });
-    it('should call logger.warn if discarded block that does not match with current chain', async()=>{
+    it('should call logger.warn if discarded block that does not match with current chain', async () => {
       const roundsLogic = container.get(Symbols.logic.rounds);
       roundsLogic.enqueueResponse('calcRound', 'round');
       blocksModule.lastBlock = {id: '12', height: 10, timestamp: 1} as any;
