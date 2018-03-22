@@ -50,3 +50,11 @@ export const create2ndSigTX = (from: LiskWallet, fee: number, obj: any = {}): IT
   Object.keys(obj).forEach((k) => t.set(k as any, obj[k]));
   return t.withFees(fee).sign(from);
 };
+
+export const createMultiSigTX = (from: LiskWallet, fee: number, obj: any = {}): ITransaction => {
+  const t = new dposOffline.transactions.MultiSignatureTx(obj.asset)
+    // .withRecipientId(from.address)
+    .withTimestamp(0);
+  Object.keys(obj).forEach((k) => t.set(k as any, obj[k]));
+  return t.withFees(fee).sign(from);
+};

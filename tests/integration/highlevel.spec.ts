@@ -2,19 +2,28 @@ import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { LiskWallet } from 'dpos-offline';
-import { ITransactionPoolLogic } from '../../src/ioc/interfaces/logic';
-import { IAccountsModule, IBlocksModule, ISystemModule, ITransactionsModule } from '../../src/ioc/interfaces/modules';
+import { ITransactionLogic, ITransactionPoolLogic } from '../../src/ioc/interfaces/logic';
+import {
+  IAccountsModule,
+  IBlocksModule,
+  ISystemModule,
+  ITransactionsModule,
+  ITransportModule
+} from '../../src/ioc/interfaces/modules';
 import { Symbols } from '../../src/ioc/symbols';
 import initializer from './common/init';
 import {
   confirmTransactions,
+  createMultiSignTransaction,
   createRandomAccountWithFunds,
   createRandomWallet,
-  createRegDelegateTransaction, createSecondSignTransaction,
+  createRegDelegateTransaction,
+  createSecondSignTransaction,
   createSendTransaction,
   createVoteTransaction,
   getRandomDelegateWallet
 } from './common/utils';
+import { Ed } from '../../src/helpers';
 
 // tslint:disable no-unused-expression
 chai.use(chaiAsPromised);
@@ -26,19 +35,26 @@ describe('highlevel checks', () => {
   let accModule: IAccountsModule;
   let txModule: ITransactionsModule;
   let txPool: ITransactionPoolLogic;
+  let transportModule: ITransportModule;
+  let txLogic: ITransactionLogic;
+  let ed: Ed;
   beforeEach(async () => {
     const { wallet: randomAccount } = await createRandomAccountWithFunds(funds);
     senderAccount                   = randomAccount;
+    ed                              = initializer.appManager.container.get(Symbols.helpers.ed);
     blocksModule                    = initializer.appManager.container.get(Symbols.modules.blocks);
     accModule                       = initializer.appManager.container.get(Symbols.modules.accounts);
     txModule                        = initializer.appManager.container.get(Symbols.modules.transactions);
+    transportModule                 = initializer.appManager.container.get(Symbols.modules.transport);
     txPool                          = initializer.appManager.container.get(Symbols.logic.transactionPool);
+    txLogic                         = initializer.appManager.container.get(Symbols.logic.transaction);
   });
   afterEach(async () => {
     await initializer.rawDeleteBlocks(blocksModule.lastBlock.height - 1);
   });
 
   describe('txs', () => {
+
     describe('send', () => {
       it('should not allow spending all the money the account have (fees)', async () => {
         const tx = await createSendTransaction(1, funds, senderAccount, '1R');
@@ -84,6 +100,7 @@ describe('highlevel checks', () => {
         }
       });
     });
+
     describe('votes', () => {
       it('should not be allowed to vote for 2 different account in same block', async () => {
         const delegate1 = getRandomDelegateWallet();
@@ -188,6 +205,7 @@ describe('highlevel checks', () => {
         expect(blocksModule.lastBlock.height).is.eq(4);
       });
     });
+
     describe('delegate', () => {
       it('should allow registering a delegate', async () => {
         await createRegDelegateTransaction(1, senderAccount, 'vekexasia');
@@ -258,16 +276,16 @@ describe('highlevel checks', () => {
 
     describe('secondSignature', () => {
       it('should allow secondSignature creation', async () => {
-        const pk = createRandomWallet().publicKey;
-        const tx = await createSecondSignTransaction(1, senderAccount, pk);
+        const pk  = createRandomWallet().publicKey;
+        const tx  = await createSecondSignTransaction(1, senderAccount, pk);
         const acc = await accModule.getAccount({ address: senderAccount.address });
         expect(acc.secondPublicKey).to.be.eq(pk);
         expect(acc.secondSignature).to.be.eq(1);
       });
       it('should not allow 2 second signature in 2 diff blocks', async () => {
-        const pk = createRandomWallet().publicKey;
+        const pk  = createRandomWallet().publicKey;
         const pk2 = createRandomWallet().publicKey;
-        const tx = await createSecondSignTransaction(1, senderAccount, pk);
+        const tx  = await createSecondSignTransaction(1, senderAccount, pk);
         const tx2 = await createSecondSignTransaction(1, senderAccount, pk2);
         const acc = await accModule.getAccount({ address: senderAccount.address });
         expect(acc.secondPublicKey).to.be.eq(pk);
@@ -275,7 +293,7 @@ describe('highlevel checks', () => {
         expect(blocksModule.lastBlock.transactions).is.empty;
       });
       it('should not allow 2 second signature in same block', async () => {
-        const pk = createRandomWallet().publicKey;
+        const pk  = createRandomWallet().publicKey;
         const pk2 = createRandomWallet().publicKey;
         const txs = [
           await createSecondSignTransaction(0, senderAccount, pk),
@@ -286,6 +304,76 @@ describe('highlevel checks', () => {
         expect(acc.secondPublicKey).to.be.eq(pk2);
         expect(acc.secondSignature).to.be.eq(1);
         expect(blocksModule.lastBlock.transactions.length).is.eq(1);
+      });
+    });
+
+    describe('multiSignature', () => {
+      it('should create multisignature account', async () => {
+        const keys     = new Array(3).fill(null).map(() => createRandomWallet());
+        const signedTx = createMultiSignTransaction(senderAccount, 3, keys.map((k) => `+${k.publicKey}`));
+        await txModule.receiveTransactions([signedTx], false, false);
+        await initializer.rawMineBlocks(1);
+        // In pool => valid and not included in block.
+        expect(txPool.multisignature.has(signedTx.id)).is.true;
+        // let it sign by all.
+
+        const signatures = keys.map((k) => ed.sign(
+          txLogic.getHash(signedTx, true, false),
+          {
+            privateKey: Buffer.from(k.privKey, 'hex'),
+            publicKey : Buffer.from(k.publicKey, 'hex'),
+          }
+        ).toString('hex'));
+
+        await transportModule.receiveSignatures(signatures.map((sig) => ({
+          signature  : sig,
+          transaction: signedTx.id,
+        })));
+
+        await initializer.rawMineBlocks(1);
+
+        const acc = await accModule.getAccount({ address: senderAccount.address });
+        expect(acc.multisignatures).to.be.an('array');
+
+        for (const k of keys) {
+          expect(acc.multisignatures).to.contain(k.publicKey);
+        }
+        expect(acc.multimin).to.be.eq(3);
+        expect(acc.multilifetime).to.be.eq(24);
+      });
+      it('should not allow min > than keys', async () => {
+        const keys     = new Array(3).fill(null).map(() => createRandomWallet());
+        const signedTx = createMultiSignTransaction(senderAccount, 4, keys.map((k) => `+${k.publicKey}`));
+        return expect(txModule.receiveTransactions([signedTx], false, false)).to.be
+          .rejectedWith('Invalid multisignature min. Must be less than or equal to keysgroup size');
+      });
+      it('should keep tx in multisignature tx pool until all signature arrives, even if min is 2', async () => {
+        const keys     = new Array(3).fill(null).map(() => createRandomWallet());
+        const signedTx = createMultiSignTransaction(senderAccount, 2, keys.map((k) => `+${k.publicKey}`));
+        await txModule.receiveTransactions([signedTx], false, false);
+        await initializer.rawMineBlocks(1);
+        // In pool => valid and not included in block.
+        expect(txPool.multisignature.has(signedTx.id)).is.true;
+
+        // let it sign by all.
+        const signatures = keys.map((k) => ed.sign(
+          txLogic.getHash(signedTx, true, false),
+          {
+            privateKey: Buffer.from(k.privKey, 'hex'),
+            publicKey : Buffer.from(k.publicKey, 'hex'),
+          }
+        ).toString('hex'));
+
+        for (let i = 0; i < signatures.length - 1; i++) {
+          await transportModule.receiveSignatures([{
+            signature: signatures[i],
+            transaction: signedTx.id,
+          }]);
+          await initializer.rawMineBlocks(1);
+          const acc = await accModule.getAccount({ address: senderAccount.address });
+          expect(acc.multisignatures).to.be.null;
+          expect(txPool.multisignature.has(signedTx.id)).is.true;
+        }
       });
     });
 

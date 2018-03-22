@@ -32,6 +32,13 @@ export class InnerTXQueue<T = { receivedAt: Date }> {
     }
   }
 
+  public getPayload(tx: IBaseTransaction<any>): T {
+    if (!this.has(tx.id)) {
+      return undefined;
+    }
+    return this.payload[tx.id];
+  }
+
   public add(tx: IBaseTransaction<any>, payload?: T) {
     if (!this.has(tx.id)) {
       this.transactions.push(tx);
@@ -56,12 +63,12 @@ export class InnerTXQueue<T = { receivedAt: Date }> {
   }
 
   public list(reverse: boolean, limit?: number,
-              filterFn?: (tx: IBaseTransaction<any>) => boolean): Array<IBaseTransaction<any>> {
+              filterFn?: (tx: IBaseTransaction<any>, payload: T) => boolean): Array<IBaseTransaction<any>> {
     let res = this.transactions
       .filter((tx) => typeof(tx) !== 'undefined');
 
     if (typeof(filterFn) === 'function') {
-      res = res.filter(filterFn);
+      res = res.filter((tx) => filterFn(tx, this.payload[tx.id]));
     }
 
     if (reverse) {
@@ -74,7 +81,7 @@ export class InnerTXQueue<T = { receivedAt: Date }> {
   }
 
   // tslint:disable-next-line
-  public listWithPayload(reverse: boolean, limit?: number, filterFn?: (tx: IBaseTransaction<any>) => boolean): Array<{ tx: IBaseTransaction<any>, payload: T }> {
+  public listWithPayload(reverse: boolean, limit?: number, filterFn?: (tx: IBaseTransaction<any>, payload: T) => boolean): Array<{ tx: IBaseTransaction<any>, payload: T }> {
     const txs   = this.list(reverse, limit, filterFn);
     const toRet = [];
     for (const tx of txs) {
@@ -91,7 +98,7 @@ export class TransactionPool implements ITransactionPoolLogic {
   public unconfirmed    = new InnerTXQueue();
   public bundled        = new InnerTXQueue();
   public queued         = new InnerTXQueue();
-  public multisignature = new InnerTXQueue();
+  public multisignature = new InnerTXQueue<{ receivedAt: Date, ready: boolean }>();
 
   // generic
   @inject(Symbols.generic.appConfig)
@@ -142,13 +149,14 @@ export class TransactionPool implements ITransactionPoolLogic {
    * Queue a transaction or throws an error if it couldnt
    */
   public queueTransaction(tx: IBaseTransaction<any>, bundled: boolean): void {
-    const payload = { receivedAt: new Date() };
+    const payload: {receivedAt: Date, ready?: boolean} = { receivedAt: new Date() };
 
     let queue: InnerTXQueue;
     if (bundled) {
       queue = this.bundled;
     } else if (tx.type === TransactionType.MULTI || Array.isArray(tx.signatures)) {
       queue = this.multisignature;
+      payload.ready = false;
     } else {
       queue = this.queued;
     }
@@ -177,11 +185,11 @@ export class TransactionPool implements ITransactionPoolLogic {
       true,
       5,
       // tslint:disable-next-line
-      (tx) => (tx as any)['ready']);
+      (tx, payload) => payload.ready);
 
     const inQueue = this.queued.listWithPayload(true, Math.max(0, spare - multignatures.length));
 
-    const txsAndPayloads = multignatures.concat(inQueue);
+    const txsAndPayloads = multignatures.concat(inQueue as any);
     txsAndPayloads.forEach(({tx, payload}) => {
       // Remove the tx from either multisig or queued
       this.multisignature.remove(tx.id);
@@ -225,9 +233,9 @@ export class TransactionPool implements ITransactionPoolLogic {
   public expireTransactions(): string[] {
     const unconfirmed    = this.unconfirmed.listWithPayload(true);
     const queued         = this.queued.listWithPayload(true);
-    const multisignature = this.multisignature.listWithPayload(true);
+    const multi          = this.multisignature.listWithPayload(true);
 
-    const all = unconfirmed.concat(queued).concat(multisignature);
+    const all = unconfirmed.concat(queued).concat(multi);
 
     const ids: string[] = [];
     for (const txP of all) {

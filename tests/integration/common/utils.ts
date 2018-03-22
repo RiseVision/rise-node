@@ -10,6 +10,7 @@ import { ISystemModule, ITransactionsModule } from '../../../src/ioc/interfaces/
 import { Symbols } from '../../../src/ioc/symbols';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import * as txCrafter from '../../utils/txCrafter';
+import { IMultiSignatureAsset } from 'dpos-offline/src/trxTypes/MultiSignature';
 
 const delegates = require('../genesisDelegates.json');
 
@@ -80,6 +81,24 @@ export const createSecondSignTransaction = async (confirmations: number, from: L
   if (confirmations > 0) {
     await confirmTransactions([tx], confirmations);
   }
+  return tx;
+};
+
+export const createMultiSignTransaction = (from: LiskWallet, min: number, keysgroup: publicKey[], lifetime: number = 24) => {
+  const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
+  const tx = txCrafter.createMultiSigTX(
+    from,
+    systemModule.getFees().fees.secondsignature,
+    {
+      asset: {
+        multisignature: {
+          keysgroup,
+          lifetime,
+          min,
+        },
+      },
+    });
+
   return tx;
 };
 
