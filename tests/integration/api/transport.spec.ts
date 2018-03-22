@@ -190,7 +190,8 @@ describe('api/transport', () => {
     it('should return all transactions in queue');
   });
 
-  describe('/transactions [POST]', () => {
+  describe('/transactions [POST]', function () {
+    this.timeout(10000);
     let account: LiskWallet;
     let blocksModule: IBlocksModule;
     let txModule: ITransactionsModule;
