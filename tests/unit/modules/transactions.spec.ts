@@ -2,7 +2,6 @@ import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
-import * as rewire from 'rewire';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy } from 'sinon';
 import * as helpers from '../../../src/helpers';

@@ -47,7 +47,7 @@ let promiseRetryStub: any;
 // tslint:disable no-unused-expression max-line-length
 // tslint:disable no-unused-expression object-literal-sort-keys
 
-const LoaderModuleRewire = proxyquire('../../../src/modules/loader',  {
+const ProxyLoaderModule = proxyquire('../../../src/modules/loader',  {
   'promise-retry': (...args) => {
     return promiseRetryStub.apply(this, args);
   },
@@ -123,7 +123,7 @@ describe('modules/loader', () => {
     container.bind(Symbols.modules.transactions).to(TransactionsModuleStub).inSingletonScope();
     container.bind(Symbols.modules.transport).to(TransportModuleStub).inSingletonScope();
 
-    container.bind(Symbols.modules.loader).to(LoaderModuleRewire.LoaderModule);
+    container.bind(Symbols.modules.loader).to(ProxyLoaderModule.LoaderModule);
 
     instance = container.get(Symbols.modules.loader);
   });
@@ -1766,7 +1766,6 @@ describe('modules/loader', () => {
   });
 
   describe('.syncTrigger', () => {
-    // We cannot use rewire here due to incompatibility with FakeTimers.
     let loggerStub: LoggerStub;
     let appStateStub: AppStateStub;
     let socketIoStub: SocketIOStub;

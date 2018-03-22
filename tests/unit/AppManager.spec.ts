@@ -1,13 +1,14 @@
 import * as chai from 'chai';
 import * as fs from 'fs';
+import * as http from 'http';
 import { Container } from 'inversify';
 import * as path from 'path';
-import * as rewire from 'rewire';
+import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import { allControllers, APIErrorHandler } from '../../src/apis';
 import { AppManager } from '../../src/AppManager';
-import { ExceptionsManager } from '../../src/helpers';
+import { Bus, cache, Database, Ed,  ExceptionsManager, JobsQueue, Sequence, Slots, z_schema } from '../../src/helpers';
 import constants from '../../src/helpers/constants';
 import { Symbols } from '../../src/ioc/symbols';
 import { SignedAndChainedBlockType } from '../../src/logic';
@@ -19,8 +20,45 @@ import { LoaderModuleStub } from '../stubs/modules/LoaderModuleStub';
 import { ContainerStub } from '../stubs/utils/ContainerStub';
 import { createContainer } from '../utils/containerCreator';
 
-const { expect }        = chai;
-const RewiredAppManager = rewire('../../src/AppManager');
+const { expect } = chai;
+
+const fakeMiddleware = {} as any;
+const fakeBodyParser = { raw: undefined, urlencoded: undefined, json: undefined } as any;
+let expressStub: SinonStub;
+let applyExpressLimitsStub: SinonStub;
+let compressionStub: SinonStub;
+let corsStub: SinonStub;
+let useContainerForHTTPStub: SinonStub;
+let useExpressServerStub: SinonStub;
+let socketIOStub: SinonStub;
+let cbToPromiseStub: SinonStub;
+let catchToLoggerAndRemapErrorStub: SinonStub;
+
+function expressRunner(...args) {
+  return expressStub.apply(this, args);
+}
+
+const ProxyAppManager = proxyquire('../../src/AppManager', {
+  'express': expressRunner,
+  './helpers/': {
+    applyExpressLimits        : (...args) => applyExpressLimitsStub.apply(this, args),
+    Bus, cache,
+    catchToLoggerAndRemapError: (...args) => catchToLoggerAndRemapErrorStub.apply(this, args),
+    cbToPromise               : (...args) => cbToPromiseStub.apply(this, args),
+    constants, Database, Ed, ExceptionsManager, JobsQueue,
+    middleware: fakeMiddleware,
+    Sequence, Slots, z_schema,
+  },
+  'compression'        : (...args) => compressionStub.apply(this, args),
+  'cors'               : (...args) => corsStub.apply(this, args),
+  'body-parser'        : fakeBodyParser,
+  'reflect-metadata'   : Reflect,
+  'routing-controllers': {
+    useContainer    : (...args) => useContainerForHTTPStub.apply(this, args),
+    useExpressServer: (...args) => useExpressServerStub.apply(this, args),
+  },
+  'socket.io'          : (...args) => socketIOStub.apply(this, args),
+});
 
 // tslint:disable no-unused-expression
 describe('AppManager', () => {
@@ -57,7 +95,7 @@ describe('AppManager', () => {
 
   describe('constructor', () => {
     it('should set appConfig.nethash to genesisBlock.payloadHash', () => {
-      instance = new RewiredAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
+      instance = new ProxyAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
       expect(appConfig.nethash).to.be.deep.equal(genesisBlock.payloadHash);
     });
   });
@@ -68,7 +106,7 @@ describe('AppManager', () => {
     let finishBootStub: SinonStub;
 
     beforeEach(() => {
-      instance            = new RewiredAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
+      instance            = new ProxyAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
       initAppElementsStub = sandbox.stub(instance, 'initAppElements').resolves();
       initExpressStub     = sandbox.stub(instance, 'initExpress').resolves();
       finishBootStub      = sandbox.stub(instance, 'finishBoot');
@@ -105,7 +143,7 @@ describe('AppManager', () => {
     let fakeModules;
 
     beforeEach(() => {
-      instance = new RewiredAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
+      instance = new ProxyAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
 
       instance.container           = allStubsContainer;
       (instance as any).isCleaning = false;
@@ -166,79 +204,37 @@ describe('AppManager', () => {
   });
 
   describe('initExpress', () => {
-    let expressStub: any;
     let fakeApp: { use: SinonStub, options: SinonStub };
-    let fakeBodyParser: { raw: SinonStub, urlencoded: SinonStub, json: SinonStub };
-    let fakeMiddleware:
-          { logClientConnections: SinonStub, attachResponseHeader: SinonStub, applyAPIAccessRules: SinonStub };
-    let applyExpressLimitsStub: SinonStub;
-    let compressionStub: SinonStub;
-    let corsStub: SinonStub;
-    let useContainerForHTTPStub: SinonStub;
-    let useExpressServerStub: SinonStub;
     let getMetadataSpy: SinonSpy;
 
-    let toRestore;
-
-    before(() => {
-      toRestore = {
-        'express'                               : RewiredAppManager.__get__('express'),
-        '_1.applyExpressLimits'                 : RewiredAppManager.__get__('_1.applyExpressLimits'),
-        'compression'                           : RewiredAppManager.__get__('compression'),
-        'cors'                                  : RewiredAppManager.__get__('cors'),
-        'bodyParser'                            : RewiredAppManager.__get__('bodyParser'),
-        '_1.middleware'                         : RewiredAppManager.__get__('_1.middleware'),
-        'Reflect.getMetadata'                   : RewiredAppManager.__get__('Reflect.getMetadata'),
-        'routing_controllers_1.useContainer'    : RewiredAppManager.__get__('routing_controllers_1.useContainer'),
-        'routing_controllers_1.useExpressServer': RewiredAppManager.__get__('routing_controllers_1.useExpressServer'),
-      };
-    });
-
     beforeEach(() => {
-      fakeApp        = {
+      fakeApp                       = {
         use    : sandbox.stub(),
         options: sandbox.stub(),
       };
-      expressStub    = { static: sandbox.stub().returns('static') };
-      fakeBodyParser = {
-        raw       : sandbox.stub().returns('raw'),
-        urlencoded: sandbox.stub().returns('urlencoded'),
-        json      : sandbox.stub().returns('json'),
-      };
-      fakeMiddleware = {
-        logClientConnections: sandbox.stub().returns('logClientConnections'),
-        attachResponseHeader: sandbox.stub().returns('attachResponseHeader'),
-        applyAPIAccessRules : sandbox.stub().returns('applyAPIAccessRules'),
-      };
+      (expressRunner as any).static = sandbox.stub().returns('static');
+
+      (fakeBodyParser as any).raw        = sandbox.stub().returns('raw');
+      (fakeBodyParser as any).urlencoded = sandbox.stub().returns('urlencoded');
+      (fakeBodyParser as any).json       = sandbox.stub().returns('json');
+
+      fakeMiddleware.logClientConnections = sandbox.stub().returns('logClientConnections');
+      fakeMiddleware.attachResponseHeader = sandbox.stub().returns('attachResponseHeader');
+      fakeMiddleware.applyAPIAccessRules  = sandbox.stub().returns('applyAPIAccessRules');
 
       applyExpressLimitsStub  = sandbox.stub();
       compressionStub         = sandbox.stub().returns('compression');
       corsStub                = sandbox.stub().returns('cors');
       useContainerForHTTPStub = sandbox.stub();
       useExpressServerStub    = sandbox.stub();
-      getMetadataSpy          = sandbox.spy(RewiredAppManager.__get__('Reflect'), 'getMetadata');
-
-      RewiredAppManager.__set__('express', expressStub);
-      RewiredAppManager.__set__('_1.applyExpressLimits', applyExpressLimitsStub);
-      RewiredAppManager.__set__('compression', compressionStub);
-      RewiredAppManager.__set__('cors', corsStub);
-      RewiredAppManager.__set__('bodyParser', fakeBodyParser);
-      RewiredAppManager.__set__('_1.middleware', fakeMiddleware);
-      RewiredAppManager.__set__('routing_controllers_1.useContainer', useContainerForHTTPStub);
-      RewiredAppManager.__set__('routing_controllers_1.useExpressServer', useExpressServerStub);
+      getMetadataSpy          = sandbox.spy(Reflect, 'getMetadata');
 
       containerStub = new ContainerStub(sandbox);
       containerStub.get.callsFake((s) => (s === Symbols.generic.expressApp) ? fakeApp : s.toString());
 
-      instance = new RewiredAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
+      instance = new ProxyAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
 
       (instance as any).container = containerStub;
-    });
-
-    after(() => {
-      Object.keys(toRestore).forEach((key) => {
-        RewiredAppManager.__set__(key, toRestore[key]);
-      });
     });
 
     it('should get express from container', async () => {
@@ -275,8 +271,8 @@ describe('AppManager', () => {
 
     it('should use static middleware for ../public', async () => {
       await instance.initExpress();
-      expect(expressStub.static.calledOnce).to.be.true;
-      expect(expressStub.static.firstCall.args[0]).to.match(/\.\.\/public$/);
+      expect((expressRunner as any).static.calledOnce).to.be.true;
+      expect((expressRunner as any).static.firstCall.args[0]).to.match(/\.\.\/public$/);
       expect(fakeApp.use.getCall(2).args[0]).to.be.equal('static');
     });
 
@@ -385,51 +381,19 @@ describe('AppManager', () => {
   });
 
   describe('initAppElements', () => {
-    let expressStub: SinonStub;
-    let createServerStub: SinonStub;
-    let socketIOStub: SinonStub;
     let databaseConnectStub: SinonStub;
     let cacheConnectStub: SinonStub;
-    let sequenceSpy: SinonSpy;
-    let edSpy: SinonSpy;
-    let busSpy: SinonSpy;
+    let createServerStub: SinonStub;
     let getMetadataSpy: SinonSpy;
     let excCreators: any[];
-    let toRestore;
-
-    before(() => {
-      toRestore = {
-        'express'            : RewiredAppManager.__get__('express'),
-        'http.createServer'  : RewiredAppManager.__get__('http.createServer'),
-        'socketIO'           : RewiredAppManager.__get__('socketIO'),
-        '_1.Database.connect': RewiredAppManager.__get__('_1.Database.connect'),
-        '_1.cache.connect'   : RewiredAppManager.__get__('_1.cache.connect'),
-        '_1.Sequence'        : RewiredAppManager.__get__('_1.Sequence'),
-        '_1.Ed'              : RewiredAppManager.__get__('_1.Ed'),
-        '_1.Bus'             : RewiredAppManager.__get__('_1.Bus'),
-        'Reflect.getMetadata': RewiredAppManager.__get__('Reflect.getMetadata'),
-      };
-    });
 
     beforeEach(() => {
       expressStub         = sandbox.stub().returns('expressApp');
-      createServerStub    = sandbox.stub().returns('server');
+      createServerStub    = sandbox.stub(http, 'createServer').returns('server');
       socketIOStub        = sandbox.stub().returns('socketIO');
-      databaseConnectStub = sandbox.stub().resolves('db');
-      cacheConnectStub    = sandbox.stub().resolves({ client: 'theClient' });
-      sequenceSpy         = sandbox.spy(toRestore['_1.Sequence']);
-      edSpy               = sandbox.spy(toRestore['_1.Ed']);
-      busSpy              = sandbox.spy(toRestore['_1.Bus']);
-      getMetadataSpy      = sandbox.spy(RewiredAppManager.__get__('Reflect'), 'getMetadata');
-
-      RewiredAppManager.__set__('express', expressStub);
-      RewiredAppManager.__set__('http.createServer', createServerStub);
-      RewiredAppManager.__set__('socketIO', socketIOStub);
-      RewiredAppManager.__set__('_1.Database.connect', databaseConnectStub);
-      RewiredAppManager.__set__('_1.cache.connect', cacheConnectStub);
-      RewiredAppManager.__set__('_1.Sequence', sequenceSpy);
-      RewiredAppManager.__set__('_1.Ed', edSpy);
-      RewiredAppManager.__set__('_1.Bus', busSpy);
+      databaseConnectStub = sandbox.stub(Database, 'connect').resolves('db');
+      cacheConnectStub    = sandbox.stub(cache, 'connect').resolves({ client: 'theClient' });
+      getMetadataSpy      = sandbox.spy(Reflect, 'getMetadata');
 
       containerStub = new ContainerStub(sandbox);
       containerStub.get.callsFake((s) => allStubsContainer.get(s));
@@ -439,15 +403,9 @@ describe('AppManager', () => {
         sandbox.stub(),
       ];
 
-      instance = new RewiredAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, excCreators);
+      instance = new ProxyAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, excCreators);
 
       (instance as any).container = containerStub;
-    });
-
-    after(() => {
-      Object.keys(toRestore).forEach((key) => {
-        RewiredAppManager.__set__(key, toRestore[key]);
-      });
     });
 
     it('should call express and set this.expressApp', async () => {
@@ -488,18 +446,6 @@ describe('AppManager', () => {
       expect(cacheConnectStub.firstCall.args[0]).to.be.deep.equal(appConfig.cacheEnabled);
       expect(cacheConnectStub.firstCall.args[1]).to.be.deep.equal(appConfig.redis);
       expect(cacheConnectStub.firstCall.args[2]).to.be.deep.equal(loggerStub);
-    });
-
-    it('should instantiate Ed', async () => {
-      await instance.initAppElements();
-      expect(edSpy.calledOnce).to.be.true;
-      expect(edSpy.firstCall.args.length).to.be.equal(0);
-    });
-
-    it('should instantiate Bus', async () => {
-      await instance.initAppElements();
-      expect(busSpy.calledOnce).to.be.true;
-      expect(busSpy.firstCall.args.length).to.be.equal(0);
     });
 
     it('should call Reflect.getMetadata for each API controller', async () => {
@@ -664,7 +610,6 @@ describe('AppManager', () => {
 
     it('should create 3 Sequences to bind in container for helpers.sequence based on the tag', async () => {
       await instance.initAppElements();
-      expect(sequenceSpy.calledThrice).to.be.true;
       expect(Array.isArray(containerStub.bindings[Symbols.helpers.sequence])).to.be.true;
       expect(containerStub.bindings[Symbols.helpers.sequence].length).to.be.equal(3);
       const seqSymbols = [
@@ -676,11 +621,6 @@ describe('AppManager', () => {
         expect(containerStub.bindings[Symbols.helpers.sequence][index].toConstantValue).to.not.be.undefined;
         const sequence = containerStub.bindings[Symbols.helpers.sequence][index].toConstantValue;
         expect(sequence.constructor.name).to.be.equal('Sequence');
-        expect(sequenceSpy.getCall(index).args[0].onWarning).to.not.be.undefined;
-        sequenceSpy.getCall(index).args[0].onWarning(`current_${index}`);
-        expect(loggerStub.stubs.warn.callCount).to.be.equal(index + 1);
-        expect(loggerStub.stubs.warn.getCall(index).args[0]).to.be.equal(`${sequenceTag.toString()} queue`);
-        expect(loggerStub.stubs.warn.getCall(index).args[1]).to.be.equal(`current_${index}`);
         expect(containerStub.bindings[Symbols.helpers.sequence][index].whenTargetTagged).to.not.be.undefined;
         expect(containerStub.bindings[Symbols.helpers.sequence][index].whenTargetTagged).to.be.deep
           .equal([Symbols.helpers.sequence, sequenceTag]);
@@ -970,22 +910,12 @@ describe('AppManager', () => {
   });
 
   describe('finishBoot', () => {
-    let cbToPromiseStub: SinonStub;
-    let catchToLoggerAndRemapErrorStub: SinonStub;
     let listenStub: SinonStub;
     let getModulesSpy: SinonSpy;
     let busStub: BusStub;
     let transactionLogicStub: TransactionLogicStub;
     let blocksSubmoduleChainStub: BlocksSubmoduleChainStub;
     let loaderModuleStub: LoaderModuleStub;
-    let toRestore;
-
-    before(() => {
-      toRestore = {
-        '_1.cbToPromise'               : RewiredAppManager.__get__('_1.cbToPromise'),
-        '_1.catchToLoggerAndRemapError': RewiredAppManager.__get__('_1.catchToLoggerAndRemapError'),
-      };
-    });
 
     beforeEach(() => {
       cbToPromiseStub                = sandbox.stub().callsFake((fn) => {
@@ -999,10 +929,7 @@ describe('AppManager', () => {
       loaderModuleStub               = allStubsContainer.get(Symbols.modules.loader);
       listenStub                     = sandbox.stub();
 
-      RewiredAppManager.__set__('_1.cbToPromise', cbToPromiseStub);
-      RewiredAppManager.__set__('_1.catchToLoggerAndRemapError', catchToLoggerAndRemapErrorStub);
-
-      instance      = new RewiredAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
+      instance      = new ProxyAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
       getModulesSpy = sandbox.spy(instance as any, 'getModules');
 
       containerStub = new ContainerStub(sandbox);
@@ -1031,12 +958,6 @@ describe('AppManager', () => {
         if (typeof stub.stubReset !== 'undefined') {
           stub.stubReset();
         }
-      });
-    });
-
-    after(() => {
-      Object.keys(toRestore).forEach((key) => {
-        RewiredAppManager.__set__(key, toRestore[key]);
       });
     });
 
@@ -1155,7 +1076,7 @@ describe('AppManager', () => {
     };
 
     beforeEach(() => {
-      instance      = new RewiredAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
+      instance      = new ProxyAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
       containerStub = new ContainerStub(sandbox);
       containerStub.get.callsFake((s) => s.toString());
       (instance as any).container = containerStub;
@@ -1179,7 +1100,7 @@ describe('AppManager', () => {
   describe('getModules', () => {
     let getElementsFromContainerStub: SinonStub;
     beforeEach(() => {
-      instance = new RewiredAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
+      instance = new ProxyAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
 
       containerStub                = new ContainerStub(sandbox);
       (instance as any).container  = containerStub;

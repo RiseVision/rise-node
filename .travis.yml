@@ -12,7 +12,7 @@ before_script:
   - psql -c "CREATE USER test WITH PASSWORD 'test';" -U postgres
 script:
   - npm run test-integration
-#  - npm run test-cover-unit
+  - npm run test-cover-unit
 #cache:
 #  directories:
 #    - node_modules

@@ -7,7 +7,7 @@ import { SinonStub } from 'sinon';
 import { DbStub, LoggerStub, ZSchemaStub } from '../../stubs';
 
 const pgpStub = { QueryFile :  () => { return; }} as any;
-const RewireAccount = proxyquire('../../../src/logic/account', {
+const ProxyAccount = proxyquire('../../../src/logic/account', {
   'pg-promise': pgpStub,
 });
 const jsonSql       = jsonSqlCreator();
@@ -33,7 +33,7 @@ describe('logic/account', () => {
   beforeEach(() => {
     loggerStub              = new LoggerStub();
     zSchemaStub             = new ZSchemaStub();
-    account                 = new RewireAccount.AccountLogic();
+    account                 = new ProxyAccount.AccountLogic();
     // Inject the dependencies
     (account as any).db     = dbStub;
     (account as any).logger = loggerStub;

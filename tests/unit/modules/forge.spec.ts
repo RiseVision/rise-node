@@ -242,7 +242,6 @@ describe('modules/forge', () => {
   });
 
   describe('onBlockchainReady', () => {
-    // We cannot use rewire here due to incompatibility with FakeTimers.
     let inst: ForgeModule;
     let forgeStub: SinonStub;
     beforeEach(() => {

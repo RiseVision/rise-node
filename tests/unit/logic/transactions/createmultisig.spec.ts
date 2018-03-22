@@ -111,18 +111,20 @@ describe('logic/transactions/createmultisig', () => {
 
     before(() => {
       toRestore.writeByte = ByteBuffer.prototype.writeByte;
+      toRestore.writeInt  = ByteBuffer.prototype.writeInt;
+      toRestore.writeLong = (ByteBuffer.prototype as any).writeLong;
       toRestore.toBuffer  = ByteBuffer.prototype.toBuffer;
       toRestore.flip      = ByteBuffer.prototype.flip;
     });
     beforeEach(() => {
-      lastBB = false;
+      lastBB                                  = false;
       sequence                                = [];
       (ByteBuffer.prototype as any).writeByte = function(b) {
         sequence.push(b);
         lastBB = this;
       };
-      ByteBuffer.prototype.flip               = sandbox.stub();
       ByteBuffer.prototype.toBuffer           = sandbox.stub().returns(expectedBuffer);
+      ByteBuffer.prototype.flip               = sandbox.stub();
     });
 
     after(() => {
@@ -130,6 +132,7 @@ describe('logic/transactions/createmultisig', () => {
       (ByteBuffer.prototype as any).writeInt  = toRestore.writeInt;
       (ByteBuffer.prototype as any).writeLong = toRestore.writeLong;
       ByteBuffer.prototype.flip               = toRestore.flip;
+      ByteBuffer.prototype.toBuffer           = toRestore.toBuffer;
     });
 
     it('should call Buffer.from', () => {
