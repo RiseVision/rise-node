@@ -238,6 +238,23 @@ describe('apis/transactionsAPI', () => {
     });
   });
 
+  describe('getQueuedTx()', () => {
+    it('should call transactionsModule.getQueuedTransaction and return transaction', async ()=>{
+      const id = 'id';
+      const transaction = {};
+      transactionsModuleStub.enqueueResponse('getQueuedTransaction', transaction);
+      expect(await instance.getQueuedTx(id)).to.be.deep.equal({transaction});
+
+      expect(transactionsModuleStub.stubs.getQueuedTransaction.calledOnce).to.be.true;
+      expect(transactionsModuleStub.stubs.getQueuedTransaction.firstCall.args.length).to.be.equal(1);
+      expect(transactionsModuleStub.stubs.getQueuedTransaction.firstCall.args[0]).to.be.equal(id);
+    });
+    it('should throw error if transaction is null', async()=>{
+      transactionsModuleStub.enqueueResponse('getQueuedTransaction', null);
+      await expect(instance.getQueuedTx('id')).to.be.rejectedWith('Transaction not found');
+    });
+  });
+
   describe('getQueuedTxs()', () => {
     it('filtering by senderPublicKey &  address', () => {
       result = instance.getQueuedTxs({
@@ -363,6 +380,11 @@ describe('apis/transactionsAPI', () => {
       await expect(instance.getUnconfirmedTx('123')).to.be.rejectedWith(
         'Transaction not found'
       );
+    });
+  });
+  describe('put', () => {
+    it('should throw error', async () => {
+      await expect(instance.put()).to.be.rejectedWith('This method is deprecated');
     });
   });
 });

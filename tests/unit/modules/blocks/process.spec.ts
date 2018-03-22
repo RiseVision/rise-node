@@ -30,6 +30,7 @@ import AccountsModuleStub from '../../../stubs/modules/AccountsModuleStub';
 import { IBaseTransaction } from '../../../../src/logic/transactions';
 import { createRandomTransactions } from '../../../utils/txCrafter';
 import TransactionLogicStub from '../../../stubs/logic/TransactionLogicStub';
+import LoggerStub from '../../../stubs/helpers/LoggerStub';
 
 chai.use(chaiAsPromised);
 
@@ -67,6 +68,7 @@ describe('modules/blocks/process', () => {
   let peersLogic: PeersLogicStub;
   let roundsStub: RoundsLogicStub;
   let txLogic: TransactionLogicStub;
+  let loggerStub: LoggerStub;
   // let blockLogic: BlockLogicStub;
   // let roundsModule: RoundsModuleStub;
   // let busStub: BusStub;
@@ -98,6 +100,7 @@ describe('modules/blocks/process', () => {
     peersLogic      = container.get(Symbols.logic.peers);
     txModule        = container.get(Symbols.modules.transactions);
     txLogic         = container.get(Symbols.logic.transaction);
+    loggerStub      = container.get(Symbols.helpers.logger);
   });
 
   describe('getCommonBlock', () => {
@@ -298,6 +301,10 @@ describe('modules/blocks/process', () => {
         }
         expect(blocksModule.lastBlock).to.be.deep.eq({id: '1'});
       });
+      it('should return undefined if cleanup', async() => {
+        await inst.cleanup();
+        expect(await inst.loadBlocksOffset(10, 0, false)).to.be.undefined;
+      });
     });
   });
 
@@ -410,6 +417,11 @@ describe('modules/blocks/process', () => {
       await expect(inst.generateBlock(null, 1)).to.be.rejectedWith('meow');
       expect(blockLogic.stubs.create.called).is.false;
     });
+    it('should throw if account by publicKey not found', async () => {
+      accountsModule.stubs.getAccount.onCall(0).resolves(Promise.resolve());
+      await expect(inst.generateBlock(null, 1)).to.be.rejectedWith('Sender not found');
+      expect(blockLogic.stubs.create.called).is.false;
+    });
     it('should not verify every tx that is ready', async () => {
       txLogic.stubs.ready.onSecondCall().returns(false);
       await inst.generateBlock(null, 1)
@@ -443,6 +455,13 @@ describe('modules/blocks/process', () => {
         true,
         true,
       ]);
+    });
+    it('should call logger.error if transactionLogic.verify throw', async() => {
+      const error = new Error('hihihi');
+      txLogic.stubs.verify.onCall(1).rejects(error);
+      await inst.generateBlock({key: 'pair'} as any, 1);
+      expect(loggerStub.stubs.error.calledOnce).is.true;
+      expect(loggerStub.stubs.error.firstCall.args[0]).is.equal(error.stack);
     });
   });
 
@@ -607,6 +626,23 @@ describe('modules/blocks/process', () => {
       });
     });
 
+    it('Block already processed where block.id === lastBlock.id', async () => {
+      blocksModule.lastBlock = {id: '1', height: 10, timestamp: 1} as any;
+      appState.stubs.get.returns(false);
+      await inst.onReceiveBlock({id: '1'} as any);
+      expect(loggerStub.stubs.debug.calledOnce).to.be.true;
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Block already processed');
+      expect(loggerStub.stubs.debug.firstCall.args[1]).to.be.equal('1');
+    });
+    it('should call logger.warn if discarded block that does not match with current chain', async () => {
+      const roundsLogic = container.get(Symbols.logic.rounds);
+      roundsLogic.enqueueResponse('calcRound', 'round');
+      blocksModule.lastBlock = {id: '12', height: 10, timestamp: 1} as any;
+      appState.stubs.get.returns(false);
+      await inst.onReceiveBlock({id: '1'} as any);
+      expect(loggerStub.stubs.warn.calledOnce).to.be.true;
+      expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Discarded block that does not match with current chain: 1 height:  round: round slot: 1 generator: ');
+    });
   });
 
 });

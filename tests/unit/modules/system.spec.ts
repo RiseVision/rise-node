@@ -172,6 +172,9 @@ describe('modules/system', () => {
     it('should return true if 0.1.3', () => {
       expect(inst.versionCompatible('0.1.3')).is.true;
     });
+    it('should return true if 0.1.3a', () => {
+      expect(inst.versionCompatible('0.1.3a')).is.true;
+    });
     it('should return false if 0.2.0', () => {
       expect(inst.versionCompatible('0.2.0')).is.false;
     });

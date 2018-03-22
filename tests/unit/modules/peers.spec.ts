@@ -12,6 +12,7 @@ import { BasePeerType, PeerLogic, PeerState } from '../../../src/logic';
 import { BusStub, PeersLogicStub, SystemModuleStub } from '../../stubs';
 import { createFakePeer, createFakePeers } from '../../utils/fakePeersFactory';
 import DbStub from '../../stubs/helpers/DbStub';
+import LoggerStub from '../../stubs/helpers/LoggerStub';
 
 // tslint:disable no-unused-expression
 describe('modules/peers', () => {
@@ -296,11 +297,12 @@ describe('modules/peers', () => {
     });
     it('should save peers to database with single tx after cleaning peers table', async () => {
       const dbStub = container.get<DbStub>(Symbols.generic.db);
+      const loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
       const taskStub = {
         batch: sinon.stub(),
         none: sinon.stub(),
       };
-      dbStub.stubs.tx.callsArgWith(0, taskStub);
+      dbStub.stubs.tx.callsArgWith(0, taskStub).returns(Promise.resolve());
       const fakePeers = [createFakePeer(), createFakePeer()];
       peersLogicStub.enqueueResponse('list', fakePeers);
       await inst.cleanup();
@@ -309,12 +311,29 @@ describe('modules/peers', () => {
       expect(taskStub.none.firstCall.args[0]).to.be.eq('DELETE FROM peers');
       expect(taskStub.none.secondCall.args[0]).to.contain(fakePeers[0].ip);
       expect(taskStub.none.secondCall.args[0]).to.contain(fakePeers[1].ip);
+      expect(loggerStub.stubs.info.calledOnce).to.be.true;
+      expect(loggerStub.stubs.info.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal('Peers exported to database');
+    });
+    it('should throw error if db query was rejected', async () => {
+      const error = new Error('error');
+      const dbStub     = container.get<DbStub>(Symbols.generic.db);
+      const loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
+      dbStub.stubs.tx.rejects(error);
+      const fakePeers = [createFakePeer(), createFakePeer()];
+      peersLogicStub.enqueueResponse('list', fakePeers);
+      await inst.cleanup();
+      expect(loggerStub.stubs.error.calledOnce).to.be.true;
+      expect(loggerStub.stubs.error.firstCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal('Export peers to database failed');
+      expect(loggerStub.stubs.error.firstCall.args[1]).to.be.deep.equal({error: 'error'});
     });
   });
 
   describe('.onBlockchainReady', () => {
     let pingStub: SinonStub;
     let busStub: BusStub;
+    let loggerStub: LoggerStub;
     let oldEnv: string;
     beforeEach(() => {
       oldEnv = process.env.NODE_ENV;
@@ -327,6 +346,7 @@ describe('modules/peers', () => {
       peersLogicStub.enqueueResponse('create', {pingAndUpdate: pingStub});
       peersLogicStub.enqueueResponse('exists', false);
 
+      loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
       busStub = container.get<BusStub>(Symbols.helpers.bus);
       busStub.enqueueResponse('message', '');
     });
@@ -342,6 +362,27 @@ describe('modules/peers', () => {
       await instR.onBlockchainReady();
       expect(busStub.stubs.message.called).is.true;
       expect(busStub.stubs.message.firstCall.args[0]).to.be.eq('peersReady');
+    });
+    it('should call logger.trace', async()=>{
+      await instR.onBlockchainReady();
+      expect(loggerStub.stubs.trace.callCount).to.be.equal(5);
+      expect(loggerStub.stubs.trace.lastCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.trace.lastCall.args[0]).to.be.equal('Peers->dbLoad Peers discovered');
+      expect(loggerStub.stubs.trace.lastCall.args[1]).to.be.deep.equal({
+        total: 1,
+        updated: 1
+      });
+    });
+    it('should call logger.error if db query was throw error', async () => {
+      const error = new Error('errors');
+      const dbStub         = container.get<DbStub>(Symbols.generic.db);
+      dbStub.reset();
+      dbStub.enqueueResponse('any', Promise.reject(error));
+      await instR.onBlockchainReady();
+      expect(loggerStub.stubs.error.calledOnce).to.be.true;
+      expect(loggerStub.stubs.error.firstCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal('Import peers from database failed');
+      expect(loggerStub.stubs.error.firstCall.args[1]).to.be.deep.equal({error: error.message});
     });
   });
 });

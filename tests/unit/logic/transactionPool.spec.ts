@@ -423,11 +423,11 @@ describe('logic/transactionPool - TransactionPool', () => {
     });
 
     it('should resolve with empty array if no spare space', async () => {
-      (instance.unconfirmed as any).index = {};
       const bigIndex = {};
       for (let i = 0; i < 100; i++) {
         bigIndex['tx' + i] = i;
       }
+      (instance.unconfirmed as any).index = bigIndex;
       const retVal = await instance.fillPool();
       expect(retVal).to.be.equalTo([]);
       // In this case logger.debug is called

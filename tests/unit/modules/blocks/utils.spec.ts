@@ -106,6 +106,18 @@ describe('modules/utils', () => {
       expect(res[0]).to.be.deep.eq({id: '1', transactions: [{id: '2'}]});
       expect(res[1]).to.be.deep.eq({id: '2', transactions: [{id: '3'}]});
     });
+    it('should create generationSignature for block if it id is equal genesisBLock.id', async () =>{
+      const genBlockId = (inst as any).genesisBlock.id;
+      const rows = [
+        {b_id: '1', t_id: '2'},
+        {b_id: '1', t_id: '2'},
+        {b_id: genBlockId},
+        {b_id: '2', t_id: '3'},
+      ];
+      const res  = inst.readDbRows(rows as any);
+      expect(res.length).is.eq(3);
+      expect((res[1] as any).generationSignature).to.be.deep.eq('0000000000000000000000000000000000000000000000000000000000000000');
+    });
   });
 
   describe('loadBlocksPart', () => {
