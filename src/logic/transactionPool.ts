@@ -1,5 +1,6 @@
-import { inject, injectable, postConstruct } from 'inversify';
-import { Bus, constants, ILogger, TransactionType } from '../helpers/';
+import { inject, injectable, postConstruct, tagged } from 'inversify';
+import { Bus, constants, ILogger, Sequence, TransactionType } from '../helpers/';
+import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules';
@@ -103,6 +104,10 @@ export class TransactionPool implements ITransactionPoolLogic {
   private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  // tslint:disable-next-line member-ordering
+  @inject(Symbols.helpers.sequence)
+  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
+  public balancesSequence: Sequence;
 
   // Logic
   @inject(Symbols.logic.appState)
@@ -245,18 +250,20 @@ export class TransactionPool implements ITransactionPoolLogic {
   /**
    * Picks bundled transactions, verifies them and then enqueue them
    */
+  @WrapInBalanceSequence
   public async processBundled(): Promise<void> {
     const bundledTxs = this.bundled.list(true, this.bundleLimit);
     for (const tx of bundledTxs) {
       if (!tx) {
         continue;
       }
-      this.bundled.remove(tx.id);
+
       try {
         await this.processVerifyTransaction(
           tx,
           true
         );
+        this.bundled.remove(tx.id);
         try {
           this.queueTransaction(tx, false /* After processing the tx becomes unbundled */);
         } catch (e) {
@@ -312,6 +319,7 @@ export class TransactionPool implements ITransactionPoolLogic {
    * Calls processVerifyTransaction for each transaction and applies
    * unconfirmed transaction.
    */
+  @WrapInBalanceSequence
   // tslint:disable-next-line
   public async applyUnconfirmedList(txs: Array<IBaseTransaction<any> | string>, txModule: ITransactionsModule): Promise<void> {
     for (let theTx of txs) {
@@ -342,6 +350,7 @@ export class TransactionPool implements ITransactionPoolLogic {
     }
   }
 
+  @WrapInBalanceSequence
   public async undoUnconfirmedList(txModule: ITransactionsModule): Promise<string[]> {
     const ids: string[] = [];
     const txs           = this.unconfirmed.list(false);

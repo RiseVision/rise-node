@@ -7,8 +7,10 @@ import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import { TransactionType } from '../../../src/helpers';
 import { InnerTXQueue, TransactionPool} from '../../../src/logic';
 import { IBaseTransaction } from '../../../src/logic/transactions';
-import { AccountsModuleStub, JobsQueueStub, LoggerStub,
-         TransactionLogicStub, TransactionsModuleStub } from '../../stubs';
+import {
+  AccountsModuleStub, JobsQueueStub, LoggerStub, SequenceStub,
+  TransactionLogicStub, TransactionsModuleStub
+} from '../../stubs';
 
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
@@ -217,6 +219,7 @@ describe('logic/transactionPool - TransactionPool', () => {
   let loggerStub: LoggerStub;
   let transactionLogicStub: TransactionLogicStub;
   let accountsModuleStub: AccountsModuleStub;
+  let balanceSequenceStub: SequenceStub;
   let tx: IBaseTransaction<any>;
   let tx2: IBaseTransaction<any>;
   let tx3: IBaseTransaction<any>;
@@ -264,12 +267,13 @@ describe('logic/transactionPool - TransactionPool', () => {
     loggerStub = new LoggerStub();
     transactionLogicStub = new TransactionLogicStub();
     accountsModuleStub = new AccountsModuleStub();
-
+    balanceSequenceStub = new SequenceStub();
     // dependencies
     (instance as any).bus = fakeBus;
     (instance as any).jobsQueue = jqStub;
     (instance as any).logger = loggerStub;
     (instance as any).appState = fakeAppState;
+    (instance as any).balancesSequence = balanceSequenceStub;
     (instance as any).transactionLogic = transactionLogicStub;
     (instance as any).accountsModule = accountsModuleStub;
     (instance as any).config = {
@@ -575,7 +579,10 @@ describe('logic/transactionPool - TransactionPool', () => {
     beforeEach(async () => {
       await addMixedTransactionsAndFillPool();
     });
-
+    it('should call balancesSequence', async () => {
+      await instance.processBundled();
+      expect(balanceSequenceStub.spies.addAndPromise.calledOnce).is.true;
+    });
     it('should call list with reverse and limit on bundled queue', async () => {
       await instance.processBundled();
       expect(spiedQueues.bundled.list.calledOnce).to.be.true;
@@ -585,6 +592,7 @@ describe('logic/transactionPool - TransactionPool', () => {
 
     it('should call remove on bundled for each tx', async () => {
       const bundledCount = instance.bundled.count;
+      sandbox.stub(instance as any, 'processVerifyTransaction').resolves(true);
       await instance.processBundled();
       expect(spiedQueues.bundled.remove.called).to.be.true;
       expect(spiedQueues.bundled.remove.callCount).to.be.equal(bundledCount);
@@ -592,10 +600,12 @@ describe('logic/transactionPool - TransactionPool', () => {
 
     it('should call processVerifyTransaction for each valid tx', async () => {
       const bundledCount = instance.bundled.count;
-      const processVerifyTransactionSpy = sandbox.spy(instance as any, 'processVerifyTransaction');
+
+      const processVerifyTransactionStub = sandbox
+        .stub(instance as any, 'processVerifyTransaction').resolves(true);
       await instance.processBundled();
-      expect(processVerifyTransactionSpy.called).to.be.true;
-      expect(processVerifyTransactionSpy.callCount).to.be.equal(bundledCount);
+      expect(processVerifyTransactionStub.called).to.be.true;
+      expect(processVerifyTransactionStub.callCount).to.be.equal(bundledCount);
     });
 
     it('should call queueTransaction for each valid tx if processVerifyTransaction does not throw', async () => {
