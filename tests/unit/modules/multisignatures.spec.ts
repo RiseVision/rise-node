@@ -6,7 +6,7 @@ import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { TransactionType } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
-import { IBaseTransaction } from '../../../src/logic/transactions';
+import { IBaseTransaction, MultiSignatureTransaction } from '../../../src/logic/transactions';
 import { MultisignaturesModule } from '../../../src/modules';
 import {
   AccountsModuleStub,
@@ -14,9 +14,10 @@ import {
   LoggerStub,
   SequenceStub,
   SocketIOStub,
-  TransactionLogicStub,
+  TransactionLogicStub, TransactionPoolStub,
   TransactionsModuleStub
 } from '../../stubs';
+import { createContainer } from '../../utils/containerCreator';
 
 chai.use(chaiAsPromised);
 
@@ -36,26 +37,14 @@ describe('modules/multisignatures', () => {
   let socketIOStub: SocketIOStub;
   let transactionLogicStub: TransactionLogicStub;
   let transactionsModuleStub: TransactionsModuleStub;
+  let multisigTx: MultiSignatureTransaction;
 
   before(() => {
-    container = new Container();
+    container = createContainer();
+    container.rebind(Symbols.modules.multisignatures).to(MultisignaturesModule).inSingletonScope();
+    // Txs
+    container.bind(Symbols.logic.transactions.createmultisig).to(MultiSignatureTransaction).inSingletonScope();
 
-    // Generic
-    container.bind(Symbols.generic.socketIO).to(SocketIOStub).inSingletonScope();
-
-    // Helpers
-    container.bind(Symbols.helpers.logger).to(LoggerStub).inSingletonScope();
-    container.bind(Symbols.helpers.bus).to(BusStub).inSingletonScope();
-    container.bind(Symbols.helpers.sequence).to(SequenceStub).inSingletonScope();
-
-    // Logic
-    container.bind(Symbols.logic.transaction).to(TransactionLogicStub).inSingletonScope();
-
-    // Modules
-    container.bind(Symbols.modules.transactions).to(TransactionsModuleStub).inSingletonScope();
-    container.bind(Symbols.modules.accounts).to(AccountsModuleStub).inSingletonScope();
-
-    container.bind(Symbols.modules.multisignatures).to(MultisignaturesModule).inSingletonScope();
   });
 
   beforeEach(() => {
@@ -67,8 +56,8 @@ describe('modules/multisignatures', () => {
     loggerStub             = container.get(Symbols.helpers.logger);
     socketIOStub           = container.get(Symbols.generic.socketIO);
     busStub                = container.get(Symbols.helpers.bus);
-    sequenceStub           = container.get(Symbols.helpers.sequence);
-
+    sequenceStub           = container.getTagged(Symbols.helpers.sequence, Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence);
+    multisigTx             = container.get(Symbols.logic.transactions.createmultisig);
     tx        = {
       type           : TransactionType.MULTI,
       amount         : 108910891000000,
@@ -107,12 +96,14 @@ describe('modules/multisignatures', () => {
   describe('processSignature', () => {
     let processMultisigTxStub: SinonStub;
     let processNormalTxStub: SinonStub;
+    let txReadyStub: SinonStub;
 
     beforeEach(() => {
       transactionsModuleStub.enqueueResponse('getMultisignatureTransaction', tx);
       transactionsModuleStub.enqueueResponse('getMultisignatureTransaction', tx);
       processMultisigTxStub = sandbox.stub(instance as any, 'processMultiSigSignature').resolves();
       processNormalTxStub   = sandbox.stub(instance as any, 'processNormalTxSignature').resolves();
+      txReadyStub           = sandbox.stub(multisigTx as any, 'ready').returns(true);
       accountsModuleStub.enqueueResponse('getAccount', sender);
       busStub.stubs.message.resolves();
     });

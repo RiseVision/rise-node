@@ -241,9 +241,11 @@ describe('logic/transactionPool - TransactionPool', () => {
           },
         };
       }
-      (newTx as any).ready = (i % 2 === 0);
       const bundled = (i >= 12 && i < 25);
       instance.queueTransaction(newTx, bundled);
+      if (newTx.type === TransactionType.MULTI) {
+        instance.multisignature.getPayload(newTx).ready = (i % 2 === 0);
+      }
       allTxs.push(newTx);
     }
     sandbox.resetHistory();
@@ -397,11 +399,11 @@ describe('logic/transactionPool - TransactionPool', () => {
     const addFillPoolTxs = () => {
       // tx and tx2 go to multisignature queue
       tx.type = TransactionType.MULTI;
-      (tx as any).ready = true;
       instance.queueTransaction(tx, false);
+      instance.multisignature.getPayload(tx).ready = true;
       tx2.type = TransactionType.MULTI;
-      (tx2 as any).ready = true;
       instance.queueTransaction(tx2, false);
+      instance.multisignature.getPayload(tx2).ready = true;
       // tx3 goes to queued queue
       instance.queueTransaction(tx3, false);
     };
@@ -507,13 +509,13 @@ describe('logic/transactionPool - TransactionPool', () => {
     it('should return all the txs in a merged array', async () => {
       await addMixedTransactionsAndFillPool();
       const retVal = instance.getMergedTransactionList(30);
-      const expectedIDs = [ 'tx_10', 'tx_8', 'tx_6', 'tx_4', 'tx_2', 'tx_0', 'tx_25', 'tx_26', 'tx_27', 'tx_28',
+      const expectedIDs = [ 'tx_10', 'tx_8', 'tx_6', 'tx_4', 'tx_2', 'tx_25', 'tx_26', 'tx_27', 'tx_28',
         'tx_29', 'tx_30', 'tx_31', 'tx_32', 'tx_33', 'tx_34', 'tx_35', 'tx_36', 'tx_37', 'tx_38', 'tx_39', 'tx_40',
-        'tx_41', 'tx_42', 'tx_43', 'tx_44', 'tx_45', 'tx_46', 'tx_47', 'tx_48' ];
+        'tx_41', 'tx_42', 'tx_43', 'tx_44', 'tx_45', 'tx_46', 'tx_47', 'tx_48', 'tx_49'];
 
       expect(Array.isArray(retVal)).to.be.true;
       expect(retVal.length).to.be.equal(expectedIDs.length);
-      expect(retVal.map((t) => t.id)).to.be.equalTo(expectedIDs);
+      expect(retVal.map((t) => t.id)).to.be.deep.eq(expectedIDs);
     });
 
     it('should respect passed limit unless less than minimum', async () => {
