@@ -51,7 +51,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
   private systemModule: ISystemModule;
 
   constructor() {
-    super(TransactionType.IN_TRANSFER);
+    super(TransactionType.MULTI);
     this.unconfirmedSignatures = {};
   }
 
