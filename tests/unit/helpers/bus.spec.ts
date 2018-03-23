@@ -17,23 +17,18 @@ describe('helpers/bus', () => {
   let instance: Bus;
   let stub: any;
   let stub2: any;
-  let stub3: any;
-  let myPromise: any;
+  let stub4: any;
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
     instance = new Bus();
-    stub3 = sandbox.stub().returns(true);
-    myPromise = new Promise((resolve, reject) => {
-      if (stub3()) {
-        resolve();
-      }
-    });
-    stub = sandbox.stub().returns(myPromise);
+    stub = sandbox.stub().resolves(true);
+    stub4 = sandbox.stub().returns(undefined);
   });
 
   afterEach(() => {
     sandbox.restore();
+    sandbox.resetHistory();
   });
 
   describe('receiveBlock', () => {
@@ -42,7 +37,13 @@ describe('helpers/bus', () => {
       await instance.message('receiveBlock', { the: 'block' } as any);
       expect(stub.calledOnce).to.be.true;
       expect(stub.args[0][0]).to.be.deep.eq({ the: 'block' });
-      expect(stub3.calledOnce).to.be.true;
+    });
+
+    it('success without Promise', async () => {
+      instance.modules = [{ onReceiveBlock: stub4 }];
+      await instance.message('receiveBlock', { the: 'block' } as any);
+      expect(stub4.calledOnce).to.be.true;
+      expect(stub4.args[0][0]).to.be.deep.eq({ the: 'block' });
     });
   });
 
@@ -52,7 +53,13 @@ describe('helpers/bus', () => {
       await instance.message('finishRound', 10);
       expect(stub.calledOnce).is.true;
       expect(stub.args[0][0]).to.equal(10);
-      expect(stub3.calledOnce).to.be.true;
+    });
+
+    it('success without Promise', async () => {
+      instance.modules = [{ onFinishRound: stub4 }];
+      await instance.message('finishRound', 10);
+      expect(stub4.calledOnce).is.true;
+      expect(stub4.args[0][0]).to.equal(10);
     });
   });
 
@@ -62,7 +69,13 @@ describe('helpers/bus', () => {
       await instance.message('transactionsSaved', [1, 2, 3] as any);
       expect(stub.calledOnce).is.true;
       expect(stub.args[0][0]).to.be.equalTo([1, 2, 3]);
-      expect(stub3.calledOnce).to.be.true;
+    });
+
+    it('success without Promise', async () => {
+      instance.modules = [{ onTransactionsSaved: stub4 }];
+      await instance.message('transactionsSaved', [1, 2, 3] as any);
+      expect(stub4.calledOnce).is.true;
+      expect(stub4.args[0][0]).to.be.equalTo([1, 2, 3]);
     });
   });
 
@@ -71,7 +84,14 @@ describe('helpers/bus', () => {
       instance.modules = [{ onBlockchainReady: stub }];
       await instance.message('blockchainReady');
       expect(stub.calledOnce).is.true;
-      expect(stub3.calledOnce).to.be.true;
+      expect(stub.args[0][0]).to.be.undefined;
+    });
+
+    it('success without Promise', async () => {
+      instance.modules = [{ onBlockchainReady: stub4 }];
+      await instance.message('blockchainReady');
+      expect(stub4.calledOnce).is.true;
+      expect(stub4.args[0][0]).to.be.undefined;
     });
   });
 
@@ -80,7 +100,14 @@ describe('helpers/bus', () => {
       instance.modules = [{ onSyncStarted: stub }];
       await instance.message('syncStarted');
       expect(stub.calledOnce).is.true;
-      expect(stub3.calledOnce).to.be.true;
+      expect(stub.args[0][0]).to.be.undefined;
+    });
+
+    it('success without Promise', async () => {
+      instance.modules = [{ onSyncStarted: stub4 }];
+      await instance.message('syncStarted');
+      expect(stub4.calledOnce).is.true;
+      expect(stub4.args[0][0]).to.be.undefined;
     });
   });
 
@@ -89,7 +116,14 @@ describe('helpers/bus', () => {
       instance.modules = [{ onSyncFinished: stub }];
       await instance.message('syncFinished');
       expect(stub.calledOnce).is.true;
-      expect(stub3.calledOnce).to.be.true;
+      expect(stub.args[0][0]).to.be.undefined;
+    });
+
+    it('success without Promise', async () => {
+      instance.modules = [{ onSyncFinished: stub4 }];
+      await instance.message('syncFinished');
+      expect(stub4.calledOnce).is.true;
+      expect(stub4.args[0][0]).to.be.undefined;
     });
   });
 
@@ -98,7 +132,13 @@ describe('helpers/bus', () => {
       instance.modules = [{ onPeersReady: stub }];
       await instance.message('peersReady');
       expect(stub.calledOnce).is.true;
-      expect(stub3.calledOnce).to.be.true;
+    });
+
+    it('success without Promise', async () => {
+      instance.modules = [{ onPeersReady: stub4 }];
+      await instance.message('peersReady');
+      expect(stub4.calledOnce).is.true;
+      expect(stub4.args[0][0]).to.be.undefined;
     });
   });
 
@@ -109,7 +149,14 @@ describe('helpers/bus', () => {
       expect(stub.calledOnce).is.true;
       expect(stub.args[0][0]).to.deep.equal({ foo: 'bar' });
       expect(stub.args[0][1]).to.be.true;
-      expect(stub3.calledOnce).to.be.true;
+    });
+
+    it('success without Promise', async () => {
+      instance.modules = [{ onNewBlock: stub4 }];
+      await instance.message('newBlock', { foo: 'bar' } as any, true);
+      expect(stub4.calledOnce).is.true;
+      expect(stub4.args[0][0]).to.deep.equal({ foo: 'bar' });
+      expect(stub4.args[0][1]).to.be.true;
     });
   });
 
@@ -127,7 +174,21 @@ describe('helpers/bus', () => {
         transaction: 'foo',
       });
       expect(stub.args[0][1]).to.be.true;
-      expect(stub3.calledOnce).to.be.true;
+    });
+
+    it('success without Promise', async () => {
+      instance.modules = [{ onSignature: stub4 }];
+      await instance.message(
+        'signature',
+        { transaction: 'foo', signature: 123 },
+        true
+      );
+      expect(stub4.calledOnce).is.true;
+      expect(stub4.args[0][0]).to.deep.equal({
+        signature: 123,
+        transaction: 'foo',
+      });
+      expect(stub4.args[0][1]).to.be.true;
     });
   });
 
@@ -138,7 +199,14 @@ describe('helpers/bus', () => {
       expect(stub.calledOnce).is.true;
       expect(stub.args[0][0]).to.equal('abc');
       expect(stub.args[0][1]).to.be.true;
-      expect(stub3.calledOnce).to.be.true;
+    });
+
+    it('success without Promise', async () => {
+      instance.modules = [{ onUnconfirmedTransaction: stub4 }];
+      await instance.message('unconfirmedTransaction', 'abc', true);
+      expect(stub4.calledOnce).is.true;
+      expect(stub4.args[0][0]).to.equal('abc');
+      expect(stub4.args[0][1]).to.be.true;
     });
   });
 
@@ -153,7 +221,6 @@ describe('helpers/bus', () => {
       expect(stub2.args[0][0]).to.be.deep.eq({ the: 'block' });
       expect(stub.calledBefore(stub2)).is.true;
       expect(stub2.calledAfter(stub)).is.true;
-      expect(stub3.calledOnce).to.be.true;
     });
   });
 
@@ -167,7 +234,6 @@ describe('helpers/bus', () => {
       await instance.message('receiveBlock', { the: 'block' } as any);
       expect(stub.called).is.false;
       expect(stub2.called).is.false;
-      expect(stub3.calledOnce).to.be.true;
     });
   });
 });
