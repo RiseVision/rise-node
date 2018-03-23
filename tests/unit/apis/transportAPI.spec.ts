@@ -69,6 +69,7 @@ describe('apis/transportAPI', () => {
     transportModuleStub = container.get(Symbols.modules.transport);
     transportModuleStub.enqueueResponse('receiveTransactions', true);
     transportModuleStub.enqueueResponse('receiveTransaction', true);
+    transportModuleStub.enqueueResponse('receiveSignatures', Promise.resolve());
     peersLogicStub = container.get(Symbols.logic.peers);
     thePeer = { ip: '8.8.8.8', port: 1234 };
     peersLogicStub.enqueueResponse('create', thePeer);
@@ -133,6 +134,16 @@ describe('apis/transportAPI', () => {
           { transaction: '102', signatures: [1, 2, 3] },
         ],
       });
+    });
+  });
+
+  describe('postSignatures()', () => {
+    it('success', async () => {
+      const signatures = [{transaction: 'abc', signature: 'def'}];
+      result = await instance.postSignatures([{transaction: 'abc', signature: 'def'}]);
+      expect(result).to.be.undefined;
+      expect(transportModuleStub.stubs.receiveSignatures.calledOnce).to.be.true;
+      expect(transportModuleStub.stubs.receiveSignatures.args[0][0]).to.deep.equal(signatures);
     });
   });
 
