@@ -7,6 +7,10 @@ export default {
       type  : 'string',
       format: 'publicKey',
     },
+    username: {
+      type: 'string',
+      format: 'username',
+    },
   },
-  required  : ['publicKey'],
+  required  : ['publicKey', 'username'],
 };

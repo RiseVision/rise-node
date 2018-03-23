@@ -805,10 +805,7 @@ describe('src/modules/transport.ts', () => {
     let query;
 
     beforeEach(() => {
-      query                = {
-        signatures:
-          [{ transaction: 'transaction', signature: 'signature' }],
-      };
+      query                = [{ transaction: 'transaction', signature: 'signature' }];
       receiveSignatureStub = sandbox.stub(inst as any, 'receiveSignature');
     });
 
@@ -817,7 +814,7 @@ describe('src/modules/transport.ts', () => {
 
       expect(receiveSignatureStub.calledOnce).to.be.true;
       expect(receiveSignatureStub.firstCall.args.length).to.be.equal(1);
-      expect(receiveSignatureStub.firstCall.args[0]).to.be.deep.equal(query.signatures[0]);
+      expect(receiveSignatureStub.firstCall.args[0]).to.be.deep.equal(query[0]);
     });
 
     it('should call logger.debug if receiveSignature throw error', async () => {
@@ -829,7 +826,7 @@ describe('src/modules/transport.ts', () => {
       expect(logger.stubs.debug.calledOnce).to.be.true;
       expect(logger.stubs.debug.firstCall.args.length).to.be.equal(2);
       expect(logger.stubs.debug.firstCall.args[0]).to.be.equal(error);
-      expect(logger.stubs.debug.firstCall.args[1]).to.be.deep.equal(query.signatures[0]);
+      expect(logger.stubs.debug.firstCall.args[1]).to.be.deep.equal(query[0]);
     });
   });
 

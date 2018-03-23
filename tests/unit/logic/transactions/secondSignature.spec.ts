@@ -184,24 +184,24 @@ describe('logic/transactions/secondSignature', () => {
       expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
       expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.be.deep.equal({
         address          : sender.address,
-        u_secondSignature: 0,
+        u_secondSignature: 1,
       });
     });
+    it('should reject if sender.u_secondSignature', async () => {
+      sender.u_secondSignature = 1;
+      await expect(instance.applyUnconfirmed(tx, sender)).to.be.rejectedWith('Second signature already enabled');
+    });
+
+    it('should reject if sender.secondSignature', async () => {
+      sender.secondSignature = 1;
+      await expect(instance.applyUnconfirmed(tx, sender)).to.be.rejectedWith('Second signature already enabled');
+    });
+
   });
 
   describe('undoUnconfirmed', () => {
     beforeEach(() => {
       accountsModuleStub.stubs.setAccountAndGet.resolves();
-    });
-
-    it('should reject if sender.u_secondSignature', async () => {
-      sender.u_secondSignature = 'u_secondSignature';
-      await expect(instance.undoUnconfirmed(tx, sender)).to.be.rejectedWith('Second signature already enabled');
-    });
-
-    it('should reject if sender.secondSignature', async () => {
-      sender.secondSignature = 'secondSignature';
-      await expect(instance.undoUnconfirmed(tx, sender)).to.be.rejectedWith('Second signature already enabled');
     });
 
     it('should call accountsModule.setAccountAndGet and return a promise', async () => {
@@ -211,7 +211,7 @@ describe('logic/transactions/secondSignature', () => {
       expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
       expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.be.deep.equal({
         address          : sender.address,
-        u_secondSignature: 1,
+        u_secondSignature: 0,
       });
     });
   });

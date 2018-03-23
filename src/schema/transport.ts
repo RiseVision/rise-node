@@ -94,23 +94,17 @@ export default {
     id        : 'transport.signature',
     type      : 'object',
     properties: {
-      signature: {
-        type      : 'object',
-        properties: {
-          transaction: {
-            type     : 'string',
-            format   : 'id',
-            minLength: 1,
-            maxLength: 20,
-          },
-          signature  : {
-            type  : 'string',
-            format: 'signature',
-          },
-        },
-        required  : ['transaction', 'signature'],
+      transaction: {
+        type     : 'string',
+        format   : 'id',
+        minLength: 1,
+        maxLength: 20,
+      },
+      signature  : {
+        type  : 'string',
+        format: 'signature',
       },
     },
-    required  : ['signature'],
+    required  : ['transaction', 'signature'],
   },
 };

@@ -29,8 +29,7 @@ export interface ITransportModule extends IModule {
    */
   onNewBlock(block: SignedBlockType & { relays?: number }, broadcast: boolean): Promise<void>;
 
-  receiveSignatures(// tslint:disable-next-line max-line-length
-    query: { signatures: Array<{ transaction: string, signature: string }> }): Promise<void>;
+  receiveSignatures(signatures: Array<{ transaction: string, signature: string }> ): Promise<void>;
 
   /**
    * Validate signature with schema and calls processSignature from module multisignautre

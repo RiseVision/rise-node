@@ -7,8 +7,10 @@ import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import { TransactionType } from '../../../src/helpers';
 import { InnerTXQueue, TransactionPool} from '../../../src/logic';
 import { IBaseTransaction } from '../../../src/logic/transactions';
-import { AccountsModuleStub, JobsQueueStub, LoggerStub,
-         TransactionLogicStub, TransactionsModuleStub } from '../../stubs';
+import {
+  AccountsModuleStub, JobsQueueStub, LoggerStub, SequenceStub,
+  TransactionLogicStub, TransactionsModuleStub
+} from '../../stubs';
 
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
@@ -217,6 +219,7 @@ describe('logic/transactionPool - TransactionPool', () => {
   let loggerStub: LoggerStub;
   let transactionLogicStub: TransactionLogicStub;
   let accountsModuleStub: AccountsModuleStub;
+  let balanceSequenceStub: SequenceStub;
   let tx: IBaseTransaction<any>;
   let tx2: IBaseTransaction<any>;
   let tx3: IBaseTransaction<any>;
@@ -238,9 +241,11 @@ describe('logic/transactionPool - TransactionPool', () => {
           },
         };
       }
-      (newTx as any).ready = (i % 2 === 0);
       const bundled = (i >= 12 && i < 25);
       instance.queueTransaction(newTx, bundled);
+      if (newTx.type === TransactionType.MULTI) {
+        instance.multisignature.getPayload(newTx).ready = (i % 2 === 0);
+      }
       allTxs.push(newTx);
     }
     sandbox.resetHistory();
@@ -264,12 +269,13 @@ describe('logic/transactionPool - TransactionPool', () => {
     loggerStub = new LoggerStub();
     transactionLogicStub = new TransactionLogicStub();
     accountsModuleStub = new AccountsModuleStub();
-
+    balanceSequenceStub = new SequenceStub();
     // dependencies
     (instance as any).bus = fakeBus;
     (instance as any).jobsQueue = jqStub;
     (instance as any).logger = loggerStub;
     (instance as any).appState = fakeAppState;
+    (instance as any).balancesSequence = balanceSequenceStub;
     (instance as any).transactionLogic = transactionLogicStub;
     (instance as any).accountsModule = accountsModuleStub;
     (instance as any).config = {
@@ -393,11 +399,11 @@ describe('logic/transactionPool - TransactionPool', () => {
     const addFillPoolTxs = () => {
       // tx and tx2 go to multisignature queue
       tx.type = TransactionType.MULTI;
-      (tx as any).ready = true;
       instance.queueTransaction(tx, false);
+      instance.multisignature.getPayload(tx).ready = true;
       tx2.type = TransactionType.MULTI;
-      (tx2 as any).ready = true;
       instance.queueTransaction(tx2, false);
+      instance.multisignature.getPayload(tx2).ready = true;
       // tx3 goes to queued queue
       instance.queueTransaction(tx3, false);
     };
@@ -503,13 +509,13 @@ describe('logic/transactionPool - TransactionPool', () => {
     it('should return all the txs in a merged array', async () => {
       await addMixedTransactionsAndFillPool();
       const retVal = instance.getMergedTransactionList(30);
-      const expectedIDs = [ 'tx_10', 'tx_8', 'tx_6', 'tx_4', 'tx_2', 'tx_0', 'tx_25', 'tx_26', 'tx_27', 'tx_28',
+      const expectedIDs = [ 'tx_10', 'tx_8', 'tx_6', 'tx_4', 'tx_2', 'tx_25', 'tx_26', 'tx_27', 'tx_28',
         'tx_29', 'tx_30', 'tx_31', 'tx_32', 'tx_33', 'tx_34', 'tx_35', 'tx_36', 'tx_37', 'tx_38', 'tx_39', 'tx_40',
-        'tx_41', 'tx_42', 'tx_43', 'tx_44', 'tx_45', 'tx_46', 'tx_47', 'tx_48' ];
+        'tx_41', 'tx_42', 'tx_43', 'tx_44', 'tx_45', 'tx_46', 'tx_47', 'tx_48', 'tx_49'];
 
       expect(Array.isArray(retVal)).to.be.true;
       expect(retVal.length).to.be.equal(expectedIDs.length);
-      expect(retVal.map((t) => t.id)).to.be.equalTo(expectedIDs);
+      expect(retVal.map((t) => t.id)).to.be.deep.eq(expectedIDs);
     });
 
     it('should respect passed limit unless less than minimum', async () => {
@@ -575,7 +581,10 @@ describe('logic/transactionPool - TransactionPool', () => {
     beforeEach(async () => {
       await addMixedTransactionsAndFillPool();
     });
-
+    it('should call balancesSequence', async () => {
+      await instance.processBundled();
+      expect(balanceSequenceStub.spies.addAndPromise.calledOnce).is.true;
+    });
     it('should call list with reverse and limit on bundled queue', async () => {
       await instance.processBundled();
       expect(spiedQueues.bundled.list.calledOnce).to.be.true;
@@ -585,6 +594,7 @@ describe('logic/transactionPool - TransactionPool', () => {
 
     it('should call remove on bundled for each tx', async () => {
       const bundledCount = instance.bundled.count;
+      sandbox.stub(instance as any, 'processVerifyTransaction').resolves(true);
       await instance.processBundled();
       expect(spiedQueues.bundled.remove.called).to.be.true;
       expect(spiedQueues.bundled.remove.callCount).to.be.equal(bundledCount);
@@ -592,10 +602,12 @@ describe('logic/transactionPool - TransactionPool', () => {
 
     it('should call processVerifyTransaction for each valid tx', async () => {
       const bundledCount = instance.bundled.count;
-      const processVerifyTransactionSpy = sandbox.spy(instance as any, 'processVerifyTransaction');
+
+      const processVerifyTransactionStub = sandbox
+        .stub(instance as any, 'processVerifyTransaction').resolves(true);
       await instance.processBundled();
-      expect(processVerifyTransactionSpy.called).to.be.true;
-      expect(processVerifyTransactionSpy.callCount).to.be.equal(bundledCount);
+      expect(processVerifyTransactionStub.called).to.be.true;
+      expect(processVerifyTransactionStub.callCount).to.be.equal(bundledCount);
     });
 
     it('should call queueTransaction for each valid tx if processVerifyTransaction does not throw', async () => {

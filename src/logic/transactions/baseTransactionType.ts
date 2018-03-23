@@ -1,5 +1,6 @@
 import { injectable, unmanaged } from 'inversify';
 import { TransactionType } from '../../helpers/';
+import { MemAccountsData } from '../account';
 import { SignedBlockType } from '../block';
 
 export interface IBaseTransaction<T> {
@@ -41,13 +42,13 @@ export abstract class BaseTransactionType<T> {
     return this.txType;
   }
 
-  public abstract calculateFee(tx: IBaseTransaction<T>, sender: any, height: number): number;
+  public abstract calculateFee(tx: IBaseTransaction<T>, sender: MemAccountsData, height: number): number;
 
-  public verify(tx: IBaseTransaction<T>, sender: any): Promise<void> {
+  public verify(tx: IBaseTransaction<T>, sender: MemAccountsData): Promise<void> {
     return Promise.resolve();
   }
 
-  public process(tx: IBaseTransaction<T>, sender: any): Promise<void> {
+  public process(tx: IBaseTransaction<T>, sender: MemAccountsData): Promise<void> {
     return Promise.resolve();
   }
 
@@ -55,19 +56,19 @@ export abstract class BaseTransactionType<T> {
     return emptyBuffer;
   }
 
-  public apply(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: any): Promise<void> {
+  public apply(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: MemAccountsData): Promise<void> {
     return Promise.resolve();
   }
 
-  public applyUnconfirmed(tx: IBaseTransaction<T>, sender: any): Promise<void> {
+  public applyUnconfirmed(tx: IBaseTransaction<T>, sender: MemAccountsData): Promise<void> {
     return Promise.resolve();
   }
 
-  public undo(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: any): Promise<void> {
+  public undo(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: MemAccountsData): Promise<void> {
     return Promise.resolve();
   }
 
-  public undoUnconfirmed(tx: IBaseTransaction<T>, sender: any): Promise<void> {
+  public undoUnconfirmed(tx: IBaseTransaction<T>, sender: MemAccountsData): Promise<void> {
     return Promise.resolve();
   }
 
@@ -82,7 +83,7 @@ export abstract class BaseTransactionType<T> {
     return Promise.resolve();
   }
 
-  public ready(tx: IBaseTransaction<T>, sender: any): boolean {
+  public ready(tx: IBaseTransaction<T>, sender: MemAccountsData): boolean {
     if (Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
       if (!Array.isArray(tx.signatures)) {
         return false;
