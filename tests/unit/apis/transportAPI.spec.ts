@@ -102,6 +102,7 @@ describe('apis/transportAPI', () => {
 
   afterEach(() => {
     sandbox.restore();
+    sandbox.resetHistory();
   });
 
   describe('height()', () => {
@@ -207,6 +208,25 @@ describe('apis/transportAPI', () => {
       expect(transportModuleStub.stubs.receiveTransaction.args[0][3]).to.equal(
         'post /foo2'
       );
+      expect(transportModuleStub.stubs.receiveTransactions.called).to.be
+        .false;
+    });
+
+    it('Without transactions and transaction', async () => {
+      await instance.postTransactions(
+        undefined,
+        undefined as any,
+        {
+          headers: { port: '1234' },
+          ip: '8.8.8.8',
+          method: 'post',
+          url: '/foo2',
+        } as any
+      );
+      expect(peersLogicStub.stubs.create.calledOnce).to.be.true;
+      expect(peersLogicStub.stubs.create.args[0][0]).to.deep.equal(thePeer);
+      expect(transportModuleStub.stubs.receiveTransaction.calledOnce).to.be
+        .false;
       expect(transportModuleStub.stubs.receiveTransactions.called).to.be
         .false;
     });
