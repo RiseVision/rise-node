@@ -178,6 +178,7 @@ describe('apis/transportAPI', () => {
         'post /foo'
       );
       expect(result).to.deep.equal({});
+      expect(transportModuleStub.stubs.receiveTransaction.called).to.be.false;
     });
 
     it('One transaction', async () => {
@@ -206,6 +207,8 @@ describe('apis/transportAPI', () => {
       expect(transportModuleStub.stubs.receiveTransaction.args[0][3]).to.equal(
         'post /foo2'
       );
+      expect(transportModuleStub.stubs.receiveTransactions.called).to.be
+        .false;
     });
   });
 
