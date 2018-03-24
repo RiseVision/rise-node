@@ -26,6 +26,13 @@ describe('modules/accounts', () => {
     accountLogicStub.reset();
     accountModule = container.get<any>(Symbols.modules.accounts);
   });
+
+  describe('cleanup', () => {
+    it('should return resolved promise', async () => {
+      await expect(accountModule.cleanup()).to.be.fulfilled;
+    });
+  });
+  
   describe('.getAccount', () => {
     it('should call accountLogic.get', async () => {
       accountLogicStub.enqueueResponse('get', 'diocan');

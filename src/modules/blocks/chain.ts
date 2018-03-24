@@ -2,6 +2,7 @@ import { inject, injectable, tagged } from 'inversify';
 import * as _ from 'lodash';
 import { IDatabase, ITask } from 'pg-promise';
 import { Bus, catchToLoggerAndRemapError, ILogger, Inserts, Sequence, TransactionType, wait } from '../../helpers/';
+import { WrapInBalanceSequence } from '../../helpers/decorators/wrapInSequence';
 import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
   IAccountsModule,
@@ -30,9 +31,10 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   private bus: Bus;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
-  private balancesSequence: Sequence;
+  public balancesSequence: Sequence;
 
   // LOGIC
   @inject(Symbols.logic.block)
@@ -378,47 +380,47 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * @param {SignedBlockType} lb
    * @returns {Promise<SignedBlockType>}
    */
+  @WrapInBalanceSequence
   private async popLastBlock(lb: SignedBlockType): Promise<SignedAndChainedBlockType> {
-    return this.balancesSequence.addAndPromise(async () => {
-      const b = await this.blocksModuleUtils.loadBlocksPart({ id: lb.previousBlock });
-      if (b.length === 0) {
-        throw new Error('previousBlock is null');
+    const b = await this.blocksModuleUtils.loadBlocksPart({ id: lb.previousBlock });
+    if (b.length === 0) {
+      throw new Error('previousBlock is null');
+    }
+    const [previousBlock] = b;
+
+    const txs = lb.transactions.reverse();
+    try {
+      for (const tx of txs) {
+        const sender = await this.accountsModule.getAccount({ publicKey: tx.senderPublicKey });
+        // Undoing confirmed tx - refresh confirmed balance (see: logic.transaction.undo, logic.transfer.undo)
+        // WARNING: DB_WRITE
+        await this.transactionsModule.undo(tx as IConfirmedTransaction<any>, lb, sender);
+
+        // Undoing unconfirmed tx - refresh unconfirmed balance (see: logic.transaction.undoUnconfirmed)
+        // WARNING: DB_WRITE
+        await this.transactionsModule.undoUnconfirmed(tx);
       }
-      const [previousBlock] = b;
+    } catch (err) {
+      this.logger.error('Failed to undo transactions', err);
+      process.exit(0);
+    }
 
-      const txs = lb.transactions.reverse();
-      try {
-        for (const tx of txs) {
-          const sender = await this.accountsModule.getAccount({ publicKey: tx.senderPublicKey });
-          // Undoing confirmed tx - refresh confirmed balance (see: logic.transaction.undo, logic.transfer.undo)
-          // WARNING: DB_WRITE
-          await this.transactionsModule.undo(tx as IConfirmedTransaction<any>, lb, sender);
+    await this.roundsModule.backwardTick(lb, previousBlock)
+      .catch((err) => {
+        // Fatal error, memory tables will be inconsistent
+        this.logger.error('Failed to perform backwards tick', err);
 
-          // Undoing unconfirmed tx - refresh unconfirmed balance (see: logic.transaction.undoUnconfirmed)
-          // WARNING: DB_WRITE
-          await this.transactionsModule.undoUnconfirmed(tx);
-        }
-      } catch (err) {
-        this.logger.error('Failed to undo transactions', err);
-        process.exit(0);
-      }
+        return process.exit(0);
+      });
 
-      await this.roundsModule.backwardTick(lb, previousBlock)
-        .catch((err) => {
-          // Fatal error, memory tables will be inconsistent
-          this.logger.error('Failed to perform backwards tick', err);
+    await this.deleteBlock(lb.id)
+      .catch((err) => {
+        // Fatal error, memory tables will be inconsistent
+        this.logger.error('Failed to delete block', err);
+        return process.exit(0);
+      });
 
-          return process.exit(0);
-        });
+    return previousBlock;
 
-      await this.deleteBlock(lb.id)
-        .catch((err) => {
-          // Fatal error, memory tables will be inconsistent
-          this.logger.error('Failed to delete block', err);
-          return process.exit(0);
-        });
-
-      return previousBlock;
-    });
   }
 }

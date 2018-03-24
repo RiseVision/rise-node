@@ -47,8 +47,8 @@ describe('helpers/z_schema', () => {
   describe('Format "username"', ()  => {
     const schema = { type: 'string', format: 'username' };
     // Y ?
-    it('should accept an empty string', () => {
-      expect(validator.validate('', schema)).to.be.true;
+    it('should not accept an empty string', () => {
+      expect(validator.validate('', schema)).to.be.false;
     });
     it('should accept an email address', () => {
       expect(validator.validate('aw3s0m3@rise.vision', schema)).to.be.true;

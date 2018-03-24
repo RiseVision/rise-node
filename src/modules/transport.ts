@@ -217,11 +217,8 @@ export class TransportModule implements ITransportModule {
     }
   }
 
-  @ValidateSchema()
-  public async receiveSignatures(@SchemaValid(schema.signature, 'Invalid signatures body')
-                                   // tslint:disable-next-line max-line-length
-                                   query: { signatures: Array<{ transaction: string, signature: string }> }): Promise<void> {
-    const { signatures } = query;
+  // tslint:disable-next-line
+  public async receiveSignatures(signatures: Array<{ transaction: string, signature: string }> ): Promise<void> {
     for (const signature of signatures) {
       try {
         await this.receiveSignature(signature);

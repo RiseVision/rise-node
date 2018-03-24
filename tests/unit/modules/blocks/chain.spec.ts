@@ -318,6 +318,11 @@ describe('modules/blocks/chain', () => {
       dbStub.stubs.tx.returns(Promise.resolve());
       busStub.enqueueResponse('message', Promise.resolve());
     });
+    it('should return undefined if cleanup in processing and set instance.isCleaning in true', async ()=>{
+      await inst.cleanup();
+      expect(await inst.applyBlock({transactions: allTxs} as any, false, false)).to.be.undefined
+      expect(txModule.stubs.undoUnconfirmedList.notCalled).to.be.true;
+    });
     it('should set .isProcessing to true to prevent shutdowns', async () => {
       const p = inst.applyBlock({transactions: allTxs} as any, false, false);
       expect(inst['isProcessing']).to.be.true;

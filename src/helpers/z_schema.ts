@@ -41,8 +41,8 @@ z_schema.registerFormat('address', (str: string) => {
 });
 
 z_schema.registerFormat('username', (str: string) => {
-  if (str.length === 0) {
-    return true;
+  if (typeof(str) !== 'string') {
+    return false;
   }
 
   return /^[a-z0-9!@$&_.]+$/ig.test(str);

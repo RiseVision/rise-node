@@ -18,6 +18,11 @@ export class InnerTXQueueStub<T = { receivedAt: Date }> extends BaseStubClass {
   }
 
   @stubMethod(true)
+  public getPayload() {
+    return {};
+  }
+
+  @stubMethod(true)
   public add(tx: IBaseTransaction<any>, payload?: { receivedAt: Date }) {
     return;
   }

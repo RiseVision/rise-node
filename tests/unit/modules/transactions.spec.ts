@@ -100,6 +100,18 @@ describe('modules/transactions', () => {
 
   describe('getQueuedTransaction', () => {
     it('should call txPool.queued.get and return', () => {
+      const returnedTx = { test: 'tx' };
+      transactionPoolStub.queued.stubs.get.returns(returnedTx);
+      const retVal = instance.getQueuedTransaction('testTxId');
+      expect(transactionPoolStub.queued.stubs.get.calledOnce).to.be.true;
+      expect(transactionPoolStub.queued.stubs.get.firstCall.args.length).to.be.equal(1);
+      expect(transactionPoolStub.queued.stubs.get.firstCall.args[0]).to.be.equal('testTxId');
+      expect(retVal).to.be.deep.equal(returnedTx);
+    });
+  });
+
+  describe('getQueuedTransaction', () => {
+    it('should call txPool.queued.get and return', () => {
       it('should call txPool.unconfirmed.get and return', () => {
         const returnedTx = { test: 'tx' };
         transactionPoolStub.queued.stubs.get.returns(returnedTx);

@@ -4,6 +4,7 @@ import { removeEmptyObjKeys, TransactionType } from '../../helpers/';
 import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import delegateSchema from '../../schema/logic/transactions/delegate';
+import { MemAccountsData } from '../account';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
@@ -98,7 +99,8 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     }
   }
 
-  public apply(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: any): Promise<void> {
+  // tslint:disable-next-line max-line-length
+  public apply(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: MemAccountsData): Promise<void> {
     const data: any = {
       address     : sender.address,
       isDelegate  : 1,
@@ -109,12 +111,15 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.u_username = null;
       data.username   = tx.asset.delegate.username;
     }
-
+    if (sender.isDelegate === 1) {
+      throw new Error('Account is already a delegate');
+    }
     return this.accountsModule.setAccountAndGet(data)
       .then(() => void 0);
   }
 
-  public undo(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: any): Promise<void> {
+  // tslint:disable-next-line max-line-length
+  public undo(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: MemAccountsData): Promise<void> {
     const data: any = {
       address     : sender.address,
       isDelegate  : 0,
@@ -133,7 +138,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
   /**
    * Stores in accounts that sender is now an unconfirmed delegate
    */
-  public applyUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: any): Promise<void> {
+  public applyUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: MemAccountsData): Promise<void> {
     const data: any = {
       address     : sender.address,
       isDelegate  : 0,
@@ -143,12 +148,14 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.username   = null;
       data.u_username = tx.asset.delegate.username;
     }
-
+    if (sender.u_isDelegate === 1) {
+      throw new Error('Account is already trying to be a delegate');
+    }
     return this.accountsModule.setAccountAndGet(data)
       .then(() => void 0);
   }
 
-  public undoUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: any): Promise<void> {
+  public undoUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: MemAccountsData): Promise<void> {
     const data: any = {
       address     : sender.address,
       isDelegate  : 0,

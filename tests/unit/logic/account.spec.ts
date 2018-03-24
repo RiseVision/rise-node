@@ -396,6 +396,11 @@ describe('logic/account', () => {
       expect(zSchemaStub.stubs.validate.firstCall.args[0]).to.be.eq(publicKey);
       expect(zSchemaStub.stubs.validate.firstCall.args[1]).to.be.deep.eq({ format: 'hex' });
     });
+
+    it('publicKey is undefined & allowUndefined is false', () => {
+      const error = 'Public Key is undefined';
+      expect(() => account.assertPublicKey(undefined, false)).to.throw(error);
+    });
   });
 
   describe('account.toDB', () => {
@@ -784,6 +789,13 @@ describe('logic/account', () => {
       expect(callback.getCall(0).args[1]).to.be.undefined;
     });
 
+    it('should return callback with rejected promise if one of diff fields value is Infinity', async()=>{
+      diff.balance = Number.POSITIVE_INFINITY;
+      await account.merge(address, diff, callback)
+        .catch((err) => {
+          expect(err).to.be.equal('Encountered insane number: Infinity');
+        });
+    });
   });
 
   describe('account.remove', () => {

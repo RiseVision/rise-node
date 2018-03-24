@@ -286,6 +286,14 @@ describe('logic/block', () => {
         instance.objectNormalize(dummyBlock);
       }).to.throw(/Failed to validate block schema/);
     });
+    it('should throw an exception if schema validation fails with errors', () => {
+      zschemastub.enqueueResponse('validate', false);
+      zschemastub.enqueueResponse('getLastErrors', [{message: '1'}, {message: '2'}]);
+      dummyBlock.greeting = 'Hello World!';
+      expect(() => {
+        instance.objectNormalize(dummyBlock);
+      }).to.throw('Failed to validate block schema: 1, 2');
+    })
   });
 
   describe('[static] getId', () => {
@@ -364,6 +372,10 @@ describe('logic/block', () => {
       instance.dbRead(raw);
       expect(parseIntSpy.callCount).to.be.eq(9);
       parseIntSpy.restore();
+    });
+    it('should return null is raw.d_id is undefined', () => {
+      delete raw.b_id;
+      expect(instance.dbRead(raw)).to.be.null;
     });
   });
 });

@@ -38,6 +38,7 @@ import {
 import { PeerType } from '../../../src/logic';
 import loaderSchema from '../../../src/schema/loader';
 import { createFakePeers } from '../../utils/fakePeersFactory';
+import sql from '../../../src/sql/loader';
 
 chai.use(chaiAsPromised);
 
@@ -518,6 +519,7 @@ describe('modules/loader', () => {
     let loadStub: SinonStub;
     let processExitStub: SinonStub;
     let processEmitStub: SinonStub;
+    let tStub: SinonStub;
 
     beforeEach(() => {
       dbStub                = container.get<DbStub>(Symbols.generic.db);
@@ -552,6 +554,20 @@ describe('modules/loader', () => {
 
       res = [[], [], [{}]];
 
+      tStub = {
+        batch: sandbox.stub(),
+        one  : sandbox.stub().returns(1),
+        query: sandbox.stub().returns(1),
+        none : sandbox.stub().returns(1),
+      };
+      dbStub.stubs.task.onCall(0).callsFake((fn) => {
+        fn(tStub);
+        return Promise.resolve(results);
+      });
+      dbStub.stubs.task.onCall(1).callsFake((fn) => {
+        fn(tStub);
+        return Promise.resolve(res);
+      });
       appStateStub.enqueueResponse('set', {});
       dbStub.enqueueResponse('task', Promise.resolve(results));
       dbStub.enqueueResponse('task', Promise.resolve(res));
@@ -580,6 +596,28 @@ describe('modules/loader', () => {
       expect(dbStub.stubs.task.called).to.be.true;
       expect(dbStub.stubs.task.firstCall.args.length).to.be.equal(1);
       expect(dbStub.stubs.task.firstCall.args[0]).to.be.a('function');
+    });
+
+    it('shoudl call db.task(first call) callback', async () => {
+      await instance.loadBlockChain();
+
+      expect(tStub.batch.calledTwice).to.be.true;
+      expect(tStub.batch.firstCall.args.length).to.be.equal(1);
+      expect(tStub.batch.firstCall.args[0]).to.be.deep.equal([1, 1, 1, 1, 1]);
+
+      expect(tStub.one.calledTwice).to.be.true;
+      expect(tStub.one.firstCall.args.length).to.be.equal(1);
+      expect(tStub.one.firstCall.args[0]).to.be.equal(sql.countBlocks);
+      expect(tStub.one.secondCall.args.length).to.be.equal(1);
+      expect(tStub.one.secondCall.args[0]).to.be.equal(sql.countMemAccounts);
+
+      expect(tStub.query.callCount).to.be.equal(5);
+      expect(tStub.query.firstCall.args.length).to.be.equal(1);
+      expect(tStub.query.firstCall.args[0]).to.be.equal(sql.getGenesisBlock);
+      expect(tStub.query.secondCall.args.length).to.be.equal(1);
+      expect(tStub.query.secondCall.args[0]).to.be.equal(sql.getMemRounds);
+      expect(tStub.query.thirdCall.args.length).to.be.equal(1);
+      expect(tStub.query.thirdCall.args[0]).to.be.equal(sql.countDuplicatedDelegates);
     });
 
     it('should call logger.info with blocks count info', async () => {
@@ -844,6 +882,24 @@ describe('modules/loader', () => {
       expect(dbStub.stubs.task.callCount).to.be.equal(2);
       expect(dbStub.stubs.task.secondCall.args.length).to.be.equal(1);
       expect(dbStub.stubs.task.secondCall.args[0]).to.be.a('function');
+    });
+
+    it('shoudl call db.task(second call) callback', async () => {
+      await instance.loadBlockChain();
+
+      expect(tStub.batch.calledTwice).to.be.true;
+      expect(tStub.batch.secondCall.args.length).to.be.equal(1);
+      expect(tStub.batch.secondCall.args[0]).to.be.deep.equal([1, 1, 1]);
+
+      expect(tStub.none.calledOnce).to.be.true;
+      expect(tStub.none.firstCall.args.length).to.be.equal(1);
+      expect(tStub.none.firstCall.args[0]).to.be.equal(sql.updateMemAccounts);
+
+      expect(tStub.query.callCount).to.be.equal(5);
+      expect(tStub.query.getCall(3).args.length).to.be.equal(1);
+      expect(tStub.query.getCall(3).args[0]).to.be.equal(sql.getOrphanedMemAccounts);
+      expect(tStub.query.getCall(4).args.length).to.be.equal(1);
+      expect(tStub.query.getCall(4).args[0]).to.be.equal(sql.getDelegates);
     });
 
     it('should return instance.load if res[1].length > 0', async () => {

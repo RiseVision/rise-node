@@ -81,6 +81,15 @@ export class TransportAPI {
     return {signatures};
   }
 
+  @Post('/signatures')
+  @ValidateSchema()
+  public async postSignatures(
+    @SchemaValid(transportSchema.signatures, 'Invalid signatures body')
+    @BodyParam('signatures') signatures: Array<{ transaction: string, signature: string }>) {
+
+    return this.transportModule.receiveSignatures(signatures);
+  }
+
   @Get('/transactions')
   public transactions() {
     const transactions = this.transactionsModule.getMergedTransactionList(this.constants.maxSharedTxs);
