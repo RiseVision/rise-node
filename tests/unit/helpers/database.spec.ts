@@ -15,8 +15,9 @@ const pgStub = () => () => true;
 const migratorStub = {} as any;
 
 const ProxyDatabase = proxyquire('../../../src/helpers/database', {
-  'pg-promise': pgStub,
   './migrator': migratorStub,
+  'pg-monitor': monitor,
+  'pg-promise': pgStub,
 });
 
 // tslint:disable-next-line no-var-requires
@@ -200,17 +201,16 @@ describe('helpers/database', () => {
       monitor.detach();
     });
 
-    it('monitor.log', async()=>{
-      database.__set__('Migrator', function Migrator() {
-        return migrator;
-      });
+    it('monitor.log', async () => {
+      migratorStub.Migrator = function Migrator() {
+          return migrator;
+      };
       const fakeILogger: any = {
         log: sandbox.stub(),
       };
-      const monitor = database.__get__('monitor');
       const info = {event: 'event', text: 'text', display: true};
 
-      await database.connect(appConfig as any, fakeILogger);
+      await ProxyDatabase.connect(appConfig as any, fakeILogger);
       monitor.log('msg', info);
 
       expect(fakeILogger.log.calledOnce).to.be.true;
