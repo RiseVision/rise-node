@@ -69,6 +69,7 @@ describe('apis/transportAPI', () => {
     transportModuleStub = container.get(Symbols.modules.transport);
     transportModuleStub.enqueueResponse('receiveTransactions', true);
     transportModuleStub.enqueueResponse('receiveTransaction', true);
+    transportModuleStub.enqueueResponse('receiveSignatures', Promise.resolve());
     peersLogicStub = container.get(Symbols.logic.peers);
     thePeer = { ip: '8.8.8.8', port: 1234 };
     peersLogicStub.enqueueResponse('create', thePeer);
@@ -101,6 +102,7 @@ describe('apis/transportAPI', () => {
 
   afterEach(() => {
     sandbox.restore();
+    sandbox.resetHistory();
   });
 
   describe('height()', () => {
@@ -136,6 +138,17 @@ describe('apis/transportAPI', () => {
     });
   });
 
+  describe('postSignatures', () => {
+    it('should call transportModule.receiveSignatures', async () => {
+      transportModuleStub.enqueueResponse('receiveSignatures', true);
+      const signatures = [{transaction: 'transaction', signature: 'signature'}];
+      expect(await instance.postSignatures(signatures)).to.be.true;
+      expect(transportModuleStub.stubs.receiveSignatures.calledOnce).to.be.true;
+      expect(transportModuleStub.stubs.receiveSignatures.firstCall.args.length).to.be.equal(1);
+      expect(transportModuleStub.stubs.receiveSignatures.firstCall.args[0]).to.be.deep.equal(signatures);
+    });
+  });
+
   describe('transactions()', () => {
     it('success', () => {
       result = instance.transactions();
@@ -167,6 +180,7 @@ describe('apis/transportAPI', () => {
         'post /foo'
       );
       expect(result).to.deep.equal({});
+      expect(transportModuleStub.stubs.receiveTransaction.called).to.be.false;
     });
 
     it('One transaction', async () => {
@@ -195,6 +209,27 @@ describe('apis/transportAPI', () => {
       expect(transportModuleStub.stubs.receiveTransaction.args[0][3]).to.equal(
         'post /foo2'
       );
+      expect(transportModuleStub.stubs.receiveTransactions.called).to.be
+        .false;
+    });
+
+    it('Without transactions and transaction', async () => {
+      await instance.postTransactions(
+        undefined,
+        undefined as any,
+        {
+          headers: { port: '1234' },
+          ip: '8.8.8.8',
+          method: 'post',
+          url: '/foo2',
+        } as any
+      );
+      expect(peersLogicStub.stubs.create.calledOnce).to.be.true;
+      expect(peersLogicStub.stubs.create.args[0][0]).to.deep.equal(thePeer);
+      expect(transportModuleStub.stubs.receiveTransaction.calledOnce).to.be
+        .false;
+      expect(transportModuleStub.stubs.receiveTransactions.called).to.be
+        .false;
     });
   });
 

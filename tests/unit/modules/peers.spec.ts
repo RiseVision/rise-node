@@ -384,5 +384,10 @@ describe('modules/peers', () => {
       expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal('Import peers from database failed');
       expect(loggerStub.stubs.error.firstCall.args[1]).to.be.deep.equal({error: error.message});
     });
+    it('should not call broadcast peersReady if process.env.NODE_ENV === test', async()=>{
+      process.env.NODE_ENV = 'test';
+      await instR.onBlockchainReady();
+      expect(busStub.stubs.message.called).is.false;
+    });
   });
 });
