@@ -140,7 +140,7 @@ describe('apis/transportAPI', () => {
 
   describe('postSignatures', () => {
     it('should call transportModule.receiveSignatures', async () => {
-      transportModuleStub.enqueueResponse('receiveSignatures', true);
+      transportModuleStub.stubs.receiveSignatures.resolves(true);
       const signatures = [{transaction: 'transaction', signature: 'signature'}];
       expect(await instance.postSignatures(signatures)).to.be.true;
       expect(transportModuleStub.stubs.receiveSignatures.calledOnce).to.be.true;

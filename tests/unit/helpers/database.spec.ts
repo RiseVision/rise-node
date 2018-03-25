@@ -211,7 +211,7 @@ describe('helpers/database', () => {
       const info = {event: 'event', text: 'text', display: true};
 
       await ProxyDatabase.connect(appConfig as any, fakeILogger);
-      monitor.log('msg', info);
+      (monitor as any).log('msg', info);
 
       expect(fakeILogger.log.calledOnce).to.be.true;
       expect(fakeILogger.log.firstCall.args.length).to.be.equal(2);

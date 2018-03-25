@@ -519,7 +519,7 @@ describe('modules/loader', () => {
     let loadStub: SinonStub;
     let processExitStub: SinonStub;
     let processEmitStub: SinonStub;
-    let tStub: SinonStub;
+    let tStub;
 
     beforeEach(() => {
       dbStub                = container.get<DbStub>(Symbols.generic.db);
