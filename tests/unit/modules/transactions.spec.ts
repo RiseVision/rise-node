@@ -326,9 +326,8 @@ describe('modules/transactions', () => {
     it('should call logger.debug', async () => {
       await instance.applyUnconfirmed(tx as any, sender as any);
       expect(loggerStub.stubs.debug.calledOnce).to.be.true;
-      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(2);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.deep.equal('Applying unconfirmed transaction');
-      expect(loggerStub.stubs.debug.firstCall.args[1]).to.be.deep.equal(tx.id);
+      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.contain('Applying unconfirmed transaction');
     });
 
     it('should throw if sender not set and tx not in genesis block', async () => {
@@ -393,9 +392,8 @@ describe('modules/transactions', () => {
     it('should call logger.debug', async () => {
       await instance.undoUnconfirmed(tx);
       expect(loggerStub.stubs.debug.calledOnce).to.be.true;
-      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(2);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Undoing unconfirmed transaction');
-      expect(loggerStub.stubs.debug.firstCall.args[1]).to.be.equal(tx.id);
+      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.contain('Undoing unconfirmed transaction');
     });
 
     it('should call accountsModule.getAccount', async () => {

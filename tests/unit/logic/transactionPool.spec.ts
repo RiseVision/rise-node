@@ -626,28 +626,27 @@ describe('logic/transactionPool - TransactionPool', () => {
       expect(queueTransactionSpy.called).to.be.false;
     });
 
-    it('should call logger.debug if queueTransaction fails', async () => {
+    it('should call logger.warn if queueTransaction fails', async () => {
       const queueTransactionStub = sandbox.stub(instance as any, 'queueTransaction').throws('err');
       sandbox.stub(instance as any, 'processVerifyTransaction').resolves(true);
       await instance.processBundled();
       expect(queueTransactionStub.called).to.be.true;
-      expect(loggerStub.stubs.debug.called).to.be.true;
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.match(/Failed to queue/);
+      expect(loggerStub.stubs.warn.called).to.be.true;
+      expect(loggerStub.stubs.warn.firstCall.args[0]).to.match(/Failed to queue/);
     });
 
-    it('should call logger.debug if processVerifyTransaction throws', async () => {
+    it('should call logger.warn if processVerifyTransaction throws', async () => {
       sandbox.stub(instance as any, 'processVerifyTransaction').throws('err');
       await instance.processBundled();
-      expect(loggerStub.stubs.debug.called).to.be.true;
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.match(/Failed to process/);
+      expect(loggerStub.stubs.warn.called).to.be.true;
+      expect(loggerStub.stubs.warn.firstCall.args[0]).to.match(/Failed to process/);
     });
 
-    it('should call removeUnconfirmedTransaction if processVerifyTransaction fails', async () => {
-      const removeUnconfirmedTransactionSpy = sandbox.spy(instance as any, 'removeUnconfirmedTransaction');
+    it('should call bundled.remove if processVerifyTransaction fails', async () => {
       sandbox.stub(instance as any, 'processVerifyTransaction').throws('err');
       await instance.processBundled();
-      expect(removeUnconfirmedTransactionSpy.called).to.be.true;
-      expect(removeUnconfirmedTransactionSpy.firstCall.args[0]).to.match(/^tx_/);
+      expect(spiedQueues.bundled.remove.called).to.be.true;
+      expect(spiedQueues.bundled.remove.firstCall.args[0]).to.match(/^tx_/);
     });
   });
 

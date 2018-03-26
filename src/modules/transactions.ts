@@ -150,7 +150,7 @@ export class TransactionsModule implements ITransactionsModule {
   // tslint:disable-next-line max-line-length
   public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: MemAccountsData): Promise<void> {
     // tslint:disable-next-line max-line-length
-    this.logger.debug(`Applying unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${sender.u_balance}`);
+    this.logger.debug(`Applying unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${(sender || {u_balance: undefined}).u_balance}`);
 
     if (!sender && transaction.blockId !== this.genesisBlock.id) {
       throw new Error('Invalid block id');
