@@ -222,7 +222,7 @@ describe('modules/blocks/chain', () => {
       allTxs   = sendTxs.concat(voteTxs);
     });
     it('should call applyUnconfirmed and apply to all txs included in genesis. keeping votes for last', async () => {
-      await inst.applyGenesisBlock({transactions: voteTxs.concat(sendTxs)} as any);
+      await inst.applyGenesisBlock({transactions: sendTxs.concat(voteTxs)} as any);
 
       const totalTxs = voteTxs.length + sendTxs.length;
       expect(txModule.stubs.applyUnconfirmed.callCount).is.eq(totalTxs);
