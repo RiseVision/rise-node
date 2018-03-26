@@ -25,7 +25,7 @@ import {
   createVoteTransaction,
   getRandomDelegateWallet
 } from './common/utils';
-import { Ed, wait } from '../../src/helpers';
+import { Ed, JobsQueue, wait } from '../../src/helpers';
 import BigNumber from 'bignumber.js';
 
 // tslint:disable no-unused-expression
@@ -386,7 +386,7 @@ describe('highlevel checks', function () {
   });
 
   describe('other tests', () => {
-    it('transactions/blocks concurrency test', async function () {
+    it('transactions/blocks concurrency test 1', async function () {
       this.timeout(1230000);
       /**
        * Tests applyUnconfirmed/undo when receiving blocks and transactions
@@ -455,6 +455,81 @@ describe('highlevel checks', function () {
         expect(new BigNumber(u_balance).toNumber()).to.be.eq(Math.max(0, new BigNumber(funds)
           .minus(fundPerTx * (i + 1 + 2))
           .minus(systemModule.getFees().fees.send * (i + 1 + 2))
+          .toNumber()), 'unconfirmed balance');
+
+        expect(blocksModule.lastBlock.height).to.be.eq( startHeight + i + 1);
+        // console.log('Current Balance is : ', balance, u_balance);
+      }
+
+      await initializer.rawMineBlocks(1);
+      const {u_balance, balance} = await accModule.getAccount({address: senderAccount.address});
+      expect(u_balance).to.be.eq(balance, 'unconfirmed balance');
+    });
+    it('transactions/blocks concurrency test 2', async function () {
+      this.timeout(1230000);
+      /**
+       * This test is similar to #1 above with the only difference that
+       * instead of sending the "next block" tx we send the current block tx
+       * in the hope that a dual applyUnconfirmed gets done causing inconsistency.
+       */
+      const jobsQueue = initializer.appManager.container.get<JobsQueue>(Symbols.helpers.jobsQueue);
+
+      const fieldheader = {
+        nethash: 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
+        version: '0.1.10',
+        port   : 1,
+      };
+
+      const startHeight = blocksModule.lastBlock.height;
+      const fundPerTx = 1;
+
+      // Create some 1 satoshi transactions
+      const txs = await Promise.all(
+        new Array(10000).fill(null)
+          .map((what, idx) => createSendTransaction(0, fundPerTx, senderAccount, '1R', {timestamp: idx}))
+      );
+
+
+      for (let i = 0; i < 250; i++) {
+        const block = await initializer.generateBlock(txs.slice(i, i + 1));
+        console.log (`####`);
+        console.log(block.transactions[0].id);
+        console.log (`####`);
+
+        // Send the current (same) transaction
+        await supertest(initializer.appManager.expressApp)
+            .post('/peer/transactions')
+            .set(fieldheader)
+            .send({transaction: txs.slice(i, i+1)[0]})
+            .expect(200);
+
+
+        await Promise.all([
+          // simulate fillPool (forgeModule calling it)
+          // wait(Math.random() * 100).then(() => jobsQueue.bau['delegatesNextForge']()),
+          // Broadcast block with current transaction
+          supertest(initializer.appManager.expressApp)
+            .post('/peer/blocks')
+            .set(fieldheader)
+            .send({block})
+            .expect(200)
+        ]);
+
+        expect(blocksModule.lastBlock.blockSignature).to.be.eq(block.blockSignature);
+
+        // Check balances are correct so that no other applyUnconfirmed happened.
+        // NOTE: this could fail as <<<--HERE-->>> an applyUnconfirmed (of NEXT tx) could
+        // have happened
+        const { u_balance, balance } = await accModule.getAccount({address: senderAccount.address});
+        // console.log('End loop - test begins');
+        expect(new BigNumber(balance).toNumber()).to.be.eq(new BigNumber(funds)
+          .minus(fundPerTx * (i + 1))
+          .minus(systemModule.getFees().fees.send * (i + 1))
+          .toNumber(), 'confirmed balance');
+
+        expect(new BigNumber(u_balance).toNumber()).to.be.eq(Math.max(0, new BigNumber(funds)
+          .minus(fundPerTx * (i + 1))
+          .minus(systemModule.getFees().fees.send * (i + 1))
           .toNumber()), 'unconfirmed balance');
 
         expect(blocksModule.lastBlock.height).to.be.eq( startHeight + i + 1);
