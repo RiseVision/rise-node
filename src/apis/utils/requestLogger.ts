@@ -9,6 +9,21 @@ import { IBlocksModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import { AppConfig } from '../../types/genericTypes';
 
+const startHRTime = process.hrtime();
+
+// tslint:disable-next-line
+export type RequestLoggerEntry = {
+  height: number
+  now: number
+  fromStart: [number, number]
+  req: {
+    body: any
+    headers: any
+    query: any
+    url: string
+  }
+};
+
 @Middleware({ type: 'before' })
 @injectable()
 @IoCSymbol(Symbols.api.utils.requestLogger)
@@ -39,8 +54,10 @@ export class RequestLogger implements ExpressMiddlewareInterface {
   }
 
   public use(request: express.Request, response: express.Response, next: (err?: any) => any) {
+    // process.hrtime returns a [seconds, nanoseconds] tuple
+    const elapsed = process.hrtime(startHRTime);
     if (this.shouldLog(request)) {
-      this.log(request);
+      this.log(request, elapsed);
     }
     next();
   }
@@ -55,10 +72,11 @@ export class RequestLogger implements ExpressMiddlewareInterface {
     return validUrls.length === 1;
   }
 
-  private log(req: express.Request) {
-    const lineObj = {
+  private log(req: express.Request, elapsed: [number, number]) {
+    const lineObj: RequestLoggerEntry = {
       height: this.blocksModule.lastBlock.height,
       now: Date.now(),
+      fromStart: elapsed,
       req: {
         body: req.body,
         headers: req.headers,
