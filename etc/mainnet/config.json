@@ -111,5 +111,10 @@
         "masterpassword": "r8NJovDde9yB",
         "autoexec": []
     },
-    "nethash": "cd8171332c012514864edd8eb6f68fc3ea6cb2afbaf21c56e12751022684cea5"
+    "nethash": "cd8171332c012514864edd8eb6f68fc3ea6cb2afbaf21c56e12751022684cea5",
+    "requestLogger": {
+        "enabled": false,
+        "logFileName": "logs/transport-requests.log",
+        "minHeight": 0
+    }
 }

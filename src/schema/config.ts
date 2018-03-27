@@ -311,9 +311,25 @@ export default {
         type  : 'string',
         format: 'hex',
       },
+      requestLogger: {
+        type: 'object',
+        properties: {
+          enabled: {
+            type: 'boolean',
+          },
+          logFileName: {
+            type: 'string',
+          },
+          minHeight: {
+            type: 'integer',
+            min: 0,
+          },
+        },
+        required: ['enabled', 'logFileName'],
+      },
     },
     required  : ['port', 'address', 'version', 'fileLogLevel', 'logFileName', 'consoleLogLevel', 'trustProxy',
       'topAccounts', 'db', 'api', 'peers', 'broadcasts', 'transactions', 'forging', 'loading', 'ssl', 'dapp',
-      'nethash', 'cacheEnabled', 'redis'],
+      'nethash', 'cacheEnabled', 'redis', 'requestLogger'],
   },
 };

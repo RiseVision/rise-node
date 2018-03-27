@@ -17,6 +17,7 @@ import { IBaseTransaction } from '../logic/transactions';
 import transportSchema from '../schema/transport';
 import transportSQL from '../sql/transport';
 import { AttachPeerHeaders } from './utils/attachPeerHeaders';
+import { RequestLogger } from './utils/requestLogger';
 import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
 
 @JsonController('/peer')
@@ -24,6 +25,7 @@ import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
 @IoCSymbol(Symbols.api.transport)
 @UseBefore(ValidatePeerHeaders)
 @UseBefore(AttachPeerHeaders)
+@UseBefore(RequestLogger)
 export class TransportAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;

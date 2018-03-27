@@ -98,6 +98,11 @@ export interface AppConfig {
 
   dapp: any;
   nethash: string;
+  requestLogger: {
+    enabled: boolean
+    logFileName: string
+    minHeight: number
+  };
 }
 
 // tslint:disable-next-line interface-name
