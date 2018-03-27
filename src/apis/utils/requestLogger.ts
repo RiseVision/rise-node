@@ -11,7 +11,7 @@ import { AppConfig } from '../../types/genericTypes';
 
 @Middleware({ type: 'before' })
 @injectable()
-@IoCSymbol(Symbols.api.utils.attachPeerHeaderToResponseObject)
+@IoCSymbol(Symbols.api.utils.requestLogger)
 export class RequestLogger implements ExpressMiddlewareInterface {
 
   @inject(Symbols.generic.appConfig)
