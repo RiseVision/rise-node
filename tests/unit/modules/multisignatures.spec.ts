@@ -11,10 +11,12 @@ import { MultisignaturesModule } from '../../../src/modules';
 import {
   AccountsModuleStub,
   BusStub,
+  InnerTXQueueStub,
   LoggerStub,
   SequenceStub,
   SocketIOStub,
-  TransactionLogicStub, TransactionPoolStub,
+  TransactionLogicStub,
+  TransactionPoolStub,
   TransactionsModuleStub
 } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
@@ -38,6 +40,8 @@ describe('modules/multisignatures', () => {
   let transactionLogicStub: TransactionLogicStub;
   let transactionsModuleStub: TransactionsModuleStub;
   let multisigTx: MultiSignatureTransaction;
+  let transactionPoolStub: TransactionPoolStub;
+  let innerTXQueueStub: InnerTXQueueStub;
 
   before(() => {
     container = createContainer();
@@ -53,6 +57,8 @@ describe('modules/multisignatures', () => {
     transactionsModuleStub = container.get(Symbols.modules.transactions);
     accountsModuleStub     = container.get(Symbols.modules.accounts);
     transactionLogicStub   = container.get(Symbols.logic.transaction);
+    transactionPoolStub    = container.get(Symbols.logic.transactionPool);
+    innerTXQueueStub       = transactionPoolStub.multisignature;
     loggerStub             = container.get(Symbols.helpers.logger);
     socketIOStub           = container.get(Symbols.generic.socketIO);
     busStub                = container.get(Symbols.helpers.bus);
@@ -114,7 +120,7 @@ describe('modules/multisignatures', () => {
       expect(transactionsModuleStub.stubs.getMultisignatureTransaction.firstCall.args[0]).to.be.equal(tx.id);
     });
 
-    it('should throw if transactionsModule.getMultisignatureTransaction returns falsey', async () => {
+    it('should throw if transactionsModule.getMultisignatureTransaction returns false', async () => {
       transactionsModuleStub.reset();
       transactionsModuleStub.enqueueResponse('getMultisignatureTransaction', false);
       await expect(instance.processSignature({
@@ -190,6 +196,14 @@ describe('modules/multisignatures', () => {
       expect(busStub.stubs.message.firstCall.args[0]).to.be.equal('signature');
       expect(busStub.stubs.message.firstCall.args[1]).to.be.deep.equal({ transaction: tx.id, signature });
       expect(busStub.stubs.message.firstCall.args[2]).to.be.true;
+    });
+
+    it('Throw: Cannot find payload for such multisig tx', async () => {
+      innerTXQueueStub.stubs.getPayload.returns(false);
+      await expect(instance.processSignature({
+        signature,
+        transaction: tx.id,
+      })).to.be.rejectedWith('Cannot find payload for such multisig tx');
     });
   });
 

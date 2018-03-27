@@ -275,11 +275,12 @@ export class TransactionPool implements ITransactionPoolLogic {
         try {
           this.queueTransaction(tx, false /* After processing the tx becomes unbundled */);
         } catch (e) {
-          this.logger.debug(`Failed to queue bundled transaction: ${tx.id}`, e);
+          this.logger.warn(`Failed to queue bundled transaction: ${tx.id}`, e);
         }
       } catch (e) {
-        this.logger.debug(`Failed to process / verify bundled transaction: ${tx.id}`, e);
-        this.removeUnconfirmedTransaction(tx.id);
+        this.logger.warn(`Failed to process / verify bundled transaction: ${tx.id}`, e);
+        // this.removeUnconfirmedTransaction(tx.id);
+        this.bundled.remove(tx.id);
       }
     }
   }
@@ -425,8 +426,7 @@ export class TransactionPool implements ITransactionPoolLogic {
     const normalizedTx = this.transactionLogic.objectNormalize(transaction);
 
     // Verify the transaction
-    // TODO: check why here we've to cast to any
-    await this.transactionLogic.verify(normalizedTx as any, sender, requester, null);
+    await this.transactionLogic.verify(normalizedTx, sender, requester, null);
 
     await this.bus.message('unconfirmedTransaction', normalizedTx, broadcast);
     return sender;

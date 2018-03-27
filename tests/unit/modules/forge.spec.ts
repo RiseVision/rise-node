@@ -16,7 +16,7 @@ import {
   DelegatesModuleStub,
   EdStub,
   JobsQueueStub,
-  LoggerStub,
+  LoggerStub, SequenceStub,
   SlotsStub,
   TransactionsModuleStub
 } from '../../stubs';
@@ -79,7 +79,7 @@ describe('modules/forge', () => {
     instance.jobsQueue           = jobsQueueStub;
     instance.logger              = loggerStub;
     instance.ed                  = edStub;
-    instance.sequence            = sequenceStub;
+    instance.defaultSequence     = sequenceStub;
     instance.slots               = slotsStub;
     instance.appState            = appStateStub;
     instance.broadcasterLogic    = broadcasterLogicStub;
@@ -248,6 +248,7 @@ describe('modules/forge', () => {
       jobsQueueStub.stubs.register.resolves();
       transactionsModuleStub.stubs.fillPool.resolves();
       inst = new ForgeModule();
+      inst.defaultSequence = new SequenceStub() as any;
       // Immediately execute the jobsQueue Job for testing it
       jobsQueueStub.stubs.register.callsFake((k, t) => {
         t();
