@@ -12,7 +12,6 @@ import * as z_schema from 'z-schema';
  * - signature
  * - queryList
  * - delegatesList
- * - parsedInt
  * - ip
  * - os
  * - version
@@ -81,14 +80,6 @@ z_schema.registerFormat('queryList', (obj: any) => {
 
 z_schema.registerFormat('delegatesList', (obj: any) => {
   obj.limit = 101;
-  return true;
-});
-
-z_schema.registerFormat('parsedInt', (value: any) => {
-  if (isNaN(value) || parseInt(value, 10) !== value || isNaN(parseInt(value, 10))) {
-    return false;
-  }
-  // value = parseInt(value);
   return true;
 });
 
