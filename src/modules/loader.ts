@@ -1,6 +1,7 @@
 import { inject, injectable, postConstruct, tagged } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import * as promiseRetry from 'promise-retry';
+import SocketIO from 'socket.io';
 import z_schema from 'z-schema';
 import { Bus, constants as constantsType, ILogger, Sequence, wait } from '../helpers/';
 import { IJobsQueue } from '../ioc/interfaces/helpers';

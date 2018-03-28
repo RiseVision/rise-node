@@ -97,7 +97,7 @@ export class BlocksAPI {
 
   @Get('/getFee')
   @ValidateSchema()
-  public getFee(@SchemaValid(blocksSchema.getFee, { castNumbers: true })
+  public async getFee(@SchemaValid(blocksSchema.getFee, { castNumbers: true })
                 @QueryParams() params: { height: number }) {
     const fees = this.systemModule.getFees(params.height);
     return { fee: fees.fees.send, fromHeight: fees.fromHeight, toHeight: fees.toHeight, height: fees.height };
@@ -105,7 +105,7 @@ export class BlocksAPI {
 
   @Get('/getFees')
   @ValidateSchema()
-  public getFees(@SchemaValid(blocksSchema.getFees, { castNumbers: true })
+  public async getFees(@SchemaValid(blocksSchema.getFees, { castNumbers: true })
                  @QueryParams() params: { height: number }) {
     return this.systemModule.getFees(params.height);
   }

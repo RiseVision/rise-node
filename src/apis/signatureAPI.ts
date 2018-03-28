@@ -18,7 +18,7 @@ export class SignaturesAPI {
 
   @Get('/fee')
   @ValidateSchema()
-  public fees(@SchemaValid(sigSchema.getFee, {castNumbers: true})
+  public async fees(@SchemaValid(sigSchema.getFee, {castNumbers: true})
               @QueryParams()
                 params: { height?: number }) {
     const feesForHeight = this.system.getFees(params.height);

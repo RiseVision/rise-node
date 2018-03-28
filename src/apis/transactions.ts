@@ -55,7 +55,7 @@ export class TransactionsAPI {
 
   @Get('/multisignatures')
   @ValidateSchema()
-  public getMultiSigs(@SchemaValid(schema.getPooledTransactions)
+  public async getMultiSigs(@SchemaValid(schema.getPooledTransactions)
                       @QueryParams() params: { senderPublicKey?: string, address?: string }) {
     const txs = this.transactionsModule.getMultisignatureTransactionList(true);
 
@@ -80,7 +80,7 @@ export class TransactionsAPI {
 
   @Get('/queued')
   @ValidateSchema()
-  public getQueuedTxs(@SchemaValid(schema.getPooledTransactions)
+  public async getQueuedTxs(@SchemaValid(schema.getPooledTransactions)
                       @QueryParams() params: { senderPublicKey?: string, address?: string }) {
     const txs = this.transactionsModule.getQueuedTransactionList(true);
 
@@ -105,7 +105,7 @@ export class TransactionsAPI {
 
   @Get('/unconfirmed')
   @ValidateSchema()
-  public getUnconfirmedTxs(@SchemaValid(schema.getPooledTransactions)
+  public async getUnconfirmedTxs(@SchemaValid(schema.getPooledTransactions)
                            @QueryParams() params: { senderPublicKey?: string, address?: string }) {
     const txs = this.transactionsModule.getUnconfirmedTransactionList(true);
 

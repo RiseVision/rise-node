@@ -13,6 +13,7 @@ export const Symbols = {
     utils             : {
       attachPeerHeaderToResponseObject: Symbol('attachPeerHeaderToResponseObject'),
       errorHandler                    : Symbol('errorHandler'),
+      forgingApisWatchGuard           : Symbol('forgingApisWatchGuard'),
       requestLogger                   : Symbol('requestLogger'),
       successInterceptor              : Symbol('successInterceptor'),
       validatePeerHeadersMiddleware   : Symbol('validatePeerHeadersMiddleware'),

@@ -10,6 +10,7 @@ import * as socketIO from 'socket.io';
 import * as uuid from 'uuid';
 import { allControllers, APIErrorHandler } from './apis';
 import { AttachPeerHeaders } from './apis/utils/attachPeerHeaders';
+import { ForgingApisWatchGuard } from './apis/utils/forgingApisWatchGuard';
 import { SuccessInterceptor } from './apis/utils/successInterceptor';
 import { ValidatePeerHeaders } from './apis/utils/validatePeerHeaders';
 import {
@@ -176,6 +177,7 @@ export class AppManager {
     }
     this.container.bind(Symbols.api.utils.errorHandler).to(APIErrorHandler).inSingletonScope();
     this.container.bind(Symbols.api.utils.successInterceptor).to(SuccessInterceptor).inSingletonScope();
+    this.container.bind(Symbols.api.utils.forgingApisWatchGuard).to(ForgingApisWatchGuard).inSingletonScope();
     this.container.bind(Symbols.api.utils.validatePeerHeadersMiddleware).to(ValidatePeerHeaders).inSingletonScope();
     this.container.bind(Symbols.api.utils.attachPeerHeaderToResponseObject).to(AttachPeerHeaders).inSingletonScope();
 

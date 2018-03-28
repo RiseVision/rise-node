@@ -1,6 +1,7 @@
 import { inject, injectable, postConstruct, tagged } from 'inversify';
 import * as popsicle from 'popsicle';
 import * as Throttle from 'promise-parallel-throttle';
+import SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
 import { cbToPromise, constants as constantsType, ILogger, Sequence } from '../helpers/';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
@@ -233,7 +234,7 @@ export class TransportModule implements ITransportModule {
    */
   @ValidateSchema()
   public async receiveSignature(@SchemaValid(schema.signature, 'Invalid signature body')
-                                  signature: { transaction: string, signature: string }): Promise<void> {
+                                  signature: { transaction: string, signature: string }) {
     try {
       await this.multisigModule.processSignature(signature);
     } catch (e) {

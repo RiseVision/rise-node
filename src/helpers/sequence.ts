@@ -52,12 +52,7 @@ export class Sequence {
       return setImmediate(cb);
     }
     return task.worker()
-      .then(() => cb())
-      .catch((err) => {
-        // tslint:disable-next-line
-        console.error('ERROR in handler.', err);
-        cb();
-      });
+      .then(() => cb());
   }
 
   private nextSequenceTick() {

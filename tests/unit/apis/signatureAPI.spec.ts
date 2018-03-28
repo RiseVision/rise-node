@@ -45,8 +45,8 @@ describe('apis/signatureAPI', () => {
   });
 
   describe('fees()', () => {
-    it('success', () => {
-      result = instance.fees({ height: 123 });
+    it('success', async () => {
+      result = await instance.fees({ height: 123 });
       expect(result).to.deep.equal({
         fee: 10,
         fromHeight: 20,

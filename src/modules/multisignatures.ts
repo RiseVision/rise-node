@@ -1,4 +1,5 @@
 import { inject, injectable, tagged } from 'inversify';
+import SocketIO from 'socket.io';
 import { Bus, ILogger, Sequence, TransactionType } from '../helpers/';
 import { ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule, IMultisignaturesModule, ITransactionsModule } from '../ioc/interfaces/modules';
