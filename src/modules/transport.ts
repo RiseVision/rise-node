@@ -234,7 +234,7 @@ export class TransportModule implements ITransportModule {
    */
   @ValidateSchema()
   public async receiveSignature(@SchemaValid(schema.signature, 'Invalid signature body')
-                                  signature: { transaction: string, signature: string }): Promise<void> {
+                                  signature: { transaction: string, signature: string }) {
     try {
       await this.multisigModule.processSignature(signature);
     } catch (e) {

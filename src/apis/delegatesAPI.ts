@@ -208,7 +208,7 @@ export class DelegatesAPI {
   // internal stuff.
   @Get('/forging/status')
   @ValidateSchema()
-  public getForgingStatus(@SchemaValid(schema.forgingStatus)
+  public async getForgingStatus(@SchemaValid(schema.forgingStatus)
                           @QueryParams() params: { publicKey: publicKey }) {
     // TODO: Add middleware
     /*
