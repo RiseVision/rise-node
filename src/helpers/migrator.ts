@@ -60,7 +60,7 @@ export class Migrator {
       .filter((d) => fs.statSync(d.path).isFile())
       .filter((d) => /\.sql$/.test(d.path))
       // Filter only pending migrations
-      .filter((d) => !lastMigration || d.id.greaterThan(lastMigration));
+      .filter((d) => !lastMigration || d.id.isGreaterThan(lastMigration));
   }
 
   public async applyPendingMigrations(pendingMigrations: Array<{ id: BigNumber, name: string, path: string }>) {

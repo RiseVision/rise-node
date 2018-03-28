@@ -189,9 +189,8 @@ describe('helpers/decorators', () => {
       helpersStub.castFieldsToNumberUsingSchema = castSpy;
       const instance = new TestCase();
       // Passing a valid value
-      await instance.method({ str: 'RISE', num: '42' });
+      instance.method({ str: 'RISE', num: 42 });
       expect(castSpy.called).to.be.true;
-      castSpy.restore();
     });
 
     it('should reject the promise if method is returning a promise', async () => {
