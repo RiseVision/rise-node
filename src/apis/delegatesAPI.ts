@@ -2,7 +2,7 @@ import BigNumber from 'bignumber.js';
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
-import { Body, Get, JsonController, Post, Put, QueryParam, QueryParams } from 'routing-controllers';
+import { Body, Get, JsonController, Post, Put, QueryParam, QueryParams, UseBefore } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { constants, Ed, OrderBy, Slots } from '../helpers/';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
@@ -19,6 +19,7 @@ import { Symbols } from '../ioc/symbols';
 import schema from '../schema/delegates';
 import sql from '../sql/delegates';
 import { publicKey } from '../types/sanityTypes';
+import { ForgingApisWatchGuard } from './utils/forgingApisWatchGuard';
 
 @JsonController('/api/delegates')
 @injectable()
@@ -208,14 +209,9 @@ export class DelegatesAPI {
   // internal stuff.
   @Get('/forging/status')
   @ValidateSchema()
+  @UseBefore(ForgingApisWatchGuard)
   public async getForgingStatus(@SchemaValid(schema.forgingStatus)
                           @QueryParams() params: { publicKey: publicKey }) {
-    // TODO: Add middleware
-    /*
-    		if (!checkIpInList(library.config.forging.access.whiteList, req.ip)) {
-			return setImmediate(cb, 'Access denied');
-		}
-     */
     if (params.publicKey) {
       return {
         delegates: [params.publicKey],
@@ -233,6 +229,7 @@ export class DelegatesAPI {
 
   @Post('/forging/enable')
   @ValidateSchema()
+  @UseBefore(ForgingApisWatchGuard)
   public async forgingEnable(@SchemaValid(schema.disableForging)
                              @Body() params: { secret: string, publicKey: string }) {
     const kp = this.ed.makeKeypair(crypto
