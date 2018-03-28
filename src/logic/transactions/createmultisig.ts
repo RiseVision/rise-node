@@ -1,5 +1,6 @@
 import * as ByteBuffer from 'bytebuffer';
 import { inject, injectable } from 'inversify';
+import * as SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
 import { constants, Diff, emptyCB, TransactionType } from '../../helpers/';
 import { IAccountLogic, IRoundsLogic, ITransactionLogic } from '../../ioc/interfaces/logic';

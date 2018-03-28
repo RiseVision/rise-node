@@ -238,7 +238,7 @@ export class TransactionLogic implements ITransactionLogic {
   public checkBalance(amount: number | BigNumber, balanceKey: 'balance' | 'u_balance',
                       tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: MemAccountsData) {
     const accountBalance  = sender[balanceKey].toString();
-    const exceededBalance = new BigNum(accountBalance).lessThan(amount);
+    const exceededBalance = new BigNum(accountBalance).isLessThan(amount);
     // tslint:disable-next-line
     const exceeded        = (tx['blockId'] !== this.genesisBlock.id && exceededBalance);
     return {
