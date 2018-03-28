@@ -658,8 +658,8 @@ describe('apis/blocksAPI', () => {
       forgeModule.enqueueResponse('getEnabledKeys', delegates);
     });
 
-    it('param.publucKey', () => {
-      const ret = instance.getForgingStatus(params);
+    it('param.publicKey', async () => {
+      const ret = await instance.getForgingStatus(params);
 
       expect(ret).to.be.deep.equal({ delegates: [params.publicKey], enabled: true });
 
@@ -668,9 +668,9 @@ describe('apis/blocksAPI', () => {
       expect(forgeModule.stubs.isForgeEnabledOn.firstCall.args[0]).to.be.equal(params.publicKey);
     });
 
-    it('!param.publucKey', () => {
+    it('!param.publicKey', async () => {
       delete params.publicKey;
-      const ret = instance.getForgingStatus(params);
+      const ret = await instance.getForgingStatus(params);
 
       expect(forgeModule.stubs.getEnabledKeys.calledOnce).to.be.true;
       expect(forgeModule.stubs.getEnabledKeys.firstCall.args.length).to.be.equal(0);

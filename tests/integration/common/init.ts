@@ -12,7 +12,9 @@ import {
   ITransactionsModule
 } from '../../../src/ioc/interfaces/modules';
 import { getKeypairByPkey } from './utils';
-import sql from '../../../src/sql/blocks';
+import { SignedBlockType } from '../../../src/logic';
+import { IBlockLogic } from '../../../src/ioc/interfaces/logic';
+import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 
 export class IntegrationTestInitializer {
   public appManager: AppManager;
@@ -67,6 +69,25 @@ export class IntegrationTestInitializer {
       await blockChainModule.deleteLastBlock();
     }
     expect(blockModule.lastBlock.height).to.be.eq(height - howMany);
+  }
+
+  public async generateBlock(transactions: Array<ITransaction<any>> = []): Promise<SignedBlockType> {
+    const blockLogic     = this.appManager.container.get<IBlockLogic>(Symbols.logic.block);
+    const blockModule     = this.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
+    const height          = blockModule.lastBlock.height;
+    const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
+    const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
+    const delegates  = await delegatesModule.generateDelegateList(height + 1);
+    const theSlot    = height + 1;
+    const delegateId = delegates[theSlot % slots.delegates];
+    const kp         = getKeypairByPkey(delegateId);
+
+    return blockLogic.create({
+      keypair: kp,
+      transactions,
+      timestamp: slots.getSlotTime(theSlot),
+      previousBlock: blockModule.lastBlock
+    });
   }
 
   public async rawMineBlocks(howMany: number): Promise<number> {

@@ -163,8 +163,8 @@ describe('apis/transactionsAPI', () => {
   });
 
   describe('getMultiSigs()', () => {
-    it('filtering by senderPublicKey &  address', () => {
-      result = instance.getMultiSigs({
+    it('filtering by senderPublicKey &  address', async () => {
+      result = await instance.getMultiSigs({
         address: 'bbb',
         senderPublicKey: 'aaa',
       });
@@ -178,8 +178,8 @@ describe('apis/transactionsAPI', () => {
       expect(result.transactions).to.be.ofSize(2);
     });
 
-    it('filtering by senderPublicKey', () => {
-      result = instance.getMultiSigs({ senderPublicKey: 'aaa' });
+    it('filtering by senderPublicKey', async () => {
+      result = await instance.getMultiSigs({ senderPublicKey: 'aaa' });
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
@@ -191,8 +191,8 @@ describe('apis/transactionsAPI', () => {
       expect(result.transactions).to.be.ofSize(3);
     });
 
-    it('filtering by address', () => {
-      result = instance.getMultiSigs({ address: 'ddd' });
+    it('filtering by address', async () => {
+      result = await instance.getMultiSigs({ address: 'ddd' });
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
@@ -203,8 +203,8 @@ describe('apis/transactionsAPI', () => {
       expect(result.transactions).to.be.ofSize(2);
     });
 
-    it('No filters', () => {
-      result = instance.getMultiSigs({});
+    it('No filters', async () => {
+      result = await instance.getMultiSigs({});
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
@@ -253,8 +253,8 @@ describe('apis/transactionsAPI', () => {
   });
 
   describe('getQueuedTxs()', () => {
-    it('filtering by senderPublicKey &  address', () => {
-      result = instance.getQueuedTxs({
+    it('filtering by senderPublicKey &  address', async () => {
+      result = await instance.getQueuedTxs({
         address: 'bbb',
         senderPublicKey: 'aaa',
       });
@@ -268,8 +268,8 @@ describe('apis/transactionsAPI', () => {
       expect(result.transactions).to.be.ofSize(2);
     });
 
-    it('filtering by senderPublicKey', () => {
-      result = instance.getQueuedTxs({ senderPublicKey: 'aaa' });
+    it('filtering by senderPublicKey', async () => {
+      result = await instance.getQueuedTxs({ senderPublicKey: 'aaa' });
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
@@ -281,8 +281,8 @@ describe('apis/transactionsAPI', () => {
       expect(result.transactions).to.be.ofSize(3);
     });
 
-    it('filtering by address', () => {
-      result = instance.getQueuedTxs({ address: 'ddd' });
+    it('filtering by address', async () => {
+      result = await instance.getQueuedTxs({ address: 'ddd' });
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
@@ -293,8 +293,8 @@ describe('apis/transactionsAPI', () => {
       expect(result.transactions).to.be.ofSize(2);
     });
 
-    it('No filters', () => {
-      result = instance.getQueuedTxs({});
+    it('No filters', async () => {
+      result = await instance.getQueuedTxs({});
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
@@ -310,8 +310,8 @@ describe('apis/transactionsAPI', () => {
   });
 
   describe('getUnconfirmedTxs()', () => {
-    it('filtering by senderPublicKey &  address', () => {
-      result = instance.getUnconfirmedTxs({
+    it('filtering by senderPublicKey &  address', async () => {
+      result = await instance.getUnconfirmedTxs({
         address: 'bbb',
         senderPublicKey: 'aaa',
       });
@@ -325,8 +325,8 @@ describe('apis/transactionsAPI', () => {
       expect(result.transactions).to.be.ofSize(2);
     });
 
-    it('filtering by senderPublicKey', () => {
-      result = instance.getUnconfirmedTxs({ senderPublicKey: 'aaa' });
+    it('filtering by senderPublicKey', async () => {
+      result = await instance.getUnconfirmedTxs({ senderPublicKey: 'aaa' });
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
@@ -338,8 +338,8 @@ describe('apis/transactionsAPI', () => {
       expect(result.transactions).to.be.ofSize(3);
     });
 
-    it('filtering by address', () => {
-      result = instance.getUnconfirmedTxs({ address: 'ddd' });
+    it('filtering by address', async () => {
+      result = await instance.getUnconfirmedTxs({ address: 'ddd' });
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
@@ -350,8 +350,8 @@ describe('apis/transactionsAPI', () => {
       expect(result.transactions).to.be.ofSize(2);
     });
 
-    it('No filters', () => {
-      result = instance.getUnconfirmedTxs({});
+    it('No filters', async () => {
+      result = await instance.getUnconfirmedTxs({});
       expect(result).to.deep.equal({
         count: 5,
         transactions: [

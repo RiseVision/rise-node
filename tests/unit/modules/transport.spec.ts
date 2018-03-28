@@ -27,6 +27,7 @@ import {
   ZSchemaStub,
 } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
+import { wait } from '../../../src/helpers';
 
 chai.use(chaiAsPromised);
 
@@ -514,7 +515,7 @@ describe('src/modules/transport.ts', () => {
         expect(logger.stubs.error.calledOnce).to.be.true;
         expect(logger.stubs.error.firstCall.args.length).to.be.equal(2);
         expect(logger.stubs.error.firstCall.args[0]).to.be.equal('Discovering new peers failed');
-        expect(logger.stubs.error.firstCall.args[1]).to.be.equal(error.message);
+        expect(logger.stubs.error.firstCall.args[1]).to.be.equal(error);
       });
     });
 
@@ -548,7 +549,7 @@ describe('src/modules/transport.ts', () => {
         peers[0].updated = Date.now() - 3001;
 
         await inst.onPeersReady();
-
+        await wait(10);
         expect(peers[0].pingAndUpdate.calledOnce).to.be.true;
         expect(peers[0].pingAndUpdate.firstCall.args.length).to.be.equal(0);
       });
@@ -558,13 +559,12 @@ describe('src/modules/transport.ts', () => {
         peers[0].pingAndUpdate.rejects(error);
 
         await inst.onPeersReady();
+        await wait(10);
+        expect(logger.stubs.debug.calledOnce).to.be.true;
+        expect(logger.stubs.debug.firstCall.args.length).to.be.equal(2);
+        expect(logger.stubs.debug.firstCall.args[0]).to.be.equal('Ping failed when updating peer string');
+        expect(logger.stubs.debug.firstCall.args[1]).to.be.deep.equal(error);
 
-        process.nextTick(() => {
-          expect(logger.stubs.error.calledOnce).to.be.true;
-          expect(logger.stubs.error.firstCall.args.length).to.be.equal(2);
-          expect(logger.stubs.error.firstCall.args[0]).to.be.equal('Ping failed when updating peer string');
-          expect(logger.stubs.error.firstCall.args[1]).to.be.equal(error.message);
-        });
       });
 
       describe('false in condition of Throttle.all"s callback', () => {
@@ -573,30 +573,25 @@ describe('src/modules/transport.ts', () => {
           peers[0] = null;
 
           await inst.onPeersReady();
-
-          process.nextTick(() => {
-            expect(logger.stubs.trace.callCount).to.be.equal(3);
-          });
+          await wait(100);
+          expect(logger.stubs.trace.callCount).to.be.equal(3);
         });
 
         it('p.state === PeerState.BANNED', async () => {
           peers[0].state = PeerState.BANNED;
 
           await inst.onPeersReady();
-
-          process.nextTick(() => {
-            expect(logger.stubs.trace.callCount).to.be.equal(3);
-          });
+          await wait(10);
+          expect(logger.stubs.trace.callCount).to.be.equal(3);
         });
 
         it('p.update is true and (Date.now() - p.updated) <= 3000', async () => {
-          peers[0].update = Date.now() - 2000;
+          peers[0].updated = Date.now() - 2000;
 
           await inst.onPeersReady();
+          await wait(10);
 
-          process.nextTick(() => {
-            expect(logger.stubs.trace.callCount).to.be.equal(3);
-          });
+          expect(logger.stubs.trace.callCount).to.be.equal(3);
         });
       });
     });

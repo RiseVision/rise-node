@@ -143,7 +143,7 @@ export const checkIntParam = (paramName: string, validURL: string, constraints: 
   }
 
   if (typeof(constraints.max) !== 'undefined') {
-    const outOfRangeValue = new BigNumber(constraints.max).add(1).toString();
+    const outOfRangeValue = new BigNumber(constraints.max).plus(1).toString();
     it(`Should throw if ${outOfRangeValue} is passed for ${paramName}`, async () => {
       const theURLOBJ = url.parse(validURL, true);
       delete theURLOBJ.query[paramName];

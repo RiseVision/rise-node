@@ -6,11 +6,10 @@ import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
 import { Ed, IKeypair } from '../../../src/helpers';
 import { publicKey } from '../../../src/types/sanityTypes';
 import initializer from './init';
-import { ISystemModule, ITransactionsModule } from '../../../src/ioc/interfaces/modules';
+import { ISystemModule, ITransactionsModule, IAccountsModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import * as txCrafter from '../../utils/txCrafter';
-import { IMultiSignatureAsset } from 'dpos-offline/src/trxTypes/MultiSignature';
 
 const delegates = require('../genesisDelegates.json');
 
@@ -121,9 +120,11 @@ export const createRegDelegateTransaction = async (confirmations: number, from: 
   return tx;
 };
 
-export const createSendTransaction = async (confirmations: number, amount: number, from: LiskWallet, dest: string): Promise<ITransaction> => {
+export const createSendTransaction = async (confirmations: number, amount: number, from: LiskWallet, dest: string, opts: any = {}): Promise<ITransaction> => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
-  const tx           = txCrafter.createSendTransaction(from, dest, systemModule.getFees().fees.send, { amount });
+  const tx           = txCrafter.createSendTransaction(from, dest, systemModule.getFees().fees.send, {...{ amount }, ...opts});
+  tx['senderId'] = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts)
+    .generateAddressByPublicKey(tx.senderPublicKey);
   if (confirmations > 0) {
     await confirmTransactions([tx], confirmations);
   }

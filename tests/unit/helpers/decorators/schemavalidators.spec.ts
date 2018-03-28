@@ -1,11 +1,13 @@
 import * as chai from 'chai';
 import * as proxyquire from 'proxyquire';
+import * as chaiAsPromised from 'chai-as-promised';
 import 'reflect-metadata';
 import { SinonSpy } from 'sinon';
 import * as sinon from 'sinon';
 import * as z_schema from 'z-schema';
 
 const { expect } = chai;
+chai.use(chaiAsPromised);
 const helpersStub = {} as any;
 const ProxySchemaValidators = proxyquire('../../../../src/helpers/decorators/schemavalidators', {
   '../': helpersStub,
@@ -135,7 +137,7 @@ describe('helpers/decorators', () => {
       }
     }
 
-    it('should validate passed parameters with schema and continue function execution if validation is OK', () => {
+    it('should validate passed parameters with schema and continue function execution if validation is OK', async () => {
       class TestCase extends TestUtil {
         @ValidateSchema()
         public method(@SchemaValid(nonEmptyString) param: string, executionSpy: SinonSpy) {
@@ -146,46 +148,40 @@ describe('helpers/decorators', () => {
       const instance = new TestCase();
       const executionSpy = sinon.spy();
       // Passing a valid value
-      instance.method('test', executionSpy);
+      await instance.method('test', executionSpy);
       expect(instance.validateSpy.called).to.be.true;
       expect(executionSpy.called).to.be.true;
     });
 
-    it('should throw an error and stop execution if validation is KO', () => {
+    it('should throw an error and stop execution if validation is KO', async () => {
       class TestCase extends TestUtil {
         @ValidateSchema()
-        public method(@SchemaValid(nonEmptyString) param: string, executionSpy: SinonSpy) {
+        public async method(@SchemaValid(nonEmptyString) param: string, executionSpy: SinonSpy) {
           executionSpy();
           return param;
         }
       }
       const instance = new TestCase();
       const executionSpy = sinon.spy();
-      expect(() => {
-        // Passing an empty string, validator requires a string long >= 1
-        instance.method('', executionSpy);
-      }).to.throw(Error);
+      await expect(instance.method('', executionSpy)).to.rejectedWith(Error);
       expect(executionSpy.called).to.be.false;
     });
 
-    it('should throw an error with the right message when specified in metadata', () => {
+    it('should throw an error with the right message when specified in metadata', async () => {
       class TestCase extends TestUtil {
         @ValidateSchema()
-        public method(@SchemaValid(nonEmptyString, 'RISEError6') param: string) {
+        public async method(@SchemaValid(nonEmptyString, 'RISEError6') param: string) {
           return param;
         }
       }
       const instance = new TestCase();;
-      expect(() => {
-        // Passing an empty string, validator requires a string long >= 1
-        instance.method('');
-      }).to.throw(Error, /^RISEError6$/);
+      await expect(instance.method('')).to.rejectedWith(/^RISEError6$/);
     });
 
-    it('should call castFieldsToNumberUsingSchema if specified in metadata', () => {
+    it('should call castFieldsToNumberUsingSchema if specified in metadata', async () => {
       class TestCase extends TestUtil {
         @ValidateSchema()
-        public method(@SchemaValid(simpleObject, {castNumbers: true}) param: any) {
+        public async method(@SchemaValid(simpleObject, {castNumbers: true}) param: any) {
           return param;
         }
       }
@@ -193,14 +189,15 @@ describe('helpers/decorators', () => {
       helpersStub.castFieldsToNumberUsingSchema = castSpy;
       const instance = new TestCase();
       // Passing a valid value
-      instance.method({ str: 'RISE', num: 42 });
+      await instance.method({ str: 'RISE', num: '42' });
       expect(castSpy.called).to.be.true;
+      castSpy.restore();
     });
 
     it('should reject the promise if method is returning a promise', async () => {
       class TestCase extends TestUtil {
         @ValidateSchema()
-        public method(@SchemaValid(nonEmptyString, 'RISEError8') param: string) {
+        public async method(@SchemaValid(nonEmptyString, 'RISEError8') param: string) {
           return param;
         }
       }
