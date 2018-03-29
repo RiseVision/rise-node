@@ -37,13 +37,18 @@ describe('api/delegates', () => {
         });
     });
 
+    const numParams = ['approval', 'productivity', 'rank', 'vote'];
     ['approval', 'productivity', 'rank', 'vote', 'username', 'address', 'publicKey'].forEach((field) => {
       it(`should honor orderBy  ${field}:asc param`, () => {
         return supertest(initializer.appManager.expressApp)
           .get(`/api/delegates?orderBy=${field}:asc`)
           .expect(200)
           .then((res) => {
-            orderChecker(res.body.delegates, field, 'asc');
+            if (numParams.indexOf(field) !== -1) {
+              orderChecker(res.body.delegates, field, 'asc', 'number');
+            } else {
+              orderChecker(res.body.delegates, field, 'asc', 'string');
+            }
           });
       });
       it(`should honor orderBy  ${field}:desc param`, () => {
@@ -51,13 +56,17 @@ describe('api/delegates', () => {
           .get(`/api/delegates?orderBy=${field}:desc`)
           .expect(200)
           .then((res) => {
-            orderChecker(res.body.delegates, field, 'desc');
+            if (numParams.indexOf(field) !== -1) {
+              orderChecker(res.body.delegates, field, 'desc', 'number');
+            } else {
+              orderChecker(res.body.delegates, field, 'desc', 'string');
+            }
           });
       });
     });
 
     describe('should honor limit param', () => {
-      it('limit is 10', ()=>{
+      it('limit is 10', () => {
         return supertest(initializer.appManager.expressApp)
           .get('/api/delegates?limit=10')
           .expect(200)
@@ -68,7 +77,7 @@ describe('api/delegates', () => {
             expect(res.body.delegates.length).to.be.eq(10);
           });
       });
-      it('limit is 0', ()=>{
+      it('limit is 0', () => {
         return supertest(initializer.appManager.expressApp)
           .get('/api/delegates?limit=0')
           .expect(500)
@@ -76,7 +85,7 @@ describe('api/delegates', () => {
             expect(res.error.text).include('Value 0 is less than minimum 1');
           });
       });
-      it('limit is 150', ()=>{
+      it('limit is 150', () => {
         return supertest(initializer.appManager.expressApp)
           .get('/api/delegates?limit=150')
           .expect(500)
@@ -86,19 +95,18 @@ describe('api/delegates', () => {
       });
     });
     describe('should honor offset param', () => {
-      it('offset is 10', ()=>{
+      it('offset is 10', () => {
         return supertest(initializer.appManager.expressApp)
           .get('/api/delegates?offset=10')
           .expect(200)
           .then((res) => {
-            console.log(res);
             expect(res.body.success).is.true;
             expect(res.body).to.haveOwnProperty('delegates');
             expect(res.body.delegates).to.be.an('array');
             expect(res.body.delegates.length).to.be.eq(91);
           });
       });
-      it('offset is 0', ()=>{
+      it('offset is 0', () => {
         return supertest(initializer.appManager.expressApp)
           .get('/api/delegates?offset=0')
           .expect(200)
@@ -109,7 +117,7 @@ describe('api/delegates', () => {
             expect(res.body.delegates.length).to.be.eq(101);
           });
       });
-      it('offset is 150', ()=>{
+      it('offset is 150', () => {
         return supertest(initializer.appManager.expressApp)
           .get('/api/delegates?offset=150')
           .expect(200)

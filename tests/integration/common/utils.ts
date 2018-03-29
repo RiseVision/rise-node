@@ -152,12 +152,12 @@ export const createRandomAccountWithFunds = async (howMany: number = 1000, recip
   };
 };
 
-export const orderChecker = (arr, field, order) => {
+export const orderChecker = (arr, field, order, valueType) => {
   if (order === 'asc') {
     arr.reduce((previousValue, currentValue) => {
-      if(typeof previousValue[field] === 'number')
+      if(valueType === 'number')
       {
-        expect(previousValue[field]).most(currentValue[field]);
+        expect(previousValue[field]<=currentValue[field]).to.be.true;
       }
       else{
         expect(previousValue[field].localeCompare(currentValue[field])).most(0);
@@ -167,9 +167,9 @@ export const orderChecker = (arr, field, order) => {
 
   } else {
     arr.reduce((previousValue, currentValue) => {
-      if(typeof previousValue[field] === 'number')
+      if(valueType === 'number')
       {
-        expect(previousValue[field]).least(currentValue[field]);
+        expect(previousValue[field]>=currentValue[field]).to.be.true;
       }
       else{
         expect(previousValue[field].localeCompare(currentValue[field])).least(0);
