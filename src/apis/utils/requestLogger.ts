@@ -1,7 +1,7 @@
 import * as express from 'express';
 import { WriteStream } from 'fs';
 import * as fs from 'fs';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, postConstruct } from 'inversify';
 import { ExpressMiddlewareInterface, Middleware } from 'routing-controllers';
 import { ILogger } from '../../helpers';
 import { IoCSymbol } from '../../helpers/decorators/iocSymbol';
@@ -39,8 +39,10 @@ export class RequestLogger implements ExpressMiddlewareInterface {
   private isEnabled: boolean;
   private logStream: WriteStream;
   private minHeight: number;
+  private lastBlockHeight = 0;
 
-  constructor() {
+  @postConstruct()
+  public afterConstructor() {
     this.isEnabled = this.appConfig.requestLogger.enabled;
     if (this.isEnabled) {
       try {
@@ -56,6 +58,7 @@ export class RequestLogger implements ExpressMiddlewareInterface {
   public use(request: express.Request, response: express.Response, next: (err?: any) => any) {
     // process.hrtime returns a [seconds, nanoseconds] tuple
     const elapsed = process.hrtime(startHRTime);
+    this.lastBlockHeight = typeof this.blocksModule.lastBlock !== 'undefined' ? this.blocksModule.lastBlock.height : 0;
     if (this.shouldLog(request)) {
       this.log(request, elapsed);
     }
@@ -63,7 +66,7 @@ export class RequestLogger implements ExpressMiddlewareInterface {
   }
 
   private shouldLog(req: express.Request): boolean {
-    if (!this.isEnabled || this.minHeight > this.blocksModule.lastBlock.height || req.method.toLowerCase() !== 'post') {
+    if (!this.isEnabled || this.minHeight > this.lastBlockHeight || req.method.toLowerCase() !== 'post') {
       return false;
     }
     const validUrls = ['/peer/signatures', '/peer/transactions', '/peer/blocks'].filter(
@@ -74,9 +77,9 @@ export class RequestLogger implements ExpressMiddlewareInterface {
 
   private log(req: express.Request, elapsed: [number, number]) {
     const lineObj: RequestLoggerEntry = {
-      height: this.blocksModule.lastBlock.height,
-      now: Date.now(),
       fromStart: elapsed,
+      height: this.lastBlockHeight,
+      now: Date.now(),
       req: {
         body: req.body,
         headers: req.headers,
