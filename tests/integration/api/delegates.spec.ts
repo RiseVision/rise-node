@@ -1,5 +1,8 @@
 import initializer from '../common/init';
 import { checkEnumParam, checkIntParam, checkPubKey, checkRequiredParam, checkReturnObjKeyVal } from './utils';
+import { expect } from 'chai';
+import * as supertest from 'supertest';
+import { createRandomWallet, createSendTransaction, orderChecker } from '../common/utils';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/delegates', () => {
@@ -18,13 +21,61 @@ describe('api/delegates', () => {
     ], '/api/delegates');
     checkIntParam('limit', '/api/delegates', { min: 1, max: 101 });
     checkIntParam('offset', '/api/delegates', { min: 0 });
+    checkReturnObjKeyVal('totalCount', 101, '/api/delegates');
 
     checkReturnObjKeyVal('totalCount', 101, '/api/delegates');
-    it('should return delegates array');
-    it('should honor orderBy asc param');
-    it('should honor orderBy desc param');
-    it('should honor limit param');
-    it('should honor offset param');
+
+    it('should return delegates array', async () => {
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/delegates')
+        .expect(200)
+        .then((res) => {
+          expect(res.body.success).is.true;
+          expect(res.body).to.haveOwnProperty('delegates');
+          expect(res.body.delegates).to.be.an('array');
+          expect(res.body.delegates.length).to.be.eq(101);
+        });
+    });
+
+    it('should honor orderBy asc param', () => {
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/delegates?orderBy=rank:asc')
+        .expect(200)
+        .then((res) => {
+          orderChecker(res.body.delegates, 'rank', 'asc');
+        });
+    });
+    it('should honor orderBy desc param', () => {
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/delegates?orderBy=productivity:desc')
+        .expect(200)
+        .then((res) => {
+          orderChecker(res.body.delegates, 'productivity', 'desc');
+        });
+    });
+
+    it('should honor limit param', () => {
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/delegates?limit=10')
+        .expect(200)
+        .then((res) => {
+          expect(res.body.success).is.true;
+          expect(res.body).to.haveOwnProperty('delegates');
+          expect(res.body.delegates).to.be.an('array');
+          expect(res.body.delegates.length).to.be.eq(10);
+        });
+    });
+    it('should honor offset param', () => {
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/delegates?offset=10')
+        .expect(200)
+        .then((res) => {
+          expect(res.body.success).is.true;
+          expect(res.body).to.haveOwnProperty('delegates');
+          expect(res.body.delegates).to.be.an('array');
+          expect(res.body.delegates.length).to.be.eq(91);
+        });
+    });
   });
 
   describe('/fee', () => {
@@ -32,7 +83,7 @@ describe('api/delegates', () => {
     checkReturnObjKeyVal('fromHeight', 1, '/api/delegates/fee');
     checkReturnObjKeyVal('toHeight', null, '/api/delegates/fee');
     checkReturnObjKeyVal('height', 2, '/api/delegates/fee');
-    it('should return fee value for delegate');
+    checkReturnObjKeyVal('fee', 2500000000, '/api/delegates/fee');
   });
 
   describe('/forging/getForgedByAccount', () => {

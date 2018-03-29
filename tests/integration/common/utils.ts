@@ -151,3 +151,17 @@ export const createRandomAccountWithFunds = async (howMany: number = 1000, recip
     wallet: recipientWallet,
   };
 };
+
+export const orderChecker = (arr, field, order) => {
+  if (order === 'asc') {
+    arr.reduce((previousValue, currentValue) => {
+      expect(previousValue[field]).most(currentValue[field]);
+      return currentValue;
+    });
+  } else {
+    arr.reduce((previousValue, currentValue) => {
+      expect(previousValue[field]).least(currentValue[field]);
+      return currentValue;
+    });
+  }
+};
