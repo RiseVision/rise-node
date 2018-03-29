@@ -155,12 +155,25 @@ export const createRandomAccountWithFunds = async (howMany: number = 1000, recip
 export const orderChecker = (arr, field, order) => {
   if (order === 'asc') {
     arr.reduce((previousValue, currentValue) => {
-      expect(previousValue[field]).most(currentValue[field]);
+      if(typeof previousValue[field] === 'number')
+      {
+        expect(previousValue[field]).most(currentValue[field]);
+      }
+      else{
+        expect(previousValue[field].localeCompare(currentValue[field])).most(0);
+      }
       return currentValue;
     });
+
   } else {
     arr.reduce((previousValue, currentValue) => {
-      expect(previousValue[field]).least(currentValue[field]);
+      if(typeof previousValue[field] === 'number')
+      {
+        expect(previousValue[field]).least(currentValue[field]);
+      }
+      else{
+        expect(previousValue[field].localeCompare(currentValue[field])).least(0);
+      }
       return currentValue;
     });
   }
