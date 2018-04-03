@@ -79,6 +79,17 @@ describe('logic/transactionPool - InnerTXQueue', () => {
     });
   });
 
+  describe('getPayload', () => {
+    it('should returns undefined', () => {
+      expect(instance.getPayload({id: 'abc'} as any)).to.be.undefined;
+    });
+
+    it('should returns payload', () => {
+      instance.add(tx1 as any, payload1 as any);
+      expect(instance.getPayload({id: 'tx1'} as any)).to.deep.equal(payload1);
+    });
+  });
+
   describe('add', () => {
     it('should call has()', () => {
       instance.add(tx1 as any);
@@ -337,7 +348,9 @@ describe('logic/transactionPool - TransactionPool', () => {
       expect(jqStub.stubs.register.called).to.be.true;
       expect(jqStub.stubs.register.callCount).to.be.equal(2);
       expect(jqStub.stubs.register.firstCall.args[0]).to.be.equal('transactionPoolNextBundle');
+      expect(jqStub.stubs.register.firstCall.args[1]).to.be.a('function');
       expect(jqStub.stubs.register.secondCall.args[0]).to.be.equal('transactionPoolNextExpiry');
+      expect(jqStub.stubs.register.secondCall.args[1]).to.be.a('function');
     });
   });
 
