@@ -1056,3 +1056,51 @@ describe('logic/transactionPool - TransactionPool', () => {
     });
   });
 });
+
+describe('logic/transactionPool - afterConstruction', () => {
+  let sandbox: SinonSandbox;
+  let instance: TransactionPool;
+  let jqStub: JobsQueueStub;
+  let processBundledStub;
+  let expireTransactionsStub;
+
+  beforeEach(() => {
+    sandbox = sinon.sandbox.create();
+    instance = new TransactionPool();
+    jqStub = new JobsQueueStub();
+    jqStub.stubs.register.callsFake((name: string, job: () => Promise<any>, time: number) => {
+      job();
+    });
+    (instance as any).jobsQueue = jqStub;
+    (instance as any).config = {
+      broadcasts: {
+        broadcastInterval: 1500,
+        releaseLimit: 100,
+      },
+      transactions: {
+        maxTxsPerQueue: 50,
+      },
+    };
+    processBundledStub = sandbox.stub(instance, 'processBundled').returns(true);
+    expireTransactionsStub = sandbox.stub(instance, 'expireTransactions').returns(true);
+  });
+
+  afterEach(() => {
+    sandbox.restore();
+    sandbox.resetHistory();
+  });
+
+  describe('afterConstruction', () => {
+    it('should call to processBundled() and expireTransactions()', () => {
+      instance.afterConstruction();
+      expect(jqStub.stubs.register.called).to.be.true;
+      expect(jqStub.stubs.register.callCount).to.be.equal(2);
+      expect(jqStub.stubs.register.firstCall.args[0]).to.be.equal('transactionPoolNextBundle');
+      expect(jqStub.stubs.register.firstCall.args[1]).to.be.a('function');
+      expect(jqStub.stubs.register.secondCall.args[0]).to.be.equal('transactionPoolNextExpiry');
+      expect(jqStub.stubs.register.secondCall.args[1]).to.be.a('function');
+      expect(processBundledStub.calledOnce).to.be.true;
+      expect(expireTransactionsStub.calledOnce).to.be.true;
+    });
+  });
+});
