@@ -235,7 +235,7 @@ describe('logic/transactionPool - TransactionPool', () => {
   let tx2: IBaseTransaction<any>;
   let tx3: IBaseTransaction<any>;
 
-  const addMixedTransactionsAndFillPool = async () => {
+  const addMixedTransactionsAndFillPool = async (withSignatures: boolean) => {
     const allTxs = [];
     // Add 50 txs to various queues
     for (let i = 0; i < 50; i++) {
@@ -243,6 +243,13 @@ describe('logic/transactionPool - TransactionPool', () => {
         await instance.fillPool();
       }
       const newTx = Object.assign({}, tx);
+
+      if (withSignatures) {
+        if (i % 2 === 0) {
+          newTx.signatures = ['aaa', 'bbb'];
+        }
+      }
+
       newTx.id = 'tx_' + i;
       if (i < 12) {
         newTx.type = TransactionType.MULTI;
@@ -542,8 +549,7 @@ describe('logic/transactionPool - TransactionPool', () => {
 
   describe('expireTransactions', () => {
     const oldDateNow = Date.now;
-    beforeEach(async () => {
-      await addMixedTransactionsAndFillPool();
+    beforeEach(() => {
       const timeInFuture = Date.now() + (24 * 60 * 60 * 1000);
       Date.now = () => timeInFuture;
     });
@@ -551,7 +557,8 @@ describe('logic/transactionPool - TransactionPool', () => {
       Date.now = oldDateNow;
     });
 
-    it('should call listWithPayload (reversed) on the 3 queues', () => {
+    it('should call listWithPayload (reversed) on the 3 queues', async () => {
+      await addMixedTransactionsAndFillPool();
       instance.expireTransactions();
       expect(spiedQueues.unconfirmed.list.calledOnce).to.be.true;
       expect(spiedQueues.unconfirmed.list.firstCall.args[0]).to.be.true;
@@ -561,27 +568,52 @@ describe('logic/transactionPool - TransactionPool', () => {
       expect(spiedQueues.multisignature.list.firstCall.args[0]).to.be.true;
     });
 
-    it('should call txTimeout() for each transaction', () => {
+    it('should call txTimeout() for each transaction', async () => {
+      await addMixedTransactionsAndFillPool();
       const txTimeoutSpy = sandbox.spy(instance as any, 'txTimeout');
       instance.expireTransactions();
       expect(txTimeoutSpy.called).to.be.true;
       expect(txTimeoutSpy.callCount).to.be.equal(37);
     });
 
-    it('should call removeUnconfirmedTransaction when a tx is expired', () => {
+    it('should not call to txTimeout() if tx is empty', async () => {
+      await addMixedTransactionsAndFillPool();
+      const txTimeoutSpy = sandbox.spy(instance as any, 'txTimeout');
+      instance['unconfirmed'].listWithPayload.restore();
+      instance['queued'].listWithPayload.restore();
+      instance['multisignature'].listWithPayload.restore();
+      sandbox.stub(instance['unconfirmed'], 'listWithPayload').returns([{payload: {foo: 'bar1'}}]);
+      sandbox.stub(instance['queued'], 'listWithPayload').returns([{payload: {foo: 'bar2'}}]);
+      sandbox.stub(instance['multisignature'], 'listWithPayload').returns([{payload: {foo: 'bar3'}}]);
+      instance.expireTransactions();
+      expect(txTimeoutSpy.called).to.be.false;
+    });
+
+    it('should call removeUnconfirmedTransaction when a tx is expired', async () => {
+      await addMixedTransactionsAndFillPool();
       const removeUnconfirmedTransactionSpy = sandbox.spy(instance as any, 'removeUnconfirmedTransaction');
       instance.expireTransactions();
       expect(removeUnconfirmedTransactionSpy.called).to.be.true;
       expect(removeUnconfirmedTransactionSpy.callCount).to.be.equal(25);
     });
 
-    it('should call logger.info when an expired tx is removed', () => {
+    it('should call removeUnconfirmedTransaction when a tx is expired and has not signatures', async () => {
+      await addMixedTransactionsAndFillPool(true);
+      const removeUnconfirmedTransactionSpy = sandbox.spy(instance as any, 'removeUnconfirmedTransaction');
+      instance.expireTransactions();
+      expect(removeUnconfirmedTransactionSpy.called).to.be.true;
+      expect(removeUnconfirmedTransactionSpy.callCount).to.be.equal(13);
+    });
+
+    it('should call logger.info when an expired tx is removed', async () => {
+      await addMixedTransactionsAndFillPool();
       instance.expireTransactions();
       expect(loggerStub.stubs.info.called).to.be.true;
       expect(loggerStub.stubs.info.callCount).to.be.equal(25);
     });
 
-    it('should return an array of IDs', () => {
+    it('should return an array of IDs', async () => {
+      await addMixedTransactionsAndFillPool();
       const retVal = instance.expireTransactions();
       expect(Array.isArray(retVal)).to.be.true;
       expect(retVal).to.be.equalTo(['tx_49', 'tx_48', 'tx_47', 'tx_46', 'tx_45', 'tx_44', 'tx_43', 'tx_42', 'tx_41',
@@ -590,7 +622,7 @@ describe('logic/transactionPool - TransactionPool', () => {
     });
   });
 
-  describe('processBundled', () => {
+  describe('processBundled #1', () => {
     beforeEach(async () => {
       await addMixedTransactionsAndFillPool();
     });
@@ -660,6 +692,17 @@ describe('logic/transactionPool - TransactionPool', () => {
       await instance.processBundled();
       expect(spiedQueues.bundled.remove.called).to.be.true;
       expect(spiedQueues.bundled.remove.firstCall.args[0]).to.match(/^tx_/);
+    });
+  });
+
+  describe('processBundled #2', () => {
+    it('should not call processVerifyTransaction if tx is empty', async () => {
+      instance['bundled'].list.restore();
+      sandbox.stub(instance['bundled'], 'list').returns([undefined, undefined]);
+      const processVerifyTransactionSpy = sandbox
+        .spy(instance as any, 'processVerifyTransaction');
+      await instance.processBundled();
+      expect(processVerifyTransactionSpy.called).to.be.false;
     });
   });
 
@@ -807,6 +850,12 @@ describe('logic/transactionPool - TransactionPool', () => {
       expect(processVerifyTransactionSpy.firstCall.args[1]).to.be.false;
       expect(processVerifyTransactionSpy.secondCall.args[0].id).to.be.equal(unconfirmedIds[1]);
       expect(processVerifyTransactionSpy.secondCall.args[1]).to.be.false;
+    });
+
+    it('should not call processVerifyTransaction for empty tx', async () => {
+      const processVerifyTransactionSpy = sandbox.spy(instance as any, 'processVerifyTransaction');
+      await instance.applyUnconfirmedList([undefined, undefined], txModuleStub);
+      expect(processVerifyTransactionSpy.called).to.be.false;
     });
 
     it('should call applyUnconfirmed on txModule for each tx if processVerifyTransaction did not throw', async () => {
