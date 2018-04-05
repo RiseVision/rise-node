@@ -505,10 +505,10 @@ describe('modules/forge', () => {
         catcherLastErr = null;
       });
 
-      it('should call sequence.addAndPromise', async () => {
-        await instance.forge();
-        expect(sequenceStub.addAndPromise.calledOnce).to.be.true;
-      });
+      // it('should call sequence.addAndPromise', async () => {
+      //   await instance.forge();
+      //   expect(sequenceStub.addAndPromise.calledOnce).to.be.true;
+      // });
 
       it('should call broadcasterLogic.getPeers (in sequence worker)', async () => {
         await instance.forge();
@@ -524,8 +524,7 @@ describe('modules/forge', () => {
 
       it('should throw if node has poor consensus (in sequence worker)', async () => {
         appStateStub.stubs.getComputed.returns(true);
-        await expect(instance.forge()).to.be.rejected;
-        expect(catcherLastErr.message).to.be.equal('Inadequate broadhash consensus 10 %');
+        await expect(instance.forge()).to.be.rejectedWith('Inadequate broadhash consensus 10 %');
       });
 
       it('should call blocksProcessModule.generateBlock (in sequence worker)', async () => {
@@ -536,7 +535,7 @@ describe('modules/forge', () => {
       });
 
       it('should call catchToLoggerAndRemapError if addAndPromise promise is rejected', async () => {
-        appStateStub.stubs.getComputed.returns(true);
+        blocksProcessModuleStub.stubs.generateBlock.rejects(new Error('hey'));
         await expect(instance.forge()).to.be.rejectedWith('Failed to generate block within delegate slot');
         expect(catcherStub.calledOnce).to.be.true;
       });
