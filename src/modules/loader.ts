@@ -4,6 +4,7 @@ import * as promiseRetry from 'promise-retry';
 import SocketIO from 'socket.io';
 import z_schema from 'z-schema';
 import { Bus, constants as constantsType, ILogger, Sequence, wait } from '../helpers/';
+import { WrapInDefaultSequence } from '../helpers/decorators/wrapInSequence';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import {
   IAccountLogic, IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, IRoundsLogic,
@@ -58,9 +59,10 @@ export class LoaderModule implements ILoaderModule {
   private logger: ILogger;
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
+  // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence)
-  private sequence: Sequence;
+  public defaultSequence: Sequence;
 
   // Logic
   @inject(Symbols.logic.account)
@@ -480,6 +482,7 @@ export class LoaderModule implements ILoaderModule {
    * - Establish broadhash consensus
    * - Applies unconfirmed transactions
    */
+  @WrapInDefaultSequence
   private async sync() {
     this.logger.info('Starting sync');
     await this.bus.message('syncStarted');
@@ -489,9 +492,6 @@ export class LoaderModule implements ILoaderModule {
 
     // Logic block of "real work"
     {
-      // undo unconfirmedList
-      this.logger.debug('Undoing unconfirmed transactions before sync');
-      await this.transactionsModule.undoUnconfirmedList();
 
       // Establish consensus. (internally)
       this.logger.debug('Establishing broadhash consensus before sync');
@@ -503,7 +503,6 @@ export class LoaderModule implements ILoaderModule {
       this.logger.debug('Establishing broadhash consensus after sync');
       await this.broadcasterLogic.getPeers({ limit: this.constants.maxPeers });
 
-      await this.transactionsModule.applyUnconfirmedList();
     }
 
     this.isActive = false;
@@ -525,14 +524,14 @@ export class LoaderModule implements ILoaderModule {
       });
 
       if (this.loaded && !this.isSyncing && this.blocksModule.lastReceipt.isStale()) {
-        await this.sequence.addAndPromise(() => promiseRetry(async (retries) => {
+        await promiseRetry(async (retries) => {
           try {
             await this.sync();
           } catch (err) {
             this.logger.warn('Error syncing... Retrying... ', err);
             retries(err);
           }
-        }, { retries: this.retries }));
+        }, { retries: this.retries });
       }
     }, this.syncInterval);
   }
@@ -558,7 +557,7 @@ export class LoaderModule implements ILoaderModule {
     const { signatures }: { signatures: any[] } = res.body;
 
     // Process multisignature transactions and validate signatures in sequence
-    await this.sequence.addAndPromise(async () => {
+    await this.defaultSequence.addAndPromise(async () => {
       for (const multiSigTX of signatures) {
         for (const signature of  multiSigTX.signatures) {
           try {

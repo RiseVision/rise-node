@@ -1,13 +1,22 @@
 import * as crypto from 'crypto';
 import { inject, injectable, tagged } from 'inversify';
 import {
-  catchToLoggerAndRemapError, constants as constantsType, Ed, IKeypair, ILogger, Sequence,
+  catchToLoggerAndRemapError,
+  constants as constantsType,
+  Ed,
+  IKeypair,
+  ILogger,
+  Sequence,
   Slots
 } from '../helpers';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic } from '../ioc/interfaces/logic';
 import {
-  IAccountsModule, IBlocksModule, IBlocksModuleProcess, IDelegatesModule, IForgeModule,
+  IAccountsModule,
+  IBlocksModule,
+  IBlocksModuleProcess,
+  IDelegatesModule,
+  IForgeModule,
   ITransactionsModule
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
@@ -160,19 +169,18 @@ export class ForgeModule implements IForgeModule {
       return;
     }
 
-    await this.defaultSequence.addAndPromise(async () => {
-      // updates consensus.
-      await this.broadcasterLogic.getPeers({ limit: this.constants.maxPeers });
+    // NOTE: This is wrapped in a default sequence because it's called only from delegatesNextForge
 
-      if (this.appState.getComputed('node.poorConsensus')  ) {
-        throw new Error(`Inadequate broadhash consensus ${this.appState
-          .get('node.consensus')} %`);
-      }
+    // updates consensus.
+    await this.broadcasterLogic.getPeers({ limit: this.constants.maxPeers });
 
-      // ok lets generate, save and broadcast the block
-      await this.blocksProcessModule.generateBlock(blockData.keypair, blockData.time);
+    if (this.appState.getComputed('node.poorConsensus')) {
+      throw new Error(`Inadequate broadhash consensus ${this.appState
+        .get('node.consensus')} %`);
+    }
 
-    })
+    // ok lets generate, save and broadcast the block
+    await this.blocksProcessModule.generateBlock(blockData.keypair, blockData.time)
       .catch(catchToLoggerAndRemapError('Failed to generate block within delegate slot', this.logger));
 
   }
