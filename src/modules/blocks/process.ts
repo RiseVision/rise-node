@@ -3,6 +3,7 @@ import * as _ from 'lodash';
 import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
 import { catchToLoggerAndRemapError, constants, ForkType, IKeypair, ILogger, Sequence } from '../../helpers/';
+import { WrapInDBSequence, WrapInDefaultSequence } from '../../helpers/decorators/wrapInSequence';
 import { ISlots } from '../../ioc/interfaces/helpers';
 import {
   IAppState,
@@ -30,7 +31,6 @@ import { IBaseTransaction } from '../../logic/transactions/';
 import schema from '../../schema/blocks';
 import sql from '../../sql/blocks';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
-import { WrapInDBSequence, WrapInDefaultSequence } from '../../helpers/decorators/wrapInSequence';
 
 @injectable()
 export class BlocksModuleProcess implements IBlocksModuleProcess {
@@ -206,7 +206,6 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
    * @param {PeerLogic | BasePeerType} rawPeer
    * @return {Promise<SignedBlockType>}
    */
-  @WrapInDefaultSequence
   public async loadBlocksFromPeer(rawPeer: IPeerLogic | BasePeerType): Promise<SignedBlockType> {
     let lastValidBlock: SignedBlockType = this.blocksModule.lastBlock;
 
