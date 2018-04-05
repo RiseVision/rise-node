@@ -206,6 +206,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
    * @param {PeerLogic | BasePeerType} rawPeer
    * @return {Promise<SignedBlockType>}
    */
+  @WrapInDefaultSequence
   public async loadBlocksFromPeer(rawPeer: IPeerLogic | BasePeerType): Promise<SignedBlockType> {
     let lastValidBlock: SignedBlockType = this.blocksModule.lastBlock;
 

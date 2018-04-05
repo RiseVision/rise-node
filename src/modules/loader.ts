@@ -489,9 +489,6 @@ export class LoaderModule implements ILoaderModule {
 
     // Logic block of "real work"
     {
-      // undo unconfirmedList
-      this.logger.debug('Undoing unconfirmed transactions before sync');
-      await this.transactionsModule.undoUnconfirmedList();
 
       // Establish consensus. (internally)
       this.logger.debug('Establishing broadhash consensus before sync');
@@ -503,7 +500,6 @@ export class LoaderModule implements ILoaderModule {
       this.logger.debug('Establishing broadhash consensus after sync');
       await this.broadcasterLogic.getPeers({ limit: this.constants.maxPeers });
 
-      await this.transactionsModule.applyUnconfirmedList();
     }
 
     this.isActive = false;
