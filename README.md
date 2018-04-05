@@ -75,7 +75,7 @@ And finally restart your node to apply the changes:
 ./manager.sh restart node
 ```
 
-### Quick start Rise installation (Mainnet) 
+### Quick start Rise installation (Testnet) 
 The same as above, only the install step is different:
 ```
 bash install.sh install -r testnet -u https://downloads.rise.vision/core/testnet/latest.tar.gz
