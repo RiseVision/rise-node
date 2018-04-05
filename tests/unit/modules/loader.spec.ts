@@ -126,9 +126,8 @@ describe('modules/loader', () => {
     promiseRetryStub = sandbox.stub().callsFake(sandbox.spy((w) => Promise.resolve(w(retryStub))));
     LoaderModuleRewire.__set__('promiseRetry', promiseRetryStub);
 
-
     (instance as any).jobsQueue.register                              = sandbox.stub().callsFake((val, fn) => fn());
-    (instance as  any).sequence.addAndPromise                         = sandbox.stub().callsFake(w => Promise.resolve(w()));
+    (instance as  any).defaultSequence.addAndPromise                  = sandbox.stub().callsFake(w => Promise.resolve(w()));
     instance                                                          = container.get(Symbols.modules.loader);
     container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock = { height: 1, id: 1 } as any;
   });
