@@ -5,6 +5,7 @@ import * as crypto from 'crypto';
 import * as rewire from 'rewire';
 import * as sinon from 'sinon';
 import { SinonSpy } from 'sinon';
+import { constants } from '../../../src/helpers/';
 import { Ed } from '../../../src/helpers';
 import { BlockLogic } from '../../../src/logic';
 import { BlockRewardLogicStub, TransactionLogicStub, ZSchemaStub } from '../../stubs';
@@ -44,7 +45,7 @@ describe('logic/block', () => {
     createHashSpy = sinon.spy(rewiredCrypto, 'createHash');
     dummyTransactions = [
       {
-        type: 0,
+        type: 1,
         amount: 108910891000000,
         fee: 5,
         timestamp: 0,
@@ -56,7 +57,7 @@ describe('logic/block', () => {
         id: '8139741256612355994',
       },
       {
-        type: 0,
+        type: 3,
         amount: 108910891000000,
         fee: 3,
         timestamp: 0,
@@ -66,6 +67,18 @@ describe('logic/block', () => {
         signature: 'e26edb739d93bb415af72f1c288b06560c0111c4505f11076ca20e2f6e8903d3b00730' +
                    '9c0e04362bfeb8bf2021d0e67ce3c943bfe0c0193f6c9503eb6dfe750c',
         id: '16622990339377112127',
+      },
+      {
+        type: 2,
+        amount: 108910891000000,
+        fee: 3,
+        timestamp: 0,
+        recipientId: '6781920633453960895R',
+        senderId: '14709573872795067383R',
+        senderPublicKey: '35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892',
+        signature: 'e26edb739d93bb415af72f1c288b06560c0111c4505f11076ca20e2f6e8903d3b00730' +
+        '9c0e04362bfeb8bf2021d0e67ce3c943bfe0c0193f6c9503eb6dfe750c',
+        id: '16622990339377114578',
       },
     ];
 
@@ -117,11 +130,15 @@ describe('logic/block', () => {
 
   describe('create', () => {
     it('should return a new block', () => {
+      const oldValue = constants.maxPayloadLength;
+      constants.maxPayloadLength = 10;
+      instance.transaction.getBytes.onCall(2).returns('1234567890abc');
       const newBlock = instance.create(data);
       expect(newBlock).to.be.an.instanceof(Object);
       expect(newBlock.totalFee).to.equal(8);
       expect(newBlock.numberOfTransactions).to.equal(2);
       expect(newBlock.transactions).to.have.lengthOf(2);
+      constants.maxPayloadLength = oldValue;
     });
 
     it('should call blockReward.calcReward', () => {
@@ -131,7 +148,7 @@ describe('logic/block', () => {
 
     it('should call transaction.getBytes per each tx', () => {
       instance.create(data);
-      expect(transactionLogicStub.stubs.getBytes.callCount).to.equal(2);
+      expect(transactionLogicStub.stubs.getBytes.callCount).to.equal(3);
     });
 
     it('should call crypto.createHash', () => {
