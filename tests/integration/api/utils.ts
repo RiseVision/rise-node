@@ -9,7 +9,7 @@ export const checkAddress = (paramName: string, baseUrl: string) => {
   it(`should throw if ${paramName} is not a valid address`, async () => {
     return supertest(initializer.appManager.expressApp)
       .get(`${baseUrl}?${paramName}=1`)
-      .expect(500)
+      .expect(200)
       .then((response) => {
         expect(response.body.success).is.false;
         expect(response.body.error).to.contain(`${paramName} - Object didn't pass validation for format address`);
@@ -20,7 +20,7 @@ export const checkPubKey = (paramName: string, baseUrl: string) => {
   it(`should throw if ${paramName} is not a valid publicKey`, async () => {
     return supertest(initializer.appManager.expressApp)
       .get(`${baseUrl}?${paramName}=1`)
-      .expect(500)
+      .expect(200)
       .then((response) => {
         expect(response.body.success).is.false;
         expect(response.body.error).to.contain(`${paramName} - Object didn't pass validation for format publicKey`);
@@ -69,7 +69,7 @@ export const checkEnumParam = (paramName: string, allowedValues: string[], valid
     theURLOBJ.query[paramName] = 'ahahahaha';
     return supertest(initializer.appManager.expressApp)
       .get(url.format(theURLOBJ))
-      .expect(500)
+      .expect(200)
       .then((response) => {
         expect(response.body.success).is.false;
       });
@@ -84,7 +84,7 @@ export const checkRequiredParam = (paramName: string, validUrl: string) => {
     delete theURLOBJ.href;
     return supertest(initializer.appManager.expressApp)
       .get(url.format(theURLOBJ))
-      .expect(500)
+      .expect(200)
       .then((response) => {
         expect(response.body.success).is.false;
         expect(response.body.error).to.contain(`Missing required property: ${paramName}`);
@@ -117,7 +117,7 @@ export const checkIntParam = (paramName: string, validURL: string, constraints: 
     theURLOBJ.query[paramName] = 'ahah';
     return supertest(initializer.appManager.expressApp)
       .get(url.format(theURLOBJ))
-      .expect(500)
+      .expect(200)
       .then((response) => {
         expect(response.body.success).is.false;
         expect(response.body.error).to.contain(`${paramName} - Expected type integer but`);
@@ -134,7 +134,7 @@ export const checkIntParam = (paramName: string, validURL: string, constraints: 
       theURLOBJ.query[paramName] = `${constraints.min - 1}`;
       return supertest(initializer.appManager.expressApp)
         .get(url.format(theURLOBJ))
-        .expect(500)
+        .expect(200)
         .then((response) => {
           expect(response.body.success).is.false;
           expect(response.body.error).to.contain(`${paramName} - Value ${constraints.min - 1} is less than minimum`);
@@ -153,7 +153,7 @@ export const checkIntParam = (paramName: string, validURL: string, constraints: 
       theURLOBJ.query[paramName] = outOfRangeValue;
       return supertest(initializer.appManager.expressApp)
         .get(url.format(theURLOBJ))
-        .expect(500)
+        .expect(200)
         .then((response) => {
           expect(response.body.success).is.false;
           expect(response.body.error).to.contain(`${paramName} - Value ${outOfRangeValue} is greater than maximum`);

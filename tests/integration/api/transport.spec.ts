@@ -22,7 +22,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     delete tmp.version;
     return p()
       .set(tmp)
-      .expect(500)
+      .expect(200)
       .then((res) => {
         expect(res.body.error).to.contain('Missing required property: version');
       });
@@ -32,7 +32,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     delete tmp.nethash;
     return p()
       .set(tmp)
-      .expect(500)
+      .expect(200)
       .then((res) => {
         expect(res.body.error).to.contain('Missing required property: nethash');
       });
@@ -42,7 +42,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     delete tmp.port;
     return p()
       .set(tmp)
-      .expect(500)
+      .expect(200)
       .then((res) => {
         expect(res.body.error).to.contain('Missing required property: port');
       });
@@ -53,7 +53,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     tmp.nethash = new Array(64).fill(null).map(() => 'a').join('');
     return p()
       .set(tmp)
-      .expect(500)
+      .expect(200)
       .then((res) => {
         expect(res.body.error.message).to.contain('Request is made on the wrong network');
       });
@@ -63,7 +63,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     tmp.broadhash  = 'hh'
     return p()
       .set(tmp)
-      .expect(500)
+      .expect(200)
       .then((res) => {
         expect(res.body.error).to.contain('broadhash - Object didn\'t pass validation for format');
       });
@@ -73,7 +73,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     tmp.height     = 'hh';
     return p()
       .set(tmp)
-      .expect(500)
+      .expect(200)
       .then((res) => {
         expect(res.body.error).to.contain('height - Expected type integer');
       });
@@ -83,7 +83,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     tmp.nonce      = new Array(15).fill(null).fill('a').join('');
     return p()
       .set(tmp)
-      .expect(500)
+      .expect(200)
       .then((res) => {
         expect(res.body.error).to.contain('nonce - String is too short (15 chars)');
       });
@@ -93,7 +93,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     tmp.nonce      = new Array(37).fill(null).fill('a').join('');
     return p()
       .set(tmp)
-      .expect(500)
+      .expect(200)
       .then((res) => {
         expect(res.body.error).to.contain('nonce - String is too long (37 chars)');
       });

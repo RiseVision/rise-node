@@ -3,6 +3,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
+import { APIError, DeprecatedAPIError } from '../../../../src/apis/errors';
 import { APIErrorHandler } from '../../../../src/apis/utils/errorHandler';
 import { Symbols } from '../../../../src/ioc/symbols';
 import { LoggerStub } from '../../../stubs';
@@ -32,7 +33,7 @@ describe('apis/utils/errorHandler', () => {
     container.bind(Symbols.api.utils.errorHandler).to(APIErrorHandler);
     sandbox = sinon.sandbox.create();
     sendSpy = {send: sandbox.spy()};
-    response = {status: () => sendSpy };
+    response = {status: () => sendSpy, send: sendSpy.send };
     responseStatusSpy = sandbox.spy(response, 'status');
     request = {url: {startsWith: () => true}};
     requestStub = sandbox.stub(request.url, 'startsWith');
@@ -54,11 +55,11 @@ describe('apis/utils/errorHandler', () => {
       expect(loggerStub.stubs.warn.args[0][0]).to.contains('Transport error');
       expect(loggerStub.stubs.warn.args[0][1]).to.equal('Fake error');
       expect(responseStatusSpy.calledOnce).to.be.true;
-      expect(responseStatusSpy.args[0][0]).to.equal(500);
+      expect(responseStatusSpy.args[0][0]).to.equal(200);
       expect(sendSpy.send.calledOnce).to.be.true;
       expect(sendSpy.send.args[0][0]).to.deep.equal({success: false, error: 'Fake error'});
-      expect(next.calledOnce).to.be.true;
-      expect(next.args[0][0]).to.deep.equal({success: false, error: 'Fake error'});
+      // expect(next.calledOnce).to.be.true;
+      // expect(next.args[0][0]).to.deep.equal({success: false, error: 'Fake error'});
     });
 
     it('If url NOT starts with /peer', () => {
@@ -69,11 +70,26 @@ describe('apis/utils/errorHandler', () => {
       expect(loggerStub.stubs.error.args[0][0]).to.contains('API error');
       expect(loggerStub.stubs.error.args[0][1]).to.equal('Another fake error');
       expect(responseStatusSpy.calledOnce).to.be.true;
-      expect(responseStatusSpy.args[0][0]).to.equal(500);
+      expect(responseStatusSpy.args[0][0]).to.equal(200);
       expect(sendSpy.send.calledOnce).to.be.true;
       expect(sendSpy.send.args[0][0]).to.deep.equal({success: false, error: 'Another fake error'});
-      expect(next.calledOnce).to.be.true;
-      expect(next.args[0][0]).to.deep.equal({success: false, error: 'Another fake error'});
+      // expect(next.calledOnce).to.be.true;
+      // expect(next.args[0][0]).to.deep.equal({success: false, error: 'Another fake error'});
+    });
+  });
+
+  describe('APIError', () => {
+    it('should honorate statusCode of APIError', () => {
+      requestStub.returns(false);
+      instance.error(new APIError('Another fake error', 500), request, response, next);
+      expect(responseStatusSpy.args[0][0]).to.equal(500);
+      expect(sendSpy.send.args[0][0]).to.deep.equal({success: false, error: 'Another fake error'});
+    });
+    it('should honorate Deprecated API Error (which is child of APIError)', () => {
+      requestStub.returns(false);
+      instance.error(new DeprecatedAPIError(), request, response, next);
+      expect(responseStatusSpy.args[0][0]).to.equal(500);
+      expect(sendSpy.send.args[0][0]).to.deep.equal({success: false, error: 'Method is deprecated'});
     });
   });
 });

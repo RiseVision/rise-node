@@ -209,6 +209,11 @@ describe('logic/transactions/delegate', () => {
         username    : tx.asset.delegate.username,
       });
     });
+
+    it('should throw an error', () => {
+      sender.isDelegate = 1;
+      expect(() => instance.apply(tx, block, sender)).to.throw('Account is already a delegate');
+    });
   });
 
   describe('undo', () => {
@@ -249,6 +254,12 @@ describe('logic/transactions/delegate', () => {
         username    : null,
         u_username  : tx.asset.delegate.username,
       });
+    });
+
+    it('should throw an error', () => {
+      sender.u_isDelegate = 1;
+      expect(() => instance.applyUnconfirmed(tx, sender)).to.throw('Account is already trying to be a delegate');
+
     });
   });
 

@@ -6,6 +6,7 @@ import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidat
 import { ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import sigSchema from '../schema/signatures';
+import { DeprecatedAPIError } from './errors';
 
 @JsonController('/api/signatures')
 @injectable()
@@ -28,7 +29,7 @@ export class SignaturesAPI {
   }
 
   @Put('/')
-  public addSignature() {
-    return Promise.reject('Method is now deprecated');
+  public async addSignature() {
+    throw new DeprecatedAPIError();
   }
 }

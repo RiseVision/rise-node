@@ -183,14 +183,14 @@ describe('apis/multisignatureAPI', () => {
 
   describe('sign()', () => {
     it('Throws deprecated', async () => {
-      await expect(instance.sign()).to.be.rejectedWith('Method deprecated');
+      await expect(instance.sign()).to.be.rejectedWith('Method is deprecated');
     });
   });
 
   describe('addMultisignature()', () => {
     it('Throws deprecated', async () => {
       await expect(instance.addMultisignature()).to.be.rejectedWith(
-        'Method deprecated'
+        'Method is deprecated'
       );
     });
   });

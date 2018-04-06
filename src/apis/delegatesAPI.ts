@@ -19,6 +19,7 @@ import { Symbols } from '../ioc/symbols';
 import schema from '../schema/delegates';
 import sql from '../sql/delegates';
 import { publicKey } from '../types/sanityTypes';
+import { APIError, DeprecatedAPIError } from './errors';
 import { ForgingApisWatchGuard } from './utils/forgingApisWatchGuard';
 
 @JsonController('/api/delegates')
@@ -109,7 +110,7 @@ export class DelegatesAPI {
         .getAccount({ publicKey: params.generatorPublicKey }, ['fees', 'rewards']);
 
       if (!account) {
-        throw new Error('Account not found');
+        throw new APIError('Account not found', 200);
       }
 
       return {
@@ -132,7 +133,7 @@ export class DelegatesAPI {
     if (delegate) {
       return { delegate };
     }
-    throw new Error('Delegate not found');
+    throw new APIError('Delegate not found', 200);
   }
 
   @Get('/voters')
@@ -202,8 +203,8 @@ export class DelegatesAPI {
   }
 
   @Put('/')
-  public createDelegate() {
-    return Promise.reject('Method deprecated');
+  public async createDelegate() {
+    throw new DeprecatedAPIError();
   }
 
   // internal stuff.
@@ -238,19 +239,19 @@ export class DelegatesAPI {
 
     const pk = kp.publicKey.toString('hex');
     if (params.publicKey && pk !== params.publicKey) {
-      throw new Error('Invalid passphrase');
+      throw new APIError('Invalid passphrase', 200);
     }
 
     if (this.forgeModule.isForgeEnabledOn(pk)) {
-      throw new Error('Forging is already enabled');
+      throw new APIError('Forging is already enabled', 200);
     }
 
     const account = await this.accounts.getAccount({ publicKey: pk });
     if (!account) {
-      throw new Error('Account not found');
+      throw new APIError('Account not found', 200);
     }
     if (!account.isDelegate) {
-      throw new Error('Delegate not found');
+      throw new APIError('Delegate not found', 200);
     }
 
     this.forgeModule.enableForge(kp);
@@ -266,19 +267,19 @@ export class DelegatesAPI {
 
     const pk = kp.publicKey.toString('hex');
     if (params.publicKey && pk !== params.publicKey) {
-      throw new Error('Invalid passphrase');
+      throw new APIError('Invalid passphrase', 200);
     }
 
     if (typeof(this.forgeModule.isForgeEnabledOn(pk)) === 'undefined') {
-      throw new Error('Forging is already disabled');
+      throw new APIError('Forging is already disabled', 200);
     }
 
     const account = await this.accounts.getAccount({ publicKey: pk });
     if (!account) {
-      throw new Error('Account not found');
+      throw new APIError('Account not found', 200);
     }
     if (!account.isDelegate) {
-      throw new Error('Delegate not found');
+      throw new APIError('Delegate not found', 200);
     }
 
     this.forgeModule.disableForge(pk);
