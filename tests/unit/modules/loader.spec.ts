@@ -126,9 +126,8 @@ describe('modules/loader', () => {
     promiseRetryStub = sandbox.stub().callsFake(sandbox.spy((w) => Promise.resolve(w(retryStub))));
     LoaderModuleRewire.__set__('promiseRetry', promiseRetryStub);
 
-
     (instance as any).jobsQueue.register                              = sandbox.stub().callsFake((val, fn) => fn());
-    (instance as  any).sequence.addAndPromise                         = sandbox.stub().callsFake(w => Promise.resolve(w()));
+    (instance as  any).defaultSequence.addAndPromise                  = sandbox.stub().callsFake(w => Promise.resolve(w()));
     instance                                                          = container.get(Symbols.modules.loader);
     container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock = { height: 1, id: 1 } as any;
   });
@@ -1217,31 +1216,13 @@ describe('modules/loader', () => {
     it('call logger.debug methods', async () => {
       await  (instance as any).sync();
 
-      expect(loggerStub.stubs.debug.callCount).to.be.equal(3);
+      expect(loggerStub.stubs.debug.callCount).to.be.equal(2);
 
       expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Undoing unconfirmed transactions before sync');
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Establishing broadhash consensus before sync');
 
       expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal('Establishing broadhash consensus before sync');
-
-      expect(loggerStub.stubs.debug.thirdCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.thirdCall.args[0]).to.be.equal('Establishing broadhash consensus after sync');
-    });
-
-    it('call logger.debug methods', async () => {
-      await  (instance as any).sync();
-
-      expect(loggerStub.stubs.debug.callCount).to.be.equal(3);
-
-      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Undoing unconfirmed transactions before sync');
-
-      expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal('Establishing broadhash consensus before sync');
-
-      expect(loggerStub.stubs.debug.thirdCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.thirdCall.args[0]).to.be.equal('Establishing broadhash consensus after sync');
+      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal('Establishing broadhash consensus after sync');
     });
 
     it('call bus"s methods', async () => {
@@ -1254,16 +1235,6 @@ describe('modules/loader', () => {
 
       expect(busStub.stubs.message.secondCall.args.length).to.be.equal(1);
       expect(busStub.stubs.message.secondCall.args[0]).to.be.equal('syncFinished');
-    });
-
-    it('call transactionsModule methods', async () => {
-      await  (instance as any).sync();
-
-      expect(transactionsModuleStub.stubs.undoUnconfirmedList.calledOnce).to.be.true;
-      expect(transactionsModuleStub.stubs.undoUnconfirmedList.firstCall.args.length).to.be.equal(0);
-
-      expect(transactionsModuleStub.stubs.applyUnconfirmedList.calledOnce).to.be.true;
-      expect(transactionsModuleStub.stubs.applyUnconfirmedList.firstCall.args.length).to.be.equal(0);
     });
 
     it('call broadcasterLogic methods', async () => {
