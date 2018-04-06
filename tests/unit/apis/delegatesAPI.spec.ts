@@ -648,7 +648,7 @@ describe('apis/blocksAPI', () => {
   describe('createDelegate', () => {
 
     it('should return a rejected promise', async () => {
-      expect(instance.createDelegate()).to.be.rejectedWith('Method deprecated');
+      await expect(instance.createDelegate()).to.be.rejectedWith('Method is deprecated');
     });
 
   });

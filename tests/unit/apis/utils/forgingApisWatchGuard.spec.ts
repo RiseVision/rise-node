@@ -8,6 +8,7 @@ import { ForgingApisWatchGuard } from '../../../../src/apis/utils/forgingApisWat
 import { Symbols } from '../../../../src/ioc/symbols';
 import { AppConfig } from '../../../../src/types/genericTypes';
 import { createContainer } from '../../../utils/containerCreator';
+import { APIError } from '../../../../src/apis/errors';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -66,7 +67,9 @@ describe('apis/utils/forgingApisWatchGuard', () => {
       checkIpInListStub.returns(false);
       instance.use(request as any, response, next);
       expect(next.calledOnce).to.be.true;
-      expect(next.args[0][0]).to.deep.equal({ error: 'API access denied' });
+      expect(next.args[0][0]).to.be.instanceof(APIError);
+      expect(next.args[0][0].message).to.be.eq('Delegates API access denied');
+      expect(next.args[0][0].statusCode).to.be.eq(403);
       expect(checkIpInListStub.calledOnce).to.be.true;
       expect(checkIpInListStub.args[0][0]).to.equal(
         config.forging.access.whiteList

@@ -12,6 +12,7 @@ import { SignedBlockType } from '../logic';
 import blocksSchema from '../schema/blocks';
 import sql from '../sql/blocks';
 import { publicKey } from '../types/sanityTypes';
+import { APIError } from './errors';
 
 // tslint:disable-next-line
 type FilterType = {
@@ -72,7 +73,7 @@ export class BlocksAPI {
     const block = await this.dbSequence.addAndPromise(async () => {
       const rows = await this.db.query(sql.getById, { id: filters.id });
       if (rows.length === 0) {
-        throw new Error('Block not found');
+        throw new APIError('Block not found', 200);
       }
       return this.blockLogic.dbRead(rows[0]);
     });
@@ -199,7 +200,7 @@ export class BlocksAPI {
     }
 
     if (params.limit > 100) {
-      throw new Error('Invalid limit. Maximum is 100');
+      throw new APIError('Invalid limit. Maximum is 100', 500);
     }
     const orderBy = OrderBy(
       (filter.orderBy || 'height:desc'), {
