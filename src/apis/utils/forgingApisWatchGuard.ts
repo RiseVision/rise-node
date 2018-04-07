@@ -5,6 +5,7 @@ import { checkIpInList } from '../../helpers';
 import { IoCSymbol } from '../../helpers/decorators/iocSymbol';
 import { Symbols } from '../../ioc/symbols';
 import { AppConfig } from '../../types/genericTypes';
+import { APIError } from '../errors';
 
 @Middleware({ type: 'before' })
 @injectable()
@@ -16,7 +17,7 @@ export class ForgingApisWatchGuard implements ExpressMiddlewareInterface {
 
   public use(request: express.Request, response: any, next: (err?: any) => any) {
     if (!checkIpInList(this.config.forging.access.whiteList, request.ip)) {
-      return next({error: 'API access denied'});
+      return next(new APIError('Delegates API access denied', 403));
     }
     next();
   }

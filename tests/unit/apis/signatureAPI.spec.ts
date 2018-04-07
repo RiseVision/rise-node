@@ -61,7 +61,7 @@ describe('apis/signatureAPI', () => {
   describe('addSignature()', () => {
     it('Throws deprecated', async () => {
       await expect(instance.addSignature()).to.be.rejectedWith(
-        'Method is now deprecated'
+        'Method is deprecated'
       );
     });
   });

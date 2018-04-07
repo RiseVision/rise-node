@@ -19,6 +19,7 @@ import transportSQL from '../sql/transport';
 import { AttachPeerHeaders } from './utils/attachPeerHeaders';
 import { RequestLogger } from './utils/requestLogger';
 import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
+import { APIError } from './errors';
 
 @JsonController('/peer')
 @injectable()
@@ -129,7 +130,7 @@ export class TransportAPI {
       .filter((id) => /^[0-9]+$/.test(id));
     if (excapedIds.length === 0 ) {
       this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
-      throw new Error ('Invalid block id sequence');
+      throw new APIError('Invalid block id sequence', 200);
     }
     const rows = await this.db.query(transportSQL.getCommonBlock, excapedIds);
     return { common: rows[0] || null };

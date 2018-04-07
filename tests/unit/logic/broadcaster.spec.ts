@@ -87,6 +87,27 @@ describe('logic/broadcaster', () => {
       expect(jobsQueueStub.stubs.register.firstCall.args[1]).to.be.a('function');
       expect(jobsQueueStub.stubs.register.firstCall.args[2]).to.be.equal(fakeConfig.broadcasts.broadcastInterval);
     });
+
+    it('should call to releaseQueue()', async () => {
+      jobsQueueStub.stubs.register.callsFake((name: string, job: () => Promise<any>, time: number) => {
+        job();
+      });
+      instance['releaseQueue'] = sandbox.stub().resolves(true);
+      await instance.afterConstruct();
+      expect(jobsQueueStub.stubs.register.called).to.be.true;
+      expect(instance['releaseQueue'].calledOnce).to.be.true;
+    });
+
+    it('if releaseQueue() rejects should call to catch()', async () => {
+      jobsQueueStub.stubs.register.callsFake((name: string, job: () => Promise<any>, time: number) => {
+        job();
+      });
+      instance['releaseQueue'] = sandbox.stub().rejects(new Error('Booo!'));
+      await instance.afterConstruct();
+      expect(jobsQueueStub.stubs.register.called).to.be.true;
+      expect(instance['releaseQueue'].calledOnce).to.be.true;
+      expect(loggerStub.stubs.log.called).to.be.true;
+    });
   });
 
   describe('getPeers', () => {

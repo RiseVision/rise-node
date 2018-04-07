@@ -8,6 +8,7 @@ import { assertValidSchema, SchemaValid, ValidateSchema } from '../helpers/decor
 import { ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import schema from '../schema/transactions';
+import { APIError, DeprecatedAPIError } from './errors';
 
 @JsonController('/api/transactions')
 @injectable()
@@ -73,7 +74,7 @@ export class TransactionsAPI {
                            @QueryParam('id') id: string) {
     const transaction = this.transactionsModule.getMultisignatureTransaction(id);
     if (!transaction) {
-      throw new Error('Transaction not found');
+      throw new APIError('Transaction not found', 200);
     }
     return { transaction };
   }
@@ -98,7 +99,7 @@ export class TransactionsAPI {
                            @QueryParam('id') id: string) {
     const transaction = this.transactionsModule.getQueuedTransaction(id);
     if (!transaction) {
-      throw new Error('Transaction not found');
+      throw new APIError('Transaction not found', 200);
     }
     return { transaction };
   }
@@ -123,7 +124,7 @@ export class TransactionsAPI {
                                 @QueryParam('id') id: string) {
     const transaction = this.transactionsModule.getUnconfirmedTransaction(id);
     if (!transaction) {
-      throw new Error('Transaction not found');
+      throw new APIError('Transaction not found', 200);
     }
     return { transaction };
   }
@@ -133,7 +134,7 @@ export class TransactionsAPI {
    * @deprecated
    */
   public async put() {
-    throw new Error('This method is deprecated');
+    throw new DeprecatedAPIError();
   }
 
 }

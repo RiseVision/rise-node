@@ -16,7 +16,6 @@ import {
 } from '../common/utils';
 import { checkAddress, checkIntParam, checkPubKey, checkReturnObjKeyVal } from './utils';
 
-
 // tslint:disable no-unused-expression max-line-length
 describe('api/transactions', () => {
 
@@ -96,7 +95,7 @@ describe('api/transactions', () => {
     it('should disallow an unknown query parameter', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/transactions?hey=brooother')
-        .expect(500)
+        .expect(200)
         .then((resp) => {
           expect(resp.body.error).to.contain('Additional properties not allowed');
         });

@@ -45,7 +45,7 @@ describe('helpers/z_schema', () => {
   });
 
   describe('Format "username"', ()  => {
-    const schema = { type: 'string', format: 'username' };
+    let schema = { type: 'string', format: 'username' };
     // Y ?
     it('should not accept an empty string', () => {
       expect(validator.validate('', schema)).to.be.false;
@@ -60,6 +60,14 @@ describe('helpers/z_schema', () => {
     });
     it('should reject other characters', () => {
       expect(validator.validate('#yeah', schema)).to.be.false;
+    });
+    it('should be reject if is a number', () => {
+      schema = { type: 'number', format: 'username' };
+      expect(validator.validate(1234, schema)).to.be.false;
+    });
+    it('should be reject if is an integer', () => {
+      schema = { type: 'integer', format: 'username' };
+      expect(validator.validate(1234, schema)).to.be.false;
     });
   });
 
@@ -101,7 +109,7 @@ describe('helpers/z_schema', () => {
   });
 
   describe('Format "csv"', ()  => {
-    const schema = { type: 'string', format: 'csv' };
+    let schema = { type: 'string', format: 'csv' };
     it('should accept an empty string', () => {
       expect(validator.validate('', schema)).to.be.true;
     });
@@ -117,6 +125,14 @@ describe('helpers/z_schema', () => {
         s += i + ',';
       }
       expect(validator.validate(s, schema)).to.be.false;
+    });
+    it('should be reject if is a number', () => {
+      schema = { type: 'number', format: 'csv' };
+      expect(validator.validate(1234, schema)).to.be.false;
+    });
+    it('should be reject if is an integer', () => {
+      schema = { type: 'integer', format: 'csv' };
+      expect(validator.validate(1234, schema)).to.be.false;
     });
   });
 
@@ -160,25 +176,6 @@ describe('helpers/z_schema', () => {
       const obj = {a: 1, limit: 10000};
       validator.validate(obj, schema);
       expect(obj.limit).to.be.eq(101);
-    });
-  });
-
-  describe('Format "parsedInt"', ()  => {
-    const schema = { type: 'integer', format: 'parsedInt' };
-    it('should accept an integer', () => {
-      expect(validator.validate(666, schema)).to.be.true;
-    });
-    it('should reject an integer string', () => {
-      expect(validator.validate('666', schema)).to.be.false;
-    });
-    it('should reject NaN values', () => {
-      expect(validator.validate(parseInt('nan!', 10), schema)).to.be.false;
-    });
-    it('should reject alternative integer notations in strings', () => {
-      expect(validator.validate('15e2', schema)).to.be.false;
-    });
-    it('should reject strings parsable as an integer but ambiguous', () => {
-      expect(validator.validate('15*3', schema)).to.be.false;
     });
   });
 

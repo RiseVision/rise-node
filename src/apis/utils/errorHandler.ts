@@ -4,6 +4,7 @@ import { ExpressErrorMiddlewareInterface, Middleware } from 'routing-controllers
 import { ILogger } from '../../helpers';
 import { IoCSymbol } from '../../helpers/decorators/iocSymbol';
 import { Symbols } from '../../ioc/symbols';
+import { APIError } from '../errors';
 
 @Middleware({ type: 'after' })
 @IoCSymbol(Symbols.api.utils.errorHandler)
@@ -14,6 +15,11 @@ export class APIErrorHandler implements ExpressErrorMiddlewareInterface {
   private logger: ILogger;
 
   public error(error: any, req: express.Request, res: express.Response, next: (err: any) => any) {
+    if (error instanceof APIError) {
+      res.status(error.statusCode);
+    } else {
+      res.status(200);
+    }
     if (error instanceof Error) {
       error = error.message;
     }
@@ -22,9 +28,7 @@ export class APIErrorHandler implements ExpressErrorMiddlewareInterface {
     } else {
       this.logger.error('API error ' + req.url, error);
     }
-    res.status(500)
-      .send({ success: false, error });
-    next({ success: false, error });
+    res.send({ success: false, error });
   }
 
 }

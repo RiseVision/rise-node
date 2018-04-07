@@ -1,75 +1,84 @@
-## Rise-node version 0.1.2
+## Rise-node version 1.0.0
+
 # RISE
-[![Build Status](https://travis-ci.org/RiseVision/rise-node.svg?branch=unit-test%2Ffix-development-branch)](https://travis-ci.org/RiseVision/rise-node) [![Coverage Status](https://coveralls.io/repos/github/RiseVision/rise-node/badge.svg?branch=development)](https://coveralls.io/github/RiseVision/rise-node?branch=development) 
+[![Build Status](https://travis-ci.org/RiseVision/rise-node.svg?branch=development)](https://travis-ci.org/RiseVision/rise-node) [![Coverage Status](https://coveralls.io/repos/github/RiseVision/rise-node/badge.svg?branch=development)](https://coveralls.io/github/RiseVision/rise-node?branch=development) 
 ## Installation
 
-Automatic install script for Debian based systems Ubuntu, Mint, Debian.
+An automatic install script for Ubuntu is available.
 
-<b>Install Rise (Mainnet)</b>
--- BE SURE NOT TO RUN AS ROOT OR WITH SUDO --
+### Wiki 
 
-First, go home
+For detailed information on node installation and management please refer to the [wiki of this repository](https://github.com/RiseVision/rise-node/wiki).
+
+### Quick start Rise installation (Mainnet)
+
+First, perform some basic checks:
+
+- MAKE SURE NOT TO RUN AS ROOT OR WITH SUDO
+- Your user will need sudo privileges, though
+- PostgresSQL must **not** be installed on your server
+
+Then go home:
+
 ```
 cd $HOME
 ```
 
-Then git clone
+Download the installer:
+
 ```
-git clone -b master https://github.com/RiseVision/rise-node.git
+wget https://raw.githubusercontent.com/RiseVision/rise-build/master/scripts/install.sh
 ```
 
-Go to the Rise directory
+Install Rise:
 ```
-cd rise-node
-```
-
-Install Rise
-```
-./rise_manager.bash install
+bash install.sh install -r mainnet -u https://downloads.rise.vision/core/mainnet/latest.tar.gz
 ```
 
-Then start the node with this line:
+The installer will start the node automatically if installation was successful.
+
+## Basic node management
+
+Installer will create a `rise` folder in your homedir. Make sure to `cd` to this dir when managing your node.
+
+
+Check the status of your node with:
 ```
-./rise_manager.bash start
+./manager.sh status
 ```
 
-Catch up with current mainnet (download snapshot: y)
+Stop node with: 
 ```
-./rise_manager.bash rebuild
-```
-
-Get node status
-```
-./rise_manager.bash status
+./manager.sh stop node
 ```
 
 Insert your passphrase so you can forge:
 ```
-nano config.json
+nano etc/node_config.json
 ```
 
 And change this section to include your passphrase:
 ```
-"forging": {
-        "force": false,
-        "secret": ["word1 word2 word3 ..."],
-        "access": {
-            "whiteList": [
-                "127.0.0.1"
-            ]
-        }
-    },
+{
+  "fileLogLevel": "error",
+  "forging": {
+    "secret": [ "my secret" ],
+    "access": {
+      "whiteList": [ "127.0.0.1" ]
+    }
+  }
+}
 ```
 
 And finally restart your node to apply the changes:
 ```
-./rise_manager.bash reload
+./manager.sh restart node
 ```
 
-<b>Install Rise (Testnet)</b>
-The same as above, only the git clone section is different:
+### Quick start Rise installation (Testnet) 
+The same as above, only the install step is different:
 ```
-git clone -b testnet https://github.com/RiseVision/rise-node.git
+bash install.sh install -r testnet -u https://downloads.rise.vision/core/testnet/latest.tar.gz
 ```
 
 ## Authors

@@ -384,7 +384,7 @@ describe('apis/transactionsAPI', () => {
   });
   describe('put', () => {
     it('should throw error', async () => {
-      await expect(instance.put()).to.be.rejectedWith('This method is deprecated');
+      await expect(instance.put()).to.be.rejectedWith('Method is deprecated');
     });
   });
 });

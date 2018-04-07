@@ -8,6 +8,7 @@ import { IAccountsModule, IDelegatesModule, ISystemModule } from '../ioc/interfa
 import { Symbols } from '../ioc/symbols';
 import accountSchema from '../schema/accounts';
 import { publicKey } from '../types/sanityTypes';
+import { APIError, DeprecatedAPIError } from './errors';
 
 @JsonController('/api/accounts')
 @injectable()
@@ -27,7 +28,7 @@ export class AccountsAPI {
   public async getAccount(@SchemaValid(accountSchema.getAccount)
                           @QueryParams() query: { address?: string, publicKey?: publicKey }) {
     if (isEmpty(query.address) && isEmpty(query.publicKey)) {
-      throw new Error('Missing required property: address or publicKey');
+      throw new APIError('Missing required property: address or publicKey', 200);
     }
 
     const address = !isEmpty(query.publicKey)
@@ -35,11 +36,11 @@ export class AccountsAPI {
       : query.address;
 
     if (!isEmpty(query.address) && !isEmpty(query.publicKey) && address !== query.address) {
-      throw new Error('Account publicKey does not match address');
+      throw new APIError('Account publicKey does not match address', 200);
     }
     const accData = await this.accountsModule.getAccount(query);
     if (!accData) {
-      throw new Error('Account not found');
+      throw new APIError('Account not found', 200);
     }
     return {
       account: {
@@ -74,7 +75,7 @@ export class AccountsAPI {
     const account = await this.accountsModule
       .getAccount({ address: params.address });
     if (!account) {
-      throw new Error('Account not found');
+      throw new APIError('Account not found', 200);
     }
     return { publicKey: account.publicKey };
   }
@@ -86,7 +87,7 @@ export class AccountsAPI {
     const account = await this.accountsModule
       .getAccount({ address: params.address });
     if (!account) {
-      throw new Error('Account not found');
+      throw new APIError('Account not found', 200);
     }
     if (account.delegates) {
       const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'rank:desc' });
@@ -110,22 +111,7 @@ export class AccountsAPI {
   @ValidateSchema()
   public async open(@SchemaValid(accountSchema.open)
                     @Body() body: { secret: string }): Promise<any> {
-    throw new Error('Method is not supported anymore');
-    // const accountData = await this.accounts.openAccount(body.secret);
-    // return {
-    //  account: {
-    //    address             : accountData.address,
-    //    unconfirmedBalance  : accountData.u_balance,
-    //    balance             : accountData.balance,
-    //    publicKey           : accountData.publicKey,
-    //    unconfirmedSignature: accountData.u_secondSignature,
-    //    secondSignature     : accountData.secondSignature,
-    //    secondPublicKey     : accountData.secondPublicKey,
-    //    multisignatures     : accountData.multisignatures,
-    //    u_multisignatures   : accountData.u_multisignatures
-    //  },
-    // };
-
+    throw new DeprecatedAPIError();
   }
 
   /**
@@ -133,7 +119,7 @@ export class AccountsAPI {
    */
   @Put('/delegates')
   public async addDelegate() {
-    throw new Error('Method is now deprecated');
+    throw new DeprecatedAPIError();
   }
 
   /**
@@ -141,7 +127,7 @@ export class AccountsAPI {
    */
   @Post('/generatePublicKey')
   public async generatePublicKey() {
-    throw new Error('Method is now deprecated');
+    throw new DeprecatedAPIError();
   }
 
 }

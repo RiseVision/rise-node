@@ -635,6 +635,34 @@ describe('logic/transaction', () => {
       await expect(instance.verify(tx, sender, requester, 1)).to.be.rejectedWith('Invalid member in keysgroup');
     });
 
+    it('should verify multisignatures', async () => {
+      sender.multisignatures  = [];
+      tx.signatures = ['a', 'b'];
+      tx.requesterPublicKey          = 'yz';
+      tx.asset.multisignature = {
+        keysgroup: [
+          'xyz',
+          'def',
+        ],
+      };
+      verifySignatureStub.returns(true);
+
+      await instance.verify(tx, sender, requester, 1);
+
+      expect(verifySignatureStub.callCount).to.equal(3);
+      expect(verifySignatureStub.args[0][0]).to.be.deep.equal(tx);
+      expect(verifySignatureStub.args[0][1]).to.be.equal(tx.requesterPublicKey);
+      expect(verifySignatureStub.args[0][2]).to.be.equal(tx.signature);
+
+      expect(verifySignatureStub.args[1][0]).to.be.deep.equal(tx);
+      expect(verifySignatureStub.args[1][1]).to.be.equal('ef');
+      expect(verifySignatureStub.args[1][2]).to.be.equal('a');
+
+      expect(verifySignatureStub.args[2][0]).to.be.deep.equal(tx);
+      expect(verifySignatureStub.args[2][1]).to.be.equal('ef');
+      expect(verifySignatureStub.args[2][2]).to.be.equal('b');
+    });
+
     it('should throw if account does not belong to multisignature group', async () => {
       // FIXME This must be broken in src/logic/transaction.ts No other way to test this behavior
       tx.requesterPublicKey  = requester.publicKey;
