@@ -573,12 +573,12 @@ describe('src/modules/transport.ts', () => {
 
       describe('false in condition of Throttle.all"s callback', () => {
 
-        it('p in null', async () => {
+        it('p is null', async () => {
           peers[0] = null;
 
           await inst.onPeersReady();
           await wait(100);
-          expect(logger.stubs.trace.callCount).to.be.equal(2);
+          expect(logger.stubs.trace.callCount).to.be.equal(3);
         });
 
         it('p.state === PeerState.BANNED', async () => {
@@ -586,7 +586,7 @@ describe('src/modules/transport.ts', () => {
 
           await inst.onPeersReady();
           await wait(10);
-          expect(logger.stubs.trace.callCount).to.be.equal(2);
+          expect(logger.stubs.trace.callCount).to.be.equal(3);
         });
 
         it('p.update is true and (Date.now() - p.updated) <= 3000', async () => {
@@ -595,7 +595,7 @@ describe('src/modules/transport.ts', () => {
           await inst.onPeersReady();
           await wait(10);
 
-          expect(logger.stubs.trace.callCount).to.be.equal(2);
+          expect(logger.stubs.trace.callCount).to.be.equal(3);
         });
       });
     });
