@@ -14,7 +14,8 @@ import {
   createVoteTransaction,
   getRandomDelegateWallet
 } from '../common/utils';
-import { checkAddress, checkIntParam, checkPubKey, checkReturnObjKeyVal } from './utils';
+import { checkAddress, checkIntParam, checkPubKey, checkRequiredParam, checkReturnObjKeyVal } from './utils';
+import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/transactions', () => {
@@ -273,5 +274,60 @@ describe('api/transactions', () => {
       });
     });
     // TODO: multisignatures.
+  });
+
+  describe('/get', () => {
+
+    let tx: ITransaction;
+    let delegate1: LiskWallet;
+    let senderAccount: LiskWallet;
+    beforeEach(async () => {
+      const {wallet: randomAccount} = await createRandomAccountWithFunds(Math.pow(10, 9));
+      senderAccount                 = randomAccount;
+      delegate1 = getRandomDelegateWallet();
+      tx = await createVoteTransaction(1, senderAccount, delegate1.publicKey, true);
+    });
+
+    checkRequiredParam('id', '/api/transactions/get?id=1111');
+    describe('vote tx', () => {
+      it('should show asset object (corectly)', async () => {
+        return supertest(initializer.appManager.expressApp)
+          .get(`/api/transactions/get?id=${tx.id}`)
+          .expect(200)
+          .then((resp) => {
+            expect(resp.body.transaction.asset).to.be.an('object');
+            expect(resp.body.transaction.asset).to.haveOwnProperty('votes');
+            expect(resp.body.transaction.asset.votes).to.be.an('array');
+            expect(resp.body.transaction.asset.votes).to.be.deep.eq([
+              `+${delegate1.publicKey}`,
+            ]);
+          });
+      });
+      it('should also add votes object (deprecated stuff)', async () => {
+        return supertest(initializer.appManager.expressApp)
+          .get(`/api/transactions/get?id=${tx.id}`)
+          .expect(200)
+          .then((resp) => {
+            expect(resp.body.transaction.votes).to.be.an('object');
+            expect(resp.body.transaction.votes).to.haveOwnProperty('added');
+            expect(resp.body.transaction.votes).to.haveOwnProperty('deleted');
+            expect(resp.body.transaction.votes.deleted).to.be.empty;
+            expect(resp.body.transaction.votes.added).to.be.deep.eq([delegate1.publicKey]);
+          });
+      });
+      it('should correctly also show deleted votes', async () => {
+        const tx2 = await createVoteTransaction(1, senderAccount, delegate1.publicKey, false);
+        return supertest(initializer.appManager.expressApp)
+          .get(`/api/transactions/get?id=${tx2.id}`)
+          .expect(200)
+          .then((resp) => {
+            expect(resp.body.transaction.votes).to.be.an('object');
+            expect(resp.body.transaction.votes).to.haveOwnProperty('added');
+            expect(resp.body.transaction.votes).to.haveOwnProperty('deleted');
+            expect(resp.body.transaction.votes.added).to.be.empty;
+            expect(resp.body.transaction.votes.deleted).to.be.deep.eq([delegate1.publicKey]);
+          });
+      });
+    });
   });
 });

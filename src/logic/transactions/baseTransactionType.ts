@@ -1,4 +1,5 @@
 import { injectable, unmanaged } from 'inversify';
+import { IDatabase } from 'pg-promise';
 import { TransactionType } from '../../helpers/';
 import { MemAccountsData } from '../account';
 import { SignedBlockType } from '../block';
@@ -81,6 +82,10 @@ export abstract class BaseTransactionType<T> {
 
   public afterSave(tx: IBaseTransaction<T>): Promise<void> {
     return Promise.resolve();
+  }
+
+  public restoreAsset(tx: IBaseTransaction<any>, db: IDatabase<any>): Promise<IBaseTransaction<T>> {
+    return Promise.resolve(tx);
   }
 
   public ready(tx: IBaseTransaction<T>, sender: MemAccountsData): boolean {

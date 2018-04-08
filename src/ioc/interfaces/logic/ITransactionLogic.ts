@@ -109,4 +109,11 @@ export interface ITransactionLogic {
   objectNormalize(tx: IBaseTransaction<any>): IBaseTransaction<any>;
 
   dbRead(raw: any): IConfirmedTransaction<any>;
+
+  /**
+   * Restores the tx asset field as it was originally broadcastes/crafted
+   */
+  restoreAsset<T = any>(tx: IConfirmedTransaction<void>): Promise<IConfirmedTransaction<T>>;
+  restoreAsset<T = any>(tx: IBaseTransaction<void>): Promise<IBaseTransaction<T>>;
+
 }

@@ -1318,4 +1318,17 @@ describe('logic/transaction', () => {
     });
   });
 
+  describe('restoreAsset', () => {
+    it('should throw if tx is not valid type', async () => {
+      await expect(instance.restoreAsset({type: 102} as any))
+        .to.be.rejectedWith('Unknown transaction type 102');
+    });
+    it('should delegate asset restore to type implementation', async () => {
+      const stub = sandbox.stub(sendTransaction, 'restoreAsset').returns('meow');
+      expect(await instance.restoreAsset({type: TransactionType.SEND} as any))
+        .to.be.eq('meow');
+
+      expect(stub.calledWith({type: TransactionType.SEND})).is.true;
+    });
+  });
 });

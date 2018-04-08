@@ -1,12 +1,14 @@
-import {inject, injectable} from 'inversify';
+import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
 import { Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import { castFieldsToNumberUsingSchema } from '../helpers';
+import { castFieldsToNumberUsingSchema, TransactionType } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { assertValidSchema, SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { ITransactionLogic } from '../ioc/interfaces/logic';
 import { ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
+import { IConfirmedTransaction, VoteAsset } from '../logic/transactions';
 import schema from '../schema/transactions';
 import { APIError, DeprecatedAPIError } from './errors';
 
@@ -19,6 +21,9 @@ export class TransactionsAPI {
 
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
+
+  @inject(Symbols.logic.transaction)
+  private txLogic: ITransactionLogic;
 
   @Get()
   public async getTransactions(@QueryParams() body: any) {
@@ -48,9 +53,25 @@ export class TransactionsAPI {
   }
 
   @Get('/get')
-  public async getTX(@QueryParam('id', { required: true }) id: string) {
-    // Do validation on length?
-    const tx = await this.transactionsModule.getByID(id);
+  @ValidateSchema()
+  public async getTX(
+    @SchemaValid(schema.getTransaction)
+    @QueryParams() params: {id: string}) {
+
+    const {id} = params;
+    let tx = await this.transactionsModule.getByID(id);
+    tx = await this.txLogic.restoreAsset(tx);
+    if (tx.type === TransactionType.VOTE) {
+      // tslint:disable-next-line
+      tx['votes'] = {
+        added: (tx as (IConfirmedTransaction<VoteAsset>)).asset.votes
+          .filter((v) => v.startsWith('+'))
+          .map((v) => v.substr(1)),
+        deleted: (tx as (IConfirmedTransaction<VoteAsset>)).asset.votes
+          .filter((v) => v.startsWith('-'))
+          .map((v) => v.substr(1)),
+      };
+    }
     return { transaction: tx };
   }
 
