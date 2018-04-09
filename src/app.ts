@@ -63,10 +63,12 @@ if (program.extraConfig) {
   extraConfig = require(program.extraConfig);
 }
 
-const appConfig = extend(true, {
-  ...configCreator(program.config ? program.config : `./etc/${program.net}/config.json`),
-  ...extraConfig,
-});
+const appConfig = extend(
+  true,
+  {},
+  configCreator(program.config ? program.config : `./etc/${program.net}/config.json`),
+  extraConfig
+);
 
 if (program.port) {
   appConfig.port = program.port;

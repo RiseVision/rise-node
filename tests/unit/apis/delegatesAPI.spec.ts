@@ -83,9 +83,9 @@ describe('apis/blocksAPI', () => {
       }
 
       const delegates = [
-        { [field]: areNumberValues ? 1 : 'a' },
-        { [field]: areNumberValues ? 3 : 'bb' },
-        { [field]: areNumberValues ? 2 : 'ccc' },
+        { [field]: areNumberValues ? 1 : 'a', rank: 1 },
+        { [field]: areNumberValues ? 3 : 'bb', rank: 2 },
+        { [field]: areNumberValues ? 2 : 'ccc', rank: 3 },
       ];
 
       d = {
@@ -125,9 +125,9 @@ describe('apis/blocksAPI', () => {
 
         expect(ret.delegates).to.be.deep.equal(
           [
-            { approval: 1 },
-            { approval: 2 },
-            { approval: 3 },
+            { approval: 1, rank: 1, rate: 1 },
+            { approval: 2, rank: 3, rate: 3 },
+            { approval: 3, rank: 2, rate: 2 },
           ]);
       });
 
@@ -137,9 +137,9 @@ describe('apis/blocksAPI', () => {
 
         expect(ret.delegates).to.be.deep.equal(
           [
-            { approval: 3 },
-            { approval: 2 },
-            { approval: 1 },
+            { approval: 3, rank: 2, rate: 2 },
+            { approval: 2, rank: 3, rate: 3 },
+            { approval: 1, rank: 1, rate: 1 },
           ]);
       });
 
@@ -149,9 +149,9 @@ describe('apis/blocksAPI', () => {
 
         expect(ret.delegates).to.be.deep.equal(
           [
-            { username: 'a' },
-            { username: 'bb' },
-            { username: 'ccc' },
+            { username: 'a', rank: 1, rate: 1 },
+            { username: 'bb', rank: 2, rate: 2 },
+            { username: 'ccc', rank: 3, rate: 3 },
           ]);
       });
 
@@ -161,9 +161,9 @@ describe('apis/blocksAPI', () => {
 
         expect(ret.delegates).to.be.deep.equal(
           [
-            { username: 'ccc' },
-            { username: 'bb' },
-            { username: 'a' },
+            { username: 'ccc', rank: 3, rate: 3 },
+            { username: 'bb', rank: 2, rate: 2 },
+            { username: 'a', rank: 1, rate: 1 },
           ]);
       });
 
@@ -171,14 +171,21 @@ describe('apis/blocksAPI', () => {
         setReturnedDelegates(null, 'DESC', true);
         const ret = await instance.getDelegates(data);
 
-        expect(ret.delegates).to.be.deep.equal([{ f: 1 }, { f: 3 }, { f: 2 }]);
+        expect(ret.delegates).to.be.deep.equal([
+          { f: 1, rank: 1, rate: 1 },
+          { f: 3, rank: 2, rate: 2 },
+          { f: 2, rank: 3, rate: 3 }]);
       });
 
       it('sortField state is not to same the allowed fields', async () => {
         setReturnedDelegates('NICKBORSUK', 'DESC', true);
         const ret = await instance.getDelegates(data);
 
-        expect(ret.delegates).to.be.deep.equal([{ NICKBORSUK: 1 }, { NICKBORSUK: 3 }, { NICKBORSUK: 2 }]);
+        expect(ret.delegates).to.be.deep.equal([
+          { NICKBORSUK: 1, rank: 1, rate: 1 },
+          { NICKBORSUK: 3, rank: 2, rate: 2 },
+          { NICKBORSUK: 2, rank: 3, rate: 3 }
+          ]);
       });
     });
 
@@ -186,14 +193,14 @@ describe('apis/blocksAPI', () => {
       setReturnedDelegates('approval', 'ASC', true, undefined, 2);
       const ret = await instance.getDelegates(data);
 
-      expect(ret.delegates).to.be.deep.equal([{ approval: 3 }]);
+      expect(ret.delegates).to.be.deep.equal([{ approval: 3, rank: 2, rate: 2 }]);
     });
 
     it('check slice array by limit', async () => {
       setReturnedDelegates('approval', 'ASC', true, 1);
       const ret = await instance.getDelegates(data);
 
-      expect(ret.delegates).to.be.deep.equal([{ approval: 1 }]);
+      expect(ret.delegates).to.be.deep.equal([{ approval: 1, rank: 1, rate: 1 }]);
     });
 
     it('success', async () => {
@@ -202,9 +209,9 @@ describe('apis/blocksAPI', () => {
 
       expect(ret).to.be.deep.equal({
         delegates : [
-          { approval: 1, },
-          { approval: 2, },
-          { approval: 3, },
+          { approval: 1, rank: 1, rate: 1 },
+          { approval: 2, rank: 3, rate: 3 },
+          { approval: 3, rank: 2, rate: 2 },
         ],
         totalCount: 3,
       });
@@ -363,10 +370,14 @@ describe('apis/blocksAPI', () => {
         {
           publicKey: 'publicKey',
           username : 'username',
+          rank: 1,
+          rate: 1,
         },
         {
           publicKey: '111',
           username : '222',
+          rank: 2,
+          rate: 2
         }];
       delegatesModule.enqueueResponse('getDelegates', Promise.resolve({ delegates }));
     });

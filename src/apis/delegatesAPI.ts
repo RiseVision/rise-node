@@ -71,6 +71,7 @@ export class DelegatesAPI {
         });
       }
     }
+    d.delegates = d.delegates.map((del) => ({...del, ...{rate: del.rank}}));
 
     const delegates = d.delegates.slice(d.offset, d.limit);
     return { delegates, totalCount: d.count };
@@ -131,7 +132,7 @@ export class DelegatesAPI {
     const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'username:asc' });
     const delegate      = delegates.find((d) => d.publicKey === params.publicKey || d.username === params.username);
     if (delegate) {
-      return { delegate };
+      return { delegate: {...delegate, ...{ rate: delegate.rank }} };
     }
     throw new APIError('Delegate not found', 200);
   }
