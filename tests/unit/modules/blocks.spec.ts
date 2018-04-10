@@ -30,41 +30,14 @@ describe('modules/blocks', () => {
     it('should have lastReceipt', () => {
       expect(inst.lastReceipt).to.exist;
     });
-    it('should set isActive to false', () => {
-      expect(inst.isActive).to.be.false;
-    });
     it('should set lastBlock to undefined', () => {
       expect(inst.lastBlock).to.be.undefined;
-    });
-    it('should set isCleaning to false', () => {
-      expect(inst.isCleaning).to.be.false;
     });
   });
 
   describe('.cleanup', () => {
-    it('should set isCleaning to true and return immediately if isActive is false', async () => {
-      await instB.cleanup();
-      expect(inst.isCleaning).to.be.true;
-    });
-    it('should wait until isActive is false and then return', async () => {
-      const timers   = sinon.useFakeTimers();
-      instB.isActive = true;
-      const stub = sinon.stub();
-      const p = instB.cleanup()
-        .then(stub)
-        .catch(stub);
-
-      expect(stub.called).is.false;
-      timers.tick(10000);
-      expect(stub.called).is.false;
-      instB.isActive = false;
-      timers.tick(10000);
-      await p;
-
-      expect(stub.called).is.true;
-      expect(stub.callCount).is.eq(1);
-
-      timers.restore();
+    it('should resolve', () => {
+      return instB.cleanup();
     });
   });
 

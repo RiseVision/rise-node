@@ -29,7 +29,7 @@ describe('api/multisignatures', () => {
         .post('/api/multisignatures/sign')
         .expect(500)
         .then((response) => {
-          expect(response.body.error).is.eq('Method deprecated');
+          expect(response.body.error).is.eq('Method is deprecated');
         });
     });
   });
@@ -40,7 +40,7 @@ describe('api/multisignatures', () => {
         .put('/api/multisignatures/')
         .expect(500)
         .then((response) => {
-          expect(response.body.error).is.eq('Method deprecated');
+          expect(response.body.error).is.eq('Method is deprecated');
         });
     });
   });

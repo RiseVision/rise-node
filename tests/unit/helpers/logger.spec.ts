@@ -192,6 +192,56 @@ describe('helpers/logger', () => {
       expect(consoleLogSpy.args[0][3]).contains('Message fatal');
       expect(consoleLogSpy.args[0][5]).to.deep.equal('{"foo":"bar"}');
     });
+
+    it('When data is an instance of Error', () => {
+      instance = loggerCreator({ echo: 'fatal', errorLevel: 'fatal' });
+      instance.fatal('Message fatal', new Error('MyError'));
+      expect(logFileWriteSpy.calledOnce).to.be.true;
+      expect(logFileWriteSpy.args[0][0]).contains('FTL');
+      expect(logFileWriteSpy.args[0][0]).contains('Message fatal');
+      expect(logFileWriteSpy.args[0][0]).contains('{"message":"MyError","error":"Error: MyError');
+      expect(consoleLogSpy.calledOnce).to.be.true;
+      expect(consoleLogSpy.args[0][0]).contains('FTL');
+      expect(consoleLogSpy.args[0][3]).contains('Message fatal');
+      expect(consoleLogSpy.args[0][5]).contains('{"message":"MyError","error":"Error: MyError');
+    });
+
+    it('Receiving an object with toLogObj() function', () => {
+      instance = loggerCreator({ echo: 'fatal', errorLevel: 'fatal' });
+      instance.fatal('Message fatal', {foo: 'bar', toLogObj: () => ({abc: 123}) });
+      expect(logFileWriteSpy.calledOnce).to.be.true;
+      expect(logFileWriteSpy.args[0][0]).contains('FTL');
+      expect(logFileWriteSpy.args[0][0]).contains('Message fatal');
+      expect(logFileWriteSpy.args[0][0]).contains('{"abc":123}');
+      expect(consoleLogSpy.calledOnce).to.be.true;
+      expect(consoleLogSpy.args[0][0]).contains('FTL');
+      expect(consoleLogSpy.args[0][3]).contains('Message fatal');
+      expect(consoleLogSpy.args[0][5]).contains('{"abc":123}');
+    });
+
+    it('If data is not an object', () => {
+      instance = loggerCreator({ echo: 'fatal', errorLevel: 'fatal' });
+      instance.fatal('Message fatal', 'Not an object');
+      expect(logFileWriteSpy.calledOnce).to.be.true;
+      expect(logFileWriteSpy.args[0][0]).contains('FTL');
+      expect(logFileWriteSpy.args[0][0]).contains('Message fatal');
+      expect(logFileWriteSpy.args[0][0]).contains('Not an object');
+      expect(consoleLogSpy.calledOnce).to.be.true;
+      expect(consoleLogSpy.args[0][0]).contains('FTL');
+      expect(consoleLogSpy.args[0][3]).contains('Message fatal');
+      expect(consoleLogSpy.args[0][5]).contains('Not an object');
+    });
+
+    it('If data is empty', () => {
+      instance = loggerCreator({ echo: 'fatal', errorLevel: 'fatal' });
+      instance.fatal('Message fatal');
+      expect(logFileWriteSpy.calledOnce).to.be.true;
+      expect(logFileWriteSpy.args[0][0]).contains('FTL');
+      expect(logFileWriteSpy.args[0][0]).contains('Message fatal');
+      expect(consoleLogSpy.calledOnce).to.be.true;
+      expect(consoleLogSpy.args[0][0]).contains('FTL');
+      expect(consoleLogSpy.args[0][3]).contains('Message fatal');
+    });
   });
 
   describe('setLevel()', () => {

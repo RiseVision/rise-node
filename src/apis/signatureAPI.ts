@@ -6,6 +6,7 @@ import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidat
 import { ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import sigSchema from '../schema/signatures';
+import { DeprecatedAPIError } from './errors';
 
 @JsonController('/api/signatures')
 @injectable()
@@ -18,7 +19,7 @@ export class SignaturesAPI {
 
   @Get('/fee')
   @ValidateSchema()
-  public fees(@SchemaValid(sigSchema.getFee, {castNumbers: true})
+  public async fees(@SchemaValid(sigSchema.getFee, {castNumbers: true})
               @QueryParams()
                 params: { height?: number }) {
     const feesForHeight = this.system.getFees(params.height);
@@ -28,7 +29,7 @@ export class SignaturesAPI {
   }
 
   @Put('/')
-  public addSignature() {
-    return Promise.reject('Method is now deprecated');
+  public async addSignature() {
+    throw new DeprecatedAPIError();
   }
 }

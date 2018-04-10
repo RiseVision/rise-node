@@ -59,7 +59,6 @@ describe('logic/broadcaster', () => {
   });
 
   afterEach(() => {
-    sandbox.reset();
     sandbox.restore();
   });
 
@@ -87,6 +86,27 @@ describe('logic/broadcaster', () => {
       expect(jobsQueueStub.stubs.register.firstCall.args[0]).to.be.equal('broadcasterNextRelease');
       expect(jobsQueueStub.stubs.register.firstCall.args[1]).to.be.a('function');
       expect(jobsQueueStub.stubs.register.firstCall.args[2]).to.be.equal(fakeConfig.broadcasts.broadcastInterval);
+    });
+
+    it('should call to releaseQueue()', async () => {
+      jobsQueueStub.stubs.register.callsFake((name: string, job: () => Promise<any>, time: number) => {
+        job();
+      });
+      instance['releaseQueue'] = sandbox.stub().resolves(true);
+      await instance.afterConstruct();
+      expect(jobsQueueStub.stubs.register.called).to.be.true;
+      expect(instance['releaseQueue'].calledOnce).to.be.true;
+    });
+
+    it('if releaseQueue() rejects should call to catch()', async () => {
+      jobsQueueStub.stubs.register.callsFake((name: string, job: () => Promise<any>, time: number) => {
+        job();
+      });
+      instance['releaseQueue'] = sandbox.stub().rejects(new Error('Booo!'));
+      await instance.afterConstruct();
+      expect(jobsQueueStub.stubs.register.called).to.be.true;
+      expect(instance['releaseQueue'].calledOnce).to.be.true;
+      expect(loggerStub.stubs.log.called).to.be.true;
     });
   });
 
@@ -126,6 +146,14 @@ describe('logic/broadcaster', () => {
       expect(fakeAppState.set.calledOnce).to.be.true;
       expect(fakeAppState.set.firstCall.args[0]).to.be.equal('node.consensus');
       expect(fakeAppState.set.firstCall.args[1]).to.be.equal(consensus);
+    });
+
+    it('should set consensus in 100 if limit is constants.maxPeers and config.forging.force is true', async () => {
+      (instance as any).config.forging.force = true;
+      await instance.getPeers({ limit: constants.maxPeers });
+      expect(fakeAppState.set.calledOnce).to.be.true;
+      expect(fakeAppState.set.firstCall.args[0]).to.be.equal('node.consensus');
+      expect(fakeAppState.set.firstCall.args[1]).to.be.equal(100);
     });
 
     it('should return the right value', async () => {
@@ -262,7 +290,7 @@ describe('logic/broadcaster', () => {
     });
 
     it('should call peer.makeRequest per each created peer instance', async () => {
-      peersLogicStub.stubs.create.reset();
+      peersLogicStub.stubs.create.resetBehavior();
       const stubs              = [];
       let makeRequestCallCount = 0;
       peersLogicStub.stubs.create.callsFake((p) => {

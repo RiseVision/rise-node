@@ -34,6 +34,7 @@ describe('modules/system', () => {
         { height: 1, ver: '^0.1.0' },
         { height: 2, ver: '^0.1.2' },
         { height: 3, ver: '^0.1.3' },
+        { height: 11, ver: '0.1.4b' },
       ],
     } as any;
     container.bind(Symbols.helpers.constants).toConstantValue(constants);
@@ -65,7 +66,6 @@ describe('modules/system', () => {
     it('should return ^0.1.3 for height 3', () => {
       expect(inst.getMinVersion(3)).to.be.eq('^0.1.3');
     });
-    it('should ')
     it('should return ^0.1.3 for default height taken from blocksModule', () => {
       const blocksModule = container.get<IBlocksStub>(Symbols.modules.blocks);
       const origStub     = sinon.stub().returns(10);
@@ -75,6 +75,12 @@ describe('modules/system', () => {
 
       expect(origStub.called).to.be.true;
       stub.restore();
+    });
+    it('should remove letters from the end', () => {
+      inst.getMinVersion(11);
+      expect(inst.minVersion).to.be.eq('0.1.4');
+      // tslint:disable no-string-literal
+      expect(inst['minVersionChar']).to.be.eq('b');
     });
   });
 
@@ -173,8 +179,17 @@ describe('modules/system', () => {
     it('should return true if 0.1.3', () => {
       expect(inst.versionCompatible('0.1.3')).is.true;
     });
+    it('should return true if 0.1.3a', () => {
+      expect(inst.versionCompatible('0.1.3a')).is.true;
+    });
     it('should return false if 0.2.0', () => {
       expect(inst.versionCompatible('0.2.0')).is.false;
+    });
+    it('should return true if 0.1.4b', () => {
+      container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = {
+        height: 11,
+      } as any;
+      expect(inst.versionCompatible('0.1.4b')).is.true;
     });
   });
 

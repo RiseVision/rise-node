@@ -1,13 +1,16 @@
-import {inject, injectable} from 'inversify';
+import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
 import { Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import { castFieldsToNumberUsingSchema } from '../helpers';
+import { castFieldsToNumberUsingSchema, TransactionType } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { assertValidSchema, SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { ITransactionLogic } from '../ioc/interfaces/logic';
 import { ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
+import { IConfirmedTransaction, VoteAsset } from '../logic/transactions';
 import schema from '../schema/transactions';
+import { APIError, DeprecatedAPIError } from './errors';
 
 @JsonController('/api/transactions')
 @injectable()
@@ -18,6 +21,9 @@ export class TransactionsAPI {
 
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
+
+  @inject(Symbols.logic.transaction)
+  private txLogic: ITransactionLogic;
 
   @Get()
   public async getTransactions(@QueryParams() body: any) {
@@ -47,15 +53,31 @@ export class TransactionsAPI {
   }
 
   @Get('/get')
-  public async getTX(@QueryParam('id', { required: true }) id: string) {
-    // Do validation on length?
-    const tx = await this.transactionsModule.getByID(id);
+  @ValidateSchema()
+  public async getTX(
+    @SchemaValid(schema.getTransaction)
+    @QueryParams() params: {id: string}) {
+
+    const {id} = params;
+    let tx = await this.transactionsModule.getByID(id);
+    tx = await this.txLogic.restoreAsset(tx);
+    if (tx.type === TransactionType.VOTE) {
+      // tslint:disable-next-line
+      tx['votes'] = {
+        added: (tx as (IConfirmedTransaction<VoteAsset>)).asset.votes
+          .filter((v) => v.startsWith('+'))
+          .map((v) => v.substr(1)),
+        deleted: (tx as (IConfirmedTransaction<VoteAsset>)).asset.votes
+          .filter((v) => v.startsWith('-'))
+          .map((v) => v.substr(1)),
+      };
+    }
     return { transaction: tx };
   }
 
   @Get('/multisignatures')
   @ValidateSchema()
-  public getMultiSigs(@SchemaValid(schema.getPooledTransactions)
+  public async getMultiSigs(@SchemaValid(schema.getPooledTransactions)
                       @QueryParams() params: { senderPublicKey?: string, address?: string }) {
     const txs = this.transactionsModule.getMultisignatureTransactionList(true);
 
@@ -73,14 +95,14 @@ export class TransactionsAPI {
                            @QueryParam('id') id: string) {
     const transaction = this.transactionsModule.getMultisignatureTransaction(id);
     if (!transaction) {
-      throw new Error('Transaction not found');
+      throw new APIError('Transaction not found', 200);
     }
     return { transaction };
   }
 
   @Get('/queued')
   @ValidateSchema()
-  public getQueuedTxs(@SchemaValid(schema.getPooledTransactions)
+  public async getQueuedTxs(@SchemaValid(schema.getPooledTransactions)
                       @QueryParams() params: { senderPublicKey?: string, address?: string }) {
     const txs = this.transactionsModule.getQueuedTransactionList(true);
 
@@ -98,14 +120,14 @@ export class TransactionsAPI {
                            @QueryParam('id') id: string) {
     const transaction = this.transactionsModule.getQueuedTransaction(id);
     if (!transaction) {
-      throw new Error('Transaction not found');
+      throw new APIError('Transaction not found', 200);
     }
     return { transaction };
   }
 
   @Get('/unconfirmed')
   @ValidateSchema()
-  public getUnconfirmedTxs(@SchemaValid(schema.getPooledTransactions)
+  public async getUnconfirmedTxs(@SchemaValid(schema.getPooledTransactions)
                            @QueryParams() params: { senderPublicKey?: string, address?: string }) {
     const txs = this.transactionsModule.getUnconfirmedTransactionList(true);
 
@@ -123,7 +145,7 @@ export class TransactionsAPI {
                                 @QueryParam('id') id: string) {
     const transaction = this.transactionsModule.getUnconfirmedTransaction(id);
     if (!transaction) {
-      throw new Error('Transaction not found');
+      throw new APIError('Transaction not found', 200);
     }
     return { transaction };
   }
@@ -133,7 +155,7 @@ export class TransactionsAPI {
    * @deprecated
    */
   public async put() {
-    throw new Error('This method is deprecated');
+    throw new DeprecatedAPIError();
   }
 
 }

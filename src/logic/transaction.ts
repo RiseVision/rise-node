@@ -238,7 +238,7 @@ export class TransactionLogic implements ITransactionLogic {
   public checkBalance(amount: number | BigNumber, balanceKey: 'balance' | 'u_balance',
                       tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: MemAccountsData) {
     const accountBalance  = sender[balanceKey].toString();
-    const exceededBalance = new BigNum(accountBalance).lessThan(amount);
+    const exceededBalance = new BigNum(accountBalance).isLessThan(amount);
     // tslint:disable-next-line
     const exceeded        = (tx['blockId'] !== this.genesisBlock.id && exceededBalance);
     return {
@@ -664,5 +664,12 @@ export class TransactionLogic implements ITransactionLogic {
       tx.asset = asset;
     }
     return tx;
+  }
+
+  public async restoreAsset<T>(tx: IConfirmedTransaction<void>): Promise<IConfirmedTransaction<T>>;
+  public async restoreAsset<T>(tx: IBaseTransaction<void>): Promise<IBaseTransaction<T>>;
+  public async restoreAsset<T>(tx: IBaseTransaction<void> | IConfirmedTransaction<void>) {
+    this.assertKnownTransactionType(tx);
+    return this.types[tx.type].restoreAsset(tx, this.db);
   }
 }

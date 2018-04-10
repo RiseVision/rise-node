@@ -1,5 +1,6 @@
-import { inject, injectable, postConstruct } from 'inversify';
-import { Bus, constants, ILogger, TransactionType } from '../helpers/';
+import { inject, injectable, postConstruct, tagged } from 'inversify';
+import { Bus, constants, ILogger, Sequence, TransactionType } from '../helpers/';
+import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules';
@@ -31,6 +32,13 @@ export class InnerTXQueue<T = { receivedAt: Date }> {
     }
   }
 
+  public getPayload(tx: IBaseTransaction<any>): T {
+    if (!this.has(tx.id)) {
+      return undefined;
+    }
+    return this.payload[tx.id];
+  }
+
   public add(tx: IBaseTransaction<any>, payload?: T) {
     if (!this.has(tx.id)) {
       this.transactions.push(tx);
@@ -55,12 +63,12 @@ export class InnerTXQueue<T = { receivedAt: Date }> {
   }
 
   public list(reverse: boolean, limit?: number,
-              filterFn?: (tx: IBaseTransaction<any>) => boolean): Array<IBaseTransaction<any>> {
+              filterFn?: (tx: IBaseTransaction<any>, payload: T) => boolean): Array<IBaseTransaction<any>> {
     let res = this.transactions
       .filter((tx) => typeof(tx) !== 'undefined');
 
     if (typeof(filterFn) === 'function') {
-      res = res.filter(filterFn);
+      res = res.filter((tx) => filterFn(tx, this.payload[tx.id]));
     }
 
     if (reverse) {
@@ -73,7 +81,7 @@ export class InnerTXQueue<T = { receivedAt: Date }> {
   }
 
   // tslint:disable-next-line
-  public listWithPayload(reverse: boolean, limit?: number, filterFn?: (tx: IBaseTransaction<any>) => boolean): Array<{ tx: IBaseTransaction<any>, payload: T }> {
+  public listWithPayload(reverse: boolean, limit?: number, filterFn?: (tx: IBaseTransaction<any>, payload: T) => boolean): Array<{ tx: IBaseTransaction<any>, payload: T }> {
     const txs   = this.list(reverse, limit, filterFn);
     const toRet = [];
     for (const tx of txs) {
@@ -90,7 +98,7 @@ export class TransactionPool implements ITransactionPoolLogic {
   public unconfirmed    = new InnerTXQueue();
   public bundled        = new InnerTXQueue();
   public queued         = new InnerTXQueue();
-  public multisignature = new InnerTXQueue();
+  public multisignature = new InnerTXQueue<{ receivedAt: Date, ready: boolean }>();
 
   // generic
   @inject(Symbols.generic.appConfig)
@@ -103,6 +111,10 @@ export class TransactionPool implements ITransactionPoolLogic {
   private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  // tslint:disable-next-line member-ordering
+  @inject(Symbols.helpers.sequence)
+  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
+  public balancesSequence: Sequence;
 
   // Logic
   @inject(Symbols.logic.appState)
@@ -137,13 +149,14 @@ export class TransactionPool implements ITransactionPoolLogic {
    * Queue a transaction or throws an error if it couldnt
    */
   public queueTransaction(tx: IBaseTransaction<any>, bundled: boolean): void {
-    const payload = { receivedAt: new Date() };
+    const payload: {receivedAt: Date, ready?: boolean} = { receivedAt: new Date() };
 
     let queue: InnerTXQueue;
     if (bundled) {
       queue = this.bundled;
     } else if (tx.type === TransactionType.MULTI || Array.isArray(tx.signatures)) {
       queue = this.multisignature;
+      payload.ready = false;
     } else {
       queue = this.queued;
     }
@@ -172,11 +185,11 @@ export class TransactionPool implements ITransactionPoolLogic {
       true,
       5,
       // tslint:disable-next-line
-      (tx) => (tx as any)['ready']);
+      (tx, payload) => payload.ready);
 
     const inQueue = this.queued.listWithPayload(true, Math.max(0, spare - multignatures.length));
 
-    const txsAndPayloads = multignatures.concat(inQueue);
+    const txsAndPayloads = multignatures.concat(inQueue as any);
     txsAndPayloads.forEach(({tx, payload}) => {
       // Remove the tx from either multisig or queued
       this.multisignature.remove(tx.id);
@@ -189,7 +202,7 @@ export class TransactionPool implements ITransactionPoolLogic {
     return txsAndPayloads.map(({tx}) => tx);
   }
 
-  public transactionInPool(txID: string) {
+  public transactionInPool(txID: string): boolean {
     return this.allQueues
       .map((queue) => queue.has(txID))
       .filter((isInQueue) => isInQueue)
@@ -199,7 +212,7 @@ export class TransactionPool implements ITransactionPoolLogic {
   /**
    * Gets unconfirmed, multisig and queued txs based on limit and reverse opts
    */
-  public getMergedTransactionList(limit: number) {
+  public getMergedTransactionList(limit: number): Array<IBaseTransaction<any>> {
     const minLimit = (constants.maxTxsPerBlock + 2);
 
     if (limit <= minLimit || limit > constants.maxSharedTxs) {
@@ -220,9 +233,9 @@ export class TransactionPool implements ITransactionPoolLogic {
   public expireTransactions(): string[] {
     const unconfirmed    = this.unconfirmed.listWithPayload(true);
     const queued         = this.queued.listWithPayload(true);
-    const multisignature = this.multisignature.listWithPayload(true);
+    const multi          = this.multisignature.listWithPayload(true);
 
-    const all = unconfirmed.concat(queued).concat(multisignature);
+    const all = unconfirmed.concat(queued).concat(multi);
 
     const ids: string[] = [];
     for (const txP of all) {
@@ -245,26 +258,29 @@ export class TransactionPool implements ITransactionPoolLogic {
   /**
    * Picks bundled transactions, verifies them and then enqueue them
    */
-  public async processBundled() {
+  @WrapInBalanceSequence
+  public async processBundled(): Promise<void> {
     const bundledTxs = this.bundled.list(true, this.bundleLimit);
     for (const tx of bundledTxs) {
       if (!tx) {
         continue;
       }
-      this.bundled.remove(tx.id);
+
       try {
         await this.processVerifyTransaction(
           tx,
           true
         );
+        this.bundled.remove(tx.id);
         try {
           this.queueTransaction(tx, false /* After processing the tx becomes unbundled */);
         } catch (e) {
-          this.logger.debug(`Failed to queue bundled transaction: ${tx.id}`, e);
+          this.logger.warn(`Failed to queue bundled transaction: ${tx.id}`, e);
         }
       } catch (e) {
-        this.logger.debug(`Failed to process / verify bundled transaction: ${tx.id}`, e);
-        this.removeUnconfirmedTransaction(tx.id);
+        this.logger.warn(`Failed to process / verify bundled transaction: ${tx.id}`, e);
+        // this.removeUnconfirmedTransaction(tx.id);
+        this.bundled.remove(tx.id);
       }
     }
   }
@@ -312,6 +328,7 @@ export class TransactionPool implements ITransactionPoolLogic {
    * Calls processVerifyTransaction for each transaction and applies
    * unconfirmed transaction.
    */
+  @WrapInBalanceSequence
   // tslint:disable-next-line
   public async applyUnconfirmedList(txs: Array<IBaseTransaction<any> | string>, txModule: ITransactionsModule): Promise<void> {
     for (let theTx of txs) {
@@ -342,6 +359,7 @@ export class TransactionPool implements ITransactionPoolLogic {
     }
   }
 
+  @WrapInBalanceSequence
   public async undoUnconfirmedList(txModule: ITransactionsModule): Promise<string[]> {
     const ids: string[] = [];
     const txs           = this.unconfirmed.list(false);
@@ -408,8 +426,7 @@ export class TransactionPool implements ITransactionPoolLogic {
     const normalizedTx = this.transactionLogic.objectNormalize(transaction);
 
     // Verify the transaction
-    // TODO: check why here we've to cast to any
-    await this.transactionLogic.verify(normalizedTx as any, sender, requester, null);
+    await this.transactionLogic.verify(normalizedTx, sender, requester, null);
 
     await this.bus.message('unconfirmedTransaction', normalizedTx, broadcast);
     return sender;

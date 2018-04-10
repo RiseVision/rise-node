@@ -18,6 +18,7 @@ import transportSchema from '../schema/transport';
 import transportSQL from '../sql/transport';
 import { AttachPeerHeaders } from './utils/attachPeerHeaders';
 import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
+import { APIError } from './errors';
 
 @JsonController('/peer')
 @injectable()
@@ -81,6 +82,15 @@ export class TransportAPI {
     return {signatures};
   }
 
+  @Post('/signatures')
+  @ValidateSchema()
+  public async postSignatures(
+    @SchemaValid(transportSchema.signatures, 'Invalid signatures body')
+    @BodyParam('signatures') signatures: Array<{ transaction: string, signature: string }>) {
+
+    return this.transportModule.receiveSignatures(signatures);
+  }
+
   @Get('/transactions')
   public transactions() {
     const transactions = this.transactionsModule.getMergedTransactionList(this.constants.maxSharedTxs);
@@ -118,7 +128,7 @@ export class TransportAPI {
       .filter((id) => /^[0-9]+$/.test(id));
     if (excapedIds.length === 0 ) {
       this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
-      throw new Error ('Invalid block id sequence');
+      throw new APIError('Invalid block id sequence', 200);
     }
     const rows = await this.db.query(transportSQL.getCommonBlock, excapedIds);
     return { common: rows[0] || null };

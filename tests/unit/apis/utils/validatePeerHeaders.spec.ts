@@ -21,7 +21,7 @@ chai.use(chaiAsPromised);
 chai.use(assertArrays);
 
 // tslint:disable no-unused-expression
-describe('apis/utils/attachPeerHeaders', () => {
+describe('apis/utils/validatePeerHeaders', () => {
   let sandbox: SinonSandbox;
   let instance: ValidatePeerHeaders;
   let container: Container;
@@ -49,10 +49,7 @@ describe('apis/utils/attachPeerHeaders', () => {
     container
       .bind(Symbols.api.utils.validatePeerHeadersMiddleware)
       .to(ValidatePeerHeaders);
-    container
-      .bind(Symbols.modules.peers)
-      .to(PeersModuleStub)
-      .inSingletonScope();
+
 
     // Instance
     instance = container.get(Symbols.api.utils.validatePeerHeadersMiddleware);

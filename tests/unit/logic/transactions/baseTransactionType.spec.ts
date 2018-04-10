@@ -1,6 +1,9 @@
 import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
 import { TransactionType } from '../../../../src/helpers';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from '../../../../src/logic/transactions';
+
+chai.use(chaiAsPromised);
 
 const expect = chai.expect;
 
@@ -32,20 +35,20 @@ describe('logic/transactions/baseTransactionType', () => {
   beforeEach(() => {
     instance = new TestTransactionType(1);
     tx       = {
-      asset          : {},
-      type           : TransactionType.MULTI,
       amount         : 0,
+      asset          : {},
       fee            : 10,
-      timestamp      : 0,
+      id             : '8139741256612355994',
       senderId       : '1233456789012345R',
       senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
       signatures     : ['sig1', 'sig2'],
-      id             : '8139741256612355994',
+      timestamp      : 0,
+      type           : TransactionType.MULTI,
     };
 
     sender = {
-      balance  : 10000000,
       address  : '1233456789012345R',
+      balance  : 10000000,
       publicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
     };
   });
@@ -130,6 +133,12 @@ describe('logic/transactions/baseTransactionType', () => {
   describe('afterSave', () => {
     it('should resolve', () => {
       expect(instance.afterSave(tx)).to.be.fulfilled;
+    });
+  });
+
+  describe('restoreAsset', () => {
+    it('should resolve', () => {
+      expect(instance.restoreAsset(tx, {} as any)).to.be.fulfilled;
     });
   });
 });

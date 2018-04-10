@@ -23,7 +23,7 @@ describe('api/signatures', () => {
         .expect(500)
         .then((response) => {
           expect(response.body.success).is.false;
-          expect(response.body.error).to.be.eq('Method is now deprecated');
+          expect(response.body.error).to.be.eq('Method is deprecated');
         });
     });
   });

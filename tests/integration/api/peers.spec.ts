@@ -138,7 +138,7 @@ describe('api/peers', () => {
     it('should throw peer not found if peer is not found', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/peers/get?ip=1.1.1.1&port=100')
-        .expect(500)
+        .expect(200)
         .then((response) => {
           expect(response.body.error).is.eq('Peer not found');
         });

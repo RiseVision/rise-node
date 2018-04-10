@@ -1,12 +1,16 @@
 import { inject, injectable, tagged } from 'inversify';
+import SocketIO from 'socket.io';
 import { Bus, ILogger, Sequence, TransactionType } from '../helpers/';
-import { ITransactionLogic } from '../ioc/interfaces/logic';
+import { ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule, IMultisignaturesModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { IBaseTransaction, MultisigAsset } from '../logic/transactions/';
+import { IBaseTransaction, MultisigAsset, MultiSignatureTransaction } from '../logic/transactions/';
 
 @injectable()
 export class MultisignaturesModule implements IMultisignaturesModule {
+  @inject(Symbols.logic.transactionPool)
+  private transactionPool: ITransactionPoolLogic;
+
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
   @inject(Symbols.helpers.sequence)
@@ -23,12 +27,13 @@ export class MultisignaturesModule implements IMultisignaturesModule {
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
+  @inject(Symbols.logic.transactions.createmultisig)
+  private multiTx: MultiSignatureTransaction;
   /**
    * Gets the tx from the txID, verifies the given signature and
-   * @param {{signature: any; transaction: string}} tx
    * @return {Promise<void>}
    */
-  public async processSignature(tx: { signature: any, transaction: string }) {
+  public async processSignature(tx: { signature: string, transaction: string }) {
     const transaction = this.transactionsModule.getMultisignatureTransaction(tx.transaction);
     if (!transaction) {
       throw new Error('Transaction not found');
@@ -57,8 +62,13 @@ export class MultisignaturesModule implements IMultisignaturesModule {
       // it will update its data.
       multisigTx.signatures = multisigTx.signatures || [];
       multisigTx.signatures.push(tx.signature);
-      // TODO: Check if following line is needed
-      // multisigTx.ready = this.multiTx.ready(multisigTx, sender);
+
+      // update readyness so that it can be inserted into pool
+      const payload = this.transactionPool.multisignature.getPayload(multisigTx);
+      if (!payload) {
+        throw new Error('Cannot find payload for such multisig tx');
+      }
+      payload.ready = this.multiTx.ready(multisigTx, sender);
 
       await this.bus.message('signature', { transaction: tx.transaction, signature: tx.signature }, true);
       return null;

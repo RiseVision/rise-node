@@ -48,7 +48,7 @@ describe('api/blocks', () => {
     it('should throw block not found if invalid block id is given', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/blocks/get?id=1')
-        .expect(500)
+        .expect(200)
         .then((response) => {
           expect(response.body.success).is.false;
           expect(response.body.error).to.be.eq('Block not found');

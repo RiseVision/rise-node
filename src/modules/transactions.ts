@@ -1,11 +1,11 @@
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
 import { IDatabase } from 'pg-promise';
-import { constants, ILogger, OrderBy } from '../helpers/';
+import { constants as constantsType, ILogger, OrderBy } from '../helpers/';
 import { ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
-import { SignedAndChainedBlockType, SignedBlockType } from '../logic/';
+import { MemAccountsData, SignedAndChainedBlockType, SignedBlockType } from '../logic/';
 import { IBaseTransaction, IConfirmedTransaction } from '../logic/transactions/';
 import txSQL from '../sql/logic/transactions';
 
@@ -17,6 +17,8 @@ export class TransactionsModule implements ITransactionsModule {
   private db: IDatabase<any>;
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.logic.transactionPool)
@@ -145,8 +147,10 @@ export class TransactionsModule implements ITransactionsModule {
   /**
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
-  public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: any): Promise<void> {
-    this.logger.debug('Applying unconfirmed transaction', transaction.id);
+  // tslint:disable-next-line max-line-length
+  public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: MemAccountsData): Promise<void> {
+    // tslint:disable-next-line max-line-length
+    this.logger.debug(`Applying unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${(sender || {u_balance: undefined}).u_balance}`);
 
     if (!sender && transaction.blockId !== this.genesisBlock.id) {
       throw new Error('Invalid block id');
@@ -168,9 +172,9 @@ export class TransactionsModule implements ITransactionsModule {
    * Validates account and Undoes unconfirmed transaction.
    */
   public async undoUnconfirmed(transaction): Promise<void> {
-    this.logger.debug('Undoing unconfirmed transaction', transaction.id);
-
     const sender = await this.accountsModule.getAccount({ publicKey: transaction.senderPublicKey });
+    // tslint:disable-next-line max-line-length
+    this.logger.debug(`Undoing unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${sender.u_balance}`);
     await this.transactionLogic.undoUnconfirmed(transaction, sender);
   }
 
@@ -265,7 +269,7 @@ export class TransactionsModule implements ITransactionsModule {
       // Mutating parametres when unix timestamp is supplied
       if (_.includes(['fromUnixTime', 'toUnixTime'], field[1])) {
         // Lisk epoch is 1464109200 as unix timestamp
-        value    = value - constants.epochTime.getTime() / 1000;
+        value    = value - this.constants.epochTime.getTime() / 1000;
         field[1] = field[1].replace('UnixTime', 'Timestamp');
       }
 

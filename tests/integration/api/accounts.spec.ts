@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import * as supertest from 'supertest';
 import initializer from '../common/init';
+import { checkAddress, checkPubKey } from './utils';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/accounts', () => {
@@ -8,28 +9,12 @@ describe('api/accounts', () => {
   initializer.setup();
 
   describe('/', () => {
-    it('should throw if address is not a valid address format', async () => {
-      return supertest(initializer.appManager.expressApp)
-        .get('/api/accounts/?address=1')
-        .expect(500)
-        .then((response) => {
-          expect(response.body.success).is.false;
-          expect(response.body.error).to.contain('address - Object didn\'t pass validation for format address');
-        });
-    });
-    it('should throw if publickey is not a valid publickey', async () => {
-      return supertest(initializer.appManager.expressApp)
-        .get('/api/accounts/?publicKey=1')
-        .expect(500)
-        .then((response) => {
-          expect(response.body.success).is.false;
-          expect(response.body.error).to.contain('publicKey - Object didn\'t pass validation for format publicKey');
-        });
-    });
+    checkAddress('address', '/api/accounts/');
+    checkPubKey('publicKey', '/api/accounts/');
     it('should throw if no address nor pubkey is provided', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/')
-        .expect(500)
+        .expect(200)
         .then((response) => {
           expect(response.body.success).is.false;
           expect(response.body.error).to.be.eq('Missing required property: address or publicKey');
@@ -38,7 +23,7 @@ describe('api/accounts', () => {
     it('should throw if both address and pubkey are provided but relates to different account', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/?publicKey=f4654563e34c93a22a90bcdb12dbe1edc42fc148cee5f21dde668748acf5f89d&address=11316019077384178848R')
-        .expect(500)
+        .expect(200)
         .then((response) => {
           expect(response.body.success).is.false;
           expect(response.body.error).to.be.eq('Account publicKey does not match address');
@@ -47,7 +32,7 @@ describe('api/accounts', () => {
     it('should throw if account cannot be found', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/?address=1R')
-        .expect(500)
+        .expect(200)
         .then((response) => {
           expect(response.body.success).is.false;
           expect(response.body.error).to.be.eq('Account not found');
@@ -79,21 +64,14 @@ describe('api/accounts', () => {
     it('should return error if address is not provided', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/getBalance')
-        .expect(500)
+        .expect(200)
         .then((response) => {
           expect(response.body.success).is.false;
           expect(response.body.error).to.contain('Missing required property: address');
         });
     });
-    it('should return error if address is not in valid format', async () => {
-      return supertest(initializer.appManager.expressApp)
-        .get('/api/accounts/getBalance?address=1')
-        .expect(500)
-        .then((response) => {
-          expect(response.body.success).is.false;
-          expect(response.body.error).to.contain('address - Object didn\'t pass validation for format address');
-        });
-    });
+    checkAddress('address', '/api/accounts/getBalance');
+
     it('should return balance 0 if account is not found', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/getBalance?address=1R')
@@ -121,28 +99,20 @@ describe('api/accounts', () => {
   });
 
   describe('/getPublicKey', () => {
+    checkAddress('address', '/api/accounts/getPublicKey');
     it('should return error if address is not provided', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/getPublicKey')
-        .expect(500)
+        .expect(200)
         .then((response) => {
           expect(response.body.success).is.false;
           expect(response.body.error).to.contain('Missing required property: address');
         });
     });
-    it('should return error if address is not in valid format', async () => {
-      return supertest(initializer.appManager.expressApp)
-        .get('/api/accounts/getPublicKey?address=1')
-        .expect(500)
-        .then((response) => {
-          expect(response.body.success).is.false;
-          expect(response.body.error).to.contain('address - Object didn\'t pass validation for format address');
-        });
-    });
     it('should return Account not foundif account is not found', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/getPublicKey?address=1R')
-        .expect(500)
+        .expect(200)
         .then((response) => {
           expect(response.body.success).is.false;
           expect(response.body.error).to.be.eq('Account not found');
@@ -161,28 +131,20 @@ describe('api/accounts', () => {
   });
 
   describe('/delegates', () => {
+    checkAddress('address', '/api/accounts/delegates');
     it('should return error if address is not provided', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/delegates')
-        .expect(500)
+        .expect(200)
         .then((response) => {
           expect(response.body.success).is.false;
           expect(response.body.error).to.contain('Missing required property: address');
         });
     });
-    it('should return error if address is not in valid format', async () => {
-      return supertest(initializer.appManager.expressApp)
-        .get('/api/accounts/delegates?address=1')
-        .expect(500)
-        .then((response) => {
-          expect(response.body.success).is.false;
-          expect(response.body.error).to.contain('address - Object didn\'t pass validation for format address');
-        });
-    });
     it('should return Account not foundif account is not found', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/delegates?address=1R')
-        .expect(500)
+        .expect(200)
         .then((response) => {
           expect(response.body.success).is.false;
           expect(response.body.error).to.be.eq('Account not found');

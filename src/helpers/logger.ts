@@ -81,11 +81,7 @@ export default (config: any = {}): ILogger => {
         timestamp: strftime('%F %T', new Date()),
       };
 
-      if (message instanceof Error) {
-        logData.message = message.stack;
-      } else {
-        logData.message = message;
-      }
+      logData.message = message;
 
       if (data && util.isObject(data)) {
         if (data instanceof Error) {

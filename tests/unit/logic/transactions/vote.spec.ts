@@ -83,7 +83,6 @@ describe('logic/transactions/vote', () => {
 
   afterEach(() => {
     sandbox.restore();
-    sandbox.reset();
   });
 
   describe('calculateFee', () => {
@@ -354,6 +353,14 @@ describe('logic/transactions/vote', () => {
       expect(() => {
         instance.objectNormalize(tx);
       }).to.throw(/Failed to validate vote schema/);
+    });
+
+    it('should throw with errors message if validation fails', () => {
+      (instance as any).schema.getLastErrors = () => [{message: '1'}, {message: '2'}];
+      zSchemaStub.validate.returns(false);
+      expect(() => {
+        instance.objectNormalize(tx);
+      }).to.throw('Failed to validate vote schema: 1, 2');
     });
 
     it('should return the tx', () => {

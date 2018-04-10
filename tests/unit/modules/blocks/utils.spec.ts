@@ -3,19 +3,20 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
+import { SinonStub } from 'sinon';
+import { BlockProgressLogger, TransactionType } from '../../../../src/helpers';
 import { IBlocksModuleUtils } from '../../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../../src/ioc/symbols';
+import { SignedAndChainedBlockType } from '../../../../src/logic';
 import { BlocksModuleUtils } from '../../../../src/modules/blocks/';
-import { createContainer } from '../../../utils/containerCreator';
 import DbStub from '../../../stubs/helpers/DbStub';
 import { SequenceStub } from '../../../stubs/helpers/SequenceStub';
-import BlocksModuleStub from '../../../stubs/modules/BlocksModuleStub';
-import { SignedAndChainedBlockType } from '../../../../src/logic';
 import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
 import TransactionLogicStub from '../../../stubs/logic/TransactionLogicStub';
-import { BlockProgressLogger } from '../../../../src/helpers';
-import { SinonStub } from 'sinon';
+import BlocksModuleStub from '../../../stubs/modules/BlocksModuleStub';
+import { createContainer } from '../../../utils/containerCreator';
 
+// tslint:disable no-unused-expression max-line-length
 chai.use(chaiAsPromised);
 describe('modules/utils', () => {
   let inst: IBlocksModuleUtils;
@@ -106,6 +107,18 @@ describe('modules/utils', () => {
       expect(res[0]).to.be.deep.eq({id: '1', transactions: [{id: '2'}]});
       expect(res[1]).to.be.deep.eq({id: '2', transactions: [{id: '3'}]});
     });
+    it('should create generationSignature for block if it id is equal genesisBLock.id', async () =>{
+      const genBlockId = (inst as any).genesisBlock.id;
+      const rows = [
+        {b_id: '1', t_id: '2'},
+        {b_id: '1', t_id: '2'},
+        {b_id: genBlockId},
+        {b_id: '2', t_id: '3'},
+      ];
+      const res  = inst.readDbRows(rows as any);
+      expect(res.length).is.eq(3);
+      expect((res[1] as any).generationSignature).to.be.deep.eq('0000000000000000000000000000000000000000000000000000000000000000');
+    });
   });
 
   describe('loadBlocksPart', () => {
@@ -148,6 +161,45 @@ describe('modules/utils', () => {
     it('should remap error if something happend', async () => {
       dbStub.stubs.query.rejects(new Error('meow'));
       await expect(inst.loadLastBlock()).to.be.rejectedWith('Blocks#loadLastBlock error');
+    });
+
+    it('Sorting transactions (VOTE)', async () => {
+      const transactions = [
+        {id: 1, type: TransactionType.VOTE},
+        {id: 2, type: TransactionType.DELEGATE}];
+
+      readDbRowsStub.returns([{id: '16985986483000875063', transactions }]);
+      const block = await inst.loadLastBlock();
+      expect(block.transactions).to.deep.equal(transactions);
+      expect(block.transactions).to.have.lengthOf(2);
+      expect(block.transactions[0]).to.deep.equal({id: 2, type: TransactionType.DELEGATE});
+      expect(block.transactions[1]).to.deep.equal({id: 1, type: TransactionType.VOTE});
+    });
+
+    it('Sorting transactions (SIGNATURE)', async () => {
+      const transactions = [
+        {id: 1, type: TransactionType.SIGNATURE},
+        {id: 2, type: TransactionType.DELEGATE}];
+
+      readDbRowsStub.returns([{id: '16985986483000875063', transactions }]);
+      const block = await inst.loadLastBlock();
+      expect(block.transactions).to.deep.equal(transactions);
+      expect(block.transactions).to.have.lengthOf(2);
+      expect(block.transactions[0]).to.deep.equal({id: 2, type: TransactionType.DELEGATE});
+      expect(block.transactions[1]).to.deep.equal({id: 1, type: TransactionType.SIGNATURE});
+    });
+
+    it('Sorting transactions (Rest of cases)', async () => {
+      const transactions = [
+        {id: 1, type: TransactionType.DELEGATE},
+        {id: 2, type: TransactionType.MULTI}];
+
+      readDbRowsStub.returns([{id: '16985986483000875063', transactions }]);
+      const block = await inst.loadLastBlock();
+      expect(block.transactions).to.deep.equal(transactions);
+      expect(block.transactions).to.have.lengthOf(2);
+      expect(block.transactions[0]).to.deep.equal({id: 1, type: TransactionType.DELEGATE});
+      expect(block.transactions[1]).to.deep.equal({id: 2, type: TransactionType.MULTI});
     });
   });
 
@@ -241,6 +293,7 @@ describe('modules/utils', () => {
     it('should return BlockProgresslogger with given arguments', async () => {
       const res = inst.getBlockProgressLogger(10, 5, 'msg');
       expect(res).to.be.instanceOf(BlockProgressLogger);
+      // tslint:disable no-string-literal
       expect(res['target']).is.eq(10);
       expect(res['step']).is.eq(2);
     });
@@ -270,8 +323,8 @@ describe('modules/utils', () => {
     it('should allow specify end time in unix timestamp', async () => {
       const constants = container.get<any>(Symbols.helpers.constants);
       await inst.aggregateBlockReward({
+        end               : Math.floor(constants.epochTime.getTime() / 1000 + 1000),
         generatorPublicKey: 'abc',
-        end               : Math.floor(constants.epochTime.getTime() / 1000 + 1000)
       });
       expect(dbStub.stubs.oneOrNone.called).is.true;
       expect(await dbStub.stubs.oneOrNone.firstCall.args[1]).is.deep.eq({
@@ -286,9 +339,9 @@ describe('modules/utils', () => {
       });
 
       expect(res).to.be.deep.eq({
+        count  : 0, // defaulted to zero
         fees   : 2,
         rewards: 3,
-        count  : 0, // defaulted to zero
       });
     });
     it('should throw error if returned data shows delegate does not exist', async () => {

@@ -6,7 +6,7 @@ export interface ITransactionPoolLogic {
   readonly unconfirmed: InnerTXQueue;
   readonly bundled: InnerTXQueue;
   readonly queued: InnerTXQueue;
-  readonly multisignature: InnerTXQueue;
+  readonly multisignature: InnerTXQueue<{ receivedAt: Date, ready: boolean }>;
 
   /**
    * Queue a transaction or throws an error if it couldnt

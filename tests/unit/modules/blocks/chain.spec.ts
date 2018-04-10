@@ -25,7 +25,6 @@ import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
 import { TransactionType } from '../../../../src/helpers';
 
-
 chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression
@@ -193,7 +192,7 @@ describe('modules/blocks/chain', () => {
     });
     it('should throw error if deleteLastBlock throws', async () => {
       sinon.stub(inst, 'deleteLastBlock').returns(Promise.reject('error'));
-      expect(inst.recoverChain()).to.be.rejectedWith('error');
+      await expect(inst.recoverChain()).to.be.rejectedWith('error');
     });
   });
 
@@ -223,7 +222,7 @@ describe('modules/blocks/chain', () => {
       allTxs   = sendTxs.concat(voteTxs);
     });
     it('should call applyUnconfirmed and apply to all txs included in genesis. keeping votes for last', async () => {
-      await inst.applyGenesisBlock({transactions: voteTxs.concat(sendTxs)} as any);
+      await inst.applyGenesisBlock({transactions: sendTxs.concat(voteTxs)} as any);
 
       const totalTxs = voteTxs.length + sendTxs.length;
       expect(txModule.stubs.applyUnconfirmed.callCount).is.eq(totalTxs);
@@ -319,11 +318,16 @@ describe('modules/blocks/chain', () => {
       dbStub.stubs.tx.returns(Promise.resolve());
       busStub.enqueueResponse('message', Promise.resolve());
     });
-    it('should set blockModule.isActive to true to prevent shutdowns', async () => {
+    it('should return undefined if cleanup in processing and set instance.isCleaning in true', async ()=>{
+      await inst.cleanup();
+      expect(await inst.applyBlock({transactions: allTxs} as any, false, false)).to.be.undefined
+      expect(txModule.stubs.undoUnconfirmedList.notCalled).to.be.true;
+    });
+    it('should set .isProcessing to true to prevent shutdowns', async () => {
       const p = inst.applyBlock({transactions: allTxs} as any, false, false);
-      expect(blocksModule.isActive).to.be.true;
+      expect(inst['isProcessing']).to.be.true;
       await p;
-      expect(blocksModule.isActive).to.be.false;
+      expect(inst['isProcessing']).to.be.false;
     });
     it('should undo all unconfirmed transactions', async () => {
       await inst.applyBlock({transactions: allTxs} as any, false, false);
@@ -438,10 +442,11 @@ describe('modules/blocks/chain', () => {
         batch: sinon.stub().resolves(),
         none : sinon.stub(),
       };
-      dbStub.stubs.tx.reset();
+      dbStub.stubs.tx.resetBehavior();
+      dbStub.stubs.tx.resetHistory();
       dbStub.stubs.tx.callsArgWith(0, txStub);
       // simulate another table for clustering
-      txLogic.stubs.dbSave.onCall(3).returns({table: 'vote_table', values: {id: '1'}, fields: ['id']})
+      txLogic.stubs.dbSave.onCall(3).returns({table: 'vote_table', values: {id: '1'}, fields: ['id']});
 
       const transactions = createRandomTransactions({send: 5, vote: 3});
       await inst.saveBlock({transactions} as any);
@@ -455,7 +460,8 @@ describe('modules/blocks/chain', () => {
         batch: sinon.stub().resolves(),
         none : sinon.stub(),
       };
-      dbStub.stubs.tx.reset();
+      dbStub.stubs.tx.resetHistory();
+      dbStub.stubs.tx.resetBehavior();
       dbStub.stubs.tx.callsArgWith(0, txStub);
 
       const transactions = createRandomTransactions({send: 5, vote: 3});
@@ -487,7 +493,8 @@ describe('modules/blocks/chain', () => {
         batch: sinon.stub().resolves(),
         none : sinon.stub(),
       };
-      dbStub.stubs.tx.reset();
+      dbStub.stubs.tx.resetHistory();
+      dbStub.stubs.tx.resetBehavior();
       dbStub.stubs.tx.callsArgWith(0, txStub);
       await inst.saveBlock({transactions: []} as any);
     });
@@ -508,7 +515,7 @@ describe('modules/blocks/chain', () => {
       expect(stub.called).is.true;
       expect(stub.calledOnce).is.true;
 
-      stub.reset();
+      stub.resetHistory();
       dbStub.enqueueResponse('query', Promise.resolve([{id: 'aaa'}]));
       await inst.saveGenesisBlock();
       expect(stub.called).is.false;
@@ -521,6 +528,26 @@ describe('modules/blocks/chain', () => {
     });
     it('should resolve', () => {
       return expect(inst.cleanup()).to.be.fulfilled;
+    });
+    it('should wait until isProcessing is false and then return', async () => {
+      const timers   = sinon.useFakeTimers();
+      inst['isProcessing'] = true;
+      const stub = sinon.stub();
+      const p = inst.cleanup()
+        .then(stub)
+        .catch(stub);
+
+      expect(stub.called).is.false;
+      timers.tick(10000);
+      expect(stub.called).is.false;
+      inst['isProcessing'] = false;
+      timers.tick(10000);
+      await p;
+
+      expect(stub.called).is.true;
+      expect(stub.callCount).is.eq(1);
+
+      timers.restore();
     });
   });
 });
