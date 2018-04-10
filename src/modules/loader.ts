@@ -292,13 +292,15 @@ export class LoaderModule implements ILoaderModule {
     if (res[2].length === 0) {
       return this.load(blocksCount, limit, 'No delegates found', true);
     }
+
     try {
       this.lastblock = await this.blocksUtilsModule.loadLastBlock();
-      this.logger.info('Blockchain ready');
-      await this.bus.message('blockchainReady');
     } catch (err) {
       return this.load(blocksCount, err.message || 'Failed to load last block');
     }
+
+    this.logger.info('Blockchain ready');
+    await this.bus.message('blockchainReady');
   }
 
   public async load(count: number, limitPerIteration: number, message?: string, emitBlockchainReady = false) {

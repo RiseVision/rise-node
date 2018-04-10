@@ -210,8 +210,12 @@ export class PeersModule implements IPeersModule {
         .map((rawPeer) => this.peersLogic.create(rawPeer))
         .filter((peer) => !this.peersLogic.exists(peer))
         .map(async (peer) => {
-          await peer.pingAndUpdate();
-          updated++;
+          try {
+            await peer.pingAndUpdate();
+            updated++;
+          } catch (e) {
+            this.logger.info(`Peer ${peer.string} seems to be unresponsive.`, e.message);
+          }
         })
       );
       this.logger.trace('Peers->dbLoad Peers discovered', { updated, total: rows.length });
