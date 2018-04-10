@@ -54,7 +54,7 @@ export default {
   epochTime                    : new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
   minVersion                   : [
     { height: 1, ver: '^0.1.0' },
-    { height: 500000,  ver: '>=0.1.2' },
+    { height: 500000,  ver: '>=0.1.0' },
   ],
   fees                         : [
     {
