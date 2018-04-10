@@ -116,4 +116,9 @@ export default class TransactionLogicStub extends BaseStubClass implements ITran
         return false;
     }
 
+    @stubMethod(true)
+    public async restoreAsset<T>(tx: IBaseTransaction<void> | IConfirmedTransaction<void>) {
+        return tx;
+    }
+
 }

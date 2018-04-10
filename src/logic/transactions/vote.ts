@@ -1,10 +1,12 @@
 import { inject, injectable } from 'inversify';
+import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
 import { constants, Diff, emptyCB, TransactionType } from '../../helpers/';
 import { IAccountLogic, IRoundsLogic } from '../../ioc/interfaces/logic';
 import { IDelegatesModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import voteSchema from '../../schema/logic/transactions/vote';
+import txSQL from '../../sql/logic/transactions';
 import { MemAccountsData } from '../account';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
@@ -156,6 +158,12 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
         votes        : Array.isArray(tx.asset.votes) ? tx.asset.votes.join(',') : null,
       },
     };
+  }
+
+  public async restoreAsset(tx: IBaseTransaction<any>, db: IDatabase<any>): Promise<IBaseTransaction<VoteAsset>> {
+    const {votes} = await db.one(txSQL.getVotesById, {id: tx.id});
+    const asset = this.dbRead({v_votes: votes});
+    return { ...tx, ...{ asset } };
   }
 
   private assertValidVote(vote: string) {

@@ -5,6 +5,7 @@ import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
 import { TransactionsAPI } from '../../../src/apis/transactions';
 import * as helpers from '../../../src/helpers';
+import { TransactionType } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { TransactionsModuleStub, ZSchemaStub } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
@@ -56,7 +57,11 @@ describe('apis/transactionsAPI', () => {
     );
     transactionsModuleStub.enqueueResponse(
       'getByID',
-      Promise.resolve({ id: 456 })
+      Promise.resolve({
+        asset: { votes: ['+100', '+50', '-25'] },
+        id: 456,
+        type: TransactionType.VOTE,
+      })
     );
     transactionsModuleStub.enqueueResponse(
       'getMultisignatureTransactionList',
@@ -156,9 +161,30 @@ describe('apis/transactionsAPI', () => {
   });
 
   describe('getTX()', () => {
-    it('success', async () => {
+    it('should return a transaction with a votes property if tx type is VOTE', async () => {
+      result = await instance.getTX({id: '123'});
+      const tx = {
+        asset: {
+          votes: ['+100', '+50', '-25'],
+        },
+        id: 456,
+        type: TransactionType.VOTE,
+        votes: {
+          added: ['100', '50'],
+          deleted: ['25'],
+        },
+      };
+      expect(result).to.deep.equal({ transaction: tx });
+    });
+
+    it('should return a transaction without a votes property if tx type is not VOTE', async () => {
+      transactionsModuleStub.stubs.getByID.returns(
+        Promise.resolve({ id: 456, type: TransactionType.DELEGATE })
+      );
       result = await instance.getTX('123');
-      expect(result).to.deep.equal({ transaction: { id: 456 } });
+      expect(result).to.deep.equal({
+        transaction: { id: 456, type: TransactionType.DELEGATE },
+      });
     });
   });
 
@@ -172,7 +198,7 @@ describe('apis/transactionsAPI', () => {
         count: 5,
         transactions: [
           { id: 100, senderPublicKey: 'aaa', recipientId: 'bbb' },
-          { id: 200, senderPublicKey: 'aaa', recipientId: 'bbb' }
+          { id: 200, senderPublicKey: 'aaa', recipientId: 'bbb' },
         ],
       });
       expect(result.transactions).to.be.ofSize(2);
@@ -236,19 +262,29 @@ describe('apis/transactionsAPI', () => {
   });
 
   describe('getQueuedTx()', () => {
-    it('should call transactionsModule.getQueuedTransaction and return transaction', async ()=>{
+    it('should call transactionsModule.getQueuedTransaction and return transaction', async () => {
       const id = 'id';
       const transaction = {};
-      transactionsModuleStub.enqueueResponse('getQueuedTransaction', transaction);
-      expect(await instance.getQueuedTx(id)).to.be.deep.equal({transaction});
+      transactionsModuleStub.enqueueResponse(
+        'getQueuedTransaction',
+        transaction
+      );
+      expect(await instance.getQueuedTx(id)).to.be.deep.equal({ transaction });
 
-      expect(transactionsModuleStub.stubs.getQueuedTransaction.calledOnce).to.be.true;
-      expect(transactionsModuleStub.stubs.getQueuedTransaction.firstCall.args.length).to.be.equal(1);
-      expect(transactionsModuleStub.stubs.getQueuedTransaction.firstCall.args[0]).to.be.equal(id);
+      expect(transactionsModuleStub.stubs.getQueuedTransaction.calledOnce).to.be
+        .true;
+      expect(
+        transactionsModuleStub.stubs.getQueuedTransaction.firstCall.args.length
+      ).to.be.equal(1);
+      expect(
+        transactionsModuleStub.stubs.getQueuedTransaction.firstCall.args[0]
+      ).to.be.equal(id);
     });
-    it('should throw error if transaction is null', async()=>{
+    it('should throw error if transaction is null', async () => {
       transactionsModuleStub.enqueueResponse('getQueuedTransaction', null);
-      await expect(instance.getQueuedTx('id')).to.be.rejectedWith('Transaction not found');
+      await expect(instance.getQueuedTx('id')).to.be.rejectedWith(
+        'Transaction not found'
+      );
     });
   });
 
