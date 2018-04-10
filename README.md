@@ -37,6 +37,14 @@ bash install.sh install -r mainnet -u https://downloads.rise.vision/core/mainnet
 
 The installer will start the node automatically if installation was successful.
 
+(Optional) Fast sync from a snapshot
+
+```
+cd rise
+wget https://downloads.rise.vision/snapshots/mainnet/latest -O latestsnap.gz
+./manager.sh restoreBackup latestsnap.gz
+```
+
 ## Basic node management
 
 Installer will create a `rise` folder in your homedir. Make sure to `cd` to this dir when managing your node.
@@ -79,6 +87,14 @@ And finally restart your node to apply the changes:
 The same as above, only the install step is different:
 ```
 bash install.sh install -r testnet -u https://downloads.rise.vision/core/testnet/latest.tar.gz
+```
+
+
+(Optional) Fast sync from a snapshot
+
+```
+wget https://downloads.rise.vision/snapshots/testnet/latest -O latestsnap.gz
+./manager.sh restoreBackup latestsnap.gz
 ```
 
 ## Authors
