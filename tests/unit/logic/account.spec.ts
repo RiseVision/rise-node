@@ -4,7 +4,6 @@ import * as path from 'path';
 import * as rewire from 'rewire';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
-import { constants } from '../../../src/helpers';
 import { DbStub, LoggerStub, ZSchemaStub } from '../../stubs';
 
 const RewireAccount = rewire('../../../src/logic/account');
@@ -28,7 +27,7 @@ describe('logic/account', () => {
   let zSchemaStub: ZSchemaStub;
   before(() => {
     dbStub                  = new DbStub();
-  })
+  });
 
   beforeEach(() => {
     pgp = { QueryFile: () => { return; } };
@@ -64,32 +63,32 @@ describe('logic/account', () => {
         { expression: 'UPPER("address")', alias: 'address' },
         { expression: 'ENCODE("publicKey", \'hex\')', alias: 'publicKey' },
         {
-          expression: 'ENCODE("secondPublicKey", \'hex\')',
           alias     : 'secondPublicKey',
+          expression: 'ENCODE("secondPublicKey", \'hex\')',
         },
         { expression: '("balance")::bigint', alias: 'balance' },
         { expression: '("u_balance")::bigint', alias: 'u_balance' },
         { expression: '("vote")::bigint', alias: 'vote' },
         { expression: '("rate")::bigint', alias: 'rate' },
         {
+          alias     : 'delegates',
           expression:
             '(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2delegates WHERE "accountId" = a."address")',
-          alias     : 'delegates',
         },
         {
+          alias     : 'u_delegates',
           expression:
             '(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2u_delegates WHERE "accountId" = a."address")',
-          alias     : 'u_delegates',
         },
         {
+          alias     : 'multisignatures',
           expression:
             '(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2multisignatures WHERE "accountId" = a."address")',
-          alias     : 'multisignatures',
         },
         {
+          alias     : 'u_multisignatures',
           expression:
             '(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2u_multisignatures WHERE "accountId" = a."address")',
-          alias     : 'u_multisignatures',
         },
         { field: 'multimin' },
         { field: 'u_multimin' },
@@ -110,41 +109,41 @@ describe('logic/account', () => {
     it('filter should match', () => {
       const filter = {
         username         : {
-          type     : 'string',
           case     : 'lower',
           maxLength: 20,
           minLength: 1,
+          type     : 'string',
         },
         isDelegate       : { type: 'boolean' },
         u_isDelegate     : { type: 'boolean' },
         secondSignature  : { type: 'boolean' },
         u_secondSignature: { type: 'boolean' },
         u_username       : {
-          type     : 'string',
           case     : 'lower',
           maxLength: 20,
           minLength: 1,
+          type     : 'string',
         },
         address          : {
-          required : true,
-          type     : 'string',
           case     : 'upper',
           minLength: 1,
           maxLength: 22,
+          required : true,
+          type     : 'string',
         },
         publicKey        : { type: 'string', format: 'publicKey' },
         secondPublicKey  : { type: 'string', format: 'publicKey' },
         balance          : {
+          maximum : 10999999991000000,
+          minimum : 0,
           required: true,
           type    : 'integer',
-          minimum : 0,
-          maximum : 10999999991000000,
         },
         u_balance        : {
+          maximum : 10999999991000000,
+          minimum : 0,
           required: true,
           type    : 'integer',
-          minimum : 0,
-          maximum : 10999999991000000,
         },
         vote             : { type: 'integer' },
         rate             : { type: 'integer' },
@@ -671,6 +670,7 @@ describe('logic/account', () => {
     let address: string;
     let diff: any;
     let queries: string;
+    let queries2: string;
     let callback: SinonStub;
 
     beforeEach(() => {
@@ -713,6 +713,24 @@ describe('logic/account', () => {
                 '= 0, "blockId" = \'11273313233467167051\' where "address" = \'2841811297332056155R\';' +
                 'INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT ' +
                 '\'2841811297332056155R\', (300)::bigint, "dependentId", \'11273313233467167051\', 2707 FROM ' +
+                'mem_accounts2delegates WHERE "accountId" = \'2841811297332056155R\';INSERT INTO mem_round ' +
+                '("address", "amount", "delegate", "blockId", "round") SELECT \'2841811297332056155R\', ' +
+                '(balance)::bigint, array[\'5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde\'],' +
+                ' \'11273313233467167051\', 2707 FROM mem_accounts WHERE address = \'2841811297332056155R\';INSERT ' +
+                'INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT ' +
+                '\'2841811297332056155R\', (-balance)::bigint, ' +
+                'array[\'5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde\'],' +
+                ' \'11273313233467167051\', 2707 FROM mem_accounts WHERE address = \'2841811297332056155R\';';
+      queries2 = 'delete from "mem_accounts2delegates" where "dependentId" in ' +
+                '(5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde) and "accountId" ' +
+                '= \'2841811297332056155R\';insert into "mem_accounts2delegates" ("accountId", "dependentId") ' +
+                'values (\'2841811297332056155R\', 5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde);' +
+                'delete from "mem_accounts2multisignatures" where "dependentId" = \'11995752116878847490R\';' +
+                'insert into "mem_accounts2multisignatures" ("dependentId") values (\'11995752116878847490R\');' +
+                'update "mem_accounts" set "balance" = "balance" - 1, "u_balance" = "u_balance" - 300, "virgin" ' +
+                '= 0, "blockId" = \'11273313233467167051\' where "address" = \'2841811297332056155R\';' +
+                'INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT ' +
+                '\'2841811297332056155R\', (-1)::bigint, "dependentId", \'11273313233467167051\', 2707 FROM ' +
                 'mem_accounts2delegates WHERE "accountId" = \'2841811297332056155R\';INSERT INTO mem_round ' +
                 '("address", "amount", "delegate", "blockId", "round") SELECT \'2841811297332056155R\', ' +
                 '(balance)::bigint, array[\'5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde\'],' +
@@ -810,6 +828,23 @@ describe('logic/account', () => {
           expect(err).to.be.equal('Encountered insane number: Infinity');
         });
     });
+
+    it('If balance is negative', async () => {
+      diff.balance = -1;
+      RewireAccount.__set__('pgp', originalPgp);
+      dbStub.enqueueResponse('none', Promise.resolve());
+      dbStub.enqueueResponse('query', Promise.resolve([]));
+
+      await account.merge(address, diff, callback);
+
+      expect(dbStub.stubs.none.calledOnce).to.be.true;
+      expect(dbStub.stubs.none.getCall(0).args.length).to.equal(1);
+      expect(dbStub.stubs.none.getCall(0).args[0]).to.equal(queries2);
+      expect(callback.calledOnce).to.be.true;
+      expect(callback.getCall(0).args.length).to.equal(2);
+      expect(callback.getCall(0).args[0]).to.be.null;
+      expect(callback.getCall(0).args[1]).to.be.undefined;
+    });
   });
 
   describe('account.remove', () => {
@@ -849,6 +884,13 @@ describe('logic/account', () => {
       expect(dbStub.stubs.none.getCall(0).args[0]).to.equal(queries);
       expect(dbStub.stubs.none.getCall(0).args[1]).to.deep.equal(values);
       expect(addr).to.equal(address);
+    });
+  });
+
+  describe('generateAddressByPublicKey', () => {
+    it('success', () => {
+      const address = account.generateAddressByPublicKey('29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da');
+      expect(address).to.equal('2841811297332056155R');
     });
   });
 });
