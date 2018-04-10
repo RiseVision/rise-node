@@ -818,7 +818,6 @@ describe('logic/account', () => {
 
     it('If balance is negative', async () => {
       diff.balance = -1;
-      RewireAccount.__set__('pgp', originalPgp);
       dbStub.enqueueResponse('none', Promise.resolve());
       dbStub.enqueueResponse('query', Promise.resolve([]));
 
