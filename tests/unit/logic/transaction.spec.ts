@@ -795,6 +795,37 @@ describe('logic/transaction', () => {
       await instance.verify(tx, sender, requester, 1);
       expect(assertNonConfirmedStub.calledOnce).to.be.true;
     });
+
+    it('should reject tx if requesetPublicKey and account is not multisign', async () => {
+      sender.multisignatures  = null;
+      tx.signatures = ['a', 'b'];
+      tx.requesterPublicKey          = 'yz';
+      tx.asset.multisignature = {
+        keysgroup: [
+          'xyz',
+          'def',
+        ],
+      };
+      verifySignatureStub.returns(true);
+
+      await expect(instance.verify(tx, sender, requester, 1))
+        .to.rejectedWith('Account or requester account is not multisignature');
+    });
+    it('should reject tx if requesterPublicKey, account is multisign but requester is null', async () => {
+      sender.multisignatures  = ['a'];
+      tx.signatures = ['a', 'b'];
+      tx.requesterPublicKey          = 'yz';
+      tx.asset.multisignature = {
+        keysgroup: [
+          'xyz',
+          'def',
+        ],
+      };
+      verifySignatureStub.returns(true);
+
+      await expect(instance.verify(tx, sender, null /*requester*/, 1))
+        .to.rejectedWith('Account or requester account is not multisignature');
+    });
   });
 
   describe('verifySignature', () => {

@@ -277,6 +277,10 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Missing sender');
     }
 
+    if (tx.requesterPublicKey && (!sender.multisignatures || requester == null)) {
+      throw new Error('Account or requester account is not multisignature');
+    }
+
     if (tx.requesterPublicKey && sender.secondSignature && !tx.signSignature &&
       (tx as IConfirmedTransaction<any>).blockId !== this.genesisBlock.id) {
       throw new Error('Missing sender second signature');

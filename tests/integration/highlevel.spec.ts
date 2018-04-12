@@ -383,6 +383,17 @@ describe('highlevel checks', function () {
       });
     });
 
+    describe('edge-cases', () => {
+      it('should react correctly when tx seems to belong to multisignature account while account is not multisign', async () => {
+        const tx = await createSendTransaction(1, funds, senderAccount, '1R', {requesterPublicKey: senderAccount.publicKey});
+        // Blocks should be forged anyway
+        expect(blocksModule.lastBlock.height).is.eq(3);
+        // txmodule should not find it in db
+        await expect(txModule.getByID(tx.id)).to.be.rejectedWith('Transaction not found');
+        // Tx pool should not have it in pool
+        expect(txPool.transactionInPool(tx.id)).is.false;
+      });
+    })
   });
 
   describe('other tests', () => {
