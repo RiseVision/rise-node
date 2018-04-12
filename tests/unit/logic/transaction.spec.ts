@@ -760,6 +760,13 @@ describe('logic/transaction', () => {
       await expect(instance.verify(tx, sender, requester, 1)).to.be.rejectedWith('Invalid transaction amount');
     });
 
+    it('should reject tx if verifySignature throws (for whatever reason', async () => {
+      verifySignatureStub.throws(new Error('whatever'));
+
+      await expect(instance.verify(tx, sender, null, 1))
+        .to.rejectedWith('whatever');
+    });
+
     it('should call checkBalance and throw if checkBalance returns an error', async () => {
       checkBalanceStub.returns({ exceeded: true, error: 'checkBalance error' });
       await expect(instance.verify(tx, sender, requester, 1)).to.be.rejectedWith('checkBalance error');
