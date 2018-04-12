@@ -316,13 +316,14 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Invalid sender address');
     }
 
-    const multisignatures = sender.multisignatures || sender.u_multisignatures || [];
+    const multisignatures = (sender.multisignatures || sender.u_multisignatures || []).slice();
     if (multisignatures.length === 0) {
       if (tx.asset && tx.asset.multisignature && tx.asset.multisignature.keysgroup) {
         for (const key of tx.asset.multisignature.keysgroup) {
           if (!key || typeof key !== 'string') {
             throw new Error('Invalid member in keysgroup');
           }
+          console.log(key);
           multisignatures.push(key.slice(1));
         }
       }
@@ -339,6 +340,7 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Failed to verify signature');
     }
 
+    console.log('heey');
     if (sender.secondSignature) {
       if (!this.verifySignature(tx, sender.secondPublicKey, tx.signSignature, true)) {
         throw new Error('Failed to verify second signature');
@@ -354,12 +356,14 @@ export class TransactionLogic implements ITransactionLogic {
       }
 
       // Verify multisignatures are valid and belong to some of prev. calculated multisignature publicKey
+      console.log(multisignatures);
       for (const sig of tx.signatures) {
         let valid = false;
         for (let s = 0; s < multisignatures.length && !valid; s++) {
           if (tx.requesterPublicKey && multisignatures[s] === tx.requesterPublicKey) {
             continue;
           }
+          console.log(multisignatures[s], sig);
           valid = this.verifySignature(tx, multisignatures[s], sig);
         }
 

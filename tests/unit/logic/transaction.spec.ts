@@ -559,6 +559,59 @@ describe('logic/transaction', () => {
       txTypeVerifyStub       = sandbox.stub(sendTransaction, 'verify').resolves();
     });
 
+    describe('multisignatures', () => {
+      describe('Sender multisig', () => {
+        beforeEach(() => {
+          sender.multisignatures = ['a', 'b'];
+          verifySignatureStub.returns(true);
+        });
+        describe('normal tx', () => {
+          it('should reject if one signature does not belong to keygroup', async () => {
+            tx.signatures = ['bit'];
+            verifySignatureStub.onCall(1).returns(false);
+            verifySignatureStub.onCall(2).returns(false);
+            await expect(instance.verify(tx, sender, null, 1))
+              .rejectedWith('Failed to verify multisignature');
+          });
+          it('should reject if requesterPublicKey and requester is null', async () => {
+            tx.requesterPublicKey = 'ab';
+            await expect(instance.verify(tx, sender, null, 1))
+              .rejectedWith('Account or requester account is not multisignature');
+          });
+          it('should reject if requesterPublicKey and requester is not in keygroup', async () => {
+            tx.requesterPublicKey = requester.publicKey;
+            await expect(instance.verify(tx, sender, requester, 1))
+              .rejectedWith('Account does not belong to multisignature group');
+          });
+          it('should be rejected if sender has second signature and it is not provided', async () => {
+            // TODO: This maybe is nonsense
+            sender.secondSignature = 'hey';
+            tx.requesterPublicKey = requester.publicKey;
+            sender.multisignatures.push(requester.publicKey);
+            verifySignatureStub.onCall(1).returns(false);
+            await expect(instance.verify(tx, sender, requester, 1))
+              .rejectedWith('Failed to verify second signature');
+          });
+          it('should be rejected if sender has second signature and it is not provided');
+          it('should pass if ok');
+        });
+        describe('multisig registration', () => {
+          it('should be rejected even if valid');
+          it('should be rejected even if requesterPublicKey is passed');
+        });
+      });
+      describe('Sender NO multisig', () => {
+        describe('normal tx', () => {
+          it('should reject even if signatures are ok');
+          it('should reject if requesterPublicKey provided (along with requester)');
+        });
+        describe('multisig registration', () => {
+          it('should reject even if tx is valid as account is already registered');
+        });
+
+      });
+    });
+
     it('should call assertKnownTransactionType', async () => {
       // we want it to throw immediately
       tx.type        = 99999;
@@ -577,6 +630,7 @@ describe('logic/transaction', () => {
 
     it('should throw if sender second signature and no signSignature in tx', async () => {
       tx.requesterPublicKey  = requester.publicKey;
+      sender.multisignatures = ['a'];
       sender.secondSignature = 'signature';
       delete tx.signSignature;
       await expect(instance.verify(tx, sender, requester, 1)).to.be.rejectedWith('Missing sender second signature');
@@ -592,6 +646,7 @@ describe('logic/transaction', () => {
 
     it('should throw if missing requester second signature', async () => {
       tx.requesterPublicKey     = requester.publicKey;
+      sender.multisignatures = ['a'];
       requester.secondSignature = 'secondSignature';
       delete tx.signSignature;
       await expect(instance.verify(tx, sender, requester, 1)).to.be.rejectedWith('Missing requester second signature');
@@ -599,6 +654,7 @@ describe('logic/transaction', () => {
 
     it('should throw if second signature provided, and requester has none enabled', async () => {
       tx.requesterPublicKey = requester.publicKey;
+      sender.multisignatures = ['a'];
       delete requester.secondSignature;
       tx.signSignature = 'signSignature';
       await expect(instance.verify(tx, sender, requester, 1))
@@ -638,36 +694,53 @@ describe('logic/transaction', () => {
     it('should verify multisignatures', async () => {
       sender.multisignatures  = [];
       tx.signatures = ['a', 'b'];
+      // tx.requesterPublicKey          = 'yz';
+      tx.asset.multisignature = {
+        keysgroup: [
+          '+yz',
+          '+ef',
+        ],
+      };
+      verifySignatureStub.returns(true);
+      verifySignatureStub.onCall(2).returns(false);
+      await instance.verify(tx, sender, requester, 1);
+
+      expect(verifySignatureStub.callCount).to.equal(4);
+      expect(verifySignatureStub.args[0][0]).to.be.deep.equal(tx);
+      expect(verifySignatureStub.args[0][1]).to.be.equal(tx.senderPublicKey);
+      expect(verifySignatureStub.args[0][2]).to.be.equal(tx.signature);
+
+      expect(verifySignatureStub.args[1][0]).to.be.deep.equal(tx);
+      expect(verifySignatureStub.args[1][1]).to.be.equal('yz');
+      expect(verifySignatureStub.args[1][2]).to.be.equal('a');
+
+      expect(verifySignatureStub.args[3][0]).to.be.deep.equal(tx);
+      expect(verifySignatureStub.args[3][1]).to.be.equal('ef');
+      expect(verifySignatureStub.args[3][2]).to.be.equal('b');
+    });
+
+    it('should verify multisig tx with already multisig account', async () => {
+      tx.signatures = ['a', 'b'];
+    });
+    it('should not verify multisignature account creation from a requester (that is not a requester yet)', async () => {
+      sender.multisignatures  = [];
+      tx.signatures = ['a', 'b'];
       tx.requesterPublicKey          = 'yz';
       tx.asset.multisignature = {
         keysgroup: [
-          'xyz',
-          'def',
+          '+yz',
+          '+ef',
         ],
       };
       verifySignatureStub.returns(true);
 
-      await instance.verify(tx, sender, requester, 1);
-
-      expect(verifySignatureStub.callCount).to.equal(3);
-      expect(verifySignatureStub.args[0][0]).to.be.deep.equal(tx);
-      expect(verifySignatureStub.args[0][1]).to.be.equal(tx.requesterPublicKey);
-      expect(verifySignatureStub.args[0][2]).to.be.equal(tx.signature);
-
-      expect(verifySignatureStub.args[1][0]).to.be.deep.equal(tx);
-      expect(verifySignatureStub.args[1][1]).to.be.equal('ef');
-      expect(verifySignatureStub.args[1][2]).to.be.equal('a');
-
-      expect(verifySignatureStub.args[2][0]).to.be.deep.equal(tx);
-      expect(verifySignatureStub.args[2][1]).to.be.equal('ef');
-      expect(verifySignatureStub.args[2][2]).to.be.equal('b');
+      await expect(instance.verify(tx, sender, requester, 1)).to
+        .rejectedWith('Account does not belong to multisignature group');
     });
 
     it('should throw if account does not belong to multisignature group', async () => {
-      // FIXME This must be broken in src/logic/transaction.ts No other way to test this behavior
       tx.requesterPublicKey  = requester.publicKey;
-      // Initializing this as an empty string is the only way to test this behavior
-      sender.multisignatures = '';
+      sender.multisignatures = ['a'];
       await expect(instance.verify(tx, sender, requester, 1))
         .to.be.rejectedWith('Account does not belong to multisignature group');
     });
