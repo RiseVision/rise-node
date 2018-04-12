@@ -316,7 +316,7 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Invalid sender address');
     }
 
-    const multisignatures = sender.multisignatures || sender.u_multisignatures || [];
+    const multisignatures = (sender.multisignatures || sender.u_multisignatures || []).slice();
     if (multisignatures.length === 0) {
       if (tx.asset && tx.asset.multisignature && tx.asset.multisignature.keysgroup) {
         for (const key of tx.asset.multisignature.keysgroup) {
