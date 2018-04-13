@@ -39,9 +39,10 @@ describe('apis/utils/attachPeerHeaders', () => {
   });
 
   describe('use()', () => {
-    it('success', () => {
+    it('should call to response.set() and next()', () => {
       instance.use(request, response, next);
       expect(responseSpy.calledOnce).to.be.true;
+      expect(responseSpy.args[0][0]).to.equal(undefined);
       expect(next.calledOnce).to.be.true;
     });
   });
