@@ -277,6 +277,10 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Missing sender');
     }
 
+    if (tx.requesterPublicKey && (!sender.multisignatures || requester == null)) {
+      throw new Error('Account or requester account is not multisignature');
+    }
+
     if (tx.requesterPublicKey && sender.secondSignature && !tx.signSignature &&
       (tx as IConfirmedTransaction<any>).blockId !== this.genesisBlock.id) {
       throw new Error('Missing sender second signature');
@@ -312,7 +316,7 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Invalid sender address');
     }
 
-    const multisignatures = sender.multisignatures || sender.u_multisignatures || [];
+    const multisignatures = (sender.multisignatures || sender.u_multisignatures || []).slice();
     if (multisignatures.length === 0) {
       if (tx.asset && tx.asset.multisignature && tx.asset.multisignature.keysgroup) {
         for (const key of tx.asset.multisignature.keysgroup) {
