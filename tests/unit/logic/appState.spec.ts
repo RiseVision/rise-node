@@ -1,6 +1,7 @@
 import { expect } from 'chai';
+import * as jsonpath from 'jsonpath';
+import * as proxyquire from 'proxyquire';
 import 'reflect-metadata';
-import * as rewire from 'rewire';
 import * as sinon from 'sinon';
 import { SinonSpy, SinonStub } from 'sinon';
 import { AppState } from '../../../src/logic';
@@ -11,12 +12,13 @@ describe('appState', () => {
   let valueSpy: SinonSpy;
   let computedStub: SinonStub;
 
-  const RewireAppState = rewire('../../../src/logic/appState.ts');
-  const jsonpath = RewireAppState.__get__('jsonpath');
+  const ProxyAppState = proxyquire('../../../src/logic/appState.ts', {
+    jsonpath,
+  });
 
   beforeEach(() => {
     valueSpy = sinon.spy(jsonpath, 'value');
-    instance = new RewireAppState.AppState();
+    instance = new ProxyAppState.AppState();
     computedStub = sinon.stub().returns('returnVal');
     instance.states = {
       rounds: {

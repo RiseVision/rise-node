@@ -1,9 +1,10 @@
 import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as rewire from 'rewire';
+import * as crypto from 'crypto';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
+import * as helpers from '../../../src/helpers';
 import { constants } from '../../../src/helpers';
 import { SignedBlockType } from '../../../src/logic';
 import { DelegatesModule } from '../../../src/modules';
@@ -23,7 +24,6 @@ import { CreateHashSpy } from '../../stubs/utils/CreateHashSpy';
 import { generateAccounts } from '../../utils/accountsUtils';
 
 chai.use(chaiAsPromised);
-const rewiredDelegatesModule = rewire('../../../src/modules/delegates');
 
 // tslint:disable no-unused-expression
 describe('modules/delegates', () => {
@@ -72,7 +72,7 @@ describe('modules/delegates', () => {
     accountsModuleStub     = new AccountsModuleStub();
     transactionsModuleStub = new TransactionsModuleStub();
 
-    instance                             = new rewiredDelegatesModule.DelegatesModule();
+    instance                             = new DelegatesModule();
     (instance as any).constants          = constants;
     (instance as any).excManager         = excManagerStub;
     (instance as any).logger             = loggerStub;
@@ -91,7 +91,6 @@ describe('modules/delegates', () => {
       '+73e57c9637af3eede22c25bcd696b94a3f4b017fdc681d714e275427a5112c28',
     ];
 
-    const crypto                                      = rewiredDelegatesModule.__get__('crypto');
     createHashSpy                                     = new CreateHashSpy(crypto, sandbox);
     const lastBlock                                   = {
       height              : 12422,
@@ -251,7 +250,6 @@ describe('modules/delegates', () => {
     });
 
     it('should call OrderBy using the passed value', async () => {
-      const helpers    = rewiredDelegatesModule.__get__('_1');
       const orderBySpy = sandbox.spy(helpers, 'OrderBy');
       await instance.getDelegates({ orderBy: 'votes' });
       expect(orderBySpy.calledOnce).to.be.true;
@@ -265,7 +263,6 @@ describe('modules/delegates', () => {
     });
 
     it('should throw on OrderBy error', async () => {
-      const helpers = rewiredDelegatesModule.__get__('_1');
       sandbox.stub(helpers, 'OrderBy').returns({ error: 'OrderBy Err', });
       await expect(instance.getDelegates({ orderBy: 'votes' })).to.be.rejectedWith('OrderBy Err');
     });

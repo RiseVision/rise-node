@@ -3,11 +3,12 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
 import { Container } from 'inversify';
-import * as rewire from 'rewire';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { DelegatesAPI } from '../../../src/apis/delegatesAPI';
+import * as helpers from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
+import sql from '../../../src/sql/delegates';
 import {
 AccountsModuleStub, BlocksModuleStub, BlocksSubmoduleUtilsStub, DbStub,
 DelegatesModuleStub, EdStub, SlotsStub,
@@ -17,8 +18,6 @@ import { ForgeModuleStub } from '../../stubs/modules/ForgeModuleStub';
 import { createContainer } from '../../utils/containerCreator';
 
 chai.use(chaiAsPromised);
-
-const DelegatesAPIRewire = rewire('../../../src/apis/delegatesAPI');
 
 // tslint:disable no-unused-expression max-line-length
 
@@ -37,14 +36,12 @@ describe('apis/blocksAPI', () => {
   let forgeModule: ForgeModuleStub;
   let slots: SlotsStub;
   let system: SystemModuleStub;
-  let sql;
   let cryptoCreateHashSpy;
-  let rewiredCrypto;
 
   beforeEach(() => {
     sandbox   = sinon.sandbox.create();
     container = createContainer();
-    container.bind(Symbols.api.delegates).to(DelegatesAPIRewire.DelegatesAPI);
+    container.bind(Symbols.api.delegates).to(DelegatesAPI);
 
     schema          = container.get(Symbols.generic.zschema);
     accounts        = container.get(Symbols.modules.accounts);
@@ -56,10 +53,7 @@ describe('apis/blocksAPI', () => {
     forgeModule     = container.get(Symbols.modules.forge);
     slots           = container.get(Symbols.helpers.slots);
     system          = container.get(Symbols.modules.system);
-
-    rewiredCrypto       = DelegatesAPIRewire.__get__('crypto');
-    cryptoCreateHashSpy = sandbox.spy(rewiredCrypto, 'createHash');
-    sql                 = DelegatesAPIRewire.__get__('delegates_2.default');
+    cryptoCreateHashSpy = sandbox.spy(crypto, 'createHash');
 
     instance = container.get(Symbols.api.delegates);
   });
@@ -469,7 +463,6 @@ describe('apis/blocksAPI', () => {
     let sqlSearchSpy: SinonSpy;
     let params;
     let orderBy;
-    let constants;
 
     beforeEach(() => {
       orderBy   = {
@@ -481,11 +474,8 @@ describe('apis/blocksAPI', () => {
         orderBy: 'username',
         q      : 'query',
       };
-      constants = { activeDelegates: 10 };
 
-      OrderByStub = sandbox.stub().returns(orderBy);
-      DelegatesAPIRewire.__set__('_1', { OrderBy: OrderByStub, constants });
-
+      OrderByStub = sandbox.stub(helpers, 'OrderBy').returns(orderBy);
       sqlSearchSpy = sandbox.spy(sql, 'search');
 
       db.enqueueResponse('query', Promise.resolve({}));
@@ -544,7 +534,7 @@ describe('apis/blocksAPI', () => {
       expect(sqlSearchSpy.calledOnce).to.be.true;
       expect(sqlSearchSpy.firstCall.args.length).to.be.equal(1);
       expect(sqlSearchSpy.firstCall.args[0]).to.be.deep.equal({
-        limit     : 10,
+        limit     : 101,
         q         : '%query%',
         sortField : 'sortField',
         sortMethod: 'sortMethod',
@@ -717,7 +707,7 @@ describe('apis/blocksAPI', () => {
         secret: 'secret',
       };
       kp        = { publicKey };
-      hash      = rewiredCrypto.createHash('sha256').update('secret', 'utf8')
+      hash      = crypto.createHash('sha256').update('secret', 'utf8')
         .digest();
 
       ed.enqueueResponse('makeKeypair', kp);
@@ -813,7 +803,7 @@ describe('apis/blocksAPI', () => {
         secret: 'secret',
       };
       kp        = { publicKey };
-      hash      = rewiredCrypto.createHash('sha256').update('secret', 'utf8')
+      hash      = crypto.createHash('sha256').update('secret', 'utf8')
         .digest();
 
       ed.enqueueResponse('makeKeypair', kp);
