@@ -95,22 +95,5 @@
         "verifyOnLoading": false,
         "loadPerIteration": 5000
     },
-<<<<<<< Updated upstream
-    "ssl": {
-        "enabled": false,
-        "options": {
-            "port": 5556,
-            "address": "0.0.0.0",
-            "key": "./ssl/rise.key",
-            "cert": "./ssl/rise.crt"
-        }
-    },
-    "dapp": {
-        "masterrequired": true,
-        "masterpassword": "",
-        "autoexec": []
-    },
-=======
->>>>>>> Stashed changes
     "nethash": "e90d39ac200c495b97deb6d9700745177c7fc4aa80a404108ec820cbeced054c"
 }

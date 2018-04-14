@@ -369,7 +369,6 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   private async afterSave(block: SignedBlockType) {
     await this.bus.message('transactionsSaved', block.transactions);
     // Execute afterSave callbacks for each transaction, depends on tx type
-    // see: logic.outTransfer.afterSave, logic.dapp.afterSave
     for (const tx of  block.transactions) {
       await this.transactionLogic.afterSave(tx);
     }

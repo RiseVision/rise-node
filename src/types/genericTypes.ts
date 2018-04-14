@@ -93,12 +93,6 @@ export interface AppConfig {
     loadPerIteration: number,
   };
 
-<<<<<<< Updated upstream
-  ssl: any;
-
-  dapp: any;
-=======
->>>>>>> Stashed changes
   nethash: string;
 }
 

@@ -261,7 +261,6 @@ export default {
         },
         required  : ['verifyOnLoading', 'loadPerIteration'],
       },
-<<<<<<< Updated upstream
       ssl            : {
         type      : 'object',
         properties: {
@@ -290,34 +289,13 @@ export default {
         },
         required  : ['enabled', 'options'],
       },
-      dapp           : {
-        type      : 'object',
-        properties: {
-          masterrequired: {
-            type: 'boolean',
-          },
-          masterpassword: {
-            type: 'string',
-          },
-          autoexec      : {
-            type: 'array',
-          },
-        },
-        required  : ['masterrequired', 'masterpassword', 'autoexec'],
-      },
-=======
->>>>>>> Stashed changes
       nethash        : {
         type  : 'string',
         format: 'hex',
       },
     },
     required  : ['port', 'address', 'version', 'fileLogLevel', 'logFileName', 'consoleLogLevel', 'trustProxy',
-<<<<<<< Updated upstream
-      'topAccounts', 'db', 'api', 'peers', 'broadcasts', 'transactions', 'forging', 'loading', 'ssl', 'dapp',
-=======
-      'db', 'api', 'peers', 'broadcasts', 'transactions', 'forging', 'loading',
->>>>>>> Stashed changes
+      'topAccounts', 'db', 'api', 'peers', 'broadcasts', 'transactions', 'forging', 'loading',
       'nethash', 'cacheEnabled', 'redis'],
   },
 };

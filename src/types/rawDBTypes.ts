@@ -39,5 +39,4 @@ export type RawFullBlockListType = {
   m_lifetime: number
   m_keysgroup: number
 
-  // dapps left out.
 };
