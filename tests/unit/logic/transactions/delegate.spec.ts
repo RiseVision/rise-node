@@ -211,6 +211,11 @@ describe('logic/transactions/delegate', () => {
         username    : tx.asset.delegate.username,
       });
     });
+
+    it('should throw an error', () => {
+      sender.isDelegate = 1;
+      expect(() => instance.apply(tx, block, sender)).to.throw('Account is already a delegate');
+    });
   });
 
   describe('undo', () => {
@@ -251,6 +256,12 @@ describe('logic/transactions/delegate', () => {
         username    : null,
         u_username  : tx.asset.delegate.username,
       });
+    });
+
+    it('should throw an error', () => {
+      sender.u_isDelegate = 1;
+      expect(() => instance.applyUnconfirmed(tx, sender)).to.throw('Account is already trying to be a delegate');
+
     });
   });
 
@@ -300,6 +311,14 @@ describe('logic/transactions/delegate', () => {
       expect(() => {
         instance.objectNormalize(tx);
       }).to.throw(/Failed to validate delegate schema/);
+    });
+
+    it('should throw with errors message if validation fails', () => {
+      (instance as any).schema.getLastErrors = () => [{message: '1'}, {message: '2'}];
+      zSchemaStub.validate.returns(false);
+      expect(() => {
+        instance.objectNormalize(tx);
+      }).to.throw('Failed to validate delegate schema: 1, 2');
     });
 
     it('should return the tx', () => {

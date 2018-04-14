@@ -32,11 +32,11 @@ import {
   ZSchemaStub,
   IAppStateStub,
 } from '../../stubs';
- 
 import { PeerType } from '../../../src/logic';
 import loaderSchema from '../../../src/schema/loader';
 import { BlocksSubmoduleProcessStub } from '../../stubs/modules/blocks/BlocksSubmoduleProcessStub';
 import { createFakePeers } from '../../utils/fakePeersFactory';
+import sql from '../../../src/sql/loader';
 
 chai.use(chaiAsPromised);
 
@@ -126,9 +126,8 @@ describe('modules/loader', () => {
     promiseRetryStub = sandbox.stub().callsFake(sandbox.spy((w) => Promise.resolve(w(retryStub))));
     LoaderModuleRewire.__set__('promiseRetry', promiseRetryStub);
 
-
     (instance as any).jobsQueue.register                              = sandbox.stub().callsFake((val, fn) => fn());
-    (instance as  any).sequence.addAndPromise                         = sandbox.stub().callsFake(w => Promise.resolve(w()));
+    (instance as  any).defaultSequence.addAndPromise                  = sandbox.stub().callsFake(w => Promise.resolve(w()));
     instance                                                          = container.get(Symbols.modules.loader);
     container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock = { height: 1, id: 1 } as any;
   });
@@ -513,6 +512,7 @@ describe('modules/loader', () => {
     let loadStub: SinonStub;
     let processExitStub: SinonStub;
     let processEmitStub: SinonStub;
+    let tStub: SinonStub;
 
     beforeEach(() => {
       dbStub                = container.get<DbStub>(Symbols.generic.db);
@@ -547,9 +547,21 @@ describe('modules/loader', () => {
 
       res = [[], [], [{}]];
 
+      tStub = {
+        batch: sandbox.stub(),
+        one  : sandbox.stub().returns(1),
+        query: sandbox.stub().returns(1),
+        none : sandbox.stub().returns(1),
+      };
+      dbStub.stubs.task.onCall(0).callsFake((fn) => {
+        fn(tStub);
+        return Promise.resolve(results);
+      });
+      dbStub.stubs.task.onCall(1).callsFake((fn) => {
+        fn(tStub);
+        return Promise.resolve(res);
+      });
       appStateStub.enqueueResponse('set', {});
-      dbStub.enqueueResponse('task', Promise.resolve(results));
-      dbStub.enqueueResponse('task', Promise.resolve(res));
       blocksUtilsModuleStub.enqueueResponse('loadLastBlock', Promise.resolve({}));
       busStub.enqueueResponse('message', Promise.resolve({}));
       loadStub        = sandbox.stub(instance, 'load').resolves(loadResult);
@@ -575,6 +587,28 @@ describe('modules/loader', () => {
       expect(dbStub.stubs.task.called).to.be.true;
       expect(dbStub.stubs.task.firstCall.args.length).to.be.equal(1);
       expect(dbStub.stubs.task.firstCall.args[0]).to.be.a('function');
+    });
+
+    it('shoudl call db.task(first call) callback', async () => {
+      await instance.loadBlockChain();
+
+      expect(tStub.batch.calledTwice).to.be.true;
+      expect(tStub.batch.firstCall.args.length).to.be.equal(1);
+      expect(tStub.batch.firstCall.args[0]).to.be.deep.equal([1, 1, 1, 1, 1]);
+
+      expect(tStub.one.calledTwice).to.be.true;
+      expect(tStub.one.firstCall.args.length).to.be.equal(1);
+      expect(tStub.one.firstCall.args[0]).to.be.equal(sql.countBlocks);
+      expect(tStub.one.secondCall.args.length).to.be.equal(1);
+      expect(tStub.one.secondCall.args[0]).to.be.equal(sql.countMemAccounts);
+
+      expect(tStub.query.callCount).to.be.equal(5);
+      expect(tStub.query.firstCall.args.length).to.be.equal(1);
+      expect(tStub.query.firstCall.args[0]).to.be.equal(sql.getGenesisBlock);
+      expect(tStub.query.secondCall.args.length).to.be.equal(1);
+      expect(tStub.query.secondCall.args[0]).to.be.equal(sql.getMemRounds);
+      expect(tStub.query.thirdCall.args.length).to.be.equal(1);
+      expect(tStub.query.thirdCall.args[0]).to.be.equal(sql.countDuplicatedDelegates);
     });
 
     it('should call logger.info with blocks count info', async () => {
@@ -839,6 +873,24 @@ describe('modules/loader', () => {
       expect(dbStub.stubs.task.callCount).to.be.equal(2);
       expect(dbStub.stubs.task.secondCall.args.length).to.be.equal(1);
       expect(dbStub.stubs.task.secondCall.args[0]).to.be.a('function');
+    });
+
+    it('shoudl call db.task(second call) callback', async () => {
+      await instance.loadBlockChain();
+
+      expect(tStub.batch.calledTwice).to.be.true;
+      expect(tStub.batch.secondCall.args.length).to.be.equal(1);
+      expect(tStub.batch.secondCall.args[0]).to.be.deep.equal([1, 1, 1]);
+
+      expect(tStub.none.calledOnce).to.be.true;
+      expect(tStub.none.firstCall.args.length).to.be.equal(1);
+      expect(tStub.none.firstCall.args[0]).to.be.equal(sql.updateMemAccounts);
+
+      expect(tStub.query.callCount).to.be.equal(5);
+      expect(tStub.query.getCall(3).args.length).to.be.equal(1);
+      expect(tStub.query.getCall(3).args[0]).to.be.equal(sql.getOrphanedMemAccounts);
+      expect(tStub.query.getCall(4).args.length).to.be.equal(1);
+      expect(tStub.query.getCall(4).args[0]).to.be.equal(sql.getDelegates);
     });
 
     it('should return instance.laod if res[1].length > 0', async () => {
@@ -1164,31 +1216,13 @@ describe('modules/loader', () => {
     it('call logger.debug methods', async () => {
       await  (instance as any).sync();
 
-      expect(loggerStub.stubs.debug.callCount).to.be.equal(3);
+      expect(loggerStub.stubs.debug.callCount).to.be.equal(2);
 
       expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Undoing unconfirmed transactions before sync');
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Establishing broadhash consensus before sync');
 
       expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal('Establishing broadhash consensus before sync');
-
-      expect(loggerStub.stubs.debug.thirdCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.thirdCall.args[0]).to.be.equal('Establishing broadhash consensus after sync');
-    });
-
-    it('call logger.debug methods', async () => {
-      await  (instance as any).sync();
-
-      expect(loggerStub.stubs.debug.callCount).to.be.equal(3);
-
-      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Undoing unconfirmed transactions before sync');
-
-      expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal('Establishing broadhash consensus before sync');
-
-      expect(loggerStub.stubs.debug.thirdCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.thirdCall.args[0]).to.be.equal('Establishing broadhash consensus after sync');
+      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal('Establishing broadhash consensus after sync');
     });
 
     it('call bus"s methods', async () => {
@@ -1201,16 +1235,6 @@ describe('modules/loader', () => {
 
       expect(busStub.stubs.message.secondCall.args.length).to.be.equal(1);
       expect(busStub.stubs.message.secondCall.args[0]).to.be.equal('syncFinished');
-    });
-
-    it('call transactionsModule methods', async () => {
-      await  (instance as any).sync();
-
-      expect(transactionsModuleStub.stubs.undoUnconfirmedList.calledOnce).to.be.true;
-      expect(transactionsModuleStub.stubs.undoUnconfirmedList.firstCall.args.length).to.be.equal(0);
-
-      expect(transactionsModuleStub.stubs.applyUnconfirmedList.calledOnce).to.be.true;
-      expect(transactionsModuleStub.stubs.applyUnconfirmedList.firstCall.args.length).to.be.equal(0);
     });
 
     it('call broadcasterLogic methods', async () => {

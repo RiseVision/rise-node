@@ -55,7 +55,10 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
    */
   private lastNBlockIds: string[] = [];
 
+  private isCleaning: boolean = false;
+
   public cleanup(): Promise<void> {
+    this.isCleaning = true;
     return Promise.resolve();
   }
 
@@ -109,7 +112,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   }
 
   public async processBlock(block: SignedBlockType, broadcast: boolean, saveBlock: boolean): Promise<any> {
-    if (this.blocksModule.isCleaning) {
+    if (this.isCleaning) {
       // We're shutting down so stop processing any further
       throw new Error('Cleaning up');
     }

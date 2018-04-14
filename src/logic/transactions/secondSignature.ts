@@ -85,20 +85,20 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   }
 
   public applyUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>, sender: any): Promise<void> {
-    return this.accountsModule.setAccountAndGet({
-      address          : sender.address,
-      u_secondSignature: 0,
-    })
-      .then(() => void 0);
-  }
-
-  public undoUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>, sender: any): Promise<void> {
     if (sender.u_secondSignature || sender.secondSignature) {
       return Promise.reject('Second signature already enabled');
     }
     return this.accountsModule.setAccountAndGet({
       address          : sender.address,
       u_secondSignature: 1,
+    })
+      .then(() => void 0);
+  }
+
+  public undoUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>, sender: any): Promise<void> {
+    return this.accountsModule.setAccountAndGet({
+      address          : sender.address,
+      u_secondSignature: 0,
     })
       .then(() => void 0);
   }

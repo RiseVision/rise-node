@@ -8,6 +8,7 @@ import { Symbols } from '../ioc/symbols';
 import { PeerState } from '../logic/';
 import peersSchema from '../schema/peers';
 import { AppConfig } from '../types/genericTypes';
+import { APIError } from './errors';
 
 @JsonController('/api/peers')
 @injectable()
@@ -36,7 +37,7 @@ export class PeersAPI {
       const peers = await this.peersModule.getByFilter(params);
       return { peers };
     } catch (err) {
-      throw new Error('Failed to get peers');
+      throw new APIError('Failed to get peers', 200);
     }
   }
 
@@ -49,10 +50,10 @@ export class PeersAPI {
       if (peers.length > 0) {
         return { peer: peers[0] };
       } else {
-        return Promise.reject(new Error('Peer not found'));
+        return Promise.reject(new APIError('Peer not found', 200));
       }
     } catch (err) {
-      throw new Error('Failed to get peers');
+      throw new APIError('Failed to get peers', 200);
     }
   }
 
@@ -65,7 +66,7 @@ export class PeersAPI {
 
       return { connected, disconnected, banned };
     } catch (e) {
-      throw new Error('Failed to get peer count');
+      throw new APIError('Failed to get peer count', 200);
     }
   }
 

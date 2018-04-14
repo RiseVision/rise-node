@@ -238,7 +238,7 @@ export class TransactionLogic implements ITransactionLogic {
   public checkBalance(amount: number | BigNumber, balanceKey: 'balance' | 'u_balance',
                       tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: MemAccountsData) {
     const accountBalance  = sender[balanceKey].toString();
-    const exceededBalance = new BigNum(accountBalance).lessThan(amount);
+    const exceededBalance = new BigNum(accountBalance).isLessThan(amount);
     // tslint:disable-next-line
     const exceeded        = (tx['blockId'] !== this.genesisBlock.id && exceededBalance);
     return {
@@ -277,6 +277,10 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Missing sender');
     }
 
+    if (tx.requesterPublicKey && (!sender.multisignatures || requester == null)) {
+      throw new Error('Account or requester account is not multisignature');
+    }
+
     if (tx.requesterPublicKey && sender.secondSignature && !tx.signSignature &&
       (tx as IConfirmedTransaction<any>).blockId !== this.genesisBlock.id) {
       throw new Error('Missing sender second signature');
@@ -312,7 +316,7 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Invalid sender address');
     }
 
-    const multisignatures = sender.multisignatures || sender.u_multisignatures || [];
+    const multisignatures = (sender.multisignatures || sender.u_multisignatures || []).slice();
     if (multisignatures.length === 0) {
       if (tx.asset && tx.asset.multisignature && tx.asset.multisignature.keysgroup) {
         for (const key of tx.asset.multisignature.keysgroup) {
@@ -664,5 +668,12 @@ export class TransactionLogic implements ITransactionLogic {
       tx.asset = asset;
     }
     return tx;
+  }
+
+  public async restoreAsset<T>(tx: IConfirmedTransaction<void>): Promise<IConfirmedTransaction<T>>;
+  public async restoreAsset<T>(tx: IBaseTransaction<void>): Promise<IBaseTransaction<T>>;
+  public async restoreAsset<T>(tx: IBaseTransaction<void> | IConfirmedTransaction<void>) {
+    this.assertKnownTransactionType(tx);
+    return this.types[tx.type].restoreAsset(tx, this.db);
   }
 }

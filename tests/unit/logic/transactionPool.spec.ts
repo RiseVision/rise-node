@@ -7,8 +7,10 @@ import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import { TransactionType } from '../../../src/helpers';
 import { InnerTXQueue, TransactionPool} from '../../../src/logic';
 import { IBaseTransaction } from '../../../src/logic/transactions';
-import { AccountsModuleStub, JobsQueueStub, LoggerStub,
-         TransactionLogicStub, TransactionsModuleStub } from '../../stubs';
+import {
+  AccountsModuleStub, JobsQueueStub, LoggerStub, SequenceStub,
+  TransactionLogicStub, TransactionsModuleStub
+} from '../../stubs';
 
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
@@ -74,6 +76,17 @@ describe('logic/transactionPool - InnerTXQueue', () => {
       expect((instance as any).transactions).to.be.equalTo([tx1, undefined, tx3]);
       expect((instance as any).index).to.be.deep.equal({tx1: 0, tx3: 2 });
       expect((instance as any).payload).to.be.deep.equal({tx1: payload1, tx3: undefined});
+    });
+  });
+
+  describe('getPayload', () => {
+    it('should returns undefined', () => {
+      expect(instance.getPayload({id: 'abc'} as any)).to.be.undefined;
+    });
+
+    it('should returns payload', () => {
+      instance.add(tx1 as any, payload1 as any);
+      expect(instance.getPayload({id: 'tx1'} as any)).to.deep.equal(payload1);
     });
   });
 
@@ -217,11 +230,12 @@ describe('logic/transactionPool - TransactionPool', () => {
   let loggerStub: LoggerStub;
   let transactionLogicStub: TransactionLogicStub;
   let accountsModuleStub: AccountsModuleStub;
+  let balanceSequenceStub: SequenceStub;
   let tx: IBaseTransaction<any>;
   let tx2: IBaseTransaction<any>;
   let tx3: IBaseTransaction<any>;
 
-  const addMixedTransactionsAndFillPool = async () => {
+  const addMixedTransactionsAndFillPool = async (withSignatures: boolean) => {
     const allTxs = [];
     // Add 50 txs to various queues
     for (let i = 0; i < 50; i++) {
@@ -229,6 +243,13 @@ describe('logic/transactionPool - TransactionPool', () => {
         await instance.fillPool();
       }
       const newTx = Object.assign({}, tx);
+
+      if (withSignatures) {
+        if (i % 2 === 0) {
+          newTx.signatures = ['aaa', 'bbb'];
+        }
+      }
+
       newTx.id = 'tx_' + i;
       if (i < 12) {
         newTx.type = TransactionType.MULTI;
@@ -238,9 +259,11 @@ describe('logic/transactionPool - TransactionPool', () => {
           },
         };
       }
-      (newTx as any).ready = (i % 2 === 0);
       const bundled = (i >= 12 && i < 25);
       instance.queueTransaction(newTx, bundled);
+      if (newTx.type === TransactionType.MULTI) {
+        instance.multisignature.getPayload(newTx).ready = (i % 2 === 0);
+      }
       allTxs.push(newTx);
     }
     sandbox.resetHistory();
@@ -264,12 +287,13 @@ describe('logic/transactionPool - TransactionPool', () => {
     loggerStub = new LoggerStub();
     transactionLogicStub = new TransactionLogicStub();
     accountsModuleStub = new AccountsModuleStub();
-
+    balanceSequenceStub = new SequenceStub();
     // dependencies
     (instance as any).bus = fakeBus;
     (instance as any).jobsQueue = jqStub;
     (instance as any).logger = loggerStub;
     (instance as any).appState = fakeAppState;
+    (instance as any).balancesSequence = balanceSequenceStub;
     (instance as any).transactionLogic = transactionLogicStub;
     (instance as any).accountsModule = accountsModuleStub;
     (instance as any).config = {
@@ -331,7 +355,9 @@ describe('logic/transactionPool - TransactionPool', () => {
       expect(jqStub.stubs.register.called).to.be.true;
       expect(jqStub.stubs.register.callCount).to.be.equal(2);
       expect(jqStub.stubs.register.firstCall.args[0]).to.be.equal('transactionPoolNextBundle');
+      expect(jqStub.stubs.register.firstCall.args[1]).to.be.a('function');
       expect(jqStub.stubs.register.secondCall.args[0]).to.be.equal('transactionPoolNextExpiry');
+      expect(jqStub.stubs.register.secondCall.args[1]).to.be.a('function');
     });
   });
 
@@ -393,11 +419,11 @@ describe('logic/transactionPool - TransactionPool', () => {
     const addFillPoolTxs = () => {
       // tx and tx2 go to multisignature queue
       tx.type = TransactionType.MULTI;
-      (tx as any).ready = true;
       instance.queueTransaction(tx, false);
+      instance.multisignature.getPayload(tx).ready = true;
       tx2.type = TransactionType.MULTI;
-      (tx2 as any).ready = true;
       instance.queueTransaction(tx2, false);
+      instance.multisignature.getPayload(tx2).ready = true;
       // tx3 goes to queued queue
       instance.queueTransaction(tx3, false);
     };
@@ -417,11 +443,11 @@ describe('logic/transactionPool - TransactionPool', () => {
     });
 
     it('should resolve with empty array if no spare space', async () => {
-      (instance.unconfirmed as any).index = {};
       const bigIndex = {};
       for (let i = 0; i < 100; i++) {
         bigIndex['tx' + i] = i;
       }
+      (instance.unconfirmed as any).index = bigIndex;
       const retVal = await instance.fillPool();
       expect(retVal).to.be.equalTo([]);
       // In this case logger.debug is called
@@ -503,13 +529,13 @@ describe('logic/transactionPool - TransactionPool', () => {
     it('should return all the txs in a merged array', async () => {
       await addMixedTransactionsAndFillPool();
       const retVal = instance.getMergedTransactionList(30);
-      const expectedIDs = [ 'tx_10', 'tx_8', 'tx_6', 'tx_4', 'tx_2', 'tx_0', 'tx_25', 'tx_26', 'tx_27', 'tx_28',
+      const expectedIDs = [ 'tx_10', 'tx_8', 'tx_6', 'tx_4', 'tx_2', 'tx_25', 'tx_26', 'tx_27', 'tx_28',
         'tx_29', 'tx_30', 'tx_31', 'tx_32', 'tx_33', 'tx_34', 'tx_35', 'tx_36', 'tx_37', 'tx_38', 'tx_39', 'tx_40',
-        'tx_41', 'tx_42', 'tx_43', 'tx_44', 'tx_45', 'tx_46', 'tx_47', 'tx_48' ];
+        'tx_41', 'tx_42', 'tx_43', 'tx_44', 'tx_45', 'tx_46', 'tx_47', 'tx_48', 'tx_49'];
 
       expect(Array.isArray(retVal)).to.be.true;
       expect(retVal.length).to.be.equal(expectedIDs.length);
-      expect(retVal.map((t) => t.id)).to.be.equalTo(expectedIDs);
+      expect(retVal.map((t) => t.id)).to.be.deep.eq(expectedIDs);
     });
 
     it('should respect passed limit unless less than minimum', async () => {
@@ -523,8 +549,7 @@ describe('logic/transactionPool - TransactionPool', () => {
 
   describe('expireTransactions', () => {
     const oldDateNow = Date.now;
-    beforeEach(async () => {
-      await addMixedTransactionsAndFillPool();
+    beforeEach(() => {
       const timeInFuture = Date.now() + (24 * 60 * 60 * 1000);
       Date.now = () => timeInFuture;
     });
@@ -532,7 +557,8 @@ describe('logic/transactionPool - TransactionPool', () => {
       Date.now = oldDateNow;
     });
 
-    it('should call listWithPayload (reversed) on the 3 queues', () => {
+    it('should call listWithPayload (reversed) on the 3 queues', async () => {
+      await addMixedTransactionsAndFillPool();
       instance.expireTransactions();
       expect(spiedQueues.unconfirmed.list.calledOnce).to.be.true;
       expect(spiedQueues.unconfirmed.list.firstCall.args[0]).to.be.true;
@@ -542,27 +568,52 @@ describe('logic/transactionPool - TransactionPool', () => {
       expect(spiedQueues.multisignature.list.firstCall.args[0]).to.be.true;
     });
 
-    it('should call txTimeout() for each transaction', () => {
+    it('should call txTimeout() for each transaction', async () => {
+      await addMixedTransactionsAndFillPool();
       const txTimeoutSpy = sandbox.spy(instance as any, 'txTimeout');
       instance.expireTransactions();
       expect(txTimeoutSpy.called).to.be.true;
       expect(txTimeoutSpy.callCount).to.be.equal(37);
     });
 
-    it('should call removeUnconfirmedTransaction when a tx is expired', () => {
+    it('should not call to txTimeout() if tx is empty', async () => {
+      await addMixedTransactionsAndFillPool();
+      const txTimeoutSpy = sandbox.spy(instance as any, 'txTimeout');
+      instance['unconfirmed'].listWithPayload.restore();
+      instance['queued'].listWithPayload.restore();
+      instance['multisignature'].listWithPayload.restore();
+      sandbox.stub(instance['unconfirmed'], 'listWithPayload').returns([{payload: {foo: 'bar1'}}]);
+      sandbox.stub(instance['queued'], 'listWithPayload').returns([{payload: {foo: 'bar2'}}]);
+      sandbox.stub(instance['multisignature'], 'listWithPayload').returns([{payload: {foo: 'bar3'}}]);
+      instance.expireTransactions();
+      expect(txTimeoutSpy.called).to.be.false;
+    });
+
+    it('should call removeUnconfirmedTransaction when a tx is expired', async () => {
+      await addMixedTransactionsAndFillPool();
       const removeUnconfirmedTransactionSpy = sandbox.spy(instance as any, 'removeUnconfirmedTransaction');
       instance.expireTransactions();
       expect(removeUnconfirmedTransactionSpy.called).to.be.true;
       expect(removeUnconfirmedTransactionSpy.callCount).to.be.equal(25);
     });
 
-    it('should call logger.info when an expired tx is removed', () => {
+    it('should call removeUnconfirmedTransaction when a tx is expired and has not signatures', async () => {
+      await addMixedTransactionsAndFillPool(true);
+      const removeUnconfirmedTransactionSpy = sandbox.spy(instance as any, 'removeUnconfirmedTransaction');
+      instance.expireTransactions();
+      expect(removeUnconfirmedTransactionSpy.called).to.be.true;
+      expect(removeUnconfirmedTransactionSpy.callCount).to.be.equal(13);
+    });
+
+    it('should call logger.info when an expired tx is removed', async () => {
+      await addMixedTransactionsAndFillPool();
       instance.expireTransactions();
       expect(loggerStub.stubs.info.called).to.be.true;
       expect(loggerStub.stubs.info.callCount).to.be.equal(25);
     });
 
-    it('should return an array of IDs', () => {
+    it('should return an array of IDs', async () => {
+      await addMixedTransactionsAndFillPool();
       const retVal = instance.expireTransactions();
       expect(Array.isArray(retVal)).to.be.true;
       expect(retVal).to.be.equalTo(['tx_49', 'tx_48', 'tx_47', 'tx_46', 'tx_45', 'tx_44', 'tx_43', 'tx_42', 'tx_41',
@@ -571,11 +622,14 @@ describe('logic/transactionPool - TransactionPool', () => {
     });
   });
 
-  describe('processBundled', () => {
+  describe('processBundled #1', () => {
     beforeEach(async () => {
       await addMixedTransactionsAndFillPool();
     });
-
+    it('should call balancesSequence', async () => {
+      await instance.processBundled();
+      expect(balanceSequenceStub.spies.addAndPromise.calledOnce).is.true;
+    });
     it('should call list with reverse and limit on bundled queue', async () => {
       await instance.processBundled();
       expect(spiedQueues.bundled.list.calledOnce).to.be.true;
@@ -585,6 +639,7 @@ describe('logic/transactionPool - TransactionPool', () => {
 
     it('should call remove on bundled for each tx', async () => {
       const bundledCount = instance.bundled.count;
+      sandbox.stub(instance as any, 'processVerifyTransaction').resolves(true);
       await instance.processBundled();
       expect(spiedQueues.bundled.remove.called).to.be.true;
       expect(spiedQueues.bundled.remove.callCount).to.be.equal(bundledCount);
@@ -592,10 +647,12 @@ describe('logic/transactionPool - TransactionPool', () => {
 
     it('should call processVerifyTransaction for each valid tx', async () => {
       const bundledCount = instance.bundled.count;
-      const processVerifyTransactionSpy = sandbox.spy(instance as any, 'processVerifyTransaction');
+
+      const processVerifyTransactionStub = sandbox
+        .stub(instance as any, 'processVerifyTransaction').resolves(true);
       await instance.processBundled();
-      expect(processVerifyTransactionSpy.called).to.be.true;
-      expect(processVerifyTransactionSpy.callCount).to.be.equal(bundledCount);
+      expect(processVerifyTransactionStub.called).to.be.true;
+      expect(processVerifyTransactionStub.callCount).to.be.equal(bundledCount);
     });
 
     it('should call queueTransaction for each valid tx if processVerifyTransaction does not throw', async () => {
@@ -614,28 +671,38 @@ describe('logic/transactionPool - TransactionPool', () => {
       expect(queueTransactionSpy.called).to.be.false;
     });
 
-    it('should call logger.debug if queueTransaction fails', async () => {
+    it('should call logger.warn if queueTransaction fails', async () => {
       const queueTransactionStub = sandbox.stub(instance as any, 'queueTransaction').throws('err');
       sandbox.stub(instance as any, 'processVerifyTransaction').resolves(true);
       await instance.processBundled();
       expect(queueTransactionStub.called).to.be.true;
-      expect(loggerStub.stubs.debug.called).to.be.true;
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.match(/Failed to queue/);
+      expect(loggerStub.stubs.warn.called).to.be.true;
+      expect(loggerStub.stubs.warn.firstCall.args[0]).to.match(/Failed to queue/);
     });
 
-    it('should call logger.debug if processVerifyTransaction throws', async () => {
+    it('should call logger.warn if processVerifyTransaction throws', async () => {
       sandbox.stub(instance as any, 'processVerifyTransaction').throws('err');
       await instance.processBundled();
-      expect(loggerStub.stubs.debug.called).to.be.true;
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.match(/Failed to process/);
+      expect(loggerStub.stubs.warn.called).to.be.true;
+      expect(loggerStub.stubs.warn.firstCall.args[0]).to.match(/Failed to process/);
     });
 
-    it('should call removeUnconfirmedTransaction if processVerifyTransaction fails', async () => {
-      const removeUnconfirmedTransactionSpy = sandbox.spy(instance as any, 'removeUnconfirmedTransaction');
+    it('should call bundled.remove if processVerifyTransaction fails', async () => {
       sandbox.stub(instance as any, 'processVerifyTransaction').throws('err');
       await instance.processBundled();
-      expect(removeUnconfirmedTransactionSpy.called).to.be.true;
-      expect(removeUnconfirmedTransactionSpy.firstCall.args[0]).to.match(/^tx_/);
+      expect(spiedQueues.bundled.remove.called).to.be.true;
+      expect(spiedQueues.bundled.remove.firstCall.args[0]).to.match(/^tx_/);
+    });
+  });
+
+  describe('processBundled #2', () => {
+    it('should not call processVerifyTransaction if tx is empty', async () => {
+      instance['bundled'].list.restore();
+      sandbox.stub(instance['bundled'], 'list').returns([undefined, undefined]);
+      const processVerifyTransactionSpy = sandbox
+        .spy(instance as any, 'processVerifyTransaction');
+      await instance.processBundled();
+      expect(processVerifyTransactionSpy.called).to.be.false;
     });
   });
 
@@ -783,6 +850,12 @@ describe('logic/transactionPool - TransactionPool', () => {
       expect(processVerifyTransactionSpy.firstCall.args[1]).to.be.false;
       expect(processVerifyTransactionSpy.secondCall.args[0].id).to.be.equal(unconfirmedIds[1]);
       expect(processVerifyTransactionSpy.secondCall.args[1]).to.be.false;
+    });
+
+    it('should not call processVerifyTransaction for empty tx', async () => {
+      const processVerifyTransactionSpy = sandbox.spy(instance as any, 'processVerifyTransaction');
+      await instance.applyUnconfirmedList([undefined, undefined], txModuleStub);
+      expect(processVerifyTransactionSpy.called).to.be.false;
     });
 
     it('should call applyUnconfirmed on txModule for each tx if processVerifyTransaction did not throw', async () => {
@@ -1029,6 +1102,54 @@ describe('logic/transactionPool - TransactionPool', () => {
       accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
       const retVal = await (instance as any).processVerifyTransaction(tx, false);
       expect(retVal).to.be.deep.equal(sender);
+    });
+  });
+});
+
+describe('logic/transactionPool - afterConstruction', () => {
+  let sandbox: SinonSandbox;
+  let instance: TransactionPool;
+  let jqStub: JobsQueueStub;
+  let processBundledStub;
+  let expireTransactionsStub;
+
+  beforeEach(() => {
+    sandbox = sinon.sandbox.create();
+    instance = new TransactionPool();
+    jqStub = new JobsQueueStub();
+    jqStub.stubs.register.callsFake((name: string, job: () => Promise<any>, time: number) => {
+      job();
+    });
+    (instance as any).jobsQueue = jqStub;
+    (instance as any).config = {
+      broadcasts: {
+        broadcastInterval: 1500,
+        releaseLimit: 100,
+      },
+      transactions: {
+        maxTxsPerQueue: 50,
+      },
+    };
+    processBundledStub = sandbox.stub(instance, 'processBundled').returns(true);
+    expireTransactionsStub = sandbox.stub(instance, 'expireTransactions').returns(true);
+  });
+
+  afterEach(() => {
+    sandbox.restore();
+    sandbox.resetHistory();
+  });
+
+  describe('afterConstruction', () => {
+    it('should call to processBundled() and expireTransactions()', () => {
+      instance.afterConstruction();
+      expect(jqStub.stubs.register.called).to.be.true;
+      expect(jqStub.stubs.register.callCount).to.be.equal(2);
+      expect(jqStub.stubs.register.firstCall.args[0]).to.be.equal('transactionPoolNextBundle');
+      expect(jqStub.stubs.register.firstCall.args[1]).to.be.a('function');
+      expect(jqStub.stubs.register.secondCall.args[0]).to.be.equal('transactionPoolNextExpiry');
+      expect(jqStub.stubs.register.secondCall.args[1]).to.be.a('function');
+      expect(processBundledStub.calledOnce).to.be.true;
+      expect(expireTransactionsStub.calledOnce).to.be.true;
     });
   });
 });

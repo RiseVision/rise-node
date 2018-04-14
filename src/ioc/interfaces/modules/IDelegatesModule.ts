@@ -25,7 +25,16 @@ export interface IDelegatesModule extends IModule {
    * Gets delegates and for each calculate rank approval and productivity.
    */
   getDelegates(query: { limit?: number, offset?: number, orderBy: string }): Promise<{
-    delegates: Array<MemAccountsData & { rank: number, approval: number, productivity: number }>,
+    delegates: Array<{
+      username: string,
+      address: string,
+      publicKey: string,
+      vote: string,
+      producedblocks: number,
+      missedblocks: number,
+      rank: number,
+      approval: number,
+      productivity: number }>,
     count: number,
     offset: number,
     limit: number,

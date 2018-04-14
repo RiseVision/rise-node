@@ -1,18 +1,28 @@
 import * as crypto from 'crypto';
 import { inject, injectable, tagged } from 'inversify';
 import {
-  catchToLoggerAndRemapError, constants as constantsType, Ed, IKeypair, ILogger, Sequence,
+  catchToLoggerAndRemapError,
+  constants as constantsType,
+  Ed,
+  IKeypair,
+  ILogger,
+  Sequence,
   Slots
 } from '../helpers';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic } from '../ioc/interfaces/logic';
 import {
-  IAccountsModule, IBlocksModule, IBlocksModuleProcess, IDelegatesModule, IForgeModule,
+  IAccountsModule,
+  IBlocksModule,
+  IBlocksModuleProcess,
+  IDelegatesModule,
+  IForgeModule,
   ITransactionsModule
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { AppConfig } from '../types/genericTypes';
 import { publicKey } from '../types/sanityTypes';
+import { WrapInDefaultSequence } from '../helpers/decorators/wrapInSequence';
 
 @injectable()
 export class ForgeModule implements IForgeModule {
@@ -32,9 +42,10 @@ export class ForgeModule implements IForgeModule {
   private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence)
-  private sequence: Sequence;
+  public defaultSequence: Sequence;
   @inject(Symbols.helpers.slots)
   private slots: Slots;
 
@@ -99,16 +110,19 @@ export class ForgeModule implements IForgeModule {
     setTimeout( () => {
       this.jobsQueue.register(
         'delegatesNextForge',
-        async () => {
-          try {
-            await this.transactionsModule.fillPool();
-            await this.forge();
-          } catch (err) {
-            this.logger.warn('Error in nextForge', err);
-          }
-        },
+        () => this.delegatesNextForge(),
         1000);
     }, 10000); // Register forging routine after 10seconds that blockchain is ready.
+  }
+
+  @WrapInDefaultSequence
+  private async delegatesNextForge() {
+    try {
+      await this.transactionsModule.fillPool();
+      await this.forge();
+    } catch (err) {
+      this.logger.warn('Error in nextForge', err);
+    }
   }
 
   /**
@@ -155,19 +169,18 @@ export class ForgeModule implements IForgeModule {
       return;
     }
 
-    await this.sequence.addAndPromise(async () => {
-      // updates consensus.
-      await this.broadcasterLogic.getPeers({ limit: this.constants.maxPeers });
+    // NOTE: This is wrapped in a default sequence because it's called only from delegatesNextForge
 
-      if (this.appState.getComputed('node.poorConsensus')  ) {
-        throw new Error(`Inadequate broadhash consensus ${this.appState
-          .get('node.consensus')} %`);
-      }
+    // updates consensus.
+    await this.broadcasterLogic.getPeers({ limit: this.constants.maxPeers });
 
-      // ok lets generate, save and broadcast the block
-      await this.blocksProcessModule.generateBlock(blockData.keypair, blockData.time);
+    if (this.appState.getComputed('node.poorConsensus')) {
+      throw new Error(`Inadequate broadhash consensus ${this.appState
+        .get('node.consensus')} %`);
+    }
 
-    })
+    // ok lets generate, save and broadcast the block
+    await this.blocksProcessModule.generateBlock(blockData.keypair, blockData.time)
       .catch(catchToLoggerAndRemapError('Failed to generate block within delegate slot', this.logger));
 
   }

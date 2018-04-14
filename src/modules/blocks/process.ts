@@ -3,9 +3,14 @@ import * as _ from 'lodash';
 import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
 import { catchToLoggerAndRemapError, constants, ForkType, IKeypair, ILogger, Sequence } from '../../helpers/';
+import { WrapInDBSequence, WrapInDefaultSequence } from '../../helpers/decorators/wrapInSequence';
 import { ISlots } from '../../ioc/interfaces/helpers';
 import {
-  IAppState, IBlockLogic, IPeerLogic, IPeersLogic, IRoundsLogic,
+  IAppState,
+  IBlockLogic,
+  IPeerLogic,
+  IPeersLogic,
+  IRoundsLogic,
   ITransactionLogic
 } from '../../ioc/interfaces/logic';
 import {
@@ -14,7 +19,8 @@ import {
   IBlocksModuleChain,
   IBlocksModuleProcess,
   IBlocksModuleUtils,
-  IBlocksModuleVerify, IDelegatesModule,
+  IBlocksModuleVerify,
+  IDelegatesModule,
   IForkModule,
   ITransactionsModule,
   ITransportModule
@@ -38,14 +44,16 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   private schema: z_schema;
 
   // Helpers
+  // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence)
-  private dbSequence: Sequence;
+  public dbSequence: Sequence;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence)
-  private sequence: Sequence;
+  public defaultSequence: Sequence;
   @inject(Symbols.helpers.slots)
   private slots: ISlots;
 
@@ -81,7 +89,10 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   @inject(Symbols.modules.transport)
   private transportModule: ITransportModule;
 
+  private isCleaning: boolean = false;
+
   public cleanup() {
+    this.isCleaning = true;
     return Promise.resolve();
   }
 
@@ -142,6 +153,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
    * @param {boolean} verify
    * @return {Promise<void>}
    */
+  @WrapInDBSequence
   // tslint:disable-next-line max-line-length
   public async loadBlocksOffset(limit: number, offset: number = 0, verify: boolean): Promise<SignedAndChainedBlockType> {
     const newLimit = limit + (offset || 0);
@@ -149,46 +161,44 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
     this.logger.debug('Loading blocks offset', { limit, offset, verify });
 
-    return this.dbSequence.addAndPromise(async () => {
-      const blocks: SignedAndChainedBlockType[] = this.blocksUtilsModule.readDbRows(
-        await this.db.query(sql.loadBlocksOffset, params)
-          .catch(catchToLoggerAndRemapError('Blocks#loadBlocksOffset error', this.logger))
-      );
+    const blocks: SignedAndChainedBlockType[] = this.blocksUtilsModule.readDbRows(
+      await this.db.query(sql.loadBlocksOffset, params)
+        .catch(catchToLoggerAndRemapError('Blocks#loadBlocksOffset error', this.logger))
+    );
 
-      // Cycle through every block and apply it.
-      for (const block of blocks) {
-        // Stop Processing if node is shutting down
-        if (this.blocksModule.isCleaning) {
-          return;
-        }
-        this.logger.debug('Processing block', block.id);
-        if (verify && block.id !== this.genesisBlock.id) {
-          // Sanity check of the block, if values are coherent.
-          // No access to database.
-          const check = await this.blocksVerifyModule.verifyBlock(block);
-
-          if (!check.verified) {
-            this.logger.error(`Block ${block.id} verification failed`, check.errors.join(', '));
-            // Return first error from checks
-            throw new Error(check.errors[0]);
-          }
-        }
-
-        if (block.id === this.genesisBlock.id) {
-          await this.blocksChainModule.applyGenesisBlock(block);
-        } else {
-          // Apply block - broadcast: false, saveBlock: false
-          // FIXME: Looks like we are missing some validations here, because applyBlock is
-          // different than processBlock used elesewhere
-          // - that need to be checked and adjusted to be consistent
-          await this.blocksChainModule.applyBlock(block, false, false);
-        }
-
-        this.blocksModule.lastBlock = block;
-
+    // Cycle through every block and apply it.
+    for (const block of blocks) {
+      // Stop Processing if node is shutting down
+      if (this.isCleaning) {
+        return;
       }
-      return this.blocksModule.lastBlock;
-    });
+      this.logger.debug('Processing block', block.id);
+      if (verify && block.id !== this.genesisBlock.id) {
+        // Sanity check of the block, if values are coherent.
+        // No access to database.
+        const check = await this.blocksVerifyModule.verifyBlock(block);
+
+        if (!check.verified) {
+          this.logger.error(`Block ${block.id} verification failed`, check.errors.join(', '));
+          // Return first error from checks
+          throw new Error(check.errors[0]);
+        }
+      }
+
+      if (block.id === this.genesisBlock.id) {
+        await this.blocksChainModule.applyGenesisBlock(block);
+      } else {
+        // Apply block - broadcast: false, saveBlock: false
+        // FIXME: Looks like we are missing some validations here, because applyBlock is
+        // different than processBlock used elesewhere
+        // - that need to be checked and adjusted to be consistent
+        await this.blocksChainModule.applyBlock(block, false, false);
+      }
+
+      this.blocksModule.lastBlock = block;
+
+    }
+    return this.blocksModule.lastBlock;
   }
 
   /**
@@ -217,7 +227,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
     const blocks = this.blocksUtilsModule.readDbRows(blocksFromPeer.blocks);
     for (const block of blocks) {
-      if (this.blocksModule.isCleaning) {
+      if (this.isCleaning) {
         return lastValidBlock;
       }
       try {
@@ -286,43 +296,42 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     return this.blocksVerifyModule.processBlock(block, true, true);
   }
 
+  @WrapInDefaultSequence
   public async onReceiveBlock(block: SignedBlockType) {
-    return this.sequence.addAndPromise(async () => {
-      // When client is not loaded, is syncing or round is ticking
-      // Do not receive new blocks as client is not ready
-      if (this.appStateLogic.get('loader.isSyncing') ||
-        this.appStateLogic.get('rounds.isTicking')) {
-        this.logger.debug('Client not ready to receive block', block.id);
-        return;
-      }
+    // When client is not loaded, is syncing or round is ticking
+    // Do not receive new blocks as client is not ready
+    if (this.appStateLogic.get('loader.isSyncing') ||
+      this.appStateLogic.get('rounds.isTicking')) {
+      this.logger.debug('Client not ready to receive block', block.id);
+      return;
+    }
 
-      const lastBlock = this.blocksModule.lastBlock;
-      // Detect sane block
-      if (block.previousBlock === lastBlock.id && lastBlock.height + 1 === block.height) {
-        // Process received block
-        return this.receiveBlock(block);
-      } else if (block.previousBlock !== lastBlock.id && lastBlock.height + 1 === block.height) {
-        // Process received fork cause 1
-        return this.receiveForkOne(block, lastBlock);
-      } else if (block.previousBlock === lastBlock.previousBlock &&
-        block.height === lastBlock.height && block.id !== lastBlock.id) {
-        // Process received fork cause 5
-        return this.receiveForkFive(block, lastBlock);
+    const lastBlock = this.blocksModule.lastBlock;
+    // Detect sane block
+    if (block.previousBlock === lastBlock.id && lastBlock.height + 1 === block.height) {
+      // Process received block
+      return this.receiveBlock(block);
+    } else if (block.previousBlock !== lastBlock.id && lastBlock.height + 1 === block.height) {
+      // Process received fork cause 1
+      return this.receiveForkOne(block, lastBlock);
+    } else if (block.previousBlock === lastBlock.previousBlock &&
+      block.height === lastBlock.height && block.id !== lastBlock.id) {
+      // Process received fork cause 5
+      return this.receiveForkFive(block, lastBlock);
+    } else {
+      if (block.id === lastBlock.id) {
+        this.logger.debug('Block already processed', block.id);
       } else {
-        if (block.id === lastBlock.id) {
-          this.logger.debug('Block already processed', block.id);
-        } else {
-          this.logger.warn([
-            'Discarded block that does not match with current chain:', block.id,
-            'height:', block.height,
-            'round:', this.roundsLogic.calcRound(block.height),
-            'slot:', this.slots.getSlotNumber(block.timestamp),
-            'generator:', block.generatorPublicKey,
-          ].join(' '));
-        }
-
+        this.logger.warn([
+          'Discarded block that does not match with current chain:', block.id,
+          'height:', block.height,
+          'round:', this.roundsLogic.calcRound(block.height),
+          'slot:', this.slots.getSlotNumber(block.timestamp),
+          'generator:', block.generatorPublicKey,
+        ].join(' '));
       }
-    });
+
+    }
   }
 
   /**

@@ -377,21 +377,21 @@ describe('apis/accountsAPI', () => {
   describe('open', () => {
 
     it('should throw error', async () => {
-      await expect(instance.open({ secret: 'sds' })).to.be.rejectedWith('Method is not supported anymore');
+      await expect(instance.open({ secret: 'sds' })).to.be.rejectedWith('Method is deprecated');
     });
 
   });
   describe('addDelegate', () => {
 
     it('should throw error', async () => {
-      await expect(instance.addDelegate()).to.be.rejectedWith('Method is now deprecated');
+      await expect(instance.addDelegate()).to.be.rejectedWith('Method is deprecated');
     });
 
   });
   describe('generatePublicKey', () => {
 
     it('should throw error', async () => {
-      await expect(instance.generatePublicKey()).to.be.rejectedWith('Method is now deprecated');
+      await expect(instance.generatePublicKey()).to.be.rejectedWith('Method is deprecated');
     });
 
   });

@@ -5,6 +5,7 @@ import * as rewire from 'rewire';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
 import { TransactionsAPI } from '../../../src/apis/transactions';
+import { TransactionType } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { TransactionsModuleStub, ZSchemaStub } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
@@ -58,7 +59,11 @@ describe('apis/transactionsAPI', () => {
     );
     transactionsModuleStub.enqueueResponse(
       'getByID',
-      Promise.resolve({ id: 456 })
+      Promise.resolve({
+        asset: { votes: ['+100', '+50', '-25'] },
+        id: 456,
+        type: TransactionType.VOTE,
+      })
     );
     transactionsModuleStub.enqueueResponse(
       'getMultisignatureTransactionList',
@@ -159,15 +164,36 @@ describe('apis/transactionsAPI', () => {
   });
 
   describe('getTX()', () => {
-    it('success', async () => {
-      result = await instance.getTX(123);
-      expect(result).to.deep.equal({ transaction: { id: 456 } });
+    it('should return a transaction with a votes property if tx type is VOTE', async () => {
+      result = await instance.getTX({id: '123'});
+      const tx = {
+        asset: {
+          votes: ['+100', '+50', '-25'],
+        },
+        id: 456,
+        type: TransactionType.VOTE,
+        votes: {
+          added: ['100', '50'],
+          deleted: ['25'],
+        },
+      };
+      expect(result).to.deep.equal({ transaction: tx });
+    });
+
+    it('should return a transaction without a votes property if tx type is not VOTE', async () => {
+      transactionsModuleStub.stubs.getByID.returns(
+        Promise.resolve({ id: 456, type: TransactionType.DELEGATE })
+      );
+      result = await instance.getTX('123');
+      expect(result).to.deep.equal({
+        transaction: { id: 456, type: TransactionType.DELEGATE },
+      });
     });
   });
 
   describe('getMultiSigs()', () => {
-    it('filtering by senderPublicKey &  address', () => {
-      result = instance.getMultiSigs({
+    it('filtering by senderPublicKey &  address', async () => {
+      result = await instance.getMultiSigs({
         address: 'bbb',
         senderPublicKey: 'aaa',
       });
@@ -175,14 +201,14 @@ describe('apis/transactionsAPI', () => {
         count: 5,
         transactions: [
           { id: 100, senderPublicKey: 'aaa', recipientId: 'bbb' },
-          { id: 200, senderPublicKey: 'aaa', recipientId: 'bbb' }
+          { id: 200, senderPublicKey: 'aaa', recipientId: 'bbb' },
         ],
       });
       expect(result.transactions).to.be.ofSize(2);
     });
 
-    it('filtering by senderPublicKey', () => {
-      result = instance.getMultiSigs({ senderPublicKey: 'aaa' });
+    it('filtering by senderPublicKey', async () => {
+      result = await instance.getMultiSigs({ senderPublicKey: 'aaa' });
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
@@ -194,8 +220,8 @@ describe('apis/transactionsAPI', () => {
       expect(result.transactions).to.be.ofSize(3);
     });
 
-    it('filtering by address', () => {
-      result = instance.getMultiSigs({ address: 'ddd' });
+    it('filtering by address', async () => {
+      result = await instance.getMultiSigs({ address: 'ddd' });
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
@@ -206,8 +232,8 @@ describe('apis/transactionsAPI', () => {
       expect(result.transactions).to.be.ofSize(2);
     });
 
-    it('No filters', () => {
-      result = instance.getMultiSigs({});
+    it('No filters', async () => {
+      result = await instance.getMultiSigs({});
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
@@ -238,9 +264,36 @@ describe('apis/transactionsAPI', () => {
     });
   });
 
+  describe('getQueuedTx()', () => {
+    it('should call transactionsModule.getQueuedTransaction and return transaction', async () => {
+      const id = 'id';
+      const transaction = {};
+      transactionsModuleStub.enqueueResponse(
+        'getQueuedTransaction',
+        transaction
+      );
+      expect(await instance.getQueuedTx(id)).to.be.deep.equal({ transaction });
+
+      expect(transactionsModuleStub.stubs.getQueuedTransaction.calledOnce).to.be
+        .true;
+      expect(
+        transactionsModuleStub.stubs.getQueuedTransaction.firstCall.args.length
+      ).to.be.equal(1);
+      expect(
+        transactionsModuleStub.stubs.getQueuedTransaction.firstCall.args[0]
+      ).to.be.equal(id);
+    });
+    it('should throw error if transaction is null', async () => {
+      transactionsModuleStub.enqueueResponse('getQueuedTransaction', null);
+      await expect(instance.getQueuedTx('id')).to.be.rejectedWith(
+        'Transaction not found'
+      );
+    });
+  });
+
   describe('getQueuedTxs()', () => {
-    it('filtering by senderPublicKey &  address', () => {
-      result = instance.getQueuedTxs({
+    it('filtering by senderPublicKey &  address', async () => {
+      result = await instance.getQueuedTxs({
         address: 'bbb',
         senderPublicKey: 'aaa',
       });
@@ -254,8 +307,8 @@ describe('apis/transactionsAPI', () => {
       expect(result.transactions).to.be.ofSize(2);
     });
 
-    it('filtering by senderPublicKey', () => {
-      result = instance.getQueuedTxs({ senderPublicKey: 'aaa' });
+    it('filtering by senderPublicKey', async () => {
+      result = await instance.getQueuedTxs({ senderPublicKey: 'aaa' });
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
@@ -267,8 +320,8 @@ describe('apis/transactionsAPI', () => {
       expect(result.transactions).to.be.ofSize(3);
     });
 
-    it('filtering by address', () => {
-      result = instance.getQueuedTxs({ address: 'ddd' });
+    it('filtering by address', async () => {
+      result = await instance.getQueuedTxs({ address: 'ddd' });
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
@@ -279,8 +332,8 @@ describe('apis/transactionsAPI', () => {
       expect(result.transactions).to.be.ofSize(2);
     });
 
-    it('No filters', () => {
-      result = instance.getQueuedTxs({});
+    it('No filters', async () => {
+      result = await instance.getQueuedTxs({});
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
@@ -296,8 +349,8 @@ describe('apis/transactionsAPI', () => {
   });
 
   describe('getUnconfirmedTxs()', () => {
-    it('filtering by senderPublicKey &  address', () => {
-      result = instance.getUnconfirmedTxs({
+    it('filtering by senderPublicKey &  address', async () => {
+      result = await instance.getUnconfirmedTxs({
         address: 'bbb',
         senderPublicKey: 'aaa',
       });
@@ -311,33 +364,33 @@ describe('apis/transactionsAPI', () => {
       expect(result.transactions).to.be.ofSize(2);
     });
 
-    it('filtering by senderPublicKey', () => {
-      result = instance.getUnconfirmedTxs({ senderPublicKey: 'aaa' });
+    it('filtering by senderPublicKey', async () => {
+      result = await instance.getUnconfirmedTxs({ senderPublicKey: 'aaa' });
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
           { id: 100, senderPublicKey: 'aaa', recipientId: 'bbb' },
           { id: 200, senderPublicKey: 'aaa', recipientId: 'bbb' },
-          { id: 400, senderPublicKey: 'aaa', recipientId: 'ddd' }
+          { id: 400, senderPublicKey: 'aaa', recipientId: 'ddd' },
         ],
       });
       expect(result.transactions).to.be.ofSize(3);
     });
 
-    it('filtering by address', () => {
-      result = instance.getUnconfirmedTxs({ address: 'ddd' });
+    it('filtering by address', async () => {
+      result = await instance.getUnconfirmedTxs({ address: 'ddd' });
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
           { id: 400, senderPublicKey: 'aaa', recipientId: 'ddd' },
-          { id: 500, senderPublicKey: 'ccc', recipientId: 'ddd' }
+          { id: 500, senderPublicKey: 'ccc', recipientId: 'ddd' },
         ],
       });
       expect(result.transactions).to.be.ofSize(2);
     });
 
-    it('No filters', () => {
-      result = instance.getUnconfirmedTxs({});
+    it('No filters', async () => {
+      result = await instance.getUnconfirmedTxs({});
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
@@ -345,7 +398,7 @@ describe('apis/transactionsAPI', () => {
           { id: 200, senderPublicKey: 'aaa', recipientId: 'bbb' },
           { id: 300, senderPublicKey: 'ccc', recipientId: 'bbb' },
           { id: 400, senderPublicKey: 'aaa', recipientId: 'ddd' },
-          { id: 500, senderPublicKey: 'ccc', recipientId: 'ddd' }
+          { id: 500, senderPublicKey: 'ccc', recipientId: 'ddd' },
         ],
       });
       expect(result.transactions).to.be.ofSize(5);
@@ -363,6 +416,11 @@ describe('apis/transactionsAPI', () => {
       await expect(instance.getUnconfirmedTx('123')).to.be.rejectedWith(
         'Transaction not found'
       );
+    });
+  });
+  describe('put', () => {
+    it('should throw error', async () => {
+      await expect(instance.put()).to.be.rejectedWith('Method is deprecated');
     });
   });
 });

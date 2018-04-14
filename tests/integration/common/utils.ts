@@ -6,7 +6,7 @@ import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
 import { Ed, IKeypair } from '../../../src/helpers';
 import { publicKey } from '../../../src/types/sanityTypes';
 import initializer from './init';
-import { ISystemModule, ITransactionsModule } from '../../../src/ioc/interfaces/modules';
+import { ISystemModule, ITransactionsModule, IAccountsModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import * as txCrafter from '../../utils/txCrafter';
@@ -35,7 +35,11 @@ export const getKeypairByPkey = (pk: publicKey): IKeypair => {
 
 export const confirmTransactions = async (txs: Array<ITransaction<any>>, confirmations: number = 1) => {
   const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
-  await txModule.receiveTransactions(txs, false, false);
+  try {
+    await txModule.receiveTransactions(txs, false, false);
+  } catch (e) {
+    console.warn('receive tx err', e);
+  }
   await initializer.rawMineBlocks(confirmations);
   for (const tx of txs) {
     expect(txModule.transactionInPool(tx.id)).is.false; // (`TX ${tx.id} is still in pool :(`);
@@ -45,12 +49,15 @@ export const createRandomWallet  = (): LiskWallet => {
   return new dposOffline.wallets.LiskLikeWallet(uuid.v4(), 'R');
 };
 
-export const createVoteTransaction = async (confirmations: number, from: LiskWallet, to: publicKey, add: boolean): Promise<ITransaction> => {
+export const createVoteTransaction = async (confirmations: number, from: LiskWallet, to: publicKey, add: boolean, obj: any = {}): Promise<ITransaction> => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
   const tx           = txCrafter.createVoteTransaction(from, systemModule.getFees().fees.vote, {
-    asset: {
-      votes: [`${add ? '+' : '-'}${to}`],
+    ... {
+      asset: {
+        votes: [`${add ? '+' : '-'}${to}`],
+      },
     },
+    ...obj,
   });
   if (confirmations > 0) {
     await confirmTransactions([tx], confirmations);
@@ -58,9 +65,66 @@ export const createVoteTransaction = async (confirmations: number, from: LiskWal
   return tx;
 };
 
-export const createSendTransaction = async (confirmations: number, amount: number, from: LiskWallet, dest: string): Promise<ITransaction> => {
+export const createSecondSignTransaction = async (confirmations: number, from: LiskWallet, pk: publicKey) => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
-  const tx           = txCrafter.createSendTransaction(from, dest, systemModule.getFees().fees.send, { amount });
+  const tx = txCrafter.create2ndSigTX(
+    from,
+    systemModule.getFees().fees.secondsignature,
+    {
+      asset: {
+        signature: {
+          publicKey: pk,
+        },
+      },
+    });
+  if (confirmations > 0) {
+    await confirmTransactions([tx], confirmations);
+  }
+  return tx;
+};
+
+export const createMultiSignTransaction = (from: LiskWallet, min: number, keysgroup: publicKey[], lifetime: number = 24) => {
+  const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
+  const tx = txCrafter.createMultiSigTX(
+    from,
+    systemModule.getFees().fees.secondsignature,
+    {
+      asset: {
+        multisignature: {
+          keysgroup,
+          lifetime,
+          min,
+        },
+      },
+    });
+
+  return tx;
+};
+
+export const createRegDelegateTransaction = async (confirmations: number, from: LiskWallet, name: string, obj: any = {}): Promise<ITransaction> => {
+  const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
+  const tx           = txCrafter.createRegDelegateTX(from, systemModule.getFees().fees.delegate, {
+    ... {
+      asset: {
+        delegate: {
+          username: name,
+          publicKey: from.publicKey
+        },
+      },
+    },
+    ...obj,
+  });
+  if (confirmations > 0) {
+    await confirmTransactions([tx], confirmations);
+  }
+  return tx;
+};
+
+export const createSendTransaction = async (confirmations: number, amount: number, from: LiskWallet, dest: string, opts: any = {}): Promise<ITransaction> => {
+  const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
+  const tx           = txCrafter.createSendTransaction(from, dest, systemModule.getFees().fees.send, {...{ amount }, ...opts});
+  tx['senderId'] = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts)
+    .generateAddressByPublicKey(tx.senderPublicKey);
   if (confirmations > 0) {
     await confirmTransactions([tx], confirmations);
   }

@@ -11,6 +11,7 @@ import { Symbols } from '../ioc/symbols';
 import multisigSchema from '../schema/multisignatures';
 import sql from '../sql/multisignatures';
 import { publicKey as pkType } from '../types/sanityTypes';
+import { APIError, DeprecatedAPIError } from './errors';
 
 @JsonController('/api/multisignatures')
 @injectable()
@@ -94,7 +95,7 @@ export class MultisignatureAPI {
 
       const sender = await this.accounts.getAccount({ publicKey: tx.senderPublicKey });
       if (!sender) {
-        throw new Error('Sender not found');
+        throw new APIError('Sender not found', 200);
       }
 
       const min        = sender.u_multimin || sender.multimin;
@@ -115,12 +116,12 @@ export class MultisignatureAPI {
   }
 
   @Post('/sign')
-  public sign() {
-    return Promise.reject('Method deprecated');
+  public async sign() {
+    throw new DeprecatedAPIError();
   }
 
   @Put('/')
-  public addMultisignature() {
-    return Promise.reject('Method deprecated');
+  public async addMultisignature() {
+    throw new DeprecatedAPIError();
   }
 }

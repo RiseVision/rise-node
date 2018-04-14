@@ -1,5 +1,6 @@
 import { inject, injectable } from 'inversify';
 import { IDatabase, ITask } from 'pg-promise';
+import SocketIO from 'socket.io';
 import { Bus, constants as constantsType, ILogger, Slots } from '../helpers/';
 import { IAppState, IRoundLogicNewable, IRoundsLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule, IDelegatesModule, IRoundsModule } from '../ioc/interfaces/modules/';

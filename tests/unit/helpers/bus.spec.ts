@@ -1,141 +1,238 @@
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as sinon from 'sinon';
-import {SinonSandbox} from 'sinon';
-import {Bus} from '../../../src/helpers';
+import { SinonSandbox } from 'sinon';
+import { Bus } from '../../../src/helpers';
 
+// tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
 
+// tslint:disable no-unused-expression
 describe('helpers/bus', () => {
-    let sandbox: SinonSandbox;
-    let instance: Bus;
-    let stub: any;
-    let stub2: any;
+  let sandbox: SinonSandbox;
+  let instance: Bus;
+  let promiseStub: any;
+  let promiseStub2: any;
+  let functionStub: any;
 
-    beforeEach(() => {
-        instance = new Bus();
-        sandbox = sinon.sandbox.create();
-        stub = sandbox.stub().resolves();
+  beforeEach(() => {
+    sandbox = sinon.sandbox.create();
+    instance = new Bus();
+    promiseStub = sandbox.stub().resolves(true);
+    promiseStub2 = sandbox.stub().resolves(true);
+    functionStub = sandbox.stub().returns(undefined);
+  });
+
+  afterEach(() => {
+    sandbox.restore();
+    sandbox.resetHistory();
+  });
+
+  describe('receiveBlock', () => {
+    it('success', async () => {
+      instance.modules = [{ onReceiveBlock: promiseStub }];
+      await instance.message('receiveBlock', { the: 'block' } as any);
+      expect(promiseStub.calledOnce).to.be.true;
+      expect(promiseStub.args[0][0]).to.be.deep.eq({ the: 'block' });
     });
 
-    afterEach(() => {
-        sandbox.restore();
+    it('success without Promise', async () => {
+      instance.modules = [{ onReceiveBlock: functionStub }];
+      await instance.message('receiveBlock', { the: 'block' } as any);
+      expect(functionStub.calledOnce).to.be.true;
+      expect(functionStub.args[0][0]).to.be.deep.eq({ the: 'block' });
+    });
+  });
+
+  describe('finishRound', () => {
+    it('success', async () => {
+      instance.modules = [{ onFinishRound: promiseStub }];
+      await instance.message('finishRound', 10);
+      expect(promiseStub.calledOnce).is.true;
+      expect(promiseStub.args[0][0]).to.equal(10);
     });
 
-    describe('receiveBlock', () => {
-        it('success', async () => {
-            instance.modules = [{onReceiveBlock: stub}];
-            await instance.message('receiveBlock', {the: 'block'} as any);
-            expect(stub.calledOnce).is.true;
-            expect(stub.args[0][0]).to.be.deep.eq({the: 'block'});
-        });
+    it('success without Promise', async () => {
+      instance.modules = [{ onFinishRound: functionStub }];
+      await instance.message('finishRound', 10);
+      expect(functionStub.calledOnce).is.true;
+      expect(functionStub.args[0][0]).to.equal(10);
+    });
+  });
+
+  describe('transactionsSaved', () => {
+    it('success', async () => {
+      instance.modules = [{ onTransactionsSaved: promiseStub }];
+      await instance.message('transactionsSaved', [1, 2, 3] as any);
+      expect(promiseStub.calledOnce).is.true;
+      expect(promiseStub.args[0][0]).to.be.equalTo([1, 2, 3]);
     });
 
-    describe('finishRound', () => {
-        it('success', async () => {
-            instance.modules = [{onFinishRound: stub}];
-            await instance.message('finishRound', 10);
-            expect(stub.calledOnce).is.true;
-            expect(stub.args[0][0]).to.equal(10);
-        });
+    it('success without Promise', async () => {
+      instance.modules = [{ onTransactionsSaved: functionStub }];
+      await instance.message('transactionsSaved', [1, 2, 3] as any);
+      expect(functionStub.calledOnce).is.true;
+      expect(functionStub.args[0][0]).to.be.equalTo([1, 2, 3]);
+    });
+  });
+
+  describe('blockchainReady', () => {
+    it('success', async () => {
+      instance.modules = [{ onBlockchainReady: promiseStub }];
+      await instance.message('blockchainReady');
+      expect(promiseStub.calledOnce).is.true;
+      expect(promiseStub.args[0][0]).to.be.undefined;
     });
 
-    describe('transactionsSaved', () => {
-        it('success', async () => {
-            instance.modules = [{onTransactionsSaved: stub}];
-            await instance.message('transactionsSaved', [1, 2, 3] as any);
-            expect(stub.calledOnce).is.true;
-            expect(stub.args[0][0]).to.be.equalTo([1, 2, 3]);
-        });
+    it('success without Promise', async () => {
+      instance.modules = [{ onBlockchainReady: functionStub }];
+      await instance.message('blockchainReady');
+      expect(functionStub.calledOnce).is.true;
+      expect(functionStub.args[0][0]).to.be.undefined;
+    });
+  });
+
+  describe('syncStarted', () => {
+    it('success', async () => {
+      instance.modules = [{ onSyncStarted: promiseStub }];
+      await instance.message('syncStarted');
+      expect(promiseStub.calledOnce).is.true;
+      expect(promiseStub.args[0][0]).to.be.undefined;
     });
 
-    describe('blockchainReady', () => {
-        it('success', async () => {
-            instance.modules = [{onBlockchainReady: stub}];
-            await instance.message('blockchainReady');
-            expect(stub.calledOnce).is.true;
-        });
+    it('success without Promise', async () => {
+      instance.modules = [{ onSyncStarted: functionStub }];
+      await instance.message('syncStarted');
+      expect(functionStub.calledOnce).is.true;
+      expect(functionStub.args[0][0]).to.be.undefined;
+    });
+  });
+
+  describe('syncFinished', () => {
+    it('success', async () => {
+      instance.modules = [{ onSyncFinished: promiseStub }];
+      await instance.message('syncFinished');
+      expect(promiseStub.calledOnce).is.true;
+      expect(promiseStub.args[0][0]).to.be.undefined;
     });
 
-    describe('syncStarted', () => {
-        it('success', async () => {
-            instance.modules = [{onSyncStarted: stub}];
-            await instance.message('syncStarted');
-            expect(stub.calledOnce).is.true;
-        });
+    it('success without Promise', async () => {
+      instance.modules = [{ onSyncFinished: functionStub }];
+      await instance.message('syncFinished');
+      expect(functionStub.calledOnce).is.true;
+      expect(functionStub.args[0][0]).to.be.undefined;
+    });
+  });
+
+  describe('peersReady', () => {
+    it('success', async () => {
+      instance.modules = [{ onPeersReady: promiseStub }];
+      await instance.message('peersReady');
+      expect(promiseStub.calledOnce).is.true;
     });
 
-    describe('syncFinished', () => {
-        it('success', async () => {
-            instance.modules = [{onSyncFinished: stub}];
-            await instance.message('syncFinished');
-            expect(stub.calledOnce).is.true;
-        });
+    it('success without Promise', async () => {
+      instance.modules = [{ onPeersReady: functionStub }];
+      await instance.message('peersReady');
+      expect(functionStub.calledOnce).is.true;
+      expect(functionStub.args[0][0]).to.be.undefined;
+    });
+  });
+
+  describe('newBlock', () => {
+    it('success', async () => {
+      instance.modules = [{ onNewBlock: promiseStub }];
+      await instance.message('newBlock', { foo: 'bar' } as any, true);
+      expect(promiseStub.calledOnce).is.true;
+      expect(promiseStub.args[0][0]).to.deep.equal({ foo: 'bar' });
+      expect(promiseStub.args[0][1]).to.be.true;
     });
 
-    describe('peersReady', () => {
-        it('success', async () => {
-            instance.modules = [{onPeersReady: stub}];
-            await instance.message('peersReady');
-            expect(stub.calledOnce).is.true;
-        });
+    it('success without Promise', async () => {
+      instance.modules = [{ onNewBlock: functionStub }];
+      await instance.message('newBlock', { foo: 'bar' } as any, true);
+      expect(functionStub.calledOnce).is.true;
+      expect(functionStub.args[0][0]).to.deep.equal({ foo: 'bar' });
+      expect(functionStub.args[0][1]).to.be.true;
+    });
+  });
+
+  describe('signature', () => {
+    it('success', async () => {
+      instance.modules = [{ onSignature: promiseStub }];
+      await instance.message(
+        'signature',
+        { transaction: 'foo', signature: 123 },
+        true
+      );
+      expect(promiseStub.calledOnce).is.true;
+      expect(promiseStub.args[0][0]).to.deep.equal({
+        signature: 123,
+        transaction: 'foo',
+      });
+      expect(promiseStub.args[0][1]).to.be.true;
     });
 
-    describe('newBlock', () => {
-        it('success', async () => {
-            instance.modules = [{onNewBlock: stub}];
-            await instance.message('newBlock', {foo: 'bar'} as any, true);
-            expect(stub.calledOnce).is.true;
-            expect(stub.args[0][0]).to.deep.equal({foo: 'bar'});
-            expect(stub.args[0][1]).to.be.true;
-        });
+    it('success without Promise', async () => {
+      instance.modules = [{ onSignature: functionStub }];
+      await instance.message(
+        'signature',
+        { transaction: 'foo', signature: 123 },
+        true
+      );
+      expect(functionStub.calledOnce).is.true;
+      expect(functionStub.args[0][0]).to.deep.equal({
+        signature: 123,
+        transaction: 'foo',
+      });
+      expect(functionStub.args[0][1]).to.be.true;
+    });
+  });
+
+  describe('unconfirmedTransaction', () => {
+    it('success', async () => {
+      instance.modules = [{ onUnconfirmedTransaction: promiseStub }];
+      await instance.message('unconfirmedTransaction', 'abc', true);
+      expect(promiseStub.calledOnce).is.true;
+      expect(promiseStub.args[0][0]).to.equal('abc');
+      expect(promiseStub.args[0][1]).to.be.true;
     });
 
-    describe('signature', () => {
-        it('success', async () => {
-            instance.modules = [{onSignature: stub}];
-            await instance.message('signature', {transaction: 'foo', signature: 123}, true);
-            expect(stub.calledOnce).is.true;
-            expect(stub.args[0][0]).to.deep.equal({transaction: 'foo', signature: 123});
-            expect(stub.args[0][1]).to.be.true;
-        });
+    it('success without Promise', async () => {
+      instance.modules = [{ onUnconfirmedTransaction: functionStub }];
+      await instance.message('unconfirmedTransaction', 'abc', true);
+      expect(functionStub.calledOnce).is.true;
+      expect(functionStub.args[0][0]).to.equal('abc');
+      expect(functionStub.args[0][1]).to.be.true;
     });
+  });
 
-    describe('unconfirmedTransaction', () => {
-        it('success', async () => {
-            instance.modules = [{onUnconfirmedTransaction: stub}];
-            await instance.message('unconfirmedTransaction', 'abc', true);
-            expect(stub.calledOnce).is.true;
-            expect(stub.args[0][0]).to.equal('abc');
-            expect(stub.args[0][1]).to.be.true;
-        });
+  describe('Testing multiple listeners', () => {
+    it('success', async () => {
+      instance.modules = [{ onReceiveBlock: promiseStub }, { onReceiveBlock: promiseStub2 }];
+      await instance.message('receiveBlock', { the: 'block' } as any);
+      expect(promiseStub.calledOnce).is.true;
+      expect(promiseStub.args[0][0]).to.be.deep.eq({ the: 'block' });
+      expect(promiseStub2.calledOnce).is.true;
+      expect(promiseStub2.args[0][0]).to.be.deep.eq({ the: 'block' });
+      expect(promiseStub.calledBefore(promiseStub2)).is.true;
+      expect(promiseStub2.calledAfter(promiseStub)).is.true;
     });
+  });
 
-    describe('Testing multiple listeners', () => {
-        it('success', async () => {
-            stub2 = sandbox.stub().resolves();
-            instance.modules = [{onReceiveBlock: stub}, {onReceiveBlock: stub2}];
-            await instance.message('receiveBlock', {the: 'block'} as any);
-            expect(stub.calledOnce).is.true;
-            expect(stub.args[0][0]).to.be.deep.eq({the: 'block'});
-            expect(stub2.calledOnce).is.true;
-            expect(stub2.args[0][0]).to.be.deep.eq({the: 'block'});
-            expect(stub.calledBefore(stub2)).is.true;
-            expect(stub2.calledAfter(stub)).is.true;
-        });
+  describe('Without listeners available', () => {
+    it('success', async () => {
+      instance.modules = [
+        { onUnconfirmedTransaction: promiseStub },
+        { onUnconfirmedTransaction: promiseStub2 },
+      ];
+      await instance.message('receiveBlock', { the: 'block' } as any);
+      expect(promiseStub.called).is.false;
+      expect(promiseStub2.called).is.false;
     });
-
-    describe('Without listeners available', () => {
-        it('success', async () => {
-            stub2 = sandbox.stub().resolves();
-            instance.modules = [{onUnconfirmedTransaction: stub}, {onUnconfirmedTransaction: stub2}];
-            await instance.message('receiveBlock', {the: 'block'} as any);
-            expect(stub.called).is.false;
-            expect(stub2.called).is.false;
-        });
-    });
+  });
 });
