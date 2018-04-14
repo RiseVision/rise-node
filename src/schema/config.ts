@@ -32,9 +32,6 @@ export default {
       trustProxy     : {
         type: 'boolean',
       },
-      topAccounts    : {
-        type: 'boolean',
-      },
       cacheEnabled   : {
         type: 'boolean',
       },
@@ -264,6 +261,7 @@ export default {
         },
         required  : ['verifyOnLoading', 'loadPerIteration'],
       },
+<<<<<<< Updated upstream
       ssl            : {
         type      : 'object',
         properties: {
@@ -307,13 +305,19 @@ export default {
         },
         required  : ['masterrequired', 'masterpassword', 'autoexec'],
       },
+=======
+>>>>>>> Stashed changes
       nethash        : {
         type  : 'string',
         format: 'hex',
       },
     },
     required  : ['port', 'address', 'version', 'fileLogLevel', 'logFileName', 'consoleLogLevel', 'trustProxy',
+<<<<<<< Updated upstream
       'topAccounts', 'db', 'api', 'peers', 'broadcasts', 'transactions', 'forging', 'loading', 'ssl', 'dapp',
+=======
+      'db', 'api', 'peers', 'broadcasts', 'transactions', 'forging', 'loading',
+>>>>>>> Stashed changes
       'nethash', 'cacheEnabled', 'redis'],
   },
 };
