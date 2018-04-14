@@ -19,6 +19,7 @@
     ]
   },
   "exclude"        : [
+    "tests",
     "node_modules",
     "public",
     "dist",

@@ -130,7 +130,6 @@ describe('api/blocks', () => {
           expect(response.body.fees).to.haveOwnProperty('secondsignature');
           expect(response.body.fees).to.haveOwnProperty('delegate');
           expect(response.body.fees).to.haveOwnProperty('multisignature');
-          expect(response.body.fees).to.haveOwnProperty('dapp');
         });
     });
     it('should use provided height', async () => {

@@ -155,11 +155,11 @@ export class IntegrationTestInitializer {
     const db: IDatabase<any> = this.appManager.container.get(Symbols.generic.db);
     await this.appManager.tearDown();
     monitor.detach();
-    const tables = ['blocks', 'delegates', 'forks_stat', 'intransfer', 'mem_accounts',
+    const tables = ['blocks', 'delegates', 'forks_stat', 'mem_accounts',
       'mem_accounts2delegates',
       'mem_accounts2multisignatures', 'mem_accounts2u_delegates', 'mem_accounts2u_multisignatures', 'mem_round',
       // 'migrations',
-      'multisignatures', 'outtransfer', 'peers', 'rounds_fees', 'signatures', 'trs', 'votes'];
+      'multisignatures',  'peers', 'rounds_fees', 'signatures', 'trs', 'votes'];
 
     for (const table of tables) {
       await db.query('TRUNCATE $1:name CASCADE', table);

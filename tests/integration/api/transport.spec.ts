@@ -137,7 +137,6 @@ describe('api/transport', () => {
           expect(peer).to.be.deep.eq({
             broadhash: null,
             clock    : null,
-            dappid   : null,
             height   : null,
             ip       : '::ffff:127.0.0.1',
             os       : null,

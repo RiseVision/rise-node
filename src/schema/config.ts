@@ -295,7 +295,7 @@ export default {
       },
     },
     required  : ['port', 'address', 'version', 'fileLogLevel', 'logFileName', 'consoleLogLevel', 'trustProxy',
-      'topAccounts', 'db', 'api', 'peers', 'broadcasts', 'transactions', 'forging', 'loading',
+      'db', 'api', 'peers', 'broadcasts', 'transactions', 'forging', 'loading',
       'nethash', 'cacheEnabled', 'redis'],
   },
 };
