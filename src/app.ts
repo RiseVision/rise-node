@@ -140,7 +140,7 @@ async function boot(constants: typeof constantsType): Promise<AppManager> {
 
 exitHook.forceExitTimeout(15000);
 exitHook.unhandledRejectionHandler((err) => {
-  logger.fatal('Unhandled Promise rejection', { message: err.message, stack: err.stack });
+  logger.fatal('Unhandled Promise rejection', err);
 });
 
 boot(constantsType)

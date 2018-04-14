@@ -96,7 +96,6 @@ export interface AppConfig {
 
   ssl: any;
 
-  dapp: any;
   nethash: string;
 }
 
