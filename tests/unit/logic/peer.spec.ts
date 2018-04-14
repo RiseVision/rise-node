@@ -27,7 +27,6 @@ describe('logic/peer', () => {
         'state',
         'os',
         'version',
-        'dappid',
         'broadhash',
         'height',
         'clock',
@@ -48,7 +47,6 @@ describe('logic/peer', () => {
       expect(instance.headers).to.deep.equal([
         'os',
         'version',
-        'dappid',
         'broadhash',
         'height',
         'nonce',
@@ -62,7 +60,6 @@ describe('logic/peer', () => {
       expect(instance.nullable).to.deep.equal([
         'os',
         'version',
-        'dappid',
         'broadhash',
         'height',
         'clock',
@@ -144,7 +141,6 @@ describe('logic/peer', () => {
         state    : '2',
         os       : '',
         version  : '',
-        dappid   : '',
         broadhash: '',
         height   : '',
         clock    : '',
@@ -166,7 +162,6 @@ describe('logic/peer', () => {
         state    : 2,
         os       : '',
         version  : '',
-        dappid   : '',
         broadhash: '',
         height   : '',
         clock    : '',
@@ -198,10 +193,7 @@ describe('logic/peer', () => {
         clock    : '',
         updated  : '',
         nonce    : '',
-        dappid   : ['dappId'],
       };
-
-      peer.dappid = 'dappId';
 
       const normalized = instance.normalize(Object.assign({}, peer));
 
