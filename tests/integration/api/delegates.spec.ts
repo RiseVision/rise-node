@@ -1,5 +1,12 @@
 import initializer from '../common/init';
 import { checkEnumParam, checkIntParam, checkPubKey, checkRequiredParam, checkReturnObjKeyVal } from './utils';
+import * as supertest from 'supertest';
+import * as chai from 'chai';
+import * as chaiSorted from 'chai-sorted';
+chai.use(chaiSorted);
+
+const {expect} = chai;
+const delegates = require('../genesisDelegates.json');
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/delegates', () => {
@@ -20,11 +27,61 @@ describe('api/delegates', () => {
     checkIntParam('offset', '/api/delegates', { min: 0 });
 
     checkReturnObjKeyVal('totalCount', 101, '/api/delegates');
-    it('should return delegates array');
-    it('should honor orderBy asc param');
-    it('should honor orderBy desc param');
-    it('should honor limit param');
-    it('should honor offset param');
+
+    it('should return delegates array', async () => {
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/delegates/')
+        .expect(200)
+        .then((response) => {
+          expect(response.body.success).is.true;
+          expect(Array.isArray(response.body.delegates));
+          expect(response.body.delegates.map((d) => d.address).sort()).to.be.deep.equal(delegates.map((d) => d.address).sort());
+        });
+    });
+
+    ['approval', 'productivity', 'rank', 'vote', 'username', 'address', 'publicKey'].forEach((sortKey: string) => {
+      it('should honor orderBy ' + sortKey + ' asc param', async () => {
+        return supertest(initializer.appManager.expressApp)
+          .get('/api/delegates/?orderBy=' + sortKey + ':asc')
+          .expect(200)
+          .then((response) => {
+            expect(response.body.success).is.true;
+            expect(Array.isArray(response.body.delegates)).to.be.true;
+            expect(response.body.delegates).to.be.ascendingBy(sortKey);
+          });
+      });
+      it('should honor orderBy ' + sortKey + ' desc param', async () => {
+        return supertest(initializer.appManager.expressApp)
+          .get('/api/delegates/?orderBy=' + sortKey + ':desc')
+          .expect(200)
+          .then((response) => {
+            expect(response.body.success).is.true;
+            expect(Array.isArray(response.body.delegates)).to.be.true;
+            expect(response.body.delegates).to.be.descendingBy(sortKey);
+          });
+      });
+    });
+    it('should honor limit param', async () => {
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/delegates/?limit=10')
+        .expect(200)
+        .then((response) => {
+          expect(response.body.success).is.true;
+          expect(Array.isArray(response.body.delegates)).to.be.true;
+          expect(response.body.delegates.length).to.be.equal(10);
+        });
+    });
+
+    it('should honor offset param', async () => {
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/delegates/?offset=30')
+        .expect(200)
+        .then((response) => {
+          expect(response.body.success).is.true;
+          expect(Array.isArray(response.body.delegates)).to.be.true;
+          expect(response.body.delegates.length).to.be.equal(71);
+        });
+    });
   });
 
   describe('/fee', () => {
@@ -32,7 +89,15 @@ describe('api/delegates', () => {
     checkReturnObjKeyVal('fromHeight', 1, '/api/delegates/fee');
     checkReturnObjKeyVal('toHeight', null, '/api/delegates/fee');
     checkReturnObjKeyVal('height', 2, '/api/delegates/fee');
-    it('should return fee value for delegate');
+    it('should return fee value for delegate', async () => {
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/delegates/fee')
+        .expect(200)
+        .then((response) => {
+          expect(response.body.success).is.true;
+          expect(response.body.fee).to.be.equal(2500000000);
+        });
+    });
   });
 
   describe('/forging/getForgedByAccount', () => {
