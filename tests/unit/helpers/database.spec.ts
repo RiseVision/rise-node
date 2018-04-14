@@ -5,12 +5,20 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as monitor from 'pg-monitor';
 import * as pgPromise from 'pg-promise';
-import * as rewire from 'rewire';
+import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
 import {SinonSandbox} from 'sinon';
 import MyBigNumb from '../../../src/helpers/bignum';
+import {Migrator} from '../../../src/helpers/migrator';
 
-const database = rewire('../../../src/helpers/database');
+const pgStub = () => () => true;
+const migratorStub = {} as any;
+
+const ProxyDatabase = proxyquire('../../../src/helpers/database', {
+  './migrator': migratorStub,
+  'pg-monitor': monitor,
+  'pg-promise': pgStub,
+});
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -31,13 +39,11 @@ describe('helpers/database', () => {
   let fsReadDirSyncStub: any;
   let fsStatSyncStub: any;
   let appConfig: any;
-  let revertPgPromise: any;
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
     pgOptions = {pgNative: true, noLocking: true, noWarnings: true};
     pgp = pgPromise(pgOptions);
-    revertPgPromise = database.__set__('pgPromise', () => pgp);
     appConfig = {logEvents: [], user: 'abc', password: '123'};
     db = pgp(appConfig);
     dbOneStub = sandbox.stub(db, 'one').resolves({to_regclass: true});
@@ -57,12 +63,11 @@ describe('helpers/database', () => {
     fsStatSyncStub = sandbox
       .stub(fs, 'statSync')
       .returns({isFile: (fullpath: string) => true});
-    migrator = new database.Migrator(pgp, db);
+    migrator = new Migrator(pgp, db);
   });
 
   afterEach(() => {
     sandbox.restore();
-    revertPgPromise();
   });
 
   describe('checkMigrations()', () => {
@@ -155,9 +160,9 @@ describe('helpers/database', () => {
 
   describe('connect()', () => {
     it('success', async () => {
-      const MigratorRevert = database.__set__('Migrator', function Migrator() {
+      migratorStub.Migrator = function Migrator() {
         return migrator;
-      });
+      };
       const fakeILogger: any = {
         info: (message: string, data: string) => true,
       };
@@ -181,7 +186,7 @@ describe('helpers/database', () => {
         'applyRuntimeQueryFile'
       );
 
-      await database.connect(appConfig as any, fakeILogger);
+      await ProxyDatabase.connect(appConfig as any, fakeILogger);
       expect(checkMigrationsSpy.calledOnce).to.be.true;
       expect(checkMigrationsSpy.calledBefore(getLastMigrationSpy)).to.be.true;
       expect(getLastMigrationSpy.calledOnce).to.be.true;
@@ -193,23 +198,20 @@ describe('helpers/database', () => {
       expect(insertAppliedMigrationsSpy.calledOnce).to.be.true;
       expect(insertAppliedMigrationsSpy.calledBefore(applyRuntimeQueryFileSpy)).to.be.true;
       expect(applyRuntimeQueryFileSpy.calledOnce).to.be.true;
-
-      MigratorRevert();
       monitor.detach();
     });
 
-    it('monitor.log', async()=>{
-      database.__set__('Migrator', function Migrator() {
-        return migrator;
-      });
+    it('monitor.log', async () => {
+      migratorStub.Migrator = function Migrator() {
+          return migrator;
+      };
       const fakeILogger: any = {
         log: sandbox.stub(),
       };
-      const monitor = database.__get__('monitor');
       const info = {event: 'event', text: 'text', display: true};
 
-      await database.connect(appConfig as any, fakeILogger);
-      monitor.log('msg', info);
+      await ProxyDatabase.connect(appConfig as any, fakeILogger);
+      (monitor as any).log('msg', info);
 
       expect(fakeILogger.log.calledOnce).to.be.true;
       expect(fakeILogger.log.firstCall.args.length).to.be.equal(2);

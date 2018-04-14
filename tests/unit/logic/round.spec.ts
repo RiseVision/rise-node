@@ -1,11 +1,18 @@
 import * as chai from 'chai';
-import * as rewire from 'rewire';
+import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
+import * as helpers from '../../../src/helpers/';
+import roundSQL from '../../../src/sql/logic/rounds';
 
 const expect = chai.expect;
 
-const RewireRound = rewire('../../../src/logic/round.ts');
+const pgpStub = { as: undefined } as any;
+const ProxyRound = proxyquire('../../../src/logic/round.ts', {
+  '../helpers/': helpers,
+  '../sql/logic/rounds': roundSQL,
+  'pg-promise': pgpStub,
+});
 
 // tslint:disable no-unused-expression
 describe('logic/round', () => {
@@ -44,7 +51,7 @@ describe('logic/round', () => {
       none : sinon.stub().resolves('none works'),
       query: sinon.stub().resolves('query works'),
     };
-    instance = new RewireRound.RoundLogic(scope, task);
+    instance = new ProxyRound.RoundLogic(scope, task);
   });
 
   describe('constructor', () => {
@@ -63,7 +70,7 @@ describe('logic/round', () => {
 
         delete scope[prop];
         const throwError = () => {
-          new RewireRound.RoundLogic(scope);
+          new ProxyRound.RoundLogic(scope);
         };
         expect(throwError).to.throw();
       });
@@ -89,7 +96,7 @@ describe('logic/round', () => {
 
         delete scope[prop];
         const throwError = () => {
-          new RewireRound.RoundLogic(scope);
+          new ProxyRound.RoundLogic(scope);
         };
         expect(throwError).to.throw();
       });
@@ -117,15 +124,14 @@ describe('logic/round', () => {
   describe('updateMissedBlocks', () => {
     it('should resolve when roundOutsiders is empty', async () => {
       scope.roundOutsiders = [];
-      const instanceTest   = new RewireRound.RoundLogic(scope, task);
+      const instanceTest   = new ProxyRound.RoundLogic(scope, task);
       const ar             = await instanceTest.updateMissedBlocks();
       expect(ar).to.be.undefined;
       expect(task.none.notCalled).to.equal(true);
     });
 
     it('should return result from updateMissedBlocks', async () => {
-      const sql                = RewireRound.__get__('rounds_1');
-      const updateMissedBlocks = sinon.stub(sql.default, 'updateMissedBlocks').returns(true);
+      const updateMissedBlocks = sinon.stub(roundSQL, 'updateMissedBlocks').returns(true);
       const retVal             = await instance.updateMissedBlocks();
 
       expect(task.none.calledOnce).to.equal(true);
@@ -157,23 +163,16 @@ describe('logic/round', () => {
   });
 
   describe('updateVotes', () => {
-    let pgpOriginal;
-    let pgp;
     let getVotesStub: SinonStub;
 
     beforeEach(() => {
-      pgpOriginal = RewireRound.__get__('pgp');
-      pgp         = {
-        as: {
-          format: sinon.stub(),
-        },
+      pgpStub.as = {
+        format: sinon.stub(),
       };
-      RewireRound.__set__('pgp', pgp);
       getVotesStub = sinon.stub(instance, 'getVotes');
     });
 
     afterEach(() => {
-      RewireRound.__set__('pgp', pgpOriginal);
       getVotesStub.restore();
     });
 
@@ -186,7 +185,7 @@ describe('logic/round', () => {
         },
       ]);
       const updateVotes = 'UPDATE mem_accounts SET "vote" = "vote" + (${amount})::bigint WHERE "address" = ${address};';
-      pgp.as.format.returns([updateVotes]);
+      pgpStub.as.format.returns([updateVotes]);
       const expectedParam = {
         address: 1,
         amount : 10,
@@ -197,10 +196,10 @@ describe('logic/round', () => {
       expect(scope.modules.accounts.generateAddressByPublicKey.calledOnce).to.be.true;
       expect(scope.modules.accounts.generateAddressByPublicKey.firstCall.args[0]).to.be.equal('delegateName');
 
-      expect(pgp.as.format.calledOnce).to.equal(true);
-      expect(pgp.as.format.firstCall.args.length).to.equal(2);
-      expect(pgp.as.format.firstCall.args[0]).to.equal(updateVotes);
-      expect(pgp.as.format.firstCall.args[1]).to.deep.equal(expectedParam);
+      expect(pgpStub.as.format.calledOnce).to.equal(true);
+      expect(pgpStub.as.format.firstCall.args.length).to.equal(2);
+      expect(pgpStub.as.format.firstCall.args[0]).to.equal(updateVotes);
+      expect(pgpStub.as.format.firstCall.args[1]).to.deep.equal(expectedParam);
 
       expect(task.none.calledOnce).to.equal(true);
       expect(task.none.firstCall.args.length).to.equal(1);
@@ -214,7 +213,7 @@ describe('logic/round', () => {
       await instance.updateVotes();
       expect(getVotesStub.calledOnce).to.equal(true);
       expect(scope.modules.accounts.generateAddressByPublicKey.notCalled).to.be.true;
-      expect(pgp.as.format.notCalled).to.be.true;
+      expect(pgpStub.as.format.notCalled).to.be.true;
       expect(task.none.notCalled).to.be.true;
     });
   });
@@ -224,7 +223,7 @@ describe('logic/round', () => {
       const updateBlockId = 'UPDATE mem_accounts SET "blockId" = ${newId} WHERE "blockId" = ${oldId};';
       scope.backwards     = true;
 
-      const instanceTest = new RewireRound.RoundLogic(scope, task);
+      const instanceTest = new ProxyRound.RoundLogic(scope, task);
       const retVal       = await instanceTest.markBlockId();
 
       expect(task.none.calledOnce).to.be.true;
@@ -259,7 +258,7 @@ describe('logic/round', () => {
       const truncateBlocks = 'DELETE FROM blocks WHERE "height" > (${height})::bigint;';
       scope.backwards      = true;
 
-      const instanceTest = new RewireRound.RoundLogic(scope, task);
+      const instanceTest = new ProxyRound.RoundLogic(scope, task);
       const retVal       = await instanceTest.truncateBlocks();
 
       expect(task.none.calledOnce).to.be.true;
@@ -277,7 +276,7 @@ describe('logic/round', () => {
       const restoreRoundSnapshot = 'INSERT INTO mem_round SELECT * FROM mem_round_snapshot';
       scope.backwards            = true;
 
-      const instanceTest = new RewireRound.RoundLogic(scope, task);
+      const instanceTest = new ProxyRound.RoundLogic(scope, task);
       const retVal       = await instanceTest.restoreRoundSnapshot();
 
       expect(scope.library.logger.debug.calledOnce).to.be.true;
@@ -297,7 +296,7 @@ describe('logic/round', () => {
         'WHERE m.address = b.address';
       scope.backwards            = true;
 
-      const instanceTest = new RewireRound.RoundLogic(scope, task);
+      const instanceTest = new ProxyRound.RoundLogic(scope, task);
       const retVal       = await instanceTest.restoreVotesSnapshot();
 
       expect(scope.library.logger.debug.calledOnce).to.be.true;
@@ -319,16 +318,16 @@ describe('logic/round', () => {
     let RoundChanges;
 
     beforeEach(() => {
-      roundChangesOriginal = RewireRound.__get__('_1');
+      roundChangesOriginal = helpers.RoundChanges;
       at                   = sinon.stub();
-      RoundChanges         = () => {
+      RoundChanges         = function RoundChanges () {
         return { at };
       };
-      RewireRound.__set__('_1', { RoundChanges });
+      (helpers.RoundChanges as any) = RoundChanges;
     });
 
     afterEach(() => {
-      RewireRound.__set__('_1', roundChangesOriginal);
+      (helpers.RoundChanges as any) = roundChangesOriginal;
     });
 
     it('should apply round changes to each delegate, with backwards false and fees > 0', async () => {
@@ -382,7 +381,7 @@ describe('logic/round', () => {
       });
       scope.roundDelegates = [];
 
-      instance     = new RewireRound.RoundLogic(scope, task);
+      instance     = new ProxyRound.RoundLogic(scope, task);
       const retVal = await instance.applyRound();
 
       expect(at.calledOnce).to.be.true;
@@ -448,7 +447,7 @@ describe('logic/round', () => {
       });
       scope.roundDelegates = [];
 
-      instance = new RewireRound.RoundLogic(scope, task);
+      instance = new ProxyRound.RoundLogic(scope, task);
       await instance.applyRound();
 
       expect(at.calledOnce).to.be.true;
@@ -470,7 +469,7 @@ describe('logic/round', () => {
       });
       scope.backwards = true;
 
-      instance     = new RewireRound.RoundLogic(scope, task);
+      instance     = new ProxyRound.RoundLogic(scope, task);
       const retVal = await instance.applyRound();
 
       expect(at.calledTwice).to.be.true;
@@ -518,7 +517,7 @@ describe('logic/round', () => {
       scope.roundDelegates = [];
       scope.backwards      = true;
 
-      instance     = new RewireRound.RoundLogic(scope, task);
+      instance     = new ProxyRound.RoundLogic(scope, task);
       const retVal = await instance.applyRound();
 
       expect(at.calledOnce).to.be.true;
@@ -552,7 +551,7 @@ describe('logic/round', () => {
       });
       scope.backwards = true;
 
-      instance     = new RewireRound.RoundLogic(scope, task);
+      instance     = new ProxyRound.RoundLogic(scope, task);
       const retVal = await instance.applyRound();
 
       expect(at.calledTwice).to.be.true;
@@ -589,7 +588,7 @@ describe('logic/round', () => {
       scope.roundDelegates = [];
       scope.backwards      = true;
 
-      instance = new RewireRound.RoundLogic(scope, task);
+      instance = new ProxyRound.RoundLogic(scope, task);
       await instance.applyRound();
 
       expect(at.calledOnce).to.be.true;

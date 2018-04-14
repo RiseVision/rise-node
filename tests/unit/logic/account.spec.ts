@@ -1,12 +1,15 @@
 import { expect } from 'chai';
 import * as jsonSqlCreator from 'json-sql';
 import * as path from 'path';
-import * as rewire from 'rewire';
+import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
 import { DbStub, LoggerStub, ZSchemaStub } from '../../stubs';
 
-const RewireAccount = rewire('../../../src/logic/account');
+const pgpStub = { QueryFile :  () => { return; }} as any;
+const ProxyAccount = proxyquire('../../../src/logic/account', {
+  'pg-promise': pgpStub,
+});
 const jsonSql       = jsonSqlCreator();
 jsonSql.setDialect('postgresql');
 
@@ -19,8 +22,6 @@ const table = 'mem_accounts';
  * TODO: Check if more test cases are needed
  */
 describe('logic/account', () => {
-  const originalPgp = RewireAccount.__get__('pgp');
-  let pgp;
   let account;
   let dbStub: DbStub;
   let loggerStub: LoggerStub;
@@ -30,20 +31,14 @@ describe('logic/account', () => {
   });
 
   beforeEach(() => {
-    pgp = { QueryFile: () => { return; } };
-    RewireAccount.__set__('pgp', pgp);
     loggerStub              = new LoggerStub();
     zSchemaStub             = new ZSchemaStub();
-    account                 = new RewireAccount.AccountLogic();
+    account                 = new ProxyAccount.AccountLogic();
     // Inject the dependencies
     (account as any).db     = dbStub;
     (account as any).logger = loggerStub;
     (account as any).schema = zSchemaStub;
     dbStub.reset();
-  });
-
-  afterEach(() => {
-    RewireAccount.__set__('pgp', originalPgp);
   });
 
   describe('constructor', () => {
@@ -236,11 +231,7 @@ describe('logic/account', () => {
     const sqlPath = path.join(process.cwd(), 'sql', 'memoryTables.sql');
 
     beforeEach(() => {
-      sinon.stub(pgp, 'QueryFile');
-    });
-
-    afterEach(() => {
-      pgp.QueryFile.restore();
+      pgpStub.QueryFile = sinon.stub();
     });
 
     it('should handle sql error', async () => {
@@ -252,14 +243,14 @@ describe('logic/account', () => {
         throw new Error('Expected method to reject.');
       }).catch((errorMessage) => {
         // It should call QueryFile
-        expect(pgp.QueryFile.called).to.be.true;
-        expect(pgp.QueryFile.getCall(0).args.length).to.equal(2);
-        expect(pgp.QueryFile.getCall(0).args[0]).to.equal(sqlPath);
-        expect(pgp.QueryFile.getCall(0).args[1]).to.deep.equal({ minify: true });
+        expect(pgpStub.QueryFile.called).to.be.true;
+        expect(pgpStub.QueryFile.getCall(0).args.length).to.equal(2);
+        expect(pgpStub.QueryFile.getCall(0).args[0]).to.equal(sqlPath);
+        expect(pgpStub.QueryFile.getCall(0).args[1]).to.deep.equal({ minify: true });
         // It should call db.query
         expect(dbStub.stubs.query.calledOnce).to.be.true;
         expect(dbStub.stubs.query.getCall(0).args.length).to.equal(1);
-        expect(dbStub.stubs.query.getCall(0).args[0]).to.be.instanceof(pgp.QueryFile);
+        expect(dbStub.stubs.query.getCall(0).args[0]).to.be.instanceof(pgpStub.QueryFile);
         // It should log the error
         expect(loggerStub.stubs.error.calledOnce).to.be.true;
         expect(loggerStub.stubs.error.getCall(0).args.length).to.equal(1);
@@ -276,14 +267,14 @@ describe('logic/account', () => {
       await account.createTables();
 
       // It should call QueryFile with the right path
-      expect(pgp.QueryFile.calledOnce).to.be.true;
-      expect(pgp.QueryFile.getCall(0).args.length).to.equal(2);
-      expect(pgp.QueryFile.getCall(0).args[0]).to.equal(sqlPath);
-      expect(pgp.QueryFile.getCall(0).args[1]).to.deep.equal({ minify: true });
+      expect(pgpStub.QueryFile.calledOnce).to.be.true;
+      expect(pgpStub.QueryFile.getCall(0).args.length).to.equal(2);
+      expect(pgpStub.QueryFile.getCall(0).args[0]).to.equal(sqlPath);
+      expect(pgpStub.QueryFile.getCall(0).args[1]).to.deep.equal({ minify: true });
       // It should call db.query
       expect(dbStub.stubs.query.calledOnce).to.be.true;
       expect(dbStub.stubs.query.getCall(0).args.length).to.equal(1);
-      expect(dbStub.stubs.query.getCall(0).args[0]).to.be.instanceof(pgp.QueryFile);
+      expect(dbStub.stubs.query.getCall(0).args[0]).to.be.instanceof(pgpStub.QueryFile);
     });
   });
 
@@ -772,8 +763,6 @@ describe('logic/account', () => {
     });
 
     it('should handle no callback passed', async () => {
-      RewireAccount.__set__('pgp', originalPgp);
-
       const testQueries =  await account.merge(address, diff);
 
       expect(testQueries).to.equal(queries);
@@ -781,7 +770,6 @@ describe('logic/account', () => {
 
     it('should call callback correctly on error', async () => {
       const error = new Error('error');
-      RewireAccount.__set__('pgp', originalPgp);
       dbStub.enqueueResponse('none', Promise.reject(error));
 
       await account.merge(address, diff, callback)
@@ -806,7 +794,6 @@ describe('logic/account', () => {
     });
 
     it('Should callback on success', async () => {
-      RewireAccount.__set__('pgp', originalPgp);
       dbStub.enqueueResponse('none', Promise.resolve());
       dbStub.enqueueResponse('query', Promise.resolve([]));
 
@@ -831,7 +818,6 @@ describe('logic/account', () => {
 
     it('If balance is negative', async () => {
       diff.balance = -1;
-      RewireAccount.__set__('pgp', originalPgp);
       dbStub.enqueueResponse('none', Promise.resolve());
       dbStub.enqueueResponse('query', Promise.resolve([]));
 

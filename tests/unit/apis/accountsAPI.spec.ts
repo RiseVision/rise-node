@@ -2,7 +2,7 @@ import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
-import * as rewire from 'rewire';
+import * as proxyquire from 'proxyquire';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { AccountsAPI } from '../../../src/apis/accountsAPI';
@@ -15,10 +15,12 @@ import { createContainer } from '../../utils/containerCreator';
 
 chai.use(chaiAsPromised);
 
+let isEmptyStub: SinonStub;
+const ProxyAccountsAPI = proxyquire('../../../src/apis/accountsAPI', {
+    'is-empty': (...args) => isEmptyStub.apply(this, args),
+});
+
 // tslint:disable no-unused-expression max-line-length
-
-const AccountsAPIRewire = rewire('../../../src/apis/accountsAPI');
-
 describe('apis/accountsAPI', () => {
 
   let sandbox: SinonSandbox;
@@ -32,7 +34,7 @@ describe('apis/accountsAPI', () => {
   beforeEach(() => {
     sandbox   = sinon.sandbox.create();
     container = createContainer();
-    container.bind(Symbols.api.accounts).to(AccountsAPIRewire.AccountsAPI);
+    container.bind(Symbols.api.accounts).to(ProxyAccountsAPI.AccountsAPI);
 
     schema          = container.get(Symbols.generic.zschema);
     accountsModule  = container.get(Symbols.modules.accounts);
@@ -46,9 +48,6 @@ describe('apis/accountsAPI', () => {
   });
 
   describe('getAccount', () => {
-
-    let isEmptyStub: SinonStub;
-
     let accData;
     let query;
     let generatedAddress;
@@ -79,8 +78,6 @@ describe('apis/accountsAPI', () => {
         .onCall(1).returns(false)
         .onCall(2).returns(true)
         .onCall(3).returns(true);
-
-      AccountsAPIRewire.__set__('isEmpty', isEmptyStub);
     });
 
     it('should call isEmpty', async () => {

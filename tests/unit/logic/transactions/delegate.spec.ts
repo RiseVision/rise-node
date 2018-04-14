@@ -1,18 +1,16 @@
 'use strict';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as rewire from 'rewire';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { removeEmptyObjKeys, TransactionType } from '../../../../src/helpers';
+import * as helpers from '../../../../src/helpers';
+import { TransactionType } from '../../../../src/helpers';
 import { RegisterDelegateTransaction } from '../../../../src/logic/transactions';
 import delegateSchema from '../../../../src/schema/logic/transactions/delegate';
 import { AccountsModuleStub, SystemModuleStub } from '../../../stubs';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
-
-const rewiredRegisterDelegateTransaction = rewire('../../../../src/logic/transactions/delegate');
 
 // tslint:disable no-unused-expression
 describe('logic/transactions/delegate', () => {
@@ -65,7 +63,7 @@ describe('logic/transactions/delegate', () => {
       id    : '13191140260435645922',
     };
 
-    instance = new rewiredRegisterDelegateTransaction.RegisterDelegateTransaction();
+    instance = new RegisterDelegateTransaction();
 
     (instance as any).schema         = zSchemaStub;
     (instance as any).accountsModule = accountsModuleStub;
@@ -291,7 +289,6 @@ describe('logic/transactions/delegate', () => {
     });
 
     it('should call removeEmptyObjKeys', () => {
-      const helpers               = rewiredRegisterDelegateTransaction.__get__('_1');
       const removeEmptyObjKeysSpy = sandbox.spy(helpers, 'removeEmptyObjKeys');
       instance.objectNormalize(tx);
       expect(removeEmptyObjKeysSpy.calledOnce).to.be.true;

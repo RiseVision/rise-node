@@ -47,6 +47,7 @@ export class PeersAPI {
                        @QueryParams() params: { ip: string, port: number }) {
     try {
       const peers = await this.peersModule.getByFilter(params);
+      console.log(peers);
       if (peers.length > 0) {
         return { peer: peers[0] };
       } else {
