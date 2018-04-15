@@ -2,14 +2,14 @@ import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
-import * as rewire from 'rewire';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy } from 'sinon';
+import * as helpers from '../../../src/helpers';
 import { OrderBy } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { SignedAndChainedBlockType } from '../../../src/logic';
 import { TransactionsModule } from '../../../src/modules';
-import sql from '../../../src/sql/logic/transactions';
+import txSQL from '../../../src/sql/logic/transactions';
 import {
   AccountsModuleStub,
   DbStub,
@@ -19,8 +19,6 @@ import {
 } from '../../stubs';
 
 import { createContainer } from '../../utils/containerCreator';
-
-const RewiredTransactionsModule = rewire('../../../src/modules/transactions.ts');
 
 chai.use(chaiAsPromised);
 
@@ -43,7 +41,7 @@ describe('modules/transactions', () => {
   });
 
   beforeEach(() => {
-    container.rebind(Symbols.modules.transactions).to(RewiredTransactionsModule.TransactionsModule);
+    container.rebind(Symbols.modules.transactions).to(TransactionsModule);
     sandbox              = sinon.sandbox.create();
     instance             = container.get(Symbols.modules.transactions);
     accountsModuleStub   = container.get(Symbols.modules.accounts);
@@ -437,7 +435,7 @@ describe('modules/transactions', () => {
       await instance.count();
       expect(dbStub.stubs.query.calledOnce).to.be.true;
       expect(dbStub.stubs.query.firstCall.args.length).to.be.equal(1);
-      expect(dbStub.stubs.query.firstCall.args[0]).to.be.deep.equal(sql.count);
+      expect(dbStub.stubs.query.firstCall.args[0]).to.be.deep.equal(txSQL.count);
     });
 
     it('should return the expected object', async () => {
@@ -486,8 +484,6 @@ describe('modules/transactions', () => {
     let txList;
 
     beforeEach(() => {
-      const helpers = RewiredTransactionsModule.__get__('_1');
-      const txSQL   = RewiredTransactionsModule.__get__('transactions_1.default');
       txList        = ['rawTx1', 'rawTx2'];
       orderBySpy    = sandbox.spy(helpers, 'OrderBy');
       countListSpy  = sandbox.spy(txSQL, 'countList');
@@ -641,7 +637,7 @@ describe('modules/transactions', () => {
       expect(orderBySpy.calledOnce).to.be.true;
       expect(orderBySpy.firstCall.args.length).to.be.equal(2);
       expect(orderBySpy.firstCall.args[0]).to.be.equal(filter.orderBy);
-      expect(orderBySpy.firstCall.args[1].sortFields).to.be.deep.equal(sql.sortFields);
+      expect(orderBySpy.firstCall.args[1].sortFields).to.be.deep.equal(txSQL.sortFields);
       expect(orderBySpy.firstCall.args[1].fieldPrefix).to.be.a('function');
     });
 
@@ -773,7 +769,7 @@ describe('modules/transactions', () => {
       await instance.getByID('12345');
       expect(dbStub.stubs.query.calledOnce).to.be.true;
       expect(dbStub.stubs.query.firstCall.args.length).to.be.equal(2);
-      expect(dbStub.stubs.query.firstCall.args[0]).to.be.deep.equal(sql.getById);
+      expect(dbStub.stubs.query.firstCall.args[0]).to.be.deep.equal(txSQL.getById);
       expect(dbStub.stubs.query.firstCall.args[1]).to.be.deep.equal({ id: '12345' });
     });
 

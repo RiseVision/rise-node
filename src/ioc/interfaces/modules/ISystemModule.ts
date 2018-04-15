@@ -69,7 +69,6 @@ export interface ISystemModule extends IModule {
       secondsignature: number,
       delegate: number,
       multisignature: number,
-      dapp
     }, fromHeight: number, height: number, toHeight: number
   };
 

@@ -7,7 +7,6 @@ export interface IPeerLogic {
   state: PeerState;
   os: string;
   version: string;
-  dappid: string | string[];
   broadhash: string;
   height: number;
   clock: number;
@@ -21,7 +20,7 @@ export interface IPeerLogic {
 
   accept(peer: BasePeerType): this;
 
-  normalize<T extends { dappid?: string | string[], height?: number, port?: number, state?: PeerState }>(peer: T): T;
+  normalize<T extends { height?: number, port?: number, state?: PeerState }>(peer: T): T;
 
   /**
    * Checks number or assigns default value from parameter.

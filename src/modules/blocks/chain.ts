@@ -167,7 +167,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
         // Apply tx.
         await this.transactionsModule.applyUnconfirmed(tx, sender);
-        await this.transactionsModule.apply(tx, block, sender);
+        // FIXME ? tx detected by TS as IBaseTransaction (see call just above) but IConfirmedTransaction expected
+        await this.transactionsModule.apply(tx as any, block, sender);
 
         tracker.applyNext();
       }
@@ -213,7 +214,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
             this.logger.error('Transaction', transaction);
             return Promise.reject(err);
           });
-        appliedTransactions[transaction.id] = transaction;
+        // FIXME ? tx detected by TS as IBaseTransaction (see call above) but IConfirmedTransaction expected
+        appliedTransactions[transaction.id] = transaction as any;
 
         // Remove the transaction from the node queue, if it was present.
         const idx = unconfirmedTransactionIds.indexOf(transaction.id);
@@ -239,7 +241,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     for (const tx of block.transactions) {
       const sender = await this.accountsModule.getAccount({ publicKey: tx.senderPublicKey });
       try {
-        await this.transactionsModule.apply(tx, block, sender);
+        // FIXME ? wrong type for tx detected by TS
+        await this.transactionsModule.apply(tx as any, block, sender);
 
       } catch (err) {
         // Fatal error, memory tables will be inconsistent
@@ -366,7 +369,6 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   private async afterSave(block: SignedBlockType) {
     await this.bus.message('transactionsSaved', block.transactions);
     // Execute afterSave callbacks for each transaction, depends on tx type
-    // see: logic.outTransfer.afterSave, logic.dapp.afterSave
     for (const tx of  block.transactions) {
       await this.transactionLogic.afterSave(tx);
     }

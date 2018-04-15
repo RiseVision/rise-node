@@ -1,22 +1,23 @@
 import { expect } from 'chai';
+import * as proxyquire from 'proxyquire';
 import * as redis from 'redis';
-import * as rewire from 'rewire';
 import { SinonSpy } from 'sinon';
 import * as sinon from 'sinon';
-import { cache, ILogger } from '../../../src/helpers';
+import { ILogger } from '../../../src/helpers';
 
 // tslint:disable no-unused-expression
-const RewireCache = rewire('../../../src/helpers/cache');
-
 describe('helpers/cache.connect', () => {
   let logFn: SinonSpy;
   let createClientSpy: SinonSpy;
   let onReadySpy: SinonSpy;
   let onErrorSpy: SinonSpy;
   let doError = false;
-  let oldImplementation;
   let mockLogger: ILogger;
   let mockCreateClient;
+  const proxyRedis = {} as any;
+  const cache = proxyquire('../../../src/helpers/cache', {
+    redis: proxyRedis,
+  });
 
   const config = { password: null };
   const mockOn = (event: string, cb: (err?: string) => void) => {
@@ -28,9 +29,9 @@ describe('helpers/cache.connect', () => {
       cb('testError');
     }
   };
+  const oldImplementation = redis.createClient;
 
   beforeEach(() => {
-    oldImplementation = redis.createClient;
     logFn = sinon.spy();
     createClientSpy = sinon.spy();
     onReadySpy = sinon.spy();
@@ -56,11 +57,11 @@ describe('helpers/cache.connect', () => {
       };
     };
 
-    RewireCache.__set__('redis.createClient', mockCreateClient);
+    proxyRedis.createClient  = mockCreateClient;
   });
 
   afterEach(() => {
-    RewireCache.__set__('redis.createClient', oldImplementation);
+    proxyRedis.createClient = oldImplementation;
   });
 
   it('should return a promise', () => {

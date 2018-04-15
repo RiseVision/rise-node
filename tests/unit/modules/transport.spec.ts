@@ -3,12 +3,12 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as Throttle from 'promise-parallel-throttle';
-import * as rewire from 'rewire';
+import * as proxyquire from 'proxyquire';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { Symbols } from '../../../src/ioc/symbols';
 import { PeerState } from '../../../src/logic';
-import { TransportModule } from '../../../src/modules/transport';
+import { TransportModule } from '../../../src/modules';
 import peersSchema from '../../../src/schema/peers';
 import schema from '../../../src/schema/transport';
 import {
@@ -34,8 +34,13 @@ chai.use(chaiAsPromised);
 // tslint:disable no-unused-expression
 // tslint:disable no-unused-expression max-line-length
 
-const schemaImport          = Object.assign({}, schema);
-const rewireTransportModule = rewire('../../../src/modules/transport');
+const popsicleStub         = {} as any;
+const throttleStub         = {} as any;
+const schemaImport         = Object.assign({}, schema);
+const proxyTransportModule = proxyquire('../../../src/modules/transport', {
+  'popsicle'                 : popsicleStub,
+  'promise-parallel-throttle': throttleStub,
+});
 
 describe('src/modules/transport.ts', () => {
 
@@ -53,7 +58,7 @@ describe('src/modules/transport.ts', () => {
   beforeEach(() => {
     container = createContainer();
     container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
-    container.rebind(Symbols.modules.transport).to(rewireTransportModule.TransportModule);
+    container.rebind(Symbols.modules.transport).to(proxyTransportModule.TransportModule);
   });
 
   let constants;
@@ -169,7 +174,6 @@ describe('src/modules/transport.ts', () => {
     let headers;
     let error;
 
-    let popsicleStub;
     let popsicleUseStub;
     let removePeerStub: SinonStub;
 
@@ -194,12 +198,9 @@ describe('src/modules/transport.ts', () => {
       thePeer = { applyHeaders: sandbox.stub() };
       thePeer.applyHeaders.returns(headers);
 
-      popsicleUseStub = { use: sandbox.stub().resolves(res) };
-      popsicleStub    = {
-        plugins: { parse: sandbox.stub().returns(1) },
-        request: sandbox.stub().returns(popsicleUseStub),
-      };
-      rewireTransportModule.__set__('popsicle', popsicleStub);
+      popsicleUseStub      = { use: sandbox.stub().resolves(res) };
+      popsicleStub.plugins = { parse: sandbox.stub().returns(1) };
+      popsicleStub.request = sandbox.stub().returns(popsicleUseStub);
 
       removePeerStub = sandbox.stub(inst as any, 'removePeer');
 
@@ -438,8 +439,6 @@ describe('src/modules/transport.ts', () => {
   });
 
   describe('onPeersReady', () => {
-
-    let ThrottleStub;
     let peers;
     let discoverPeersStub: SinonStub;
 
@@ -451,16 +450,13 @@ describe('src/modules/transport.ts', () => {
         updated      : false,
       }];
 
-      ThrottleStub = {
-        all: sandbox.stub().callsFake((fkArray) => {
-          const promiseArray = [];
-          for (const fk of fkArray) {
-            promiseArray.push(fk());
-          }
-          return Promise.all(promiseArray);
-        }),
-      };
-      rewireTransportModule.__set__('Throttle', ThrottleStub);
+      throttleStub.all = sandbox.stub().callsFake((fkArray) => {
+        const promiseArray = [];
+        for (const fk of fkArray) {
+          promiseArray.push(fk());
+        }
+        return Promise.all(promiseArray);
+      });
 
       jobsQueue.stubs.register.callsArg(1);
       discoverPeersStub = sandbox.stub(inst as any, 'discoverPeers');
@@ -534,10 +530,10 @@ describe('src/modules/transport.ts', () => {
     it('should call Throttle.all', async () => {
       await inst.onPeersReady();
 
-      expect(ThrottleStub.all.calledOnce).to.be.true;
-      expect(ThrottleStub.all.firstCall.args.length).to.be.equal(2);
-      expect(ThrottleStub.all.firstCall.args[0]).to.be.a('array');
-      expect(ThrottleStub.all.firstCall.args[1]).to.be.deep.equal({ maxInProgress: 50 });
+      expect(throttleStub.all.calledOnce).to.be.true;
+      expect(throttleStub.all.firstCall.args.length).to.be.equal(2);
+      expect(throttleStub.all.firstCall.args[0]).to.be.a('array');
+      expect(throttleStub.all.firstCall.args[1]).to.be.deep.equal({ maxInProgress: 50 });
     });
 
     describe('Throttle.all callback(for each peer in peers)', () => {

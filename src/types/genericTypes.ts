@@ -21,7 +21,6 @@ export interface AppConfig {
   consoleLogLevel: string;
   logFileName: string;
   trustProxy: boolean;
-  topAccounts: boolean;
   cacheEnabled: boolean;
   db: AppConfigDatabase;
 
@@ -94,9 +93,6 @@ export interface AppConfig {
     loadPerIteration: number,
   };
 
-  ssl: any;
-
-  dapp: any;
   nethash: string;
 }
 

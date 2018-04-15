@@ -1,11 +1,15 @@
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as rewire from 'rewire';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
 import * as limiterModule from '../../../src/helpers/request-limiter';
 import applyExpressLimits from '../../../src/helpers/request-limiter';
-const requestLimiter = rewire('../../../src/helpers/request-limiter');
+const defaults = {
+  delayAfter: 0,
+  delayMs   : 0,
+  max       : 0,
+  windowMs  : 60000,
+};
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -57,12 +61,12 @@ describe('helpers/request-limiter', () => {
       };
 
       const result = limiterModule.applyLimits(limits);
-      expect(result).to.deep.equal(requestLimiter.__get__('defaults'));
+      expect(result).to.deep.equal(defaults);
     });
 
     it("limits === 'undefined'", () => {
       const result = limiterModule.applyLimits(undefined);
-      expect(result).to.deep.equal(requestLimiter.__get__('defaults'));
+      expect(result).to.deep.equal(defaults);
     });
   });
 

@@ -635,7 +635,7 @@ describe('modules/blocks/process', () => {
       expect(loggerStub.stubs.debug.firstCall.args[1]).to.be.equal('1');
     });
     it('should call logger.warn if discarded block that does not match with current chain', async () => {
-      const roundsLogic = container.get(Symbols.logic.rounds);
+      const roundsLogic: RoundsLogicStub = container.get(Symbols.logic.rounds);
       roundsLogic.enqueueResponse('calcRound', 'round');
       blocksModule.lastBlock = {id: '12', height: 10, timestamp: 1} as any;
       appState.stubs.get.returns(false);

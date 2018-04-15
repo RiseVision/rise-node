@@ -1,15 +1,18 @@
 import * as chai from 'chai';
+import * as proxyquire from 'proxyquire';
 import * as chaiAsPromised from 'chai-as-promised';
 import 'reflect-metadata';
-import * as rewire from 'rewire';
 import { SinonSpy } from 'sinon';
 import * as sinon from 'sinon';
 import * as z_schema from 'z-schema';
-import { SchemaValid, ValidateSchema } from '../../../../src/helpers/decorators/schemavalidators';
 
 const { expect } = chai;
 chai.use(chaiAsPromised);
-const rewired = rewire('../../../../src/helpers/decorators/schemavalidators');
+const helpersStub = {} as any;
+const ProxySchemaValidators = proxyquire('../../../../src/helpers/decorators/schemavalidators', {
+  '../': helpersStub,
+});
+const { SchemaValid, ValidateSchema } = ProxySchemaValidators;
 
 describe('helpers/decorators', () => {
 
@@ -182,13 +185,12 @@ describe('helpers/decorators', () => {
           return param;
         }
       }
-      const helper = rewired.__get__('_1');
-      const castSpy = sinon.spy(helper, 'castFieldsToNumberUsingSchema');
+      const castSpy = sinon.spy();
+      helpersStub.castFieldsToNumberUsingSchema = castSpy;
       const instance = new TestCase();
       // Passing a valid value
-      await instance.method({ str: 'RISE', num: '42' });
+      instance.method({ str: 'RISE', num: 42 });
       expect(castSpy.called).to.be.true;
-      castSpy.restore();
     });
 
     it('should reject the promise if method is returning a promise', async () => {
