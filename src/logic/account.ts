@@ -6,7 +6,7 @@ import * as pgp from 'pg-promise';
 import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
 import { BigNum, catchToLoggerAndRemapError, cback, ILogger, promiseToCB } from '../helpers/';
-import { IAccountLogic } from '../ioc/interfaces/';
+import { IAccountLogic, MergeQueriesResponse } from '../ioc/interfaces/';
 import { Symbols } from '../ioc/symbols';
 import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
@@ -346,37 +346,26 @@ export class AccountLogic implements IAccountLogic {
     );
   }
 
-  /**
-   * Updates account from mem_account with diff data belongings to an editable field
-   * Inserts into mem_round "address", "amount", "delegate", "blockId", "round"
-   * based on field balance or delegates.
-   * @param {string} address
-   * @param {MemAccountsData} diff
-   * @returns {Promise<any>}
-   */
-  public merge(address: string, diff: any): string;
-
-  /**
-   * @param {string} address
-   * @param diff
-   * @param {cback<any>} cb
-   * @returns {Promise<any>}
-   */
-  public merge(address: string, diff: any, cb: cback<any>): Promise<any>;
-
-  /**
-   * @param {string} address
-   * @param diff
-   * @param {cback<any>} cb
-   * @returns {any}
-   */
-  public merge(address: string, diff: any, cb?: cback<any>) {
-    const update: any       = {};
-    const remove: any       = {};
-    const insert: any       = {};
-    const insertObject: any = {};
-    const removeObject: any = {};
-    const round: any        = [];
+  public mergeQueries(address: string, diff: any): MergeQueriesResponse {
+    const update: {
+      $inc?: { [fieldName: string]: number },
+      $dec?: { [fieldName: string]: number },
+      virgin?: 0
+    }                                                                          = {};
+    const remove: { [fieldName: string]: string[] }                            = {};
+    const insert: { [fieldName: string]: string[] }                            = {};
+    const insertObject: { [fieldName: string]: any[] & { accountId: string } } = {};
+    const removeObject: { [fieldName: string]: any[] & { accountId: string } } = {};
+    const round: Array<{
+      query: string
+      values: {
+        address: string,
+        amount?: number,
+        blockId: string,
+        delegate?: string,
+        round: number,
+      },
+    }>                                                                         = [];
 
     address = address.toUpperCase();
     this.assertPublicKey(diff.publicKey);
@@ -391,7 +380,7 @@ export class AccountLogic implements IAccountLogic {
           break;
         case Number:
           if (isNaN(trueValue) || trueValue === Infinity) {
-            return promiseToCB(Promise.reject(`Encountered insane number: ${trueValue}`), cb);
+            throw new Error(`Encountered insane number: ${trueValue}`);
           }
           if (Math.abs(trueValue) === trueValue && trueValue !== 0) {
             update.$inc            = update.$inc || {};
@@ -436,12 +425,12 @@ export class AccountLogic implements IAccountLogic {
             for (const val of (trueValue as Array<{ action?: '-' | '+' } & any>)) {
               if (val.action === '-') {
                 delete val.action;
-                removeObject[fieldName]           = removeObject[fieldName] || [];
+                removeObject[fieldName]           = removeObject[fieldName] || ([] as any);
                 removeObject[fieldName].accountId = address;
                 removeObject[fieldName].push(val);
               } else {
                 delete val.action;
-                insertObject[fieldName]           = insertObject[fieldName] || [];
+                insertObject[fieldName]           = insertObject[fieldName] || ([] as any);
                 insertObject[fieldName].accountId = address;
                 insertObject[fieldName].push(val);
               }
@@ -489,8 +478,63 @@ export class AccountLogic implements IAccountLogic {
 
     }
 
-    const sqles = Object.keys(remove)
+    // All unconfirmed stuff could go just redis.
+    const redisHandledKeys = [
+      'u_delegates', 'u_balance', 'u_isDelegate', 'u_secondSignature',
+      'u_username', 'u_multimin', 'u_multilifetime'];
 
+    const redis: Array<{ operation: string, params: any[] }> = [];
+    // Calculate redis stuff.
+
+    // remove.
+    Object.keys(remove)
+      .filter((k) => redisHandledKeys.indexOf(k) !== -1)
+      .forEach((k) => {
+        redis.push(
+          { operation: 'srem', params: [`${address}${k}`, ...remove[k]] }
+        );
+        delete remove[k]; // Avoid SQL
+      });
+
+    // inserts
+    Object.keys(insert)
+      .filter((k) => redisHandledKeys.indexOf(k) !== -1)
+      .forEach((k) => {
+        redis.push(
+          { operation: 'sadd', params: [`${address}${k}`, ...insert[k]] }
+        );
+        delete insert[k]; // Avoid SQL
+      });
+
+    // updates
+    if (update.$inc) {
+      Object.keys(update.$inc)
+        .filter((k) => redisHandledKeys.indexOf(k) !== -1)
+        .forEach((k) => {
+          redis.push(
+            { operation: 'hincrby', params: [address, k, update.$inc[k]] }
+          );
+          delete update.$inc[k];
+        });
+      if (Object.keys(update.$inc).length === 0) {
+        delete update.$inc;
+      }
+    }
+    if (update.$dec) {
+      Object.keys(update.$dec)
+        .filter((k) => redisHandledKeys.indexOf(k) !== -1)
+        .forEach((k) => {
+          redis.push(
+            { operation: 'hincrby', params: [address, k, -update.$dec[k]] }
+          );
+          delete update.$dec[k];
+        });
+      if (Object.keys(update.$dec).length === 0) {
+        delete update.$dec;
+      }
+    }
+
+    const sqles = Object.keys(remove)
     // All remove
       .map((el) => jsonSql.build({
         condition: {
@@ -541,30 +585,39 @@ export class AccountLogic implements IAccountLogic {
       }));
     }
 
-    const sqlQuery: string = sqles.concat(round)
-      .map((sql) => pgp.as.format(sql.query, sql.values))
-      .join('');
+    sqles.push.apply(sqles, round);
 
-    // If callback is not given then return the built query.
-    // TODO: this is not a good coding practice but third party code relies on this.
-    if (!cb) {
-      return sqlQuery;
-    }
+    return {
+      pg: {
+        compiled: sqles
+          .map((sql) => pgp.as.format(sql.query, sql.values))
+          .join('\n'),
+        raw: sqles,
+      },
+      redis,
+    };
+  }
 
-    if (sqlQuery.length === 0) {
+  /**
+   * @param {string} address
+   * @param diff
+   * @returns {any}
+   */
+  public merge(address: string, diff: any) {
+    address             = address.toUpperCase();
+    const { redis, pg } = this.mergeQueries(address, diff);
+
+    if (pg.raw.length === 0) {
       // Nothing to run return account
       return this.get({ address });
     }
 
-    return promiseToCB(
-      this.db.none(sqlQuery)
-        .then(() => this.get({ address }))
-        .catch((err) => {
-          this.logger.error(err.stack);
-          return Promise.reject('Account#merge error');
-        }),
-      cb
-    );
+    return this.db.none(pg.compiled)
+      .then(() => this.get({ address }))
+      .catch((err) => {
+        this.logger.error(err.stack);
+        return Promise.reject('Account#merge error');
+      });
   }
 
   /**

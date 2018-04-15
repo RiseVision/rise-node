@@ -92,7 +92,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
       blockId  : block.id,
       delegates: tx.asset.votes,
       round    : this.roundsLogic.calcRound(block.height),
-    }, emptyCB);
+    });
   }
 
   // tslint:disable-next-line max-line-length
@@ -103,7 +103,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
       blockId  : block.id,
       delegates: invertedVotes,
       round    : this.roundsLogic.calcRound(block.height),
-    }, emptyCB);
+    });
   }
 
   /**
@@ -122,13 +122,13 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
 
   public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: any): Promise<void> {
     await this.checkUnconfirmedDelegates(tx);
-    return this.accountLogic.merge(sender.address, { u_delegates: tx.asset.votes }, emptyCB);
+    return this.accountLogic.merge(sender.address, { u_delegates: tx.asset.votes });
   }
 
   public async undoUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: any): Promise<void> {
     this.objectNormalize(tx);
     const invertedVotes = Diff.reverse(tx.asset.votes);
-    return this.accountLogic.merge(sender.address, { u_delegates: invertedVotes }, emptyCB);
+    return this.accountLogic.merge(sender.address, { u_delegates: invertedVotes });
   }
 
   public objectNormalize(tx: IBaseTransaction<VoteAsset>): IBaseTransaction<VoteAsset> {

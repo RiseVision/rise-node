@@ -770,6 +770,7 @@ describe('logic/account', () => {
 
     it('should call callback correctly on error', async () => {
       const error = new Error('error');
+      diff.vote = -120;
       dbStub.enqueueResponse('none', Promise.reject(error));
 
       await account.merge(address, diff, callback)
@@ -830,6 +831,32 @@ describe('logic/account', () => {
       expect(callback.getCall(0).args.length).to.equal(2);
       expect(callback.getCall(0).args[0]).to.be.null;
       expect(callback.getCall(0).args[1]).to.be.undefined;
+    });
+
+    it('simple balance diff', async () => {
+      diff = {
+        publicKey      :
+          '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da',
+        blockId: '1',
+        balance: -10,
+        u_balance: -10,
+        u_delegates: [
+          '+a',
+          '-b',
+          '+c'
+        ],
+        multisignatures: [
+          {
+            action     : '+',
+            dependentId: '11995752116878847490R',
+          },
+          {
+            action     : '-',
+            dependentId: '11995752116878847490R',
+          },
+        ],
+      };
+      await account.merge(address, diff);
     });
   });
 

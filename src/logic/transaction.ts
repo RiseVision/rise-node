@@ -448,9 +448,7 @@ export class TransactionLogic implements ITransactionLogic {
         balance: -amountNumber,
         blockId: block.id,
         round  : this.roundsLogic.calcRound(block.height),
-      },
-      // tslint:disable-next-line no-empty
-      emptyCB // If you don't pass cb then the sql string is returned.
+      }
     );
 
     try {
@@ -463,8 +461,7 @@ export class TransactionLogic implements ITransactionLogic {
           balance: amountNumber,
           blockId: block.id,
           round  : this.roundsLogic.calcRound(block.height),
-        },
-        emptyCB
+        }
       );
       // here it differs from original implementation which did not throw
       throw e;
@@ -492,8 +489,7 @@ export class TransactionLogic implements ITransactionLogic {
         balance: amount,
         blockId: block.id,
         round  : this.roundsLogic.calcRound(block.height),
-      },
-      emptyCB
+      }
     );
 
     try {
@@ -506,8 +502,7 @@ export class TransactionLogic implements ITransactionLogic {
           balance: -amount,
           blockId: block.id,
           round  : this.roundsLogic.calcRound(block.height),
-        },
-        emptyCB
+        }
       );
       throw e;
     }
@@ -527,8 +522,7 @@ export class TransactionLogic implements ITransactionLogic {
 
     await this.accountLogic.merge(
       sender.address,
-      { u_balance: -amountNumber },
-      emptyCB
+      { u_balance: -amountNumber }
     );
     try {
       await this.types[tx.type].applyUnconfirmed(tx, sender);
@@ -536,8 +530,7 @@ export class TransactionLogic implements ITransactionLogic {
       // RollBack
       await this.accountLogic.merge(
         sender.address,
-        { u_balance: amountNumber },
-        emptyCB
+        { u_balance: amountNumber }
       );
       throw e;
     }
@@ -554,8 +547,7 @@ export class TransactionLogic implements ITransactionLogic {
 
     const mergedSender = await this.accountLogic.merge(
       sender.address,
-      { u_balance: amount },
-      emptyCB
+      { u_balance: amount }
     );
 
     try {
@@ -564,8 +556,7 @@ export class TransactionLogic implements ITransactionLogic {
       // Rollback
       await this.accountLogic.merge(
         sender.address,
-        { u_balance: -amount },
-        emptyCB
+        { u_balance: -amount }
       );
       throw e;
     }

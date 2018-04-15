@@ -45,10 +45,11 @@ export class AccountsModule implements IAccountsModule {
   }
 
   public mergeAccountAndGetSQL(diff: any): string {
+    // TODO: ACcount for redis.
     diff = this.fixAndCheckInputParams(diff);
     const {address} = diff;
     delete diff.address;
-    return this.accountLogic.merge(address, diff);
+    return this.accountLogic.mergeQueries(address, diff).pg.compiled;
   }
 
   /**
@@ -62,7 +63,7 @@ export class AccountsModule implements IAccountsModule {
     const {address} = diff;
     delete diff.address;
 
-    return this.accountLogic.merge(address, diff, emptyCB);
+    return this.accountLogic.merge(address, diff);
   }
 
   /**

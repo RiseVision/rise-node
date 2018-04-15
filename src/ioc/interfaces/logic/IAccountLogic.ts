@@ -2,6 +2,14 @@ import { cback } from '../../../helpers';
 import { AccountFilterData, MemAccountsData } from '../../../logic';
 import { publicKey } from '../../../types/sanityTypes';
 
+// tslint:disable-next-line
+export type RedisOperation = { operation: string, params: any[] }
+// tslint:disable-next-line
+export type MergeQueriesResponse = {
+  redis: RedisOperation[],
+  pg: {raw: Array<{ query: string, values: any[] }>, compiled: string}
+};
+
 export interface IAccountLogic {
   objectNormalize(account: any);
 
@@ -46,15 +54,7 @@ export interface IAccountLogic {
    */
   set(address: string, fields: { [k: string]: any }, cb?: cback<any>);
 
-  /**
-   * Updates account from mem_account with diff data belongings to an editable field
-   * Inserts into mem_round "address", "amount", "delegate", "blockId", "round"
-   * based on field balance or delegates.
-   * @param {string} address
-   * @param {MemAccountsData} diff
-   * @returns {Promise<any>}
-   */
-  merge(address: string, diff: any): string;
+  mergeQueries(address: string, diff: any): MergeQueriesResponse;
 
   /**
    * Updates account from mem_account with diff data belongings to an editable field
@@ -62,10 +62,9 @@ export interface IAccountLogic {
    * based on field balance or delegates.
    * @param {string} address
    * @param {MemAccountsData} diff
-   * @param {cback<any>} cb
    * @returns {Promise<any>}
    */
-  merge(address: string, diff: any, cb: cback<any>): Promise<any>;
+  merge(address: string, diff: any): Promise<MemAccountsData>;
 
   /**
    * Removes an account from mem_account table based on address.

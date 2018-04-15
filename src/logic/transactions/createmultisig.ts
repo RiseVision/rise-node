@@ -169,8 +169,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         multimin       : tx.asset.multisignature.min,
         multisignatures: tx.asset.multisignature.keysgroup,
         round          : this.roundsLogic.calcRound(block.height),
-      },
-      emptyCB
+      }
     );
 
     // Generate accounts
@@ -194,8 +193,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         multimin       : -tx.asset.multisignature.min,
         multisignatures: multiInvert,
         round          : this.roundsLogic.calcRound(block.height),
-      },
-      emptyCB
+      }
     );
   }
 
@@ -211,8 +209,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         u_multilifetime  : tx.asset.multisignature.lifetime,
         u_multimin       : tx.asset.multisignature.min,
         u_multisignatures: tx.asset.multisignature.keysgroup,
-      },
-      emptyCB
+      }
     );
   }
 
@@ -226,8 +223,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         u_multilifetime  : -tx.asset.multisignature.lifetime,
         u_multimin       : -tx.asset.multisignature.min,
         u_multisignatures: multiInvert,
-      },
-      emptyCB
+      }
     );
   }
 
