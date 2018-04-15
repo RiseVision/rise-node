@@ -32,9 +32,6 @@ export default {
       trustProxy     : {
         type: 'boolean',
       },
-      topAccounts    : {
-        type: 'boolean',
-      },
       cacheEnabled   : {
         type: 'boolean',
       },
@@ -292,28 +289,13 @@ export default {
         },
         required  : ['enabled', 'options'],
       },
-      dapp           : {
-        type      : 'object',
-        properties: {
-          masterrequired: {
-            type: 'boolean',
-          },
-          masterpassword: {
-            type: 'string',
-          },
-          autoexec      : {
-            type: 'array',
-          },
-        },
-        required  : ['masterrequired', 'masterpassword', 'autoexec'],
-      },
       nethash        : {
         type  : 'string',
         format: 'hex',
       },
     },
     required  : ['port', 'address', 'version', 'fileLogLevel', 'logFileName', 'consoleLogLevel', 'trustProxy',
-      'topAccounts', 'db', 'api', 'peers', 'broadcasts', 'transactions', 'forging', 'loading', 'ssl', 'dapp',
+      'db', 'api', 'peers', 'broadcasts', 'transactions', 'forging', 'loading',
       'nethash', 'cacheEnabled', 'redis'],
   },
 };

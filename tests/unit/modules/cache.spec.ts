@@ -2,15 +2,13 @@ import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
-import * as rewire from 'rewire';
 import { SinonSandbox } from 'sinon';
 import * as sinon from 'sinon';
+import * as helpers from '../../../src/helpers';
 import { cbToPromise, TransactionType } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { Cache, DummyCache } from '../../../src/modules';
 import { LoggerStub, RedisClientStub } from '../../stubs';
-
-const RewireCache = rewire('../../../src/modules/cache');
 
 chai.use(chaiAsPromised);
 
@@ -25,17 +23,13 @@ describe('modules/cache', () => {
   const appConfig = {
     cacheEnabled: true,
   };
-  let rewireCacheHelpersImports;
-  let JSONrewireOrigin;
 
   before(() => {
-    JSONrewireOrigin          = RewireCache.__get__('JSON');
-    rewireCacheHelpersImports = RewireCache.__get__('_1');
     container                 = new Container();
     container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
     container.bind(Symbols.generic.redisClient).to(RedisClientStub).inSingletonScope();
     container.bind(Symbols.helpers.logger).to(LoggerStub);
-    container.bind(Symbols.modules.cache).to(RewireCache.Cache);
+    container.bind(Symbols.modules.cache).to(Cache);
   });
 
   beforeEach(() => {
@@ -54,9 +48,9 @@ describe('modules/cache', () => {
       },
       callback    : sandbox.spy(),
       promiseUtils: {
-        cbToPromise    : sandbox.spy(rewireCacheHelpersImports, 'cbToPromise'),
-        cbToVoidPromise: sandbox.spy(rewireCacheHelpersImports, 'cbToVoidPromise'),
-        emptyCB        : sandbox.spy(rewireCacheHelpersImports, 'emptyCB'),
+        cbToPromise    : sandbox.spy(helpers, 'cbToPromise'),
+        cbToVoidPromise: sandbox.spy(helpers, 'cbToVoidPromise'),
+        emptyCB        : sandbox.spy(helpers, 'emptyCB'),
       },
     };
   });
@@ -140,7 +134,7 @@ describe('modules/cache', () => {
         keyString = '{"data":10}';
         keyObject = JSON.parse(keyString);
 
-        parseStub = sandbox.spy(JSONrewireOrigin, 'parse');
+        parseStub = sandbox.spy(JSON, 'parse');
         redisClientStub.stubs.get.callsArgWith(1, null, keyString);
       });
 
@@ -190,7 +184,7 @@ describe('modules/cache', () => {
         valueString = JSON.stringify(valueObject);
         redisResult = 'ok';
 
-        stringifyStub = sandbox.spy(JSONrewireOrigin, 'stringify');
+        stringifyStub = sandbox.spy(JSON, 'stringify');
         redisClientStub.stubs.set.callsArgWith(2, null, redisResult);
       });
 

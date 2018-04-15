@@ -1,12 +1,13 @@
 import * as chai from 'chai';
-import * as rewire from 'rewire';
+import * as ip from 'ip';
+import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
 import { SinonSpy } from 'sinon';
-import { PeerLogic, PeerState, PeerType } from '../../../src/logic';
+import { PeerState, PeerType } from '../../../src/logic';
 import { TransportModuleStub } from '../../stubs';
 
 const expect          = chai.expect;
-const RewirePeerLogic = rewire('../../../src/logic/peer.ts');
+const ProxyPeerLogic = proxyquire('../../../src/logic/peer.ts', {ip});
 
 // tslint:disable no-unused-expression
 describe('logic/peer', () => {
@@ -14,7 +15,7 @@ describe('logic/peer', () => {
   let transportModuleStub: TransportModuleStub;
   beforeEach(() => {
     transportModuleStub               = new TransportModuleStub();
-    instance                          = new PeerLogic();
+    instance                          = new ProxyPeerLogic.PeerLogic();
     (instance as any).transportModule = transportModuleStub;
   });
 
@@ -26,7 +27,6 @@ describe('logic/peer', () => {
         'state',
         'os',
         'version',
-        'dappid',
         'broadhash',
         'height',
         'clock',
@@ -47,7 +47,6 @@ describe('logic/peer', () => {
       expect(instance.headers).to.deep.equal([
         'os',
         'version',
-        'dappid',
         'broadhash',
         'height',
         'nonce',
@@ -61,7 +60,6 @@ describe('logic/peer', () => {
       expect(instance.nullable).to.deep.equal([
         'os',
         'version',
-        'dappid',
         'broadhash',
         'height',
         'clock',
@@ -111,7 +109,6 @@ describe('logic/peer', () => {
     });
 
     it('should call ip.fromLong and set instance.string to ip:port from a long ip', () => {
-      const ip          = RewirePeerLogic.__get__('ip');
       const fromLongSpy = sinon.spy(ip, 'fromLong');
       peer.ip           = '2130706433';
       peer.port         = 1010;
@@ -144,7 +141,6 @@ describe('logic/peer', () => {
         state    : '2',
         os       : '',
         version  : '',
-        dappid   : '',
         broadhash: '',
         height   : '',
         clock    : '',
@@ -166,7 +162,6 @@ describe('logic/peer', () => {
         state    : 2,
         os       : '',
         version  : '',
-        dappid   : '',
         broadhash: '',
         height   : '',
         clock    : '',
@@ -198,10 +193,7 @@ describe('logic/peer', () => {
         clock    : '',
         updated  : '',
         nonce    : '',
-        dappid   : ['dappId'],
       };
-
-      peer.dappid = 'dappId';
 
       const normalized = instance.normalize(Object.assign({}, peer));
 

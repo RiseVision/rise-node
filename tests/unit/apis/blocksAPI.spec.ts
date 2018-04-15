@@ -2,12 +2,13 @@ import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
-import * as rewire from 'rewire';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { BlocksAPI } from '../../../src/apis/blocksAPI';
 import { OrderBy } from '../../../src/helpers';
+import * as helpers from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
+import sql from '../../../src/sql/blocks';
 import {
   BlockRewardLogicStub, BlocksModuleStub, DbStub, SequenceStub, SystemModuleStub, ZSchemaStub,
 } from '../../stubs';
@@ -15,8 +16,6 @@ import { BlockLogicStub } from '../../stubs/logic/BlockLogicStub';
 import { createContainer } from '../../utils/containerCreator';
 
 chai.use(chaiAsPromised);
-
-const BlocksAPIRewire = rewire('../../../src/apis/blocksAPI');
 
 // tslint:disable no-unused-expression max-line-length
 
@@ -37,7 +36,7 @@ describe('apis/blocksAPI', () => {
   beforeEach(() => {
     sandbox   = sinon.sandbox.create();
     container = createContainer();
-    container.bind(Symbols.api.blocks).to(BlocksAPIRewire.BlocksAPI);
+    container.bind(Symbols.api.blocks).to(BlocksAPI);
 
     schema           = container.get(Symbols.generic.zschema);
     db               = container.get(Symbols.generic.db);
@@ -373,8 +372,6 @@ describe('apis/blocksAPI', () => {
       blockRows = ['row1', 'row2'];
 
       instance      = instance as any;
-      const helpers = BlocksAPIRewire.__get__('helpers_1');
-      const sql     = BlocksAPIRewire.__get__('blocks_2.default');
       OrderBySpy    = sandbox.spy(helpers, 'OrderBy');
       countListSpy  = sandbox.spy(sql, 'countList');
       listSpy       = sandbox.spy(sql, 'list');

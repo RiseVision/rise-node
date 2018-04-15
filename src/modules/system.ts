@@ -182,7 +182,6 @@ export class SystemModule implements ISystemModule {
       secondsignature: number,
       delegate: number,
       multisignature: number,
-      dapp: number
     }, fromHeight: number, height: number, toHeight: number
   } {
 
