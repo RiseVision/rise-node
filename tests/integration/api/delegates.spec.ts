@@ -3,6 +3,9 @@ import { checkEnumParam, checkIntParam, checkPubKey, checkRequiredParam, checkRe
 import * as supertest from 'supertest';
 import * as chai from 'chai';
 import * as chaiSorted from 'chai-sorted';
+import { IBlocksModule } from '../../../src/ioc/interfaces/modules';
+import { Symbols } from '../../../src/ioc/symbols';
+import { ISlots } from '../../../src/ioc/interfaces/helpers';
 chai.use(chaiSorted);
 
 const {expect} = chai;
@@ -259,10 +262,44 @@ describe('api/delegates', () => {
   });
 
   describe('/getNextForgers', () => {
-    it('should return current block');
-    it('should return currentBlock slot');
-    it('should return current slot (time)');
-    it('should return next delegates in line to forge');
+    let curBlock: any;
+    let slots: ISlots;
+    beforeEach(async () => {
+      curBlock = initializer.appManager.container.get<IBlocksModule>(Symbols.modules.blocks).lastBlock;
+      slots = initializer.appManager.container.get<ISlots>(Symbols.helpers.slots);
+    });
+
+    it('should return current block', async () => {
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/delegates/getNextForgers').expect(200)
+        .then((response) => {
+          expect(response.body.success).is.true;
+          expect(response.body.currentBlock).to.be.deep.equal(curBlock);
+        });
+    });
+    it('should return currentBlock slot', async () => {
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/delegates/getNextForgers').expect(200)
+        .then((response) => {
+          expect(response.body.currentBlockSlot).to.be.deep.equal(102);
+        });
+    });
+
+    it('should return current slot (time)', async () => {
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/delegates/getNextForgers').expect(200)
+        .then((response) => {
+          expect(response.body.currentSlot).to.be.deep.equal(slots.getSlotNumber());
+        });
+    });
+
+    it('should return next delegates in line to forge', async () => {
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/delegates/getNextForgers?limit=101').expect(200)
+        .then((response) => {
+          expect(response.body.delegates.length).to.be.equal(slots.delegates);
+        });
+    });
   });
 
   describe('/forging/status', () => {
