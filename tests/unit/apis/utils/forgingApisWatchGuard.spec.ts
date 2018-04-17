@@ -1,21 +1,20 @@
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
-import * as rewire from 'rewire';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
+import { APIError } from '../../../../src/apis/errors';
 import { ForgingApisWatchGuard } from '../../../../src/apis/utils/forgingApisWatchGuard';
+import * as helpers from '../../../../src/helpers';
 import { Symbols } from '../../../../src/ioc/symbols';
 import { AppConfig } from '../../../../src/types/genericTypes';
 import { createContainer } from '../../../utils/containerCreator';
-import { APIError } from '../../../../src/apis/errors';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
 const expect = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
-const forgingApis = rewire('../../../../src/apis/utils/forgingApisWatchGuard');
 
 // tslint:disable no-unused-expression max-line-length
 describe('apis/utils/forgingApisWatchGuard', () => {
@@ -40,7 +39,6 @@ describe('apis/utils/forgingApisWatchGuard', () => {
     config = container.get(Symbols.generic.appConfig);
 
     next = sandbox.spy();
-    const helpers = forgingApis.__get__('helpers_1');
     checkIpInListStub = sandbox.stub(helpers, 'checkIpInList');
     instance = container.get(Symbols.api.utils.forgingApisWatchGuard);
   });

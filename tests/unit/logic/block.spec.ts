@@ -2,7 +2,7 @@ import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import 'chai-arrays';
 import * as crypto from 'crypto';
-import * as rewire from 'rewire';
+import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
 import { SinonSpy } from 'sinon';
 import { constants } from '../../../src/helpers/';
@@ -17,7 +17,9 @@ const { expect } = chai;
 chai.use(assertArrays);
 
 const ed = new Ed();
-const RewireBlock = rewire('../../../src/logic/block.ts');
+const ProxyBlock = proxyquire('../../../src/logic/block.ts', {
+  crypto,
+});
 const passphrase = 'oath polypody manumit effector half sigmoid abound osmium jewfish weed sunproof ramose';
 const dummyKeypair = ed.makeKeypair(
   crypto.createHash('sha256').update(passphrase, 'utf8').digest()
@@ -41,8 +43,7 @@ describe('logic/block', () => {
   const buffer = bb.toBuffer();
 
   beforeEach(() => {
-    const rewiredCrypto = RewireBlock.__get__('crypto');
-    createHashSpy = sinon.spy(rewiredCrypto, 'createHash');
+    createHashSpy = sinon.spy(crypto, 'createHash');
     dummyTransactions = [
       {
         type: 1,

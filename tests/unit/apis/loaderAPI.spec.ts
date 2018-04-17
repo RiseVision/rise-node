@@ -41,7 +41,7 @@ describe('apis/blocksAPI', () => {
     loaderModule = container.get(Symbols.modules.loader);
 
     loaderModule.loaded    = true;
-    blocksModule.lastBlock = { height: 1 };
+    blocksModule.lastBlock = { height: 1 } as any;
 
     instance = container.get(Symbols.api.loader);
   });

@@ -1,16 +1,15 @@
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
-import * as rewire from 'rewire';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
 import { TransactionsAPI } from '../../../src/apis/transactions';
+import * as helpers from '../../../src/helpers';
 import { TransactionType } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { TransactionsModuleStub, ZSchemaStub } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
 
-const rewired = rewire('../../../src/helpers/decorators/schemavalidators');
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
 const expect = chai.expect;
@@ -24,7 +23,6 @@ describe('apis/transactionsAPI', () => {
   let container: Container;
   let result: any;
   let transactionsModuleStub: TransactionsModuleStub;
-  let helper: any;
   let castSpy: any;
   let schema: ZSchemaStub;
   let dummyTxs: any;
@@ -83,8 +81,7 @@ describe('apis/transactionsAPI', () => {
     transactionsModuleStub.enqueueResponse('getUnconfirmedTransaction', {
       id: '123',
     });
-    helper = rewired.__get__('_1');
-    castSpy = sandbox.spy(helper, 'castFieldsToNumberUsingSchema');
+    castSpy = sandbox.spy(helpers, 'castFieldsToNumberUsingSchema');
     schema = container.get(Symbols.generic.zschema);
     schema.enqueueResponse('validate', true);
     schema.enqueueResponse('getLastError', {
@@ -371,7 +368,7 @@ describe('apis/transactionsAPI', () => {
         transactions: [
           { id: 100, senderPublicKey: 'aaa', recipientId: 'bbb' },
           { id: 200, senderPublicKey: 'aaa', recipientId: 'bbb' },
-          { id: 400, senderPublicKey: 'aaa', recipientId: 'ddd' },
+          { id: 400, senderPublicKey: 'aaa', recipientId: 'ddd' }
         ],
       });
       expect(result.transactions).to.be.ofSize(3);
@@ -383,7 +380,7 @@ describe('apis/transactionsAPI', () => {
         count: 5,
         transactions: [
           { id: 400, senderPublicKey: 'aaa', recipientId: 'ddd' },
-          { id: 500, senderPublicKey: 'ccc', recipientId: 'ddd' },
+          { id: 500, senderPublicKey: 'ccc', recipientId: 'ddd' }
         ],
       });
       expect(result.transactions).to.be.ofSize(2);
@@ -398,7 +395,7 @@ describe('apis/transactionsAPI', () => {
           { id: 200, senderPublicKey: 'aaa', recipientId: 'bbb' },
           { id: 300, senderPublicKey: 'ccc', recipientId: 'bbb' },
           { id: 400, senderPublicKey: 'aaa', recipientId: 'ddd' },
-          { id: 500, senderPublicKey: 'ccc', recipientId: 'ddd' },
+          { id: 500, senderPublicKey: 'ccc', recipientId: 'ddd' }
         ],
       });
       expect(result.transactions).to.be.ofSize(5);

@@ -43,7 +43,7 @@ export default class TransportModuleStub extends BaseStubClass implements ITrans
   }
 
   @stubMethod()
-  public receiveSignatures(query: { signatures: Array<{ transaction: string; signature: string }> }): Promise<void> {
+  public receiveSignatures(signatures: Array<{ transaction: string, signature: string }> ): Promise<void> {
     return undefined;
   }
 

@@ -138,13 +138,14 @@ describe('apis/transportAPI', () => {
     });
   });
 
-  describe('postSignatures()', () => {
-    it('success', async () => {
-      const signatures = [{transaction: 'abc', signature: 'def'}];
-      result = await instance.postSignatures(signatures);
-      expect(result).to.be.undefined;
+  describe('postSignatures', () => {
+    it('should call transportModule.receiveSignatures', async () => {
+      transportModuleStub.stubs.receiveSignatures.resolves(true);
+      const signatures = [{transaction: 'transaction', signature: 'signature'}];
+      expect(await instance.postSignatures(signatures)).to.be.true;
       expect(transportModuleStub.stubs.receiveSignatures.calledOnce).to.be.true;
-      expect(transportModuleStub.stubs.receiveSignatures.args[0][0]).to.deep.equal(signatures);
+      expect(transportModuleStub.stubs.receiveSignatures.firstCall.args.length).to.be.equal(1);
+      expect(transportModuleStub.stubs.receiveSignatures.firstCall.args[0]).to.be.deep.equal(signatures);
     });
   });
 
