@@ -4,7 +4,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
-import { BlocksAPI } from '../../../src/apis/blocksAPI';
+import { BlocksAPI } from '../../../src/apis';
 import { OrderBy } from '../../../src/helpers';
 import * as helpers from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
@@ -127,7 +127,7 @@ describe('apis/blocksAPI', () => {
       expect(blockLogic.stubs.dbRead.firstCall.args[0]).to.be.deep.equal({});
     });
 
-    it('success', async () => {
+    it('should return block from an id', async () => {
       const ret = await instance.getBlock(filters);
 
       expect(ret).to.be.deep.equal({ block });
@@ -136,7 +136,7 @@ describe('apis/blocksAPI', () => {
 
   describe('getHeight', () => {
 
-    it('success', async () => {
+    it('should return height', async () => {
       blocksModule.lastBlock = { height: 5 } as any;
 
       const ret = await instance.getHeight();
@@ -148,7 +148,7 @@ describe('apis/blocksAPI', () => {
 
   describe('getBroadHash', () => {
 
-    it('success', async () => {
+    it('should return a broadhash', async () => {
       systemModule.enqueueResponse('getBroadhash', 'hash');
 
       const ret = await instance.getBroadHash();
@@ -160,7 +160,7 @@ describe('apis/blocksAPI', () => {
 
   describe('getEpoch', () => {
 
-    it('success', () => {
+    it('should return an epoch', () => {
       const ret   = instance.getEpoch();
       const epoch = new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0));
 
@@ -176,12 +176,12 @@ describe('apis/blocksAPI', () => {
 
     beforeEach(() => {
       fees   = {
-        fromHeight: 'fromHeight',
-        toHeight  : 'toHeight',
-        height    : 'height',
         fees      : {
           send: 'send',
         },
+        fromHeight: 'fromHeight',
+        height    : 'height',
+        toHeight  : 'toHeight',
       };
       params = { height: 1 };
       systemModule.enqueueResponse('getFees', fees);
@@ -195,7 +195,7 @@ describe('apis/blocksAPI', () => {
       expect(systemModule.stubs.getFees.firstCall.args[0]).to.be.equal(1);
     });
 
-    it('success', async () => {
+    it('should return fee from height', async () => {
       const ret = await instance.getFee(params);
 
       expect(ret).to.be.deep.equal({
@@ -341,7 +341,7 @@ describe('apis/blocksAPI', () => {
       expect(blockRewardLogic.stubs.calcSupply.firstCall.args[0]).to.be.equal(5);
     });
 
-    it('success', () => {
+    it('should return a status', () => {
       const epoch = new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0));
 
       const ret = instance.getStatus();
@@ -479,7 +479,7 @@ describe('apis/blocksAPI', () => {
         expect(params.limit).to.be.equal(10);
       });
 
-      it('limit state isn"t exist', async () => {
+      it('limit state isn\'t exist', async () => {
         await doCall(filter);
 
         expect(params.limit).to.be.equal(100);
@@ -608,7 +608,7 @@ describe('apis/blocksAPI', () => {
       expect(blockLogic.stubs.dbRead.secondCall.args[0]).to.be.equal(blockRows[1]);
     });
 
-    it('success', async () => {
+    it('should return an object with the properties blocks and count', async () => {
       const ret = await instance['list'](filter);
 
       expect(ret).to.be.deep.equal({ blocks: blockRows, count: 10 });
