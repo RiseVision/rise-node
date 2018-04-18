@@ -3,7 +3,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { TransportAPI } from '../../../src/apis/transportAPI';
+import { TransportAPI } from '../../../src/apis';
 import { Symbols } from '../../../src/ioc/symbols';
 import {
   BlocksModuleStub,
@@ -106,28 +106,28 @@ describe('apis/transportAPI', () => {
   });
 
   describe('height()', () => {
-    it('success', () => {
+    it('should return an object with the property height', () => {
       result = instance.height();
       expect(result).to.deep.equal({ height: 101 });
     });
   });
 
   describe('ping()', () => {
-    it('success', () => {
+    it('should return an empty object', () => {
       result = instance.ping();
       expect(result).to.deep.equal({});
     });
   });
 
   describe('list()', () => {
-    it('success', async () => {
+    it('should return an object with the property peers', async () => {
       result = await instance.list();
       expect(result).to.deep.equal({ peers: ['a', 'b', 'c'] });
     });
   });
 
   describe('signatures()', () => {
-    it('success', () => {
+    it('should return an object with the property signatures', () => {
       result = instance.signatures();
       expect(result).to.deep.equal({
         signatures: [
@@ -150,7 +150,7 @@ describe('apis/transportAPI', () => {
   });
 
   describe('transactions()', () => {
-    it('success', () => {
+    it('should return an object with the property transactions', () => {
       result = instance.transactions();
       expect(result).to.deep.equal({
         transactions: [{ id: 10 }, { id: 11 }, { id: 12 }],
@@ -246,7 +246,7 @@ describe('apis/transportAPI', () => {
       expect(peersModuleStub.stubs.remove.args[0][1]).to.equal(1234);
     });
 
-    it('success #1', async () => {
+    it('should return an object with the property \'common\' equal to true', async () => {
       result = await instance.getBlocksCommon('1,2,3', {} as any);
       expect(result).to.deep.equal({ common: true });
       expect(dbStub.stubs.query.calledOnce).to.be.true;
@@ -257,7 +257,7 @@ describe('apis/transportAPI', () => {
       expect(dbStub.stubs.query.args[0][1]).to.deep.equal(['1', '2', '3']);
     });
 
-    it('success #2', async () => {
+    it('should return an object with the property \'common\' equal to null', async () => {
       dbStub.stubs.query.returns([]);
       result = await instance.getBlocksCommon('1,2,3', {} as any);
       expect(result).to.deep.equal({ common: null });
@@ -271,7 +271,7 @@ describe('apis/transportAPI', () => {
   });
 
   describe('postBlock()', () => {
-    it('success', async () => {
+    it('should return an object with the property blockId', async () => {
       result = await instance.postBlock(
         { foo: 'bar' } as any,
         { ip: '8.8.8.8', headers: { port: '1234' } } as any
@@ -286,7 +286,7 @@ describe('apis/transportAPI', () => {
       expect(busStub.stubs.message.args[0][1]).to.deep.equal({ id: 123 });
     });
 
-    it('error', async () => {
+    it('should be rejected', async () => {
       blockLogicStub.stubs.objectNormalize.throws(
         new Error('objectNormalizeError')
       );
@@ -307,7 +307,7 @@ describe('apis/transportAPI', () => {
   });
 
   describe('getBlocks()', () => {
-    it('success', async () => {
+    it('should return an object with the property blocks', async () => {
       result = await instance.getBlocks('123');
       expect(result).to.deep.equal({
         blocks: [{ id: 1 }, { id: 2 }, { id: 3 }],

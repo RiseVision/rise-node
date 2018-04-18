@@ -4,7 +4,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import { SinonSandbox } from 'sinon';
 import * as sinon from 'sinon';
-import { LoaderAPI } from '../../../src/apis/loaderAPI';
+import { LoaderAPI } from '../../../src/apis';
 import { Symbols } from '../../../src/ioc/symbols';
 import {
   AppStateStub,
@@ -52,7 +52,7 @@ describe('apis/blocksAPI', () => {
 
   describe('getStatus', () => {
 
-    it('success', () => {
+    it('should return an object with the property \'loaded\' equal to true', () => {
       const ret = instance.getStatus();
 
       expect(ret).to.be.deep.equal({ loaded: true });
@@ -62,7 +62,7 @@ describe('apis/blocksAPI', () => {
 
   describe('getStatusSync', () => {
 
-    it('success', () => {
+    it('should return an object with the properties: broadhash, consensus, height and syncing', () => {
       appState.enqueueResponse('get', 'consensus');
 
       const ret = instance.getStatusSync();
