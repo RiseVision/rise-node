@@ -260,6 +260,7 @@ export class DelegatesAPI {
 
   @Post('/forging/disable')
   @ValidateSchema()
+  @UseBefore(ForgingApisWatchGuard)
   public async forgingDisable(@SchemaValid(schema.disableForging)
                               @Body() params: { secret: string, publicKey: string }) {
     const kp = this.ed.makeKeypair(crypto

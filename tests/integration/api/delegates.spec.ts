@@ -1,11 +1,15 @@
 import initializer from '../common/init';
-import { checkEnumParam, checkIntParam, checkPubKey, checkRequiredParam, checkReturnObjKeyVal } from './utils';
+import {
+  checkEnumParam, checkIntParam, checkPostPubKey, checkPostRequiredParam, checkPubKey, checkRequiredParam,
+  checkReturnObjKeyVal
+} from './utils';
 import * as supertest from 'supertest';
 import * as chai from 'chai';
 import * as chaiSorted from 'chai-sorted';
 import { IBlocksModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { ISlots } from '../../../src/ioc/interfaces/helpers';
+import { AppConfig } from '../../../src/types/genericTypes';
 chai.use(chaiSorted);
 
 const {expect} = chai;
@@ -303,24 +307,93 @@ describe('api/delegates', () => {
   });
 
   describe('/forging/status', () => {
+    let cfg: AppConfig;
+    beforeEach(async () => {
+      cfg = initializer.appManager.container.get<AppConfig>(Symbols.generic.appConfig);
+      cfg.forging.access.whiteList = [ '127.0.0.1', '::ffff:127.0.0.1'];
+    });
+
     checkPubKey('publicKey', '/api/delegates/forging/status');
-    it('should disallow request from unallowed ip');
-    it('should check for publicKey only if provided');
-    it('should return all enabled delegates to forge');
+
+    it('should disallow request from unallowed ip', async () => {
+      cfg.forging.access.whiteList = [];
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/delegates/forging/status').expect(403)
+        .then((response) => {
+          expect(response.body.error).to.be.equal('Delegates API access denied');
+        });
+    });
+
+    it('should check for publicKey only if provided', async () => {
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/delegates/forging/status?publicKey=241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14').expect(200)
+        .then((response) => {
+          expect(response.body).to.be.deep.equal({
+            delegates: [ '241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14' ],
+            enabled: false ,
+            success: true,
+          });
+        });
+    });
+
+    it('should return all enabled delegates to forge', async () => {
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/delegates/forging/status').expect(200)
+        .then((response) => {
+          expect(response.body).to.be.deep.equal({
+            delegates: [],
+            enabled: false,
+            success: true,
+          });
+        });
+    });
   });
+
   describe('/forging/enable', () => {
-    // checkRequiredParam('secret', '/api/delegates/forging/enable?secret=aaa');
-    // checkPubKey('publicKey', '/api/delegates/forging/enable?secret=aaa');
-    it('should disallow request from unallowed ip');
+    let cfg: AppConfig;
+    beforeEach(async () => {
+      cfg = initializer.appManager.container.get<AppConfig>(Symbols.generic.appConfig);
+      cfg.forging.access.whiteList = [ '127.0.0.1', '::ffff:127.0.0.1'];
+    });
+
+    // checkPostRequiredParam('secret', '/api/delegates/forging/enable?secret=aaa&publickKey=241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14');
+    // checkPostPubKey('publicKey', '/api/delegates/forging/enable?secret=aaa');
+
+    it('should disallow request from unallowed ip', async () => {
+      cfg.forging.access.whiteList = [];
+      return supertest(initializer.appManager.expressApp)
+        .post('/api/delegates/forging/enable').expect(403)
+        .then((response) => {
+          expect(response.body.error).to.be.equal('Delegates API access denied');
+        });
+    });
+
     it('should throw error if given publicKey differs from computed pk');
+
     it('should throw error if forging is already enabled for such account');
+
     it('should throw error if account is not found');
+
     it('should throw error if account is not a delegate');
   });
   describe('/forging/disable', () => {
-    // checkRequiredParam('secret', '/api/delegates/forging/disable');
-    // checkPubKey('publicKey', '/api/delegates/forging/disable?secret=aaa');
-    it('should disallow request from unallowed ip');
+    let cfg: AppConfig;
+    beforeEach(async () => {
+      cfg = initializer.appManager.container.get<AppConfig>(Symbols.generic.appConfig);
+      cfg.forging.access.whiteList = [ '127.0.0.1', '::ffff:127.0.0.1'];
+    });
+
+    // checkPostRequiredParam('secret', '/api/delegates/forging/disable');
+    // checkPostPubKey('publicKey', '/api/delegates/forging/disable?secret=aaa');
+
+    it('should disallow request from unallowed ip', async () => {
+      cfg.forging.access.whiteList = [];
+      return supertest(initializer.appManager.expressApp)
+        .post('/api/delegates/forging/disable').expect(403)
+        .then((response) => {
+          expect(response.body.error).to.be.equal('Delegates API access denied');
+        });
+    });
     it('should throw error if given publicKey differs from computed pk');
     it('should throw error if forging is already disabled for such account');
     it('should throw error if account is not found');
