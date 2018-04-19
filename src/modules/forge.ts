@@ -72,7 +72,7 @@ export class ForgeModule implements IForgeModule {
       .filter((pk) => this.enabledKeys[pk] === true);
   }
 
-  public isForgeEnabledOn(pk?: publicKey | IKeypair) {
+  public isForgeEnabledOn(pk?: publicKey | IKeypair): boolean {
     let thePK: publicKey;
     if (typeof(pk) === 'object') {
       thePK                = pk.publicKey.toString('hex');

@@ -28,10 +28,12 @@ export const checkPubKey = (paramName: string, baseUrl: string) => {
   });
 };
 
-export const checkPostPubKey = (paramName: string, baseUrl: string) => {
+export const checkPostPubKey = (paramName: string, baseUrl: string, body: any) => {
   it(`should throw if ${paramName} is not a valid publicKey`, async () => {
+    body[paramName] = '1';
     return supertest(initializer.appManager.expressApp)
-      .post(`${baseUrl}?${paramName}=1`)
+      .post(`${baseUrl}`)
+      .send(body)
       .expect(200)
       .then((response) => {
         expect(response.body.success).is.false;
@@ -104,7 +106,7 @@ export const checkRequiredParam = (paramName: string, validUrl: string) => {
   });
 }
 
-export const checkPostRequiredParam = (paramName: string, validUrl: string) => {
+export const checkPostRequiredParam = (paramName: string, validUrl: string, body: any) => {
   it(`should throw if ${paramName} is not provided`, async () => {
     const theURLOBJ = url.parse(validUrl, true);
     delete theURLOBJ.query[paramName];
@@ -113,6 +115,7 @@ export const checkPostRequiredParam = (paramName: string, validUrl: string) => {
     delete theURLOBJ.href;
     return supertest(initializer.appManager.expressApp)
       .post(url.format(theURLOBJ))
+      .send(body)
       .expect(200)
       .then((response) => {
         expect(response.body.success).is.false;

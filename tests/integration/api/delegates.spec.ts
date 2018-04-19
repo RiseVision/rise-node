@@ -10,6 +10,10 @@ import { IBlocksModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { ISlots } from '../../../src/ioc/interfaces/helpers';
 import { AppConfig } from '../../../src/types/genericTypes';
+import {
+  confirmTransactions, createSendTransaction, createWallet, getRandomDelegateWallet
+} from '../common/utils';
+import { IForgeModule } from '../../../src/ioc/interfaces/modules/IForgeModule';
 chai.use(chaiSorted);
 
 const {expect} = chai;
@@ -356,8 +360,10 @@ describe('api/delegates', () => {
       cfg.forging.access.whiteList = [ '127.0.0.1', '::ffff:127.0.0.1'];
     });
 
-    // checkPostRequiredParam('secret', '/api/delegates/forging/enable?secret=aaa&publickKey=241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14');
-    // checkPostPubKey('publicKey', '/api/delegates/forging/enable?secret=aaa');
+    checkPostRequiredParam('secret', '/api/delegates/forging/enable', {
+      publicKey: '241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14',
+    });
+    checkPostPubKey('publicKey', '/api/delegates/forging/enable', {secret: 'aaa'});
 
     it('should disallow request from unallowed ip', async () => {
       cfg.forging.access.whiteList = [];
@@ -368,14 +374,75 @@ describe('api/delegates', () => {
         });
     });
 
-    it('should throw error if given publicKey differs from computed pk');
+    it('should throw error if given publicKey differs from computed pk', async () => {
+      return supertest(initializer.appManager.expressApp)
+        .post('/api/delegates/forging/enable')
+        .send({
+          publicKey: '241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14',
+          secret: 'sensereduceweirdpluck',
+        }).expect(200)
+        .then((response) => {
+          expect(response.body.error).to.be.equal('Invalid passphrase');
+        });
+    });
 
-    it('should throw error if forging is already enabled for such account');
+    it('should throw error if forging is already enabled for such account', async () => {
+      return supertest(initializer.appManager.expressApp)
+        .post('/api/delegates/forging/enable')
+        .send({
+          publicKey: '241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14',
+          secret: 'sense reduce weird pluck result business unable dust garage gaze business anchor',
+        }).expect(200)
+        .then((response) => {
+          return supertest(initializer.appManager.expressApp)
+            .post('/api/delegates/forging/enable')
+            .send({
+              publicKey: '241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14',
+              secret: 'sense reduce weird pluck result business unable dust garage gaze business anchor',
+            }).expect(200)
+            .then((res) => {
+              expect(res.body.error).to.be.equal('Forging is already enabled');
+            });
+        });
+    });
 
-    it('should throw error if account is not found');
+    it('should throw error if account is not found', async () => {
+      // Key pair is valid but account does not exist
+      return supertest(initializer.appManager.expressApp)
+        .post('/api/delegates/forging/enable')
+        .send({
+          publicKey: '0cf75c0afa655b7658d971765d4989d8553d639eeed57eaa45b1991b61db1856',
+          secret: 'unable dust garage gaze business anchor sense reduce weird pluck result business',
+        }).expect(200)
+        .then((response) => {
+          expect(response.body.error).to.be.equal('Account not found');
+        });
+    });
 
-    it('should throw error if account is not a delegate');
+    it('should throw error if account is not a delegate', async () => {
+      // Transfer some funds to a new account from a delegate
+      const secret = 'business anchor sense reduce weird pluck result business unable dust garage gaze';
+      const wallet = createWallet(secret);
+      const tx = await createSendTransaction(
+        0,
+        Math.ceil(Math.random() * 100),
+        getRandomDelegateWallet(),
+        wallet.address
+      );
+      await confirmTransactions([tx], 1);
+      // Try to enable forging on this new non-delegate account
+      return supertest(initializer.appManager.expressApp)
+        .post('/api/delegates/forging/enable')
+        .send({
+          publicKey: wallet.publicKey,
+          secret,
+        }).expect(200)
+        .then((response) => {
+          expect(response.body.error).to.be.equal('Delegate not found');
+        });
+    });
   });
+
   describe('/forging/disable', () => {
     let cfg: AppConfig;
     beforeEach(async () => {
@@ -383,8 +450,10 @@ describe('api/delegates', () => {
       cfg.forging.access.whiteList = [ '127.0.0.1', '::ffff:127.0.0.1'];
     });
 
-    // checkPostRequiredParam('secret', '/api/delegates/forging/disable');
-    // checkPostPubKey('publicKey', '/api/delegates/forging/disable?secret=aaa');
+    checkPostRequiredParam('secret', '/api/delegates/forging/disable', {});
+    checkPostPubKey('publicKey', '/api/delegates/forging/disable', {
+      secret: 'aaa',
+    });
 
     it('should disallow request from unallowed ip', async () => {
       cfg.forging.access.whiteList = [];
@@ -394,10 +463,82 @@ describe('api/delegates', () => {
           expect(response.body.error).to.be.equal('Delegates API access denied');
         });
     });
-    it('should throw error if given publicKey differs from computed pk');
-    it('should throw error if forging is already disabled for such account');
-    it('should throw error if account is not found');
-    it('should throw error if account is not a delegate');
+
+    it('should throw error if given publicKey differs from computed pk', async () => {
+      return supertest(initializer.appManager.expressApp)
+        .post('/api/delegates/forging/disable')
+        .send({
+          publicKey: '241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14',
+          secret: 'sensereduceweirdpluck',
+        }).expect(200)
+        .then((response) => {
+          expect(response.body.error).to.be.equal('Invalid passphrase');
+        });
+    });
+
+    it('should throw error if forging is already disabled for such account', async () => {
+      return supertest(initializer.appManager.expressApp)
+        .post('/api/delegates/forging/disable')
+        .send({
+          publicKey: '21ba4bd249c3369c1a1c15a2f309ce993db9396c55d519f17d0138fafee36d66',
+          secret: 'chunk torch ice snow lunar cute school trigger portion gift home canal',
+        }).expect(200).then((res) => {
+          return supertest(initializer.appManager.expressApp)
+            .post('/api/delegates/forging/disable')
+            .send({
+              publicKey: '21ba4bd249c3369c1a1c15a2f309ce993db9396c55d519f17d0138fafee36d66',
+              secret: 'chunk torch ice snow lunar cute school trigger portion gift home canal',
+            }).expect(200).then((resp) => {
+              expect(resp.body.error).to.be.equal('Forging is already disabled');
+            });
+        });
+    });
+
+    it('should throw error if account is not found', async () => {
+      const forgeModule = initializer.appManager.container.get<IForgeModule>(Symbols.modules.forge);
+      forgeModule.enableForge({
+        privateKey: Buffer.from('aaaa', 'hex'),
+        publicKey: Buffer.from('b7717adf51800bce03b1aebdad444220734c423f0014944bfcdb8d615641c61e', 'hex'),
+      });
+      // Key pair is valid but account does not exist
+      return supertest(initializer.appManager.expressApp)
+        .post('/api/delegates/forging/disable')
+        .send({
+          publicKey: 'b7717adf51800bce03b1aebdad444220734c423f0014944bfcdb8d615641c61e',
+          secret: 'pluck result dust unable garage gaze business anchor sense reduce weird business',
+        }).expect(200)
+        .then((response) => {
+          expect(response.body.error).to.be.equal('Account not found');
+        });
+    });
+
+    it('should throw error if account is not a delegate', async () => {
+      // Transfer some funds to a new account from a delegate
+      const secret = 'dust pluck sense reduce weird pluck result business unable dust sense gaze';
+      const wallet = createWallet(secret);
+      const tx = await createSendTransaction(
+        0,
+        Math.ceil(Math.random() * 100),
+        getRandomDelegateWallet(),
+        wallet.address
+      );
+      await confirmTransactions([tx], 1);
+      const forgeModule = initializer.appManager.container.get<IForgeModule>(Symbols.modules.forge);
+      forgeModule.enableForge({
+        privateKey: Buffer.from('aaaa', 'hex'),
+        publicKey: Buffer.from(wallet.publicKey, 'hex'),
+      });
+      // Try to disable forging on this new non-delegate account
+      return supertest(initializer.appManager.expressApp)
+        .post('/api/delegates/forging/disable')
+        .send({
+          publicKey: wallet.publicKey,
+          secret,
+        }).expect(200)
+        .then((response) => {
+          expect(response.body.error).to.be.equal('Delegate not found');
+        });
+    });
   });
 
 });

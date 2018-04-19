@@ -272,7 +272,7 @@ export class DelegatesAPI {
       throw new APIError('Invalid passphrase', 200);
     }
 
-    if (typeof(this.forgeModule.isForgeEnabledOn(pk)) === 'undefined') {
+    if (!this.forgeModule.isForgeEnabledOn(pk)) {
       throw new APIError('Forging is already disabled', 200);
     }
 
