@@ -1,9 +1,14 @@
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import {Container} from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
 import { BlockProgressLogger } from '../../../src/helpers';
+import { Symbols } from '../../../src/ioc/symbols';
+import { LoggerStub } from '../../stubs';
+import { createContainer } from '../../utils/containerCreator';
 
+// tslint:disable no-var-requires no-string-literal no-unused-expression
 const assertArrays = require('chai-arrays');
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -12,14 +17,14 @@ chai.use(assertArrays);
 describe('helpers/blocksProgressLogger', () => {
   let sandbox: SinonSandbox;
   let instance: BlockProgressLogger;
-  let fakeILogger: any;
-  let loggerStub: any;
+  let loggerStub: LoggerStub;
+  let container: Container;
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
-    fakeILogger = { info: (message: string, data: string) => true };
-    loggerStub = sandbox.stub(fakeILogger, 'info');
-    instance = new BlockProgressLogger(10, 2, 'My message', fakeILogger);
+    container = createContainer();
+    loggerStub = container.get(Symbols.helpers.logger);
+    instance = new BlockProgressLogger(10, 2, 'My message', loggerStub);
   });
 
   afterEach(() => {
@@ -43,25 +48,25 @@ describe('helpers/blocksProgressLogger', () => {
   describe('applyNext', () => {
     it('this.applied === 1', () => {
       instance.applyNext();
-      expect(loggerStub.calledOnce).to.be.true;
-      expect(loggerStub.args[0][0]).to.equal('My message');
-      expect(loggerStub.args[0][1]).contain('applied');
+      expect(loggerStub.stubs.info.calledOnce).to.be.true;
+      expect(loggerStub.stubs.info.args[0][0]).to.equal('My message');
+      expect(loggerStub.stubs.info.args[0][1]).contain('applied');
     });
 
     it('this.applied === this.target', () => {
       instance['applied'] = 9;
       instance.applyNext();
-      expect(loggerStub.calledOnce).to.be.true;
-      expect(loggerStub.args[0][0]).to.equal('My message');
-      expect(loggerStub.args[0][1]).contain('applied');
+      expect(loggerStub.stubs.info.calledOnce).to.be.true;
+      expect(loggerStub.stubs.info.args[0][0]).to.equal('My message');
+      expect(loggerStub.stubs.info.args[0][1]).contain('applied');
     });
 
     it('this.applied % this.step === 1', () => {
       instance['applied'] = 5;
       instance.applyNext();
-      expect(loggerStub.calledOnce).to.be.true;
-      expect(loggerStub.args[0][0]).to.equal('My message');
-      expect(loggerStub.args[0][1]).contain('applied');
+      expect(loggerStub.stubs.info.calledOnce).to.be.true;
+      expect(loggerStub.stubs.info.args[0][0]).to.equal('My message');
+      expect(loggerStub.stubs.info.args[0][1]).contain('applied');
     });
 
     it('this.applied >= this.target', () => {
@@ -74,7 +79,7 @@ describe('helpers/blocksProgressLogger', () => {
     it('Rest of cases', () => {
       instance['applied'] = 1;
       instance.applyNext();
-      expect(loggerStub.called).to.be.false;
+      expect(loggerStub.stubs.info.calledOnce).to.be.false;
     });
   });
 });

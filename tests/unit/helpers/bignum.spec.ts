@@ -13,7 +13,7 @@ describe('helpers/bignum', () => {
 
     it('should throw error when buffer length and size are not multiples', () => {
       expect(() => {
-        const bn = MyBigNumb.fromBuffer(Buffer.from('11223344556677889900ff', 'hex'), { size: 3 });
+        MyBigNumb.fromBuffer(Buffer.from('11223344556677889900ff', 'hex'), { size: 3 });
       }).to.throw(Error, /multiple/);
     });
 

@@ -137,8 +137,8 @@ describe('helpers/ed', () => {
 
     const inputSeed = Buffer.from(inputSeedHex, 'hex');
     const expectedOutputKeys: IKeypair = {
-      publicKey: Buffer.from(publicKeyHex, 'hex'),
       privateKey: Buffer.from(privateKeyHex, 'hex'),
+      publicKey: Buffer.from(publicKeyHex, 'hex'),
     };
     const inputMessage = Buffer.from(messageHash);
     const expectedOutputSignature = Buffer.from(signatureHex, 'hex');

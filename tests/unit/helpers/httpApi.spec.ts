@@ -2,7 +2,7 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { middleware } from '../../../src/helpers/httpApi';
+import { middleware } from '../../../src/helpers';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -29,9 +29,9 @@ describe('helpers/httpApi', () => {
     loggerFake = { log: () => true };
     loggerSpy = sandbox.spy(loggerFake, 'log');
     req = { method: 'aaa', url: 'bbb', ip: '80.3.10.20' };
-    sendObject = { send: (body: any) => () => true };
+    sendObject = { send: () => () => true };
     sendSpy = sandbox.spy(sendObject, 'send');
-    res = { setHeader: () => true, status: (code: number) => sendObject };
+    res = { setHeader: () => true, status: () => sendObject };
     setHeaderSpy = sandbox.spy(res, 'setHeader');
     statusSpy = sandbox.spy(res, 'status');
     next = sandbox.stub().returns(123);
@@ -42,7 +42,7 @@ describe('helpers/httpApi', () => {
   });
 
   describe('logClientConnections()', () => {
-    it('success', () => {
+    it('should call to logger.log() and next() once', () => {
       const result = middleware.logClientConnections(loggerFake);
       const nextResult = result(req, res, next);
       expect(loggerSpy.calledOnce).to.be.true;
@@ -53,7 +53,7 @@ describe('helpers/httpApi', () => {
   });
 
   describe('attachResponseHeader()', () => {
-    it('success', () => {
+    it('should call to setHeader() and next() once', () => {
       const result = middleware.attachResponseHeader('aaa', 'bbb');
       const nextResult = result(req, res, next);
       expect(setHeaderSpy.calledOnce).to.be.true;
