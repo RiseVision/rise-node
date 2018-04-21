@@ -21,7 +21,7 @@ chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression max-line-length
 
-describe('apis/blocksAPI', () => {
+describe('apis/delegatesAPI', () => {
 
   let sandbox: SinonSandbox;
   let container: Container;
@@ -807,7 +807,7 @@ describe('apis/blocksAPI', () => {
         .digest();
 
       ed.enqueueResponse('makeKeypair', kp);
-      forgeModule.enqueueResponse('isForgeEnabledOn', false);
+      forgeModule.enqueueResponse('isForgeEnabledOn', true);
       forgeModule.enqueueResponse('disableForge', {});
       accounts.enqueueResponse('getAccount', account);
     });
