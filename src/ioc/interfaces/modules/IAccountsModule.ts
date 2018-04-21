@@ -1,6 +1,7 @@
 import { AccountFilterData, MemAccountsData, OptionalsMemAccounts } from '../../../logic';
 import { publicKey } from '../../../types/sanityTypes';
 import { IModule } from './IModule';
+import { AccountsModel } from '../../../models/AccountsModel';
 
 export interface IAccountsModule extends IModule {
   getAccount(filter: AccountFilterData, fields?: Array<(keyof MemAccountsData)>): Promise<MemAccountsData>;
@@ -11,7 +12,7 @@ export interface IAccountsModule extends IModule {
    * Sets some data to specific account
    */
   // tslint:disable-next-line max-line-length
-  setAccountAndGet(data: ({ publicKey: string } | { address: string }) & OptionalsMemAccounts ): Promise<MemAccountsData>;
+  setAccountAndGet(data: OptionalsMemAccounts  & ({ publicKey: Buffer } | { address: string })): Promise<AccountsModel>;
 
   mergeAccountAndGetSQL(diff: any): string;
 

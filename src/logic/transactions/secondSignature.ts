@@ -6,6 +6,7 @@ import { Symbols } from '../../ioc/symbols';
 import secondSignatureSchema from '../../schema/logic/transactions/secondSignature';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
+import { SignaturesModel } from '../../models/SignaturesModel';
 // tslint:disable-next-line interface-over-type-literal
 export type SecondSignatureAsset = {
   signature: {
@@ -14,13 +15,7 @@ export type SecondSignatureAsset = {
 };
 
 @injectable()
-export class SecondSignatureTransaction extends BaseTransactionType<SecondSignatureAsset> {
-
-  private dbTable  = 'signatures';
-  private dbFields = [
-    'publicKey',
-    'transactionId',
-  ];
+export class SecondSignatureTransaction extends BaseTransactionType<SecondSignatureAsset, SignaturesModel> {
 
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
@@ -124,17 +119,14 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(tx: IConfirmedTransaction<SecondSignatureAsset> & { senderId: string }): { table: string; fields: string[]; values: any } {
-    // tslint:disable object-literal-sort-keys
+  public dbSave(tx: IConfirmedTransaction<SecondSignatureAsset> & { senderId: string }) {
     return {
-      table : this.dbTable,
-      fields: this.dbFields,
+      model: SignaturesModel,
       values: {
-        publicKey    : Buffer.from(tx.asset.signature.publicKey, 'hex'),
+        publicKey: Buffer.from(tx.asset.signature.publicKey, 'hex'),
         transactionId: tx.id,
       },
     };
-    // tslint:enable object-literal-sort-keys
   }
 
 }

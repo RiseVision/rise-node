@@ -24,7 +24,7 @@ export type OptionalsMemAccounts = {
   u_secondSignature?: number;
   u_username?: string;
   address?: string;
-  publicKey?: string;
+  publicKey?: Buffer;
   secondPublicKey?: string;
   balance?: number;
   u_balance?: number;

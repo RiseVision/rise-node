@@ -44,6 +44,8 @@
     "redis": "^2.8.0",
     "routing-controllers": "=0.7.7",
     "semver": "=5.5.0",
+    "sequelize": "^4.37.6",
+    "sequelize-typescript": "^0.6.3",
     "shuffle-array": "^1.0.1",
     "socket.io": "=2.0.4",
     "sodium": "=2.0.3",

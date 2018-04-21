@@ -1,5 +1,7 @@
 import { injectable, unmanaged } from 'inversify';
 import { IDatabase } from 'pg-promise';
+import { Model } from 'sequelize-typescript';
+import { Omit, RecursivePartial } from 'sequelize-typescript/lib/utils/types';
 import { TransactionType } from '../../helpers/';
 import { MemAccountsData } from '../account';
 import { SignedBlockType } from '../block';
@@ -28,13 +30,18 @@ export interface IConfirmedTransaction<T> extends IBaseTransaction<T> {
   confirmations?: number;
 }
 
+export interface IDbSaveReturnType<T extends Model<any>> {
+  model: new () => T;
+  values: RecursivePartial<Omit<T, keyof Model<any>>>;
+}
+
 const emptyBuffer = new Buffer(0);
 
 /**
  * Describes a Base Transaction Object
  */
 @injectable()
-export abstract class BaseTransactionType<T> {
+export abstract class BaseTransactionType<T, M extends Model<any>> {
 
   constructor(@unmanaged() private txType: TransactionType) {
   }
@@ -78,7 +85,7 @@ export abstract class BaseTransactionType<T> {
   public abstract dbRead(raw: any): T;
 
   // tslint:disable-next-line max-line-length
-  public abstract dbSave(tx: IConfirmedTransaction<T> & { senderId: string }): { table: string, fields: string[], values: any };
+  public abstract dbSave(tx: IConfirmedTransaction<T> & { senderId: string }): IDbSaveReturnType<M>;
 
   public afterSave(tx: IBaseTransaction<T>): Promise<void> {
     return Promise.resolve();

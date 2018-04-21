@@ -7,6 +7,7 @@ import delegateSchema from '../../schema/logic/transactions/delegate';
 import { MemAccountsData } from '../account';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
+import { DelegatesModel } from '../../models/DelegatesModel';
 
 // tslint:disable-next-line interface-over-type-literal
 export type DelegateAsset = {
@@ -16,14 +17,9 @@ export type DelegateAsset = {
     address?: string;
   }
 };
-@injectable()
-export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAsset> {
 
-  private dbTable  = 'delegates';
-  private dbFields = [
-    'username',
-    'transactionId',
-  ];
+@injectable()
+export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAsset, DelegatesModel> {
 
   // Generic
   @inject(Symbols.generic.zschema)
@@ -199,17 +195,15 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(tx: IConfirmedTransaction<DelegateAsset> & { senderId: string }): { table: string; fields: string[]; values: any } {
-    // tslint:disable object-literal-sort-keys
+  public dbSave(tx: IConfirmedTransaction<DelegateAsset> & { senderId: string }) {
     return {
-      table : this.dbTable,
-      fields: this.dbFields,
+      model : DelegatesModel,
+
       values: {
+        transactioanId: tx.id,
         username     : tx.asset.delegate.username,
-        transactionId: tx.id,
       },
     };
-    // tslint:enable object-literal-sort-keys
   }
 
 }

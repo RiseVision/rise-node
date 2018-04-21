@@ -17,6 +17,9 @@ import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './
 
 import { IDatabase } from 'pg-promise';
 import { Symbols } from '../ioc/symbols';
+import { Model } from 'sequelize-typescript';
+import { Omit, RecursivePartial } from 'sequelize-typescript/lib/utils/types';
+import { TransactionsModel } from '../models/TransactionsModel';
 
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
@@ -571,8 +574,9 @@ export class TransactionLogic implements ITransactionLogic {
     }
   }
 
-  public dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<{
-    table: string, fields: string[], values: any
+  public dbSave<T extends Model<T>>(tx: IConfirmedTransaction<any> & { senderId: string }): Array<{
+    model: T,
+    values: RecursivePartial<Omit<T, keyof Model<any>>>
   }> {
     this.assertKnownTransactionType(tx);
     const senderPublicKey    = Buffer.from(tx.senderPublicKey, 'hex');
@@ -581,9 +585,11 @@ export class TransactionLogic implements ITransactionLogic {
     const requesterPublicKey = tx.requesterPublicKey ? Buffer.from(tx.requesterPublicKey, 'hex') : null;
 
     // tslint:disable object-literal-sort-keys
-    const toRet = [{
-      table : this.dbTable,
-      fields: this.dbFields,
+    const toRet: {
+      model: typeof TransactionsModel,
+      values: RecursivePartial<Omit<TransactionsModel, keyof Model<TransactionsModel>>> & { id: string }
+    } = {
+      model : TransactionsModel,
       values: {
         id         : tx.id,
         blockId    : tx.blockId,
@@ -599,7 +605,7 @@ export class TransactionLogic implements ITransactionLogic {
         signSignature,
         signatures : tx.signatures ? tx.signatures.join(',') : null,
       },
-    }];
+    };
     // tslint:enable object-literal-sort-keys
 
     const typeSQL = this.types[tx.type].dbSave(tx);

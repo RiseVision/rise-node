@@ -6,23 +6,18 @@ import { IAccountLogic, IRoundsLogic } from '../../ioc/interfaces/logic';
 import { IDelegatesModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import voteSchema from '../../schema/logic/transactions/vote';
-import txSQL from '../../sql/logic/transactions';
 import { MemAccountsData } from '../account';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
+
+import { VotesModel } from '../../models/VotesModel';
 
 // tslint:disable-next-line interface-over-type-literal
 export type VoteAsset = {
   votes: string[];
 };
 @injectable()
-export class VoteTransaction extends BaseTransactionType<VoteAsset> {
-  private dbTable  = 'votes';
-  private dbFields = [
-    'votes',
-    'transactionId',
-  ];
-
+export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> {
   // Generic
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
@@ -149,21 +144,19 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(tx: IConfirmedTransaction<VoteAsset> & { senderId: string }): { table: string; fields: string[]; values: any } {
+  public dbSave(tx: IConfirmedTransaction<VoteAsset> & { senderId: string }) {
     return {
-      fields: this.dbFields,
-      table : this.dbTable,
+      model: VotesModel,
       values: {
         transactionId: tx.id,
-        votes        : Array.isArray(tx.asset.votes) ? tx.asset.votes.join(',') : null,
+        votes: Array.isArray(tx.asset.votes) ? tx.asset.votes.join(',') : null,
       },
     };
   }
 
   public async restoreAsset(tx: IBaseTransaction<any>, db: IDatabase<any>): Promise<IBaseTransaction<VoteAsset>> {
-    const {votes} = await db.one(txSQL.getVotesById, {id: tx.id});
-    const asset = this.dbRead({v_votes: votes});
-    return { ...tx, ...{ asset } };
+    const voteRow = await VotesModel.findOne({ where: {transactionId: tx.id}});
+    return { ... tx, ... {asset: { votes: voteRow.votes.split(',') }}};
   }
 
   private assertValidVote(vote: string) {

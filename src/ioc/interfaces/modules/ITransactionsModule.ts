@@ -1,6 +1,9 @@
 import { SignedBlockType } from '../../../logic';
 import { IBaseTransaction, IConfirmedTransaction } from '../../../logic/transactions';
 import { IModule } from './IModule';
+import { TransactionsModel } from '../../../models/TransactionsModel';
+import { BlocksModel } from '../../../models/BlocksModel';
+import { AccountsModel } from '../../../models/AccountsModel';
 
 export interface ITransactionsModule extends IModule {
   /**
@@ -73,22 +76,22 @@ export interface ITransactionsModule extends IModule {
   /**
    * Applies confirmed transaction.
    */
-  apply(transaction: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void>;
+  apply(transaction: TransactionsModel, block: BlocksModel, sender: AccountsModel): Promise<void>;
 
   /**
    * Undoes confirmed transaction.
    */
-  undo(transaction: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void>;
+  undo(transaction: TransactionsModel, block: BlocksModel, sender: AccountsModel): Promise<void>;
 
   /**
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
-  applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: any): Promise<void>;
+  applyUnconfirmed(transaction: TransactionsModel, sender: AccountsModel): Promise<void>;
 
   /**
    * Validates account and Undoes unconfirmed transaction.
    */
-  undoUnconfirmed(transaction): Promise<void>;
+  undoUnconfirmed(transaction: TransactionsModel): Promise<void>;
 
   /**
    * Receives transactions

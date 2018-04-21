@@ -16,6 +16,9 @@ import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType } from '../../logic/';
 import { IConfirmedTransaction } from '../../logic/transactions/';
 import sql from '../../sql/blocks';
+import { BlocksModel } from '../../models/BlocksModel';
+import { AccountsModel } from '../../models/AccountsModel';
+import { TransactionsModel } from '../../models/TransactionsModel';
 
 @injectable()
 export class BlocksModuleChain implements IBlocksModuleChain {
@@ -76,15 +79,15 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   public deleteBlock(blockId: string): Promise<void> {
     // Delete block with ID from blocks table
     // WARNING: DB_WRITE
-    return this.db.none(sql.deleteBlock, { id: blockId })
-      .catch(catchToLoggerAndRemapError<void>('Blocks#deleteBlock error', this.logger));
+    return BlocksModel.findById(blockId)
+      .then((b) => b.destroy()) as any;
   }
 
   /**
    * Deletes last block and returns the "new" lastBlock (previous basically)
    * @returns {Promise<SignedBlockType>}
    */
-  public async deleteLastBlock(): Promise<SignedAndChainedBlockType> {
+  public async deleteLastBlock(): Promise<BlocksModel> {
     const lastBlock = this.blocksModule.lastBlock;
     this.logger.warn('Deleting last block', lastBlock);
 
@@ -99,12 +102,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
   /**
    * Deletes blocks after a certain block id.
-   * @param {string} blockId
+   * @param {number} height
    * @returns {Promise<void>}
    */
-  public async deleteAfterBlock(blockId: string): Promise<void> {
-    return this.db.query(sql.deleteAfterBlock, { id: blockId })
-      .catch(catchToLoggerAndRemapError('Blocks#deleteAfterBlock error', this.logger));
+  public async deleteAfterBlock(height: number): Promise<void> {
+    await BlocksModel.destroy({where: { $gte: height }});
   }
 
   /**
@@ -136,12 +138,13 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
   /**
    * Apply genesis block transaction to blockchain
-   * @param {SignedBlockType} block
+   * @param {BlocksModel} block
+   * @param {TransactionsModel[]} transactions
    * @returns {Promise<void>}
    */
-  public async applyGenesisBlock(block: SignedAndChainedBlockType) {
+  public async applyGenesisBlock(block: BlocksModel, transactions: TransactionsModel[]) {
     // Order vote transactions to be at the end of processing.
-    block.transactions.sort((a, b) => {
+    transactions.sort((a, b) => {
       if (a.type !== b.type) {
         if (a.type === TransactionType.VOTE) {
           return 1;
@@ -153,13 +156,13 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     });
 
     const tracker = this.blocksModuleUtils.getBlockProgressLogger(
-      block.transactions.length,
-      block.transactions.length / 100,
+      transactions.length,
+      transactions.length / 100,
       'Genesis block loading'
     );
 
     try {
-      for (const tx of block.transactions) {
+      for (const tx of transactions) {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
         // FIXME: Poor performance - every transaction cause SQL query to be executed
         // WARNING: DB_WRITE
@@ -167,8 +170,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
         // Apply tx.
         await this.transactionsModule.applyUnconfirmed(tx, sender);
-        // FIXME ? tx detected by TS as IBaseTransaction (see call just above) but IConfirmedTransaction expected
-        await this.transactionsModule.apply(tx as any, block, sender);
+        await this.transactionsModule.apply(tx, block, sender);
 
         tracker.applyNext();
       }
@@ -206,7 +208,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     // Apply transaction to unconfirmed mem_accounts field
     try {
       for (const transaction of block.transactions) {
-        const sender = await this.accountsModule.setAccountAndGet({ publicKey: transaction.senderPublicKey });
+        const sender = await this.accountsModule.setAccountAndGet({ publicKey: new Buffer(transaction.senderPublicKey, 'hex') });
         await this.transactionsModule.applyUnconfirmed(transaction, sender)
           .catch((err) => {
             this.logger.error(`Failed to applyUnconfirmed transaction ${transaction.id} - ${err.message || err}`);
@@ -380,20 +382,21 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * @returns {Promise<SignedBlockType>}
    */
   @WrapInBalanceSequence
-  private async popLastBlock(lb: SignedBlockType): Promise<SignedAndChainedBlockType> {
-    const b = await this.blocksModuleUtils.loadBlocksPart({ id: lb.previousBlock });
-    if (b.length === 0) {
+  private async popLastBlock(lb: BlocksModel): Promise<BlocksModel> {
+    const previousBlock = await BlocksModel.findById(lb.previousBlock);
+
+    if (previousBlock === null) {
       throw new Error('previousBlock is null');
     }
-    const [previousBlock] = b;
+    const txs = (await previousBlock.findTransactions()).slice().reverse();
 
-    const txs = lb.transactions.reverse();
     try {
       for (const tx of txs) {
-        const sender = await this.accountsModule.getAccount({ publicKey: tx.senderPublicKey });
+        const sender = await AccountsModel.find({where: { publicKey: tx.senderPublicKey }})
+        // const sender = await this.accountsModule.getAccount({ publicKey: tx.senderPublicKey });
         // Undoing confirmed tx - refresh confirmed balance (see: logic.transaction.undo, logic.transfer.undo)
         // WARNING: DB_WRITE
-        await this.transactionsModule.undo(tx as IConfirmedTransaction<any>, lb, sender);
+        await this.transactionsModule.undo(tx, lb, sender);
 
         // Undoing unconfirmed tx - refresh unconfirmed balance (see: logic.transaction.undoUnconfirmed)
         // WARNING: DB_WRITE

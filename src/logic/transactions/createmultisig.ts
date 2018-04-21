@@ -6,10 +6,11 @@ import { constants, Diff, emptyCB, TransactionType } from '../../helpers/';
 import { IAccountLogic, IRoundsLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
+import { MultiSignaturesModel } from '../../models/MultiSignaturesModel';
 import multiSigSchema from '../../schema/logic/transactions/multisignature';
 import { MemAccountsData } from '../account';
 import { SignedBlockType } from '../block';
-import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
+import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction, IDbSaveReturnType } from './baseTransactionType';
 
 // tslint:disable-next-line interface-over-type-literal
 export type MultisigAsset = {
@@ -20,16 +21,9 @@ export type MultisigAsset = {
   }
 };
 @injectable()
-export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset> {
+export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset, MultiSignaturesModel> {
 
   private unconfirmedSignatures: { [name: string]: true };
-  private dbTable  = 'multisignatures';
-  private dbFields = [
-    'min',
-    'lifetime',
-    'keysgroup',
-    'transactionId',
-  ];
 
   // Generics
   @inject(Symbols.generic.socketIO)
@@ -260,19 +254,16 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(tx: IConfirmedTransaction<MultisigAsset> & { senderId: string }): { table: string; fields: string[]; values: any } {
-    // tslint:disable object-literal-sort-keys
+  public dbSave(tx: IConfirmedTransaction<MultisigAsset> & { senderId: string }) {
     return {
-      table : this.dbTable,
-      fields: this.dbFields,
+      model: MultiSignaturesModel,
       values: {
-        min          : tx.asset.multisignature.min,
-        lifetime     : tx.asset.multisignature.lifetime,
         keysgroup    : tx.asset.multisignature.keysgroup.join(','),
+        lifetime     : tx.asset.multisignature.lifetime,
+        min          : tx.asset.multisignature.min,
         transactionId: tx.id,
       },
     };
-    // tslint:enable object-literal-sort-keys
   }
 
   public afterSave(tx: IBaseTransaction<MultisigAsset>): Promise<void> {
