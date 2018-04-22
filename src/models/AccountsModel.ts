@@ -14,6 +14,7 @@ import 'reflect-metadata';
 import {Sequelize} from 'sequelize-typescript';
 import { AfterInit } from 'sequelize-typescript/lib/annotations/hooks/AfterInit';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
+import { publicKey } from '../types/sanityTypes';
 var pg = require('pg')
 
 pg.types.setTypeParser(20, 'text', parseInt)
@@ -69,5 +70,34 @@ export class AccountsModel extends Model<AccountsModel> {
   @Column
   public virgin: boolean;
 
+
+  // Unconfirmed stuff
+
+  @Column
+  public u_isDelegate: boolean;
+  @Column
+  public u_secondSignature: boolean;
+  @Column
+  public u_username: boolean;
+  @Column
+  public u_balance: boolean;
+
+
+  public isMultisignature(): boolean {
+    return this.multilifetime > 0;
+  }
+
+  private _hexPublicKey: publicKey;
+  public get hexPublicKey(): publicKey {
+    if (typeof(this._hexPublicKey) === 'undefined') {
+      if (this.publicKey === null) {
+        this._hexPublicKey = null;
+      } else {
+        this._hexPublicKey = this.publicKey.toString('hex');
+      }
+    }
+    return this._hexPublicKey;
+
+  }
 
 }

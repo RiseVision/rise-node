@@ -1,11 +1,18 @@
 import BigNumber from 'bignumber.js';
+import { Model } from 'sequelize-typescript';
 import { IKeypair } from '../../../helpers';
 import { MemAccountsData, SignedBlockType } from '../../../logic';
-import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from '../../../logic/transactions';
+import {
+  BaseTransactionType,
+  IBaseTransaction,
+  IConfirmedTransaction,
+  IDbSaveReturnType
+} from '../../../logic/transactions';
+import { AccountsModel } from '../../../models/AccountsModel';
 
 export interface ITransactionLogic {
 
-  attachAssetType<K>(instance: BaseTransactionType<K>): BaseTransactionType<K>;
+  attachAssetType<K, M extends Model<any>>(instance: BaseTransactionType<K, M>): BaseTransactionType<K, M>;
 
   /**
    * Creates and returns signature
@@ -64,10 +71,10 @@ export interface ITransactionLogic {
    * to the respective tx type.
    */
   // tslint:disable max-line-length
-  process<T = any>(tx: IBaseTransaction<T>, sender: MemAccountsData, requester: MemAccountsData): Promise<IBaseTransaction<T>>;
+  process<T = any>(tx: IBaseTransaction<T>, sender: AccountsModel, requester: MemAccountsData): Promise<IBaseTransaction<T>>;
 
-  verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: MemAccountsData,
-         requester: MemAccountsData, height: number): Promise<void>;
+  verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel,
+         requester: AccountsModel, height: number): Promise<void>;
 
   /**
    * Verifies the given signature (both first and second)
@@ -96,9 +103,7 @@ export interface ITransactionLogic {
    */
   undoUnconfirmed(tx: IBaseTransaction<any>, sender: MemAccountsData): Promise<void>;
 
-  dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<{
-    table: string, fields: string[], values: any
-  }>;
+  dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<IDbSaveReturnType<any>>;
 
   afterSave(tx: IBaseTransaction<any>): Promise<void>;
 

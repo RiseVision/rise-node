@@ -11,6 +11,7 @@ import multiSigSchema from '../../schema/logic/transactions/multisignature';
 import { MemAccountsData } from '../account';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction, IDbSaveReturnType } from './baseTransactionType';
+import { AccountsModel } from '../../models/AccountsModel';
 
 // tslint:disable-next-line interface-over-type-literal
 export type MultisigAsset = {
@@ -69,7 +70,11 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     return bb.toBuffer() as any;
   }
 
-  public async verify(tx: IBaseTransaction<MultisigAsset>, sender: MemAccountsData): Promise<void> {
+  public async verify(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModel): Promise<void> {
+    if (sender.isMultisignature()) {
+      throw new Error('Only one multisignature tx per account is allowed');
+    }
+
     if (!tx.asset || !tx.asset.multisignature) {
       throw new Error('Invalid transaction asset');
     }
@@ -81,6 +86,14 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     if (tx.asset.multisignature.keysgroup.length === 0) {
       throw new Error('Invalid multisignature keysgroup. Must not be empty');
     }
+
+    // check multisig asset is valid hex publickeys
+    for (const key of tx.asset.multisignature.keysgroup) {
+      if (!key || typeof(key) !== 'string' || key.length != 32+1) {
+        throw new Error('Invalid member in keysgroup');
+      }
+    }
+
 
     if (tx.asset.multisignature.min < constants.multisigConstraints.min.minimum ||
       tx.asset.multisignature.min > constants.multisigConstraints.min.maximum) {

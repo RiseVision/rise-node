@@ -2,6 +2,8 @@ import { BigNumber } from 'bignumber.js';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
+import { IDatabase } from 'pg-promise';
+import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
 import {
   BigNum, constants, Ed, emptyCB, ExceptionsList, ExceptionsManager, IKeypair, ILogger,
@@ -13,13 +15,11 @@ import txSchema from '../schema/logic/transaction';
 import sql from '../sql/logic/transactions';
 import { MemAccountsData } from './account';
 import { SignedAndChainedBlockType, SignedBlockType } from './block';
-import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './transactions/';
+import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction, IDbSaveReturnType } from './transactions/';
 
-import { IDatabase } from 'pg-promise';
 import { Symbols } from '../ioc/symbols';
-import { Model } from 'sequelize-typescript';
-import { Omit, RecursivePartial } from 'sequelize-typescript/lib/utils/types';
 import { TransactionsModel } from '../models/TransactionsModel';
+import { AccountsModel } from '../models/AccountsModel';
 
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
@@ -68,9 +68,9 @@ export class TransactionLogic implements ITransactionLogic {
   @inject(Symbols.helpers.slots)
   private slots: Slots;
 
-  private types: { [k: number]: BaseTransactionType<any> } = {};
+  private types: { [k: number]: BaseTransactionType<any, any> } = {};
 
-  public attachAssetType<K>(instance: BaseTransactionType<K>): BaseTransactionType<K> {
+  public attachAssetType<K, M extends Model<any>>(instance: BaseTransactionType<K, M>): BaseTransactionType<K, M> {
     if (!(instance instanceof BaseTransactionType)) {
       throw new Error('Invalid instance interface');
     }
@@ -216,8 +216,7 @@ export class TransactionLogic implements ITransactionLogic {
    */
   public async countById(tx: IBaseTransaction<any>): Promise<number> {
     try {
-      const { count } = await this.db.one(sql.countById, { id: tx.id });
-      return count;
+      return await TransactionsModel.count({where: { id: tx.id }});
     } catch (e) {
       this.logger.error(e.stack);
       throw new Error('Transaction#countById error');
@@ -256,7 +255,7 @@ export class TransactionLogic implements ITransactionLogic {
    * to the respective tx type.
    */
   // tslint:disable-next-line max-line-length
-  public async process<T = any>(tx: IBaseTransaction<T>, sender: MemAccountsData, requester: MemAccountsData): Promise<IBaseTransaction<T>> {
+  public async process<T = any>(tx: IBaseTransaction<T>, sender: AccountsModel, requester: MemAccountsData): Promise<IBaseTransaction<T>> {
     this.assertKnownTransactionType(tx);
     if (!sender) {
       throw new Error('Missing sender');
@@ -269,18 +268,18 @@ export class TransactionLogic implements ITransactionLogic {
 
     tx.senderId = sender.address;
 
-    await this.types[tx.type].process(tx, sender);
+    // await this.types[tx.type].process(tx, sender);
     return tx;
   }
 
-  public async verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: MemAccountsData,
-                      requester: MemAccountsData, height: number) {
+  public async verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel,
+                      requester: AccountsModel, height: number) {
     this.assertKnownTransactionType(tx);
     if (!sender) {
       throw new Error('Missing sender');
     }
 
-    if (tx.requesterPublicKey && (!sender.multisignatures || requester == null)) {
+    if (tx.requesterPublicKey && (!sender.isMultisignature() || requester == null)) {
       throw new Error('Account or requester account is not multisignature');
     }
 
@@ -305,12 +304,12 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     // Check sender public key
-    if (sender.publicKey && sender.publicKey !== tx.senderPublicKey) {
+    if (sender.publicKey && sender.hexPublicKey !== tx.senderPublicKey) {
       throw new Error(`Invalid sender public key: ${tx.senderPublicKey} expected ${sender.publicKey}`);
     }
 
     // Check sender is not genesis account unless block id equals genesis
-    if (this.genesisBlock.generatorPublicKey === sender.publicKey
+    if (this.genesisBlock.generatorPublicKey === sender.hexPublicKey
       && (tx as IConfirmedTransaction<any>).blockId !== this.genesisBlock.id) {
       throw new Error('Invalid sender. Can not send from genesis account');
     }
@@ -319,6 +318,9 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Invalid sender address');
     }
 
+    if ( ! sender.isMultisignature()) {
+
+    }
     const multisignatures = (sender.multisignatures || sender.u_multisignatures || []).slice();
     if (multisignatures.length === 0) {
       if (tx.asset && tx.asset.multisignature && tx.asset.multisignature.keysgroup) {
@@ -574,10 +576,7 @@ export class TransactionLogic implements ITransactionLogic {
     }
   }
 
-  public dbSave<T extends Model<T>>(tx: IConfirmedTransaction<any> & { senderId: string }): Array<{
-    model: T,
-    values: RecursivePartial<Omit<T, keyof Model<any>>>
-  }> {
+  public dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<IDbSaveReturnType<any>> {
     this.assertKnownTransactionType(tx);
     const senderPublicKey    = Buffer.from(tx.senderPublicKey, 'hex');
     const signature          = Buffer.from(tx.signature, 'hex');
@@ -585,13 +584,10 @@ export class TransactionLogic implements ITransactionLogic {
     const requesterPublicKey = tx.requesterPublicKey ? Buffer.from(tx.requesterPublicKey, 'hex') : null;
 
     // tslint:disable object-literal-sort-keys
-    const toRet: {
-      model: typeof TransactionsModel,
-      values: RecursivePartial<Omit<TransactionsModel, keyof Model<TransactionsModel>>> & { id: string }
-    } = {
+    const toRet: IDbSaveReturnType<any> = {
       model : TransactionsModel,
       values: {
-        id         : tx.id,
+        // id         : tx.id,
         blockId    : tx.blockId,
         type       : tx.type,
         timestamp  : tx.timestamp,
@@ -610,9 +606,9 @@ export class TransactionLogic implements ITransactionLogic {
 
     const typeSQL = this.types[tx.type].dbSave(tx);
     if (typeSQL) {
-      toRet.push(typeSQL);
+      return [toRet, typeSQL];
     }
-    return toRet;
+    return [toRet];
   }
 
   public afterSave(tx: IBaseTransaction<any>): Promise<void> {

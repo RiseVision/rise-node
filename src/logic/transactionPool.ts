@@ -406,12 +406,12 @@ export class TransactionPool implements ITransactionPoolLogic {
       throw new Error('Missing transaction');
     }
 
-    const sender = await this.accountsModule.setAccountAndGet({ publicKey: transaction.senderPublicKey });
+    const sender = await this.accountsModule
+      .setAccountAndGet({ publicKey: new Buffer(transaction.senderPublicKey, 'hex') });
 
-    const isMultisigAccount = Array.isArray(sender.multisignatures) && sender.multisignatures.length > 0;
+    const isMultisigAccount = sender.isMultisignature();
     if (isMultisigAccount) {
-      // TODO: fixme please
-      (transaction as any).signatures = (transaction as any).signatures || [];
+      transaction.signatures = transaction.signatures || [];
     }
     let requester = null;
     if (sender && transaction.requesterPublicKey && isMultisigAccount) {

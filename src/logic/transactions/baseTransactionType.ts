@@ -5,6 +5,7 @@ import { Omit, RecursivePartial } from 'sequelize-typescript/lib/utils/types';
 import { TransactionType } from '../../helpers/';
 import { MemAccountsData } from '../account';
 import { SignedBlockType } from '../block';
+import { AccountsModel } from '../../models/AccountsModel';
 
 export interface IBaseTransaction<T> {
   type: TransactionType;
@@ -53,10 +54,6 @@ export abstract class BaseTransactionType<T, M extends Model<any>> {
   public abstract calculateFee(tx: IBaseTransaction<T>, sender: MemAccountsData, height: number): number;
 
   public verify(tx: IBaseTransaction<T>, sender: MemAccountsData): Promise<void> {
-    return Promise.resolve();
-  }
-
-  public process(tx: IBaseTransaction<T>, sender: MemAccountsData): Promise<void> {
     return Promise.resolve();
   }
 
