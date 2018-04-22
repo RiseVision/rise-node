@@ -637,9 +637,7 @@ describe('logic/transaction', () => {
     });
 
     it('should verify multisignatures', async () => {
-      // sender.multisignatures  = [];
       tx.signatures = ['a', 'b'];
-      // tx.requesterPublicKey          = 'yz';
       tx.asset.multisignature = {
         keysgroup: [
           'xyz',
@@ -710,12 +708,30 @@ describe('logic/transaction', () => {
 
     it('should throw if failed to verify multisignature', async () => {
       tx.signatures = ['a', 'b'];
-      // First call is simple validation with requester or sender publio key
+      // First call is simple validation with requester or sender public key
       verifySignatureStub.onCall(0).returns(true);
       // Second call is inside tx.signatures loop
       verifySignatureStub.onCall(1).returns(false);
       await expect(instance.verify(tx, sender, requester, 1))
         .to.be.rejectedWith('Failed to verify multisignature');
+    });
+
+    it('should throw Failed to verify multisignature if verifySignature() is skipped', async () => {
+      sender.multisignatures  = ['yz'];
+      tx.signatures = ['a', 'b'];
+      tx.requesterPublicKey          = 'yz';
+      tx.asset.multisignature = {
+        keysgroup: [
+          'xyz',
+          'def',
+        ],
+      };
+      verifySignatureStub.returns(true);
+      verifySignatureStub.onCall(2).returns(false);
+
+      await expect(instance.verify(tx, sender, requester, 1))
+        .to.be.rejectedWith('Failed to verify multisignature');
+
     });
 
     it('should call verifySignature if tx.signatures not empty', async () => {

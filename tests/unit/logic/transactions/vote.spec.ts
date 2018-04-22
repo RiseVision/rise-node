@@ -5,7 +5,8 @@ import { SinonSandbox, SinonStub } from 'sinon';
 import { TransactionType } from '../../../../src/helpers';
 import { VoteTransaction } from '../../../../src/logic/transactions';
 import voteSchema from '../../../../src/schema/logic/transactions/vote';
-import { AccountLogicStub, DelegatesModuleStub, RoundsLogicStub, SystemModuleStub } from '../../../stubs';
+import txSQL from '../../../../src/sql/logic/transactions';
+import { AccountLogicStub, DbStub, DelegatesModuleStub, RoundsLogicStub, SystemModuleStub } from '../../../stubs';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -22,6 +23,7 @@ describe('logic/transactions/vote', () => {
   let roundsLogicStub: RoundsLogicStub;
   let delegatesModuleStub: DelegatesModuleStub;
   let systemModuleStub: SystemModuleStub;
+  let dbStub: DbStub;
 
   let instance: VoteTransaction;
   let tx: any;
@@ -31,24 +33,25 @@ describe('logic/transactions/vote', () => {
   beforeEach(() => {
     sandbox             = sinon.sandbox.create();
     zSchemaStub         = {
-      validate     : sandbox.stub(),
       getLastErrors: () => [],
+      validate     : sandbox.stub(),
     };
     accountLogicStub    = new AccountLogicStub();
     roundsLogicStub     = new RoundsLogicStub();
     delegatesModuleStub = new DelegatesModuleStub();
     systemModuleStub    = new SystemModuleStub();
+    dbStub              = new DbStub();
 
     tx = {
+      amount         : 0,
       asset          : {
         votes: [
           '-7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381',
           '+05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a',
         ],
       },
-      type           : TransactionType.VOTE,
-      amount         : 0,
       fee            : 10,
+      type           : TransactionType.VOTE,
       timestamp      : 0,
       senderId       : '1233456789012345R',
       senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
@@ -59,8 +62,8 @@ describe('logic/transactions/vote', () => {
     };
 
     sender = {
-      balance  : 10000000,
       address  : '1233456789012345R',
+      balance  : 10000000,
       publicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
     };
 
@@ -428,6 +431,22 @@ describe('logic/transactions/vote', () => {
       expect(() => {
         (instance as any).assertValidVote(tx.asset.votes[1]);
       }).to.throw('Invalid vote publicKey');
+    });
+  });
+
+  describe('restoreAsset()', () => {
+    it('success', async () => {
+      // tslint:disable max-line-length
+      const myVotes = '-7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381,+05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a';
+      dbStub.stubs.one.resolves({votes: myVotes});
+      const dbReadSpy = sandbox.spy(instance, 'dbRead');
+      const result = await instance.restoreAsset(tx, dbStub as any);
+      expect(dbStub.stubs.one.calledOnce).to.be.true;
+      expect(dbStub.stubs.one.args[0][0]).to.be.equal(txSQL.getVotesById);
+      expect(dbStub.stubs.one.args[0][1]).to.deep.equal({id: tx.id});
+      expect(dbReadSpy.calledOnce).to.be.true;
+      expect(dbReadSpy.args[0][0]).to.deep.equal({v_votes: myVotes});
+      expect(result).to.deep.equal(tx);
     });
   });
 });

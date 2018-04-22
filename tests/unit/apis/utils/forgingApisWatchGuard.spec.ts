@@ -49,7 +49,7 @@ describe('apis/utils/forgingApisWatchGuard', () => {
   });
 
   describe('use()', () => {
-    it('success', () => {
+    it('should call to next() without parameters if everything is ok', () => {
       checkIpInListStub.returns(true);
       instance.use(request as any, response, next);
       expect(next.calledOnce).to.be.true;
@@ -61,7 +61,7 @@ describe('apis/utils/forgingApisWatchGuard', () => {
       expect(checkIpInListStub.args[0][1]).to.equal(request.ip);
     });
 
-    it('error', () => {
+    it('should call to next() with an APIError() if checkIpInList() returns false', () => {
       checkIpInListStub.returns(false);
       instance.use(request as any, response, next);
       expect(next.calledOnce).to.be.true;

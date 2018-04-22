@@ -957,6 +957,14 @@ describe('logic/transactionPool - TransactionPool', () => {
       expect(removeUnconfirmedTransactionSpy.callCount).to.be.equal(unconfirmedIds.length);
       expect(removeUnconfirmedTransactionSpy.firstCall.args[0]).to.be.equal(unconfirmedIds[0]);
     });
+
+    it('should return an empty array if transactions are empty', async () => {
+      instance['unconfirmed'].list.restore();
+      const unconfirmedStub = sandbox.stub(instance['unconfirmed'], 'list').returns([undefined, undefined]);
+      const retVal = await instance.undoUnconfirmedList(txModuleStub);
+      expect(retVal).to.be.equalTo([]);
+      expect(unconfirmedStub.calledOnce).to.be.true;
+    });
   });
 
   describe('reindexAllQueues', () => {

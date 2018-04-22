@@ -389,5 +389,24 @@ describe('modules/peers', () => {
       await instR.onBlockchainReady();
       expect(busStub.stubs.message.called).is.false;
     });
+    it('should not increase updated if peer fails', async()=>{
+      peersLogicStub.reset();
+      peersLogicStub.enqueueResponse('create', {pingAndUpdate: pingStub});
+      peersLogicStub.enqueueResponse('create', {pingAndUpdate: pingStub});
+      peersLogicStub.enqueueResponse('create', {pingAndUpdate: () => Promise.reject('booo')});
+      peersLogicStub.enqueueResponse('exists', false);
+      await instR.onBlockchainReady();
+      expect(loggerStub.stubs.info.callCount).to.be.equal(2);
+      expect(loggerStub.stubs.info.args[0][0]).to.contains('Peers->insertSeeds - Peers discovered');
+      expect(loggerStub.stubs.info.args[1][0]).to.contains('unresponsive');
+      expect(loggerStub.stubs.info.callCount).to.be.equal(2);
+      expect(loggerStub.stubs.trace.callCount).to.be.equal(5);
+      expect(loggerStub.stubs.trace.lastCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.trace.lastCall.args[0]).to.be.equal('Peers->dbLoad Peers discovered');
+      expect(loggerStub.stubs.trace.lastCall.args[1]).to.be.deep.equal({
+        total: 1,
+        updated: 0
+      });
+    });
   });
 });
