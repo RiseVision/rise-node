@@ -298,7 +298,7 @@ export class TransportModule implements ITransportModule {
    */
   private removePeer(options: { code: string, peer: IPeerLogic }, extraMessage: string) {
     this.logger.debug(`${options.code} Removing peer ${options.peer.string} ${extraMessage}`);
-    this.peersModule.remove(options.peer.ip, options.peer.port);
+    this.peersModule.remove(options.peer.ip, options.peer.port, 'TransportModule' + options.code);
   }
 
   /**

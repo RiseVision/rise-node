@@ -13,7 +13,7 @@ export interface IPeersLogic {
 
   upsert(peer: PeerType, insertOnly: boolean): boolean;
 
-  remove(peer: BasePeerType): boolean;
+  remove(peer: BasePeerType, reason?: string): boolean;
 
   list(normalize: true): PeerType[];
 

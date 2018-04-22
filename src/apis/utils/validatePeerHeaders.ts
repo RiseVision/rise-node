@@ -30,12 +30,12 @@ export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
       request.headers
     );
     if (!this.schema.validate(request.headers, transportSchema.headers)) {
-      this.removePeer(request);
+      this.removePeer(request, 'HeadersSchemaValidationFailed');
       return next(new Error(`${this.schema.getLastError().details[0].path
       } - ${this.schema.getLastErrors()[0].message}`));
     }
     if (!this.systemModule.networkCompatible(request.headers.nethash as string)) {
-      this.removePeer(request);
+      this.removePeer(request, 'WrongNetwork');
       return next({
         expected: this.systemModule.getNethash(),
         message : 'Request is made on the wrong network',
@@ -44,7 +44,7 @@ export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
     }
 
     if (!this.systemModule.versionCompatible(request.headers.version)) {
-      this.removePeer(request);
+      this.removePeer(request, 'IncompatibleVersion');
       return next({
         expected: this.systemModule.getMinVersion(),
         message : 'Request is made from incompatible version',
@@ -57,8 +57,8 @@ export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
     next();
   }
 
-  private removePeer(request: express.Request) {
-    this.peersLogic.remove(this.computeBasePeerType(request));
+  private removePeer(request: express.Request, reason: string = 'validatePeerHeadersUnknown') {
+    this.peersLogic.remove(this.computeBasePeerType(request), reason);
   }
 
   private computeBasePeerType(request: express.Request): BasePeerType {

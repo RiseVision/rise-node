@@ -13,7 +13,7 @@ export interface IPeersModule extends IModule {
   /**
    * Remove a peer from the list if its not one from config files
    */
-  remove(peerIP: string, port: number): boolean;
+  remove(peerIP: string, port: number, reason?: string): boolean;
 
   /**
    * Gets the peers using the given filter.

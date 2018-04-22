@@ -105,10 +105,10 @@ export class PeersLogic implements IPeersLogic {
 
   }
 
-  public remove(peer: BasePeerType): boolean {
+  public remove(peer: BasePeerType, reason: string = 'Unknown'): boolean {
     if (this.exists(peer)) {
       const thePeer = this.create(peer);
-      this.logger.info('Removed peer', thePeer.string);
+      this.logger.info('Removed peer', thePeer.string + ' - Reason ' + reason );
       // this.logger.debug('Removed peer', this.peers[thePeer.string]);
       delete this.peers[thePeer.string];
       return true;

@@ -127,7 +127,7 @@ export class TransportAPI {
       // Reject any non-numeric values
       .filter((id) => /^[0-9]+$/.test(id));
     if (excapedIds.length === 0 ) {
-      this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
+      this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10), 'InvalidBlockSequence');
       throw new APIError('Invalid block id sequence', 200);
     }
     const rows = await this.db.query(transportSQL.getCommonBlock, excapedIds);
@@ -139,7 +139,7 @@ export class TransportAPI {
     try {
       block = this.blockLogic.objectNormalize(block);
     } catch (e) {
-      this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
+      this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10), 'BlockNormalizeFailed');
       throw e;
     }
     await this.bus.message('receiveBlock', block);

@@ -603,7 +603,7 @@ export class LoaderModule implements ILoaderModule {
         this.logger.warn(['Transaction', tx.id, 'is not valid, peer removed'].join(' '), peer.string);
 
         // Remove invalid peer as a mechanism to discourage invalid processing.
-        this.peersModule.remove(peer.ip, peer.port);
+        this.peersModule.remove(peer.ip, peer.port, 'InvalidTransaction');
         throw e;
       }
     }
