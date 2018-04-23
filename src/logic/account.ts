@@ -10,6 +10,12 @@ import { IAccountLogic } from '../ioc/interfaces/';
 import { Symbols } from '../ioc/symbols';
 import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
+import { AccountsModel } from '../models/AccountsModel';
+import { MemRoundsModel } from '../models/MemRoundsModel';
+import { Accounts2DelegatesModel } from '../models/accounts/Accounts2DelegatesModel';
+import { Accounts2MultisignaturesModel } from '../models/accounts/Accounts2MultisignaturesModel';
+import { Accounts2U_MultisignaturesModel } from '../models/accounts/Accounts2U_MultisignaturesModel';
+import { Accounts2U_DelegatesModel } from '../models/accounts/Accounts2U_DelegatesModel';
 
 const jsonSql = jsonSqlCreator();
 
@@ -186,23 +192,15 @@ export class AccountLogic implements IAccountLogic {
    * @returns {Promise<void>}
    */
   public removeTables(): Promise<void> {
-    const fullQuery = [
-      this.table,
-      'mem_round',
-      'mem_accounts2delegates',
-      'mem_accounts2u_delegates',
-      'mem_accounts2multisignatures',
-      'mem_accounts2u_multisignatures',
-    ].map((table) => jsonSql
-      .build({
-        table,
-        type: 'remove',
-      })
-      .query
-    )
-      .join('');
-
-    return this.db.query(fullQuery)
+    return Promise.all([
+      AccountsModel.drop(),
+      MemRoundsModel.drop(),
+      Accounts2DelegatesModel.drop(),
+      Accounts2MultisignaturesModel.drop(),
+      Accounts2U_DelegatesModel.drop(),
+      Accounts2U_MultisignaturesModel.drop(),
+    ])
+      .then(() => void 0)
       .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
   }
 
