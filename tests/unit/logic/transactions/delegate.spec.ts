@@ -1,13 +1,16 @@
 'use strict';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import {Container} from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
 import * as helpers from '../../../../src/helpers';
 import { TransactionType } from '../../../../src/helpers';
+import {Symbols} from '../../../../src/ioc/symbols';
 import { RegisterDelegateTransaction } from '../../../../src/logic/transactions';
 import delegateSchema from '../../../../src/schema/logic/transactions/delegate';
-import { AccountsModuleStub, SystemModuleStub } from '../../../stubs';
+import { AccountsModuleStub, SystemModuleStub, ZSchemaStub } from '../../../stubs';
+import { createContainer } from '../../../utils/containerCreator';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -15,10 +18,10 @@ chai.use(chaiAsPromised);
 // tslint:disable no-unused-expression
 describe('logic/transactions/delegate', () => {
   let sandbox: SinonSandbox;
-  let zSchemaStub: any;
+  let zSchemaStub: ZSchemaStub;
   let accountsModuleStub: AccountsModuleStub;
   let systemModuleStub: SystemModuleStub;
-
+  let container: Container;
   let instance: RegisterDelegateTransaction;
   let tx: any;
   let sender: any;
@@ -26,35 +29,33 @@ describe('logic/transactions/delegate', () => {
 
   beforeEach(() => {
     sandbox            = sinon.sandbox.create();
-    zSchemaStub        = {
-      validate     : sandbox.stub(),
-      getLastErrors: () => [],
-    };
-    accountsModuleStub = new AccountsModuleStub();
-    systemModuleStub   = new SystemModuleStub();
-
+    container          = createContainer();
+    zSchemaStub        = container.get(Symbols.generic.zschema);
+    accountsModuleStub = container.get(Symbols.modules.accounts);
+    systemModuleStub   = container.get(Symbols.modules.system);
+    zSchemaStub.enqueueResponse('getLastErrors', []);
     tx = {
+      amount         : 0,
       asset          : {
         delegate: {
-          username : 'topdelegate',
-          publicKey: 'a2bac0a1525e9605a37e6c6588716f9c941530c74eabdf0b27b10b3817e58fe3',
           address  : '74128139741256612355994R',
+          publicKey: 'a2bac0a1525e9605a37e6c6588716f9c941530c74eabdf0b27b10b3817e58fe3',
+          username : 'topdelegate',
         },
       },
-      type           : TransactionType.DELEGATE,
-      amount         : 0,
       fee            : 10,
-      timestamp      : 0,
+      id             : '8139741256612355994',
       senderId       : '1233456789012345R',
       senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
       signature      : '0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
       'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2',
-      id             : '8139741256612355994',
+      timestamp      : 0,
+      type           : TransactionType.DELEGATE,
     };
 
     sender = {
-      balance  : 10000000,
       address  : '1233456789012345R',
+      balance  : 10000000,
       publicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
     };
 
@@ -107,8 +108,8 @@ describe('logic/transactions/delegate', () => {
 
   describe('verify', () => {
     beforeEach(() => {
-      zSchemaStub.validate.onFirstCall().returns(false);
-      zSchemaStub.validate.onSecondCall().returns(true);
+      zSchemaStub.stubs.validate.onFirstCall().returns(false);
+      zSchemaStub.stubs.validate.onSecondCall().returns(true);
       accountsModuleStub.stubs.getAccount.resolves(null);
     });
 
@@ -165,21 +166,21 @@ describe('logic/transactions/delegate', () => {
     });
 
     it('should throw when username is a possible address', async () => {
-      zSchemaStub.validate.onFirstCall().returns(true);
+      zSchemaStub.stubs.validate.onFirstCall().returns(true);
       await expect(instance.verify(tx, sender)).to.be.rejectedWith('Username can not be a potential address');
-      expect(zSchemaStub.validate.calledOnce).to.be.true;
-      expect(zSchemaStub.validate.firstCall.args[0]).to.be.equal(tx.asset.delegate.username);
-      expect(zSchemaStub.validate.firstCall.args[1].format).to.be.equal('address');
+      expect(zSchemaStub.stubs.validate.calledOnce).to.be.true;
+      expect(zSchemaStub.stubs.validate.firstCall.args[0]).to.be.equal(tx.asset.delegate.username);
+      expect(zSchemaStub.stubs.validate.firstCall.args[1].format).to.be.equal('address');
     });
 
     it('should throw if zschema does not validate the username', async () => {
       // First call needs false to avoid throwing, second is false to force throwing
-      zSchemaStub.validate.onFirstCall().returns(false);
-      zSchemaStub.validate.onSecondCall().returns(false);
+      zSchemaStub.stubs.validate.onFirstCall().returns(false);
+      zSchemaStub.stubs.validate.onSecondCall().returns(false);
       await expect(instance.verify(tx, sender)).to.be.
         rejectedWith('Username can only contain alphanumeric characters with the exception of !@$&_.');
-      expect(zSchemaStub.validate.secondCall.args[0]).to.be.equal(tx.asset.delegate.username);
-      expect(zSchemaStub.validate.secondCall.args[1].format).to.be.equal('username');
+      expect(zSchemaStub.stubs.validate.secondCall.args[0]).to.be.equal(tx.asset.delegate.username);
+      expect(zSchemaStub.stubs.validate.secondCall.args[1].format).to.be.equal('username');
     });
 
     it('should call accountsModule.getAccount and throw if account is found', async () => {
@@ -204,9 +205,9 @@ describe('logic/transactions/delegate', () => {
         address     : sender.address,
         isDelegate  : 1,
         u_isDelegate: 0,
-        vote        : 0,
         u_username  : null,
         username    : tx.asset.delegate.username,
+        vote        : 0,
       });
     });
 
@@ -230,9 +231,9 @@ describe('logic/transactions/delegate', () => {
         address     : sender.address,
         isDelegate  : 0,
         u_isDelegate: 1,
-        vote        : 0,
         u_username  : tx.asset.delegate.username,
         username    : null,
+        vote        : 0,
       });
     });
   });
@@ -251,8 +252,8 @@ describe('logic/transactions/delegate', () => {
         address     : sender.address,
         isDelegate  : 0,
         u_isDelegate: 1,
-        username    : null,
         u_username  : tx.asset.delegate.username,
+        username    : null,
       });
     });
 
@@ -277,15 +278,15 @@ describe('logic/transactions/delegate', () => {
         address     : sender.address,
         isDelegate  : 0,
         u_isDelegate: 0,
-        username    : null,
         u_username  : null,
+        username    : null,
       });
     });
   });
 
   describe('objectNormalize', () => {
     beforeEach(() => {
-      zSchemaStub.validate.returns(true);
+      zSchemaStub.stubs.validate.returns(true);
     });
 
     it('should call removeEmptyObjKeys', () => {
@@ -298,13 +299,13 @@ describe('logic/transactions/delegate', () => {
 
     it('should call schema.validate', () => {
       instance.objectNormalize(tx);
-      expect(zSchemaStub.validate.calledOnce).to.be.true;
-      expect(zSchemaStub.validate.firstCall.args[0]).to.be.deep.equal(tx.asset.delegate);
-      expect(zSchemaStub.validate.firstCall.args[1]).to.be.deep.equal(delegateSchema);
+      expect(zSchemaStub.stubs.validate.calledOnce).to.be.true;
+      expect(zSchemaStub.stubs.validate.firstCall.args[0]).to.be.deep.equal(tx.asset.delegate);
+      expect(zSchemaStub.stubs.validate.firstCall.args[1]).to.be.deep.equal(delegateSchema);
     });
 
     it('should throw if validation fails', () => {
-      zSchemaStub.validate.returns(false);
+      zSchemaStub.stubs.validate.returns(false);
       expect(() => {
         instance.objectNormalize(tx);
       }).to.throw(/Failed to validate delegate schema/);
@@ -312,7 +313,7 @@ describe('logic/transactions/delegate', () => {
 
     it('should throw with errors message if validation fails', () => {
       (instance as any).schema.getLastErrors = () => [{message: '1'}, {message: '2'}];
-      zSchemaStub.validate.returns(false);
+      zSchemaStub.stubs.validate.returns(false);
       expect(() => {
         instance.objectNormalize(tx);
       }).to.throw('Failed to validate delegate schema: 1, 2');
@@ -333,14 +334,14 @@ describe('logic/transactions/delegate', () => {
     it('should return the delegate object', () => {
       const retVal = instance.dbRead({
         d_username       : 'thebestdelegate',
-        t_senderPublicKey: 'pubKey',
         t_senderId       : 'address',
+        t_senderPublicKey: 'pubKey',
       });
       expect(retVal).to.be.deep.equal({
         delegate: {
-          username : 'thebestdelegate',
-          publicKey: 'pubKey',
           address  : 'address',
+          publicKey: 'pubKey',
+          username : 'thebestdelegate',
         },
       });
     });
@@ -349,12 +350,12 @@ describe('logic/transactions/delegate', () => {
   describe('dbSave', () => {
     it('should return the expected object', () => {
       expect(instance.dbSave(tx)).to.be.deep.equal({
-          table : 'delegates',
-          fields: ['username', 'transactionId'],
-          values: {
-            username     : tx.asset.delegate.username,
-            transactionId: tx.id,
-          },
+        fields: ['username', 'transactionId'],
+        table : 'delegates',
+        values: {
+          transactionId: tx.id,
+          username     : tx.asset.delegate.username,
+        },
         }
       );
     });

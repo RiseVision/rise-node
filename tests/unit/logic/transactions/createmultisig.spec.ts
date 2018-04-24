@@ -2,15 +2,18 @@
 import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import {Container} from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy } from 'sinon';
 import * as helpers from '../../../../src/helpers';
 import { TransactionType } from '../../../../src/helpers';
+import {Symbols} from '../../../../src/ioc/symbols';
 import { MultiSignatureTransaction } from '../../../../src/logic/transactions';
 import {
-  AccountLogicStub, AccountsModuleStub, ByteBufferStub, RoundsLogicStub, SystemModuleStub,
+  AccountLogicStub, AccountsModuleStub, RoundsLogicStub, SystemModuleStub,
   TransactionLogicStub, ZSchemaStub
 } from '../../../stubs';
+import { createContainer } from '../../../utils/containerCreator';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -34,42 +37,44 @@ describe('logic/transactions/createmultisig', () => {
   let tx: any;
   let sender: any;
   let block: any;
+  let container: Container;
 
   beforeEach(() => {
     sandbox              = sinon.sandbox.create();
+    container = createContainer();
     socketIOStub         = {
       sockets: {
         emit: sandbox.stub(),
       },
     };
-    zSchemaStub          = new ZSchemaStub();
-    accountLogicStub     = new AccountLogicStub();
-    transactionLogicStub = new TransactionLogicStub();
-    accountsModuleStub   = new AccountsModuleStub();
-    systemModuleStub     = new SystemModuleStub();
-    roundsLogicStub      = new RoundsLogicStub();
+    zSchemaStub          = container.get(Symbols.generic.zschema);
+    accountLogicStub     = container.get(Symbols.logic.account);
+    transactionLogicStub = container.get(Symbols.logic.transaction);
+    accountsModuleStub   = container.get(Symbols.modules.accounts);
+    systemModuleStub     = container.get(Symbols.modules.system);
+    roundsLogicStub      = container.get(Symbols.logic.rounds);
 
     tx = {
+      amount         : 0,
       asset          : {
         multisignature: {
-          min      : 2,
-          lifetime : 33,
           keysgroup: ['+key1', '+key2'],
+          lifetime : 33,
+          min      : 2,
         },
       },
-      type           : TransactionType.MULTI,
-      amount         : 0,
       fee            : 10,
-      timestamp      : 0,
+      id             : '8139741256612355994',
       senderId       : '1233456789012345R',
       senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
       signatures     : ['sig1', 'sig2'],
-      id             : '8139741256612355994',
+      timestamp      : 0,
+      type           : TransactionType.MULTI,
     };
 
     sender = {
-      balance  : 10000000,
       address  : '1233456789012345R',
+      balance  : 10000000,
       publicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
     };
 
@@ -88,7 +93,7 @@ describe('logic/transactions/createmultisig', () => {
     (instance as any).accountsModule   = accountsModuleStub;
     (instance as any).systemModule     = systemModuleStub;
 
-    return systemModuleStub.stubs.getFees.returns({ fees: { multisignature: 123 } });
+    systemModuleStub.stubs.getFees.returns({ fees: { multisignature: 123 } });
   });
 
   afterEach(() => {
@@ -177,6 +182,7 @@ describe('logic/transactions/createmultisig', () => {
 
     it('should throw when asset.multisignature.keygroup is not an array', async () => {
       tx.asset.multisignature.keysgroup = null;
+      // tslint:disable max-line-length
       await expect(instance.verify(tx, sender)).to.be.rejectedWith('Invalid multisignature keysgroup. Must be an array');
     });
 
@@ -372,8 +378,9 @@ describe('logic/transactions/createmultisig', () => {
 
     it('should throw if signature is not confirmed yet', () => {
       (instance as any).unconfirmedSignatures[sender.address] = true;
+      let p;
       expect(() => {
-        instance.applyUnconfirmed(tx, sender);
+        p = instance.applyUnconfirmed(tx, sender);
       }).to.throw('Signature on this account is pending confirmation');
     });
 
@@ -485,15 +492,15 @@ describe('logic/transactions/createmultisig', () => {
   describe('dbSave', () => {
     it('should return the expected object', () => {
       expect(instance.dbSave(tx)).to.be.deep.equal({
+        fields: ['min', 'lifetime', 'keysgroup', 'transactionId'],
           table : 'multisignatures',
-          fields: ['min', 'lifetime', 'keysgroup', 'transactionId'],
           values:
             {
-              min          : 2,
-              lifetime     : 33,
               keysgroup    : '+key1,+key2',
-              transactionId: '8139741256612355994'
-            }
+              lifetime     : 33,
+              min          : 2,
+              transactionId: '8139741256612355994',
+            },
         }
       );
     });

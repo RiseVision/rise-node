@@ -1,8 +1,11 @@
 'use strict';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import {Container} from 'inversify';
+import {Symbols} from '../../../../src/ioc/symbols';
 import { SendTransaction } from '../../../../src/logic/transactions';
 import { AccountsModuleStub, RoundsLogicStub, SystemModuleStub } from '../../../stubs';
+import { createContainer } from '../../../utils/containerCreator';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -12,6 +15,7 @@ describe('logic/transactions/send', () => {
   let roundsLogicStub: RoundsLogicStub;
   let accountsModuleStub: AccountsModuleStub;
   let systemModuleStub: SystemModuleStub;
+  let container: Container;
 
   let instance: SendTransaction;
   let tx: any;
@@ -19,27 +23,28 @@ describe('logic/transactions/send', () => {
   let block: any;
 
   beforeEach(() => {
-    accountsModuleStub = new AccountsModuleStub();
+    container = createContainer();
+    accountsModuleStub = container.get(Symbols.modules.accounts);
     accountsModuleStub.stubs.setAccountAndGet.resolves();
     accountsModuleStub.stubs.mergeAccountAndGet.resolves();
 
-    systemModuleStub = new SystemModuleStub();
+    systemModuleStub = container.get(Symbols.modules.system);
     systemModuleStub.stubs.getFees.returns({
       fees: {
         send: 1,
       },
     });
-    roundsLogicStub = new RoundsLogicStub();
+    roundsLogicStub = container.get(Symbols.logic.rounds);
     roundsLogicStub.stubs.calcRound.returns(10);
 
     tx       = {
-      recipientId: '1234567890R',
       amount     : 10,
+      recipientId: '1234567890R',
     };
     sender   = { publicKey: '123' };
     block    = {
-      id    : 'blockId',
       height: 123456,
+      id    : 'blockId',
     };
     instance = new SendTransaction();
 
