@@ -8,6 +8,7 @@ import {
 import { Symbols } from '../../../src/ioc/symbols';
 import { LiskWallet } from 'dpos-offline';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
+import { ITransactionsModule } from '../../../src/ioc/interfaces/modules';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/multisignatures', () => {
@@ -81,7 +82,10 @@ describe('api/multisignatures', () => {
     });
 
     it('should have a min, max, lifetime, signed info for each pending tx', async () => {
-      const txModule = initializer.appManager.container.get(Symbols.modules.transactions);
+      const txModule: ITransactionsModule = initializer.appManager.container.get(Symbols.modules.transactions);
+      const transportModule = initializer.appManager.container.get(Symbols.modules.transport);
+      const ed = initializer.appManager.container.get(Symbols.helpers.ed);
+      const txLogic = initializer.appManager.container.get(Symbols.logic.transaction);
       const senderData = await createRandomAccountWithFunds(5000000000);
       sender = senderData.wallet;
       const keys = [createRandomWallet(), createRandomWallet(), createRandomWallet()];
@@ -91,7 +95,7 @@ describe('api/multisignatures', () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/multisignatures/pending?publicKey=' + sender.publicKey)
         .expect(200)
-        .then((response) => {
+        .then(async (response) => {
           expect(Array.isArray(response.body.transactions)).to.be.true;
           response.body.transactions.forEach((txObj) => {
             expect(txObj.lifetime).to.exist;
@@ -100,6 +104,19 @@ describe('api/multisignatures', () => {
             expect(txObj.signed).to.exist;
             expect(txObj.transaction).to.exist;
           });
+          const signatures = keys.map((k) => ed.sign(
+            txLogic.getHash(signedTx, true, false),
+            {
+              privateKey: Buffer.from(k.privKey, 'hex'),
+              publicKey : Buffer.from(k.publicKey, 'hex'),
+            }
+          ).toString('hex'));
+          await transportModule.receiveSignatures(signatures.map((sig) => ({
+            signature  : sig,
+            transaction: signedTx.id,
+          })));
+
+          await initializer.rawMineBlocks(1);
         });
     });
   });

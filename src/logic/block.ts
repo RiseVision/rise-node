@@ -173,7 +173,8 @@ export class BlockLogic implements IBlockLogic {
     transactions: Array<IBaseTransaction<any>>,
     previousBlock?: SignedAndChainedBlockType
   }): SignedBlockType {
-    const transactions = data.transactions.sort((a, b) => {
+    const transactions = data.transactions;
+    transactions.sort((a, b) => {
       if (a.type < b.type) {
         return -1;
       }

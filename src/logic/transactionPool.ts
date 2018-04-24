@@ -27,7 +27,7 @@ export class InnerTXQueue<T = { receivedAt: Date }> {
     if (this.has(id)) {
       const index = this.index[id];
       delete this.index[id];
-      delete this.transactions[index];
+      this.transactions[index] = undefined;
       delete this.payload[id];
     }
   }
@@ -72,7 +72,7 @@ export class InnerTXQueue<T = { receivedAt: Date }> {
     }
 
     if (reverse) {
-      res = res.reverse();
+      res.reverse();
     }
     if (limit) {
       res.splice(limit);

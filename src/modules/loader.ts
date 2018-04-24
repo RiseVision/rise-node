@@ -370,7 +370,7 @@ export class LoaderModule implements ILoaderModule {
       return { height: 0, peers: [] };
     } else {
       // Ordering the peers with descending height
-      peers = peers.sort((a, b) => b.height - a.height);
+      peers.sort((a, b) => b.height - a.height);
 
       const histogram = {};
       let max         = 0;

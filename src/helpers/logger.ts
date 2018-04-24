@@ -66,6 +66,22 @@ export default (config: any = {}): ILogger => {
     return data;
   }
 
+  function computeData(data) {
+    if (data && util.isObject(data)) {
+      if (data instanceof Error) {
+        data = { message: data.message, error: data.stack };
+      }
+      if (typeof(data.toLogObj) === 'function') {
+        return CircularJSON.stringify(snipsecret(data.toLogObj()));
+      } else {
+        return CircularJSON.stringify(snipsecret(data));
+      }
+
+    } else {
+      return data;
+    }
+  }
+
   Object.keys(config.levels).forEach((name: string) => {
     function log(message, data) {
       if (config.levels[config.errorLevel] > config.levels[name] &&
@@ -82,21 +98,7 @@ export default (config: any = {}): ILogger => {
       };
 
       logData.message = message;
-
-      if (data && util.isObject(data)) {
-        if (data instanceof Error) {
-          data = { message: data.message, error: data.stack };
-        }
-        if (typeof(data.toLogObj) === 'function') {
-          logData.data = CircularJSON.stringify(snipsecret(data.toLogObj()));
-        } else {
-          logData.data = CircularJSON.stringify(snipsecret(data));
-        }
-
-      } else {
-        logData.data = data;
-      }
-
+      logData.data = computeData(data);
       logData.symbol = config.level_abbr[logData.level] ? config.level_abbr[logData.level] : '???';
 
       if (config.levels[config.errorLevel] <= config.levels[logData.level]) {

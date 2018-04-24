@@ -16,9 +16,9 @@ import { SignedAndChainedBlockType } from '../logic';
 import { IBaseTransaction } from '../logic/transactions';
 import transportSchema from '../schema/transport';
 import transportSQL from '../sql/transport';
+import { APIError } from './errors';
 import { AttachPeerHeaders } from './utils/attachPeerHeaders';
 import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
-import { APIError } from './errors';
 
 @JsonController('/peer')
 @injectable()

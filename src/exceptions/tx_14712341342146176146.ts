@@ -1,7 +1,7 @@
 import { ExceptionsList, ExceptionsManager, IExceptionHandler } from '../helpers';
-import { IBaseTransaction, VoteTransaction } from '../logic/transactions';
-import { VoteAsset } from '../logic/transactions';
 import { ITransactionLogic } from '../ioc/interfaces/logic';
+import { IBaseTransaction } from '../logic/transactions';
+import { VoteAsset } from '../logic/transactions';
 /**
  * This transaction was broadcasted with 14572759844663166621 in the same
  * block and it was not allowed to be included as it removes a vote that
