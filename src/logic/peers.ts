@@ -15,6 +15,8 @@ export class PeersLogic implements IPeersLogic {
 
   private peers: { [peerIdentifier: string]: IPeerLogic } = {};
 
+  private lastRemoved: { [peerIdentifier: string]: number } = {}
+
   @inject(Symbols.logic.peerFactory)
   private peersFactory: (bp: BasePeerType) => IPeerLogic;
 
@@ -66,6 +68,11 @@ export class PeersLogic implements IPeersLogic {
         this.logger.trace('Peer not changed', thePeer.string);
       }
     } else {
+      // Do not add peer if it was removed recently
+      if (this.wasRecentlyRemoved(thePeer)) {
+        this.logger.debug('Rejecting recently removed peer', thePeer.string);
+        return;
+      }
       // insert peer!
       if (!_.isEmpty(this.acceptable([thePeer]))) {
         thePeer.updated            = Date.now();
@@ -110,6 +117,7 @@ export class PeersLogic implements IPeersLogic {
       const thePeer = this.create(peer);
       this.logger.info('Removed peer', thePeer.string);
       // this.logger.debug('Removed peer', this.peers[thePeer.string]);
+      this.lastRemoved[thePeer.string] = Date.now();
       delete this.peers[thePeer.string];
       return true;
     }
@@ -139,6 +147,18 @@ export class PeersLogic implements IPeersLogic {
         return !ip.isPrivate(peer.ip) && peer.nonce !== this.systemModule.getNonce() && (peer.os !== 'lisk-js-api');
       })
       .value();
+  }
+
+  /**
+   * Returns true if peer was last removed less than 15 minutes ago.
+   * @param {IPeerLogic} thePeer
+   * @returns {boolean}
+   */
+  private wasRecentlyRemoved(thePeer: IPeerLogic) {
+    if (typeof this.lastRemoved[thePeer.string] === 'undefined') {
+      return false;
+    }
+    return (Date.now() - this.lastRemoved[thePeer.string]) < 15 * 60 * 1000;
   }
 
 }
