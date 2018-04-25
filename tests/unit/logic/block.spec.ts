@@ -2,13 +2,15 @@ import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import 'chai-arrays';
 import * as crypto from 'crypto';
-import * as proxyquire from 'proxyquire';
+import {Container} from 'inversify';
 import * as sinon from 'sinon';
-import { SinonSpy } from 'sinon';
-import { constants } from '../../../src/helpers/';
+import { SinonSandbox, SinonSpy } from 'sinon';
 import { Ed } from '../../../src/helpers';
+import { constants } from '../../../src/helpers/';
+import {Symbols} from '../../../src/ioc/symbols';
 import { BlockLogic } from '../../../src/logic';
 import { BlockRewardLogicStub, TransactionLogicStub, ZSchemaStub } from '../../stubs';
+import { createContainer } from '../../utils/containerCreator';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -17,9 +19,7 @@ const { expect } = chai;
 chai.use(assertArrays);
 
 const ed = new Ed();
-const ProxyBlock = proxyquire('../../../src/logic/block.ts', {
-  crypto,
-});
+
 const passphrase = 'oath polypody manumit effector half sigmoid abound osmium jewfish weed sunproof ramose';
 const dummyKeypair = ed.makeKeypair(
   crypto.createHash('sha256').update(passphrase, 'utf8').digest()
@@ -27,6 +27,8 @@ const dummyKeypair = ed.makeKeypair(
 
 // tslint:disable no-unused-expression
 describe('logic/block', () => {
+  let sandbox: SinonSandbox;
+  let container: Container;
   let dummyBlock;
   let dummyTransactions;
   let callback;
@@ -43,67 +45,69 @@ describe('logic/block', () => {
   const buffer = bb.toBuffer();
 
   beforeEach(() => {
-    createHashSpy = sinon.spy(crypto, 'createHash');
+    sandbox = sinon.sandbox.create();
+    container = createContainer();
+    createHashSpy = sandbox.spy(crypto, 'createHash');
     dummyTransactions = [
       {
-        type: 1,
         amount: 108910891000000,
         fee: 5,
-        timestamp: 0,
+        id: '8139741256612355994',
         recipientId: '15256762582730568272R',
         senderId: '14709573872795067383R',
         senderPublicKey: '35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892',
         signature: 'f8fbf9b8433bf1bbea971dc8b14c6772d33c7dd285d84c5e6c984b10c4141e9fa56ace' +
-                   '902b910e05e98b55898d982b3d5b9bf8bd897083a7d1ca1d5028703e03',
-        id: '8139741256612355994',
+        '902b910e05e98b55898d982b3d5b9bf8bd897083a7d1ca1d5028703e03',
+        timestamp: 0,
+        type: 1,
       },
       {
-        type: 3,
         amount: 108910891000000,
         fee: 3,
-        timestamp: 0,
-        recipientId: '6781920633453960895R',
-        senderId: '14709573872795067383R',
-        senderPublicKey: '35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892',
-        signature: 'e26edb739d93bb415af72f1c288b06560c0111c4505f11076ca20e2f6e8903d3b00730' +
-                   '9c0e04362bfeb8bf2021d0e67ce3c943bfe0c0193f6c9503eb6dfe750c',
         id: '16622990339377112127',
-      },
-      {
-        type: 2,
-        amount: 108910891000000,
-        fee: 3,
-        timestamp: 0,
         recipientId: '6781920633453960895R',
         senderId: '14709573872795067383R',
         senderPublicKey: '35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892',
         signature: 'e26edb739d93bb415af72f1c288b06560c0111c4505f11076ca20e2f6e8903d3b00730' +
         '9c0e04362bfeb8bf2021d0e67ce3c943bfe0c0193f6c9503eb6dfe750c',
+        timestamp: 0,
+        type: 3,
+      },
+      {
+        amount: 108910891000000,
+        fee: 3,
         id: '16622990339377114578',
+        recipientId: '6781920633453960895R',
+        senderId: '14709573872795067383R',
+        senderPublicKey: '35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892',
+        signature: 'e26edb739d93bb415af72f1c288b06560c0111c4505f11076ca20e2f6e8903d3b00730' +
+        '9c0e04362bfeb8bf2021d0e67ce3c943bfe0c0193f6c9503eb6dfe750c',
+        timestamp: 0,
+        type: 2,
       },
     ];
 
     dummyBlock = {
-      version: 0,
-      totalAmount: 217821782000000,
-      totalFee: 8,
-      reward: 30000000,
-      payloadHash: 'b3cf5bb113442c9ba61ed0a485159b767ca181dd447f5a3d93e9dd73564ae762',
-      timestamp: 1506889306558,
+      blockSignature: '8c5f2b088eaf0634e1f6e12f94a1f3e871f21194489c76ad2aae5c1b71acd848bc7b' +
+      '158fa3b827e97f3f685c772bfe1a72d59975cbd2ccaa0467026d13bae50a',
+      generatorPublicKey: 'c950f1e6c91485d2e6932fbd689bba636f73970557fe644cd901a438f74883c5',
       numberOfTransactions: 2,
+      payloadHash: 'b3cf5bb113442c9ba61ed0a485159b767ca181dd447f5a3d93e9dd73564ae762',
       payloadLength: 8,
       previousBlock: '1',
-      generatorPublicKey: 'c950f1e6c91485d2e6932fbd689bba636f73970557fe644cd901a438f74883c5',
+      reward: 30000000,
+      timestamp: 1506889306558,
+      totalAmount: 217821782000000,
+      totalFee: 8,
       transactions: dummyTransactions,
-      blockSignature: '8c5f2b088eaf0634e1f6e12f94a1f3e871f21194489c76ad2aae5c1b71acd848bc7b' +
-                      '158fa3b827e97f3f685c772bfe1a72d59975cbd2ccaa0467026d13bae50a',
+      version: 0,
     };
 
-    callback = sinon.spy();
-    zschemastub = new ZSchemaStub();
-    blockRewardLogicStub = new BlockRewardLogicStub();
+    callback = sandbox.spy();
+    zschemastub = container.get(Symbols.generic.zschema);
+    blockRewardLogicStub = container.get(Symbols.logic.blockReward);
     instance = new BlockLogic();
-    transactionLogicStub = new TransactionLogicStub();
+    transactionLogicStub = container.get(Symbols.logic.transaction);
 
     // Inject dependencies!
     (instance as any).zschema = zschemastub;
@@ -118,15 +122,14 @@ describe('logic/block', () => {
 
     data = {
       keypair: dummyKeypair,
+      previousBlock: { id: '1', height: 10 },
       timestamp: Date.now(),
       transactions: dummyTransactions,
-      previousBlock: { id: '1', height: 10 },
     };
   });
 
   afterEach(() => {
-    callback.resetHistory();
-    createHashSpy.restore();
+    sandbox.restore();
   });
 
   describe('create', () => {
@@ -310,7 +313,7 @@ describe('logic/block', () => {
       expect(() => {
         instance.objectNormalize(dummyBlock);
       }).to.throw('Failed to validate block schema: 1, 2');
-    })
+    });
   });
 
   describe('[static] getId', () => {
@@ -334,20 +337,20 @@ describe('logic/block', () => {
 
   describe('dbRead', () => {
     const raw = {
-      b_id: 10,
-      b_version: 11,
-      b_timestamp: Date.now(),
-      b_height: 12,
-      b_previousBlock: 9,
-      b_numberOfTransactions: 1,
-      b_totalAmount: 0,
-      b_totalFee: 100,
-      b_reward: 50,
-      b_payloadLength: 13,
-      b_payloadHash: 14,
-      b_generatorPublicKey: 'c950f1e6c91485d2e6932fbd689bba636f73970557fe644cd901a438f74883c5',
       b_blockSignature: 16,
       b_confirmations: 1,
+      b_generatorPublicKey: 'c950f1e6c91485d2e6932fbd689bba636f73970557fe644cd901a438f74883c5',
+      b_height: 12,
+      b_id: 10,
+      b_numberOfTransactions: 1,
+      b_payloadHash: 14,
+      b_payloadLength: 13,
+      b_previousBlock: 9,
+      b_reward: 50,
+      b_timestamp: Date.now(),
+      b_totalAmount: 0,
+      b_totalFee: 100,
+      b_version: 11,
     };
 
     it('should return a specific format', () => {

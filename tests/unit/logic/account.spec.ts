@@ -1,10 +1,13 @@
 import { expect } from 'chai';
+import {Container} from 'inversify';
 import * as jsonSqlCreator from 'json-sql';
 import * as path from 'path';
 import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
-import { SinonStub } from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
+import {Symbols} from '../../../src/ioc/symbols';
 import { DbStub, LoggerStub, ZSchemaStub } from '../../stubs';
+import { createContainer } from '../../utils/containerCreator';
 
 const pgpStub = { QueryFile :  () => { return; }} as any;
 const ProxyAccount = proxyquire('../../../src/logic/account', {
@@ -22,23 +25,29 @@ const table = 'mem_accounts';
  * TODO: Check if more test cases are needed
  */
 describe('logic/account', () => {
+  let sandbox: SinonSandbox;
   let account;
   let dbStub: DbStub;
   let loggerStub: LoggerStub;
   let zSchemaStub: ZSchemaStub;
-  before(() => {
-    dbStub                  = new DbStub();
-  });
+  let container: Container;
+  let callback: SinonStub;
 
   beforeEach(() => {
-    loggerStub              = new LoggerStub();
-    zSchemaStub             = new ZSchemaStub();
+    sandbox                 = sinon.sandbox.create();
+    container               = createContainer();
+    dbStub                  = container.get(Symbols.generic.db);
+    loggerStub              = container.get(Symbols.helpers.logger);
+    zSchemaStub             = container.get(Symbols.generic.zschema);
     account                 = new ProxyAccount.AccountLogic();
     // Inject the dependencies
     (account as any).db     = dbStub;
     (account as any).logger = loggerStub;
     (account as any).schema = zSchemaStub;
-    dbStub.reset();
+  });
+
+  afterEach(() => {
+    sandbox.restore();
   });
 
   describe('constructor', () => {
@@ -103,15 +112,46 @@ describe('logic/account', () => {
 
     it('filter should match', () => {
       const filter = {
-        username         : {
-          case     : 'lower',
-          maxLength: 20,
+        address          : {
+          case     : 'upper',
+          maxLength: 22,
           minLength: 1,
+          required : true,
           type     : 'string',
         },
+        balance          : {
+          maximum : 10999999991000000,
+          minimum : 0,
+          required: true,
+          type    : 'integer',
+        },
+        blockId          : { type: 'string', minLength: 1, maxLength: 20 },
+        delegates        : { type: 'array', uniqueItems: true },
+        fees             : { type: 'integer' },
         isDelegate       : { type: 'boolean' },
-        u_isDelegate     : { type: 'boolean' },
+        missedblocks     : { type: 'integer', minimum: -1, maximum: 1 },
+        multilifetime    : { type: 'integer', minimum: 1, maximum: 72 },
+        multimin         : { type: 'integer', minimum: 0, maximum: 17 },
+        multisignatures  : { type: 'array', uniqueItems: true },
+        nameexist        : { type: 'boolean' },
+        producedblocks   : { type: 'integer', minimum: -1, maximum: 1 },
+        publicKey        : { type: 'string', format: 'publicKey' },
+        rate             : { type: 'integer' },
+        rewards          : { type: 'integer' },
+        secondPublicKey  : { type: 'string', format: 'publicKey' },
         secondSignature  : { type: 'boolean' },
+        u_balance        : {
+          maximum : 10999999991000000,
+          minimum : 0,
+          required: true,
+          type    : 'integer',
+        },
+        u_delegates      : { type: 'array', uniqueItems: true },
+        u_isDelegate     : { type: 'boolean' },
+        u_multilifetime  : { type: 'integer', minimum: 1, maximum: 72 },
+        u_multimin       : { type: 'integer', minimum: 0, maximum: 17 },
+        u_multisignatures: { type: 'array', uniqueItems: true },
+        u_nameexist      : { type: 'boolean' },
         u_secondSignature: { type: 'boolean' },
         u_username       : {
           case     : 'lower',
@@ -119,80 +159,49 @@ describe('logic/account', () => {
           minLength: 1,
           type     : 'string',
         },
-        address          : {
-          case     : 'upper',
+        username         : {
+          case     : 'lower',
+          maxLength: 20,
           minLength: 1,
-          maxLength: 22,
-          required : true,
           type     : 'string',
         },
-        publicKey        : { type: 'string', format: 'publicKey' },
-        secondPublicKey  : { type: 'string', format: 'publicKey' },
-        balance          : {
-          maximum : 10999999991000000,
-          minimum : 0,
-          required: true,
-          type    : 'integer',
-        },
-        u_balance        : {
-          maximum : 10999999991000000,
-          minimum : 0,
-          required: true,
-          type    : 'integer',
-        },
-        vote             : { type: 'integer' },
-        rate             : { type: 'integer' },
-        delegates        : { type: 'array', uniqueItems: true },
-        u_delegates      : { type: 'array', uniqueItems: true },
-        multisignatures  : { type: 'array', uniqueItems: true },
-        u_multisignatures: { type: 'array', uniqueItems: true },
-        multimin         : { type: 'integer', minimum: 0, maximum: 17 },
-        u_multimin       : { type: 'integer', minimum: 0, maximum: 17 },
-        multilifetime    : { type: 'integer', minimum: 1, maximum: 72 },
-        u_multilifetime  : { type: 'integer', minimum: 1, maximum: 72 },
-        blockId          : { type: 'string', minLength: 1, maxLength: 20 },
-        nameexist        : { type: 'boolean' },
-        u_nameexist      : { type: 'boolean' },
-        producedblocks   : { type: 'integer', minimum: -1, maximum: 1 },
-        missedblocks     : { type: 'integer', minimum: -1, maximum: 1 },
-        fees             : { type: 'integer' },
-        rewards          : { type: 'integer' },
         virgin           : { type: 'boolean' },
+        vote             : { type: 'integer' },
       };
       expect(account.filter).to.deep.equal(filter);
     });
 
     it('conv should match', () => {
       const conv = {
-        username         : String,
+        address          : String,
+        balance          : Number,
+        blockId          : String,
+        delegates        : Array,
+        fees             : Number,
         isDelegate       : Boolean,
-        u_isDelegate     : Boolean,
+        missedblocks     : Number,
+        multilifetime    : Number,
+        multimin         : Number,
+        multisignatures  : Array,
+        nameexist        : Boolean,
+        producedblocks   : Number,
+        publicKey        : String,
+        rate             : Number,
+        rewards          : Number,
+        secondPublicKey  : String,
         secondSignature  : Boolean,
+        u_balance        : Number,
+        u_delegates      : Array,
+        u_isDelegate     : Boolean,
+        u_multilifetime  : Number,
+        u_multimin       : Number,
+        u_multisignatures: Array,
+        u_nameexist      : Boolean,
         u_secondSignature: Boolean,
         u_username       : String,
-        address          : String,
-        publicKey        : String,
-        secondPublicKey  : String,
-        balance          : Number,
-        u_balance        : Number,
-        vote             : Number,
-        rate             : Number,
-        delegates        : Array,
-        u_delegates      : Array,
-        multisignatures  : Array,
-        u_multisignatures: Array,
-        multimin         : Number,
-        u_multimin       : Number,
-        multilifetime    : Number,
-        u_multilifetime  : Number,
-        blockId          : String,
-        nameexist        : Boolean,
-        u_nameexist      : Boolean,
-        producedblocks   : Number,
-        missedblocks     : Number,
-        fees             : Number,
-        rewards          : Number,
+        username         : String,
         virgin           : Boolean,
+        vote             : Number,
       };
       expect(account.conv).to.deep.equal(conv);
     });
@@ -231,7 +240,7 @@ describe('logic/account', () => {
     const sqlPath = path.join(process.cwd(), 'sql', 'memoryTables.sql');
 
     beforeEach(() => {
-      pgpStub.QueryFile = sinon.stub();
+      pgpStub.QueryFile = sandbox.stub();
     });
 
     it('should handle sql error', async () => {
@@ -290,8 +299,8 @@ describe('logic/account', () => {
 
     const sqles = tables.map((tbl) => {
       const sql = jsonSql.build({
-        type : 'remove',
         table: tbl,
+        type : 'remove',
       });
       return sql.query;
     });
@@ -406,9 +415,9 @@ describe('logic/account', () => {
   describe('account.toDB', () => {
     it('should convert correctly', () => {
       const raw = {
+        address  : '2841811297332056155r',
         publicKey:
           '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da',
-        address  : '2841811297332056155r',
       };
 
       const result = account.toDB(raw);
@@ -423,18 +432,14 @@ describe('logic/account', () => {
     const filter = {};
 
     beforeEach(() => {
-      sinon.stub(account, 'getAll');
-    });
-
-    afterEach(() => {
-      account.getAll.restore();
+      sandbox.stub(account, 'getAll');
     });
 
     it('without fields; getAll error', async () => {
       const error  = 'error';
       const fields = account.fields.map((field) => field.alias || field.field);
 
-      account.getAll.returns(Promise.reject(error));
+      account.getAll.returns(Promise.reject(error), 'foo');
 
       await account.get(filter).then(() => {
         throw new Error('Should reject');
@@ -451,7 +456,7 @@ describe('logic/account', () => {
       const error  = 'error';
       const fields = {};
 
-      account.getAll.returns(Promise.reject(error));
+      account.getAll.returns(Promise.reject(error), 'foo');
 
       await account.get(filter, fields).then(() => {
         throw new Error('Should reject');
@@ -467,7 +472,7 @@ describe('logic/account', () => {
     it('without fields', async () => {
       const fields = account.fields.map((field) => field.alias || field.field);
 
-      account.getAll.returns(Promise.resolve(data));
+      account.getAll.returns(Promise.resolve(data), 'foo');
 
       const retVal = await account.get(filter).catch(() => {
         throw new Error('Should resolve');
@@ -483,7 +488,7 @@ describe('logic/account', () => {
     it('with fields', async () => {
       const fields = {};
 
-      account.getAll.returns(Promise.resolve(data));
+      account.getAll.returns(Promise.resolve(data), 'foo');
 
       const retVal = await account.get(filter, fields).catch(() => {
         throw new Error('Should resolve');
@@ -506,10 +511,10 @@ describe('logic/account', () => {
 
     beforeEach(() => {
       filter   = {
+        address: '2841811297332056155r',
         limit  : 4,
         offset : 2,
         sort   : 'username',
-        address: '2841811297332056155r',
       };
       fields   = [];
       sql      = 'select "username", "isDelegate", "u_isDelegate", "secondSignature", "u_secondSignature", ' +
@@ -613,21 +618,16 @@ describe('logic/account', () => {
     const sql     = 'insert into "mem_accounts" ("address") values (${p1}) on conflict ("address") do update set ' +
                     '"address" = ${p2};';
     const values  = { p1: '2841811297332056155R', p2: '2841811297332056155R' };
-    let callback: SinonStub;
 
     beforeEach(() => {
-      sinon.stub(account, 'assertPublicKey');
-      callback = sinon.stub();
-    });
-
-    afterEach(() => {
-      account.assertPublicKey.restore();
+      sandbox.stub(account, 'assertPublicKey');
+      callback = sandbox.stub();
     });
 
     it('should handle errors', async () => {
       const error = new Error('error');
 
-      account.assertPublicKey.returns(true);
+      account.assertPublicKey.returns(true, 'foo');
       dbStub.enqueueResponse('none', Promise.reject(error));
 
       await account.set(address, fields)
@@ -643,7 +643,7 @@ describe('logic/account', () => {
     });
 
     it('should set data', async () => {
-      account.assertPublicKey.returns(true);
+      account.assertPublicKey.returns(true, 'foo');
       dbStub.enqueueResponse('none', Promise.resolve());
 
       await account.set(address, fields, callback);
@@ -662,27 +662,12 @@ describe('logic/account', () => {
     let diff: any;
     let queries: string;
     let queries2: string;
-    let callback: SinonStub;
 
     beforeEach(() => {
       address = '2841811297332056155r';
       diff    = {
-        publicKey      :
-          '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da',
-        blockId        : '11273313233467167051',
-        round          : 2707,
         balance        : 300,
-        u_balance      : -300,
-        multisignatures: [
-          {
-            action     : '+',
-            dependentId: '11995752116878847490R',
-          },
-          {
-            action     : '-',
-            dependentId: '11995752116878847490R',
-          },
-        ],
+        blockId        : '11273313233467167051',
         delegates      : [
           [
             '+',
@@ -693,6 +678,20 @@ describe('logic/account', () => {
             '5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde',
           ],
         ],
+        multisignatures: [
+          {
+            action     : '+',
+            dependentId: '11995752116878847490R',
+          },
+          {
+            action     : '-',
+            dependentId: '11995752116878847490R',
+          },
+        ],
+        publicKey      :
+          '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da',
+        round          : 2707,
+        u_balance      : -300,
       };
       queries = 'delete from "mem_accounts2delegates" where "dependentId" in ' +
                 '(5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde) and "accountId" ' +
@@ -731,13 +730,9 @@ describe('logic/account', () => {
                 'array[\'5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde\'],' +
                 ' \'11273313233467167051\', 2707 FROM mem_accounts WHERE address = \'2841811297332056155R\';';
 
-      sinon.stub(account, 'assertPublicKey');
-      account.assertPublicKey.returns(true);
-      callback = sinon.stub();
-    });
-
-    afterEach(() => {
-      account.assertPublicKey.restore();
+      sandbox.stub(account, 'assertPublicKey');
+      account.assertPublicKey.returns(true, 'foo');
+      callback = sandbox.stub();
     });
 
     it('should throw if verify throws error', () => {
@@ -747,7 +742,7 @@ describe('logic/account', () => {
     });
 
     it('should handle no queries passed', async () => {
-      sinon.stub(account, 'get');
+      sandbox.stub(account, 'get');
 
       dbStub.enqueueResponse('query', Promise.resolve([]));
 
@@ -808,7 +803,7 @@ describe('logic/account', () => {
       expect(callback.getCall(0).args[1]).to.be.undefined;
     });
 
-    it('should return callback with rejected promise if one of diff fields value is Infinity', async()=>{
+    it('should return callback with rejected promise if one of diff fields value is Infinity', async () => {
       diff.balance = Number.POSITIVE_INFINITY;
       await account.merge(address, diff, callback)
         .catch((err) => {
@@ -874,7 +869,8 @@ describe('logic/account', () => {
   });
 
   describe('generateAddressByPublicKey', () => {
-    it('success', () => {
+    it('should return the address', () => {
+      // tslint:disable max-line-length
       const address = account.generateAddressByPublicKey('29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da');
       expect(address).to.equal('2841811297332056155R');
     });

@@ -1,9 +1,12 @@
 import * as chai from 'chai';
+import {Container} from 'inversify';
 import * as sinon from 'sinon';
-import { SinonStub } from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
+import {Symbols} from '../../../src/ioc/symbols';
+import { PeerLogic } from '../../../src/logic';
 import { PeersLogic } from '../../../src/logic';
 import { LoggerStub, PeerLogicStub, SystemModuleStub } from '../../stubs';
-import { PeerLogic } from '../../../src/logic/peer';
+import { createContainer } from '../../utils/containerCreator';
 
 const expect = chai.expect;
 
@@ -14,16 +17,24 @@ describe('logic/peers', () => {
   let peerLogicStub: PeerLogicStub;
   let systemModuleStub: SystemModuleStub;
   let peersFactoryStub: SinonStub;
+  let container: Container;
+  let sandbox: SinonSandbox;
 
   beforeEach(() => {
-    loggerStub = new LoggerStub();
-    instance = new PeersLogic();
+    sandbox = sinon.sandbox.create();
+    container = createContainer();
+    loggerStub = container.get(Symbols.helpers.logger);
     peerLogicStub = new PeerLogicStub();
-    systemModuleStub = new SystemModuleStub();
-    peersFactoryStub = sinon.stub().returns(peerLogicStub);
+    systemModuleStub = container.get(Symbols.modules.system);
+    peersFactoryStub = sandbox.stub().returns(peerLogicStub);
+    instance = new PeersLogic();
     (instance as any).logger = loggerStub;
     (instance as any).peersFactory = peersFactoryStub;
     (instance as any).systemModule = systemModuleStub;
+  });
+
+  afterEach(() => {
+    sandbox.restore();
   });
 
   describe('create', () => {

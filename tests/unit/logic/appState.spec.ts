@@ -3,7 +3,7 @@ import * as jsonpath from 'jsonpath';
 import * as proxyquire from 'proxyquire';
 import 'reflect-metadata';
 import * as sinon from 'sinon';
-import { SinonSpy, SinonStub } from 'sinon';
+import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import { AppState } from '../../../src/logic';
 
 // tslint:disable no-unused-expression
@@ -11,15 +11,17 @@ describe('appState', () => {
   let instance: AppState;
   let valueSpy: SinonSpy;
   let computedStub: SinonStub;
+  let sandbox: SinonSandbox;
 
   const ProxyAppState = proxyquire('../../../src/logic/appState.ts', {
     jsonpath,
   });
 
   beforeEach(() => {
-    valueSpy = sinon.spy(jsonpath, 'value');
+    sandbox = sinon.sandbox.create();
+    valueSpy = sandbox.spy(jsonpath, 'value');
     instance = new ProxyAppState.AppState();
-    computedStub = sinon.stub().returns('returnVal');
+    computedStub = sandbox.stub().returns('returnVal');
     instance.states = {
       rounds: {
         isLoaded: false,
@@ -31,7 +33,7 @@ describe('appState', () => {
   });
 
   afterEach(() => {
-    valueSpy.restore();
+    sandbox.restore();
   });
 
   describe('set', () => {
