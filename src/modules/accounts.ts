@@ -3,8 +3,9 @@ import { emptyCB } from '../helpers/';
 import { IAccountLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { OptionalsMemAccounts } from '../logic';
 import { AccountFilterData, MemAccountsData } from '../logic/';
+import { AccountsModel } from '../models/';
+import { FieldsInModel } from '../types/utils';
 
 @injectable()
 export class AccountsModule implements IAccountsModule {
@@ -16,7 +17,7 @@ export class AccountsModule implements IAccountsModule {
     return Promise.resolve();
   }
 
-  public getAccount(filter: AccountFilterData, fields?: Array<(keyof MemAccountsData)>): Promise<MemAccountsData> {
+  public getAccount(filter: AccountFilterData, fields?: Array<FieldsInModel<AccountsModel>>): Promise<AccountsModel> {
     if (filter.publicKey) {
       filter.address = this.accountLogic.generateAddressByPublicKey(filter.publicKey);
       delete filter.publicKey;
@@ -24,7 +25,7 @@ export class AccountsModule implements IAccountsModule {
     return this.accountLogic.get(filter, fields);
   }
 
-  public getAccounts(filter: AccountFilterData, fields: Array<(keyof MemAccountsData)>): Promise<MemAccountsData[]> {
+  public getAccounts(filter: AccountFilterData, fields: Array<FieldsInModel<AccountsModel>>): Promise<AccountsModel[]> {
     return this.accountLogic.getAll(filter, fields);
   }
 
@@ -34,7 +35,7 @@ export class AccountsModule implements IAccountsModule {
    * @returns {Promise<MemAccountsData>}
    */
   // tslint:disable-next-line max-line-length
-  public async setAccountAndGet(data: ({ publicKey: string } | { address: string }) & OptionalsMemAccounts): Promise<MemAccountsData> {
+  public async setAccountAndGet(data: ({ publicKey: string } | { address: string }) & Partial<AccountsModel>): Promise<AccountsModel> {
     data = this.fixAndCheckInputParams(data);
     // no need to reset address!
     const {address} = data;

@@ -43,7 +43,7 @@ export class AccountsModel extends Model<AccountsModel> {
   public isDelegate: boolean;
 
   @Column
-  public secondSignature: boolean;
+  public secondSignature: 0|1;
 
   @PrimaryKey
   @Column
@@ -99,10 +99,10 @@ export class AccountsModel extends Model<AccountsModel> {
   public u_balance: boolean;
 
 
-  public multisignatures: publicKey[];
-  public u_multisignatures: publicKey[];
-  public delegates: publicKey[];
-  public u_delegates: publicKey[];
+  public multisignatures?: publicKey[];
+  public u_multisignatures?: publicKey[];
+  public delegates?: publicKey[];
+  public u_delegates?: publicKey[];
 
 
   public isMultisignature(): boolean {
@@ -123,3 +123,19 @@ export class AccountsModel extends Model<AccountsModel> {
   }
 
 }
+
+
+const s = new Sequelize({
+  username: 'andrea',
+  password: 'password',
+  database: 'rise_db',
+  dialect: 'postgres'
+
+});
+
+s.addModels([AccountsModel]);
+
+AccountsModel.upsert({address: '5637366780247854848R', secondSignature: 0})
+.then((res) => {
+  console.log(res);
+})

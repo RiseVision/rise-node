@@ -8,14 +8,16 @@ import * as z_schema from 'z-schema';
 import { BigNum, catchToLoggerAndRemapError, cback, ILogger, promiseToCB } from '../helpers/';
 import { IAccountLogic } from '../ioc/interfaces/';
 import { Symbols } from '../ioc/symbols';
+import {
+  Accounts2DelegatesModel,
+  Accounts2MultisignaturesModel,
+  Accounts2U_DelegatesModel, Accounts2U_MultisignaturesModel,
+  AccountsModel,
+  MemRoundsModel
+} from '../models/';
+import { FieldsInModel, ModelAttributes } from '../types/utils';
 import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
-import { AccountsModel } from '../models/AccountsModel';
-import { MemRoundsModel } from '../models/MemRoundsModel';
-import { Accounts2DelegatesModel } from '../models/accounts/Accounts2DelegatesModel';
-import { Accounts2MultisignaturesModel } from '../models/accounts/Accounts2MultisignaturesModel';
-import { Accounts2U_MultisignaturesModel } from '../models/accounts/Accounts2U_MultisignaturesModel';
-import { Accounts2U_DelegatesModel } from '../models/accounts/Accounts2U_DelegatesModel';
 
 const jsonSql = jsonSqlCreator();
 
@@ -105,10 +107,6 @@ export class AccountLogic implements IAccountLogic {
    * All fields
    */
   private fields: Array<{ alias: string, field?: string, expression?: string }> = [];
-  /**
-   * Binary fields
-   */
-  private binary: string[];
 
   /**
    * Filters by field
@@ -154,11 +152,6 @@ export class AccountLogic implements IAccountLogic {
       }
       return tmp;
     });
-
-    // binary fields
-    this.binary = this.model
-      .filter((f) => f.type === 'Binary')
-      .map((f) => f.name);
 
     // filters
     this.model.forEach((field) => this.filter[field.name] = field.filter);
@@ -228,17 +221,23 @@ export class AccountLogic implements IAccountLogic {
    * @param {string} publicKey
    * @param {boolean} allowUndefined
    */
-  public assertPublicKey(publicKey: string, allowUndefined: boolean = true) {
+  public assertPublicKey(publicKey: string | Buffer, allowUndefined: boolean = true) {
     if (typeof(publicKey) !== 'undefined') {
-      if (typeof(publicKey) !== 'string') {
-        throw new Error('Invalid public key, must be a string');
-      }
-      if (publicKey.length !== 64) {
-        throw new Error('Invalid public key, must be 64 characters long');
-      }
+      if (Buffer.isBuffer(publicKey)) {
+        if (publicKey.length !== 32) {
+          throw new Error('Invalid public key. If buffer it must be 32 bytes long');
+        }
+      } else {
+        if (typeof(publicKey) !== 'string') {
+          throw new Error('Invalid public key, must be a string');
+        }
+        if (publicKey.length !== 64) {
+          throw new Error('Invalid public key, must be 64 characters long');
+        }
 
-      if (!this.schema.validate(publicKey, { format: 'hex' })) {
-        throw new Error('Invalid public key, must be a hex string');
+        if (!this.schema.validate(publicKey, { format: 'hex' })) {
+          throw new Error('Invalid public key, must be a hex string');
+        }
       }
     } else if (!allowUndefined) {
       throw new Error('Public Key is undefined');
@@ -246,25 +245,10 @@ export class AccountLogic implements IAccountLogic {
   }
 
   /**
-   * Normalize address and creates binary buffers to insert.
-   * @param raw
-   * @returns {any}
-   */
-  public toDB(raw: any) {
-    this.binary.forEach((field) => {
-      if (raw[field]) {
-        raw[field] = Buffer.from(raw[field], 'hex');
-      }
-    });
-    raw.address = String(raw.address).toUpperCase();
-    return raw;
-  }
-
-  /**
    * Get account information for specific fields and filtering criteria
    */
   // tslint:disable-next-line max-line-length
-  public get(filter: AccountFilterData, fields: Array<(keyof MemAccountsData)> = this.fields.map((field) => field.alias || field.field) as any): Promise<MemAccountsData> {
+  public get(filter: AccountFilterData, fields: Array<FieldsInModel<AccountsModel>> = this.fields.map((field) => field.alias || field.field) as any): Promise<AccountsModel> {
     return this.getAll(filter, fields)
       .then((res) => res[0]);
   }
@@ -272,18 +256,20 @@ export class AccountLogic implements IAccountLogic {
   /**
    * Get accountS information for specific fields and filtering criteria.
    */
-  public getAll(filter: AccountFilterData, fields?: Array<(keyof MemAccountsData)>): Promise<MemAccountsData[]> {
+  public getAll(filter: AccountFilterData, fields?: Array<FieldsInModel<AccountsModel>>): Promise<AccountsModel[]> {
     if (!Array.isArray(fields)) {
       fields = this.fields.map((field) => field.alias || field.field) as any;
     }
 
-    const theFields = fields as string[]; // Ts fuck
+    const theFields = fields;
 
-    const realFields = this.fields.filter((field) => theFields.indexOf(field.alias || field.field) !== -1);
+    const realFields = this.fields
+      .filter((field) => theFields.indexOf(field.alias || field.field as any) !== -1)
+      .map((f) => f.alias || f.field);
 
     const realConv = {};
     Object.keys(this.conv)
-      .filter((key) => theFields.indexOf(key) !== -1)
+      .filter((key) => theFields.indexOf(key as any) !== -1)
       .forEach((key) => realConv[key] = this.conv[key]);
 
     const limit: number  = filter.limit > 0 ? filter.limit : undefined;
@@ -303,45 +289,40 @@ export class AccountLogic implements IAccountLogic {
       }
     });
 
-    const sql = jsonSql.build({
-      alias : 'a',
-      condition,
-      fields: realFields,
-      limit,
-      offset,
-      sort,
-      table : this.table,
-      type  : 'select',
-    });
+    let scope = null;
+    if ('delegates' in realFields || 'multisignatures' in realFields) {
+      if ('u_delegates' in realFields || 'u_multisignatures' in realFields) {
+        scope = 'full';
+      } else {
+        scope = 'fullConfirmed';
+      }
+    }
 
-    return this.db.query(sql.query, sql.values)
-      .catch(catchToLoggerAndRemapError('Account#getAll error', this.logger));
+    return Promise.resolve(
+      AccountsModel.scope(scope).findAll({
+        attributes: realFields,
+        limit,
+        offset,
+        order     : typeof(sort) === 'string' ?
+          [[sort, 'ASC']] :
+          Object.keys(sort).map((col) => [col, sort[col] === -1 ? 'DESC' : 'ASC']),
+        where     : condition,
+      })
+    );
+
   }
 
   /**
    * Sets fields for specific address in mem_accounts table
    * @param {string} address
    * @param fields
-   * @param {cback<any>} cb
    */
-  public set(address: string, fields: { [k: string]: any }, cb?: cback<any>) {
-    return promiseToCB((async () => {
-        this.assertPublicKey(fields.publicKey);
-        address        = String(address).toUpperCase();
-        fields.address = address;
-        const sql      = jsonSql.build({
-          conflictFields: ['address'],
-          modifier      : this.toDB(fields),
-          table         : this.table,
-          type          : 'insertorupdate',
-          values        : this.toDB(fields),
-        });
+  public async set(address: string, fields: ModelAttributes<AccountsModel>) {
+    this.assertPublicKey(fields.publicKey);
+    address        = String(address).toUpperCase();
+    fields.address = address;
 
-        return this.db.none(sql.query, sql.values)
-          .catch(catchToLoggerAndRemapError('Account#set error', this.logger));
-      })(),
-      cb
-    );
+    await AccountsModel.upsert(fields);
   }
 
   /**
@@ -568,21 +549,10 @@ export class AccountLogic implements IAccountLogic {
   /**
    * Removes an account from mem_account table based on address.
    * @param {string} address
-   * @param {cback<string>} cb
-   * @returns {Promise<string>}
+   * @returns {Promise<number>}
    */
-  public remove(address: string, cb: cback<string>): Promise<string> {
-    const sql = jsonSql.build({
-      condition: { address },
-      table    : this.table,
-      type     : 'remove',
-    });
-    return promiseToCB(
-      this.db.none(sql.query, sql.values)
-        .then(() => address)
-        .catch(catchToLoggerAndRemapError('Account#remove error', this.logger)),
-      cb
-    );
+  public async remove(address: string): Promise<number> {
+    return await AccountsModel.destroy({ where: { address } });
   }
 
   public generateAddressByPublicKey(publicKey: string): string {
