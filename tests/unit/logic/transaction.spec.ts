@@ -2,21 +2,21 @@ import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
+import {Container} from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { BigNum, IKeypair, TransactionType } from '../../../src/helpers';
+import {Symbols} from '../../../src/ioc/symbols';
 import { TransactionLogic } from '../../../src/logic';
 import { IBaseTransaction, SendTransaction } from '../../../src/logic/transactions';
 import {
   AccountLogicStub, DbStub, EdStub, ExceptionsManagerStub, LoggerStub,
   RoundsLogicStub, SlotsStub, ZSchemaStub
 } from '../../stubs';
+import { createContainer } from '../../utils/containerCreator';
 
 chai.use(chaiAsPromised);
 
-const helpers          = {
-  Bigum: BigNum as any,
-};
 // tslint:disable-next-line no-var-requires
 const genesisBlock     = require('../../../etc/mainnet/genesisBlock.json');
 const expect           = chai.expect;
@@ -24,7 +24,7 @@ const expect           = chai.expect;
 // tslint:disable no-unused-expression
 describe('logic/transaction', () => {
   let instance: TransactionLogic;
-
+  let container: Container;
   let dbStub: DbStub;
   let edStub: EdStub;
   let slotsStub: SlotsStub;
@@ -46,20 +46,20 @@ describe('logic/transaction', () => {
   const privateKeyHex     = 'cd25f48e0bf2c9ac3c9fe67f22fea54bb108f694bb69eb10520c48b228635df0' +
     '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3';
   const keyPair: IKeypair = {
-    publicKey : Buffer.from(publicKeyHex, 'hex'),
     privateKey: Buffer.from(privateKeyHex, 'hex'),
+    publicKey : Buffer.from(publicKeyHex, 'hex'),
   };
 
   beforeEach(() => {
-    dbStub           = new DbStub();
-    edStub           = new EdStub();
-    slotsStub        = new SlotsStub();
-    zSchemaStub      = new ZSchemaStub();
-    accountLogicStub = new AccountLogicStub();
-    roundsLogicStub  = new RoundsLogicStub();
-    loggerStub       = new LoggerStub();
-    loggerStub       = new LoggerStub();
-    excManagerStub   = new ExceptionsManagerStub();
+    container          = createContainer();
+    dbStub           = container.get(Symbols.generic.db);
+    edStub           = container.get(Symbols.helpers.ed);
+    slotsStub        = container.get(Symbols.helpers.slots);
+    zSchemaStub      = container.get(Symbols.generic.zschema);
+    accountLogicStub = container.get(Symbols.logic.account);
+    roundsLogicStub  = container.get(Symbols.logic.rounds);
+    loggerStub       = container.get(Symbols.helpers.logger);
+    excManagerStub   = container.get(Symbols.helpers.exceptionsManager);
     sendTransaction  = new SendTransaction();
 
     instance = new TransactionLogic();
@@ -77,46 +77,46 @@ describe('logic/transaction', () => {
     (instance as any).excManager   = excManagerStub;
 
     tx = {
-      type           : TransactionType.SEND,
       amount         : 108910891000000,
+      asset          : {},
       fee            : 10,
-      timestamp      : 0,
+      id             : '8139741256612355994',
       recipientId    : '15256762582730568272R',
       senderId       : '1233456789012345R',
       senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
       signature      : 'f8fbf9b8433bf1bbea971dc8b14c6772d33c7dd285d84c5e6c984b10c4141e9f' +
       'a56ace902b910e05e98b55898d982b3d5b9bf8bd897083a7d1ca1d5028703e03',
-      id             : '8139741256612355994',
-      asset          : {},
+      timestamp      : 0,
+      type           : TransactionType.SEND,
     };
 
     sender = {
-      balance  : 10000000,
       address  : '1233456789012345R',
+      balance  : 10000000,
       publicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
     };
 
     requester = {
-      balance  : 20000000,
       address  : '9999999999999999R',
+      balance  : 20000000,
       publicKey: 'e73f4ab9f4794b110ceefecd8f880d5189235526f8a1e2f482264e5d4982fc07',
     };
 
     block = {
-      version             : 0,
-      totalAmount         : 10999999991000000,
-      totalFee            : 0,
-      payloadHash         : 'cd8171332c012514864edd8eb6f68fc3ea6cb2afbaf21c56e12751022684cea5',
-      timestamp           : 0,
-      numberOfTransactions: 0,
-      payloadLength       : 0,
-      previousBlock       : null,
-      generatorPublicKey  : '35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892',
-      transactions        : [],
-      height              : 1,
       blockSignature      : 'a9e12f49432364c1e171dd1f9e2d34f8baffdda0f4ef0989d9439e5d46aba55ef640' +
       '149ff7ed7d3e3d4e1ad4173ecfd1cc0384f5598175c15434e0d97ce4150d',
+      generatorPublicKey  : '35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892',
+      height              : 1,
       id                  : '13191140260435645922',
+      numberOfTransactions: 0,
+      payloadHash         : 'cd8171332c012514864edd8eb6f68fc3ea6cb2afbaf21c56e12751022684cea5',
+      payloadLength       : 0,
+      previousBlock       : null,
+      timestamp           : 0,
+      totalAmount         : 10999999991000000,
+      totalFee            : 0,
+      transactions        : [],
+      version             : 0,
     };
 
     edStub.stubs.sign.returns(sampleBuffer);
@@ -502,7 +502,6 @@ describe('logic/transaction', () => {
       const akttStub = sandbox.stub(instance, 'assertKnownTransactionType').throws('stop');
       try {
         await instance.process(tx, sender, {} as any);
-        throw new Error('Should throw');
       } catch (e) {
         expect(akttStub.calledOnce).to.be.true;
         expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx);
@@ -563,7 +562,6 @@ describe('logic/transaction', () => {
       const akttStub = sandbox.stub(instance, 'assertKnownTransactionType').throws('stop');
       try {
         await instance.verify(tx, sender, requester, 1);
-        throw new Error('Should throw!');
       } catch (e) {
         expect(akttStub.calledOnce).to.be.true;
       }
@@ -885,7 +883,7 @@ describe('logic/transaction', () => {
       expect(getHashStub.firstCall.args[1]).to.be.equal(true);
       expect(getHashStub.firstCall.args[2]).to.be.equal(true);
     });
-    it('should call false if signature is null', ()=>{
+    it('should call false if signature is null', () => {
       expect(instance.verifySignature(tx, tx.senderPublicKey, null)).to.be.false;
     });
   });
@@ -1184,7 +1182,6 @@ describe('logic/transaction', () => {
       tx.requesterPublicKey = requester.publicKey;
       const retVal          = instance.dbSave(tx as any);
       expect(retVal[0]).to.be.deep.equal({
-        table : 'trs',
         fields: [
           'id',
           'blockId',
@@ -1200,20 +1197,21 @@ describe('logic/transaction', () => {
           'signSignature',
           'signatures',
         ],
+        table : 'trs',
         values: {
-          id                : tx.id,
+          amount            : tx.amount,
           blockId           : (tx as any).blockId,
-          type              : tx.type,
-          timestamp         : tx.timestamp,
-          senderPublicKey   : Buffer.from(tx.senderPublicKey, 'hex'),
+          fee               : tx.fee,
+          id                : tx.id,
+          recipientId       : tx.recipientId || null,
           requesterPublicKey: Buffer.from(tx.requesterPublicKey, 'hex'),
           senderId          : tx.senderId,
-          recipientId       : tx.recipientId || null,
-          amount            : tx.amount,
-          fee               : tx.fee,
-          signature         : Buffer.from(tx.signature, 'hex'),
+          senderPublicKey   : Buffer.from(tx.senderPublicKey, 'hex'),
           signSignature     : null,
+          signature         : Buffer.from(tx.signature, 'hex'),
           signatures        : tx.signatures ? tx.signatures.join(',') : null,
+          timestamp         : tx.timestamp,
+          type              : tx.type,
         },
       });
     });
@@ -1301,41 +1299,41 @@ describe('logic/transaction', () => {
       akttStub         = sandbox.stub(instance, 'assertKnownTransactionType').returns(true);
       txTypeDbReadStub = sandbox.stub(sendTransaction, 'dbRead').returns({ my: 'asset' });
       raw              = {
-        t_id                : tx.id,
         b_height            : 1,
         b_id                : block.id,
-        t_type              : TransactionType.SEND,
-        t_timestamp         : 0,
-        t_senderPublicKey   : sender.publicKey,
-        t_requesterPublicKey: requester.publicKey,
-        t_senderId          : sender.address,
-        t_recipientId       : requester.address,
+        confirmations       : 10,
         m_recipientPublicKey: requester.publicKey,
         t_amount            : tx.amount,
         t_fee               : tx.fee,
-        t_signature         : tx.signature,
+        t_id                : tx.id,
+        t_recipientId       : requester.address,
+        t_requesterPublicKey: requester.publicKey,
+        t_senderId          : sender.address,
+        t_senderPublicKey   : sender.publicKey,
         t_signSignature     : '',
+        t_signature         : tx.signature,
         t_signatures        : 'a,b',
-        confirmations       : 10,
+        t_timestamp         : 0,
+        t_type              : TransactionType.SEND,
       };
       convertedTx      = {
-        id                : raw.t_id,
-        height            : raw.b_height,
+        amount            : parseInt(raw.t_amount, 10),
+        asset             : {},
         blockId           : raw.b_id || raw.t_blockId,
-        type              : parseInt(raw.t_type, 10),
-        timestamp         : parseInt(raw.t_timestamp, 10),
-        senderPublicKey   : raw.t_senderPublicKey,
-        requesterPublicKey: raw.t_requesterPublicKey,
-        senderId          : raw.t_senderId,
+        confirmations     : parseInt(raw.confirmations, 10),
+        fee               : parseInt(raw.t_fee, 10),
+        height            : raw.b_height,
+        id                : raw.t_id,
         recipientId       : raw.t_recipientId,
         recipientPublicKey: raw.m_recipientPublicKey || null,
-        amount            : parseInt(raw.t_amount, 10),
-        fee               : parseInt(raw.t_fee, 10),
-        signature         : raw.t_signature,
+        requesterPublicKey: raw.t_requesterPublicKey,
+        senderId          : raw.t_senderId,
+        senderPublicKey   : raw.t_senderPublicKey,
         signSignature     : raw.t_signSignature,
+        signature         : raw.t_signature,
         signatures        : raw.t_signatures ? raw.t_signatures.split(',') : [],
-        confirmations     : parseInt(raw.confirmations, 10),
-        asset             : {},
+        timestamp         : parseInt(raw.t_timestamp, 10),
+        type              : parseInt(raw.t_type, 10),
       };
     });
 
