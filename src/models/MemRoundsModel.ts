@@ -1,5 +1,5 @@
 // tslint:disable
-import { Column, ForeignKey, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import { Column, DataType, ForeignKey, Model, PrimaryKey, Table } from 'sequelize-typescript';
 import 'reflect-metadata';
 import { publicKey } from '../types/sanityTypes';
 import { BlocksModel } from './BlocksModel';
@@ -18,7 +18,7 @@ export class MemRoundsModel extends Model<MemRoundsModel> {
   public amount: number;
 
   @PrimaryKey
-  @Column
+  @Column(DataType.TEXT)
   public delegate: publicKey;
 
   @PrimaryKey

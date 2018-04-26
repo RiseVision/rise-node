@@ -248,7 +248,7 @@ export class AccountLogic implements IAccountLogic {
    * Get account information for specific fields and filtering criteria
    */
   // tslint:disable-next-line max-line-length
-  public get(filter: AccountFilterData, fields: Array<FieldsInModel<AccountsModel>> = this.fields.map((field) => field.alias || field.field) as any): Promise<AccountsModel> {
+  public get(filter: AccountFilterData, fields: FieldsInModel<AccountsModel> = this.fields.map((field) => field.alias || field.field) as any): Promise<AccountsModel> {
     return this.getAll(filter, fields)
       .then((res) => res[0]);
   }
@@ -256,7 +256,7 @@ export class AccountLogic implements IAccountLogic {
   /**
    * Get accountS information for specific fields and filtering criteria.
    */
-  public getAll(filter: AccountFilterData, fields?: Array<FieldsInModel<AccountsModel>>): Promise<AccountsModel[]> {
+  public getAll(filter: AccountFilterData, fields?: FieldsInModel<AccountsModel>): Promise<AccountsModel[]> {
     if (!Array.isArray(fields)) {
       fields = this.fields.map((field) => field.alias || field.field) as any;
     }
@@ -290,8 +290,8 @@ export class AccountLogic implements IAccountLogic {
     });
 
     let scope = null;
-    if ('delegates' in realFields || 'multisignatures' in realFields) {
-      if ('u_delegates' in realFields || 'u_multisignatures' in realFields) {
+    if (realFields.indexOf('delegates') !== -1 || realFields.indexOf('multisignatures') !== -1) {
+      if (realFields.indexOf('u_delegates') !== -1 || realFields.indexOf('u_multisignatures') !== -1) {
         scope = 'full';
       } else {
         scope = 'fullConfirmed';
@@ -300,7 +300,7 @@ export class AccountLogic implements IAccountLogic {
 
     return Promise.resolve(
       AccountsModel.scope(scope).findAll({
-        attributes: realFields,
+        // attributes: realFields,
         limit,
         offset,
         order     : typeof(sort) === 'string' ?

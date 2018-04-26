@@ -9,6 +9,7 @@ import {
   Sequence,
   Slots
 } from '../helpers';
+import { WrapInDefaultSequence } from '../helpers/decorators/wrapInSequence';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic } from '../ioc/interfaces/logic';
 import {
@@ -22,7 +23,6 @@ import {
 import { Symbols } from '../ioc/symbols';
 import { AppConfig } from '../types/genericTypes';
 import { publicKey } from '../types/sanityTypes';
-import { WrapInDefaultSequence } from '../helpers/decorators/wrapInSequence';
 
 @injectable()
 export class ForgeModule implements IForgeModule {

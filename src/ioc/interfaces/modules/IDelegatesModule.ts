@@ -1,4 +1,5 @@
-import { MemAccountsData, SignedBlockType } from '../../../logic';
+import { SignedBlockType } from '../../../logic';
+import { AccountsModel } from '../../../models';
 import { publicKey } from '../../../types/sanityTypes';
 import { IModule } from './IModule';
 
@@ -26,15 +27,9 @@ export interface IDelegatesModule extends IModule {
    */
   getDelegates(query: { limit?: number, offset?: number, orderBy: string }): Promise<{
     delegates: Array<{
-      username: string,
-      address: string,
-      publicKey: string,
-      vote: string,
-      producedblocks: number,
-      missedblocks: number,
-      rank: number,
-      approval: number,
-      productivity: number }>,
+      delegate: AccountsModel,
+      info: { rank: number, approval: number, productivity: number }
+    }>
     count: number,
     offset: number,
     limit: number,

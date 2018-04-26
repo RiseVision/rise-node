@@ -27,13 +27,13 @@ export interface IAccountLogic {
   /**
    * Get account information for specific fields and filtering criteria
    */
-  get(filter: AccountFilterData, fields?: Array<FieldsInModel<AccountsModel>>): Promise<AccountsModel>;
+  get(filter: AccountFilterData, fields?: FieldsInModel<AccountsModel>): Promise<AccountsModel>;
 
   /**
    * Get accountS information for specific fields and filtering criteria.
    */
   getAll(filter: AccountFilterData,
-         fields?: Array<FieldsInModel<AccountsModel>>): Promise<AccountsModel[]>;
+         fields?: FieldsInModel<AccountsModel>): Promise<AccountsModel[]>;
 
   /**
    * Sets fields for specific address in mem_accounts table

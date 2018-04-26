@@ -31,6 +31,7 @@ import { IBaseTransaction } from '../../logic/transactions/';
 import schema from '../../schema/blocks';
 import sql from '../../sql/blocks';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
+import { BlocksModel } from '../../models';
 
 @injectable()
 export class BlocksModuleProcess implements IBlocksModuleProcess {
@@ -161,10 +162,15 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
     this.logger.debug('Loading blocks offset', { limit, offset, verify });
 
-    const blocks: SignedAndChainedBlockType[] = this.blocksUtilsModule.readDbRows(
-      await this.db.query(sql.loadBlocksOffset, params)
-        .catch(catchToLoggerAndRemapError('Blocks#loadBlocksOffset error', this.logger))
-    );
+    const blocks: BlocksModel[] = await BlocksModel.findAll({
+      order: ['height', 'rowId'],
+      where: {
+        height: {
+          $gte: params.offset,
+          $lt: params.limit,
+        },
+      },
+    });
 
     // Cycle through every block and apply it.
     for (const block of blocks) {
@@ -357,7 +363,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   /**
    * Receive block detected as fork cause 1: Consecutive height but different previous block id
    */
-  private async receiveForkOne(block: SignedBlockType, lastBlock: SignedBlockType) {
+  private async receiveForkOne(block: SignedBlockType, lastBlock: BlocksModel) {
     const tmpBlock = _.clone(block);
 
     // Fork: Consecutive height but different previous block id

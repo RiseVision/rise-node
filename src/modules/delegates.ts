@@ -13,7 +13,8 @@ import {
   IAccountsModule, IBlocksModule, IDelegatesModule, ITransactionsModule,
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { BlockRewardLogic, MemAccountsData, SignedBlockType } from '../logic/';
+import { BlockRewardLogic, SignedBlockType } from '../logic/';
+import { AccountsModel } from '../models';
 import { publicKey } from '../types/sanityTypes';
 
 @injectable()
@@ -88,15 +89,9 @@ export class DelegatesModule implements IDelegatesModule {
    */
   public async getDelegates(query: { limit?: number, offset?: number, orderBy: string }): Promise<{
     delegates: Array<{
-      username: string,
-      address: string,
-      publicKey: string,
-      vote: string,
-      producedblocks: number,
-      missedblocks: number,
-      rank: number,
-      approval: number,
-      productivity: number }>,
+      delegate: AccountsModel,
+      info: { rank: number, approval: number, productivity: number }
+    }>,
     count: number,
     offset: number,
     limit: number,
@@ -123,7 +118,8 @@ export class DelegatesModule implements IDelegatesModule {
     const lastBlock   = this.blocksModule.lastBlock;
     const totalSupply = this.blockReward.calcSupply(lastBlock.height);
 
-    const crunchedDelegates: Array<MemAccountsData & { rank: number, approval: number, productivity: number }> = [];
+    // tslint:disable-next-line
+    const crunchedDelegates: Array<{delegate: AccountsModel, info: { rank: number, approval: number, productivity: number }}> = [];
     for (let i = 0; i < delegates.length; i++) {
 
       const rank     = i + 1;
@@ -137,8 +133,8 @@ export class DelegatesModule implements IDelegatesModule {
       const productivity = (!outsider) ? Math.round(percent * 1e2) / 1e2 : 0;
 
       crunchedDelegates.push({
-        ... delegates[i],
-        ... {rank, approval, productivity},
+        delegate: delegates[i],
+        info: {rank, approval, productivity},
       });
     }
 
@@ -194,7 +190,7 @@ export class DelegatesModule implements IDelegatesModule {
       limit     : this.slots.delegates,
       sort      : {vote: -1, publicKey: 1},
     }, ['publicKey']);
-    return rows.map((r) => r.publicKey);
+    return rows.map((r) => r.hexPublicKey);
   }
 
   /**

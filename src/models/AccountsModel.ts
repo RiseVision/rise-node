@@ -3,6 +3,7 @@ import { Column, DataType, Model, PrimaryKey, Scopes, Sequelize, Table } from 's
 import 'reflect-metadata';
 import { publicKey } from '../types/sanityTypes';
 import * as sequelize from 'sequelize';
+import { BlocksModel, DelegatesModel, TransactionsModel } from './index';
 
 var pg = require('pg')
 
@@ -40,7 +41,7 @@ export class AccountsModel extends Model<AccountsModel> {
   @Column
   public username: string;
   @Column
-  public isDelegate: boolean;
+  public isDelegate: 0|1;
 
   @Column
   public secondSignature: 0|1;
@@ -59,10 +60,10 @@ export class AccountsModel extends Model<AccountsModel> {
   public balance: number;
 
   @Column
-  public vote: string;
+  public vote: number;
 
   @Column
-  public rate: string;
+  public rate: number;
 
   @Column
   public multimin: number;
@@ -122,20 +123,21 @@ export class AccountsModel extends Model<AccountsModel> {
 
   }
 
+  public static restoreUnconfirmedEntries() {
+    return this.update({
+      u_isDelegate: sequelize.col('isDelegate'),
+      u_balance: sequelize.col('balance'),
+      u_secondSignature: sequelize.col('secondSignature'),
+      u_username: sequelize.col('username'),
+    }, {
+      where: {
+        $or: {
+          u_isDelegate: {$ne: sequelize.col('isDelegate')},
+          u_balance: {$ne: sequelize.col('balance')},
+          u_secondSignature: {$ne: sequelize.col('secondSignature')},
+          u_username: {$ne: sequelize.col('username')},
+        }
+      }
+    })
+  }
 }
-
-
-const s = new Sequelize({
-  username: 'andrea',
-  password: 'password',
-  database: 'rise_db',
-  dialect: 'postgres'
-
-});
-
-s.addModels([AccountsModel]);
-
-AccountsModel.upsert({address: '5637366780247854848R', secondSignature: 0})
-.then((res) => {
-  console.log(res);
-})

@@ -9,9 +9,9 @@ export class SignaturesModel extends Model<SignaturesModel> {
   @Column(DataType.BLOB)
   public publicKey: Buffer;
 
-  @Column
   @PrimaryKey
   @ForeignKey(() => TransactionsModel)
+  @Column
   public transactionId: string;
 
   @BelongsTo(() => TransactionsModel)

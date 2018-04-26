@@ -17,4 +17,3 @@ export class DelegatesModel extends Model<DelegatesModel> {
   public transaction: TransactionsModel = null;
 
 }
-

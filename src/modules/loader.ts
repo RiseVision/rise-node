@@ -22,6 +22,8 @@ import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
 import { AppConfig } from '../types/genericTypes';
 import Timer = NodeJS.Timer;
+import { AccountsModel, BlocksModel, DelegatesModel, MemRoundsModel } from '../models';
+import * as sequelize from 'sequelize';
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
@@ -29,7 +31,7 @@ export class LoaderModule implements ILoaderModule {
   public loaded: boolean                       = false;
   private blocksToSync: number                 = 0;
   private isActive: boolean                    = false;
-  private lastblock: SignedAndChainedBlockType = null;
+  private lastblock: BlocksModel               = null;
   private network: { height: number, peers: IPeerLogic[] };
   private retries: number                      = 5;
   private syncInterval                         = 1000;
@@ -192,16 +194,7 @@ export class LoaderModule implements ILoaderModule {
     const limit = Number(this.config.loading.loadPerIteration) || 1000;
     // const verify   = Boolean(this.library.config.loading.verifyOnLoading);
 
-    // Check memory tables.
-    const results = await this.db.task((t) => t.batch([
-      t.one(sql.countBlocks),
-      t.query(sql.getGenesisBlock),
-      t.one(sql.countMemAccounts),
-      t.query(sql.getMemRounds),
-      t.query(sql.countDuplicatedDelegates),
-    ]));
-
-    const blocksCount = results[0].count;
+    const blocksCount = await BlocksModel.count();
     this.logger.info(`Blocks ${blocksCount}`);
 
     if (blocksCount === 1) {
@@ -209,7 +202,7 @@ export class LoaderModule implements ILoaderModule {
       return this.load(1, limit, null, true);
     }
 
-    const genesisBlock = results[1][0];
+    const genesisBlock = await BlocksModel.findOne({where: { height: 1}});
     // If there's a genesis in db lets check its validity against code version
     if (genesisBlock) {
       const matches = (
@@ -260,36 +253,41 @@ export class LoaderModule implements ILoaderModule {
       process.exit(0);
     }
 
-    const missedBlocksInMemAccounts = !(results[2].count);
+    const updatedAccountsInLastBlock = await AccountsModel
+      .count({where: {blockId: {$in: sequelize.literal('(SELECT "id" from blocks ORDER BY "height" DESC LIMIT 1)')}}});
 
-    if (missedBlocksInMemAccounts) {
+    if (updatedAccountsInLastBlock === 0) {
       return this.load(blocksCount, limit, 'Detected missed blocks in mem_accounts', true);
     }
 
-    const unapplied = results[3].filter((r) => r.round !== String(round));
+    const rounds = await MemRoundsModel.findAll({ attributes: ['round'], group: 'round'});
+    const unapplied = rounds.filter((r) => r.round !== round);
     if (unapplied.length > 0) {
       // round is not applied.
       return this.load(blocksCount, limit, 'Detected unapplied rounds in mem_round', true);
     }
 
-    const duplicatedDelegates = results[4][0].count > 0;
-    if (duplicatedDelegates) {
+    const [duplicatedDelegates] = await DelegatesModel.sequelize.query(
+      sql.countDuplicatedDelegates,
+      { type: sequelize.QueryTypes.SELECT });
+    if (duplicatedDelegates.count > 0) {
       this.logger.error('Delegates table corrupted with duplicated entries');
       process.emit('exit', 1);
       return;
     }
 
-    const res = await this.db.task((t) => t.batch([
-      t.none(sql.updateMemAccounts),
-      t.query(sql.getOrphanedMemAccounts),
-      t.query(sql.getDelegates),
-    ]));
+    await AccountsModel.restoreUnconfirmedEntries();
 
-    if (res[1].length > 0) {
+    const orphanedMemAccounts = await AccountsModel.sequelize.query(
+      sql.getOrphanedMemAccounts,
+      { type: sequelize.QueryTypes.SELECT });
+
+    if (orphanedMemAccounts.length > 0) {
       return this.load(blocksCount, limit, 'Detected orphaned blocks in mem_accounts', true);
     }
 
-    if (res[2].length === 0) {
+    const delegatesCount = await AccountsModel.count({where: {isDelegate: 1}});
+    if (delegatesCount === 0) {
       return this.load(blocksCount, limit, 'No delegates found', true);
     }
 
@@ -436,7 +434,7 @@ export class LoaderModule implements ILoaderModule {
     do {
       await promiseRetry(async (retry) => {
         const randomPeer                 = await this.getRandomPeer();
-        const lastBlock: SignedBlockType = this.blocksModule.lastBlock;
+        const lastBlock: BlocksModel     = this.blocksModule.lastBlock;
 
         if (typeof(randomPeer) === 'undefined') {
           // This could happen when we received a block but we did not get the updated peer list.

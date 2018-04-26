@@ -5,15 +5,13 @@ import {
   catchToLoggerAndRemapError,
   constants as constantType,
   ILogger,
-  logCatchRewrite,
-  Sequence,
-  TransactionType
-
+  Sequence
 } from '../../helpers/';
-import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
+import { IBlockLogic, IRoundsLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import { IBlocksModule, IBlocksModuleUtils } from '../../ioc/interfaces/modules/';
 import { Symbols } from '../../ioc/symbols';
-import { SignedAndChainedBlockType, SignedBlockType } from '../../logic/';
+import { SignedAndChainedBlockType } from '../../logic/';
+import { BlocksModel } from '../../models';
 import sql from '../../sql/blocks';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
 import { publicKey } from '../../types/sanityTypes';
@@ -39,6 +37,8 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   // Logic
   @inject(Symbols.logic.block)
   private blockLogic: IBlockLogic;
+  @inject(Symbols.logic.rounds)
+  private rounds: IRoundsLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
 
@@ -93,41 +93,41 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   }
 
   /**
-   * Loads full blocks from database and normalize them
+   * Loads blocks from database and normalize them
    *
    */
   public async loadBlocksPart(filter: { limit?: number, id?: string, lastId?: string }) {
-    const blocks = await this.loadBlocksData(filter);
-    return this.readDbRows(blocks);
+    return  this.loadBlocksData(filter);
   }
 
   /**
    * Loads the last block from db and normalizes it.
-   * @return {Promise<SignedBlockType>}
+   * @return {Promise<BlocksModel>}
    */
-  public async loadLastBlock(): Promise<SignedAndChainedBlockType> {
-    return await this.dbSequence.addAndPromise(async () => {
-      const rows  = await this.db.query(sql.loadLastBlock);
-      const block = this.readDbRows(rows)[0];
-      // this is not correct. Ordering should always return consistent data so it should also account b
-      // I'm not sure why this is needed though
-      // FIXME PLEASE!
-      block.transactions = block.transactions.sort((a, b) => {
-        if (block.id === this.genesisBlock.id) {
-          if (a.type === TransactionType.VOTE) {
-            return 1;
-          }
-        }
-        if (a.type === TransactionType.SIGNATURE) {
-          return 1;
-        }
-        return 0;
-      });
-
-      this.blocksModule.lastBlock = block;
-      return block;
-    })
-      .catch(logCatchRewrite(this.logger, 'Blocks#loadLastBlock error'));
+  public async loadLastBlock(): Promise<BlocksModel> {
+    return await BlocksModel.findOne({ order: ['height', 'DESC'], limit: 1 });
+    // return await this.dbSequence.addAndPromise(async () => {
+    //   const rows  = await this.db.query(sql.loadLastBlock);
+    //   const block = this.readDbRows(rows)[0];
+    //   // this is not correct. Ordering should always return consistent data so it should also account b
+    //   // I'm not sure why this is needed though
+    //   // FIXME PLEASE!
+    //   block.transactions = block.transactions.sort((a, b) => {
+    //     if (block.id === this.genesisBlock.id) {
+    //       if (a.type === TransactionType.VOTE) {
+    //         return 1;
+    //       }
+    //     }
+    //     if (a.type === TransactionType.SIGNATURE) {
+    //       return 1;
+    //     }
+    //     return 0;
+    //   });
+    //
+    //   this.blocksModule.lastBlock = block;
+    //   return block;
+    // })
+    //   .catch(logCatchRewrite(this.logger, 'Blocks#loadLastBlock error'));
   }
 
   /**
@@ -139,20 +139,27 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     // Get IDs of first blocks of (n) last rounds, descending order
     // EXAMPLE: For height 2000000 (round 19802) we will get IDs of blocks at height: 1999902, 1999801, 1999700,
     // 1999599, 1999498
-    const rows = await this.db.query<Array<{ id: string, height: number }>>(sql.getIdSequence(), {
-      delegates: this.constants.activeDelegates,
-      height,
-      limit    : 5,
-    });
+    const firstInRound             = this.rounds.firstInRound(this.rounds.calcRound(height));
+    const heightsToQuery: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      heightsToQuery.push(firstInRound - this.constants.activeDelegates * i);
+    }
 
-    if (rows.length === 0) {
+    const blocks: Array<{ id: string, height: number }> = await BlocksModel
+      .findAll({
+        attributes: ['id', 'height'],
+        order     : ['height', 'DESC'],
+        where     : { height: { $in: heightsToQuery } },
+      });
+
+    if (blocks.length === 0) {
       throw new Error(`Failed to get id sequence for height ${height}`);
     }
 
     // Add genesis block at the end if the set doesn't contain it already
     if (this.genesisBlock) {
-      if (!rows.find((v) => v.id === this.genesisBlock.id)) {
-        rows.push({
+      if (!blocks.find((v) => v.id === this.genesisBlock.id)) {
+        blocks.push({
           height: this.genesisBlock.height,
           id    : this.genesisBlock.id,
         });
@@ -160,20 +167,20 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     }
 
     // Add last block at the beginning if the set doesn't contain it already
-    if (lastBlock && !rows.find((v) => v.id === lastBlock.id)) {
-      rows.unshift({
+    if (lastBlock && !blocks.find((v) => v.id === lastBlock.id)) {
+      blocks.unshift({
         height: lastBlock.height,
         id    : lastBlock.id,
       });
     }
 
-    const ids: string[] = rows.map((r) => r.id);
+    const ids: string[] = blocks.map((r) => r.id);
 
-    return {firstHeight: rows[0].height, ids};
+    return { firstHeight: blocks[0].height, ids };
   }
 
   // tslint:disable-next-line max-line-length
-  public async loadBlocksData(filter: { limit?: number, id?: string, lastId?: string }): Promise<RawFullBlockListType[]> {
+  public async loadBlocksData(filter: { limit?: number, id?: string, lastId?: string }): Promise<BlocksModel[]> {
     const params: any = { limit: filter.limit || 1 };
     if (filter.id && filter.lastId) {
       throw new Error('Invalid filter: Received both id and lastId');
@@ -182,21 +189,22 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     } else if (filter.lastId) {
       params.lastId = filter.lastId;
     }
-    return await this.dbSequence.addAndPromise(async () => {
-      const res = await this.db.oneOrNone<{height: number}>(
-        sql.getHeightByLastId,
-        { id: filter.lastId || filter.id || null }
-        );
+    return await this.dbSequence.addAndPromise<BlocksModel[]>(async () => {
+      const block = await BlocksModel.findOne({ where: { id: filter.lastId || filter.id || null } });
 
-      const height = res !== null ? res.height : 0;
+      const height = block !== null ? block.height : 0;
       // Calculate max block height for database query
 
-      params.limit  = height + (parseInt(`${filter.limit}`, 10) || 1);
-      params.height = height;
-
-      return this.db.query(sql.loadBlocksData(filter), params);
+      if (typeof(params.lastId) !== 'undefined') {
+        const limit = height + (parseInt(`${filter.limit}`, 10) || 1);
+        return await BlocksModel.findAll({
+          order: ['height', 'rowId'],
+          where: { height: { $gt: height, $lt: limit } },
+        });
+      }
+      return [block];
     })
-      .catch(catchToLoggerAndRemapError('Blocks#loadBlockData error', this.logger));
+      .catch(catchToLoggerAndRemapError<BlocksModel[]>('Blocks#loadBlockData error', this.logger));
   }
 
   public getBlockProgressLogger(txCount: number, logsFrequency: number, msg: string) {
@@ -222,7 +230,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
 
     // Get calculated rewards
     // tslint:disable-next-line
-    type dbDataType = {delegate: 1, fees: number, rewards: number, count: number};
+    type dbDataType = { delegate: 1, fees: number, rewards: number, count: number };
     const data: dbDataType = await this.db.oneOrNone<dbDataType>(sql.aggregateBlocksReward(params), params)
       .catch(catchToLoggerAndRemapError<dbDataType>('Blocks#aggregateBlocksReward error', this.logger));
 

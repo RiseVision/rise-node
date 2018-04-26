@@ -5,9 +5,9 @@ import { FieldsInModel } from '../../../types/utils';
 import { IModule } from './IModule';
 
 export interface IAccountsModule extends IModule {
-  getAccount(filter: AccountFilterData, fields?: Array<FieldsInModel<AccountsModel>>): Promise<AccountsModel>;
+  getAccount(filter: AccountFilterData, fields?: FieldsInModel<AccountsModel>): Promise<AccountsModel>;
 
-  getAccounts(filter: AccountFilterData, fields: Array<FieldsInModel<AccountsModel>>): Promise<AccountsModel[]>;
+  getAccounts(filter: AccountFilterData, fields: FieldsInModel<AccountsModel>): Promise<AccountsModel[]>;
 
   /**
    * Sets some data to specific account

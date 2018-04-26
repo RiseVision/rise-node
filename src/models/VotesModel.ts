@@ -6,13 +6,13 @@ import { publicKey } from '../types/sanityTypes';
 
 @Table({tableName: 'votes'})
 export class VotesModel extends Model<VotesModel> {
-  @Column
   @PrimaryKey
+  @Column
   public votes: string;
 
-  @Column
   @PrimaryKey
   @ForeignKey(() => TransactionsModel)
+  @Column
   public transactionId: string;
 
   @BelongsTo(() => TransactionsModel)
