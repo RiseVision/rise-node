@@ -1,5 +1,5 @@
 import { inject, injectable, tagged } from 'inversify';
-import { IDatabase } from 'pg-promise';
+import * as sequelize from 'sequelize';
 import {
   BlockProgressLogger,
   catchToLoggerAndRemapError,
@@ -11,8 +11,7 @@ import { IBlockLogic, IRoundsLogic, ITransactionLogic } from '../../ioc/interfac
 import { IBlocksModule, IBlocksModuleUtils } from '../../ioc/interfaces/modules/';
 import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType } from '../../logic/';
-import { BlocksModel } from '../../models';
-import sql from '../../sql/blocks';
+import { AccountsModel, BlocksModel, RoundsFeesModel } from '../../models';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
 import { publicKey } from '../../types/sanityTypes';
 
@@ -20,8 +19,6 @@ import { publicKey } from '../../types/sanityTypes';
 export class BlocksModuleUtils implements IBlocksModuleUtils {
 
   // Generic
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
 
@@ -97,7 +94,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
    *
    */
   public async loadBlocksPart(filter: { limit?: number, id?: string, lastId?: string }) {
-    return  this.loadBlocksData(filter);
+    return this.loadBlocksData(filter);
   }
 
   /**
@@ -216,28 +213,52 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
    */
   // tslint:disable-next-line max-line-length
   public async aggregateBlockReward(filter: { generatorPublicKey: publicKey, start?: number, end?: number }): Promise<{ fees: number, rewards: number, count: number }> {
-    const params: any         = {};
-    params.generatorPublicKey = filter.generatorPublicKey;
-    params.delegates          = this.constants.activeDelegates;
+    const params: any                                                         = {};
+    params.generatorPublicKey                                                 = filter.generatorPublicKey;
+    params.delegates                                                          = this.constants.activeDelegates;
+    const timestampClausole: { timestamp?: { $gte?: number, $lte?: number } } = { timestamp: {} };
 
     if (typeof(filter.start) !== 'undefined') {
-      params.start = filter.start - this.constants.epochTime.getTime() / 1000;
+      timestampClausole.timestamp.$gte = filter.start - this.constants.epochTime.getTime() / 1000;
     }
 
     if (typeof(filter.end) !== 'undefined') {
-      params.end = filter.end - this.constants.epochTime.getTime() / 1000;
+      timestampClausole.timestamp.$lte = filter.end - this.constants.epochTime.getTime() / 1000;
     }
 
-    // Get calculated rewards
-    // tslint:disable-next-line
-    type dbDataType = { delegate: 1, fees: number, rewards: number, count: number };
-    const data: dbDataType = await this.db.oneOrNone<dbDataType>(sql.aggregateBlocksReward(params), params)
-      .catch(catchToLoggerAndRemapError<dbDataType>('Blocks#aggregateBlocksReward error', this.logger));
+    if (typeof(timestampClausole.timestamp.$gte) === 'undefined'
+      && typeof(timestampClausole.timestamp.$lte) === 'undefined') {
+      delete timestampClausole.timestamp;
+    }
 
-    if (data && data.delegate === null) {
+    const bufPublicKey = Buffer.from(params.generatorPublicKey, 'hex');
+    const acc          = await AccountsModel
+      .findOne({ where: { isDelegate: 1, publicKey: bufPublicKey } });
+    if (acc === null) {
       throw new Error('Account not found or is not a delegate');
     }
-    return { fees: data.fees || 0, rewards: data.rewards || 0, count: data.count || 0 };
+
+    const res: { count: string, rewards: string } = await BlocksModel.findOne({
+      attributes: [
+        sequelize.literal('COUNT(1)'),
+        sequelize.literal('SUM("reward") as rewards'),
+      ],
+      raw       : true,
+      where     : {
+        ...timestampClausole,
+        // tslint:disable-next-line
+        generatorPublicKey: bufPublicKey,
+      },
+    }) as any;
+
+    const data = { fees: 0, rewards: parseInt(res.rewards, 10), count: parseInt(res.count, 10) };
+    data.fees  = await RoundsFeesModel.aggregate('fees', 'sum', {
+      where: {
+        ...timestampClausole,
+      },
+    }) as number;
+
+    return data;
   }
 
 }

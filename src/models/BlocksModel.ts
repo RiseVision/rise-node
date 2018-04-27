@@ -1,4 +1,4 @@
-import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import { Column, DataType, Model, PrimaryKey, Sequelize, Table } from 'sequelize-typescript';
 import { TransactionsModel } from './TransactionsModel';
 import { SignedBlockType } from '../logic';
 
@@ -56,6 +56,7 @@ export class BlocksModel extends Model<BlocksModel> {
     return this._transactions;
   }
 
+  // tslint:disable member-ordering
   public static classFromPOJO(pojo: SignedBlockType): BlocksModel {
     const toRet = new this();
     Object.keys(pojo).forEach((k) => toRet[k] = pojo[k]);

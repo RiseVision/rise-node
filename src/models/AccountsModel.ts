@@ -141,3 +141,48 @@ export class AccountsModel extends Model<AccountsModel> {
     })
   }
 }
+
+
+const s = new Sequelize({
+  username: 'andrea',
+  password: 'password',
+  database: 'rise_db',
+  dialect: 'postgres'
+
+});
+
+s.addModels([AccountsModel, BlocksModel, DelegatesModel, TransactionsModel]);
+//
+// AccountsModel.upsert({address: '5637366780247854848R', secondSignature: 0})
+// .then((res) => {
+//   console.log(res);
+// })
+//
+// AccountsModel.count({where: {blockId: [sequelize.col('blockId'), sequelize.literal('(SELECT "id" from blocks ORDER BY "height" DESC LIMIT 1)')]}}as any)
+//   .then((result) => {
+//     console.log(result);
+//   });
+
+// DelegatesModel.sequelize.query(
+//   'WITH duplicates AS (SELECT COUNT(1) FROM delegates GROUP BY "transactionId" HAVING COUNT(1) > 1) SELECT count(1) FROM duplicates',
+//   { type: sequelize.QueryTypes.SELECT })
+// .then(([res]) => {
+//   console.log(res);
+//   console.log(res.count);
+// })
+//
+// console.log(AccountsModel.attributes)
+// console.log(sequelize.col('u_balance'))
+// AccountsModel.restoreUnconfirmedEntries()
+// .then((r) => {
+//   console.log(r);
+// })
+
+// AccountsModel.count({where: {isDelegate: 1}})
+// .then((r) => console.log(r))
+
+// BlocksModel.findAll({
+//   raw: true,
+//   order: ['height', 'rowId'],
+//   where: { height: { $gt: 10, $lt: 11} },
+// }).then((res) => console.log(res))

@@ -172,7 +172,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
         // FIXME: Poor performance - every transaction cause SQL query to be executed
         // WARNING: DB_WRITE
-        const sender = await this.accountsModule.setAccountAndGet({ publicKey: tx.senderPublicKey });
+        const sender = await this.accountsModule
+          .setAccountAndGet({ publicKey: Buffer.from(tx.senderPublicKey, 'hex')});
 
         // Apply tx.
         await this.transactionsModule.applyUnconfirmed(tx, sender);
@@ -355,7 +356,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
     try {
       for (const tx of txs) {
-        const sender = await AccountsModel.find({where: { publicKey: tx.senderPublicKey }})
+        const sender = await AccountsModel.find({where: { publicKey: tx.senderPublicKey }});
         // const sender = await this.accountsModule.getAccount({ publicKey: tx.senderPublicKey });
         // Undoing confirmed tx - refresh confirmed balance (see: logic.transaction.undo, logic.transfer.undo)
         // WARNING: DB_WRITE
