@@ -207,8 +207,8 @@ export class LoaderModule implements ILoaderModule {
     if (genesisBlock) {
       const matches = (
         genesisBlock.id === this.genesisBlock.id &&
-        genesisBlock.payloadHash.toString('hex') === this.genesisBlock.payloadHash &&
-        genesisBlock.blockSignature.toString('hex') === this.genesisBlock.blockSignature
+        genesisBlock.payloadHash.equals(this.genesisBlock.payloadHash) &&
+        genesisBlock.blockSignature.equals(this.genesisBlock.blockSignature)
       );
       if (!matches) {
         throw new Error('Failed to match genesis block with database');

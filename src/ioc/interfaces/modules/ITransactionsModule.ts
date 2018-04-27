@@ -76,22 +76,22 @@ export interface ITransactionsModule extends IModule {
   /**
    * Applies confirmed transaction.
    */
-  apply(transaction: TransactionsModel, block: BlocksModel, sender: AccountsModel): Promise<void>;
+  apply(transaction: IBaseTransaction<any>, block: BlocksModel, sender: AccountsModel): Promise<void>;
 
   /**
    * Undoes confirmed transaction.
    */
-  undo(transaction: TransactionsModel, block: BlocksModel, sender: AccountsModel): Promise<void>;
+  undo(transaction: IBaseTransaction<any>, block: BlocksModel, sender: AccountsModel): Promise<void>;
 
   /**
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
-  applyUnconfirmed(transaction: TransactionsModel, sender: AccountsModel): Promise<void>;
+  applyUnconfirmed(transaction: IBaseTransaction<any>, sender: AccountsModel): Promise<void>;
 
   /**
    * Validates account and Undoes unconfirmed transaction.
    */
-  undoUnconfirmed(transaction: TransactionsModel): Promise<void>;
+  undoUnconfirmed(transaction: IBaseTransaction<any>): Promise<void>;
 
   /**
    * Receives transactions

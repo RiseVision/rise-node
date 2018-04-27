@@ -9,6 +9,7 @@ import {
   IDbSaveReturnType
 } from '../../../logic/transactions';
 import { AccountsModel } from '../../../models/AccountsModel';
+import { IDBOp } from '../../../types/genericTypes';
 
 export interface ITransactionLogic {
 
@@ -44,7 +45,7 @@ export interface ITransactionLogic {
   getBytes(tx: IBaseTransaction<any>,
            skipSignature?: boolean, skipSecondSignature?: boolean): Buffer;
 
-  ready(tx: IBaseTransaction<any>, sender: MemAccountsData): boolean;
+  ready(tx: IBaseTransaction<any>, sender: AccountsModel): boolean;
 
   assertKnownTransactionType(tx: IBaseTransaction<any>): void;
 
@@ -71,7 +72,7 @@ export interface ITransactionLogic {
    * to the respective tx type.
    */
   // tslint:disable max-line-length
-  process<T = any>(tx: IBaseTransaction<T>, sender: AccountsModel, requester: MemAccountsData): Promise<IBaseTransaction<T>>;
+  process<T = any>(tx: IBaseTransaction<T>, sender: AccountsModel, requester: AccountsModel): Promise<IBaseTransaction<T>>;
 
   verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel,
          requester: AccountsModel, height: number): Promise<void>;
@@ -79,31 +80,31 @@ export interface ITransactionLogic {
   /**
    * Verifies the given signature (both first and second)
    * @param {IBaseTransaction<any>} tx
-   * @param {string} publicKey
+   * @param {Buffer} publicKey
    * @param {string} signature
    * @param {boolean} isSecondSignature if true, then this will check agains secondsignature
    * @returns {boolean} true
    */
-  verifySignature(tx: IBaseTransaction<any>, publicKey: string, signature: string,
+  verifySignature(tx: IBaseTransaction<any>, publicKey: Buffer, signature: string,
                   isSecondSignature?: boolean): boolean;
 
-  apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: MemAccountsData): Promise<void>;
+  apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<void>;
 
   /**
    * Merges account into sender address and calls undo to txtype
    * @returns {Promise<void>}
    */
-  undo(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: MemAccountsData): Promise<void>;
+  undo(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<void>;
 
-  applyUnconfirmed(tx: IBaseTransaction<any>, sender: MemAccountsData, requester?: MemAccountsData): Promise<void>;
+  applyUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel, requester?: AccountsModel): Promise<void>;
 
   /**
    * Merges account into sender address with unconfirmed balance tx amount
    * Then calls undoUnconfirmed to the txType.
    */
-  undoUnconfirmed(tx: IBaseTransaction<any>, sender: MemAccountsData): Promise<void>;
+  undoUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel): Promise<void>;
 
-  dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<IDbSaveReturnType<any>>;
+  dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<IDBOp<any>>;
 
   afterSave(tx: IBaseTransaction<any>): Promise<void>;
 

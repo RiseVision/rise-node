@@ -2,6 +2,7 @@
 import { Model } from 'sequelize-typescript';
 import { ModelAttributes, Partial } from './utils';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
+import { CreateOptions, UpdateOptions } from 'sequelize';
 
 export interface AppConfigDatabase {
   host: string;
@@ -93,14 +94,14 @@ export interface AppConfig {
 
   loading: {
     verifyOnLoading: false,
-    snapshot?: number|true,
+    snapshot?: number | true,
     loadPerIteration: number,
   };
 
   nethash: string;
 }
 
-// tslint:disable-next-line interface-name
+// tslint:disable interface-name interface-over-type-literal
 export interface PeerHeaders {
   os: string;
   version: string;
@@ -111,7 +112,16 @@ export interface PeerHeaders {
   nonce: string;
 }
 
-export interface IDBOp<T extends Model<T>> {
-  model: (new () => T);
+type BaseDBOp<T extends Model<T>> = {
+  model: (new () => T) & (typeof Model);
   values: FilteredModelAttributes<T>;
-}
+};
+export type DBUpdateOp<T extends Model<T>> = BaseDBOp<T> & {
+  type: 'update',
+  options?: UpdateOptions
+};
+export type DBCreateOp<T extends Model<T>> = BaseDBOp<T> & {
+  type: 'create',
+};
+
+export type DBOp<T extends Model<T>> = DBCreateOp<T> | DBUpdateOp<T>;

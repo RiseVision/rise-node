@@ -94,7 +94,6 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
       }
     }
 
-
     if (tx.asset.multisignature.min < constants.multisigConstraints.min.minimum ||
       tx.asset.multisignature.min > constants.multisigConstraints.min.maximum) {
       throw new Error(`Invalid multisignature min. Must be between ${constants.multisigConstraints.min.minimum} and ${

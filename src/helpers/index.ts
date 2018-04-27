@@ -10,6 +10,7 @@ import applyExpressLimits from './request-limiter';
 export * from './blocksProgressLogger';
 export * from './bus';
 export * from './checkIpInList';
+export * from './db';
 export * from './ed';
 export * from './httpApi';
 export * from './forkTypes';

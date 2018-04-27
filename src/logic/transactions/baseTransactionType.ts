@@ -6,6 +6,7 @@ import { TransactionType } from '../../helpers/';
 import { MemAccountsData } from '../account';
 import { SignedBlockType } from '../block';
 import { AccountsModel } from '../../models/AccountsModel';
+import { IDBOp } from '../../types/genericTypes';
 
 export interface IBaseTransaction<T> {
   type: TransactionType;
@@ -31,11 +32,6 @@ export interface IConfirmedTransaction<T> extends IBaseTransaction<T> {
   confirmations?: number;
 }
 
-export interface IDbSaveReturnType<T extends Model<any>> {
-  model: new () => T;
-  values: RecursivePartial<Omit<T, keyof Model<any>>>;
-}
-
 const emptyBuffer = new Buffer(0);
 
 /**
@@ -51,9 +47,9 @@ export abstract class BaseTransactionType<T, M extends Model<any>> {
     return this.txType;
   }
 
-  public abstract calculateFee(tx: IBaseTransaction<T>, sender: MemAccountsData, height: number): number;
+  public abstract calculateFee(tx: IBaseTransaction<T>, sender: AccountsModel, height: number): number;
 
-  public verify(tx: IBaseTransaction<T>, sender: MemAccountsData): Promise<void> {
+  public verify(tx: IBaseTransaction<T>, sender: AccountsModel): Promise<void> {
     return Promise.resolve();
   }
 
@@ -61,19 +57,19 @@ export abstract class BaseTransactionType<T, M extends Model<any>> {
     return emptyBuffer;
   }
 
-  public apply(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: MemAccountsData): Promise<void> {
+  public apply(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
     return Promise.resolve();
   }
 
-  public applyUnconfirmed(tx: IBaseTransaction<T>, sender: MemAccountsData): Promise<void> {
+  public applyUnconfirmed(tx: IBaseTransaction<T>, sender: AccountsModel): Promise<void> {
     return Promise.resolve();
   }
 
-  public undo(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: MemAccountsData): Promise<void> {
+  public undo(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
     return Promise.resolve();
   }
 
-  public undoUnconfirmed(tx: IBaseTransaction<T>, sender: MemAccountsData): Promise<void> {
+  public undoUnconfirmed(tx: IBaseTransaction<T>, sender: AccountsModel): Promise<void> {
     return Promise.resolve();
   }
 
@@ -82,7 +78,7 @@ export abstract class BaseTransactionType<T, M extends Model<any>> {
   public abstract dbRead(raw: any): T;
 
   // tslint:disable-next-line max-line-length
-  public abstract dbSave(tx: IConfirmedTransaction<T> & { senderId: string }): IDbSaveReturnType<M>;
+  public abstract dbSave(tx: IConfirmedTransaction<T> & { senderId: string }): IDBOp<M>;
 
   public afterSave(tx: IBaseTransaction<T>): Promise<void> {
     return Promise.resolve();
@@ -92,7 +88,7 @@ export abstract class BaseTransactionType<T, M extends Model<any>> {
     return Promise.resolve(tx);
   }
 
-  public ready(tx: IBaseTransaction<T>, sender: MemAccountsData): boolean {
+  public ready(tx: IBaseTransaction<T>, sender: AccountsModel): boolean {
     if (Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
       if (!Array.isArray(tx.signatures)) {
         return false;

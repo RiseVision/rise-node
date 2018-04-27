@@ -32,6 +32,7 @@ export const Symbols = {
   helpers: {
     bus              : Symbol('bus'),
     constants        : Symbol('constants'),
+    db               : Symbol('dbHelper'),
     ed               : Symbol('ed'),
     exceptionsManager: Symbol('exceptionsManager'),
     jobsQueue        : Symbol('jobsQueue'),

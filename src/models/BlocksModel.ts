@@ -1,5 +1,6 @@
 import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
 import { TransactionsModel } from './TransactionsModel';
+import { SignedBlockType } from '../logic';
 
 @Table({tableName: 'blocks'})
 export class BlocksModel extends Model<BlocksModel> {
@@ -53,5 +54,11 @@ export class BlocksModel extends Model<BlocksModel> {
       this._transactions = await TransactionsModel.findAll({where: {blockId: this.id}});
     }
     return this._transactions;
+  }
+
+  public static classFromPOJO(pojo: SignedBlockType): BlocksModel {
+    const toRet = new this();
+    Object.keys(pojo).forEach((k) => toRet[k] = pojo[k]);
+    return toRet;
   }
 }

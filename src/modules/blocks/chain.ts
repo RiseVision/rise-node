@@ -1,7 +1,16 @@
 import { inject, injectable, tagged } from 'inversify';
 import * as _ from 'lodash';
 import { IDatabase, ITask } from 'pg-promise';
-import { Bus, catchToLoggerAndRemapError, ILogger, Inserts, Sequence, TransactionType, wait } from '../../helpers/';
+import {
+  Bus,
+  catchToLoggerAndRemapError,
+  DBHelper,
+  ILogger,
+  Inserts,
+  Sequence,
+  TransactionType,
+  wait
+} from '../../helpers/';
 import { WrapInBalanceSequence } from '../../helpers/decorators/wrapInSequence';
 import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
@@ -24,14 +33,14 @@ import { TransactionsModel } from '../../models/TransactionsModel';
 export class BlocksModuleChain implements IBlocksModuleChain {
 
   // Generic
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
 
   // Helpers
   @inject(Symbols.helpers.bus)
   private bus: Bus;
+  @inject(Symbols.helpers.db)
+  private dbHelper: DBHelper;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   // tslint:disable-next-line member-ordering
@@ -128,10 +137,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * @returns {Promise<any>}
    */
   public async saveGenesisBlock() {
-    const rows    = await this.db.query(sql.getBlockId, { id: this.genesisBlock.id })
-      .catch(catchToLoggerAndRemapError('Blocks#saveGenesisBlock error', this.logger));
-    const blockId = rows.length && rows[0].id;
-    if (!blockId) {
+    const genesis = await BlocksModel.findById(this.genesisBlock.id);
+    if (!genesis) {
       return this.saveBlock(this.genesisBlock);
     }
   }
@@ -139,12 +146,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   /**
    * Apply genesis block transaction to blockchain
    * @param {BlocksModel} block
-   * @param {TransactionsModel[]} transactions
    * @returns {Promise<void>}
    */
-  public async applyGenesisBlock(block: BlocksModel, transactions: TransactionsModel[]) {
+  public async applyGenesisBlock(block: SignedAndChainedBlockType) {
     // Order vote transactions to be at the end of processing.
-    transactions.sort((a, b) => {
+    block.transactions.sort((a, b) => {
       if (a.type !== b.type) {
         if (a.type === TransactionType.VOTE) {
           return 1;
@@ -156,13 +162,13 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     });
 
     const tracker = this.blocksModuleUtils.getBlockProgressLogger(
-      transactions.length,
-      transactions.length / 100,
+      block.transactions.length,
+      block.transactions.length / 100,
       'Genesis block loading'
     );
 
     try {
-      for (const tx of transactions) {
+      for (const tx of block.transactions) {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
         // FIXME: Poor performance - every transaction cause SQL query to be executed
         // WARNING: DB_WRITE
@@ -179,8 +185,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       this.logger.error(err);
       process.exit(0);
     }
-    this.blocksModule.lastBlock = block;
-    await this.roundsModule.tick(block);
+    this.blocksModule.lastBlock = BlocksModel.classFromPOJO(block);
+    await this.roundsModule.tick(this.blocksModule.lastBlock);
   }
 
   public async applyBlock(block: SignedAndChainedBlockType, broadcast: boolean, saveBlock: boolean) {
@@ -195,9 +201,6 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
     // List of unconfirmed transactions ids.
     // Rewind any unconfirmed transactions before applying block.
-    // TODO: It should be possible to remove this call if we can guarantee that only
-    // TODO: this function is processing transactions atomically. Then speed should be improved further.
-    // TODO: Other possibility, when we rebuild from block chain this action should be moved out of the rebuild fn.
     const unconfirmedTransactionIds = await this.transactionsModule.undoUnconfirmedList()
       .catch((err) => {
         // Fatal error, memory tables will be inconsistent
@@ -208,7 +211,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     // Apply transaction to unconfirmed mem_accounts field
     try {
       for (const transaction of block.transactions) {
-        const sender = await this.accountsModule.setAccountAndGet({ publicKey: new Buffer(transaction.senderPublicKey, 'hex') });
+        const sender = await this.accountsModule
+          .setAccountAndGet({ publicKey: new Buffer(transaction.senderPublicKey, 'hex') });
         await this.transactionsModule.applyUnconfirmed(transaction, sender)
           .catch((err) => {
             this.logger.error(`Failed to applyUnconfirmed transaction ${transaction.id} - ${err.message || err}`);
@@ -257,7 +261,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       this.transactionsModule.removeUnconfirmedTransaction(tx.id);
     }
 
-    this.blocksModule.lastBlock = block;
+    this.blocksModule.lastBlock = BlocksModel.classFromPOJO(block);
     if (saveBlock) {
       try {
         await this.saveBlock(block);
@@ -303,22 +307,15 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   public async saveBlock(b: SignedBlockType) {
     // Prepare and execute SQL transaction
     // WARNING: DB_WRITE
-    await this.db.tx((t) => {
-      // Create bytea fields (buffers), and returns pseudo-row object promise-like
-      const promise = this.blockLogic.dbSave(b);
-      // Initialize insert helper
-      const inserts = new Inserts(promise, promise.values);
+    const saveOp = this.blockLogic.dbSave(b);
+    const txOps = b.transactions
+      .map((t: IConfirmedTransaction<any>) => this.transactionLogic.dbSave(t))
+      .reduce((o1, o2) => o1.concat(o2));
 
-      const promises = [
-        // Prepare insert SQL query
-        t.none(inserts.template(), promise.values),
-      ];
-
-      // Apply transactions inserts
-      t = this.promiseTransactions(t, b);
-      // Exec inserts as batch
-      return t.batch(promises);
-    });
+    const tx = await BlocksModel.sequelize.transaction();
+    await this.dbHelper.performOps([saveOp, ...txOps], tx)
+      .then(() => tx.commit())
+      .catch(() => tx.rollback());
 
     await this.afterSave(b)
       .catch(
@@ -327,40 +324,6 @@ export class BlocksModuleChain implements IBlocksModuleChain {
           this.logger
         )
       );
-  }
-
-  /**
-   * Build a sequence of transaction queries
-   * FIXME: Processing here is not clean
-   *
-   * @returns {pgPromise.ITask<any>}
-   */
-  private promiseTransactions(t: ITask<any>, block: SignedBlockType): ITask<any> {
-    if (_.isEmpty(block.transactions)) {
-      // nothing to do if no txs.
-      return t;
-    }
-
-    const savePromises = block.transactions
-      .map((tx) => {
-        // tslint:disable-next-line
-        tx['blockId'] = block.id; // apply block id;
-        return tx;
-      })
-      .map((tx) => this.transactionLogic.dbSave(tx as any))
-      .reduce((a, b) => a.concat(b), []);
-
-    // Group the saving things by table to batch sqls.
-    const byTable = _.groupBy(savePromises, (p) => p.table);
-
-    // Now cycle through tables and batch values together.
-    Object.keys(byTable).forEach((table) => {
-      const values    = byTable[table].map((p) => p.values).reduce((a, b) => a.concat(b), []);
-      const newInsert = new Inserts(byTable[table][0], values, true);
-      t.none(newInsert.template(), newInsert);
-    });
-
-    return t;
   }
 
   /**
