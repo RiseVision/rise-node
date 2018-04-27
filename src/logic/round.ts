@@ -12,7 +12,7 @@ export type RoundLogicScope = {
   round: number;
   // List of address which missed a block in this round
   roundOutsiders: address[];
-  roundDelegates: publicKey[];
+  roundDelegates: Buffer[];
   roundFees: any;
   roundRewards: number[];
   finishRound: boolean;

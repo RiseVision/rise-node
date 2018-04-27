@@ -8,6 +8,8 @@ import { Symbols } from '../ioc/symbols';
 import { RoundLogicScope, SignedBlockType } from '../logic/';
 import roundsSQL from '../sql/logic/rounds';
 import { address, publicKey } from '../types/sanityTypes';
+import { BlocksModel } from '../models';
+import { RoundsModel } from '../models/RoundsModel';
 
 @injectable()
 export class RoundsModule implements IRoundsModule {
@@ -69,7 +71,7 @@ export class RoundsModule implements IRoundsModule {
    * @param {SignedBlockType} block
    * @param {SignedBlockType} previousBlock
    */
-  public backwardTick(block: SignedBlockType, previousBlock: SignedBlockType) {
+  public backwardTick(block: BlocksModel, previousBlock: SignedBlockType) {
     return this.innerTick(block, true, (roundLogicScope) => (task) => {
       this.logger.debug('Performing backward tick');
 
@@ -192,35 +194,25 @@ export class RoundsModule implements IRoundsModule {
    * Generates outsider array from a given round and roundDelegates (the ones who actually forged something)
    * @return {Promise<address[]>} a list of addresses that missed the blocks
    */
-  private async getOutsiders(round: number, roundDelegates: publicKey[]): Promise<address[]> {
+  private async getOutsiders(round: number, roundDelegates: Buffer[]): Promise<address[]> {
+    const strPKDelegates = roundDelegates.map((r) => r.toString('hex'));
 
     const height  = this.roundsLogic.lastInRound(round);
     const originalDelegates = await this.delegatesModule.generateDelegateList(height);
 
     return originalDelegates
-      .filter((pk) => roundDelegates.indexOf(pk) === -1)
+      .filter((pk) => strPKDelegates.indexOf(pk) === -1)
       .map((pk) => this.accountsModule.generateAddressByPublicKey(pk));
   }
 
   // tslint:disable-next-line
-  private async sumRound(round: number): Promise<{ roundFees: number, roundRewards: number[], roundDelegates: publicKey[] }> {
+  private async sumRound(round: number): Promise<{ roundFees: number, roundRewards: number[], roundDelegates: Buffer[] }> {
     this.logger.debug('Summing round', round);
-    const rows = await this.db.query(
-      roundsSQL.summedRound,
-      {
-        activeDelegates: this.constants.activeDelegates,
-        round,
-      }
-    )
-      .catch((err) => {
-        this.logger.error('Failed to sum round', round);
-        this.logger.error(err.stack);
-        return Promise.reject(err);
-      });
+    const res = await RoundsModel.sumRound(this.constants.activeDelegates, round);
 
-    const roundRewards   = rows[0].rewards.map((reward) => Math.floor(reward));
-    const roundFees      = Math.floor(rows[0].fees);
-    const roundDelegates = rows[0].delegates;
+    const roundRewards   = res.rewards.map((reward) => Math.floor(parseFloat(reward)));
+    const roundFees      = Math.floor(parseFloat(res.fees));
+    const roundDelegates = res.delegates;
 
     return { roundRewards, roundFees, roundDelegates };
   }

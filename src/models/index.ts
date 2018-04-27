@@ -8,6 +8,7 @@ export * from './DelegatesModel';
 export * from './ForksStatsModel';
 export * from './MemRoundsModel';
 export * from './MultiSignaturesModel';
+export * from './PeersModel';
 export * from './SignaturesModel';
 export * from './TransactionsModel';
 export * from './VotesModel';

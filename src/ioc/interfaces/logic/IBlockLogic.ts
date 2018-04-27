@@ -2,6 +2,8 @@ import { IKeypair } from '../../../helpers';
 import { BlockType, SignedAndChainedBlockType, SignedBlockType } from '../../../logic';
 import { IBaseTransaction } from '../../../logic/transactions';
 import { RawFullBlockListType } from '../../../types/rawDBTypes';
+import { IDBOp } from '../../../types/genericTypes';
+import { BlocksModel } from '../../../models';
 
 export interface IBlockLogic {
   table: string;
@@ -25,7 +27,7 @@ export interface IBlockLogic {
    * @param {IKeypair} key
    * @returns {string}
    */
-  sign(block: BlockType, key: IKeypair): string;
+  sign(block: BlockType, key: IKeypair): Buffer;
 
   /**
    * Verifies block hash, generator block public key and block signature
@@ -37,7 +39,7 @@ export interface IBlockLogic {
    * Creates db object transaction to `blocks` table.
    * @param {BlockType} block
    */
-  dbSave(block: SignedBlockType): any;
+  dbSave(block: SignedBlockType): IDBOp<BlocksModel>;
 
   /**
    * Normalize block object and eventually throw if something is not valid

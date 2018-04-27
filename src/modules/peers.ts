@@ -1,18 +1,14 @@
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
-import * as pgpCreator from 'pg-promise';
-import { IDatabase } from 'pg-promise';
 import * as shuffle from 'shuffle-array';
 import { Bus, constants as constantsType, ILogger } from '../helpers/';
 import { IPeerLogic, IPeersLogic } from '../ioc/interfaces/logic/';
 import { IPeersModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { PeerState, PeerType } from '../logic/';
-import peerSQL from '../sql/peers';
+import { PeersModel } from '../models';
 import { AppConfig } from '../types/genericTypes';
-
-const pgp = pgpCreator();
 
 // tslint:disable-next-line
 export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip?: string, port?: number, broadhash?: string, state?: PeerState };
@@ -23,8 +19,6 @@ export class PeersModule implements IPeersModule {
   // Generic
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
 
   // Helpers
   @inject(Symbols.helpers.bus)
@@ -65,7 +59,7 @@ export class PeersModule implements IPeersModule {
       this.logger.debug('Cannot remove frozen peer', peerIP + ':' + port);
       return false;
     } else {
-      return this.peersLogic.remove({ ip: peerIP, port });
+      return this.peersLogic.remove({ip: peerIP, port});
     }
   }
 
@@ -125,8 +119,8 @@ export class PeersModule implements IPeersModule {
     options.broadhash     = options.broadhash || this.systemModule.broadhash;
     options.allowedStates = options.allowedStates || [PeerState.CONNECTED];
 
-    let peersList = (await this.getByFilter({ broadhash: options.broadhash }))
-      // only matching states
+    let peersList = (await this.getByFilter({broadhash: options.broadhash}))
+    // only matching states
       .filter((p) => options.allowedStates.indexOf(p.state) !== -1);
 
     peersList = this.peersLogic.acceptable(peersList);
@@ -143,15 +137,15 @@ export class PeersModule implements IPeersModule {
 
       unmatchedBroadPeers = this.peersLogic.acceptable(unmatchedBroadPeers);
       peersList           = peersList.concat(unmatchedBroadPeers);
-      peersList = peersList.slice(0, options.limit);
+      peersList           = peersList.slice(0, options.limit);
     }
 
     let consensus = Math.round(matchedBroadhash / peersList.length * 1e2 * 1e2) / 1e2;
 
-    consensus     = isNaN(consensus) ? 0 : consensus;
+    consensus = isNaN(consensus) ? 0 : consensus;
 
     this.logger.debug(`Listing ${peersList.length} total peers`);
-    return { consensus, peers: peersList };
+    return {consensus, peers: peersList};
   }
 
   public async onBlockchainReady() {
@@ -168,34 +162,21 @@ export class PeersModule implements IPeersModule {
       this.logger.debug('Export peers to database failed: Peers list empty');
       return;
     }
-    const cs = new pgp.helpers.ColumnSet([
-      'ip', 'port', 'state', 'height', 'os', 'version', 'clock',
-      {
-        name: 'broadhash',
-        init(col) {
-          return col.value ? Buffer.from(col.value, 'hex') : null;
-        },
-      },
-    ], { table: 'peers' });
-
+    // Wrap sql queries in transaction and execute
+    const transaction = await PeersModel.sequelize.transaction();
     try {
-      // Wrap sql queries in transaction and execute
-      await this.db.tx((t) => {
-        // Generating insert query
-        const insertPeers = pgp.helpers.insert(peers, cs);
-
-        const queries = [
-          // Clear peers table
-          t.none(peerSQL.clear),
-          // Insert all peers
-          t.none(insertPeers),
-        ];
-        return t.batch(queries);
-      });
+      await PeersModel.truncate({transaction});
+      await PeersModel.bulkCreate(
+        peers.map((p) => ({...p, ...{broadhash: Buffer.from(p.broadhash, 'hex')}})),
+        {transaction}
+      );
+      await transaction.commit();
       this.logger.info('Peers exported to database');
     } catch (err) {
-      this.logger.error('Export peers to database failed', { error: err.message || err });
+      this.logger.error('Export peers to database failed', {error: err.message || err});
+      await transaction.rollback();
     }
+
   }
 
   /**
@@ -203,8 +184,9 @@ export class PeersModule implements IPeersModule {
    */
   private async dbLoad() {
     this.logger.trace('Importing peers from database');
+
     try {
-      const rows  = await this.db.any(peerSQL.getAll);
+      const rows = await PeersModel.findAll({raw: true});
       let updated = 0;
       await Promise.all(rows
         .map((rawPeer) => this.peersLogic.create(rawPeer))
@@ -218,9 +200,9 @@ export class PeersModule implements IPeersModule {
           }
         })
       );
-      this.logger.trace('Peers->dbLoad Peers discovered', { updated, total: rows.length });
+      this.logger.trace('Peers->dbLoad Peers discovered', {updated, total: rows.length});
     } catch (e) {
-      this.logger.error('Import peers from database failed', { error: e.message || e });
+      this.logger.error('Import peers from database failed', {error: e.message || e});
     }
   }
 

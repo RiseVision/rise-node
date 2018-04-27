@@ -7,7 +7,7 @@ export type RawFullBlockListType = {
   b_version: number
   b_timestamp: number
   b_height: number
-  b_previousBlock: number
+  b_previousBlock: string
   b_numberOfTransactions: number
   b_totalAmount: number
   b_totalFee: number

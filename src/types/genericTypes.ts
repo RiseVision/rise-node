@@ -1,4 +1,8 @@
 // tslint:disable-next-line interface-name
+import { Model } from 'sequelize-typescript';
+import { ModelAttributes, Partial } from './utils';
+import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
+
 export interface AppConfigDatabase {
   host: string;
   port: number;
@@ -105,4 +109,9 @@ export interface PeerHeaders {
   nethash: string;
   broadhash: string;
   nonce: string;
+}
+
+export interface IDBOp<T extends Model<T>> {
+  model: (new () => T);
+  values: FilteredModelAttributes<T>;
 }

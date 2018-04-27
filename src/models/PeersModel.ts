@@ -1,37 +1,52 @@
 import {
-  BelongsTo,
   Column,
   DataType,
-  ForeignKey,
-  IBuildOptions,
   Model,
-  PrimaryKey,
   Sequelize,
   Table
 } from 'sequelize-typescript';
-import { TransactionType } from '../helpers';
-import { TransactionsModel } from './TransactionsModel';
-import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { publicKey } from '../types/sanityTypes';
-import { DelegatesModel } from './DelegatesModel';
+import { PeerState } from '../logic';
 
 @Table({tableName: 'peers'})
 export class PeersModel extends Model<PeersModel> {
+  @Column
+  public ip: string;
+
+  @Column
+  public port: number;
+
+  @Column(DataType.SMALLINT)
+  public state: PeerState;
+
+  @Column
+  public os: string;
+
+  @Column
+  public version: string;
+
+  @Column
+  public clock: number;
+
   @Column(DataType.BLOB)
-  public ip: Buffer;
+  public broadhash: Buffer;
 
   @Column
-  public keysgroup: string;
-
-  @PrimaryKey
-  @ForeignKey(() => TransactionsModel)
-  @Column
-  public transactionId: string;
-
-  @BelongsTo(() => TransactionsModel)
-  public transaction: TransactionsModel;
-
-  public added: publicKey[] = [];
-  public removed: publicKey[] = [];
+  public height: number;
 
 }
+
+//const s = new Sequelize({
+//  database: 'rise_db',
+//  dialect : 'postgres',
+//  password: 'password',
+//  username: 'rise',
+//});
+//
+//s.addModels([PeersModel]);
+//
+//PeersModel.findOne({})
+//  .then((p) => {
+//    console.log(p);
+//    console.log(p.state === PeerState.CONNECTED);
+//    console.log(PeerState.CONNECTED);
+//  })
