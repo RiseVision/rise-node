@@ -25,7 +25,7 @@ import {
   ITransportModule
 } from '../../ioc/interfaces/modules/';
 import { Symbols } from '../../ioc/symbols';
-import { BasePeerType, SignedAndChainedBlockType, SignedBlockType, } from '../../logic/';
+import { BasePeerType, SignedBlockType, } from '../../logic/';
 import { IBaseTransaction } from '../../logic/transactions/';
 import { BlocksModel } from '../../models';
 import schema from '../../schema/blocks';
@@ -36,7 +36,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
   // Generics
   @inject(Symbols.generic.genesisBlock)
-  private genesisBlock: SignedAndChainedBlockType;
+  private genesisBlock: BlocksModel;
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
 

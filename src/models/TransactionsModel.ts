@@ -1,7 +1,7 @@
 import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
 import { TransactionType } from '../helpers';
 
-@Table({tableName: 'trs'})
+@Table({ tableName: 'trs' })
 export class TransactionsModel extends Model<TransactionsModel> {
   @PrimaryKey
   @Column
@@ -44,5 +44,11 @@ export class TransactionsModel extends Model<TransactionsModel> {
   public requesterPublicKey: Buffer;
 
   @Column
-  public signatures: string;
+  public get signatures(): string[] {
+    return this.getDataValue('signatures').join(',');
+  }
+
+  public set signatures(value: string[]) {
+    this.setDataValue('signatures', Array.isArray(value) ? value.join(',') : value);
+  }
 }

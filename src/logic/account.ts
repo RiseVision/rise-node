@@ -4,20 +4,26 @@ import * as jsonSqlCreator from 'json-sql';
 import * as path from 'path';
 import * as pgp from 'pg-promise';
 import { IDatabase } from 'pg-promise';
+import * as sequelize from 'sequelize';
 import * as z_schema from 'z-schema';
-import { BigNum, catchToLoggerAndRemapError, cback, ILogger, promiseToCB } from '../helpers/';
+import { BigNum, catchToLoggerAndRemapError, ILogger, promiseToCB } from '../helpers/';
 import { IAccountLogic } from '../ioc/interfaces/';
 import { Symbols } from '../ioc/symbols';
 import {
   Accounts2DelegatesModel,
   Accounts2MultisignaturesModel,
-  Accounts2U_DelegatesModel, Accounts2U_MultisignaturesModel,
+  Accounts2U_DelegatesModel,
+  Accounts2U_MultisignaturesModel,
   AccountsModel,
-  MemRoundsModel
+  MemRoundsModel,
+  RoundsModel
 } from '../models/';
+import { DBOp } from '../types/genericTypes';
 import { FieldsInModel, ModelAttributes } from '../types/utils';
 import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
+
+import { AccountDiffType } from '../ioc/interfaces/logic';
 
 const jsonSql = jsonSqlCreator();
 
@@ -93,7 +99,7 @@ export type AccountFilterData = {
   isDelegate?: 1 | 0;
   username?: string;
   address?: string | { $in: string[] };
-  publicKey?: string;
+  publicKey?: Buffer;
   limit?: number;
   offset?: number;
   sort?: string | { [k: string]: -1 | 1 }
@@ -303,10 +309,10 @@ export class AccountLogic implements IAccountLogic {
         // attributes: realFields,
         limit,
         offset,
-        order     : typeof(sort) === 'string' ?
+        order: typeof(sort) === 'string' ?
           [[sort, 'ASC']] :
           Object.keys(sort).map((col) => [col, sort[col] === -1 ? 'DESC' : 'ASC']),
-        where     : condition,
+        where: condition,
       })
     );
 
@@ -326,38 +332,17 @@ export class AccountLogic implements IAccountLogic {
   }
 
   /**
-   * Updates account from mem_account with diff data belongings to an editable field
-   * Inserts into mem_round "address", "amount", "delegate", "blockId", "round"
-   * based on field balance or delegates.
-   * @param {string} address
-   * @param {MemAccountsData} diff
-   * @returns {Promise<any>}
-   */
-  public merge(address: string, diff: any): string;
-
-  /**
    * @param {string} address
    * @param diff
-   * @param {cback<any>} cb
-   * @returns {Promise<any>}
-   */
-  public merge(address: string, diff: any, cb: cback<any>): Promise<any>;
-
-  /**
-   * @param {string} address
-   * @param diff
-   * @param {cback<any>} cb
    * @returns {any}
    */
-  public merge(address: string, diff: any, cb?: cback<any>) {
-    const update: any       = {};
-    const remove: any       = {};
-    const insert: any       = {};
-    const insertObject: any = {};
-    const removeObject: any = {};
-    const round: any        = [];
+  public merge(address: string, diff: AccountDiffType): Array<DBOp<any>> {
+    const update: any = {};
+    const remove: any = {};
+    const insert: any = {};
+    address                       = address.toUpperCase();
+    const dbOps: Array<DBOp<any>> = [];
 
-    address = address.toUpperCase();
     this.assertPublicKey(diff.publicKey);
     for (const fieldName of this.editable) {
       if (typeof(diff[fieldName]) === 'undefined') {
@@ -370,96 +355,80 @@ export class AccountLogic implements IAccountLogic {
           break;
         case Number:
           if (isNaN(trueValue) || trueValue === Infinity) {
-            return promiseToCB(Promise.reject(`Encountered insane number: ${trueValue}`), cb);
+            throw new Error(`Encountered insane number: ${trueValue}`);
           }
           if (Math.abs(trueValue) === trueValue && trueValue !== 0) {
-            update.$inc            = update.$inc || {};
-            update.$inc[fieldName] = Math.floor(trueValue);
+            update[fieldName] = sequelize.literal(`${fieldName} + ${Math.floor(trueValue)}`);
             if (fieldName === 'balance') {
-              round.push({
-                // tslint:disable-next-line
-                query : 'INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT ${address}, (${amount})::bigint, "dependentId", ${blockId}, ${round} FROM mem_accounts2delegates WHERE "accountId" = ${address};',
-                values: {
+              dbOps.push({
+                model: RoundsModel,
+                query: RoundsModel.insertMemRoundBalanceSQL({
                   address,
                   amount : trueValue,
                   blockId: diff.blockId,
                   round  : diff.round,
-                },
+                }),
+                type : 'custom',
               });
             }
           } else if (trueValue < 0) {
-            update.$dec            = update.$dec || {};
-            update.$dec[fieldName] = Math.floor(Math.abs(trueValue));
+            update[fieldName] = sequelize.literal(`${fieldName} - ${Math.floor(Math.abs(trueValue))}`);
             // If decrementing u_balance on account
-            if (update.$dec.u_balance) {
+            if (update.u_balance) {
               // Remove virginity and ensure marked columns become immutable
               update.virgin = 0;
             }
             if (fieldName === 'balance') {
-              round.push({
-                // tslint:disable-next-line
-                query : 'INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT ${address}, (${amount})::bigint, "dependentId", ${blockId}, ${round} FROM mem_accounts2delegates WHERE "accountId" = ${address};',
-                values: {
+              dbOps.push({
+                model: RoundsModel,
+                query: RoundsModel.insertMemRoundBalanceSQL({
                   address,
                   amount : trueValue,
                   blockId: diff.blockId,
                   round  : diff.round,
-                },
+                }),
+                type : 'custom',
               });
             }
           }
           break;
         case Array:
-          if (Object.prototype.toString.call(trueValue[0]) === '[object Object]') {
 
-            for (const val of (trueValue as Array<{ action?: '-' | '+' } & any>)) {
-              if (val.action === '-') {
-                delete val.action;
-                removeObject[fieldName]           = removeObject[fieldName] || [];
-                removeObject[fieldName].accountId = address;
-                removeObject[fieldName].push(val);
-              } else {
-                delete val.action;
-                insertObject[fieldName]           = insertObject[fieldName] || [];
-                insertObject[fieldName].accountId = address;
-                insertObject[fieldName].push(val);
+          for (const val of (trueValue as string[])) {
+            const sign: string = val[0];
+            if (sign !== '-') {
+              const theVal      = sign === '+' ? val.slice(1) : val;
+              insert[fieldName] = insert[fieldName] || [];
+              insert[fieldName].push(theVal);
+              if (fieldName === 'delegates') {
+                dbOps.push({
+                  model: RoundsModel,
+                  query: RoundsModel.insertMemRoundDelegatesSQL({
+                    add     : true,
+                    address,
+                    blockId : diff.blockId,
+                    delegate: theVal,
+                    round   : diff.round,
+                  }),
+                  type : 'custom',
+                });
               }
-            }
-          } else {
-            for (const val of (trueValue as string[])) {
-              const sign: string = val[0];
-              if (sign !== '-') {
-                const theVal      = sign === '+' ? val.slice(1) : val;
-                insert[fieldName] = insert[fieldName] || [];
-                insert[fieldName].push(theVal);
-                if (fieldName === 'delegates') {
-                  round.push({
-                    // tslint:disable-next-line
-                    query : 'INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT ${address}, (balance)::bigint, ${delegate}, ${blockId}, ${round} FROM mem_accounts WHERE address = ${address};',
-                    values: {
-                      address,
-                      blockId : diff.blockId,
-                      delegate: theVal,
-                      round   : diff.round,
-                    },
-                  });
-                }
-              } else {
-                const theVal      = val.slice(1);
-                remove[fieldName] = remove[fieldName] || [];
-                remove[fieldName].push(theVal);
-                if (fieldName === 'delegates') {
-                  round.push({
-                    // tslint:disable-next-line
-                    query : 'INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT ${address}, (-balance)::bigint, ${delegate}, ${blockId}, ${round} FROM mem_accounts WHERE address = ${address};',
-                    values: {
-                      address,
-                      blockId : diff.blockId,
-                      delegate: theVal,
-                      round   : diff.round,
-                    },
-                  });
-                }
+            } else {
+              const theVal      = val.slice(1);
+              remove[fieldName] = remove[fieldName] || [];
+              remove[fieldName].push(theVal);
+              if (fieldName === 'delegates') {
+                dbOps.push({
+                  model: RoundsModel,
+                  query: RoundsModel.insertMemRoundDelegatesSQL({
+                    add     : false,
+                    address,
+                    blockId : diff.blockId,
+                    delegate: theVal,
+                    round   : diff.round,
+                  }),
+                  type : 'custom',
+                });
               }
             }
           }
@@ -468,82 +437,65 @@ export class AccountLogic implements IAccountLogic {
 
     }
 
-    const sqles = Object.keys(remove)
+    function elToModel(el: string) {
+      switch (el) {
+        case 'delegates':
+          return Accounts2DelegatesModel;
+        case 'u_delegates':
+          return Accounts2U_DelegatesModel;
+        case 'multisignatures':
+          return Accounts2MultisignaturesModel;
+        case 'u_multisignatures':
+          return Accounts2U_MultisignaturesModel;
+        default:
+          throw new Error(`Unknown el ${el}`);
+      }
+    }
 
-    // All remove
-      .map((el) => jsonSql.build({
-        condition: {
-          dependentId: { $in: remove[el] },
-          // tslint:disable-next-line
-          accountId  : address,
-        },
-        table    : `${this.table}2${el}`,
-        type     : 'remove',
-      }))
-
-      // Lets do all inserts
-      .concat(Object.keys(insert)
-        .map((el) => insert[el]
-          .map((dependentId) => jsonSql.build({
-            table : `${this.table}2${el}`,
-            type  : 'insert',
+    // Create insert ops.
+    Object.keys(insert)
+      .forEach((el) => {
+        const model = elToModel(el);
+        insert[el].forEach((dependentId) => {
+          dbOps.push({
+            model,
+            type  : 'create',
             values: {
               accountId: address,
               dependentId,
             },
-          }))
-        ).reduce((a, b) => a.concat(b), [])
-      )
+          });
+        });
+      });
 
-      // All remove objects
-      .concat(Object.keys(removeObject)
-        .map((el) => jsonSql.build({
-          condition: removeObject[el],
-          table    : `${this.table}2${el}`,
-          type     : 'remove',
-        })))
+    // Create remove ops
+    Object.keys(remove)
+      .forEach((el) => {
+        const model = elToModel(el);
+        dbOps.push({
+          model,
+          options: {
+            where: {
+              accountId  : address,
+              dependentId: { $in: remove[el] },
+            },
+          },
+          type   : 'remove',
+        });
 
-      // All inserts - TODO: Check code logically differs here from original implementation
-      .concat(Object.keys(insertObject)
-        .map((el) => jsonSql.build({
-          table : `${this.table}2${el}`,
-          type  : 'insert',
-          values: insertObject[el],
-        })));
+      });
 
-    if (Object.keys(update).length > 0) {
-      sqles.push(jsonSql.build({
-        condition: { address },
-        modifier : update,
-        table    : this.table,
-        type     : 'update',
-      }));
-    }
+    dbOps.push({
+      model: AccountsModel,
+      options: {
+        limit: 1,
+        where: { address },
+      },
+      type: 'update',
+      values: update,
+    });
 
-    const sqlQuery: string = sqles.concat(round)
-      .map((sql) => pgp.as.format(sql.query, sql.values))
-      .join('');
-
-    // If callback is not given then return the built query.
-    // TODO: this is not a good coding practice but third party code relies on this.
-    if (!cb) {
-      return sqlQuery;
-    }
-
-    if (sqlQuery.length === 0) {
-      // Nothing to run return account
-      return this.get({ address });
-    }
-
-    return promiseToCB(
-      this.db.none(sqlQuery)
-        .then(() => this.get({ address }))
-        .catch((err) => {
-          this.logger.error(err.stack);
-          return Promise.reject('Account#merge error');
-        }),
-      cb
-    );
+    return dbOps;
   }
 
   /**

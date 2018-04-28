@@ -81,23 +81,23 @@ export class AccountsModel extends Model<AccountsModel> {
   public missedblocks: number;
 
   @Column
-  public fees: string;
+  public fees: number;
   @Column
-  public rewards: string;
+  public rewards: number;
   @Column
-  public virgin: boolean;
+  public virgin: 0|1;
 
 
   // Unconfirmed stuff
 
   @Column
-  public u_isDelegate: boolean;
+  public u_isDelegate: 0|1;
   @Column
-  public u_secondSignature: boolean;
+  public u_secondSignature: 0|1;
   @Column
-  public u_username: boolean;
+  public u_username: string;
   @Column
-  public u_balance: boolean;
+  public u_balance: number;
 
 
   public multisignatures?: publicKey[];
@@ -152,6 +152,8 @@ const s = new Sequelize({
 });
 
 s.addModels([AccountsModel, BlocksModel, DelegatesModel, TransactionsModel]);
+
+
 //
 // AccountsModel.upsert({address: '5637366780247854848R', secondSignature: 0})
 // .then((res) => {
@@ -186,3 +188,5 @@ s.addModels([AccountsModel, BlocksModel, DelegatesModel, TransactionsModel]);
 //   order: ['height', 'rowId'],
 //   where: { height: { $gt: 10, $lt: 11} },
 // }).then((res) => console.log(res))
+
+

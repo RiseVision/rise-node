@@ -1,6 +1,7 @@
-import { SignedBlockType } from '../../../logic';
+import { SignedAndChainedBlockType, SignedBlockType } from '../../../logic';
 import { BlocksModel } from '../../../models/BlocksModel';
 import { IModule } from './IModule';
+import { Transaction } from 'sequelize';
 
 export interface IRoundsModule extends IModule {
   /**
@@ -12,8 +13,9 @@ export interface IRoundsModule extends IModule {
    * Performs a backward tick on the round
    * @param {SignedBlockType} block
    * @param {SignedBlockType} previousBlock
+   * @param {Transaction} dbTX eventual tx where to perform such db queries.
    */
-  backwardTick(block: BlocksModel, previousBlock: BlocksModel): Promise<void>;
+  backwardTick(block: BlocksModel, previousBlock: BlocksModel, dbTX?: Transaction): Promise<void>;
 
-  tick(block: BlocksModel): Promise<void>;
+  tick(block: BlocksModel|SignedAndChainedBlockType, dbTX?: Transaction): Promise<void>;
 }

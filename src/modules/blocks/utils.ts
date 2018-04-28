@@ -246,7 +246,6 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
       raw       : true,
       where     : {
         ...timestampClausole,
-        // tslint:disable-next-line
         generatorPublicKey: bufPublicKey,
       },
     }) as any;
@@ -255,6 +254,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     data.fees  = await RoundsFeesModel.aggregate('fees', 'sum', {
       where: {
         ...timestampClausole,
+        publicKey: bufPublicKey,
       },
     }) as number;
 

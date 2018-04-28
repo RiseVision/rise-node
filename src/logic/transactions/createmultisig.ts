@@ -128,7 +128,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         if (Array.isArray(tx.signatures)) {
           for (let i = 0; i < tx.signatures.length && !valid; i++) {
             if (key[0] === '+' || key[0] === '-') {
-              valid = this.transactionLogic.verifySignature(tx, key.substring(1), tx.signatures[i], false);
+              valid = this.transactionLogic.verifySignature(tx, new Buffer(key.substring(1), 'hex'), tx.signatures[i], false);
             }
           }
         }
@@ -175,8 +175,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         multimin       : tx.asset.multisignature.min,
         multisignatures: tx.asset.multisignature.keysgroup,
         round          : this.roundsLogic.calcRound(block.height),
-      },
-      emptyCB
+      }
     );
 
     // Generate accounts

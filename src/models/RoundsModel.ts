@@ -1,13 +1,12 @@
+import * as sequelize from 'sequelize';
 import {
   Column,
   DataType,
   Model,
-  Sequelize,
   Table
 } from 'sequelize-typescript';
-import { PeerState } from '../logic';
+import * as sequelizeUtils from 'sequelize/lib/utils';
 import { publicKey } from '../types/sanityTypes';
-import * as sequelize from 'sequelize';
 
 @Table({tableName: 'mem_round'})
 export class RoundsModel extends Model<RoundsModel> {
@@ -57,25 +56,22 @@ export class RoundsModel extends Model<RoundsModel> {
     );
     return res;
   }
-}
 
-//const s = new Sequelize({
-//  database: 'rise_db',
-//  dialect : 'postgres',
-//  password: 'password',
-//  username: 'rise',
-//});
-//
-//s.addModels([RoundsModel]);
-//
-//RoundsModel.getVotes(9010)
-//  .then((bit) => {
-//    console.log(bit)
-//  })
-//
-//PeersModel.findOne({})
-//  .then((p) => {
-//    console.log(p);
-//    console.log(p.state === PeerState.CONNECTED);
-//    console.log(PeerState.CONNECTED);
-//  })
+  public static insertMemRoundBalanceSQL(params: {address: string, amount: number, blockId: string, round: number}) {
+    return sequelizeUtils.formatNamedParameters(
+      // tslint:disable-next-line
+      'INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT :address, (:amount)::bigint, "dependentId", :blockId, :round FROM mem_accounts2delegates WHERE "accountId" = :address',
+      params,
+      'postgres'
+    );
+  }
+
+  public static insertMemRoundDelegatesSQL(params: {add: boolean, address: string, delegate: string, blockId: string, round: number}) {
+    return sequelizeUtils.formatNamedParameters(
+      // tslint:disable-next-line
+      `INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT :address, (${params.add?'':'-'}balance)::bigint, :delegate, :blockId, :round FROM mem_accounts WHERE address = :address`,
+      params,
+      'postgres'
+    );
+  }
+}

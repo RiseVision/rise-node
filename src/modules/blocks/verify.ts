@@ -299,7 +299,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       totalFee += tx.fee;
     }
 
-    if (payloadHash.digest().toString('hex') !== block.payloadHash) {
+    if (!payloadHash.digest().equals(block.payloadHash)) {
       errors.push('Invalid payload hash');
     }
 

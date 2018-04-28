@@ -3,7 +3,9 @@ import { AccountFilterData, MemAccountsData } from '../../../logic';
 import { AccountsModel } from '../../../models/AccountsModel';
 import { publicKey } from '../../../types/sanityTypes';
 import { FieldsInModel } from '../../../types/utils';
+import { DBOp } from '../../../types/genericTypes';
 
+export type AccountDiffType = {[k in keyof AccountsModel]?: AccountsModel[k]} & {round: number};
 export interface IAccountLogic {
   objectNormalize(account: any);
 
@@ -50,18 +52,7 @@ export interface IAccountLogic {
    * @param {MemAccountsData} diff
    * @returns {Promise<any>}
    */
-  merge(address: string, diff: any): string;
-
-  /**
-   * Updates account from mem_account with diff data belongings to an editable field
-   * Inserts into mem_round "address", "amount", "delegate", "blockId", "round"
-   * based on field balance or delegates.
-   * @param {string} address
-   * @param {MemAccountsData} diff
-   * @param {cback<any>} cb
-   * @returns {Promise<any>}
-   */
-  merge(address: string, diff: any, cb: cback<any>): Promise<any>;
+  merge(address: string, diff: AccountDiffType): Array<DBOp<any>>;
 
   /**
    * Removes an account from mem_account table based on address.

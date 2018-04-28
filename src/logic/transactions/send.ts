@@ -7,7 +7,7 @@ import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
 @injectable()
-export class SendTransaction extends BaseTransactionType<void> {
+export class SendTransaction extends BaseTransactionType<void, null> {
 
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;

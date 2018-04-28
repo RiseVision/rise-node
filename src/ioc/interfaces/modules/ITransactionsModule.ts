@@ -4,6 +4,7 @@ import { IModule } from './IModule';
 import { TransactionsModel } from '../../../models/TransactionsModel';
 import { BlocksModel } from '../../../models/BlocksModel';
 import { AccountsModel } from '../../../models/AccountsModel';
+import { Transaction } from 'sequelize';
 
 export interface ITransactionsModule extends IModule {
   /**
@@ -76,22 +77,22 @@ export interface ITransactionsModule extends IModule {
   /**
    * Applies confirmed transaction.
    */
-  apply(transaction: IBaseTransaction<any>, block: BlocksModel, sender: AccountsModel): Promise<void>;
+  apply(transaction: IBaseTransaction<any>, block: SignedBlockType, sender: AccountsModel, dbTX?: Transaction): Promise<void>;
 
   /**
    * Undoes confirmed transaction.
    */
-  undo(transaction: IBaseTransaction<any>, block: BlocksModel, sender: AccountsModel): Promise<void>;
+  undo(transaction: IBaseTransaction<any>, block: BlocksModel, sender: AccountsModel, dbTX?: Transaction): Promise<void>;
 
   /**
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
-  applyUnconfirmed(transaction: IBaseTransaction<any>, sender: AccountsModel): Promise<void>;
+  applyUnconfirmed(transaction: IBaseTransaction<any>, sender: AccountsModel, dbTX?: Transaction): Promise<void>;
 
   /**
    * Validates account and Undoes unconfirmed transaction.
    */
-  undoUnconfirmed(transaction: IBaseTransaction<any>): Promise<void>;
+  undoUnconfirmed(transaction: IBaseTransaction<any>, dbTX?: Transaction): Promise<void>;
 
   /**
    * Receives transactions

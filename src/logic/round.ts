@@ -23,7 +23,7 @@ export type RoundLogicScope = {
     accounts: IAccountsModule;
   }
   block: {
-    generatorPublicKey: publicKey;
+    generatorPublicKey: Buffer;
     id: string;
     height: number;
   }

@@ -2,7 +2,7 @@
 import { Model } from 'sequelize-typescript';
 import { ModelAttributes, Partial } from './utils';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { CreateOptions, UpdateOptions } from 'sequelize';
+import { CreateOptions, DestroyOptions, UpdateOptions } from 'sequelize';
 
 export interface AppConfigDatabase {
   host: string;
@@ -114,14 +114,23 @@ export interface PeerHeaders {
 
 type BaseDBOp<T extends Model<T>> = {
   model: (new () => T) & (typeof Model);
-  values: FilteredModelAttributes<T>;
 };
 export type DBUpdateOp<T extends Model<T>> = BaseDBOp<T> & {
   type: 'update',
   options?: UpdateOptions
+  values: FilteredModelAttributes<T>;
 };
 export type DBCreateOp<T extends Model<T>> = BaseDBOp<T> & {
   type: 'create',
+  values: FilteredModelAttributes<T>;
+};
+export type DBRemoveOp<T extends Model<T>> = BaseDBOp<T> & {
+  type: 'remove',
+  options: DestroyOptions;
+};
+export type DBCustomOp<T extends Model<T>> = BaseDBOp<T> & {
+  type: 'custom',
+  query: string
 };
 
-export type DBOp<T extends Model<T>> = DBCreateOp<T> | DBUpdateOp<T>;
+export type DBOp<T extends Model<T>> = DBCreateOp<T> | DBUpdateOp<T> | DBCustomOp<T> | DBRemoveOp<T>;

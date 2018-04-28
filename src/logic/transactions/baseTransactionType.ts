@@ -12,16 +12,16 @@ export interface IBaseTransaction<T> {
   type: TransactionType;
   amount: number;
   senderId?: string;
-  senderPublicKey: string;
-  requesterPublicKey?: string;
+  senderPublicKey: Buffer;
+  requesterPublicKey?: Buffer;
   timestamp: number;
-  asset: T;
+  asset?: T;
   recipientId: string;
-  signature: string;
+  signature: Buffer;
   id: string;
   fee: number;
   signatures?: string[];
-  signSignature?: string;
+  signSignature?: Buffer;
 }
 
 export interface IConfirmedTransaction<T> extends IBaseTransaction<T> {
