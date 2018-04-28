@@ -5,12 +5,12 @@ import z_schema from 'z-schema';
 import { BigNum, constants, Ed, IKeypair } from '../helpers/';
 import { IBlockLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
 import { Symbols } from '../ioc/symbols';
+import { BlocksModel } from '../models';
 import logicBlockSchema from '../schema/logic/block';
+import { DBOp } from '../types/genericTypes';
+import { RawFullBlockListType } from '../types/rawDBTypes';
 import { BlockRewardLogic } from './blockReward';
 import { IBaseTransaction, IConfirmedTransaction } from './transactions/';
-import { IDBOp } from '../types/genericTypes';
-import { BlocksModel } from '../models';
-import { RawFullBlockListType } from '../types/rawDBTypes';
 
 // import * as OldImplementation from './_block.js';
 
@@ -70,7 +70,7 @@ export class BlockLogic implements IBlockLogic {
 
     if (block.previousBlock) {
       const pb = new BigNum(block.previousBlock)
-        .toBuffer({size: 8});
+        .toBuffer({ size: 8 });
 
       for (let i = 0; i < 8; i++) {
         bb.writeByte(pb[i]);
@@ -273,9 +273,10 @@ export class BlockLogic implements IBlockLogic {
    * @param {BlockType} block
    * TODO: Change method name to something more meaningful as this does NOT save
    */
-  public dbSave(block: SignedBlockType): IDBOp<BlocksModel & { id: string }> {
+  public dbSave(block: SignedBlockType): DBOp<BlocksModel & { id: string }> {
     return {
       model : BlocksModel,
+      type  : 'create',
       values: block,
     };
   }

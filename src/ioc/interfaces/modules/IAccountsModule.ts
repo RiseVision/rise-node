@@ -19,7 +19,7 @@ export interface IAccountsModule extends IModule {
 
   mergeAccountAndGetOPs(diff: AccountDiffType): Array<DBOp<any>>;
 
-  mergeAccountAndGet(diff: AccountDiffType): Promise<MemAccountsData>;
+  mergeAccountAndGet(diff: AccountDiffType): Promise<AccountsModel>;
 
   /**
    * @deprecated

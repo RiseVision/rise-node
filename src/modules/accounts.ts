@@ -1,12 +1,12 @@
 import { inject, injectable } from 'inversify';
+import { DBHelper } from '../helpers';
 import { AccountDiffType, IAccountLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { AccountFilterData, MemAccountsData } from '../logic/';
 import { AccountsModel } from '../models/';
-import { FieldsInModel } from '../types/utils';
-import { DBHelper } from '../helpers';
 import { DBOp } from '../types/genericTypes';
+import { FieldsInModel } from '../types/utils';
 
 @injectable()
 export class AccountsModule implements IAccountsModule {
@@ -48,7 +48,7 @@ export class AccountsModule implements IAccountsModule {
     return this.accountLogic.get({ address });
   }
 
-  public mergeAccountAndGetOPS(diff: any): Array<DBOp<any>> {
+  public mergeAccountAndGetOPs(diff: any): Array<DBOp<any>> {
     diff              = this.fixAndCheckInputParams(diff);
     const { address } = diff;
     delete diff.address;

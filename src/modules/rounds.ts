@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
 import { IDatabase, ITask } from 'pg-promise';
 import SocketIO from 'socket.io';
-import { Bus, constants as constantsType, ILogger, Slots } from '../helpers/';
+import { Bus, constants as constantsType, DBHelper, ILogger, Slots } from '../helpers/';
 import { IAppState, IRoundLogicNewable, IRoundsLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule, IDelegatesModule, IRoundsModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
@@ -9,7 +9,6 @@ import { RoundLogicScope, SignedBlockType } from '../logic/';
 import { BlocksModel, RoundsModel } from '../models';
 import roundsSQL from '../sql/logic/rounds';
 import { address } from '../types/sanityTypes';
-
 
 @injectable()
 export class RoundsModule implements IRoundsModule {
@@ -21,6 +20,8 @@ export class RoundsModule implements IRoundsModule {
   private constants: typeof constantsType;
   @inject(Symbols.generic.db)
   private db: IDatabase<any>;
+  @inject(Symbols.helpers.db)
+  private dbHelper: DBHelper;
   @inject(Symbols.generic.socketIO)
   private io: SocketIO.Server;
   @inject(Symbols.helpers.logger)
@@ -171,6 +172,7 @@ export class RoundsModule implements IRoundsModule {
         block  : block as any, // TODO: ID and height are optional in SignedBlockType
         finishRound,
         library: {
+          dbHelper: this.dbHelper,
           logger: this.logger,
         },
         modules: {
