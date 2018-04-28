@@ -62,5 +62,5 @@ export interface IAccountLogic {
    */
   remove(address: string, cb: cback<string>): Promise<number>;
 
-  generateAddressByPublicKey(pk: publicKey): string;
+  generateAddressByPublicKey(pk: publicKey | Buffer): string;
 }

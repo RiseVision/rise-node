@@ -13,9 +13,8 @@ export interface IRoundsModule extends IModule {
    * Performs a backward tick on the round
    * @param {SignedBlockType} block
    * @param {SignedBlockType} previousBlock
-   * @param {Transaction} dbTX eventual tx where to perform such db queries.
    */
-  backwardTick(block: BlocksModel, previousBlock: BlocksModel, dbTX?: Transaction): Promise<void>;
+  backwardTick(block: BlocksModel, previousBlock: BlocksModel): Promise<void>;
 
-  tick(block: BlocksModel|SignedAndChainedBlockType, dbTX?: Transaction): Promise<void>;
+  tick(block: BlocksModel|SignedAndChainedBlockType): Promise<void>;
 }

@@ -83,7 +83,7 @@ export class MultisignaturesModule implements IMultisignaturesModule {
     const multisignatures = sender.multisignatures;
 
     if (tx.requesterPublicKey) {
-      multisignatures.push(tx.senderPublicKey);
+      multisignatures.push(tx.senderPublicKey.toString('hex'));
     }
 
     tx.signatures = tx.signatures || [];
@@ -92,7 +92,7 @@ export class MultisignaturesModule implements IMultisignaturesModule {
     }
     let verify = false;
     for (let i = 0; i < multisignatures.length && !verify; i++) {
-      verify = this.transactionLogic.verifySignature(tx, multisignatures[i], signature);
+      verify = this.transactionLogic.verifySignature(tx, new Buffer(multisignatures[i], 'hex'), signature);
     }
 
     if (!verify) {
@@ -111,7 +111,7 @@ export class MultisignaturesModule implements IMultisignaturesModule {
     let verify = false;
     for (let i = 0; i < tx.asset.multisignature.keysgroup.length && !verify; i++) {
       const key = tx.asset.multisignature.keysgroup[i].substring(1);
-      verify    = this.transactionLogic.verifySignature(tx, key, signature);
+      verify    = this.transactionLogic.verifySignature(tx, new Buffer(key, 'hex'), signature);
     }
     if (!verify) {
       throw new Error('Failed to verify signature');

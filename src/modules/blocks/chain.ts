@@ -192,7 +192,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       for (const transaction of block.transactions) {
         const sender = await this.accountsModule
           .setAccountAndGet({ publicKey: transaction.senderPublicKey });
-        await this.transactionsModule.applyUnconfirmed(transaction, sender, dbTX)
+        await this.transactionsModule.applyUnconfirmed(transaction, sender)
           .catch((err) => {
             this.logger.error(`Failed to applyUnconfirmed transaction ${transaction.id} - ${err.message || err}`);
             this.logger.error(err);
@@ -212,7 +212,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       for (const tx of block.transactions) {
         const sender = await this.accountsModule.getAccount({ publicKey: tx.senderPublicKey });
         try {
-          await this.transactionsModule.apply(tx, block, sender, dbTX);
+          await this.transactionsModule.apply(tx, block, sender);
         } catch (err) {
           this.logger.error(`Failed to apply transaction: ${tx.id}`, err);
           this.logger.error('Transaction', tx);
@@ -237,7 +237,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
       await this.bus.message('newBlock', block, broadcast);
 
-      await this.roundsModule.tick(block, dbTX);
+      await this.roundsModule.tick(block);
     });
 
     // restore the (yet) unconfirmed ids.
@@ -301,10 +301,10 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     await BlocksModel.sequelize.transaction(async (dbTX) => {
       for (const tx of txs) {
         const sender = await AccountsModel.find({where: { publicKey: tx.senderPublicKey }});
-        await this.transactionsModule.undo(tx, lb, sender, dbTX);
-        await this.transactionsModule.undoUnconfirmed(tx, dbTX);
+        await this.transactionsModule.undo(tx, lb, sender);
+        await this.transactionsModule.undoUnconfirmed(tx);
       }
-      await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
+      await this.roundsModule.backwardTick(lb, previousBlock);
       await previousBlock.destroy({transaction: dbTX});
     });
 

@@ -1,10 +1,11 @@
 import * as pgp from 'pg-promise';
 import { ITask } from 'pg-promise';
-import { ILogger, RoundChanges, Slots } from '../helpers/';
+import { DBHelper, ILogger, RoundChanges, Slots } from '../helpers/';
 import { IRoundLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule } from '../ioc/interfaces/modules';
 import roundSQL from '../sql/logic/rounds';
 import { address, publicKey } from '../types/sanityTypes';
+import { DBOp } from '../types/genericTypes';
 
 // tslint:disable-next-line
 export type RoundLogicScope = {
@@ -18,6 +19,7 @@ export type RoundLogicScope = {
   finishRound: boolean;
   library: {
     logger: ILogger
+    dbHelper: DBHelper;
   },
   modules: {
     accounts: IAccountsModule;
@@ -169,7 +171,7 @@ export class RoundLogic implements IRoundLogic {
    */
   public applyRound(): Promise<void> {
     const roundChanges      = new RoundChanges(this.scope, this.slots);
-    const queries: string[] = [];
+    const queries: Array<DBOp<any>> = [];
 
     const delegates = this.scope.backwards ?
       this.scope.roundDelegates.reverse() :
@@ -181,7 +183,7 @@ export class RoundLogic implements IRoundLogic {
       this.scope.library.logger.trace('Delegate changes', { delegate, changes });
 
       // merge Account in the direction.
-      queries.push(this.scope.modules.accounts.mergeAccountAndGetSQL({
+      queries.concat.apply(queries, this.scope.modules.accounts.mergeAccountAndGetOPs({
         balance  : (this.scope.backwards ? -changes.balance : changes.balance),
         blockId  : this.scope.block.id,
         fees     : (this.scope.backwards ? -changes.fees : changes.fees),
@@ -207,7 +209,7 @@ export class RoundLogic implements IRoundLogic {
         index   : remainderIndex,
       });
 
-      queries.push(this.scope.modules.accounts.mergeAccountAndGetSQL({
+      queries.concat.apply(queries, this.scope.modules.accounts.mergeAccountAndGetOPs({
         balance  : feesRemaining,
         blockId  : this.scope.block.id,
         fees     : feesRemaining,
@@ -219,7 +221,7 @@ export class RoundLogic implements IRoundLogic {
 
     this.scope.library.logger.trace('Applying round', queries);
     if (queries.length > 0) {
-      return this.task.none(queries.join(''));
+      return Promise.resolve(this.scope.library.dbHelper.performOps(queries)).then(() => void 0);
     }
     return Promise.resolve();
   }

@@ -5,8 +5,9 @@ import { constants as constantsType, ILogger, OrderBy } from '../helpers/';
 import { ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
-import { MemAccountsData, SignedAndChainedBlockType, SignedBlockType } from '../logic/';
+import { SignedAndChainedBlockType, SignedBlockType } from '../logic/';
 import { IBaseTransaction, IConfirmedTransaction } from '../logic/transactions/';
+import { AccountsModel } from '../models';
 import txSQL from '../sql/logic/transactions';
 
 @injectable()
@@ -131,7 +132,7 @@ export class TransactionsModule implements ITransactionsModule {
   /**
    * Applies confirmed transaction.
    */
-  public apply(transaction: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void> {
+  public apply(transaction: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
     this.logger.debug('Applying confirmed transaction', transaction.id);
     return this.transactionLogic.apply(transaction, block, sender);
   }
@@ -139,7 +140,7 @@ export class TransactionsModule implements ITransactionsModule {
   /**
    * Undoes confirmed transaction.
    */
-  public undo(transaction: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void> {
+  public undo(transaction: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
     this.logger.debug('Undoing confirmed transaction', transaction.id);
     return this.transactionLogic.undo(transaction, block, sender);
   }
@@ -148,7 +149,7 @@ export class TransactionsModule implements ITransactionsModule {
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
   // tslint:disable-next-line max-line-length
-  public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: MemAccountsData): Promise<void> {
+  public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: AccountsModel): Promise<void> {
     // tslint:disable-next-line max-line-length
     this.logger.debug(`Applying unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${(sender || {u_balance: undefined}).u_balance}`);
 

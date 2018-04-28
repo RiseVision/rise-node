@@ -1,15 +1,15 @@
 import BigNumber from 'bignumber.js';
+import { Transaction } from 'sequelize';
 import { Model } from 'sequelize-typescript';
 import { IKeypair } from '../../../helpers';
-import { MemAccountsData, SignedBlockType } from '../../../logic';
+import { SignedBlockType } from '../../../logic';
 import {
   BaseTransactionType,
   IBaseTransaction,
   IConfirmedTransaction,
-  IDbSaveReturnType
 } from '../../../logic/transactions';
-import { AccountsModel } from '../../../models/AccountsModel';
-import { IDBOp } from '../../../types/genericTypes';
+import { AccountsModel } from '../../../models/';
+import { DBOp } from '../../../types/genericTypes';
 
 export interface ITransactionLogic {
 
@@ -104,7 +104,7 @@ export interface ITransactionLogic {
    */
   undoUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel): Promise<void>;
 
-  dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<IDBOp<any>>;
+  dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<DBOp<any>>;
 
   afterSave(tx: IBaseTransaction<any>): Promise<void>;
 

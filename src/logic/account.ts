@@ -1,12 +1,11 @@
 import * as crypto from 'crypto';
+import * as fs from 'fs';
 import { inject, injectable } from 'inversify';
 import * as jsonSqlCreator from 'json-sql';
 import * as path from 'path';
-import * as pgp from 'pg-promise';
-import { IDatabase } from 'pg-promise';
 import * as sequelize from 'sequelize';
 import * as z_schema from 'z-schema';
-import { BigNum, catchToLoggerAndRemapError, ILogger, promiseToCB } from '../helpers/';
+import { BigNum, catchToLoggerAndRemapError, ILogger } from '../helpers/';
 import { IAccountLogic } from '../ioc/interfaces/';
 import { Symbols } from '../ioc/symbols';
 import {
@@ -131,9 +130,6 @@ export class AccountLogic implements IAccountLogic {
    */
   private editable: string[];
 
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
-
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
@@ -176,9 +172,11 @@ export class AccountLogic implements IAccountLogic {
    * Creates memory tables related to accounts!
    */
   public createTables(): Promise<void> {
-    const sql = new pgp.QueryFile(path.join(process.cwd(), 'sql', 'memoryTables.sql'), { minify: true });
-    return this.db.query(sql)
-      .catch(catchToLoggerAndRemapError('Account#createTables error', this.logger));
+    return Promise.resolve(
+      AccountsModel.sequelize.query(
+        fs.readFileSync(path.join(process.cwd(), 'sql', 'memoryTables.sql'), { encoding: 'utf8' })
+      )
+    );
   }
 
   /**
@@ -337,9 +335,9 @@ export class AccountLogic implements IAccountLogic {
    * @returns {any}
    */
   public merge(address: string, diff: AccountDiffType): Array<DBOp<any>> {
-    const update: any = {};
-    const remove: any = {};
-    const insert: any = {};
+    const update: any             = {};
+    const remove: any             = {};
+    const insert: any             = {};
     address                       = address.toUpperCase();
     const dbOps: Array<DBOp<any>> = [];
 
@@ -486,13 +484,13 @@ export class AccountLogic implements IAccountLogic {
       });
 
     dbOps.push({
-      model: AccountsModel,
+      model  : AccountsModel,
       options: {
         limit: 1,
         where: { address },
       },
-      type: 'update',
-      values: update,
+      type   : 'update',
+      values : update,
     });
 
     return dbOps;

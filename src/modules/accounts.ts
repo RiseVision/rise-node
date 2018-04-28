@@ -1,17 +1,20 @@
 import { inject, injectable } from 'inversify';
-import { emptyCB } from '../helpers/';
-import { IAccountLogic } from '../ioc/interfaces/logic';
+import { AccountDiffType, IAccountLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { AccountFilterData, MemAccountsData } from '../logic/';
 import { AccountsModel } from '../models/';
 import { FieldsInModel } from '../types/utils';
+import { DBHelper } from '../helpers';
+import { DBOp } from '../types/genericTypes';
 
 @injectable()
 export class AccountsModule implements IAccountsModule {
 
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
+  @inject(Symbols.helpers.db)
+  private dbHelper: DBHelper;
 
   public cleanup() {
     return Promise.resolve();
@@ -36,18 +39,18 @@ export class AccountsModule implements IAccountsModule {
    */
   // tslint:disable-next-line max-line-length
   public async setAccountAndGet(data: ({ publicKey: string } | { address: string }) & Partial<AccountsModel>): Promise<AccountsModel> {
-    data = this.fixAndCheckInputParams(data);
+    data              = this.fixAndCheckInputParams(data);
     // no need to reset address!
-    const {address} = data;
+    const { address } = data;
     delete data.address;
 
     await this.accountLogic.set(address, data);
-    return this.accountLogic.get({address});
+    return this.accountLogic.get({ address });
   }
 
-  public mergeAccountAndGetSQL(diff: any): string {
-    diff = this.fixAndCheckInputParams(diff);
-    const {address} = diff;
+  public mergeAccountAndGetOPS(diff: any): Array<DBOp<any>> {
+    diff              = this.fixAndCheckInputParams(diff);
+    const { address } = diff;
     delete diff.address;
     return this.accountLogic.merge(address, diff);
   }
@@ -58,22 +61,24 @@ export class AccountsModule implements IAccountsModule {
    * @returns {Promise<MemAccountsData>}
    */
 
-  public async mergeAccountAndGet(diff: any): Promise<MemAccountsData> {
+  public async mergeAccountAndGet(diff: AccountDiffType): Promise<AccountsModel> {
     diff = this.fixAndCheckInputParams(diff);
-    const {address} = diff;
-    delete diff.address;
 
-    return this.accountLogic.merge(address, diff, emptyCB);
+    const { address } = diff;
+    delete diff.address;
+    const ops = this.accountLogic.merge(address, diff);
+    await this.dbHelper.performOps(ops);
+    return this.getAccount({ address });
   }
 
   /**
    * @deprecated
    */
-  public generateAddressByPublicKey(pk: string) {
+  public generateAddressByPublicKey(pk: string | Buffer) {
     return this.accountLogic.generateAddressByPublicKey(pk);
   }
 
-  private fixAndCheckInputParams<T extends { address?: string, publicKey?: string } = any>(what: T): T {
+  private fixAndCheckInputParams<T extends { address?: string, publicKey?: Buffer } = any>(what: T): T {
     if (!what.address && !what.publicKey) {
       throw new Error('Missing address and public key');
     }

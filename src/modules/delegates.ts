@@ -52,11 +52,11 @@ export class DelegatesModule implements IDelegatesModule {
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
-  public async checkConfirmedDelegates(pk: publicKey, votes: string[]) {
+  public async checkConfirmedDelegates(pk: Buffer, votes: string[]) {
     return this.checkDelegates(pk, votes, 'confirmed');
   }
 
-  public async checkUnconfirmedDelegates(pk: publicKey, votes: string[]) {
+  public async checkUnconfirmedDelegates(pk: Buffer, votes: string[]) {
     return this.checkDelegates(pk, votes, 'unconfirmed');
   }
 
@@ -65,7 +65,7 @@ export class DelegatesModule implements IDelegatesModule {
    * @param {number} height blockheight.
    * @return {Promise<publicKey[]>}
    */
-  public async generateDelegateList(height: number): Promise<publicKey[]> {
+  public async generateDelegateList(height: number): Promise<Buffer[]> {
     const pkeys      = await this.getKeysSortByVote();
     const seedSource = this.roundsLogic.calcRound(height).toString();
     let currentSeed  = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
@@ -163,7 +163,7 @@ export class DelegatesModule implements IDelegatesModule {
 
     const curSlot = this.slots.getSlotNumber(block.timestamp);
     const delegId = delegates[curSlot % this.slots.delegates];
-    if (!(delegId && block.generatorPublicKey === delegId)) {
+    if (!(delegId && block.generatorPublicKey.equals(delegId))) {
       this.logger.error(`Expected generator ${delegId} Received generator: ${block.generatorPublicKey}`);
       throw new Error(`Failed to verify slot ${curSlot}`);
     }
@@ -184,13 +184,13 @@ export class DelegatesModule implements IDelegatesModule {
   /**
    * Get delegates public keys sorted by descending vote.
    */
-  private async getKeysSortByVote(): Promise<publicKey[]> {
+  private async getKeysSortByVote(): Promise<Buffer[]> {
     const rows = await this.accountsModule.getAccounts({
       isDelegate: 1,
       limit     : this.slots.delegates,
       sort      : {vote: -1, publicKey: 1},
     }, ['publicKey']);
-    return rows.map((r) => r.hexPublicKey);
+    return rows.map((r) => r.publicKey);
   }
 
   /**
@@ -200,7 +200,7 @@ export class DelegatesModule implements IDelegatesModule {
    * @param state
    * @return {Promise<void>}
    */
-  private async checkDelegates(pk: publicKey, votes: string[], state: 'confirmed' | 'unconfirmed') {
+  private async checkDelegates(pk: Buffer, votes: string[], state: 'confirmed' | 'unconfirmed') {
     const account = await this.accountsModule.getAccount({publicKey: pk});
 
     if (!account) {
@@ -238,7 +238,7 @@ export class DelegatesModule implements IDelegatesModule {
 
       // check voted (or unvoted) is actually a delegate.
       // TODO: This can be optimized as it's only effective when "Adding" a vote.
-      const del = await this.accountsModule.getAccount({publicKey: curPK, isDelegate: 1});
+      const del = await this.accountsModule.getAccount({publicKey: new Buffer(curPK, 'hex'), isDelegate: 1});
       if (!del) {
         throw new Error('Delegate not found');
       }

@@ -1,6 +1,5 @@
 import { SignedBlockType } from '../../../logic';
 import { AccountsModel } from '../../../models';
-import { publicKey } from '../../../types/sanityTypes';
 import { IModule } from './IModule';
 
 export interface IDelegatesModule extends IModule {
@@ -8,19 +7,19 @@ export interface IDelegatesModule extends IModule {
   /**
    * Checks that the account on pk has vote integrity for the unconfirmed state
    */
-  checkConfirmedDelegates(pk: publicKey, votes: string[]): Promise<void>;
+  checkConfirmedDelegates(pk: Buffer, votes: string[]): Promise<void>;
 
   /**
    * Checks that the account on pk has vote integrity for the confirmed state
    */
-  checkUnconfirmedDelegates(pk: publicKey, votes: string[]): Promise<void>;
+  checkUnconfirmedDelegates(pk: Buffer, votes: string[]): Promise<void>;
 
   /**
    * Generate a randomized list for the round of which the given height is into.
    * @param {number} height blockheight.
-   * @return {Promise<publicKey[]>}
+   * @return {Promise<Buffer[]>}
    */
-  generateDelegateList(height: number): Promise<publicKey[]>;
+  generateDelegateList(height: number): Promise<Buffer[]>;
 
   /**
    * Gets delegates and for each calculate rank approval and productivity.

@@ -197,7 +197,7 @@ export class ForgeModule implements IForgeModule {
 
     for (const secret of secrets) {
       const keypair = this.ed.makeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
-      const account = await this.accountsModule.getAccount({ publicKey: keypair.publicKey.toString('hex') });
+      const account = await this.accountsModule.getAccount({ publicKey: keypair.publicKey });
       if (!account) {
         throw new Error(`Account with publicKey: ${keypair.publicKey.toString('hex')} not found`);
       }
@@ -225,9 +225,9 @@ export class ForgeModule implements IForgeModule {
     for (let cs = slot; cs < lastSlot; cs++) {
       const delegPos = cs % this.slots.delegates;
       const delegId  = pkeys[delegPos];
-      if (delegId && this.enabledKeys[delegId]) {
+      if (delegId && this.enabledKeys[delegId.toString('hex')]) {
         return {
-          keypair: this.keypairs[delegId],
+          keypair: this.keypairs[delegId.toString('hex')],
           time   : this.slots.getSlotTime(cs),
         };
       }

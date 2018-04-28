@@ -4,6 +4,7 @@ import { publicKey } from '../../../types/sanityTypes';
 import { FieldsInModel } from '../../../types/utils';
 import { IModule } from './IModule';
 import { AccountDiffType } from '../logic/';
+import { DBOp } from '../../../types/genericTypes';
 
 export interface IAccountsModule extends IModule {
   getAccount(filter: AccountFilterData, fields?: FieldsInModel<AccountsModel>): Promise<AccountsModel>;
@@ -16,12 +17,12 @@ export interface IAccountsModule extends IModule {
   // tslint:disable-next-line max-line-length
   setAccountAndGet(data: Partial<AccountsModel>  & ({ publicKey: Buffer } | { address: string })): Promise<AccountsModel>;
 
-  mergeAccountAndGetSQL(diff: AccountDiffType): string;
+  mergeAccountAndGetOPs(diff: AccountDiffType): Array<DBOp<any>>;
 
   mergeAccountAndGet(diff: AccountDiffType): Promise<MemAccountsData>;
 
   /**
    * @deprecated
    */
-  generateAddressByPublicKey(pk: publicKey): string;
+  generateAddressByPublicKey(pk: publicKey|Buffer): string;
 }

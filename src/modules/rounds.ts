@@ -6,10 +6,10 @@ import { IAppState, IRoundLogicNewable, IRoundsLogic } from '../ioc/interfaces/l
 import { IAccountsModule, IDelegatesModule, IRoundsModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { RoundLogicScope, SignedBlockType } from '../logic/';
+import { BlocksModel, RoundsModel } from '../models';
 import roundsSQL from '../sql/logic/rounds';
-import { address, publicKey } from '../types/sanityTypes';
-import { BlocksModel } from '../models';
-import { RoundsModel } from '../models/RoundsModel';
+import { address } from '../types/sanityTypes';
+
 
 @injectable()
 export class RoundsModule implements IRoundsModule {
@@ -201,7 +201,7 @@ export class RoundsModule implements IRoundsModule {
     const originalDelegates = await this.delegatesModule.generateDelegateList(height);
 
     return originalDelegates
-      .filter((pk) => strPKDelegates.indexOf(pk) === -1)
+      .filter((pk) => strPKDelegates.indexOf(pk.toString('hex')) === -1)
       .map((pk) => this.accountsModule.generateAddressByPublicKey(pk));
   }
 

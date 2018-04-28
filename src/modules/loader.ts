@@ -1,6 +1,7 @@
 import { inject, injectable, postConstruct, tagged } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import * as promiseRetry from 'promise-retry';
+import * as sequelize from 'sequelize';
 import SocketIO from 'socket.io';
 import z_schema from 'z-schema';
 import { Bus, constants as constantsType, ILogger, Sequence, wait } from '../helpers/';
@@ -18,12 +19,11 @@ import {
 import { Symbols } from '../ioc/symbols';
 import { PeerType, SignedAndChainedBlockType, SignedBlockType, } from '../logic/';
 import { IBaseTransaction } from '../logic/transactions/';
+import { AccountsModel, BlocksModel, DelegatesModel, MemRoundsModel } from '../models';
 import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
 import { AppConfig } from '../types/genericTypes';
 import Timer = NodeJS.Timer;
-import { AccountsModel, BlocksModel, DelegatesModel, MemRoundsModel } from '../models';
-import * as sequelize from 'sequelize';
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
