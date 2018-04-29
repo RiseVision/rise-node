@@ -71,7 +71,7 @@ export class PeersLogic implements IPeersLogic {
       // Do not add peer if it was removed recently
       if (this.wasRecentlyRemoved(thePeer)) {
         this.logger.debug('Rejecting recently removed peer', thePeer.string);
-        return;
+        return false;
       }
       // insert peer!
       if (!_.isEmpty(this.acceptable([thePeer]))) {
