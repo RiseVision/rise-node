@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import { IDatabase, ITask } from 'pg-promise';
+import { Transaction } from 'sequelize';
 import SocketIO from 'socket.io';
 import { Bus, constants as constantsType, DBHelper, ILogger, Slots } from '../helpers/';
 import { IAppState, IRoundLogicNewable, IRoundsLogic } from '../ioc/interfaces/logic/';
@@ -8,6 +8,7 @@ import { Symbols } from '../ioc/symbols';
 import { RoundLogicScope, SignedBlockType } from '../logic/';
 import { BlocksModel, RoundsModel } from '../models';
 import roundsSQL from '../sql/logic/rounds';
+import { DBOp } from '../types/genericTypes';
 import { address } from '../types/sanityTypes';
 
 @injectable()
@@ -18,8 +19,6 @@ export class RoundsModule implements IRoundsModule {
   private bus: Bus;
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
   @inject(Symbols.helpers.db)
   private dbHelper: DBHelper;
   @inject(Symbols.generic.socketIO)
@@ -57,31 +56,22 @@ export class RoundsModule implements IRoundsModule {
   }
 
   /**
-   * Deletes specific round from mem_rounds table
-   */
-  public flush(round: number): Promise<void> {
-    return this.db.none(roundsSQL.flush, { round })
-      .catch((err) => {
-        this.logger.error(err.stack);
-        return Promise.reject(new Error('Rounds#flush error'));
-      });
-  }
-
-  /**
    * Performs a backward tick on the round
    * @param {SignedBlockType} block
    * @param {SignedBlockType} previousBlock
    */
   public backwardTick(block: BlocksModel, previousBlock: SignedBlockType) {
-    return this.innerTick(block, true, (roundLogicScope) => (task) => {
+    return this.innerTick(block, true, (roundLogicScope) => async (transaction) => {
       this.logger.debug('Performing backward tick');
 
-      const roundLogic = new this.RoundLogic(roundLogicScope, task, this.slots);
-
-      return roundLogic.mergeBlockGenerator()
-      // call backwardLand only if this was the last block in round.
-        .then(() => roundLogicScope.finishRound ? roundLogic.backwardLand() : null)
-        .then(() => roundLogic.markBlockId());
+      const roundLogic            = new this.RoundLogic(roundLogicScope, this.slots);
+      const ops: Array<DBOp<any>> = [...roundLogic.mergeBlockGenerator()];
+      if (roundLogicScope.finishRound) {
+        // call backwardLand only if this was the last block in round.
+        ops.push(... roundLogic.backwardLand());
+      }
+      ops.push(roundLogic.markBlockId());
+      return this.dbHelper.performOps(ops, transaction);
     });
   }
 
@@ -89,28 +79,25 @@ export class RoundsModule implements IRoundsModule {
     return this.innerTick(
       block,
       false,
-      (roundLogicScope) => (task) => {
+      (roundLogicScope) => async (transaction) => {
 
         this.logger.debug('Performing forward tick');
-        const roundLogic    = new this.RoundLogic(roundLogicScope, task, this.slots);
-        const snapshotRound = (
+        const roundLogic            = new this.RoundLogic(roundLogicScope, this.slots);
+        const snapshotRound         = (
           this.getSnapshotRounds() > 0 && this.getSnapshotRounds() === roundLogicScope.round
         );
-
-        return roundLogic.mergeBlockGenerator()
-        // call land only if this was the last block in round.
-          .then(() => roundLogicScope.finishRound
-            ? roundLogic.land()
-              .then(() => this.bus.message('finishRound', roundLogicScope.round))
-
-              // If this was the round of the snapshot lets truncate the blocks
-              .then(() => snapshotRound
-                ? roundLogic.truncateBlocks()
-                : null
-              )
-            : null
-          )
-          .then(() => roundLogic.markBlockId());
+        const ops: Array<DBOp<any>> = [...roundLogic.mergeBlockGenerator()];
+        if (roundLogicScope.finishRound) {
+          ops.push(... roundLogic.land());
+          if (snapshotRound) {
+            ops.push(roundLogic.truncateBlocks());
+          }
+        }
+        ops.push(roundLogic.markBlockId());
+        await this.dbHelper.performOps(ops, transaction);
+        if (roundLogicScope.finishRound) {
+          await this.bus.message('finishRound', roundLogicScope.round);
+        }
       },
       async () => {
         // Check if we are one block before last block of round, if yes - perform round snapshot
@@ -118,17 +105,15 @@ export class RoundsModule implements IRoundsModule {
         if ((block.height + 1) % this.slots.delegates === 0) {
           this.logger.debug('Performing round snapshot...');
 
-          await this.db.tx((t) => t.batch([
-              t.none(roundsSQL.clearRoundSnapshot),
-              t.none(roundsSQL.performRoundSnapshot),
-              t.none(roundsSQL.clearVotesSnapshot),
-              t.none(roundsSQL.performVotesSnapshot),
-            ])
-          ).catch((err) => {
-            this.logger.error('Round snapshot failed', err);
-            return Promise.reject(err);
+          await RoundsModel.sequelize.transaction(async (transaction) => {
+            await this.dbHelper.performOps([
+                roundsSQL.clearRoundSnapshot,
+                roundsSQL.performRoundSnapshot,
+                roundsSQL.clearVotesSnapshot,
+                roundsSQL.performVotesSnapshot,
+              ].map<DBOp<any>>((query) => ({ model: RoundsModel, query, type: 'custom' })),
+              transaction);
           });
-
           this.logger.trace('Round snapshot done');
         }
       });
@@ -143,7 +128,7 @@ export class RoundsModule implements IRoundsModule {
 
   private async innerTick(block: SignedBlockType,
                           backwards: boolean,
-                          txGenerator: (ls: RoundLogicScope) => (t: ITask<any>) => Promise<any>,
+                          txGenerator: (ls: RoundLogicScope) => (t: Transaction) => Promise<any>,
                           afterTxPromise: () => Promise<any> = () => Promise.resolve(null)) {
     const round     = this.roundsLogic.calcRound(block.height);
     const nextRound = this.roundsLogic.calcRound(block.height + 1);
@@ -151,13 +136,10 @@ export class RoundsModule implements IRoundsModule {
     const finishRound = (
       (nextRound !== round) || (block.height === 1)
     );
-    // if (finishRound) {
-    //   console.log('finishround', block.height);
-    // }
     try {
       // Set ticking flag to true
       this.appStateLogic.set('rounds.isTicking', true);
-      let roundSums      = finishRound ? await this.sumRound(round) : null;
+      let roundSums = finishRound ? await this.sumRound(round) : null;
       if (block.height === 1 && roundSums.roundDelegates.length !== 1) {
         // in round 1 (and height=1) and when verifying snapshot delegates are there (and created in 2nd round #1)
         // so roundDelegates are 101 not 1 (genesis generator) causing genesis to have an extra block accounted.
@@ -169,10 +151,9 @@ export class RoundsModule implements IRoundsModule {
 
       const roundLogicScope: RoundLogicScope = {
         backwards,
-        block  : block as any, // TODO: ID and height are optional in SignedBlockType
+        block,
         finishRound,
         library: {
-          dbHelper: this.dbHelper,
           logger: this.logger,
         },
         modules: {
@@ -182,7 +163,7 @@ export class RoundsModule implements IRoundsModule {
         roundOutsiders,
         ...roundSums,
       };
-      await this.db.tx(txGenerator(roundLogicScope));
+      await RoundsModel.sequelize.transaction(txGenerator(roundLogicScope));
       await afterTxPromise();
       this.appStateLogic.set('rounds.isTicking', false);
     } catch (e) {
@@ -199,7 +180,7 @@ export class RoundsModule implements IRoundsModule {
   private async getOutsiders(round: number, roundDelegates: Buffer[]): Promise<address[]> {
     const strPKDelegates = roundDelegates.map((r) => r.toString('hex'));
 
-    const height  = this.roundsLogic.lastInRound(round);
+    const height            = this.roundsLogic.lastInRound(round);
     const originalDelegates = await this.delegatesModule.generateDelegateList(height);
 
     return originalDelegates

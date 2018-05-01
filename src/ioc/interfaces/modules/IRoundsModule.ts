@@ -4,10 +4,6 @@ import { IModule } from './IModule';
 import { Transaction } from 'sequelize';
 
 export interface IRoundsModule extends IModule {
-  /**
-   * Deletes specific round from mem_rounds table
-   */
-  flush(round: number): Promise<void>;
 
   /**
    * Performs a backward tick on the round

@@ -1,9 +1,10 @@
 import { ITask } from 'pg-promise';
 import { Slots } from '../../../helpers';
 import { RoundLogicScope } from '../../../logic';
+import { DBCustomOp, DBOp } from '../../../types/genericTypes';
 
 export interface IRoundLogicNewable {
-  new (scope: RoundLogicScope, task: ITask<any>, slots: Slots): IRoundLogic;
+  new (scope: RoundLogicScope, slots: Slots): IRoundLogic;
 }
 
 export interface IRoundLogic {
@@ -12,63 +13,58 @@ export interface IRoundLogic {
    * Adds or remove the blocks to the generator account.
    * @returns {Promise<void>}
    */
-  mergeBlockGenerator(): Promise<void>;
+  mergeBlockGenerator(): Array<DBOp<any>>;
 
   /**
    * Updates accounts and add a missing block to whoever skipped one
    * @returns {Promise<void>}
    */
-  updateMissedBlocks(): Promise<void>;
+  updateMissedBlocks(): DBOp<any>;
 
   /**
-   * Calls sql getVotes and returns the votes by each delegate
+   * Update votes for the round
    */
-  getVotes(): Promise<Array<{ delegate: string, amount: number }>>;
-
-  /**
-   * Update votes for thie round
-   */
-  updateVotes(): Promise<void>;
+  updateVotes(): DBCustomOp<any>;
 
   /**
    * In case of backwards calls updateBlockId with '0';
    */
-  markBlockId(): Promise<void>;
+  markBlockId(): DBOp<any>;
 
   /**
    * Calls sql flush, deletes round from mem_round
    */
-  flushRound(): Promise<void>;
+  flushRound(): DBOp<any>;
 
   /**
    * REmove blocks higher than this block height
    */
-  truncateBlocks(): Promise<null>;
+  truncateBlocks(): DBOp<any>;
 
   /**
    * Performed when rollbacking last block of a round.
    * It restores the round snapshot from sql
    */
-  restoreRoundSnapshot(): Promise<null>;
+  restoreRoundSnapshot(): DBOp<any>;
 
   /**
    * Performed when rollbacking last block of a round.
    * It restores the round snapshot from sql
    */
-  restoreVotesSnapshot(): Promise<null>;
+  restoreVotesSnapshot(): DBOp<any>;
 
   /**
    * For each delegate in round calls mergeAccountAndGet with new Balance
    */
-  applyRound(): Promise<void>;
+  applyRound(): Array<DBOp<any>>;
 
   /**
    * Performs operations to go to the next round.
    */
-  land(): Promise<void>;
+  land(): Array<DBOp<any>>;
 
   /**
    * Land back from a future round
    */
-  backwardLand(): Promise<void>;
+  backwardLand(): Array<DBOp<any>>;
 }
