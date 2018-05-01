@@ -74,7 +74,7 @@ export class SendTransaction extends BaseTransactionType<void, null> {
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(tx: IConfirmedTransaction<void> & { senderId: string }): { table: string; fields: string[]; values: any } {
+  public dbSave(tx: IConfirmedTransaction<void> & { senderId: string }) {
     return null;
   }
 

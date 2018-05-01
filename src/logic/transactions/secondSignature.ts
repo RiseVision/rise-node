@@ -3,10 +3,11 @@ import * as z_schema from 'z-schema';
 import { TransactionType } from '../../helpers/';
 import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
+import { AccountsModel, SignaturesModel } from '../../models/';
 import secondSignatureSchema from '../../schema/logic/transactions/secondSignature';
+import { DBOp } from '../../types/genericTypes';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
-import { SignaturesModel } from '../../models/SignaturesModel';
 // tslint:disable-next-line interface-over-type-literal
 export type SecondSignatureAsset = {
   signature: {
@@ -30,7 +31,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     super(TransactionType.SIGNATURE);
   }
 
-  public calculateFee(tx: IBaseTransaction<SecondSignatureAsset>, sender: any, height: number): number {
+  public calculateFee(tx: IBaseTransaction<SecondSignatureAsset>, sender: AccountsModel, height: number): number {
     return this.systemModule.getFees(height).fees.secondsignature;
   }
 
@@ -39,7 +40,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     return Buffer.from(tx.asset.signature.publicKey, 'hex');
   }
 
-  public async verify(tx: IBaseTransaction<SecondSignatureAsset>, sender: any): Promise<void> {
+  public async verify(tx: IBaseTransaction<SecondSignatureAsset>, sender: AccountsModel): Promise<void> {
     if (!tx.asset || !tx.asset.signature) {
       throw new Error('Invalid transaction asset');
     }
@@ -59,17 +60,19 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   }
 
   public async apply(tx: IConfirmedTransaction<SecondSignatureAsset>, block: SignedBlockType,
-                     sender: any): Promise<void> {
+                     sender: AccountsModel): Promise<void> {
     return this.accountsModule.setAccountAndGet({
       address          : sender.address,
-      secondPublicKey  : tx.asset.signature.publicKey,
+      secondPublicKey  : new Buffer(tx.asset.signature.publicKey, 'hex'),
       secondSignature  : 1,
       u_secondSignature: 0,
     })
       .then(() => void 0);
   }
 
-  public undo(tx: IConfirmedTransaction<SecondSignatureAsset>, block: SignedBlockType, sender: any): Promise<void> {
+  public undo(tx: IConfirmedTransaction<SecondSignatureAsset>,
+              block: SignedBlockType,
+              sender: AccountsModel): Promise<void> {
     return this.accountsModule.setAccountAndGet({
       address          : sender.address,
       secondPublicKey  : null,
@@ -79,7 +82,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
       .then(() => void 0);
   }
 
-  public applyUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>, sender: any): Promise<void> {
+  public applyUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>, sender: AccountsModel): Promise<void> {
     if (sender.u_secondSignature || sender.secondSignature) {
       return Promise.reject('Second signature already enabled');
     }
@@ -90,7 +93,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
       .then(() => void 0);
   }
 
-  public undoUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>, sender: any): Promise<void> {
+  public undoUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>, sender: AccountsModel): Promise<void> {
     return this.accountsModule.setAccountAndGet({
       address          : sender.address,
       u_secondSignature: 0,
@@ -119,9 +122,10 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(tx: IConfirmedTransaction<SecondSignatureAsset> & { senderId: string }) {
+  public dbSave(tx: IConfirmedTransaction<SecondSignatureAsset> & { senderId: string }): DBOp<any> {
     return {
       model: SignaturesModel,
+      type: 'create',
       values: {
         publicKey: Buffer.from(tx.asset.signature.publicKey, 'hex'),
         transactionId: tx.id,

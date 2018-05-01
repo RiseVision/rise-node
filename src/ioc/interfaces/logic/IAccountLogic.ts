@@ -5,7 +5,7 @@ import { publicKey } from '../../../types/sanityTypes';
 import { FieldsInModel } from '../../../types/utils';
 import { DBOp } from '../../../types/genericTypes';
 
-export type AccountDiffType = {[k in keyof AccountsModel]?: AccountsModel[k]} & {round: number};
+export type AccountDiffType = {[k in keyof AccountsModel]?: AccountsModel[k]} & {round?: number};
 export interface IAccountLogic {
   objectNormalize(account: any);
 

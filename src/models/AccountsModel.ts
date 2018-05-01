@@ -98,6 +98,11 @@ export class AccountsModel extends Model<AccountsModel> {
   public u_username: string;
   @Column
   public u_balance: number;
+  @Column
+  public u_multilifetime: number;
+  @Column
+  public u_multimin: number;
+
 
 
   public multisignatures?: publicKey[];

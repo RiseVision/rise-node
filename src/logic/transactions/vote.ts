@@ -1,21 +1,21 @@
 import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
-import { constants, Diff, emptyCB, TransactionType } from '../../helpers/';
-import { IAccountLogic, IRoundsLogic } from '../../ioc/interfaces/logic';
-import { IDelegatesModule, ISystemModule } from '../../ioc/interfaces/modules';
+import { constants, Diff, TransactionType } from '../../helpers/';
+import { IRoundsLogic } from '../../ioc/interfaces/logic';
+import { IAccountsModule, IDelegatesModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
+import { AccountsModel, VotesModel } from '../../models/';
 import voteSchema from '../../schema/logic/transactions/vote';
-import { MemAccountsData } from '../account';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
-
-import { VotesModel } from '../../models/VotesModel';
+import { DBOp } from '../../types/genericTypes';
 
 // tslint:disable-next-line interface-over-type-literal
 export type VoteAsset = {
   votes: string[];
 };
+
 @injectable()
 export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> {
   // Generic
@@ -23,12 +23,12 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   private schema: z_schema;
 
   // Logic
-  @inject(Symbols.logic.account)
-  private accountLogic: IAccountLogic;
   @inject(Symbols.logic.rounds)
   private roundsLogic: IRoundsLogic;
 
   // Module
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
   @inject(Symbols.modules.delegates)
   private delegatesModule: IDelegatesModule;
   @inject(Symbols.modules.system)
@@ -38,11 +38,11 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     super(TransactionType.VOTE);
   }
 
-  public calculateFee(tx: IBaseTransaction<VoteAsset>, sender: any, height: number): number {
+  public calculateFee(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel, height: number): number {
     return this.systemModule.getFees(height).fees.vote;
   }
 
-  public async verify(tx: IBaseTransaction<VoteAsset> & { senderId: string }, sender: any): Promise<void> {
+  public async verify(tx: IBaseTransaction<VoteAsset> & { senderId: string }, sender: AccountsModel): Promise<void> {
     if (tx.recipientId !== tx.senderId) {
       throw new Error('Missing recipient');
     }
@@ -81,24 +81,26 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   }
 
   // tslint:disable-next-line max-line-length
-  public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: MemAccountsData): Promise<void> {
+  public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
     await this.checkConfirmedDelegates(tx);
-    return this.accountLogic.merge(sender.address, {
+    return this.accountsModule.mergeAccountAndGet({
+      address  : sender.address,
       blockId  : block.id,
       delegates: tx.asset.votes,
       round    : this.roundsLogic.calcRound(block.height),
-    }, emptyCB);
+    }).then(() => void 0);
   }
 
   // tslint:disable-next-line max-line-length
-  public async undo(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: MemAccountsData): Promise<void> {
+  public async undo(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
     this.objectNormalize(tx);
     const invertedVotes = Diff.reverse(tx.asset.votes);
-    return this.accountLogic.merge(sender.address, {
+    return this.accountsModule.mergeAccountAndGet({
+      address  : sender.address,
       blockId  : block.id,
       delegates: invertedVotes,
       round    : this.roundsLogic.calcRound(block.height),
-    }, emptyCB);
+    }).then(() => void 0);
   }
 
   /**
@@ -115,15 +117,17 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     return this.delegatesModule.checkConfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
   }
 
-  public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: any): Promise<void> {
+  public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<void> {
     await this.checkUnconfirmedDelegates(tx);
-    return this.accountLogic.merge(sender.address, { u_delegates: tx.asset.votes }, emptyCB);
+    return this.accountsModule.mergeAccountAndGet({ address: sender.address,  u_delegates: tx.asset.votes })
+      .then(() => void 0);
   }
 
-  public async undoUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: any): Promise<void> {
+  public async undoUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<void> {
     this.objectNormalize(tx);
     const invertedVotes = Diff.reverse(tx.asset.votes);
-    return this.accountLogic.merge(sender.address, { u_delegates: invertedVotes }, emptyCB);
+    return this.accountsModule.mergeAccountAndGet({ address: sender.address, u_delegates: invertedVotes })
+      .then(() => void 0);
   }
 
   public objectNormalize(tx: IBaseTransaction<VoteAsset>): IBaseTransaction<VoteAsset> {
@@ -144,19 +148,20 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(tx: IConfirmedTransaction<VoteAsset> & { senderId: string }) {
+  public dbSave(tx: IConfirmedTransaction<VoteAsset> & { senderId: string }): DBOp<any> {
     return {
-      model: VotesModel,
+      model : VotesModel,
+      type: 'create',
       values: {
         transactionId: tx.id,
-        votes: Array.isArray(tx.asset.votes) ? tx.asset.votes.join(',') : null,
+        votes        : Array.isArray(tx.asset.votes) ? tx.asset.votes.join(',') : null,
       },
     };
   }
 
   public async restoreAsset(tx: IBaseTransaction<any>, db: IDatabase<any>): Promise<IBaseTransaction<VoteAsset>> {
-    const voteRow = await VotesModel.findOne({ where: {transactionId: tx.id}});
-    return { ... tx, ... {asset: { votes: voteRow.votes.split(',') }}};
+    const voteRow = await VotesModel.findOne({ where: { transactionId: tx.id } });
+    return { ...tx, ... { asset: { votes: voteRow.votes.split(',') } } };
   }
 
   private assertValidVote(vote: string) {
