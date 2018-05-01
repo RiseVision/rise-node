@@ -2,29 +2,34 @@ import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
-import { IAccountLogic } from '../../../src/ioc/interfaces/logic';
+import * as sinon from 'sinon';
+import {SinonSandbox} from 'sinon';
 import { IAccountsModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { AccountsModule } from '../../../src/modules';
 import AccountLogicStub from '../../stubs/logic/AccountLogicStub';
+import { createContainer } from '../../utils/containerCreator';
 
 chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression
 
 describe('modules/accounts', () => {
+  let sandbox: SinonSandbox;
   let accountLogicStub: AccountLogicStub;
   let accountModule: IAccountsModule;
   let container: Container;
-  before(() => {
-    container = new Container();
-    container.bind<IAccountLogic>(Symbols.logic.account).to(AccountLogicStub).inSingletonScope();
-    container.bind<IAccountsModule>(Symbols.modules.accounts).to(AccountsModule).inSingletonScope();
-    accountLogicStub = container.get<any>(Symbols.logic.account);
-  });
+
   beforeEach(() => {
-    accountLogicStub.reset();
-    accountModule = container.get<any>(Symbols.modules.accounts);
+    sandbox          = sinon.sandbox.create();
+    container        = createContainer();
+    accountLogicStub = container.get(Symbols.logic.account);
+    container.rebind<IAccountsModule>(Symbols.modules.accounts).to(AccountsModule).inSingletonScope();
+    accountModule    = container.get<any>(Symbols.modules.accounts);
+  });
+
+  afterEach(() => {
+    sandbox.restore();
   });
 
   describe('cleanup', () => {
@@ -32,7 +37,7 @@ describe('modules/accounts', () => {
       await expect(accountModule.cleanup()).to.be.fulfilled;
     });
   });
-  
+
   describe('.getAccount', () => {
     it('should call accountLogic.get', async () => {
       accountLogicStub.enqueueResponse('get', 'diocan');
