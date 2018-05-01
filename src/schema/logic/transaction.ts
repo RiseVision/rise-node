@@ -27,12 +27,12 @@ export default {
       type: 'integer',
     },
     senderPublicKey   : {
-      type  : 'string',
-      format: 'publicKey',
+      type  : 'object',
+      format: 'publicKeyBuf',
     },
     requesterPublicKey: {
-      type  : 'string',
-      format: 'publicKey',
+      type  : 'object',
+      format: 'publicKeyBuf',
     },
     senderId          : {
       type     : 'string',
@@ -58,11 +58,11 @@ export default {
     },
     signature         : {
       type  : 'string',
-      format: 'signature',
+      format: 'signatureBuf',
     },
     signSignature     : {
       type  : 'string',
-      format: 'signature',
+      format: 'signatureBuf',
     },
     asset             : {
       type: 'object',

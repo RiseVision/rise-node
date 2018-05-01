@@ -85,24 +85,24 @@ export interface ITransactionLogic {
    * @param {boolean} isSecondSignature if true, then this will check agains secondsignature
    * @returns {boolean} true
    */
-  verifySignature(tx: IBaseTransaction<any>, publicKey: Buffer, signature: string,
+  verifySignature(tx: IBaseTransaction<any>, publicKey: Buffer, signature: Buffer,
                   isSecondSignature?: boolean): boolean;
 
-  apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<void>;
+  apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>>;
 
   /**
    * Merges account into sender address and calls undo to txtype
    * @returns {Promise<void>}
    */
-  undo(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<void>;
+  undo(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>>;
 
-  applyUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel, requester?: AccountsModel): Promise<void>;
+  applyUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel, requester?: AccountsModel): Promise<Array<DBOp<any>>>;
 
   /**
    * Merges account into sender address with unconfirmed balance tx amount
    * Then calls undoUnconfirmed to the txType.
    */
-  undoUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel): Promise<void>;
+  undoUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel): Promise<Array<DBOp<any>>>;
 
   dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<DBOp<any>>;
 

@@ -155,7 +155,7 @@ export class RoundLogic implements IRoundLogic {
    * Performed when rollbacking last block of a round.
    * It restores the votes snapshot from sql
    */
-  public restoreVotesSnapshot(): DBOp<AccountsModel>{
+  public restoreVotesSnapshot(): DBOp<AccountsModel> {
     return {
       model: AccountsModel,
       query: roundSQL.restoreVotesSnapshot,

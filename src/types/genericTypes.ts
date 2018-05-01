@@ -2,7 +2,7 @@
 import { Model } from 'sequelize-typescript';
 import { ModelAttributes, Partial } from './utils';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { CreateOptions, DestroyOptions, UpdateOptions } from 'sequelize';
+import { CreateOptions, DestroyOptions, UpdateOptions, UpsertOptions } from 'sequelize';
 
 export interface AppConfigDatabase {
   host: string;
@@ -132,5 +132,10 @@ export type DBCustomOp<T extends Model<T>> = BaseDBOp<T> & {
   type: 'custom',
   query: string
 };
+export type DBUpsertOp<T extends Model<T>> = BaseDBOp<T> & {
+  type: 'upsert',
+  values: FilteredModelAttributes<T>,
+  options?: UpsertOptions
+};
 
-export type DBOp<T extends Model<T>> = DBCreateOp<T> | DBUpdateOp<T> | DBCustomOp<T> | DBRemoveOp<T>;
+export type DBOp<T extends Model<T>> = DBCreateOp<T> | DBUpdateOp<T> | DBCustomOp<T> | DBRemoveOp<T> | DBUpsertOp<T>;

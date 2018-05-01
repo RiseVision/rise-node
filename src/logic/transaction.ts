@@ -5,16 +5,13 @@ import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
-import {
-  BigNum, constants, Ed, emptyCB, ExceptionsList, ExceptionsManager, IKeypair, ILogger,
-  Slots
-} from '../helpers/';
+import { BigNum, constants, Ed, ExceptionsList, ExceptionsManager, IKeypair, ILogger, Slots } from '../helpers/';
 import { RunThroughExceptions } from '../helpers/decorators/exceptions';
 import { IAccountLogic, IRoundsLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
 import { Symbols } from '../ioc/symbols';
 import { AccountsModel, TransactionsModel } from '../models/';
 import txSchema from '../schema/logic/transaction';
-import { IDBOp } from '../types/genericTypes';
+import { DBOp } from '../types/genericTypes';
 import { SignedAndChainedBlockType, SignedBlockType } from './block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './transactions/';
 
@@ -116,14 +113,14 @@ export class TransactionLogic implements ITransactionLogic {
     bb.writeByte(tx.type);
     bb.writeInt(tx.timestamp);
 
-    const senderPublicKeyBuffer = Buffer.from(tx.senderPublicKey, 'hex');
+    const senderPublicKeyBuffer = tx.senderPublicKey;
     // tslint:disable-next-line
     for (let i = 0; i < senderPublicKeyBuffer.length; i++) {
       bb.writeByte(senderPublicKeyBuffer[i]);
     }
 
     if (tx.requesterPublicKey) {
-      const requesterPublicKey = Buffer.from(tx.requesterPublicKey, 'hex');
+      const requesterPublicKey = tx.requesterPublicKey;
       // tslint:disable-next-line
       for (let i = 0; i < requesterPublicKey.length; i++) {
         bb.writeByte(requesterPublicKey[i]);
@@ -154,7 +151,7 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     if (!skipSignature && tx.signature) {
-      const signatureBuffer = Buffer.from(tx.signature, 'hex');
+      const signatureBuffer = tx.signature;
       // tslint:disable-next-line
       for (let i = 0; i < signatureBuffer.length; i++) {
         bb.writeByte(signatureBuffer[i]);
@@ -162,7 +159,7 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     if (!skipSecondSignature && tx.signSignature) {
-      const signSignatureBuffer = Buffer.from(tx.signSignature, 'hex');
+      const signSignatureBuffer = tx.signSignature;
       // tslint:disable-next-line
       for (let i = 0; i < signSignatureBuffer.length; i++) {
         bb.writeByte(signSignatureBuffer[i]);
@@ -196,7 +193,7 @@ export class TransactionLogic implements ITransactionLogic {
    */
   public async countById(tx: IBaseTransaction<any>): Promise<number> {
     try {
-      return await TransactionsModel.count({where: { id: tx.id }});
+      return await TransactionsModel.count({ where: { id: tx.id } });
     } catch (e) {
       this.logger.error(e.stack);
       throw new Error('Transaction#countById error');
@@ -284,12 +281,13 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     // Check sender public key
-    if (sender.publicKey && sender.hexPublicKey !== tx.senderPublicKey) {
-      throw new Error(`Invalid sender public key: ${tx.senderPublicKey} expected ${sender.publicKey}`);
+    if (sender.publicKey && sender.publicKey.equals(tx.senderPublicKey)) {
+      // tslint:disable-next-line
+      throw new Error(`Invalid sender public key: ${tx.senderPublicKey.toString('hex')} expected ${sender.publicKey.toString('hex')}`);
     }
 
     // Check sender is not genesis account unless block id equals genesis
-    if (this.genesisBlock.generatorPublicKey.compare(sender.publicKey) === 0
+    if (this.genesisBlock.generatorPublicKey.equals(sender.publicKey)
       && (tx as IConfirmedTransaction<any>).blockId !== this.genesisBlock.id) {
       throw new Error('Invalid sender. Can not send from genesis account');
     }
@@ -311,13 +309,13 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     if (tx.requesterPublicKey) {
-      multisignatures.push(tx.requesterPublicKey);
-      if (sender.multisignatures.indexOf(tx.requesterPublicKey) < 0) {
+      multisignatures.push(tx.requesterPublicKey.toString('hex'));
+      if (sender.multisignatures.indexOf(tx.requesterPublicKey.toString('hex')) < 0) {
         throw new Error('Account does not belong to multisignature group');
       }
     }
 
-    if (!this.verifySignature(tx, Buffer.from((tx.requesterPublicKey || tx.senderPublicKey), 'hex'), tx.signature)) {
+    if (!this.verifySignature(tx, (tx.requesterPublicKey || tx.senderPublicKey), tx.signature)) {
       throw new Error('Failed to verify signature');
     }
 
@@ -339,10 +337,10 @@ export class TransactionLogic implements ITransactionLogic {
       for (const sig of tx.signatures) {
         let valid = false;
         for (let s = 0; s < multisignatures.length && !valid; s++) {
-          if (tx.requesterPublicKey && multisignatures[s] === tx.requesterPublicKey) {
+          if (tx.requesterPublicKey && multisignatures[s] === tx.requesterPublicKey.toString('hex')) {
             continue;
           }
-          valid = this.verifySignature(tx, Buffer.from(multisignatures[s], 'hex'), sig);
+          valid = this.verifySignature(tx, Buffer.from(multisignatures[s], 'hex'), Buffer.from(sig, 'hex'));
         }
 
         if (!valid) {
@@ -390,7 +388,7 @@ export class TransactionLogic implements ITransactionLogic {
    * @param {boolean} isSecondSignature if true, then this will check agains secondsignature
    * @returns {boolean} true
    */
-  public verifySignature(tx: IBaseTransaction<any>, publicKey: Buffer, signature: string,
+  public verifySignature(tx: IBaseTransaction<any>, publicKey: Buffer, signature: Buffer,
                          isSecondSignature: boolean = false) {
     this.assertKnownTransactionType(tx);
     if (!signature) {
@@ -399,13 +397,14 @@ export class TransactionLogic implements ITransactionLogic {
 
     return this.ed.verify(
       this.getHash(tx, !isSecondSignature, true),
-      Buffer.from(signature, 'hex'),
+      signature,
       publicKey
     );
   }
 
   @RunThroughExceptions(ExceptionsList.tx_apply)
-  public async apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
+  public async apply(tx: IConfirmedTransaction<any>,
+                     block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     if (!this.ready(tx, sender)) {
       throw new Error('Transaction is not ready');
     }
@@ -424,40 +423,22 @@ export class TransactionLogic implements ITransactionLogic {
       round  : this.roundsLogic.calcRound(block.height),
       sender : sender.address,
     });
-    await this.accountLogic.merge(
-      sender.address,
-      {
-        balance: -amountNumber,
-        blockId: block.id,
-        round  : this.roundsLogic.calcRound(block.height),
-      },
-      // tslint:disable-next-line no-empty
-      emptyCB // If you don't pass cb then the sql string is returned.
-    );
-
-    try {
-      await this.types[tx.type].apply(tx, block, sender);
-    } catch (e) {
-      // Rollback!
-      await this.accountLogic.merge(
-        sender.address,
-        {
-          balance: amountNumber,
-          blockId: block.id,
-          round  : this.roundsLogic.calcRound(block.height),
-        },
-        emptyCB
-      );
-      // here it differs from original implementation which did not throw
-      throw e;
-    }
+    const ops = this.accountLogic.merge(sender.address, {
+      address: sender.address,
+      balance: -amountNumber,
+      blockId: block.id,
+      round  : this.roundsLogic.calcRound(block.height),
+    });
+    ops.push(... await this.types[tx.type].apply(tx, block, sender));
+    return ops;
   }
 
   /**
    * Merges account into sender address and calls undo to txtype
    * @returns {Promise<void>}
    */
-  public async undo(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
+  public async undo(tx: IConfirmedTransaction<any>,
+                    block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     const amount: number = new BigNum(tx.amount.toString())
       .plus(tx.fee.toString())
       .toNumber();
@@ -468,36 +449,21 @@ export class TransactionLogic implements ITransactionLogic {
       round  : this.roundsLogic.calcRound(block.height),
       sender : sender.address,
     });
-    const mergedSender = await this.accountLogic.merge(
+    const ops = this.accountLogic.merge(
       sender.address,
       {
         balance: amount,
         blockId: block.id,
         round  : this.roundsLogic.calcRound(block.height),
-      },
-      emptyCB
+      }
     );
-
-    try {
-      await this.types[tx.type].undo(tx, block, mergedSender);
-    } catch (e) {
-      // Rollback
-      await this.accountLogic.merge(
-        sender.address,
-        {
-          balance: -amount,
-          blockId: block.id,
-          round  : this.roundsLogic.calcRound(block.height),
-        },
-        emptyCB
-      );
-      throw e;
-    }
+    ops.push(... await this.types[tx.type].undo(tx, block, sender));
+    return ops;
   }
 
   @RunThroughExceptions(ExceptionsList.tx_applyUnconfirmed)
   // tslint:disable-next-line max-line-length
-  public async applyUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel, requester?: AccountsModel): Promise<void> {
+  public async applyUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel, requester?: AccountsModel): Promise<Array<DBOp<any>>> {
     // FIXME propagate requester?
     const amount        = new BigNum(tx.amount.toString()).plus(tx.fee.toString());
     const senderBalance = this.checkBalance(amount, 'u_balance', tx, sender);
@@ -507,62 +473,42 @@ export class TransactionLogic implements ITransactionLogic {
 
     const amountNumber = amount.toNumber();
 
-    await this.accountLogic.merge(
+    const ops = this.accountLogic.merge(
       sender.address,
-      { u_balance: -amountNumber },
-      emptyCB
+      { u_balance: -amountNumber }
     );
-    try {
-      await this.types[tx.type].applyUnconfirmed(tx, sender);
-    } catch (e) {
-      // RollBack
-      await this.accountLogic.merge(
-        sender.address,
-        { u_balance: amountNumber },
-        emptyCB
-      );
-      throw e;
-    }
+    ops.push(... await this.types[tx.type].applyUnconfirmed(tx, sender));
+    return ops;
   }
 
   /**
    * Merges account into sender address with unconfirmed balance tx amount
    * Then calls undoUnconfirmed to the txType.
    */
-  public async undoUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel): Promise<void> {
+  public async undoUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     const amount: number = new BigNum(tx.amount.toString())
       .plus(tx.fee.toString())
       .toNumber();
 
-    const mergedSender = await this.accountLogic.merge(
+    const ops = this.accountLogic.merge(
       sender.address,
-      { u_balance: amount },
-      emptyCB
+      { u_balance: amount }
     );
-
-    try {
-      await this.types[tx.type].undoUnconfirmed(tx, mergedSender);
-    } catch (e) {
-      // Rollback
-      await this.accountLogic.merge(
-        sender.address,
-        { u_balance: -amount },
-        emptyCB
-      );
-      throw e;
-    }
+    ops.push(... await this.types[tx.type].undoUnconfirmed(tx, sender));
+    return ops;
   }
 
-  public dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<IDBOp<any>> {
+  public dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<DBOp<any>> {
     this.assertKnownTransactionType(tx);
-    const senderPublicKey    = Buffer.from(tx.senderPublicKey, 'hex');
-    const signature          = Buffer.from(tx.signature, 'hex');
-    const signSignature      = tx.signSignature ? Buffer.from(tx.signSignature, 'hex') : null;
-    const requesterPublicKey = tx.requesterPublicKey ? Buffer.from(tx.requesterPublicKey, 'hex') : null;
+    const senderPublicKey    = tx.senderPublicKey;
+    const signature          = tx.signature;
+    const signSignature      = tx.signSignature ? tx.signSignature : null;
+    const requesterPublicKey = tx.requesterPublicKey ? tx.requesterPublicKey : null;
 
     // tslint:disable object-literal-sort-keys
-    const toRet: IDBOp<TransactionsModel> = {
+    const toRet: DBOp<TransactionsModel> = {
       model : TransactionsModel,
+      type  : 'create',
       values: {
         // id         : tx.id,
         blockId    : tx.blockId,
@@ -588,7 +534,7 @@ export class TransactionLogic implements ITransactionLogic {
     return [toRet];
   }
 
-  public afterSave(tx: IBaseTransaction<any>): Promise<void> {
+  public async afterSave(tx: IBaseTransaction<any>): Promise<void> {
     this.assertKnownTransactionType(tx);
     return this.types[tx.type].afterSave(tx);
   }
@@ -604,6 +550,12 @@ export class TransactionLogic implements ITransactionLogic {
         delete tx[key];
       }
     }
+    // Convert hex encoded fields to Buffers (if they're not already buffers)
+    ['senderPublicKey', 'requesterPublicKey', 'signature', 'signSignature'].forEach((k) => {
+      if (typeof (tx[k]) === 'string') {
+        tx[k] = Buffer.from(tx[k], 'hex');
+      }
+    });
 
     const report = this.schema.validate(tx, txSchema);
 

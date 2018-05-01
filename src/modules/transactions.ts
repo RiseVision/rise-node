@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
 import { IDatabase } from 'pg-promise';
-import { constants as constantsType, ILogger, OrderBy } from '../helpers/';
+import { constants as constantsType, DBHelper, ILogger, OrderBy } from '../helpers/';
 import { ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
@@ -20,6 +20,8 @@ export class TransactionsModule implements ITransactionsModule {
   private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
+  @inject(Symbols.helpers.db)
+  private dbHelper: DBHelper;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.logic.transactionPool)
@@ -132,17 +134,19 @@ export class TransactionsModule implements ITransactionsModule {
   /**
    * Applies confirmed transaction.
    */
-  public apply(transaction: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
+  public async apply(transaction: IConfirmedTransaction<any>,
+                     block: SignedBlockType, sender: AccountsModel): Promise<void> {
     this.logger.debug('Applying confirmed transaction', transaction.id);
-    return this.transactionLogic.apply(transaction, block, sender);
+    await this.dbHelper.performOps(await this.transactionLogic.apply(transaction, block, sender));
   }
 
   /**
    * Undoes confirmed transaction.
    */
-  public undo(transaction: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
+  public async undo(transaction: IConfirmedTransaction<any>,
+                    block: SignedBlockType, sender: AccountsModel): Promise<void> {
     this.logger.debug('Undoing confirmed transaction', transaction.id);
-    return this.transactionLogic.undo(transaction, block, sender);
+    await this.dbHelper.performOps(await this.transactionLogic.undo(transaction, block, sender));
   }
 
   /**
@@ -151,7 +155,7 @@ export class TransactionsModule implements ITransactionsModule {
   // tslint:disable-next-line max-line-length
   public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: AccountsModel): Promise<void> {
     // tslint:disable-next-line max-line-length
-    this.logger.debug(`Applying unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${(sender || {u_balance: undefined}).u_balance}`);
+    this.logger.debug(`Applying unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${(sender || { u_balance: undefined }).u_balance}`);
 
     if (!sender && transaction.blockId !== this.genesisBlock.id) {
       throw new Error('Invalid block id');
@@ -162,9 +166,9 @@ export class TransactionsModule implements ITransactionsModule {
           throw new Error('Requester not found');
         }
 
-        await this.transactionLogic.applyUnconfirmed(transaction, sender, requester);
+        await this.dbHelper.performOps(await this.transactionLogic.applyUnconfirmed(transaction, sender, requester));
       } else {
-        await this.transactionLogic.applyUnconfirmed(transaction, sender);
+        await this.dbHelper.performOps(await this.transactionLogic.applyUnconfirmed(transaction, sender));
       }
     }
   }
@@ -176,7 +180,7 @@ export class TransactionsModule implements ITransactionsModule {
     const sender = await this.accountsModule.getAccount({ publicKey: transaction.senderPublicKey });
     // tslint:disable-next-line max-line-length
     this.logger.debug(`Undoing unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${sender.u_balance}`);
-    await this.transactionLogic.undoUnconfirmed(transaction, sender);
+    await this.dbHelper.performOps(await this.transactionLogic.undoUnconfirmed(transaction, sender));
   }
 
   /**
@@ -280,7 +284,7 @@ export class TransactionsModule implements ITransactionsModule {
 
       // Checking for empty parameters, 0 is allowed for few
       if (!value && !(value === 0 &&
-          _.includes(['fromTimestamp', 'minAmount', 'minConfirmations', 'type', 'offset'], field[1]))) {
+        _.includes(['fromTimestamp', 'minAmount', 'minConfirmations', 'type', 'offset'], field[1]))) {
         throw new Error('Value for parameter [' + field[1] + '] cannot be empty');
       }
 

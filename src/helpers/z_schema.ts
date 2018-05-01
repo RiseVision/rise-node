@@ -57,6 +57,13 @@ z_schema.registerFormat('publicKey', (str: string) => {
   return /^[a-f0-9]{64}$/i.test(str);
 });
 
+z_schema.registerFormat('publicKeyBuf', (str: Buffer) => {
+  if (!Buffer.isBuffer(str)) {
+    return false;
+  }
+  return str.length === 32;
+});
+
 z_schema.registerFormat('csv', (str: string) => {
   try {
     const a = str.split(',');
@@ -71,6 +78,13 @@ z_schema.registerFormat('signature', (str: string) => {
     return true;
   }
   return /^[a-f0-9]{128}$/i.test(str);
+});
+
+z_schema.registerFormat('signatureBuf', (buf: Buffer) => {
+  if (!Buffer.isBuffer(buf)) {
+    return false;
+  }
+  return buf.length === 64;
 });
 
 z_schema.registerFormat('queryList', (obj: any) => {

@@ -55,20 +55,20 @@ export abstract class BaseTransactionType<T, M extends Model<any>> {
     return emptyBuffer;
   }
 
-  public apply(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
-    return Promise.resolve();
+  public apply(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+    return Promise.resolve([]);
   }
 
-  public applyUnconfirmed(tx: IBaseTransaction<T>, sender: AccountsModel): Promise<void> {
-    return Promise.resolve();
+  public applyUnconfirmed(tx: IBaseTransaction<T>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+    return Promise.resolve([]);
   }
 
-  public undo(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
-    return Promise.resolve();
+  public undo(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+    return Promise.resolve([]);
   }
 
-  public undoUnconfirmed(tx: IBaseTransaction<T>, sender: AccountsModel): Promise<void> {
-    return Promise.resolve();
+  public undoUnconfirmed(tx: IBaseTransaction<T>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+    return Promise.resolve([]);
   }
 
   public abstract objectNormalize(tx: IBaseTransaction<T>): IBaseTransaction<T>;

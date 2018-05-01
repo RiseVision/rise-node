@@ -3,22 +3,78 @@ import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import { BodyParam, Get, JsonController, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import { Bus, constants as constantsType } from '../helpers';
+import { Bus, constants as constantsType, TransactionType } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { IBlockLogic, IPeersLogic } from '../ioc/interfaces/logic';
 import {
-  IBlocksModule, IBlocksModuleUtils, IPeersModule, ITransactionsModule,
+  IBlocksModule,
+  IBlocksModuleUtils,
+  IPeersModule,
+  ITransactionsModule,
   ITransportModule
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { SignedAndChainedBlockType } from '../logic';
 import { IBaseTransaction } from '../logic/transactions';
+import { BlocksModel, DelegatesModel, MultiSignaturesModel, SignaturesModel, VotesModel } from '../models';
 import transportSchema from '../schema/transport';
 import transportSQL from '../sql/transport';
+import { RawFullBlockListType } from '../types/rawDBTypes';
+import { Partial } from '../types/utils';
+import { APIError } from './errors';
 import { AttachPeerHeaders } from './utils/attachPeerHeaders';
 import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
-import { APIError } from './errors';
+
+function genTransportBlock(block: BlocksModel, extra: Partial<RawFullBlockListType>): RawFullBlockListType {
+  // tslint:disable object-literal-sort-keys
+  return {
+    ...{
+      b_id                  : block.id,
+      b_version             : block.version,
+      b_timestamp           : block.timestamp,
+      b_previousBlock       : block.previousBlock,
+      b_numberOfTransactions: block.numberOfTransactions,
+      b_totalAmount         : block.totalAmount,
+      b_totalFee            : block.totalFee,
+      b_reward              : block.reward,
+      b_payloadLength       : block.payloadLength,
+      b_payloadHash         : block.payloadHash.toString('hex'),
+      b_generatorPublicKey  : block.generatorPublicKey.toString('hex'),
+      b_blockSignature      : block.blockSignature.toString('hex'),
+      t_id                  : null,
+      // t_rowId: 350034,
+      t_type                : null,
+      t_timestamp           : null,
+      t_senderPublicKey     : null,
+      t_senderId            : null,
+      t_recipientId         : null,
+      t_amount              : null,
+      t_fee                 : null,
+      t_signature           : null,
+      t_signSignature       : null,
+      s_publicKey           : null,
+      d_username            : null,
+      v_votes               : null,
+      m_min                 : null,
+      m_lifetime            : null,
+      m_keysgroup           : null,
+      dapp_name             : null,
+      dapp_description      : null,
+      dapp_tags             : null,
+      dapp_type             : null,
+      dapp_link             : null,
+      dapp_category         : null,
+      dapp_icon             : null,
+      in_dappId             : null,
+      ot_dappId             : null,
+      ot_outTransactionId   : null,
+      t_requesterPublicKey  : null,
+      t_signatures          : null,
+    } as any,
+    ...extra,
+  };
+}
 
 @JsonController('/peer')
 @injectable()
@@ -61,7 +117,7 @@ export class TransportAPI {
 
   @Get('/list')
   public async list() {
-    const {peers} = await this.peersModule.list({limit: this.constants.maxPeers});
+    const { peers } = await this.peersModule.list({ limit: this.constants.maxPeers });
     return { peers };
   }
 
@@ -79,7 +135,7 @@ export class TransportAPI {
         });
       }
     }
-    return {signatures};
+    return { signatures };
   }
 
   @Post('/signatures')
@@ -94,7 +150,7 @@ export class TransportAPI {
   @Get('/transactions')
   public transactions() {
     const transactions = this.transactionsModule.getMergedTransactionList(this.constants.maxSharedTxs);
-    return {transactions};
+    return { transactions };
   }
 
   @Post('/transactions')
@@ -126,7 +182,7 @@ export class TransportAPI {
       .split(',')
       // Reject any non-numeric values
       .filter((id) => /^[0-9]+$/.test(id));
-    if (excapedIds.length === 0 ) {
+    if (excapedIds.length === 0) {
       this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
       throw new APIError('Invalid block id sequence', 200);
     }
@@ -149,15 +205,77 @@ export class TransportAPI {
   @Get('/blocks')
   @ValidateSchema()
   public async getBlocks(@SchemaValid(transportSchema.blocks.properties.lastBlockId)
-                           @QueryParam('lastBlockId') lastBlockId: string) {
+                         @QueryParam('lastBlockId') lastBlockId: string) {
     // Get 34 blocks with all data (joins) from provided block id
     // According to maxium payload of 58150 bytes per block with every transaction being a vote
     // Discounting maxium compression setting used in middleware
     // Maximum transport payload = 2000000 bytes
-    const blocks = await this.blocksModuleUtils.loadBlocksData({
+    const dbBlocks = await this.blocksModuleUtils.loadBlocksData({
       lastId: lastBlockId,
-      limit: 34,
+      limit : 34,
     });
+    const blocks   = (await Promise.all(dbBlocks.map(async (block) => {
+      const transactions = await block.findTransactions();
+
+      const rawBlocks: RawFullBlockListType[] = [];
+      for (const t of transactions) {
+        const tmpBlock = genTransportBlock(block, {
+          t_id             : t.id,
+          t_rowId          : t.rowId,
+          t_type           : t.type,
+          t_timestamp      : t.timestamp,
+          t_senderPublicKey: t.senderPublicKey.toString('hex'),
+          t_senderId       : t.senderId,
+          t_recipientId    : t.recipientId,
+          t_amount         : t.amount,
+          t_fee            : t.fee,
+          t_signature      : t.signature.toString('hex'),
+          t_signSignature  : t.signSignature.toString('hex'),
+          t_signatures     : t.signatures,
+        });
+        switch (t.type) {
+          case TransactionType.VOTE:
+            rawBlocks.push({
+              ...tmpBlock, ... {
+                v_votes: (await VotesModel.findOne({ where: { transactionId: t.id } })).votes,
+              },
+            });
+            break;
+          case TransactionType.MULTI:
+            const mr = await MultiSignaturesModel.findOne({ where: { transactionId: t.id } });
+            rawBlocks.push({
+              ...tmpBlock, ... {
+                m_min      : mr.min,
+                m_lifetime : mr.lifetime,
+                m_keysgroup: mr.keysgroup,
+              },
+            });
+            break;
+          case TransactionType.DELEGATE:
+            const dr = await DelegatesModel.findOne({ where: { transactionId: t.id } });
+            rawBlocks.push({
+              ...tmpBlock, ... {
+                d_username: dr.username,
+              },
+            });
+            break;
+          case TransactionType.SIGNATURE:
+            const sr = await SignaturesModel.findOne({ where: { transactionId: t.id } });
+            rawBlocks.push({
+              ...tmpBlock, ... {
+                s_publicKey: sr.publicKey.toString('hex'),
+              },
+            });
+            break;
+        }
+        rawBlocks.push(tmpBlock);
+      }
+      if (rawBlocks.length === 0) {
+        // no txs add one block with empty tx data.
+        rawBlocks.push(genTransportBlock(block, {}));
+      }
+      return rawBlocks;
+    }))).reduce((a, b) => a.concat(b), []);
     return { blocks };
   }
 

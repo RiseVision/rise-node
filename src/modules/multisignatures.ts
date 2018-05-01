@@ -29,6 +29,7 @@ export class MultisignaturesModule implements IMultisignaturesModule {
 
   @inject(Symbols.logic.transactions.createmultisig)
   private multiTx: MultiSignatureTransaction;
+
   /**
    * Gets the tx from the txID, verifies the given signature and
    * @return {Promise<void>}
@@ -92,7 +93,11 @@ export class MultisignaturesModule implements IMultisignaturesModule {
     }
     let verify = false;
     for (let i = 0; i < multisignatures.length && !verify; i++) {
-      verify = this.transactionLogic.verifySignature(tx, new Buffer(multisignatures[i], 'hex'), signature);
+      verify = this.transactionLogic.verifySignature(
+        tx,
+        Buffer.from(multisignatures[i], 'hex'),
+        Buffer.from(signature, 'hex')
+      );
     }
 
     if (!verify) {
@@ -111,7 +116,11 @@ export class MultisignaturesModule implements IMultisignaturesModule {
     let verify = false;
     for (let i = 0; i < tx.asset.multisignature.keysgroup.length && !verify; i++) {
       const key = tx.asset.multisignature.keysgroup[i].substring(1);
-      verify    = this.transactionLogic.verifySignature(tx, new Buffer(key, 'hex'), signature);
+      verify    = this.transactionLogic.verifySignature(
+        tx,
+        Buffer.from(key, 'hex'),
+        Buffer.from(signature, 'hex')
+      );
     }
     if (!verify) {
       throw new Error('Failed to verify signature');

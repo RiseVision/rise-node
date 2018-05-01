@@ -1,16 +1,20 @@
 import { inject, injectable } from 'inversify';
 import { TransactionType } from '../../helpers/';
-import { IRoundsLogic } from '../../ioc/interfaces/logic';
+import { IAccountLogic, IRoundsLogic } from '../../ioc/interfaces/logic';
 import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
+import { AccountsModel } from '../../models';
+import { DBOp } from '../../types/genericTypes';
 
 @injectable()
 export class SendTransaction extends BaseTransactionType<void, null> {
 
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
+  @inject(Symbols.logic.account)
+  private accountLogic: IAccountLogic;
 
   @inject(Symbols.logic.rounds)
   private roundsLogic: IRoundsLogic;
@@ -36,33 +40,40 @@ export class SendTransaction extends BaseTransactionType<void, null> {
     }
   }
 
-  public async apply(tx: IConfirmedTransaction<void>, block: SignedBlockType,
-                     sender: any): Promise<void> {
-    // Create account if does not exist.
-    await this.accountsModule.setAccountAndGet({ address: tx.recipientId });
-
-    return this.accountsModule.mergeAccountAndGet({
-      address  : tx.recipientId,
-      balance  : tx.amount,
-      blockId  : block.id,
-      round    : this.roundsLogic.calcRound(block.height),
-      u_balance: tx.amount,
-    })
-      .then(() => void 0);
+  public async apply(tx: IConfirmedTransaction<void>,
+                     block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+    return [
+      // Create account if does not exist
+      {
+        model : AccountsModel,
+        type  : 'upsert',
+        values: { address: tx.recipientId },
+      },
+      ... this.accountLogic.merge(tx.recipientId, {
+        balance  : tx.amount,
+        blockId  : block.id,
+        round    : this.roundsLogic.calcRound(block.height),
+        u_balance: tx.amount,
+      }),
+    ];
   }
 
-  public async undo(tx: IConfirmedTransaction<void>, block: SignedBlockType, sender: any): Promise<void> {
+  public async undo(tx: IConfirmedTransaction<void>, block: SignedBlockType, sender: any): Promise<Array<DBOp<any>>> {
     // Create account if does not exist.
-    await this.accountsModule.setAccountAndGet({ address: tx.recipientId });
-
-    return this.accountsModule.mergeAccountAndGet({
-      address  : tx.recipientId,
-      balance  : -tx.amount,
-      blockId  : block.id,
-      round    : this.roundsLogic.calcRound(block.height),
-      u_balance: -tx.amount,
-    })
-      .then(() => void 0);
+    return [
+      // Create account if does not exist
+      {
+        model : AccountsModel,
+        type  : 'upsert',
+        values: { address: tx.recipientId },
+      },
+      ... this.accountLogic.merge(tx.recipientId, {
+        balance  : -tx.amount,
+        blockId  : block.id,
+        round    : this.roundsLogic.calcRound(block.height),
+        u_balance: -tx.amount,
+      }),
+    ];
   }
 
   public objectNormalize(tx: IBaseTransaction<void>): IBaseTransaction<void> {

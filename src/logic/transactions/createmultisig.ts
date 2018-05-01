@@ -8,7 +8,7 @@ import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import { AccountsModel, MultiSignaturesModel } from '../../models/';
 import multiSigSchema from '../../schema/logic/transactions/multisignature';
-import { DBCreateOp } from '../../types/genericTypes';
+import { DBCreateOp, DBOp } from '../../types/genericTypes';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
@@ -130,8 +130,8 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
             if (key[0] === '+' || key[0] === '-') {
               valid = this.transactionLogic.verifySignature(
                 tx,
-                new Buffer(key.substring(1), 'hex'),
-                tx.signatures[i],
+                Buffer.from(key.substring(1), 'hex'),
+                Buffer.from(tx.signatures[i], 'hex'),
                 false
               );
             }
@@ -172,9 +172,10 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
 
   public async apply(tx: IConfirmedTransaction<MultisigAsset>,
                      block: SignedBlockType,
-                     sender: AccountsModel): Promise<void> {
+                     sender: AccountsModel): Promise<Array<DBOp<any>>> {
     delete this.unconfirmedSignatures[sender.address];
-    await this.accountLogic.merge(
+
+    const ops = this.accountLogic.merge(
       sender.address,
       {
         blockId        : block.id,
@@ -190,55 +191,65 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
       // index 0 has "+" or "-"
       const realKey = key.substr(1);
       const address = this.accountLogic.generateAddressByPublicKey(realKey);
-      await this.accountsModule.setAccountAndGet({ address, publicKey: Buffer.from(realKey, 'hex') });
+      ops.push({
+        model : AccountsModel,
+        type  : 'upsert',
+        values: {
+          address,
+          publicKey: Buffer.from(realKey, 'hex'),
+        },
+      });
     }
+    return ops;
   }
 
-  public undo(tx: IConfirmedTransaction<MultisigAsset>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
+  public async undo(tx: IConfirmedTransaction<MultisigAsset>,
+                    block: SignedBlockType,
+                    sender: AccountsModel): Promise<Array<DBOp<any>>> {
     const multiInvert = Diff.reverse(tx.asset.multisignature.keysgroup);
 
     this.unconfirmedSignatures[sender.address] = true;
 
-    return this.accountsModule.mergeAccountAndGet(
+    return this.accountLogic.merge(
+      sender.address,
       {
-        address        : sender.address,
         blockId        : block.id,
         multilifetime  : -tx.asset.multisignature.lifetime,
         multimin       : -tx.asset.multisignature.min,
         multisignatures: multiInvert,
         round          : this.roundsLogic.calcRound(block.height),
       }
-    ).then(() => void 0);
+    );
   }
 
-  public applyUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: any): Promise<void> {
+  public async applyUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: any): Promise<Array<DBOp<any>>> {
     if (this.unconfirmedSignatures[sender.address]) {
       throw new Error('Signature on this account is pending confirmation');
     }
     this.unconfirmedSignatures[sender.address] = true;
 
-    return this.accountsModule.mergeAccountAndGet(
+    return this.accountLogic.merge(
+      sender.address,
       {
-        address          : sender.address,
         u_multilifetime  : tx.asset.multisignature.lifetime,
         u_multimin       : tx.asset.multisignature.min,
         u_multisignatures: tx.asset.multisignature.keysgroup,
       }
-    ).then(() => void 0);
+    );
   }
 
-  public undoUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: any): Promise<void> {
+  public async undoUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: any): Promise<Array<DBOp<any>>> {
     const multiInvert = Diff.reverse(tx.asset.multisignature.keysgroup);
     delete this.unconfirmedSignatures[sender.address];
 
-    return this.accountsModule.mergeAccountAndGet(
+    return this.accountLogic.merge(
+      sender.address,
       {
-        address          : sender.address,
         u_multilifetime  : -tx.asset.multisignature.lifetime,
         u_multimin       : -tx.asset.multisignature.min,
         u_multisignatures: multiInvert,
       }
-    ).then(() => void 0);
+    );
   }
 
   public objectNormalize(tx: IBaseTransaction<MultisigAsset>): IBaseTransaction<MultisigAsset> {
@@ -273,7 +284,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
   public dbSave(tx: IConfirmedTransaction<MultisigAsset> & { senderId: string }): DBCreateOp<MultiSignaturesModel> {
     return {
       model : MultiSignaturesModel,
-      type: 'create',
+      type  : 'create',
       values: {
         keysgroup    : tx.asset.multisignature.keysgroup.join(','),
         lifetime     : tx.asset.multisignature.lifetime,

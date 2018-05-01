@@ -96,9 +96,8 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
   }
 
   // tslint:disable-next-line max-line-length
-  public apply(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
+  public async apply(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     const data: any = {
-      address     : sender.address,
       isDelegate  : 1,
       u_isDelegate: 0,
       vote        : 0,
@@ -107,17 +106,23 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.u_username = null;
       data.username   = tx.asset.delegate.username;
     }
+    // TODO: Else? tx is not a valid tx. so why bothering doing an if ^^ ?
     if (sender.isDelegate === 1) {
       throw new Error('Account is already a delegate');
     }
-    return this.accountsModule.setAccountAndGet(data)
-      .then(() => void 0);
+    return [{
+      model  : AccountsModel,
+      options: {
+        where: { address: sender.address },
+      },
+      type   : 'update',
+      values : data,
+    }];
   }
 
   // tslint:disable-next-line max-line-length
-  public undo(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
+  public async undo(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     const data: any = {
-      address     : sender.address,
       isDelegate  : 0,
       u_isDelegate: 1,
       vote        : 0,
@@ -126,17 +131,21 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.username   = null;
       data.u_username = tx.asset.delegate.username;
     }
-
-    return this.accountsModule.setAccountAndGet(data)
-      .then(() => void 0);
+    return [{
+      model  : AccountsModel,
+      options: {
+        where: { address: sender.address },
+      },
+      type   : 'update',
+      values : data,
+    }];
   }
 
   /**
    * Stores in accounts that sender is now an unconfirmed delegate
    */
-  public applyUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModel): Promise<void> {
+  public async applyUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     const data: any = {
-      address     : sender.address,
       isDelegate  : 0,
       u_isDelegate: 1,
     };
@@ -147,13 +156,18 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     if (sender.u_isDelegate === 1) {
       throw new Error('Account is already trying to be a delegate');
     }
-    return this.accountsModule.setAccountAndGet(data)
-      .then(() => void 0);
+    return [{
+      model  : AccountsModel,
+      options: {
+        where: { address: sender.address },
+      },
+      type   : 'update',
+      values : data,
+    }];
   }
 
-  public undoUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModel): Promise<void> {
+  public async undoUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     const data: any = {
-      address     : sender.address,
       isDelegate  : 0,
       u_isDelegate: 0,
     };
@@ -162,8 +176,14 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.u_username = null;
     }
 
-    return this.accountsModule.setAccountAndGet(data)
-      .then(() => void 0);
+    return [{
+      model  : AccountsModel,
+      options: {
+        where: { address: sender.address },
+      },
+      type   : 'update',
+      values : data,
+    }];
   }
 
   public objectNormalize(tx: IBaseTransaction<DelegateAsset>): IBaseTransaction<DelegateAsset> {
@@ -195,12 +215,12 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(tx: IConfirmedTransaction<DelegateAsset> & { senderId: string }): DBOp<any> {
+  public dbSave(tx: IConfirmedTransaction<DelegateAsset> & { senderId: string }): DBOp<DelegatesModel> {
     return {
       model : DelegatesModel,
-      type: 'create',
+      type  : 'create',
       values: {
-        transactioanId: tx.id,
+        transactionId: tx.id,
         username     : tx.asset.delegate.username,
       },
     };

@@ -2,14 +2,14 @@ import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
 import { constants, Diff, TransactionType } from '../../helpers/';
-import { IRoundsLogic } from '../../ioc/interfaces/logic';
+import { IAccountLogic, IRoundsLogic } from '../../ioc/interfaces/logic';
 import { IAccountsModule, IDelegatesModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import { AccountsModel, VotesModel } from '../../models/';
 import voteSchema from '../../schema/logic/transactions/vote';
+import { DBOp } from '../../types/genericTypes';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
-import { DBOp } from '../../types/genericTypes';
 
 // tslint:disable-next-line interface-over-type-literal
 export type VoteAsset = {
@@ -25,6 +25,8 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   // Logic
   @inject(Symbols.logic.rounds)
   private roundsLogic: IRoundsLogic;
+  @inject(Symbols.logic.account)
+  private accountLogic: IAccountLogic;
 
   // Module
   @inject(Symbols.modules.accounts)
@@ -81,26 +83,31 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   }
 
   // tslint:disable-next-line max-line-length
-  public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
+  public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     await this.checkConfirmedDelegates(tx);
-    return this.accountsModule.mergeAccountAndGet({
-      address  : sender.address,
-      blockId  : block.id,
-      delegates: tx.asset.votes,
-      round    : this.roundsLogic.calcRound(block.height),
-    }).then(() => void 0);
+
+    return this.accountLogic.merge(
+      sender.address,
+      {
+        blockId  : block.id,
+        delegates: tx.asset.votes,
+        round    : this.roundsLogic.calcRound(block.height),
+      }
+    );
   }
 
   // tslint:disable-next-line max-line-length
-  public async undo(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModel): Promise<void> {
+  public async undo(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     this.objectNormalize(tx);
     const invertedVotes = Diff.reverse(tx.asset.votes);
-    return this.accountsModule.mergeAccountAndGet({
-      address  : sender.address,
-      blockId  : block.id,
-      delegates: invertedVotes,
-      round    : this.roundsLogic.calcRound(block.height),
-    }).then(() => void 0);
+    return this.accountLogic.merge(
+      sender.address,
+      {
+        blockId  : block.id,
+        delegates: invertedVotes,
+        round    : this.roundsLogic.calcRound(block.height),
+      }
+    );
   }
 
   /**
@@ -117,17 +124,24 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     return this.delegatesModule.checkConfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
   }
 
-  public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<void> {
+  public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     await this.checkUnconfirmedDelegates(tx);
-    return this.accountsModule.mergeAccountAndGet({ address: sender.address,  u_delegates: tx.asset.votes })
-      .then(() => void 0);
+    return this.accountLogic.merge(
+      sender.address,
+      {
+        u_delegates: tx.asset.votes,
+      }
+    );
   }
 
-  public async undoUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<void> {
+  public async undoUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     this.objectNormalize(tx);
-    const invertedVotes = Diff.reverse(tx.asset.votes);
-    return this.accountsModule.mergeAccountAndGet({ address: sender.address, u_delegates: invertedVotes })
-      .then(() => void 0);
+    return this.accountLogic.merge(
+      sender.address,
+      {
+        u_delegates: Diff.reverse(tx.asset.votes),
+      }
+    );
   }
 
   public objectNormalize(tx: IBaseTransaction<VoteAsset>): IBaseTransaction<VoteAsset> {

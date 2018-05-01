@@ -193,5 +193,3 @@ s.addModels([AccountsModel, BlocksModel, DelegatesModel, TransactionsModel]);
 //   order: ['height', 'rowId'],
 //   where: { height: { $gt: 10, $lt: 11} },
 // }).then((res) => console.log(res))
-
-

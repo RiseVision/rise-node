@@ -60,45 +60,67 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   }
 
   public async apply(tx: IConfirmedTransaction<SecondSignatureAsset>, block: SignedBlockType,
-                     sender: AccountsModel): Promise<void> {
-    return this.accountsModule.setAccountAndGet({
-      address          : sender.address,
-      secondPublicKey  : new Buffer(tx.asset.signature.publicKey, 'hex'),
-      secondSignature  : 1,
-      u_secondSignature: 0,
-    })
-      .then(() => void 0);
+                     sender: AccountsModel): Promise<Array<DBOp<any>>> {
+    return [{
+      model  : AccountsModel,
+      options: {
+        where: { address: sender.address },
+      },
+      type   : 'update',
+      values : {
+        secondPublicKey  : new Buffer(tx.asset.signature.publicKey, 'hex'),
+        secondSignature  : 1,
+        u_secondSignature: 0,
+      },
+    }];
   }
 
-  public undo(tx: IConfirmedTransaction<SecondSignatureAsset>,
-              block: SignedBlockType,
-              sender: AccountsModel): Promise<void> {
-    return this.accountsModule.setAccountAndGet({
-      address          : sender.address,
-      secondPublicKey  : null,
-      secondSignature  : 0,
-      u_secondSignature: 1,
-    })
-      .then(() => void 0);
+  public async undo(tx: IConfirmedTransaction<SecondSignatureAsset>,
+                    block: SignedBlockType,
+                    sender: AccountsModel): Promise<Array<DBOp<any>>> {
+    return [{
+      model  : AccountsModel,
+      options: {
+        where: { address: sender.address },
+      },
+      type   : 'update',
+      values : {
+        secondPublicKey  : null,
+        secondSignature  : 0,
+        u_secondSignature: 1,
+      },
+    }];
   }
 
-  public applyUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>, sender: AccountsModel): Promise<void> {
+  public async applyUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>,
+                                sender: AccountsModel): Promise<Array<DBOp<any>>> {
     if (sender.u_secondSignature || sender.secondSignature) {
-      return Promise.reject('Second signature already enabled');
+      throw new Error('Second signature already enabled');
     }
-    return this.accountsModule.setAccountAndGet({
-      address          : sender.address,
-      u_secondSignature: 1,
-    })
-      .then(() => void 0);
+    return [{
+      model  : AccountsModel,
+      options: {
+        where: { address: sender.address },
+      },
+      type   : 'update',
+      values : {
+        u_secondSignature: 1,
+      },
+    }];
   }
 
-  public undoUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>, sender: AccountsModel): Promise<void> {
-    return this.accountsModule.setAccountAndGet({
-      address          : sender.address,
-      u_secondSignature: 0,
-    })
-      .then(() => void 0);
+  public async undoUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>,
+                               sender: AccountsModel): Promise<Array<DBOp<any>>> {
+    return [{
+      model  : AccountsModel,
+      options: {
+        where: { address: sender.address },
+      },
+      type   : 'update',
+      values : {
+        u_secondSignature: 0,
+      },
+    }];
   }
 
   public objectNormalize(tx: IBaseTransaction<SecondSignatureAsset>): IBaseTransaction<SecondSignatureAsset> {
@@ -124,10 +146,10 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   // tslint:disable-next-line max-line-length
   public dbSave(tx: IConfirmedTransaction<SecondSignatureAsset> & { senderId: string }): DBOp<any> {
     return {
-      model: SignaturesModel,
-      type: 'create',
+      model : SignaturesModel,
+      type  : 'create',
       values: {
-        publicKey: Buffer.from(tx.asset.signature.publicKey, 'hex'),
+        publicKey    : Buffer.from(tx.asset.signature.publicKey, 'hex'),
         transactionId: tx.id,
       },
     };
