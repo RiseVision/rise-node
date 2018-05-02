@@ -2,7 +2,7 @@ import * as sequelize from 'sequelize';
 import { ILogger, RoundChanges, Slots } from '../helpers/';
 import { IRoundLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule } from '../ioc/interfaces/modules';
-import { AccountsModel, MemRoundsModel, RoundsModel } from '../models';
+import { AccountsModel, RoundsModel } from '../models';
 import roundSQL from '../sql/logic/rounds';
 import { DBCustomOp, DBOp } from '../types/genericTypes';
 import { address } from '../types/sanityTypes';
@@ -122,7 +122,7 @@ export class RoundLogic implements IRoundLogic {
    */
   public flushRound(): DBOp<any> {
     return {
-      model  : MemRoundsModel,
+      model  : RoundsModel,
       options: { where: { round: this.scope.round } },
       type   : 'remove',
     };
@@ -131,9 +131,9 @@ export class RoundLogic implements IRoundLogic {
   /**
    * Remove blocks higher than this block height
    */
-  public truncateBlocks(): DBOp<MemRoundsModel> {
+  public truncateBlocks(): DBOp<RoundsModel> {
     return {
-      model  : MemRoundsModel,
+      model  : RoundsModel,
       options: { where: { height: { $gt: this.scope.block.height } } },
       type   : 'remove',
     };
@@ -143,9 +143,9 @@ export class RoundLogic implements IRoundLogic {
    * Performed when rollbacking last block of a round.
    * It restores the round snapshot from sql
    */
-  public restoreRoundSnapshot(): DBOp<MemRoundsModel> {
+  public restoreRoundSnapshot(): DBOp<RoundsModel> {
     return {
-      model: MemRoundsModel,
+      model: RoundsModel,
       query: roundSQL.restoreRoundSnapshot,
       type: 'custom',
     };
@@ -180,7 +180,7 @@ export class RoundLogic implements IRoundLogic {
       this.scope.library.logger.trace('Delegate changes', { delegate, changes });
 
       // merge Account in the direction.
-      queries.concat.apply(queries, this.scope.modules.accounts.mergeAccountAndGetOPs({
+      queries.push(... this.scope.modules.accounts.mergeAccountAndGetOPs({
         balance  : (this.scope.backwards ? -changes.balance : changes.balance),
         blockId  : this.scope.block.id,
         fees     : (this.scope.backwards ? -changes.fees : changes.fees),
@@ -206,7 +206,7 @@ export class RoundLogic implements IRoundLogic {
         index   : remainderIndex,
       });
 
-      queries.concat.apply(queries, this.scope.modules.accounts.mergeAccountAndGetOPs({
+      queries.push(... this.scope.modules.accounts.mergeAccountAndGetOPs({
         balance  : feesRemaining,
         blockId  : this.scope.block.id,
         fees     : feesRemaining,
@@ -216,6 +216,7 @@ export class RoundLogic implements IRoundLogic {
       }));
     }
 
+    console.log(queries);
     this.scope.library.logger.trace('Applying round', queries);
     return queries;
   }

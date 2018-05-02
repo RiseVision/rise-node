@@ -43,7 +43,7 @@ export class TransactionsModel extends Model<TransactionsModel> {
   @Column(DataType.BLOB)
   public requesterPublicKey: Buffer;
 
-  @Column
+  @Column(DataType.STRING)
   public get signatures(): string[] {
     return this.getDataValue('signatures').join(',');
   }

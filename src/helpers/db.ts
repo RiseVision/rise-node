@@ -1,6 +1,8 @@
+import { injectable } from 'inversify';
 import * as sequelize from 'sequelize';
 import { DBCreateOp, DBCustomOp, DBOp, DBRemoveOp, DBUpdateOp, DBUpsertOp } from '../types/genericTypes';
 
+@injectable()
 export class DBHelper {
   /**
    * Batches operations together and performs them parallelly (eventually in a transaction)
@@ -14,6 +16,9 @@ export class DBHelper {
       baseOptions.transaction = transaction;
     }
     for (const op of what) {
+      if (op === null) {
+        continue; // Null op.
+      }
       switch (op.type) {
         case 'create':
           await op.model.create(op.values, baseOptions);

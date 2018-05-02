@@ -77,7 +77,7 @@ export interface ITransactionsModule extends IModule {
   /**
    * Applies confirmed transaction.
    */
-  apply(transaction: IBaseTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<void>;
+  apply(transaction: IBaseTransaction<any>|IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<void>;
 
   /**
    * Undoes confirmed transaction.
@@ -87,7 +87,7 @@ export interface ITransactionsModule extends IModule {
   /**
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
-  applyUnconfirmed(transaction: IBaseTransaction<any>, sender: AccountsModel): Promise<void>;
+  applyUnconfirmed(transaction: IBaseTransaction<any>|IConfirmedTransaction<any>, sender: AccountsModel): Promise<void>;
 
   /**
    * Validates account and Undoes unconfirmed transaction.

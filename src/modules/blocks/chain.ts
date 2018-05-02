@@ -1,14 +1,6 @@
 import { inject, injectable, tagged } from 'inversify';
 import { Transaction } from 'sequelize';
-import {
-  Bus,
-  catchToLoggerAndRemapError,
-  DBHelper,
-  ILogger,
-  Sequence,
-  TransactionType,
-  wait
-} from '../../helpers/';
+import { Bus, catchToLoggerAndRemapError, DBHelper, ILogger, Sequence, TransactionType, wait } from '../../helpers/';
 import { WrapInBalanceSequence } from '../../helpers/decorators/wrapInSequence';
 import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
@@ -95,7 +87,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   }
 
   public async deleteAfterBlock(height: number): Promise<void> {
-    await BlocksModel.destroy({where: { $gte: height }});
+    await BlocksModel.destroy({ where: { $gte: height } });
   }
 
   /**
@@ -156,8 +148,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
           .setAccountAndGet({ publicKey: tx.senderPublicKey });
 
         // Apply tx.
-        await this.transactionsModule.applyUnconfirmed(tx, sender);
-        await this.transactionsModule.apply(tx, block, sender);
+        await this.transactionsModule.applyUnconfirmed({ ...tx, blockId: block.id }, sender);
+        await this.transactionsModule.apply({ ...tx, blockId: block.id }, block, sender);
 
         tracker.applyNext();
       }
@@ -256,9 +248,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    */
   public async saveBlock(b: SignedBlockType, dbTX: Transaction) {
     const saveOp = this.blockLogic.dbSave(b);
-    const txOps = b.transactions
-      .map((t: IConfirmedTransaction<any>) => this.transactionLogic.dbSave(t))
-      .reduce((o1, o2) => o1.concat(o2));
+    const txOps  = b.transactions
+      .map((t: IConfirmedTransaction<any>) => this.transactionLogic.dbSave({ ...t, blockId: b.id }))
+      .reduce((o1, o2) => o1.concat(o2), []);
 
     await this.dbHelper.performOps([saveOp, ...txOps], dbTX);
 
@@ -296,16 +288,16 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     if (previousBlock === null) {
       throw new Error('previousBlock is null');
     }
-    const txs = (await previousBlock.findTransactions()).slice().reverse();
+    const txs = (await previousBlock.populateTransactions()).slice().reverse();
 
     await BlocksModel.sequelize.transaction(async (dbTX) => {
       for (const tx of txs) {
-        const sender = await AccountsModel.find({where: { publicKey: tx.senderPublicKey }});
+        const sender = await AccountsModel.find({ where: { publicKey: tx.senderPublicKey } });
         await this.transactionsModule.undo(tx, lb, sender);
         await this.transactionsModule.undoUnconfirmed(tx);
       }
       await this.roundsModule.backwardTick(lb, previousBlock);
-      await previousBlock.destroy({transaction: dbTX});
+      await previousBlock.destroy({ transaction: dbTX });
     });
 
     return previousBlock;

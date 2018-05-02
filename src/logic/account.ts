@@ -14,7 +14,6 @@ import {
   Accounts2U_DelegatesModel,
   Accounts2U_MultisignaturesModel,
   AccountsModel,
-  MemRoundsModel,
   RoundsModel
 } from '../models/';
 import { DBOp } from '../types/genericTypes';
@@ -190,12 +189,12 @@ export class AccountLogic implements IAccountLogic {
    */
   public removeTables(): Promise<void> {
     return Promise.all([
-      AccountsModel.drop(),
-      MemRoundsModel.drop(),
-      Accounts2DelegatesModel.drop(),
-      Accounts2MultisignaturesModel.drop(),
-      Accounts2U_DelegatesModel.drop(),
-      Accounts2U_MultisignaturesModel.drop(),
+      AccountsModel.drop({cascade: true}),
+      RoundsModel.drop({cascade: true}),
+      Accounts2DelegatesModel.drop({cascade: true}),
+      Accounts2MultisignaturesModel.drop({cascade: true}),
+      Accounts2U_DelegatesModel.drop({cascade: true}),
+      Accounts2U_MultisignaturesModel.drop({cascade: true}),
     ])
       .then(() => void 0)
       .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
@@ -278,13 +277,11 @@ export class AccountLogic implements IAccountLogic {
 
     const limit: number  = filter.limit > 0 ? filter.limit : undefined;
     const offset: number = filter.offset > 0 ? filter.offset : undefined;
-    const sort: any      = filter.sort ? filter.sort : undefined;
+    const sort: any      = filter.sort ? filter.sort : {};
 
     const condition: any = { ...filter, ...{ limit: undefined, offset: undefined, sort: undefined } };
     if (typeof(filter.address) === 'string') {
-      condition.address = {
-        $upper: ['address', filter.address],
-      };
+      condition.address = filter.address.toUpperCase();
     }
     // Remove fields = undefined (such as limit, offset and sort)
     Object.keys(condition).forEach((k) => {
@@ -304,7 +301,7 @@ export class AccountLogic implements IAccountLogic {
 
     return Promise.resolve(
       AccountsModel.scope(scope).findAll({
-        // attributes: realFields,
+        attributes: realFields,
         limit,
         offset,
         order: typeof(sort) === 'string' ?

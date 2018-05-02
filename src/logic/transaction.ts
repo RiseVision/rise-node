@@ -510,7 +510,7 @@ export class TransactionLogic implements ITransactionLogic {
       model : TransactionsModel,
       type  : 'create',
       values: {
-        // id         : tx.id,
+        id         : tx.id,
         blockId    : tx.blockId,
         type       : tx.type,
         timestamp  : tx.timestamp,

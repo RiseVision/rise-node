@@ -6,6 +6,7 @@
     "timestamp": 0,
     "numberOfTransactions": 303,
     "payloadLength": 43726,
+    "reward": 0,
     "previousBlock": null,
     "generatorPublicKey": "35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892",
     "transactions": [

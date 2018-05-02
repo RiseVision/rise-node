@@ -299,6 +299,7 @@ export class BlockLogic implements IBlockLogic {
         delete block[key];
       }
     }
+
     ['generatorPublicKey', 'payloadHash', 'blockSignature'].forEach((bufKey) => {
       if (!Buffer.isBuffer(block[bufKey])) {
         block[bufKey] = Buffer.from(block[bufKey], 'hex');
@@ -331,7 +332,7 @@ export class BlockLogic implements IBlockLogic {
         get generatorId() {
           return BlockLogic.getAddressByPublicKey(rawBlock.b_generatorPublicKey);
         },
-        generatorPublicKey  : Buffer.from(rawBlock.b_generatorPublicKey),
+        generatorPublicKey  : Buffer.from(rawBlock.b_generatorPublicKey, 'hex'),
         height              : parseInt(`${rawBlock.b_height}`, 10),
         id                  : rawBlock.b_id,
         numberOfTransactions: parseInt(`${rawBlock.b_numberOfTransactions}`, 10),

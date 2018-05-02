@@ -218,7 +218,7 @@ export class TransportAPI {
       limit : 34,
     });
     const blocks   = (await Promise.all(dbBlocks.map(async (block) => {
-      const transactions = await block.findTransactions();
+      const transactions = await block.populateTransactions();
 
       const rawBlocks: RawFullBlockListType[] = [];
       for (const t of transactions) {

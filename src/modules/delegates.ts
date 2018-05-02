@@ -164,7 +164,7 @@ export class DelegatesModule implements IDelegatesModule {
     const curSlot = this.slots.getSlotNumber(block.timestamp);
     const delegId = delegates[curSlot % this.slots.delegates];
     if (!(delegId && block.generatorPublicKey.equals(delegId))) {
-      this.logger.error(`Expected generator ${delegId} Received generator: ${block.generatorPublicKey}`);
+      this.logger.error(`Expected generator ${delegId.toString('hex')} Received generator: ${block.generatorPublicKey.toString('hex')}`);
       throw new Error(`Failed to verify slot ${curSlot}`);
     }
   }

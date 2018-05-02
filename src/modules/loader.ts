@@ -19,7 +19,7 @@ import {
 import { Symbols } from '../ioc/symbols';
 import { PeerType, SignedAndChainedBlockType, SignedBlockType, } from '../logic/';
 import { IBaseTransaction } from '../logic/transactions/';
-import { AccountsModel, BlocksModel, DelegatesModel, MemRoundsModel } from '../models';
+import { AccountsModel, BlocksModel, DelegatesModel, RoundsModel } from '../models';
 import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
 import { AppConfig } from '../types/genericTypes';
@@ -260,7 +260,7 @@ export class LoaderModule implements ILoaderModule {
       return this.load(blocksCount, limit, 'Detected missed blocks in mem_accounts', true);
     }
 
-    const rounds = await MemRoundsModel.findAll({ attributes: ['round'], group: 'round'});
+    const rounds = await RoundsModel.findAll({ attributes: ['round'], group: 'round'});
     const unapplied = rounds.filter((r) => r.round !== round);
     if (unapplied.length > 0) {
       // round is not applied.
@@ -294,7 +294,7 @@ export class LoaderModule implements ILoaderModule {
     try {
       this.lastblock = await this.blocksUtilsModule.loadLastBlock();
     } catch (err) {
-      return this.load(blocksCount, err.message || 'Failed to load last block');
+      return this.load(blocksCount, limit, err.message || 'Failed to load last block');
     }
 
     this.logger.info('Blockchain ready');
@@ -430,7 +430,6 @@ export class LoaderModule implements ILoaderModule {
    */
   private async loadBlocksFromNetwork() {
     let loaded = false;
-
     do {
       await promiseRetry(async (retry) => {
         const randomPeer                 = await this.getRandomPeer();

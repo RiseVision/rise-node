@@ -57,11 +57,11 @@ export default {
       maximum: constants.totalAmount,
     },
     signature         : {
-      type  : 'string',
+      type  : 'object',
       format: 'signatureBuf',
     },
     signSignature     : {
-      type  : 'string',
+      type  : 'object',
       format: 'signatureBuf',
     },
     asset             : {

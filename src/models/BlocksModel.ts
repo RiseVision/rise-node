@@ -1,6 +1,7 @@
-import { Column, DataType, Model, PrimaryKey, Sequelize, Table } from 'sequelize-typescript';
-import { TransactionsModel } from './TransactionsModel';
+import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
 import { SignedBlockType } from '../logic';
+import { TransactionsModel } from './TransactionsModel';
+import { IConfirmedTransaction } from '../logic/transactions';
 
 @Table({tableName: 'blocks'})
 export class BlocksModel extends Model<BlocksModel> {
@@ -48,12 +49,12 @@ export class BlocksModel extends Model<BlocksModel> {
   public blockSignature: Buffer;
 
   // tslint:disable-next-line
-  private _transactions: TransactionsModel[] = null;
-  public async findTransactions(): Promise<TransactionsModel[]> {
-    if (this._transactions === null) {
-      this._transactions = await TransactionsModel.findAll({where: {blockId: this.id}});
+  public transactions: TransactionsModel[] = null;
+  public async populateTransactions(): Promise<TransactionsModel[]> {
+    if (this.transactions === null) {
+      this.transactions = await TransactionsModel.findAll({where: {blockId: this.id}});
     }
-    return this._transactions;
+    return this.transactions;
   }
 
   // tslint:disable member-ordering
@@ -63,3 +64,6 @@ export class BlocksModel extends Model<BlocksModel> {
     return toRet;
   }
 }
+//
+// const bit = new TransactionsModel();
+// const b: IConfirmedTransaction<any> = bit;

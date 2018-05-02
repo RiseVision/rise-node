@@ -25,7 +25,12 @@ import {
   ITransportModule
 } from '../../ioc/interfaces/modules/';
 import { Symbols } from '../../ioc/symbols';
-import { BasePeerType, SignedBlockType, } from '../../logic/';
+import {
+  BasePeerType,
+  SignedAndChainedBlockType,
+  SignedAndChainedTransportBlockType,
+  SignedBlockType,
+} from '../../logic/';
 import { IBaseTransaction } from '../../logic/transactions/';
 import { BlocksModel } from '../../models';
 import schema from '../../schema/blocks';
@@ -36,7 +41,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
   // Generics
   @inject(Symbols.generic.genesisBlock)
-  private genesisBlock: BlocksModel;
+  private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
 
@@ -177,6 +182,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       }
       this.logger.debug('Processing block', block.id);
       if (verify && block.id !== this.genesisBlock.id) {
+        await block.populateTransactions();
         // Sanity check of the block, if values are coherent.
         // No access to database.
         const check = await this.blocksVerifyModule.verifyBlock(block);
@@ -189,7 +195,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       }
 
       if (block.id === this.genesisBlock.id) {
-        await this.blocksChainModule.applyGenesisBlock(block);
+        await this.blocksChainModule.applyGenesisBlock(this.genesisBlock);
       } else {
         // Apply block - broadcast: false, saveBlock: false
         // FIXME: Looks like we are missing some validations here, because applyBlock is

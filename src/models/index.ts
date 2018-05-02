@@ -6,7 +6,6 @@ export * from './AccountsModel';
 export * from './BlocksModel';
 export * from './DelegatesModel';
 export * from './ForksStatsModel';
-export * from './MemRoundsModel';
 export * from './MultiSignaturesModel';
 export * from './PeersModel';
 export * from './RoundsModel';

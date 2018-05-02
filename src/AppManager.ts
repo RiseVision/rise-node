@@ -22,7 +22,7 @@ import {
   catchToLoggerAndRemapError,
   cbToPromise,
   constants as constantsType,
-  Database,
+  Database, DBHelper,
   Ed,
   ExceptionsManager,
   ILogger,
@@ -32,7 +32,7 @@ import {
   Slots,
   z_schema,
 } from './helpers/';
-import { IPeerLogic, ITransactionLogic } from './ioc/interfaces/logic';
+import { IBlockLogic, IPeerLogic, ITransactionLogic } from './ioc/interfaces/logic';
 import { IBlocksModuleChain } from './ioc/interfaces/modules';
 import { Symbols } from './ioc/symbols';
 import {
@@ -67,7 +67,6 @@ import {
   BlocksModel,
   DelegatesModel,
   ForksStatsModel,
-  MemRoundsModel,
   MultiSignaturesModel,
   PeersModel,
   RoundsFeesModel,
@@ -217,7 +216,11 @@ export class AppManager {
     this.server     = http.createServer(this.expressApp);
     const io        = socketIO(this.server);
     const db        = await Database.connect(this.appConfig.db, this.logger);
+    ((require('fs'))).unlinkSync(`${__dirname}/../sequelize.log`);
     const sequelize = new Sequelize({
+      logging(msg) {
+        (require('fs')).appendFileSync(`${__dirname}/../sequelize.log`, msg+"\n");
+      },
       database: this.appConfig.db.database,
       dialect : 'postgres',
       host    : this.appConfig.db.host,
@@ -266,6 +269,7 @@ export class AppManager {
     // Helpers
     this.container.bind(Symbols.helpers.bus).toConstantValue(bus);
     this.container.bind(Symbols.helpers.constants).toConstantValue(this.constants);
+    this.container.bind(Symbols.helpers.db).to(DBHelper).inSingletonScope();
     this.container.bind(Symbols.helpers.ed).toConstantValue(ed);
     this.container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManager).inSingletonScope();
     this.container.bind(Symbols.helpers.jobsQueue).to(JobsQueue).inSingletonScope();
@@ -341,7 +345,6 @@ export class AppManager {
     this.container.bind(Symbols.models.blocks).toConstructor(BlocksModel);
     this.container.bind(Symbols.models.delegates).toConstructor(DelegatesModel);
     this.container.bind(Symbols.models.forkStats).toConstructor(ForksStatsModel);
-    this.container.bind(Symbols.models.memRounds).toConstructor(MemRoundsModel);
     this.container.bind(Symbols.models.multisignatures).toConstructor(MultiSignaturesModel);
     this.container.bind(Symbols.models.peers).toConstructor(PeersModel);
     this.container.bind(Symbols.models.roundsFees).toConstructor(RoundsFeesModel);
@@ -358,7 +361,7 @@ export class AppManager {
 
   public async finishBoot() {
     const bus   = this.container.get<Bus>(Symbols.helpers.bus);
-    const sequelize = this.container.get<Sequelize>(Symbols.generic.db);
+    const sequelize = this.container.get<Sequelize>(Symbols.generic.sequelize);
     bus.modules = this.getModules();
 
     // Register transaction types.
@@ -369,6 +372,9 @@ export class AppManager {
     // Register models
     const models = this.getElementsFromContainer<typeof Model>(Symbols.models);
     sequelize.addModels(models);
+
+    // Move the genesis from string signatures to buffer signatures
+    this.container.get<IBlockLogic>(Symbols.logic.block).objectNormalize(this.genesisBlock);
 
     const blocksChainModule = this.container.get<IBlocksModuleChain>(Symbols.modules.blocksSubModules.chain);
     await blocksChainModule.saveGenesisBlock();

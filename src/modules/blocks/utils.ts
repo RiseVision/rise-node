@@ -102,29 +102,10 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
    * @return {Promise<BlocksModel>}
    */
   public async loadLastBlock(): Promise<BlocksModel> {
-    return await BlocksModel.findOne({ order: ['height', 'DESC'], limit: 1 });
-    // return await this.dbSequence.addAndPromise(async () => {
-    //   const rows  = await this.db.query(sql.loadLastBlock);
-    //   const block = this.readDbRows(rows)[0];
-    //   // this is not correct. Ordering should always return consistent data so it should also account b
-    //   // I'm not sure why this is needed though
-    //   // FIXME PLEASE!
-    //   block.transactions = block.transactions.sort((a, b) => {
-    //     if (block.id === this.genesisBlock.id) {
-    //       if (a.type === TransactionType.VOTE) {
-    //         return 1;
-    //       }
-    //     }
-    //     if (a.type === TransactionType.SIGNATURE) {
-    //       return 1;
-    //     }
-    //     return 0;
-    //   });
-    //
-    //   this.blocksModule.lastBlock = block;
-    //   return block;
-    // })
-    //   .catch(logCatchRewrite(this.logger, 'Blocks#loadLastBlock error'));
+    const b = await BlocksModel.findOne({ order: [['height', 'DESC']], limit: 1 });
+    await b.populateTransactions();
+    this.blocksModule.lastBlock = b;
+    return b;
   }
 
   /**
@@ -145,7 +126,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     const blocks: Array<{ id: string, height: number }> = await BlocksModel
       .findAll({
         attributes: ['id', 'height'],
-        order     : ['height', 'DESC'],
+        order     : [['height', 'DESC']],
         where     : { height: { $in: heightsToQuery } },
       });
 

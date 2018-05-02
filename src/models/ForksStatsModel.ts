@@ -4,7 +4,7 @@ import 'reflect-metadata';
 import { ForkType } from '../helpers';
 
 
-@Table({ tableName: 'fork_stats' })
+@Table({ tableName: 'forks_stat' })
 export class ForksStatsModel extends Model<ForksStatsModel> {
   @PrimaryKey
   @Column(DataType.BLOB)
@@ -12,7 +12,7 @@ export class ForksStatsModel extends Model<ForksStatsModel> {
 
   @PrimaryKey
   @Column
-  public blockTimeStamp: number;
+  public blockTimestamp: number;
 
   @PrimaryKey
   @Column
@@ -27,7 +27,7 @@ export class ForksStatsModel extends Model<ForksStatsModel> {
   public previousBlock: string;
 
   @PrimaryKey
-  @Column(DataType.INTEGER.UNSIGNED)
+  @Column(DataType.INTEGER)
   public cause: ForkType
 
 }
