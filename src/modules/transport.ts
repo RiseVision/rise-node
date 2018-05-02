@@ -8,7 +8,10 @@ import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidat
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
-  IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule,
+  IMultisignaturesModule,
+  IPeersModule,
+  ISystemModule,
+  ITransactionsModule,
   ITransportModule
 } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
@@ -17,6 +20,7 @@ import { IBaseTransaction } from '../logic/transactions/';
 import peersSchema from '../schema/peers';
 import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
+import { ITransportTransaction } from '../logic/transactions/baseTransactionType';
 
 // tslint:disable-next-line
 export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };
@@ -99,7 +103,7 @@ export class TransportModule implements ITransportModule {
       res = await popsicle.request(req)
         .use(popsicle.plugins.parse(['json'], false));
     } catch (err) {
-      this.removePeer({peer: thePeer, code: 'HTTPERROR'}, err.message);
+      this.removePeer({ peer: thePeer, code: 'HTTPERROR' }, err.message);
       return Promise.reject(err);
     }
 
@@ -219,7 +223,7 @@ export class TransportModule implements ITransportModule {
   }
 
   // tslint:disable-next-line
-  public async receiveSignatures(signatures: Array<{ transaction: string, signature: string }> ): Promise<void> {
+  public async receiveSignatures(signatures: Array<{ transaction: string, signature: string }>): Promise<void> {
     for (const signature of signatures) {
       try {
         await this.receiveSignature(signature);
@@ -245,7 +249,7 @@ export class TransportModule implements ITransportModule {
   @ValidateSchema()
   // tslint:disable-next-line
   public async receiveTransactions(@SchemaValid(schema.transactions.properties.transactions, 'Invalid transactions body')
-                                     transactions: Array<IBaseTransaction<any>>,
+                                     transactions: Array<ITransportTransaction<any>>,
                                    peer: IPeerLogic,
                                    extraLogMessage: string) {
     for (const tx of transactions) {
@@ -263,9 +267,10 @@ export class TransportModule implements ITransportModule {
    * @returns {Promise<void>}
    */
   // tslint:disable-next-line max-line-length
-  public async receiveTransaction(transaction: IBaseTransaction<any>, peer: IPeerLogic, bundled: boolean, extraLogMessage: string): Promise<string> {
+  public async receiveTransaction(transaction: ITransportTransaction<any>, peer: IPeerLogic, bundled: boolean, extraLogMessage: string): Promise<string> {
+    let tx: IBaseTransaction<any>;
     try {
-      transaction = this.transactionLogic.objectNormalize(transaction);
+      tx = this.transactionLogic.objectNormalize(transaction);
     } catch (e) {
       this.logger.debug('Transaction normalization failed', {
         err   : e.toString(),
@@ -279,16 +284,16 @@ export class TransportModule implements ITransportModule {
 
     try {
       await this.balancesSequence.addAndPromise(async () => {
-        this.logger.debug(`Received transaction ${transaction.id} from peer: ${peer.string}`);
+        this.logger.debug(`Received transaction ${tx.id} from peer: ${peer.string}`);
         await this.transactionModule.processUnconfirmedTransaction(
-          transaction,
+          tx,
           true,
           bundled
         );
       });
-      return transaction.id;
+      return tx.id;
     } catch (err) {
-      this.logger.debug(`Transaction ${transaction.id} error ${err}`, transaction);
+      this.logger.debug(`Transaction ${tx.id} error ${err}`, tx);
       throw new Error(err);
     }
   }

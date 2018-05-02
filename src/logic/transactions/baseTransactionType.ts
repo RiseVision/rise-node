@@ -6,6 +6,22 @@ import { AccountsModel } from '../../models/';
 import { SignedBlockType } from '../block';
 import { DBOp } from '../../types/genericTypes';
 
+export interface ITransportTransaction<T> {
+  type: TransactionType;
+  amount: number;
+  senderId?: string;
+  senderPublicKey: string;
+  requesterPublicKey?: string;
+  timestamp: number;
+  asset?: T;
+  recipientId: string;
+  signature: string;
+  id: string;
+  fee: number;
+  signatures?: string[];
+  signSignature?: string;
+}
+
 export interface IBaseTransaction<T> {
   type: TransactionType;
   amount: number;

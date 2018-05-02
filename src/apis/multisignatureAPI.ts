@@ -72,8 +72,9 @@ export class MultisignatureAPI {
   public async getPending(@SchemaValid(multisigSchema.pending)
                           @QueryParams() params: { publicKey: pkType }) {
     const { publicKey } = params;
+    const bufPubKey = Buffer.from(publicKey, 'hex');
     const txs = this.transactions.getMultisignatureTransactionList(false)
-      .filter((tx) => tx.senderPublicKey === publicKey);
+      .filter((tx) => tx.senderPublicKey.equals(bufPubKey));
 
     const toRet = [];
 
@@ -83,12 +84,12 @@ export class MultisignatureAPI {
         let verified = false;
         for (let i = 0; i < tx.signatures.length && !verified; i++) {
           const signature = tx.signatures[i];
-          verified        = this.txLogic.verifySignature(tx, publicKey, signature);
+          verified        = this.txLogic.verifySignature(tx, bufPubKey, Buffer.from(signature, 'hex'));
         }
         signed = verified;
       }
 
-      if (!signed && tx.senderPublicKey === publicKey) {
+      if (!signed && tx.senderPublicKey.equals(bufPubKey)) {
         // It's signed if the sender is the publickey( signature of tx)
         signed = true;
       }

@@ -71,7 +71,7 @@ export class DelegatesAPI {
         });
       }
     }
-    d.delegates = d.delegates.map((del) => ({...del, ...{rate: del.rank}}));
+    d.delegates = d.delegates.map((del) => ({ ...del, ...{ rate: del.info.rank } }));
 
     const delegates = d.delegates.slice(d.offset, d.limit);
     return { delegates, totalCount: d.count };
@@ -108,7 +108,7 @@ export class DelegatesAPI {
       };
     } else {
       const account = await this.accounts
-        .getAccount({ publicKey: params.generatorPublicKey }, ['fees', 'rewards']);
+        .getAccount({ publicKey: Buffer.from(params.generatorPublicKey, 'hex') }, ['fees', 'rewards']);
 
       if (!account) {
         throw new APIError('Account not found', 200);
@@ -130,9 +130,10 @@ export class DelegatesAPI {
     // FIXME: Delegates returned are automatically limited by maxDelegates. This means that a delegate cannot be found
     // if ranked (username) below the desired value.
     const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'username:asc' });
-    const delegate      = delegates.find((d) => d.publicKey === params.publicKey || d.username === params.username);
+    const delegate      = delegates
+      .find((d) => d.delegate.hexPublicKey === params.publicKey || d.delegate.username === params.username);
     if (delegate) {
-      return { delegate: {...delegate, ...{ rate: delegate.rank }} };
+      return { delegate: { ...delegate, ...{ rate: delegate.info.rank } } };
     }
     throw new APIError('Delegate not found', 200);
   }
@@ -213,7 +214,7 @@ export class DelegatesAPI {
   @ValidateSchema()
   @UseBefore(ForgingApisWatchGuard)
   public async getForgingStatus(@SchemaValid(schema.forgingStatus)
-                          @QueryParams() params: { publicKey: publicKey }) {
+                                @QueryParams() params: { publicKey: publicKey }) {
     if (params.publicKey) {
       return {
         delegates: [params.publicKey],
@@ -247,7 +248,7 @@ export class DelegatesAPI {
       throw new APIError('Forging is already enabled', 200);
     }
 
-    const account = await this.accounts.getAccount({ publicKey: pk });
+    const account = await this.accounts.getAccount({ publicKey: kp.publicKey });
     if (!account) {
       throw new APIError('Account not found', 200);
     }
@@ -275,7 +276,7 @@ export class DelegatesAPI {
       throw new APIError('Forging is already disabled', 200);
     }
 
-    const account = await this.accounts.getAccount({ publicKey: pk });
+    const account = await this.accounts.getAccount({ publicKey: kp.publicKey });
     if (!account) {
       throw new APIError('Account not found', 200);
     }

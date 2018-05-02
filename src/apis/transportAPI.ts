@@ -25,6 +25,7 @@ import { Partial } from '../types/utils';
 import { APIError } from './errors';
 import { AttachPeerHeaders } from './utils/attachPeerHeaders';
 import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
+import { ITransportTransaction } from '../logic/transactions/baseTransactionType';
 
 function genTransportBlock(block: BlocksModel, extra: Partial<RawFullBlockListType>): RawFullBlockListType {
   // tslint:disable object-literal-sort-keys
@@ -154,8 +155,8 @@ export class TransportAPI {
   }
 
   @Post('/transactions')
-  public async postTransactions(@BodyParam('transactions') txs: Array<IBaseTransaction<any>>,
-                                @BodyParam('transaction') tx: IBaseTransaction<any>,
+  public async postTransactions(@BodyParam('transactions') txs: Array<ITransportTransaction<any>>,
+                                @BodyParam('transaction') tx: ITransportTransaction<any>,
                                 @Req() req: Request) {
     const thePeer = this.peersLogic.create({
       ip  : req.ip,

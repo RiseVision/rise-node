@@ -38,7 +38,11 @@ export class AccountsAPI {
     if (!isEmpty(query.address) && !isEmpty(query.publicKey) && address !== query.address) {
       throw new APIError('Account publicKey does not match address', 200);
     }
-    const accData = await this.accountsModule.getAccount(query);
+    const theQuery: {address: string, publicKey?: Buffer } = { address };
+    if (!isEmpty(query.publicKey)) {
+      theQuery.publicKey = Buffer.from(query.publicKey, 'hex');
+    }
+    const accData = await this.accountsModule.getAccount(theQuery);
     if (!accData) {
       throw new APIError('Account not found', 200);
     }
@@ -92,7 +96,7 @@ export class AccountsAPI {
     if (account.delegates) {
       const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'rank:desc' });
       return {
-        delegates: delegates.filter((d) => account.delegates.indexOf(d.publicKey) !== -1),
+        delegates: delegates.filter((d) => account.delegates.indexOf(d.delegate.hexPublicKey) !== -1),
       };
     }
     return { publicKey: account.publicKey };

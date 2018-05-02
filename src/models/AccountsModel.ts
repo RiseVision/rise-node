@@ -16,7 +16,7 @@ const allFields = fields.concat(unconfirmedFields);
 
 const buildArrayArgAttribute = function (table: string): any {
   return [sequelize.literal(`(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2${table} WHERE "accountId" = "AccountsModel"."address")`), table];
-}
+};
 
 @Scopes({
   full         : {

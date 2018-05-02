@@ -39,7 +39,7 @@ export class TransactionsAPI {
       // params[param] = value;
     });
     body = castFieldsToNumberUsingSchema(schema.getTransactions, body);
-    assertValidSchema(this.schema, body, { obj: schema.getTransactions, opts: {}});
+    assertValidSchema(this.schema, body, { obj: schema.getTransactions, opts: {} });
 
     const { transactions, count } = await this.transactionsModule.list(body)
       .catch((err) => Promise.reject(new Error(`Failed to get transactions: ${err.message || err}`)));
@@ -56,15 +56,15 @@ export class TransactionsAPI {
   @ValidateSchema()
   public async getTX(
     @SchemaValid(schema.getTransaction)
-    @QueryParams() params: {id: string}) {
+    @QueryParams() params: { id: string }) {
 
-    const {id} = params;
-    let tx = await this.transactionsModule.getByID(id);
-    tx = await this.txLogic.restoreAsset(tx);
+    const { id } = params;
+    let tx       = await this.transactionsModule.getByID(id);
+    tx           = await this.txLogic.restoreAsset(tx);
     if (tx.type === TransactionType.VOTE) {
       // tslint:disable-next-line
       tx['votes'] = {
-        added: (tx as (IConfirmedTransaction<VoteAsset>)).asset.votes
+        added  : (tx as (IConfirmedTransaction<VoteAsset>)).asset.votes
           .filter((v) => v.startsWith('+'))
           .map((v) => v.substr(1)),
         deleted: (tx as (IConfirmedTransaction<VoteAsset>)).asset.votes
@@ -78,13 +78,15 @@ export class TransactionsAPI {
   @Get('/multisignatures')
   @ValidateSchema()
   public async getMultiSigs(@SchemaValid(schema.getPooledTransactions)
-                      @QueryParams() params: { senderPublicKey?: string, address?: string }) {
+                            @QueryParams() params: { senderPublicKey?: string, address?: string }) {
     const txs = this.transactionsModule.getMultisignatureTransactionList(true);
 
     return {
       count       : txs.length,
       transactions: txs
-        .filter((tx) => params.senderPublicKey ? params.senderPublicKey === tx.senderPublicKey : true)
+        .filter((tx) => params.senderPublicKey ?
+          Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
+          true)
         .filter((tx) => params.address ? params.address === tx.recipientId : true),
     };
   }
@@ -103,13 +105,15 @@ export class TransactionsAPI {
   @Get('/queued')
   @ValidateSchema()
   public async getQueuedTxs(@SchemaValid(schema.getPooledTransactions)
-                      @QueryParams() params: { senderPublicKey?: string, address?: string }) {
+                            @QueryParams() params: { senderPublicKey?: string, address?: string }) {
     const txs = this.transactionsModule.getQueuedTransactionList(true);
 
     return {
       count       : txs.length,
       transactions: txs
-        .filter((tx) => params.senderPublicKey ? params.senderPublicKey === tx.senderPublicKey : true)
+        .filter((tx) => params.senderPublicKey ?
+          Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
+          true)
         .filter((tx) => params.address ? params.address === tx.recipientId : true),
     };
   }
@@ -128,13 +132,15 @@ export class TransactionsAPI {
   @Get('/unconfirmed')
   @ValidateSchema()
   public async getUnconfirmedTxs(@SchemaValid(schema.getPooledTransactions)
-                           @QueryParams() params: { senderPublicKey?: string, address?: string }) {
+                                 @QueryParams() params: { senderPublicKey?: string, address?: string }) {
     const txs = this.transactionsModule.getUnconfirmedTransactionList(true);
 
     return {
       count       : txs.length,
       transactions: txs
-        .filter((tx) => params.senderPublicKey ? params.senderPublicKey === tx.senderPublicKey : true)
+        .filter((tx) => params.senderPublicKey ?
+          Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
+          true)
         .filter((tx) => params.address ? params.address === tx.recipientId : true),
     };
   }

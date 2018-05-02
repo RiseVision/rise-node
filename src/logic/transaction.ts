@@ -13,7 +13,7 @@ import { AccountsModel, TransactionsModel } from '../models/';
 import txSchema from '../schema/logic/transaction';
 import { DBOp } from '../types/genericTypes';
 import { SignedAndChainedBlockType, SignedBlockType } from './block';
-import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './transactions/';
+import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
 
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
@@ -172,7 +172,7 @@ export class TransactionLogic implements ITransactionLogic {
   }
 
   public ready(tx: IBaseTransaction<any>, sender: AccountsModel): boolean {
-    this.assertKnownTransactionType(tx);
+    this.assertKnownTransactionType(tx.type);
 
     if (!sender) {
       return false;
@@ -181,9 +181,9 @@ export class TransactionLogic implements ITransactionLogic {
     return this.types[tx.type].ready(tx, sender);
   }
 
-  public assertKnownTransactionType(tx: IBaseTransaction<any>) {
-    if (!(tx.type in this.types)) {
-      throw new Error(`Unknown transaction type ${tx.type}`);
+  public assertKnownTransactionType(type: number) {
+    if (!(type in this.types)) {
+      throw new Error(`Unknown transaction type ${type}`);
     }
   }
 
@@ -233,7 +233,7 @@ export class TransactionLogic implements ITransactionLogic {
    */
   // tslint:disable-next-line max-line-length
   public async process<T = any>(tx: IBaseTransaction<T>, sender: AccountsModel, requester: AccountsModel): Promise<IBaseTransaction<T>> {
-    this.assertKnownTransactionType(tx);
+    this.assertKnownTransactionType(tx.type);
     if (!sender) {
       throw new Error('Missing sender');
     }
@@ -251,7 +251,7 @@ export class TransactionLogic implements ITransactionLogic {
 
   public async verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel,
                       requester: AccountsModel, height: number) {
-    this.assertKnownTransactionType(tx);
+    this.assertKnownTransactionType(tx.type);
     if (!sender) {
       throw new Error('Missing sender');
     }
@@ -390,7 +390,7 @@ export class TransactionLogic implements ITransactionLogic {
    */
   public verifySignature(tx: IBaseTransaction<any>, publicKey: Buffer, signature: Buffer,
                          isSecondSignature: boolean = false) {
-    this.assertKnownTransactionType(tx);
+    this.assertKnownTransactionType(tx.type);
     if (!signature) {
       return false;
     }
@@ -499,7 +499,7 @@ export class TransactionLogic implements ITransactionLogic {
   }
 
   public dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<DBOp<any>> {
-    this.assertKnownTransactionType(tx);
+    this.assertKnownTransactionType(tx.type);
     const senderPublicKey    = tx.senderPublicKey;
     const signature          = tx.signature;
     const signSignature      = tx.signSignature ? tx.signSignature : null;
@@ -535,7 +535,7 @@ export class TransactionLogic implements ITransactionLogic {
   }
 
   public async afterSave(tx: IBaseTransaction<any>): Promise<void> {
-    this.assertKnownTransactionType(tx);
+    this.assertKnownTransactionType(tx.type);
     return this.types[tx.type].afterSave(tx);
   }
 
@@ -543,8 +543,8 @@ export class TransactionLogic implements ITransactionLogic {
    * Epurates the tx object by removing null and undefined fields
    * Pass it through schema validation and then calls subtype objectNormalize.
    */
-  public objectNormalize(tx: IBaseTransaction<any>): IBaseTransaction<any> {
-    this.assertKnownTransactionType(tx);
+  public objectNormalize(tx: IBaseTransaction<any>|ITransportTransaction<any>): IBaseTransaction<any> {
+    this.assertKnownTransactionType(tx.type);
     for (const key in tx) {
       if (tx[key] === null || typeof(tx[key]) === 'undefined') {
         delete tx[key];
@@ -563,8 +563,8 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error(`Failed to validate transaction schema: ${this.schema.getLastErrors().map((e) => e.message)
         .join(', ')}`);
     }
-
-    return this.types[tx.type].objectNormalize(tx);
+    // After processing the tx object becomes a IBaseTransaction<any>
+    return this.types[tx.type].objectNormalize(tx as IBaseTransaction<any>);
   }
 
   public dbRead(raw: any): IConfirmedTransaction<any> {
@@ -592,7 +592,7 @@ export class TransactionLogic implements ITransactionLogic {
       asset             : {},
     };
 
-    this.assertKnownTransactionType(tx);
+    this.assertKnownTransactionType(tx.type);
 
     const asset = this.types[tx.type].dbRead(raw);
     if (asset) {
@@ -604,7 +604,7 @@ export class TransactionLogic implements ITransactionLogic {
   public async restoreAsset<T>(tx: IConfirmedTransaction<void>): Promise<IConfirmedTransaction<T>>;
   public async restoreAsset<T>(tx: IBaseTransaction<void>): Promise<IBaseTransaction<T>>;
   public async restoreAsset<T>(tx: IBaseTransaction<void> | IConfirmedTransaction<void>) {
-    this.assertKnownTransactionType(tx);
+    this.assertKnownTransactionType(tx.type);
     return this.types[tx.type].restoreAsset(tx, this.db);
   }
 }

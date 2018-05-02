@@ -3,6 +3,7 @@ import { IBaseTransaction } from '../../../logic/transactions';
 import { PeerRequestOptions } from '../../../modules';
 import { IPeerLogic } from '../logic';
 import { IModule } from './IModule';
+import { ITransportTransaction } from '../../../logic/transactions/baseTransactionType';
 
 export interface ITransportModule extends IModule {
 
@@ -36,7 +37,7 @@ export interface ITransportModule extends IModule {
    */
   receiveSignature(signature: { transaction: string, signature: string }): Promise<void>;
 
-  receiveTransactions(transactions: Array<IBaseTransaction<any>>,
+  receiveTransactions(transactions: Array<ITransportTransaction<any>>,
                       peer: IPeerLogic,
                       extraLogMessage: string): Promise<void>;
 
@@ -46,6 +47,6 @@ export interface ITransportModule extends IModule {
    * @returns {Promise<void>}
    */
   // tslint:disable-next-line max-line-length
-  receiveTransaction(transaction: IBaseTransaction<any>, peer: IPeerLogic, bundled: boolean, extraLogMessage: string): Promise<string>;
+  receiveTransaction(transaction: ITransportTransaction<any>, peer: IPeerLogic, bundled: boolean, extraLogMessage: string): Promise<string>;
 
 }

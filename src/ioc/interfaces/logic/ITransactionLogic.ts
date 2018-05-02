@@ -7,6 +7,7 @@ import {
   BaseTransactionType,
   IBaseTransaction,
   IConfirmedTransaction,
+  ITransportTransaction
 } from '../../../logic/transactions';
 import { AccountsModel } from '../../../models/';
 import { DBOp } from '../../../types/genericTypes';
@@ -47,7 +48,7 @@ export interface ITransactionLogic {
 
   ready(tx: IBaseTransaction<any>, sender: AccountsModel): boolean;
 
-  assertKnownTransactionType(tx: IBaseTransaction<any>): void;
+  assertKnownTransactionType(type: number): void;
 
   /**
    * Counts transaction by id
@@ -112,7 +113,7 @@ export interface ITransactionLogic {
    * Epurates the tx object by removing null and undefined fields
    * Pass it through schema validation and then calls subtype objectNormalize.
    */
-  objectNormalize(tx: IBaseTransaction<any>): IBaseTransaction<any>;
+  objectNormalize(tx: IBaseTransaction<any> | ITransportTransaction<any>): IBaseTransaction<any>;
 
   dbRead(raw: any): IConfirmedTransaction<any>;
 
