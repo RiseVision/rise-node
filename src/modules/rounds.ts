@@ -59,9 +59,10 @@ export class RoundsModule implements IRoundsModule {
    * Performs a backward tick on the round
    * @param {SignedBlockType} block
    * @param {SignedBlockType} previousBlock
+   * @param {Transaction} transaction
    */
-  public backwardTick(block: BlocksModel, previousBlock: SignedBlockType) {
-    return this.innerTick(block, true, (roundLogicScope) => async (transaction) => {
+  public backwardTick(block: BlocksModel, previousBlock: SignedBlockType, transaction: Transaction) {
+    return this.innerTick(block, true, async (roundLogicScope) => {
       this.logger.debug('Performing backward tick');
 
       const roundLogic            = new this.RoundLogic(roundLogicScope, this.slots);
@@ -75,11 +76,11 @@ export class RoundsModule implements IRoundsModule {
     });
   }
 
-  public async tick(block: SignedBlockType) {
+  public async tick(block: SignedBlockType, transaction: Transaction) {
     return this.innerTick(
       block,
       false,
-      (roundLogicScope) => async (transaction) => {
+      async (roundLogicScope) => {
 
         this.logger.debug('Performing forward tick');
         const roundLogic            = new this.RoundLogic(roundLogicScope, this.slots);
@@ -105,15 +106,14 @@ export class RoundsModule implements IRoundsModule {
         if ((block.height + 1) % this.slots.delegates === 0) {
           this.logger.debug('Performing round snapshot...');
 
-          await RoundsModel.sequelize.transaction(async (transaction) => {
-            await this.dbHelper.performOps([
-                roundsSQL.clearRoundSnapshot,
-                roundsSQL.performRoundSnapshot,
-                roundsSQL.clearVotesSnapshot,
-                roundsSQL.performVotesSnapshot,
-              ].map<DBOp<any>>((query) => ({ model: RoundsModel, query, type: 'custom' })),
-              transaction);
-          });
+          await this.dbHelper.performOps([
+              roundsSQL.clearRoundSnapshot,
+              roundsSQL.performRoundSnapshot,
+              roundsSQL.clearVotesSnapshot,
+              roundsSQL.performVotesSnapshot,
+            ].map<DBOp<any>>((query) => ({ model: RoundsModel, query, type: 'custom' })),
+            transaction);
+
           this.logger.trace('Round snapshot done');
         }
       });
@@ -128,7 +128,7 @@ export class RoundsModule implements IRoundsModule {
 
   private async innerTick(block: SignedBlockType,
                           backwards: boolean,
-                          txGenerator: (ls: RoundLogicScope) => (t: Transaction) => Promise<any>,
+                          txGenerator: (ls: RoundLogicScope) => Promise<any>,
                           afterTxPromise: () => Promise<any> = () => Promise.resolve(null)) {
     const round     = this.roundsLogic.calcRound(block.height);
     const nextRound = this.roundsLogic.calcRound(block.height + 1);
@@ -163,7 +163,7 @@ export class RoundsModule implements IRoundsModule {
         roundOutsiders,
         ...roundSums,
       };
-      await RoundsModel.sequelize.transaction(txGenerator(roundLogicScope));
+      await txGenerator(roundLogicScope);
       await afterTxPromise();
       this.appStateLogic.set('rounds.isTicking', false);
     } catch (e) {

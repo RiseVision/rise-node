@@ -229,7 +229,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
       await this.bus.message('newBlock', block, broadcast);
 
-      await this.roundsModule.tick(block);
+      await this.roundsModule.tick(block, dbTX);
     });
 
     // restore the (yet) unconfirmed ids.
@@ -296,7 +296,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         await this.transactionsModule.undo(tx, lb, sender);
         await this.transactionsModule.undoUnconfirmed(tx);
       }
-      await this.roundsModule.backwardTick(lb, previousBlock);
+      await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
       await previousBlock.destroy({ transaction: dbTX });
     });
 
