@@ -87,6 +87,13 @@ z_schema.registerFormat('signatureBuf', (buf: Buffer) => {
   return buf.length === 64;
 });
 
+z_schema.registerFormat('sha256Buf', (buf: Buffer) => {
+  if (!Buffer.isBuffer(buf)) {
+    return false;
+  }
+  return buf.length === 32;
+});
+
 z_schema.registerFormat('queryList', (obj: any) => {
   obj.limit = 100;
   return true;

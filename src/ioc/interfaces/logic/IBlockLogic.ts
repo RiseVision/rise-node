@@ -1,9 +1,14 @@
 import { IKeypair } from '../../../helpers';
-import { BlockType, SignedAndChainedBlockType, SignedBlockType } from '../../../logic';
+import {
+  BlockType,
+  SignedAndChainedBlockType,
+  SignedAndChainedTransportBlockType,
+  SignedBlockType
+} from '../../../logic';
 import { IBaseTransaction } from '../../../logic/transactions';
-import { RawFullBlockListType } from '../../../types/rawDBTypes';
-import { IDBOp } from '../../../types/genericTypes';
 import { BlocksModel } from '../../../models';
+import { DBOp } from '../../../types/genericTypes';
+import { RawFullBlockListType } from '../../../types/rawDBTypes';
 
 export interface IBlockLogic {
   table: string;
@@ -39,7 +44,7 @@ export interface IBlockLogic {
    * Creates db object transaction to `blocks` table.
    * @param {BlockType} block
    */
-  dbSave(block: SignedBlockType): IDBOp<BlocksModel>;
+  dbSave(block: SignedBlockType): DBOp<BlocksModel>;
 
   /**
    * Normalize block object and eventually throw if something is not valid
@@ -47,7 +52,8 @@ export interface IBlockLogic {
    * @param {BlockType} block
    * @returns {BlockType}
    */
-  objectNormalize<T extends BlockType>(block: T): T;
+  objectNormalize(block: SignedAndChainedTransportBlockType): SignedAndChainedBlockType;
+  objectNormalize<T extends BlockType<Buffer | string>>(block: T): T;
 
   dbRead(rawBlock: RawFullBlockListType): SignedBlockType;
 }

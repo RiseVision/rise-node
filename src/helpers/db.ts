@@ -1,5 +1,5 @@
 import * as sequelize from 'sequelize';
-import { DBOp, DBUpdateOp } from '../types/genericTypes';
+import { DBCreateOp, DBCustomOp, DBOp, DBRemoveOp, DBUpdateOp, DBUpsertOp } from '../types/genericTypes';
 
 export class DBHelper {
   /**
@@ -9,34 +9,29 @@ export class DBHelper {
    * @returns {Promise<[Model<string>[] , any]>}
    */
   public async performOps(what: Array<DBOp<any>>, transaction?: sequelize.Transaction) {
-    const modelClusters: { [models: string]: Array<DBOp<any>> } = {};
-    for (const element of what) {
-      const name          = element.model.prototype.constructor.name;
-      modelClusters[name] = modelClusters[name] || [];
-      modelClusters[name].push(element);
+    const baseOptions: any = {};
+    if (transaction) {
+      baseOptions.transaction = transaction;
     }
-    return Promise.all(
-      Object.keys(modelClusters)
-        .map((k) => {
-          const model = modelClusters[k][0].model;
-
-          const creations = modelClusters[k]
-            .filter((item: DBOp<any>) => item.type === 'create')
-            .map((item) => item.values);
-
-          const updates: Array<DBUpdateOp<any>> = modelClusters[k]
-            .filter((item) => item.type === 'update') as any;
-
-          return model.bulkCreate(creations, {transaction})
-            .then(() => Promise
-              .all(updates
-                .map(({values, options}) => {
-                  return model.update(values, {...{transaction}, ...options});
-                })
-              )
-            );
-        })
-    );
+    for (const op of what) {
+      switch (op.type) {
+        case 'create':
+          await op.model.create(op.values, baseOptions);
+          break;
+        case 'update':
+          await op.model.update(op.values, {... baseOptions, ... op.options});
+          break;
+        case 'upsert':
+          await op.model.upsert(op.values, {... baseOptions, ... op.options});
+          break;
+        case 'remove':
+          await op.model.destroy({... baseOptions, ... op.options});
+          break;
+        case 'custom':
+          await op.model.sequelize.query(op.query, baseOptions);
+          break;
+      }
+    }
 
   }
 

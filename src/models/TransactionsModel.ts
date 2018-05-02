@@ -44,13 +44,11 @@ export class TransactionsModel extends Model<TransactionsModel> {
   public requesterPublicKey: Buffer;
 
   @Column
-  public signatures: string;
-  // @Column
-  // public get signatures(): string[] {
-  //   return this.getDataValue('signatures').join(',');
-  // }
-  //
-  // public set signatures(value: string[]) {
-  //   this.setDataValue('signatures', Array.isArray(value) ? value.join(',') : value);
-  // }
+  public get signatures(): string[] {
+    return this.getDataValue('signatures').join(',');
+  }
+
+  public set signatures(value: string[]) {
+    this.setDataValue('signatures', Array.isArray(value) ? value.join(',') : value);
+  }
 }

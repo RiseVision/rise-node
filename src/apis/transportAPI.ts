@@ -26,6 +26,7 @@ import { APIError } from './errors';
 import { AttachPeerHeaders } from './utils/attachPeerHeaders';
 import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
 import { ITransportTransaction } from '../logic/transactions/baseTransactionType';
+import { SignedAndChainedTransportBlockType } from '../logic/block';
 
 function genTransportBlock(block: BlocksModel, extra: Partial<RawFullBlockListType>): RawFullBlockListType {
   // tslint:disable object-literal-sort-keys
@@ -192,14 +193,15 @@ export class TransportAPI {
   }
 
   @Post('/blocks')
-  public async postBlock(@BodyParam('block') block: SignedAndChainedBlockType, @Req() req: Request) {
+  public async postBlock(@BodyParam('block') block: SignedAndChainedTransportBlockType, @Req() req: Request) {
+    let normalizedBlock: SignedAndChainedBlockType;
     try {
-      block = this.blockLogic.objectNormalize(block);
+      normalizedBlock = this.blockLogic.objectNormalize(block);
     } catch (e) {
       this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
       throw e;
     }
-    await this.bus.message('receiveBlock', block);
+    await this.bus.message('receiveBlock', normalizedBlock);
     return { blockId: block.id };
   }
 
@@ -232,7 +234,7 @@ export class TransportAPI {
           t_fee            : t.fee,
           t_signature      : t.signature.toString('hex'),
           t_signSignature  : t.signSignature.toString('hex'),
-          t_signatures     : t.signatures,
+          t_signatures     : t.signatures.join(','),
         });
         switch (t.type) {
           case TransactionType.VOTE:

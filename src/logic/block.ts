@@ -10,34 +10,39 @@ import logicBlockSchema from '../schema/logic/block';
 import { DBOp } from '../types/genericTypes';
 import { RawFullBlockListType } from '../types/rawDBTypes';
 import { BlockRewardLogic } from './blockReward';
-import { IBaseTransaction, IConfirmedTransaction } from './transactions/';
+import { IBaseTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
 
 // import * as OldImplementation from './_block.js';
 
 // tslint:disable-next-line interface-over-type-literal
-export type BlockType = {
+export type BlockType<T = Buffer> = {
   height?: number;
   version: number;
   totalAmount: number;
   totalFee: number;
   reward: number;
-  payloadHash: Buffer;
+  payloadHash: T;
   timestamp: number;
   numberOfTransactions: number;
   payloadLength: number;
   previousBlock: string;
-  generatorPublicKey: Buffer;
+  generatorPublicKey: T;
   transactions?: Array<IBaseTransaction<any>>;
 };
 
-export type SignedBlockType = BlockType & {
+export type SignedBlockType<T = Buffer> = BlockType<T> & {
   id: string;
-  blockSignature: Buffer;
+  blockSignature: T;
   transactions?: Array<IConfirmedTransaction<any>>;
 };
 
-export type SignedAndChainedBlockType = SignedBlockType & {
+export type SignedAndChainedBlockType = SignedBlockType<Buffer> & {
   height: number
+};
+
+export type SignedAndChainedTransportBlockType = SignedBlockType<string> & {
+  height: number;
+  transactions?: Array<ITransportTransaction<any>>
 };
 
 @injectable()
@@ -287,13 +292,18 @@ export class BlockLogic implements IBlockLogic {
    * @param {BlockType} block
    * @returns {BlockType}
    */
-  public objectNormalize<T extends BlockType>(block: T): T {
+  public objectNormalize<T extends BlockType<Buffer | string>>(block: T | SignedAndChainedTransportBlockType): T | SignedAndChainedBlockType {
     // Delete null or undefined elements in block obj
     for (const key in block) {
       if (block[key] === null || typeof(block[key]) === 'undefined') {
         delete block[key];
       }
     }
+    ['generatorPublicKey', 'payloadHash', 'blockSignature'].forEach((bufKey) => {
+      if (!Buffer.isBuffer(block[bufKey])) {
+        block[bufKey] = Buffer.from(block[bufKey], 'hex');
+      }
+    });
 
     const report = this.zschema.validate(
       block,
@@ -308,8 +318,8 @@ export class BlockLogic implements IBlockLogic {
     for (let i = 0; i < block.transactions.length; i++) {
       block.transactions[i] = this.transaction.objectNormalize(block.transactions[i]);
     }
-
-    return block;
+    // cast to any is correct as we transform non-buffer items to
+    return block as any;
   }
 
   public dbRead(rawBlock: RawFullBlockListType): SignedBlockType {
