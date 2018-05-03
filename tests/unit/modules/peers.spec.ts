@@ -6,13 +6,13 @@ import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { IPeersModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
-import { PeersModule } from '../../../src/modules';
-import { createContainer } from '../../utils/containerCreator';
 import { BasePeerType, PeerLogic, PeerState } from '../../../src/logic';
+import { PeersModule } from '../../../src/modules';
 import { BusStub, PeersLogicStub, SystemModuleStub } from '../../stubs';
-import { createFakePeer, createFakePeers } from '../../utils/fakePeersFactory';
 import DbStub from '../../stubs/helpers/DbStub';
 import LoggerStub from '../../stubs/helpers/LoggerStub';
+import { createContainer } from '../../utils/containerCreator';
+import { createFakePeer, createFakePeers } from '../../utils/fakePeersFactory';
 
 // tslint:disable no-unused-expression
 describe('modules/peers', () => {
@@ -29,7 +29,6 @@ describe('modules/peers', () => {
     container = createContainer();
     container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
     container.rebind(Symbols.modules.peers).to(PeersModule);
-
     inst = instR = container.get(Symbols.modules.peers);
     peersLogicStub = container.get(Symbols.logic.peers);
   });
@@ -352,7 +351,7 @@ describe('modules/peers', () => {
     });
     afterEach(() => {
       process.env.NODE_ENV = oldEnv;
-    })
+    });
     it('should load peers from db and config and call pingUpdate on all of them', async () => {
       await instR.onBlockchainReady();
       expect(pingStub.callCount).to.be.eq(3);
@@ -363,14 +362,14 @@ describe('modules/peers', () => {
       expect(busStub.stubs.message.called).is.true;
       expect(busStub.stubs.message.firstCall.args[0]).to.be.eq('peersReady');
     });
-    it('should call logger.trace', async()=>{
+    it('should call logger.trace', async () => {
       await instR.onBlockchainReady();
       expect(loggerStub.stubs.trace.callCount).to.be.equal(5);
       expect(loggerStub.stubs.trace.lastCall.args.length).to.be.equal(2);
       expect(loggerStub.stubs.trace.lastCall.args[0]).to.be.equal('Peers->dbLoad Peers discovered');
       expect(loggerStub.stubs.trace.lastCall.args[1]).to.be.deep.equal({
         total: 1,
-        updated: 1
+        updated: 1,
       });
     });
     it('should call logger.error if db query was throw error', async () => {
@@ -384,12 +383,12 @@ describe('modules/peers', () => {
       expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal('Import peers from database failed');
       expect(loggerStub.stubs.error.firstCall.args[1]).to.be.deep.equal({error: error.message});
     });
-    it('should not call broadcast peersReady if process.env.NODE_ENV === test', async()=>{
+    it('should not call broadcast peersReady if process.env.NODE_ENV === test', async () => {
       process.env.NODE_ENV = 'test';
       await instR.onBlockchainReady();
       expect(busStub.stubs.message.called).is.false;
     });
-    it('should not increase updated if peer fails', async()=>{
+    it('should not increase updated if peer fails', async () => {
       peersLogicStub.reset();
       peersLogicStub.enqueueResponse('create', {pingAndUpdate: pingStub});
       peersLogicStub.enqueueResponse('create', {pingAndUpdate: pingStub});
@@ -405,7 +404,7 @@ describe('modules/peers', () => {
       expect(loggerStub.stubs.trace.lastCall.args[0]).to.be.equal('Peers->dbLoad Peers discovered');
       expect(loggerStub.stubs.trace.lastCall.args[1]).to.be.deep.equal({
         total: 1,
-        updated: 0
+        updated: 0,
       });
     });
   });

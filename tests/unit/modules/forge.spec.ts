@@ -2,10 +2,12 @@ import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
+import {Container} from 'inversify';
 import { SinonFakeTimers, SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import * as helpers from '../../../src/helpers';
 import { catchToLoggerAndRemapError, constants } from '../../../src/helpers';
+import {Symbols} from '../../../src/ioc/symbols';
 import { ForgeModule } from '../../../src/modules';
 import {
   AccountsModuleStub,
@@ -21,12 +23,14 @@ import {
   TransactionsModuleStub
 } from '../../stubs';
 import { CreateHashSpy } from '../../stubs/utils/CreateHashSpy';
+import { createContainer } from '../../utils/containerCreator';
 
 chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression
 describe('modules/forge', () => {
   let sandbox: SinonSandbox;
+  let container: Container;
   let clock: SinonFakeTimers;
   let instance: any;
   let fakeConfig: any;
@@ -48,20 +52,21 @@ describe('modules/forge', () => {
 
   beforeEach(() => {
     sandbox    = sinon.sandbox.create();
+    container = createContainer();
     clock      = sandbox.useFakeTimers();
     fakeConfig = { forging: { secret: ['secret1', 'secret2'] } };
 
-    jobsQueueStub           = new JobsQueueStub();
-    loggerStub              = new LoggerStub();
-    edStub                  = new EdStub();
-    slotsStub               = new SlotsStub();
-    appStateStub            = new AppStateStub();
-    broadcasterLogicStub    = new BroadcasterLogicStub();
-    accountsModuleStub      = new AccountsModuleStub();
-    blocksModuleStub        = new BlocksModuleStub();
-    delegatesModuleStub     = new DelegatesModuleStub();
-    transactionsModuleStub  = new TransactionsModuleStub();
-    blocksProcessModuleStub = new BlocksSubmoduleProcessStub();
+    jobsQueueStub           = container.get(Symbols.helpers.jobsQueue);
+    loggerStub              = container.get(Symbols.helpers.logger);
+    edStub                  = container.get(Symbols.helpers.ed);
+    slotsStub               = container.get(Symbols.helpers.slots);
+    appStateStub            = container.get(Symbols.logic.appState);
+    broadcasterLogicStub    = container.get(Symbols.logic.broadcaster);
+    accountsModuleStub      = container.get(Symbols.modules.accounts);
+    blocksModuleStub        = container.get(Symbols.modules.blocks);
+    delegatesModuleStub     = container.get(Symbols.modules.delegates);
+    transactionsModuleStub  = container.get(Symbols.modules.transactions);
+    blocksProcessModuleStub = container.get(Symbols.modules.blocksSubModules.process);
     sequenceStub            = {
       addAndPromise: sandbox.spy((w) => {
         return Promise.resolve(
@@ -91,19 +96,19 @@ describe('modules/forge', () => {
 
     createHashSpy              = new CreateHashSpy(crypto, sandbox);
     blocksModuleStub.lastBlock = {
+      blockSignature      : 'blockSignature',
+      generatorPublicKey  : 'pubKey',
       height              : 12422,
       id                  : 'blockID',
-      blockSignature      : 'blockSignature',
-      version             : 1,
-      totalAmount         : 0,
-      totalFee            : 0,
-      reward              : 15,
-      payloadHash         : '',
-      timestamp           : Date.now(),
       numberOfTransactions: 0,
+      payloadHash         : '',
       payloadLength       : 0,
       previousBlock       : 'previous',
-      generatorPublicKey  : 'pubKey',
+      reward              : 15,
+      timestamp           : Date.now(),
+      totalAmount         : 0,
+      totalFee            : 0,
+      version             : 1,
     };
     loadKeypairs               = () => {
       instance.enabledKeys = {
@@ -154,8 +159,8 @@ describe('modules/forge', () => {
     describe('when passed an object', () => {
       const hex = 'abcdef123456abcdef1234567891011123';
       const pk  = {
-        publicKey : Buffer.from(hex, 'hex'),
         privateKey: Buffer.from('aaaa', 'hex'),
+        publicKey : Buffer.from(hex, 'hex'),
       };
 
       it('should store the keypair in this.keypairs', () => {
@@ -502,11 +507,6 @@ describe('modules/forge', () => {
         catcherLastErr = null;
       });
 
-      // it('should call sequence.addAndPromise', async () => {
-      //   await instance.forge();
-      //   expect(sequenceStub.addAndPromise.calledOnce).to.be.true;
-      // });
-
       it('should call broadcasterLogic.getPeers (in sequence worker)', async () => {
         await instance.forge();
         expect(broadcasterLogicStub.stubs.getPeers.calledOnce).to.be.true;
@@ -544,8 +544,8 @@ describe('modules/forge', () => {
       accountsModuleStub.stubs.getAccount.callsFake((filter) => {
         return {
           address   : 'addr_' + filter.publicKey,
-          publicKey : filter.publicKey,
           isDelegate: true,
+          publicKey : filter.publicKey,
         };
       });
       edStub.stubs.makeKeypair.callsFake((hash) => {
@@ -607,16 +607,16 @@ describe('modules/forge', () => {
     it('should add the keypair to this.keypairs if account is a delegate', async () => {
       await instance.loadDelegates();
       expect(instance.keypairs).to.be.deep.equal({
-          pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6:
-            {
-              privateKey: 'pr5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
-              publicKey : 'pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
-            },
-          pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2:
-            {
-              privateKey: 'pr35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
-              publicKey : 'pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
-            },
+        pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2:
+          {
+            privateKey: 'pr35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
+            publicKey : 'pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
+          },
+        pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6:
+          {
+            privateKey: 'pr5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
+            publicKey : 'pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
+          },
         }
       );
     });

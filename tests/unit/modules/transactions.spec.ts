@@ -36,13 +36,10 @@ describe('modules/transactions', () => {
   let transactionPoolStub: TransactionPoolStub;
   let transactionLogicStub: TransactionLogicStub;
 
-  before(() => {
-    container = createContainer();
-  });
-
   beforeEach(() => {
-    container.rebind(Symbols.modules.transactions).to(TransactionsModule);
     sandbox              = sinon.sandbox.create();
+    container = createContainer();
+    container.rebind(Symbols.modules.transactions).to(TransactionsModule);
     instance             = container.get(Symbols.modules.transactions);
     accountsModuleStub   = container.get(Symbols.modules.accounts);
     loggerStub           = container.get(Symbols.helpers.logger);
@@ -539,9 +536,9 @@ describe('modules/transactions', () => {
         await doCall(filter);
         expect(params).to.be.deep.equal({
           fromTimestamp: -1464109200,
-          toTimestamp  : -1464099200,
           limit        : 100,
           offset       : 0,
+          toTimestamp  : -1464099200,
         });
       });
 
@@ -751,8 +748,8 @@ describe('modules/transactions', () => {
       const filter = { blockId: 12345 };
       const retVal = await instance.list(filter);
       expect(retVal).to.be.deep.equal({
-        transactions: txList.map((tx) => transactionLogicStub.dbRead(tx)),
         count       : 10,
+        transactions: txList.map((tx) => transactionLogicStub.dbRead(tx)),
       });
     });
   });

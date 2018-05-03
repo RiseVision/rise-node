@@ -7,7 +7,10 @@ import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as helpers from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
+import { PeerType } from '../../../src/logic';
 import { LoaderModule } from '../../../src/modules';
+import loaderSchema from '../../../src/schema/loader';
+import sql from '../../../src/sql/loader';
 import {
   AccountLogicStub,
   AppStateStub,
@@ -15,7 +18,6 @@ import {
   BlocksSubmoduleChainStub,
   BlocksSubmoduleProcessStub,
   BlocksSubmoduleUtilsStub,
-  BlocksSubmoduleVerifyStub,
   BroadcasterLogicStub,
   BusStub,
   DbStub,
@@ -34,11 +36,8 @@ import {
   TransportModuleStub,
   ZSchemaStub,
 } from '../../stubs';
-
-import { PeerType } from '../../../src/logic';
-import loaderSchema from '../../../src/schema/loader';
+import { createContainer } from '../../utils/containerCreator';
 import { createFakePeers } from '../../utils/fakePeersFactory';
-import sql from '../../../src/sql/loader';
 
 chai.use(chaiAsPromised);
 
@@ -46,8 +45,6 @@ let promiseRetryStub: any;
 
 // tslint:disable no-unused-expression
 // tslint:disable no-unused-expression max-line-length
-// tslint:disable no-unused-expression object-literal-sort-keys
-
 const ProxyLoaderModule = proxyquire('../../../src/modules/loader',  {
   'promise-retry': (...args) => {
     return promiseRetryStub.apply(this, args);
@@ -73,58 +70,19 @@ describe('modules/loader', () => {
     },
   };
   let genesisBlock = {
-    id            : 10,
     blockSignature: Buffer.from('10').toString('hex'),
+    id            : 10,
     payloadHash   : Buffer.from('10').toString('hex'),
-
   };
 
   before(() => {
     sandbox   = sinon.sandbox.create();
-    container = new Container();
+    container = createContainer();
 
-    // Generic
-    container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
-    container.bind(Symbols.generic.db).to(DbStub).inSingletonScope();
-    container.bind(Symbols.generic.genesisBlock).toConstantValue(genesisBlock);
-    container.bind(Symbols.generic.socketIO).to(SocketIOStub).inSingletonScope();
-    container.bind(Symbols.generic.zschema).to(ZSchemaStub).inSingletonScope();
-
-    // Helpers
-    container.bind(Symbols.helpers.constants).toConstantValue(constants);
-    container.bind(Symbols.helpers.bus).to(BusStub).inSingletonScope();
-    container.bind(Symbols.helpers.jobsQueue).to(JobsQueueStub).inSingletonScope();
-    container.bind(Symbols.helpers.logger).to(LoggerStub).inSingletonScope();
-    container.bind(Symbols.helpers.sequence).to(SequenceStub).inSingletonScope().whenTargetTagged(
-      Symbols.helpers.sequence,
-      Symbols.tags.helpers.balancesSequence
-    );
-    container.bind(Symbols.helpers.sequence).to(SequenceStub).inSingletonScope().whenTargetTagged(
-      Symbols.helpers.sequence,
-      Symbols.tags.helpers.defaultSequence
-    );
-
-    // Logic
-    container.bind(Symbols.logic.appState).to(AppStateStub).inSingletonScope();
-    container.bind(Symbols.logic.account).to(AccountLogicStub).inSingletonScope();
-    container.bind(Symbols.logic.broadcaster).to(BroadcasterLogicStub).inSingletonScope();
-    container.bind(Symbols.logic.peers).to(PeersLogicStub).inSingletonScope();
-    container.bind(Symbols.logic.transaction).to(TransactionLogicStub).inSingletonScope();
-    container.bind(Symbols.logic.rounds).to(RoundsLogicStub).inSingletonScope();
-
-    // Modules
-    container.bind(Symbols.modules.blocks).to(BlocksModuleStub).inSingletonScope();
-    container.bind(Symbols.modules.blocksSubModules.chain).to(BlocksSubmoduleChainStub).inSingletonScope();
-    container.bind(Symbols.modules.blocksSubModules.process).to(BlocksSubmoduleProcessStub).inSingletonScope();
-    container.bind(Symbols.modules.blocksSubModules.utils).to(BlocksSubmoduleUtilsStub).inSingletonScope();
-    container.bind(Symbols.modules.blocksSubModules.verify).to(BlocksSubmoduleVerifyStub).inSingletonScope();
-    container.bind(Symbols.modules.multisignatures).to(MultisignaturesModuleStub).inSingletonScope();
-    container.bind(Symbols.modules.peers).to(PeersModuleStub).inSingletonScope();
-    container.bind(Symbols.modules.system).to(SystemModuleStub).inSingletonScope();
-    container.bind(Symbols.modules.transactions).to(TransactionsModuleStub).inSingletonScope();
-    container.bind(Symbols.modules.transport).to(TransportModuleStub).inSingletonScope();
-
-    container.bind(Symbols.modules.loader).to(ProxyLoaderModule.LoaderModule);
+    container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
+    container.rebind(Symbols.generic.genesisBlock).toConstantValue(genesisBlock);
+    container.rebind(Symbols.helpers.constants).toConstantValue(constants);
+    container.rebind(Symbols.modules.loader).to(ProxyLoaderModule.LoaderModule);
 
     instance = container.get(Symbols.modules.loader);
   });
@@ -134,7 +92,7 @@ describe('modules/loader', () => {
     promiseRetryStub = sandbox.stub().callsFake(sandbox.spy((w) => Promise.resolve(w(retryStub))));
 
     (instance as any).jobsQueue.register                              = sandbox.stub().callsFake((val, fn) => fn());
-    (instance as  any).defaultSequence.addAndPromise                  = sandbox.stub().callsFake(w => Promise.resolve(w()));
+    (instance as  any).defaultSequence.addAndPromise                  = sandbox.stub().callsFake((w) => Promise.resolve(w()));
     instance                                                          = container.get(Symbols.modules.loader);
     container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock = { height: 1, id: 1 } as any;
   });
@@ -172,8 +130,8 @@ describe('modules/loader', () => {
 
   describe('.getNetwork', () => {
 
-    let peersModuleStub;
-    let peersLogicStub;
+    let peersModuleStub: PeersModuleStub;
+    let peersLogicStub: PeersLogicStub;
     let loggerStub: LoggerStub;
     let peers: PeerType[];
 
@@ -328,7 +286,7 @@ describe('modules/loader', () => {
 
   describe('get .isSyncing', () => {
 
-    let appStateStub;
+    let appStateStub: AppStateStub;
 
     beforeEach(() => {
       appStateStub = container.get(Symbols.logic.appState);
@@ -556,9 +514,9 @@ describe('modules/loader', () => {
 
       tStub = {
         batch: sandbox.stub(),
+        none : sandbox.stub().returns(1),
         one  : sandbox.stub().returns(1),
         query: sandbox.stub().returns(1),
-        none : sandbox.stub().returns(1),
       };
       dbStub.stubs.task.onCall(0).callsFake((fn) => {
         fn(tStub);
@@ -997,10 +955,10 @@ describe('modules/loader', () => {
     let emitBlockchainReady;
 
     let loggerStub;
-    let busStub;
-    let accountLogicStub;
-    let blocksProcessModuleStub;
-    let blocksChainModuleStub;
+    let busStub: BusStub;
+    let accountLogicStub: AccountLogicStub;
+    let blocksProcessModuleStub: BlocksSubmoduleProcessStub;
+    let blocksChainModuleStub: BlocksSubmoduleChainStub;
 
     let lastBlock;
     let error;
