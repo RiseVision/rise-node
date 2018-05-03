@@ -118,6 +118,6 @@ export interface ITransactionsModule extends IModule {
   /**
    * Get transaction by id
    */
-  getByID<T = any>(id: string): Promise<IConfirmedTransaction<T>>;
+  getByID<T = any>(id: string): Promise<TransactionsModel>;
 
 }

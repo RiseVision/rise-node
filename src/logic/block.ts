@@ -279,10 +279,12 @@ export class BlockLogic implements IBlockLogic {
    * TODO: Change method name to something more meaningful as this does NOT save
    */
   public dbSave(block: SignedBlockType): DBOp<BlocksModel & { id: string }> {
+    const values = {...block } ;
+    delete values.transactions;
     return {
       model : BlocksModel,
       type  : 'create',
-      values: block,
+      values,
     };
   }
 

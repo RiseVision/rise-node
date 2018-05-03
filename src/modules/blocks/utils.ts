@@ -11,7 +11,7 @@ import { IBlockLogic, IRoundsLogic, ITransactionLogic } from '../../ioc/interfac
 import { IBlocksModule, IBlocksModuleUtils } from '../../ioc/interfaces/modules/';
 import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType } from '../../logic/';
-import { AccountsModel, BlocksModel, RoundsFeesModel } from '../../models';
+import { AccountsModel, BlocksModel, RoundsFeesModel, TransactionsModel } from '../../models';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
 import { publicKey } from '../../types/sanityTypes';
 
@@ -102,8 +102,11 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
    * @return {Promise<BlocksModel>}
    */
   public async loadLastBlock(): Promise<BlocksModel> {
-    const b = await BlocksModel.findOne({ order: [['height', 'DESC']], limit: 1 });
-    await b.populateTransactions();
+    const b                     = await BlocksModel.findOne({
+      order  : [['height', 'DESC']],
+      include: [TransactionsModel],
+      limit  : 1
+    });
     this.blocksModule.lastBlock = b;
     return b;
   }
@@ -168,7 +171,10 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
       params.lastId = filter.lastId;
     }
     return await this.dbSequence.addAndPromise<BlocksModel[]>(async () => {
-      const block = await BlocksModel.findOne({ where: { id: filter.lastId || filter.id || null } });
+      const block = await BlocksModel.findOne({
+        include: [TransactionsModel],
+        where  : { id: filter.lastId || filter.id || null },
+      });
 
       const height = block !== null ? block.height : 0;
       // Calculate max block height for database query

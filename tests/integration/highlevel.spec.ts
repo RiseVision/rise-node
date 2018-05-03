@@ -1,4 +1,5 @@
 // tslint:disable
+import 'reflect-metadata';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
@@ -77,10 +78,10 @@ describe('highlevel checks', function () {
         const tx = await createSendTransaction(1, funds - systemModule.getFees().fees.send, senderAccount, '1R');
         expect(blocksModule.lastBlock.height).is.eq(3);
 
-        // txmodule should be in db with correct confimed height
+        // txmodule should be in db with correct blockId
         const dbTX = await txModule.getByID(tx.id);
         expect(dbTX.id).to.be.deep.eq(tx.id);
-        expect(dbTX.height).to.be.eq(3);
+        expect(dbTX.blockId).to.be.eq(blocksModule.lastBlock.id);
 
         // Tx pool should not have it in pool
         expect(txPool.transactionInPool(tx.id)).is.false;

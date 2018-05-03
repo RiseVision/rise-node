@@ -7,7 +7,7 @@ import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules/
 import { Symbols } from '../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType } from '../logic/';
 import { IBaseTransaction, IConfirmedTransaction } from '../logic/transactions/';
-import { AccountsModel } from '../models';
+import { AccountsModel, BlocksModel, TransactionsModel } from '../models';
 import txSQL from '../sql/logic/transactions';
 
 @injectable()
@@ -144,7 +144,7 @@ export class TransactionsModule implements ITransactionsModule {
    * Undoes confirmed transaction.
    */
   public async undo(transaction: IConfirmedTransaction<any>,
-                    block: SignedBlockType, sender: AccountsModel): Promise<void> {
+                    block: BlocksModel, sender: AccountsModel): Promise<void> {
     this.logger.debug('Undoing confirmed transaction', transaction.id);
     await this.dbHelper.performOps(await this.transactionLogic.undo(transaction, block, sender));
   }
@@ -356,11 +356,11 @@ export class TransactionsModule implements ITransactionsModule {
    * Get transaction by id
    */
   public async getByID<T = any>(id: string): Promise<IConfirmedTransaction<T>> {
-    const rows = await this.db.query(txSQL.getById, { id });
-    if (rows.length === 0) {
-      throw new Error(`Transaction not found: ${id}`);
+    const tx = await TransactionsModel.findById(id) as any;
+    if (tx === null) {
+      throw new Error('Transaction not found');
     }
-    return this.transactionLogic.dbRead(rows[0]);
+    return tx;
   }
 
 }

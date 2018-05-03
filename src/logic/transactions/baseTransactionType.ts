@@ -40,7 +40,7 @@ export interface IBaseTransaction<T> {
 
 export interface IConfirmedTransaction<T> extends IBaseTransaction<T> {
   blockId: string;
-  height: number;
+  height?: number;
   senderId: string;
   recipientPublicKey?: string;
   confirmations?: number;

@@ -281,7 +281,7 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     // Check sender public key
-    if (sender.publicKey && sender.publicKey.equals(tx.senderPublicKey)) {
+    if (sender.publicKey && !sender.publicKey.equals(tx.senderPublicKey)) {
       // tslint:disable-next-line
       throw new Error(`Invalid sender public key: ${tx.senderPublicKey.toString('hex')} expected ${sender.publicKey.toString('hex')}`);
     }
@@ -543,7 +543,9 @@ export class TransactionLogic implements ITransactionLogic {
    * Epurates the tx object by removing null and undefined fields
    * Pass it through schema validation and then calls subtype objectNormalize.
    */
-  public objectNormalize(tx: IBaseTransaction<any>|ITransportTransaction<any>): IBaseTransaction<any> {
+  public objectNormalize(tx: IConfirmedTransaction<any>): IConfirmedTransaction<any>;
+  // tslint:disable-next-line max-line-length
+  public objectNormalize(tx: IBaseTransaction<any> | ITransportTransaction<any> | IConfirmedTransaction<any>): IBaseTransaction<any> | IConfirmedTransaction<any> {
     this.assertKnownTransactionType(tx.type);
     for (const key in tx) {
       if (tx[key] === null || typeof(tx[key]) === 'undefined') {

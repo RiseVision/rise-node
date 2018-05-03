@@ -1,7 +1,6 @@
 import { Column, DataType, HasMany, Model, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
 import { SignedBlockType } from '../logic';
 import { TransactionsModel } from './TransactionsModel';
-import { IConfirmedTransaction } from '../logic/transactions';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
@@ -60,12 +59,11 @@ export class BlocksModel extends Model<BlocksModel> {
   @Column(DataType.BLOB)
   public blockSignature: Buffer;
 
+  public transactions: TransactionsModel[];
+
   // tslint:disable-next-line
   @HasMany(() => TransactionsModel, {as: "TransactionsModel"})
   private TransactionsModel: TransactionsModel[];
-
-  public transactions: TransactionsModel[];
-
 
   // tslint:disable member-ordering
   public static classFromPOJO(pojo: SignedBlockType): BlocksModel {
@@ -74,6 +72,3 @@ export class BlocksModel extends Model<BlocksModel> {
     return toRet;
   }
 }
-//
-// const bit = new TransactionsModel();
-// const b: IConfirmedTransaction<any> = bit;

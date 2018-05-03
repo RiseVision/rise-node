@@ -14,7 +14,7 @@ import {
 import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType } from '../../logic/';
 import { IConfirmedTransaction } from '../../logic/transactions/';
-import { AccountsModel, BlocksModel } from '../../models/';
+import { AccountsModel, BlocksModel, TransactionsModel } from '../../models/';
 
 @injectable()
 export class BlocksModuleChain implements IBlocksModuleChain {
@@ -283,12 +283,12 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    */
   @WrapInBalanceSequence
   private async popLastBlock(lb: BlocksModel): Promise<BlocksModel> {
-    const previousBlock = await BlocksModel.findById(lb.previousBlock);
+    const previousBlock = await BlocksModel.findById(lb.previousBlock, { include: [ TransactionsModel ]});
 
     if (previousBlock === null) {
       throw new Error('previousBlock is null');
     }
-    const txs = (await previousBlock.populateTransactions()).slice().reverse();
+    const txs = previousBlock.transactions.slice().reverse();
 
     await BlocksModel.sequelize.transaction(async (dbTX) => {
       for (const tx of txs) {

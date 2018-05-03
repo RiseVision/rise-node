@@ -10,6 +10,7 @@ import { ISystemModule, ITransactionsModule, IAccountsModule } from '../../../sr
 import { Symbols } from '../../../src/ioc/symbols';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import * as txCrafter from '../../utils/txCrafter';
+import { toBufferedTransaction } from '../../utils/txCrafter';
 
 const delegates = require('../genesisDelegates.json');
 
@@ -36,7 +37,7 @@ export const getKeypairByPkey = (pk: publicKey): IKeypair => {
 export const confirmTransactions = async (txs: Array<ITransaction<any>>, confirmations: number = 1) => {
   const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
   try {
-    await txModule.receiveTransactions(txs, false, false);
+    await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
   } catch (e) {
     console.warn('receive tx err', e);
   }

@@ -38,7 +38,6 @@ export class DBHelper {
   }
 
   public handleInsert(insertOp: DBCreateOp<any>) {
-    // console.log(insertOp.values, insertOp.model.rawAttributes);
     return insertOp.model.sequelize.getQueryInterface().QueryGenerator.insertQuery(
       insertOp.model.getTableName(),
       insertOp.values,
