@@ -216,8 +216,7 @@ export class RoundLogic implements IRoundLogic {
       }));
     }
 
-    console.log(queries);
-    this.scope.library.logger.trace('Applying round', queries);
+    this.scope.library.logger.trace('Applying round', queries.length);
     return queries;
   }
 

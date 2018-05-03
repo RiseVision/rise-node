@@ -159,7 +159,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       process.exit(0);
     }
     this.blocksModule.lastBlock = BlocksModel.classFromPOJO(block);
-    await this.roundsModule.tick(this.blocksModule.lastBlock);
+    await BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
   }
 
   public async applyBlock(block: SignedAndChainedBlockType, broadcast: boolean, saveBlock: boolean) {

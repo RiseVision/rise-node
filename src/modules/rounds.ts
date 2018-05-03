@@ -62,7 +62,7 @@ export class RoundsModule implements IRoundsModule {
    * @param {Transaction} transaction
    */
   public backwardTick(block: BlocksModel, previousBlock: SignedBlockType, transaction: Transaction) {
-    return this.innerTick(block, true, async (roundLogicScope) => {
+    return this.innerTick(block,  transaction, true, async (roundLogicScope) => {
       this.logger.debug('Performing backward tick');
 
       const roundLogic            = new this.RoundLogic(roundLogicScope, this.slots);
@@ -79,9 +79,9 @@ export class RoundsModule implements IRoundsModule {
   public async tick(block: SignedBlockType, transaction: Transaction) {
     return this.innerTick(
       block,
+      transaction,
       false,
       async (roundLogicScope) => {
-
         this.logger.debug('Performing forward tick');
         const roundLogic            = new this.RoundLogic(roundLogicScope, this.slots);
         const snapshotRound         = (
@@ -117,6 +117,7 @@ export class RoundsModule implements IRoundsModule {
           this.logger.trace('Round snapshot done');
         }
       });
+
   }
 
   /**
@@ -127,6 +128,7 @@ export class RoundsModule implements IRoundsModule {
   }
 
   private async innerTick(block: SignedBlockType,
+                          dbTransaction: Transaction,
                           backwards: boolean,
                           txGenerator: (ls: RoundLogicScope) => Promise<any>,
                           afterTxPromise: () => Promise<any> = () => Promise.resolve(null)) {
@@ -139,7 +141,7 @@ export class RoundsModule implements IRoundsModule {
     try {
       // Set ticking flag to true
       this.appStateLogic.set('rounds.isTicking', true);
-      let roundSums = finishRound ? await this.sumRound(round) : null;
+      let roundSums = finishRound ? await this.sumRound(round, dbTransaction) : null;
       if (block.height === 1 && roundSums.roundDelegates.length !== 1) {
         // in round 1 (and height=1) and when verifying snapshot delegates are there (and created in 2nd round #1)
         // so roundDelegates are 101 not 1 (genesis generator) causing genesis to have an extra block accounted.
@@ -189,9 +191,9 @@ export class RoundsModule implements IRoundsModule {
   }
 
   // tslint:disable-next-line
-  private async sumRound(round: number): Promise<{ roundFees: number, roundRewards: number[], roundDelegates: Buffer[] }> {
+  private async sumRound(round: number, tx: Transaction): Promise<{ roundFees: number, roundRewards: number[], roundDelegates: Buffer[] }> {
     this.logger.debug('Summing round', round);
-    const res = await RoundsModel.sumRound(this.constants.activeDelegates, round);
+    const res = await RoundsModel.sumRound(this.constants.activeDelegates, round, tx);
 
     const roundRewards   = res.rewards.map((reward) => Math.floor(parseFloat(reward)));
     const roundFees      = Math.floor(parseFloat(res.fees));

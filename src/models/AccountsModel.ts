@@ -99,9 +99,13 @@ export class AccountsModel extends Model<AccountsModel> {
 
 
 
+  @Column(DataType.TEXT)
   public multisignatures?: publicKey[];
+  @Column(DataType.TEXT)
   public u_multisignatures?: publicKey[];
+  @Column(DataType.TEXT)
   public delegates?: publicKey[];
+  @Column(DataType.TEXT)
   public u_delegates?: publicKey[];
 
 

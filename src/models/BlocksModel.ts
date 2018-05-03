@@ -1,10 +1,22 @@
-import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import { Column, DataType, HasMany, Model, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
 import { SignedBlockType } from '../logic';
 import { TransactionsModel } from './TransactionsModel';
 import { IConfirmedTransaction } from '../logic/transactions';
+import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
+import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
 @Table({tableName: 'blocks'})
 export class BlocksModel extends Model<BlocksModel> {
+
+  constructor(values?: FilteredModelAttributes<BlocksModel>, options?: IBuildOptions) {
+    super(values, options);
+    if (this.TransactionsModel == null) {
+      this.transactions = [];
+    } else {
+      this.transactions = this.TransactionsModel.sort((a, b) => a.rowId - b.rowId);
+    }
+  }
+
   @PrimaryKey
   @Column
   public id: string;
@@ -49,13 +61,11 @@ export class BlocksModel extends Model<BlocksModel> {
   public blockSignature: Buffer;
 
   // tslint:disable-next-line
-  public transactions: TransactionsModel[] = null;
-  public async populateTransactions(): Promise<TransactionsModel[]> {
-    if (this.transactions === null) {
-      this.transactions = await TransactionsModel.findAll({where: {blockId: this.id}});
-    }
-    return this.transactions;
-  }
+  @HasMany(() => TransactionsModel, {as: "TransactionsModel"})
+  private TransactionsModel: TransactionsModel[];
+
+  public transactions: TransactionsModel[];
+
 
   // tslint:disable member-ordering
   public static classFromPOJO(pojo: SignedBlockType): BlocksModel {

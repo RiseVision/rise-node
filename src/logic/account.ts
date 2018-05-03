@@ -301,7 +301,7 @@ export class AccountLogic implements IAccountLogic {
 
     return Promise.resolve(
       AccountsModel.scope(scope).findAll({
-        attributes: realFields,
+        // attributes: realFields, // NOTE: do not re-SET!
         limit,
         offset,
         order: typeof(sort) === 'string' ?

@@ -1,4 +1,5 @@
 import * as sequelize from 'sequelize';
+import { Transaction } from 'sequelize';
 import { Column, DataType, Model, Table } from 'sequelize-typescript';
 import * as sequelizeUtils from 'sequelize/lib/utils';
 import { publicKey } from '../types/sanityTypes';
@@ -21,7 +22,7 @@ export class RoundsModel extends Model<RoundsModel> {
   public round: number;
 
   // tslint:disable member-ordering
-  public static async sumRound(activeDelegates: number, round: number):
+  public static async sumRound(activeDelegates: number, round: number, tx: Transaction):
     Promise<{ fees: null | string, rewards: null | string[], delegates: null | Buffer[] }> {
 
     const [res] = await this.sequelize.query(
@@ -34,18 +35,7 @@ export class RoundsModel extends Model<RoundsModel> {
       ) r`,
       {
         replacements: { activeDelegates, round },
-        type        : sequelize.QueryTypes.SELECT,
-      }
-    );
-    return res;
-  }
-
-  public static async getVotes(round: number): Promise<{ delegate: publicKey, amount: string, round: string }> {
-    const [res] = await this.sequelize.query(
-      `SELECT d."delegate", d."amount" FROM (SELECT m."delegate", SUM(m."amount") AS "amount", "round"
-      FROM mem_round m GROUP BY m."delegate", m."round") AS d WHERE "round" = (:round)::bigint`,
-      {
-        replacements: { round },
+        transaction : tx,
         type        : sequelize.QueryTypes.SELECT,
       }
     );

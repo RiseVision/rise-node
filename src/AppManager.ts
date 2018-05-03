@@ -33,7 +33,7 @@ import {
   z_schema,
 } from './helpers/';
 import { IBlockLogic, IPeerLogic, ITransactionLogic } from './ioc/interfaces/logic';
-import { IBlocksModuleChain } from './ioc/interfaces/modules';
+import { IAccountsModule, IBlocksModuleChain } from './ioc/interfaces/modules';
 import { Symbols } from './ioc/symbols';
 import {
   AccountLogic,
@@ -216,11 +216,12 @@ export class AppManager {
     this.server     = http.createServer(this.expressApp);
     const io        = socketIO(this.server);
     const db        = await Database.connect(this.appConfig.db, this.logger);
-    ((require('fs'))).unlinkSync(`${__dirname}/../sequelize.log`);
+    // ((require('fs'))).unlinkSync(`${__dirname}/../sequelize.log`);
     const sequelize = new Sequelize({
-      logging(msg) {
-        (require('fs')).appendFileSync(`${__dirname}/../sequelize.log`, msg+"\n");
-      },
+      // logging(msg) {
+      //   (require('fs')).appendFileSync(`${__dirname}/../sequelize.log`, msg+"\n");
+      // },
+      logging: false,
       database: this.appConfig.db.database,
       dialect : 'postgres',
       host    : this.appConfig.db.host,
@@ -390,7 +391,9 @@ export class AppManager {
     await loaderModule.loadBlockChain()
       .catch(catchToLoggerAndRemapError('Cannot load blockchain', this.logger));
     this.logger.info('App Booted');
-
+    // const aM = this.container.get<IAccountsModule>(Symbols.modules.accounts);
+    // const bit = await aM.getAccount({address: '15326312953541715317R'});
+    // console.log(bit);
   }
 
   private getElementsFromContainer<T = any>(symbols: { [k: string]: symbol | { [k: string]: symbol } }): T[] {

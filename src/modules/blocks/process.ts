@@ -32,7 +32,7 @@ import {
   SignedBlockType,
 } from '../../logic/';
 import { IBaseTransaction } from '../../logic/transactions/';
-import { BlocksModel } from '../../models';
+import { BlocksModel, TransactionsModel } from '../../models';
 import schema from '../../schema/blocks';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
 
@@ -165,6 +165,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     this.logger.debug('Loading blocks offset', { limit, offset, verify });
 
     const blocks: BlocksModel[] = await BlocksModel.findAll({
+      include: [ TransactionsModel ],
       order: ['height', 'rowId'],
       where: {
         height: {
@@ -182,7 +183,6 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       }
       this.logger.debug('Processing block', block.id);
       if (verify && block.id !== this.genesisBlock.id) {
-        await block.populateTransactions();
         // Sanity check of the block, if values are coherent.
         // No access to database.
         const check = await this.blocksVerifyModule.verifyBlock(block);
