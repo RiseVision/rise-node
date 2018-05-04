@@ -1,13 +1,13 @@
 import { expect } from 'chai';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import * as supertest from 'supertest';
+import initializer from '../common/init';
 import { constants, TransactionType } from '../../../src/helpers';
 import { ITransactionPoolLogic } from '../../../src/ioc/interfaces/logic';
 import { ITransactionsModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { IBaseTransaction } from '../../../src/logic/transactions';
 
-import initializer from '../common/init';
 import {
   createRandomAccountWithFunds, createRandomWallet,
   createSendTransaction,
@@ -127,9 +127,10 @@ describe('api/transactions', () => {
       });
       it('should return empty tx if senderId did not broadcast', async () => {
         return supertest(initializer.appManager.expressApp)
-          .get('/api/transactions?senderId=1R')
+          .get(`/api/transactions?senderId=1R&and:senderPublicKey=${voterAccount.publicKey}&and:minAmount=0`)
           .expect(200)
           .then((resp) => {
+            console.log(resp.body);
             expect(resp.body.transactions).to.be.empty;
           });
       });

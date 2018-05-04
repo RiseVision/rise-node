@@ -11,6 +11,7 @@ import { Symbols } from '../ioc/symbols';
 import { IConfirmedTransaction, VoteAsset } from '../logic/transactions';
 import schema from '../schema/transactions';
 import { APIError, DeprecatedAPIError } from './errors';
+import { TransactionsModel } from '../models';
 
 @JsonController('/api/transactions')
 @injectable()
@@ -21,6 +22,8 @@ export class TransactionsAPI {
 
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
+  @inject(Symbols.models.transactions)
+  private TXModel: typeof TransactionsModel;
 
   @inject(Symbols.logic.transaction)
   private txLogic: ITransactionLogic;
