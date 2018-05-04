@@ -89,7 +89,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
 
     // check multisig asset is valid hex publickeys
     for (const key of tx.asset.multisignature.keysgroup) {
-      if (!key || typeof(key) !== 'string' || key.length !== 32 + 1) {
+      if (!key || typeof(key) !== 'string' || key.length !== 64 + 1) {
         throw new Error('Invalid member in keysgroup');
       }
     }

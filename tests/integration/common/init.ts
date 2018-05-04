@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import * as monitor from 'pg-monitor';
+import 'reflect-metadata';
 import { Bus, constants, loggerCreator, Slots } from '../../../src/helpers';
 import { AppManager } from '../../../src/AppManager';
 import { Symbols } from '../../../src/ioc/symbols';
@@ -50,12 +51,15 @@ export class IntegrationTestInitializer {
   public createBlocks(howMany: number, when: 'each' | 'single') {
     const before = when === 'single' ? 'before' : 'beforeEach';
     const after  = when === 'single' ? 'after' : 'afterEach';
-    global[before](async () => {
-      await this.rawMineBlocks(howMany);
+    const self = this;
+    global[before](async function () {
+      this.timeout(howMany * 100);
+      await self.rawMineBlocks(howMany);
     });
 
-    global[after](async () => {
-      await this.rawDeleteBlocks(howMany);
+    global[after](async function () {
+      this.timeout(howMany * 100);
+      await self.rawDeleteBlocks(howMany);
     });
 
   }
@@ -99,7 +103,7 @@ export class IntegrationTestInitializer {
     const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
     const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
     const height          = blockModule.lastBlock.height;
-    // console.log(`Mining ${howMany} blocks from height: ${height}`);
+     console.log(`Mining ${howMany} blocks from height: ${height}`);
     for (let i = 0; i < howMany; i++) {
       const delegates  = await delegatesModule.generateDelegateList(height + i + 1);
       const theSlot    = height + i + 1;

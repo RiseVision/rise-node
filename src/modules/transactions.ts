@@ -355,7 +355,7 @@ export class TransactionsModule implements ITransactionsModule {
   /**
    * Get transaction by id
    */
-  public async getByID<T = any>(id: string): Promise<IConfirmedTransaction<T>> {
+  public async getByID<T = any>(id: string): Promise<TransactionsModel> {
     const tx = await TransactionsModel.findById(id) as any;
     if (tx === null) {
       throw new Error('Transaction not found');

@@ -1,5 +1,4 @@
 import { inject, injectable } from 'inversify';
-import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
 import { constants, Diff, TransactionType } from '../../helpers/';
 import { IAccountLogic, IRoundsLogic } from '../../ioc/interfaces/logic';
@@ -171,11 +170,6 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
         votes        : Array.isArray(tx.asset.votes) ? tx.asset.votes.join(',') : null,
       },
     };
-  }
-
-  public async restoreAsset(tx: IBaseTransaction<any>, db: IDatabase<any>): Promise<IBaseTransaction<VoteAsset>> {
-    const voteRow = await VotesModel.findOne({ where: { transactionId: tx.id } });
-    return { ...tx, ... { asset: { votes: voteRow.votes.split(',') } } };
   }
 
   private assertValidVote(vote: string) {

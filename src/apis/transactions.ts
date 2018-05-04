@@ -8,7 +8,7 @@ import { assertValidSchema, SchemaValid, ValidateSchema } from '../helpers/decor
 import { ITransactionLogic } from '../ioc/interfaces/logic';
 import { ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { IConfirmedTransaction, VoteAsset } from '../logic/transactions';
+import { TransactionsModel } from '../models';
 import schema from '../schema/transactions';
 import { APIError, DeprecatedAPIError } from './errors';
 
@@ -21,6 +21,8 @@ export class TransactionsAPI {
 
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
+  @inject(Symbols.models.transactions)
+  private TXModel: typeof TransactionsModel;
 
   @inject(Symbols.logic.transaction)
   private txLogic: ITransactionLogic;
@@ -59,15 +61,15 @@ export class TransactionsAPI {
     @QueryParams() params: { id: string }) {
 
     const { id } = params;
-    let tx       = await this.transactionsModule.getByID(id);
-    tx           = await this.txLogic.restoreAsset(tx);
+    const tx = (await this.transactionsModule.getByID(id)).toTransport<any>();
+
     if (tx.type === TransactionType.VOTE) {
       // tslint:disable-next-line
       tx['votes'] = {
-        added  : (tx as (IConfirmedTransaction<VoteAsset>)).asset.votes
+        added  : tx.asset.votes
           .filter((v) => v.startsWith('+'))
           .map((v) => v.substr(1)),
-        deleted: (tx as (IConfirmedTransaction<VoteAsset>)).asset.votes
+        deleted: tx.asset.votes
           .filter((v) => v.startsWith('-'))
           .map((v) => v.substr(1)),
       };

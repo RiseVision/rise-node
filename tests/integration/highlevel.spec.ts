@@ -29,6 +29,7 @@ import {
 import { Ed, JobsQueue, wait } from '../../src/helpers';
 import BigNumber from 'bignumber.js';
 import { toBufferedTransaction } from '../utils/txCrafter';
+import { BlocksModel } from '../../src/models';
 
 // tslint:disable no-unused-expression
 chai.use(chaiAsPromised);
@@ -75,7 +76,7 @@ describe('highlevel checks', function () {
         expect(txPool.transactionInPool(tx.id)).is.false;
       });
       it('should allow spending all money without fee', async () => {
-
+console.log('bit');
         const tx = await createSendTransaction(1, funds - systemModule.getFees().fees.send, senderAccount, '1R');
         expect(blocksModule.lastBlock.height).is.eq(3);
 
@@ -98,7 +99,11 @@ describe('highlevel checks', function () {
               )
             )
         );
-        await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
+        await txModule.receiveTransactions(txs
+          .map((tx) => toBufferedTransaction(tx)),
+          false,
+          false
+        );
         await initializer.rawMineBlocks(1);
 
         expect(blocksModule.lastBlock.transactions.length).to.be.eq(2);
@@ -116,8 +121,8 @@ describe('highlevel checks', function () {
         const txs       = [
           await createVoteTransaction(0, senderAccount, delegate1.publicKey, true),
           await createVoteTransaction(0, senderAccount, delegate2.publicKey, true),
-        ].map((t) => toBufferedTransaction(t));
-        await txModule.receiveTransactions(txs, false, false);
+        ];
+        await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
         await initializer.rawMineBlocks(1);
         expect(blocksModule.lastBlock.transactions.length).to.be.eq(1);
         expect(blocksModule.lastBlock.height).to.be.eq(3);
@@ -127,8 +132,8 @@ describe('highlevel checks', function () {
         const txs      = [
           await createVoteTransaction(0, senderAccount, delegate.publicKey, true, {timestamp: 1}),
           await createVoteTransaction(0, senderAccount, delegate.publicKey, true),
-        ].map((t) => toBufferedTransaction(t));
-        await txModule.receiveTransactions(txs, false, false);
+        ];
+        await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
         await initializer.rawMineBlocks(1);
         expect(blocksModule.lastBlock.transactions.length).to.be.eq(1);
         expect(blocksModule.lastBlock.height).to.be.eq(3);
@@ -138,9 +143,9 @@ describe('highlevel checks', function () {
         const txs      = [
           await createVoteTransaction(0, senderAccount, delegate.publicKey, true),
           await createVoteTransaction(0, senderAccount, delegate.publicKey, false),
-        ].map((t) => toBufferedTransaction(t));
+        ];
         try {
-          await txModule.receiveTransactions(txs, false, false);
+          await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
         } catch (e) {
           void 0;
         }
@@ -270,9 +275,9 @@ describe('highlevel checks', function () {
         const txs = [
           await createRegDelegateTransaction(0, senderAccount, 'vekexasia'),
           await createRegDelegateTransaction(0, senderAccount, 'meow'),
-        ].map((t) => toBufferedTransaction(t));
+        ];
 
-        await txModule.receiveTransactions(txs, false, false);
+        await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
         await initializer.rawMineBlocks(1);
         const acc = await accModule.getAccount({address: senderAccount.address});
         expect(acc.username).is.eq('meow');
@@ -287,7 +292,7 @@ describe('highlevel checks', function () {
         const pk  = createRandomWallet().publicKey;
         const tx  = await createSecondSignTransaction(1, senderAccount, pk);
         const acc = await accModule.getAccount({address: senderAccount.address});
-        expect(acc.secondPublicKey).to.be.eq(pk);
+        expect(acc.secondPublicKey.toString('hex')).to.be.eq(pk);
         expect(acc.secondSignature).to.be.eq(1);
       });
       it('should not allow 2 second signature in 2 diff blocks', async () => {
@@ -296,7 +301,7 @@ describe('highlevel checks', function () {
         const tx  = await createSecondSignTransaction(1, senderAccount, pk);
         const tx2 = await createSecondSignTransaction(1, senderAccount, pk2);
         const acc = await accModule.getAccount({address: senderAccount.address});
-        expect(acc.secondPublicKey).to.be.eq(pk);
+        expect(acc.secondPublicKey.toString('hex')).to.be.eq(pk);
         expect(acc.secondSignature).to.be.eq(1);
         expect(blocksModule.lastBlock.transactions).is.empty;
       });
@@ -309,7 +314,7 @@ describe('highlevel checks', function () {
         ];
         await confirmTransactions(txs, 1);
         const acc = await accModule.getAccount({address: senderAccount.address});
-        expect(acc.secondPublicKey).to.be.eq(pk2);
+        expect(acc.secondPublicKey.toString('hex')).to.be.eq(pk2);
         expect(acc.secondSignature).to.be.eq(1);
         expect(blocksModule.lastBlock.transactions.length).is.eq(1);
       });
@@ -456,10 +461,10 @@ describe('highlevel checks', function () {
         await supertest(initializer.appManager.expressApp)
           .post('/peer/blocks')
           .set(fieldheader)
-          .send({block})
+          .send({block: BlocksModel.toStringBlockType(block)})
           .expect(200);
 
-        expect(blocksModule.lastBlock.blockSignature).to.be.eq(block.blockSignature);
+        expect(blocksModule.lastBlock.blockSignature).to.be.deep.eq(block.blockSignature);
 
         // Check balances are correct so that no other applyUnconfirmed happened.
         // NOTE: this could fail as <<<--HERE-->>> an applyUnconfirmed (of NEXT tx) could
@@ -509,7 +514,7 @@ describe('highlevel checks', function () {
       );
 
 
-      for (let i = 0; i < 250; i++) {
+      for (let i = 0; i < 500; i++) {
         const block = await initializer.generateBlock(txs.slice(i, i + 1));
         console.log (`####`);
         console.log(block.transactions[0].id);
@@ -530,11 +535,11 @@ describe('highlevel checks', function () {
           supertest(initializer.appManager.expressApp)
             .post('/peer/blocks')
             .set(fieldheader)
-            .send({block})
+            .send({block: BlocksModel.toStringBlockType(block)})
             .expect(200)
         ]);
 
-        expect(blocksModule.lastBlock.blockSignature).to.be.eq(block.blockSignature);
+        expect(blocksModule.lastBlock.blockSignature).to.be.deep.eq(block.blockSignature);
 
         // Check balances are correct so that no other applyUnconfirmed happened.
         // NOTE: this could fail as <<<--HERE-->>> an applyUnconfirmed (of NEXT tx) could

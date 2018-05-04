@@ -98,10 +98,6 @@ export abstract class BaseTransactionType<T, M extends Model<any>> {
     return Promise.resolve();
   }
 
-  public restoreAsset(tx: IBaseTransaction<any>, db: IDatabase<any>): Promise<IBaseTransaction<T>> {
-    return Promise.resolve(tx);
-  }
-
   public ready(tx: IBaseTransaction<T>, sender: AccountsModel): boolean {
     if (Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
       if (!Array.isArray(tx.signatures)) {
