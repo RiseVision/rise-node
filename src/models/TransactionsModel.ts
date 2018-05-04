@@ -70,7 +70,10 @@ export class TransactionsModel extends Model<TransactionsModel> {
 
   @Column(DataType.STRING)
   public get signatures(): string[] {
-    return (this.getDataValue('signatures') || []).join(',');
+    if (this.getDataValue('signatures')) {
+      return this.getDataValue('signatures').split(',');
+    }
+    return [];
   }
 
   public set signatures(value: string[]) {
@@ -115,10 +118,19 @@ export class TransactionsModel extends Model<TransactionsModel> {
   }
 
   public static toTransportTransaction<T>(t: IBaseTransaction<any>): ITransportTransaction<T> {
-    const obj = {... t};
+    let obj;
+    if (t instanceof TransactionsModel) {
+      obj = {... t.toJSON(), asset: t.asset };
+      delete obj.multisigData;
+      delete obj.votes;
+      delete obj.username;
+      delete obj.secondSignPublicKey;
+    } else {
+      obj = {... t};
+    }
     ['requesterPublicKey', 'senderPublicKey', 'signSignature', 'signature']
       .forEach((k) => {
-        if (typeof(obj[k]) !== 'undefined') {
+        if (typeof(obj[k]) !== 'undefined' && obj[k] !== null) {
           obj[k] = obj[k].toString('hex');
         }
       });

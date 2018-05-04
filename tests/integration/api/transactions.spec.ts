@@ -122,6 +122,7 @@ describe('api/transactions', () => {
           .expect(200)
           .then((resp) => {
             expect(resp.body.transactions.length).to.be.eq(1);
+
             expect(resp.body.transactions[0].id).to.be.eq(voteTxID);
           });
       });

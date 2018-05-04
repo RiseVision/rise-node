@@ -68,14 +68,6 @@ export default {
           format: 'publicKey',
         },
       },
-      recipientPublicKeys   : {
-        type    : 'array',
-        minItems: 1,
-        items   : {
-          type  : 'string',
-          format: 'publicKey',
-        },
-      },
       senderIds             : {
         type    : 'array',
         minItems: 1,
