@@ -28,6 +28,7 @@ import {
 } from './common/utils';
 import { Ed, JobsQueue, wait } from '../../src/helpers';
 import BigNumber from 'bignumber.js';
+import { toBufferedTransaction } from '../utils/txCrafter';
 
 // tslint:disable no-unused-expression
 chai.use(chaiAsPromised);
@@ -97,7 +98,7 @@ describe('highlevel checks', function () {
               )
             )
         );
-        await txModule.receiveTransactions(txs, false, false);
+        await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
         await initializer.rawMineBlocks(1);
 
         expect(blocksModule.lastBlock.transactions.length).to.be.eq(2);
@@ -115,7 +116,7 @@ describe('highlevel checks', function () {
         const txs       = [
           await createVoteTransaction(0, senderAccount, delegate1.publicKey, true),
           await createVoteTransaction(0, senderAccount, delegate2.publicKey, true),
-        ];
+        ].map((t) => toBufferedTransaction(t));
         await txModule.receiveTransactions(txs, false, false);
         await initializer.rawMineBlocks(1);
         expect(blocksModule.lastBlock.transactions.length).to.be.eq(1);
@@ -126,7 +127,7 @@ describe('highlevel checks', function () {
         const txs      = [
           await createVoteTransaction(0, senderAccount, delegate.publicKey, true, {timestamp: 1}),
           await createVoteTransaction(0, senderAccount, delegate.publicKey, true),
-        ];
+        ].map((t) => toBufferedTransaction(t));
         await txModule.receiveTransactions(txs, false, false);
         await initializer.rawMineBlocks(1);
         expect(blocksModule.lastBlock.transactions.length).to.be.eq(1);
@@ -137,7 +138,7 @@ describe('highlevel checks', function () {
         const txs      = [
           await createVoteTransaction(0, senderAccount, delegate.publicKey, true),
           await createVoteTransaction(0, senderAccount, delegate.publicKey, false),
-        ];
+        ].map((t) => toBufferedTransaction(t));
         try {
           await txModule.receiveTransactions(txs, false, false);
         } catch (e) {
@@ -269,7 +270,7 @@ describe('highlevel checks', function () {
         const txs = [
           await createRegDelegateTransaction(0, senderAccount, 'vekexasia'),
           await createRegDelegateTransaction(0, senderAccount, 'meow'),
-        ];
+        ].map((t) => toBufferedTransaction(t));
 
         await txModule.receiveTransactions(txs, false, false);
         await initializer.rawMineBlocks(1);
@@ -317,7 +318,9 @@ describe('highlevel checks', function () {
     describe('multiSignature', () => {
       it('should create multisignature account', async () => {
         const keys     = new Array(3).fill(null).map(() => createRandomWallet());
-        const signedTx = createMultiSignTransaction(senderAccount, 3, keys.map((k) => `+${k.publicKey}`));
+        const signedTx = toBufferedTransaction(
+          createMultiSignTransaction(senderAccount, 3, keys.map((k) => `+${k.publicKey}`))
+        );
         await txModule.receiveTransactions([signedTx], false, false);
         await initializer.rawMineBlocks(1);
         // In pool => valid and not included in block.
@@ -350,13 +353,17 @@ describe('highlevel checks', function () {
       });
       it('should not allow min > than keys', async () => {
         const keys     = new Array(3).fill(null).map(() => createRandomWallet());
-        const signedTx = createMultiSignTransaction(senderAccount, 4, keys.map((k) => `+${k.publicKey}`));
+        const signedTx = toBufferedTransaction(
+          createMultiSignTransaction(senderAccount, 4, keys.map((k) => `+${k.publicKey}`))
+        );
         return expect(txModule.receiveTransactions([signedTx], false, false)).to.be
           .rejectedWith('Invalid multisignature min. Must be less than or equal to keysgroup size');
       });
       it('should keep tx in multisignature tx pool until all signature arrives, even if min is 2', async () => {
         const keys     = new Array(3).fill(null).map(() => createRandomWallet());
-        const signedTx = createMultiSignTransaction(senderAccount, 2, keys.map((k) => `+${k.publicKey}`));
+        const signedTx = toBufferedTransaction(
+          createMultiSignTransaction(senderAccount, 2, keys.map((k) => `+${k.publicKey}`))
+        );
         await txModule.receiveTransactions([signedTx], false, false);
         await initializer.rawMineBlocks(1);
         // In pool => valid and not included in block.
