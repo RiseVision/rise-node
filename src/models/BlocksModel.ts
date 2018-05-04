@@ -1,5 +1,5 @@
 import { Column, DataType, HasMany, Model, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
-import { SignedBlockType } from '../logic';
+import { BlockType, SignedBlockType } from '../logic';
 import { TransactionsModel } from './TransactionsModel';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
@@ -70,5 +70,18 @@ export class BlocksModel extends Model<BlocksModel> {
     const toRet = new this();
     Object.keys(pojo).forEach((k) => toRet[k] = pojo[k]);
     return toRet;
+  }
+
+  public static toStringBlockType(b: SignedBlockType): SignedBlockType<string> {
+    const txs = (b.transactions || [])
+      .map((t) => TransactionsModel.toTransportTransaction(t));
+
+    return {
+      ...b,
+      blockSignature    : b.blockSignature.toString('hex'),
+      transactions      : txs as any,
+      generatorPublicKey: b.generatorPublicKey.toString('hex'),
+      payloadHash       : b.payloadHash.toString('hex'),
+    };
   }
 }

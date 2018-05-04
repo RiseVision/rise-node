@@ -161,6 +161,18 @@ describe('api/accounts', () => {
           expect(response.body.delegates).to.not.be.empty;
           expect(response.body.delegates.length).to.be.eq(1);
           expect(response.body.delegates[0].publicKey).to.be.eq('b2778387b9ee350bf5f5d770baeebcb5ce859080f6ed15f33d285fec830a0dca');
+          expect(response.body.delegates[0]).to.be.deep.eq({
+            username: 'genesisDelegate34',
+            address: '8832350072536010884R',
+            publicKey: 'b2778387b9ee350bf5f5d770baeebcb5ce859080f6ed15f33d285fec830a0dca',
+            vote: 108910891000000,
+            producedblocks: 0,
+            missedblocks: 1,
+            rate: 73,
+            rank: 73,
+            approval: 0.99,
+            productivity: 0,
+          });
         });
     });
   });

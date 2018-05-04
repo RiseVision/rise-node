@@ -29,6 +29,7 @@ import {
 import { Ed, JobsQueue, wait } from '../../src/helpers';
 import BigNumber from 'bignumber.js';
 import { toBufferedTransaction } from '../utils/txCrafter';
+import { BlocksModel } from '../../src/models';
 
 // tslint:disable no-unused-expression
 chai.use(chaiAsPromised);
@@ -460,10 +461,10 @@ console.log('bit');
         await supertest(initializer.appManager.expressApp)
           .post('/peer/blocks')
           .set(fieldheader)
-          .send({block})
+          .send({block: BlocksModel.toStringBlockType(block)})
           .expect(200);
 
-        expect(blocksModule.lastBlock.blockSignature).to.be.eq(block.blockSignature);
+        expect(blocksModule.lastBlock.blockSignature).to.be.deep.eq(block.blockSignature);
 
         // Check balances are correct so that no other applyUnconfirmed happened.
         // NOTE: this could fail as <<<--HERE-->>> an applyUnconfirmed (of NEXT tx) could
@@ -513,7 +514,7 @@ console.log('bit');
       );
 
 
-      for (let i = 0; i < 250; i++) {
+      for (let i = 0; i < 500; i++) {
         const block = await initializer.generateBlock(txs.slice(i, i + 1));
         console.log (`####`);
         console.log(block.transactions[0].id);
@@ -534,11 +535,11 @@ console.log('bit');
           supertest(initializer.appManager.expressApp)
             .post('/peer/blocks')
             .set(fieldheader)
-            .send({block})
+            .send({block: BlocksModel.toStringBlockType(block)})
             .expect(200)
         ]);
 
-        expect(blocksModule.lastBlock.blockSignature).to.be.eq(block.blockSignature);
+        expect(blocksModule.lastBlock.blockSignature).to.be.deep.eq(block.blockSignature);
 
         // Check balances are correct so that no other applyUnconfirmed happened.
         // NOTE: this could fail as <<<--HERE-->>> an applyUnconfirmed (of NEXT tx) could

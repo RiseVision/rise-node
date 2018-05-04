@@ -3,6 +3,7 @@ import { TransactionType } from '../helpers';
 import * as sequelize from 'sequelize';
 import { MultiSignaturesModel } from './MultiSignaturesModel';
 import { BlocksModel } from './BlocksModel';
+import { IBaseTransaction, ITransportTransaction } from '../logic/transactions';
 
 const fields                 = ['id', 'rowId', 'blockId', 'type', 'timestamp', 'senderPublicKey', 'senderId', 'recipientId', 'amount', 'fee', 'signature', 'signSignature', 'requesterPublicKey'];
 const buildArrayArgAttribute = function (table: string, what: string, alias?: string): any {
@@ -103,6 +104,17 @@ export class TransactionsModel extends Model<TransactionsModel> {
       default:
         return {};
     }
+  }
+
+  public static toTransportTransaction<T>(t: IBaseTransaction<any>): ITransportTransaction<T> {
+    const obj = {... t};
+    ['requesterPublicKey', 'senderPublicKey', 'signSignature', 'signature']
+      .forEach((k) => {
+        if (typeof(obj[k]) !== 'undefined') {
+          obj[k] = obj[k].toString('hex');
+        }
+      });
+    return obj as any;
   }
 
 }
