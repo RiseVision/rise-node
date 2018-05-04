@@ -126,6 +126,14 @@ export class AccountsModel extends Model<AccountsModel> {
 
   }
 
+  public toPOJO() {
+    const toRet = this.toJSON();
+    ['publicKey', 'secondPublicKey'].forEach((pk) => {
+      toRet[pk] = toRet[pk] !== null ? toRet[pk].toString('hex'): null;
+    });
+    return toRet;
+  }
+
   public static restoreUnconfirmedEntries() {
     return this.update({
       u_isDelegate: sequelize.col('isDelegate'),

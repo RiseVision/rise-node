@@ -49,12 +49,26 @@ export class DelegatesAPI {
 
   @Get('/')
   @ValidateSchema()
-  public async getDelegates(@SchemaValid(schema.getDelegates, { castNumbers: true })
+  public async getDelegates(@SchemaValid(schema.getDelegates, {castNumbers: true})
                             @QueryParams() data: { orderBy: string, limit: number, offset: number }) {
     const d = await this.delegatesModule.getDelegates(data);
+    const delegates = d.delegates.map((item) => {
+      return {
+        address       : item.delegate.address,
+        username      : item.delegate.username,
+        publicKey     : item.delegate.hexPublicKey,
+        vote          : `${item.delegate.vote}`,
+        producedblocks: item.delegate.producedblocks,
+        missedblocks  : item.delegate.missedblocks,
+        rate          : item.info.rank,
+        rank          : item.info.rank,
+        approval      : item.info.approval,
+        productivity  : item.info.productivity
+      };
+    });
     if (d.sortField) {
       if (['approval', 'productivity', 'rank', 'vote'].indexOf(d.sortField) > -1) {
-        d.delegates.sort((a, b) => {
+        delegates.sort((a, b) => {
           if (d.sortMethod === 'ASC') {
             return a[d.sortField] - b[d.sortField];
           } else {
@@ -62,7 +76,7 @@ export class DelegatesAPI {
           }
         });
       } else if (['username', 'address', 'publicKey'].indexOf(d.sortField) > -1) {
-        d.delegates.sort((a, b) => {
+        delegates.sort((a, b) => {
           if (d.sortMethod === 'ASC') {
             return a[d.sortField].localeCompare(b[d.sortField]);
           } else {
@@ -71,26 +85,23 @@ export class DelegatesAPI {
         });
       }
     }
-    d.delegates = d.delegates.map((del) => ({ ...del, ...{ rate: del.info.rank } }));
-
-    const delegates = d.delegates.slice(d.offset, d.limit);
-    return { delegates, totalCount: d.count };
+    return {delegates: delegates.slice(d.offset, d.limit), totalCount: d.count};
   }
 
   @Get('/fee')
   @ValidateSchema()
-  public async getFee(@SchemaValid(schema.getFee, { castNumbers: true })
+  public async getFee(@SchemaValid(schema.getFee, {castNumbers: true})
                       @QueryParams() params: { height?: number }) {
-    const f            = this.system.getFees(params.height);
-    const { delegate } = f.fees;
+    const f          = this.system.getFees(params.height);
+    const {delegate} = f.fees;
     delete f.fees;
-    return { ...f, ... { fee: delegate } };
+    return {...f, ... {fee: delegate}};
 
   }
 
   @Get('/forging/getForgedByAccount')
   @ValidateSchema()
-  public async getForgedByAccount(@SchemaValid(schema.getForgedByAccount, { castNumbers: true })
+  public async getForgedByAccount(@SchemaValid(schema.getForgedByAccount, {castNumbers: true})
                                   // tslint:disable-next-line max-line-length
                                   @QueryParams() params: { generatorPublicKey: publicKey, start?: number, end?: number }) {
     if (typeof(params.start) !== 'undefined' || typeof(params.end) !== 'undefined') {
@@ -108,7 +119,7 @@ export class DelegatesAPI {
       };
     } else {
       const account = await this.accounts
-        .getAccount({ publicKey: Buffer.from(params.generatorPublicKey, 'hex') }, ['fees', 'rewards']);
+        .getAccount({publicKey: Buffer.from(params.generatorPublicKey, 'hex')}, ['fees', 'rewards']);
 
       if (!account) {
         throw new APIError('Account not found', 200);
@@ -129,11 +140,11 @@ export class DelegatesAPI {
                            @QueryParams() params: { publicKey: publicKey, username: string }) {
     // FIXME: Delegates returned are automatically limited by maxDelegates. This means that a delegate cannot be found
     // if ranked (username) below the desired value.
-    const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'username:asc' });
-    const delegate      = delegates
+    const {delegates} = await this.delegatesModule.getDelegates({orderBy: 'username:asc'});
+    const delegate    = delegates
       .find((d) => d.delegate.hexPublicKey === params.publicKey || d.delegate.username === params.username);
     if (delegate) {
-      return { delegate: { ...delegate, ...{ rate: delegate.info.rank } } };
+      return {delegate: {...delegate, ...{rate: delegate.info.rank}}};
     }
     throw new APIError('Delegate not found', 200);
   }
@@ -142,19 +153,19 @@ export class DelegatesAPI {
   @ValidateSchema()
   public async getVoters(@SchemaValid(schema.getVoters)
                          @QueryParams() params: { publicKey: publicKey }) {
-    const row       = await this.db.one(sql.getVoters, { publicKey: params.publicKey });
+    const row       = await this.db.one(sql.getVoters, {publicKey: params.publicKey});
     const addresses = row.accountIds ? row.accountIds : [];
 
     const accounts = await this.accounts.getAccounts(
-      { address: { $in: addresses }, sort: 'balance' },
+      {address: {$in: addresses}, sort: 'balance'},
       ['address', 'balance', 'username', 'publicKey']);
 
-    return { accounts };
+    return {accounts};
   }
 
   @Get('/search')
   @ValidateSchema()
-  public async search(@SchemaValid(schema.search, { castNumbers: true })
+  public async search(@SchemaValid(schema.search, {castNumbers: true})
                       @QueryParams() params: { q: string, limit?: number, orderBy: string }) {
 
     const orderBy = OrderBy(params.orderBy, {
@@ -171,17 +182,17 @@ export class DelegatesAPI {
       sortField : orderBy.sortField,
       sortMethod: orderBy.sortMethod,
     }));
-    return { delegates };
+    return {delegates};
   }
 
   @Get('/count')
   public async count() {
-    const { count } = await this.db.one(sql.count);
-    return { count };
+    const {count} = await this.db.one(sql.count);
+    return {count};
   }
 
   @Get('/getNextForgers')
-  public async getNextForgers(@QueryParam('limit', { required: false }) limit: number = 10) {
+  public async getNextForgers(@QueryParam('limit', {required: false}) limit: number = 10) {
     const curBlock = this.blocks.lastBlock;
 
     const activeDelegates = await this.delegatesModule.generateDelegateList(curBlock.height);
@@ -248,7 +259,7 @@ export class DelegatesAPI {
       throw new APIError('Forging is already enabled', 200);
     }
 
-    const account = await this.accounts.getAccount({ publicKey: kp.publicKey });
+    const account = await this.accounts.getAccount({publicKey: kp.publicKey});
     if (!account) {
       throw new APIError('Account not found', 200);
     }
@@ -276,7 +287,7 @@ export class DelegatesAPI {
       throw new APIError('Forging is already disabled', 200);
     }
 
-    const account = await this.accounts.getAccount({ publicKey: kp.publicKey });
+    const account = await this.accounts.getAccount({publicKey: kp.publicKey});
     if (!account) {
       throw new APIError('Account not found', 200);
     }

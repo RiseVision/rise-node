@@ -130,7 +130,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
       .findAll({
         attributes: ['id', 'height'],
         order     : [['height', 'DESC']],
-        where     : { height: { $in: heightsToQuery } },
+        where     : {height: {$in: heightsToQuery}},
       });
 
     if (blocks.length === 0) {
@@ -157,12 +157,12 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
 
     const ids: string[] = blocks.map((r) => r.id);
 
-    return { firstHeight: blocks[0].height, ids };
+    return {firstHeight: blocks[0].height, ids};
   }
 
   // tslint:disable-next-line max-line-length
   public async loadBlocksData(filter: { limit?: number, id?: string, lastId?: string }): Promise<BlocksModel[]> {
-    const params: any = { limit: filter.limit || 1 };
+    const params: any = {limit: filter.limit || 1};
     if (filter.id && filter.lastId) {
       throw new Error('Invalid filter: Received both id and lastId');
     } else if (filter.id) {
@@ -173,7 +173,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     return await this.dbSequence.addAndPromise<BlocksModel[]>(async () => {
       const block = await BlocksModel.findOne({
         include: [TransactionsModel],
-        where  : { id: filter.lastId || filter.id || null },
+        where  : {id: filter.lastId || filter.id || null},
       });
 
       const height = block !== null ? block.height : 0;
@@ -183,7 +183,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
         const limit = height + (parseInt(`${filter.limit}`, 10) || 1);
         return await BlocksModel.findAll({
           order: ['height', 'rowId'],
-          where: { height: { $gt: height, $lt: limit } },
+          where: {height: {$gt: height, $lt: limit}},
         });
       }
       return [block];
@@ -203,7 +203,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     const params: any                                                         = {};
     params.generatorPublicKey                                                 = filter.generatorPublicKey;
     params.delegates                                                          = this.constants.activeDelegates;
-    const timestampClausole: { timestamp?: { $gte?: number, $lte?: number } } = { timestamp: {} };
+    const timestampClausole: { timestamp?: { $gte?: number, $lte?: number } } = {timestamp: {}};
 
     if (typeof(filter.start) !== 'undefined') {
       timestampClausole.timestamp.$gte = filter.start - this.constants.epochTime.getTime() / 1000;
@@ -220,7 +220,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
 
     const bufPublicKey = Buffer.from(params.generatorPublicKey, 'hex');
     const acc          = await AccountsModel
-      .findOne({ where: { isDelegate: 1, publicKey: bufPublicKey } });
+      .findOne({where: {isDelegate: 1, publicKey: bufPublicKey}});
     if (acc === null) {
       throw new Error('Account not found or is not a delegate');
     }
@@ -237,7 +237,11 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
       },
     }) as any;
 
-    const data = { fees: 0, rewards: parseInt(res.rewards, 10), count: parseInt(res.count, 10) };
+    const data = {
+      count  : parseInt(res.count, 10),
+      fees   : 0,
+      rewards: res.rewards === null ? 0 : parseInt(res.rewards, 10),
+    };
     data.fees  = await RoundsFeesModel.aggregate('fees', 'sum', {
       where: {
         ...timestampClausole,
