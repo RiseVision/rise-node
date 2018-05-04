@@ -110,6 +110,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    */
   public async saveGenesisBlock() {
     const genesis = await BlocksModel.findById(this.genesisBlock.id);
+    console.log('saving genesis block', !genesis);
     if (!genesis) {
       return BlocksModel.sequelize.transaction((t) => this.saveBlock(this.genesisBlock, t));
     }
@@ -288,7 +289,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     if (previousBlock === null) {
       throw new Error('previousBlock is null');
     }
-    const txs = previousBlock.transactions.slice().reverse();
+    const txs = lb.transactions.slice().reverse();
 
     await BlocksModel.sequelize.transaction(async (dbTX) => {
       for (const tx of txs) {
@@ -297,7 +298,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         await this.transactionsModule.undoUnconfirmed(tx);
       }
       await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
-      await previousBlock.destroy({ transaction: dbTX });
+      await lb.destroy({ transaction: dbTX });
     });
 
     return previousBlock;

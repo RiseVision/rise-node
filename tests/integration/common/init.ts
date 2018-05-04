@@ -99,7 +99,7 @@ export class IntegrationTestInitializer {
     const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
     const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
     const height          = blockModule.lastBlock.height;
-    // console.log(`Mining ${howMany} blocks from height: ${height}`);
+     console.log(`Mining ${howMany} blocks from height: ${height}`);
     for (let i = 0; i < howMany; i++) {
       const delegates  = await delegatesModule.generateDelegateList(height + i + 1);
       const theSlot    = height + i + 1;
