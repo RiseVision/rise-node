@@ -87,7 +87,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   }
 
   public async deleteAfterBlock(height: number): Promise<void> {
-    await BlocksModel.destroy({ where: { $gte: height } });
+    await BlocksModel.destroy({where: {$gte: height}});
   }
 
   /**
@@ -110,7 +110,6 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    */
   public async saveGenesisBlock() {
     const genesis = await BlocksModel.findById(this.genesisBlock.id);
-    console.log('saving genesis block', !genesis);
     if (!genesis) {
       return BlocksModel.sequelize.transaction((t) => this.saveBlock(this.genesisBlock, t));
     }
@@ -146,11 +145,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         // FIXME: Poor performance - every transaction cause SQL query to be executed
         // WARNING: DB_WRITE
         const sender = await this.accountsModule
-          .setAccountAndGet({ publicKey: tx.senderPublicKey });
+          .setAccountAndGet({publicKey: tx.senderPublicKey});
 
         // Apply tx.
-        await this.transactionsModule.applyUnconfirmed({ ...tx, blockId: block.id }, sender);
-        await this.transactionsModule.apply({ ...tx, blockId: block.id }, block, sender);
+        await this.transactionsModule.applyUnconfirmed({...tx, blockId: block.id}, sender);
+        await this.transactionsModule.apply({...tx, blockId: block.id}, block, sender);
 
         tracker.applyNext();
       }
@@ -184,7 +183,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       // Apply transaction to unconfirmed mem_accounts field
       for (const transaction of block.transactions) {
         const sender = await this.accountsModule
-          .setAccountAndGet({ publicKey: transaction.senderPublicKey });
+          .setAccountAndGet({publicKey: transaction.senderPublicKey});
         await this.transactionsModule.applyUnconfirmed(transaction, sender)
           .catch((err) => {
             this.logger.error(`Failed to applyUnconfirmed transaction ${transaction.id} - ${err.message || err}`);
@@ -203,7 +202,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       // Block and transactions are ok.
       // Apply transactions to confirmed mem_accounts fields.
       for (const tx of block.transactions) {
-        const sender = await this.accountsModule.getAccount({ publicKey: tx.senderPublicKey });
+        const sender = await this.accountsModule.getAccount({publicKey: tx.senderPublicKey});
         try {
           await this.transactionsModule.apply(tx, block, sender);
         } catch (err) {
@@ -250,7 +249,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   public async saveBlock(b: SignedBlockType, dbTX: Transaction) {
     const saveOp = this.blockLogic.dbSave(b);
     const txOps  = b.transactions
-      .map((t: IConfirmedTransaction<any>) => this.transactionLogic.dbSave({ ...t, blockId: b.id }))
+      .map((t: IConfirmedTransaction<any>) => this.transactionLogic.dbSave({
+        ...t,
+        blockId: b.id,
+        height : b.height
+      }))
       .reduce((o1, o2) => o1.concat(o2), []);
 
     await this.dbHelper.performOps([saveOp, ...txOps], dbTX);
@@ -284,7 +287,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    */
   @WrapInBalanceSequence
   private async popLastBlock(lb: BlocksModel): Promise<BlocksModel> {
-    const previousBlock = await BlocksModel.findById(lb.previousBlock, { include: [ TransactionsModel ]});
+    const previousBlock = await BlocksModel.findById(lb.previousBlock, {include: [TransactionsModel]});
 
     if (previousBlock === null) {
       throw new Error('previousBlock is null');
@@ -293,12 +296,12 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
     await BlocksModel.sequelize.transaction(async (dbTX) => {
       for (const tx of txs) {
-        const sender = await AccountsModel.find({ where: { publicKey: tx.senderPublicKey } });
+        const sender = await AccountsModel.find({where: {publicKey: tx.senderPublicKey}});
         await this.transactionsModule.undo(tx, lb, sender);
         await this.transactionsModule.undoUnconfirmed(tx);
       }
       await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
-      await lb.destroy({ transaction: dbTX });
+      await lb.destroy({transaction: dbTX});
     });
 
     return previousBlock;

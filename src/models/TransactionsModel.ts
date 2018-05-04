@@ -4,6 +4,7 @@ import * as sequelize from 'sequelize';
 import { MultiSignaturesModel } from './MultiSignaturesModel';
 import { BlocksModel } from './BlocksModel';
 import { IBaseTransaction, ITransportTransaction } from '../logic/transactions';
+import { TransportModule } from '../modules';
 
 const fields                 = ['id', 'rowId', 'blockId', 'type', 'timestamp', 'senderPublicKey', 'senderId', 'recipientId', 'amount', 'fee', 'signature', 'signSignature', 'requesterPublicKey'];
 const buildArrayArgAttribute = function (table: string, what: string, alias?: string): any {
@@ -29,6 +30,9 @@ export class TransactionsModel extends Model<TransactionsModel> {
 
   @Column
   public rowId: number;
+
+  @Column
+  public height: number;
 
   @ForeignKey(() => BlocksModel)
   @Column
@@ -104,6 +108,10 @@ export class TransactionsModel extends Model<TransactionsModel> {
       default:
         return {};
     }
+  }
+
+  public toTransport<T>(): ITransportTransaction<T> {
+    return TransactionsModel.toTransportTransaction(this);
   }
 
   public static toTransportTransaction<T>(t: IBaseTransaction<any>): ITransportTransaction<T> {

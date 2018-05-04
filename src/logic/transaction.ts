@@ -512,6 +512,7 @@ export class TransactionLogic implements ITransactionLogic {
       values: {
         id         : tx.id,
         blockId    : tx.blockId,
+        height     : tx.height,
         type       : tx.type,
         timestamp  : tx.timestamp,
         senderPublicKey,
@@ -603,10 +604,4 @@ export class TransactionLogic implements ITransactionLogic {
     return tx;
   }
 
-  public async restoreAsset<T>(tx: IConfirmedTransaction<void>): Promise<IConfirmedTransaction<T>>;
-  public async restoreAsset<T>(tx: IBaseTransaction<void>): Promise<IBaseTransaction<T>>;
-  public async restoreAsset<T>(tx: IBaseTransaction<void> | IConfirmedTransaction<void>) {
-    this.assertKnownTransactionType(tx.type);
-    return this.types[tx.type].restoreAsset(tx, this.db);
-  }
 }
