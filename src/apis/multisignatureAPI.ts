@@ -2,14 +2,14 @@ import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import { Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import { catchToLoggerAndRemapError, ILogger} from '../helpers';
+import { ILogger} from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { ITransactionLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
+import { Accounts2MultisignaturesModel } from '../models';
 import multisigSchema from '../schema/multisignatures';
-import sql from '../sql/multisignatures';
 import { publicKey as pkType } from '../types/sanityTypes';
 import { APIError, DeprecatedAPIError } from './errors';
 
@@ -37,15 +37,21 @@ export class MultisignatureAPI {
   @inject(Symbols.modules.transactions)
   private transactions: ITransactionsModule;
 
+  // models
+  @inject(Symbols.models.multisignatures)
+  private Accounts2MultisignaturesModel: typeof Accounts2MultisignaturesModel;
+
   @Get('/accounts')
   @ValidateSchema()
   public async getAccounts(@SchemaValid(multisigSchema.getAccounts)
                            @QueryParams() params: { publicKey: pkType }) {
-    const { publicKey } = params;
-    const row = await this.db.one(sql.getAccountIds, { publicKey })
-      .catch(catchToLoggerAndRemapError('Multisignature#getAccountIds error', this.logger));
+    const rows = await this.Accounts2MultisignaturesModel.findAll({
+      attributes: ['accountId'],
+      where     : { dependentId: params.publicKey },
+    });
 
-    const accountIds = Array.isArray(row.accountIds) ? row.accountIds : [];
+    const accountIds = rows.map((r) => r.accountId);
+
     // Get all multisignature accounts associated to that have that publicKey as a signer.
     const accounts   = await this.accounts.getAccounts(
       { address: { $in: accountIds }, sort: 'balance' },
