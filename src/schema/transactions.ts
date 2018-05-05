@@ -162,6 +162,11 @@ export default {
       },
       orderBy               : {
         type: 'string',
+        enum: [
+          'height:desc', 'height:asc',
+          'timestamp:desc', 'timestamp:asc',
+          'amount:desc', 'amount:asc',
+        ],
       },
       limit                 : {
         type   : 'integer',

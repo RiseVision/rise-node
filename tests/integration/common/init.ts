@@ -53,12 +53,12 @@ export class IntegrationTestInitializer {
     const after  = when === 'single' ? 'after' : 'afterEach';
     const self = this;
     global[before](async function () {
-      this.timeout(howMany * 100);
+      this.timeout(howMany * 100 + 150);
       await self.rawMineBlocks(howMany);
     });
 
     global[after](async function () {
-      this.timeout(howMany * 100);
+      this.timeout(howMany * 100 + 150);
       await self.rawDeleteBlocks(howMany);
     });
 

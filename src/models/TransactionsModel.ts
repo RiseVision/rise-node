@@ -6,7 +6,7 @@ import { BlocksModel } from './BlocksModel';
 import { IBaseTransaction, ITransportTransaction } from '../logic/transactions';
 import { TransportModule } from '../modules';
 
-const fields                 = ['id', 'rowId', 'blockId', 'type', 'timestamp', 'senderPublicKey', 'senderId', 'recipientId', 'amount', 'fee', 'signature', 'signSignature', 'requesterPublicKey'];
+const fields                 = ['id', 'rowId', 'blockId', 'height', 'type', 'timestamp', 'senderPublicKey', 'senderId', 'recipientId', 'amount', 'fee', 'signature', 'signSignature', 'requesterPublicKey'];
 const buildArrayArgAttribute = function (table: string, what: string, alias?: string): any {
   return [sequelize.literal(`(SELECT "${what}" FROM ${table} WHERE "transactionId" = "TransactionsModel"."id")`), alias || what];
 };

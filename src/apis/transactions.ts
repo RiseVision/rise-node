@@ -126,9 +126,15 @@ export class TransactionsAPI {
       }
     }
 
+    let orderBy;
+    if (body.orderBy) {
+      orderBy = [body.orderBy.split(':')];
+    }
+
     const {rows: transactions, count} = await this.TXModel.findAndCountAll({
       limit: body.limit || 100,
       offset: body.offset || 0,
+      order: orderBy,
       where: whereClause,
     });
     return { transactions: transactions.map((t) => t.toTransport()), count};
