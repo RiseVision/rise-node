@@ -113,8 +113,6 @@ export interface ITransactionsModule extends IModule {
    */
   isLoaded(): boolean;
 
-  list(filter): Promise<{ count: number, transactions: Array<IConfirmedTransaction<any>> }>;
-
   /**
    * Get transaction by id
    */
