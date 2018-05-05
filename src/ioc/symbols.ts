@@ -71,6 +71,7 @@ export const Symbols = {
     blocks                    : Symbol('blocksModel'),
     delegates                 : Symbol('delegatesModel'),
     forkStats                 : Symbol('forkStatsModel'),
+    migrations                : Symbol('migrationsModel'),
     multisignatures           : Symbol('multisignaturesModel'),
     peers                     : Symbol('peersModel'),
     rounds                    : Symbol('roundsModel'),

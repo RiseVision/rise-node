@@ -1,17 +1,18 @@
 import { BigNumber } from 'bignumber.js';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as pgPromise from 'pg-promise';
-import { IDatabase } from 'pg-promise';
+import * as sequelize from 'sequelize';
+import { MigrationsModel } from '../models';
 import MyBigNumb from './bignum';
 
 export class Migrator {
-  constructor(private pgp: pgPromise.IMain, private db: IDatabase<any>) {
+  constructor(private m: typeof MigrationsModel) {
 
   }
 
   public async checkMigrations(): Promise<boolean> {
-    const row = await this.db.one('SELECT to_regclass(\'migrations\')');
+    const row = await this.m.sequelize
+      .query('SELECT to_regclass(\'migrations\')', { raw: true, type: sequelize.QueryTypes.SELECT });
     return row.to_regclass;
   }
 
@@ -23,11 +24,14 @@ export class Migrator {
       return;
     }
 
-    const rows = await this.db.query('SELECT * FROM migrations ORDER BY "id" DESC LIMIT 1');
-    if (rows[0]) {
-      rows[0] = new MyBigNumb(rows[0].id);
+    const row = await this.m.findOne({
+      limit: 1,
+      order: [['id', 'DESC']],
+    });
+    if (row) {
+      return new MyBigNumb(row.id);
     }
-    return rows[0];
+    return new MyBigNumb(0);
   }
 
   /**
@@ -65,8 +69,7 @@ export class Migrator {
 
   public async applyPendingMigrations(pendingMigrations: Array<{ id: BigNumber, name: string, path: string }>) {
     for (const m of pendingMigrations) {
-      const sql = new (this.pgp.QueryFile)(m.path, { minify: true });
-      await this.db.query(sql);
+      await this.m.sequelize.query(fs.readFileSync(m.path, {encoding: 'utf8'}));
     }
     return pendingMigrations;
   }
@@ -76,10 +79,7 @@ export class Migrator {
    */
   public async insertAppliedMigrations(appMigrs: Array<{ id: BigNumber, name: string, path: string }>) {
     for (const m of appMigrs) {
-      await this.db.query(
-        'INSERT INTO migrations(id, name) VALUES($1, $2) ON CONFLICT DO NOTHING',
-        [m.id.toString(), m.name]
-      );
+      await this.m.create({id: m.id.toString(), name: m.name});
     }
   }
 
@@ -89,7 +89,8 @@ export class Migrator {
    * @return {function} waterCb with error
    */
   public applyRuntimeQueryFile() {
-    const sql     = new (this.pgp).QueryFile(path.join(process.cwd(), 'sql', 'runtime.sql'), { minify: true });
-    return this.db.query(sql);
+    return Promise.resolve(
+      this.m.sequelize.query(fs.readFileSync(path.join(process.cwd(), 'sql', 'runtime.sql'), {encoding:'utf8'}));
+    );
   }
 }
