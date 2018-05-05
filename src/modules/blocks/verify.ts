@@ -1,6 +1,5 @@
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
-import { IDatabase } from 'pg-promise';
 import { constants as constantsType, ForkType, ILogger, Slots } from '../../helpers/';
 import { IBlockLogic, IBlockReward, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
@@ -11,14 +10,10 @@ import {
 import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType, } from '../../logic/';
 import { IConfirmedTransaction } from '../../logic/transactions/';
-import sql from '../../sql/blocks';
+import { BlocksModel } from '../../models';
 
 @injectable()
 export class BlocksModuleVerify implements IBlocksModuleVerify {
-
-  // Generics
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
 
   // Helpers
   @inject(Symbols.helpers.constants)
@@ -49,6 +44,10 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   private forkModule: IForkModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
+
+  // Models
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
 
   /**
    * Contains the last N block Ids used to perform validations
@@ -132,8 +131,8 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     }
 
     // check if blocks exists.
-    const rows = await this.db.query(sql.getBlockId, {id: block.id});
-    if (rows.length > 0) {
+    const dbBlock = await this.BlocksModel.findById(block.id);
+    if (dbBlock === null) {
       throw new Error(`Block ${block.id} already exists`);
     }
 
@@ -160,8 +159,11 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   }
 
   public async onBlockchainReady() {
-    const blockIds = await this.db.query(sql.loadLastNBlockIds, { limit: this.constants.blockSlotWindow });
-    this.lastNBlockIds = blockIds.map((b) => b.id);
+    const blocks = await this.BlocksModel.findAll({
+      limit: this.constants.blockSlotWindow,
+      order: [['height', 'desc']],
+    });
+    this.lastNBlockIds = blocks.map((b) => b.id);
   }
 
   public async onNewBlock(block: SignedBlockType) {

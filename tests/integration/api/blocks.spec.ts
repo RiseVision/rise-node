@@ -27,9 +27,12 @@ describe('api/blocks', () => {
             expect(response.body).to.haveOwnProperty('blocks');
             expect(response.body.blocks).to.be.an('array');
             expect(response.body.blocks.length).to.be.eq(1);
-
+            expect(response.body.blocks[0].transactions.length).to.be.eq(303);
           });
       });
+      it('bau', async () => {
+
+      })
     });
   });
 
