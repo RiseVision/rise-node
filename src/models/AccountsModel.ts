@@ -1,8 +1,8 @@
-// tslint:disable
+import * as pgp from 'pg-promise';
 import { Column, DataType, Model, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
-import 'reflect-metadata';
 import { publicKey } from '../types/sanityTypes';
 import * as sequelize from 'sequelize';
+
 const fields            = ['username', 'isDelegate', 'secondSignature', 'address', 'publicKey', 'secondPublicKey', 'balance', 'vote', 'rate', 'multimin', 'multilifetime', 'blockId', 'producedblocks', 'missedblocks', 'fees', 'rewards', 'virgin'];
 const unconfirmedFields = ['u_isDelegate', 'u_secondSignature', 'u_username', 'u_balance', 'u_multimin', 'u_multilifetime'];
 
@@ -35,10 +35,10 @@ export class AccountsModel extends Model<AccountsModel> {
   @Column
   public username: string;
   @Column
-  public isDelegate: 0|1;
+  public isDelegate: 0 | 1;
 
   @Column
-  public secondSignature: 0|1;
+  public secondSignature: 0 | 1;
 
   @PrimaryKey
   @Column
@@ -79,15 +79,15 @@ export class AccountsModel extends Model<AccountsModel> {
   @Column
   public rewards: number;
   @Column
-  public virgin: 0|1;
+  public virgin: 0 | 1;
 
 
   // Unconfirmed stuff
 
   @Column
-  public u_isDelegate: 0|1;
+  public u_isDelegate: 0 | 1;
   @Column
-  public u_secondSignature: 0|1;
+  public u_secondSignature: 0 | 1;
   @Column
   public u_username: string;
   @Column
@@ -96,7 +96,6 @@ export class AccountsModel extends Model<AccountsModel> {
   public u_multilifetime: number;
   @Column
   public u_multimin: number;
-
 
 
   @Column(DataType.TEXT)
@@ -129,24 +128,61 @@ export class AccountsModel extends Model<AccountsModel> {
   public toPOJO() {
     const toRet = this.toJSON();
     ['publicKey', 'secondPublicKey'].forEach((pk) => {
-      toRet[pk] = toRet[pk] !== null ? toRet[pk].toString('hex'): null;
+      toRet[pk] = toRet[pk] !== null ? toRet[pk].toString('hex') : null;
     });
     return toRet;
   }
 
+  public static searchDelegate(q: string, limit: number, orderBy: string, orderHow: 'ASC' | 'DESC' = 'ASC') {
+    if (['ASC', 'DESC'].indexOf(orderHow.toLocaleUpperCase()) === -1) {
+      throw new Error('Invalid ordering mechanism')
+    }
+
+    return pgp.as.format(`
+    WITH
+      supply AS (SELECT calcSupply((SELECT height FROM blocks ORDER BY height DESC LIMIT 1))::numeric),
+      delegates AS (SELECT row_number() OVER (ORDER BY vote DESC, m."publicKey" ASC)::int AS rank,
+        m.username,
+        m.address,
+        ENCODE(m."publicKey", 'hex') AS "publicKey",
+        m.vote,
+        m.producedblocks,
+        m.missedblocks,
+        ROUND(vote / (SELECT * FROM supply) * 100, 2)::float AS approval,
+        (CASE WHEN producedblocks + missedblocks = 0 THEN 0.00 ELSE
+        ROUND(100 - (missedblocks::numeric / (producedblocks + missedblocks) * 100), 2)
+        END)::float AS productivity,
+        COALESCE(v.voters_cnt, 0) AS voters_cnt,
+        t.timestamp AS register_timestamp
+        FROM delegates d
+        LEFT JOIN mem_accounts m ON d.username = m.username
+        LEFT JOIN trs t ON d."transactionId" = t.id
+        LEFT JOIN (SELECT "dependentId", COUNT(1)::int AS voters_cnt from mem_accounts2delegates GROUP BY "dependentId") v ON v."dependentId" = ENCODE(m."publicKey", 'hex')
+        WHERE m."isDelegate" = 1
+        ORDER BY \${orderBy:name} \${orderHow:raw})
+      SELECT * FROM delegates WHERE username LIKE \${q} LIMIT \${limit}
+    `, {
+      q: `%${q}%`,
+      limit,
+      orderBy,
+      orderHow
+    });
+
+  }
+
   public static restoreUnconfirmedEntries() {
     return this.update({
-      u_isDelegate: sequelize.col('isDelegate'),
-      u_balance: sequelize.col('balance'),
+      u_isDelegate     : sequelize.col('isDelegate'),
+      u_balance        : sequelize.col('balance'),
       u_secondSignature: sequelize.col('secondSignature'),
-      u_username: sequelize.col('username'),
+      u_username       : sequelize.col('username'),
     }, {
       where: {
         $or: {
-          u_isDelegate: {$ne: sequelize.col('isDelegate')},
-          u_balance: {$ne: sequelize.col('balance')},
-          u_secondSignature: {$ne: sequelize.col('secondSignature')},
-          u_username: {$ne: sequelize.col('username')},
+          u_isDelegate     : { $ne: sequelize.col('isDelegate') },
+          u_balance        : { $ne: sequelize.col('balance') },
+          u_secondSignature: { $ne: sequelize.col('secondSignature') },
+          u_username       : { $ne: sequelize.col('username') },
         }
       }
     })

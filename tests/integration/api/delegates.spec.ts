@@ -173,8 +173,18 @@ describe('api/delegates', () => {
   describe('/search', () => {
     checkRequiredParam('q', '/api/delegates/search?q=haha');
     checkIntParam('limit', '/api/delegates/search?q=haha', {min: 1, max: 1000});
-    it('should return delegates array matching search criteria');
-    it('should honor limit parameter');
+    it('should return delegates array matching search criteria', async () => {
+      const res = await  supertest(initializer.appManager.expressApp)
+        .get(`/api/delegates/search/?q=gen`)
+        .expect(200);
+      expect(res.body.delegates.length).to.be.eq(101);
+    });
+    it('should honor limit parameter', async () => {
+      const res = await  supertest(initializer.appManager.expressApp)
+        .get(`/api/delegates/search/?q=gen&limit=10`)
+        .expect(200);
+      expect(res.body.delegates.length).to.be.eq(10);
+    });
   });
 
   describe('/count', () => {
