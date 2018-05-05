@@ -7,14 +7,11 @@ import { Symbols } from '../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType } from '../logic/';
 import { IBaseTransaction, IConfirmedTransaction } from '../logic/transactions/';
 import { AccountsModel, BlocksModel, TransactionsModel } from '../models';
-import txSQL from '../sql/logic/transactions';
 
 @injectable()
 export class TransactionsModule implements ITransactionsModule {
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.helpers.constants)
@@ -27,6 +24,9 @@ export class TransactionsModule implements ITransactionsModule {
   private transactionPool: ITransactionPoolLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
+
+  @inject(Symbols.models.transactions)
+  private TXModel: typeof TransactionsModel;
 
   public cleanup() {
     return Promise.resolve();
@@ -195,9 +195,8 @@ export class TransactionsModule implements ITransactionsModule {
   }
 
   public async count(): Promise<{ confirmed: number, multisignature: number, queued: number, unconfirmed: number }> {
-    const [res] = await this.db.query(txSQL.count);
     return {
-      confirmed     : res.count,
+      confirmed     : await this.TXModel.count(),
       multisignature: this.transactionPool.multisignature.count,
       queued        : this.transactionPool.queued.count,
       unconfirmed   : this.transactionPool.unconfirmed.count,
