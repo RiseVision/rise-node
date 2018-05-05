@@ -132,7 +132,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
 
     // check if blocks exists.
     const dbBlock = await this.BlocksModel.findById(block.id);
-    if (dbBlock === null) {
+    if (dbBlock !== null) {
       throw new Error(`Block ${block.id} already exists`);
     }
 

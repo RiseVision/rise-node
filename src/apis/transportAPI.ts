@@ -2,6 +2,7 @@ import { Request } from 'express';
 import { inject, injectable } from 'inversify';
 import { IDatabase } from 'pg-promise';
 import { BodyParam, Get, JsonController, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
+import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { Bus, constants as constantsType, TransactionType } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
@@ -15,18 +16,15 @@ import {
   ITransportModule
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { SignedAndChainedBlockType } from '../logic';
-import { IBaseTransaction } from '../logic/transactions';
+import { SignedAndChainedBlockType, SignedAndChainedTransportBlockType } from '../logic';
+import { IBaseTransaction, ITransportTransaction } from '../logic/transactions';
 import { BlocksModel, DelegatesModel, MultiSignaturesModel, SignaturesModel, VotesModel } from '../models';
 import transportSchema from '../schema/transport';
-import transportSQL from '../sql/transport';
 import { RawFullBlockListType } from '../types/rawDBTypes';
 import { Partial } from '../types/utils';
 import { APIError } from './errors';
 import { AttachPeerHeaders } from './utils/attachPeerHeaders';
 import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
-import { ITransportTransaction } from '../logic/transactions/baseTransactionType';
-import { SignedAndChainedTransportBlockType } from '../logic/block';
 
 function genTransportBlock(block: BlocksModel, extra: Partial<RawFullBlockListType>): RawFullBlockListType {
   // tslint:disable object-literal-sort-keys
@@ -107,6 +105,10 @@ export class TransportAPI {
   @inject(Symbols.modules.transport)
   private transportModule: ITransportModule;
 
+  // models
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
+
   @Get('/height')
   public height() {
     return { height: this.blocksModule.lastBlock.height };
@@ -184,12 +186,20 @@ export class TransportAPI {
       .split(',')
       // Reject any non-numeric values
       .filter((id) => /^[0-9]+$/.test(id));
-    if (excapedIds.length === 0) {
+    if (excapedIds.length === 0 || excapedIds.length > 10) {
       this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
       throw new APIError('Invalid block id sequence', 200);
     }
-    const rows = await this.db.query(transportSQL.getCommonBlock, excapedIds);
-    return { common: rows[0] || null };
+
+    return {
+      common: await this.BlocksModel.findOne({
+        raw       : true,
+        attributes: ['height', 'id', 'previousBlock', 'timestamp'],
+        where     : { id: { [Op.in]: excapedIds } },
+        order     : [['height', 'DESC']],
+        limit     : 1,
+      }),
+    };
   }
 
   @Post('/blocks')
