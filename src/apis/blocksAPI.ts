@@ -21,8 +21,6 @@ export class BlocksAPI {
   // Generic
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
 
   // Helpers
   @inject(Symbols.helpers.constants)

@@ -22,18 +22,19 @@ import {
   catchToLoggerAndRemapError,
   cbToPromise,
   constants as constantsType,
-  Database, DBHelper,
+  DBHelper,
   Ed,
   ExceptionsManager,
   ILogger,
   JobsQueue,
   middleware,
+  Migrator,
   Sequence,
   Slots,
   z_schema,
 } from './helpers/';
 import { IBlockLogic, IPeerLogic, ITransactionLogic } from './ioc/interfaces/logic';
-import { IAccountsModule, IBlocksModuleChain } from './ioc/interfaces/modules';
+import { IBlocksModuleChain } from './ioc/interfaces/modules';
 import { Symbols } from './ioc/symbols';
 import {
   AccountLogic,
@@ -66,7 +67,7 @@ import {
   AccountsModel,
   BlocksModel,
   DelegatesModel,
-  ForksStatsModel,
+  ForksStatsModel, MigrationsModel,
   MultiSignaturesModel,
   PeersModel,
   RoundsFeesModel,
@@ -213,18 +214,18 @@ export class AppManager {
   public async initAppElements() {
     this.expressApp = express();
 
-    this.server     = http.createServer(this.expressApp);
-    const io        = socketIO(this.server);
-    const db        = await Database.connect(this.appConfig.db, this.logger);
+    this.server = http.createServer(this.expressApp);
+    const io    = socketIO(this.server);
+    // const db        = await Database.connect(this.appConfig.db, this.logger);
     // ((require('fs'))).unlinkSync(`${__dirname}/../sequelize.log`);
     const sequelize = new Sequelize({
       // logging(msg) {
       //   (require('fs')).appendFileSync(`${__dirname}/../sequelize.log`, msg+"\n");
       // },
-      logging: false,
       database: this.appConfig.db.database,
       dialect : 'postgres',
       host    : this.appConfig.db.host,
+      logging : false,
       password: this.appConfig.db.password,
       pool    : {
         idle: this.appConfig.db.poolIdleTimeout,
@@ -257,7 +258,6 @@ export class AppManager {
 
     // Generics
     this.container.bind(Symbols.generic.appConfig).toConstantValue(this.appConfig);
-    this.container.bind(Symbols.generic.db).toConstantValue(db);
     this.container.bind(Symbols.generic.expressApp).toConstantValue(this.expressApp);
     this.container.bind(Symbols.generic.genesisBlock).toConstantValue(this.genesisBlock);
     this.container.bind(Symbols.generic.nonce).toConstantValue(this.nonce);
@@ -275,6 +275,7 @@ export class AppManager {
     this.container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManager).inSingletonScope();
     this.container.bind(Symbols.helpers.jobsQueue).to(JobsQueue).inSingletonScope();
     this.container.bind(Symbols.helpers.logger).toConstantValue(this.logger);
+    this.container.bind(Symbols.helpers.migrator).to(Migrator).inSingletonScope();
     // this.container.bind(Symbols.helpers.sequence).toConstantValue();
     const self = this;
     [Symbols.tags.helpers.dbSequence, Symbols.tags.helpers.defaultSequence, Symbols.tags.helpers.balancesSequence]
@@ -346,6 +347,7 @@ export class AppManager {
     this.container.bind(Symbols.models.blocks).toConstructor(BlocksModel);
     this.container.bind(Symbols.models.delegates).toConstructor(DelegatesModel);
     this.container.bind(Symbols.models.forkStats).toConstructor(ForksStatsModel);
+    this.container.bind(Symbols.models.migrations).toConstructor(MigrationsModel);
     this.container.bind(Symbols.models.multisignatures).toConstructor(MultiSignaturesModel);
     this.container.bind(Symbols.models.peers).toConstructor(PeersModel);
     this.container.bind(Symbols.models.roundsFees).toConstructor(RoundsFeesModel);
@@ -361,9 +363,9 @@ export class AppManager {
   }
 
   public async finishBoot() {
-    const bus   = this.container.get<Bus>(Symbols.helpers.bus);
+    const bus       = this.container.get<Bus>(Symbols.helpers.bus);
     const sequelize = this.container.get<Sequelize>(Symbols.generic.sequelize);
-    bus.modules = this.getModules();
+    bus.modules     = this.getModules();
 
     // Register transaction types.
     const txLogic = this.container.get<ITransactionLogic>(Symbols.logic.transaction);
@@ -373,6 +375,9 @@ export class AppManager {
     // Register models
     const models = this.getElementsFromContainer<typeof Model>(Symbols.models);
     sequelize.addModels(models);
+
+    // Start migrations/runtime queries.
+    await this.container.get<Migrator>(Symbols.helpers.migrator).init();
 
     // Move the genesis from string signatures to buffer signatures
     this.container.get<IBlockLogic>(Symbols.logic.block).objectNormalize(this.genesisBlock);

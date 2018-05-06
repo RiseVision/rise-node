@@ -2,7 +2,6 @@ import BigNum from './bignum';
 import * as cache from './cache';
 import config from './config';
 import constants from './constants';
-import * as Database from './database';
 import * as Diff from './diff';
 import loggerCreator from './logger';
 import applyExpressLimits from './request-limiter';
@@ -19,6 +18,7 @@ export * from './genericUtils';
 export * from './inserts';
 export * from './jobsQueue';
 export * from './logger';
+export * from './migrator';
 export * from './orderBy';
 export * from './promiseUtils';
 export * from './RoundChanges';
@@ -33,7 +33,6 @@ export {
   cache,
   config,
   constants,
-  Database,
   Diff,
   loggerCreator
 };

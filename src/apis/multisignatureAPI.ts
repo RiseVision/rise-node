@@ -1,5 +1,4 @@
 import { inject, injectable } from 'inversify';
-import { IDatabase } from 'pg-promise';
 import { Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { ILogger} from '../helpers';
@@ -20,8 +19,6 @@ export class MultisignatureAPI {
   // Generics
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
 
   // Helpers
   @inject(Symbols.helpers.logger)

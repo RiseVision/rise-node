@@ -2,7 +2,6 @@ import { BigNumber } from 'bignumber.js';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
-import { IDatabase } from 'pg-promise';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
 import { BigNum, constants, Ed, ExceptionsList, ExceptionsManager, IKeypair, ILogger, Slots } from '../helpers/';
@@ -23,9 +22,6 @@ export class TransactionLogic implements ITransactionLogic {
 
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
-
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
 
   @inject(Symbols.helpers.ed)
   private ed: Ed;

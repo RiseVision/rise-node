@@ -6,8 +6,9 @@ BEGIN;
 
 /* Tables */
 CREATE TABLE IF NOT EXISTS "migrations"(
-  "id" VARCHAR(22) NOT NULL PRIMARY KEY,
-  "name" TEXT NOT NULL
+  "id" VARCHAR(22) NOT NULL,
+  "name" TEXT NOT NULL,
+  PRIMARY KEY(id, name)
 );
 
 CREATE TABLE IF NOT EXISTS "blocks"(

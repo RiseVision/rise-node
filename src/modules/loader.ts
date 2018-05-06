@@ -1,5 +1,4 @@
 import { inject, injectable, postConstruct, tagged } from 'inversify';
-import { IDatabase } from 'pg-promise';
 import * as promiseRetry from 'promise-retry';
 import * as sequelize from 'sequelize';
 import SocketIO from 'socket.io';
@@ -40,8 +39,6 @@ export class LoaderModule implements ILoaderModule {
   // Generic
   @inject(Symbols.generic.appConfig)
   private config: AppConfig;
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.generic.socketIO)

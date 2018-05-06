@@ -7,6 +7,7 @@ import { ForkType } from '../helpers';
 @Table({ tableName: 'migrations' })
 export class MigrationsModel extends Model<MigrationsModel> {
   @PrimaryKey
+  @Column
   public id: string;
 
   @PrimaryKey

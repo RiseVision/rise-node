@@ -1,6 +1,5 @@
 import { Request } from 'express';
 import { inject, injectable } from 'inversify';
-import { IDatabase } from 'pg-promise';
 import { BodyParam, Get, JsonController, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
@@ -94,8 +93,6 @@ export class TransportAPI {
   private bus: Bus;
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
   @inject(Symbols.logic.peers)
   private peersLogic: IPeersLogic;
   @inject(Symbols.modules.peers)

@@ -17,6 +17,7 @@ import { SignedBlockType } from '../../../src/logic';
 import { IBlockLogic } from '../../../src/ioc/interfaces/logic';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { toBufferedTransaction } from '../../utils/txCrafter';
+import { MigrationsModel } from '../../../src/models';
 
 export class IntegrationTestInitializer {
   public appManager: AppManager;
@@ -149,17 +150,21 @@ export class IntegrationTestInitializer {
   private async runBefore() {
 
     this.createAppManager();
+    console.log('hey');
     await this.appManager.initAppElements();
+    console.log('hey2');
     await this.appManager.initExpress();
+    console.log('hey3');
     await this.appManager.finishBoot();
+    console.log('hey4');
+
     const bus = this.appManager.container.get<Bus>(Symbols.helpers.bus);
     await bus.message('syncFinished');
   }
 
   private async runAfter() {
-    const db: IDatabase<any> = this.appManager.container.get(Symbols.generic.db);
+    const migrations: typeof MigrationsModel = this.appManager.container.get(Symbols.models.migrations);
     await this.appManager.tearDown();
-    monitor.detach();
     const tables = ['blocks', 'delegates', 'forks_stat', 'mem_accounts',
       'mem_accounts2delegates',
       'mem_accounts2multisignatures', 'mem_accounts2u_delegates', 'mem_accounts2u_multisignatures', 'mem_round',
@@ -167,7 +172,7 @@ export class IntegrationTestInitializer {
       'multisignatures', 'peers', 'rounds_fees', 'signatures', 'trs', 'votes'];
 
     for (const table of tables) {
-      await db.query('TRUNCATE $1:name CASCADE', table);
+      await migrations.sequelize.query(`TRUNCATE ${table} CASCADE`);
     }
   }
 

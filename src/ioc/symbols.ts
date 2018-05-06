@@ -20,7 +20,6 @@ export const Symbols = {
   },
   generic: {
     appConfig   : Symbol('appConfig'),
-    db          : Symbol('db'),
     expressApp  : Symbol('expressApp'),
     genesisBlock: Symbol('genesisBlock'),
     nonce       : Symbol('nonce'),
@@ -38,6 +37,7 @@ export const Symbols = {
     exceptionsManager: Symbol('exceptionsManager'),
     jobsQueue        : Symbol('jobsQueue'),
     logger           : Symbol('logger'),
+    migrator         : Symbol('migrator'),
     sequence         : Symbol('sequence'),
     slots            : Symbol('slots'),
   },

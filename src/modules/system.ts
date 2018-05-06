@@ -1,7 +1,6 @@
 import * as crypto from 'crypto';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as os from 'os';
-import { IDatabase } from 'pg-promise';
 import * as semver from 'semver';
 import { constants as constantType } from '../helpers/';
 import { IBlocksModule, ISystemModule } from '../ioc/interfaces/modules/';
@@ -23,8 +22,6 @@ export class SystemModule implements ISystemModule {
   private appConfig: AppConfig;
   @inject(Symbols.helpers.constants)
   private constants: typeof constantType;
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
   @inject(Symbols.generic.nonce)
   private nonce: string;
 
