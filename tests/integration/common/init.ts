@@ -150,13 +150,9 @@ export class IntegrationTestInitializer {
   private async runBefore() {
 
     this.createAppManager();
-    console.log('hey');
     await this.appManager.initAppElements();
-    console.log('hey2');
     await this.appManager.initExpress();
-    console.log('hey3');
     await this.appManager.finishBoot();
-    console.log('hey4');
 
     const bus = this.appManager.container.get<Bus>(Symbols.helpers.bus);
     await bus.message('syncFinished');

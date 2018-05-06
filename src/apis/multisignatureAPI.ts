@@ -1,10 +1,11 @@
+import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import { ILogger} from '../helpers';
+import { ILogger } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
-import { ITransactionLogic } from '../ioc/interfaces/logic';
+import { ITransactionLogic, VerificationType } from '../ioc/interfaces/logic';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { Accounts2MultisignaturesModel } from '../models';
@@ -35,7 +36,7 @@ export class MultisignatureAPI {
   private transactions: ITransactionsModule;
 
   // models
-  @inject(Symbols.models.multisignatures)
+  @inject(Symbols.models.accounts2Multisignatures)
   private Accounts2MultisignaturesModel: typeof Accounts2MultisignaturesModel;
 
   @Get('/accounts')
@@ -43,14 +44,14 @@ export class MultisignatureAPI {
   public async getAccounts(@SchemaValid(multisigSchema.getAccounts)
                            @QueryParams() params: { publicKey: pkType }) {
     const rows = await this.Accounts2MultisignaturesModel.findAll({
-      attributes: ['accountId'],
-      where     : { dependentId: params.publicKey },
+      // attributes: ['accountId'],
+      where: { dependentId: params.publicKey },
     });
 
     const accountIds = rows.map((r) => r.accountId);
 
     // Get all multisignature accounts associated to that have that publicKey as a signer.
-    const accounts   = await this.accounts.getAccounts(
+    const accounts = await this.accounts.getAccounts(
       { address: { $in: accountIds }, sort: 'balance' },
       ['address', 'balance', 'multisignatures', 'multilifetime', 'multimin']);
 
@@ -64,7 +65,16 @@ export class MultisignatureAPI {
         },
         ['address', 'publicKey', 'balance']
       );
-      items.push({ ...account, ...{ multisigaccounts } });
+      items.push({
+        ...filterObject(
+          account.toPOJO(),
+          ['address', 'balance', 'multisignatures', 'multilifetime', 'multimin']
+        ),
+        ...{
+          multisigaccounts: multisigaccounts
+            .map((m) => filterObject(m.toPOJO(), ['address', 'publicKey', 'balance']))
+        },
+      });
     }
 
     return { accounts: items };
@@ -75,8 +85,8 @@ export class MultisignatureAPI {
   public async getPending(@SchemaValid(multisigSchema.pending)
                           @QueryParams() params: { publicKey: pkType }) {
     const { publicKey } = params;
-    const bufPubKey = Buffer.from(publicKey, 'hex');
-    const txs = this.transactions.getMultisignatureTransactionList(false)
+    const bufPubKey     = Buffer.from(publicKey, 'hex');
+    const txs           = this.transactions.getMultisignatureTransactionList(false)
       .filter((tx) => tx.senderPublicKey.equals(bufPubKey));
 
     const toRet = [];
@@ -87,7 +97,7 @@ export class MultisignatureAPI {
         let verified = false;
         for (let i = 0; i < tx.signatures.length && !verified; i++) {
           const signature = tx.signatures[i];
-          verified        = this.txLogic.verifySignature(tx, bufPubKey, Buffer.from(signature, 'hex'));
+          verified        = this.txLogic.verifySignature(tx, bufPubKey, Buffer.from(signature, 'hex'), VerificationType.ALL);
         }
         signed = verified;
       }

@@ -6,7 +6,13 @@ import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
 import { Ed, IKeypair } from '../../../src/helpers';
 import { publicKey } from '../../../src/types/sanityTypes';
 import initializer from './init';
-import { ISystemModule, ITransactionsModule, IAccountsModule } from '../../../src/ioc/interfaces/modules';
+import {
+  IAccountsModule,
+  IBlocksModule,
+  IMultisignaturesModule,
+  ISystemModule,
+  ITransactionsModule
+} from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import * as txCrafter from '../../utils/txCrafter';
@@ -68,7 +74,7 @@ export const createVoteTransaction = async (confirmations: number, from: LiskWal
 
 export const createSecondSignTransaction = async (confirmations: number, from: LiskWallet, pk: publicKey) => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
-  const tx = txCrafter.create2ndSigTX(
+  const tx           = txCrafter.create2ndSigTX(
     from,
     systemModule.getFees().fees.secondsignature,
     {
@@ -83,10 +89,32 @@ export const createSecondSignTransaction = async (confirmations: number, from: L
   }
   return tx;
 };
+export const createMultiSignAccount      = async (howMany: number, min: number = howMany) => {
+  const { wallet } = await createRandomAccountWithFunds(Math.pow(10, 11));
+  const keys       = new Array(howMany).fill(null).map(() => createRandomWallet());
+  const signedTx   = createMultiSignTransaction(wallet, min, keys.map((k) => `+${k.publicKey}`));
 
-export const createMultiSignTransaction = (from: LiskWallet, min: number, keysgroup: publicKey[], lifetime: number = 24) => {
+  const signatures = keys
+    .map((k) => k.getSignatureOfTransaction(signedTx));
+
+  const txModule       = initializer.appManager.container
+    .get<ITransactionsModule>(Symbols.modules.transactions);
+  const multisigModule = initializer.appManager.container
+    .get<IMultisignaturesModule>(Symbols.modules.multisignatures);
+
+  await txModule.receiveTransactions([toBufferedTransaction(signedTx)], false, false);
+  // We should ask multisignature module to change readyness state of such tx.
+
+  for (const signature of signatures) {
+    await multisigModule.processSignature({ signature, transaction: signedTx.id });
+  }
+
+  await initializer.rawMineBlocks(1);
+  return { wallet, keys, tx: signedTx };
+}
+export const createMultiSignTransaction  = (from: LiskWallet, min: number, keysgroup: publicKey[], lifetime: number = 24) => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
-  const tx = txCrafter.createMultiSigTX(
+  const tx           = txCrafter.createMultiSigTX(
     from,
     systemModule.getFees().fees.secondsignature,
     {
@@ -108,7 +136,7 @@ export const createRegDelegateTransaction = async (confirmations: number, from: 
     ... {
       asset: {
         delegate: {
-          username: name,
+          username : name,
           publicKey: from.publicKey
         },
       },
@@ -123,8 +151,8 @@ export const createRegDelegateTransaction = async (confirmations: number, from: 
 
 export const createSendTransaction = async (confirmations: number, amount: number, from: LiskWallet, dest: string, opts: any = {}): Promise<ITransaction> => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
-  const tx           = txCrafter.createSendTransaction(from, dest, systemModule.getFees().fees.send, {...{ amount }, ...opts});
-  tx['senderId'] = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts)
+  const tx           = txCrafter.createSendTransaction(from, dest, systemModule.getFees().fees.send, { ...{ amount }, ...opts });
+  tx['senderId']     = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts)
     .generateAddressByPublicKey(tx.senderPublicKey);
   if (confirmations > 0) {
     await confirmTransactions([tx], confirmations);

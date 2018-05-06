@@ -6,7 +6,7 @@ import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
 import { BigNum, constants, Ed, ExceptionsList, ExceptionsManager, IKeypair, ILogger, Slots } from '../helpers/';
 import { RunThroughExceptions } from '../helpers/decorators/exceptions';
-import { IAccountLogic, IRoundsLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
+import { IAccountLogic, IRoundsLogic, ITransactionLogic, VerificationType } from '../ioc/interfaces/logic/';
 import { Symbols } from '../ioc/symbols';
 import { AccountsModel, TransactionsModel } from '../models/';
 import txSchema from '../schema/logic/transaction';
@@ -311,12 +311,17 @@ export class TransactionLogic implements ITransactionLogic {
       }
     }
 
-    if (!this.verifySignature(tx, (tx.requesterPublicKey || tx.senderPublicKey), tx.signature)) {
+    if (!this.verifySignature(
+      tx,
+      (tx.requesterPublicKey || tx.senderPublicKey),
+      tx.signature,
+      VerificationType.SIGNATURE)) {
+
       throw new Error('Failed to verify signature');
     }
 
     if (sender.secondSignature) {
-      if (!this.verifySignature(tx, sender.secondPublicKey, tx.signSignature, true)) {
+      if (!this.verifySignature(tx, sender.secondPublicKey, tx.signSignature, VerificationType.SECOND_SIGNATURE)) {
         throw new Error('Failed to verify second signature');
       }
     }
@@ -336,7 +341,12 @@ export class TransactionLogic implements ITransactionLogic {
           if (tx.requesterPublicKey && multisignatures[s] === tx.requesterPublicKey.toString('hex')) {
             continue;
           }
-          valid = this.verifySignature(tx, Buffer.from(multisignatures[s], 'hex'), Buffer.from(sig, 'hex'));
+          valid = this.verifySignature(
+            tx,
+            Buffer.from(multisignatures[s], 'hex'),
+            Buffer.from(sig, 'hex'),
+            VerificationType.ALL
+          );
         }
 
         if (!valid) {
@@ -381,18 +391,28 @@ export class TransactionLogic implements ITransactionLogic {
    * @param {IBaseTransaction<any>} tx
    * @param {Buffer} publicKey
    * @param {string} signature
-   * @param {boolean} isSecondSignature if true, then this will check agains secondsignature
+   * @param {VerificationType} verificationType
    * @returns {boolean} true
    */
   public verifySignature(tx: IBaseTransaction<any>, publicKey: Buffer, signature: Buffer,
-                         isSecondSignature: boolean = false) {
+                         verificationType: VerificationType): boolean {
     this.assertKnownTransactionType(tx.type);
     if (!signature) {
       return false;
     }
-
+    // ALL
+    let skipSign       = false;
+    let skipSecondSign = false;
+    switch (verificationType) {
+      case VerificationType.SECOND_SIGNATURE:
+        skipSecondSign = true;
+        break;
+      case VerificationType.SIGNATURE:
+        skipSecondSign = skipSign = true;
+        break;
+    }
     return this.ed.verify(
-      this.getHash(tx, !isSecondSignature, true),
+      this.getHash(tx, skipSign, skipSecondSign),
       signature,
       publicKey
     );

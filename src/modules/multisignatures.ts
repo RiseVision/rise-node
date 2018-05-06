@@ -1,7 +1,7 @@
 import { inject, injectable, tagged } from 'inversify';
 import SocketIO from 'socket.io';
 import { Bus, ILogger, Sequence, TransactionType } from '../helpers/';
-import { ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic';
+import { ITransactionLogic, ITransactionPoolLogic, VerificationType } from '../ioc/interfaces/logic';
 import { IAccountsModule, IMultisignaturesModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { IBaseTransaction, MultisigAsset, MultiSignatureTransaction } from '../logic/transactions/';
@@ -96,7 +96,8 @@ export class MultisignaturesModule implements IMultisignaturesModule {
       verify = this.transactionLogic.verifySignature(
         tx,
         Buffer.from(multisignatures[i], 'hex'),
-        Buffer.from(signature, 'hex')
+        Buffer.from(signature, 'hex'),
+        VerificationType.ALL
       );
     }
 
@@ -119,7 +120,8 @@ export class MultisignaturesModule implements IMultisignaturesModule {
       verify    = this.transactionLogic.verifySignature(
         tx,
         Buffer.from(key, 'hex'),
-        Buffer.from(signature, 'hex')
+        Buffer.from(signature, 'hex'),
+        VerificationType.ALL
       );
     }
     if (!verify) {

@@ -12,6 +12,23 @@ import {
 import { AccountsModel } from '../../../models/';
 import { DBOp } from '../../../types/genericTypes';
 
+/**
+ * VerificationType When checking against signature.
+ */
+export enum VerificationType {
+  /**
+   * Check signature is valid for both signature and secondsignature
+   */
+  ALL,
+  /**
+   * Check if signature is a valid signature
+   */
+  SIGNATURE,
+  /**
+   * Check if signature is a valid secondsign
+   */
+  SECOND_SIGNATURE,
+}
 export interface ITransactionLogic {
 
   attachAssetType<K, M extends Model<any>>(instance: BaseTransactionType<K, M>): BaseTransactionType<K, M>;
@@ -83,11 +100,10 @@ export interface ITransactionLogic {
    * @param {IBaseTransaction<any>} tx
    * @param {Buffer} publicKey
    * @param {string} signature
-   * @param {boolean} isSecondSignature if true, then this will check agains secondsignature
+   * @param {VerificationType} verificationType
    * @returns {boolean} true
    */
-  verifySignature(tx: IBaseTransaction<any>, publicKey: Buffer, signature: Buffer,
-                  isSecondSignature?: boolean): boolean;
+  verifySignature(tx: IBaseTransaction<any>, publicKey: Buffer, signature: Buffer, verificationType: VerificationType): boolean;
 
   apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>>;
 

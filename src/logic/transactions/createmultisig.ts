@@ -3,7 +3,7 @@ import { inject, injectable } from 'inversify';
 import * as SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
 import { constants, Diff, TransactionType } from '../../helpers/';
-import { IAccountLogic, IRoundsLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
+import { IAccountLogic, IRoundsLogic, ITransactionLogic, VerificationType } from '../../ioc/interfaces/logic';
 import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import { AccountsModel, MultiSignaturesModel } from '../../models/';
@@ -132,7 +132,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
                 tx,
                 Buffer.from(key.substring(1), 'hex'),
                 Buffer.from(tx.signatures[i], 'hex'),
-                false
+                VerificationType.ALL
               );
             }
           }
