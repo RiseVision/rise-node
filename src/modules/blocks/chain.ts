@@ -53,6 +53,12 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
+  @inject(Symbols.models.accounts)
+  private AccountsModel: typeof AccountsModel;
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
+  @inject(Symbols.models.transactions)
+  private TransactionsModel: typeof TransactionsModel;
   /**
    * Lock for processing.
    * @type {boolean}
@@ -87,7 +93,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   }
 
   public async deleteAfterBlock(height: number): Promise<void> {
-    await BlocksModel.destroy({where: {$gte: height}});
+    await this.BlocksModel.destroy({where: {$gte: height}});
   }
 
   /**
@@ -109,9 +115,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * @returns {Promise<any>}
    */
   public async saveGenesisBlock() {
-    const genesis = await BlocksModel.findById(this.genesisBlock.id);
+    const genesis = await this.BlocksModel.findById(this.genesisBlock.id);
     if (!genesis) {
-      return BlocksModel.sequelize.transaction((t) => this.saveBlock(this.genesisBlock, t));
+      return this.BlocksModel.sequelize.transaction((t) => this.saveBlock(this.genesisBlock, t));
     }
   }
 
@@ -158,8 +164,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       this.logger.error(err);
       process.exit(0);
     }
-    this.blocksModule.lastBlock = BlocksModel.classFromPOJO(block);
-    await BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
+    this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
+    await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
   }
 
   public async applyBlock(block: SignedAndChainedBlockType, broadcast: boolean, saveBlock: boolean) {
@@ -179,7 +185,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       });
 
     // Start atomic block saving.
-    await BlocksModel.sequelize.transaction(async (dbTX) => {
+    await this.BlocksModel.sequelize.transaction(async (dbTX) => {
       // Apply transaction to unconfirmed mem_accounts field
       for (const transaction of block.transactions) {
         const sender = await this.accountsModule
@@ -215,7 +221,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         this.transactionsModule.removeUnconfirmedTransaction(tx.id);
       }
 
-      this.blocksModule.lastBlock = BlocksModel.classFromPOJO(block);
+      this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
       if (saveBlock) {
         try {
           await this.saveBlock(block, dbTX);
@@ -256,7 +262,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       .map((t: IConfirmedTransaction<any>) => this.transactionLogic.dbSave({
         ...t,
         blockId: b.id,
-        height : b.height
+        height : b.height,
       }))
       .reduce((o1, o2) => o1.concat(o2), []);
 
@@ -291,16 +297,16 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    */
   @WrapInBalanceSequence
   private async popLastBlock(lb: BlocksModel): Promise<BlocksModel> {
-    const previousBlock = await BlocksModel.findById(lb.previousBlock, {include: [TransactionsModel]});
+    const previousBlock = await this.BlocksModel.findById(lb.previousBlock, {include: [this.TransactionsModel]});
 
     if (previousBlock === null) {
       throw new Error('previousBlock is null');
     }
     const txs = lb.transactions.slice().reverse();
 
-    await BlocksModel.sequelize.transaction(async (dbTX) => {
+    await this.BlocksModel.sequelize.transaction(async (dbTX) => {
       for (const tx of txs) {
-        const sender = await AccountsModel.find({where: {publicKey: tx.senderPublicKey}});
+        const sender = await this.AccountsModel.find({where: {publicKey: tx.senderPublicKey}});
         await this.transactionsModule.undo(tx, lb, sender);
         await this.transactionsModule.undoUnconfirmed(tx);
       }

@@ -9,6 +9,7 @@ import voteSchema from '../../schema/logic/transactions/vote';
 import { DBOp } from '../../types/genericTypes';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
+import { SignaturesModel } from '../../models';
 
 // tslint:disable-next-line interface-over-type-literal
 export type VoteAsset = {
@@ -34,6 +35,10 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   private delegatesModule: IDelegatesModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
+
+  // models
+  @inject(Symbols.models.votes)
+  private VotesModel: typeof VotesModel;
 
   constructor() {
     super(TransactionType.VOTE);
@@ -163,7 +168,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   // tslint:disable-next-line max-line-length
   public dbSave(tx: IConfirmedTransaction<VoteAsset> & { senderId: string }): DBOp<any> {
     return {
-      model : VotesModel,
+      model : this.VotesModel,
       type: 'create',
       values: {
         transactionId: tx.id,

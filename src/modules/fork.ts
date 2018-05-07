@@ -14,6 +14,8 @@ export class ForkModule implements IForkModule {
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
+  @inject(Symbols.models.forkStats)
+  private ForksStatsModel: typeof ForksStatsModel;
   /**
    * Inserts a fork into fork_stats table and emits a socket signal with the fork data
    * @param {SignedBlockType} block
@@ -36,7 +38,7 @@ export class ForkModule implements IForkModule {
       previousBlock    : block.previousBlock,
     };
 
-    await ForksStatsModel.create(fork);
+    await this.ForksStatsModel.create(fork);
 
     this.io.sockets.emit('delegates/fork', fork);
   }

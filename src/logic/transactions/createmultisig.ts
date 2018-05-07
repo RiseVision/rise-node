@@ -46,6 +46,9 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
+  @inject(Symbols.models.multisignatures)
+  private MultiSignaturesModel: typeof MultiSignaturesModel;
+
   constructor() {
     super(TransactionType.MULTI);
     this.unconfirmedSignatures = {};
@@ -283,7 +286,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
   // tslint:disable-next-line max-line-length
   public dbSave(tx: IConfirmedTransaction<MultisigAsset> & { senderId: string }): DBCreateOp<MultiSignaturesModel> {
     return {
-      model : MultiSignaturesModel,
+      model : this.MultiSignaturesModel,
       type  : 'create',
       values: {
         keysgroup    : tx.asset.multisignature.keysgroup.join(','),

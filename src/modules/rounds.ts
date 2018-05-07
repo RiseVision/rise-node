@@ -6,7 +6,7 @@ import { IAppState, IRoundLogicNewable, IRoundsLogic } from '../ioc/interfaces/l
 import { IAccountsModule, IDelegatesModule, IRoundsModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { RoundLogicScope, SignedBlockType } from '../logic/';
-import { BlocksModel, RoundsModel } from '../models';
+import { AccountsModel, BlocksModel, RoundsModel } from '../models';
 import roundsSQL from '../sql/logic/rounds';
 import { DBOp } from '../types/genericTypes';
 import { address } from '../types/sanityTypes';
@@ -41,6 +41,14 @@ export class RoundsModule implements IRoundsModule {
   private accountsModule: IAccountsModule;
   @inject(Symbols.modules.delegates)
   private delegatesModule: IDelegatesModule;
+
+  // models
+  @inject(Symbols.models.accounts)
+  private AccountsModel: typeof AccountsModel;
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
+  @inject(Symbols.models.rounds)
+  private RoundsModel: typeof RoundsModel;
 
   public onFinishRound(round: number) {
     this.io.sockets.emit('rounds/change', { number: round });
@@ -111,7 +119,7 @@ export class RoundsModule implements IRoundsModule {
               roundsSQL.performRoundSnapshot,
               roundsSQL.clearVotesSnapshot,
               roundsSQL.performVotesSnapshot,
-            ].map<DBOp<any>>((query) => ({ model: RoundsModel, query, type: 'custom' })),
+            ].map<DBOp<any>>((query) => ({ model: this.RoundsModel, query, type: 'custom' })),
             transaction);
 
           this.logger.trace('Round snapshot done');
@@ -158,6 +166,11 @@ export class RoundsModule implements IRoundsModule {
         library: {
           logger: this.logger,
         },
+        models: {
+          AccountsModel: this.AccountsModel,
+          BlocksModel: this.BlocksModel,
+          RoundsModel: this.RoundsModel,
+        },
         modules: {
           accounts: this.accountsModule,
         },
@@ -193,7 +206,7 @@ export class RoundsModule implements IRoundsModule {
   // tslint:disable-next-line
   private async sumRound(round: number, tx: Transaction): Promise<{ roundFees: number, roundRewards: number[], roundDelegates: Buffer[] }> {
     this.logger.debug('Summing round', round);
-    const res = await RoundsModel.sumRound(this.constants.activeDelegates, round, tx);
+    const res = await this.RoundsModel.sumRound(this.constants.activeDelegates, round, tx);
 
     const roundRewards   = res.rewards.map((reward) => Math.floor(parseFloat(reward)));
     const roundFees      = Math.floor(parseFloat(res.fees));

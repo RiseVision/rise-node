@@ -99,6 +99,16 @@ export class LoaderModule implements ILoaderModule {
   @inject(Symbols.modules.transport)
   private transportModule: ITransportModule;
 
+  // Models
+  @inject(Symbols.models.accounts)
+  private AccountsModel: typeof AccountsModel;
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
+  @inject(Symbols.models.delegates)
+  private DelegatesModel: typeof DelegatesModel;
+  @inject(Symbols.models.rounds)
+  private RoundsModel: typeof RoundsModel;
+
   @postConstruct()
   public initialize() {
     this.network = {
@@ -191,7 +201,7 @@ export class LoaderModule implements ILoaderModule {
     const limit = Number(this.config.loading.loadPerIteration) || 1000;
     // const verify   = Boolean(this.library.config.loading.verifyOnLoading);
 
-    const blocksCount = await BlocksModel.count();
+    const blocksCount = await this.BlocksModel.count();
     this.logger.info(`Blocks ${blocksCount}`);
 
     if (blocksCount === 1) {
@@ -199,7 +209,7 @@ export class LoaderModule implements ILoaderModule {
       return this.load(1, limit, null, true);
     }
 
-    const genesisBlock = await BlocksModel.findOne({where: { height: 1}});
+    const genesisBlock = await this.BlocksModel.findOne({where: { height: 1}});
     // If there's a genesis in db lets check its validity against code version
     if (genesisBlock) {
       const matches = (
@@ -257,14 +267,14 @@ export class LoaderModule implements ILoaderModule {
       return this.load(blocksCount, limit, 'Detected missed blocks in mem_accounts', true);
     }
 
-    const rounds = await RoundsModel.findAll({ attributes: ['round'], group: 'round'});
+    const rounds = await this.RoundsModel.findAll({ attributes: ['round'], group: 'round'});
     const unapplied = rounds.filter((r) => r.round !== round);
     if (unapplied.length > 0) {
       // round is not applied.
       return this.load(blocksCount, limit, 'Detected unapplied rounds in mem_round', true);
     }
 
-    const [duplicatedDelegates] = await DelegatesModel.sequelize.query(
+    const [duplicatedDelegates] = await this.DelegatesModel.sequelize.query(
       sql.countDuplicatedDelegates,
       { type: sequelize.QueryTypes.SELECT });
     if (duplicatedDelegates.count > 0) {
@@ -273,9 +283,9 @@ export class LoaderModule implements ILoaderModule {
       return;
     }
 
-    await AccountsModel.restoreUnconfirmedEntries();
+    await this.AccountsModel.restoreUnconfirmedEntries();
 
-    const orphanedMemAccounts = await AccountsModel.sequelize.query(
+    const orphanedMemAccounts = await this.AccountsModel.sequelize.query(
       sql.getOrphanedMemAccounts,
       { type: sequelize.QueryTypes.SELECT });
 
@@ -283,7 +293,7 @@ export class LoaderModule implements ILoaderModule {
       return this.load(blocksCount, limit, 'Detected orphaned blocks in mem_accounts', true);
     }
 
-    const delegatesCount = await AccountsModel.count({where: {isDelegate: 1}});
+    const delegatesCount = await this.AccountsModel.count({where: {isDelegate: 1}});
     if (delegatesCount === 0) {
       return this.load(blocksCount, limit, 'No delegates found', true);
     }

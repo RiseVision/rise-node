@@ -31,6 +31,11 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
+  @inject(Symbols.models.accounts)
+  private AccountsModel: typeof AccountsModel;
+  @inject(Symbols.models.delegates)
+  private DelegatesModel: typeof DelegatesModel;
+
   constructor() {
     super(TransactionType.DELEGATE);
   }
@@ -111,7 +116,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       throw new Error('Account is already a delegate');
     }
     return [{
-      model  : AccountsModel,
+      model  : this.AccountsModel,
       options: {
         where: { address: sender.address },
       },
@@ -132,7 +137,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       data.u_username = tx.asset.delegate.username;
     }
     return [{
-      model  : AccountsModel,
+      model  : this.AccountsModel,
       options: {
         where: { address: sender.address },
       },
@@ -157,7 +162,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       throw new Error('Account is already trying to be a delegate');
     }
     return [{
-      model  : AccountsModel,
+      model  : this.AccountsModel,
       options: {
         where: { address: sender.address },
       },
@@ -177,7 +182,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     }
 
     return [{
-      model  : AccountsModel,
+      model  : this.AccountsModel,
       options: {
         where: { address: sender.address },
       },
@@ -217,7 +222,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
   // tslint:disable-next-line max-line-length
   public dbSave(tx: IConfirmedTransaction<DelegateAsset> & { senderId: string }): DBOp<DelegatesModel> {
     return {
-      model : DelegatesModel,
+      model : this.DelegatesModel,
       type  : 'create',
       values: {
         transactionId: tx.id,

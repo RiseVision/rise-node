@@ -28,7 +28,6 @@ import { Symbols } from '../../ioc/symbols';
 import {
   BasePeerType,
   SignedAndChainedBlockType,
-  SignedAndChainedTransportBlockType,
   SignedBlockType,
 } from '../../logic/';
 import { IBaseTransaction } from '../../logic/transactions/';
@@ -91,6 +90,12 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   @inject(Symbols.modules.transport)
   private transportModule: ITransportModule;
 
+  // models
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
+  @inject(Symbols.models.transactions)
+  private TransactionsModel: typeof TransactionsModel;
+
   private isCleaning: boolean = false;
 
   public cleanup() {
@@ -128,7 +133,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     }
 
     // Check that block with ID, previousBlock and height exists in database
-    const matchingCount = await BlocksModel.count({
+    const matchingCount = await this.BlocksModel.count({
       where: {
         height       : commonResp.common.height,
         id           : commonResp.common.id,
@@ -164,7 +169,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
     this.logger.debug('Loading blocks offset', { limit, offset, verify });
 
-    const blocks: BlocksModel[] = await BlocksModel.findAll({
+    const blocks: BlocksModel[] = await this.BlocksModel.findAll({
       include: [ TransactionsModel ],
       order: ['height', 'rowId'],
       where: {

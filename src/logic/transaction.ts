@@ -41,6 +41,9 @@ export class TransactionLogic implements ITransactionLogic {
   @inject(Symbols.helpers.slots)
   private slots: Slots;
 
+  @inject(Symbols.models.transactions)
+  private TransactionsModel: typeof TransactionsModel;
+
   private types: { [k: number]: BaseTransactionType<any, any> } = {};
 
   public attachAssetType<K, M extends Model<any>>(instance: BaseTransactionType<K, M>): BaseTransactionType<K, M> {
@@ -189,7 +192,7 @@ export class TransactionLogic implements ITransactionLogic {
    */
   public async countById(tx: IBaseTransaction<any>): Promise<number> {
     try {
-      return await TransactionsModel.count({ where: { id: tx.id } });
+      return await this.TransactionsModel.count({ where: { id: tx.id } });
     } catch (e) {
       this.logger.error(e.stack);
       throw new Error('Transaction#countById error');
@@ -523,7 +526,7 @@ export class TransactionLogic implements ITransactionLogic {
 
     // tslint:disable object-literal-sort-keys
     const toRet: DBOp<TransactionsModel> = {
-      model : TransactionsModel,
+      model : this.TransactionsModel,
       type  : 'create',
       values: {
         id         : tx.id,

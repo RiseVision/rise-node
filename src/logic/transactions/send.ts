@@ -3,10 +3,10 @@ import { TransactionType } from '../../helpers/';
 import { IAccountLogic, IRoundsLogic } from '../../ioc/interfaces/logic';
 import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
-import { SignedBlockType } from '../block';
-import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 import { AccountsModel } from '../../models';
 import { DBOp } from '../../types/genericTypes';
+import { SignedBlockType } from '../block';
+import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
 @injectable()
 export class SendTransaction extends BaseTransactionType<void, null> {
@@ -21,6 +21,9 @@ export class SendTransaction extends BaseTransactionType<void, null> {
 
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
+
+  @inject(Symbols.models.accounts)
+  private AccountsModel: typeof AccountsModel;
 
   constructor() {
     super(TransactionType.SEND);
@@ -45,9 +48,9 @@ export class SendTransaction extends BaseTransactionType<void, null> {
     return [
       // Create account if does not exist
       {
-        model : AccountsModel,
+        model : this.AccountsModel,
         type  : 'upsert',
-        values: { address: tx.recipientId },
+        values: { address: tx.recipientId.toUpperCase() },
       },
       ... this.accountLogic.merge(tx.recipientId, {
         balance  : tx.amount,
@@ -63,9 +66,9 @@ export class SendTransaction extends BaseTransactionType<void, null> {
     return [
       // Create account if does not exist
       {
-        model : AccountsModel,
+        model : this.AccountsModel,
         type  : 'upsert',
-        values: { address: tx.recipientId },
+        values: { address: tx.recipientId.toUpperCase() },
       },
       ... this.accountLogic.merge(tx.recipientId, {
         balance  : -tx.amount,

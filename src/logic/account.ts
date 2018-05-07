@@ -1,7 +1,6 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import { inject, injectable } from 'inversify';
-import * as jsonSqlCreator from 'json-sql';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
 import * as z_schema from 'z-schema';
@@ -22,10 +21,6 @@ import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
 
 import { AccountDiffType } from '../ioc/interfaces/logic';
-
-const jsonSql = jsonSqlCreator();
-
-jsonSql.setDialect('postgresql');
 
 // tslint:disable-next-line
 export type OptionalsMemAccounts = {
@@ -132,6 +127,21 @@ export class AccountLogic implements IAccountLogic {
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
+  @inject(Symbols.models.accounts2Delegates)
+  private Accounts2DelegatesModel: typeof Accounts2DelegatesModel;
+  @inject(Symbols.models.accounts2Multisignatures)
+  private Accounts2MultisignaturesModel: typeof Accounts2MultisignaturesModel;
+  @inject(Symbols.models.accounts2U_Delegates)
+  // tslint:disable-next-line
+  private Accounts2U_DelegatesModel: typeof Accounts2U_DelegatesModel;
+  @inject(Symbols.models.accounts2U_Multisignatures)
+  // tslint:disable-next-line
+  private Accounts2U_MultisignaturesModel: typeof Accounts2U_MultisignaturesModel;
+  @inject(Symbols.models.accounts)
+  private AccountsModel: typeof AccountsModel;
+  @inject(Symbols.models.rounds)
+  private RoundsModel: typeof RoundsModel;
+
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
 
@@ -172,7 +182,7 @@ export class AccountLogic implements IAccountLogic {
    */
   public createTables(): Promise<void> {
     return Promise.resolve(
-      AccountsModel.sequelize.query(
+      this.AccountsModel.sequelize.query(
         fs.readFileSync(path.join(process.cwd(), 'sql', 'memoryTables.sql'), { encoding: 'utf8' })
       )
     );
@@ -189,12 +199,12 @@ export class AccountLogic implements IAccountLogic {
    */
   public removeTables(): Promise<void> {
     return Promise.all([
-      AccountsModel.drop({cascade: true}),
-      RoundsModel.drop({cascade: true}),
-      Accounts2DelegatesModel.drop({cascade: true}),
-      Accounts2MultisignaturesModel.drop({cascade: true}),
-      Accounts2U_DelegatesModel.drop({cascade: true}),
-      Accounts2U_MultisignaturesModel.drop({cascade: true}),
+      this.AccountsModel.drop({cascade: true}),
+      this.RoundsModel.drop({cascade: true}),
+      this.Accounts2DelegatesModel.drop({cascade: true}),
+      this.Accounts2MultisignaturesModel.drop({cascade: true}),
+      this.Accounts2U_DelegatesModel.drop({cascade: true}),
+      this.Accounts2U_MultisignaturesModel.drop({cascade: true}),
     ])
       .then(() => void 0)
       .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
@@ -300,7 +310,7 @@ export class AccountLogic implements IAccountLogic {
     }
 
     return Promise.resolve(
-      AccountsModel.scope(scope).findAll({
+      this.AccountsModel.scope(scope).findAll({
         // attributes: realFields, // NOTE: do not re-SET!
         limit,
         offset,
@@ -323,7 +333,7 @@ export class AccountLogic implements IAccountLogic {
     address        = String(address).toUpperCase();
     fields.address = address;
 
-    await AccountsModel.upsert(fields);
+    await this.AccountsModel.upsert(fields);
   }
 
   /**
@@ -356,8 +366,8 @@ export class AccountLogic implements IAccountLogic {
             update[fieldName] = sequelize.literal(`${fieldName} + ${Math.floor(trueValue)}`);
             if (fieldName === 'balance') {
               dbOps.push({
-                model: RoundsModel,
-                query: RoundsModel.insertMemRoundBalanceSQL({
+                model: this.RoundsModel,
+                query: this.RoundsModel.insertMemRoundBalanceSQL({
                   address,
                   amount : trueValue,
                   blockId: diff.blockId,
@@ -375,8 +385,8 @@ export class AccountLogic implements IAccountLogic {
             }
             if (fieldName === 'balance') {
               dbOps.push({
-                model: RoundsModel,
-                query: RoundsModel.insertMemRoundBalanceSQL({
+                model: this.RoundsModel,
+                query: this.RoundsModel.insertMemRoundBalanceSQL({
                   address,
                   amount : trueValue,
                   blockId: diff.blockId,
@@ -397,8 +407,8 @@ export class AccountLogic implements IAccountLogic {
               insert[fieldName].push(theVal);
               if (fieldName === 'delegates') {
                 dbOps.push({
-                  model: RoundsModel,
-                  query: RoundsModel.insertMemRoundDelegatesSQL({
+                  model: this.RoundsModel,
+                  query: this.RoundsModel.insertMemRoundDelegatesSQL({
                     add     : true,
                     address,
                     blockId : diff.blockId,
@@ -414,8 +424,8 @@ export class AccountLogic implements IAccountLogic {
               remove[fieldName].push(theVal);
               if (fieldName === 'delegates') {
                 dbOps.push({
-                  model: RoundsModel,
-                  query: RoundsModel.insertMemRoundDelegatesSQL({
+                  model: this.RoundsModel,
+                  query: this.RoundsModel.insertMemRoundDelegatesSQL({
                     add     : false,
                     address,
                     blockId : diff.blockId,
@@ -432,20 +442,20 @@ export class AccountLogic implements IAccountLogic {
 
     }
 
-    function elToModel(el: string) {
+    const elToModel = (el: string) => {
       switch (el) {
         case 'delegates':
-          return Accounts2DelegatesModel;
+          return this.Accounts2DelegatesModel;
         case 'u_delegates':
-          return Accounts2U_DelegatesModel;
+          return this.Accounts2U_DelegatesModel;
         case 'multisignatures':
-          return Accounts2MultisignaturesModel;
+          return this.Accounts2MultisignaturesModel;
         case 'u_multisignatures':
-          return Accounts2U_MultisignaturesModel;
+          return this.Accounts2U_MultisignaturesModel;
         default:
           throw new Error(`Unknown el ${el}`);
       }
-    }
+    };
 
     // Create insert ops.
     Object.keys(insert)
@@ -481,7 +491,7 @@ export class AccountLogic implements IAccountLogic {
       });
 
     dbOps.push({
-      model  : AccountsModel,
+      model  : this.AccountsModel,
       options: {
         limit: 1,
         where: { address },
@@ -499,7 +509,7 @@ export class AccountLogic implements IAccountLogic {
    * @returns {Promise<number>}
    */
   public async remove(address: string): Promise<number> {
-    return await AccountsModel.destroy({ where: { address } });
+    return await this.AccountsModel.destroy({ where: { address } });
   }
 
   public generateAddressByPublicKey(publicKey: string): string {

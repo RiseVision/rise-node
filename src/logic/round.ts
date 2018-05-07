@@ -2,7 +2,7 @@ import * as sequelize from 'sequelize';
 import { ILogger, RoundChanges, Slots } from '../helpers/';
 import { IRoundLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule } from '../ioc/interfaces/modules';
-import { AccountsModel, RoundsModel } from '../models';
+import { AccountsModel, BlocksModel, RoundsModel } from '../models';
 import roundSQL from '../sql/logic/rounds';
 import { DBCustomOp, DBOp } from '../types/genericTypes';
 import { address } from '../types/sanityTypes';
@@ -21,6 +21,11 @@ export type RoundLogicScope = {
   library: {
     logger: ILogger
   },
+  models: {
+    AccountsModel: typeof AccountsModel,
+    BlocksModel: typeof BlocksModel,
+    RoundsModel: typeof RoundsModel,
+  }
   modules: {
     accounts: IAccountsModule;
   }
@@ -72,7 +77,7 @@ export class RoundLogic implements IRoundLogic {
       return null;
     }
     return {
-      model  : AccountsModel,
+      model  : this.scope.models.AccountsModel,
       options: {
         where: {
           address: { $in: this.scope.roundOutsiders },
@@ -90,8 +95,8 @@ export class RoundLogic implements IRoundLogic {
    */
   public updateVotes(): DBCustomOp<any> {
     return {
-      model: AccountsModel,
-      query: RoundsModel.updateVotesSQL(this.scope.round),
+      model: this.scope.models.AccountsModel,
+      query: this.scope.models.RoundsModel.updateVotesSQL(this.scope.round),
       type : 'custom',
     };
   }
@@ -102,7 +107,7 @@ export class RoundLogic implements IRoundLogic {
   public markBlockId(): DBOp<any> {
     if (this.scope.backwards) {
       return {
-        model  : AccountsModel,
+        model  : this.scope.models.AccountsModel,
         options: {
           where: {
             blockId: this.scope.block.id,
@@ -122,7 +127,7 @@ export class RoundLogic implements IRoundLogic {
    */
   public flushRound(): DBOp<any> {
     return {
-      model  : RoundsModel,
+      model  : this.scope.models.RoundsModel,
       options: { where: { round: this.scope.round } },
       type   : 'remove',
     };
@@ -133,7 +138,7 @@ export class RoundLogic implements IRoundLogic {
    */
   public truncateBlocks(): DBOp<RoundsModel> {
     return {
-      model  : RoundsModel,
+      model  : this.scope.models.RoundsModel,
       options: { where: { height: { $gt: this.scope.block.height } } },
       type   : 'remove',
     };
@@ -145,7 +150,7 @@ export class RoundLogic implements IRoundLogic {
    */
   public restoreRoundSnapshot(): DBOp<RoundsModel> {
     return {
-      model: RoundsModel,
+      model: this.scope.models.RoundsModel,
       query: roundSQL.restoreRoundSnapshot,
       type: 'custom',
     };
@@ -157,7 +162,7 @@ export class RoundLogic implements IRoundLogic {
    */
   public restoreVotesSnapshot(): DBOp<AccountsModel> {
     return {
-      model: AccountsModel,
+      model: this.scope.models.AccountsModel,
       query: roundSQL.restoreVotesSnapshot,
       type: 'custom',
     };

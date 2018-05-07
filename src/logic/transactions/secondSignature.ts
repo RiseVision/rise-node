@@ -8,6 +8,7 @@ import secondSignatureSchema from '../../schema/logic/transactions/secondSignatu
 import { DBOp } from '../../types/genericTypes';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
+import { DelegatesModel } from '../../models';
 // tslint:disable-next-line interface-over-type-literal
 export type SecondSignatureAsset = {
   signature: {
@@ -26,6 +27,12 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
 
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
+
+  // models
+  @inject(Symbols.models.accounts)
+  private AccountsModel: typeof AccountsModel;
+  @inject(Symbols.models.signatures)
+  private SignaturesModel: typeof SignaturesModel;
 
   constructor() {
     super(TransactionType.SIGNATURE);
@@ -62,7 +69,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   public async apply(tx: IConfirmedTransaction<SecondSignatureAsset>, block: SignedBlockType,
                      sender: AccountsModel): Promise<Array<DBOp<any>>> {
     return [{
-      model  : AccountsModel,
+      model  : this.AccountsModel,
       options: {
         where: { address: sender.address },
       },
@@ -79,7 +86,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
                     block: SignedBlockType,
                     sender: AccountsModel): Promise<Array<DBOp<any>>> {
     return [{
-      model  : AccountsModel,
+      model  : this.AccountsModel,
       options: {
         where: { address: sender.address },
       },
@@ -98,7 +105,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
       throw new Error('Second signature already enabled');
     }
     return [{
-      model  : AccountsModel,
+      model  : this.AccountsModel,
       options: {
         where: { address: sender.address },
       },
@@ -112,7 +119,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   public async undoUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>,
                                sender: AccountsModel): Promise<Array<DBOp<any>>> {
     return [{
-      model  : AccountsModel,
+      model  : this.AccountsModel,
       options: {
         where: { address: sender.address },
       },
@@ -146,7 +153,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   // tslint:disable-next-line max-line-length
   public dbSave(tx: IConfirmedTransaction<SecondSignatureAsset> & { senderId: string }): DBOp<any> {
     return {
-      model : SignaturesModel,
+      model : this.SignaturesModel,
       type  : 'create',
       values: {
         publicKey    : Buffer.from(tx.asset.signature.publicKey, 'hex'),

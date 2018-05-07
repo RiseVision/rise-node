@@ -1,5 +1,4 @@
 import { inject, injectable } from 'inversify';
-import { IDatabase } from 'pg-promise';
 import { constants as constantsType, DBHelper, ILogger } from '../helpers/';
 import { ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules/';

@@ -36,6 +36,9 @@ export class PeersModule implements IPeersModule {
   @inject(Symbols.modules.system)
   private systemModule;
 
+  @inject(Symbols.models.peers)
+  private PeersModel: typeof PeersModel;
+
   public cleanup() {
     // save on cleanup.
     return this.dbSave();
@@ -163,10 +166,10 @@ export class PeersModule implements IPeersModule {
       return;
     }
     // Wrap sql queries in transaction and execute
-    const transaction = await PeersModel.sequelize.transaction();
+    const transaction = await this.PeersModel.sequelize.transaction();
     try {
-      await PeersModel.truncate({transaction});
-      await PeersModel.bulkCreate(
+      await this.PeersModel.truncate({transaction});
+      await this.PeersModel.bulkCreate(
         peers.map((p) => ({...p, ...{broadhash: Buffer.from(p.broadhash, 'hex')}})),
         {transaction}
       );
@@ -186,7 +189,7 @@ export class PeersModule implements IPeersModule {
     this.logger.trace('Importing peers from database');
 
     try {
-      const rows = await PeersModel.findAll({raw: true});
+      const rows = await this.PeersModel.findAll({raw: true});
       let updated = 0;
       await Promise.all(rows
         .map((rawPeer) => this.peersLogic.create(rawPeer))

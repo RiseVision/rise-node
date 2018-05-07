@@ -161,6 +161,9 @@ export class BlockLogic implements IBlockLogic {
   @inject(Symbols.logic.transaction)
   private transaction: ITransactionLogic;
 
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
+
   /**
    * Use static method instead
    * @deprecated
@@ -282,7 +285,7 @@ export class BlockLogic implements IBlockLogic {
     const values = {...block } ;
     delete values.transactions;
     return {
-      model : BlocksModel,
+      model : this.BlocksModel,
       type  : 'create',
       values,
     };

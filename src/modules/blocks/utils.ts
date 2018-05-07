@@ -39,6 +39,16 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
 
+  // models
+  @inject(Symbols.models.accounts)
+  private AccountsModel: typeof AccountsModel;
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
+  @inject(Symbols.models.transactions)
+  private TransactionsModel: typeof TransactionsModel;
+  @inject(Symbols.models.roundsFees)
+  private RoundsFeesModel: typeof RoundsFeesModel;
+
   // Modules
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
@@ -102,10 +112,10 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
    * @return {Promise<BlocksModel>}
    */
   public async loadLastBlock(): Promise<BlocksModel> {
-    const b                     = await BlocksModel.findOne({
+    const b                     = await this.BlocksModel.findOne({
+      include: [this.TransactionsModel],
       order  : [['height', 'DESC']],
-      include: [TransactionsModel],
-      limit  : 1
+      limit  : 1,
     });
     this.blocksModule.lastBlock = b;
     return b;
@@ -171,8 +181,8 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
       params.lastId = filter.lastId;
     }
     return await this.dbSequence.addAndPromise<BlocksModel[]>(async () => {
-      const block = await BlocksModel.findOne({
-        include: [TransactionsModel],
+      const block = await this.BlocksModel.findOne({
+        include: [this.TransactionsModel],
         where  : {id: filter.lastId || filter.id || null},
       });
 
@@ -181,7 +191,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
 
       if (typeof(params.lastId) !== 'undefined') {
         const limit = height + (parseInt(`${filter.limit}`, 10) || 1);
-        return await BlocksModel.findAll({
+        return await this.BlocksModel.findAll({
           order: ['height', 'rowId'],
           where: {height: {$gt: height, $lt: limit}},
         });
@@ -225,7 +235,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
       throw new Error('Account not found or is not a delegate');
     }
 
-    const res: { count: string, rewards: string } = await BlocksModel.findOne({
+    const res: { count: string, rewards: string } = await this.BlocksModel.findOne({
       attributes: [
         sequelize.literal('COUNT(1)'),
         sequelize.literal('SUM("reward") as rewards'),
@@ -242,7 +252,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
       fees   : 0,
       rewards: res.rewards === null ? 0 : parseInt(res.rewards, 10),
     };
-    data.fees  = await RoundsFeesModel.aggregate('fees', 'sum', {
+    data.fees  = await this.RoundsFeesModel.aggregate('fees', 'sum', {
       where: {
         ...timestampClausole,
         publicKey: bufPublicKey,
