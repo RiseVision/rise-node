@@ -23,13 +23,14 @@ import {
   createRegDelegateTransaction,
   createSecondSignTransaction,
   createSendTransaction,
-  createVoteTransaction,
+  createVoteTransaction, easyCreateMultiSignAccount,
   getRandomDelegateWallet
 } from './common/utils';
 import { Ed, JobsQueue, wait } from '../../src/helpers';
 import BigNumber from 'bignumber.js';
 import { toBufferedTransaction } from '../utils/txCrafter';
 import { BlocksModel } from '../../src/models';
+import { Sequelize } from 'sequelize-typescript';
 
 // tslint:disable no-unused-expression
 chai.use(chaiAsPromised);
@@ -76,7 +77,6 @@ describe('highlevel checks', function () {
         expect(txPool.transactionInPool(tx.id)).is.false;
       });
       it('should allow spending all money without fee', async () => {
-console.log('bit');
         const tx = await createSendTransaction(1, funds - systemModule.getFees().fees.send, senderAccount, '1R');
         expect(blocksModule.lastBlock.height).is.eq(3);
 
@@ -89,28 +89,32 @@ console.log('bit');
         expect(txPool.transactionInPool(tx.id)).is.false;
       });
 
-      it('should not include one of the tx exceeding account balance', async () => {
+      it('should not allow block with tx exceeding account balance', async () => {
+        const preHeight = blocksModule.lastBlock.height;
+        const acc = accModule.getAccount({address: senderAccount.address});
         const txs = await Promise.all(
           new Array(3).fill(null)
             .map(() => createSendTransaction(
               0,
-              Math.ceil(funds / 3), senderAccount,
+              Math.ceil(funds / 3),
+              senderAccount,
               createRandomWallet().address
               )
             )
         );
-        await txModule.receiveTransactions(txs
-          .map((tx) => toBufferedTransaction(tx)),
-          false,
-          false
-        );
-        await initializer.rawMineBlocks(1);
+        const s = initializer.appManager.container.get<Sequelize>(Symbols.generic.sequelize);
+        s.options.logging = true;
+        console.log('TXS:', txs.map(tx => tx.id), senderAccount.address);
 
-        expect(blocksModule.lastBlock.transactions.length).to.be.eq(2);
-        // All of the transactions should not in pool anymore.
-        for (const stx of txs) {
-          expect(await txPool.transactionInPool(stx.id)).to.be.false;
-        }
+        await expect(initializer
+          .rawMineBlockWithTxs(txs.map((t) => toBufferedTransaction(t))))
+          .to
+          .rejectedWith(/Account does not have enough currency/);
+        s.options.logging = false;
+
+        const postAcc = accModule.getAccount({address: senderAccount.address });
+
+        expect(blocksModule.lastBlock.height).to.be.eq(preHeight);
       });
     });
 
@@ -322,32 +326,9 @@ console.log('bit');
 
     describe('multiSignature', () => {
       it('should create multisignature account', async () => {
-        const keys     = new Array(3).fill(null).map(() => createRandomWallet());
-        const signedTx = toBufferedTransaction(
-          createMultiSignTransaction(senderAccount, 3, keys.map((k) => `+${k.publicKey}`))
-        );
-        await txModule.receiveTransactions([signedTx], false, false);
-        await initializer.rawMineBlocks(1);
-        // In pool => valid and not included in block.
-        expect(txPool.multisignature.has(signedTx.id)).is.true;
-        // let it sign by all.
+        const {keys, wallet, tx} = await easyCreateMultiSignAccount(3, 3);
 
-        const signatures = keys.map((k) => ed.sign(
-          txLogic.getHash(signedTx, true, false),
-          {
-            privateKey: Buffer.from(k.privKey, 'hex'),
-            publicKey : Buffer.from(k.publicKey, 'hex'),
-          }
-        ).toString('hex'));
-
-        await transportModule.receiveSignatures(signatures.map((sig) => ({
-          signature  : sig,
-          transaction: signedTx.id,
-        })));
-
-        await initializer.rawMineBlocks(1);
-
-        const acc = await accModule.getAccount({address: senderAccount.address});
+        const acc = await accModule.getAccount({address: wallet.address});
         expect(acc.multisignatures).to.be.an('array');
 
         for (const k of keys) {

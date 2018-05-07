@@ -230,6 +230,10 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       await this.bus.message('newBlock', block, broadcast);
 
       await this.roundsModule.tick(block, dbTX);
+    }).catch((err) => {
+      // Allow cleanup as processing finished even if rollback.
+      this.isProcessing = false;
+      throw err;
     });
 
     // restore the (yet) unconfirmed ids.

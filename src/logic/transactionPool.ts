@@ -29,7 +29,9 @@ export class InnerTXQueue<T = { receivedAt: Date }> {
       delete this.index[id];
       delete this.transactions[index];
       delete this.payload[id];
+      return true;
     }
+    return false;
   }
 
   public getPayload(tx: IBaseTransaction<any>): T {

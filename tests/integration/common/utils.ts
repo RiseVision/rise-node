@@ -66,6 +66,8 @@ export const createVoteTransaction = async (confirmations: number, from: LiskWal
     },
     ...obj,
   });
+  tx['senderId']     = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts)
+    .generateAddressByPublicKey(tx.senderPublicKey);
   if (confirmations > 0) {
     await confirmTransactions([tx], confirmations);
   }
@@ -89,44 +91,62 @@ export const createSecondSignTransaction = async (confirmations: number, from: L
   }
   return tx;
 };
-export const createMultiSignAccount      = async (howMany: number, min: number = howMany) => {
-  const { wallet } = await createRandomAccountWithFunds(Math.pow(10, 11));
-  const keys       = new Array(howMany).fill(null).map(() => createRandomWallet());
-  const signedTx   = createMultiSignTransaction(wallet, min, keys.map((k) => `+${k.publicKey}`));
+export const easyCreateMultiSignAccount  = async (howMany: number, min: number = howMany) => {
+  const {wallet} = await createRandomAccountWithFunds(Math.pow(10, 11));
+  const keys     = new Array(howMany).fill(null).map(() => createRandomWallet());
+  return createMultiSignAccount(wallet, keys, min);
+}
 
-  const signatures = keys
-    .map((k) => k.getSignatureOfTransaction(signedTx));
+export const createMultiSignAccount = async (wallet: LiskWallet, keys: LiskWallet[], min: number, extra: any = {}) => {
+  const {tx, signatures} = createMultiSignTransactionWithSignatures(
+    wallet,
+    min,
+    keys,
+    24,
+    extra
+  );
 
   const txModule       = initializer.appManager.container
     .get<ITransactionsModule>(Symbols.modules.transactions);
   const multisigModule = initializer.appManager.container
     .get<IMultisignaturesModule>(Symbols.modules.multisignatures);
 
-  await txModule.receiveTransactions([toBufferedTransaction(signedTx)], false, false);
+  await txModule.receiveTransactions([toBufferedTransaction(tx)], false, false);
   // We should ask multisignature module to change readyness state of such tx.
 
   for (const signature of signatures) {
-    await multisigModule.processSignature({ signature, transaction: signedTx.id });
+    await multisigModule.processSignature({signature, transaction: tx.id});
   }
-
   await initializer.rawMineBlocks(1);
-  return { wallet, keys, tx: signedTx };
-}
-export const createMultiSignTransaction  = (from: LiskWallet, min: number, keysgroup: publicKey[], lifetime: number = 24) => {
+  return {wallet, keys, tx};
+};
+
+export const createMultiSignTransactionWithSignatures = (from: LiskWallet, min: number, keys: LiskWallet[], lifetime: number = 24, extra: any) => {
+  const tx         = createMultiSignTransaction(from, min, keys.map((k) => `+${k.publicKey}`), lifetime, extra);
+  const signatures = keys.map((k) => k.getSignatureOfTransaction(tx));
+  return {tx, signatures};
+};
+
+export const createMultiSignTransaction               = (from: LiskWallet, min: number, keysgroup: publicKey[], lifetime: number = 24, extra: any = {}) => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
   const tx           = txCrafter.createMultiSigTX(
     from,
     systemModule.getFees().fees.secondsignature,
     {
-      asset: {
-        multisignature: {
-          keysgroup,
-          lifetime,
-          min,
+      ... {
+        asset: {
+          multisignature: {
+            keysgroup,
+            lifetime,
+            min,
+          },
         },
       },
-    });
-
+      ...extra
+    }
+  );
+  tx['senderId']     = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts)
+    .generateAddressByPublicKey(tx.senderPublicKey);
   return tx;
 };
 
@@ -143,6 +163,8 @@ export const createRegDelegateTransaction = async (confirmations: number, from: 
     },
     ...obj,
   });
+  tx['senderId']     = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts)
+    .generateAddressByPublicKey(tx.senderPublicKey);
   if (confirmations > 0) {
     await confirmTransactions([tx], confirmations);
   }
@@ -151,7 +173,7 @@ export const createRegDelegateTransaction = async (confirmations: number, from: 
 
 export const createSendTransaction = async (confirmations: number, amount: number, from: LiskWallet, dest: string, opts: any = {}): Promise<ITransaction> => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
-  const tx           = txCrafter.createSendTransaction(from, dest, systemModule.getFees().fees.send, { ...{ amount }, ...opts });
+  const tx           = txCrafter.createSendTransaction(from, dest, systemModule.getFees().fees.send, {...{amount}, ...opts});
   tx['senderId']     = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts)
     .generateAddressByPublicKey(tx.senderPublicKey);
   if (confirmations > 0) {

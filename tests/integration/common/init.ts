@@ -8,7 +8,7 @@ import { IDatabase } from 'pg-promise';
 import {
   IBlocksModule,
   IBlocksModuleChain,
-  IBlocksModuleProcess,
+  IBlocksModuleProcess, IBlocksModuleVerify,
   IDelegatesModule,
   ITransactionsModule
 } from '../../../src/ioc/interfaces/modules';
@@ -18,6 +18,7 @@ import { IBlockLogic } from '../../../src/ioc/interfaces/logic';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { toBufferedTransaction } from '../../utils/txCrafter';
 import { MigrationsModel } from '../../../src/models';
+import { IBaseTransaction } from '../../../src/logic/transactions';
 
 export class IntegrationTestInitializer {
   public appManager: AppManager;
@@ -28,7 +29,10 @@ export class IntegrationTestInitializer {
       this.timeout(10000);
       return s.runBefore();
     });
-    afterEach(() => this.runAfter());
+    afterEach(function()  {
+      this.timeout(10000);
+      return s.runAfter();
+    });
   }
 
   /**
@@ -36,15 +40,19 @@ export class IntegrationTestInitializer {
    */
   public autoRestoreEach() {
     let height: number;
+    const self = this;
     beforeEach(() => {
       const blockModule = this.appManager.container
         .get<IBlocksModule>(Symbols.modules.blocks);
       height            = blockModule.lastBlock.height;
     });
-    afterEach(async () => {
-      const blockModule = this.appManager.container
+    afterEach(async function () {
+
+      const blockModule = self.appManager.container
         .get<IBlocksModule>(Symbols.modules.blocks);
-      await this.rawDeleteBlocks(blockModule.lastBlock.height - height);
+      const howMany      = blockModule.lastBlock.height - height;
+      this.timeout(howMany * 100 + 150);
+      await self.rawDeleteBlocks(howMany);
       expect(blockModule.lastBlock.height).to.be.eq(height);
     });
   }
@@ -96,6 +104,36 @@ export class IntegrationTestInitializer {
     });
   }
 
+  /**
+   * Tries to mine a block with a specific set of transactions.
+   * Useful when testing edge cases such as over-spending etc.
+   * @param {Array<IBaseTransaction<any>>} transactions
+   * @returns {Promise<SignedBlockType>}
+   */
+  public async rawMineBlockWithTxs(transactions: Array<IBaseTransaction<any>>) {
+    const blockLogic = this.appManager.container.get<IBlockLogic>(Symbols.logic.block);
+    const blockModule     = this.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
+    const blocksVerifyModule     = this.appManager.container.get<IBlocksModuleVerify>(Symbols.modules.blocksSubModules.verify);
+    const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
+    const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
+    const height = blockModule.lastBlock.height;
+
+    const delegates  = await delegatesModule.generateDelegateList(height + 1);
+    const theSlot    = height + 1;
+    const delegateId = delegates[theSlot % slots.delegates];
+    const kp         = getKeypairByPkey(delegateId.toString('hex'));
+
+    const newBlock = blockLogic.create({
+      keypair      : kp,
+      previousBlock: blockModule.lastBlock,
+      timestamp    : slots.getSlotTime(theSlot),
+      transactions,
+    });
+
+    await blocksVerifyModule.processBlock(newBlock, false, true);
+    return newBlock;
+  }
+
   public async rawMineBlocks(howMany: number): Promise<number> {
     // const db              = this.appManager.container.get<IDatabase<any>>(Symbols.generic.db);
     const blockModule     = this.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
@@ -104,7 +142,7 @@ export class IntegrationTestInitializer {
     const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
     const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
     const height          = blockModule.lastBlock.height;
-     console.log(`Mining ${howMany} blocks from height: ${height}`);
+    // console.log(`Mining ${howMany} blocks from height: ${height}`);
     for (let i = 0; i < howMany; i++) {
       const delegates  = await delegatesModule.generateDelegateList(height + i + 1);
       const theSlot    = height + i + 1;
@@ -130,7 +168,10 @@ export class IntegrationTestInitializer {
       return s.runBefore();
     });
 
-    after(() => this.runAfter());
+    after(function () {
+      this.timeout(100000);
+      return s.runAfter();
+    });
   }
 
   private createAppManager() {

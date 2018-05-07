@@ -50,7 +50,7 @@ export interface ITransactionsModule extends IModule {
   /**
    * Removes transaction from unconfirmed, queued and multisignature.
    */
-  removeUnconfirmedTransaction(id: string): void;
+  removeUnconfirmedTransaction(id: string): boolean;
 
   /**
    * Checks kind of unconfirmed transaction and process it, resets queue

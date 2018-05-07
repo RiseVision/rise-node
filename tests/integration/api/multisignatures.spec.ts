@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as supertest from 'supertest';
 import initializer from '../common/init';
 import { checkPubKey, checkRequiredParam, checkReturnObjKeyVal } from './utils';
-import { createMultiSignAccount } from '../common/utils';
+import { easyCreateMultiSignAccount } from '../common/utils';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/multisignatures', () => {
@@ -16,7 +16,7 @@ describe('api/multisignatures', () => {
     // checkPubKey('publicKey', '/api/multisignatures/accounts');
     checkReturnObjKeyVal('accounts', [], '/api/multisignatures/accounts?publicKey=e0f1c6cca365cd61bbb01cfb454828a698fa4b7170e85a597dde510567f9dda5');
     it('should return correct accounts info if account is, indeed a multisig account', async () => {
-      const { wallet, keys, tx } = await createMultiSignAccount(3);
+      const { wallet, keys, tx } = await easyCreateMultiSignAccount(3);
       for (const key of keys) {
         const { body }               = await supertest(initializer.appManager.expressApp)
           .get(`/api/multisignatures/accounts?publicKey=${key.publicKey}`)

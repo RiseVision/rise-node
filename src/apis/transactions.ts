@@ -137,7 +137,11 @@ export class TransactionsAPI {
       order: orderBy,
       where: whereClause,
     });
-    return { transactions: transactions.map((t) => t.toTransport()), count};
+    return {
+      transactions: transactions
+        .map((t) => t.toTransport()),
+      count
+    };
   }
 
   @Get('/count')

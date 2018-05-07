@@ -159,7 +159,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   }
 
   public async onBlockchainReady() {
-    const blocks = await this.BlocksModel.findAll({
+    const blocks       = await this.BlocksModel.findAll({
       limit: this.constants.blockSlotWindow,
       order: [['height', 'desc']],
     });
@@ -177,9 +177,9 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
    * Verify block slot is not too in the past or in the future.
    */
   private verifyBlockSlotWindow(block: SignedBlockType): string[] {
-    const curSlot = this.slots.getSlotNumber();
+    const curSlot   = this.slots.getSlotNumber();
     const blockSlot = this.slots.getSlotNumber(block.timestamp);
-    const errors = [];
+    const errors    = [];
     if (curSlot - blockSlot > this.constants.blockSlotWindow) {
       errors.push('Block slot is too old');
     }
@@ -188,6 +188,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     }
     return errors;
   }
+
   /**
    * Verify that given block is not already within last known block ids.
    */
@@ -352,17 +353,26 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       .catch(async (err) => {
         await this.forkModule.fork(block, ForkType.TX_ALREADY_CONFIRMED);
         // undo the offending tx
-        await this.transactionsModule.undoUnconfirmed(tx);
-        this.transactionsModule.removeUnconfirmedTransaction(tx.id);
+
+        if (this.transactionsModule.removeUnconfirmedTransaction(tx.id)) {
+          await this.transactionsModule.undoUnconfirmed(tx);
+        }
         return Promise.reject(err);
       });
 
     // get account from db if exists
-    const acc = await this.accountsModule.getAccount({publicKey: tx.senderPublicKey});
+    // We try to fetch account without an upsert and eventually upsert the account if necessary.
+    // this is just for optimization purposes.
+    const acc = await this.accountsModule.getAccount({publicKey: tx.senderPublicKey})
+      .then((a) => a.publicKey === null ? this.accountsModule.setAccountAndGet({publicKey: tx.senderPublicKey}) : a);
 
     let requester = null;
     if (tx.requesterPublicKey) {
-      requester = await this.accountsModule.getAccount({publicKey: tx.requesterPublicKey});
+      requester = await this.accountsModule.getAccount({publicKey: tx.requesterPublicKey})
+        .then((a) => a.publicKey === null
+          ? this.accountsModule.setAccountAndGet({publicKey: tx.requesterPublicKey})
+          : a
+        );
     }
     // Verify will throw if any error occurs during validation.
     await this.transactionLogic.verify(tx, acc, requester, block.height);

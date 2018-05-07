@@ -1,4 +1,5 @@
 import * as bodyParser from 'body-parser';
+import * as cls from 'cls-hooked';
 import * as compression from 'compression';
 import * as cors from 'cors';
 import * as express from 'express';
@@ -218,6 +219,11 @@ export class AppManager {
     const io    = socketIO(this.server);
     // const db        = await Database.connect(this.appConfig.db, this.logger);
     // ((require('fs'))).unlinkSync(`${__dirname}/../sequelize.log`);
+    const namespace = cls.createNamespace('sequelize-namespace');
+
+    //(Sequelize as any).__proto__.useCls(namespace);
+    (Sequelize as any).__proto__.useCLS(namespace);
+    //Sequelize.useCLS(namespace);
     const sequelize = new Sequelize({
       // logging(msg) {
       //   (require('fs')).appendFileSync(`${__dirname}/../sequelize.log`, msg+"\n");
@@ -263,6 +269,7 @@ export class AppManager {
     this.container.bind(Symbols.generic.nonce).toConstantValue(this.nonce);
     this.container.bind(Symbols.generic.redisClient).toConstantValue(theCache.client);
     this.container.bind(Symbols.generic.sequelize).toConstantValue(sequelize);
+    this.container.bind(Symbols.generic.sequelizeNamespace).toConstantValue(namespace);
     this.container.bind(Symbols.generic.socketIO).toConstantValue(io);
     this.container.bind(Symbols.generic.versionBuild).toConstantValue(this.versionBuild);
     this.container.bind(Symbols.generic.zschema).toConstantValue(this.schema);
