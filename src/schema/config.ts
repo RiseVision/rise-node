@@ -244,6 +244,9 @@ export default {
             },
             required  : ['whiteList'],
           },
+          transactionsPolling: {
+            type: 'boolean',
+          },
         },
         required  : ['force', 'secret', 'access'],
       },

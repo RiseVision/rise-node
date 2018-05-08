@@ -80,11 +80,12 @@ export interface AppConfig {
   };
 
   forging: {
-    force: boolean,
+    force: boolean
     secret: string[]
     access: {
       whiteList: string[]
     }
+    transactionsPolling?: boolean
   };
 
   loading: {
