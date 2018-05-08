@@ -2,12 +2,13 @@ import * as ByteBuffer from 'bytebuffer';
 import { inject, injectable } from 'inversify';
 import * as SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
-import { constants, Diff, emptyCB, TransactionType } from '../../helpers/';
-import { IAccountLogic, IRoundsLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
+import { constants, Diff, TransactionType } from '../../helpers/';
+import { IAccountLogic, IRoundsLogic, ITransactionLogic, VerificationType } from '../../ioc/interfaces/logic';
 import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
+import { AccountsModel, MultiSignaturesModel } from '../../models/';
 import multiSigSchema from '../../schema/logic/transactions/multisignature';
-import { MemAccountsData } from '../account';
+import { DBCreateOp, DBOp } from '../../types/genericTypes';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
@@ -19,17 +20,11 @@ export type MultisigAsset = {
     keysgroup: string[];
   }
 };
+
 @injectable()
-export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset> {
+export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset, MultiSignaturesModel> {
 
   private unconfirmedSignatures: { [name: string]: true };
-  private dbTable  = 'multisignatures';
-  private dbFields = [
-    'min',
-    'lifetime',
-    'keysgroup',
-    'transactionId',
-  ];
 
   // Generics
   @inject(Symbols.generic.socketIO)
@@ -50,6 +45,9 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
   private accountsModule: IAccountsModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
+
+  @inject(Symbols.models.multisignatures)
+  private MultiSignaturesModel: typeof MultiSignaturesModel;
 
   constructor() {
     super(TransactionType.MULTI);
@@ -75,7 +73,11 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     return bb.toBuffer() as any;
   }
 
-  public async verify(tx: IBaseTransaction<MultisigAsset>, sender: MemAccountsData): Promise<void> {
+  public async verify(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModel): Promise<void> {
+    if (sender.isMultisignature()) {
+      throw new Error('Only one multisignature tx per account is allowed');
+    }
+
     if (!tx.asset || !tx.asset.multisignature) {
       throw new Error('Invalid transaction asset');
     }
@@ -86,6 +88,13 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
 
     if (tx.asset.multisignature.keysgroup.length === 0) {
       throw new Error('Invalid multisignature keysgroup. Must not be empty');
+    }
+
+    // check multisig asset is valid hex publickeys
+    for (const key of tx.asset.multisignature.keysgroup) {
+      if (!key || typeof(key) !== 'string' || key.length !== 64 + 1) {
+        throw new Error('Invalid member in keysgroup');
+      }
     }
 
     if (tx.asset.multisignature.min < constants.multisigConstraints.min.minimum ||
@@ -122,7 +131,12 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         if (Array.isArray(tx.signatures)) {
           for (let i = 0; i < tx.signatures.length && !valid; i++) {
             if (key[0] === '+' || key[0] === '-') {
-              valid = this.transactionLogic.verifySignature(tx, key.substring(1), tx.signatures[i], false);
+              valid = this.transactionLogic.verifySignature(
+                tx,
+                Buffer.from(key.substring(1), 'hex'),
+                Buffer.from(tx.signatures[i], 'hex'),
+                VerificationType.ALL
+              );
             }
           }
         }
@@ -159,9 +173,12 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     }
   }
 
-  public async apply(tx: IConfirmedTransaction<MultisigAsset>, block: SignedBlockType, sender: any): Promise<void> {
+  public async apply(tx: IConfirmedTransaction<MultisigAsset>,
+                     block: SignedBlockType,
+                     sender: AccountsModel): Promise<Array<DBOp<any>>> {
     delete this.unconfirmedSignatures[sender.address];
-    await this.accountLogic.merge(
+
+    const ops = this.accountLogic.merge(
       sender.address,
       {
         blockId        : block.id,
@@ -169,8 +186,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         multimin       : tx.asset.multisignature.min,
         multisignatures: tx.asset.multisignature.keysgroup,
         round          : this.roundsLogic.calcRound(block.height),
-      },
-      emptyCB
+      }
     );
 
     // Generate accounts
@@ -178,28 +194,38 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
       // index 0 has "+" or "-"
       const realKey = key.substr(1);
       const address = this.accountLogic.generateAddressByPublicKey(realKey);
-      await this.accountsModule.setAccountAndGet({ address, publicKey: realKey });
+      ops.push({
+        model : AccountsModel,
+        type  : 'upsert',
+        values: {
+          address,
+          publicKey: Buffer.from(realKey, 'hex'),
+        },
+      });
     }
+    return ops;
   }
 
-  public undo(tx: IConfirmedTransaction<MultisigAsset>, block: SignedBlockType, sender: any): Promise<void> {
+  public async undo(tx: IConfirmedTransaction<MultisigAsset>,
+                    block: SignedBlockType,
+                    sender: AccountsModel): Promise<Array<DBOp<any>>> {
     const multiInvert = Diff.reverse(tx.asset.multisignature.keysgroup);
 
     this.unconfirmedSignatures[sender.address] = true;
 
     return this.accountLogic.merge(
-      sender.address, {
+      sender.address,
+      {
         blockId        : block.id,
         multilifetime  : -tx.asset.multisignature.lifetime,
         multimin       : -tx.asset.multisignature.min,
         multisignatures: multiInvert,
         round          : this.roundsLogic.calcRound(block.height),
-      },
-      emptyCB
+      }
     );
   }
 
-  public applyUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: any): Promise<void> {
+  public async applyUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: any): Promise<Array<DBOp<any>>> {
     if (this.unconfirmedSignatures[sender.address]) {
       throw new Error('Signature on this account is pending confirmation');
     }
@@ -211,12 +237,11 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         u_multilifetime  : tx.asset.multisignature.lifetime,
         u_multimin       : tx.asset.multisignature.min,
         u_multisignatures: tx.asset.multisignature.keysgroup,
-      },
-      emptyCB
+      }
     );
   }
 
-  public undoUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: any): Promise<void> {
+  public async undoUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: any): Promise<Array<DBOp<any>>> {
     const multiInvert = Diff.reverse(tx.asset.multisignature.keysgroup);
     delete this.unconfirmedSignatures[sender.address];
 
@@ -226,8 +251,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         u_multilifetime  : -tx.asset.multisignature.lifetime,
         u_multimin       : -tx.asset.multisignature.min,
         u_multisignatures: multiInvert,
-      },
-      emptyCB
+      }
     );
   }
 
@@ -260,19 +284,17 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(tx: IConfirmedTransaction<MultisigAsset> & { senderId: string }): { table: string; fields: string[]; values: any } {
-    // tslint:disable object-literal-sort-keys
+  public dbSave(tx: IConfirmedTransaction<MultisigAsset> & { senderId: string }): DBCreateOp<MultiSignaturesModel> {
     return {
-      table : this.dbTable,
-      fields: this.dbFields,
+      model : this.MultiSignaturesModel,
+      type  : 'create',
       values: {
-        min          : tx.asset.multisignature.min,
-        lifetime     : tx.asset.multisignature.lifetime,
         keysgroup    : tx.asset.multisignature.keysgroup.join(','),
+        lifetime     : tx.asset.multisignature.lifetime,
+        min          : tx.asset.multisignature.min,
         transactionId: tx.id,
       },
     };
-    // tslint:enable object-literal-sort-keys
   }
 
   public afterSave(tx: IBaseTransaction<MultisigAsset>): Promise<void> {

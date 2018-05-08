@@ -5,36 +5,44 @@ import z_schema from 'z-schema';
 import { BigNum, constants, Ed, IKeypair } from '../helpers/';
 import { IBlockLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
 import { Symbols } from '../ioc/symbols';
+import { BlocksModel } from '../models';
 import logicBlockSchema from '../schema/logic/block';
+import { DBOp } from '../types/genericTypes';
+import { RawFullBlockListType } from '../types/rawDBTypes';
 import { BlockRewardLogic } from './blockReward';
-import { IBaseTransaction, IConfirmedTransaction } from './transactions/';
+import { IBaseTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
 
 // import * as OldImplementation from './_block.js';
 
 // tslint:disable-next-line interface-over-type-literal
-export type BlockType = {
+export type BlockType<T = Buffer> = {
   height?: number;
   version: number;
   totalAmount: number;
   totalFee: number;
   reward: number;
-  payloadHash: string;
+  payloadHash: T;
   timestamp: number;
   numberOfTransactions: number;
   payloadLength: number;
   previousBlock: string;
-  generatorPublicKey: string;
+  generatorPublicKey: T;
   transactions?: Array<IBaseTransaction<any>>;
 };
 
-export type SignedBlockType = BlockType & {
+export type SignedBlockType<T = Buffer> = BlockType<T> & {
   id: string;
-  blockSignature: string;
+  blockSignature: T;
   transactions?: Array<IConfirmedTransaction<any>>;
 };
 
-export type SignedAndChainedBlockType = SignedBlockType & {
+export type SignedAndChainedBlockType = SignedBlockType<Buffer> & {
   height: number
+};
+
+export type SignedAndChainedTransportBlockType = SignedBlockType<string> & {
+  height: number;
+  transactions?: Array<ITransportTransaction<any>>
 };
 
 @injectable()
@@ -88,20 +96,20 @@ export class BlockLogic implements IBlockLogic {
 
     bb.writeInt(block.payloadLength);
 
-    const payloadHashBuffer = Buffer.from(block.payloadHash, 'hex');
+    const payloadHashBuffer = block.payloadHash;
     // tslint:disable-next-line
     for (let i = 0; i < payloadHashBuffer.length; i++) {
       bb.writeByte(payloadHashBuffer[i]);
     }
 
-    const generatorPublicKeyBuffer = Buffer.from(block.generatorPublicKey, 'hex');
+    const generatorPublicKeyBuffer = block.generatorPublicKey;
     // tslint:disable-next-line
     for (let i = 0; i < generatorPublicKeyBuffer.length; i++) {
       bb.writeByte(generatorPublicKeyBuffer[i]);
     }
 
     if (typeof((block as SignedBlockType).blockSignature) !== 'undefined' && includeSignature) {
-      const blockSignatureBuffer = Buffer.from((block as SignedBlockType).blockSignature, 'hex');
+      const blockSignatureBuffer = (block as SignedBlockType).blockSignature;
       // tslint:disable-next-line
       for (let i = 0; i < blockSignatureBuffer.length; i++) {
         bb.writeByte(blockSignatureBuffer[i]);
@@ -152,6 +160,9 @@ export class BlockLogic implements IBlockLogic {
   private ed: Ed;
   @inject(Symbols.logic.transaction)
   private transaction: ITransactionLogic;
+
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
 
   /**
    * Use static method instead
@@ -217,11 +228,11 @@ export class BlockLogic implements IBlockLogic {
 
     const block: SignedBlockType = {
       blockSignature      : undefined,
-      generatorPublicKey  : data.keypair.publicKey.toString('hex'),
+      generatorPublicKey  : data.keypair.publicKey,
       height              : data.previousBlock.height + 1,
       id                  : undefined,
       numberOfTransactions: blockTransactions.length,
-      payloadHash         : payloadHash.digest().toString('hex'),
+      payloadHash         : payloadHash.digest(),
       payloadLength       : size,
       previousBlock       : data.previousBlock.id,
       reward,
@@ -242,11 +253,11 @@ export class BlockLogic implements IBlockLogic {
    * @param {IKeypair} key
    * @returns {string}
    */
-  public sign(block: BlockType, key: IKeypair): string {
+  public sign(block: BlockType, key: IKeypair): Buffer {
     return this.ed.sign(
       BlockLogic.getHash(block, false),
       key
-    ).toString('hex');
+    );
   }
 
   /**
@@ -260,8 +271,8 @@ export class BlockLogic implements IBlockLogic {
     // console.log(res);
     return this.ed.verify(
       BlockLogic.getHash(block, false),
-      Buffer.from(block.blockSignature, 'hex'),
-      Buffer.from(block.generatorPublicKey, 'hex')
+      block.blockSignature,
+      block.generatorPublicKey
     );
   }
 
@@ -270,29 +281,13 @@ export class BlockLogic implements IBlockLogic {
    * @param {BlockType} block
    * TODO: Change method name to something more meaningful as this does NOT save
    */
-  public dbSave(block: SignedBlockType) {
-    const payloadHash        = Buffer.from(block.payloadHash, 'hex');
-    const generatorPublicKey = Buffer.from(block.generatorPublicKey, 'hex');
-    const blockSignature     = Buffer.from(block.blockSignature, 'hex');
-
+  public dbSave(block: SignedBlockType): DBOp<BlocksModel & { id: string }> {
+    const values = {...block } ;
+    delete values.transactions;
     return {
-      fields: this.dbFields,
-      table : this.table,
-      values: {
-        blockSignature,
-        generatorPublicKey,
-        height              : block.height,
-        id                  : block.id,
-        numberOfTransactions: block.numberOfTransactions,
-        payloadHash,
-        payloadLength       : block.payloadLength,
-        previousBlock       : block.previousBlock || null,
-        reward              : block.reward || 0,
-        timestamp           : block.timestamp,
-        totalAmount         : block.totalAmount,
-        totalFee            : block.totalFee,
-        version             : block.version,
-      },
+      model : this.BlocksModel,
+      type  : 'create',
+      values,
     };
   }
 
@@ -302,13 +297,19 @@ export class BlockLogic implements IBlockLogic {
    * @param {BlockType} block
    * @returns {BlockType}
    */
-  public objectNormalize<T extends BlockType>(block: T): T {
+  public objectNormalize<T extends BlockType<Buffer | string>>(block: T | SignedAndChainedTransportBlockType): T | SignedAndChainedBlockType {
     // Delete null or undefined elements in block obj
     for (const key in block) {
       if (block[key] === null || typeof(block[key]) === 'undefined') {
         delete block[key];
       }
     }
+
+    ['generatorPublicKey', 'payloadHash', 'blockSignature'].forEach((bufKey) => {
+      if (!Buffer.isBuffer(block[bufKey])) {
+        block[bufKey] = Buffer.from(block[bufKey], 'hex');
+      }
+    });
 
     const report = this.zschema.validate(
       block,
@@ -323,33 +324,32 @@ export class BlockLogic implements IBlockLogic {
     for (let i = 0; i < block.transactions.length; i++) {
       block.transactions[i] = this.transaction.objectNormalize(block.transactions[i]);
     }
-
-    return block;
+    // cast to any is correct as we transform non-buffer items to
+    return block as any;
   }
 
-  public dbRead(rawBlock: any): SignedBlockType {
+  public dbRead(rawBlock: RawFullBlockListType): SignedBlockType {
     if (!rawBlock.b_id) {
       return null;
     } else {
       const block       = {
-        blockSignature      : rawBlock.b_blockSignature,
-        confirmations       : parseInt(rawBlock.b_confirmations, 10),
+        blockSignature      : Buffer.from(rawBlock.b_blockSignature, 'hex'),
         get generatorId() {
           return BlockLogic.getAddressByPublicKey(rawBlock.b_generatorPublicKey);
         },
-        generatorPublicKey: rawBlock.b_generatorPublicKey,
-        height              : parseInt(rawBlock.b_height, 10),
+        generatorPublicKey  : Buffer.from(rawBlock.b_generatorPublicKey, 'hex'),
+        height              : parseInt(`${rawBlock.b_height}`, 10),
         id                  : rawBlock.b_id,
-        numberOfTransactions: parseInt(rawBlock.b_numberOfTransactions, 10),
-        payloadHash         : rawBlock.b_payloadHash,
-        payloadLength       : parseInt(rawBlock.b_payloadLength, 10),
+        numberOfTransactions: parseInt(`${rawBlock.b_numberOfTransactions}`, 10),
+        payloadHash         : Buffer.from(rawBlock.b_payloadHash, 'hex'),
+        payloadLength       : parseInt(`${rawBlock.b_payloadLength}`, 10),
         previousBlock       : rawBlock.b_previousBlock,
-        reward              : parseInt(rawBlock.b_reward, 10),
-        timestamp           : parseInt(rawBlock.b_timestamp, 10),
-        totalAmount         : parseInt(rawBlock.b_totalAmount, 10),
-        totalFee            : parseInt(rawBlock.b_totalFee, 10),
+        reward              : parseInt(`${rawBlock.b_reward}`, 10),
+        timestamp           : parseInt(`${rawBlock.b_timestamp}`, 10),
+        totalAmount         : parseInt(`${rawBlock.b_totalAmount}`, 10),
+        totalFee            : parseInt(`${rawBlock.b_totalFee}`, 10),
         totalForged         : '',
-        version             : parseInt(rawBlock.b_version, 10),
+        version             : parseInt(`${rawBlock.b_version}`, 10),
       };
       block.totalForged = new BigNum(block.totalFee).plus(new BigNum(block.reward)).toString();
       return block;

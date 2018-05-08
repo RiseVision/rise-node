@@ -16,12 +16,12 @@ export default function exceptionTx14712341342146176146(excManager: ExceptionsMa
   const handler: IExceptionHandler<ITransactionLogic> = {
     canHandle(obj: ITransactionLogic, tx: IBaseTransaction<VoteAsset>) {
       return tx.id === '14712341342146176146' &&
-        tx.senderPublicKey === '505a860f782db11937a1183732770878c45215567856670a9219c27ada80f22e' &&
+        tx.senderPublicKey.toString('hex') === '505a860f782db11937a1183732770878c45215567856670a9219c27ada80f22e' &&
         // tslint:disable-next-line
-        tx.signature === '75ded480d00179b80ae975d91189c2d68fb474b95cd09c1769b2ea693eaa0e502bffe958c8c8bed39b025926b4e7e6ac766f3c82d569a178bc5dd40b7ee2c303';
+        tx.signature.toString('hex') === '75ded480d00179b80ae975d91189c2d68fb474b95cd09c1769b2ea693eaa0e502bffe958c8c8bed39b025926b4e7e6ac766f3c82d569a178bc5dd40b7ee2c303';
     },
     handle() {
-      return Promise.resolve();
+      return Promise.resolve([]);
     },
   };
   excManager.registerExceptionHandler(

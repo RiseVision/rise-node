@@ -1,21 +1,30 @@
 import { expect } from 'chai';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
+import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import * as supertest from 'supertest';
+import initializer from '../common/init';
+// tslint:disable-next-line
 import { constants, TransactionType } from '../../../src/helpers';
 import { ITransactionPoolLogic } from '../../../src/ioc/interfaces/logic';
-import { ITransactionsModule } from '../../../src/ioc/interfaces/modules';
+import { IBlocksModule, ITransactionsModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
-import { IBaseTransaction } from '../../../src/logic/transactions';
 
-import initializer from '../common/init';
 import {
-  createRandomAccountWithFunds, createRandomWallet,
+  createRandomAccountWithFunds, createRandomWallet, createSecondSignTransaction,
   createSendTransaction,
   createVoteTransaction,
   getRandomDelegateWallet
 } from '../common/utils';
-import { checkAddress, checkIntParam, checkPubKey, checkRequiredParam, checkReturnObjKeyVal } from './utils';
-import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
+import {
+  checkAddress,
+  checkEnumParam,
+  checkIntParam,
+  checkPubKey,
+  checkRequiredParam,
+  checkReturnObjKeyVal
+} from './utils';
+
+import { toBufferedTransaction } from '../../utils/txCrafter';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/transactions', () => {
@@ -63,8 +72,15 @@ describe('api/transactions', () => {
     checkIntParam('limit', '/api/transactions', {min: 1, max: 1000});
     checkIntParam('offset', '/api/transactions', {min: 0});
 
-    let voteTxID: string;
+    checkEnumParam(
+      'orderBy',
+      ['height:asc', 'height:desc', 'timestamp:asc', 'timestamp:desc', 'amount:asc', 'amount:desc'],
+      '/api/transactions'
+    );
+
+    let voteTx: ITransaction<any>;
     let sendTxID: string;
+    let secondSignTx: ITransaction<any>;
     let onlyReceiverTxID: string;
     let senderAccount: LiskWallet;
     let voterAccount: LiskWallet;
@@ -79,17 +95,22 @@ describe('api/transactions', () => {
       voterAccount                        = randomAccount;
       sendTxID                            = txID;
 
-      const t  = await createVoteTransaction(
+      voteTx = await createVoteTransaction(
         1,
         randomAccount,
         senderAccount.publicKey,
         true
       );
-      voteTxID = t.id;
 
       const {wallet: rA, txID: ortid} = await createRandomAccountWithFunds(Math.pow(10, 10));
       onlyReceiverTxID                = ortid;
       onlyReceiverAccount             = rA;
+
+      secondSignTx = await createSecondSignTransaction(
+        1,
+        voterAccount,
+        createRandomWallet().publicKey
+      );
 
     });
 
@@ -102,46 +123,68 @@ describe('api/transactions', () => {
         });
     });
     describe('type filter', () => {
-      it('should filter only send tx');
+      it('should filter only send tx', async () => {
+        return supertest(initializer.appManager.expressApp)
+          .get(`/api/transactions?type=${TransactionType.SEND}&fromHeight=2&orderBy=height:asc`)
+          .expect(200)
+          .then((resp) => {
+            expect(resp.body.transactions.length).to.be.eq(2);
+            expect(resp.body.transactions[0].id).to.be.eq(sendTxID);
+          });
+      });
       it('should filter only vote tx', async () => {
         return supertest(initializer.appManager.expressApp)
-          .get(`/api/transactions?type=${TransactionType.VOTE}&orderBy=height:desc&and:fromHeight=2`)
+          .get(`/api/transactions?type=${TransactionType.VOTE}&fromHeight=2`)
           .expect(200)
           .then((resp) => {
             expect(resp.body.transactions.length).to.be.eq(1);
-            expect(resp.body.transactions[0].id).to.be.eq(voteTxID);
+            expect(resp.body.transactions[0].id).to.be.eq(voteTx.id);
+            expect(resp.body.transactions[0].asset).to.be.deep.eq(voteTx.asset);
           });
       });
-      it('should filter only secondsign tx');
+      it('should filter only secondsign tx', async () => {
+        return supertest(initializer.appManager.expressApp)
+          .get(`/api/transactions?type=${TransactionType.SIGNATURE}&fromHeight=2`)
+          .expect(200)
+          .then((resp) => {
+            expect(resp.body.transactions.length).to.be.eq(1);
+            expect(resp.body.transactions[0].id).to.be.eq(secondSignTx.id);
+            expect(resp.body.transactions[0].asset).to.be.deep.eq(secondSignTx.asset);
+          });
+      });
       it('should filter only multiaccount tx');
     });
     describe('senderId filter', () => {
       it('should return only tx from such senderId', async () => {
         return supertest(initializer.appManager.expressApp)
-          .get(`/api/transactions?senderId=${voterAccount.address}`)
+          .get(`/api/transactions?senderId=${voterAccount.address}&orderBy=height:asc`)
           .expect(200)
           .then((resp) => {
-            expect(resp.body.transactions.length).to.be.eq(1);
-            expect(resp.body.transactions[0].id).to.be.eq(voteTxID);
+            expect(resp.body.transactions.length).to.be.eq(2);
+            expect(resp.body.transactions[0].id).to.be.eq(voteTx.id);
+            expect(resp.body.transactions[1].id).to.be.eq(secondSignTx.id);
           });
       });
       it('should return empty tx if senderId did not broadcast', async () => {
         return supertest(initializer.appManager.expressApp)
-          .get('/api/transactions?senderId=1R')
+          .get('/api/transactions?senderId=1R&and:minAmount=0')
           .expect(200)
           .then((resp) => {
             expect(resp.body.transactions).to.be.empty;
+            expect(resp.body.count).to.be.eq(0);
           });
       });
     });
+
     describe('senderPublicKey', () => {
       it('should return only tx from such senderPublicKey', async () => {
         return supertest(initializer.appManager.expressApp)
           .get(`/api/transactions?senderPublicKey=${voterAccount.publicKey}`)
           .expect(200)
           .then((resp) => {
-            expect(resp.body.transactions.length).to.be.eq(1);
-            expect(resp.body.transactions[0].id).to.be.eq(voteTxID);
+            expect(resp.body.transactions.length).to.be.eq(2);
+            expect(resp.body.transactions[0].senderPublicKey).to.be.eq(voterAccount.publicKey);
+            expect(resp.body.transactions[1].senderPublicKey).to.be.eq(voterAccount.publicKey);
           });
       });
       it('should return empty tx if senderPublicKey did not broadcast', async () => {
@@ -227,10 +270,37 @@ describe('api/transactions', () => {
       it('should return txs that have a certain min amount');
     });
     describe('minConfirmations filter', () => {
-      it('should return txs that have a certain min confirmations amount');
+      it('should return txs that have a certain min confirmations amount', async () => {
+        const lastHeight = initializer.appManager.container.get<IBlocksModule>(Symbols.modules.blocks).lastBlock.height;
+        // should include only genesisBlock
+        const {count, transactions} = await supertest(initializer.appManager.expressApp)
+          .get(`/api/transactions?type=${TransactionType.SEND}&minConfirmations=${lastHeight - 1}&limit=200`)
+          .then((resp) => resp.body);
+        expect(transactions.length).is.eq(101);
+        expect(count).is.eq(101);
+        transactions.forEach((t) => expect(t.height).to.be.eq(1));
+      });
     });
     describe('limit and offset', () => {
-      it('should limit ret txs by limit and offset it');
+      it('should limit ret txs by limit and offset it', async () => {
+        const {count, transactions} = await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}`)
+          .then((resp) => resp.body);
+
+        // offset!
+        await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}&offset=1`)
+          .then((resp) => {
+            expect(resp.body.count).to.be.eq(count);
+            expect(resp.body.transactions[0]).to.be.deep.eq(transactions[1]);
+          });
+
+        // limit and offset
+        await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}&offset=2&limit=1`)
+          .then((resp) => {
+            expect(resp.body.count).to.be.eq(count);
+            expect(resp.body.transactions.length).to.be.eq(1);
+            expect(resp.body.transactions[0]).to.be.deep.eq(transactions[2]);
+          });
+      });
     });
   });
   //
@@ -242,7 +312,7 @@ describe('api/transactions', () => {
     describe('with some txs', () => {
       initializer.createBlocks(1, 'each');
       beforeEach(async () => {
-        const txs: Array<IBaseTransaction<any>> = [];
+        const txs: Array<ITransaction<any>> = [];
         for (let i = 0; i < 5; i++) {
           const tx = await createSendTransaction(
             0,
@@ -252,7 +322,7 @@ describe('api/transactions', () => {
           txs.push(tx);
         }
         const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
-        await txModule.receiveTransactions(txs, false, false);
+        await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
       });
       it('should return 5 queued', async () => {
         return supertest(initializer.appManager.expressApp)

@@ -1,10 +1,12 @@
-import * as pgp from 'pg-promise';
-import { ITask } from 'pg-promise';
+import * as sequelize from 'sequelize';
 import { ILogger, RoundChanges, Slots } from '../helpers/';
 import { IRoundLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule } from '../ioc/interfaces/modules';
+import { AccountsModel, BlocksModel, RoundsModel } from '../models';
 import roundSQL from '../sql/logic/rounds';
-import { address, publicKey } from '../types/sanityTypes';
+import { DBCustomOp, DBOp } from '../types/genericTypes';
+import { address } from '../types/sanityTypes';
+import { SignedBlockType } from './block';
 
 // tslint:disable-next-line
 export type RoundLogicScope = {
@@ -12,27 +14,30 @@ export type RoundLogicScope = {
   round: number;
   // List of address which missed a block in this round
   roundOutsiders: address[];
-  roundDelegates: publicKey[];
+  roundDelegates: Buffer[];
   roundFees: any;
   roundRewards: number[];
   finishRound: boolean;
   library: {
     logger: ILogger
   },
+  models: {
+    AccountsModel: typeof AccountsModel,
+    BlocksModel: typeof BlocksModel,
+    RoundsModel: typeof RoundsModel,
+  }
   modules: {
     accounts: IAccountsModule;
   }
-  block: {
-    generatorPublicKey: publicKey;
-    id: string;
-    height: number;
-  }
+  block: SignedBlockType
+  // must be populated with the votes in round when is needed
+  votes?: Array<{ delegate: string, amount: number }>
 };
 
 // This cannot be injected directly as it needs to be created.
 // rounds module.
 export class RoundLogic implements IRoundLogic {
-  constructor(public scope: RoundLogicScope, public task: ITask<any>, private slots: Slots) {
+  constructor(public scope: RoundLogicScope, private slots: Slots) {
     let reqProps = ['library', 'modules', 'block', 'round', 'backwards'];
     if (scope.finishRound) {
       reqProps = reqProps.concat([
@@ -54,122 +59,121 @@ export class RoundLogic implements IRoundLogic {
    * Adds or remove the blocks to the generator account.
    * @returns {Promise<void>}
    */
-  public mergeBlockGenerator(): Promise<void> {
-    return this.scope.modules.accounts.mergeAccountAndGet({
+  public mergeBlockGenerator(): Array<DBOp<any>> {
+    return this.scope.modules.accounts.mergeAccountAndGetOPs({
       blockId       : this.scope.block.id,
       producedblocks: (this.scope.backwards ? -1 : 1),
       publicKey     : this.scope.block.generatorPublicKey,
       round         : this.scope.round,
-    }).then(() => void 0);
+    });
   }
 
   /**
    * Updates accounts and add a missing block to whoever skipped one
    * @returns {Promise<void>}
    */
-  public updateMissedBlocks(): Promise<void> {
+  public updateMissedBlocks(): DBOp<any> {
     if (this.scope.roundOutsiders.length === 0) {
-      return Promise.resolve();
+      return null;
     }
-
-    return this.task.none(
-      roundSQL
-        .updateMissedBlocks(this.scope.backwards),
-      [this.scope.roundOutsiders]
-    );
-  }
-
-  /**
-   * Calls sql getVotes and returns the votes by each delegate
-   */
-  public getVotes(): Promise<Array<{ delegate: string, amount: number }>> {
-    return this.task.query(
-      roundSQL.getVotes,
-      { round: this.scope.round }
-    );
+    return {
+      model  : this.scope.models.AccountsModel,
+      options: {
+        where: {
+          address: { $in: this.scope.roundOutsiders },
+        },
+      },
+      type   : 'update',
+      values : {
+        missedblocks: sequelize.literal(`missedblocks ${this.scope.backwards ? '-' : '+'}1`),
+      },
+    };
   }
 
   /**
    * Update votes for the round
    */
-  public updateVotes(): Promise<void> {
-    return this.getVotes()
-      .then((votes) => {
-        const queries = votes.map((vote) => pgp.as.format(
-          roundSQL.updateVotes,
-          {
-            address: this.scope.modules.accounts.generateAddressByPublicKey(vote.delegate),
-            amount : Math.floor(vote.amount),
-          }
-        )).join('');
-        if (queries.length > 0) {
-          return this.task.none(queries);
-        } else {
-          return Promise.resolve();
-        }
-      });
+  public updateVotes(): DBCustomOp<any> {
+    return {
+      model: this.scope.models.AccountsModel,
+      query: this.scope.models.RoundsModel.updateVotesSQL(this.scope.round),
+      type : 'custom',
+    };
   }
 
   /**
    * In case of backwards calls updateBlockId with '0';
    */
-  public markBlockId(): Promise<void> {
+  public markBlockId(): DBOp<any> {
     if (this.scope.backwards) {
-      return this.task.none(
-        roundSQL.updateBlockId,
-        {
-          newId: '0',
-          oldId: this.scope.block.id,
-        }
-      );
+      return {
+        model  : this.scope.models.AccountsModel,
+        options: {
+          where: {
+            blockId: this.scope.block.id,
+          },
+        },
+        type   : 'update',
+        values : {
+          blockId: '0',
+        },
+      };
     }
-    return Promise.resolve();
+    return null;
   }
 
   /**
    * Calls sql flush, deletes round from mem_round
    */
-  public flushRound(): Promise<void> {
-    return this.task.none(
-      roundSQL.flush,
-      { round: this.scope.round }
-    );
+  public flushRound(): DBOp<any> {
+    return {
+      model  : this.scope.models.RoundsModel,
+      options: { where: { round: this.scope.round } },
+      type   : 'remove',
+    };
   }
 
   /**
    * Remove blocks higher than this block height
    */
-  public truncateBlocks() {
-    return this.task.none(
-      roundSQL.truncateBlocks,
-      { height: this.scope.block.height }
-    );
+  public truncateBlocks(): DBOp<RoundsModel> {
+    return {
+      model  : this.scope.models.RoundsModel,
+      options: { where: { height: { $gt: this.scope.block.height } } },
+      type   : 'remove',
+    };
   }
 
   /**
    * Performed when rollbacking last block of a round.
    * It restores the round snapshot from sql
    */
-  public restoreRoundSnapshot() {
-    this.scope.library.logger.debug('Restoring mem_round snapshot...');
-    return this.task.none(roundSQL.restoreRoundSnapshot);
+  public restoreRoundSnapshot(): DBOp<RoundsModel> {
+    return {
+      model: this.scope.models.RoundsModel,
+      query: roundSQL.restoreRoundSnapshot,
+      type: 'custom',
+    };
   }
 
   /**
    * Performed when rollbacking last block of a round.
    * It restores the votes snapshot from sql
    */
-  public restoreVotesSnapshot() {
-    this.scope.library.logger.debug('Restoring mem_accounts.vote snapshot...');
-    return this.task.none(roundSQL.restoreVotesSnapshot);
+  public restoreVotesSnapshot(): DBOp<AccountsModel> {
+    return {
+      model: this.scope.models.AccountsModel,
+      query: roundSQL.restoreVotesSnapshot,
+      type: 'custom',
+    };
   }
 
   /**
    * For each delegate in round calls mergeAccountAndGet with new Balance
    */
-  public applyRound(): Promise<void> {
-    const roundChanges      = new RoundChanges(this.scope, this.slots);
-    const queries: string[] = [];
+  public applyRound(): Array<DBOp<any>> {
+    const roundChanges              = new RoundChanges(this.scope, this.slots);
+    const queries: Array<DBOp<any>> = [];
 
     const delegates = this.scope.backwards ?
       this.scope.roundDelegates.reverse() :
@@ -181,7 +185,7 @@ export class RoundLogic implements IRoundLogic {
       this.scope.library.logger.trace('Delegate changes', { delegate, changes });
 
       // merge Account in the direction.
-      queries.push(this.scope.modules.accounts.mergeAccountAndGetSQL({
+      queries.push(... this.scope.modules.accounts.mergeAccountAndGetOPs({
         balance  : (this.scope.backwards ? -changes.balance : changes.balance),
         blockId  : this.scope.block.id,
         fees     : (this.scope.backwards ? -changes.fees : changes.fees),
@@ -207,7 +211,7 @@ export class RoundLogic implements IRoundLogic {
         index   : remainderIndex,
       });
 
-      queries.push(this.scope.modules.accounts.mergeAccountAndGetSQL({
+      queries.push(... this.scope.modules.accounts.mergeAccountAndGetOPs({
         balance  : feesRemaining,
         blockId  : this.scope.block.id,
         fees     : feesRemaining,
@@ -217,36 +221,37 @@ export class RoundLogic implements IRoundLogic {
       }));
     }
 
-    this.scope.library.logger.trace('Applying round', queries);
-    if (queries.length > 0) {
-      return this.task.none(queries.join(''));
-    }
-    return Promise.resolve();
+    this.scope.library.logger.trace('Applying round', queries.length);
+    return queries;
   }
 
   /**
    * Performs operations to go to the next round.
    */
-  public async land(): Promise<void> {
-    await this.updateVotes();
-    await this.updateMissedBlocks();
-    await this.flushRound();
-    await this.applyRound();
-    await this.updateVotes();
-    await this.flushRound();
+  public land(): Array<DBOp<any>> {
+    return [
+      this.updateVotes(),
+      this.updateMissedBlocks(),
+      this.flushRound(),
+      ...this.applyRound(),
+      this.updateVotes(),
+      this.flushRound(),
+    ];
   }
 
   /**
    * Land back from a future round
    */
-  public async backwardLand(): Promise<void> {
-    await this.updateVotes();
-    await this.updateMissedBlocks();
-    await this.flushRound();
-    await this.applyRound();
-    await this.updateVotes();
-    await this.flushRound();
-    await this.restoreRoundSnapshot();
-    await this.restoreVotesSnapshot();
+  public backwardLand(): Array<DBOp<any>> {
+    return [
+      this.updateVotes(),
+      this.updateMissedBlocks(),
+      this.flushRound(),
+      ...this.applyRound(),
+      this.updateVotes(),
+      this.flushRound(),
+      this.restoreRoundSnapshot(),
+      this.restoreVotesSnapshot(),
+    ];
   }
 }

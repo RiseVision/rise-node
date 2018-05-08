@@ -1,22 +1,26 @@
 import { inject, injectable } from 'inversify';
-import { emptyCB } from '../helpers/';
-import { IAccountLogic } from '../ioc/interfaces/logic';
+import { DBHelper } from '../helpers';
+import { AccountDiffType, IAccountLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { OptionalsMemAccounts } from '../logic';
 import { AccountFilterData, MemAccountsData } from '../logic/';
+import { AccountsModel } from '../models/';
+import { DBOp } from '../types/genericTypes';
+import { FieldsInModel } from '../types/utils';
 
 @injectable()
 export class AccountsModule implements IAccountsModule {
 
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
+  @inject(Symbols.helpers.db)
+  private dbHelper: DBHelper;
 
   public cleanup() {
     return Promise.resolve();
   }
 
-  public getAccount(filter: AccountFilterData, fields?: Array<(keyof MemAccountsData)>): Promise<MemAccountsData> {
+  public getAccount(filter: AccountFilterData, fields?: FieldsInModel<AccountsModel>): Promise<AccountsModel> {
     if (filter.publicKey) {
       filter.address = this.accountLogic.generateAddressByPublicKey(filter.publicKey);
       delete filter.publicKey;
@@ -24,7 +28,7 @@ export class AccountsModule implements IAccountsModule {
     return this.accountLogic.get(filter, fields);
   }
 
-  public getAccounts(filter: AccountFilterData, fields: Array<(keyof MemAccountsData)>): Promise<MemAccountsData[]> {
+  public getAccounts(filter: AccountFilterData, fields: FieldsInModel<AccountsModel>): Promise<AccountsModel[]> {
     return this.accountLogic.getAll(filter, fields);
   }
 
@@ -34,19 +38,19 @@ export class AccountsModule implements IAccountsModule {
    * @returns {Promise<MemAccountsData>}
    */
   // tslint:disable-next-line max-line-length
-  public async setAccountAndGet(data: ({ publicKey: string } | { address: string }) & OptionalsMemAccounts): Promise<MemAccountsData> {
-    data = this.fixAndCheckInputParams(data);
+  public async setAccountAndGet(data: ({ publicKey: string } | { address: string }) & Partial<AccountsModel>): Promise<AccountsModel> {
+    data              = this.fixAndCheckInputParams(data);
     // no need to reset address!
-    const {address} = data;
+    const { address } = data;
     delete data.address;
 
     await this.accountLogic.set(address, data);
-    return this.accountLogic.get({address});
+    return this.accountLogic.get({ address });
   }
 
-  public mergeAccountAndGetSQL(diff: any): string {
-    diff = this.fixAndCheckInputParams(diff);
-    const {address} = diff;
+  public mergeAccountAndGetOPs(diff: any): Array<DBOp<any>> {
+    diff              = this.fixAndCheckInputParams(diff);
+    const { address } = diff;
     delete diff.address;
     return this.accountLogic.merge(address, diff);
   }
@@ -57,22 +61,24 @@ export class AccountsModule implements IAccountsModule {
    * @returns {Promise<MemAccountsData>}
    */
 
-  public async mergeAccountAndGet(diff: any): Promise<MemAccountsData> {
+  public async mergeAccountAndGet(diff: AccountDiffType): Promise<AccountsModel> {
     diff = this.fixAndCheckInputParams(diff);
-    const {address} = diff;
-    delete diff.address;
 
-    return this.accountLogic.merge(address, diff, emptyCB);
+    const { address } = diff;
+    delete diff.address;
+    const ops = this.accountLogic.merge(address, diff);
+    await this.dbHelper.performOps(ops);
+    return this.getAccount({ address });
   }
 
   /**
    * @deprecated
    */
-  public generateAddressByPublicKey(pk: string) {
+  public generateAddressByPublicKey(pk: string | Buffer) {
     return this.accountLogic.generateAddressByPublicKey(pk);
   }
 
-  private fixAndCheckInputParams<T extends { address?: string, publicKey?: string } = any>(what: T): T {
+  private fixAndCheckInputParams<T extends { address?: string, publicKey?: Buffer } = any>(what: T): T {
     if (!what.address && !what.publicKey) {
       throw new Error('Missing address and public key');
     }

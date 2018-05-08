@@ -7,7 +7,7 @@ export type RawFullBlockListType = {
   b_version: number
   b_timestamp: number
   b_height: number
-  b_previousBlock: number
+  b_previousBlock: string
   b_numberOfTransactions: number
   b_totalAmount: number
   b_totalFee: number
@@ -19,7 +19,7 @@ export type RawFullBlockListType = {
 
   // TX part
   t_id: string
-  t_rowId: string
+  t_rowId: number
   t_type: TransactionType
   t_timestamp: number
   t_senderPublicKey: publicKey
@@ -30,13 +30,13 @@ export type RawFullBlockListType = {
   t_signature: string
   t_signSignature: string
   t_requesterPublicKey: publicKey
-  t_signatures: string[] // ?
+  t_signatures: string
 
   s_publicKey: publicKey
   d_username: string
-  v_votes: number
+  v_votes: string
   m_min: number
   m_lifetime: number
-  m_keysgroup: number
+  m_keysgroup: string
 
 };

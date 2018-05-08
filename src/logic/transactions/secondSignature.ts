@@ -3,9 +3,12 @@ import * as z_schema from 'z-schema';
 import { TransactionType } from '../../helpers/';
 import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
+import { AccountsModel, SignaturesModel } from '../../models/';
 import secondSignatureSchema from '../../schema/logic/transactions/secondSignature';
+import { DBOp } from '../../types/genericTypes';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
+import { DelegatesModel } from '../../models';
 // tslint:disable-next-line interface-over-type-literal
 export type SecondSignatureAsset = {
   signature: {
@@ -14,13 +17,7 @@ export type SecondSignatureAsset = {
 };
 
 @injectable()
-export class SecondSignatureTransaction extends BaseTransactionType<SecondSignatureAsset> {
-
-  private dbTable  = 'signatures';
-  private dbFields = [
-    'publicKey',
-    'transactionId',
-  ];
+export class SecondSignatureTransaction extends BaseTransactionType<SecondSignatureAsset, SignaturesModel> {
 
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
@@ -31,11 +28,17 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
+  // models
+  @inject(Symbols.models.accounts)
+  private AccountsModel: typeof AccountsModel;
+  @inject(Symbols.models.signatures)
+  private SignaturesModel: typeof SignaturesModel;
+
   constructor() {
     super(TransactionType.SIGNATURE);
   }
 
-  public calculateFee(tx: IBaseTransaction<SecondSignatureAsset>, sender: any, height: number): number {
+  public calculateFee(tx: IBaseTransaction<SecondSignatureAsset>, sender: AccountsModel, height: number): number {
     return this.systemModule.getFees(height).fees.secondsignature;
   }
 
@@ -44,7 +47,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     return Buffer.from(tx.asset.signature.publicKey, 'hex');
   }
 
-  public async verify(tx: IBaseTransaction<SecondSignatureAsset>, sender: any): Promise<void> {
+  public async verify(tx: IBaseTransaction<SecondSignatureAsset>, sender: AccountsModel): Promise<void> {
     if (!tx.asset || !tx.asset.signature) {
       throw new Error('Invalid transaction asset');
     }
@@ -64,43 +67,67 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   }
 
   public async apply(tx: IConfirmedTransaction<SecondSignatureAsset>, block: SignedBlockType,
-                     sender: any): Promise<void> {
-    return this.accountsModule.setAccountAndGet({
-      address          : sender.address,
-      secondPublicKey  : tx.asset.signature.publicKey,
-      secondSignature  : 1,
-      u_secondSignature: 0,
-    })
-      .then(() => void 0);
+                     sender: AccountsModel): Promise<Array<DBOp<any>>> {
+    return [{
+      model  : this.AccountsModel,
+      options: {
+        where: { address: sender.address },
+      },
+      type   : 'update',
+      values : {
+        secondPublicKey  : new Buffer(tx.asset.signature.publicKey, 'hex'),
+        secondSignature  : 1,
+        u_secondSignature: 0,
+      },
+    }];
   }
 
-  public undo(tx: IConfirmedTransaction<SecondSignatureAsset>, block: SignedBlockType, sender: any): Promise<void> {
-    return this.accountsModule.setAccountAndGet({
-      address          : sender.address,
-      secondPublicKey  : null,
-      secondSignature  : 0,
-      u_secondSignature: 1,
-    })
-      .then(() => void 0);
+  public async undo(tx: IConfirmedTransaction<SecondSignatureAsset>,
+                    block: SignedBlockType,
+                    sender: AccountsModel): Promise<Array<DBOp<any>>> {
+    return [{
+      model  : this.AccountsModel,
+      options: {
+        where: { address: sender.address },
+      },
+      type   : 'update',
+      values : {
+        secondPublicKey  : null,
+        secondSignature  : 0,
+        u_secondSignature: 1,
+      },
+    }];
   }
 
-  public applyUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>, sender: any): Promise<void> {
+  public async applyUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>,
+                                sender: AccountsModel): Promise<Array<DBOp<any>>> {
     if (sender.u_secondSignature || sender.secondSignature) {
-      return Promise.reject('Second signature already enabled');
+      throw new Error('Second signature already enabled');
     }
-    return this.accountsModule.setAccountAndGet({
-      address          : sender.address,
-      u_secondSignature: 1,
-    })
-      .then(() => void 0);
+    return [{
+      model  : this.AccountsModel,
+      options: {
+        where: { address: sender.address },
+      },
+      type   : 'update',
+      values : {
+        u_secondSignature: 1,
+      },
+    }];
   }
 
-  public undoUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>, sender: any): Promise<void> {
-    return this.accountsModule.setAccountAndGet({
-      address          : sender.address,
-      u_secondSignature: 0,
-    })
-      .then(() => void 0);
+  public async undoUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>,
+                               sender: AccountsModel): Promise<Array<DBOp<any>>> {
+    return [{
+      model  : this.AccountsModel,
+      options: {
+        where: { address: sender.address },
+      },
+      type   : 'update',
+      values : {
+        u_secondSignature: 0,
+      },
+    }];
   }
 
   public objectNormalize(tx: IBaseTransaction<SecondSignatureAsset>): IBaseTransaction<SecondSignatureAsset> {
@@ -124,17 +151,15 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(tx: IConfirmedTransaction<SecondSignatureAsset> & { senderId: string }): { table: string; fields: string[]; values: any } {
-    // tslint:disable object-literal-sort-keys
+  public dbSave(tx: IConfirmedTransaction<SecondSignatureAsset> & { senderId: string }): DBOp<any> {
     return {
-      table : this.dbTable,
-      fields: this.dbFields,
+      model : this.SignaturesModel,
+      type  : 'create',
       values: {
         publicKey    : Buffer.from(tx.asset.signature.publicKey, 'hex'),
         transactionId: tx.id,
       },
     };
-    // tslint:enable object-literal-sort-keys
   }
 
 }

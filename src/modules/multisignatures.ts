@@ -1,7 +1,7 @@
 import { inject, injectable, tagged } from 'inversify';
 import SocketIO from 'socket.io';
 import { Bus, ILogger, Sequence, TransactionType } from '../helpers/';
-import { ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic';
+import { ITransactionLogic, ITransactionPoolLogic, VerificationType } from '../ioc/interfaces/logic';
 import { IAccountsModule, IMultisignaturesModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { IBaseTransaction, MultisigAsset, MultiSignatureTransaction } from '../logic/transactions/';
@@ -29,6 +29,7 @@ export class MultisignaturesModule implements IMultisignaturesModule {
 
   @inject(Symbols.logic.transactions.createmultisig)
   private multiTx: MultiSignatureTransaction;
+
   /**
    * Gets the tx from the txID, verifies the given signature and
    * @return {Promise<void>}
@@ -83,7 +84,7 @@ export class MultisignaturesModule implements IMultisignaturesModule {
     const multisignatures = sender.multisignatures;
 
     if (tx.requesterPublicKey) {
-      multisignatures.push(tx.senderPublicKey);
+      multisignatures.push(tx.senderPublicKey.toString('hex'));
     }
 
     tx.signatures = tx.signatures || [];
@@ -92,7 +93,12 @@ export class MultisignaturesModule implements IMultisignaturesModule {
     }
     let verify = false;
     for (let i = 0; i < multisignatures.length && !verify; i++) {
-      verify = this.transactionLogic.verifySignature(tx, multisignatures[i], signature);
+      verify = this.transactionLogic.verifySignature(
+        tx,
+        Buffer.from(multisignatures[i], 'hex'),
+        Buffer.from(signature, 'hex'),
+        VerificationType.ALL
+      );
     }
 
     if (!verify) {
@@ -111,7 +117,12 @@ export class MultisignaturesModule implements IMultisignaturesModule {
     let verify = false;
     for (let i = 0; i < tx.asset.multisignature.keysgroup.length && !verify; i++) {
       const key = tx.asset.multisignature.keysgroup[i].substring(1);
-      verify    = this.transactionLogic.verifySignature(tx, key, signature);
+      verify    = this.transactionLogic.verifySignature(
+        tx,
+        Buffer.from(key, 'hex'),
+        Buffer.from(signature, 'hex'),
+        VerificationType.ALL
+      );
     }
     if (!verify) {
       throw new Error('Failed to verify signature');

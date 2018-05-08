@@ -412,20 +412,20 @@ describe('logic/account', () => {
     });
   });
 
-  describe('account.toDB', () => {
-    it('should convert correctly', () => {
-      const raw = {
-        address  : '2841811297332056155r',
-        publicKey:
-          '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da',
-      };
-
-      const result = account.toDB(raw);
-
-      expect(result.publicKey).to.deep.equal(new Buffer(raw.publicKey, 'hex'));
-      expect(result.address).to.equal(raw.address.toUpperCase());
-    });
-  });
+  // describe('account.toDB', () => {
+  //   it('should convert correctly', () => {
+  //     const raw = {
+  //       publicKey:
+  //         '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da',
+  //       address  : '2841811297332056155r',
+  //     };
+  //
+  //     const result = account.toDB(raw);
+  //
+  //     expect(result.publicKey).to.deep.equal(new Buffer(raw.publicKey, 'hex'));
+  //     expect(result.address).to.equal(raw.address.toUpperCase());
+  //   });
+  // });
 
   describe('account.get', () => {
     const data   = ['some data'];

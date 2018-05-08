@@ -1,30 +1,31 @@
 import { inject, injectable } from 'inversify';
-import * as _ from 'lodash';
-import { IDatabase } from 'pg-promise';
-import { constants as constantsType, ILogger, OrderBy } from '../helpers/';
+import { constants as constantsType, DBHelper, ILogger } from '../helpers/';
 import { ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
-import { MemAccountsData, SignedAndChainedBlockType, SignedBlockType } from '../logic/';
+import { SignedAndChainedBlockType, SignedBlockType } from '../logic/';
 import { IBaseTransaction, IConfirmedTransaction } from '../logic/transactions/';
-import txSQL from '../sql/logic/transactions';
+import { AccountsModel, BlocksModel, TransactionsModel } from '../models';
 
 @injectable()
 export class TransactionsModule implements ITransactionsModule {
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
+  @inject(Symbols.helpers.db)
+  private dbHelper: DBHelper;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.logic.transactionPool)
   private transactionPool: ITransactionPoolLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
+
+  @inject(Symbols.models.transactions)
+  private TXModel: typeof TransactionsModel;
 
   public cleanup() {
     return Promise.resolve();
@@ -88,11 +89,13 @@ export class TransactionsModule implements ITransactionsModule {
 
   /**
    * Removes transaction from unconfirmed, queued and multisignature.
+   * @return true if the tx was in the unconfirmed queue.
    */
   public removeUnconfirmedTransaction(id: string) {
-    this.transactionPool.unconfirmed.remove(id);
+    const wasUnconfirmed = this.transactionPool.unconfirmed.remove(id);
     this.transactionPool.queued.remove(id);
     this.transactionPool.multisignature.remove(id);
+    return wasUnconfirmed;
   }
 
   /**
@@ -131,26 +134,28 @@ export class TransactionsModule implements ITransactionsModule {
   /**
    * Applies confirmed transaction.
    */
-  public apply(transaction: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void> {
+  public async apply(transaction: IConfirmedTransaction<any>,
+                     block: SignedBlockType, sender: AccountsModel): Promise<void> {
     this.logger.debug('Applying confirmed transaction', transaction.id);
-    return this.transactionLogic.apply(transaction, block, sender);
+    await this.dbHelper.performOps(await this.transactionLogic.apply(transaction, block, sender));
   }
 
   /**
    * Undoes confirmed transaction.
    */
-  public undo(transaction: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void> {
+  public async undo(transaction: IConfirmedTransaction<any>,
+                    block: BlocksModel, sender: AccountsModel): Promise<void> {
     this.logger.debug('Undoing confirmed transaction', transaction.id);
-    return this.transactionLogic.undo(transaction, block, sender);
+    await this.dbHelper.performOps(await this.transactionLogic.undo(transaction, block, sender));
   }
 
   /**
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
   // tslint:disable-next-line max-line-length
-  public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: MemAccountsData): Promise<void> {
+  public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: AccountsModel): Promise<void> {
     // tslint:disable-next-line max-line-length
-    this.logger.debug(`Applying unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${(sender || {u_balance: undefined}).u_balance}`);
+    this.logger.debug(`Applying unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${(sender || { u_balance: undefined }).u_balance}`);
 
     if (!sender && transaction.blockId !== this.genesisBlock.id) {
       throw new Error('Invalid block id');
@@ -161,9 +166,9 @@ export class TransactionsModule implements ITransactionsModule {
           throw new Error('Requester not found');
         }
 
-        await this.transactionLogic.applyUnconfirmed(transaction, sender, requester);
+        await this.dbHelper.performOps(await this.transactionLogic.applyUnconfirmed(transaction, sender, requester));
       } else {
-        await this.transactionLogic.applyUnconfirmed(transaction, sender);
+        await this.dbHelper.performOps(await this.transactionLogic.applyUnconfirmed(transaction, sender));
       }
     }
   }
@@ -175,7 +180,7 @@ export class TransactionsModule implements ITransactionsModule {
     const sender = await this.accountsModule.getAccount({ publicKey: transaction.senderPublicKey });
     // tslint:disable-next-line max-line-length
     this.logger.debug(`Undoing unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${sender.u_balance}`);
-    await this.transactionLogic.undoUnconfirmed(transaction, sender);
+    await this.dbHelper.performOps(await this.transactionLogic.undoUnconfirmed(transaction, sender));
   }
 
   /**
@@ -191,9 +196,8 @@ export class TransactionsModule implements ITransactionsModule {
   }
 
   public async count(): Promise<{ confirmed: number, multisignature: number, queued: number, unconfirmed: number }> {
-    const [res] = await this.db.query(txSQL.count);
     return {
-      confirmed     : res.count,
+      confirmed     : await this.TXModel.count(),
       multisignature: this.transactionPool.multisignature.count,
       queued        : this.transactionPool.queued.count,
       unconfirmed   : this.transactionPool.unconfirmed.count,
@@ -216,146 +220,15 @@ export class TransactionsModule implements ITransactionsModule {
     return true;
   }
 
-  public async list(filter): Promise<{ count: number, transactions: Array<IConfirmedTransaction<any>> }> {
-    const params: any      = {};
-    const where            = [];
-    // tslint:disable object-literal-sort-keys
-    const allowedFieldsMap = {
-      blockId            : '"t_blockId" = ${blockId}',
-      senderPublicKey    : '"t_senderPublicKey" = DECODE (${senderPublicKey}, \'hex\')',
-      recipientPublicKey : '"m_recipientPublicKey" = DECODE (${recipientPublicKey}, \'hex\')',
-      senderId           : '"t_senderId" = ${senderId}',
-      recipientId        : '"t_recipientId" = ${recipientId}',
-      fromHeight         : '"b_height" >= ${fromHeight}',
-      toHeight           : '"b_height" <= ${toHeight}',
-      fromTimestamp      : '"t_timestamp" >= ${fromTimestamp}',
-      toTimestamp        : '"t_timestamp" <= ${toTimestamp}',
-      senderIds          : '"t_senderId" IN (${senderIds:csv})',
-      recipientIds       : '"t_recipientId" IN (${recipientIds:csv})',
-      senderPublicKeys   : 'ENCODE ("t_senderPublicKey", \'hex\') IN (${senderPublicKeys:csv})',
-      recipientPublicKeys: 'ENCODE ("m_recipientPublicKey", \'hex\') IN (${recipientPublicKeys:csv})',
-      minAmount          : '"t_amount" >= ${minAmount}',
-      maxAmount          : '"t_amount" <= ${maxAmount}',
-      type               : '"t_type" = ${type}',
-      minConfirmations   : 'confirmations >= ${minConfirmations}',
-      limit              : null,
-      offset             : null,
-      orderBy            : null,
-    };
-    // tslint:enable object-literal-sort-keys
-
-    let isFirstWhere = true;
-    // TODO: move this validation to schema validation.
-
-    // Process parameters and fill where object.
-    Object.keys(filter).forEach((key) => {
-      let value   = filter[key];
-      const field = String(key).split(':');
-      if (field.length === 1) {
-        // Only field identifier, so using default 'OR' condition
-        field.unshift('OR');
-      } else if (field.length === 2) {
-        // Condition supplied, checking if correct one
-        if (_.includes(['or', 'and'], field[0].toLowerCase())) {
-          field[0] = field[0].toUpperCase();
-        } else {
-          throw new Error('Incorrect condition [' + field[0] + '] for field: ' + field[1]);
-        }
-      } else {
-        // Invalid parameter 'x:y:z'
-        throw new Error('Invalid parameter supplied: ' + key);
-      }
-
-      // Mutating parametres when unix timestamp is supplied
-      if (_.includes(['fromUnixTime', 'toUnixTime'], field[1])) {
-        // Lisk epoch is 1464109200 as unix timestamp
-        value    = value - this.constants.epochTime.getTime() / 1000;
-        field[1] = field[1].replace('UnixTime', 'Timestamp');
-      }
-
-      if (!_.includes(_.keys(allowedFieldsMap), field[1])) {
-        throw new Error('Parameter is not supported: ' + field[1]);
-      }
-
-      // Checking for empty parameters, 0 is allowed for few
-      if (!value && !(value === 0 &&
-          _.includes(['fromTimestamp', 'minAmount', 'minConfirmations', 'type', 'offset'], field[1]))) {
-        throw new Error('Value for parameter [' + field[1] + '] cannot be empty');
-      }
-
-      if (allowedFieldsMap[field[1]]) {
-        where.push((!isFirstWhere ? (field[0] + ' ') : '') + allowedFieldsMap[field[1]]);
-        params[field[1]] = value;
-        isFirstWhere     = false;
-      }
-    });
-
-    if (!filter.limit) {
-      params.limit = 100;
-    } else {
-      params.limit = Math.abs(filter.limit);
-    }
-
-    if (!filter.offset) {
-      params.offset = 0;
-    } else {
-      params.offset = Math.abs(filter.offset);
-    }
-
-    if (params.limit > 1000) {
-      throw new Error('Invalid limit, maximum is 1000');
-    }
-
-    const orderBy = OrderBy(
-      filter.orderBy, {
-        sortFields: txSQL.sortFields,
-        fieldPrefix(sortField) {
-          if (['height'].indexOf(sortField) > -1) {
-            return 'b_' + sortField;
-          } else if (['confirmations'].indexOf(sortField) > -1) {
-            return sortField;
-          } else {
-            return 't_' + sortField;
-          }
-        },
-      }
-    );
-
-    if (orderBy.error) {
-      throw new Error(orderBy.error);
-    }
-
-    const rows = await this.db.query(txSQL.countList({ where }), params)
-      .catch((err) => {
-        this.logger.error(err.stack);
-        return Promise.reject(new Error('Transactions#list error'));
-      });
-
-    const count = rows.length ? rows[0].count : 0;
-
-    const txRows = await this.db.query(
-      txSQL.list({ where, sortField: orderBy.sortField, sortMethod: orderBy.sortMethod }),
-      params
-    ).catch((err) => {
-      this.logger.error(err.stack);
-      return Promise.reject(new Error('Transactions#list error'));
-    });
-
-    const transactions: Array<IConfirmedTransaction<any>> = txRows
-      .map((rawTX) => this.transactionLogic.dbRead(rawTX));
-
-    return { count, transactions };
-  }
-
   /**
    * Get transaction by id
    */
-  public async getByID<T = any>(id: string): Promise<IConfirmedTransaction<T>> {
-    const rows = await this.db.query(txSQL.getById, { id });
-    if (rows.length === 0) {
-      throw new Error(`Transaction not found: ${id}`);
+  public async getByID<T = any>(id: string): Promise<TransactionsModel> {
+    const tx = await TransactionsModel.findById(id) as any;
+    if (tx === null) {
+      throw new Error('Transaction not found');
     }
-    return this.transactionLogic.dbRead(rows[0]);
+    return tx;
   }
 
 }

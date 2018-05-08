@@ -1,6 +1,5 @@
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
-import { IDatabase } from 'pg-promise';
 import { constants as constantsType, ForkType, ILogger, Slots } from '../../helpers/';
 import { IBlockLogic, IBlockReward, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
@@ -11,14 +10,10 @@ import {
 import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType, } from '../../logic/';
 import { IConfirmedTransaction } from '../../logic/transactions/';
-import sql from '../../sql/blocks';
+import { BlocksModel } from '../../models';
 
 @injectable()
 export class BlocksModuleVerify implements IBlocksModuleVerify {
-
-  // Generics
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
 
   // Helpers
   @inject(Symbols.helpers.constants)
@@ -49,6 +44,10 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   private forkModule: IForkModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
+
+  // Models
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
 
   /**
    * Contains the last N block Ids used to perform validations
@@ -132,8 +131,8 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     }
 
     // check if blocks exists.
-    const rows = await this.db.query(sql.getBlockId, {id: block.id});
-    if (rows.length > 0) {
+    const dbBlock = await this.BlocksModel.findById(block.id);
+    if (dbBlock !== null) {
       throw new Error(`Block ${block.id} already exists`);
     }
 
@@ -160,8 +159,11 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   }
 
   public async onBlockchainReady() {
-    const blockIds = await this.db.query(sql.loadLastNBlockIds, { limit: this.constants.blockSlotWindow });
-    this.lastNBlockIds = blockIds.map((b) => b.id);
+    const blocks       = await this.BlocksModel.findAll({
+      limit: this.constants.blockSlotWindow,
+      order: [['height', 'desc']],
+    });
+    this.lastNBlockIds = blocks.map((b) => b.id);
   }
 
   public async onNewBlock(block: SignedBlockType) {
@@ -175,9 +177,9 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
    * Verify block slot is not too in the past or in the future.
    */
   private verifyBlockSlotWindow(block: SignedBlockType): string[] {
-    const curSlot = this.slots.getSlotNumber();
+    const curSlot   = this.slots.getSlotNumber();
     const blockSlot = this.slots.getSlotNumber(block.timestamp);
-    const errors = [];
+    const errors    = [];
     if (curSlot - blockSlot > this.constants.blockSlotWindow) {
       errors.push('Block slot is too old');
     }
@@ -186,6 +188,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     }
     return errors;
   }
+
   /**
    * Verify that given block is not already within last known block ids.
    */
@@ -299,7 +302,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       totalFee += tx.fee;
     }
 
-    if (payloadHash.digest().toString('hex') !== block.payloadHash) {
+    if (!payloadHash.digest().equals(block.payloadHash)) {
       errors.push('Invalid payload hash');
     }
 
@@ -350,17 +353,26 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       .catch(async (err) => {
         await this.forkModule.fork(block, ForkType.TX_ALREADY_CONFIRMED);
         // undo the offending tx
-        await this.transactionsModule.undoUnconfirmed(tx);
-        this.transactionsModule.removeUnconfirmedTransaction(tx.id);
+
+        if (this.transactionsModule.removeUnconfirmedTransaction(tx.id)) {
+          await this.transactionsModule.undoUnconfirmed(tx);
+        }
         return Promise.reject(err);
       });
 
     // get account from db if exists
-    const acc = await this.accountsModule.getAccount({publicKey: tx.senderPublicKey});
+    // We try to fetch account without an upsert and eventually upsert the account if necessary.
+    // this is just for optimization purposes.
+    const acc = await this.accountsModule.getAccount({publicKey: tx.senderPublicKey})
+      .then((a) => a.publicKey === null ? this.accountsModule.setAccountAndGet({publicKey: tx.senderPublicKey}) : a);
 
     let requester = null;
     if (tx.requesterPublicKey) {
-      requester = await this.accountsModule.getAccount({publicKey: tx.requesterPublicKey});
+      requester = await this.accountsModule.getAccount({publicKey: tx.requesterPublicKey})
+        .then((a) => a.publicKey === null
+          ? this.accountsModule.setAccountAndGet({publicKey: tx.requesterPublicKey})
+          : a
+        );
     }
     // Verify will throw if any error occurs during validation.
     await this.transactionLogic.verify(tx, acc, requester, block.height);

@@ -13,19 +13,19 @@ export default {
       type: 'integer',
     },
     blockSignature      : {
-      type  : 'string',
-      format: 'signature',
+      type  : 'object',
+      format: 'signatureBuf',
     },
     generatorPublicKey  : {
-      type  : 'string',
-      format: 'publicKey',
+      type  : 'object',
+      format: 'publicKeyBuf',
     },
     numberOfTransactions: {
       type: 'integer',
     },
     payloadHash         : {
-      type  : 'string',
-      format: 'hex',
+      type  : 'object',
+      format: 'sha256Buf',
     },
     payloadLength       : {
       type: 'integer',
