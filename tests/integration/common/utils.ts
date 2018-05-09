@@ -57,22 +57,25 @@ export const getKeypairByPkey = (pk: publicKey): IKeypair => {
     .digest());
 };
 
-export const confirmTransactions = async (txs: Array<ITransaction<any>>, confirmations: number = Math.ceil(txs.length/25)) => {
-  const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
+export const confirmTransactions = async (txs: Array<ITransaction<any>>, withTxPool: boolean) => {
   txs = txs.slice();
-  //try {
-  //  await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
-  //} catch (e) {
-  //  console.warn('receive tx err', e);
-  //}
-  console.log(confirmations);
-  while (txs.length > 0) {
-    await initializer.rawMineBlockWithTxs(txs.splice(0, 25).map((t) => toBufferedTransaction(t)));
+  if (withTxPool) {
+    const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
+    try {
+     await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
+    } catch (e) {
+      console.warn('receive tx err', e);
+    }
+    await initializer.rawMineBlocks(Math.ceil(txs.length / 25));
+    for (const tx of txs) {
+     expect(txModule.transactionInPool(tx.id)).is.false; // (`TX ${tx.id} is still in pool :(`);
+    }
+    return;
+  } else {
+    while (txs.length > 0) {
+      await initializer.rawMineBlockWithTxs(txs.splice(0, 25).map((t) => toBufferedTransaction(t)));
+    }
   }
-  //await initializer.rawMineBlocks(confirmations);
-  //for (const tx of txs) {
-  //  expect(txModule.transactionInPool(tx.id)).is.false; // (`TX ${tx.id} is still in pool :(`);
-  //}
 };
 export const createRandomWallet  = (): LiskWallet => {
   return new dposOffline.wallets.LiskLikeWallet(uuid.v4(), 'R');
@@ -91,7 +94,7 @@ export const createVoteTransaction = async (confirmations: number, from: LiskWal
   tx['senderId']     = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts)
     .generateAddressByPublicKey(tx.senderPublicKey);
   if (confirmations > 0) {
-    await confirmTransactions([tx], confirmations);
+    await confirmTransactions([tx], true);
   }
   return tx;
 };
@@ -109,7 +112,7 @@ export const createSecondSignTransaction = async (confirmations: number, from: L
       },
     });
   if (confirmations > 0) {
-    await confirmTransactions([tx], confirmations);
+    await confirmTransactions([tx], true);
   }
   return tx;
 };
@@ -188,7 +191,7 @@ export const createRegDelegateTransaction = async (confirmations: number, from: 
   tx['senderId']     = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts)
     .generateAddressByPublicKey(tx.senderPublicKey);
   if (confirmations > 0) {
-    await confirmTransactions([tx], confirmations);
+    await confirmTransactions([tx], true);
   }
   return tx;
 };
@@ -199,7 +202,7 @@ export const createSendTransaction = async (confirmations: number, amount: numbe
   tx['senderId']     = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts)
     .generateAddressByPublicKey(tx.senderPublicKey);
   if (confirmations > 0) {
-    await confirmTransactions([tx], confirmations);
+    await confirmTransactions([tx], true);
   }
   return tx;
 };
@@ -218,7 +221,7 @@ export const createRandomAccountWithFunds = async (howMany: number = 1000, recip
   t.set('timestamp', 0);
   t.set('recipientId', recipientWallet.address);
   const tx = t.sign(senderWallet);
-  await confirmTransactions([tx], 1);
+  await confirmTransactions([tx], true);
   return {
     delegate: senderWallet,
     txID    : tx.id,
@@ -245,7 +248,7 @@ export const createRandomAccountsWithFunds = async (howManyAccounts: number, amo
     accounts.push(randomRecipient);
   }
 
-  await confirmTransactions(txs, Math.ceil(txs.length / 25 + 1));
+  await confirmTransactions(txs, false);
   return txs
     .map((tx, idx) => ({tx, account: accounts[idx], senderWallet}));
 };

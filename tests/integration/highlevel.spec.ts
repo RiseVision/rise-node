@@ -316,7 +316,7 @@ describe('highlevel checks', function () {
           await createSecondSignTransaction(0, senderAccount, pk),
           await createSecondSignTransaction(0, senderAccount, pk2),
         ];
-        await confirmTransactions(txs, 1);
+        await confirmTransactions(txs, true);
         const acc = await accModule.getAccount({address: senderAccount.address});
         expect(acc.secondPublicKey.toString('hex')).to.be.eq(pk2);
         expect(acc.secondSignature).to.be.eq(1);

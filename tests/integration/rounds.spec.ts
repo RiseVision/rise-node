@@ -2,21 +2,23 @@ import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Sequelize } from 'sequelize-typescript';
+import * as filterObject from 'filter-object';
 import initializer from './common/init';
-import { toBufferedTransaction } from '../utils/txCrafter';
 import {
   confirmTransactions,
-  createMultiSignAccount, createMultiSignTransactionWithSignatures, createRandomAccountsWithFunds,
-  createRandomAccountWithFunds,
-  createRandomWallet, createRegDelegateTransaction,
+  createRandomAccountsWithFunds,
   createSendTransaction,
-  createVoteTransaction, findDelegateByPkey, findDelegateByUsername, getRandomDelegateWallet
+  createVoteTransaction,
+  findDelegateByPkey,
+  findDelegateByUsername
 } from './common/utils';
 import { Symbols } from '../../src/ioc/symbols';
 import { IRoundsLogic, ITransactionLogic, ITransactionPoolLogic } from '../../src/ioc/interfaces/logic';
 import {
   IAccountsModule,
-  IBlocksModule, IDelegatesModule, IRoundsModule,
+  IBlocksModule,
+  IDelegatesModule,
+  IRoundsModule,
   ISystemModule,
   ITransactionsModule,
   ITransportModule
@@ -25,7 +27,6 @@ import { Ed } from '../../src/helpers';
 import { dposOffline, LiskWallet } from 'dpos-offline';
 import { BlocksModel } from '../../src/models';
 import { Op } from 'sequelize';
-import MyBigNumb from '../../src/helpers/bignum';
 
 chai.use(chaiAsPromised);
 describe('rounds', () => {
@@ -69,7 +70,10 @@ describe('rounds', () => {
       bala : i.delegate.balance,
       ubala: i.delegate.u_balance,
       pk   : i.delegate.publicKey.toString('hex'),
-      rank : i.info.rank
+      addr : i.delegate.address,
+      rank : i.info.rank,
+      mb   : i.delegate.missedblocks,
+      pb   : i.delegate.producedblocks,
     };
   }
 
@@ -82,7 +86,6 @@ describe('rounds', () => {
   let accounts: LiskWallet[];
   beforeEach(async function () {
     this.timeout(100000);
-    const now   = Date.now();
     const toRet = await createRandomAccountsWithFunds(101, funds);
     accounts    = toRet.map((item) => item.account);
     const txs   = [];
@@ -104,13 +107,11 @@ describe('rounds', () => {
       // reorder so that genesisDelegate1 is higher in rank than genesiDelegate2 by one satoshi
       txs.push(await createSendTransaction(0, i, accounts[i - 1], '1R'));
     }
-    // console.log('ciao', Date.now() - now);
-    await confirmTransactions(txs);
-    // console.log('ciao', Date.now() - now);
+    await confirmTransactions(txs, false);
   });
 
   async function getmappedDelObj() {
-    const preRes       = await delegatesModule.getDelegates({orderBy: 'vote:desc'});
+    const preRes       = await delegatesModule.getDelegates({ orderBy: 'vote:desc' });
     const preResMapped = preRes.delegates.map(mapDelegate);
     return mappedDelegatesToHASH(preResMapped);
   }
@@ -121,8 +122,10 @@ describe('rounds', () => {
     const toMine   = roundsLogic.lastInRound(curRound) - blocksModule.lastBlock.height;
     for (let i = 0; i < toMine - 1; i++) {
       await initializer.rawMineBlocks(1);
-      expect(preOBJ).to.be.deep.eq(await getmappedDelObj());
+      expect(filterObject(preOBJ, ['!*.mb', '!*.pb']))
+        .to.be.deep.eq(filterObject(await getmappedDelObj(), ['!*.mb', '!*.pb']));
     }
+    const preLastBlock = await getmappedDelObj();
     await initializer.rawMineBlocks(1);
 
     const postOBJ = await getmappedDelObj();
@@ -130,16 +133,16 @@ describe('rounds', () => {
     // should contain same delegates (even if sorted in another order)
     expect(Object.keys(preOBJ).sort()).to.be.deep.eq(Object.keys(postOBJ).sort());
     expect(preOBJ).to.not.be.deep.eq(postOBJ);
-    return {preOBJ, postOBJ};
+    return { preOBJ, preLastBlock, postOBJ };
   }
 
   describe('endRoundApply', () => {
     it('should update delegates amounts', async function () {
       this.timeout(10000);
-      const {preOBJ, postOBJ} = await getPREPostOBJ();
+      const { preOBJ, postOBJ } = await getPREPostOBJ();
 
       const blocks       = await blocksModel.findAll({
-        where: {height: {[Op.gt]: 1}}
+        where: { height: { [Op.gt]: 1 } }
       });
       const totalRewards = blocks
         .map((x) => x.totalFee)
@@ -154,23 +157,34 @@ describe('rounds', () => {
     });
     it('should update delegate votes and rank!', async function () {
       this.timeout(10000);
-      const {postOBJ} = await getPREPostOBJ();
-      let i           = 1;
-      for (const delegateName in postOBJ) {
+      const { postOBJ } = await getPREPostOBJ();
+      for (let i = 1; i <= 101; i++) {
+        const delegateName = `genesisDelegate${i}`;
         expect(postOBJ[delegateName].vote).to.be.eq(99890000000 - i);
         expect(delegateName).to.be.eq(`genesisDelegate${i}`);
         expect(postOBJ[delegateName].rank).to.be.eq(i);
-        i++;
       }
     });
   });
   describe('endRound + rollback', () => {
-    it('should return to original preOBJ', async function () {
+    it('rollback should return to original preOBJ', async function () {
       this.timeout(10000);
-      const {preOBJ, postOBJ} = await getPREPostOBJ();
+      const { preLastBlock} = await getPREPostOBJ();
+
       await initializer.rawDeleteBlocks(1);
-      const nowOBJ = await getmappedDelObj();
-      expect(nowOBJ).to.be.deep.eq(preOBJ);
+
+      const nowOBJ      = await getmappedDelObj();
+      expect(nowOBJ).to.be.deep.eq(preLastBlock);
+    });
+    it('end + rollback + end should give same result as end only', async function () {
+      this.timeout(10000);
+      const { postOBJ } = await getPREPostOBJ();
+
+      await initializer.rawDeleteBlocks(1);
+      await initializer.rawMineBlocks(1);
+
+      const nowOBJ      = await getmappedDelObj();
+      expect(nowOBJ).to.be.deep.eq(postOBJ);
     });
   });
 });
