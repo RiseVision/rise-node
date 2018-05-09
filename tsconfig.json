@@ -12,10 +12,7 @@
     "inlineSources"               : true,
     "lib"                         : [
       "dom",
-      "es5",
-      "es6",
-      "es2015.core",
-      "es2015.promise"
+      "es7"
     ]
   },
   "exclude"        : [
