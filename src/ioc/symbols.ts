@@ -64,7 +64,7 @@ export const Symbols = {
     },
   },
   models : {
-    accounts                  : Symbol('accontsModel'),
+    accounts                  : Symbol('accountsModel'),
     accounts2Delegates        : Symbol('accounts2delegatesModel'),
     accounts2Multisignatures  : Symbol('accounts2multisignatures'),
     accounts2U_Delegates      : Symbol('accounts2U_delegatesModel'),

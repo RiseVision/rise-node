@@ -11,7 +11,6 @@ import {
   TransactionPoolStub,
   TransactionsModuleStub,
 } from '../stubs';
-import DbStub from '../stubs/helpers/DbStub';
 import EdStub from '../stubs/helpers/EdStub';
 import JobsQueueStub from '../stubs/helpers/jobsQueueStub';
 import { SequenceStub } from '../stubs/helpers/SequenceStub';
@@ -34,13 +33,13 @@ import MultisignaturesModuleStub from '../stubs/modules/MultisignaturesModuleStu
 import { RoundsModuleStub } from '../stubs/modules/RoundsModuleStub';
 import TransportModuleStub from '../stubs/modules/TransportModuleStub';
 import SocketIOStub from '../stubs/utils/SocketIOStub';
+import AccountsModelStub from '../stubs/models/AccountsModelStub';
 
 export const createContainer = (): Container => {
   const container = new Container();
   // Generics
   container.bind(Symbols.generic.appConfig)
     .toConstantValue(require(`${__dirname}/../integration/config.json`));
-  container.bind(Symbols.generic.db).to(DbStub).inSingletonScope();
   container.bind(Symbols.generic.genesisBlock)
     .toConstantValue(require(`${__dirname}/../integration/genesisBlock.json`));
   container.bind(Symbols.generic.socketIO).to(SocketIOStub).inSingletonScope();
@@ -94,6 +93,9 @@ export const createContainer = (): Container => {
   container.bind(Symbols.modules.system).to(SystemModuleStub).inSingletonScope();
   container.bind(Symbols.modules.transport).to(TransportModuleStub).inSingletonScope();
   container.bind(Symbols.modules.transactions).to(TransactionsModuleStub).inSingletonScope();
+
+  // Models
+  container.bind(Symbols.models.accounts).to(AccountsModelStub).inRequestScope();
 
   return container;
 };
