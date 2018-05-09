@@ -13,7 +13,7 @@ import {
 } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType } from '../../logic/';
-import { IConfirmedTransaction } from '../../logic/transactions/';
+import { IBaseTransaction, IConfirmedTransaction } from '../../logic/transactions/';
 import { AccountsModel, BlocksModel, TransactionsModel } from '../../models/';
 
 @injectable()
@@ -187,39 +187,55 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     // Start atomic block saving.
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
       // Apply transaction to unconfirmed mem_accounts field
-      for (const transaction of block.transactions) {
-        const sender = await this.accountsModule
-          .setAccountAndGet({publicKey: transaction.senderPublicKey});
-        await this.transactionsModule.applyUnconfirmed(transaction, sender)
-          .catch((err) => {
-            this.logger.error(`Failed to applyUnconfirmed transaction ${transaction.id} - ${err.message || err}`);
-            this.logger.error(err);
-            this.logger.error('Transaction', transaction);
-            return Promise.reject(err);
-          });
+      // Divide transactions by senderAccounts.
+      const txsBySender: { [address: string]: Array<IBaseTransaction<any>> } = {};
+      block.transactions.forEach((tx) => {
+        txsBySender[tx.senderId] = txsBySender[tx.senderId] || [];
+        txsBySender[tx.senderId].push(tx);
+      });
 
-        // Remove the transaction from the node queue, if it was present.
-        const idx = unconfirmedTransactionIds.indexOf(transaction.id);
-        if (idx !== -1) {
-          unconfirmedTransactionIds.splice(idx, 1);
+      // Apply Unconfirmed parallelly grouped by sender.
+      await Promise.all(Object.keys(txsBySender).map(async (address) => {
+        const txs  = txsBySender[address];
+        let sender = null;
+        for (const transaction of txs) {
+          sender = sender ?
+            await this.accountsModule
+              .getAccount({ address: transaction.senderId }) :
+            await this.accountsModule
+              .setAccountAndGet({ publicKey: transaction.senderPublicKey });
+          await this.transactionsModule.applyUnconfirmed(transaction, sender)
+            .catch((err) => {
+              this.logger.error(`Failed to applyUnconfirmed transaction ${transaction.id} - ${err.message || err}`);
+              this.logger.error(err);
+              this.logger.error('Transaction', transaction);
+              throw err;
+            });
+
+          // Remove the transaction from the node queue, if it was present.
+          const idx = unconfirmedTransactionIds.indexOf(transaction.id);
+          if (idx !== -1) {
+            unconfirmedTransactionIds.splice(idx, 1);
+          }
         }
-      }
+      }));
 
-      // Block and transactions are ok.
-      // Apply transactions to confirmed mem_accounts fields.
-      for (const tx of block.transactions) {
-        const sender = await this.accountsModule.getAccount({publicKey: tx.senderPublicKey});
-        try {
-          await this.transactionsModule.apply(tx, block, sender);
-        } catch (err) {
-          this.logger.error(`Failed to apply transaction: ${tx.id}`, err);
-          this.logger.error('Transaction', tx);
-          throw err;
+      // Apply confirmed parallelly
+      await Promise.all(Object.keys(txsBySender).map(async (address) => {
+        const txs  = txsBySender[address];
+        for (const transaction of txs) {
+          const sender = await this.accountsModule.getAccount({ address: transaction.senderId });
+          await this.transactionsModule.apply(transaction, block, sender)
+            .catch((err) => {
+              this.logger.error(`Failed to apply transaction: ${transaction.id}`, err);
+              this.logger.error('Transaction', transaction);
+              throw err;
+            });
+
+          // Transaction applied, removed from the unconfirmed list.
+          this.transactionsModule.removeUnconfirmedTransaction(transaction.id);
         }
-
-        // Transaction applied, removed from the unconfirmed list.
-        this.transactionsModule.removeUnconfirmedTransaction(tx.id);
-      }
+      }));
 
       this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
       if (saveBlock) {
