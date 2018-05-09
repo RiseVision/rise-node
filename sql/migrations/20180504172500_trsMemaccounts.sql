@@ -26,8 +26,8 @@ ALTER TABLE trs
  */
 update mem_accounts
   set address = upper(address)
-  where address <> upper(address)
+  where address <> upper(address);
 
 ALTER table mem_accounts
-  ADD CONSTRAINT upperAddress CHECK(upper("address") = "address")
+  ADD CONSTRAINT upperAddress CHECK(upper("address") = "address");
 COMMIT;

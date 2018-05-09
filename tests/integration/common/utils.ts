@@ -18,7 +18,8 @@ import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import * as txCrafter from '../../utils/txCrafter';
 import { toBufferedTransaction } from '../../utils/txCrafter';
 
-const delegates = require('../genesisDelegates.json');
+const delegates    = require('../genesisDelegates.json');
+const genesisBlock = require('../genesisBlock.json');
 
 export const findDelegateByPkey = (pk: publicKey): {
   secret: string,
@@ -26,7 +27,23 @@ export const findDelegateByPkey = (pk: publicKey): {
   publicKey: string,
   username: string
 } => {
-  return delegates.filter((d) => d.keypair.publicKey === pk).pop();
+  const del    = delegates.filter((d) => d.keypair.publicKey === pk)[0];
+  del.username = genesisBlock
+    .transactions
+    .filter((t) => t.type === 2)
+    .filter((t) => t.senderPublicKey.toString('hex') === pk)
+    .map((t) => t.asset.delegate.username)[0];
+
+  return del;
+};
+
+export const findDelegateByUsername = (username: string) => {
+  const tx = genesisBlock.transactions.filter((t) => t.type === 2)
+    .filter((t) => {
+      return t.asset.delegate.username.toLowerCase() === username.toLowerCase()
+    })[0];
+
+  return findDelegateByPkey(tx.senderPublicKey.toString('hex'));
 };
 
 export const getKeypairByPkey = (pk: publicKey): IKeypair => {
@@ -40,17 +57,22 @@ export const getKeypairByPkey = (pk: publicKey): IKeypair => {
     .digest());
 };
 
-export const confirmTransactions = async (txs: Array<ITransaction<any>>, confirmations: number = 1) => {
+export const confirmTransactions = async (txs: Array<ITransaction<any>>, confirmations: number = Math.ceil(txs.length/25)) => {
   const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
-  try {
-    await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
-  } catch (e) {
-    console.warn('receive tx err', e);
+  txs = txs.slice();
+  //try {
+  //  await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
+  //} catch (e) {
+  //  console.warn('receive tx err', e);
+  //}
+  console.log(confirmations);
+  while (txs.length > 0) {
+    await initializer.rawMineBlockWithTxs(txs.splice(0, 25).map((t) => toBufferedTransaction(t)));
   }
-  await initializer.rawMineBlocks(confirmations);
-  for (const tx of txs) {
-    expect(txModule.transactionInPool(tx.id)).is.false; // (`TX ${tx.id} is still in pool :(`);
-  }
+  //await initializer.rawMineBlocks(confirmations);
+  //for (const tx of txs) {
+  //  expect(txModule.transactionInPool(tx.id)).is.false; // (`TX ${tx.id} is still in pool :(`);
+  //}
 };
 export const createRandomWallet  = (): LiskWallet => {
   return new dposOffline.wallets.LiskLikeWallet(uuid.v4(), 'R');
@@ -127,7 +149,7 @@ export const createMultiSignTransactionWithSignatures = (from: LiskWallet, min: 
   return {tx, signatures};
 };
 
-export const createMultiSignTransaction               = (from: LiskWallet, min: number, keysgroup: publicKey[], lifetime: number = 24, extra: any = {}) => {
+export const createMultiSignTransaction = (from: LiskWallet, min: number, keysgroup: publicKey[], lifetime: number = 24, extra: any = {}) => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
   const tx           = txCrafter.createMultiSigTX(
     from,
@@ -187,7 +209,7 @@ export const getRandomDelegateWallet = (): LiskWallet => {
   return new dposOffline.wallets.LiskLikeWallet(d.secret, 'R');
 }
 
-export const createRandomAccountWithFunds = async (howMany: number = 1000, recipientWallet: LiskWallet = createRandomWallet()): Promise<{ wallet: LiskWallet, txID: string }> => {
+export const createRandomAccountWithFunds = async (howMany: number = 1000, recipientWallet: LiskWallet = createRandomWallet()) => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
   const senderWallet = getRandomDelegateWallet();
   const t            = new dposOffline.transactions.SendTx();
@@ -198,7 +220,32 @@ export const createRandomAccountWithFunds = async (howMany: number = 1000, recip
   const tx = t.sign(senderWallet);
   await confirmTransactions([tx], 1);
   return {
-    txID  : tx.id,
-    wallet: recipientWallet,
+    delegate: senderWallet,
+    txID    : tx.id,
+    wallet  : recipientWallet,
   };
+};
+
+export const createRandomAccountsWithFunds = async (howManyAccounts: number, amount: number): Promise<Array<{ tx: ITransaction, account: LiskWallet, senderWallet: LiskWallet }>> => {
+  const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
+  const senderWallet = getRandomDelegateWallet();
+
+  const txs                    = [];
+  const accounts: LiskWallet[] = [];
+  for (let i = 0; i < howManyAccounts; i++) {
+    const randomRecipient = createRandomWallet();
+    const t               = new dposOffline.transactions.SendTx();
+    t.set('amount', amount);
+    t.set('fee', systemModule.getFees().fees.send);
+    t.set('timestamp', 0);
+    t.set('recipientId', randomRecipient.address);
+    const signedTx = t.sign(senderWallet);
+    signedTx['senderId'] = senderWallet.address;
+    txs.push(signedTx);
+    accounts.push(randomRecipient);
+  }
+
+  await confirmTransactions(txs, Math.ceil(txs.length / 25 + 1));
+  return txs
+    .map((tx, idx) => ({tx, account: accounts[idx], senderWallet}));
 };
