@@ -133,9 +133,11 @@ describe('logic/transactions/send', () => {
       const result = await instance.undo(tx, block, sender);
       expect(result).to.be.an('array');
       expect(result[0]).to.be.an('object').that.includes.all.keys('model', 'type', 'values');
-      expect(result[0].model).to.be.an('object');
-      expect(result[0].type).to.equal('upsert');
-      expect(result[0].values).to.deep.equal({address: '1234567890R'});
+      expect(result[0]).to.be.deep.eq({
+        model: container.get(Symbols.models.accounts),
+        type: 'upsert',
+        values: { address: '1234567890R' },
+      });
       expect(result[1]).to.deep.equal({foo: 'bar'});
       expect(accountLogicStub.stubs.merge.calledOnce).to.be.true;
       expect(accountLogicStub.stubs.merge.args[0][0]).to.equal(tx.recipientId);
