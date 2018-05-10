@@ -1,13 +1,15 @@
 'use strict';
+import 'reflect-metadata';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import {Container} from 'inversify';
-import { SinonSandbox } from 'sinon';
+import { Container } from 'inversify';
 import * as sinon from 'sinon';
-import {Symbols} from '../../../../src/ioc/symbols';
+import { SinonSandbox } from 'sinon';
+import { Symbols } from '../../../../src/ioc/symbols';
 import { SendTransaction } from '../../../../src/logic/transactions';
-import { AccountLogicStub, RoundsLogicStub, SystemModuleStub } from '../../../stubs';
+import { AccountLogicStub, BlocksModelStub, RoundsLogicStub, SystemModuleStub } from '../../../stubs';
 import { createContainer } from '../../../utils/containerCreator';
+import AccountsModelStub from '../../../stubs/models/AccountsModelStub';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -59,6 +61,19 @@ describe('logic/transactions/send', () => {
   afterEach(() => {
     sandbox.restore();
   });
+  it('test', () => {
+    const a = container.get<typeof AccountsModelStub>(Symbols.models.accounts);
+    const b = container.get<typeof BlocksModelStub>(Symbols.models.blocks);
+    a.enqueueResponse('findAll', { 'bot': 'bau' });
+    // console.log(a);
+    b.reset();
+    a.reset();
+    // console.log(b);
+    b.enqueueResponse('findMeow', { 'bot': 'meow' });
+    a.enqueueResponse('findAll', { 'find': 'all' });
+    expect(b.findMeow()).to.be.deep.eq({ 'bot': 'meow' });
+    expect(a.findAll()).to.be.deep.eq({ 'find': 'all' });
+  })
 
   describe('calculateFee', () => {
     it('should call systemModule.getFees', () => {
@@ -89,9 +104,11 @@ describe('logic/transactions/send', () => {
       const result = await instance.apply(tx, block, sender);
       expect(result).to.be.an('array');
       expect(result[0]).to.be.an('object').that.includes.all.keys('model', 'type', 'values');
-      expect(result[0].model).to.be.an('object');
-      expect(result[0].type).to.equal('upsert');
-      expect(result[0].values).to.deep.equal({address: '1234567890R'});
+      expect(result[0]).to.be.deep.eq({
+        model: container.get(Symbols.models.accounts),
+        type: 'upsert',
+        values: { address: '1234567890R' },
+      });
       expect(result[1]).to.deep.equal({foo: 'bar'});
       expect(accountLogicStub.stubs.merge.calledOnce).to.be.true;
       expect(accountLogicStub.stubs.merge.args[0][0]).to.equal(tx.recipientId);

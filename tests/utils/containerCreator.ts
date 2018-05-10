@@ -2,6 +2,8 @@ import { Container } from 'inversify';
 import { constants } from '../../src/helpers';
 import { Symbols } from '../../src/ioc/symbols';
 import {
+  AccountsModelStub,
+  BlocksModelStub,
   BlocksSubmoduleChainStub, BlocksSubmoduleVerifyStub,
   BroadcasterLogicStub, BusStub, DelegatesModuleStub,
   ExceptionsManagerStub,
@@ -33,7 +35,6 @@ import MultisignaturesModuleStub from '../stubs/modules/MultisignaturesModuleStu
 import { RoundsModuleStub } from '../stubs/modules/RoundsModuleStub';
 import TransportModuleStub from '../stubs/modules/TransportModuleStub';
 import SocketIOStub from '../stubs/utils/SocketIOStub';
-import AccountsModelStub from '../stubs/models/AccountsModelStub';
 
 export const createContainer = (): Container => {
   const container = new Container();
@@ -95,7 +96,8 @@ export const createContainer = (): Container => {
   container.bind(Symbols.modules.transactions).to(TransactionsModuleStub).inSingletonScope();
 
   // Models
-  container.bind(Symbols.models.accounts).to(AccountsModelStub).inRequestScope();
+  container.bind(Symbols.models.accounts).toConstructor(AccountsModelStub);
+  container.bind(Symbols.models.blocks).toConstructor(BlocksModelStub);
 
   return container;
 };

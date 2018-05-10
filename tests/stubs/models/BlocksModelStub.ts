@@ -5,7 +5,7 @@ import { stubMethod, stubStaticMethod } from '../stubDecorator';
 // tslint:disable no-empty
 
 @injectable()
-export class AccountsModelStub extends BaseStubClass {
+export class BlocksModelStub extends BaseStubClass {
 
   @stubMethod()
   public isMultisignature() {}
@@ -23,6 +23,6 @@ export class AccountsModelStub extends BaseStubClass {
   public restoreUnconfirmedEntries() {}
 
   @stubStaticMethod()
-  public static findAll() {
+  public static findMeow() {
   }
 }
