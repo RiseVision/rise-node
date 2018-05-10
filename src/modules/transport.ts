@@ -263,7 +263,7 @@ export class TransportModule implements ITransportModule {
    * @returns {Promise<void>}
    */
   // tslint:disable-next-line max-line-length
-  public async receiveTransaction(transaction: IBaseTransaction<any>, peer: IPeerLogic, bundled: boolean, extraLogMessage: string): Promise<string> {
+  public async receiveTransaction(transaction: IBaseTransaction<any>, peer: IPeerLogic, bundled: boolean, extraLogMessage: string, broadcast = true): Promise<string> {
     try {
       transaction = this.transactionLogic.objectNormalize(transaction);
     } catch (e) {
@@ -282,7 +282,7 @@ export class TransportModule implements ITransportModule {
         this.logger.debug(`Received transaction ${transaction.id} from peer: ${peer.string}`);
         await this.transactionModule.processUnconfirmedTransaction(
           transaction,
-          true,
+          broadcast,
           bundled
         );
       });

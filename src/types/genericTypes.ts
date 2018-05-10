@@ -86,6 +86,7 @@ export interface AppConfig {
       whiteList: string[]
     }
     transactionsPolling?: boolean
+    pollingInterval?: number
   };
 
   loading: {
@@ -106,4 +107,5 @@ export interface PeerHeaders {
   nethash: string;
   broadhash: string;
   nonce: string;
+  firewalled?: string;
 }

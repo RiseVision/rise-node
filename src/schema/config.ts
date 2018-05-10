@@ -247,6 +247,9 @@ export default {
           transactionsPolling: {
             type: 'boolean',
           },
+          pollingInterval: {
+            type: 'number',
+          },
         },
         required  : ['force', 'secret', 'access'],
       },
