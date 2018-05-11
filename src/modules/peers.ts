@@ -170,7 +170,13 @@ export class PeersModule implements IPeersModule {
     try {
       await this.PeersModel.truncate({transaction});
       await this.PeersModel.bulkCreate(
-        peers.map((p) => ({...p, ...{broadhash: Buffer.from(p.broadhash, 'hex')}})),
+        peers
+          .map((p) => {
+            if (p.broadhash) {
+              return {...p, ...{broadhash: Buffer.from(p.broadhash, 'hex')}};
+            }
+            return p;
+          }),
         {transaction}
       );
       await transaction.commit();

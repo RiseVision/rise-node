@@ -17,7 +17,7 @@ import {
 } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { PeerType, SignedAndChainedBlockType, SignedBlockType, } from '../logic/';
-import { IBaseTransaction } from '../logic/transactions/';
+import { ITransportTransaction } from '../logic/transactions/';
 import { AccountsModel, BlocksModel, DelegatesModel, RoundsModel } from '../models';
 import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
@@ -496,12 +496,6 @@ export class LoaderModule implements ILoaderModule {
     this.logger.info('Finished sync');
     await this.bus.message('syncFinished');
 
-    if (this.config.forging.transactionsPolling) {
-      this.logger.info('Polling transactions and signatures');
-      await this.syncTransactions();
-      await this.syncSignatures();
-      this.logger.info('Finshed polling');
-    }
   }
 
   private async syncTimer() {
@@ -524,6 +518,14 @@ export class LoaderModule implements ILoaderModule {
             retries(err);
           }
         }, { retries: this.retries });
+
+        // IF polling is enabled then poolling sync both txs and signatures.
+        if (this.config.forging.transactionsPolling) {
+          this.logger.info('Polling transactions and signatures');
+          await this.syncTransactions();
+          await this.syncSignatures();
+          this.logger.info('Finshed polling');
+        }
       }
     }, this.syncInterval);
   }
@@ -619,14 +621,12 @@ export class LoaderModule implements ILoaderModule {
       throw new Error('Cannot validate load transactions schema against peer');
     }
 
-    const { transactions }: { transactions: Array<IBaseTransaction<any>> } = res.body;
+    const { transactions }: { transactions: Array<ITransportTransaction<any>> } = res.body;
     for (const tx of transactions) {
       try {
         await this.transportModule.receiveTransaction(tx, peer, true, 'LoaderModule.loadTransactions', false);
       } catch (err) {
         this.logger.debug(err, tx);
-        // Throw so that we can retry with another peer before processing other transactions from this problematic peer
-        throw err;
       }
     }
 

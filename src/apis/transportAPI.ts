@@ -24,7 +24,56 @@ import { Partial } from '../types/utils';
 import { APIError } from './errors';
 import { AttachPeerHeaders } from './utils/attachPeerHeaders';
 import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
-import { APIError } from './errors';
+
+function genTransportBlock(block: BlocksModel, extra: Partial<RawFullBlockListType>): RawFullBlockListType {
+  // tslint:disable object-literal-sort-keys
+  return {
+    ...{
+      b_id                  : block.id,
+      b_version             : block.version,
+      b_timestamp           : block.timestamp,
+      b_previousBlock       : block.previousBlock,
+      b_numberOfTransactions: block.numberOfTransactions,
+      b_totalAmount         : block.totalAmount,
+      b_totalFee            : block.totalFee,
+      b_reward              : block.reward,
+      b_payloadLength       : block.payloadLength,
+      b_payloadHash         : block.payloadHash.toString('hex'),
+      b_generatorPublicKey  : block.generatorPublicKey.toString('hex'),
+      b_blockSignature      : block.blockSignature.toString('hex'),
+      t_id                  : null,
+      // t_rowId: 350034,
+      t_type                : null,
+      t_timestamp           : null,
+      t_senderPublicKey     : null,
+      t_senderId            : null,
+      t_recipientId         : null,
+      t_amount              : null,
+      t_fee                 : null,
+      t_signature           : null,
+      t_signSignature       : null,
+      s_publicKey           : null,
+      d_username            : null,
+      v_votes               : null,
+      m_min                 : null,
+      m_lifetime            : null,
+      m_keysgroup           : null,
+      dapp_name             : null,
+      dapp_description      : null,
+      dapp_tags             : null,
+      dapp_type             : null,
+      dapp_link             : null,
+      dapp_category         : null,
+      dapp_icon             : null,
+      in_dappId             : null,
+      ot_dappId             : null,
+      ot_outTransactionId   : null,
+      t_requesterPublicKey  : null,
+      t_signatures          : null,
+    } as any,
+    ...extra,
+  };
+}
 
 @JsonController('/peer')
 @injectable()

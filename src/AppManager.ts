@@ -288,7 +288,7 @@ export class AppManager {
     [Symbols.tags.helpers.dbSequence, Symbols.tags.helpers.defaultSequence, Symbols.tags.helpers.balancesSequence]
       .forEach((sequenceTag) => {
         this.container.bind(Symbols.helpers.sequence)
-          .toConstantValue(new Sequence({
+          .toConstantValue(new Sequence(sequenceTag, {
             onWarning(current) {
               self.logger.warn(`${sequenceTag.toString()} queue`, current);
             },

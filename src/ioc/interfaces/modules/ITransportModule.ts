@@ -47,6 +47,6 @@ export interface ITransportModule extends IModule {
    * @returns {Promise<void>}
    */
   // tslint:disable-next-line max-line-length
-  receiveTransaction(transaction: IBaseTransaction<any>, peer: IPeerLogic, bundled: boolean, extraLogMessage: string, broadcast?: boolean): Promise<string>;
+  receiveTransaction(transaction: ITransportTransaction<any>, peer: IPeerLogic, bundled: boolean, extraLogMessage: string, broadcast?: boolean): Promise<string>;
 
 }

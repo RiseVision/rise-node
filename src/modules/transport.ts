@@ -267,7 +267,8 @@ export class TransportModule implements ITransportModule {
    * @returns {Promise<void>}
    */
   // tslint:disable-next-line max-line-length
-  public async receiveTransaction(transaction: IBaseTransaction<any>, peer: IPeerLogic, bundled: boolean, extraLogMessage: string, broadcast = true): Promise<string> {
+  public async receiveTransaction(transaction: ITransportTransaction<any>, peer: IPeerLogic, bundled: boolean, extraLogMessage: string): Promise<string> {
+    let tx: IBaseTransaction<any>;
     try {
       tx = this.transactionLogic.objectNormalize(transaction);
     } catch (e) {
