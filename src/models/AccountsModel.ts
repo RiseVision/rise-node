@@ -2,6 +2,10 @@ import * as pgp from 'pg-promise';
 import { Column, DataType, Model, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
 import { publicKey } from '../types/sanityTypes';
 import * as sequelize from 'sequelize';
+import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
+import { TransactionType } from '../helpers';
+import { IBaseTransaction } from '../logic/transactions';
+import { FieldsInModel } from '../types/utils';
 
 const fields            = ['username', 'isDelegate', 'secondSignature', 'address', 'publicKey', 'secondPublicKey', 'balance', 'vote', 'rate', 'multimin', 'multilifetime', 'blockId', 'producedblocks', 'missedblocks', 'fees', 'rewards', 'virgin'];
 const unconfirmedFields = ['u_isDelegate', 'u_secondSignature', 'u_username', 'u_balance', 'u_multimin', 'u_multilifetime'];
@@ -11,6 +15,24 @@ const allFields = fields.concat(unconfirmedFields);
 const buildArrayArgAttribute = function (table: string): any {
   return [sequelize.literal(`(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2${table} WHERE "accountId" = "AccountsModel"."address")`), table];
 };
+/**
+ * Precomputed fields required by txType based on confirmed state
+ * @type {{true: {}; false: {}}}
+ */
+const fieldsByTxType = {
+  // Unconfirmed
+  false: {},
+  // Confirmed
+  true: {},
+};
+for (const txType in TransactionType) {
+  fieldsByTxType.true[txType] = allFields;
+  fieldsByTxType.false[txType] = allFields;
+}
+fieldsByTxType.false[TransactionType.VOTE] = allFields.concat('u_delegates');
+fieldsByTxType.true[TransactionType.VOTE] = allFields.concat('delegates');
+fieldsByTxType.false[TransactionType.MULTI] = allFields.concat('u_multisignatures');
+fieldsByTxType.true[TransactionType.MULTI] = allFields.concat('multisignatures');
 
 @Scopes({
   full         : {
@@ -20,15 +42,15 @@ const buildArrayArgAttribute = function (table: string): any {
       buildArrayArgAttribute('multisignatures'),
       buildArrayArgAttribute('u_delegates'),
       buildArrayArgAttribute('u_multisignatures'),
-    ]
+    ],
   },
   fullConfirmed: {
     attributes: [
       ...fields,
       buildArrayArgAttribute('delegates'),
       buildArrayArgAttribute('multisignatures'),
-    ]
-  }
+    ],
+  },
 })
 @Table({ tableName: 'mem_accounts' })
 export class AccountsModel extends Model<AccountsModel> {
@@ -168,6 +190,10 @@ export class AccountsModel extends Model<AccountsModel> {
       orderHow
     });
 
+  }
+
+  public static fieldsFor(tx: ITransaction<any>|IBaseTransaction<any>, confirmed: boolean): FieldsInModel<AccountsModel> {
+    return fieldsByTxType[`${confirmed}`][tx.type];
   }
 
   public static restoreUnconfirmedEntries() {

@@ -201,7 +201,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         for (const transaction of txs) {
           sender = sender ?
             await this.accountsModule
-              .getAccount({ address: transaction.senderId }) :
+              .getAccount({ address: transaction.senderId }, this.AccountsModel.fieldsFor(transaction, false)) :
             await this.accountsModule
               .setAccountAndGet({ publicKey: transaction.senderPublicKey });
           await this.transactionsModule.applyUnconfirmed(transaction, sender)
@@ -224,7 +224,10 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       await Promise.all(Object.keys(txsBySender).map(async (address) => {
         const txs  = txsBySender[address];
         for (const transaction of txs) {
-          const sender = await this.accountsModule.getAccount({ address: transaction.senderId });
+          const sender = await this.accountsModule.getAccount(
+            { address: transaction.senderId },
+            this.AccountsModel.fieldsFor(transaction, true)
+          );
           await this.transactionsModule.apply(transaction, block, sender)
             .catch((err) => {
               this.logger.error(`Failed to apply transaction: ${transaction.id}`, err);
