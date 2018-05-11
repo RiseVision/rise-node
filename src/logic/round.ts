@@ -136,9 +136,9 @@ export class RoundLogic implements IRoundLogic {
   /**
    * Remove blocks higher than this block height
    */
-  public truncateBlocks(): DBOp<RoundsModel> {
+  public truncateBlocks(): DBOp<BlocksModel> {
     return {
-      model  : this.scope.models.RoundsModel,
+      model  : this.scope.models.BlocksModel,
       options: { where: { height: { $gt: this.scope.block.height } } },
       type   : 'remove',
     };
