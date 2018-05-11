@@ -108,7 +108,7 @@ if (program.log) {
 }
 
 if (program.snapshot) {
-  if (typeof(program.snapshot) === 'number') {
+  if (typeof(program.snapshot) === 'string') {
     appConfig.loading.snapshot = Math.abs(Math.floor(program.snapshot));
   } else {
     appConfig.loading.snapshot = true;
