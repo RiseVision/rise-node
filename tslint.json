@@ -1,7 +1,7 @@
 {
   "extends":        [
-    "tslint:recommended"
-
+    "tslint:recommended",
+    "tslint-sonarts"
   ],
   "jsRules":        {},
   "rules":          {
@@ -16,6 +16,9 @@
           "typeLiterals": "ignore"
         }
       }
-    ]
+    ],
+    "no-commented-code": false,
+    "no-duplicate-string": false,
+    "cognitive-complexity": [true, 20]
   }
 }

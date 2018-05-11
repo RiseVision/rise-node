@@ -36,13 +36,14 @@ export class SystemModule implements ISystemModule {
   @postConstruct()
   public postConstruct() {
     this.headers = {
-      broadhash: this.appConfig.nethash,
-      height   : 1,
-      nethash  : this.appConfig.nethash,
-      nonce    : this.nonce,
-      os       : `${os.platform()}${os.release()}`,
-      port     : this.appConfig.port,
-      version  : this.appConfig.version,
+      broadhash : this.appConfig.nethash,
+      firewalled: this.appConfig.forging.transactionsPolling ? 'true' : 'false',
+      height    : 1,
+      nethash   : this.appConfig.nethash,
+      nonce     : this.nonce,
+      os        : `${os.platform()}${os.release()}`,
+      port      : this.appConfig.port,
+      version   : this.appConfig.version,
     };
   }
 

@@ -11,6 +11,7 @@ describe('api/accounts', () => {
   describe('/', () => {
     checkAddress('address', '/api/accounts/');
     checkPubKey('publicKey', '/api/accounts/');
+
     it('should throw if no address nor pubkey is provided', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/')
@@ -20,6 +21,7 @@ describe('api/accounts', () => {
           expect(response.body.error).to.be.eq('Missing required property: address or publicKey');
         });
     });
+
     it('should throw if both address and pubkey are provided but relates to different account', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/?publicKey=f4654563e34c93a22a90bcdb12dbe1edc42fc148cee5f21dde668748acf5f89d&address=11316019077384178848R')
@@ -29,6 +31,7 @@ describe('api/accounts', () => {
           expect(response.body.error).to.be.eq('Account publicKey does not match address');
         });
     });
+
     it('should throw if account cannot be found', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/?address=1R')
@@ -38,6 +41,7 @@ describe('api/accounts', () => {
           expect(response.body.error).to.be.eq('Account not found');
         });
     });
+
     it('should return account data if all ok', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/?address=12333350760210376657R')
@@ -109,6 +113,7 @@ describe('api/accounts', () => {
           expect(response.body.error).to.contain('Missing required property: address');
         });
     });
+
     it('should return Account not foundif account is not found', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/getPublicKey?address=1R')
@@ -118,7 +123,8 @@ describe('api/accounts', () => {
           expect(response.body.error).to.be.eq('Account not found');
 
         });
-    });
+      });
+
     it('should return correct publicKey and unconfirmedBalance in return object', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/getPublicKey?address=12324540900396688540R')
@@ -141,6 +147,7 @@ describe('api/accounts', () => {
           expect(response.body.error).to.contain('Missing required property: address');
         });
     });
+
     it('should return Account not foundif account is not found', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/delegates?address=1R')
@@ -151,6 +158,7 @@ describe('api/accounts', () => {
 
         });
     });
+
     it('should return correct voted delegates', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/accounts/delegates?address=8832350072536010884R')

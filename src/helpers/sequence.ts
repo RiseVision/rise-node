@@ -1,3 +1,4 @@
+import * as cls from 'cls-hooked';
 
 interface IPromiseTask {
   worker(): Promise<any>;
@@ -9,12 +10,13 @@ interface IPromiseTask {
  */
 export class Sequence {
   private sequence: IPromiseTask[] = [];
+  private namespace: any;
   private config: {
     onWarning: (curPending: number, warnLimit: number) => void,
     warningLimit: number
   };
 
-  constructor(cfg) {
+  constructor(private tag: symbol, cfg) {
     this.config = {
       ...{
         onWarning   : null,
@@ -23,7 +25,11 @@ export class Sequence {
       ...cfg,
     };
 
-    setImmediate(() => this.nextSequenceTick());
+    this.namespace = cls.createNamespace(this.tag);
+    this.namespace.run(() => {
+      setImmediate(() => this.nextSequenceTick());
+    });
+
   }
 
   /**
@@ -34,6 +40,9 @@ export class Sequence {
   }
 
   public addAndPromise<T>(worker: () => Promise<T>): Promise<T> {
+    if (this.namespace.get('running') === true) {
+      throw new Error(`Sequences conflict!! ${this.tag.toString()}`);
+    }
     return new Promise((resolve, reject) => {
       const task: IPromiseTask = {
         worker() {
@@ -51,8 +60,12 @@ export class Sequence {
     if (!task) {
       return setImmediate(cb);
     }
-    return task.worker()
-      .then(() => cb());
+    this.namespace.set('running', true);
+    task.worker()
+      .then(() => {
+        this.namespace.set('running', false);
+        cb();
+      });
   }
 
   private nextSequenceTick() {

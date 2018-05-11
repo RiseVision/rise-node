@@ -1,5 +1,6 @@
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
+import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
 import z_schema from 'z-schema';
 import { BigNum, constants, Ed, IKeypair } from '../helpers/';
@@ -184,7 +185,8 @@ export class BlockLogic implements IBlockLogic {
     transactions: Array<IBaseTransaction<any>>,
     previousBlock?: SignedAndChainedBlockType
   }): SignedBlockType {
-    const transactions = data.transactions.sort((a, b) => {
+    const transactions = data.transactions;
+    transactions.sort((a, b) => {
       if (a.type < b.type) {
         return -1;
       }
@@ -282,8 +284,7 @@ export class BlockLogic implements IBlockLogic {
    * TODO: Change method name to something more meaningful as this does NOT save
    */
   public dbSave(block: SignedBlockType): DBOp<BlocksModel & { id: string }> {
-    const values = {...block } ;
-    delete values.transactions;
+    const values = {...filterObject(block, this.dbFields) };
     return {
       model : this.BlocksModel,
       type  : 'create',

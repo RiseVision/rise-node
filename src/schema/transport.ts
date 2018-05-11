@@ -40,6 +40,10 @@ export default {
         minLength: 16,
         maxLength: 36,
       },
+      firewalled    : {
+        type: 'string',
+        enum: ['true', 'false'],
+      },
     },
     required  : ['port', 'version', 'nethash'],
   },

@@ -175,7 +175,9 @@ export class RoundLogic implements IRoundLogic {
     const roundChanges              = new RoundChanges(this.scope, this.slots);
     const queries: Array<DBOp<any>> = [];
 
-    const delegates = this.scope.roundDelegates;
+    const delegates = this.scope.backwards ?
+      this.scope.roundDelegates.reverse() :
+      this.scope.roundDelegates;
 
     for (let i = 0; i < delegates.length; i++) {
       const delegate = delegates[i];

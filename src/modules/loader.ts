@@ -17,7 +17,7 @@ import {
 } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { PeerType, SignedAndChainedBlockType, SignedBlockType, } from '../logic/';
-import { IBaseTransaction } from '../logic/transactions/';
+import { ITransportTransaction } from '../logic/transactions/';
 import { AccountsModel, BlocksModel, DelegatesModel, RoundsModel } from '../models';
 import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
@@ -115,6 +115,9 @@ export class LoaderModule implements ILoaderModule {
       height: 0,
       peers : [],
     };
+    if (this.config.forging.transactionsPolling) {
+      this.syncInterval = this.config.forging.pollingInterval;
+    }
   }
 
   public async getNetwork() {
@@ -142,36 +145,11 @@ export class LoaderModule implements ILoaderModule {
 
   public async onPeersReady() {
     await this.syncTimer();
-    if (this.loaded) {
-      // Load transactions.
-      try {
-        await promiseRetry(async (retry) => {
-          try {
-            await this.loadTransactions();
-          } catch (e) {
-            this.logger.warn('Error loading transactions... Retrying... ', e);
-            retry(e);
-          }
-        }, { retries: this.retries });
-      } catch (e) {
-        this.logger.log('Unconfirmed transactions loader error', e);
-      }
-
-      // load multisignature transactions
-      try {
-        await promiseRetry(async (retry) => {
-          try {
-            await this.loadSignatures();
-          } catch (e) {
-            this.logger.warn('Error loading transactions... Retrying... ', e);
-            retry(e);
-          }
-        }, { retries: this.retries });
-      } catch (e) {
-        this.logger.log('Multisig pending transactions loader error', e);
-      }
+    // If transactions polling is not enabled, sync txs only on boot.
+    if (this.loaded && !this.config.forging.transactionsPolling) {
+      await this.syncTransactions();
+      await this.syncSignatures();
     }
-
   }
 
   public onBlockchainReady() {
@@ -375,7 +353,7 @@ export class LoaderModule implements ILoaderModule {
       return { height: 0, peers: [] };
     } else {
       // Ordering the peers with descending height
-      peers = peers.sort((a, b) => b.height - a.height);
+      peers.sort((a, b) => b.height - a.height);
 
       const histogram = {};
       let max         = 0;
@@ -517,6 +495,7 @@ export class LoaderModule implements ILoaderModule {
 
     this.logger.info('Finished sync');
     await this.bus.message('syncFinished');
+
   }
 
   private async syncTimer() {
@@ -529,7 +508,8 @@ export class LoaderModule implements ILoaderModule {
         syncing     : this.isSyncing,
       });
 
-      if (this.loaded && !this.isSyncing && this.blocksModule.lastReceipt.isStale()) {
+      const canSync = this.loaded && !this.isSyncing;
+      if (canSync && (this.blocksModule.lastReceipt.isStale() || this.config.forging.transactionsPolling)) {
         await promiseRetry(async (retries) => {
           try {
             await this.sync();
@@ -538,8 +518,53 @@ export class LoaderModule implements ILoaderModule {
             retries(err);
           }
         }, { retries: this.retries });
+
+        // IF polling is enabled then poolling sync both txs and signatures.
+        if (this.config.forging.transactionsPolling) {
+          this.logger.info('Polling transactions and signatures');
+          await this.syncTransactions();
+          await this.syncSignatures();
+          this.logger.info('Finshed polling');
+        }
       }
     }, this.syncInterval);
+  }
+
+  /**
+   * Tries loading transactions from peers for this.retries times or logs errors
+   */
+  private async syncTransactions() {
+    try {
+      await promiseRetry(async (retry) => {
+        try {
+          await this.loadTransactions();
+        } catch (e) {
+          this.logger.warn('Error loading transactions... Retrying... ', e);
+          retry(e);
+        }
+      }, { retries: this.retries });
+    } catch (e) {
+      this.logger.log('Unconfirmed transactions loader error', e);
+    }
+  }
+
+  /**
+   * Tries loading multisig transactions from peers for this.retries times or logs errors
+   */
+  private async syncSignatures() {
+    // load multisignature transactions
+    try {
+      await promiseRetry(async (retry) => {
+        try {
+          await this.loadSignatures();
+        } catch (e) {
+          this.logger.warn('Error loading transactions... Retrying... ', e);
+          retry(e);
+        }
+      }, { retries: this.retries });
+    } catch (e) {
+      this.logger.log('Multisig pending transactions loader error', e);
+    }
   }
 
   /**
@@ -596,32 +621,13 @@ export class LoaderModule implements ILoaderModule {
       throw new Error('Cannot validate load transactions schema against peer');
     }
 
-    const { transactions }: { transactions: Array<IBaseTransaction<any>> } = res.body;
+    const { transactions }: { transactions: Array<ITransportTransaction<any>> } = res.body;
     for (const tx of transactions) {
       try {
-        // Perform validation and throw if error
-        this.transactionLogic.objectNormalize(tx);
-      } catch (e) {
-        this.logger.debug('Transaction normalization failed', { err: e.toString(), module: 'loader', tx });
-
-        this.logger.warn(['Transaction', tx.id, 'is not valid, peer removed'].join(' '), peer.string);
-
-        // Remove invalid peer as a mechanism to discourage invalid processing.
-        this.peersModule.remove(peer.ip, peer.port);
-        throw e;
+        await this.transportModule.receiveTransaction(tx, peer, true, 'LoaderModule.loadTransactions', false);
+      } catch (err) {
+        this.logger.debug(err, tx);
       }
-    }
-
-    // Process unconfirmed transaction
-    for (const tx of transactions) {
-      await
-        this.balancesSequence.addAndPromise(async () => {
-          try {
-            await this.transactionsModule.processUnconfirmedTransaction(tx, false, true);
-          } catch (err) {
-            this.logger.debug(err);
-          }
-        });
     }
 
   }

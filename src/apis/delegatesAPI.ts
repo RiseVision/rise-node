@@ -280,6 +280,7 @@ export class DelegatesAPI {
 
   @Post('/forging/disable')
   @ValidateSchema()
+  @UseBefore(ForgingApisWatchGuard)
   public async forgingDisable(@SchemaValid(schema.disableForging)
                               @Body() params: { secret: string, publicKey: string }) {
     const kp = this.ed.makeKeypair(crypto
@@ -291,7 +292,7 @@ export class DelegatesAPI {
       throw new APIError('Invalid passphrase', 200);
     }
 
-    if (typeof(this.forgeModule.isForgeEnabledOn(pk)) === 'undefined') {
+    if (!this.forgeModule.isForgeEnabledOn(pk)) {
       throw new APIError('Forging is already disabled', 200);
     }
 

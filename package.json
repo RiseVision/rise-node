@@ -9,7 +9,8 @@
     "test-all": "NODE_ENV=test mocha  --bail --exit --require ts-node/register './tests/unit/**/*.spec.ts' './tests/integration/**/*.spec.ts'",
     "transpile": "shx rm -rf dist; tsc",
     "test-cover-unit": "nyc -e '.ts' -x 'tests/**' -r lcov npm run test-unit && cat ./coverage/lcov.info | coveralls",
-    "test-cover-all": "nyc -e '.ts' -x 'tests/**' -r lcov npm run test-all && cat ./coverage/lcov.info | coveralls"
+    "test-cover-all": "nyc -e '.ts' -x 'tests/**' -r lcov npm run test-all && cat ./coverage/lcov.info | coveralls",
+    "static-analysis": "tslint --force --project ./tsconfig.json 'src/**/*.ts'"
   },
   "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
   "license": "GPL-3.0",
@@ -84,7 +85,9 @@
     "chai": "=4.1.2",
     "chai-arrays": "=2.0.0",
     "chai-as-promised": "^7.1.1",
+    "chai-sorted": "^0.2.0",
     "coveralls": "=2.11.16",
+    "dpos-api-wrapper": "^1.3.2",
     "dpos-offline": "=1.4.0",
     "mocha": "=5.0.5",
     "moment": "=2.21.0",
@@ -97,6 +100,7 @@
     "supertest": "=3.0.0",
     "ts-node": "^5.0.1",
     "tslint": "^5.8.0",
+    "tslint-sonarts": "^1.6.0",
     "typescript": "=2.6.2"
   }
 }

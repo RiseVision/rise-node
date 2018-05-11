@@ -85,11 +85,13 @@ export interface AppConfig {
   };
 
   forging: {
-    force: boolean,
+    force: boolean
     secret: string[]
     access: {
       whiteList: string[]
     }
+    transactionsPolling?: boolean
+    pollingInterval?: number
   };
 
   loading: {
@@ -110,6 +112,7 @@ export interface PeerHeaders {
   nethash: string;
   broadhash: string;
   nonce: string;
+  firewalled?: string;
 }
 
 type BaseDBOp<T extends Model<T>> = {

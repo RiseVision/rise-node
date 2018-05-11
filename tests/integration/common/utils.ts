@@ -81,6 +81,10 @@ export const createRandomWallet  = (): LiskWallet => {
   return new dposOffline.wallets.LiskLikeWallet(uuid.v4(), 'R');
 };
 
+export const createWallet  = (secret: string): LiskWallet => {
+  return new dposOffline.wallets.LiskLikeWallet(secret, 'R');
+};
+
 export const createVoteTransaction = async (confirmations: number, from: LiskWallet, to: publicKey, add: boolean, obj: any = {}): Promise<ITransaction> => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
   const tx           = txCrafter.createVoteTransaction(from, systemModule.getFees().fees.vote, {

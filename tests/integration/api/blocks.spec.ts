@@ -18,6 +18,7 @@ describe('api/blocks', () => {
         checkIntParam('offset', '/api/blocks/', { min: 0 });
       });
       checkPubKey('generatorPublicKey', '/api/blocks');
+
       it('should return an array of blocks', async () => {
         return supertest(initializer.appManager.expressApp)
           .get('/api/blocks')
@@ -27,7 +28,10 @@ describe('api/blocks', () => {
             expect(response.body).to.haveOwnProperty('blocks');
             expect(response.body.blocks).to.be.an('array');
             expect(response.body.blocks.length).to.be.eq(1);
+<<<<<<< HEAD
+=======
             expect(response.body.blocks[0].transactions.length).to.be.eq(303);
+>>>>>>> feature/sequelize
           });
       });
       it('bau', async () => {
@@ -135,6 +139,7 @@ describe('api/blocks', () => {
           expect(response.body.fees).to.haveOwnProperty('multisignature');
         });
     });
+
     it('should use provided height', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/blocks/getFees?height=10000&asd=asd')
@@ -169,6 +174,7 @@ describe('api/blocks', () => {
       '/api/blocks/getReward'
     );
   });
+
   describe('/getSupply', () => {
     checkReturnObjKeyVal(
       'supply',
@@ -176,6 +182,7 @@ describe('api/blocks', () => {
       '/api/blocks/getSupply'
     );
   });
+
   describe('/getStatus', () => {
     checkReturnObjKeyVal('nethash', 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6', '/api/blocks/getStatus');
     checkReturnObjKeyVal('broadhash', 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6', '/api/blocks/getStatus');
@@ -185,5 +192,4 @@ describe('api/blocks', () => {
     checkReturnObjKeyVal('reward', 0, '/api/blocks/getStatus');
     checkReturnObjKeyVal('supply', 10999999991000000, '/api/blocks/getStatus');
   });
-
 });
