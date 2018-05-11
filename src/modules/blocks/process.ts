@@ -1,8 +1,7 @@
 import { inject, injectable, tagged } from 'inversify';
 import * as _ from 'lodash';
-import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
-import { catchToLoggerAndRemapError, constants, ForkType, IKeypair, ILogger, Sequence } from '../../helpers/';
+import { constants, ForkType, IKeypair, ILogger, Sequence } from '../../helpers/';
 import { WrapInDBSequence, WrapInDefaultSequence } from '../../helpers/decorators/wrapInSequence';
 import { ISlots } from '../../ioc/interfaces/helpers';
 import {
@@ -26,18 +25,20 @@ import {
   ITransportModule
 } from '../../ioc/interfaces/modules/';
 import { Symbols } from '../../ioc/symbols';
-import { BasePeerType, SignedAndChainedBlockType, SignedBlockType, } from '../../logic/';
+import {
+  BasePeerType,
+  SignedAndChainedBlockType,
+  SignedBlockType,
+} from '../../logic/';
 import { IBaseTransaction } from '../../logic/transactions/';
+import { BlocksModel, TransactionsModel } from '../../models';
 import schema from '../../schema/blocks';
-import sql from '../../sql/blocks';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
 
 @injectable()
 export class BlocksModuleProcess implements IBlocksModuleProcess {
 
   // Generics
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.generic.zschema)
@@ -89,6 +90,12 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   @inject(Symbols.modules.transport)
   private transportModule: ITransportModule;
 
+  // models
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
+  @inject(Symbols.models.transactions)
+  private TransactionsModel: typeof TransactionsModel;
+
   private isCleaning: boolean = false;
 
   public cleanup() {
@@ -126,14 +133,15 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     }
 
     // Check that block with ID, previousBlock and height exists in database
-    const prevBlockRows = await this.db.query(sql.getCommonBlock(commonResp.common), {
-      height       : commonResp.common.height,
-      id           : commonResp.common.id,
-      previousBlock: commonResp.common.previousBlock,
-    })
-      .catch(catchToLoggerAndRemapError('Blocks#getCommonBlock error', this.logger));
+    const matchingCount = await this.BlocksModel.count({
+      where: {
+        height       : commonResp.common.height,
+        id           : commonResp.common.id,
+        previousBlock: commonResp.common.previousBlock,
+      },
+    });
 
-    if (!prevBlockRows.length || !prevBlockRows[0].count) {
+    if (matchingCount === 0) {
       // Block does not exist  - comparison failed.
       if (this.appStateLogic.getComputed('node.poorConsensus')) {
         return this.blocksChainModule.recoverChain();
@@ -155,16 +163,22 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
    */
   @WrapInDBSequence
   // tslint:disable-next-line max-line-length
-  public async loadBlocksOffset(limit: number, offset: number = 0, verify: boolean): Promise<SignedAndChainedBlockType> {
+  public async loadBlocksOffset(limit: number, offset: number = 0, verify: boolean): Promise<BlocksModel> {
     const newLimit = limit + (offset || 0);
     const params   = { limit: newLimit, offset: offset || 0 };
 
     this.logger.debug('Loading blocks offset', { limit, offset, verify });
 
-    const blocks: SignedAndChainedBlockType[] = this.blocksUtilsModule.readDbRows(
-      await this.db.query(sql.loadBlocksOffset, params)
-        .catch(catchToLoggerAndRemapError('Blocks#loadBlocksOffset error', this.logger))
-    );
+    const blocks: BlocksModel[] = await this.BlocksModel.findAll({
+      include: [ TransactionsModel ],
+      order: ['height', 'rowId'],
+      where: {
+        height: {
+          $gte: params.offset,
+          $lt : params.limit,
+        },
+      },
+    });
 
     // Cycle through every block and apply it.
     for (const block of blocks) {
@@ -186,7 +200,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       }
 
       if (block.id === this.genesisBlock.id) {
-        await this.blocksChainModule.applyGenesisBlock(block);
+        await this.blocksChainModule.applyGenesisBlock(this.genesisBlock);
       } else {
         // Apply block - broadcast: false, saveBlock: false
         // FIXME: Looks like we are missing some validations here, because applyBlock is
@@ -198,6 +212,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       this.blocksModule.lastBlock = block;
 
     }
+
     return this.blocksModule.lastBlock;
   }
 
@@ -240,14 +255,6 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         );
         throw err;
       }
-      // tslint:disable max-line-length
-      // if (block.height % 5000 === 0) {
-      //   console.log('backupping');
-      //   await (require('child-process-promise').exec(`${__dirname}/../../../.devutils/dumpdb.sh`));
-      //   await (require('child-process-promise').exec(`mv ${__dirname}/../../../backup.tar ${__dirname}/../../../dumps/backup_${block.height}.tar`));
-      //
-      // }
-      // tslint:enable max-line-length
     }
 
     return lastValidBlock;
@@ -357,7 +364,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   /**
    * Receive block detected as fork cause 1: Consecutive height but different previous block id
    */
-  private async receiveForkOne(block: SignedBlockType, lastBlock: SignedBlockType) {
+  private async receiveForkOne(block: SignedBlockType, lastBlock: BlocksModel) {
     const tmpBlock = _.clone(block);
 
     // Fork: Consecutive height but different previous block id
@@ -371,7 +378,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       try {
         const tmpBlockN = this.blockLogic.objectNormalize(tmpBlock);
         await this.delegatesModule.assertValidBlockSlot(block);
-        const check     = this.blocksVerifyModule.verifyReceipt(tmpBlockN);
+        const check = this.blocksVerifyModule.verifyReceipt(tmpBlockN);
         if (!check.verified) {
           this.logger.error(`Block ${tmpBlockN.id} verification failed`, check.errors.join(', '));
           throw new Error(check.errors[0]);

@@ -1,3 +1,4 @@
+import * as isEmpty from 'is-empty';
 /**
  * Removes empty stuff from object either recursively or not
  * @param {T} obj
@@ -14,5 +15,15 @@ export function removeEmptyObjKeys<T>(obj: T, recursive: boolean = false): T {
       }
     }
   }
+  for (const key of Object.getOwnPropertySymbols(obj)) {
+    if (obj[key] === null || typeof(obj[key]) === 'undefined') {
+      delete obj[key];
+    } else {
+      if (typeof(obj[key]) === 'object' && recursive) {
+        removeEmptyObjKeys(obj[key], true);
+      }
+    }
+  }
+
   return obj;
 }

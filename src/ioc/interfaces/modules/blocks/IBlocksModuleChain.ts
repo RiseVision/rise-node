@@ -1,12 +1,8 @@
+import { Transaction } from 'sequelize';
 import { SignedAndChainedBlockType, SignedBlockType } from '../../../../logic';
 import { IModule } from '../IModule';
 
 export interface IBlocksModuleChain extends IModule {
-
-  /**
-   * Deletes a block from the Database table
-   */
-  deleteBlock(blockId: string): Promise<void>;
 
   /**
    * Delete last block and return the new last
@@ -14,11 +10,11 @@ export interface IBlocksModuleChain extends IModule {
   deleteLastBlock(): Promise<SignedAndChainedBlockType>;
 
   /**
-   * Deletes blocks after a certain block id.
-   * @param {string} blockId
+   * Deletes blocks after a certain block height (included).
+   * @param {number} height
    * @returns {Promise<void>}
    */
-  deleteAfterBlock(blockId: string): Promise<void>;
+  deleteAfterBlock(height: number): Promise<void>;
 
   /**
    * Recover chain - wrapper for deleteLastBLock
@@ -44,7 +40,8 @@ export interface IBlocksModuleChain extends IModule {
   /**
    * Save block with transactions to database
    * @param {SignedBlockType} b
+   * @param {Transaction} dbTX Database Transaction where to run this against
    * @returns {Promise<void>}
    */
-  saveBlock(b: SignedBlockType): Promise<void>;
+  saveBlock(b: SignedBlockType, dbTX: Transaction): Promise<void>;
 }

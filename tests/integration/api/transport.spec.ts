@@ -232,12 +232,45 @@ describe('api/transport', () => {
   });
 
   describe('/blocks/common', () => {
+    initializer.createBlocks(10, 'single');
     checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
       .get('/peer/blocks/common'));
-    it('should throw if given ids is not csv');
+    it('should throw if given ids is not csv', async () => {
+      const res = await supertest(initializer.appManager.expressApp)
+        .get('/peer/blocks/common?ids=ohh%20yeah')
+        .set(headers)
+        .expect(200);
+      expect(res.body.success).is.false;
+      expect(res.body.error).is.eq('Invalid block id sequence');
+    });
+    it('should throw if more than 10 ids are given', async () => {
+      const res = await supertest(initializer.appManager.expressApp)
+        .get('/peer/blocks/common?ids=1,2,3,4,5,6,7,8,9,0,1')
+        .set(headers)
+        .expect(200);
+      expect(res.body.success).is.false;
+      expect(res.body.error).is.eq('Invalid block id sequence');
+    });
     it('should throw and remove querying peer if one or many ids are not numeric');
-    it('should return commonblocks if any');
-    it('should return null if no common blocks');
+    it('should return the most heigh commonblock if any', async () => {
+      const lastBlock = initializer.appManager.container.get<IBlocksModule>(Symbols.modules.blocks).lastBlock;
+      const genesis = initializer.appManager.container.get<any>(Symbols.generic.genesisBlock);
+      const res = await supertest(initializer.appManager.expressApp)
+        .get(`/peer/blocks/common?ids=${genesis.id},2,33433441728981446756,${lastBlock.previousBlock}`)
+        .set(headers)
+        .expect(200);
+      expect(res.body.success).is.true;
+      expect(res.body.common).is.not.null;
+      expect(res.body.common.height).is.eq(lastBlock.height - 1);
+    });
+    it('should return null if no common blocks', async () => {
+      const res = await supertest(initializer.appManager.expressApp)
+        .get('/peer/blocks/common?ids=1,2,3,')
+        .set(headers)
+        .expect(200);
+      expect(res.body.success).is.true;
+      expect(res.body.common).is.null;
+    });
   });
 
   describe('/blocks', () => {

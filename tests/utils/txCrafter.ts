@@ -2,7 +2,19 @@ import { dposOffline } from 'dpos-offline';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
 import { generateAccount } from './accountsUtils';
-
+import { IBaseTransaction } from '../../src/logic/transactions';
+export const toBufferedTransaction = <T>(t: ITransaction<any>): IBaseTransaction<T> => {
+  return {... t, ... {
+      requesterPublicKey: t.requesterPublicKey === null || typeof(t.requesterPublicKey) === 'undefined' ?
+        null :
+        Buffer.from(t.requesterPublicKey, 'hex'),
+      senderPublicKey   : Buffer.from(t.senderPublicKey, 'hex'),
+      signSignature     : t.signSignature === null || typeof(t.signSignature) === 'undefined' ?
+        null :
+        Buffer.from(t.signSignature, 'hex'),
+      signature         : Buffer.from(t.signature, 'hex'),
+    }}
+}
 export const createRandomTransactions = (config: { send?: number, vote?: number } = {}): Array<ITransaction> => {
   const send = config.send || 0;
   const vote = config.vote || 0;

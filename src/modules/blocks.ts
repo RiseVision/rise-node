@@ -2,12 +2,12 @@ import { inject, injectable } from 'inversify';
 import { constants as constantsType, ILogger, wait } from '../helpers/';
 import { IBlocksModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { SignedAndChainedBlockType } from '../logic/';
+import { BlocksModel } from '../models';
 
 // TODO Eventually remove this module and use appState instead.
 @injectable()
 export class BlocksModule implements IBlocksModule {
-  public lastBlock: SignedAndChainedBlockType;
+  public lastBlock: BlocksModel;
   public lastReceipt: { get: () => number, isStale: () => boolean, update: (time?: number) => void };
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;

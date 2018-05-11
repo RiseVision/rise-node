@@ -1,11 +1,14 @@
 import * as bodyParser from 'body-parser';
+import * as cls from 'cls-hooked';
 import * as compression from 'compression';
 import * as cors from 'cors';
 import * as express from 'express';
 import * as http from 'http';
 import { Container } from 'inversify';
+import * as pg from 'pg';
 import 'reflect-metadata';
 import { useContainer as useContainerForHTTP, useExpressServer } from 'routing-controllers';
+import { Model, Sequelize } from 'sequelize-typescript';
 import * as socketIO from 'socket.io';
 import * as uuid from 'uuid';
 import { allControllers, APIErrorHandler } from './apis';
@@ -14,26 +17,80 @@ import { ForgingApisWatchGuard } from './apis/utils/forgingApisWatchGuard';
 import { SuccessInterceptor } from './apis/utils/successInterceptor';
 import { ValidatePeerHeaders } from './apis/utils/validatePeerHeaders';
 import {
-  applyExpressLimits, Bus, cache, catchToLoggerAndRemapError, cbToPromise, constants as constantsType, Database, Ed,
-  ExceptionsManager, ILogger, JobsQueue, middleware, Sequence, Slots, z_schema,
+  applyExpressLimits,
+  Bus,
+  cache,
+  catchToLoggerAndRemapError,
+  cbToPromise,
+  constants as constantsType,
+  DBHelper,
+  Ed,
+  ExceptionsManager,
+  ILogger,
+  JobsQueue,
+  middleware,
+  Migrator,
+  Sequence,
+  Slots,
+  z_schema,
 } from './helpers/';
-import { IPeerLogic, ITransactionLogic } from './ioc/interfaces/logic';
+import { IBlockLogic, IPeerLogic, ITransactionLogic } from './ioc/interfaces/logic';
 import { IBlocksModuleChain } from './ioc/interfaces/modules';
 import { Symbols } from './ioc/symbols';
 import {
-  AccountLogic, AppState, BasePeerType, BlockLogic, BlockRewardLogic, BroadcasterLogic, PeerLogic, PeersLogic,
+  AccountLogic,
+  AppState,
+  BasePeerType,
+  BlockLogic,
+  BlockRewardLogic,
+  BroadcasterLogic,
+  PeerLogic,
+  PeersLogic,
   RoundLogic,
   RoundsLogic,
-  SignedAndChainedBlockType, TransactionLogic, TransactionPool
+  SignedAndChainedBlockType,
+  TransactionLogic,
+  TransactionPool
 } from './logic/';
 import {
-  BaseTransactionType, MultiSignatureTransaction, RegisterDelegateTransaction, SecondSignatureTransaction,
-  SendTransaction, VoteTransaction
+  BaseTransactionType,
+  MultiSignatureTransaction,
+  RegisterDelegateTransaction,
+  SecondSignatureTransaction,
+  SendTransaction,
+  VoteTransaction
 } from './logic/transactions';
-
 import {
-  AccountsModule, BlocksModule, Cache, DelegatesModule, DummyCache, ForgeModule, LoaderModule, MultisignaturesModule,
-  PeersModule, RoundsModule, SystemModule, TransactionsModule, TransportModule
+  Accounts2DelegatesModel,
+  Accounts2MultisignaturesModel,
+  Accounts2U_DelegatesModel,
+  Accounts2U_MultisignaturesModel,
+  AccountsModel,
+  BlocksModel,
+  DelegatesModel,
+  ForksStatsModel, MigrationsModel,
+  MultiSignaturesModel,
+  PeersModel,
+  RoundsFeesModel,
+  RoundsModel,
+  SignaturesModel,
+  TransactionsModel,
+  VotesModel
+} from './models';
+import {
+  AccountsModule,
+  BlocksModule,
+  Cache,
+  DelegatesModule,
+  DummyCache,
+  ForgeModule,
+  LoaderModule,
+  MultisignaturesModule,
+  PeersModule,
+  RoundsModule,
+  SystemModule,
+  TransactionsModule,
+  TransportModule
 } from './modules/';
 import { BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify } from './modules/blocks/';
 import { ForkModule } from './modules/fork';
@@ -57,8 +114,10 @@ export class AppManager {
               private genesisBlock: SignedAndChainedBlockType,
               private constants: typeof constantsType,
               private excCreators: Array<(ex: ExceptionsManager) => void>) {
-    this.appConfig.nethash = genesisBlock.payloadHash;
+    this.appConfig.nethash = genesisBlock.payloadHash.toString('hex');
     // this.container.applyMiddleware(theLogger);
+    // Sets the int8 (64bit integer) to be parsed as int instead of being returned as text
+    pg.types.setTypeParser(20, 'text', parseInt);
   }
 
   /**
@@ -103,14 +162,14 @@ export class AppManager {
     const app = this.container.get<express.Application>(Symbols.generic.expressApp);
     applyExpressLimits(app, this.appConfig);
 
-    app.use(compression({level: 9}));
+    app.use(compression({ level: 9 }));
     app.use(cors());
     app.options('*', cors());
 
     app.use(express.static(`${__dirname}/../public`));
-    app.use(bodyParser.raw({limit: '2mb'}));
-    app.use(bodyParser.urlencoded({extended: true, limit: '2mb', parameterLimit: 5000}));
-    app.use(bodyParser.json({limit: '2mb'}));
+    app.use(bodyParser.raw({ limit: '2mb' }));
+    app.use(bodyParser.urlencoded({ extended: true, limit: '2mb', parameterLimit: 5000 }));
+    app.use(bodyParser.json({ limit: '2mb' }));
 
     app.use(middleware.logClientConnections(this.logger));
     // Disallow inclusion in iframe.
@@ -156,16 +215,38 @@ export class AppManager {
   public async initAppElements() {
     this.expressApp = express();
 
-    this.server    = http.createServer(this.expressApp);
-    const io       = socketIO(this.server);
-    const db       = await Database.connect(this.appConfig.db, this.logger);
-    const theCache = await cache.connect(
+    this.server = http.createServer(this.expressApp);
+    const io    = socketIO(this.server);
+    // const db        = await Database.connect(this.appConfig.db, this.logger);
+    // ((require('fs'))).unlinkSync(`${__dirname}/../sequelize.log`);
+    const namespace = cls.createNamespace('sequelize-namespace');
+
+    //(Sequelize as any).__proto__.useCls(namespace);
+    (Sequelize as any).__proto__.useCLS(namespace);
+    //Sequelize.useCLS(namespace);
+    const sequelize = new Sequelize({
+      // logging(msg) {
+      //   (require('fs')).appendFileSync(`${__dirname}/../sequelize.log`, msg+"\n");
+      // },
+      database: this.appConfig.db.database,
+      dialect : 'postgres',
+      host    : this.appConfig.db.host,
+      logging : false,
+      password: this.appConfig.db.password,
+      pool    : {
+        idle: this.appConfig.db.poolIdleTimeout,
+        max : this.appConfig.db.poolSize,
+      },
+      port    : this.appConfig.db.port,
+      username: this.appConfig.db.user,
+    });
+    const theCache  = await cache.connect(
       this.appConfig.cacheEnabled,
       this.appConfig.redis,
       this.logger
     );
-    const ed       = new Ed();
-    const bus      = new Bus();
+    const ed        = new Ed();
+    const bus       = new Bus();
 
     // HTTP APIs
     for (const controller of allControllers) {
@@ -183,11 +264,12 @@ export class AppManager {
 
     // Generics
     this.container.bind(Symbols.generic.appConfig).toConstantValue(this.appConfig);
-    this.container.bind(Symbols.generic.db).toConstantValue(db);
     this.container.bind(Symbols.generic.expressApp).toConstantValue(this.expressApp);
     this.container.bind(Symbols.generic.genesisBlock).toConstantValue(this.genesisBlock);
     this.container.bind(Symbols.generic.nonce).toConstantValue(this.nonce);
     this.container.bind(Symbols.generic.redisClient).toConstantValue(theCache.client);
+    this.container.bind(Symbols.generic.sequelize).toConstantValue(sequelize);
+    this.container.bind(Symbols.generic.sequelizeNamespace).toConstantValue(namespace);
     this.container.bind(Symbols.generic.socketIO).toConstantValue(io);
     this.container.bind(Symbols.generic.versionBuild).toConstantValue(this.versionBuild);
     this.container.bind(Symbols.generic.zschema).toConstantValue(this.schema);
@@ -195,10 +277,12 @@ export class AppManager {
     // Helpers
     this.container.bind(Symbols.helpers.bus).toConstantValue(bus);
     this.container.bind(Symbols.helpers.constants).toConstantValue(this.constants);
+    this.container.bind(Symbols.helpers.db).to(DBHelper).inSingletonScope();
     this.container.bind(Symbols.helpers.ed).toConstantValue(ed);
     this.container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManager).inSingletonScope();
     this.container.bind(Symbols.helpers.jobsQueue).to(JobsQueue).inSingletonScope();
     this.container.bind(Symbols.helpers.logger).toConstantValue(this.logger);
+    this.container.bind(Symbols.helpers.migrator).to(Migrator).inSingletonScope();
     // this.container.bind(Symbols.helpers.sequence).toConstantValue();
     const self = this;
     [Symbols.tags.helpers.dbSequence, Symbols.tags.helpers.defaultSequence, Symbols.tags.helpers.balancesSequence]
@@ -223,7 +307,7 @@ export class AppManager {
     this.container.bind(Symbols.logic.peerFactory).toFactory((ctx) => {
       return (peer: BasePeerType) => {
         const p = ctx.container.get<IPeerLogic>(Symbols.logic.peer);
-        p.accept({... {}, ...peer});
+        p.accept({ ... {}, ...peer });
         return p;
       };
     });
@@ -261,6 +345,24 @@ export class AppManager {
     this.container.bind(Symbols.modules.transactions).to(TransactionsModule).inSingletonScope();
     this.container.bind(Symbols.modules.transport).to(TransportModule).inSingletonScope();
 
+    // Add models
+    this.container.bind(Symbols.models.accounts).toConstructor(AccountsModel);
+    this.container.bind(Symbols.models.accounts2Delegates).toConstructor(Accounts2DelegatesModel);
+    this.container.bind(Symbols.models.accounts2Multisignatures).toConstructor(Accounts2MultisignaturesModel);
+    this.container.bind(Symbols.models.accounts2U_Delegates).toConstructor(Accounts2U_DelegatesModel);
+    this.container.bind(Symbols.models.accounts2U_Multisignatures).toConstructor(Accounts2U_MultisignaturesModel);
+    this.container.bind(Symbols.models.blocks).toConstructor(BlocksModel);
+    this.container.bind(Symbols.models.delegates).toConstructor(DelegatesModel);
+    this.container.bind(Symbols.models.forkStats).toConstructor(ForksStatsModel);
+    this.container.bind(Symbols.models.migrations).toConstructor(MigrationsModel);
+    this.container.bind(Symbols.models.multisignatures).toConstructor(MultiSignaturesModel);
+    this.container.bind(Symbols.models.peers).toConstructor(PeersModel);
+    this.container.bind(Symbols.models.roundsFees).toConstructor(RoundsFeesModel);
+    this.container.bind(Symbols.models.rounds).toConstructor(RoundsModel);
+    this.container.bind(Symbols.models.signatures).toConstructor(SignaturesModel);
+    this.container.bind(Symbols.models.transactions).toConstructor(TransactionsModel);
+    this.container.bind(Symbols.models.votes).toConstructor(VotesModel);
+
     // Add exceptions by attaching exception handlers to the manager.
     const exceptionsManager = this.container.get<ExceptionsManager>(Symbols.helpers.exceptionsManager);
     this.excCreators
@@ -268,13 +370,24 @@ export class AppManager {
   }
 
   public async finishBoot() {
-    const bus   = this.container.get<Bus>(Symbols.helpers.bus);
-    bus.modules = this.getModules();
+    const bus       = this.container.get<Bus>(Symbols.helpers.bus);
+    const sequelize = this.container.get<Sequelize>(Symbols.generic.sequelize);
+    bus.modules     = this.getModules();
 
     // Register transaction types.
     const txLogic = this.container.get<ITransactionLogic>(Symbols.logic.transaction);
-    const txs     = this.getElementsFromContainer<BaseTransactionType<any>>(Symbols.logic.transactions);
+    const txs     = this.getElementsFromContainer<BaseTransactionType<any, any>>(Symbols.logic.transactions);
     txs.forEach((tx) => txLogic.attachAssetType(tx));
+
+    // Register models
+    const models = this.getElementsFromContainer<typeof Model>(Symbols.models);
+    sequelize.addModels(models);
+
+    // Start migrations/runtime queries.
+    await this.container.get<Migrator>(Symbols.helpers.migrator).init();
+
+    // Move the genesis from string signatures to buffer signatures
+    this.container.get<IBlockLogic>(Symbols.logic.block).objectNormalize(this.genesisBlock);
 
     const blocksChainModule = this.container.get<IBlocksModuleChain>(Symbols.modules.blocksSubModules.chain);
     await blocksChainModule.saveGenesisBlock();
@@ -290,7 +403,9 @@ export class AppManager {
     await loaderModule.loadBlockChain()
       .catch(catchToLoggerAndRemapError('Cannot load blockchain', this.logger));
     this.logger.info('App Booted');
-
+    // const aM = this.container.get<IAccountsModule>(Symbols.modules.accounts);
+    // const bit = await aM.getAccount({address: '15326312953541715317R'});
+    // console.log(bit);
   }
 
   private getElementsFromContainer<T = any>(symbols: { [k: string]: symbol | { [k: string]: symbol } }): T[] {

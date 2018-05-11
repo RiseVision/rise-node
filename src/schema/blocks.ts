@@ -30,6 +30,9 @@ export default {
       },
       orderBy           : {
         type: 'string',
+        enum: [
+          'height:asc', 'height:desc',
+        ],
       },
       offset            : {
         type   : 'integer',

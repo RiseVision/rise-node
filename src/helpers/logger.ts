@@ -21,7 +21,7 @@ export interface ILogger {
 
   setLevel(lvl: string): void;
 }
-
+const startTime = Date.now();
 export default (config: any = {}): ILogger => {
   config                 = config || {};
   const exports: ILogger = {} as any;
@@ -89,6 +89,7 @@ export default (config: any = {}): ILogger => {
         // DO not process any further if error level does not need to be processed.
         return;
       }
+      const elapsed = Date.now() - startTime;
       const logData = {
         data     : null,
         level    : name,
@@ -112,10 +113,10 @@ export default (config: any = {}): ILogger => {
 
       if (config.echo && config.levels[config.echo] <= config.levels[logData.level]) {
         if (logData.data) {
-          console.log('[' + logData.symbol.bgYellow.black + ']', logData.timestamp.grey, '|', logData.message, '-',
+          console.log('[' + logData.symbol.bgYellow.black + ']', logData.timestamp.grey, '|', elapsed.toString().cyan, '|', logData.message, '-',
             logData.data);
         } else {
-          console.log('[' + logData.symbol.bgYellow.black + ']', logData.timestamp.grey, '|', logData.message);
+          console.log('[' + logData.symbol.bgYellow.black + ']', logData.timestamp.grey, '|', elapsed.toString().cyan, '|', logData.message);
         }
       }
     }

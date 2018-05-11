@@ -29,7 +29,9 @@ export class InnerTXQueue<T = { receivedAt: Date }> {
       delete this.index[id];
       this.transactions[index] = undefined;
       delete this.payload[id];
+      return true;
     }
+    return false;
   }
 
   public getPayload(tx: IBaseTransaction<any>): T {
@@ -408,10 +410,9 @@ export class TransactionPool implements ITransactionPoolLogic {
 
     const sender = await this.accountsModule.setAccountAndGet({ publicKey: transaction.senderPublicKey });
 
-    const isMultisigAccount = Array.isArray(sender.multisignatures) && sender.multisignatures.length > 0;
+    const isMultisigAccount = sender.isMultisignature();
     if (isMultisigAccount) {
-      // TODO: fixme please
-      (transaction as any).signatures = (transaction as any).signatures || [];
+      transaction.signatures = transaction.signatures || [];
     }
     let requester = null;
     if (sender && transaction.requesterPublicKey && isMultisigAccount) {

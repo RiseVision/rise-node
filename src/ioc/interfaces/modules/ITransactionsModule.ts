@@ -1,6 +1,10 @@
 import { SignedBlockType } from '../../../logic';
 import { IBaseTransaction, IConfirmedTransaction } from '../../../logic/transactions';
 import { IModule } from './IModule';
+import { TransactionsModel } from '../../../models/TransactionsModel';
+import { BlocksModel } from '../../../models/BlocksModel';
+import { AccountsModel } from '../../../models/AccountsModel';
+import { Transaction } from 'sequelize';
 
 export interface ITransactionsModule extends IModule {
   /**
@@ -46,7 +50,7 @@ export interface ITransactionsModule extends IModule {
   /**
    * Removes transaction from unconfirmed, queued and multisignature.
    */
-  removeUnconfirmedTransaction(id: string): void;
+  removeUnconfirmedTransaction(id: string): boolean;
 
   /**
    * Checks kind of unconfirmed transaction and process it, resets queue
@@ -73,22 +77,22 @@ export interface ITransactionsModule extends IModule {
   /**
    * Applies confirmed transaction.
    */
-  apply(transaction: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void>;
+  apply(transaction: IBaseTransaction<any>|IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<void>;
 
   /**
    * Undoes confirmed transaction.
    */
-  undo(transaction: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void>;
+  undo(transaction: IBaseTransaction<any>, block: BlocksModel, sender: AccountsModel): Promise<void>;
 
   /**
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
-  applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: any): Promise<void>;
+  applyUnconfirmed(transaction: IBaseTransaction<any>|IConfirmedTransaction<any>, sender: AccountsModel): Promise<void>;
 
   /**
    * Validates account and Undoes unconfirmed transaction.
    */
-  undoUnconfirmed(transaction): Promise<void>;
+  undoUnconfirmed(transaction: IBaseTransaction<any>): Promise<void>;
 
   /**
    * Receives transactions
@@ -109,11 +113,9 @@ export interface ITransactionsModule extends IModule {
    */
   isLoaded(): boolean;
 
-  list(filter): Promise<{ count: number, transactions: Array<IConfirmedTransaction<any>> }>;
-
   /**
    * Get transaction by id
    */
-  getByID<T = any>(id: string): Promise<IConfirmedTransaction<T>>;
+  getByID<T = any>(id: string): Promise<TransactionsModel>;
 
 }

@@ -1,40 +1,57 @@
 import { BigNumber } from 'bignumber.js';
 import * as fs from 'fs';
+import { inject, injectable } from 'inversify';
 import * as path from 'path';
-import * as pgPromise from 'pg-promise';
-import { IDatabase } from 'pg-promise';
+import * as sequelize from 'sequelize';
+import { Symbols } from '../ioc/symbols';
+import { MigrationsModel } from '../models';
 import MyBigNumb from './bignum';
 
-export class Migrator {
-  constructor(private pgp: pgPromise.IMain, private db: IDatabase<any>) {
 
+@injectable()
+export class Migrator {
+  @inject(Symbols.models.migrations)
+  private MigrationsModel: typeof MigrationsModel;
+
+
+  public async init(): Promise<void> {
+    const hasMigrations   = await this.checkMigrations();
+    const lastMigration   = await this.getLastMigration(hasMigrations);
+    const pending         = await this.readPendingMigrations(lastMigration);
+    const insertedPending = await this.applyPendingMigrations(pending);
+    await this.insertAppliedMigrations(insertedPending);
+    await this.applyRuntimeQueryFile();
   }
 
-  public async checkMigrations(): Promise<boolean> {
-    const row = await this.db.one('SELECT to_regclass(\'migrations\')');
-    return row.to_regclass;
+  private async checkMigrations(): Promise<boolean> {
+    const [row] = await this.MigrationsModel.sequelize
+      .query('SELECT to_regclass(\'migrations\')', { raw: true, type: sequelize.QueryTypes.SELECT });
+    return row.to_regclass !== null;
   }
 
   /**
    * Gets last migration record from db table
    */
-  public async getLastMigration(hasMigration: boolean): Promise<BigNumber> {
+  private async getLastMigration(hasMigration: boolean): Promise<BigNumber> {
     if (!hasMigration) {
       return;
     }
 
-    const rows = await this.db.query('SELECT * FROM migrations ORDER BY "id" DESC LIMIT 1');
-    if (rows[0]) {
-      rows[0] = new MyBigNumb(rows[0].id);
+    const row = await this.MigrationsModel.findOne({
+      limit: 1,
+      order: [['id', 'DESC']],
+    });
+    if (row) {
+      return new MyBigNumb(row.id);
     }
-    return rows[0];
+    return new MyBigNumb(0);
   }
 
   /**
    * Reads sql migration folder and returns only pending migrations sqls.
    */
   // tslint:disable-next-line max-line-length
-  public async readPendingMigrations(lastMigration: BigNumber): Promise<Array<{ id: BigNumber, name: string, path: string }>> {
+  private async readPendingMigrations(lastMigration: BigNumber): Promise<Array<{ id: BigNumber, name: string, path: string }>> {
     const migrationsPath = path.join(process.cwd(), 'sql', 'migrations');
 
     function matchMigrationName(file) {
@@ -63,10 +80,10 @@ export class Migrator {
       .filter((d) => !lastMigration || d.id.isGreaterThan(lastMigration));
   }
 
-  public async applyPendingMigrations(pendingMigrations: Array<{ id: BigNumber, name: string, path: string }>) {
+  private async applyPendingMigrations(pendingMigrations: Array<{ id: BigNumber, name: string, path: string }>) {
     for (const m of pendingMigrations) {
-      const sql = new (this.pgp.QueryFile)(m.path, { minify: true });
-      await this.db.query(sql);
+      console.log(m.path);
+      await this.MigrationsModel.sequelize.query(fs.readFileSync(m.path, { encoding: 'utf8' }));
     }
     return pendingMigrations;
   }
@@ -74,12 +91,9 @@ export class Migrator {
   /**
    * Inserts into `migrations` table the previous applied migrations.
    */
-  public async insertAppliedMigrations(appMigrs: Array<{ id: BigNumber, name: string, path: string }>) {
+  private async insertAppliedMigrations(appMigrs: Array<{ id: BigNumber, name: string, path: string }>) {
     for (const m of appMigrs) {
-      await this.db.query(
-        'INSERT INTO migrations(id, name) VALUES($1, $2) ON CONFLICT DO NOTHING',
-        [m.id.toString(), m.name]
-      );
+      await this.MigrationsModel.create({ id: m.id.toString(), name: m.name });
     }
   }
 
@@ -88,8 +102,9 @@ export class Migrator {
    * @method
    * @return {function} waterCb with error
    */
-  public applyRuntimeQueryFile() {
-    const sql     = new (this.pgp).QueryFile(path.join(process.cwd(), 'sql', 'runtime.sql'), { minify: true });
-    return this.db.query(sql);
+  private applyRuntimeQueryFile() {
+    return Promise.resolve(
+      this.MigrationsModel.sequelize.query(fs.readFileSync(path.join(process.cwd(), 'sql', 'runtime.sql'), { encoding: 'utf8' }))
+    );
   }
 }
