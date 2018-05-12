@@ -55,7 +55,7 @@ export default {
   minVersion                   : [
     { height: 1, ver: '^0.1.0' },
     { height: 500000,  ver: '>=0.1.0' },
-    { height: 600000,  ver: '>=1.0.0' },
+    { height: 620000,  ver: '>=1.0.0' },
   ],
   fees                         : [
     {
