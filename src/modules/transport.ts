@@ -21,6 +21,7 @@ import peersSchema from '../schema/peers';
 import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
 import { ITransportTransaction } from '../logic/transactions/baseTransactionType';
+import { TransactionsModel } from '../models';
 
 // tslint:disable-next-line
 export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };
@@ -198,7 +199,14 @@ export class TransportModule implements ITransportModule {
    */
   public onUnconfirmedTransaction(transaction: IBaseTransaction<any> & { relays?: number }, broadcast: boolean) {
     if (broadcast && !this.broadcasterLogic.maxRelays(transaction)) {
-      this.broadcasterLogic.enqueue({}, { api: '/transactions', data: { transaction }, method: 'POST' });
+
+      this.broadcasterLogic.enqueue({}, {
+        api   : '/transactions',
+        data  : {
+          transaction: TransactionsModel.toTransportTransaction(transaction),
+        },
+        method: 'POST',
+      });
       this.io.sockets.emit('transactions/change', transaction);
     }
   }
