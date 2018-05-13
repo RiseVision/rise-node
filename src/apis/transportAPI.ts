@@ -32,6 +32,7 @@ function genTransportBlock(block: BlocksModel, extra: Partial<RawFullBlockListTy
       b_id                  : block.id,
       b_version             : block.version,
       b_timestamp           : block.timestamp,
+      b_height              : block.height,
       b_previousBlock       : block.previousBlock,
       b_numberOfTransactions: block.numberOfTransactions,
       b_totalAmount         : block.totalAmount,
