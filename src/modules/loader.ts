@@ -147,8 +147,10 @@ export class LoaderModule implements ILoaderModule {
     await this.syncTimer();
     // If transactions polling is not enabled, sync txs only on boot.
     if (this.loaded && !this.config.forging.transactionsPolling) {
-      await this.syncTransactions();
-      await this.syncSignatures();
+      await this.syncTransactions()
+        .catch((e) => this.logger.info('Failed to sync transactions on startup', e));
+      await this.syncSignatures()
+        .catch((e) => this.logger.info('Failed to sync signatures on startup', e));
     }
   }
 
