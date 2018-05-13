@@ -211,8 +211,14 @@ export class TransportModule implements ITransportModule {
 
       await this.systemModule.update();
       if (!this.broadcasterLogic.maxRelays(block)) {
-        await this.broadcasterLogic.broadcast({ limit: this.constants.maxPeers, broadhash },
-          { api: '/blocks', data: { block }, method: 'POST', immediate: true });
+        // We avoid awaiting the broadcast result as it could result in unnecessary peer removals.
+        // Ex: Peer A, B, C
+        // A broadcasts block to B which wants to rebroadcast to A (which is waiting for B to respond) =>
+        // | - A will remove B as it will timeout and the same will happen to B
+
+        /* await */ this.broadcasterLogic.broadcast({ limit: this.constants.maxPeers, broadhash },
+            { api: '/blocks', data: { block }, method: 'POST', immediate: true })
+            .catch((err) => this.logger.warn('Error broadcasting block', err));
       }
       this.io.sockets.emit('blocks/change', block);
     }
