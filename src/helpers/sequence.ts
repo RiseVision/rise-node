@@ -26,10 +26,7 @@ export class Sequence {
     };
 
     this.namespace = cls.createNamespace(this.tag);
-    this.namespace.run(() => {
-      setImmediate(() => this.nextSequenceTick());
-    });
-
+    setImmediate(() => this.nextSequenceTick());
   }
 
   /**
@@ -41,6 +38,7 @@ export class Sequence {
 
   public addAndPromise<T>(worker: () => Promise<T>): Promise<T> {
     if (this.namespace.get('running') === true) {
+      // console.log('PREVIOUSLY: ',this.namespace.get('stack'));
       throw new Error(`Sequences conflict!! ${this.tag.toString()}`);
     }
     return new Promise((resolve, reject) => {
@@ -60,12 +58,14 @@ export class Sequence {
     if (!task) {
       return setImmediate(cb);
     }
-    this.namespace.set('running', true);
-    task.worker()
-      .then(() => {
-        this.namespace.set('running', false);
-        cb();
-      });
+    this.namespace.run(() => {
+      this.namespace.set('running', true);
+      task.worker()
+        .then(() => {
+          this.namespace.set('running', false);
+          cb();
+        });
+    });
   }
 
   private nextSequenceTick() {
