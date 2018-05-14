@@ -728,7 +728,7 @@ describe('src/modules/transport.ts', () => {
       (inst as any).systemModule.broadhash = 'broadhash';
       systemModule.enqueueResponse('update', Promise.resolve());
       broadcasterLogic.enqueueResponse('maxRelays', false);
-      broadcasterLogic.enqueueResponse('broadcast', false);
+      broadcasterLogic.enqueueResponse('broadcast', Promise.resolve());
     });
 
     it('should call systemModule.update', async () => {
@@ -787,6 +787,19 @@ describe('src/modules/transport.ts', () => {
       inst.onNewBlock(block, broadcast);
 
       expect(broadcasterLogic.stubs.enqueue.notCalled).to.be.true;
+    });
+    it('should ignore broadcast error if any and, more importantly avoid waiting for broadcaster result', async () => {
+      broadcasterLogic.reset();
+      broadcasterLogic.enqueueResponse('maxRelays', false);
+      let finished = false;
+      const promise = wait(1000)
+        .then(() => finished = true);
+
+      broadcasterLogic.enqueueResponse('broadcast', promise);
+
+      await inst.onNewBlock(block, true);
+      expect(finished).to.be.false;
+      await promise;
     });
   });
 
