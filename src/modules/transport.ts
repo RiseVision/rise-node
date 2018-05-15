@@ -21,7 +21,7 @@ import peersSchema from '../schema/peers';
 import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
 import { ITransportTransaction } from '../logic/transactions/baseTransactionType';
-import { TransactionsModel } from '../models';
+import { BlocksModel, TransactionsModel } from '../models';
 
 // tslint:disable-next-line
 export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };
@@ -67,6 +67,10 @@ export class TransportModule implements ITransportModule {
   private systemModule: ISystemModule;
   @inject(Symbols.modules.transactions)
   private transactionModule: ITransactionsModule;
+
+  // models
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
 
   private loaded: boolean = false;
 
@@ -229,7 +233,7 @@ export class TransportModule implements ITransportModule {
         // | - A will remove B as it will timeout and the same will happen to B
 
         /* await */ this.broadcasterLogic.broadcast({ limit: this.constants.maxPeers, broadhash },
-            { api: '/blocks', data: { block }, method: 'POST', immediate: true })
+            { api: '/blocks', data: { block: this.BlocksModel.toStringBlockType(block) }, method: 'POST', immediate: true })
             .catch((err) => this.logger.warn('Error broadcasting block', err));
       }
       this.io.sockets.emit('blocks/change', block);

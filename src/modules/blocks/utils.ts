@@ -192,6 +192,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
       if (typeof(params.lastId) !== 'undefined') {
         const limit = height + (parseInt(`${filter.limit}`, 10) || 1);
         return await this.BlocksModel.findAll({
+          include: [this.TransactionsModel],
           order: ['height', 'rowId'],
           where: {height: {$gt: height, $lt: limit}},
         });

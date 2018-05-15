@@ -17,7 +17,7 @@ import {
 import { Symbols } from '../ioc/symbols';
 import { SignedAndChainedBlockType, SignedAndChainedTransportBlockType } from '../logic';
 import { IBaseTransaction, ITransportTransaction } from '../logic/transactions';
-import { BlocksModel, DelegatesModel, MultiSignaturesModel, SignaturesModel, VotesModel } from '../models';
+import { BlocksModel } from '../models';
 import transportSchema from '../schema/transport';
 import { RawFullBlockListType } from '../types/rawDBTypes';
 import { Partial } from '../types/utils';
@@ -189,15 +189,14 @@ export class TransportAPI {
       throw new APIError('Invalid block id sequence', 200);
     }
 
-    return {
-      common: await this.BlocksModel.findOne({
-        raw       : true,
-        attributes: ['height', 'id', 'previousBlock', 'timestamp'],
-        where     : { id: { [Op.in]: excapedIds } },
-        order     : [['height', 'DESC']],
-        limit     : 1,
-      }),
-    };
+    const common = await this.BlocksModel.findOne({
+      raw       : true,
+      attributes: ['height', 'id', 'previousBlock', 'timestamp'],
+      where     : { id: { [Op.in]: excapedIds } },
+      order     : [['height', 'DESC']],
+      limit     : 1,
+    });
+    return { common };
   }
 
   @Post('/blocks')
@@ -241,40 +240,38 @@ export class TransportAPI {
           t_amount         : t.amount,
           t_fee            : t.fee,
           t_signature      : t.signature.toString('hex'),
-          t_signSignature  : t.signSignature.toString('hex'),
+          t_signSignature  : t.signSignature ? t.signSignature.toString('hex') : null,
           t_signatures     : t.signatures.join(','),
         });
         switch (t.type) {
           case TransactionType.VOTE:
             rawBlocks.push({
-              ...tmpBlock, ... {
-                v_votes: (await VotesModel.findOne({ where: { transactionId: t.id } })).votes,
+              ...tmpBlock,
+              ... {
+                v_votes: t.asset.votes.join(','),
               },
             });
             break;
           case TransactionType.MULTI:
-            const mr = await MultiSignaturesModel.findOne({ where: { transactionId: t.id } });
             rawBlocks.push({
               ...tmpBlock, ... {
-                m_min      : mr.min,
-                m_lifetime : mr.lifetime,
-                m_keysgroup: mr.keysgroup,
+                m_min      : t.asset.multisignature.min,
+                m_lifetime : t.asset.multisignature.lifetime,
+                m_keysgroup: t.asset.multisignature.keysgroup,
               },
             });
             break;
           case TransactionType.DELEGATE:
-            const dr = await DelegatesModel.findOne({ where: { transactionId: t.id } });
             rawBlocks.push({
               ...tmpBlock, ... {
-                d_username: dr.username,
+                d_username: t.asset.delegate.username,
               },
             });
             break;
           case TransactionType.SIGNATURE:
-            const sr = await SignaturesModel.findOne({ where: { transactionId: t.id } });
             rawBlocks.push({
               ...tmpBlock, ... {
-                s_publicKey: sr.publicKey.toString('hex'),
+                s_publicKey: t.asset.signature.publicKey,
               },
             });
             break;

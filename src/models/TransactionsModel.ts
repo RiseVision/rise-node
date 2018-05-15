@@ -92,7 +92,7 @@ export class TransactionsModel extends Model<TransactionsModel> {
   @Column(DataType.BLOB)
   private secondSignPublicKey: Buffer;
 
-  public get asset() {
+  public get asset(): any {
     switch (this.type) {
       case TransactionType.DELEGATE:
         return { delegate: { username: this.username } };

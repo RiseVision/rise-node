@@ -75,6 +75,9 @@ export class BlocksModel extends Model<BlocksModel> {
   public static toStringBlockType(b: SignedBlockType): SignedBlockType<string> {
     const txs = (b.transactions || [])
       .map((t) => TransactionsModel.toTransportTransaction(t));
+    if (!Buffer.isBuffer(b.blockSignature) || !Buffer.isBuffer(b.generatorPublicKey) || !Buffer.isBuffer(b.payloadHash)) {
+      throw new Error('toStringBlockType used with non Buffer block type');
+    }
     const toRet = {
       ...(b instanceof BlocksModel ? b.toJSON() : b),
       blockSignature    : b.blockSignature.toString('hex'),

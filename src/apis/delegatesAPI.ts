@@ -150,7 +150,7 @@ export class DelegatesAPI {
     const delegate      = delegates
       .find((d) => d.delegate.hexPublicKey === params.publicKey || d.delegate.username === params.username);
     if (delegate) {
-      return { delegate: { ...delegate, ...{ rate: delegate.info.rank } } };
+      return { delegate: { ...delegate.delegate.toJSON(), ...{ rate: delegate.info.rank } } };
     }
     throw new APIError('Delegate not found', 200);
   }
