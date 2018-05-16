@@ -25,6 +25,7 @@ import {
 } from './utils';
 
 import { toBufferedTransaction } from '../../utils/txCrafter';
+import { Sequelize } from 'sequelize-typescript';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/transactions', () => {
@@ -122,10 +123,21 @@ describe('api/transactions', () => {
           expect(resp.body.error).to.contain('Additional properties not allowed');
         });
     });
+    it('mau', async () => {
+      const s = initializer.appManager.container.get<Sequelize>(Symbols.generic.sequelize);
+      s.options.logging = true;
+      return supertest(initializer.appManager.expressApp)
+        .get(`/api/transactions?orderBy=timestamp:desc`)
+        .then((resp) => {
+          console.log(resp.body);
+          s.options.logging = false;
+
+        })
+    });
     describe('type filter', () => {
       it('should filter only send tx', async () => {
         return supertest(initializer.appManager.expressApp)
-          .get(`/api/transactions?type=${TransactionType.SEND}&fromHeight=2&orderBy=height:asc`)
+          .get(`/api/transactions?type=${TransactionType.SEND}&and:fromHeight=2&orderBy=height:asc`)
           .expect(200)
           .then((resp) => {
             expect(resp.body.transactions.length).to.be.eq(2);
@@ -134,7 +146,7 @@ describe('api/transactions', () => {
       });
       it('should filter only vote tx', async () => {
         return supertest(initializer.appManager.expressApp)
-          .get(`/api/transactions?type=${TransactionType.VOTE}&fromHeight=2`)
+          .get(`/api/transactions?type=${TransactionType.VOTE}&and:fromHeight=2`)
           .expect(200)
           .then((resp) => {
             expect(resp.body.transactions.length).to.be.eq(1);
@@ -144,7 +156,7 @@ describe('api/transactions', () => {
       });
       it('should filter only secondsign tx', async () => {
         return supertest(initializer.appManager.expressApp)
-          .get(`/api/transactions?type=${TransactionType.SIGNATURE}&fromHeight=2`)
+          .get(`/api/transactions?type=${TransactionType.SIGNATURE}&and:fromHeight=2`)
           .expect(200)
           .then((resp) => {
             expect(resp.body.transactions.length).to.be.eq(1);
