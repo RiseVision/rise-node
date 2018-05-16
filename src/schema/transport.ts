@@ -1,3 +1,9 @@
+import transactionSchema from './logic/transaction';
+const transactionItem = {
+  ...transactionSchema,
+};
+delete transactionItem.id;
+
 // tslint:disable object-literal-sort-keys
 
 export default {
@@ -74,6 +80,7 @@ export default {
         type    : 'array',
         minItems: 1,
         maxItems: 25,
+        items: transactionItem,
       },
     },
     required  : ['transactions'],

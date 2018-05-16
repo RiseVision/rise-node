@@ -1,10 +1,12 @@
 // tslint:disable object-literal-sort-keys
 import constants from '../helpers/constants';
+import rawBlock from './logic/rawBlock';
 
 export default {
   loadBlocksFromPeer: {
     id  : 'blocks.loadBlocksFromPeer',
     type: 'array',
+    items: rawBlock,
   },
   getBlock          : {
     id        : 'blocks.getBlock',
