@@ -4,7 +4,7 @@ import * as sequelize from 'sequelize';
 import { MultiSignaturesModel } from './MultiSignaturesModel';
 import { BlocksModel } from './BlocksModel';
 import { IBaseTransaction, ITransportTransaction } from '../logic/transactions';
-import { TransportModule } from '../modules';
+import { IBlocksModule } from '../ioc/interfaces/index';
 
 const fields                 = ['id', 'rowId', 'blockId', 'height', 'type', 'timestamp', 'senderPublicKey', 'senderId', 'recipientId', 'amount', 'fee', 'signature', 'signSignature', 'requesterPublicKey'];
 const buildArrayArgAttribute = function (table: string, what: string, alias?: string): any {
@@ -113,20 +113,20 @@ export class TransactionsModel extends Model<TransactionsModel> {
     }
   }
 
-  public toTransport<T>(): ITransportTransaction<T> {
-    return TransactionsModel.toTransportTransaction(this);
+  public toTransport<T>(blocksModule: IBlocksModule): ITransportTransaction<T> {
+    return TransactionsModel.toTransportTransaction(this, blocksModule);
   }
 
-  public static toTransportTransaction<T>(t: IBaseTransaction<any>): ITransportTransaction<T> {
+  public static toTransportTransaction<T>(t: IBaseTransaction<any>, blocksModule: IBlocksModule): ITransportTransaction<T> & { confirmations?: number } {
     let obj;
     if (t instanceof TransactionsModel) {
-      obj = {... t.toJSON(), asset: t.asset };
+      obj = { ... t.toJSON(), asset: t.asset };
       delete obj.multisigData;
       delete obj.votes;
       delete obj.username;
       delete obj.secondSignPublicKey;
     } else {
-      obj = {... t};
+      obj = { ...t };
     }
     ['requesterPublicKey', 'senderPublicKey', 'signSignature', 'signature']
       .forEach((k) => {
@@ -134,6 +134,9 @@ export class TransactionsModel extends Model<TransactionsModel> {
           obj[k] = obj[k].toString('hex');
         }
       });
+    if (obj.height) {
+      obj.confirmations = 1 + blocksModule.lastBlock.height - obj.height;
+    }
     return obj as any;
   }
 

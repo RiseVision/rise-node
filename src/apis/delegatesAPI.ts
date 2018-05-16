@@ -16,7 +16,7 @@ import {
   ISystemModule,
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { Accounts2DelegatesModel, AccountsModel } from '../models';
+import { Accounts2DelegatesModel, AccountsModel, BlocksModel, TransactionsModel } from '../models';
 import schema from '../schema/delegates';
 import { publicKey } from '../types/sanityTypes';
 import { APIError, DeprecatedAPIError } from './errors';
@@ -50,6 +50,11 @@ export class DelegatesAPI {
   private Accounts2DelegatesModel: typeof Accounts2DelegatesModel;
   @inject(Symbols.models.accounts)
   private AccountsModel: typeof AccountsModel;
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
+  @inject(Symbols.models.transactions)
+  private TransactionsModel: typeof TransactionsModel;
+
 
   @Get('/')
   @ValidateSchema()
@@ -205,18 +210,18 @@ export class DelegatesAPI {
 
     const activeDelegates = await this.delegatesModule.generateDelegateList(curBlock.height);
 
-    const currentBlockSlot = this.slots.getSlotNumber(curBlock.timestamp);
-    const currentSlot      = this.slots.getSlotNumber();
-    const nextForgers      = [];
+    const currentBlockSlot      = this.slots.getSlotNumber(curBlock.timestamp);
+    const currentSlot           = this.slots.getSlotNumber();
+    const nextForgers: string[] = [];
     for (let i = 1; i <= this.slots.delegates && i <= limit; i++) {
       // This if looks a bit stupid to me.
       if (activeDelegates[(currentSlot + i) % this.slots.delegates]) {
-        nextForgers.push(activeDelegates[(currentSlot + i) % this.slots.delegates]);
+        nextForgers.push(activeDelegates[(currentSlot + i) % this.slots.delegates].toString('hex'));
       }
     }
 
     return {
-      currentBlock: curBlock,
+      currentBlock: this.BlocksModel.toStringBlockType(curBlock, this.TransactionsModel, this.blocks),
       currentBlockSlot,
       currentSlot,
       delegates   : nextForgers,

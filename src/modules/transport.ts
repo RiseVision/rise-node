@@ -8,6 +8,7 @@ import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidat
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
+  IBlocksModule,
   IMultisignaturesModule,
   IPeersModule,
   ISystemModule,
@@ -16,12 +17,11 @@ import {
 } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { BasePeerType, PeerHeaders, PeerState, SignedBlockType } from '../logic/';
-import { IBaseTransaction } from '../logic/transactions/';
+import { IBaseTransaction, ITransportTransaction } from '../logic/transactions/';
+import { BlocksModel, TransactionsModel } from '../models';
 import peersSchema from '../schema/peers';
 import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
-import { ITransportTransaction } from '../logic/transactions/baseTransactionType';
-import { BlocksModel, TransactionsModel } from '../models';
 
 // tslint:disable-next-line
 export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };
@@ -67,10 +67,14 @@ export class TransportModule implements ITransportModule {
   private systemModule: ISystemModule;
   @inject(Symbols.modules.transactions)
   private transactionModule: ITransactionsModule;
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
 
   // models
   @inject(Symbols.models.blocks)
   private BlocksModel: typeof BlocksModel;
+  @inject(Symbols.models.transactions)
+  private TransactionsModel: typeof TransactionsModel;
 
   private loaded: boolean = false;
 
@@ -207,7 +211,7 @@ export class TransportModule implements ITransportModule {
       this.broadcasterLogic.enqueue({}, {
         api   : '/transactions',
         data  : {
-          transaction: TransactionsModel.toTransportTransaction(transaction),
+          transaction: this.TransactionsModel.toTransportTransaction(transaction, this.blocksModule),
         },
         method: 'POST',
       });
@@ -232,9 +236,15 @@ export class TransportModule implements ITransportModule {
         // A broadcasts block to B which wants to rebroadcast to A (which is waiting for B to respond) =>
         // | - A will remove B as it will timeout and the same will happen to B
 
-        /* await */ this.broadcasterLogic.broadcast({ limit: this.constants.maxPeers, broadhash },
-            { api: '/blocks', data: { block: this.BlocksModel.toStringBlockType(block) }, method: 'POST', immediate: true })
-            .catch((err) => this.logger.warn('Error broadcasting block', err));
+        /* await */
+        this.broadcasterLogic.broadcast({ limit: this.constants.maxPeers, broadhash },
+          {
+            api      : '/blocks',
+            data     : { block: this.BlocksModel.toStringBlockType(block, this.TransactionsModel, this.blocksModule) },
+            immediate: true,
+            method   : 'POST',
+          })
+          .catch((err) => this.logger.warn('Error broadcasting block', err));
       }
       this.io.sockets.emit('blocks/change', block);
     }

@@ -1,5 +1,4 @@
 import { inject, injectable, tagged } from 'inversify';
-import { IDatabase } from 'pg-promise';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { constants as constantsType, removeEmptyObjKeys, Sequence } from '../helpers';
@@ -72,7 +71,15 @@ export class BlocksAPI {
       where  : whereClause,
     });
     // console.log(blocks);
-    return { blocks: blocks.map((b) => this.BlocksModel.toStringBlockType(b)), count };
+    return {
+      blocks: blocks.map((b) => this.BlocksModel.toStringBlockType(
+        b,
+        this.TransactionsModel,
+        this.blocksModule
+        )
+      ),
+      count,
+    };
   }
 
   @Get('/get')
@@ -84,7 +91,7 @@ export class BlocksAPI {
       if (b === null) {
         throw new APIError('Block not found', 200);
       }
-      return this.BlocksModel.toStringBlockType(b);
+      return this.BlocksModel.toStringBlockType(b, this.TransactionsModel, this.blocksModule);
     });
     return { block };
   }

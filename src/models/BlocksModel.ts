@@ -3,6 +3,7 @@ import { SignedBlockType } from '../logic';
 import { TransactionsModel } from './TransactionsModel';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
+import { IBlocksModule } from '../ioc/interfaces/modules';
 
 @Table({ tableName: 'blocks' })
 export class BlocksModel extends Model<BlocksModel> {
@@ -72,9 +73,9 @@ export class BlocksModel extends Model<BlocksModel> {
     return toRet;
   }
 
-  public static toStringBlockType(b: SignedBlockType): SignedBlockType<string> {
+  public static toStringBlockType(b: SignedBlockType, TxModel: typeof TransactionsModel, blocksModule: IBlocksModule): SignedBlockType<string> {
     const txs = (b.transactions || [])
-      .map((t) => TransactionsModel.toTransportTransaction(t));
+      .map((t) => TxModel.toTransportTransaction(t, blocksModule));
     if (!Buffer.isBuffer(b.blockSignature) || !Buffer.isBuffer(b.generatorPublicKey) || !Buffer.isBuffer(b.payloadHash)) {
       throw new Error('toStringBlockType used with non Buffer block type');
     }

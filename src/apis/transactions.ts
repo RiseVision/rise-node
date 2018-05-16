@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
-import * as isEmpty from 'is-empty';
 import * as _ from 'lodash';
 import { Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
+import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { castFieldsToNumberUsingSchema, removeEmptyObjKeys, TransactionType } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
@@ -12,7 +12,6 @@ import { Symbols } from '../ioc/symbols';
 import { TransactionsModel } from '../models';
 import schema from '../schema/transactions';
 import { APIError, DeprecatedAPIError } from './errors';
-import { Op } from 'sequelize';
 import { ISlots } from '../ioc/interfaces/helpers';
 
 @JsonController('/api/transactions')
@@ -85,7 +84,6 @@ export class TransactionsAPI {
 
     whereClause.type[Op.eq] = body.type;
 
-
     // Computed stuff
     if (body.minConfirmations) {
       whereClause.height[Op.lte] = Math.min(
@@ -108,15 +106,15 @@ export class TransactionsAPI {
     }
 
     if (Array.isArray(body.senderIds)) {
-      whereClause.senderId = {[Op.in]: body.senderIds};
+      whereClause.senderId = { [Op.in]: body.senderIds };
     }
 
     if (Array.isArray(body.recipientIds)) {
-      whereClause.recipientId = {[Op.in]: body.recipientIds};
+      whereClause.recipientId = { [Op.in]: body.recipientIds };
     }
 
     if (Array.isArray(body.senderPublicKeys)) {
-      whereClause.senderPublicKey = {[Op.in]: body.senderPublicKeys.map((pk) => Buffer.from(pk, 'hex'))};
+      whereClause.senderPublicKey = { [Op.in]: body.senderPublicKeys.map((pk) => Buffer.from(pk, 'hex')) };
     }
 
     removeEmptyObjKeys(whereClause, true);
@@ -131,16 +129,16 @@ export class TransactionsAPI {
       orderBy = [body.orderBy.split(':')];
     }
 
-    const {rows: transactions, count} = await this.TXModel.findAndCountAll({
-      limit: body.limit || 100,
+    const { rows: transactions, count } = await this.TXModel.findAndCountAll({
+      limit : body.limit || 100,
       offset: body.offset || 0,
-      order: orderBy,
-      where: whereClause,
+      order : orderBy,
+      where : whereClause,
     });
     return {
+      count,
       transactions: transactions
-        .map((t) => t.toTransport()),
-      count
+        .map((t) => t.toTransport(this.blocksModule)),
     };
   }
 
@@ -156,7 +154,7 @@ export class TransactionsAPI {
     @QueryParams() params: { id: string }) {
 
     const { id } = params;
-    const tx     = (await this.transactionsModule.getByID(id)).toTransport<any>();
+    const tx     = (await this.transactionsModule.getByID(id)).toTransport<any>(this.blocksModule);
 
     if (tx.type === TransactionType.VOTE) {
       // tslint:disable-next-line
@@ -231,14 +229,14 @@ export class TransactionsAPI {
   public async getUnconfirmedTxs(@SchemaValid(schema.getPooledTransactions)
                                  @QueryParams() params: { senderPublicKey?: string, address?: string }) {
     const txs = this.transactionsModule.getUnconfirmedTransactionList(true);
-
     return {
       count       : txs.length,
       transactions: txs
-        .filter((tx) => params.senderPublicKey ?
-          Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
-          true)
-        .filter((tx) => params.address ? params.address === tx.recipientId : true),
+        .filter((tx) => {
+          return (params.senderPublicKey && Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey))
+            || (params.address && params.address === tx.recipientId);
+        })
+        .map((tx) => this.TXModel.toTransportTransaction(tx, this.blocksModule)),
     };
   }
 
