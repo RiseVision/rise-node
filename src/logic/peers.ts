@@ -15,7 +15,7 @@ export class PeersLogic implements IPeersLogic {
 
   private peers: { [peerIdentifier: string]: IPeerLogic } = {};
 
-  private lastRemoved: { [peerIdentifier: string]: number } = {}
+  private lastRemoved: { [peerIdentifier: string]: number } = {};
 
   @inject(Symbols.logic.peerFactory)
   private peersFactory: (bp: BasePeerType) => IPeerLogic;

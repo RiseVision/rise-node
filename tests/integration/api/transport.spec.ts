@@ -8,6 +8,8 @@ import { Symbols } from '../../../src/ioc/symbols';
 import initializer from '../common/init';
 import { createRandomAccountWithFunds, createRandomWallet, createSendTransaction } from '../common/utils';
 import { checkReturnObjKeyVal } from './utils';
+import { createFakePeers } from '../../utils/fakePeersFactory';
+import { PeerType } from '../../../src/logic';
 
 // tslint:disable no-unused-expression max-line-length
 const headers = {
@@ -18,7 +20,7 @@ const headers = {
 
 function checkHeadersValidation(p: () => supertest.Test) {
   it('should fail if version is not provided', () => {
-    const tmp = {...{}, ...headers};
+    const tmp = { ...{}, ...headers };
     delete tmp.version;
     return p()
       .set(tmp)
@@ -28,7 +30,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
       });
   });
   it('should fail if nethash is not provided', () => {
-    const tmp = {...{}, ...headers};
+    const tmp = { ...{}, ...headers };
     delete tmp.nethash;
     return p()
       .set(tmp)
@@ -38,7 +40,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
       });
   });
   it('should fail if port is not provided', () => {
-    const tmp = {...{}, ...headers};
+    const tmp = { ...{}, ...headers };
     delete tmp.port;
     return p()
       .set(tmp)
@@ -49,7 +51,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
   });
 
   it('should fail if nethash is not correct', () => {
-    const tmp   = {...{}, ...headers};
+    const tmp   = { ...{}, ...headers };
     tmp.nethash = new Array(64).fill(null).map(() => 'a').join('');
     return p()
       .set(tmp)
@@ -59,7 +61,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
       });
   });
   it('should fail if broadhash is not hex', () => {
-    const tmp: any = {...{}, ...headers};
+    const tmp: any = { ...{}, ...headers };
     tmp.broadhash  = 'hh'
     return p()
       .set(tmp)
@@ -69,7 +71,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
       });
   });
   it('should fail if height is string', () => {
-    const tmp: any = {...{}, ...headers};
+    const tmp: any = { ...{}, ...headers };
     tmp.height     = 'hh';
     return p()
       .set(tmp)
@@ -79,7 +81,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
       });
   });
   it('should fail if nonce is less than 16 chars', () => {
-    const tmp: any = {...{}, ...headers};
+    const tmp: any = { ...{}, ...headers };
     tmp.nonce      = new Array(15).fill(null).fill('a').join('');
     return p()
       .set(tmp)
@@ -89,7 +91,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
       });
   });
   it('should fail if nonce is longer than 36 chars', () => {
-    const tmp: any = {...{}, ...headers};
+    const tmp: any = { ...{}, ...headers };
     tmp.nonce      = new Array(37).fill(null).fill('a').join('');
     return p()
       .set(tmp)
@@ -121,33 +123,34 @@ describe('api/transport', () => {
   });
 
   describe('/list', () => {
+    let peers: PeerType[];
+    let peersLogic: IPeersLogic;
+    before(() => {
+      peers      = createFakePeers(10);
+      peersLogic = initializer.appManager.container.get<IPeersLogic>(Symbols.logic.peers);
+      peers.forEach((p) => peersLogic.upsert(p, true));
+
+    });
+    after(() => {
+      peers.map((p) => peersLogic.remove(p));
+    });
     checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
       .get('/peer/list'));
-    it('should return known peer (test peer)', () => {
+    it('should return known peers ', () => {
       return supertest(initializer.appManager.expressApp)
         .get('/peer/list')
         .set(headers)
         .expect(200)
         .then((res) => {
           expect(res.body.peers).to.be.an('array');
-          expect(res.body.peers.length).to.be.eq(1);
-          const [peer] = res.body.peers;
-          expect(Date.now() - peer.updated).to.be.lt(100);
-          delete peer.updated;
-          expect(peer).to.be.deep.eq({
-            broadhash: null,
-            clock    : null,
-            height   : null,
-            ip       : '::ffff:127.0.0.1',
-            os       : null,
-            port     : 1,
-            state    : 2,
-            version  : '0.1.10',
-          });
+          // Check peers existence.!
+          for (let i = 0; i < peers.length; i++) {
+            expect(res.body.peers.find((p) => p.ip === peers[i].ip).ip).to.be.eq(peers[i].ip);
+            expect(Date.now() - res.body.peers[i].updated).to.be.lt(100);
+          }
         });
     });
     it('should return other peers if inserted', () => {
-      const peersLogic: IPeersLogic   = initializer.appManager.container.get(Symbols.logic.peers);
       const peersModule: IPeersModule = initializer.appManager.container.get(Symbols.modules.peers);
 
       const peer = peersLogic.create({
@@ -168,7 +171,6 @@ describe('api/transport', () => {
         .set(headers)
         .expect(200)
         .then((res) => {
-          expect(res.body.peers.length).to.be.eq(2);
           const [thePeer] = res.body.peers.filter((p) => p.ip === '1.1.1.1');
           expect(thePeer).to.be.deep.eq(peer.object());
         });
@@ -196,11 +198,11 @@ describe('api/transport', () => {
     let txModule: ITransactionsModule;
     let txPool: ITransactionPoolLogic;
     beforeEach(async () => {
-      blocksModule = initializer.appManager.container.get(Symbols.modules.blocks);
-      txModule     = initializer.appManager.container.get(Symbols.modules.transactions);
-      txPool       = initializer.appManager.container.get(Symbols.logic.transactionPool);
-      const {wallet} = await createRandomAccountWithFunds(Math.pow(10, 8));
-      account = wallet;
+      blocksModule     = initializer.appManager.container.get(Symbols.modules.blocks);
+      txModule         = initializer.appManager.container.get(Symbols.modules.transactions);
+      txPool           = initializer.appManager.container.get(Symbols.logic.transactionPool);
+      const { wallet } = await createRandomAccountWithFunds(Math.pow(10, 8));
+      account          = wallet;
     });
     afterEach(async () => {
       await initializer.rawDeleteBlocks(blocksModule.lastBlock.height - 1);
@@ -208,21 +210,21 @@ describe('api/transport', () => {
     checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
       .post('/peer/transactions'));
     it('should enqueue transaction', async () => {
-      const tx = await createSendTransaction(0, 1, account, createRandomWallet().address);
+      const tx  = await createSendTransaction(0, 1, account, createRandomWallet().address);
       const res = await supertest(initializer.appManager.expressApp)
         .post('/peer/transactions')
         .set(headers)
-        .send({transaction: tx})
+        .send({ transaction: tx })
         .expect(200);
       // console.log(await txModule.getByID(tx.id));
       expect(txPool.transactionInPool(tx.id)).is.true;
     });
     it('should enqueue bundled transactions', async () => {
-      const tx = await createSendTransaction(0, 1, account, createRandomWallet().address);
+      const tx  = await createSendTransaction(0, 1, account, createRandomWallet().address);
       const res = await supertest(initializer.appManager.expressApp)
         .post('/peer/transactions')
         .set(headers)
-        .send({transactions: [tx, tx]})
+        .send({ transactions: [tx, tx] })
         .expect(200);
       // console.log(await txModule.getByID(tx.id));
       expect(txPool.transactionInPool(tx.id)).is.true;
@@ -254,8 +256,8 @@ describe('api/transport', () => {
     it('should throw and remove querying peer if one or many ids are not numeric');
     it('should return the most heigh commonblock if any', async () => {
       const lastBlock = initializer.appManager.container.get<IBlocksModule>(Symbols.modules.blocks).lastBlock;
-      const genesis = initializer.appManager.container.get<any>(Symbols.generic.genesisBlock);
-      const res = await supertest(initializer.appManager.expressApp)
+      const genesis   = initializer.appManager.container.get<any>(Symbols.generic.genesisBlock);
+      const res       = await supertest(initializer.appManager.expressApp)
         .get(`/peer/blocks/common?ids=${genesis.id},2,33433441728981446756,${lastBlock.previousBlock}`)
         .set(headers)
         .expect(200);
