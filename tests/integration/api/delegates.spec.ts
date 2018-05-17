@@ -11,7 +11,12 @@ import { Symbols } from '../../../src/ioc/symbols';
 import { ISlots } from '../../../src/ioc/interfaces/helpers';
 import { AppConfig } from '../../../src/types/genericTypes';
 import {
-  confirmTransactions, createSendTransaction, createWallet, getRandomDelegateWallet
+  confirmTransactions,
+  createRandomAccountWithFunds,
+  createSendTransaction,
+  createVoteTransaction,
+  createWallet,
+  getRandomDelegateWallet
 } from '../common/utils';
 import { IForgeModule } from '../../../src/ioc/interfaces/modules/IForgeModule';
 chai.use(chaiSorted);
@@ -23,6 +28,7 @@ const delegates = require('../genesisDelegates.json');
 describe('api/delegates', () => {
 
   initializer.setup();
+  initializer.autoRestoreEach();
   before(async function() {
     this.timeout(10000);
     await initializer.rawMineBlocks(101);
@@ -133,7 +139,7 @@ describe('api/delegates', () => {
     });
 
     it('should calculate the forged amount accounting start and end', async () => {
-      const start = new Date(new Date().getTime() - 1000) / 1000;
+      const start = new Date(new Date().getTime() - 1000).getTime() / 1000;
       const end = new Date().getTime() / 1000;
       return supertest(initializer.appManager.expressApp)
         .get('/api/delegates/forging/getForgedByAccount?start=' + start + '&end=' + end + '&generatorPublicKey=b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3')
@@ -158,7 +164,7 @@ describe('api/delegates', () => {
             username: 'genesisDelegate32',
             address: '15048500907174916103R',
             publicKey: 'b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3',
-            vote: '108912391000000',
+            vote: 108912391000000,
             producedblocks: 1,
             missedblocks: 1,
             rank: 63,
@@ -179,7 +185,7 @@ describe('api/delegates', () => {
             username: 'genesisDelegate33',
             address: '14851457879581478143R',
             publicKey: 'eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44',
-            vote: '108912391000000',
+            vote: 108912391000000,
             producedblocks: 1,
             missedblocks: 1,
             rank: 82,
@@ -204,16 +210,25 @@ describe('api/delegates', () => {
   describe('/voters', () => {
     checkPubKey('publicKey', '/api/delegates/voters');
     it('should return accounts that voted for delegate', async () => {
+      const {wallet: newAcc} = await createRandomAccountWithFunds(1e10);
+      await createVoteTransaction(1, newAcc, 'eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44', true)
       return supertest(initializer.appManager.expressApp)
         .get('/api/delegates/voters?publicKey=eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44')
         .expect(200)
         .then((response) => {
           expect(response.body.success).is.true;
-          expect(response.body.accounts).to.be.deep.equal([{
+          expect(response.body.accounts).to.be.deep.equal([
+            {
+              address: newAcc.address,
+              balance: 1e10 - 1e8 /* voting fees */,
+              publicKey: newAcc.publicKey,
+              username: null,
+            },
+            {
             username: 'genesisDelegate33',
             address: '14851457879581478143R',
             publicKey: 'eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44',
-            balance: '108912391000000',
+            balance: 108912391000000,
           }]);
         });
     });
@@ -242,7 +257,7 @@ describe('api/delegates', () => {
             username: 'genesisDelegate33',
             address: '14851457879581478143R',
             publicKey: 'eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44',
-            vote: '108912391000000',
+            vote: 108912391000000,
             producedblocks: 1,
             missedblocks: 1,
             rank: 82,

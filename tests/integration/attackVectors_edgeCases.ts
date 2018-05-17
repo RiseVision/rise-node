@@ -1,15 +1,18 @@
 import * as chai from 'chai';
 import { expect } from 'chai';
+import BigNumber from 'bignumber.js';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Sequelize } from 'sequelize-typescript';
 import initializer from './common/init';
 import { toBufferedTransaction } from '../utils/txCrafter';
 import {
-  createMultiSignAccount, createMultiSignTransactionWithSignatures,
+  createMultiSignTransactionWithSignatures,
   createRandomAccountWithFunds,
-  createRandomWallet, createRegDelegateTransaction,
+  createRandomWallet,
+  createRegDelegateTransaction,
   createSendTransaction,
-  createVoteTransaction, getRandomDelegateWallet
+  createVoteTransaction,
+  getRandomDelegateWallet
 } from './common/utils';
 import { Symbols } from '../../src/ioc/symbols';
 import { ITransactionLogic, ITransactionPoolLogic } from '../../src/ioc/interfaces/logic';
@@ -52,7 +55,7 @@ describe('attackVectors/edgeCases', () => {
     sequelize                     = initializer.appManager.container.get(Symbols.generic.sequelize);
   });
   describe('blocks', () => {
-    describe('duplicated txs', () => {
+    describe('wrong txs', () => {
       it('should disallow block with same tx twice', async () => {
         const lastId = blocksModule.lastBlock.id;
         const tx     = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
@@ -78,6 +81,22 @@ describe('attackVectors/edgeCases', () => {
         expect(postAcc.u_balance).to.be.eq(postAcc.balance);
 
         expect(blocksModule.lastBlock.id).to.be.eq(lastId);
+      });
+      it('should disallow block with a tx having a wrong address', async () => {
+        const lastId = blocksModule.lastBlock.id;
+        const tx     = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
+        tx.recipientId = tx.recipientId.toLowerCase();
+        await expect(initializer.rawMineBlockWithTxs(
+          [tx].map((t) => toBufferedTransaction(t)),
+        )).to.rejectedWith('Failed to validate transaction schema');
+        const postAcc = await accModule.getAccount({address: senderAccount.address});
+        expect(postAcc.balance).to.be.eq(funds);
+        expect(postAcc.u_balance).to.be.eq(funds);
+        expect(blocksModule.lastBlock.id).to.be.eq(lastId);
+
+        // check tx does not exist in db nor pool
+        expect(txPool.transactionInPool(tx.id)).is.false;
+        await expect(txModule.getByID(tx.id)).to.be.rejectedWith('Transaction not found');
       });
     });
 
@@ -107,6 +126,24 @@ describe('attackVectors/edgeCases', () => {
         expect(postAcc.balance).to.be.eq(acc.balance);
         expect(postAcc.u_balance).to.be.eq(acc.u_balance);
         expect(postAcc.u_balance).to.be.eq(postAcc.balance);
+      });
+      it('should allow spending the total account amount', async () => {
+        const sendFees = systemModule.getFees().fees.send;
+        const totalPerTx = new BigNumber(funds).minus(new BigNumber(sendFees).multipliedBy(10)).div(10).toNumber();
+        expect(Number.isInteger(totalPerTx)).is.true;
+
+        // create 10 txs
+        const txs = await Promise.all(
+          new Array(10).fill(null)
+          .map(() => createSendTransaction(0, totalPerTx, senderAccount, createRandomWallet().address))
+        );
+
+        await expect(initializer
+          .rawMineBlockWithTxs(txs.map((t) => toBufferedTransaction(t)))).to.not.be.rejected;
+
+        const postAcc = await accModule.getAccount({address: senderAccount.address});
+        expect(postAcc.balance).to.be.eq(0);
+        expect(postAcc.u_balance).to.be.eq(0);
       });
     });
 
