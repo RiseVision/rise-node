@@ -1,5 +1,6 @@
 import BigNumber from 'bignumber.js';
 import * as crypto from 'crypto';
+import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
 import { Body, Get, JsonController, Post, Put, QueryParam, QueryParams, UseBefore } from 'routing-controllers';
 import * as sequelize from 'sequelize';
@@ -155,7 +156,13 @@ export class DelegatesAPI {
     const delegate      = delegates
       .find((d) => d.delegate.hexPublicKey === params.publicKey || d.delegate.username === params.username);
     if (delegate) {
-      return { delegate: { ...delegate.delegate.toJSON(), ...{ rate: delegate.info.rank } } };
+      return {
+        delegate: filterObject(
+          { ...delegate.delegate.toPOJO(), ...delegate.info, ...{ rate: delegate.info.rank } },
+          ['username', 'address', 'publicKey', 'vote', 'producedblocks',
+            'missedblocks', 'rank', 'approval', 'productivity', 'rate']
+        ),
+      };
     }
     throw new APIError('Delegate not found', 200);
   }
@@ -174,7 +181,12 @@ export class DelegatesAPI {
       { address: { $in: addresses }, sort: 'balance' },
       ['address', 'balance', 'username', 'publicKey']);
 
-    return { accounts: accounts.map((a) => a.toPOJO()) };
+    return {
+      accounts: accounts.map((a) => filterObject(
+        a.toPOJO(),
+        ['address', 'balance', 'username', 'publicKey'])
+      ),
+    };
   }
 
   @Get('/search')
