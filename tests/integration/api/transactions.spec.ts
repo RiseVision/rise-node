@@ -123,17 +123,6 @@ describe('api/transactions', () => {
           expect(resp.body.error).to.contain('Additional properties not allowed');
         });
     });
-    it('mau', async () => {
-      const s = initializer.appManager.container.get<Sequelize>(Symbols.generic.sequelize);
-      s.options.logging = true;
-      return supertest(initializer.appManager.expressApp)
-        .get(`/api/transactions?orderBy=timestamp:desc`)
-        .then((resp) => {
-          console.log(resp.body);
-          s.options.logging = false;
-
-        })
-    });
     describe('type filter', () => {
       it('should filter only send tx', async () => {
         return supertest(initializer.appManager.expressApp)
@@ -286,7 +275,7 @@ describe('api/transactions', () => {
         const lastHeight = initializer.appManager.container.get<IBlocksModule>(Symbols.modules.blocks).lastBlock.height;
         // should include only genesisBlock
         const {count, transactions} = await supertest(initializer.appManager.expressApp)
-          .get(`/api/transactions?type=${TransactionType.SEND}&minConfirmations=${lastHeight - 1}&limit=200`)
+          .get(`/api/transactions?and:type=${TransactionType.SEND}&minConfirmations=${lastHeight - 1}&limit=200`)
           .then((resp) => resp.body);
         expect(transactions.length).is.eq(101);
         expect(count).is.eq(101);
