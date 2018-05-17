@@ -250,16 +250,18 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
 
     const data = {
       count  : parseInt(res.count, 10),
-      fees   : 0,
+      fees   : (await this.RoundsFeesModel.aggregate('fees', 'sum', {
+        where: {
+          ...timestampClausole,
+          publicKey: bufPublicKey,
+        },
+      })) as number,
       rewards: res.rewards === null ? 0 : parseInt(res.rewards, 10),
     };
-    data.fees  = await this.RoundsFeesModel.aggregate('fees', 'sum', {
-      where: {
-        ...timestampClausole,
-        publicKey: bufPublicKey,
-      },
-    }) as number;
-
+    if (isNaN(data.fees)) {
+      // see https://github.com/sequelize/sequelize/issues/6299
+      data.fees = 0;
+    }
     return data;
   }
 
