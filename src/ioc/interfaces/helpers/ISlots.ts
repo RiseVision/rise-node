@@ -6,7 +6,7 @@ export interface ISlots {
    */
   getTime(time: number): number;
 
-  getSlotNumber(epochTime: number): number;
+  getSlotNumber(epochTime?: number): number;
 
   getSlotTime(slot: number): number;
 
