@@ -6,9 +6,9 @@ import { ILogger } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { ITransactionLogic, VerificationType } from '../ioc/interfaces/logic';
-import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules';
+import { IAccountsModule, IBlocksModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { Accounts2MultisignaturesModel } from '../models';
+import { Accounts2MultisignaturesModel, BlocksModel, TransactionsModel } from '../models';
 import multisigSchema from '../schema/multisignatures';
 import { publicKey as pkType } from '../types/sanityTypes';
 import { APIError, DeprecatedAPIError } from './errors';
@@ -32,12 +32,16 @@ export class MultisignatureAPI {
   // Modules
   @inject(Symbols.modules.accounts)
   private accounts: IAccountsModule;
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
   @inject(Symbols.modules.transactions)
   private transactions: ITransactionsModule;
 
   // models
   @inject(Symbols.models.accounts2Multisignatures)
   private Accounts2MultisignaturesModel: typeof Accounts2MultisignaturesModel;
+  @inject(Symbols.models.transactions)
+  private TransactionsModel: typeof TransactionsModel;
 
   @Get('/accounts')
   @ValidateSchema()
@@ -121,7 +125,7 @@ export class MultisignatureAPI {
         max        : signatures.length,
         min,
         signed,
-        transaction: tx,
+        transaction: this.TransactionsModel.toTransportTransaction(tx, this.blocksModule),
       });
     }
 
