@@ -1,6 +1,11 @@
 import initializer from '../common/init';
 import {
-  checkEnumParam, checkIntParam, checkPostPubKey, checkPostRequiredParam, checkPubKey, checkRequiredParam,
+  checkEnumParam,
+  checkIntParam,
+  checkPostPubKey,
+  checkPostRequiredParam,
+  checkPubKey,
+  checkRequiredParam,
   checkReturnObjKeyVal
 } from './utils';
 import * as supertest from 'supertest';
@@ -19,6 +24,8 @@ import {
   getRandomDelegateWallet
 } from '../common/utils';
 import { IForgeModule } from '../../../src/ioc/interfaces/modules/IForgeModule';
+import { BlocksModel, TransactionsModel } from '../../../src/models';
+
 chai.use(chaiSorted);
 
 const {expect} = chai;
@@ -285,11 +292,17 @@ describe('api/delegates', () => {
   });
 
   describe('/getNextForgers', () => {
-    let curBlock: any;
+    let curBlock: BlocksModel;
     let slots: ISlots;
+    let blocksModel: typeof BlocksModel;
+    let blocksModule: IBlocksModule;
+    let txModel: typeof TransactionsModel;
     beforeEach(async () => {
-      curBlock = initializer.appManager.container.get<IBlocksModule>(Symbols.modules.blocks).lastBlock;
-      slots = initializer.appManager.container.get<ISlots>(Symbols.helpers.slots);
+      blocksModule = initializer.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
+      curBlock     = blocksModule.lastBlock;
+      blocksModel  = initializer.appManager.container.get<typeof BlocksModel>(Symbols.models.blocks);
+      txModel      = initializer.appManager.container.get<typeof TransactionsModel>(Symbols.models.transactions);
+      slots        = initializer.appManager.container.get<ISlots>(Symbols.helpers.slots);
     });
 
     it('should return current block', async () => {
@@ -297,7 +310,11 @@ describe('api/delegates', () => {
         .get('/api/delegates/getNextForgers').expect(200)
         .then((response) => {
           expect(response.body.success).is.true;
-          expect(response.body.currentBlock).to.be.deep.equal(curBlock);
+          expect(response.body.currentBlock).to.be.deep.equal(blocksModel.toStringBlockType(
+            curBlock,
+            txModel,
+            blocksModule
+          ));
         });
     });
     it('should return currentBlock slot', async () => {
