@@ -336,6 +336,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
           'slot:', this.slots.getSlotNumber(block.timestamp),
           'generator:', block.generatorPublicKey,
         ].join(' '));
+        throw new Error('Block discarded - not in current chain');
       }
 
     }

@@ -92,7 +92,7 @@ export class IntegrationTestInitializer {
     const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
     const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
     const delegates       = await delegatesModule.generateDelegateList(height + 1);
-    const theSlot         = height + 1;
+    const theSlot         = height;
     const delegateId      = delegates[theSlot % slots.delegates];
     const kp              = getKeypairByPkey(delegateId.toString('hex'));
 
@@ -119,7 +119,7 @@ export class IntegrationTestInitializer {
     const height = blockModule.lastBlock.height;
 
     const delegates  = await delegatesModule.generateDelegateList(height + 1);
-    const theSlot    = height + 1;
+    const theSlot    = height;
     const delegateId = delegates[theSlot % slots.delegates];
     const kp         = getKeypairByPkey(delegateId.toString('hex'));
 
@@ -145,7 +145,7 @@ export class IntegrationTestInitializer {
     // console.log(`Mining ${howMany} blocks from height: ${height}`);
     for (let i = 0; i < howMany; i++) {
       const delegates  = await delegatesModule.generateDelegateList(height + i + 1);
-      const theSlot    = height + i + 1;
+      const theSlot    = height + i ;
       const delegateId = delegates[theSlot % slots.delegates];
       const kp         = getKeypairByPkey(delegateId.toString('hex'));
       await txModule.fillPool();
