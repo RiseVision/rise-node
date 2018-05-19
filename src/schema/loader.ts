@@ -30,6 +30,7 @@ export default {
               minLength: 1,
               maxLength: 20,
             },
+            required  : ['signatures', 'transaction'],
           },
         },
       },

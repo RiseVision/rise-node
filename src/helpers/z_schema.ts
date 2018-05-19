@@ -93,6 +93,18 @@ z_schema.registerFormat('positiveIntString', (str: string) => {
   return /^[0-9]+$/g.test(str);
 });
 
+z_schema.registerFormat('rawVotes', (str: string) => {
+  return /^((\+|-)[0-9]+[R],?)+$/ig.test(str);
+});
+
+z_schema.registerFormat('rawKeysgroup', (str: string) => {
+  return /^([a-f0-9]{64},?)+$/ig.test(str);
+});
+
+z_schema.registerFormat('rawSignatures', (str: string) => {
+  return /^([a-f0-9]{128},?)+$/ig.test(str);
+});
+
 // var registeredFormats = z_schema.getRegisteredFormats();
 // console.log(registeredFormats);
 
