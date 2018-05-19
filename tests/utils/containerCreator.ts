@@ -37,7 +37,7 @@ import TransportModuleStub from '../stubs/modules/TransportModuleStub';
 import SocketIOStub from '../stubs/utils/SocketIOStub';
 import {
   AccountsModel, BlocksModel, DelegatesModel, SignaturesModel, TransactionsModel, MultiSignaturesModel,
-  VotesModel, Accounts2DelegatesModel
+  VotesModel, Accounts2DelegatesModel, Accounts2MultisignaturesModel
 } from '../../src/models';
 import { Sequelize } from 'sequelize-typescript';
 import { TransactionsModelStub } from '../stubs/models/TransactionsModelStub';
@@ -115,8 +115,11 @@ export const createContainer = (): Container => {
   container.bind(Symbols.models.blocks).toConstructor(BlocksModel);
   container.bind(Symbols.models.transactions).toConstructor(TransactionsModel);
   container.bind(Symbols.models.accounts2Delegates).toConstructor(Accounts2DelegatesModel);
+  container.bind(Symbols.models.accounts2Multisignatures).toConstructor(Accounts2MultisignaturesModel);
 
   const sequelize = container.get<Sequelize>(Symbols.generic.sequelize);
-  sequelize.addModels([AccountsModel, BlocksModel, Accounts2DelegatesModel, TransactionsModel, MultiSignaturesModel, DelegatesModel, SignaturesModel, VotesModel]);
+  sequelize.addModels([
+    AccountsModel, BlocksModel, Accounts2DelegatesModel, Accounts2MultisignaturesModel,
+    TransactionsModel, MultiSignaturesModel, DelegatesModel, SignaturesModel, VotesModel]);
   return container;
 };
