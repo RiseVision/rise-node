@@ -2,20 +2,26 @@ import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
+import * as filterObject from 'filter-object';
 import { Container } from 'inversify';
-import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
+import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import { DelegatesAPI } from '../../../src/apis';
 import * as helpers from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
-import sql from '../../../src/sql/delegates';
 import {
-AccountsModuleStub, BlocksModuleStub, BlocksSubmoduleUtilsStub, DbStub,
-DelegatesModuleStub, EdStub, SlotsStub,
-SystemModuleStub, ZSchemaStub,
+  AccountsModuleStub,
+  BlocksModuleStub,
+  BlocksSubmoduleUtilsStub,
+  DelegatesModuleStub,
+  EdStub,
+  SlotsStub,
+  SystemModuleStub,
+  ZSchemaStub,
 } from '../../stubs';
 import { ForgeModuleStub } from '../../stubs/modules/ForgeModuleStub';
 import { createContainer } from '../../utils/containerCreator';
+import { Accounts2DelegatesModel, AccountsModel, BlocksModel } from '../../../src/models';
 
 chai.use(chaiAsPromised);
 
@@ -30,32 +36,32 @@ describe('apis/delegatesAPI', () => {
   let accounts: AccountsModuleStub;
   let blocks: BlocksModuleStub;
   let blocksUtils: BlocksSubmoduleUtilsStub;
-  let db: DbStub;
   let delegatesModule: DelegatesModuleStub;
   let ed: EdStub;
   let forgeModule: ForgeModuleStub;
   let slots: SlotsStub;
   let system: SystemModuleStub;
   let cryptoCreateHashSpy;
-
+  let accountsModel: typeof AccountsModel;
+  let accounts2delegatesModel: typeof Accounts2DelegatesModel;
   beforeEach(() => {
     sandbox   = sinon.sandbox.create();
     container = createContainer();
     container.bind(Symbols.api.delegates).to(DelegatesAPI);
 
-    schema          = container.get(Symbols.generic.zschema);
-    accounts        = container.get(Symbols.modules.accounts);
-    blocks          = container.get(Symbols.modules.blocks);
-    blocksUtils     = container.get(Symbols.modules.blocksSubModules.utils);
-    db              = container.get(Symbols.generic.db);
-    delegatesModule = container.get(Symbols.modules.delegates);
-    ed              = container.get(Symbols.helpers.ed);
-    forgeModule     = container.get(Symbols.modules.forge);
-    slots           = container.get(Symbols.helpers.slots);
-    system          = container.get(Symbols.modules.system);
+    schema              = container.get(Symbols.generic.zschema);
+    accounts            = container.get(Symbols.modules.accounts);
+    accountsModel       = container.get(Symbols.models.accounts);
+    blocks              = container.get(Symbols.modules.blocks);
+    blocksUtils         = container.get(Symbols.modules.blocksSubModules.utils);
+    delegatesModule     = container.get(Symbols.modules.delegates);
+    ed                  = container.get(Symbols.helpers.ed);
+    forgeModule         = container.get(Symbols.modules.forge);
+    slots               = container.get(Symbols.helpers.slots);
+    system              = container.get(Symbols.modules.system);
     cryptoCreateHashSpy = sandbox.spy(crypto, 'createHash');
-
-    instance = container.get(Symbols.api.delegates);
+    instance            = container.get(Symbols.api.delegates);
+    accounts2delegatesModel = container.get(Symbols.models.accounts2Delegates);
   });
 
   afterEach(() => {
@@ -64,6 +70,15 @@ describe('apis/delegatesAPI', () => {
 
   describe('getDelegates', () => {
 
+    const extraAccountData = {
+      approval      : undefined,
+      address       : null,
+      missedblocks  : undefined,
+      producedblocks: undefined,
+      productivity  : undefined,
+      username      : undefined,
+      vote          : '0'
+    };
     let data;
     let d;
 
@@ -77,9 +92,24 @@ describe('apis/delegatesAPI', () => {
       }
 
       const delegates = [
-        { [field]: areNumberValues ? 1 : 'a', rank: 1 },
-        { [field]: areNumberValues ? 3 : 'bb', rank: 2 },
-        { [field]: areNumberValues ? 2 : 'ccc', rank: 3 },
+        {
+          delegate: new AccountsModel({
+            publicKey: Buffer.from('aa', 'hex'),
+            [field]  : areNumberValues ? 1 : 'a'
+          }), info: { rank: 1, [field]: areNumberValues ? 1 : 'a' }
+        },
+        {
+          delegate: new AccountsModel({
+            publicKey: Buffer.from('bb', 'hex'),
+            [field]  : areNumberValues ? 3 : 'bb'
+          }), info: { rank: 2, [field]: areNumberValues ? 3 : 'bb' }
+        },
+        {
+          delegate: new AccountsModel({
+            publicKey: Buffer.from('cc', 'hex'),
+            [field]  : areNumberValues ? 2 : 'ccc'
+          }), info: { rank: 3, [field]: areNumberValues ? 2 : 'ccc' }
+        },
       ];
 
       d = {
@@ -119,9 +149,9 @@ describe('apis/delegatesAPI', () => {
 
         expect(ret.delegates).to.be.deep.equal(
           [
-            { approval: 1, rank: 1, rate: 1 },
-            { approval: 2, rank: 3, rate: 3 },
-            { approval: 3, rank: 2, rate: 2 },
+            { ...extraAccountData, approval: 1, rank: 1, rate: 1, publicKey: 'aa' },
+            { ...extraAccountData, approval: 2, rank: 3, rate: 3, publicKey: 'cc' },
+            { ...extraAccountData, approval: 3, rank: 2, rate: 2, publicKey: 'bb' },
           ]);
       });
 
@@ -131,9 +161,9 @@ describe('apis/delegatesAPI', () => {
 
         expect(ret.delegates).to.be.deep.equal(
           [
-            { approval: 3, rank: 2, rate: 2 },
-            { approval: 2, rank: 3, rate: 3 },
-            { approval: 1, rank: 1, rate: 1 },
+            { ...extraAccountData, approval: 3, rank: 2, rate: 2, publicKey: 'bb' },
+            { ...extraAccountData, approval: 2, rank: 3, rate: 3, publicKey: 'cc' },
+            { ...extraAccountData, approval: 1, rank: 1, rate: 1, publicKey: 'aa' },
           ]);
       });
 
@@ -143,9 +173,9 @@ describe('apis/delegatesAPI', () => {
 
         expect(ret.delegates).to.be.deep.equal(
           [
-            { username: 'a', rank: 1, rate: 1 },
-            { username: 'bb', rank: 2, rate: 2 },
-            { username: 'ccc', rank: 3, rate: 3 },
+            { ...extraAccountData, username: 'a', rank: 1, rate: 1, publicKey: 'aa' },
+            { ...extraAccountData, username: 'bb', rank: 2, rate: 2, publicKey: 'bb' },
+            { ...extraAccountData, username: 'ccc', rank: 3, rate: 3, publicKey: 'cc' },
           ]);
       });
 
@@ -155,9 +185,9 @@ describe('apis/delegatesAPI', () => {
 
         expect(ret.delegates).to.be.deep.equal(
           [
-            { username: 'ccc', rank: 3, rate: 3 },
-            { username: 'bb', rank: 2, rate: 2 },
-            { username: 'a', rank: 1, rate: 1 },
+            { ...extraAccountData, username: 'ccc', rank: 3, rate: 3, publicKey: 'cc' },
+            { ...extraAccountData, username: 'bb', rank: 2, rate: 2, publicKey: 'bb'  },
+            { ...extraAccountData, username: 'a', rank: 1, rate: 1, publicKey: 'aa' },
           ]);
       });
 
@@ -166,9 +196,10 @@ describe('apis/delegatesAPI', () => {
         const ret = await instance.getDelegates(data);
 
         expect(ret.delegates).to.be.deep.equal([
-          { f: 1, rank: 1, rate: 1 },
-          { f: 3, rank: 2, rate: 2 },
-          { f: 2, rank: 3, rate: 3 }]);
+          { ...extraAccountData, rank: 1, rate: 1, publicKey: 'aa' },
+          { ...extraAccountData, rank: 2, rate: 2, publicKey: 'bb' },
+          { ...extraAccountData, rank: 3, rate: 3, publicKey: 'cc' }
+          ]);
       });
 
       it('sortField state is not to same the allowed fields', async () => {
@@ -176,10 +207,10 @@ describe('apis/delegatesAPI', () => {
         const ret = await instance.getDelegates(data);
 
         expect(ret.delegates).to.be.deep.equal([
-          { NICKBORSUK: 1, rank: 1, rate: 1 },
-          { NICKBORSUK: 3, rank: 2, rate: 2 },
-          { NICKBORSUK: 2, rank: 3, rate: 3 },
-          ]);
+          { ...extraAccountData, rank: 1, rate: 1, publicKey: 'aa' },
+          { ...extraAccountData, rank: 2, rate: 2, publicKey: 'bb' },
+          { ...extraAccountData, rank: 3, rate: 3, publicKey: 'cc' }
+        ]);
       });
     });
 
@@ -187,28 +218,29 @@ describe('apis/delegatesAPI', () => {
       setReturnedDelegates('approval', 'ASC', true, undefined, 2);
       const ret = await instance.getDelegates(data);
 
-      expect(ret.delegates).to.be.deep.equal([{ approval: 3, rank: 2, rate: 2 }]);
+      expect(ret.delegates.map((d) => filterObject(d, ['approval', 'rank', 'rate'])))
+        .to.be.deep.equal([{ approval: 3, rank: 2, rate: 2 }]);
     });
 
     it('check slice array by limit', async () => {
       setReturnedDelegates('approval', 'ASC', true, 1);
       const ret = await instance.getDelegates(data);
 
-      expect(ret.delegates).to.be.deep.equal([{ approval: 1, rank: 1, rate: 1 }]);
+      expect(ret.delegates.map((d) => filterObject(d, ['approval', 'rank', 'rate'])))
+        .to.be.deep.equal([{ approval: 1, rank: 1, rate: 1 }]);
     });
 
     it('should return an object with a delegates array and a totalCount', async () => {
       setReturnedDelegates('approval', 'ASC');
       const ret = await instance.getDelegates(data);
 
-      expect(ret).to.be.deep.equal({
-        delegates : [
-          { approval: 1, rank: 1, rate: 1 },
-          { approval: 2, rank: 3, rate: 3 },
-          { approval: 3, rank: 2, rate: 2 },
-        ],
-        totalCount: 3,
-      });
+      expect(ret.delegates.map((d) => filterObject(d, ['approval', 'rank', 'rate'])))
+        .to.be.deep.equal([
+        { approval: 1, rank: 1, rate: 1 },
+        { approval: 2, rank: 3, rate: 3 },
+        { approval: 3, rank: 2, rate: 2 },
+      ]);
+      expect(ret.totalCount).to.be.deep.eq(3);
     });
 
   });
@@ -325,7 +357,7 @@ describe('apis/delegatesAPI', () => {
 
         expect(accounts.stubs.getAccount.calledOnce).to.be.true;
         expect(accounts.stubs.getAccount.firstCall.args.length).to.be.equal(2);
-        expect(accounts.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({ publicKey: params.generatorPublicKey });
+        expect(accounts.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({ publicKey: Buffer.from(params.generatorPublicKey, 'hex') });
         expect(accounts.stubs.getAccount.firstCall.args[1]).to.be.deep.equal(['fees', 'rewards']);
       });
 
@@ -356,38 +388,54 @@ describe('apis/delegatesAPI', () => {
     let delegates;
 
     beforeEach(() => {
-      params    = {
+      params = {
         publicKey: 'publicKey',
         username : 'username',
       };
       delegates = [
         {
-          publicKey: 'publicKey',
-          rank: 1,
-          rate: 1,
-          username : 'username',
+          delegate: new AccountsModel({
+            publicKey: Buffer.from('aaaa', 'hex'),
+            username : 'username',
+          }),
+          info    : {
+            rank        : 1,
+            approval    : 1,
+            productivity: 100
+          }
         },
         {
-          publicKey: '111',
-          rank: 2,
-          rate: 2,
-          username : '222',
+          delegate: new AccountsModel({
+            publicKey: Buffer.from('1111', 'hex'),
+            username : '222',
+          }),
+          info    : {
+            rank        : 2,
+            approval    : 1,
+            productivity: 100
+          }
         }];
       delegatesModule.enqueueResponse('getDelegates', Promise.resolve({ delegates }));
     });
 
     it('should call delegatesModule.getDelegates', async () => {
       await instance.getDelegate(params);
-
       expect(delegatesModule.stubs.getDelegates.calledOnce).to.be.true;
       expect(delegatesModule.stubs.getDelegates.firstCall.args.length).to.be.equal(1);
       expect(delegatesModule.stubs.getDelegates.firstCall.args[0]).to.be.deep.equal({ orderBy: 'username:asc' });
     });
 
     it('should return an object with the property: delegate', async () => {
-      const ret = await instance.getDelegate(params);
-
-      expect(ret).to.be.deep.equal({ delegate: delegates[0] });
+      const ret      = await instance.getDelegate(params);
+      const expected = {
+        delegate: {
+          ... delegates[0].delegate.toPOJO(),
+          ...delegates[0].info,
+          rate: delegates[0].info.rank
+        }
+      };
+      delete expected.delegate.secondPublicKey;
+      expect(ret).to.be.deep.equal(expected);
     });
 
     it('should throw error if no delegate matches found', async () => {
@@ -404,169 +452,133 @@ describe('apis/delegatesAPI', () => {
     let params;
     let row;
     let accountsObject;
-
+    let accounts2DelegatesModel: typeof Accounts2DelegatesModel;
+    let findAllStub: SinonStub;
     beforeEach(() => {
-      row            = { accountIds: [{}] };
-      accountsObject = {};
-      params         = { publicKey: 'publicKey' };
-      db.enqueueResponse('one', row);
-      accounts.enqueueResponse('getAccounts', accountsObject);
+      row                     = { accountIds: [{}] };
+      accountsObject          = {};
+      params                  = { publicKey: 'publicKey' };
+      accounts2DelegatesModel = container.get<any>(Symbols.models.accounts2Delegates);
+      findAllStub             = sandbox.stub(accounts2DelegatesModel, 'findAll').resolves([]);
+      accounts.enqueueResponse('getAccounts', Promise.resolve([]));
     });
 
-    it('should called db.one', async () => {
-      await instance.getVoters(params);
-
-      expect(db.stubs.one.calledOnce).to.be.true;
-      expect(db.stubs.one.firstCall.args.length).to.be.equal(2);
-      expect(db.stubs.one.firstCall.args[0]).to.be.equal('SELECT ARRAY_AGG("accountId") AS "accountIds" FROM mem_accounts2delegates WHERE "dependentId" = ${publicKey}');
-      expect(db.stubs.one.firstCall.args[1]).to.be.deep.equal({
-        publicKey: 'publicKey',
+    it('should correctly query Accounts2DelegatesModel', async () => {
+      await instance.getVoters({ publicKey: 'aa' });
+      expect(findAllStub.firstCall.args[0]).to.be.deep.eq({
+        attributes: ['accountId'],
+        where     : { dependentId: 'aa' },
       });
     });
-
-    it('should called accounts.getAccounts', async () => {
-      await instance.getVoters(params);
-
-      expect(accounts.stubs.getAccounts.calledOnce).to.be.true;
-      expect(accounts.stubs.getAccounts.firstCall.args.length).to.be.equal(2);
-      expect(accounts.stubs.getAccounts.firstCall.args[0]).to.be.deep.equal({
-        address: { $in: row.accountIds },
+    it('should correctly query accountsModule.getAccounts', async () => {
+      findAllStub.resolves([{ accountId: '1' }, { accountId: '2' }]);
+      accounts.stubs.getAccounts.resolves([new AccountsModel(), new AccountsModel()]);
+      await instance.getVoters({ publicKey: 'aa' });
+      expect(accounts.stubs.getAccounts.firstCall.args[0]).to.be.deep.eq({
         sort   : 'balance',
-      });
-      expect(accounts.stubs.getAccounts.firstCall.args[1]).to.be.deep.equal(['address', 'balance', 'username', 'publicKey']);
-    });
-
-    it('should set addresses in default value if row.accountIds is undefined', async () => {
-      db.reset();
-      delete row.accountIds;
-      db.enqueueResponse('one', row);
-
-      await instance.getVoters(params);
-
-      expect(accounts.stubs.getAccounts.firstCall.args[0]).to.be.deep.equal({
-        address: { $in: [] },
-        sort   : 'balance',
+        address: { $in: ['1', '2'] }
       });
     });
 
-    it('should return an object with the property: accounts', async () => {
-      const ret = await instance.getVoters(params);
-
-      expect(ret).to.be.deep.equal({ accounts: accountsObject });
+    it('should return subset of accounts infos', async () => {
+      accounts.stubs.getAccounts.resolves([
+        new AccountsModel({ address: '1', publicKey: Buffer.from('aa', 'hex') }),
+        new AccountsModel({ address: '2', publicKey: Buffer.from('bb', 'hex') })
+      ]);
+      const res = await instance.getVoters(params);
+      expect(res).to.be.deep.eq({
+        accounts: [
+          { address: '1', publicKey: 'aa' },
+          { address: '2', publicKey: 'bb' }
+        ],
+      });
     });
 
   });
 
   describe('search', () => {
-
-    let OrderByStub: SinonStub;
-    let sqlSearchSpy: SinonSpy;
     let params;
     let orderBy;
+    let queryStub: SinonStub;
 
     beforeEach(() => {
-      orderBy   = {
+      orderBy = {
         sortField : 'sortField',
         sortMethod: 'sortMethod',
       };
-      params    = {
+      params  = {
         limit  : 5,
         orderBy: 'username',
         q      : 'query',
       };
 
-      OrderByStub = sandbox.stub(helpers, 'OrderBy').returns(orderBy);
-      sqlSearchSpy = sandbox.spy(sql, 'search');
 
-      db.enqueueResponse('query', Promise.resolve({}));
+      queryStub = sandbox.stub(accountsModel.sequelize, 'query').resolves([]);
+
     });
-
-    it('should call OrderBy', async () => {
-      await instance.search(params);
-
-      expect(OrderByStub.calledOnce).to.be.true;
-      expect(OrderByStub.firstCall.args.length).to.be.equal(2);
-      expect(OrderByStub.firstCall.args[0]).to.be.equal(params.orderBy);
-      expect(OrderByStub.firstCall.args[1]).to.be.deep.equal({
-        sortField : 'username',
-        sortFields: sql.sortFields,
-      });
+    it('should query by name', async () => {
+      await instance.search({ q: 'vek' });
+      expect(queryStub.firstCall.args[0]).to.be.deep.eq(`
+    WITH
+      supply AS (SELECT calcSupply((SELECT height FROM blocks ORDER BY height DESC LIMIT 1))::numeric),
+      delegates AS (SELECT row_number() OVER (ORDER BY vote DESC, m."publicKey" ASC)::int AS rank,
+        m.username,
+        m.address,
+        ENCODE(m."publicKey", 'hex') AS "publicKey",
+        m.vote,
+        m.producedblocks,
+        m.missedblocks,
+        ROUND(vote / (SELECT * FROM supply) * 100, 2)::float AS approval,
+        (CASE WHEN producedblocks + missedblocks = 0 THEN 0.00 ELSE
+        ROUND(100 - (missedblocks::numeric / (producedblocks + missedblocks) * 100), 2)
+        END)::float AS productivity,
+        COALESCE(v.voters_cnt, 0) AS voters_cnt,
+        t.timestamp AS register_timestamp
+        FROM delegates d
+        LEFT JOIN mem_accounts m ON d.username = m.username
+        LEFT JOIN trs t ON d."transactionId" = t.id
+        LEFT JOIN (SELECT "dependentId", COUNT(1)::int AS voters_cnt from mem_accounts2delegates GROUP BY "dependentId") v ON v."dependentId" = ENCODE(m."publicKey", 'hex')
+        WHERE m."isDelegate" = 1
+        ORDER BY "username" ASC)
+      SELECT * FROM delegates WHERE username LIKE '%vek%' LIMIT 101
+    `);
     });
-
-    it('should throw error if OrderBy retuns error state', async () => {
-      const error = new Error('error');
-      OrderByStub.returns({ error });
-
-      await expect(instance.search(params)).to.be.rejectedWith(error.message);
-    });
-
-    it('should call db.query', async () => {
-      const sqlSearchResult = sql.search({
-        ...params, ...orderBy,
-      });
-
-      await instance.search(params);
-
-      expect(db.stubs.query.calledOnce).to.be.true;
-      expect(db.stubs.query.firstCall.args.length).to.be.equal(1);
-      expect(db.stubs.query.firstCall.args[0]).to.be.equal(sqlSearchResult);
-    });
-
-    it('should call sql.search', async () => {
-
-      await instance.search(params);
-
-      expect(sqlSearchSpy.calledOnce).to.be.true;
-      expect(sqlSearchSpy.firstCall.args.length).to.be.equal(1);
-      expect(sqlSearchSpy.firstCall.args[0]).to.be.deep.equal({
-        limit     : 5,
-        q         : '%query%',
-        sortField : 'sortField',
-        sortMethod: 'sortMethod',
-      });
-    });
-
-    it('check of set of limit prop in default value', async () => {
-      delete params.limit;
-
-      await instance.search(params);
-
-      expect(sqlSearchSpy.calledOnce).to.be.true;
-      expect(sqlSearchSpy.firstCall.args.length).to.be.equal(1);
-      expect(sqlSearchSpy.firstCall.args[0]).to.be.deep.equal({
-        limit     : 101,
-        q         : '%query%',
-        sortField : 'sortField',
-        sortMethod: 'sortMethod',
-      });
-    });
-
-    it('should return an object with the property: delegates', async () => {
-      const ret = await instance.search(params);
-
-      expect(ret).to.be.deep.equal({ delegates: {} });
+    it('should honorate also limit and orderBy with a SQL injection test', async () => {
+      await instance.search({ q: '1\' or \'1=1', orderBy: 'username:desc', limit: 10 });
+      expect(queryStub.firstCall.args[0]).to.be.deep.eq(`
+    WITH
+      supply AS (SELECT calcSupply((SELECT height FROM blocks ORDER BY height DESC LIMIT 1))::numeric),
+      delegates AS (SELECT row_number() OVER (ORDER BY vote DESC, m."publicKey" ASC)::int AS rank,
+        m.username,
+        m.address,
+        ENCODE(m."publicKey", 'hex') AS "publicKey",
+        m.vote,
+        m.producedblocks,
+        m.missedblocks,
+        ROUND(vote / (SELECT * FROM supply) * 100, 2)::float AS approval,
+        (CASE WHEN producedblocks + missedblocks = 0 THEN 0.00 ELSE
+        ROUND(100 - (missedblocks::numeric / (producedblocks + missedblocks) * 100), 2)
+        END)::float AS productivity,
+        COALESCE(v.voters_cnt, 0) AS voters_cnt,
+        t.timestamp AS register_timestamp
+        FROM delegates d
+        LEFT JOIN mem_accounts m ON d.username = m.username
+        LEFT JOIN trs t ON d."transactionId" = t.id
+        LEFT JOIN (SELECT "dependentId", COUNT(1)::int AS voters_cnt from mem_accounts2delegates GROUP BY "dependentId") v ON v."dependentId" = ENCODE(m."publicKey", 'hex')
+        WHERE m."isDelegate" = 1
+        ORDER BY "username" desc)
+      SELECT * FROM delegates WHERE username LIKE '%1'' or ''1=1%' LIMIT 10
+    `);
     });
 
   });
 
   describe('count', () => {
-
-    it('should call db.one', async () => {
-      db.enqueueResponse('one', { count: 1 });
-
-      await instance.count();
-
-      expect(db.stubs.one.calledOnce).to.be.true;
-      expect(db.stubs.one.firstCall.args.length).to.be.equal(1);
-      expect(db.stubs.one.firstCall.args[0]).to.be.equal(sql.count);
-    });
-
-    it('should return an object with the property: count', async () => {
-      db.enqueueResponse('one', { count: 1 });
-
-      const ret = await instance.count();
-
-      expect(ret).to.be.deep.equal({ count: 1 });
+    it('should call model.count', async () => {
+      const stub = sandbox.stub(accounts2delegatesModel, 'count').resolves(1);
+      const res = await instance.count();
+      expect(res).to.be.deep.eq({count: 1});
+      expect(stub.called).is.true;
     });
 
   });
@@ -579,11 +591,16 @@ describe('apis/delegatesAPI', () => {
     let currentBlockSlot;
 
     beforeEach(() => {
-      limit            = 3;
-      activeDelegates  = [{ del: 1 }, { del: 2 }, { del: 3 }];
-      currentSlot      = 1;
-      currentBlockSlot = 1;
-      (blocks as any).lastBlock = { height: 5, timestamp: 2 };
+      limit                     = 3;
+      activeDelegates           = [Buffer.from('aa', 'hex'), Buffer.from('bb', 'hex'), Buffer.from('cc', 'hex')];
+      currentSlot               = 1;
+      currentBlockSlot          = 1;
+      (blocks as any).lastBlock = new BlocksModel({
+        height: 5, timestamp: 2,
+        generatorPublicKey: new Buffer('aa'),
+        payloadHash: new Buffer('aa'),
+        blockSignature: new Buffer('aa'),
+      });
 
       delegatesModule.enqueueResponse('generateDelegateList', Promise.resolve(activeDelegates));
       slots.enqueueResponse('getSlotNumber', currentSlot);
@@ -613,10 +630,10 @@ describe('apis/delegatesAPI', () => {
       const ret = await instance.getNextForgers(limit);
 
       expect(ret).to.be.deep.equal({
-        currentBlock    : { height: 5, timestamp: 2 },
+        currentBlock    : BlocksModel.toStringBlockType((blocks as any).lastBlock, null, null),
         currentBlockSlot: 1,
         currentSlot     : 1,
-        delegates       : [{ del: 3 }],
+        delegates       : ['cc'],
       });
     });
 
@@ -625,7 +642,7 @@ describe('apis/delegatesAPI', () => {
       const ret = await instance.getNextForgers(limit);
 
       expect(ret).to.be.deep.equal({
-        currentBlock    : { height: 5, timestamp: 2 },
+        currentBlock    : BlocksModel.toStringBlockType((blocks as any).lastBlock, null, null),
         currentBlockSlot: 1,
         currentSlot     : 1,
         delegates       : [],
@@ -634,10 +651,10 @@ describe('apis/delegatesAPI', () => {
 
     it('should return empty delegates array if slots.delegates < 1', async () => {
       (slots as any).delegates = 0;
-      const ret       = await instance.getNextForgers(limit);
+      const ret                = await instance.getNextForgers(limit);
 
       expect(ret).to.be.deep.equal({
-        currentBlock    : { height: 5, timestamp: 2 },
+        currentBlock    : BlocksModel.toStringBlockType((blocks as any).lastBlock, null, null),
         currentBlockSlot: 1,
         currentSlot     : 1,
         delegates       : [],

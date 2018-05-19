@@ -150,7 +150,7 @@ export class AccountsModel extends Model<AccountsModel> {
   public toPOJO() {
     const toRet = this.toJSON();
     ['publicKey', 'secondPublicKey'].forEach((pk) => {
-      toRet[pk] = toRet[pk] !== null ? toRet[pk].toString('hex') : null;
+      toRet[pk] = toRet[pk] !== null && typeof(toRet[pk]) !== 'undefined' ? toRet[pk].toString('hex') : null;
     });
     return toRet;
   }

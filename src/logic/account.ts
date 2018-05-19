@@ -21,6 +21,7 @@ import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
 
 import { AccountDiffType } from '../ioc/interfaces/logic';
+import { Op } from 'sequelize';
 
 // tslint:disable-next-line
 export type OptionalsMemAccounts = {
@@ -292,6 +293,8 @@ export class AccountLogic implements IAccountLogic {
     const condition: any = { ...filter, ...{ limit: undefined, offset: undefined, sort: undefined } };
     if (typeof(filter.address) === 'string') {
       condition.address = filter.address.toUpperCase();
+    } else {
+      condition.address = { [Op.in]: filter.address.$in.map((add) => add.toUpperCase()) };
     }
     // Remove fields = undefined (such as limit, offset and sort)
     Object.keys(condition).forEach((k) => {

@@ -68,7 +68,7 @@ export class DelegatesAPI {
         address       : item.delegate.address,
         username      : item.delegate.username,
         publicKey     : item.delegate.hexPublicKey,
-        vote          : `${item.delegate.vote}`,
+        vote          : item.delegate.vote ? `${item.delegate.vote}` : '0',
         producedblocks: item.delegate.producedblocks,
         missedblocks  : item.delegate.missedblocks,
         rate          : item.info.rank,
@@ -192,7 +192,7 @@ export class DelegatesAPI {
   @Get('/search')
   @ValidateSchema()
   public async search(@SchemaValid(schema.search, { castNumbers: true })
-                      @QueryParams() params: { q: string, limit?: number, orderBy: string }) {
+                      @QueryParams() params: { q: string, limit?: number, orderBy?: string }) {
 
     const orderBy = params.orderBy ? params.orderBy.split(':') : ['username', 'ASC'];
     if (orderBy.length === 1) {
