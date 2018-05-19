@@ -61,7 +61,7 @@ export class BlocksAPI {
     };
 
     removeEmptyObjKeys(whereClause);
-    const orderBy = [filters.orderBy ? [filters.orderBy.split(':')] : ['height', 'desc']];
+    const orderBy = [filters.orderBy ? filters.orderBy.split(':') : ['height', 'desc']];
 
     const { rows: blocks, count } = await this.BlocksModel.findAndCountAll({
       include: [this.TransactionsModel],

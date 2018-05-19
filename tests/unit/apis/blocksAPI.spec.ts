@@ -2,16 +2,12 @@ import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
-import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import { BlocksAPI } from '../../../src/apis';
-import { OrderBy } from '../../../src/helpers';
-import * as helpers from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
-import sql from '../../../src/sql/blocks';
-import {
-  BlockRewardLogicStub, BlocksModuleStub, DbStub, SequenceStub, SystemModuleStub, ZSchemaStub,
-} from '../../stubs';
+import { BlocksModel, TransactionsModel } from '../../../src/models';
+import { BlockRewardLogicStub, BlocksModuleStub, SequenceStub, SystemModuleStub, ZSchemaStub, } from '../../stubs';
 import { BlockLogicStub } from '../../stubs/logic/BlockLogicStub';
 import { createContainer } from '../../utils/containerCreator';
 
@@ -25,21 +21,20 @@ describe('apis/blocksAPI', () => {
   let instance: BlocksAPI;
   let container: Container;
   let schema: ZSchemaStub;
-  let db: DbStub;
   let dbSequence: SequenceStub;
   let blockRewardLogic: BlockRewardLogicStub;
   let blockLogic: BlockLogicStub;
   let blocksModule: BlocksModuleStub;
   let systemModule: SystemModuleStub;
   let constants: any;
-
+  let fakeBlock: BlocksModel;
+  let blocksModel: typeof BlocksModel;
   beforeEach(() => {
     sandbox   = sinon.sandbox.create();
     container = createContainer();
     container.bind(Symbols.api.blocks).to(BlocksAPI);
 
     schema           = container.get(Symbols.generic.zschema);
-    db               = container.get(Symbols.generic.db);
     constants        = container.get(Symbols.helpers.constants);
     dbSequence       = container.getTagged(Symbols.helpers.sequence,
       Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence);
@@ -47,39 +42,163 @@ describe('apis/blocksAPI', () => {
     blockLogic       = container.get(Symbols.logic.block);
     blocksModule     = container.get(Symbols.modules.blocks);
     systemModule     = container.get(Symbols.modules.system);
+    blocksModel      = container.get(Symbols.models.blocks);
 
-    instance = container.get(Symbols.api.blocks);
+    instance  = container.get(Symbols.api.blocks);
+    fakeBlock = new BlocksModel({
+      blockSignature    : Buffer.alloc(64).fill('a'),
+      generatorPublicKey: Buffer.alloc(32).fill('b'),
+      payloadHash       : Buffer.alloc(32).fill('c'),
+    });
+
   });
 
   afterEach(() => {
     sandbox.restore();
   });
+  //
+  // describe('getBlocks', () => {
+  //
+  //   let listStub: SinonStub;
+  //   let filters: any;
+  //
+  //   beforeEach(() => {
+  //     filters  = {};
+  //     listStub = sandbox.stub(instance as any, 'list').resolves(1);
+  //   });
+  //
+  //   it('should call dbSequence.addAndPromise', async () => {
+  //     await instance.getBlocks(filters);
+  //
+  //     expect(dbSequence.spies.addAndPromise.calledOnce).to.be.true;
+  //   });
+  //
+  //   it('should call instance.list', async () => {
+  //     await instance.getBlocks(filters);
+  //
+  //     expect(listStub.calledOnce).to.be.true;
+  //     expect(listStub.firstCall.args.length).to.be.equal(1);
+  //     expect(listStub.firstCall.args[0]).to.be.deep.equal(filters);
+  //   });
+  //
+  // });
 
   describe('getBlocks', () => {
-
-    let listStub: SinonStub;
-    let filters: any;
-
+    let defaultFindAndCountAllParams;
+    let findAllStub: SinonStub;
     beforeEach(() => {
-      filters  = {};
-      listStub = sandbox.stub(instance as any, 'list').resolves(1);
+      const TxModel                = container.get<typeof TransactionsModel>(Symbols.models.transactions);
+      defaultFindAndCountAllParams = {
+        // include: [TxModel],
+        limit  : 100,
+        offset : 0,
+        order  : [['height', 'desc']],
+      };
+      findAllStub                  = sandbox.stub(blocksModel, 'findAndCountAll').resolves({ rows: [], count: 0 });
+    });
+    it('should filter by generatorPublicKey', async () => {
+      await instance.getBlocks({ generatorPublicKey: 'aaaa' });
+
+      delete findAllStub.firstCall.args[0].include;
+      expect(findAllStub.firstCall.args[0]).to.be.deep.eq({
+        ...defaultFindAndCountAllParams,
+        where: {
+          generatorPublicKey: Buffer.from('aaaa', 'hex'),
+        },
+      });
+    });
+    it('should filter by height', async () => {
+      await instance.getBlocks({ height: 2 });
+
+      delete findAllStub.firstCall.args[0].include;
+      expect(findAllStub.firstCall.args[0]).be.deep.eq({
+        ...defaultFindAndCountAllParams,
+        where: { height: 2 },
+      });
     });
 
-    it('should call dbSequence.addAndPromise', async () => {
-      await instance.getBlocks(filters);
+    it('should filter by previousBlock', async () => {
+      await instance.getBlocks({ previousBlock: 'ahah' });
 
-      expect(dbSequence.spies.addAndPromise.calledOnce).to.be.true;
-      expect(dbSequence.spies.addAndPromise.calledBefore(listStub)).to.be.true;
+      delete findAllStub.firstCall.args[0].include;
+      expect(findAllStub.firstCall.args[0]).be.deep.eq({
+        ...defaultFindAndCountAllParams,
+        where: { previousBlock: 'ahah' },
+      });
     });
 
-    it('should call instance.list', async () => {
-      await instance.getBlocks(filters);
+    it('should filter by reward', async () => {
+      await instance.getBlocks({ reward: 10 });
 
-      expect(listStub.calledOnce).to.be.true;
-      expect(listStub.firstCall.args.length).to.be.equal(1);
-      expect(listStub.firstCall.args[0]).to.be.deep.equal(filters);
+      delete findAllStub.firstCall.args[0].include;
+      expect(findAllStub.firstCall.args[0]).be.deep.eq({
+        ...defaultFindAndCountAllParams,
+        where: { reward: 10 },
+      });
     });
 
+    it('should filter by totalAmount', async () => {
+      await instance.getBlocks({ totalAmount: 10 });
+
+      delete findAllStub.firstCall.args[0].include;
+      expect(findAllStub.firstCall.args[0]).be.deep.eq({
+        ...defaultFindAndCountAllParams,
+        where: { totalAmount: 10 },
+      });
+    });
+
+    it('should filter by totalFee', async () => {
+      await instance.getBlocks({ totalFee: 10 });
+
+      delete findAllStub.firstCall.args[0].include;
+      expect(findAllStub.firstCall.args[0]).be.deep.eq({
+        ...defaultFindAndCountAllParams,
+        where: { totalFee: 10 },
+      });
+    });
+
+    it('should honorate orderBy clause', async () => {
+      await instance.getBlocks({ orderBy: 'id:asc' });
+
+      delete findAllStub.firstCall.args[0].include;
+      expect(findAllStub.firstCall.args[0]).be.deep.eq({
+        ...defaultFindAndCountAllParams,
+        order: [['id', 'asc']],
+        where  : {},
+      });
+    });
+
+    it('should honorate limit clause', async () => {
+      await instance.getBlocks({ limit: 10 });
+
+      delete findAllStub.firstCall.args[0].include;
+      expect(findAllStub.firstCall.args[0]).be.deep.eq({
+        ...defaultFindAndCountAllParams,
+        limit: 10,
+        where: {},
+      });
+    });
+
+    it('should honorate offset clause', async () => {
+      await instance.getBlocks({ offset: 10 });
+
+      delete findAllStub.firstCall.args[0].include;
+      expect(findAllStub.firstCall.args[0]).be.deep.eq({
+        ...defaultFindAndCountAllParams,
+        offset: 10,
+        where: {},
+      });
+    });
+
+    it('should remap object to string block type', async () => {
+      findAllStub.resolves({rows: [fakeBlock, fakeBlock], count: 3});
+      const stringFakeBlock = blocksModel.toStringBlockType(fakeBlock, null, null);
+      const result = await instance.getBlocks({ offset: 10 });
+      expect(result).to.be.deep.eq({
+        blocks: [stringFakeBlock, stringFakeBlock],
+        count: 3,
+      });
+    });
   });
 
   describe('getBlock', () => {
@@ -88,49 +207,34 @@ describe('apis/blocksAPI', () => {
     let rows;
     let block;
 
-    beforeEach(() => {
-      block   = {};
-      rows    = [{}, {}];
-      filters = { id: 'id' };
-      db.enqueueResponse('query', Promise.resolve(rows));
-      blockLogic.enqueueResponse('dbRead', block);
+    beforeEach(async () => {
+      block       = {};
+      rows        = [{}, {}];
+      filters     = { id: 'id' };
     });
 
     it('should call dbSequence.addAndPromise', async () => {
+      sandbox.stub(blocksModel, 'findById').resolves(fakeBlock);
       await instance.getBlock(filters);
-
       expect(dbSequence.spies.addAndPromise.calledOnce).to.be.true;
-      expect(dbSequence.spies.addAndPromise.calledBefore(db.stubs.query)).to.be.true;
     });
 
-    it('should call db.query', async () => {
+    it('should call blocksModel.findById', async () => {
+      const findByIdStub = sandbox.stub(blocksModel, 'findById').resolves(fakeBlock);
       await instance.getBlock(filters);
-
-      expect(db.stubs.query.calledOnce).to.be.true;
-      expect(db.stubs.query.firstCall.args.length).to.be.equal(2);
-      expect(db.stubs.query.firstCall.args[0]).to.be.equal('SELECT * FROM blocks_list WHERE "b_id" = ${id}');
-      expect(db.stubs.query.firstCall.args[1]).to.be.deep.equal({ id: 'id' });
+      expect(findByIdStub.calledOnce).is.true;
     });
 
     it('should throw error if rows.length === 0', async () => {
-      db.reset();
-      db.enqueueResponse('query', Promise.resolve([]));
-
+      sandbox.stub(blocksModel, 'findById').resolves(null);
       await expect(instance.getBlock(filters)).to.be.rejectedWith('Block not found');
     });
 
-    it('should call db.dbRead', async () => {
-      await instance.getBlock(filters);
-
-      expect(blockLogic.stubs.dbRead.calledOnce).to.be.true;
-      expect(blockLogic.stubs.dbRead.firstCall.args.length).to.be.equal(1);
-      expect(blockLogic.stubs.dbRead.firstCall.args[0]).to.be.deep.equal({});
-    });
-
-    it('should return block from an id', async () => {
+    it('should return stringified block from an id', async () => {
+      sandbox.stub(blocksModel, 'findById').resolves(fakeBlock);
       const ret = await instance.getBlock(filters);
 
-      expect(ret).to.be.deep.equal({ block });
+      expect(ret).to.be.deep.equal({ block: BlocksModel.toStringBlockType(fakeBlock, null, null) });
     });
   });
 
@@ -356,262 +460,6 @@ describe('apis/blocksAPI', () => {
         reward   : 1,
         supply   : 1,
       });
-    });
-  });
-
-  describe('list', () => {
-
-    let OrderBySpy: SinonSpy;
-    let countListSpy: SinonSpy;
-    let listSpy: SinonSpy;
-    let blockRows;
-    let filter;
-
-    beforeEach(() => {
-      filter    = {};
-      blockRows = ['row1', 'row2'];
-
-      instance      = instance as any;
-      OrderBySpy    = sandbox.spy(helpers, 'OrderBy');
-      countListSpy  = sandbox.spy(sql, 'countList');
-      listSpy       = sandbox.spy(sql, 'list');
-
-      db.enqueueResponse('query', Promise.resolve([{ count: 10 }]));
-      db.enqueueResponse('query', Promise.resolve(blockRows));
-      blockLogic.stubs.dbRead.callsFake((row) => row);
-    });
-
-    describe('filter validation', () => {
-
-      let params;
-      let where;
-
-      // Helper function to catch the where and params variables
-      const doCall = async (fltr) => {
-        params = null;
-        where  = null;
-        await instance['list'](fltr);
-        if (db.stubs.query.called) {
-          params = db.stubs.query.firstCall.args[1];
-        }
-        if (countListSpy.called) {
-          where = countListSpy.firstCall.args[0].where;
-        }
-      };
-
-      it('generatorPublicKey state is exist', async () => {
-        filter.generatorPublicKey = 'generatorPublicKey';
-
-        await doCall(filter);
-
-        expect(where[0]).to.be.equal('"b_generatorPublicKey"::bytea = ${generatorPublicKey}');
-        expect(params.generatorPublicKey).to.be.equal('generatorPublicKey');
-      });
-
-      it('numberOfTransactions state is exist', async () => {
-        filter.numberOfTransactions = 'numberOfTransactions';
-
-        await doCall(filter);
-
-        expect(where[0]).to.be.equal('"b_numberOfTransactions" = ${numberOfTransactions}');
-        expect(params.numberOfTransactions).to.be.equal('numberOfTransactions');
-      });
-
-      it('previousBlock state is exist', async () => {
-        filter.previousBlock = 'previousBlock';
-
-        await doCall(filter);
-
-        expect(where[0]).to.be.equal('"b_previousBlock" = ${previousBlock}');
-        expect(params.previousBlock).to.be.equal('previousBlock');
-      });
-
-      it('height === 0', async () => {
-        filter.height = 0;
-
-        await doCall(filter);
-
-        expect(where[0]).to.be.equal('"b_height" = ${height}');
-        expect(params.height).to.be.equal(0);
-      });
-
-      it('height > 0', async () => {
-        filter.height = 1;
-
-        await doCall(filter);
-
-        expect(where[0]).to.be.equal('"b_height" = ${height}');
-        expect(params.height).to.be.equal(1);
-      });
-
-      it('totalAmount >= 0', async () => {
-        filter.totalAmount = 5;
-
-        await doCall(filter);
-
-        expect(where[0]).to.be.equal('"b_totalAmount" = ${totalAmount}');
-        expect(params.totalAmount).to.be.equal(5);
-      });
-
-      it('totalFee >= 0', async () => {
-        filter.totalFee = 5;
-
-        await doCall(filter);
-
-        expect(where[0]).to.be.equal('"b_totalFee" = ${totalFee}');
-        expect(params.totalFee).to.be.equal(5);
-      });
-
-      it('reward >= 0', async () => {
-        filter.reward = 5;
-
-        await doCall(filter);
-
-        expect(where[0]).to.be.equal('"b_reward" = ${reward}');
-        expect(params.reward).to.be.equal(5);
-      });
-
-      it('limit state is exist', async () => {
-        filter.limit = -10;
-
-        await doCall(filter);
-
-        expect(params.limit).to.be.equal(10);
-      });
-
-      it('limit state isn\'t exist', async () => {
-        await doCall(filter);
-
-        expect(params.limit).to.be.equal(100);
-      });
-
-      it('should throw error if limit is biggest than 100', async () => {
-        filter.limit = 101;
-
-        await expect(doCall(filter)).to.be.rejectedWith('Invalid limit. Maximum is 100');
-      });
-
-      it('offset state is exist', async () => {
-        filter.offset = -10;
-
-        await doCall(filter);
-
-        expect(params.offset).to.be.equal(10);
-      });
-
-      it('offset state isn"t exist', async () => {
-        await doCall(filter);
-
-        expect(params.offset).to.be.equal(0);
-      });
-
-    });
-
-    describe('OrderBy', async () => {
-
-      it('should call OrderBy', async () => {
-        await instance['list'](filter);
-
-        expect(OrderBySpy.calledOnce).to.be.true;
-        expect(OrderBySpy.firstCall.args.length).to.be.equal(2);
-        expect(OrderBySpy.firstCall.args[0]).to.be.equal('height:desc');
-        expect(OrderBySpy.firstCall.args[1]).to.be.deep.equal({
-          fieldPrefix: 'b_',
-          quoteField : true,
-          sortField  : null,
-          sortFields : [
-            'id',
-            'timestamp',
-            'height',
-            'previousBlock',
-            'totalAmount',
-            'totalFee',
-            'reward',
-            'numberOfTransactions',
-            'generatorPublicKey',
-          ],
-          sortMethod : null,
-        });
-      });
-
-      it('check if filter.orderBy is exist', async () => {
-        filter.orderBy = 'height';
-
-        await instance['list'](filter);
-
-        expect(OrderBySpy.calledOnce).to.be.true;
-        expect(OrderBySpy.firstCall.args.length).to.be.equal(2);
-        expect(OrderBySpy.firstCall.args[0]).to.be.equal('height');
-      });
-
-      it('should throw error if OrderBy retuns error state', async () => {
-        filter.orderBy = 'MDAAAAVOTENTOPASHALKA';
-
-        await expect(instance['list'](filter)).to.be.rejectedWith(OrderBySpy.firstCall.returnValue.error);
-      });
-
-    });
-
-    it('should call db.query twice', async () => {
-      await instance['list'](filter);
-
-      expect(db.stubs.query.calledTwice).to.be.true;
-
-      expect(db.stubs.query.firstCall.args.length).to.be.equal(2);
-      expect(db.stubs.query.firstCall.args[0]).to.be.equal('SELECT COALESCE((SELECT height FROM blocks ORDER BY height DESC LIMIT 1), 0)');
-      expect(db.stubs.query.firstCall.args[1]).to.be.deep.equal({
-        limit : 100,
-        offset: 0,
-      });
-
-      expect(db.stubs.query.secondCall.args.length).to.be.equal(2);
-      expect(db.stubs.query.secondCall.args[0]).to.be.equal('SELECT * FROM blocks_list ORDER BY "b_height" DESC LIMIT ${limit} OFFSET ${offset}');
-      expect(db.stubs.query.secondCall.args[1]).to.be.deep.equal({
-        limit : 100,
-        offset: 0,
-      });
-    });
-
-    it('should call sql.countList', async () => {
-      await instance['list'](filter);
-
-      expect(countListSpy.calledOnce).to.be.true;
-      expect(countListSpy.firstCall.args.length).to.be.equal(1);
-      expect(countListSpy.firstCall.args[0]).to.be.deep.equal({
-        where: [],
-      });
-    });
-
-    it('should call sql.list', async () => {
-      await instance['list'](filter);
-
-      expect(db.stubs.query.calledTwice).to.be.true;
-
-      expect(listSpy.calledOnce).to.be.true;
-      expect(listSpy.firstCall.args.length).to.be.equal(1);
-      expect(listSpy.firstCall.args[0]).to.be.deep.equal({
-        sortField : '\"b_height"',
-        sortMethod: 'DESC',
-        where     : [],
-      });
-    });
-
-    it('should call blockLogic.dbRead for each row', async () => {
-      await instance['list'](filter);
-
-      expect(blockLogic.stubs.dbRead.calledTwice).to.be.true;
-
-      expect(blockLogic.stubs.dbRead.firstCall.args.length).to.be.equal(1);
-      expect(blockLogic.stubs.dbRead.firstCall.args[0]).to.be.equal(blockRows[0]);
-
-      expect(blockLogic.stubs.dbRead.secondCall.args.length).to.be.equal(1);
-      expect(blockLogic.stubs.dbRead.secondCall.args[0]).to.be.equal(blockRows[1]);
-    });
-
-    it('should return an object with the properties blocks and count', async () => {
-      const ret = await instance['list'](filter);
-
-      expect(ret).to.be.deep.equal({ blocks: blockRows, count: 10 });
     });
   });
 

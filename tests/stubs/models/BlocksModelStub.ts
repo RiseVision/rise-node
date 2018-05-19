@@ -25,4 +25,12 @@ export class BlocksModelStub extends BaseStubClass {
   @stubStaticMethod()
   public static findMeow() {
   }
+  @stubStaticMethod()
+  public static toStringBlockType() {
+  }
+
+  @stubStaticMethod()
+  public static findById() {
+
+  }
 }
