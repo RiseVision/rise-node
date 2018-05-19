@@ -97,6 +97,7 @@
     "reflect-metadata": "^0.1.10",
     "shx": "^0.2.2",
     "sinon": "=4.4.9",
+    "sqlite3": "^4.0.0",
     "supertest": "=3.0.0",
     "ts-node": "^5.0.1",
     "tslint": "^5.8.0",

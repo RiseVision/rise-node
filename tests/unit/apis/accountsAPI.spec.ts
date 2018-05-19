@@ -3,21 +3,20 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as proxyquire from 'proxyquire';
-import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import { AccountsAPI } from '../../../src/apis';
 import { Symbols } from '../../../src/ioc/symbols';
-import {
-  AccountsModuleStub, DelegatesModuleStub, SystemModuleStub,
-} from '../../stubs';
+import { AccountsModuleStub, DelegatesModuleStub, SystemModuleStub, } from '../../stubs';
 import ZSchemaStub from '../../stubs/helpers/ZSchemaStub';
 import { createContainer } from '../../utils/containerCreator';
+import { AccountsModel } from '../../../src/models';
 
 chai.use(chaiAsPromised);
 
 let isEmptyStub: SinonStub;
 const ProxyAccountsAPI = proxyquire('../../../src/apis/accountsAPI', {
-    'is-empty': (...args) => isEmptyStub.apply(this, args),
+  'is-empty': (...args) => isEmptyStub.apply(this, args),
 });
 
 // tslint:disable no-unused-expression max-line-length
@@ -59,19 +58,20 @@ describe('apis/accountsAPI', () => {
         publicKey: 'publicKey',
       };
       accData          = {
-        address          : 'address',
-        balance          : 'balance',
-        multisignatures  : [],
-        publicKey        : 'publicKey',
-        secondPublicKey  : 'secondPublicKey',
-        secondSignature  : 'secondSignature',
-        u_balance        : 10000,
-        u_multisignatures: [],
-        u_secondSignature: 'u_secondSignature',
+        _timestampAttributes: {},
+        address             : 'address',
+        balance             : 'balance',
+        multisignatures     : [],
+        publicKey           : Buffer.from('0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff', 'hex'),
+        secondPublicKey     : Buffer.from('1111aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff', 'hex'),
+        secondSignature     : 1,
+        u_balance           : '10000',
+        u_multisignatures   : [],
+        u_secondSignature   : 1,
       };
 
       accountsModule.enqueueResponse('generateAddressByPublicKey', generatedAddress);
-      accountsModule.enqueueResponse('getAccount', Promise.resolve(accData));
+      accountsModule.enqueueResponse('getAccount', Promise.resolve(new AccountsModel(accData)));
 
       isEmptyStub = sandbox.stub();
       isEmptyStub.onCall(0).returns(false)
@@ -150,12 +150,12 @@ describe('apis/accountsAPI', () => {
       });
     });
 
-    it('should call accountsModule.getAccount', async () => {
-      await instance.getAccount(query);
+    it('should call accountsModule.getAccount with derived address from publicKey', async () => {
+      await instance.getAccount({ publicKey: 'publicKey' });
 
       expect(accountsModule.stubs.getAccount.calledOnce).to.be.true;
       expect(accountsModule.stubs.getAccount.firstCall.args.length).to.be.equal(1);
-      expect(accountsModule.stubs.getAccount.firstCall.args[0]).to.be.deep.equal(query);
+      expect(accountsModule.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({ address: 'generatedAddress' });
     });
 
     it('should throw error if accountsModule.getAccount returns falsy ', async () => {
@@ -169,17 +169,19 @@ describe('apis/accountsAPI', () => {
     it('should return an account', async () => {
       const res = await instance.getAccount(query);
 
-      expect(res).to.be.deep.equal({account: {
+      expect(res).to.be.deep.equal({
+        account: {
           address             : accData.address,
           balance             : accData.balance,
           multisignatures     : accData.multisignatures,
-          publicKey           : accData.publicKey,
-          secondPublicKey     : accData.secondPublicKey,
+          publicKey           : accData.publicKey.toString('hex'),
+          secondPublicKey     : accData.secondPublicKey.toString('hex'),
           secondSignature     : accData.secondSignature,
           u_multisignatures   : accData.u_multisignatures,
           unconfirmedBalance  : accData.u_balance,
           unconfirmedSignature: accData.u_secondSignature,
-        }});
+        }
+      });
     });
 
   });
@@ -239,7 +241,7 @@ describe('apis/accountsAPI', () => {
       account = {
         publicKey: '1',
       };
-      accountsModule.enqueueResponse('getAccount', Promise.resolve(account));
+      accountsModule.enqueueResponse('getAccount', Promise.resolve(new AccountsModel(account)));
     });
 
     it('should call accountsModule.getAccount', async () => {
@@ -304,9 +306,16 @@ describe('apis/accountsAPI', () => {
         del1               = { publicKey: '1' };
         del2               = { publicKey: '3' };
         account.delegates  = ['1', '2'];
-        delegatesFromQuery = [del1, del2];
+        delegatesFromQuery = [del1, del2].map((d, idx) => ({
+          delegate: new AccountsModel(d), info: {
+            rate        : idx,
+            rank        : idx,
+            approval    : 100,
+            productivity: 100,
+          },
+        }));
         accountsModule.reset();
-        accountsModule.enqueueResponse('getAccount', Promise.resolve(account));
+        accountsModule.enqueueResponse('getAccount', Promise.resolve(new AccountsModel(account)));
         delegatesModule.enqueueResponse('getDelegates', Promise.resolve({ delegates: delegatesFromQuery }));
       });
 
@@ -324,6 +333,15 @@ describe('apis/accountsAPI', () => {
         expect(ret).to.be.deep.equal({
           delegates: [
             {
+              address: null,
+              approval: 100,
+              missedblocks: undefined,
+              producedblocks: undefined,
+              productivity: 100,
+              rank: 0,
+              rate: 0,
+              username: undefined,
+              vote: undefined,
               publicKey: '1',
             },
           ],

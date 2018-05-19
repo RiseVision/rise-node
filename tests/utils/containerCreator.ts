@@ -35,9 +35,12 @@ import MultisignaturesModuleStub from '../stubs/modules/MultisignaturesModuleStu
 import { RoundsModuleStub } from '../stubs/modules/RoundsModuleStub';
 import TransportModuleStub from '../stubs/modules/TransportModuleStub';
 import SocketIOStub from '../stubs/utils/SocketIOStub';
+import { AccountsModel } from '../../src/models';
+import { Sequelize } from 'sequelize-typescript';
 
 export const createContainer = (): Container => {
   const container = new Container();
+
   // Generics
   container.bind(Symbols.generic.appConfig)
     .toConstantValue(require(`${__dirname}/../integration/config.json`));
@@ -45,6 +48,14 @@ export const createContainer = (): Container => {
     .toConstantValue(require(`${__dirname}/../integration/genesisBlock.json`));
   container.bind(Symbols.generic.socketIO).to(SocketIOStub).inSingletonScope();
   container.bind(Symbols.generic.zschema).to(ZSchemaStub).inSingletonScope();
+  container.bind(Symbols.generic.sequelize).toConstantValue(new Sequelize({
+    database: '__',
+    dialect: 'sqlite',
+    username: 'root',
+    password: '',
+    storage: ':memory:',
+    logging: !('SEQ_SILENT' in process.env),
+  }));
 
   container.bind(Symbols.helpers.constants).toConstantValue({ ...{}, ...constants });
   container.bind(Symbols.helpers.bus).to(BusStub).inSingletonScope();
@@ -99,5 +110,7 @@ export const createContainer = (): Container => {
   container.bind(Symbols.models.accounts).toConstructor(AccountsModelStub);
   container.bind(Symbols.models.blocks).toConstructor(BlocksModelStub);
 
+  const sequelize = container.get<Sequelize>(Symbols.generic.sequelize);
+  sequelize.addModels([AccountsModel]);
   return container;
 };

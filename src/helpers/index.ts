@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import BigNum from './bignum';
 import * as cache from './cache';
 import config from './config';
