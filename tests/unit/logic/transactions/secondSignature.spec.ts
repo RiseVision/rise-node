@@ -1,12 +1,15 @@
 'use strict';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import {Container} from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
 import { TransactionType } from '../../../../src/helpers';
+import {Symbols} from '../../../../src/ioc/symbols';
 import { SecondSignatureTransaction } from '../../../../src/logic/transactions';
 import secondSignatureSchema from '../../../../src/schema/logic/transactions/secondSignature';
 import { AccountsModuleStub, SystemModuleStub } from '../../../stubs';
+import { createContainer } from '../../../utils/containerCreator';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -17,7 +20,7 @@ describe('logic/transactions/secondSignature', () => {
   let zSchemaStub: any;
   let accountsModuleStub: AccountsModuleStub;
   let systemModuleStub: SystemModuleStub;
-
+  let container: Container;
   let instance: SecondSignatureTransaction;
   let tx: any;
   let sender: any;
@@ -25,33 +28,34 @@ describe('logic/transactions/secondSignature', () => {
 
   beforeEach(() => {
     sandbox            = sinon.sandbox.create();
+    container          = createContainer();
     zSchemaStub        = {
-      validate     : sandbox.stub(),
       getLastErrors: () => [],
+      validate     : sandbox.stub(),
     };
-    accountsModuleStub = new AccountsModuleStub();
-    systemModuleStub   = new SystemModuleStub();
+    accountsModuleStub = container.get(Symbols.modules.accounts);
+    systemModuleStub   = container.get(Symbols.modules.system);
 
     tx = {
+      amount         : 0,
       asset          : {
         signature: {
           publicKey: 'a2bac0a1525e9605a37e6c6588716f9c941530c74eabdf0b27b10b3817e58fe3',
         },
       },
-      type           : TransactionType.SIGNATURE,
-      amount         : 0,
       fee            : 10,
-      timestamp      : 0,
+      id             : '8139741256612355994',
       senderId       : '1233456789012345R',
       senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
       signature      : '0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
       'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2',
-      id             : '8139741256612355994',
+      timestamp      : 0,
+      type           : TransactionType.SIGNATURE,
     };
 
     sender = {
-      balance  : 10000000,
       address  : '1233456789012345R',
+      balance  : 10000000,
       publicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
     };
 
@@ -270,12 +274,12 @@ describe('logic/transactions/secondSignature', () => {
   describe('dbSave', () => {
     it('should return the expected object', () => {
       expect(instance.dbSave(tx)).to.be.deep.equal({
-          table : 'signatures',
-          fields: ['publicKey', 'transactionId'],
-          values: {
-            publicKey    : Buffer.from(tx.asset.signature.publicKey, 'hex'),
-            transactionId: tx.id,
-          },
+        fields: ['publicKey', 'transactionId'],
+        table : 'signatures',
+        values: {
+          publicKey    : Buffer.from(tx.asset.signature.publicKey, 'hex'),
+          transactionId: tx.id,
+        },
         }
       );
     });

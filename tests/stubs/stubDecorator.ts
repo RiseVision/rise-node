@@ -13,6 +13,15 @@ export function stubMethod(withDefaultAllowed: boolean = false) {
   };
 }
 
+export function stubStaticMethod(withDefaultAllowed: boolean = false) {
+  return (target: typeof BaseStubClass,
+          method: string,
+          descriptor: TypedPropertyDescriptor<(...args: any[]) => any>) => {
+    target.stubConfigs = target.stubConfigs || [];
+    target.stubConfigs.push({method, withDefaultAllowed});
+  };
+}
+
 export function spyMethod(target: BaseStubClass,
                           method: string,
                           descriptor: TypedPropertyDescriptor<(...args: any[]) => any>) {

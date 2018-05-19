@@ -37,17 +37,17 @@ describe('helpers/cache.connect', () => {
     onReadySpy = sinon.spy();
     onErrorSpy = sinon.spy();
     mockLogger = {
-      none    : logFn,
-      trace   : logFn,
       debug   : logFn,
-      log     : logFn,
-      info    : logFn,
-      warn    : logFn,
       error   : logFn,
       fatal   : logFn,
-      setLevel: (lvl) => {
+      info    : logFn,
+      log     : logFn,
+      none    : logFn,
+      setLevel: () => {
         return;
       },
+      trace   : logFn,
+      warn    : logFn,
     };
 
     mockCreateClient = (cfg) => {

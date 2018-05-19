@@ -1,7 +1,7 @@
 import * as chai from 'chai';
 import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
-import { SinonStub } from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import * as helpers from '../../../src/helpers/';
 import roundSQL from '../../../src/sql/logic/rounds';
 
@@ -16,42 +16,48 @@ const ProxyRound = proxyquire('../../../src/logic/round.ts', {
 
 // tslint:disable no-unused-expression
 describe('logic/round', () => {
+  let sandbox: SinonSandbox;
   let instance;
   let scope;
   let task;
 
   beforeEach(() => {
+    sandbox             = sinon.sandbox.create();
     scope    = {
       backwards     : false,
-      round         : {},
-      roundOutsiders: ['1', '2', '3'],
-      roundDelegates: [{}],
-      roundFees     : {},
-      roundRewards  : {},
+      block         : {
+        generatorPublicKey: '9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f',
+        height            : '2',
+        id                : '1',
+      },
       library       : {
         logger: {
-          debug: sinon.stub(),
-          trace: sinon.stub(),
+          debug: sandbox.stub(),
+          trace: sandbox.stub(),
         },
       },
       modules       : {
         accounts: {
-          mergeAccountAndGet        : sinon.stub().resolves('yes'),
-          mergeAccountAndGetSQL     : sinon.stub().returns('yesSQL'),
-          generateAddressByPublicKey: sinon.stub().returns(1),
+          generateAddressByPublicKey: sandbox.stub().returns(1),
+          mergeAccountAndGet        : sandbox.stub().resolves('yes'),
+          mergeAccountAndGetSQL     : sandbox.stub().returns('yesSQL'),
         },
       },
-      block         : {
-        generatorPublicKey: '9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f',
-        id                : '1',
-        height            : '2',
-      },
+      round         : {},
+      roundDelegates: [{}],
+      roundFees     : {},
+      roundOutsiders: ['1', '2', '3'],
+      roundRewards  : {},
     };
     task     = {
-      none : sinon.stub().resolves('none works'),
-      query: sinon.stub().resolves('query works'),
+      none : sandbox.stub().resolves('none works'),
+      query: sandbox.stub().resolves('query works'),
     };
     instance = new ProxyRound.RoundLogic(scope, task);
+  });
+
+  afterEach(() => {
+    sandbox.restore();
   });
 
   describe('constructor', () => {
@@ -113,9 +119,9 @@ describe('logic/round', () => {
       await instance.mergeBlockGenerator();
       expect(scope.modules.accounts.mergeAccountAndGet.calledOnce).to.equal(true);
       expect(scope.modules.accounts.mergeAccountAndGet.firstCall.args[0]).to.deep.equal({
-        publicKey     : scope.block.generatorPublicKey,
-        producedblocks: scope.backwards ? -1 : 1,
         blockId       : scope.block.id,
+        producedblocks: scope.backwards ? -1 : 1,
+        publicKey     : scope.block.generatorPublicKey,
         round         : scope.round,
       });
     });
@@ -131,7 +137,7 @@ describe('logic/round', () => {
     });
 
     it('should return result from updateMissedBlocks', async () => {
-      const updateMissedBlocks = sinon.stub(roundSQL, 'updateMissedBlocks').returns(true);
+      const updateMissedBlocks = sandbox.stub(roundSQL, 'updateMissedBlocks').returns(true);
       const retVal             = await instance.updateMissedBlocks();
 
       expect(task.none.calledOnce).to.equal(true);
@@ -167,9 +173,9 @@ describe('logic/round', () => {
 
     beforeEach(() => {
       pgpStub.as = {
-        format: sinon.stub(),
+        format: sandbox.stub(),
       };
-      getVotesStub = sinon.stub(instance, 'getVotes');
+      getVotesStub = sandbox.stub(instance, 'getVotes');
     });
 
     afterEach(() => {
@@ -180,8 +186,8 @@ describe('logic/round', () => {
       // emulate getVotes returning array of one element
       getVotesStub.resolves([
         {
-          delegate: 'delegateName',
           amount  : '10',
+          delegate: 'delegateName',
         },
       ]);
       const updateVotes = 'UPDATE mem_accounts SET "vote" = "vote" + (${amount})::bigint WHERE "address" = ${address};';
@@ -230,8 +236,8 @@ describe('logic/round', () => {
       expect(task.none.firstCall.args.length).to.equal(2);
       expect(task.none.firstCall.args[0]).to.equal(updateBlockId);
       expect(task.none.firstCall.args[1]).to.deep.equal({
-        oldId: scope.block.id,
         newId: '0',
+        oldId: scope.block.id,
       });
       expect(retVal).to.equal('none works');
     });
@@ -319,8 +325,8 @@ describe('logic/round', () => {
 
     beforeEach(() => {
       roundChangesOriginal = helpers.RoundChanges;
-      at                   = sinon.stub();
-      RoundChanges         = function RoundChanges () {
+      at                   = sandbox.stub();
+      RoundChanges         = function RoundChangesFake() {
         return { at };
       };
       (helpers.RoundChanges as any) = RoundChanges;
@@ -347,19 +353,19 @@ describe('logic/round', () => {
         'Delegate changes'
       );
       expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
-        delegate: {},
         changes : {
           feesRemaining: 10,
         },
+        delegate: {},
       });
       expect(scope.library.logger.trace.secondCall.args.length).to.be.equal(2);
       expect(scope.library.logger.trace.secondCall.args[0]).to.be.equal(
         'Fees remaining'
       );
       expect(scope.library.logger.trace.secondCall.args[1]).to.deep.equal({
-        index   : 0,
         delegate: {},
         fees    : 10,
+        index   : 0,
       });
       expect(scope.library.logger.trace.thirdCall.args.length).to.be.equal(2);
       expect(scope.library.logger.trace.thirdCall.args[0]).to.be.equal(
@@ -394,9 +400,9 @@ describe('logic/round', () => {
         'Fees remaining'
       );
       expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
-        index   : -1,
         delegate: undefined,
         fees    : 10,
+        index   : -1,
       });
       expect(scope.library.logger.trace.secondCall.args.length).to.be.equal(2);
       expect(scope.library.logger.trace.secondCall.args[0]).to.be.equal(
@@ -425,10 +431,10 @@ describe('logic/round', () => {
         'Delegate changes'
       );
       expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
-        delegate: {},
         changes : {
           feesRemaining: 0,
         },
+        delegate: {},
       });
       expect(scope.library.logger.trace.secondCall.args.length).to.be.equal(2);
       expect(scope.library.logger.trace.secondCall.args[0]).to.be.equal(
@@ -482,19 +488,19 @@ describe('logic/round', () => {
         'Delegate changes'
       );
       expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
-        delegate: {},
         changes : {
           feesRemaining: 10,
         },
+        delegate: {},
       });
       expect(scope.library.logger.trace.secondCall.args.length).to.be.equal(2);
       expect(scope.library.logger.trace.secondCall.args[0]).to.be.equal(
         'Fees remaining'
       );
       expect(scope.library.logger.trace.secondCall.args[1]).to.deep.equal({
-        index   : 0,
         delegate: {},
         fees    : -10,
+        index   : 0,
       });
       expect(scope.library.logger.trace.thirdCall.args.length).to.be.equal(2);
       expect(scope.library.logger.trace.thirdCall.args[0]).to.be.equal(
@@ -530,9 +536,9 @@ describe('logic/round', () => {
         'Fees remaining'
       );
       expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
-        index   : 0,
         delegate: undefined,
         fees    : -10,
+        index   : 0,
       });
       expect(scope.library.logger.trace.secondCall.args.length).to.be.equal(2);
       expect(scope.library.logger.trace.secondCall.args[0]).to.be.equal(
@@ -564,10 +570,10 @@ describe('logic/round', () => {
         'Delegate changes'
       );
       expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
-        delegate: {},
         changes : {
           feesRemaining: 0,
         },
+        delegate: {},
       });
       expect(scope.library.logger.trace.secondCall.args.length).to.be.equal(2);
       expect(scope.library.logger.trace.secondCall.args[0]).to.be.equal(
@@ -607,10 +613,10 @@ describe('logic/round', () => {
 
   describe('land', () => {
     it('should call correct methods', async () => {
-      const updateVotes        = sinon.stub(instance, 'updateVotes').resolves(true);
-      const updateMissedBlocks = sinon.stub(instance, 'updateMissedBlocks').resolves(true);
-      const flushRound         = sinon.stub(instance, 'flushRound').resolves(true);
-      const applyRound         = sinon.stub(instance, 'applyRound').resolves(true);
+      const updateVotes        = sandbox.stub(instance, 'updateVotes').resolves(true);
+      const updateMissedBlocks = sandbox.stub(instance, 'updateMissedBlocks').resolves(true);
+      const flushRound         = sandbox.stub(instance, 'flushRound').resolves(true);
+      const applyRound         = sandbox.stub(instance, 'applyRound').resolves(true);
 
       await instance.land();
 
@@ -630,9 +636,9 @@ describe('logic/round', () => {
       const stubs   = {};
       const methods = ['updateVotes', 'updateMissedBlocks', 'flushRound', 'applyRound'];
       methods.forEach((k) => {
-        stubs[k] = sinon.stub(instance, k);
-        stubs[k].resolves(true);
-        stubs[k].callsFake(() => order.push(k));
+        stubs[k] = sandbox.stub(instance, k)
+          .resolves(true)
+          .callsFake(() => order.push(k));
       });
 
       await instance.land();
@@ -656,12 +662,12 @@ describe('logic/round', () => {
 
   describe('backwardLand', () => {
     it('should call correct methods', async () => {
-      const updateVotes          = sinon.stub(instance, 'updateVotes').resolves(true);
-      const updateMissedBlocks   = sinon.stub(instance, 'updateMissedBlocks').resolves(true);
-      const flushRound           = sinon.stub(instance, 'flushRound').resolves(true);
-      const applyRound           = sinon.stub(instance, 'applyRound').resolves(true);
-      const restoreRoundSnapshot = sinon.stub(instance, 'restoreRoundSnapshot').resolves(true);
-      const restoreVotesSnapshot = sinon.stub(instance, 'restoreVotesSnapshot').resolves(true);
+      const updateVotes          = sandbox.stub(instance, 'updateVotes').resolves(true);
+      const updateMissedBlocks   = sandbox.stub(instance, 'updateMissedBlocks').resolves(true);
+      const flushRound           = sandbox.stub(instance, 'flushRound').resolves(true);
+      const applyRound           = sandbox.stub(instance, 'applyRound').resolves(true);
+      const restoreRoundSnapshot = sandbox.stub(instance, 'restoreRoundSnapshot').resolves(true);
+      const restoreVotesSnapshot = sandbox.stub(instance, 'restoreVotesSnapshot').resolves(true);
 
       await instance.backwardLand();
 
@@ -685,9 +691,9 @@ describe('logic/round', () => {
       const methods = ['updateVotes', 'updateMissedBlocks', 'flushRound', 'applyRound',
         'restoreRoundSnapshot', 'restoreVotesSnapshot'];
       methods.forEach((k) => {
-        stubs[k] = sinon.stub(instance, k);
-        stubs[k].resolves(true);
-        stubs[k].callsFake(() => order.push(k));
+        stubs[k] = sandbox.stub(instance, k)
+          .resolves(true)
+          .callsFake(() => order.push(k));
       });
 
       await instance.backwardLand();

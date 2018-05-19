@@ -1,6 +1,6 @@
 import * as chai from 'chai';
-import * as proxyquire from 'proxyquire';
 import * as chaiAsPromised from 'chai-as-promised';
+import * as proxyquire from 'proxyquire';
 import 'reflect-metadata';
 import { SinonSpy } from 'sinon';
 import * as sinon from 'sinon';
@@ -14,6 +14,7 @@ const ProxySchemaValidators = proxyquire('../../../../src/helpers/decorators/sch
 });
 const { SchemaValid, ValidateSchema } = ProxySchemaValidators;
 
+// tslint:disable no-unused-expression max-classes-per-file
 describe('helpers/decorators', () => {
 
   describe('SchemaValid', () => {
@@ -115,16 +116,16 @@ describe('helpers/decorators', () => {
     // Schemas:
     const nonEmptyString = { type: 'string', minLength: 1 };
     const simpleObject = {
-      type      : 'object',
       properties: {
-        str: {
-          type     : 'string',
-          minLength: 1,
-        },
         num: {
           type: 'integer',
         },
+        str: {
+          minLength: 1,
+          type     : 'string',
+        },
       },
+      type      : 'object',
     };
 
     class TestUtil {
@@ -174,7 +175,7 @@ describe('helpers/decorators', () => {
           return param;
         }
       }
-      const instance = new TestCase();;
+      const instance = new TestCase();
       await expect(instance.method('')).to.rejectedWith(/^RISEError6$/);
     });
 

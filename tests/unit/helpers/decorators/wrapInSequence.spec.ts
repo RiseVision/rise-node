@@ -1,20 +1,19 @@
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import {Container, injectable} from 'inversify';
 import 'reflect-metadata';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy } from 'sinon';
-import { IoCSymbol } from '../../../../src/helpers/decorators/iocSymbol';
-import { Symbols } from '../../../../src/ioc/symbols';
-import { Sequence } from '../../../../src/helpers';
-import { injectable } from 'inversify';
 import {
   WrapInBalanceSequence,
   WrapInDBSequence,
   WrapInDefaultSequence
 } from '../../../../src/helpers/decorators/wrapInSequence';
+import { Symbols } from '../../../../src/ioc/symbols';
 import { SequenceStub } from '../../../stubs';
+import {createContainer} from '../../../utils/containerCreator';
 
-// tslint:disable-next-line no-var-requires
+// tslint:disable next-line no-var-requires max-classes-per-file
 const assertArrays = require('chai-arrays');
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -25,11 +24,16 @@ describe('helpers/decorators/wrapInSequence', () => {
   let sandbox: SinonSandbox;
   let defineMetadataSpy;
   let target;
+  let container: Container;
+  let sequenceStub: SequenceStub;
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
+    container = createContainer();
     defineMetadataSpy = sandbox.spy(Reflect, 'defineMetadata');
     target = () => 123;
+    sequenceStub = container.getTagged(Symbols.helpers.sequence,
+      Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence);
   });
 
   afterEach(() => {
@@ -38,8 +42,8 @@ describe('helpers/decorators/wrapInSequence', () => {
 
   describe('WrapInBalanceSequence', () => {
     @injectable()
-    class tst {
-      public balancesSequence: any = new SequenceStub();
+    class Tst {
+      public balancesSequence: any = sequenceStub;
       public spy: SinonSpy = sinon.spy();
       @WrapInBalanceSequence
       public async method(): Promise<string> {
@@ -48,15 +52,15 @@ describe('helpers/decorators/wrapInSequence', () => {
       }
     }
     it('should wrap method in balancesSequence', async () => {
-      const tObj = new tst();
+      const tObj = new Tst();
       expect(await tObj.method()).to.be.eq('hey');
-      expect(tObj.balancesSequence.spies.addAndPromise.calledBefore(tObj.spy.firstCall)).is.true;
+      expect(tObj.balancesSequence.spies.addAndPromise.calledBefore(tObj.spy)).is.true;
     });
   });
   describe('WrapInDBSequence', () => {
     @injectable()
-    class tst {
-      public dbSequence: any = new SequenceStub();
+    class Tst {
+      public dbSequence: any = sequenceStub;
       public spy: SinonSpy = sinon.spy();
       @WrapInDBSequence
       public async method(): Promise<string> {
@@ -65,15 +69,15 @@ describe('helpers/decorators/wrapInSequence', () => {
       }
     }
     it('should wrap method in balancesSequence', async () => {
-      const tObj = new tst();
+      const tObj = new Tst();
       expect(await tObj.method()).to.be.eq('hey');
-      expect(tObj.dbSequence.spies.addAndPromise.calledBefore(tObj.spy.firstCall)).is.true;
+      expect(tObj.dbSequence.spies.addAndPromise.calledBefore(tObj.spy)).is.true;
     });
   });
   describe('WrapInDefaultSequence', () => {
     @injectable()
-    class tst {
-      public defaultSequence: any = new SequenceStub();
+    class Tst {
+      public defaultSequence: any = sequenceStub;
       public spy: SinonSpy = sinon.spy();
       @WrapInDefaultSequence
       public async method(): Promise<string> {
@@ -82,9 +86,9 @@ describe('helpers/decorators/wrapInSequence', () => {
       }
     }
     it('should wrap method in balancesSequence', async () => {
-      const tObj = new tst();
+      const tObj = new Tst();
       expect(await tObj.method()).to.be.eq('hey');
-      expect(tObj.defaultSequence.spies.addAndPromise.calledBefore(tObj.spy.firstCall)).is.true;
+      expect(tObj.defaultSequence.spies.addAndPromise.calledBefore(tObj.spy)).is.true;
     });
   });
 });

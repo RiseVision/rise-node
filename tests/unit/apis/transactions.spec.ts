@@ -3,7 +3,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { TransactionsAPI } from '../../../src/apis/transactions';
+import { TransactionsAPI } from '../../../src/apis';
 import * as helpers from '../../../src/helpers';
 import { TransactionType } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
@@ -97,7 +97,7 @@ describe('apis/transactionsAPI', () => {
   });
 
   describe('getTransactions()', () => {
-    it('success', async () => {
+    it('should return an object with the properties: transactions and count', async () => {
       const body = {
         blockId: '100',
         fromHeight: '123',
@@ -149,7 +149,7 @@ describe('apis/transactionsAPI', () => {
   });
 
   describe('getCount()', () => {
-    it('success', async () => {
+    it('should return an object with the properties: confirmed, multisignature, queued and unconfirmed', async () => {
       result = await instance.getCount();
       expect(result).to.deep.equal({
         confirmed: 1,
@@ -181,7 +181,7 @@ describe('apis/transactionsAPI', () => {
       transactionsModuleStub.stubs.getByID.returns(
         Promise.resolve({ id: 456, type: TransactionType.DELEGATE })
       );
-      result = await instance.getTX('123');
+      result = await instance.getTX({id: '123'});
       expect(result).to.deep.equal({
         transaction: { id: 456, type: TransactionType.DELEGATE },
       });
@@ -246,12 +246,12 @@ describe('apis/transactionsAPI', () => {
   });
 
   describe('getMultiSig()', () => {
-    it('success', async () => {
+    it('should return an object with a transaction', async () => {
       result = await instance.getMultiSig('123');
       expect(result).to.deep.equal({ transaction: { id: '123' } });
     });
 
-    it('fail', async () => {
+    it('should to be reject with the message \'Transaction not found\'', async () => {
       transactionsModuleStub.stubs.getMultisignatureTransaction.returns(
         undefined
       );
@@ -368,7 +368,7 @@ describe('apis/transactionsAPI', () => {
         transactions: [
           { id: 100, senderPublicKey: 'aaa', recipientId: 'bbb' },
           { id: 200, senderPublicKey: 'aaa', recipientId: 'bbb' },
-          { id: 400, senderPublicKey: 'aaa', recipientId: 'ddd' }
+          { id: 400, senderPublicKey: 'aaa', recipientId: 'ddd' },
         ],
       });
       expect(result.transactions).to.be.ofSize(3);
@@ -380,7 +380,7 @@ describe('apis/transactionsAPI', () => {
         count: 5,
         transactions: [
           { id: 400, senderPublicKey: 'aaa', recipientId: 'ddd' },
-          { id: 500, senderPublicKey: 'ccc', recipientId: 'ddd' }
+          { id: 500, senderPublicKey: 'ccc', recipientId: 'ddd' },
         ],
       });
       expect(result.transactions).to.be.ofSize(2);
@@ -395,7 +395,7 @@ describe('apis/transactionsAPI', () => {
           { id: 200, senderPublicKey: 'aaa', recipientId: 'bbb' },
           { id: 300, senderPublicKey: 'ccc', recipientId: 'bbb' },
           { id: 400, senderPublicKey: 'aaa', recipientId: 'ddd' },
-          { id: 500, senderPublicKey: 'ccc', recipientId: 'ddd' }
+          { id: 500, senderPublicKey: 'ccc', recipientId: 'ddd' },
         ],
       });
       expect(result.transactions).to.be.ofSize(5);
@@ -403,12 +403,12 @@ describe('apis/transactionsAPI', () => {
   });
 
   describe('getUnconfirmedTx()', () => {
-    it('success', async () => {
+    it('should return an object with a transaction', async () => {
       result = await instance.getUnconfirmedTx('123');
       expect(result).to.deep.equal({ transaction: { id: '123' } });
     });
 
-    it('fail', async () => {
+    it('should to be reject with a message \'Transaction not found\'', async () => {
       transactionsModuleStub.stubs.getUnconfirmedTransaction.returns(undefined);
       await expect(instance.getUnconfirmedTx('123')).to.be.rejectedWith(
         'Transaction not found'
@@ -416,7 +416,7 @@ describe('apis/transactionsAPI', () => {
     });
   });
   describe('put', () => {
-    it('should throw error', async () => {
+    it('should throw deprecated', async () => {
       await expect(instance.put()).to.be.rejectedWith('Method is deprecated');
     });
   });

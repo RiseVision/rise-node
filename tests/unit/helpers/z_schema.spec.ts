@@ -264,43 +264,43 @@ describe('helpers/z_schema', () => {
 
     it('should process all levels of nested objects (recursion)', () => {
       const schema = {
-        type      : 'object',
         properties: {
-          value: {
-            type: 'integer',
-          },
           child: {
-            type      : 'object',
             properties: {
               value: {
                 type: 'integer',
               },
             },
+            type      : 'object',
+          },
+          value: {
+            type: 'integer',
           },
         },
+        type      : 'object',
       };
       const value  = {
-        value: '50',
         child: {
           value: '100',
         },
+        value: '50',
       };
       const retVal = castFieldsToNumberUsingSchema(schema, value);
       expect(retVal).to.be.deep.eq({
-        value: 50,
         child: {
           value: 100,
         },
+        value: 50,
       });
       expect(parseIntSpy.callCount).to.be.eq(2);
     });
 
     it('should process all items in Arrays', () => {
       const schema = {
-        type : 'array',
         items: {
           type: 'integer',
         },
+        type : 'array',
       };
       const value  = ['10', '1000', '99999', '-1'];
       const retVal = castFieldsToNumberUsingSchema(schema, value);

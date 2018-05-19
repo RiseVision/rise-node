@@ -6,6 +6,7 @@ import * as Throttle from 'promise-parallel-throttle';
 import * as proxyquire from 'proxyquire';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
+import { wait } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { PeerState } from '../../../src/logic';
 import { TransportModule } from '../../../src/modules';
@@ -27,7 +28,6 @@ import {
   ZSchemaStub,
 } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
-import { wait } from '../../../src/helpers';
 
 chai.use(chaiAsPromised);
 
@@ -63,7 +63,7 @@ describe('src/modules/transport.ts', () => {
 
   let constants;
   let io: SocketIOStub;
-  let schema: ZSchemaStub;
+  let schemaStub: ZSchemaStub;
   let balancesSequence: SequenceStub;
   let jobsQueue: JobsQueueStub;
   let logger: LoggerStub;
@@ -79,7 +79,7 @@ describe('src/modules/transport.ts', () => {
   let postConstrA: AppStateStub;
   beforeEach(() => {
     io     = container.get(Symbols.generic.socketIO);
-    schema = container.get(Symbols.generic.zschema);
+    schemaStub = container.get(Symbols.generic.zschema);
 
     constants        = container.get(Symbols.helpers.constants);
     balancesSequence = container.getTagged(Symbols.helpers.sequence,
@@ -302,17 +302,17 @@ describe('src/modules/transport.ts', () => {
       expect(thePeer.applyHeaders.firstCall.args[0]).to.be.equal(res.headers);
     });
 
-    it('should call schema.validate', async () => {
+    it('should call schemaStub.validate', async () => {
       await inst.getFromPeer(peer, options);
 
-      expect(schema.stubs.validate.calledOnce).to.be.true;
-      expect(schema.stubs.validate.firstCall.args.length).to.be.equal(2);
-      expect(schema.stubs.validate.firstCall.args[0]).to.be.equal(headers);
-      expect(schema.stubs.validate.firstCall.args[1]).to.be.equal(schemaImport.headers);
+      expect(schemaStub.stubs.validate.calledOnce).to.be.true;
+      expect(schemaStub.stubs.validate.firstCall.args.length).to.be.equal(2);
+      expect(schemaStub.stubs.validate.firstCall.args[0]).to.be.equal(headers);
+      expect(schemaStub.stubs.validate.firstCall.args[1]).to.be.equal(schemaImport.headers);
     });
 
-    it('should call removePeer and return rejected promise if schema.validate returned false', async () => {
-      schema.stubs.validate.returns(false);
+    it('should call removePeer and return rejected promise if schemaStub.validate returned false', async () => {
+      schemaStub.stubs.validate.returns(false);
       error = new Error('Invalid response headers {"nethash":"as8776fsg76sd87","version":"1.1.1"} put http://undefined:undefinedurl.com');
 
       await expect(inst.getFromPeer(peer, options)).to.be.rejectedWith(error.message);
@@ -375,7 +375,7 @@ describe('src/modules/transport.ts', () => {
       expect(peersModule.stubs.update.firstCall.args[0]).to.be.equal(thePeer);
     });
 
-    it('success', async () => {
+    it('should return an object with body and peer properties if everything is ok', async () => {
       expect(await inst.getFromPeer(peer, options)).to.be.deep.equal({
         body: res.body,
         peer: thePeer,
@@ -784,8 +784,9 @@ describe('src/modules/transport.ts', () => {
     it('check if broadcast is false', () => {
       broadcast = false;
 
-      inst.onNewBlock(block, broadcast);
+      const p = inst.onNewBlock(block, broadcast);
 
+      expect(p).to.be.fulfilled;
       expect(broadcasterLogic.stubs.enqueue.notCalled).to.be.true;
     });
     it('should ignore broadcast error if any and, more importantly avoid waiting for broadcaster result', async () => {
@@ -1069,7 +1070,7 @@ describe('src/modules/transport.ts', () => {
       acceptablePeers = [{}];
       peer            = { string: 'string' };
 
-      schema.stubs.validate.onCall(0).callsArg(2);
+      schemaStub.stubs.validate.onCall(0).callsArg(2);
       peersLogic.enqueueResponse('acceptable', acceptablePeers);
       peersLogic.enqueueResponse('create', peer);
       peersLogic.enqueueResponse('upsert', true);
@@ -1096,14 +1097,14 @@ describe('src/modules/transport.ts', () => {
       });
     });
 
-    it('should call schema.validate resolves', async () => {
+    it('should call schemaStub.validate resolves', async () => {
       await (inst as any).discoverPeers();
 
-      expect(schema.stubs.validate.calledTwice).to.be.true;
-      expect(schema.stubs.validate.firstCall.args.length).to.be.equal(3);
-      expect(schema.stubs.validate.firstCall.args[0]).to.be.equal(response.body);
-      expect(schema.stubs.validate.firstCall.args[1]).to.be.equal(peersSchema.discover.peers);
-      expect(schema.stubs.validate.firstCall.args[2]).to.be.a('function');
+      expect(schemaStub.stubs.validate.calledTwice).to.be.true;
+      expect(schemaStub.stubs.validate.firstCall.args.length).to.be.equal(3);
+      expect(schemaStub.stubs.validate.firstCall.args[0]).to.be.equal(response.body);
+      expect(schemaStub.stubs.validate.firstCall.args[1]).to.be.equal(peersSchema.discover.peers);
+      expect(schemaStub.stubs.validate.firstCall.args[2]).to.be.a('function');
     });
 
     it('should call peersLogic.acceptable', async () => {
@@ -1122,13 +1123,13 @@ describe('src/modules/transport.ts', () => {
       expect(peersLogic.stubs.create.firstCall.args[0]).to.be.equal(acceptablePeers[0]);
     });
 
-    it('should call schema.validate', async () => {
+    it('should call schemaStub.validate', async () => {
       await (inst as any).discoverPeers();
 
-      expect(schema.stubs.validate.calledTwice).to.be.true;
-      expect(schema.stubs.validate.secondCall.args.length).to.be.equal(2);
-      expect(schema.stubs.validate.secondCall.args[0]).to.be.equal(peer);
-      expect(schema.stubs.validate.secondCall.args[1]).to.be.equal(peersSchema.discover.peer);
+      expect(schemaStub.stubs.validate.calledTwice).to.be.true;
+      expect(schemaStub.stubs.validate.secondCall.args.length).to.be.equal(2);
+      expect(schemaStub.stubs.validate.secondCall.args[0]).to.be.equal(peer);
+      expect(schemaStub.stubs.validate.secondCall.args[1]).to.be.equal(peersSchema.discover.peer);
     });
 
     it('should call peersLogic.upsert', async () => {
@@ -1148,8 +1149,8 @@ describe('src/modules/transport.ts', () => {
       expect(logger.stubs.debug.firstCall.args[0]).to.be.equal('Discovered 1 peers - Rejected 0 - AlreadyKnown 0');
     });
 
-    it('check if schema.validate returns false then call logger.warn', async () => {
-      schema.stubs.validate.onCall(1).returns(false);
+    it('check if schemaStub.validate returns false then call logger.warn', async () => {
+      schemaStub.stubs.validate.onCall(1).returns(false);
 
       await (inst as any).discoverPeers();
 

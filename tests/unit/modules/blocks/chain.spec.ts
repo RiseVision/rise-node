@@ -2,28 +2,27 @@ import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
+import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { Container } from 'inversify';
 import * as shuffle from 'shuffle-array';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
+import { TransactionType } from '../../../../src/helpers';
 import { IBlocksModuleChain } from '../../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../../src/ioc/symbols';
 import { IBaseTransaction } from '../../../../src/logic/transactions';
 import { BlocksModuleChain } from '../../../../src/modules/blocks/';
-import { BusStub, TransactionsModuleStub } from '../../../stubs';
+import { createRandomWallet } from '../../../integration/common/utils';
+import { BlocksSubmoduleUtilsStub, BusStub, TransactionsModuleStub } from '../../../stubs';
 import DbStub from '../../../stubs/helpers/DbStub';
+import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
 import TransactionLogicStub from '../../../stubs/logic/TransactionLogicStub';
 import AccountsModuleStub from '../../../stubs/modules/AccountsModuleStub';
-import { BlocksSubmoduleUtilsStub } from '../../../stubs/modules/blocks/BlocksSubmoduleUtilsStub';
 import BlocksModuleStub from '../../../stubs/modules/BlocksModuleStub';
 import { RoundsModuleStub } from '../../../stubs/modules/RoundsModuleStub';
 import { generateAccounts } from '../../../utils/accountsUtils';
 import { createContainer } from '../../../utils/containerCreator';
 import { createRandomTransactions, createSendTransaction, createVoteTransaction } from '../../../utils/txCrafter';
-import { createRandomWallet } from '../../../integration/common/utils';
-import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
-import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
-import { TransactionType } from '../../../../src/helpers';
 
 chai.use(chaiAsPromised);
 
@@ -318,15 +317,17 @@ describe('modules/blocks/chain', () => {
       dbStub.stubs.tx.returns(Promise.resolve());
       busStub.enqueueResponse('message', Promise.resolve());
     });
-    it('should return undefined if cleanup in processing and set instance.isCleaning in true', async ()=>{
+    it('should return undefined if cleanup in processing and set instance.isCleaning in true', async () => {
       await inst.cleanup();
-      expect(await inst.applyBlock({transactions: allTxs} as any, false, false)).to.be.undefined
+      expect(await inst.applyBlock({transactions: allTxs} as any, false, false)).to.be.undefined;
       expect(txModule.stubs.undoUnconfirmedList.notCalled).to.be.true;
     });
     it('should set .isProcessing to true to prevent shutdowns', async () => {
       const p = inst.applyBlock({transactions: allTxs} as any, false, false);
+      // tslint:disable-next-line: no-string-literal
       expect(inst['isProcessing']).to.be.true;
       await p;
+      // tslint:disable-next-line: no-string-literal
       expect(inst['isProcessing']).to.be.false;
     });
     it('should undo all unconfirmed transactions', async () => {
@@ -531,6 +532,7 @@ describe('modules/blocks/chain', () => {
     });
     it('should wait until isProcessing is false and then return', async () => {
       const timers   = sinon.useFakeTimers();
+      // tslint:disable-next-line: no-string-literal
       inst['isProcessing'] = true;
       const stub = sinon.stub();
       const p = inst.cleanup()
@@ -540,6 +542,7 @@ describe('modules/blocks/chain', () => {
       expect(stub.called).is.false;
       timers.tick(10000);
       expect(stub.called).is.false;
+      // tslint:disable-next-line: no-string-literal
       inst['isProcessing'] = false;
       timers.tick(10000);
       await p;

@@ -89,6 +89,7 @@ describe('helpers/promiseUtils', () => {
         const p = cbToPromise(cb);
         expect(cb.called).to.be.true;
         expect(cb.firstCall.args[0]).to.be.a('function');
+        expect(p).to.be.fulfilled;
       });
 
       describe('calling callback', () => {
@@ -105,7 +106,7 @@ describe('helpers/promiseUtils', () => {
           const fn = (cb) => {
             cb( null, testArgs[0], testArgs[1]);
           };
-          let passedArgs: any[];
+          let passedArgs = [];
           await cbToPromise(fn, true).then((...args) => {
             passedArgs = args;
           });
@@ -117,7 +118,7 @@ describe('helpers/promiseUtils', () => {
           const fn = (cb) => {
             cb( null, testArgs[0], testArgs[1]);
           };
-          let passedArgs: any[];
+          let passedArgs = [];
           await cbToPromise(fn, false).then((...args) => {
             passedArgs = args;
           });

@@ -2,6 +2,7 @@ import {BigNumber} from 'bignumber.js';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as fs from 'fs';
+import {Container} from 'inversify';
 import * as path from 'path';
 import * as monitor from 'pg-monitor';
 import * as pgPromise from 'pg-promise';
@@ -10,6 +11,9 @@ import * as sinon from 'sinon';
 import {SinonSandbox} from 'sinon';
 import MyBigNumb from '../../../src/helpers/bignum';
 import {Migrator} from '../../../src/helpers/migrator';
+import {Symbols} from '../../../src/ioc/symbols';
+import { LoggerStub } from '../../stubs';
+import { createContainer } from '../../utils/containerCreator';
 
 const pgStub = () => () => true;
 const migratorStub = {} as any;
@@ -39,9 +43,13 @@ describe('helpers/database', () => {
   let fsReadDirSyncStub: any;
   let fsStatSyncStub: any;
   let appConfig: any;
+  let loggerStub: LoggerStub;
+  let container: Container;
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
+    container = createContainer();
+    loggerStub = container.get(Symbols.helpers.logger);
     pgOptions = {pgNative: true, noLocking: true, noWarnings: true};
     pgp = pgPromise(pgOptions);
     appConfig = {logEvents: [], user: 'abc', password: '123'};
@@ -62,7 +70,7 @@ describe('helpers/database', () => {
       ]);
     fsStatSyncStub = sandbox
       .stub(fs, 'statSync')
-      .returns({isFile: (fullpath: string) => true});
+      .returns({isFile: () => true});
     migrator = new Migrator(pgp, db);
   });
 
@@ -71,7 +79,7 @@ describe('helpers/database', () => {
   });
 
   describe('checkMigrations()', () => {
-    it('success', async () => {
+    it('should return true', async () => {
       const result = await migrator.checkMigrations();
       expect(dbOneStub.calledOnce).to.be.true;
       expect(dbOneStub.args[0][0]).contains("SELECT to_regclass('migrations')");
@@ -85,7 +93,7 @@ describe('helpers/database', () => {
       expect(result).to.be.undefined;
     });
 
-    it('success', async () => {
+    it('should return a BigNumber', async () => {
       const result = await migrator.getLastMigration(true);
       expect(dbQueryStub.calledOnce).to.be.true;
       expect(dbQueryStub.args[0][0]).contains(
@@ -97,7 +105,7 @@ describe('helpers/database', () => {
   });
 
   describe('readPendingMigrations()', () => {
-    it('success', async () => {
+    it('should return an array', async () => {
       const result = await migrator.readPendingMigrations(new BigNumber(100));
       expect(pathJoinSpy.callCount).to.equal(7);
       expect(pathJoinSpy.args[0][0]).to.equal(process.cwd());
@@ -111,7 +119,7 @@ describe('helpers/database', () => {
   });
 
   describe('applyPendingMigrations()', () => {
-    it('success', async () => {
+    it('should return pending migrations and call to db.query() for every pending migration file', async () => {
       const pendingMigrations = await migrator.readPendingMigrations(
         new BigNumber(100)
       );
@@ -130,7 +138,7 @@ describe('helpers/database', () => {
   });
 
   describe('insertAppliedMigrations()', () => {
-    it('success', async () => {
+    it('should call to db.query() for every pending migration ', async () => {
       const pendingMigrations = await migrator.readPendingMigrations(
         new BigNumber(100)
       );
@@ -151,7 +159,7 @@ describe('helpers/database', () => {
   });
 
   describe('applyRuntimeQueryFile()', () => {
-    it('success', () => {
+    it('should call to db.query() once with a QueryFile instance', () => {
       migrator.applyRuntimeQueryFile();
       expect(dbQueryStub.calledOnce).to.be.true;
       expect(dbQueryStub.args[0][0]).to.be.an.instanceof(pgPromise.QueryFile);
@@ -159,14 +167,10 @@ describe('helpers/database', () => {
   });
 
   describe('connect()', () => {
-    it('success', async () => {
-      migratorStub.Migrator = function Migrator() {
+    it('should call to all migrations methods in the same order', async () => {
+      migratorStub.Migrator = function Fake() {
         return migrator;
       };
-      const fakeILogger: any = {
-        info: (message: string, data: string) => true,
-      };
-      sandbox.stub(fakeILogger, 'info');
       const checkMigrationsSpy = sandbox.spy(migrator, 'checkMigrations');
       const getLastMigrationSpy = sandbox.spy(migrator, 'getLastMigration');
       const readPendingMigrationsSpy = sandbox.spy(
@@ -186,7 +190,7 @@ describe('helpers/database', () => {
         'applyRuntimeQueryFile'
       );
 
-      await ProxyDatabase.connect(appConfig as any, fakeILogger);
+      await ProxyDatabase.connect(appConfig as any, loggerStub);
       expect(checkMigrationsSpy.calledOnce).to.be.true;
       expect(checkMigrationsSpy.calledBefore(getLastMigrationSpy)).to.be.true;
       expect(getLastMigrationSpy.calledOnce).to.be.true;
@@ -201,22 +205,20 @@ describe('helpers/database', () => {
       monitor.detach();
     });
 
-    it('monitor.log', async () => {
-      migratorStub.Migrator = function Migrator() {
-          return migrator;
+    it('should call to logger.log() and set info.display to false', async () => {
+      migratorStub.Migrator = function Fake() {
+        return migrator;
       };
-      const fakeILogger: any = {
-        log: sandbox.stub(),
-      };
+
       const info = {event: 'event', text: 'text', display: true};
 
-      await ProxyDatabase.connect(appConfig as any, fakeILogger);
+      await ProxyDatabase.connect(appConfig as any, loggerStub);
       (monitor as any).log('msg', info);
 
-      expect(fakeILogger.log.calledOnce).to.be.true;
-      expect(fakeILogger.log.firstCall.args.length).to.be.equal(2);
-      expect(fakeILogger.log.firstCall.args[0]).to.be.equal(info.event);
-      expect(fakeILogger.log.firstCall.args[1]).to.be.equal(info.text);
+      expect(loggerStub.stubs.log.calledOnce).to.be.true;
+      expect(loggerStub.stubs.log.firstCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.log.firstCall.args[0]).to.be.equal(info.event);
+      expect(loggerStub.stubs.log.firstCall.args[1]).to.be.equal(info.text);
 
       expect(info.display).to.be.false;
     });

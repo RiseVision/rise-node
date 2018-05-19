@@ -21,8 +21,8 @@ import {
   SlotsStub,
   SocketIOStub
 } from '../../stubs';
-
 import { createFakeBlock } from '../../utils/blockCrafter';
+import { createContainer } from '../../utils/containerCreator';
 
 chai.use(chaiAsPromised);
 
@@ -55,38 +55,18 @@ describe('modules/rounds', () => {
   let afterTxPromise: () => () => Promise<any>;
   let innerTickStub: SinonStub;
 
-  before(() => {
+  beforeEach(() => {
     roundLogicStubConstructor = () => {
       return roundLogicStub;
     };
-    container                 = new Container();
-
-    // Generic
-    container.bind(Symbols.generic.db).to(DbStub).inSingletonScope();
-    container.bind(Symbols.generic.socketIO).to(SocketIOStub).inSingletonScope();
-
-    // Helpers
-    container.bind(Symbols.helpers.logger).to(LoggerStub).inSingletonScope();
-    container.bind(Symbols.helpers.slots).to(SlotsStub).inSingletonScope();
-    container.bind(Symbols.helpers.constants).toConstantValue(constants);
-    container.bind(Symbols.helpers.bus).to(BusStub).inSingletonScope();
-
-    // Logic
-    container.bind(Symbols.logic.appState).to(AppStateStub).inSingletonScope();
-    container.bind(Symbols.logic.rounds).to(RoundsLogicStub).inSingletonScope();
-    container.bind(Symbols.logic.round).to(RoundLogicStub).inSingletonScope();
+    sandbox             = sinon.sandbox.create();
+    container = createContainer();
     container.bind(roundLogicSymbol).to(RoundLogicStub).inSingletonScope();
-
-    // Modules
-    container.bind(Symbols.modules.delegates).to(DelegatesModuleStub).inSingletonScope();
-    container.bind(Symbols.modules.accounts).to(AccountsModuleStub).inSingletonScope();
-    container.bind(Symbols.modules.rounds).to(RoundsModule).inSingletonScope();
+    container.bind(Symbols.logic.round).to(RoundLogicStub).inSingletonScope();
+    container.rebind(Symbols.helpers.constants).toConstantValue(constants);
+    container.rebind(Symbols.modules.rounds).to(RoundsModule).inSingletonScope();
     block         = createFakeBlock();
     previousBlock = createFakeBlock();
-  });
-
-  beforeEach(() => {
-    sandbox             = sinon.sandbox.create();
     instance            = container.get(Symbols.modules.rounds);
     delegatesModuleStub = container.get(Symbols.modules.delegates);
     accountsModuleStub  = container.get(Symbols.modules.accounts);
@@ -98,16 +78,6 @@ describe('modules/rounds', () => {
     appStateStub        = container.get(Symbols.logic.appState);
     roundsLogicStub     = container.get(Symbols.logic.rounds);
     roundLogicStub      = container.get(roundLogicSymbol);
-    // Reset all stubs
-    [delegatesModuleStub, accountsModuleStub, loggerStub, slotsStub, dbStub, busStub, socketIOStub, appStateStub,
-      roundsLogicStub, roundLogicStub].forEach((stub: any) => {
-      if (typeof stub.reset !== 'undefined') {
-        stub.reset();
-      }
-      if (typeof stub.stubReset !== 'undefined') {
-        stub.stubReset();
-      }
-    });
     roundLogicStubConstructorSpy = sandbox.spy(roundLogicStubConstructor);
 
     // TODO check if there is a way to achieve this with inversify...
@@ -115,11 +85,11 @@ describe('modules/rounds', () => {
 
     roundLogicScope = {
       backwards     : false,
-      round         : 12,
-      roundOutsiders: [],
-      roundDelegates: [],
-      roundFees     : 10.1,
-      roundRewards  : [100],
+      block         : {
+        generatorPublicKey: block.generatorPublicKey,
+        height            : block.height,
+        id                : block.id,
+      },
       finishRound   : false,
       library       : {
         logger: {} as any,
@@ -127,11 +97,11 @@ describe('modules/rounds', () => {
       modules       : {
         accounts: {} as any,
       },
-      block         : {
-        generatorPublicKey: block.generatorPublicKey,
-        id                : block.id,
-        height            : block.height,
-      },
+      round         : 12,
+      roundDelegates: [],
+      roundFees     : 10.1,
+      roundOutsiders: [],
+      roundRewards  : [100],
     };
     innerTickStub   = sandbox.stub(instance as any, 'innerTick');
     // Expose the passed txGenerator so we can test it
@@ -495,9 +465,9 @@ describe('modules/rounds', () => {
       afterTxPromiseStub = sandbox.stub();
       sumRoundStub       = sandbox.stub(instance as any, 'sumRound');
       roundSums          = {
+        roundDelegates: ['delegate1', 'delegate2'],
         roundFees     : 0,
         roundRewards  : [0],
-        roundDelegates: ['delegate1', 'delegate2'],
       };
       sumRoundStub.returns(roundSums);
       getOutsidersStub = sandbox.stub(instance as any, 'getOutsiders');
@@ -636,10 +606,10 @@ describe('modules/rounds', () => {
           accounts: accountsModuleStub,
         },
         round         : 1,
-        roundOutsiders: [],
-        roundFees     : 0,
-        roundRewards  : [0],
         roundDelegates: [block.generatorPublicKey],
+        roundFees     : 0,
+        roundOutsiders: [],
+        roundRewards  : [0],
       });
 
     });
@@ -725,9 +695,9 @@ describe('modules/rounds', () => {
       round       = 99;
       summedRound = [
         {
-          rewards  : [1, 0.5, 3.99],
-          fees     : 12.33,
           delegates: ['d1', 'd2', 'd3'],
+          fees     : 12.33,
+          rewards  : [1, 0.5, 3.99],
         },
       ];
       dbStub.stubs.query.resolves(summedRound);
@@ -766,9 +736,9 @@ describe('modules/rounds', () => {
       expect(retVal.roundFees).not.to.be.undefined;
       expect(retVal.roundDelegates).not.to.be.undefined;
       expect(retVal).to.be.deep.equal({
-        roundRewards  : [1, 0, 3],
-        roundFees     : 12,
         roundDelegates: ['d1', 'd2', 'd3'],
+        roundFees     : 12,
+        roundRewards  : [1, 0, 3],
       });
     });
   });

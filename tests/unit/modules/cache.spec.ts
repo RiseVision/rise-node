@@ -8,7 +8,8 @@ import * as helpers from '../../../src/helpers';
 import { cbToPromise, TransactionType } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { Cache, DummyCache } from '../../../src/modules';
-import { LoggerStub, RedisClientStub } from '../../stubs';
+import { RedisClientStub } from '../../stubs';
+import { createContainer } from '../../utils/containerCreator';
 
 chai.use(chaiAsPromised);
 
@@ -20,21 +21,12 @@ describe('modules/cache', () => {
   let sandbox: SinonSandbox;
   let spyHelper;
   let redisClientStub: RedisClientStub;
-  const appConfig = {
-    cacheEnabled: true,
-  };
-
-  before(() => {
-    container                 = new Container();
-    container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
-    container.bind(Symbols.generic.redisClient).to(RedisClientStub).inSingletonScope();
-    container.bind(Symbols.helpers.logger).to(LoggerStub);
-    container.bind(Symbols.modules.cache).to(Cache);
-  });
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
-
+    sandbox         = sinon.sandbox.create();
+    container       = createContainer();
+    container.bind(Symbols.generic.redisClient).to(RedisClientStub).inSingletonScope();
+    container.bind(Symbols.modules.cache).to(Cache);
     cache           = container.get(Symbols.modules.cache);
     redisClientStub = container.get(Symbols.generic.redisClient);
     cache.onSyncFinished();
@@ -466,7 +458,8 @@ describe('modules/cache', () => {
         removeByPatternStub = sandbox.stub(cache, 'removeByPattern');
       });
 
-      it('success', async () => {
+      // tslint:disable-next-line: max-line-length
+      it('Should call to removeByPattern() with parameter /api/delegates* for to remove all cache entries', async () => {
         await cache.onFinishRound();
 
         expect(spyHelper.cache.assertConnectedAndReady.calledOnce).to.be.true;
@@ -500,7 +493,7 @@ describe('modules/cache', () => {
           senderPublicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f',
           signature      : 'd8103d0ea2004c3dea8076a6a22c6db8bae95bc0db819240c77fc5335f32920e91b9f41f58b01fc86dfda11019c9fd1c6c3dcbab0a4e478e3c9186ff6090dc05',
           timestamp      : 0,
-          type           : TransactionType.DAPP,
+          type           : TransactionType.MULTI,
         },
       ];
       // tslint:enable max-line-length

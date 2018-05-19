@@ -6,6 +6,7 @@ import { RunThroughExceptions } from '../../../../src/helpers/decorators/excepti
 
 const { expect } = chai;
 
+// tslint:disable no-unused-expression
 describe('helpers/decorators/exceptions', () => {
   describe('RunThroughExceptions', () => {
     let handlersForKeySpy: SinonSpy;
@@ -46,11 +47,11 @@ describe('helpers/decorators/exceptions', () => {
     );
 
     const handlerSpies = {
-      wrongValue: {
+      emptyString: {
         canHandle: null,
         handle: null,
       },
-      emptyString: {
+      wrongValue: {
         canHandle: null,
         handle: null,
       },
@@ -71,7 +72,7 @@ describe('helpers/decorators/exceptions', () => {
 
     class TestClass {
       public excManager: ExceptionsManager;
-      private spy: SinonSpy;
+      private readonly spy: SinonSpy;
       constructor(withSpy?: SinonSpy) {
         this.excManager = excManager;
         if (withSpy) {
@@ -118,7 +119,7 @@ describe('helpers/decorators/exceptions', () => {
     it('should call the original function with all arguments when no suitable handler is found', () => {
       const argsSpy = sinon.spy();
       const test = new TestClass(argsSpy);
-      const retVal = test.decoratedFn('validVal', true);
+      test.decoratedFn('validVal', true);
       expect(argsSpy.called).to.be.true;
       expect(argsSpy.firstCall.args[0]).to.be.deep.eq(['validVal', true]);
     });
@@ -127,7 +128,7 @@ describe('helpers/decorators/exceptions', () => {
       const argsSpy = sinon.spy();
       const test = new TestClass(argsSpy);
       // Testing with our second exception (emptyString)
-      const retVal = test.decoratedFn('', true);
+      test.decoratedFn('', true);
       expect(argsSpy.called).to.be.false;
     });
   });

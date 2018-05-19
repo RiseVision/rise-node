@@ -9,8 +9,8 @@ import { IBlocksModuleUtils } from '../../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../../src/ioc/symbols';
 import { SignedAndChainedBlockType } from '../../../../src/logic';
 import { BlocksModuleUtils } from '../../../../src/modules/blocks/';
+import { SequenceStub } from '../../../stubs';
 import DbStub from '../../../stubs/helpers/DbStub';
-import { SequenceStub } from '../../../stubs/helpers/SequenceStub';
 import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
 import TransactionLogicStub from '../../../stubs/logic/TransactionLogicStub';
 import BlocksModuleStub from '../../../stubs/modules/BlocksModuleStub';
@@ -18,6 +18,7 @@ import { createContainer } from '../../../utils/containerCreator';
 
 // tslint:disable no-unused-expression max-line-length
 chai.use(chaiAsPromised);
+
 describe('modules/utils', () => {
   let inst: IBlocksModuleUtils;
   let container: Container;
@@ -107,7 +108,7 @@ describe('modules/utils', () => {
       expect(res[0]).to.be.deep.eq({id: '1', transactions: [{id: '2'}]});
       expect(res[1]).to.be.deep.eq({id: '2', transactions: [{id: '3'}]});
     });
-    it('should create generationSignature for block if it id is equal genesisBLock.id', async () =>{
+    it('should create generationSignature for block if it id is equal genesisBLock.id', async () => {
       const genBlockId = (inst as any).genesisBlock.id;
       const rows = [
         {b_id: '1', t_id: '2'},
@@ -311,7 +312,7 @@ describe('modules/utils', () => {
       const constants = container.get<any>(Symbols.helpers.constants);
       await inst.aggregateBlockReward({
         generatorPublicKey: 'abc',
-        start             : Math.floor(constants.epochTime.getTime() / 1000 + 1000)
+        start             : Math.floor(constants.epochTime.getTime() / 1000 + 1000),
       });
       expect(dbStub.stubs.oneOrNone.called).is.true;
       expect(await dbStub.stubs.oneOrNone.firstCall.args[1]).is.deep.eq({

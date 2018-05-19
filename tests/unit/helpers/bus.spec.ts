@@ -11,7 +11,7 @@ const expect = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression max-line-length
 describe('helpers/bus', () => {
   let sandbox: SinonSandbox;
   let instance: Bus;
@@ -33,14 +33,14 @@ describe('helpers/bus', () => {
   });
 
   describe('receiveBlock', () => {
-    it('success', async () => {
+    it('Promise case: should call to onReceiveBlock() with the same object received as second argument from message()', async () => {
       instance.modules = [{ onReceiveBlock: promiseStub }];
       await instance.message('receiveBlock', { the: 'block' } as any);
       expect(promiseStub.calledOnce).to.be.true;
       expect(promiseStub.args[0][0]).to.be.deep.eq({ the: 'block' });
     });
 
-    it('success without Promise', async () => {
+    it('Function case: should call to onReceiveBlock() with the same object received as second argument from message()', async () => {
       instance.modules = [{ onReceiveBlock: functionStub }];
       await instance.message('receiveBlock', { the: 'block' } as any);
       expect(functionStub.calledOnce).to.be.true;
@@ -49,14 +49,14 @@ describe('helpers/bus', () => {
   });
 
   describe('finishRound', () => {
-    it('success', async () => {
+    it('Promise case: should call to onFinishRound() with the same round value received from message()', async () => {
       instance.modules = [{ onFinishRound: promiseStub }];
       await instance.message('finishRound', 10);
       expect(promiseStub.calledOnce).is.true;
       expect(promiseStub.args[0][0]).to.equal(10);
     });
 
-    it('success without Promise', async () => {
+    it('Function case: should call to onFinishRound() with the same round value received from message()', async () => {
       instance.modules = [{ onFinishRound: functionStub }];
       await instance.message('finishRound', 10);
       expect(functionStub.calledOnce).is.true;
@@ -65,14 +65,14 @@ describe('helpers/bus', () => {
   });
 
   describe('transactionsSaved', () => {
-    it('success', async () => {
+    it('Promise case: should call to onTransactionsSaved() with the same Array received from message()', async () => {
       instance.modules = [{ onTransactionsSaved: promiseStub }];
       await instance.message('transactionsSaved', [1, 2, 3] as any);
       expect(promiseStub.calledOnce).is.true;
       expect(promiseStub.args[0][0]).to.be.equalTo([1, 2, 3]);
     });
 
-    it('success without Promise', async () => {
+    it('Function case: should call to onTransactionsSaved() with the same Array received from message()', async () => {
       instance.modules = [{ onTransactionsSaved: functionStub }];
       await instance.message('transactionsSaved', [1, 2, 3] as any);
       expect(functionStub.calledOnce).is.true;
@@ -81,14 +81,14 @@ describe('helpers/bus', () => {
   });
 
   describe('blockchainReady', () => {
-    it('success', async () => {
+    it('Promise case: should call to onBlockchainReady() without parameters', async () => {
       instance.modules = [{ onBlockchainReady: promiseStub }];
       await instance.message('blockchainReady');
       expect(promiseStub.calledOnce).is.true;
       expect(promiseStub.args[0][0]).to.be.undefined;
     });
 
-    it('success without Promise', async () => {
+    it('Function case: should call to onBlockchainReady() without parameters', async () => {
       instance.modules = [{ onBlockchainReady: functionStub }];
       await instance.message('blockchainReady');
       expect(functionStub.calledOnce).is.true;
@@ -97,14 +97,14 @@ describe('helpers/bus', () => {
   });
 
   describe('syncStarted', () => {
-    it('success', async () => {
+    it('Promise case: should call to onSyncStarted() without parameters', async () => {
       instance.modules = [{ onSyncStarted: promiseStub }];
       await instance.message('syncStarted');
       expect(promiseStub.calledOnce).is.true;
       expect(promiseStub.args[0][0]).to.be.undefined;
     });
 
-    it('success without Promise', async () => {
+    it('Function case: should call to onSyncStarted() without parameters', async () => {
       instance.modules = [{ onSyncStarted: functionStub }];
       await instance.message('syncStarted');
       expect(functionStub.calledOnce).is.true;
@@ -113,14 +113,14 @@ describe('helpers/bus', () => {
   });
 
   describe('syncFinished', () => {
-    it('success', async () => {
+    it('Promise case: should call to onSyncFinished() without parameters', async () => {
       instance.modules = [{ onSyncFinished: promiseStub }];
       await instance.message('syncFinished');
       expect(promiseStub.calledOnce).is.true;
       expect(promiseStub.args[0][0]).to.be.undefined;
     });
 
-    it('success without Promise', async () => {
+    it('Function case: should call to onSyncFinished() without parameters', async () => {
       instance.modules = [{ onSyncFinished: functionStub }];
       await instance.message('syncFinished');
       expect(functionStub.calledOnce).is.true;
@@ -129,13 +129,14 @@ describe('helpers/bus', () => {
   });
 
   describe('peersReady', () => {
-    it('success', async () => {
+    it('Promise case: should call to onPeersReady() without parameters', async () => {
       instance.modules = [{ onPeersReady: promiseStub }];
       await instance.message('peersReady');
       expect(promiseStub.calledOnce).is.true;
+      expect(promiseStub.args[0][0]).to.be.undefined;
     });
 
-    it('success without Promise', async () => {
+    it('Function case: should call to onPeersReady() without parameters', async () => {
       instance.modules = [{ onPeersReady: functionStub }];
       await instance.message('peersReady');
       expect(functionStub.calledOnce).is.true;
@@ -144,7 +145,7 @@ describe('helpers/bus', () => {
   });
 
   describe('newBlock', () => {
-    it('success', async () => {
+    it('Promise case: should call to onNewBlock() with the same arguments received from message()', async () => {
       instance.modules = [{ onNewBlock: promiseStub }];
       await instance.message('newBlock', { foo: 'bar' } as any, true);
       expect(promiseStub.calledOnce).is.true;
@@ -152,7 +153,7 @@ describe('helpers/bus', () => {
       expect(promiseStub.args[0][1]).to.be.true;
     });
 
-    it('success without Promise', async () => {
+    it('Function case: should call to onNewBlock() with the same arguments received from message()', async () => {
       instance.modules = [{ onNewBlock: functionStub }];
       await instance.message('newBlock', { foo: 'bar' } as any, true);
       expect(functionStub.calledOnce).is.true;
@@ -162,7 +163,7 @@ describe('helpers/bus', () => {
   });
 
   describe('signature', () => {
-    it('success', async () => {
+    it('Promise case: should call to onSignature() with the same arguments received from message()', async () => {
       instance.modules = [{ onSignature: promiseStub }];
       await instance.message(
         'signature',
@@ -177,7 +178,7 @@ describe('helpers/bus', () => {
       expect(promiseStub.args[0][1]).to.be.true;
     });
 
-    it('success without Promise', async () => {
+    it('Function case: should call to onSignature() with the same arguments received from message()', async () => {
       instance.modules = [{ onSignature: functionStub }];
       await instance.message(
         'signature',
@@ -194,7 +195,7 @@ describe('helpers/bus', () => {
   });
 
   describe('unconfirmedTransaction', () => {
-    it('success', async () => {
+    it('Promise case: should call to onUnconfirmedTransaction() with the same arguments received from message()', async () => {
       instance.modules = [{ onUnconfirmedTransaction: promiseStub }];
       await instance.message('unconfirmedTransaction', 'abc', true);
       expect(promiseStub.calledOnce).is.true;
@@ -202,7 +203,7 @@ describe('helpers/bus', () => {
       expect(promiseStub.args[0][1]).to.be.true;
     });
 
-    it('success without Promise', async () => {
+    it('Function case: should call to onUnconfirmedTransaction() with the same arguments received from message()', async () => {
       instance.modules = [{ onUnconfirmedTransaction: functionStub }];
       await instance.message('unconfirmedTransaction', 'abc', true);
       expect(functionStub.calledOnce).is.true;
@@ -212,7 +213,7 @@ describe('helpers/bus', () => {
   });
 
   describe('Testing multiple listeners', () => {
-    it('success', async () => {
+    it('Should call all the listeners in the same order that they were received', async () => {
       instance.modules = [{ onReceiveBlock: promiseStub }, { onReceiveBlock: promiseStub2 }];
       await instance.message('receiveBlock', { the: 'block' } as any);
       expect(promiseStub.calledOnce).is.true;
@@ -225,7 +226,7 @@ describe('helpers/bus', () => {
   });
 
   describe('Without listeners available', () => {
-    it('success', async () => {
+    it('if the listener doesn\'t exist should not call to others listeners', async () => {
       instance.modules = [
         { onUnconfirmedTransaction: promiseStub },
         { onUnconfirmedTransaction: promiseStub2 },

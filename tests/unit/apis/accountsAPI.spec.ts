@@ -5,7 +5,7 @@ import { Container } from 'inversify';
 import * as proxyquire from 'proxyquire';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
-import { AccountsAPI } from '../../../src/apis/accountsAPI';
+import { AccountsAPI } from '../../../src/apis';
 import { Symbols } from '../../../src/ioc/symbols';
 import {
   AccountsModuleStub, DelegatesModuleStub, SystemModuleStub,
@@ -65,8 +65,8 @@ describe('apis/accountsAPI', () => {
         publicKey        : 'publicKey',
         secondPublicKey  : 'secondPublicKey',
         secondSignature  : 'secondSignature',
-        u_multisignatures: [],
         u_balance        : 10000,
+        u_multisignatures: [],
         u_secondSignature: 'u_secondSignature',
       };
 
@@ -166,7 +166,7 @@ describe('apis/accountsAPI', () => {
       await expect(instance.getAccount(query)).to.be.rejectedWith('Account not found');
     });
 
-    it('success', async () => {
+    it('should return an account', async () => {
       const res = await instance.getAccount(query);
 
       expect(res).to.be.deep.equal({account: {
@@ -206,7 +206,7 @@ describe('apis/accountsAPI', () => {
       expect(accountsModule.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({ address: 'address' });
     });
 
-    it('success', async () => {
+    it('should return a balance from an address', async () => {
       const ret = await instance.getBalance(params);
 
       expect(ret).to.be.deep.equal({
@@ -250,7 +250,7 @@ describe('apis/accountsAPI', () => {
       expect(accountsModule.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({ address: 'address' });
     });
 
-    it('success', async () => {
+    it('should return a public key from an address', async () => {
       const ret = await instance.getPublickey(params);
 
       expect(ret).to.be.deep.equal({
@@ -363,7 +363,7 @@ describe('apis/accountsAPI', () => {
       expect(systemModule.stubs.getFees.firstCall.args[0]).to.be.equal(params.height);
     });
 
-    it('success', async () => {
+    it('should return delegates fee from height', async () => {
       const ret = await instance.getDelegatesFee(params);
 
       expect(ret).to.be.deep.equal({ fee: fee.fees.delegate });

@@ -5,7 +5,7 @@ import * as crypto from 'crypto';
 import { Container } from 'inversify';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
-import { DelegatesAPI } from '../../../src/apis/delegatesAPI';
+import { DelegatesAPI } from '../../../src/apis';
 import * as helpers from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import sql from '../../../src/sql/delegates';
@@ -178,7 +178,7 @@ describe('apis/delegatesAPI', () => {
         expect(ret.delegates).to.be.deep.equal([
           { NICKBORSUK: 1, rank: 1, rate: 1 },
           { NICKBORSUK: 3, rank: 2, rate: 2 },
-          { NICKBORSUK: 2, rank: 3, rate: 3 }
+          { NICKBORSUK: 2, rank: 3, rate: 3 },
           ]);
       });
     });
@@ -197,7 +197,7 @@ describe('apis/delegatesAPI', () => {
       expect(ret.delegates).to.be.deep.equal([{ approval: 1, rank: 1, rate: 1 }]);
     });
 
-    it('success', async () => {
+    it('should return an object with a delegates array and a totalCount', async () => {
       setReturnedDelegates('approval', 'ASC');
       const ret = await instance.getDelegates(data);
 
@@ -239,7 +239,7 @@ describe('apis/delegatesAPI', () => {
       expect(f).to.not.have.property('fees');
     });
 
-    it('success', async () => {
+    it('should return an object with the properties fee and otherField', async () => {
       const ret = await instance.getFee(params);
 
       expect(ret).to.be.deep.equal({
@@ -294,7 +294,7 @@ describe('apis/delegatesAPI', () => {
         expect(blocksUtils.stubs.aggregateBlockReward.firstCall.args[0]).to.be.deep.equal({ ...params });
       });
 
-      it('success', async () => {
+      it('should return an object with the properties: count, fees, rewards and forged', async () => {
         const ret = await instance.getForgedByAccount(params);
 
         expect(ret).to.be.deep.equal({
@@ -336,7 +336,7 @@ describe('apis/delegatesAPI', () => {
         await expect(instance.getForgedByAccount(params)).to.be.rejectedWith('Account not found');
       });
 
-      it('success', async () => {
+      it('should return an object with the properties: fees, forged and rewards', async () => {
         const ret = await instance.getForgedByAccount(params);
 
         expect(ret).to.be.deep.equal(
@@ -363,15 +363,15 @@ describe('apis/delegatesAPI', () => {
       delegates = [
         {
           publicKey: 'publicKey',
-          username : 'username',
           rank: 1,
           rate: 1,
+          username : 'username',
         },
         {
           publicKey: '111',
-          username : '222',
           rank: 2,
-          rate: 2
+          rate: 2,
+          username : '222',
         }];
       delegatesModule.enqueueResponse('getDelegates', Promise.resolve({ delegates }));
     });
@@ -384,7 +384,7 @@ describe('apis/delegatesAPI', () => {
       expect(delegatesModule.stubs.getDelegates.firstCall.args[0]).to.be.deep.equal({ orderBy: 'username:asc' });
     });
 
-    it('success', async () => {
+    it('should return an object with the property: delegate', async () => {
       const ret = await instance.getDelegate(params);
 
       expect(ret).to.be.deep.equal({ delegate: delegates[0] });
@@ -449,7 +449,7 @@ describe('apis/delegatesAPI', () => {
       });
     });
 
-    it('success', async () => {
+    it('should return an object with the property: accounts', async () => {
       const ret = await instance.getVoters(params);
 
       expect(ret).to.be.deep.equal({ accounts: accountsObject });
@@ -541,7 +541,7 @@ describe('apis/delegatesAPI', () => {
       });
     });
 
-    it('success', async () => {
+    it('should return an object with the property: delegates', async () => {
       const ret = await instance.search(params);
 
       expect(ret).to.be.deep.equal({ delegates: {} });
@@ -561,7 +561,7 @@ describe('apis/delegatesAPI', () => {
       expect(db.stubs.one.firstCall.args[0]).to.be.equal(sql.count);
     });
 
-    it('success', async () => {
+    it('should return an object with the property: count', async () => {
       db.enqueueResponse('one', { count: 1 });
 
       const ret = await instance.count();
@@ -609,7 +609,7 @@ describe('apis/delegatesAPI', () => {
       expect(slots.stubs.getSlotNumber.secondCall.args.length).to.be.equal(0);
     });
 
-    it('success', async () => {
+    it('should return an object with the properties: currentBlock, currentBlockSlot, currentSlot and delegates', async () => {
       const ret = await instance.getNextForgers(limit);
 
       expect(ret).to.be.deep.equal({

@@ -2,6 +2,8 @@ import { Container } from 'inversify';
 import { constants } from '../../src/helpers';
 import { Symbols } from '../../src/ioc/symbols';
 import {
+  AccountsModelStub,
+  BlocksModelStub,
   BlocksSubmoduleChainStub, BlocksSubmoduleVerifyStub,
   BroadcasterLogicStub, BusStub, DelegatesModuleStub,
   ExceptionsManagerStub,
@@ -11,7 +13,6 @@ import {
   TransactionPoolStub,
   TransactionsModuleStub,
 } from '../stubs';
-import DbStub from '../stubs/helpers/DbStub';
 import EdStub from '../stubs/helpers/EdStub';
 import JobsQueueStub from '../stubs/helpers/jobsQueueStub';
 import { SequenceStub } from '../stubs/helpers/SequenceStub';
@@ -40,7 +41,6 @@ export const createContainer = (): Container => {
   // Generics
   container.bind(Symbols.generic.appConfig)
     .toConstantValue(require(`${__dirname}/../integration/config.json`));
-  container.bind(Symbols.generic.db).to(DbStub).inSingletonScope();
   container.bind(Symbols.generic.genesisBlock)
     .toConstantValue(require(`${__dirname}/../integration/genesisBlock.json`));
   container.bind(Symbols.generic.socketIO).to(SocketIOStub).inSingletonScope();
@@ -94,6 +94,10 @@ export const createContainer = (): Container => {
   container.bind(Symbols.modules.system).to(SystemModuleStub).inSingletonScope();
   container.bind(Symbols.modules.transport).to(TransportModuleStub).inSingletonScope();
   container.bind(Symbols.modules.transactions).to(TransactionsModuleStub).inSingletonScope();
+
+  // Models
+  container.bind(Symbols.models.accounts).toConstructor(AccountsModelStub);
+  container.bind(Symbols.models.blocks).toConstructor(BlocksModelStub);
 
   return container;
 };

@@ -3,7 +3,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { MultisignatureAPI } from '../../../src/apis/multisignatureAPI';
+import { MultisignatureAPI } from '../../../src/apis';
 import { Symbols } from '../../../src/ioc/symbols';
 import {
   AccountsModuleStub,
@@ -69,13 +69,13 @@ describe('apis/multisignatureAPI', () => {
     account3 = { id: 3, address: 'ccc', publicKey: 'c3c3c3', balance: 300 };
     account4 = { id: 4, address: 'ddd', publicKey: 'c4c4c4', balance: 400 };
     account5 = {
-      u_multimin: 10,
       u_multilifetime: 20,
+      u_multimin: 10,
       u_multisignatures: ['a', 'b', 'c'],
     };
     account6 = {
-      multimin: 100,
       multilifetime: 200,
+      multimin: 100,
       u_multisignatures: undefined,
     };
 
@@ -120,7 +120,7 @@ describe('apis/multisignatureAPI', () => {
   });
 
   describe('getAccounts()', () => {
-    it('success', async () => {
+    it('should return an array of accounts', async () => {
       result = await instance.getAccounts({ publicKey: '123' });
       const accounts = [];
       accounts.push({ ...account1, ...{ multisigaccounts: [account3] } });
@@ -163,7 +163,7 @@ describe('apis/multisignatureAPI', () => {
   });
 
   describe('getPending()', () => {
-    it('success', async () => {
+    it('should return an object with pending transactions', async () => {
       result = await instance.getPending({ publicKey: 100 });
       expect(result).to.deep.equal({
         transactions: [
@@ -182,13 +182,13 @@ describe('apis/multisignatureAPI', () => {
   });
 
   describe('sign()', () => {
-    it('Throws deprecated', async () => {
+    it('should throw deprecated', async () => {
       await expect(instance.sign()).to.be.rejectedWith('Method is deprecated');
     });
   });
 
   describe('addMultisignature()', () => {
-    it('Throws deprecated', async () => {
+    it('should throw deprecated', async () => {
       await expect(instance.addMultisignature()).to.be.rejectedWith(
         'Method is deprecated'
       );

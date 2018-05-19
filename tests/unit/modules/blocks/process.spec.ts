@@ -3,34 +3,35 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
+import { ForkType } from '../../../../src/helpers';
 import { IBlocksModuleProcess } from '../../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../../src/ioc/symbols';
+import { SignedAndChainedBlockType } from '../../../../src/logic';
+import { IBaseTransaction } from '../../../../src/logic/transactions';
 import { BlocksModuleProcess } from '../../../../src/modules/blocks/';
 import {
+  AccountsModuleStub,
+  AppStateStub,
+  BlocksModuleStub,
   BlocksSubmoduleChainStub,
   BlocksSubmoduleUtilsStub,
   BlocksSubmoduleVerifyStub,
+  DbStub,
   DelegatesModuleStub,
-  PeersLogicStub, TransactionsModuleStub
+  LoggerStub,
+  PeersLogicStub,
+  RoundsLogicStub,
+  SequenceStub,
+  TransactionLogicStub,
+  TransactionsModuleStub,
+  TransportModuleStub,
+  ZSchemaStub
 } from '../../../stubs';
-import { createContainer } from '../../../utils/containerCreator';
-import TransportModuleStub from '../../../stubs/modules/TransportModuleStub';
-import { AppStateStub } from '../../../stubs/logic/AppStateStub';
-import ZSchemaStub from '../../../stubs/helpers/ZSchemaStub';
-import DbStub from '../../../stubs/helpers/DbStub';
-import { SequenceStub } from '../../../stubs/helpers/SequenceStub';
-import BlocksModuleStub from '../../../stubs/modules/BlocksModuleStub';
-import { SignedAndChainedBlockType } from '../../../../src/logic';
-import { createFakePeer } from '../../../utils/fakePeersFactory';
-import RoundsLogicStub from '../../../stubs/logic/RoundsLogicStub';
-import { ForkModuleStub } from '../../../stubs/modules/ForkModuleStub';
 import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
-import { ForkType } from '../../../../src/helpers';
-import AccountsModuleStub from '../../../stubs/modules/AccountsModuleStub';
-import { IBaseTransaction } from '../../../../src/logic/transactions';
+import { ForkModuleStub } from '../../../stubs/modules/ForkModuleStub';
+import { createContainer } from '../../../utils/containerCreator';
+import { createFakePeer } from '../../../utils/fakePeersFactory';
 import { createRandomTransactions } from '../../../utils/txCrafter';
-import TransactionLogicStub from '../../../stubs/logic/TransactionLogicStub';
-import LoggerStub from '../../../stubs/helpers/LoggerStub';
 
 chai.use(chaiAsPromised);
 
@@ -111,6 +112,7 @@ describe('modules/blocks/process', () => {
       try {
         await inst.getCommonBlock(null, 10);
       } catch (e) {
+        return false;
       }
       expect(blocksUtils.stubs.getIdSequence.called).is.true;
       expect(blocksUtils.stubs.getIdSequence.firstCall.args[0]).is.eq(10);
@@ -120,6 +122,7 @@ describe('modules/blocks/process', () => {
       try {
         await inst.getCommonBlock({peer: 'peer'} as any, 10);
       } catch (e) {
+        return false;
       }
       expect(transportModule.stubs.getFromPeer.called).is.true;
       expect(transportModule.stubs.getFromPeer.firstCall.args[0]).to.be.deep.eq({peer: 'peer'});
@@ -169,12 +172,13 @@ describe('modules/blocks/process', () => {
             id           : 'id',
             previousBlock: 'pb',
           },
-        }
+        },
       }));
       dbStub.enqueueResponse('query', Promise.resolve([{count: 1}]));
       await inst.getCommonBlock({p: 'p'} as any, 10);
       expect(dbStub.stubs.query.calledOnce).is.true;
       expect(dbStub.stubs.query.firstCall.args[0]).is
+        // tslint:disable-next-line: max-line-length
         .eq('SELECT COUNT("id")::int FROM blocks WHERE "id" = ${id} AND "previousBlock" = ${previousBlock} AND "height" = ${height}');
       expect(dbStub.stubs.query.firstCall.args[1]).is.deep.eq({
         height       : 1,
@@ -182,6 +186,8 @@ describe('modules/blocks/process', () => {
         previousBlock: 'pb',
       });
     });
+
+    // tslint:disable-next-line: max-line-length
     it('should trigger recoverChain if returned commonblock does not return anything from db and poor consensus', async () => {
       transportModule.enqueueResponse('getFromPeer', Promise.resolve({
         body: {
@@ -198,7 +204,9 @@ describe('modules/blocks/process', () => {
       expect(appState.stubs.getComputed.firstCall.args[0]).is.eq('node.poorConsensus');
 
     });
-    it('should throw error if returned commonblock does not return anything from db and NOT poor consensus', async () => {
+
+    // tslint:disable-next-line: max-line-length
+    it('should throw error if returned common block does not return anything from db and NOT poor consensus', async () => {
       transportModule.enqueueResponse('getFromPeer', Promise.resolve({
         body: {
           common: {},
@@ -229,7 +237,7 @@ describe('modules/blocks/process', () => {
         await inst.loadBlocksOffset(10, 0, true);
 
         expect(dbStub.stubs.query.firstCall.args[1]).to.be.deep.eq({
-          limit : 10 /* limit */ + 0,
+          limit : 10,
           offset: 0,
         });
       });
@@ -239,7 +247,7 @@ describe('modules/blocks/process', () => {
         await inst.loadBlocksOffset(10, undefined, true);
 
         expect(dbStub.stubs.query.firstCall.args[1]).to.be.deep.eq({
-          limit : 10 /* limit */ + 0,
+          limit : 10,
           offset: 0,
         });
       });
@@ -297,11 +305,11 @@ describe('modules/blocks/process', () => {
         try {
           await inst.loadBlocksOffset(10, 0, false);
         } catch (e) {
-
+          return false;
         }
         expect(blocksModule.lastBlock).to.be.deep.eq({id: '1'});
       });
-      it('should return undefined if cleanup', async() => {
+      it('should return undefined if cleanup', async () => {
         await inst.cleanup();
         expect(await inst.loadBlocksOffset(10, 0, false)).to.be.undefined;
       });
@@ -424,7 +432,7 @@ describe('modules/blocks/process', () => {
     });
     it('should not verify every tx that is ready', async () => {
       txLogic.stubs.ready.onSecondCall().returns(false);
-      await inst.generateBlock(null, 1)
+      await inst.generateBlock(null, 1);
       expect(txLogic.stubs.ready.callCount).to.be.eq(txs.length);
       expect(txLogic.stubs.verify.callCount).to.be.eq(txs.length - 1);
       txs.splice(1, 1); // remove unverified call;
@@ -456,7 +464,7 @@ describe('modules/blocks/process', () => {
         true,
       ]);
     });
-    it('should call logger.error if transactionLogic.verify throw', async() => {
+    it('should call logger.error if transactionLogic.verify throw', async () => {
       const error = new Error('hihihi');
       txLogic.stubs.verify.onCall(1).rejects(error);
       await inst.generateBlock({key: 'pair'} as any, 1);
@@ -468,20 +476,14 @@ describe('modules/blocks/process', () => {
   describe('onReceiveBlock', () => {
     it('should return and do nothing if loader.isSyncing', async () => {
       appState.stubs.get.callsFake((what) => {
-        if (what === 'loader.isSyncing') {
-          return true;
-        }
-        return false;
+        return (what === 'loader.isSyncing');
       });
       await inst.onReceiveBlock({id: '1'} as any);
       expect(appState.stubs.get.calledWith('loader.isSyncing')).is.true;
     });
     it('should return and do nothing if loader.isTicking', async () => {
       appState.stubs.get.callsFake((what) => {
-        if (what === 'rounds.isTicking') {
-          return true;
-        }
-        return false;
+        return (what === 'rounds.isTicking');
       });
       await inst.onReceiveBlock({id: '1'} as any);
       expect(appState.stubs.get.calledWith('rounds.isTicking')).is.true;
@@ -615,6 +617,7 @@ describe('modules/blocks/process', () => {
         await inst.onReceiveBlock(block);
         expect(blocksModule.spies.lastReceipt.update.called).is.true;
       });
+      // tslint:disable-next-line: max-line-length
       it('should call verifyModule.processBlock with new block and broadcast=true, saveBlock=true if all good', async () => {
         block.timestamp                  = 0;
         blocksModule.lastBlock.timestamp = 1;
@@ -641,6 +644,7 @@ describe('modules/blocks/process', () => {
       appState.stubs.get.returns(false);
       await inst.onReceiveBlock({id: '1'} as any);
       expect(loggerStub.stubs.warn.calledOnce).to.be.true;
+      // tslint:disable-next-line: max-line-length
       expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Discarded block that does not match with current chain: 1 height:  round: round slot: 1 generator: ');
     });
   });

@@ -1,12 +1,15 @@
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import {Container} from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { TransactionType } from '../../../../src/helpers';
+import {Symbols} from '../../../../src/ioc/symbols';
 import { VoteTransaction } from '../../../../src/logic/transactions';
 import voteSchema from '../../../../src/schema/logic/transactions/vote';
 import txSQL from '../../../../src/sql/logic/transactions';
 import { AccountLogicStub, DbStub, DelegatesModuleStub, RoundsLogicStub, SystemModuleStub } from '../../../stubs';
+import { createContainer } from '../../../utils/containerCreator';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -24,7 +27,7 @@ describe('logic/transactions/vote', () => {
   let delegatesModuleStub: DelegatesModuleStub;
   let systemModuleStub: SystemModuleStub;
   let dbStub: DbStub;
-
+  let container: Container;
   let instance: VoteTransaction;
   let tx: any;
   let sender: any;
@@ -32,15 +35,16 @@ describe('logic/transactions/vote', () => {
 
   beforeEach(() => {
     sandbox             = sinon.sandbox.create();
+    container          = createContainer();
     zSchemaStub         = {
       getLastErrors: () => [],
       validate     : sandbox.stub(),
     };
-    accountLogicStub    = new AccountLogicStub();
-    roundsLogicStub     = new RoundsLogicStub();
-    delegatesModuleStub = new DelegatesModuleStub();
-    systemModuleStub    = new SystemModuleStub();
-    dbStub              = new DbStub();
+    accountLogicStub    = container.get(Symbols.logic.account);
+    roundsLogicStub     = container.get(Symbols.logic.rounds);
+    delegatesModuleStub = container.get(Symbols.modules.delegates);
+    systemModuleStub    = container.get(Symbols.modules.system);
+    dbStub              = container.get(Symbols.generic.db);
 
     tx = {
       amount         : 0,
@@ -51,14 +55,14 @@ describe('logic/transactions/vote', () => {
         ],
       },
       fee            : 10,
-      type           : TransactionType.VOTE,
-      timestamp      : 0,
+      id             : '8139741256612355994',
+      recipientId    : '1233456789012345R',
       senderId       : '1233456789012345R',
       senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
       signature      : '0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
       'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2',
-      id             : '8139741256612355994',
-      recipientId    : '1233456789012345R',
+      timestamp      : 0,
+      type           : TransactionType.VOTE,
     };
 
     sender = {
@@ -435,8 +439,8 @@ describe('logic/transactions/vote', () => {
   });
 
   describe('restoreAsset()', () => {
-    it('success', async () => {
-      // tslint:disable max-line-length
+    // tslint:disable max-line-length
+    it('should call to db.one() and dbread(), and return the transaction with the asset restored from database', async () => {
       const myVotes = '-7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381,+05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a';
       dbStub.stubs.one.resolves({votes: myVotes});
       const dbReadSpy = sandbox.spy(instance, 'dbRead');

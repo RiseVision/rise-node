@@ -11,6 +11,7 @@ import { ForkModule } from '../../../src/modules/fork';
 import sql from '../../../src/sql/delegates';
 import { DbStub, LoggerStub, SocketIOStub } from '../../stubs';
 import { createFakeBlock } from '../../utils/blockCrafter';
+import { createContainer } from '../../utils/containerCreator';
 
 chai.use(chaiAsPromised);
 
@@ -25,29 +26,15 @@ describe('modules/fork', () => {
   let loggerStub: LoggerStub;
   let socketIOStub: SocketIOStub;
 
-  before(() => {
-    container = new Container();
-
-    // Generic
-    container.bind(Symbols.generic.db).to(DbStub).inSingletonScope();
-    container.bind(Symbols.generic.socketIO).to(SocketIOStub).inSingletonScope();
-
-    // Helpers
-    container.bind(Symbols.helpers.logger).to(LoggerStub).inSingletonScope();
-
-    container.bind(Symbols.modules.fork).to(ForkModule);
-    block = createFakeBlock();
-  });
-
   beforeEach(() => {
     sandbox      = sinon.sandbox.create();
+    container = createContainer();
+    container.rebind(Symbols.modules.fork).to(ForkModule);
+    block = createFakeBlock();
     instance     = container.get(Symbols.modules.fork);
     dbStub       = container.get(Symbols.generic.db);
     loggerStub   = container.get(Symbols.helpers.logger);
     socketIOStub = container.get(Symbols.generic.socketIO);
-    dbStub.reset();
-    loggerStub.stubReset();
-    socketIOStub.stubReset();
   });
 
   afterEach(() => {
@@ -65,10 +52,10 @@ describe('modules/fork', () => {
       expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal('Fork');
       expect(loggerStub.stubs.info.firstCall.args[1]).to.be.deep.equal({
         block   : {
-          id           : block.id,
-          timestamp    : block.timestamp,
           height       : block.height,
+          id           : block.id,
           previousBlock: block.previousBlock,
+          timestamp    : block.timestamp,
         },
         cause   : ForkType.TX_ALREADY_CONFIRMED,
         delegate: block.generatorPublicKey,

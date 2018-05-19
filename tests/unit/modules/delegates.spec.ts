@@ -2,43 +2,41 @@ import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
+import {Container} from 'inversify';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import * as helpers from '../../../src/helpers';
-import { constants } from '../../../src/helpers';
+import {Symbols} from '../../../src/ioc/symbols';
 import { SignedBlockType } from '../../../src/logic';
 import { DelegatesModule } from '../../../src/modules';
-
 import {
   AccountsModuleStub,
-  AppStateStub,
   BlockRewardLogicStub,
   BlocksModuleStub,
-  ExceptionsManagerStub,
   LoggerStub,
   RoundsLogicStub,
-  SlotsStub, TransactionsModuleStub,
+  SlotsStub,
   ZSchemaStub
 } from '../../stubs';
 import { CreateHashSpy } from '../../stubs/utils/CreateHashSpy';
 import { generateAccounts } from '../../utils/accountsUtils';
+import { createContainer } from '../../utils/containerCreator';
 
 chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression
 describe('modules/delegates', () => {
   let sandbox: SinonSandbox;
+  let container: Container;
   let instance: DelegatesModule;
-  let excManagerStub: ExceptionsManagerStub;
+
+  let accountsModuleStub: AccountsModuleStub;
+  let blocksModuleStub: BlocksModuleStub;
+  let blockRewardLogicStub: BlockRewardLogicStub;
   let loggerStub: LoggerStub;
+  let roundsLogicStub: RoundsLogicStub;
   let slotsStub: SlotsStub;
   let schemaStub: ZSchemaStub;
-  let appStateStub: AppStateStub;
-  let blockRewardLogicStub: BlockRewardLogicStub;
-  let roundsLogicStub: RoundsLogicStub;
-  let blocksModuleStub: BlocksModuleStub;
-  let accountsModuleStub: AccountsModuleStub;
-  let transactionsModuleStub: TransactionsModuleStub;
 
   let createHashSpy: CreateHashSpy;
 
@@ -60,30 +58,18 @@ describe('modules/delegates', () => {
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
+    container = createContainer();
 
-    excManagerStub         = new ExceptionsManagerStub();
-    loggerStub             = new LoggerStub();
-    slotsStub              = new SlotsStub();
-    schemaStub             = new ZSchemaStub();
-    appStateStub           = new AppStateStub();
-    blockRewardLogicStub   = new BlockRewardLogicStub();
-    roundsLogicStub        = new RoundsLogicStub();
-    blocksModuleStub       = new BlocksModuleStub();
-    accountsModuleStub     = new AccountsModuleStub();
-    transactionsModuleStub = new TransactionsModuleStub();
+    roundsLogicStub        = container.get(Symbols.logic.rounds);
+    accountsModuleStub     = container.get(Symbols.modules.accounts);
+    blocksModuleStub       = container.get(Symbols.modules.blocks);
+    blockRewardLogicStub   = container.get(Symbols.logic.blockReward);
+    slotsStub              = container.get(Symbols.helpers.slots);
+    loggerStub             = container.get(Symbols.helpers.logger);
+    schemaStub             = container.get(Symbols.generic.zschema);
 
-    instance                             = new DelegatesModule();
-    (instance as any).constants          = constants;
-    (instance as any).excManager         = excManagerStub;
-    (instance as any).logger             = loggerStub;
-    (instance as any).slots              = slotsStub;
-    (instance as any).schema             = schemaStub;
-    (instance as any).appState           = appStateStub;
-    (instance as any).blockReward        = blockRewardLogicStub;
-    (instance as any).roundsLogic        = roundsLogicStub;
-    (instance as any).blocksModule       = blocksModuleStub;
-    (instance as any).accountsModule     = accountsModuleStub;
-    (instance as any).transactionsModule = transactionsModuleStub;
+    container.rebind(Symbols.modules.delegates).to(DelegatesModule).inSingletonScope();
+    instance = container.get(Symbols.modules.delegates);
 
     // Init frequently used test values
     pubKey = 'e22c25bcd696b94a3f4b017fdc681d714e275427a5112c2873e57c9637af3eed';
@@ -93,20 +79,21 @@ describe('modules/delegates', () => {
 
     createHashSpy                                     = new CreateHashSpy(crypto, sandbox);
     const lastBlock                                   = {
+      blockSignature      : 'blockSignature',
+      generatorPublicKey  : 'pubKey',
       height              : 12422,
       id                  : 'blockID',
-      blockSignature      : 'blockSignature',
-      version             : 1,
-      totalAmount         : 0,
-      totalFee            : 0,
-      reward              : 15,
-      payloadHash         : '',
-      timestamp           : Date.now(),
       numberOfTransactions: 0,
+      payloadHash         : '',
       payloadLength       : 0,
       previousBlock       : 'previous',
-      generatorPublicKey  : 'pubKey',
+      reward              : 15,
+      timestamp           : Date.now(),
+      totalAmount         : 0,
+      totalFee            : 0,
+      version             : 1,
     };
+
     blocksModuleStub.lastBlock                        = lastBlock;
     blockRewardLogicStub.stubConfig.calcSupply.return = totalSupply;
     signedBlock                                       = Object.assign({}, lastBlock);
@@ -214,9 +201,11 @@ describe('modules/delegates', () => {
       const pk = new Array(101).fill(null).map((a, idx) => (idx).toString(16));
       getKeysSortByVoteStub.resolves(pk);
       expect(await instance.generateDelegateList(10)).to.be.deep.eq(
+        // tslint:disable-next-line: max-line-length
         ['1', '41', '3f', '0', '42', '5a', '11', 'd', 'b', '8', '31', '5c', '4f', '1c', '15', '32', '3d', '25', '2f', '13', '46', '56', '29', '61', '58', '33', '38', '1f', '3a', '47', '17', '9', '43', 'e', '2b', '36', '37', '24', 'a', '30', '14', '4e', '48', '5d', '2', '28', '2d', '39', '64', '26', '3c', '3e', '19', '23', '1e', '44', '34', '57', '2a', '3b', '5', '1a', '27', '2c', 'f', '59', '6', '40', '4b', '45', '4c', '1d', '7', '49', '4a', '53', '2e', '18', '4', '60', '54', '10', '5e', '12', '50', '1b', '21', '16', '5b', '3', '20', '62', '55', '22', '52', '5f', 'c', '35', '4d', '63', '51']
       );
       expect(await instance.generateDelegateList(1000)).to.be.deep.eq(
+        // tslint:disable-next-line: max-line-length
         ['41', '59', '2c', '1', '6', '20', '25', '1c', '5c', 'b', '26', '55', '60', '3a', '56', '3c', '1a', '24', '39', '13', '4c', '21', '4e', '35', '5b', '3e', '34', '9', '2a', '1d', '61', '8', '40', '15', '5d', '1e', '44', '37', '31', '64', '46', '4', '7', '22', '3f', '14', '28', '57', '51', 'a', '5', '27', '33', '36', '17', '4b', '19', '16', '48', '3b', '5a', '38', '30', '2', '32', '3', '11', 'f', '53', '45', '2e', '47', 'd', '49', '4a', '12', '2d', '58', '42', 'c', '50', '3d', '52', '2f', '54', '1f', 'e', '29', '62', '0', '43', '4d', '1b', '2b', '5e', '5f', '4f', '23', '18', '63', '10']
       );
     });
@@ -273,7 +262,7 @@ describe('modules/delegates', () => {
       expect(Array.isArray(retVal.delegates)).to.be.true;
       retVal.delegates.forEach((delegate, key) => {
         expect(delegate.rank).to.be.equal(key + 1);
-        expect(delegate.approval).to.be.equal(Math.round((delegate.vote / totalSupply) * 1e4) / 1e2);
+        expect(delegate.approval).to.be.equal(Math.round((parseInt(delegate.vote, 10) / totalSupply) * 1e4) / 1e2);
         const percent = Math.abs(
           100 - (delegate.missedblocks / ((delegate.producedblocks + delegate.missedblocks) / 100))
         ) || 0;
@@ -454,8 +443,8 @@ describe('modules/delegates', () => {
       await (instance as any).checkDelegates(theAccount.publicKey, votes, 'confirmed');
       expect(accountsModuleStub.stubs.getAccount.callCount).to.be.equal(2);
       expect(accountsModuleStub.stubs.getAccount.secondCall.args[0]).to.be.deep.equal({
-        publicKey : votes[0].substr(1),
         isDelegate: 1,
+        publicKey : votes[0].substr(1),
       });
     });
 

@@ -1,22 +1,25 @@
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import {Container} from 'inversify';
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import { TransactionType } from '../../../src/helpers';
+import {Symbols} from '../../../src/ioc/symbols';
 import { InnerTXQueue, TransactionPool} from '../../../src/logic';
 import { IBaseTransaction } from '../../../src/logic/transactions';
 import {
   AccountsModuleStub, JobsQueueStub, LoggerStub, SequenceStub,
   TransactionLogicStub, TransactionsModuleStub
 } from '../../stubs';
+import { createContainer } from '../../utils/containerCreator';
 
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
 const expect = chai.expect;
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-string-literal
 describe('logic/transactionPool - InnerTXQueue', () => {
   let instance: InnerTXQueue;
   let sandbox: SinonSandbox;
@@ -223,6 +226,7 @@ describe('logic/transactionPool - InnerTXQueue', () => {
 
 describe('logic/transactionPool - TransactionPool', () => {
   let sandbox: SinonSandbox;
+  let container: Container;
   let instance: TransactionPool;
   let fakeBus: {message: SinonStub};
   let fakeAppState: {get: SinonStub};
@@ -235,7 +239,7 @@ describe('logic/transactionPool - TransactionPool', () => {
   let tx2: IBaseTransaction<any>;
   let tx3: IBaseTransaction<any>;
 
-  const addMixedTransactionsAndFillPool = async (withSignatures: boolean) => {
+  const addMixedTransactionsAndFillPool = async (withSignatures?: boolean) => {
     const allTxs = [];
     // Add 50 txs to various queues
     for (let i = 0; i < 50; i++) {
@@ -280,14 +284,17 @@ describe('logic/transactionPool - TransactionPool', () => {
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
+    container = createContainer();
     instance = new TransactionPool();
     fakeBus = {message: sandbox.stub().resolves()};
     fakeAppState = {get: sandbox.stub()};
-    jqStub = new JobsQueueStub();
-    loggerStub = new LoggerStub();
-    transactionLogicStub = new TransactionLogicStub();
-    accountsModuleStub = new AccountsModuleStub();
-    balanceSequenceStub = new SequenceStub();
+    jqStub = container.get(Symbols.helpers.jobsQueue);
+    loggerStub = container.get(Symbols.helpers.logger);
+    transactionLogicStub = container.get(Symbols.logic.transaction);
+    accountsModuleStub = container.get(Symbols.modules.accounts);
+    balanceSequenceStub = container.getTagged(Symbols.helpers.sequence,
+      Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence);
+
     // dependencies
     (instance as any).bus = fakeBus;
     (instance as any).jobsQueue = jqStub;
@@ -307,10 +314,10 @@ describe('logic/transactionPool - TransactionPool', () => {
     };
     instance.afterConstruction();
     spiedQueues = {
-      unconfirmed: {},
       bundled: {},
-      queued: {},
       multisignature: {},
+      queued: {},
+      unconfirmed: {},
     };
     // we preserve behavior of the inner queues but we spy on all methods.
     ['unconfirmed', 'bundled', 'queued', 'multisignature'].forEach((queueName) => {
@@ -323,17 +330,17 @@ describe('logic/transactionPool - TransactionPool', () => {
     });
 
     tx = {
-      type           : TransactionType.SEND,
       amount         : 108910891000000,
+      asset          : {},
       fee            : 10,
-      timestamp      : 0,
+      id             : '8139741256612355994',
       recipientId    : '15256762582730568272R',
       senderId       : '1233456789012345R',
       senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
       signature      : 'f8fbf9b8433bf1bbea971dc8b14c6772d33c7dd285d84c5e6c984b10c4141e9f' +
                        'a56ace902b910e05e98b55898d982b3d5b9bf8bd897083a7d1ca1d5028703e03',
-      id             : '8139741256612355994',
-      asset          : {},
+      timestamp      : 0,
+      type           : TransactionType.SEND,
     };
 
     // Clone the tx to separate objects with different IDs
@@ -992,13 +999,13 @@ describe('logic/transactionPool - TransactionPool', () => {
 
   describe('processVerifyTransaction', () => {
     const sender = {
-      publicKey: 'senderPublicKey',
       multisignatures: [],
+      publicKey: 'senderPublicKey',
     };
 
     const requester = {
-      publicKey: 'requesterPublicKey',
       multisignatures: [],
+      publicKey: 'requesterPublicKey',
     };
 
     beforeEach(() => {
@@ -1125,8 +1132,8 @@ describe('logic/transactionPool - afterConstruction', () => {
     sandbox = sinon.sandbox.create();
     instance = new TransactionPool();
     jqStub = new JobsQueueStub();
-    jqStub.stubs.register.callsFake((name: string, job: () => Promise<any>, time: number) => {
-      job();
+    jqStub.stubs.register.callsFake((name: string, job: () => Promise<any>) => {
+      return job();
     });
     (instance as any).jobsQueue = jqStub;
     (instance as any).config = {

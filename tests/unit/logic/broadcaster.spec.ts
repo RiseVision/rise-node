@@ -1,11 +1,14 @@
 import { expect } from 'chai';
+import {Container} from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
+import {Symbols} from '../../../src/ioc/symbols';
 import { BroadcasterLogic, BroadcastTaskOptions } from '../../../src/logic';
 import {
   JobsQueueStub, LoggerStub, PeersLogicStub, PeersModuleStub,
   TransactionLogicStub, TransactionsModuleStub
 } from '../../stubs';
+import { createContainer } from '../../utils/containerCreator';
 import { constants } from './../../../src/helpers/';
 
 // tslint:disable no-unused-expression
@@ -20,30 +23,32 @@ describe('logic/broadcaster', () => {
   let fakeAppState: { set: SinonStub };
   let peersModuleStub: PeersModuleStub;
   let transactionsModuleStub: TransactionsModuleStub;
+  let container: Container;
 
   beforeEach(() => {
     sandbox                = sinon.sandbox.create({
       useFakeTimers: true,
     });
+    container          = createContainer();
     fakeConfig             = {
       broadcasts: {
         broadcastInterval: 1,
         broadcastLimit   : 2,
         parallelLimit    : 3,
-        releaseLimit     : 4,
         relayLimit       : 5,
+        releaseLimit     : 4,
       },
       forging   : {
         force: false,
       },
     };
-    jobsQueueStub          = new JobsQueueStub();
+    jobsQueueStub          = container.get(Symbols.helpers.jobsQueue);
     fakeAppState           = { set: sandbox.stub() };
-    loggerStub             = new LoggerStub();
-    peersLogicStub         = new PeersLogicStub();
-    transactionLogicStub   = new TransactionLogicStub();
-    peersModuleStub        = new PeersModuleStub();
-    transactionsModuleStub = new TransactionsModuleStub();
+    loggerStub             = container.get(Symbols.helpers.logger);
+    peersLogicStub         = container.get(Symbols.logic.peers);
+    transactionLogicStub   = container.get(Symbols.logic.transaction);
+    peersModuleStub        = container.get(Symbols.modules.peers);
+    transactionsModuleStub = container.get(Symbols.modules.transactions);
 
     // Dependency injection
     instance                             = new BroadcasterLogic();
@@ -89,23 +94,27 @@ describe('logic/broadcaster', () => {
     });
 
     it('should call to releaseQueue()', async () => {
-      jobsQueueStub.stubs.register.callsFake((name: string, job: () => Promise<any>, time: number) => {
-        job();
+      jobsQueueStub.stubs.register.callsFake((name: string, job: () => Promise<any>) => {
+        return job();
       });
-      instance['releaseQueue'] = sandbox.stub().resolves(true);
+      const releaseQueueStub = sandbox.stub().resolves(true);
+      // tslint:disable-next-line no-string-literal
+      instance['releaseQueue'] = releaseQueueStub;
       await instance.afterConstruct();
       expect(jobsQueueStub.stubs.register.called).to.be.true;
-      expect(instance['releaseQueue'].calledOnce).to.be.true;
+      expect(releaseQueueStub.calledOnce).to.be.true;
     });
 
     it('if releaseQueue() rejects should call to catch()', async () => {
-      jobsQueueStub.stubs.register.callsFake((name: string, job: () => Promise<any>, time: number) => {
-        job();
+      jobsQueueStub.stubs.register.callsFake((name: string, job: () => Promise<any>) => {
+        return job();
       });
-      instance['releaseQueue'] = sandbox.stub().rejects(new Error('Booo!'));
+      const releaseQueueStub = sandbox.stub().rejects(new Error('Booo!'));
+      // tslint:disable-next-line no-string-literal
+      instance['releaseQueue'] = releaseQueueStub;
       await instance.afterConstruct();
       expect(jobsQueueStub.stubs.register.called).to.be.true;
-      expect(instance['releaseQueue'].calledOnce).to.be.true;
+      expect(releaseQueueStub.calledOnce).to.be.true;
       expect(loggerStub.stubs.log.called).to.be.true;
     });
   });
@@ -136,8 +145,8 @@ describe('logic/broadcaster', () => {
       expect(peersModuleStub.stubs.list.calledOnce).to.be.true;
       expect(peersModuleStub.stubs.list.firstCall.args.length).to.be.equal(1);
       expect(peersModuleStub.stubs.list.firstCall.args[0]).to.be.deep.equal({
-        limit    : constants.maxPeers,
         broadhash: null,
+        limit    : constants.maxPeers,
       });
     });
 
@@ -169,9 +178,9 @@ describe('logic/broadcaster', () => {
     beforeEach(() => {
       params  = {};
       options = {
-        immediate: true,
-        data     : {},
         api      : 'api',
+        data     : {},
+        immediate: true,
         method   : 'method',
       };
     });
@@ -184,13 +193,13 @@ describe('logic/broadcaster', () => {
       expect(spy.calledOnce).to.be.true;
       expect(spy.firstCall.args.length).to.be.equal(1);
       expect(spy.firstCall.args[0]).to.be.deep.equal({
-        params : {},
         options: {
-          immediate: false,
-          data     : {},
           api      : 'api',
+          data     : {},
+          immediate: false,
           method   : 'method',
         },
+        params : {},
       });
     });
 
@@ -198,13 +207,13 @@ describe('logic/broadcaster', () => {
       instance.enqueue(params, options);
 
       expect(instance.queue).to.be.deep.equal([{
-        params : {},
         options: {
-          immediate: false,
-          data     : {},
           api      : 'api',
+          data     : {},
+          immediate: false,
           method   : 'method',
         },
+        params : {},
       }]);
     });
 
@@ -224,8 +233,8 @@ describe('logic/broadcaster', () => {
 
     beforeEach(() => {
       params       = {
-        limit    : 100,
         broadhash: 'broadhash',
+        limit    : 100,
         peers    : null,
       };
       options      = {};
@@ -366,10 +375,10 @@ describe('logic/broadcaster', () => {
     beforeEach(() => {
       task = {
         options: {
-          immediate: true,
           data     : {
             transaction: 'transaction',
           },
+          immediate: true,
         },
       };
 
@@ -472,15 +481,15 @@ describe('logic/broadcaster', () => {
 
     beforeEach(() => {
       routes     = [{
-        path      : 'type1',
         collection: 'collection1',
-        object    : 'object1',
         method    : 'method1',
+        object    : 'object1',
+        path      : 'type1',
       }, {
-        path      : 'type2',
         collection: 'collection2',
-        object    : 'object2',
         method    : 'method2',
+        object    : 'object2',
+        path      : 'type2',
       }];
       broadcasts = [{
         options: { api: 'type1', data: { object1: 'object1' } },
@@ -535,11 +544,11 @@ describe('logic/broadcaster', () => {
     beforeEach(() => {
       queue      = [{}, {}];
       broadcasts = [{
-        params : { name: 'params1' },
         options: 'options1',
+        params : { name: 'params1' },
       }, {
-        params : { name: 'params2' },
         options: 'options2',
+        params : { name: 'params2' },
       }];
       peers      = [{ some: 'some1' }, { some: 'some2' }];
 

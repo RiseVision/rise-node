@@ -7,7 +7,8 @@ import { constants as constantsType } from '../../../src/helpers/';
 import { ISystemModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { SystemModule } from '../../../src/modules';
-import { DbStub, IBlocksStub, LoggerStub } from '../../stubs';
+import { DbStub, IBlocksStub } from '../../stubs';
+import { createContainer } from '../../utils/containerCreator';
 
 // tslint:disable no-unused-expression
 describe('modules/system', () => {
@@ -21,8 +22,7 @@ describe('modules/system', () => {
   };
   let constants: typeof constantsType;
   before(() => {
-    container = new Container();
-    container.bind(Symbols.helpers.logger).to(LoggerStub);
+    container = createContainer();
     constants = {
       fees      : [
         { height: 1, fees: { send: 1 } },
@@ -37,13 +37,10 @@ describe('modules/system', () => {
         { height: 11, ver: '0.1.4b' },
       ],
     } as any;
-    container.bind(Symbols.helpers.constants).toConstantValue(constants);
-
-    container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
+    container.rebind(Symbols.helpers.constants).toConstantValue(constants);
+    container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
     container.bind(Symbols.generic.nonce).toConstantValue('nonce');
-    container.bind(Symbols.generic.db).to(DbStub).inSingletonScope();
-    container.bind(Symbols.modules.blocks).to(IBlocksStub).inSingletonScope();
-    container.bind(Symbols.modules.system).to(SystemModule);
+    container.rebind(Symbols.modules.system).to(SystemModule);
   });
 
   beforeEach(() => {
@@ -55,7 +52,7 @@ describe('modules/system', () => {
 
   describe('.getMinVersion', () => {
     it('should return string', () => {
-      expect(inst.getMinVersion()).to.be.string;
+      expect(inst.getMinVersion()).to.be.a('string');
     });
     it('should return ^0.1.0 for height 1', () => {
       expect(inst.getMinVersion(1)).to.be.eq('^0.1.0');

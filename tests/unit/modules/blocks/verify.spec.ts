@@ -1,27 +1,30 @@
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as sinon from 'sinon';
+import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { Container } from 'inversify';
+import * as sinon from 'sinon';
+import { Ed, ForkType, Slots } from '../../../../src/helpers';
 import { IBlocksModuleVerify } from '../../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../../src/ioc/symbols';
-import { BlocksModuleChain, BlocksModuleVerify } from '../../../../src/modules/blocks/';
-import { createContainer } from '../../../utils/containerCreator';
-import DbStub from '../../../stubs/helpers/DbStub';
-import BlocksModuleStub from '../../../stubs/modules/BlocksModuleStub';
-import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
-import TransactionLogicStub from '../../../stubs/logic/TransactionLogicStub';
-import { BlocksSubmoduleChainStub, DelegatesModuleStub, SlotsStub, TransactionsModuleStub } from '../../../stubs';
-import { ForkModuleStub } from '../../../stubs/modules/ForkModuleStub';
-import AccountsModuleStub from '../../../stubs/modules/AccountsModuleStub';
-import BlockRewardLogicStub from '../../../stubs/logic/BlockRewardLogicStub';
 import { BlockLogic, BlockRewardLogic, SignedBlockType } from '../../../../src/logic';
+import { BlocksModuleVerify } from '../../../../src/modules/blocks/';
+import { BlocksSubmoduleChainStub, DelegatesModuleStub, SlotsStub, TransactionsModuleStub } from '../../../stubs';
+import DbStub from '../../../stubs/helpers/DbStub';
+import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
+import BlockRewardLogicStub from '../../../stubs/logic/BlockRewardLogicStub';
+import TransactionLogicStub from '../../../stubs/logic/TransactionLogicStub';
+import AccountsModuleStub from '../../../stubs/modules/AccountsModuleStub';
+import BlocksModuleStub from '../../../stubs/modules/BlocksModuleStub';
+import { ForkModuleStub } from '../../../stubs/modules/ForkModuleStub';
+import { createContainer } from '../../../utils/containerCreator';
+
 import { createFakeBlock } from '../../../utils/blockCrafter';
-import { Ed, ForkType, Slots } from '../../../../src/helpers';
 import { createRandomTransactions } from '../../../utils/txCrafter';
-import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 
 chai.use(chaiAsPromised);
+
+// tslint:disable no-unused-expression
 describe('modules/blocks/verify', () => {
   let inst: IBlocksModuleVerify;
   let instReal: BlocksModuleVerify;
@@ -71,6 +74,7 @@ describe('modules/blocks/verify', () => {
         await instReal.onNewBlock({id: `${i}`} as any);
       }
       // all first contants.blockSlotWindow indexes will be removed
+      // tslint:disable-next-line: no-string-literal
       expect(instReal['lastNBlockIds']).to.be.deep.eq(new Array(constants.blockSlotWindow)
         .fill(null)
         .map((a, idx) => `${constants.blockSlotWindow + idx }`));
@@ -81,6 +85,7 @@ describe('modules/blocks/verify', () => {
     it('should initialize [private].lastNBlockIds with the last blockSlotWindow block ids from db', async () => {
       dbStub.enqueueResponse('query', Promise.resolve([{id: '1'}, {id: '2'}, {id: '3'}]));
       await instReal.onBlockchainReady();
+      // tslint:disable-next-line: no-string-literal
       expect(instReal['lastNBlockIds']).to.be.deep.eq(['1', '2', '3']);
     });
   });
@@ -96,8 +101,8 @@ describe('modules/blocks/verify', () => {
     beforeEach(() => {
       const constants        = container.get<any>(Symbols.helpers.constants);
       block                  = createFakeBlock({
+        previousBlock: {id: '1', height: 100} as any,
         timestamp    : 101 * constants.blockTime,
-        previousBlock: {id: '1', height: 100} as any
       });
       blocksModule.lastBlock = {id: '1', height: 100} as any;
       container.rebind(Symbols.helpers.slots).to(Slots);
@@ -118,7 +123,7 @@ describe('modules/blocks/verify', () => {
           const res = await inst[what](block);
           expect(res.verified).is.true;
           expect(res.errors).is.empty;
-        })
+        });
         it('error if signature is invalid', async () => {
           block.blockSignature = new Array(64).fill(null).map(() => 'aa').join('');
           const res            = await inst[what](block);
@@ -177,7 +182,7 @@ describe('modules/blocks/verify', () => {
               transactions : txs,
             });
             const res = await inst[what](block);
-            expect(res.errors).to.contain(`Error: meow`);
+            expect(res.errors).to.contain('Error: meow');
           });
           it('error if computed payload hex is diff from advertised block.payloadHash', async () => {
             txLogic.stubs.getBytes.returns(Buffer.alloc(10));
@@ -224,8 +229,8 @@ describe('modules/blocks/verify', () => {
     beforeEach(() => {
       const constants        = container.get<any>(Symbols.helpers.constants);
       block                  = createFakeBlock({
+        previousBlock: {id: '1', height: 100} as any,
         timestamp    : 101 * constants.blockTime,
-        previousBlock: {id: '1', height: 100} as any
       });
       blocksModule.lastBlock = {id: '1', height: 100} as any;
     });
@@ -257,8 +262,8 @@ describe('modules/blocks/verify', () => {
     beforeEach(() => {
       const constants        = container.get<any>(Symbols.helpers.constants);
       block                  = createFakeBlock({
+        previousBlock: {id: '2', height: 100} as any,
         timestamp    : 101 * constants.blockTime,
-        previousBlock: {id: '2', height: 100} as any
       });
       blocksModule.lastBlock = {id: '1', height: 100} as any;
 
@@ -288,7 +293,7 @@ describe('modules/blocks/verify', () => {
       expect(res.verified).is.false;
       expect(res.errors).to.contain('Invalid block timestamp');
     });
-    it('previsious block is valid(check of Fork type 1)', async ()=>{
+    it('previsious block is valid(check of Fork type 1)', async () => {
       slots.enqueueResponse('getTime', 0);
       block.previousBlock = (inst as any).blocksModule.lastBlock.id;
       slots.stubs.getSlotNumber.onFirstCall().returns(1); // provided block slot
@@ -298,7 +303,7 @@ describe('modules/blocks/verify', () => {
       expect(res.verified).is.false;
       expect(res.errors).to.be.not.contain('Invalid previous block: 2 expected 1');
     });
-    it('block timestamp is valid', async ()=>{
+    it('block timestamp is valid', async () => {
       slots.enqueueResponse('getTime', 0);
       slots.stubs.getSlotNumber.onFirstCall().returns(1); // provided block slot
       slots.stubs.getSlotNumber.onSecondCall().returns(0); // last block slot
@@ -425,7 +430,7 @@ describe('modules/blocks/verify', () => {
           txs[0],
           {}, // Account
           {}, // Requester Public Account,
-          undefined
+          undefined,
         ]);
       });
     });

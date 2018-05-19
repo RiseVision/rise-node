@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import { removeEmptyObjKeys } from '../../../src/helpers/genericUtils';
+import { removeEmptyObjKeys } from '../../../src/helpers';
 
 describe('genericUtils', () => {
 

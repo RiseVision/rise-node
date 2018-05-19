@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
-import { Sequence } from '../../../src/helpers/sequence';
+import { Sequence } from '../../../src/helpers';
 
 const seqConfig = {
   onWarning: (curPending: number, warnLimit: number) => {

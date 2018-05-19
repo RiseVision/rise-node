@@ -39,19 +39,26 @@ function expressRunner(...args) {
 }
 
 const ProxyAppManager = proxyquire('../../src/AppManager', {
-  'express': expressRunner,
   './helpers/': {
+    Bus,
+    Database,
+    Ed,
+    ExceptionsManager,
+    JobsQueue,
+    Sequence,
+    Slots,
     applyExpressLimits        : (...args) => applyExpressLimitsStub.apply(this, args),
-    Bus, cache,
+    cache,
     catchToLoggerAndRemapError: (...args) => catchToLoggerAndRemapErrorStub.apply(this, args),
     cbToPromise               : (...args) => cbToPromiseStub.apply(this, args),
-    constants, Database, Ed, ExceptionsManager, JobsQueue,
+    constants,
     middleware: fakeMiddleware,
-    Sequence, Slots, z_schema,
+    z_schema,
   },
+  'body-parser'        : fakeBodyParser,
   'compression'        : (...args) => compressionStub.apply(this, args),
   'cors'               : (...args) => corsStub.apply(this, args),
-  'body-parser'        : fakeBodyParser,
+  'express': expressRunner,
   'reflect-metadata'   : Reflect,
   'routing-controllers': {
     useContainer    : (...args) => useContainerForHTTPStub.apply(this, args),
@@ -72,8 +79,8 @@ describe('AppManager', () => {
   let serverStub;
 
   before(() => {
-    loggerStub        = new LoggerStub();
     allStubsContainer = createContainer();
+    loggerStub = allStubsContainer.get(Symbols.helpers.logger);
     allStubsContainer.bind(Symbols.modules.cache).toConstantValue({});
     allStubsContainer.bind(Symbols.modules.peers).toConstantValue({});
     appConfig    = JSON.parse(fs.readFileSync(path.resolve('etc/mainnet/config.json'), 'utf8'));
@@ -83,8 +90,8 @@ describe('AppManager', () => {
   beforeEach(() => {
     sandbox    = sinon.sandbox.create();
     serverStub = {
-      listen: sandbox.stub(),
       close : sandbox.stub(),
+      listen: sandbox.stub(),
     };
   });
 
@@ -209,8 +216,8 @@ describe('AppManager', () => {
 
     beforeEach(() => {
       fakeApp                       = {
-        use    : sandbox.stub(),
         options: sandbox.stub(),
+        use    : sandbox.stub(),
       };
       (expressRunner as any).static = sandbox.stub().returns('static');
 
@@ -468,8 +475,8 @@ describe('AppManager', () => {
       allControllers.forEach((controller, index) => {
         const symbol = getMetadataSpy.getCall(index).returnValue;
         expect(containerStub.bindings[symbol]).to.be.deep.equal([{
-          to              : controller.name,
           inSingletonScope: true,
+          to              : controller.name,
         }]);
       });
     });
@@ -478,29 +485,29 @@ describe('AppManager', () => {
       await instance.initAppElements();
       expect(containerStub.bindings[Symbols.api.utils.errorHandler]).to.be.deep.equal([
         {
-          to              : 'APIErrorHandler',
           inSingletonScope: true,
+          to              : 'APIErrorHandler',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.api.utils.successInterceptor]).to.be.deep.equal([
         {
-          to              : 'SuccessInterceptor',
           inSingletonScope: true,
+          to              : 'SuccessInterceptor',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.api.utils.validatePeerHeadersMiddleware]).to.be.deep.equal([
         {
-          to              : 'ValidatePeerHeaders',
           inSingletonScope: true,
+          to              : 'ValidatePeerHeaders',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.api.utils.attachPeerHeaderToResponseObject]).to.be.deep.equal([
         {
-          to              : 'AttachPeerHeaders',
           inSingletonScope: true,
+          to              : 'AttachPeerHeaders',
         },
       ]);
     });
@@ -582,15 +589,15 @@ describe('AppManager', () => {
 
       expect(containerStub.bindings[Symbols.helpers.exceptionsManager]).to.be.deep.equal([
         {
-          to              : 'ExceptionsManager',
           inSingletonScope: true,
+          to              : 'ExceptionsManager',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.helpers.jobsQueue]).to.be.deep.equal([
         {
-          to              : 'JobsQueue',
           inSingletonScope: true,
+          to              : 'JobsQueue',
         },
       ]);
 
@@ -602,8 +609,8 @@ describe('AppManager', () => {
 
       expect(containerStub.bindings[Symbols.helpers.slots]).to.be.deep.equal([
         {
-          to              : 'Slots',
           inSingletonScope: true,
+          to              : 'Slots',
         },
       ]);
     });
@@ -632,36 +639,36 @@ describe('AppManager', () => {
 
       expect(containerStub.bindings[Symbols.logic.account]).to.be.deep.equal([
         {
-          to              : 'AccountLogic',
           inSingletonScope: true,
+          to              : 'AccountLogic',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.logic.appState]).to.be.deep.equal([
         {
-          to              : 'AppState',
           inSingletonScope: true,
+          to              : 'AppState',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.logic.block]).to.be.deep.equal([
         {
-          to              : 'BlockLogic',
           inSingletonScope: true,
+          to              : 'BlockLogic',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.logic.blockReward]).to.be.deep.equal([
         {
-          to              : 'BlockRewardLogic',
           inSingletonScope: true,
+          to              : 'BlockRewardLogic',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.logic.broadcaster]).to.be.deep.equal([
         {
-          to              : 'BroadcasterLogic',
           inSingletonScope: true,
+          to              : 'BroadcasterLogic',
         },
       ]);
 
@@ -673,8 +680,8 @@ describe('AppManager', () => {
 
       expect(containerStub.bindings[Symbols.logic.peers]).to.be.deep.equal([
         {
-          to              : 'PeersLogic',
           inSingletonScope: true,
+          to              : 'PeersLogic',
         },
       ]);
 
@@ -686,57 +693,57 @@ describe('AppManager', () => {
 
       expect(containerStub.bindings[Symbols.logic.rounds]).to.be.deep.equal([
         {
-          to              : 'RoundsLogic',
           inSingletonScope: true,
+          to              : 'RoundsLogic',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.logic.transaction]).to.be.deep.equal([
         {
-          to              : 'TransactionLogic',
           inSingletonScope: true,
+          to              : 'TransactionLogic',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.logic.transactionPool]).to.be.deep.equal([
         {
-          to              : 'TransactionPool',
           inSingletonScope: true,
+          to              : 'TransactionPool',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.logic.transactions.send]).to.be.deep.equal([
         {
-          to              : 'SendTransaction',
           inSingletonScope: true,
+          to              : 'SendTransaction',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.logic.transactions.vote]).to.be.deep.equal([
         {
-          to              : 'VoteTransaction',
           inSingletonScope: true,
+          to              : 'VoteTransaction',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.logic.transactions.createmultisig]).to.be.deep.equal([
         {
-          to              : 'MultiSignatureTransaction',
           inSingletonScope: true,
+          to              : 'MultiSignatureTransaction',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.logic.transactions.delegate]).to.be.deep.equal([
         {
-          to              : 'RegisterDelegateTransaction',
           inSingletonScope: true,
+          to              : 'RegisterDelegateTransaction',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.logic.transactions.secondSignature]).to.be.deep.equal([
         {
-          to              : 'SecondSignatureTransaction',
           inSingletonScope: true,
+          to              : 'SecondSignatureTransaction',
         },
       ]);
 
@@ -768,120 +775,120 @@ describe('AppManager', () => {
 
       expect(containerStub.bindings[Symbols.modules.accounts]).to.be.deep.equal([
         {
-          to              : 'AccountsModule',
           inSingletonScope: true,
+          to              : 'AccountsModule',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.modules.blocks]).to.be.deep.equal([
         {
-          to              : 'BlocksModule',
           inSingletonScope: true,
+          to              : 'BlocksModule',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.modules.blocksSubModules.chain]).to.be.deep.equal([
         {
-          to              : 'BlocksModuleChain',
           inSingletonScope: true,
+          to              : 'BlocksModuleChain',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.modules.blocksSubModules.process]).to.be.deep.equal([
         {
-          to              : 'BlocksModuleProcess',
           inSingletonScope: true,
+          to              : 'BlocksModuleProcess',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.modules.blocksSubModules.utils]).to.be.deep.equal([
         {
-          to              : 'BlocksModuleUtils',
           inSingletonScope: true,
+          to              : 'BlocksModuleUtils',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.modules.blocksSubModules.verify]).to.be.deep.equal([
         {
-          to              : 'BlocksModuleVerify',
           inSingletonScope: true,
+          to              : 'BlocksModuleVerify',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.modules.cache]).to.be.deep.equal([
         {
-          to              : 'Cache',
           inSingletonScope: true,
+          to              : 'Cache',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.modules.delegates]).to.be.deep.equal([
         {
-          to              : 'DelegatesModule',
           inSingletonScope: true,
+          to              : 'DelegatesModule',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.modules.forge]).to.be.deep.equal([
         {
-          to              : 'ForgeModule',
           inSingletonScope: true,
+          to              : 'ForgeModule',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.modules.fork]).to.be.deep.equal([
         {
-          to              : 'ForkModule',
           inSingletonScope: true,
+          to              : 'ForkModule',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.modules.loader]).to.be.deep.equal([
         {
-          to              : 'LoaderModule',
           inSingletonScope: true,
+          to              : 'LoaderModule',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.modules.multisignatures]).to.be.deep.equal([
         {
-          to              : 'MultisignaturesModule',
           inSingletonScope: true,
+          to              : 'MultisignaturesModule',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.modules.peers]).to.be.deep.equal([
         {
-          to              : 'PeersModule',
           inSingletonScope: true,
+          to              : 'PeersModule',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.modules.rounds]).to.be.deep.equal([
         {
-          to              : 'RoundsModule',
           inSingletonScope: true,
+          to              : 'RoundsModule',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.modules.system]).to.be.deep.equal([
         {
-          to              : 'SystemModule',
           inSingletonScope: true,
+          to              : 'SystemModule',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.modules.transactions]).to.be.deep.equal([
         {
-          to              : 'TransactionsModule',
           inSingletonScope: true,
+          to              : 'TransactionsModule',
         },
       ]);
 
       expect(containerStub.bindings[Symbols.modules.transport]).to.be.deep.equal([
         {
-          to              : 'TransportModule',
           inSingletonScope: true,
+          to              : 'TransportModule',
         },
       ]);
     });
@@ -892,8 +899,8 @@ describe('AppManager', () => {
 
       expect(containerStub.bindings[Symbols.modules.cache]).to.be.deep.equal([
         {
-          to              : 'DummyCache',
           inSingletonScope: true,
+          to              : 'DummyCache',
         },
       ]);
     });
@@ -1067,11 +1074,11 @@ describe('AppManager', () => {
     const symbols = {
       s0  : Symbol('s0'),
       test: {
-        s1    : Symbol('s1'),
         child1: {
           s3: Symbol('s3'),
         },
-        child2: Symbol('s2'),
+        child2: Symbol('s1'),
+        s1    : Symbol('s2'),
       },
     };
 
@@ -1086,8 +1093,8 @@ describe('AppManager', () => {
       (instance as any).getElementsFromContainer(symbols);
       expect(containerStub.get.callCount).to.be.equal(4);
       expect(containerStub.get.getCall(0).args[0]).to.be.equal(symbols.s0);
-      expect(containerStub.get.getCall(1).args[0]).to.be.equal(symbols.test.s1);
-      expect(containerStub.get.getCall(2).args[0]).to.be.equal(symbols.test.child2);
+      expect(containerStub.get.getCall(1).args[0]).to.be.equal(symbols.test.child2);
+      expect(containerStub.get.getCall(2).args[0]).to.be.equal(symbols.test.s1);
       expect(containerStub.get.getCall(3).args[0]).to.be.equal(symbols.test.child1.s3);
     });
 
