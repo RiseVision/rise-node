@@ -68,7 +68,7 @@ export class TransactionsAPI {
       orderBy = [body.orderBy.split(':')];
     }
 
-    const where = removeEmptyObjKeys({ ... andWhereClause, [Op.or]: orWhereClause}, true);
+    const where = removeEmptyObjKeys({ ...andWhereClause, [Op.or]: orWhereClause }, true);
     if (Object.keys(where[Op.or]).length === 0) {
       delete where[Op.or];
     }
@@ -119,14 +119,14 @@ export class TransactionsAPI {
   public async getMultiSigs(@SchemaValid(schema.getPooledTransactions)
                             @QueryParams() params: { senderPublicKey?: string, address?: string }) {
     const txs = this.transactionsModule.getMultisignatureTransactionList(true);
-
     return {
       count       : txs.length,
       transactions: txs
         .filter((tx) => params.senderPublicKey ?
           Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
           true)
-        .filter((tx) => params.address ? params.address === tx.recipientId : true),
+        .filter((tx) => params.address ? params.address === tx.recipientId : true)
+        .map((tx) => this.TXModel.toTransportTransaction(tx, this.blocksModule)),
     };
   }
 
@@ -153,7 +153,8 @@ export class TransactionsAPI {
         .filter((tx) => params.senderPublicKey ?
           Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
           true)
-        .filter((tx) => params.address ? params.address === tx.recipientId : true),
+        .filter((tx) => params.address ? params.address === tx.recipientId : true)
+        .map((tx) => this.TXModel.toTransportTransaction(tx, this.blocksModule)),
     };
   }
 
@@ -165,7 +166,7 @@ export class TransactionsAPI {
     if (!transaction) {
       throw new APIError('Transaction not found', 200);
     }
-    return { transaction };
+    return { transaction: this.TXModel.toTransportTransaction(transaction, this.blocksModule) };
   }
 
   @Get('/unconfirmed')
@@ -176,10 +177,10 @@ export class TransactionsAPI {
     return {
       count       : txs.length,
       transactions: txs
-        .filter((tx) => {
-          return (params.senderPublicKey && Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey))
-            || (params.address && params.address === tx.recipientId);
-        })
+        .filter((tx) => params.senderPublicKey ?
+          Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
+          true)
+        .filter((tx) => params.address ? params.address === tx.recipientId : true)
         .map((tx) => this.TXModel.toTransportTransaction(tx, this.blocksModule)),
     };
   }
@@ -192,7 +193,7 @@ export class TransactionsAPI {
     if (!transaction) {
       throw new APIError('Transaction not found', 200);
     }
-    return { transaction };
+    return { transaction: this.TXModel.toTransportTransaction(transaction, this.blocksModule) };
   }
 
   @Put()
@@ -204,7 +205,7 @@ export class TransactionsAPI {
   }
 
   private createWhereClause(body: any) {
-    const whereClause = {
+    const whereClause          = {
       amount         : {},
       blockId        : {},
       height         : {},
@@ -214,8 +215,8 @@ export class TransactionsAPI {
       timestamp      : {},
       type           : {},
     };
-    whereClause.amount[Op.lte] = body.minAmount;
-    whereClause.amount[Op.gte] = body.maxAmount;
+    whereClause.amount[Op.lte] = body.maxAmount;
+    whereClause.amount[Op.gte] = body.minAmount;
 
     whereClause.blockId[Op.eq] = body.blockId;
 
@@ -255,15 +256,24 @@ export class TransactionsAPI {
     }
 
     if (Array.isArray(body.senderIds)) {
-      whereClause.senderId = { [Op.in]: body.senderIds };
+      whereClause.senderId = { [Op.in]: body.senderIds.map((item) => item.toUpperCase()) };
+      if (body.senderId) {
+        whereClause.senderId[Op.in].push(body.senderId.toUpperCase());
+      }
     }
 
     if (Array.isArray(body.recipientIds)) {
-      whereClause.recipientId = { [Op.in]: body.recipientIds };
+      whereClause.recipientId = { [Op.in]: body.recipientIds.map((item) => item.toUpperCase()) };
+      if (body.recipientId) {
+        whereClause.recipientId[Op.in].push(body.recipientId.toUpperCase());
+      }
     }
 
     if (Array.isArray(body.senderPublicKeys)) {
       whereClause.senderPublicKey = { [Op.in]: body.senderPublicKeys.map((pk) => Buffer.from(pk, 'hex')) };
+      if (body.senderPublicKey) {
+        whereClause.senderPublicKey[Op.in].push(Buffer.from(body.senderPublicKey, 'hex'));
+      }
     }
 
     removeEmptyObjKeys(whereClause, true);
