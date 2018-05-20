@@ -186,10 +186,10 @@ describe('logic/round', () => {
       const res = instance.markBlockId();
       expect(res.model).to.be.deep.eq(accountsModel);
       expect(res.options).to.be.deep.eq({
-        where: { blockId: scope.block.id }
+        where: { blockId: scope.block.id },
       });
       expect(res.type).to.be.eq('update');
-      expect(res.values).to.be.eq({ blockId: '0' });
+      expect(res.values).to.be.deep.eq({ blockId: '0' });
     });
 
   });
@@ -291,240 +291,64 @@ describe('logic/round', () => {
       expect(retVal).to.deep.equal([]);
     });
 
-    it('should behave correctly when no delegates, backwards false, fees > 0', async () => {
+    it('should behave correctly when backwards false, fees > 0 && feesRemaining > 0', async () => {
       at.returns({
-        feesRemaining: 10,
+        feesRemaining: 1,
+        balance: 10,
+        fees: 5,
+        rewards: 4,
       });
-      scope.roundDelegates = [];
+      scope.roundDelegates = [Buffer.from('aa', 'hex'), Buffer.from('bb', 'hex')];
 
       const retVal = await instance.applyRound();
 
-      expect(at.calledOnce).to.be.true;
-      expect(at.firstCall.args.length).to.equal(1);
-      expect(at.firstCall.args[0]).to.equal(-1);
-      expect(scope.library.logger.trace.calledTwice).to.be.true;
-      expect(scope.library.logger.trace.firstCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.firstCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.firstCall.args[0]).to.be.equal(
-        'Fees remaining'
-      );
-      expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
-        delegate: undefined,
-        fees    : 10,
-        index   : -1,
-      });
-      expect(scope.library.logger.trace.secondCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.secondCall.args[0]).to.be.equal(
-        'Applying round'
-      );
-      expect(retVal).to.equal('none works');
-
-    });
-
-    it('should apply round changes to each delegate when backwards false, fees = 0', async () => {
-      at.returns({
-        feesRemaining: 0,
-      });
-      const retVal = await instance.applyRound();
-
-      expect(at.calledTwice).to.be.true;
-      expect(at.firstCall.args.length).to.equal(1);
+      expect(at.calledThrice).to.be.true;
       expect(at.firstCall.args[0]).to.equal(0);
-      expect(at.secondCall.args[0]).to.equal(0);
-      expect(scope.library.logger.trace.calledTwice).to.be.true;
-      expect(scope.library.logger.trace.firstCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.firstCall.args[0]).to.be.equal(
-        'Delegate changes'
-      );
-      expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
-        changes : {
-          feesRemaining: 0,
-        },
-        delegate: {},
+      expect(at.secondCall.args[0]).to.equal(1);
+      expect(at.thirdCall.args[0]).to.equal(1);
+
+      expect(scope.modules.accounts.mergeAccountAndGetOPs.calledThrice).is.true;
+      expect(scope.modules.accounts.mergeAccountAndGetOPs.firstCall.args[0]).is.deep.eq({
+        balance: 10,
+        blockId: '1',
+        fees: 5,
+        publicKey: Buffer.from('aa', 'hex'),
+        rewards: 4,
+        u_balance: 10,
+        round: 10
       });
-      expect(scope.library.logger.trace.secondCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.secondCall.args[0]).to.be.equal(
-        'Applying round'
-      );
-      expect(scope.library.logger.trace.secondCall.args[1]).to.deep.equal(['yesSQL']);
-      expect(retVal).to.equal('none works');
-      expect(task.none.calledOnce).to.be.true;
-      expect(task.none.firstCall.args.length).to.equal(1);
-      expect(task.none.firstCall.args[0]).to.equal('yesSQL');
-    });
-
-    it('should behave correctly when no delegates, backwards false, fees = 0', async () => {
-      at.returns({
-        feesRemaining: 0,
+      expect(scope.modules.accounts.mergeAccountAndGetOPs.secondCall.args[0]).is.deep.eq({
+        balance: 10,
+        blockId: '1',
+        fees: 5,
+        publicKey: Buffer.from('bb', 'hex'),
+        rewards: 4,
+        u_balance: 10,
+        round: 10
       });
-      scope.roundDelegates = [];
-
-      instance = new ProxyRound.RoundLogic(scope, task);
-      await instance.applyRound();
-
-      expect(at.calledOnce).to.be.true;
-      expect(at.firstCall.args.length).to.equal(1);
-      expect(at.firstCall.args[0]).to.equal(-1);
-      expect(scope.library.logger.trace.calledOnce).to.be.true;
-      expect(scope.library.logger.trace.firstCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.firstCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.firstCall.args[0]).to.be.equal(
-        'Applying round'
-      );
-      expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal([]);
-      expect(task.none.notCalled).is.true;
-    });
-
-    it('should apply round changes to each delegate when backwards true, fees > 0', async () => {
-      at.returns({
-        feesRemaining: 10,
-      });
-      scope.backwards = true;
-
-      instance     = new ProxyRound.RoundLogic(scope, task);
-      const retVal = await instance.applyRound();
-
-      expect(at.calledTwice).to.be.true;
-      expect(at.firstCall.args.length).to.equal(1);
-      expect(at.firstCall.args[0]).to.equal(0);
-      expect(at.secondCall.args[0]).to.equal(0);
-      expect(scope.library.logger.trace.calledThrice).to.be.true;
-      expect(scope.library.logger.trace.firstCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.firstCall.args[0]).to.be.equal(
-        'Delegate changes'
-      );
-      expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
-        changes : {
-          feesRemaining: 10,
-        },
-        delegate: {},
-      });
-      expect(scope.library.logger.trace.secondCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.secondCall.args[0]).to.be.equal(
-        'Fees remaining'
-      );
-      expect(scope.library.logger.trace.secondCall.args[1]).to.deep.equal({
-        delegate: {},
-        fees    : -10,
-        index   : 0,
-      });
-      expect(scope.library.logger.trace.thirdCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.thirdCall.args[0]).to.be.equal(
-        'Applying round'
-      );
-      expect(scope.library.logger.trace.thirdCall.args[1]).to.deep.equal([
-        'yesSQL',
-        'yesSQL',
-      ]);
-      expect(retVal).to.equal('none works');
-      expect(task.none.calledOnce).to.be.true;
-      expect(task.none.firstCall.args.length).to.equal(1);
-      expect(task.none.firstCall.args[0]).to.equal('yesSQLyesSQL');
-    });
-
-    it('should behave correctly when no delegates, backwards true, fees > 0', async () => {
-      at.returns({
-        feesRemaining: 10,
-      });
-      scope.roundDelegates = [];
-      scope.backwards      = true;
-
-      instance     = new ProxyRound.RoundLogic(scope, task);
-      const retVal = await instance.applyRound();
-
-      expect(at.calledOnce).to.be.true;
-      expect(at.firstCall.args.length).to.equal(1);
-      expect(at.firstCall.args[0]).to.equal(0);
-      expect(scope.library.logger.trace.calledTwice).to.be.true;
-      expect(scope.library.logger.trace.firstCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.firstCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.firstCall.args[0]).to.be.equal(
-        'Fees remaining'
-      );
-      expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
-        delegate: undefined,
-        fees    : -10,
-        index   : 0,
-      });
-      expect(scope.library.logger.trace.secondCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.secondCall.args[0]).to.be.equal(
-        'Applying round'
-      );
-      expect(scope.library.logger.trace.secondCall.args[1]).to.deep.equal(['yesSQL']);
-      expect(retVal).to.equal('none works');
-      expect(task.none.calledOnce).to.be.true;
-      expect(task.none.firstCall.args.length).to.equal(1);
-      expect(task.none.firstCall.args[0]).to.equal('yesSQL');
-    });
-
-    it('should apply round changes to each delegate when backwards true, fees = 0', async () => {
-      at.returns({
-        feesRemaining: 0,
-      });
-      scope.backwards = true;
-
-      instance     = new ProxyRound.RoundLogic(scope, task);
-      const retVal = await instance.applyRound();
-
-      expect(at.calledTwice).to.be.true;
-      expect(at.firstCall.args.length).to.equal(1);
-      expect(at.firstCall.args[0]).to.equal(0);
-      expect(at.secondCall.args[0]).to.equal(0);
-      expect(scope.library.logger.trace.calledTwice).to.be.true;
-      expect(scope.library.logger.trace.firstCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.firstCall.args[0]).to.be.equal(
-        'Delegate changes'
-      );
-      expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
-        changes : {
-          feesRemaining: 0,
-        },
-        delegate: {},
-      });
-      expect(scope.library.logger.trace.secondCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.secondCall.args[0]).to.be.equal(
-        'Applying round'
-      );
-      expect(scope.library.logger.trace.secondCall.args[1]).to.deep.equal(['yesSQL']);
-      expect(retVal).to.equal('none works');
-      expect(task.none.calledOnce).to.be.true;
-      expect(task.none.firstCall.args.length).to.equal(1);
-      expect(task.none.firstCall.args[0]).to.equal('yesSQL');
-    });
-
-    it('should behave correctly when no delegates, backwards true, fees = 0', async () => {
-      at.returns({
-        feesRemaining: 0,
+      // Remainder of 1 feesRemaining
+      expect(scope.modules.accounts.mergeAccountAndGetOPs.thirdCall.args[0]).is.deep.eq({
+        balance: 1,
+        blockId: '1',
+        fees: 1,
+        publicKey: Buffer.from('bb', 'hex'),
+        u_balance: 1,
+        round: 10
       });
 
-      scope.roundDelegates = [];
-      scope.backwards      = true;
+      expect(retVal).to.be.deep.eq([]);
 
-      instance = new ProxyRound.RoundLogic(scope, task);
-      await instance.applyRound();
-
-      expect(at.calledOnce).to.be.true;
-      expect(at.firstCall.args.length).to.equal(1);
-      expect(at.firstCall.args[0]).to.equal(0);
-      expect(scope.library.logger.trace.calledOnce).to.be.true;
-      expect(scope.library.logger.trace.firstCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.firstCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.firstCall.args[0]).to.be.equal(
-        'Applying round'
-      );
-      expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal([]);
-      expect(task.none.notCalled).is.true;
     });
   });
 
   describe('land', () => {
     it('should call correct methods', async () => {
-      const updateVotes        = sandbox.stub(instance, 'updateVotes').resolves(true);
-      const updateMissedBlocks = sandbox.stub(instance, 'updateMissedBlocks').resolves(true);
-      const flushRound         = sandbox.stub(instance, 'flushRound').resolves(true);
-      const applyRound         = sandbox.stub(instance, 'applyRound').resolves(true);
+      const updateVotes        = sandbox.stub(instance, 'updateVotes').returns({updateVote: true});
+      const updateMissedBlocks = sandbox.stub(instance, 'updateMissedBlocks').returns({updateMissed: true});
+      const flushRound         = sandbox.stub(instance, 'flushRound').returns({flushRound: true});
+      const applyRound         = sandbox.stub(instance, 'applyRound').returns([{apply: 1}, {apply: 2}]);
 
-      await instance.land();
+      const res = instance.land();
 
       expect(updateVotes.calledTwice).to.be.true;
       expect(updateMissedBlocks.calledOnce).to.be.true;
@@ -535,47 +359,30 @@ describe('logic/round', () => {
       updateMissedBlocks.restore();
       flushRound.restore();
       applyRound.restore();
-    });
 
-    it('should call methods in the correct order', async () => {
-      const order   = [];
-      const stubs   = {};
-      const methods = ['updateVotes', 'updateMissedBlocks', 'flushRound', 'applyRound'];
-      methods.forEach((k) => {
-        stubs[k] = sandbox.stub(instance, k)
-          .resolves(true)
-          .callsFake(() => order.push(k));
-      });
-
-      await instance.land();
-
-      expect(order).to.be.deep.equal([
-        'updateVotes',
-        'updateMissedBlocks',
-        'flushRound',
-        'applyRound',
-        'updateVotes',
-        'flushRound',
+      expect(res).to.be.deep.eq([
+        { updateVote: true},
+        { updateMissed: true},
+        { flushRound: true},
+        { apply: 1},
+        { apply: 2},
+        { updateVote: true},
+        { flushRound: true},
       ]);
-
-      for (const k in stubs) {
-        if (stubs.hasOwnProperty(k)) {
-          stubs[k].restore();
-        }
-      }
     });
+
   });
 
   describe('backwardLand', () => {
     it('should call correct methods', async () => {
-      const updateVotes          = sandbox.stub(instance, 'updateVotes').resolves(true);
-      const updateMissedBlocks   = sandbox.stub(instance, 'updateMissedBlocks').resolves(true);
-      const flushRound           = sandbox.stub(instance, 'flushRound').resolves(true);
-      const applyRound           = sandbox.stub(instance, 'applyRound').resolves(true);
-      const restoreRoundSnapshot = sandbox.stub(instance, 'restoreRoundSnapshot').resolves(true);
-      const restoreVotesSnapshot = sandbox.stub(instance, 'restoreVotesSnapshot').resolves(true);
+      const updateVotes        = sandbox.stub(instance, 'updateVotes').returns({updateVote: true});
+      const updateMissedBlocks = sandbox.stub(instance, 'updateMissedBlocks').returns({updateMissed: true});
+      const flushRound         = sandbox.stub(instance, 'flushRound').returns({flushRound: true});
+      const applyRound         = sandbox.stub(instance, 'applyRound').returns([{apply: 1}, {apply: 2}]);
+      const restoreRoundSnapshot = sandbox.stub(instance, 'restoreRoundSnapshot').returns({restoreRound: true});
+      const restoreVotesSnapshot = sandbox.stub(instance, 'restoreVotesSnapshot').returns({restorevotes: true});
 
-      await instance.backwardLand();
+      const res = instance.backwardLand();
 
       expect(updateVotes.calledTwice).to.be.true;
       expect(updateMissedBlocks.calledOnce).to.be.true;
@@ -589,37 +396,20 @@ describe('logic/round', () => {
       flushRound.restore();
       applyRound.restore();
       restoreRoundSnapshot.restore();
-    });
 
-    it('should call methods in the correct order', async () => {
-      const order   = [];
-      const stubs   = {};
-      const methods = ['updateVotes', 'updateMissedBlocks', 'flushRound', 'applyRound',
-        'restoreRoundSnapshot', 'restoreVotesSnapshot'];
-      methods.forEach((k) => {
-        stubs[k] = sandbox.stub(instance, k)
-          .resolves(true)
-          .callsFake(() => order.push(k));
-      });
-
-      await instance.backwardLand();
-
-      expect(order).to.be.deep.equal([
-        'updateVotes',
-        'updateMissedBlocks',
-        'flushRound',
-        'applyRound',
-        'updateVotes',
-        'flushRound',
-        'restoreRoundSnapshot',
-        'restoreVotesSnapshot',
+      expect(res).to.be.deep.eq([
+        { updateVote: true},
+        { updateMissed: true},
+        { flushRound: true},
+        { apply: 1},
+        { apply: 2},
+        { updateVote: true},
+        { flushRound: true},
+        { restoreRound: true},
+        { restorevotes: true},
       ]);
-
-      for (const k in stubs) {
-        if (stubs.hasOwnProperty(k)) {
-          stubs[k].restore();
-        }
-      }
     });
+
   });
+
 });
