@@ -259,22 +259,6 @@ export const accountsModelCreator = (table:string): IModelField[] =>  [
     conv  : String
   },
   {
-    name  : 'nameexist',
-    type  : 'SmallInt',
-    filter: {
-      type: 'boolean'
-    },
-    conv  : Boolean
-  },
-  {
-    name  : 'u_nameexist',
-    type  : 'SmallInt',
-    filter: {
-      type: 'boolean'
-    },
-    conv  : Boolean
-  },
-  {
     name  : 'producedblocks',
     type  : 'Number',
     filter: {

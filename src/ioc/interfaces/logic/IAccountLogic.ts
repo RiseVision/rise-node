@@ -60,7 +60,7 @@ export interface IAccountLogic {
    * @param {cback<string>} cb
    * @returns {Promise<number>} returns number of removed elements 0 if nothing was removed.
    */
-  remove(address: string, cb: cback<string>): Promise<number>;
+  remove(address: string): Promise<number>;
 
   generateAddressByPublicKey(pk: publicKey | Buffer): string;
 }

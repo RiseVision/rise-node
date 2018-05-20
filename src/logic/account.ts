@@ -477,7 +477,7 @@ export class AccountLogic implements IAccountLogic {
           options: {
             where: {
               accountId  : address,
-              dependentId: { $in: remove[el] },
+              dependentId: { [Op.in]: remove[el] },
             },
           },
           type   : 'remove',
