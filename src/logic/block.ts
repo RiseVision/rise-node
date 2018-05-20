@@ -246,6 +246,7 @@ export class BlockLogic implements IBlockLogic {
     };
 
     block.blockSignature = this.sign(block, data.keypair);
+    block.id = this.getId(block);
     return this.objectNormalize(block);
   }
 

@@ -116,6 +116,9 @@ export const createContainer = (): Container => {
   container.bind(Symbols.models.transactions).toConstructor(TransactionsModel);
   container.bind(Symbols.models.accounts2Delegates).toConstructor(Accounts2DelegatesModel);
   container.bind(Symbols.models.accounts2Multisignatures).toConstructor(Accounts2MultisignaturesModel);
+  container.bind(Symbols.models.votes).toConstructor(VotesModel);
+  container.bind(Symbols.models.signatures).toConstructor(SignaturesModel);
+  container.bind(Symbols.models.delegates).toConstructor(DelegatesModel);
 
   const sequelize = container.get<Sequelize>(Symbols.generic.sequelize);
   sequelize.addModels([

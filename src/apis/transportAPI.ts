@@ -209,7 +209,7 @@ export class TransportAPI {
       throw e;
     }
     await this.bus.message('receiveBlock', normalizedBlock);
-    return { blockId: block.id };
+    return { blockId: normalizedBlock.id };
   }
 
   @Get('/blocks')
@@ -275,8 +275,10 @@ export class TransportAPI {
               },
             });
             break;
+          case TransactionType.SEND:
+            rawBlocks.push(tmpBlock);
+            break;
         }
-        rawBlocks.push(tmpBlock);
       }
       if (rawBlocks.length === 0) {
         // no txs add one block with empty tx data.

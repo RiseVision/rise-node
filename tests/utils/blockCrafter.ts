@@ -10,7 +10,12 @@ import {
   SignedBlockType,
   TransactionLogic
 } from '../../src/logic';
-import { IBaseTransaction, SendTransaction, VoteTransaction } from '../../src/logic/transactions';
+import {
+  IBaseTransaction,
+  RegisterDelegateTransaction, SecondSignatureTransaction,
+  SendTransaction,
+  VoteTransaction
+} from '../../src/logic/transactions';
 import { createContainer } from './containerCreator';
 
 const fakeContainer = createContainer();
@@ -20,10 +25,14 @@ fakeContainer.rebind(Symbols.logic.block).to(BlockLogic).inSingletonScope();
 fakeContainer.rebind(Symbols.logic.transaction).to(TransactionLogic).inSingletonScope();
 fakeContainer.bind(Symbols.logic.transactions.send).to(SendTransaction).inSingletonScope();
 fakeContainer.bind(Symbols.logic.transactions.vote).to(VoteTransaction).inSingletonScope();
+fakeContainer.bind(Symbols.logic.transactions.delegate).to(RegisterDelegateTransaction).inSingletonScope();
+fakeContainer.bind(Symbols.logic.transactions.secondSignature).to(SecondSignatureTransaction).inSingletonScope();
 
 const txLogic: TransactionLogic = fakeContainer.get(Symbols.logic.transaction);
 txLogic.attachAssetType(fakeContainer.get(Symbols.logic.transactions.send));
 txLogic.attachAssetType(fakeContainer.get(Symbols.logic.transactions.vote));
+txLogic.attachAssetType(fakeContainer.get(Symbols.logic.transactions.secondSignature));
+txLogic.attachAssetType(fakeContainer.get(Symbols.logic.transactions.delegate));
 /**
  * Creates a fake "but valid" block
  */

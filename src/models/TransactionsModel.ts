@@ -5,6 +5,8 @@ import { MultiSignaturesModel } from './MultiSignaturesModel';
 import { BlocksModel } from './BlocksModel';
 import { IBaseTransaction, ITransportTransaction } from '../logic/transactions';
 import { IBlocksModule } from '../ioc/interfaces/index';
+import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
+import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 
 const fields                 = ['id', 'rowId', 'blockId', 'height', 'type', 'timestamp', 'senderPublicKey', 'senderId', 'recipientId', 'amount', 'fee', 'signature', 'signSignature', 'requesterPublicKey'];
 const buildArrayArgAttribute = function (table: string, what: string, alias?: string): any {
@@ -24,6 +26,31 @@ const buildArrayArgAttribute = function (table: string, what: string, alias?: st
 })
 @Table({ tableName: 'trs' })
 export class TransactionsModel extends Model<TransactionsModel> {
+
+  constructor(values?: FilteredModelAttributes<TransactionsModel>, options?: IBuildOptions) {
+    super(values, options);
+    if (values) {
+      switch (this.type) {
+        case TransactionType.DELEGATE:
+          this.username = values.asset.delegate.username as any;
+          break;
+        case TransactionType.SIGNATURE:
+          this.secondSignPublicKey = values.asset.signature.publicKey  as any;
+          break;
+        case TransactionType.VOTE:
+          this.votes = (values.asset.votes  as any).join(',');
+          break;
+        case TransactionType.MULTI:
+          this.multisigData = {
+            keysgroup: (values.asset.multisignature.keysgroup as any).join(','),
+            lifetime : values.asset.multisignature.lifetime,
+            min      : values.asset.multisignature.min,
+          } as any;
+          break;
+      }
+    }
+  }
+
   @PrimaryKey
   @Column
   public id: string;
@@ -139,5 +166,6 @@ export class TransactionsModel extends Model<TransactionsModel> {
     }
     return obj as any;
   }
+
 
 }

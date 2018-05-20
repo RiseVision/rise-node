@@ -3,13 +3,13 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
+import { Op } from 'sequelize';
 import { TransportAPI } from '../../../src/apis';
 import { Symbols } from '../../../src/ioc/symbols';
 import {
   BlocksModuleStub,
   BlocksSubmoduleUtilsStub,
   BusStub,
-  DbStub,
   PeersLogicStub,
   PeersModuleStub,
   TransactionsModuleStub,
@@ -18,11 +18,12 @@ import {
 import { BlockLogicStub } from '../../stubs/logic/BlockLogicStub';
 import { createFakeBlock } from '../../utils/blockCrafter';
 import { createContainer } from '../../utils/containerCreator';
-import { createRandomTransactions } from '../../utils/txCrafter';
+import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
+import { BlocksModel, TransactionsModel } from '../../../src/models';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
-const expect = chai.expect;
+const expect       = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
 
@@ -40,19 +41,20 @@ describe('apis/transportAPI', () => {
   let txs: any;
   let transportModuleStub: TransportModuleStub;
   let thePeer: any;
-  let dbStub: DbStub;
   let blockLogicStub: BlockLogicStub;
   let busStub: BusStub;
   let blocksSubmoduleUtilsStub: BlocksSubmoduleUtilsStub;
-
+  let blocksModel: typeof BlocksModel;
+  let transactionsModel: typeof TransactionsModel;
   beforeEach(() => {
-    container = createContainer();
-    const constants = container.get<any>(Symbols.helpers.constants);
-
-    peersModuleStub = container.get(Symbols.modules.peers);
+    container         = createContainer();
+    const constants   = container.get<any>(Symbols.helpers.constants);
+    blocksModel       = container.get(Symbols.models.blocks);
+    transactionsModel = container.get(Symbols.models.transactions);
+    peersModuleStub   = container.get(Symbols.modules.peers);
     peersModuleStub.enqueueResponse('list', {
       consensus: 123,
-      peers: ['a', 'b', 'c'],
+      peers    : ['a', 'b', 'c'],
     });
     peersModuleStub.enqueueResponse('remove', true);
     transactionsModuleStub = container.get(Symbols.modules.transactions);
@@ -71,33 +73,26 @@ describe('apis/transportAPI', () => {
     transportModuleStub.enqueueResponse('receiveTransaction', true);
     transportModuleStub.enqueueResponse('receiveSignatures', Promise.resolve());
     peersLogicStub = container.get(Symbols.logic.peers);
-    thePeer = { ip: '8.8.8.8', port: 1234 };
+    thePeer        = { ip: '8.8.8.8', port: 1234 };
     peersLogicStub.enqueueResponse('create', thePeer);
     container.bind(Symbols.api.transport).to(TransportAPI);
-    dbStub = container.get(Symbols.generic.db);
-    dbStub.enqueueResponse('query', [true]);
     blockLogicStub = container.get(Symbols.logic.block);
-    blockLogicStub.enqueueResponse('objectNormalize', { id: 123 });
-    busStub = container.get(Symbols.helpers.bus);
+    busStub        = container.get(Symbols.helpers.bus);
     busStub.enqueueResponse('message', true);
     blocksSubmoduleUtilsStub = container.get(
       Symbols.modules.blocksSubModules.utils
     );
-    blocksSubmoduleUtilsStub.enqueueResponse('loadBlocksData', [
-      { id: 1 },
-      { id: 2 },
-      { id: 3 },
-    ]);
-    sandbox = sinon.sandbox.create();
-    txs = createRandomTransactions({ send: 10 });
-    fakeBlock = createFakeBlock({
+
+    sandbox                = sinon.sandbox.create();
+    txs                    = createRandomTransactions({ send: 10 }).map((t) => toBufferedTransaction(t));
+    fakeBlock              = createFakeBlock({
       previousBlock: { id: '1', height: 100 } as any,
-      timestamp: constants.timestamp,
-      transactions: txs,
+      timestamp    : constants.timestamp,
+      transactions : txs,
     });
-    blocksModule = container.get(Symbols.modules.blocks);
+    blocksModule           = container.get(Symbols.modules.blocks);
     blocksModule.lastBlock = fakeBlock;
-    instance = container.get(Symbols.api.transport);
+    instance               = container.get(Symbols.api.transport);
   });
 
   afterEach(() => {
@@ -141,7 +136,7 @@ describe('apis/transportAPI', () => {
   describe('postSignatures', () => {
     it('should call transportModule.receiveSignatures', async () => {
       transportModuleStub.stubs.receiveSignatures.resolves(true);
-      const signatures = [{transaction: 'transaction', signature: 'signature'}];
+      const signatures = [{ transaction: 'transaction', signature: 'signature' }];
       expect(await instance.postSignatures(signatures)).to.be.true;
       expect(transportModuleStub.stubs.receiveSignatures.calledOnce).to.be.true;
       expect(transportModuleStub.stubs.receiveSignatures.firstCall.args.length).to.be.equal(1);
@@ -162,9 +157,9 @@ describe('apis/transportAPI', () => {
     it('Many transactions', async () => {
       result = await instance.postTransactions(txs, undefined, {
         headers: { port: '1234' },
-        ip: '8.8.8.8',
-        method: 'post',
-        url: '/foo',
+        ip     : '8.8.8.8',
+        method : 'post',
+        url    : '/foo',
       } as any);
       expect(peersLogicStub.stubs.create.calledOnce).to.be.true;
       expect(peersLogicStub.stubs.create.args[0][0]).to.deep.equal(thePeer);
@@ -189,9 +184,9 @@ describe('apis/transportAPI', () => {
         { id: 100 } as any,
         {
           headers: { port: '1234' },
-          ip: '8.8.8.8',
-          method: 'post',
-          url: '/foo2',
+          ip     : '8.8.8.8',
+          method : 'post',
+          url    : '/foo2',
         } as any
       );
       expect(peersLogicStub.stubs.create.calledOnce).to.be.true;
@@ -219,9 +214,9 @@ describe('apis/transportAPI', () => {
         undefined as any,
         {
           headers: { port: '1234' },
-          ip: '8.8.8.8',
-          method: 'post',
-          url: '/foo2',
+          ip     : '8.8.8.8',
+          method : 'post',
+          url    : '/foo2',
         } as any
       );
       expect(peersLogicStub.stubs.create.calledOnce).to.be.true;
@@ -238,7 +233,7 @@ describe('apis/transportAPI', () => {
       await expect(
         instance.getBlocksCommon('', {
           headers: { port: 1234 },
-          ip: '8.8.8.8',
+          ip     : '8.8.8.8',
         } as any)
       ).to.be.rejectedWith('Invalid block id sequence');
       expect(peersModuleStub.stubs.remove.calledOnce).to.be.true;
@@ -246,77 +241,90 @@ describe('apis/transportAPI', () => {
       expect(peersModuleStub.stubs.remove.args[0][1]).to.equal(1234);
     });
 
-    it('should return an object with the property \'common\' equal to true', async () => {
-      result = await instance.getBlocksCommon('1,2,3', {} as any);
-      expect(result).to.deep.equal({ common: true });
-      expect(dbStub.stubs.query.calledOnce).to.be.true;
-      // tslint:disable max-line-length
-      expect(dbStub.stubs.query.args[0][0]).to.equal(
-        'SELECT MAX("height") AS "height", "id", "previousBlock", "timestamp" FROM blocks WHERE "id" IN ($1:csv) GROUP BY "id" ORDER BY "height" DESC'
-      );
-      expect(dbStub.stubs.query.args[0][1]).to.deep.equal(['1', '2', '3']);
+    it('should call blocksModel.findOne with escaped ids and return whatever db returns', async () => {
+      const stub = sandbox.stub(blocksModel, 'findOne').resolves({ meow: 'true' });
+      const res  = await instance.getBlocksCommon('"1",2,3', {} as any);
+
+      expect(res).to.be.deep.eq({ common: { meow: 'true' } });
+
+      expect(stub.called).is.true;
+      const args = stub.firstCall.args[0];
+      expect(args.raw).is.true;
+      expect(args.attributes).is.deep.eq(['height', 'id', 'previousBlock', 'timestamp']);
+      expect(args.where).to.haveOwnProperty('id');
+      expect(args.where.id[Op.in]).to.be.deep.eq(['1', '2', '3']);
+      expect(args.order).to.be.deep.eq([['height', 'DESC']]);
+      expect(args.limit).to.be.deep.eq(1);
     });
 
-    it('should return an object with the property \'common\' equal to null', async () => {
-      dbStub.stubs.query.returns([]);
-      result = await instance.getBlocksCommon('1,2,3', {} as any);
-      expect(result).to.deep.equal({ common: null });
-      expect(dbStub.stubs.query.calledOnce).to.be.true;
-      // tslint:disable max-line-length
-      expect(dbStub.stubs.query.args[0][0]).to.equal(
-        'SELECT MAX("height") AS "height", "id", "previousBlock", "timestamp" FROM blocks WHERE "id" IN ($1:csv) GROUP BY "id" ORDER BY "height" DESC'
-      );
-      expect(dbStub.stubs.query.args[0][1]).to.deep.equal(['1', '2', '3']);
-    });
   });
 
   describe('postBlock()', () => {
-    it('should return an object with the property blockId', async () => {
-      result = await instance.postBlock(
+
+    it('should remove peer if normalization fails', async () => {
+      blockLogicStub.stubs.objectNormalize.throws(new Error('meow'));
+
+      await expect(instance.postBlock(
         { foo: 'bar' } as any,
         { ip: '8.8.8.8', headers: { port: '1234' } } as any
-      );
-      expect(result).to.deep.equal({ blockId: 123 });
-      expect(blockLogicStub.stubs.objectNormalize.calledOnce).to.be.true;
-      expect(blockLogicStub.stubs.objectNormalize.args[0][0]).to.deep.equal({
-        foo: 'bar',
-      });
-      expect(busStub.stubs.message.calledOnce).to.be.true;
-      expect(busStub.stubs.message.args[0][0]).to.equal('receiveBlock');
-      expect(busStub.stubs.message.args[0][1]).to.deep.equal({ id: 123 });
-    });
+      )).to.be.rejectedWith('meow');
 
-    it('should be rejected', async () => {
-      blockLogicStub.stubs.objectNormalize.throws(
-        new Error('objectNormalizeError')
-      );
-      await expect(
-        instance.postBlock(
-          { foo: 'bar' } as any,
-          { ip: '8.8.8.8', headers: { port: '1234' } } as any
-        )
-      ).to.be.rejectedWith('objectNormalizeError');
-      expect(blockLogicStub.stubs.objectNormalize.calledOnce).to.be.true;
-      expect(blockLogicStub.stubs.objectNormalize.args[0][0]).to.deep.equal({
-        foo: 'bar',
-      });
       expect(peersModuleStub.stubs.remove.calledOnce).to.be.true;
       expect(peersModuleStub.stubs.remove.args[0][0]).to.equal('8.8.8.8');
       expect(peersModuleStub.stubs.remove.args[0][1]).to.equal(1234);
     });
+    it('should broadcast a bus message', async () => {
+      blockLogicStub.enqueueResponse('objectNormalize', { id: 123 });
+      await instance.postBlock(
+        { id: 'meow' } as any,
+        { ip: '8.8.8.8', headers: { port: '1234' } } as any
+      );
+
+      expect(busStub.stubs.message.calledOnce).to.be.true;
+      expect(busStub.stubs.message.args[0][0]).to.equal('receiveBlock');
+      expect(busStub.stubs.message.args[0][1]).to.deep.equal({ id: 123 });
+    });
+    it('should return block id if all ok', async () => {
+      blockLogicStub.enqueueResponse('objectNormalize', { id: 123 });
+      const res = await instance.postBlock(
+        { id: 'meow' } as any,
+        { ip: '8.8.8.8', headers: { port: '1234' } } as any
+      );
+      expect(res).to.be.deep.eq({ blockId: 123 });
+    });
   });
 
   describe('getBlocks()', () => {
+    beforeEach(() => {
+      const blocks = [
+        createFakeBlock({ timestamp: 1 }),
+        createFakeBlock({ timestamp: 2 }),
+        createFakeBlock({
+          timestamp   : 3,
+          transactions: createRandomTransactions({ send: 1, vote: 1, signature: 1, delegate: 1 })
+            .map((t) => toBufferedTransaction(t))
+        }),
+      ].map((b, idx) => {
+        const transactions = b.transactions.map((t) => new transactionsModel(t));
+        const bm = new blocksModel(b);
+        bm.transactions = transactions;
+        return bm;
+      });
+      blocksSubmoduleUtilsStub.enqueueResponse('loadBlocksData', blocks);
+    });
     it('should return an object with the property blocks', async () => {
       result = await instance.getBlocks('123');
-      expect(result).to.deep.equal({
-        blocks: [{ id: 1 }, { id: 2 }, { id: 3 }],
-      });
-      expect(blocksSubmoduleUtilsStub.stubs.loadBlocksData.calledOnce).to.be
-        .true;
-      expect(
-        blocksSubmoduleUtilsStub.stubs.loadBlocksData.args[0][0]
-      ).to.deep.equal({ lastId: '123', limit: 34 });
+      expect(result.blocks.length).to.be.deep.eq(2 + 4);
+
+      // TODO: ask matteo to validate response using schema
+
+      expect(result.blocks[0].b_timestamp).to.be.eq(1);
+      expect(result.blocks[1].b_timestamp).to.be.eq(2);
+      expect(result.blocks[2].b_timestamp).to.be.eq(3);
+      expect(result.blocks[3].b_timestamp).to.be.eq(3);
+      expect(result.blocks[4].b_timestamp).to.be.eq(3);
+      expect(result.blocks[5].b_timestamp).to.be.eq(3);
+
     });
   });
 });
