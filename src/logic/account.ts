@@ -1,8 +1,10 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
+import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
+import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { BigNum, catchToLoggerAndRemapError, ILogger } from '../helpers/';
 import { IAccountLogic } from '../ioc/interfaces/';
@@ -21,7 +23,6 @@ import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
 
 import { AccountDiffType } from '../ioc/interfaces/logic';
-import { Op } from 'sequelize';
 
 // tslint:disable-next-line
 export type OptionalsMemAccounts = {
@@ -200,12 +201,12 @@ export class AccountLogic implements IAccountLogic {
    */
   public removeTables(): Promise<void> {
     return Promise.all([
-      this.AccountsModel.drop({cascade: true}),
-      this.RoundsModel.drop({cascade: true}),
-      this.Accounts2DelegatesModel.drop({cascade: true}),
-      this.Accounts2MultisignaturesModel.drop({cascade: true}),
-      this.Accounts2U_DelegatesModel.drop({cascade: true}),
-      this.Accounts2U_MultisignaturesModel.drop({cascade: true}),
+      this.AccountsModel.drop({ cascade: true }),
+      this.RoundsModel.drop({ cascade: true }),
+      this.Accounts2DelegatesModel.drop({ cascade: true }),
+      this.Accounts2MultisignaturesModel.drop({ cascade: true }),
+      this.Accounts2U_DelegatesModel.drop({ cascade: true }),
+      this.Accounts2U_MultisignaturesModel.drop({ cascade: true }),
     ])
       .then(() => void 0)
       .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
@@ -262,7 +263,7 @@ export class AccountLogic implements IAccountLogic {
    * Get account information for specific fields and filtering criteria
    */
   // tslint:disable-next-line max-line-length
-  public get(filter: AccountFilterData, fields: FieldsInModel<AccountsModel> = this.fields.map((field) => field.alias || field.field) as any): Promise<AccountsModel> {
+  public get(filter: AccountFilterData, fields?: FieldsInModel<AccountsModel>): Promise<AccountsModel> {
     return this.getAll(filter, fields)
       .then((res) => res[0]);
   }
@@ -281,16 +282,9 @@ export class AccountLogic implements IAccountLogic {
       .filter((field) => theFields.indexOf(field.alias || field.field as any) !== -1)
       .map((f) => f.alias || f.field);
 
-    const realConv = {};
-    Object.keys(this.conv)
-      .filter((key) => theFields.indexOf(key as any) !== -1)
-      .forEach((key) => realConv[key] = this.conv[key]);
+    const sort: any = filter.sort ? filter.sort : {};
 
-    const limit: number  = filter.limit > 0 ? filter.limit : undefined;
-    const offset: number = filter.offset > 0 ? filter.offset : undefined;
-    const sort: any      = filter.sort ? filter.sort : {};
-
-    const condition: any = { ...filter, ...{ limit: undefined, offset: undefined, sort: undefined } };
+    const condition: any = filterObject(filter, ['isDelegate', 'username', 'address', 'publicKey']);
     if (typeof(filter.address) === 'string') {
       condition.address = filter.address.toUpperCase();
     } else {
@@ -304,23 +298,21 @@ export class AccountLogic implements IAccountLogic {
     });
 
     let scope = null;
-    if (realFields.indexOf('delegates') !== -1 || realFields.indexOf('multisignatures') !== -1) {
-      if (realFields.indexOf('u_delegates') !== -1 || realFields.indexOf('u_multisignatures') !== -1) {
-        scope = 'full';
-      } else {
-        scope = 'fullConfirmed';
-      }
+    if (realFields.indexOf('u_delegates') !== -1 || realFields.indexOf('u_multisignatures') !== -1) {
+      scope = 'full';
+    } else if (realFields.indexOf('delegates') !== -1 || realFields.indexOf('multisignatures') !== -1) {
+      scope = 'fullConfirmed';
     }
 
     return Promise.resolve(
       this.AccountsModel.scope(scope).findAll({
         // attributes: realFields, // NOTE: do not re-SET!
-        limit,
-        offset,
-        order: typeof(sort) === 'string' ?
+        limit : filter.limit > 0 ? filter.limit : undefined,
+        offset: filter.offset > 0 ? filter.offset : undefined,
+        order : typeof(sort) === 'string' ?
           [[sort, 'ASC']] :
           Object.keys(sort).map((col) => [col, sort[col] === -1 ? 'DESC' : 'ASC']),
-        where: condition,
+        where : condition,
       })
     );
 
@@ -335,7 +327,7 @@ export class AccountLogic implements IAccountLogic {
     this.assertPublicKey(fields.publicKey);
     address        = String(address).toUpperCase();
     fields.address = address;
-
+    // TODO: check if publicKey and address are coherent. ?
     await this.AccountsModel.upsert(fields);
   }
 
@@ -512,7 +504,7 @@ export class AccountLogic implements IAccountLogic {
    * @returns {Promise<number>}
    */
   public async remove(address: string): Promise<number> {
-    return await this.AccountsModel.destroy({ where: { address } });
+    return await this.AccountsModel.destroy({ where: { address: address.toUpperCase() } });
   }
 
   public generateAddressByPublicKey(publicKey: string): string {

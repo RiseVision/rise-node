@@ -1,19 +1,23 @@
+import * as chai from 'chai';
 import { expect } from 'chai';
-import {Container} from 'inversify';
+import * as chaiAsPromised from 'chai-as-promised';
+import * as fs from 'fs';
+import { Container } from 'inversify';
 import * as jsonSqlCreator from 'json-sql';
 import * as path from 'path';
-import * as proxyquire from 'proxyquire';
+import { Op } from 'sequelize';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import {Symbols} from '../../../src/ioc/symbols';
-import { DbStub, LoggerStub, ZSchemaStub } from '../../stubs';
+import { Symbols } from '../../../src/ioc/symbols';
+import { LoggerStub, ZSchemaStub } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
+import { IAccountLogic } from '../../../src/ioc/interfaces/logic';
+import { AccountLogic } from '../../../src/logic/';
+import { AccountsModel } from '../../../src/models';
+import { FieldsInModel } from '../../../src/types/utils';
 
-const pgpStub = { QueryFile :  () => { return; }} as any;
-const ProxyAccount = proxyquire('../../../src/logic/account', {
-  'pg-promise': pgpStub,
-});
-const jsonSql       = jsonSqlCreator();
+chai.use(chaiAsPromised);
+const jsonSql = jsonSqlCreator();
 jsonSql.setDialect('postgresql');
 
 const table = 'mem_accounts';
@@ -26,24 +30,21 @@ const table = 'mem_accounts';
  */
 describe('logic/account', () => {
   let sandbox: SinonSandbox;
-  let account;
-  let dbStub: DbStub;
+  let account: IAccountLogic;
   let loggerStub: LoggerStub;
   let zSchemaStub: ZSchemaStub;
   let container: Container;
   let callback: SinonStub;
 
+  let accountsModel: typeof AccountsModel;
   beforeEach(() => {
-    sandbox                 = sinon.sandbox.create();
-    container               = createContainer();
-    dbStub                  = container.get(Symbols.generic.db);
-    loggerStub              = container.get(Symbols.helpers.logger);
-    zSchemaStub             = container.get(Symbols.generic.zschema);
-    account                 = new ProxyAccount.AccountLogic();
-    // Inject the dependencies
-    (account as any).db     = dbStub;
-    (account as any).logger = loggerStub;
-    (account as any).schema = zSchemaStub;
+    sandbox   = sinon.sandbox.create();
+    container = createContainer();
+    container.rebind(Symbols.logic.account).to(AccountLogic);
+    loggerStub    = container.get(Symbols.helpers.logger);
+    zSchemaStub   = container.get(Symbols.generic.zschema);
+    account       = container.get(Symbols.logic.account);
+    accountsModel = container.get(Symbols.models.accounts);
   });
 
   afterEach(() => {
@@ -51,10 +52,6 @@ describe('logic/account', () => {
   });
 
   describe('constructor', () => {
-    it('binary should match', () => {
-      const binary = ['publicKey', 'secondPublicKey'];
-      expect(account.binary).to.deep.equal(binary);
-    });
 
     it('fields should match', () => {
       const fields = [
@@ -239,103 +236,45 @@ describe('logic/account', () => {
   describe('account.createTables', () => {
     const sqlPath = path.join(process.cwd(), 'sql', 'memoryTables.sql');
 
-    beforeEach(() => {
-      pgpStub.QueryFile = sandbox.stub();
-    });
-
     it('should handle sql error', async () => {
       const error = new Error('error');
-
-      dbStub.enqueueResponse('query', Promise.reject(error));
-
-      await account.createTables().then(() => {
-        throw new Error('Expected method to reject.');
-      }).catch((errorMessage) => {
-        // It should call QueryFile
-        expect(pgpStub.QueryFile.called).to.be.true;
-        expect(pgpStub.QueryFile.getCall(0).args.length).to.equal(2);
-        expect(pgpStub.QueryFile.getCall(0).args[0]).to.equal(sqlPath);
-        expect(pgpStub.QueryFile.getCall(0).args[1]).to.deep.equal({ minify: true });
-        // It should call db.query
-        expect(dbStub.stubs.query.calledOnce).to.be.true;
-        expect(dbStub.stubs.query.getCall(0).args.length).to.equal(1);
-        expect(dbStub.stubs.query.getCall(0).args[0]).to.be.instanceof(pgpStub.QueryFile);
-        // It should log the error
-        expect(loggerStub.stubs.error.calledOnce).to.be.true;
-        expect(loggerStub.stubs.error.getCall(0).args.length).to.equal(1);
-        expect(loggerStub.stubs.error.getCall(0).args[0]).to.equal(
-          error.stack
-        );
-        expect(errorMessage).to.equal('Account#createTables error');
-      });
+      sandbox.stub(accountsModel.sequelize, 'query').rejects(error);
+      await expect(account.createTables()).to.be.rejectedWith('error');
     });
-
-    it('should create tables', async () => {
-      dbStub.enqueueResponse('query', Promise.resolve('OK'));
-
+    it('should call accountsModel.sequelize.query with memoryTables content', async () => {
+      const content = fs.readFileSync(sqlPath, { encoding: 'utf8' });
+      const stub    = sandbox.stub(accountsModel.sequelize, 'query').resolves(null);
       await account.createTables();
 
-      // It should call QueryFile with the right path
-      expect(pgpStub.QueryFile.calledOnce).to.be.true;
-      expect(pgpStub.QueryFile.getCall(0).args.length).to.equal(2);
-      expect(pgpStub.QueryFile.getCall(0).args[0]).to.equal(sqlPath);
-      expect(pgpStub.QueryFile.getCall(0).args[1]).to.deep.equal({ minify: true });
-      // It should call db.query
-      expect(dbStub.stubs.query.calledOnce).to.be.true;
-      expect(dbStub.stubs.query.getCall(0).args.length).to.equal(1);
-      expect(dbStub.stubs.query.getCall(0).args[0]).to.be.instanceof(pgpStub.QueryFile);
+      expect(stub.calledOnce).is.true;
+      expect(stub.firstCall.args[0]).to.be.deep.eq(content);
     });
   });
 
   describe('account.removeTables', () => {
-    const tables = [
-      table,
-      'mem_round',
-      'mem_accounts2delegates',
-      'mem_accounts2u_delegates',
-      'mem_accounts2multisignatures',
-      'mem_accounts2u_multisignatures',
-    ];
-
-    const sqles = tables.map((tbl) => {
-      const sql = jsonSql.build({
-        table: tbl,
-        type : 'remove',
-      });
-      return sql.query;
+    let dropStubs: { [s: string]: SinonStub } = {};
+    beforeEach(() => {
+      [Symbols.models.accounts,
+        Symbols.models.accounts2Multisignatures,
+        Symbols.models.accounts2U_Multisignatures,
+        Symbols.models.accounts2Delegates,
+        Symbols.models.accounts2U_Delegates,
+        Symbols.models.rounds].forEach((s) => dropStubs[s] = sandbox.stub(container.get<any>(s), 'drop').resolves());
     });
-
-    it('should handle errors', async () => {
-      const error = new Error('error');
-      dbStub.enqueueResponse('query', Promise.reject(error));
-
-      await account.removeTables().then(() => {
-        throw new Error('Expected method to reject.');
-      }).catch((errorMessage) => {
-        // It should call db.query with the right query
-        expect(dbStub.stubs.query.calledOnce).to.be.true;
-        expect(dbStub.stubs.query.getCall(0).args.length).to.equal(1);
-        expect(dbStub.stubs.query.getCall(0).args[0]).to.deep.equal(sqles.join(''));
-        // It should log the error
-        expect(loggerStub.stubs.error.calledOnce).to.be.true;
-        expect(loggerStub.stubs.error.getCall(0).args.length).to.equal(1);
-        expect(loggerStub.stubs.error.getCall(0).args[0]).to.equal(
-          error.stack
-        );
-        expect(errorMessage).to.equal('Account#removeTables error');
-      });
-    });
-
-    it('should remove tables', async () => {
-      dbStub.enqueueResponse('query', Promise.resolve('OK'));
-
+    it('should call .drop on all models', async () => {
       await account.removeTables();
-
-      // It should call db.query with the right query
-      expect(dbStub.stubs.query.calledOnce).to.be.true;
-      expect(dbStub.stubs.query.getCall(0).args.length).to.equal(1);
-      expect(dbStub.stubs.query.getCall(0).args[0]).to.deep.equal(sqles.join(''));
-
+      [Symbols.models.accounts,
+        Symbols.models.accounts2Multisignatures,
+        Symbols.models.accounts2U_Multisignatures,
+        Symbols.models.accounts2Delegates,
+        Symbols.models.accounts2U_Delegates,
+        Symbols.models.rounds].forEach((s) => {
+        expect(dropStubs[s].called).is.true;
+      });
+    });
+    it('should remap rejection', async () => {
+      dropStubs[Symbols.models.accounts].rejects(new Error('hey'));
+      await expect(account.removeTables()).to.be.rejectedWith('Account#removeTables error');
     });
   });
 
@@ -345,10 +284,10 @@ describe('logic/account', () => {
     it('should handle validation error', () => {
       const errors       = [{ message: 'error 1' }, { message: 'error 2' }];
       const errorMessage =
-            'Failed to validate account schema: ' +
-            errors
-              .map((error) => error.message)
-              .join(', ');
+              'Failed to validate account schema: ' +
+              errors
+                .map((error) => error.message)
+                .join(', ');
 
       zSchemaStub.enqueueResponse('validate', false);
       zSchemaStub.enqueueResponse('getLastErrors', errors);
@@ -399,7 +338,7 @@ describe('logic/account', () => {
 
     it('should call through schema hex validation.', () => {
       zSchemaStub.enqueueResponse('validate', false);
-      const publicKey         = '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da';
+      const publicKey = '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da';
       expect(() => account.assertPublicKey(publicKey)).to.throw('Invalid public key, must be a hex string');
       expect(zSchemaStub.stubs.validate.calledOnce).is.true;
       expect(zSchemaStub.stubs.validate.firstCall.args[0]).to.be.eq(publicKey);
@@ -412,93 +351,43 @@ describe('logic/account', () => {
     });
   });
 
-  // describe('account.toDB', () => {
-  //   it('should convert correctly', () => {
-  //     const raw = {
-  //       publicKey:
-  //         '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da',
-  //       address  : '2841811297332056155r',
-  //     };
-  //
-  //     const result = account.toDB(raw);
-  //
-  //     expect(result.publicKey).to.deep.equal(new Buffer(raw.publicKey, 'hex'));
-  //     expect(result.address).to.equal(raw.address.toUpperCase());
-  //   });
-  // });
-
   describe('account.get', () => {
     const data   = ['some data'];
     const filter = {};
-
+    let getAllStub: SinonStub;
     beforeEach(() => {
-      sandbox.stub(account, 'getAll');
+      getAllStub = sandbox.stub(account, 'getAll');
     });
 
     it('without fields; getAll error', async () => {
-      const error  = 'error';
-      const fields = account.fields.map((field) => field.alias || field.field);
+      const error = 'error';
 
-      account.getAll.returns(Promise.reject(error), 'foo');
+      getAllStub.rejects(new Error(error));
 
-      await account.get(filter).then(() => {
-        throw new Error('Should reject');
-      }).catch((err) => {
-        expect(err).to.equal(error);
-        expect(account.getAll.calledOnce).to.be.true;
-        expect(account.getAll.getCall(0).args.length).to.equal(2);
-        expect(account.getAll.getCall(0).args[0]).to.equal(filter);
-        expect(account.getAll.getCall(0).args[1]).to.deep.equal(fields);
-      });
+      await expect(account.get(filter)).to.be.rejectedWith('error');
+      expect(getAllStub.calledOnce).is.true;
+      expect(getAllStub.firstCall.args[0]).to.be.deep.eq(filter);
     });
 
-    it('with fields; getAll error', async () => {
-      const error  = 'error';
-      const fields = {};
-
-      account.getAll.returns(Promise.reject(error), 'foo');
-
-      await account.get(filter, fields).then(() => {
-        throw new Error('Should reject');
-      }).catch((err) => {
-        expect(err).to.equal(error);
-        expect(account.getAll.calledOnce).to.be.true;
-        expect(account.getAll.getCall(0).args.length).to.equal(2);
-        expect(account.getAll.getCall(0).args[0]).to.equal(filter);
-        expect(account.getAll.getCall(0).args[1]).to.equal(fields);
-      });
+    it('with fields; should propagate it', async () => {
+      const error                                = 'error';
+      const fields: FieldsInModel<AccountsModel> = ['username'];
+      getAllStub.rejects(new Error(error));
+      await expect(account.get(filter, fields)).to.be.rejectedWith('error');
+      expect(getAllStub.calledOnce).is.true;
+      expect(getAllStub.firstCall.args[0]).to.be.deep.eq(filter);
+      expect(getAllStub.firstCall.args[1]).to.be.deep.eq(fields);
     });
 
-    it('without fields', async () => {
-      const fields = account.fields.map((field) => field.alias || field.field);
-
-      account.getAll.returns(Promise.resolve(data), 'foo');
-
-      const retVal = await account.get(filter).catch(() => {
-        throw new Error('Should resolve');
-      });
-
-      expect(account.getAll.calledOnce).to.be.true;
-      expect(account.getAll.getCall(0).args.length).to.equal(2);
-      expect(account.getAll.getCall(0).args[0]).to.equal(filter);
-      expect(account.getAll.getCall(0).args[1]).to.deep.equal(fields);
-      expect(retVal).to.equal(data[0]);
+    it('should return first returned element from getAll', async () => {
+      getAllStub.resolves(['1', '2']);
+      const res = await account.get(filter);
+      expect(res).to.be.deep.eq('1');
     });
-
-    it('with fields', async () => {
-      const fields = {};
-
-      account.getAll.returns(Promise.resolve(data), 'foo');
-
-      const retVal = await account.get(filter, fields).catch(() => {
-        throw new Error('Should resolve');
-      });
-
-      expect(account.getAll.calledOnce).to.be.true;
-      expect(account.getAll.getCall(0).args.length).to.equal(2);
-      expect(account.getAll.getCall(0).args[0]).to.equal(filter);
-      expect(account.getAll.getCall(0).args[1]).to.equal(fields);
-      expect(retVal).to.equal(data[0]);
+    it('should return undefined if no matching elements', async () => {
+      getAllStub.resolves([]);
+      const res = await account.get(filter);
+      expect(res).to.be.undefined;
     });
   });
 
@@ -509,6 +398,18 @@ describe('logic/account', () => {
     let shortSql: string;
     let rows: any[];
 
+    let scopeStub: SinonStub;
+    let findAllStub: SinonStub;
+    beforeEach(() => {
+      const scope = {
+        findAll() {
+          return void 0;
+        },
+      };
+      scopeStub   = sandbox.stub(accountsModel, 'scope').returns(scope);
+      findAllStub = sandbox.stub(scope, 'findAll').resolves([]);
+    });
+
     beforeEach(() => {
       filter   = {
         address: '2841811297332056155r',
@@ -518,354 +419,171 @@ describe('logic/account', () => {
       };
       fields   = [];
       sql      = 'select "username", "isDelegate", "u_isDelegate", "secondSignature", "u_secondSignature", ' +
-                 '"u_username", UPPER("address") as "address", ENCODE("publicKey", \'hex\') as "publicKey", ' +
-                 'ENCODE("secondPublicKey", \'hex\') as "secondPublicKey", ("balance")::bigint as "balance", ' +
-                 '("u_balance")::bigint as "u_balance", ("vote")::bigint as "vote", ("rate")::bigint as "rate", ' +
-                 '(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2delegates WHERE "accountId" = a."address") ' +
-                 'as "delegates", (SELECT ARRAY_AGG("dependentId") FROM mem_accounts2u_delegates WHERE "accountId" = ' +
-                 'a."address") as "u_delegates", (SELECT ARRAY_AGG("dependentId") FROM mem_accounts2multisignatures ' +
-                 'WHERE "accountId" = a."address") as "multisignatures", (SELECT ARRAY_AGG("dependentId") FROM ' +
-                 'mem_accounts2u_multisignatures WHERE "accountId" = a."address") as "u_multisignatures", "multimin",' +
-                 ' "u_multimin", "multilifetime", "u_multilifetime", "blockId", "nameexist", "u_nameexist", ' +
-                 '"producedblocks", "missedblocks", ("fees")::bigint as "fees", ("rewards")::bigint as "rewards", ' +
-                 '"virgin" from "mem_accounts" as "a" where upper("address") = upper(${p1}) order by "username" limit' +
-                 ' 4 offset 2;';
+        '"u_username", UPPER("address") as "address", ENCODE("publicKey", \'hex\') as "publicKey", ' +
+        'ENCODE("secondPublicKey", \'hex\') as "secondPublicKey", ("balance")::bigint as "balance", ' +
+        '("u_balance")::bigint as "u_balance", ("vote")::bigint as "vote", ("rate")::bigint as "rate", ' +
+        '(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2delegates WHERE "accountId" = a."address") ' +
+        'as "delegates", (SELECT ARRAY_AGG("dependentId") FROM mem_accounts2u_delegates WHERE "accountId" = ' +
+        'a."address") as "u_delegates", (SELECT ARRAY_AGG("dependentId") FROM mem_accounts2multisignatures ' +
+        'WHERE "accountId" = a."address") as "multisignatures", (SELECT ARRAY_AGG("dependentId") FROM ' +
+        'mem_accounts2u_multisignatures WHERE "accountId" = a."address") as "u_multisignatures", "multimin",' +
+        ' "u_multimin", "multilifetime", "u_multilifetime", "blockId", "nameexist", "u_nameexist", ' +
+        '"producedblocks", "missedblocks", ("fees")::bigint as "fees", ("rewards")::bigint as "rewards", ' +
+        '"virgin" from "mem_accounts" as "a" where upper("address") = upper(${p1}) order by "username" limit' +
+        ' 4 offset 2;';
       shortSql = 'select * from "mem_accounts" as "a" where upper("address") = upper(${p1}) order by "username" ' +
-                 'limit 4 offset 2;';
+        'limit 4 offset 2;';
       rows     = [];
     });
 
-    it('without fields; error', async () => {
-      const error = new Error('error');
+    describe('scopes', () => {
+      it('should use full scope when u_delegates is provided', async () => {
+        await account.getAll({address: '1'}, ['u_delegates']);
+        expect(scopeStub.calledWith('full')).is.true;
+      });
+      it('should use full scope when u_multisignatures is provided', async () => {
+        await account.getAll({address: '1'}, ['u_multisignatures']);
+        expect(scopeStub.calledWith('full')).is.true;
+      });
+      it('should use fullConfirmed scope when multisignatures is provided', async () => {
+        await account.getAll({address: '1'}, ['multisignatures']);
+        expect(scopeStub.calledWith('fullConfirmed')).is.true;
+      });
+      it('should use fullConfirmed scope when delegates is provided', async () => {
+        await account.getAll({address: '1'}, ['delegates']);
+        expect(scopeStub.calledWith('fullConfirmed')).is.true;
+      });
+      it('should use null scope when none of the above is provided (but the rest is)', async () => {
+        await account.getAll({address: '1'}, [
+          'username',
+          'isDelegate',
+          'secondSignature',
+          'address',
+          'publicKey',
+          'secondPublicKey',
+          'balance',
+          'vote',
+          'rate',
+          'multimin',
+          'multilifetime',
+          'blockId',
+          'producedblocks',
+          'missedblocks',
+          'fees',
+          'rewards',
+          'virgin',
+          'u_isDelegate',
+          'u_secondSignature',
+          'u_username',
+          'u_balance',
+          'u_multilifetime',
+          'u_multimin',
+        ]);
+        expect(scopeStub.calledWith(null)).is.true;
+      });
+    });
 
-      dbStub.enqueueResponse('query', Promise.reject(error));
-
-      await account.getAll(filter).then(() => {
-        throw new Error('Should reject');
-      }).catch(() => {
-        expect(dbStub.stubs.query.calledOnce).to.be.true;
-        expect(dbStub.stubs.query.getCall(0).args.length).to.equal(2);
-        expect(dbStub.stubs.query.getCall(0).args[0]).to.equal(sql);
-        expect(dbStub.stubs.query.getCall(0).args[1]).to.deep.equal({
-          p1: '2841811297332056155r',
+    describe('queries', () => {
+      it('should filter out non existing fields', async () => {
+        await account.getAll({
+          address: '1',
+          publicKey: new Buffer('1'),
+          isDelegate: 1,
+          username: 'user',
+          brother: 'thers a place to rediscovar'
         });
 
-        expect(loggerStub.stubs.error.calledOnce).to.be.true;
-        expect(loggerStub.stubs.error.getCall(0).args.length).to.equal(1);
-        expect(loggerStub.stubs.error.getCall(0).args[0]).to.equal(
-          error.stack
-        );
-      });
-    });
-
-    it('without fields; success', async () => {
-      dbStub.enqueueResponse('query', Promise.resolve(rows));
-
-      const retVal = await account.getAll(filter).catch( () => {
-        throw new Error('Should rejects');
-      });
-
-      expect(dbStub.stubs.query.calledOnce).to.be.true;
-      expect(dbStub.stubs.query.getCall(0).args.length).to.equal(2);
-      expect(dbStub.stubs.query.getCall(0).args[0]).to.equal(sql);
-      expect(dbStub.stubs.query.getCall(0).args[1]).to.deep.equal({
-        p1: '2841811297332056155r',
-      });
-      expect(retVal).to.be.deep.equal(rows);
-    });
-
-    it('with fields; error', async () => {
-      const error = new Error('error');
-
-      dbStub.enqueueResponse('query', Promise.reject(error));
-
-      await account.getAll(filter, fields).then(() => {
-        throw new Error('Should reject');
-      }).catch(() => {
-        expect(dbStub.stubs.query.calledOnce).to.be.true;
-        expect(dbStub.stubs.query.getCall(0).args.length).to.equal(2);
-        expect(dbStub.stubs.query.getCall(0).args[0]).to.equal(shortSql);
-        expect(dbStub.stubs.query.getCall(0).args[1]).to.deep.equal({
-          p1: '2841811297332056155r',
+        expect(findAllStub.firstCall.args[0].where).to.be.deep.eq({
+          address: '1',
+          publicKey: new Buffer('1'),
+          isDelegate: 1,
+          username: 'user',
         });
-
-        expect(loggerStub.stubs.error.calledOnce).to.be.true;
-        expect(loggerStub.stubs.error.getCall(0).args.length).to.equal(1);
-        expect(loggerStub.stubs.error.getCall(0).args[0]).to.equal(
-          error.stack
-        );
       });
+      it('should uppercase address', async () => {
+        await account.getAll({address: 'hey'});
+        expect(findAllStub.firstCall.args[0].where).to.be.deep.eq({
+          address: 'HEY',
+        });
+      });
+      it('should uppercase addresses', async () => {
+        await account.getAll({address: {$in: ['hey', 'brother']}});
+        expect(findAllStub.firstCall.args[0].where.address[Op.in]).to.be.deep.eq([
+          'HEY',
+          'BROTHER',
+        ]);
+      });
+      it('should filter out undefined filter fields', async () => {
+        await account.getAll({address: '1', publicKey: undefined});
+
+        expect(findAllStub.firstCall.args[0].where).to.be.deep.eq({
+          address: '1',
+        });
+      });
+
+      it('should honor limit param or use undefined', async () => {
+        await account.getAll({address: '1', limit: 10});
+
+        expect(findAllStub.firstCall.args[0].limit).to.be.deep.eq(10);
+
+        await account.getAll({address: '1'});
+        expect(findAllStub.secondCall.args[0].limit).to.be.undefined;
+      });
+      it('should honor offset param or use undefined', async () => {
+        await account.getAll({address: '1', offset: 10});
+
+        expect(findAllStub.firstCall.args[0].offset).to.be.deep.eq(10);
+
+        await account.getAll({address: '1'});
+        expect(findAllStub.secondCall.args[0].offset).to.be.undefined;
+      });
+
+      it('should allow string sort param', async () => {
+        await account.getAll({address: '1', sort: 'username'});
+        expect(findAllStub.firstCall.args[0].order).to.be.deep.eq([['username', 'ASC']]);
+      });
+
+      it('should allow array sort param', async () => {
+        await account.getAll({address: '1', sort: { username: 1, address: -1} });
+        expect(findAllStub.firstCall.args[0].order).to.be.deep.eq([['username', 'ASC'], ['address', 'DESC']]);
+      });
+
     });
 
-    it('with fields; success', async () => {
-      dbStub.enqueueResponse('query', Promise.resolve(rows));
-
-      const retVal = await account.getAll(filter, fields);
-
-      expect(dbStub.stubs.query.calledOnce).to.be.true;
-      expect(dbStub.stubs.query.getCall(0).args.length).to.equal(2);
-      expect(dbStub.stubs.query.getCall(0).args[0]).to.equal(shortSql);
-      expect(dbStub.stubs.query.getCall(0).args[1]).to.deep.equal({
-        p1: '2841811297332056155r',
-      });
-      expect(retVal).to.be.deep.eq(rows);
-    });
   });
 
   describe('account.set', () => {
-    const address = '2841811297332056155r';
-    const fields  = {};
-    const sql     = 'insert into "mem_accounts" ("address") values (${p1}) on conflict ("address") do update set ' +
-                    '"address" = ${p2};';
-    const values  = { p1: '2841811297332056155R', p2: '2841811297332056155R' };
-
+    let upsertStub: SinonStub;
     beforeEach(() => {
-      sandbox.stub(account, 'assertPublicKey');
-      callback = sandbox.stub();
+      upsertStub = sandbox.stub(accountsModel, 'upsert').resolves();
     });
 
-    it('should handle errors', async () => {
-      const error = new Error('error');
-
-      account.assertPublicKey.returns(true, 'foo');
-      dbStub.enqueueResponse('none', Promise.reject(error));
-
-      await account.set(address, fields)
-        .then(() => {
-          throw new Error('should have failed');
-        }).catch((err) =>  {
-          expect(err).to.be.deep.eq('Account#set error');
-          expect(dbStub.stubs.none.calledOnce).to.be.true;
-          expect(dbStub.stubs.none.getCall(0).args.length).to.equal(2);
-          expect(dbStub.stubs.none.getCall(0).args[0]).to.equal(sql);
-          expect(dbStub.stubs.none.getCall(0).args[1]).to.deep.equal(values);
-        });
+    it('should call AccountsModel upsert with upperccasedAddress', async () => {
+      await account.set('address', { balance: 10 });
+      expect(upsertStub.firstCall.args[0]).to.be.deep.eq({
+        address: 'ADDRESS',
+        balance: 10
+      });
     });
-
-    it('should set data', async () => {
-      account.assertPublicKey.returns(true, 'foo');
-      dbStub.enqueueResponse('none', Promise.resolve());
-
-      await account.set(address, fields, callback);
-
-      expect(dbStub.stubs.none.calledOnce).to.be.true;
-      expect(dbStub.stubs.none.getCall(0).args.length).to.equal(2);
-      expect(dbStub.stubs.none.getCall(0).args[0]).to.equal(sql);
-      expect(dbStub.stubs.none.getCall(0).args[1]).to.deep.equal(values);
-      expect(callback.calledOnce).to.be.true;
-      expect(callback.getCall(0).args[1]).to.not.exist;
+    it('should throw if publicKey is defined but invalid', async () => {
+      await expect(account.set('address', { publicKey: new Buffer('a') })).to.be.rejected;
     });
   });
 
   describe('account.merge', () => {
-    let address: string;
-    let diff: any;
-    let queries: string;
-    let queries2: string;
-
-    beforeEach(() => {
-      address = '2841811297332056155r';
-      diff    = {
-        balance        : 300,
-        blockId        : '11273313233467167051',
-        delegates      : [
-          [
-            '+',
-            '5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde',
-          ],
-          [
-            '-',
-            '5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde',
-          ],
-        ],
-        multisignatures: [
-          {
-            action     : '+',
-            dependentId: '11995752116878847490R',
-          },
-          {
-            action     : '-',
-            dependentId: '11995752116878847490R',
-          },
-        ],
-        publicKey      :
-          '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da',
-        round          : 2707,
-        u_balance      : -300,
-      };
-      queries = 'delete from "mem_accounts2delegates" where "dependentId" in ' +
-                '(5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde) and "accountId" ' +
-                '= \'2841811297332056155R\';insert into "mem_accounts2delegates" ("accountId", "dependentId") ' +
-                'values (\'2841811297332056155R\', 5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde);' +
-                'delete from "mem_accounts2multisignatures" where "dependentId" = \'11995752116878847490R\';' +
-                'insert into "mem_accounts2multisignatures" ("dependentId") values (\'11995752116878847490R\');' +
-                'update "mem_accounts" set "balance" = "balance" + 300, "u_balance" = "u_balance" - 300, "virgin" ' +
-                '= 0, "blockId" = \'11273313233467167051\' where "address" = \'2841811297332056155R\';' +
-                'INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT ' +
-                '\'2841811297332056155R\', (300)::bigint, "dependentId", \'11273313233467167051\', 2707 FROM ' +
-                'mem_accounts2delegates WHERE "accountId" = \'2841811297332056155R\';INSERT INTO mem_round ' +
-                '("address", "amount", "delegate", "blockId", "round") SELECT \'2841811297332056155R\', ' +
-                '(balance)::bigint, array[\'5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde\'],' +
-                ' \'11273313233467167051\', 2707 FROM mem_accounts WHERE address = \'2841811297332056155R\';INSERT ' +
-                'INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT ' +
-                '\'2841811297332056155R\', (-balance)::bigint, ' +
-                'array[\'5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde\'],' +
-                ' \'11273313233467167051\', 2707 FROM mem_accounts WHERE address = \'2841811297332056155R\';';
-      queries2 = 'delete from "mem_accounts2delegates" where "dependentId" in ' +
-                '(5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde) and "accountId" ' +
-                '= \'2841811297332056155R\';insert into "mem_accounts2delegates" ("accountId", "dependentId") ' +
-                'values (\'2841811297332056155R\', 5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde);' +
-                'delete from "mem_accounts2multisignatures" where "dependentId" = \'11995752116878847490R\';' +
-                'insert into "mem_accounts2multisignatures" ("dependentId") values (\'11995752116878847490R\');' +
-                'update "mem_accounts" set "balance" = "balance" - 1, "u_balance" = "u_balance" - 300, "virgin" ' +
-                '= 0, "blockId" = \'11273313233467167051\' where "address" = \'2841811297332056155R\';' +
-                'INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT ' +
-                '\'2841811297332056155R\', (-1)::bigint, "dependentId", \'11273313233467167051\', 2707 FROM ' +
-                'mem_accounts2delegates WHERE "accountId" = \'2841811297332056155R\';INSERT INTO mem_round ' +
-                '("address", "amount", "delegate", "blockId", "round") SELECT \'2841811297332056155R\', ' +
-                '(balance)::bigint, array[\'5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde\'],' +
-                ' \'11273313233467167051\', 2707 FROM mem_accounts WHERE address = \'2841811297332056155R\';INSERT ' +
-                'INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT ' +
-                '\'2841811297332056155R\', (-balance)::bigint, ' +
-                'array[\'5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde\'],' +
-                ' \'11273313233467167051\', 2707 FROM mem_accounts WHERE address = \'2841811297332056155R\';';
-
-      sandbox.stub(account, 'assertPublicKey');
-      account.assertPublicKey.returns(true, 'foo');
-      callback = sandbox.stub();
-    });
-
-    it('should throw if verify throws error', () => {
-      account.assertPublicKey.throws('error');
-
-      expect(account.merge.bind(account, address, diff, callback)).to.throw();
-    });
-
-    it('should handle no queries passed', async () => {
-      sandbox.stub(account, 'get');
-
-      dbStub.enqueueResponse('query', Promise.resolve([]));
-
-      await account.merge(address, {}, callback);
-
-      expect(dbStub.stubs.none.called).to.be.false;
-
-      expect(account.get.calledOnce).to.be.true;
-      expect(account.get.getCall(0).args.length).to.equal(1);
-      expect(account.get.getCall(0).args[0]).to.deep.equal({ address: address.toUpperCase() });
-
-      account.get.restore();
-    });
-
-    it('should handle no callback passed', async () => {
-      const testQueries =  await account.merge(address, diff);
-
-      expect(testQueries).to.equal(queries);
-    });
-
-    it('should call callback correctly on error', async () => {
-      const error = new Error('error');
-      dbStub.enqueueResponse('none', Promise.reject(error));
-
-      await account.merge(address, diff, callback)
-        .then(() => {
-          throw new Error('Should have failed');
-        })
-        .catch((err) => {
-          expect(err).to.be.eq('Account#merge error');
-          expect(dbStub.stubs.none.calledOnce).to.be.true;
-          expect(dbStub.stubs.none.getCall(0).args.length).to.equal(1);
-          expect(dbStub.stubs.none.getCall(0).args[0]).to.equal(queries);
-          expect(loggerStub.stubs.error.calledOnce).to.be.true;
-          expect(loggerStub.stubs.error.getCall(0).args.length).to.equal(1);
-          expect(loggerStub.stubs.error.getCall(0).args[0]).to.equal(
-            error.stack
-          );
-
-          expect(callback.calledOnce).to.be.true;
-          expect(callback.getCall(0).args.length).to.equal(1);
-          expect(callback.getCall(0).args[0]).to.equal('Account#merge error');
-        });
-    });
-
-    it('Should callback on success', async () => {
-      dbStub.enqueueResponse('none', Promise.resolve());
-      dbStub.enqueueResponse('query', Promise.resolve([]));
-
-      await account.merge(address, diff, callback);
-
-      expect(dbStub.stubs.none.calledOnce).to.be.true;
-      expect(dbStub.stubs.none.getCall(0).args.length).to.equal(1);
-      expect(dbStub.stubs.none.getCall(0).args[0]).to.equal(queries);
-      expect(callback.calledOnce).to.be.true;
-      expect(callback.getCall(0).args.length).to.equal(2);
-      expect(callback.getCall(0).args[0]).to.be.null;
-      expect(callback.getCall(0).args[1]).to.be.undefined;
-    });
-
-    it('should return callback with rejected promise if one of diff fields value is Infinity', async () => {
-      diff.balance = Number.POSITIVE_INFINITY;
-      await account.merge(address, diff, callback)
-        .catch((err) => {
-          expect(err).to.be.equal('Encountered insane number: Infinity');
-        });
-    });
-
-    it('If balance is negative', async () => {
-      diff.balance = -1;
-      dbStub.enqueueResponse('none', Promise.resolve());
-      dbStub.enqueueResponse('query', Promise.resolve([]));
-
-      await account.merge(address, diff, callback);
-
-      expect(dbStub.stubs.none.calledOnce).to.be.true;
-      expect(dbStub.stubs.none.getCall(0).args.length).to.equal(1);
-      expect(dbStub.stubs.none.getCall(0).args[0]).to.equal(queries2);
-      expect(callback.calledOnce).to.be.true;
-      expect(callback.getCall(0).args.length).to.equal(2);
-      expect(callback.getCall(0).args[0]).to.be.null;
-      expect(callback.getCall(0).args[1]).to.be.undefined;
-    });
+    it('should throw if not valid publicKey');
+    it('should return empty array if no ops to be performed');
+    it('should allow only editable fields and discard the others');
+    it('should handle balance');
+    it('should handle delegates');
+    it('should handle multisignatures');
+    it('should remove account virginity on u_balance');
+    it('should handle username');
   });
 
   describe('account.remove', () => {
-    const address = '2841811297332056155R';
-    const queries = 'delete from "mem_accounts" where "address" = ${p1};';
-    const values  = { p1: '2841811297332056155R' };
-
-    it('handle promise rejection', async () => {
-      const error = new Error('error');
-      dbStub.enqueueResponse('none', Promise.reject(error));
-
-      await account.remove(address).then(() => {
-        throw new Error('Should reject');
-      }).catch(() => {
-        expect(dbStub.stubs.none.calledOnce).to.be.true;
-        expect(dbStub.stubs.none.getCall(0).args.length).to.equal(2);
-        expect(dbStub.stubs.none.getCall(0).args[0]).to.equal(queries);
-        expect(dbStub.stubs.none.getCall(0).args[1]).to.deep.equal(values);
-
-        expect(loggerStub.stubs.error.calledOnce).to.be.true;
-        expect(loggerStub.stubs.error.getCall(0).args.length).to.equal(1);
-        expect(loggerStub.stubs.error.getCall(0).args[0]).to.equal(
-          error.stack
-        );
-      });
-    });
-
-    it('handle promise fulfillment', async () => {
-      dbStub.enqueueResponse('none', Promise.resolve());
-
-      const addr = await account.remove(address).catch(() => {
-        throw new Error('Should resolve');
-      });
-
-      expect(dbStub.stubs.none.calledOnce).to.be.true;
-      expect(dbStub.stubs.none.getCall(0).args.length).to.equal(2);
-      expect(dbStub.stubs.none.getCall(0).args[0]).to.equal(queries);
-      expect(dbStub.stubs.none.getCall(0).args[1]).to.deep.equal(values);
-      expect(addr).to.equal(address);
-    });
+    it('should call accountsmodel.destroy');
+    it('should uppercase address when calling destroy');
   });
 
   describe('generateAddressByPublicKey', () => {
@@ -875,4 +593,5 @@ describe('logic/account', () => {
       expect(address).to.equal('2841811297332056155R');
     });
   });
+
 });
