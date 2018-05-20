@@ -25,8 +25,6 @@ import {IModelField} from './modelField';
  * @property {number} multilifetime - Between 1 and 72.
  * @property {number} u_multilifetime - Between 1 and 72.
  * @property {string} blockId
- * @property {boolean} nameexist
- * @property {boolean} u_nameexist
  * @property {number} producedblocks - Between -1 and 1.
  * @property {number} missedblocks - Between -1 and 1.
  * @property {number} fees

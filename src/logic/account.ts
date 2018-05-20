@@ -48,8 +48,6 @@ export type OptionalsMemAccounts = {
   multilifetime?: number;
   u_multilifetime?: number;
   blockId?: string;
-  nameexist?: number;
-  u_nameexist?: number;
   producedblocks?: number;
   missedblocks?: number;
   fees?: number;
@@ -80,8 +78,6 @@ export type MemAccountsData = OptionalsMemAccounts & {
   multilifetime: number;
   u_multilifetime: number;
   blockId: string;
-  nameexist: number;
-  u_nameexist: number;
   producedblocks: number;
   missedblocks: number;
   fees: number;
