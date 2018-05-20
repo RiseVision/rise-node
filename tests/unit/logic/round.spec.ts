@@ -1,17 +1,22 @@
 import * as chai from 'chai';
 import * as proxyquire from 'proxyquire';
+import { Op } from 'sequelize';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as helpers from '../../../src/helpers/';
 import roundSQL from '../../../src/sql/logic/rounds';
+import { createContainer } from '../../utils/containerCreator';
+import { Container } from 'inversify';
+import { Symbols } from '../../../src/ioc/symbols';
+import { AccountsModel, BlocksModel, RoundsModel } from '../../../src/models';
 
 const expect = chai.expect;
 
-const pgpStub = { as: undefined } as any;
+const pgpStub    = { as: undefined } as any;
 const ProxyRound = proxyquire('../../../src/logic/round.ts', {
-  '../helpers/': helpers,
+  '../helpers/'        : helpers,
   '../sql/logic/rounds': roundSQL,
-  'pg-promise': pgpStub,
+  'pg-promise'         : pgpStub,
 });
 
 // tslint:disable no-unused-expression
@@ -19,15 +24,22 @@ describe('logic/round', () => {
   let sandbox: SinonSandbox;
   let instance;
   let scope;
-  let task;
-
+  let container: Container;
+  let accountsModel: typeof AccountsModel;
+  let roundsModel: typeof RoundsModel;
+  let blocksModel: typeof BlocksModel;
   beforeEach(() => {
-    sandbox             = sinon.sandbox.create();
+    sandbox       = sinon.sandbox.create();
+    container     = createContainer();
+    accountsModel = container.get(Symbols.models.accounts);
+    roundsModel   = container.get(Symbols.models.rounds);
+    blocksModel   = container.get(Symbols.models.blocks);
+
     scope    = {
       backwards     : false,
       block         : {
-        generatorPublicKey: '9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f',
-        height            : '2',
+        generatorPublicKey: Buffer.from('9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f', 'hex'),
+        height            : 2,
         id                : '1',
       },
       library       : {
@@ -39,21 +51,21 @@ describe('logic/round', () => {
       modules       : {
         accounts: {
           generateAddressByPublicKey: sandbox.stub().returns(1),
-          mergeAccountAndGet        : sandbox.stub().resolves('yes'),
-          mergeAccountAndGetSQL     : sandbox.stub().returns('yesSQL'),
+          mergeAccountAndGetOPs     : sandbox.stub().returns([]),
         },
       },
-      round         : {},
+      models        : {
+        AccountsModel: container.get(Symbols.models.accounts),
+        BlocksModel  : container.get(Symbols.models.blocks),
+        RoundsModel  : container.get(Symbols.models.rounds),
+      },
+      round         : 10,
       roundDelegates: [{}],
       roundFees     : {},
       roundOutsiders: ['1', '2', '3'],
       roundRewards  : {},
     };
-    task     = {
-      none : sandbox.stub().resolves('none works'),
-      query: sandbox.stub().resolves('query works'),
-    };
-    instance = new ProxyRound.RoundLogic(scope, task);
+    instance = new ProxyRound.RoundLogic(scope, container.get(Symbols.helpers.slots));
   });
 
   afterEach(() => {
@@ -110,15 +122,15 @@ describe('logic/round', () => {
 
     it('success', () => {
       expect(instance.scope).to.be.deep.equal(scope);
-      expect(instance.task).to.be.deep.equal(task);
+      // expect(instance.task).to.be.deep.equal(task);
     });
   });
 
   describe('mergeBlockGenerator', () => {
-    it('should call mergeAccountAndGet', async () => {
+    it('should call mergeAccountAndGetOPs', async () => {
       await instance.mergeBlockGenerator();
-      expect(scope.modules.accounts.mergeAccountAndGet.calledOnce).to.equal(true);
-      expect(scope.modules.accounts.mergeAccountAndGet.firstCall.args[0]).to.deep.equal({
+      expect(scope.modules.accounts.mergeAccountAndGetOPs.calledOnce).to.equal(true);
+      expect(scope.modules.accounts.mergeAccountAndGetOPs.firstCall.args[0]).to.deep.equal({
         blockId       : scope.block.id,
         producedblocks: scope.backwards ? -1 : 1,
         publicKey     : scope.block.generatorPublicKey,
@@ -128,193 +140,97 @@ describe('logic/round', () => {
   });
 
   describe('updateMissedBlocks', () => {
-    it('should resolve when roundOutsiders is empty', async () => {
+    it('should return null roundOutsiders is empty', async () => {
       scope.roundOutsiders = [];
-      const instanceTest   = new ProxyRound.RoundLogic(scope, task);
+      const instanceTest   = new ProxyRound.RoundLogic(scope, container.get(Symbols.helpers.slots));
       const ar             = await instanceTest.updateMissedBlocks();
-      expect(ar).to.be.undefined;
-      expect(task.none.notCalled).to.equal(true);
+      expect(ar).to.be.null;
     });
 
     it('should return result from updateMissedBlocks', async () => {
       const updateMissedBlocks = sandbox.stub(roundSQL, 'updateMissedBlocks').returns(true);
       const retVal             = await instance.updateMissedBlocks();
+      expect(retVal.model).to.be.deep.eq(accountsModel);
+      delete retVal.model; // causes memory issue
+      expect(retVal).to.be.deep.eq({
+        options: { where: { address: { [Op.in]: scope.roundOutsiders } } },
+        type   : 'update',
+        values : { missedblocks: { val: 'missedblocks + 1' } },
+      });
 
-      expect(task.none.calledOnce).to.equal(true);
-      expect(task.none.firstCall.args.length).to.equal(2);
-      expect(task.none.firstCall.args[0]).to.equal(true);
-      expect(task.none.firstCall.args[1]).to.deep.equal([scope.roundOutsiders]);
-      expect(updateMissedBlocks.calledOnce).to.equal(true);
-      expect(updateMissedBlocks.firstCall.args.length).to.equal(1);
-      expect(updateMissedBlocks.firstCall.args[0]).to.deep.equal(scope.backwards);
-      expect(retVal).to.equal('none works');
-
+      // chai does not support deep eq on obj with symbols
+      expect(retVal.options.where.address[Op.in]).to.be.deep.eq(scope.roundOutsiders);
       updateMissedBlocks.restore();
     });
   });
 
-  describe('getVotes', () => {
-    it('should call task.query', async () => {
-      const retVal = await instance.getVotes();
-
-      expect(task.query.calledOnce).to.equal(true);
-      expect(task.query.firstCall.args.length).to.equal(2);
-      expect(task.query.firstCall.args[0]).to.equal(
-        'SELECT d."delegate", d."amount" FROM (SELECT m."delegate", SUM(m."amount") AS "amount", "round" FROM ' +
-        'mem_round m GROUP BY m."delegate", m."round") AS d WHERE "round" = (${round})::bigint'
-      );
-      expect(task.query.firstCall.args[1]).to.deep.equal({ round: scope.round });
-      expect(retVal).to.equal('query works');
-    });
-  });
 
   describe('updateVotes', () => {
-    let getVotesStub: SinonStub;
 
-    beforeEach(() => {
-      pgpStub.as = {
-        format: sandbox.stub(),
-      };
-      getVotesStub = sandbox.stub(instance, 'getVotes');
-    });
-
-    afterEach(() => {
-      getVotesStub.restore();
-    });
-
-    it('should call the expected methods and this.task.none when votes is not empty', async () => {
-      // emulate getVotes returning array of one element
-      getVotesStub.resolves([
-        {
-          amount  : '10',
-          delegate: 'delegateName',
-        },
-      ]);
-      const updateVotes = 'UPDATE mem_accounts SET "vote" = "vote" + (${amount})::bigint WHERE "address" = ${address};';
-      pgpStub.as.format.returns([updateVotes]);
-      const expectedParam = {
-        address: 1,
-        amount : 10,
-      };
-      const retVal        = await instance.updateVotes();
-      expect(getVotesStub.calledOnce).to.equal(true);
-
-      expect(scope.modules.accounts.generateAddressByPublicKey.calledOnce).to.be.true;
-      expect(scope.modules.accounts.generateAddressByPublicKey.firstCall.args[0]).to.be.equal('delegateName');
-
-      expect(pgpStub.as.format.calledOnce).to.equal(true);
-      expect(pgpStub.as.format.firstCall.args.length).to.equal(2);
-      expect(pgpStub.as.format.firstCall.args[0]).to.equal(updateVotes);
-      expect(pgpStub.as.format.firstCall.args[1]).to.deep.equal(expectedParam);
-
-      expect(task.none.calledOnce).to.equal(true);
-      expect(task.none.firstCall.args.length).to.equal(1);
-      expect(task.none.firstCall.args[0]).to.equal(updateVotes);
-      expect(retVal).to.deep.equal('none works');
-    });
-
-    it('should NOT call this.task.none when votes is empty', async () => {
-      // emulate getVotes returning empty array
-      getVotesStub.resolves([]);
-      await instance.updateVotes();
-      expect(getVotesStub.calledOnce).to.equal(true);
-      expect(scope.modules.accounts.generateAddressByPublicKey.notCalled).to.be.true;
-      expect(pgpStub.as.format.notCalled).to.be.true;
-      expect(task.none.notCalled).to.be.true;
+    it('should return custom DBOp with RoundsModel SQL', () => {
+      scope.round = 10;
+      const ret   = instance.updateVotes();
+      expect(ret.type).is.eq('custom');
+      expect(ret.model).is.deep.eq(accountsModel);
+      expect(ret.query).is.deep.eq(roundsModel.updateVotesSQL(10));
     });
   });
 
   describe('markBlockId', () => {
-    it('should call task.none if scope.backwards is true', async () => {
-      const updateBlockId = 'UPDATE mem_accounts SET "blockId" = ${newId} WHERE "blockId" = ${oldId};';
-      scope.backwards     = true;
-
-      const instanceTest = new ProxyRound.RoundLogic(scope, task);
-      const retVal       = await instanceTest.markBlockId();
-
-      expect(task.none.calledOnce).to.be.true;
-      expect(task.none.firstCall.args.length).to.equal(2);
-      expect(task.none.firstCall.args[0]).to.equal(updateBlockId);
-      expect(task.none.firstCall.args[1]).to.deep.equal({
-        newId: '0',
-        oldId: scope.block.id,
-      });
-      expect(retVal).to.equal('none works');
-    });
-
-    it('should not call task.none, then resolve, if scope.backwards is false', async () => {
+    it('should return null if backwards is true', () => {
       scope.backwards = false;
-      await instance.markBlockId();
-      expect(task.none.notCalled).to.be.true;
+      expect(instance.markBlockId()).is.null;
     });
+    it('should return update dbop if is not backward setting blockId to "0"', () => {
+      scope.backwards = true;
+      const res = instance.markBlockId();
+      expect(res.model).to.be.deep.eq(accountsModel);
+      expect(res.options).to.be.deep.eq({
+        where: { blockId: scope.block.id }
+      });
+      expect(res.type).to.be.eq('update');
+      expect(res.values).to.be.eq({ blockId: '0' });
+    });
+
   });
 
   describe('flushRound', () => {
-    it('should call task.none', async () => {
-      await instance.flushRound();
-      expect(task.none.calledOnce).to.be.true;
-      const flushQuery = 'DELETE FROM mem_round WHERE "round" = (${round})::bigint;';
-      expect(task.none.firstCall.args[0]).to.be.equal(flushQuery);
-      expect(task.none.firstCall.args[1]).to.be.deep.equal({ round: scope.round });
+    it('should return a remove operation over roundsModel using round as where', () => {
+      const res = instance.flushRound();
+
+      expect(res.model).to.be.deep.eq(roundsModel);
+      expect(res.type).to.be.deep.eq('remove');
+      expect(res.options).to.be.deep.eq({
+        where: { round: scope.round }
+      });
     });
   });
 
   describe('truncateBlocks', () => {
-    it('should calls task.none and return the result', async () => {
-      const truncateBlocks = 'DELETE FROM blocks WHERE "height" > (${height})::bigint;';
-      scope.backwards      = true;
-
-      const instanceTest = new ProxyRound.RoundLogic(scope, task);
-      const retVal       = await instanceTest.truncateBlocks();
-
-      expect(task.none.calledOnce).to.be.true;
-      expect(task.none.firstCall.args.length).to.equal(2);
-      expect(task.none.firstCall.args[0]).to.equal(truncateBlocks);
-      expect(task.none.firstCall.args[1]).to.deep.equal({
-        height: scope.block.height,
-      });
-      expect(retVal).to.equal('none works');
+    it('should return a remove operation over blocksModel for heights > than given block height', () => {
+      const res = instance.truncateBlocks();
+      expect(res.model).to.be.deep.eq(blocksModel);
+      expect(res.type).to.be.deep.eq('remove');
+      expect(res.options).to.be.deep.eq({where: { height: { [Op.gt]: scope.block.height }}});
+      expect(res.options.where.height[Op.gt]).to.be.deep.eq(scope.block.height);
     });
   });
 
   describe('restoreRoundSnapshot', () => {
-    it('should call task.none', async () => {
-      const restoreRoundSnapshot = 'INSERT INTO mem_round SELECT * FROM mem_round_snapshot';
-      scope.backwards            = true;
-
-      const instanceTest = new ProxyRound.RoundLogic(scope, task);
-      const retVal       = await instanceTest.restoreRoundSnapshot();
-
-      expect(scope.library.logger.debug.calledOnce).to.be.true;
-      expect(scope.library.logger.debug.firstCall.args.length).to.equal(1);
-      expect(scope.library.logger.debug.firstCall.args[0]).to.equal('Restoring mem_round snapshot...');
-
-      expect(task.none.calledOnce).to.be.true;
-      expect(task.none.firstCall.args.length).to.equal(1);
-      expect(task.none.firstCall.args[0]).to.equal(restoreRoundSnapshot);
-      expect(retVal).to.equal('none works');
+    it('should return custom op over roundsModel', () => {
+      const res = instance.restoreRoundSnapshot();
+      expect(res.model).to.be.deep.eq(roundsModel);
+      expect(res.type).to.be.deep.eq('custom');
+      // TODO: test query?
     });
   });
 
   describe('restoreVotesSnapshot', () => {
-    it('should call task.none', async () => {
-      const restoreVotesSnapshot = 'UPDATE mem_accounts m SET vote = b.vote FROM mem_votes_snapshot b ' +
-        'WHERE m.address = b.address';
-      scope.backwards            = true;
-
-      const instanceTest = new ProxyRound.RoundLogic(scope, task);
-      const retVal       = await instanceTest.restoreVotesSnapshot();
-
-      expect(scope.library.logger.debug.calledOnce).to.be.true;
-      expect(scope.library.logger.debug.firstCall.args.length).to.equal(1);
-      expect(scope.library.logger.debug.firstCall.args[0]).to.equal(
-        'Restoring mem_accounts.vote snapshot...'
-      );
-
-      expect(task.none.calledOnce).to.be.true;
-      expect(task.none.firstCall.args.length).to.equal(1);
-      expect(task.none.firstCall.args[0]).to.equal(restoreVotesSnapshot);
-      expect(retVal).to.equal('none works');
+    it('should return custom op over accountsModel', () => {
+      const res = instance.restoreVotesSnapshot();
+      expect(res.model).to.be.deep.eq(accountsModel);
+      expect(res.type).to.be.deep.eq('custom');
+      // TODO: test query?
     });
   });
 
@@ -324,9 +240,9 @@ describe('logic/round', () => {
     let RoundChanges;
 
     beforeEach(() => {
-      roundChangesOriginal = helpers.RoundChanges;
-      at                   = sandbox.stub();
-      RoundChanges         = function RoundChangesFake() {
+      roundChangesOriginal          = helpers.RoundChanges;
+      at                            = sandbox.stub();
+      RoundChanges                  = function RoundChangesFake() {
         return { at };
       };
       (helpers.RoundChanges as any) = RoundChanges;
@@ -371,14 +287,8 @@ describe('logic/round', () => {
       expect(scope.library.logger.trace.thirdCall.args[0]).to.be.equal(
         'Applying round'
       );
-      expect(scope.library.logger.trace.thirdCall.args[1]).to.deep.equal([
-        'yesSQL',
-        'yesSQL',
-      ]);
-      expect(retVal).to.equal('none works');
-      expect(task.none.calledOnce).to.be.true;
-      expect(task.none.firstCall.args.length).to.equal(1);
-      expect(task.none.firstCall.args[0]).to.equal('yesSQLyesSQL');
+      // TODO: Check this ->
+      expect(retVal).to.deep.equal([]);
     });
 
     it('should behave correctly when no delegates, backwards false, fees > 0', async () => {
@@ -387,7 +297,6 @@ describe('logic/round', () => {
       });
       scope.roundDelegates = [];
 
-      instance     = new ProxyRound.RoundLogic(scope, task);
       const retVal = await instance.applyRound();
 
       expect(at.calledOnce).to.be.true;
@@ -408,11 +317,8 @@ describe('logic/round', () => {
       expect(scope.library.logger.trace.secondCall.args[0]).to.be.equal(
         'Applying round'
       );
-      expect(scope.library.logger.trace.secondCall.args[1]).to.deep.equal(['yesSQL']);
       expect(retVal).to.equal('none works');
-      expect(task.none.calledOnce).to.be.true;
-      expect(task.none.firstCall.args.length).to.equal(1);
-      expect(task.none.firstCall.args[0]).to.equal('yesSQL');
+
     });
 
     it('should apply round changes to each delegate when backwards false, fees = 0', async () => {

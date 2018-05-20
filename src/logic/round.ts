@@ -1,4 +1,5 @@
 import * as sequelize from 'sequelize';
+import { Op } from 'sequelize';
 import { ILogger, RoundChanges, Slots } from '../helpers/';
 import { IRoundLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule } from '../ioc/interfaces/modules';
@@ -80,12 +81,12 @@ export class RoundLogic implements IRoundLogic {
       model  : this.scope.models.AccountsModel,
       options: {
         where: {
-          address: { $in: this.scope.roundOutsiders },
+          address: { [Op.in]: this.scope.roundOutsiders },
         },
       },
       type   : 'update',
       values : {
-        missedblocks: sequelize.literal(`missedblocks ${this.scope.backwards ? '-' : '+'}1`),
+        missedblocks: sequelize.literal(`missedblocks ${this.scope.backwards ? '-' : '+'} 1`),
       },
     };
   }
@@ -139,7 +140,7 @@ export class RoundLogic implements IRoundLogic {
   public truncateBlocks(): DBOp<BlocksModel> {
     return {
       model  : this.scope.models.BlocksModel,
-      options: { where: { height: { $gt: this.scope.block.height } } },
+      options: { where: { height: { [Op.gt]: this.scope.block.height } } },
       type   : 'remove',
     };
   }
