@@ -120,7 +120,7 @@ type BaseDBOp<T extends Model<T>> = {
 };
 export type DBUpdateOp<T extends Model<T>> = BaseDBOp<T> & {
   type: 'update',
-  options?: UpdateOptions
+  options: UpdateOptions
   values: FilteredModelAttributes<T>;
 };
 export type DBCreateOp<T extends Model<T>> = BaseDBOp<T> & {

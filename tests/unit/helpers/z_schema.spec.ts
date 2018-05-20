@@ -33,8 +33,8 @@ describe('helpers/z_schema', () => {
     it('should accept a sequence of numbers followed by uppercase "R"', () => {
       expect(validator.validate('18338120857045062830R', schema)).to.be.true;
     });
-    it('should accept a sequence of numbers followed by lowercase "r"', () => {
-      expect(validator.validate('18338120857045062830r', schema)).to.be.true;
+    it('should NOT accept a sequence of numbers followed by lowercase "r"', () => {
+      expect(validator.validate('18338120857045062830r', schema)).to.be.false;
     });
     it('should reject a plain number', () => {
       expect(validator.validate('18338120857045062830', schema)).to.be.false;

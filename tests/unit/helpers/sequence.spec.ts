@@ -31,12 +31,12 @@ describe('helpers/sequence', () => {
   describe('count', () => {
 
     it('should return zero if no tasks in queue', () => {
-      const sequence = new Sequence(seqConfig);
+      const sequence = new Sequence(Symbol.for('seq'), seqConfig);
       expect(sequence.count()).to.be.eq(0);
     });
 
     it('should return 1 before task done 0 after done', async () => {
-      const sequence = new Sequence(seqConfig);
+      const sequence = new Sequence(Symbol.for('seq'), seqConfig);
       const worker = getPromiseWorker();
       const promise = sequence.addAndPromise(worker);
       expect(sequence.count()).to.be.eq(1);
@@ -45,7 +45,7 @@ describe('helpers/sequence', () => {
     });
 
     it('should return the number of tasks in the sequence', () => {
-      const sequence = new Sequence(seqConfig);
+      const sequence = new Sequence(Symbol.for('seq'), seqConfig);
       sequence.addAndPromise(getPromiseWorker());
       sequence.addAndPromise(getPromiseWorker());
       expect(sequence.count()).to.be.eq(2);
@@ -54,20 +54,20 @@ describe('helpers/sequence', () => {
   describe('addAndPromise', () => {
 
     it('should return a Promise', () => {
-      const sequence = new Sequence(seqConfig);
+      const sequence = new Sequence(Symbol.for('seq'), seqConfig);
       const toRet = sequence.addAndPromise(() => Promise.resolve());
       expect(toRet).to.be.instanceOf(Promise);
     });
 
     it('should resolve the task and return resolved value', async () => {
-      const sequence = new Sequence(seqConfig);
+      const sequence = new Sequence(Symbol.for('seq'), seqConfig);
       const worker = getPromiseWorker();
       const val = await sequence.addAndPromise(worker);
       expect(val).to.be.eq('value');
     });
 
     it('should reject the task with the right error if rejects', async () => {
-      const sequence = new Sequence(seqConfig);
+      const sequence = new Sequence(Symbol.for('seq'), seqConfig);
       const err = new Error('error');
       const worker = getPromiseWorker(err, true);
       await sequence.addAndPromise(worker).catch((reason) => {
@@ -78,7 +78,7 @@ describe('helpers/sequence', () => {
 
   describe('tick', () => {
     it('promise fulfillment should make the sequence advance to next task', async () => {
-      const sequence = new Sequence(seqConfig);
+      const sequence = new Sequence(Symbol.for('seq'), seqConfig);
       const stub = sinon.stub();
       // add two resolving promises
       sequence.addAndPromise(getPromiseWorker('resolve'));
@@ -88,7 +88,7 @@ describe('helpers/sequence', () => {
     });
 
     it('promise rejection should make the sequence advance to next task', async () => {
-      const sequence = new Sequence(seqConfig);
+      const sequence = new Sequence(Symbol.for('seq'), seqConfig);
       const stub = sinon.stub();
       // add a rejecting promise
       sequence.addAndPromise(getPromiseWorker(new Error('rejecting'), true)).catch(() => { return; });
@@ -98,7 +98,7 @@ describe('helpers/sequence', () => {
     });
 
     it('should preserve order and execute task in FIFO style', async () => {
-      const sequence = new Sequence(seqConfig);
+      const sequence = new Sequence(Symbol.for('seq'), seqConfig);
       const spy1 = sinon.stub();
       const spy2 = sinon.stub();
       const spy3 = sinon.stub();
@@ -112,7 +112,7 @@ describe('helpers/sequence', () => {
     });
 
     it('tasks should not run simultaneusly', async () => {
-      const sequence = new Sequence(seqConfig);
+      const sequence = new Sequence(Symbol.for('seq'), seqConfig);
       const failSpy = sinon.spy();
       let runningTask = 0;
       const makeWorker = (index) => {
@@ -139,7 +139,7 @@ describe('helpers/sequence', () => {
         },
         warningLimit: 4,
       };
-      const sequence = new Sequence(cfg);
+      const sequence = new Sequence(Symbol.for('seq'), cfg);
       // warningLimit is 4. Add 2 tasks --> No warning
       sequence.addAndPromise(() => Promise.resolve(1));
       await sequence.addAndPromise(() => Promise.resolve(2));

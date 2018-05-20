@@ -29,7 +29,7 @@ export class DBHelper {
   private sequelize: Sequelize;
 
   public handleUpdate(updateOp: DBUpdateOp<any>) {
-    return updateOp.model.sequelize.getQueryInterface().QueryGenerator.updateQuery(
+    return this.sequelize.getQueryInterface().QueryGenerator.updateQuery(
       updateOp.model.getTableName(),
       updateOp.values,
       updateOp.options.where,
@@ -38,7 +38,7 @@ export class DBHelper {
   }
 
   public handleInsert(insertOp: DBCreateOp<any>) {
-    return insertOp.model.sequelize.getQueryInterface().QueryGenerator.insertQuery(
+    return this.sequelize.getQueryInterface().QueryGenerator.insertQuery(
       insertOp.model.getTableName(),
       insertOp.values,
       insertOp.model.rawAttributes,
@@ -47,7 +47,7 @@ export class DBHelper {
   }
 
   public handleUpsert(upsertOp: DBUpsertOp<any>) {
-    return upsertOp.model.sequelize.getQueryInterface().QueryGenerator.upsertQuery(
+    return this.sequelize.getQueryInterface().QueryGenerator.upsertQuery(
       upsertOp.model.getTableName(),
       upsertOp.values,
       upsertOp.values,
@@ -59,7 +59,7 @@ export class DBHelper {
   }
 
   public handleDelete(deleteOp: DBRemoveOp<any>) {
-    return deleteOp.model.sequelize.getQueryInterface().QueryGenerator.deleteQuery(
+    return this.sequelize.getQueryInterface().QueryGenerator.deleteQuery(
       deleteOp.model.getTableName(),
       deleteOp.options.where,
       {...deleteOp.options, limit: null},
