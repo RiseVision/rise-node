@@ -1001,15 +1001,23 @@ describe('logic/transactionPool - TransactionPool', () => {
     const sender = {
       multisignatures: [],
       publicKey: 'senderPublicKey',
+      isMultisignature() {
+        return false;
+      },
     };
 
     const requester = {
       multisignatures: [],
       publicKey: 'requesterPublicKey',
+      isMultisignature() {
+        return false;
+      },
     };
 
     beforeEach(() => {
       sender.multisignatures = [];
+      sender.isMultisignature = () => false;
+      requester.isMultisignature = () => false;
       transactionLogicStub.enqueueResponse('process', Promise.resolve());
       transactionLogicStub.enqueueResponse('objectNormalize', null);
       transactionLogicStub.enqueueResponse('verify', null);
@@ -1033,6 +1041,7 @@ describe('logic/transactionPool - TransactionPool', () => {
       accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
       accountsModuleStub.stubs.getAccount.resolves(requester);
       sender.multisignatures = ['a', 'b'];
+      sender.isMultisignature = () => true;
       tx.requesterPublicKey = 'requesterPublicKey';
       await (instance as any).processVerifyTransaction(tx, false);
       expect(accountsModuleStub.stubs.getAccount.calledOnce).to.be.true;
@@ -1045,6 +1054,7 @@ describe('logic/transactionPool - TransactionPool', () => {
       accountsModuleStub.stubs.setAccountAndGet.resolves(false);
       accountsModuleStub.stubs.getAccount.resolves(requester);
       sender.multisignatures = ['a', 'b'];
+      sender.isMultisignature = () => true;
       tx.requesterPublicKey = 'requesterPublicKey';
       await (instance as any).processVerifyTransaction(tx, false);
       expect(accountsModuleStub.stubs.getAccount.notCalled).to.be.true;
@@ -1064,6 +1074,7 @@ describe('logic/transactionPool - TransactionPool', () => {
       accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
       accountsModuleStub.stubs.getAccount.resolves(requester);
       tx.requesterPublicKey = 'requesterPublicKey';
+
       await (instance as any).processVerifyTransaction(tx, false);
       expect(accountsModuleStub.stubs.getAccount.notCalled).to.be.true;
     });
@@ -1072,6 +1083,7 @@ describe('logic/transactionPool - TransactionPool', () => {
       accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
       accountsModuleStub.stubs.getAccount.resolves(requester);
       sender.multisignatures = ['a', 'b'];
+      sender.isMultisignature = () => true;
       tx.requesterPublicKey = 'requesterPublicKey';
       // Will have a valid requester
       await (instance as any).processVerifyTransaction(tx, false);

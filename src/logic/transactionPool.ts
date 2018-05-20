@@ -409,8 +409,7 @@ export class TransactionPool implements ITransactionPoolLogic {
     }
 
     const sender = await this.accountsModule.setAccountAndGet({ publicKey: transaction.senderPublicKey });
-
-    const isMultisigAccount = sender.isMultisignature();
+    const isMultisigAccount = sender && sender.isMultisignature();
     if (isMultisigAccount) {
       transaction.signatures = transaction.signatures || [];
     }
