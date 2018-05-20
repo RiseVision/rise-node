@@ -29,7 +29,7 @@ export class TransactionsModel extends Model<TransactionsModel> {
 
   constructor(values?: FilteredModelAttributes<TransactionsModel>, options?: IBuildOptions) {
     super(values, options);
-    if (values) {
+    if (values && values.asset) {
       switch (this.type) {
         case TransactionType.DELEGATE:
           this.username = values.asset.delegate.username as any;
