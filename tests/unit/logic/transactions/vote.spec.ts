@@ -7,9 +7,9 @@ import { TransactionType } from '../../../../src/helpers';
 import {Symbols} from '../../../../src/ioc/symbols';
 import { VoteTransaction } from '../../../../src/logic/transactions';
 import voteSchema from '../../../../src/schema/logic/transactions/vote';
-import txSQL from '../../../../src/sql/logic/transactions';
-import { AccountLogicStub, DbStub, DelegatesModuleStub, RoundsLogicStub, SystemModuleStub } from '../../../stubs';
+import { AccountLogicStub, DelegatesModuleStub, RoundsLogicStub, SystemModuleStub } from '../../../stubs';
 import { createContainer } from '../../../utils/containerCreator';
+import { AccountsModel, VotesModel } from '../../../../src/models';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -26,12 +26,15 @@ describe('logic/transactions/vote', () => {
   let roundsLogicStub: RoundsLogicStub;
   let delegatesModuleStub: DelegatesModuleStub;
   let systemModuleStub: SystemModuleStub;
-  let dbStub: DbStub;
   let container: Container;
   let instance: VoteTransaction;
   let tx: any;
   let sender: any;
   let block: any;
+
+  let accountsModel: typeof AccountsModel;
+  let votesModel: typeof VotesModel;
+
 
   beforeEach(() => {
     sandbox             = sinon.sandbox.create();
@@ -44,7 +47,9 @@ describe('logic/transactions/vote', () => {
     roundsLogicStub     = container.get(Symbols.logic.rounds);
     delegatesModuleStub = container.get(Symbols.modules.delegates);
     systemModuleStub    = container.get(Symbols.modules.system);
-    dbStub              = container.get(Symbols.generic.db);
+
+    accountsModel = container.get(Symbols.models.accounts);
+    votesModel = container.get(Symbols.models.votes);
 
     tx = {
       amount         : 0,
@@ -58,9 +63,9 @@ describe('logic/transactions/vote', () => {
       id             : '8139741256612355994',
       recipientId    : '1233456789012345R',
       senderId       : '1233456789012345R',
-      senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
-      signature      : '0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
-      'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2',
+      senderPublicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+      signature      : Buffer.from('0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
+      'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2', 'hex'),
       timestamp      : 0,
       type           : TransactionType.VOTE,
     };
@@ -68,7 +73,7 @@ describe('logic/transactions/vote', () => {
     sender = {
       address  : '1233456789012345R',
       balance  : 10000000,
-      publicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
+      publicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex')
     };
 
     block = {
@@ -76,13 +81,10 @@ describe('logic/transactions/vote', () => {
       id    : '13191140260435645922',
     };
 
-    instance = new VoteTransaction();
+    container.rebind(Symbols.logic.transactions.vote).to(VoteTransaction).inSingletonScope();
+    instance = container.get(Symbols.logic.transactions.vote);
 
     (instance as any).schema          = zSchemaStub;
-    (instance as any).accountLogic    = accountLogicStub;
-    (instance as any).roundsLogic     = roundsLogicStub;
-    (instance as any).delegatesModule = delegatesModuleStub;
-    (instance as any).systemModule    = systemModuleStub;
 
     systemModuleStub.stubs.getFees.returns({ fees: { vote: 1 } });
     delegatesModuleStub.stubs.checkConfirmedDelegates.resolves();
@@ -393,19 +395,14 @@ describe('logic/transactions/vote', () => {
   });
 
   describe('dbSave', () => {
-    it('should return the expected object', () => {
-      expect(instance.dbSave(tx)).to.be.deep.equal({
-          fields: [
-            'votes',
-            'transactionId',
-          ],
-          table : 'votes',
-          values: {
-            transactionId: tx.id,
-            votes        : tx.asset.votes.join(','),
-          },
-        }
-      );
+    it('should return the expecteddb object', () => {
+      const op = instance.dbSave(tx);
+      expect(op.type).eq('create');
+      expect(op.model).deep.eq(votesModel);
+      expect(op.values).deep.eq({
+        transactionId: tx.id,
+        votes        : tx.asset.votes.join(','),
+      });
     });
   });
 
@@ -438,19 +435,4 @@ describe('logic/transactions/vote', () => {
     });
   });
 
-  describe('restoreAsset()', () => {
-    // tslint:disable max-line-length
-    it('should call to db.one() and dbread(), and return the transaction with the asset restored from database', async () => {
-      const myVotes = '-7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381,+05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a';
-      dbStub.stubs.one.resolves({votes: myVotes});
-      const dbReadSpy = sandbox.spy(instance, 'dbRead');
-      const result = await instance.restoreAsset(tx, dbStub as any);
-      expect(dbStub.stubs.one.calledOnce).to.be.true;
-      expect(dbStub.stubs.one.args[0][0]).to.be.equal(txSQL.getVotesById);
-      expect(dbStub.stubs.one.args[0][1]).to.deep.equal({id: tx.id});
-      expect(dbReadSpy.calledOnce).to.be.true;
-      expect(dbReadSpy.args[0][0]).to.deep.equal({v_votes: myVotes});
-      expect(result).to.deep.equal(tx);
-    });
-  });
 });

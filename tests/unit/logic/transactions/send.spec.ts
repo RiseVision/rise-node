@@ -10,6 +10,7 @@ import { SendTransaction } from '../../../../src/logic/transactions';
 import { AccountLogicStub, BlocksModelStub, RoundsLogicStub, SystemModuleStub } from '../../../stubs';
 import { createContainer } from '../../../utils/containerCreator';
 import AccountsModelStub from '../../../stubs/models/AccountsModelStub';
+import { AccountsModel } from '../../../../src/models';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -21,6 +22,7 @@ describe('logic/transactions/send', () => {
   let accountLogicStub: AccountLogicStub;
   let systemModuleStub: SystemModuleStub;
   let container: Container;
+  let accountsModel: typeof AccountsModel;
 
   let instance: SendTransaction;
   let tx: any;
@@ -31,6 +33,7 @@ describe('logic/transactions/send', () => {
     sandbox   = sinon.sandbox.create();
     container = createContainer();
     accountLogicStub = container.get(Symbols.logic.account);
+    accountsModel = container.get(Symbols.models.accounts);
     accountLogicStub.enqueueResponse('merge', [{foo: 'bar'}]);
     systemModuleStub = container.get(Symbols.modules.system);
     systemModuleStub.stubs.getFees.returns({
@@ -51,7 +54,7 @@ describe('logic/transactions/send', () => {
       id    : 'blockId',
     };
 
-    container.bind(Symbols.logic.transactions.send).to(SendTransaction).inSingletonScope();
+    container.rebind(Symbols.logic.transactions.send).to(SendTransaction).inSingletonScope();
     instance = container.get(Symbols.logic.transactions.send);
 
     (instance as any).roundsLogic    = roundsLogicStub;
@@ -61,19 +64,6 @@ describe('logic/transactions/send', () => {
   afterEach(() => {
     sandbox.restore();
   });
-  it('test', () => {
-    const a = container.get<typeof AccountsModelStub>(Symbols.models.accounts);
-    const b = container.get<typeof BlocksModelStub>(Symbols.models.blocks);
-    a.enqueueResponse('findAll', { 'bot': 'bau' });
-    // console.log(a);
-    b.reset();
-    a.reset();
-    // console.log(b);
-    b.enqueueResponse('findMeow', { 'bot': 'meow' });
-    a.enqueueResponse('findAll', { 'find': 'all' });
-    expect(b.findMeow()).to.be.deep.eq({ 'bot': 'meow' });
-    expect(a.findAll()).to.be.deep.eq({ 'find': 'all' });
-  })
 
   describe('calculateFee', () => {
     it('should call systemModule.getFees', () => {
@@ -133,7 +123,7 @@ describe('logic/transactions/send', () => {
       const result = await instance.undo(tx, block, sender);
       expect(result).to.be.an('array');
       expect(result[0]).to.be.an('object').that.includes.all.keys('model', 'type', 'values');
-      expect(result[0].model).to.be.an('object');
+      expect(result[0].model).to.be.deep.eq(accountsModel);
       expect(result[0].type).to.equal('upsert');
       expect(result[0].values).to.deep.equal({address: '1234567890R'});
       expect(result[1]).to.deep.equal({foo: 'bar'});
