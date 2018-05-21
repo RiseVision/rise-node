@@ -7,7 +7,7 @@ chai.use(chaiAsPromised);
 
 const expect = chai.expect;
 
-class TestTransactionType extends BaseTransactionType<any> {
+class TestTransactionType extends BaseTransactionType<any, any> {
   // Implement abstract methods only
   public calculateFee(tx: IBaseTransaction<any>, sender: any, height: number): number {
     return undefined;
@@ -94,12 +94,6 @@ describe('logic/transactions/baseTransactionType', () => {
     });
   });
 
-  describe('process', () => {
-    it('should resolve', () => {
-      expect(instance.process(tx, sender)).to.be.fulfilled;
-    });
-  });
-
   describe('getBytes', () => {
     it('should return emptyBuffer', () => {
       expect(instance.getBytes(tx, false, false)).to.be.deep.equal(new Buffer(0));
@@ -136,9 +130,4 @@ describe('logic/transactions/baseTransactionType', () => {
     });
   });
 
-  describe('restoreAsset', () => {
-    it('should resolve', () => {
-      expect(instance.restoreAsset(tx, {} as any)).to.be.fulfilled;
-    });
-  });
 });

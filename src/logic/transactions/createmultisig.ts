@@ -147,7 +147,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
       }
     }
 
-    if (tx.asset.multisignature.keysgroup.indexOf(`+${sender.publicKey}`) !== -1) {
+    if (tx.asset.multisignature.keysgroup.indexOf(`+${sender.publicKey.toString('hex')}`) !== -1) {
       throw new Error('Invalid multisignature keysgroup. Cannot contain sender');
     }
 

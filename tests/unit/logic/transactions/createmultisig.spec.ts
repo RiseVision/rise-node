@@ -2,18 +2,20 @@
 import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import {Container} from 'inversify';
+import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy } from 'sinon';
 import * as helpers from '../../../../src/helpers';
 import { TransactionType } from '../../../../src/helpers';
-import {Symbols} from '../../../../src/ioc/symbols';
+import { Symbols } from '../../../../src/ioc/symbols';
 import { MultiSignatureTransaction } from '../../../../src/logic/transactions';
 import {
   AccountLogicStub, AccountsModuleStub, RoundsLogicStub, SystemModuleStub,
   TransactionLogicStub, ZSchemaStub
 } from '../../../stubs';
 import { createContainer } from '../../../utils/containerCreator';
+import { AccountsModel, MultiSignaturesModel } from '../../../../src/models';
+import { DBCreateOp } from '../../../../src/types/genericTypes';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -32,7 +34,8 @@ describe('logic/transactions/createmultisig', () => {
   let roundsLogicStub: RoundsLogicStub;
   let accountsModuleStub: AccountsModuleStub;
   let systemModuleStub: SystemModuleStub;
-
+  let accountsModel: typeof AccountsModel;
+  let multisigModel: typeof MultiSignaturesModel;
   let instance: MultiSignatureTransaction;
   let tx: any;
   let sender: any;
@@ -41,7 +44,9 @@ describe('logic/transactions/createmultisig', () => {
 
   beforeEach(() => {
     sandbox              = sinon.sandbox.create();
-    container = createContainer();
+    container            = createContainer();
+    accountsModel = container.get(Symbols.models.accounts);
+    multisigModel = container.get(Symbols.models.multisignatures);
     socketIOStub         = {
       sockets: {
         emit: sandbox.stub(),
@@ -58,7 +63,7 @@ describe('logic/transactions/createmultisig', () => {
       amount         : 0,
       asset          : {
         multisignature: {
-          keysgroup: ['+key1', '+key2'],
+          keysgroup: ['+' + new Array(64).fill('a').join(''), '+' + new Array(64).fill('b').join('')],
           lifetime : 33,
           min      : 2,
         },
@@ -66,7 +71,7 @@ describe('logic/transactions/createmultisig', () => {
       fee            : 10,
       id             : '8139741256612355994',
       senderId       : '1233456789012345R',
-      senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
+      senderPublicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
       signatures     : ['sig1', 'sig2'],
       timestamp      : 0,
       type           : TransactionType.MULTI,
@@ -75,7 +80,10 @@ describe('logic/transactions/createmultisig', () => {
     sender = {
       address  : '1233456789012345R',
       balance  : 10000000,
-      publicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
+      publicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+      isMultisignature() {
+        return false;
+      },
     };
 
     block = {
@@ -83,17 +91,10 @@ describe('logic/transactions/createmultisig', () => {
       id    : '13191140260435645922',
     };
 
-    instance = new MultiSignatureTransaction();
-
-    (instance as any).io               = socketIOStub;
-    (instance as any).schema           = zSchemaStub;
-    (instance as any).accountLogic     = accountLogicStub;
-    (instance as any).transactionLogic = transactionLogicStub;
-    (instance as any).roundsLogic      = roundsLogicStub;
-    (instance as any).accountsModule   = accountsModuleStub;
-    (instance as any).systemModule     = systemModuleStub;
-
-    systemModuleStub.stubs.getFees.returns({ fees: { multisignature: 123 } });
+    container.rebind(Symbols.logic.transactions.createmultisig).to(MultiSignatureTransaction).inSingletonScope();
+    instance = container.get(Symbols.logic.transactions.createmultisig);
+    (instance as any).io = socketIOStub;
+    systemModuleStub.stubs.getFees.returns({fees: {multisignature: 123}});
   });
 
   afterEach(() => {
@@ -124,7 +125,7 @@ describe('logic/transactions/createmultisig', () => {
     beforeEach(() => {
       lastBB                                  = false;
       sequence                                = [];
-      (ByteBuffer.prototype as any).writeByte = function(b) {
+      (ByteBuffer.prototype as any).writeByte = function (b) {
         sequence.push(b);
         lastBB = this;
       };
@@ -241,7 +242,7 @@ describe('logic/transactions/createmultisig', () => {
     });
 
     it('should throw if keysgroup contains the sender', async () => {
-      tx.asset.multisignature.keysgroup[0] = '+' + sender.publicKey;
+      tx.asset.multisignature.keysgroup[0] = '+' + sender.publicKey.toString('hex');
       await expect(instance.verify(tx, sender)).to.be.rejectedWith('Invalid multisignature keysgroup. Cannot contain sender');
     });
 
@@ -255,7 +256,7 @@ describe('logic/transactions/createmultisig', () => {
     it('should throw if wrong math operator in keysgroup', async () => {
       // We make ready() return false so that we can skip another branch where it would throw for invalid keysgroup
       sandbox.stub(instance, 'ready').returns(false);
-      tx.asset.multisignature.keysgroup[0] = '-key1';
+      tx.asset.multisignature.keysgroup[0] = '-' + tx.asset.multisignature.keysgroup[0].substr(1);
       await expect(instance.verify(tx, sender)).to.be.rejectedWith('Invalid math operator in multisignature keysgroup');
     });
 
@@ -264,7 +265,7 @@ describe('logic/transactions/createmultisig', () => {
       await instance.verify(tx, sender);
       expect(zSchemaStub.stubs.validate.callCount).to.be.equal(tx.asset.multisignature.keysgroup.length);
       expect(zSchemaStub.stubs.validate.firstCall.args[0]).to.be.equal(tx.asset.multisignature.keysgroup[0].substring(1));
-      expect(zSchemaStub.stubs.validate.firstCall.args[1]).to.be.deep.equal({ format: 'publicKey' });
+      expect(zSchemaStub.stubs.validate.firstCall.args[1]).to.be.deep.equal({format: 'publicKey'});
     });
 
     it('should throw if pubKey is invalid', async () => {
@@ -284,7 +285,7 @@ describe('logic/transactions/createmultisig', () => {
 
   describe('apply', () => {
     beforeEach(() => {
-      accountLogicStub.stubs.merge.resolves();
+      accountLogicStub.stubs.merge.returns([]);
       roundsLogicStub.stubs.calcRound.returns(123);
       accountLogicStub.stubs.generateAddressByPublicKey.returns('123123124125R');
       accountsModuleStub.stubs.setAccountAndGet.resolves();
@@ -314,13 +315,20 @@ describe('logic/transactions/createmultisig', () => {
       expect(accountLogicStub.stubs.generateAddressByPublicKey.callCount).to.be.equal(tx.asset.multisignature.keysgroup.length);
       expect(accountLogicStub.stubs.generateAddressByPublicKey.firstCall.args[0]).to.be.equal(tx.asset.multisignature.keysgroup[0].substring(1));
     });
-
-    it('should call accountsModule.setAccountAndGet for each key', async () => {
-      await instance.apply(tx, block, sender);
-      expect(accountsModuleStub.stubs.setAccountAndGet.callCount).to.be.equal(tx.asset.multisignature.keysgroup.length);
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.be.deep.equal({
+    it('should create AccountsModel upsert operations for each key', async () => {
+      const res = await instance.apply(tx, block, sender);
+      expect(res.length).to.be.gte(2);
+      expect(res[res.length - 1].type).eq('upsert');
+      expect(res[res.length - 2].type).eq('upsert');
+      expect(res[res.length - 1].model).is.deep.eq(accountsModel);
+      expect(res[res.length - 2].model).is.deep.eq(accountsModel);
+      expect((res[res.length - 2] as DBCreateOp<any>).values).is.deep.eq({
         address  : '123123124125R',
-        publicKey: tx.asset.multisignature.keysgroup[0].substring(1),
+        publicKey: Buffer.from(tx.asset.multisignature.keysgroup[0].substr(1), 'hex')
+      });
+      expect((res[res.length - 1] as DBCreateOp<any>).values).is.deep.eq({
+        address  : '123123124125R',
+        publicKey: Buffer.from(tx.asset.multisignature.keysgroup[1].substr(1), 'hex')
       });
     });
   });
@@ -378,10 +386,7 @@ describe('logic/transactions/createmultisig', () => {
 
     it('should throw if signature is not confirmed yet', () => {
       (instance as any).unconfirmedSignatures[sender.address] = true;
-      let p;
-      expect(() => {
-        p = instance.applyUnconfirmed(tx, sender);
-      }).to.throw('Signature on this account is pending confirmation');
+      expect(instance.applyUnconfirmed(tx, sender)).to.be.rejectedWith('Signature on this account is pending confirmation');
     });
 
     it('should call accountLogic.merge', async () => {
@@ -491,18 +496,15 @@ describe('logic/transactions/createmultisig', () => {
 
   describe('dbSave', () => {
     it('should return the expected object', () => {
-      expect(instance.dbSave(tx)).to.be.deep.equal({
-        fields: ['min', 'lifetime', 'keysgroup', 'transactionId'],
-          table : 'multisignatures',
-          values:
-            {
-              keysgroup    : '+key1,+key2',
-              lifetime     : 33,
-              min          : 2,
-              transactionId: '8139741256612355994',
-            },
-        }
-      );
+      const saveOp = instance.dbSave(tx);
+      expect(saveOp.type).is.eq('create');
+      expect(saveOp.values).is.deep.eq({
+        keysgroup    : '+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,+bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        lifetime     : 33,
+        min          : 2,
+        transactionId: '8139741256612355994',
+      });
+      expect(saveOp.model).is.deep.eq(multisigModel);
     });
   });
 
