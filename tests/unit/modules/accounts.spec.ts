@@ -3,12 +3,13 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
-import {SinonSandbox} from 'sinon';
+import {SinonSandbox, SinonStub} from 'sinon';
 import { IAccountsModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { AccountsModule } from '../../../src/modules';
 import AccountLogicStub from '../../stubs/logic/AccountLogicStub';
 import { createContainer } from '../../utils/containerCreator';
+import DbStub from '../../stubs/helpers/DbStub';
 
 chai.use(chaiAsPromised);
 
@@ -120,45 +121,58 @@ describe('modules/accounts', () => {
     });
   });
 
-  describe('.mergeAccountAndGetSQL', () => {
+  describe('.mergeAccountAndGetOPs', () => {
     it('should throw if no publicKey and address is provided', async () => {
-      expect(() => accountModule.mergeAccountAndGetSQL({} as any))
+      expect(() => accountModule.mergeAccountAndGetOPs({} as any))
         .to.be.throw('Missing address and public key');
     });
     it('should derive address from publicKey if not provided', () => {
       accountLogicStub.enqueueResponse('generateAddressByPublicKey', '1L');
       accountLogicStub.enqueueResponse('merge', null);
-      accountModule.mergeAccountAndGetSQL({publicKey: 'public'});
+      accountModule.mergeAccountAndGetOPs({publicKey: 'public'});
       expect(accountLogicStub.stubs.generateAddressByPublicKey.called).is.true;
       expect(accountLogicStub.stubs.generateAddressByPublicKey.firstCall.args[0])
         .to.be.deep.eq('public');
     });
     it('should call accountLogic.merge with address and return its value', async () => {
       accountLogicStub.enqueueResponse('merge', 'mergeResult');
-      const toRet = accountModule.mergeAccountAndGetSQL({address: '1L'});
+      const toRet = accountModule.mergeAccountAndGetOPs({address: '1L'});
       expect(toRet).to.be.eq('mergeResult');
     });
   });
 
   describe('.mergeAccountAndGet', () => {
+    let dbHelperStub: DbStub;
+    let getAccountStub: SinonStub;
+    beforeEach(() => {
+      dbHelperStub = container.get(Symbols.helpers.db);
+      getAccountStub = sandbox.stub(accountModule, 'getAccount').resolves('hey');
+    });
     it('should throw if no publicKey and address is provided', async () => {
       await expect(accountModule.mergeAccountAndGet({} as any))
         .to.be.rejectedWith('Missing address and public key');
     });
     it('should derive address from publicKey if not provided', async () => {
+      dbHelperStub.enqueueResponse('performOps', Promise.resolve());
       accountLogicStub.enqueueResponse('generateAddressByPublicKey', '1L');
       accountLogicStub.enqueueResponse('merge', null);
+
+
       await accountModule.mergeAccountAndGet({publicKey: 'public'});
       expect(accountLogicStub.stubs.generateAddressByPublicKey.called).is.true;
       expect(accountLogicStub.stubs.generateAddressByPublicKey.firstCall.args[0])
         .to.be.deep.eq('public');
     });
-    it('should call accountLogic.merge with address and an emptycb and return its value', async () => {
-      accountLogicStub.enqueueResponse('merge', 'mergeResult');
-      const toRet = await accountModule.mergeAccountAndGet({address: '1L'});
-      expect(accountLogicStub.stubs.merge.firstCall.args.length).to.be.eq(3);
-      expect(accountLogicStub.stubs.merge.firstCall.args[2]).to.be.an('function');
-      expect(toRet).to.be.eq('mergeResult');
+    it('should return whatever getAccount does after calling performOps', async () => {
+      dbHelperStub.enqueueResponse('performOps', Promise.resolve());
+      accountLogicStub.enqueueResponse('generateAddressByPublicKey', '1L');
+      accountLogicStub.enqueueResponse('merge', null);
+
+      const res = await accountModule.mergeAccountAndGet({publicKey: 'public'});
+      expect(res).eq('hey'); // set in beforeEach
+      expect(dbHelperStub.stubs.performOps.firstCall.calledBefore(
+        getAccountStub.firstCall
+      ));
     });
   });
 

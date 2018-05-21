@@ -1,40 +1,16 @@
 import { injectable } from 'inversify';
-
+import * as sequelize from 'sequelize';
 import { BaseStubClass } from '../BaseStubClass';
+import { DBOp } from '../../../src/types/genericTypes';
 import { stubMethod } from '../stubDecorator';
 
 // tslint:disable no-empty
 
 @injectable()
-export default class DbStub extends BaseStubClass /*implements IDatabase<any>*/ {
+export default class DbStub extends BaseStubClass {
 
   @stubMethod()
-  public query() {
+  public async performOps(what: Array<DBOp<any>>, transaction?: sequelize.Transaction) {
+    return null;
   }
-
-  @stubMethod()
-  public none() {
-  }
-
-  @stubMethod()
-  public one() {
-  }
-
-  @stubMethod()
-  public any() {
-  }
-
-  @stubMethod()
-  public tx() {
-  }
-
-  @stubMethod()
-  public task() {
-  }
-
-  @stubMethod()
-  public oneOrNone(){
-
-  }
-  // TODO Add more methods when needed
 }

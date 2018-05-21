@@ -261,12 +261,12 @@ describe('modules/delegates', () => {
       expect(retVal.count).to.be.equal(testAccounts.length);
       expect(Array.isArray(retVal.delegates)).to.be.true;
       retVal.delegates.forEach((delegate, key) => {
-        expect(delegate.rank).to.be.equal(key + 1);
-        expect(delegate.approval).to.be.equal(Math.round((parseInt(delegate.vote, 10) / totalSupply) * 1e4) / 1e2);
+        expect(delegate.info.rank).to.be.equal(key + 1);
+        expect(delegate.info.approval).to.be.equal(Math.round((delegate.delegate.vote / totalSupply) * 1e4) / 1e2);
         const percent = Math.abs(
-          100 - (delegate.missedblocks / ((delegate.producedblocks + delegate.missedblocks) / 100))
+          100 - (delegate.delegate.missedblocks / ((delegate.delegate.producedblocks + delegate.delegate.missedblocks) / 100))
         ) || 0;
-        expect(delegate.productivity).to.be.equal(
+        expect(delegate.info.productivity).to.be.equal(
           (key + 1 > 101) ? 0 : Math.round(percent * 1e2) / 1e2
         );
       });
@@ -304,9 +304,10 @@ describe('modules/delegates', () => {
       getKeysSortByVoteStub = sandbox.stub(instance as any, 'getKeysSortByVote');
       getKeysSortByVoteStub.resolves(keys);
       roundsLogicStub.stubs.calcRound.returns(123);
-      generateDelegateListStub = sandbox.stub(instance, 'generateDelegateList').resolves(keys);
+      generateDelegateListStub = sandbox.stub(instance, 'generateDelegateList').resolves(keys
+        .map((k) => Buffer.from(k, 'hex')));
       slotsStub.stubs.getSlotNumber.returns(curSlot);
-      signedBlock.generatorPublicKey = keys[curSlot % 101];
+      signedBlock.generatorPublicKey = Buffer.from(keys[curSlot % 101], 'hex');
     });
 
     it('should call generateDelegateList', async () => {
@@ -321,21 +322,13 @@ describe('modules/delegates', () => {
       expect(slotsStub.stubs.getSlotNumber.firstCall.args[0]).to.be.equal(signedBlock.timestamp);
     });
 
-    it('should call logger.error and throw if delegate is not found', async () => {
-      const brokenKeys          = keys.slice();
-      brokenKeys[curSlot % 101] = undefined;
-      generateDelegateListStub.resolves(brokenKeys);
+    it('should call logger.error and throw if delegate is not the generator of the block', async () => {
+      signedBlock.generatorPublicKey = Buffer.from('aabb', 'hex');
       await expect(instance.assertValidBlockSlot(signedBlock)).to.be.rejectedWith('Failed to verify slot ' + curSlot);
       expect(loggerStub.stubs.error.calledOnce).to.be.true;
       expect(loggerStub.stubs.error.firstCall.args[0]).to.match(/^Expected generator .+ Received generator: .+/);
     });
 
-    it('should call logger.error and throw if delegate is not the generator of the block', async () => {
-      signedBlock.generatorPublicKey = 'anotherKey';
-      await expect(instance.assertValidBlockSlot(signedBlock)).to.be.rejectedWith('Failed to verify slot ' + curSlot);
-      expect(loggerStub.stubs.error.calledOnce).to.be.true;
-      expect(loggerStub.stubs.error.firstCall.args[0]).to.match(/^Expected generator .+ Received generator: .+/);
-    });
   });
 
   describe('onBlockchainReady', () => {
@@ -386,7 +379,9 @@ describe('modules/delegates', () => {
   describe('checkDelegates', () => {
     let theAccount: any;
     beforeEach(() => {
-      theAccount             = Object.assign({}, testAccounts[0]);
+      theAccount             = {... testAccounts[0] };
+      theAccount.publicKey = Buffer.from(testAccounts[0].publicKey, 'hex');
+      theAccount.privKey = Buffer.from(testAccounts[0].privKey, 'hex');
       theAccount.delegates   = [];
       theAccount.u_delegates = [];
       accountsModuleStub.stubs.getAccount.resolves(theAccount);
@@ -439,12 +434,12 @@ describe('modules/delegates', () => {
         rejectedWith('Failed to remove vote, account has not voted for this delegate');
     });
 
-    it('should call accountsModule.getAccount', async () => {
+    it('should call accountsModule.getAccount on vote publicKey', async () => {
       await (instance as any).checkDelegates(theAccount.publicKey, votes, 'confirmed');
       expect(accountsModuleStub.stubs.getAccount.callCount).to.be.equal(2);
       expect(accountsModuleStub.stubs.getAccount.secondCall.args[0]).to.be.deep.equal({
         isDelegate: 1,
-        publicKey : votes[0].substr(1),
+        publicKey : Buffer.from(votes[0].substr(1), 'hex'),
       });
     });
 
