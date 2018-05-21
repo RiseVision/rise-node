@@ -3,6 +3,8 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as proxyquire from 'proxyquire';
+import * as sequelize from 'sequelize';
+import {Op} from 'sequelize';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as helpers from '../../../src/helpers';
@@ -38,6 +40,7 @@ import {
 } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
 import { createFakePeers } from '../../utils/fakePeersFactory';
+import { AccountsModel, BlocksModel, RoundsModel } from '../../../src/models';
 
 chai.use(chaiAsPromised);
 
@@ -58,25 +61,36 @@ describe('modules/loader', () => {
   let container: Container;
   let sandbox: SinonSandbox;
   let retryStub: SinonStub;
-  let constants    = {
-    activeDelegates: 1,
-    epochTime      : { getTime: sinon.stub().returns(1000) },
-    maxPeers       : 100,
-  } as any;
-  let appConfig    = {
-    loading: {
-      loadPerIteration: 10,
-      snapshot        : false,
-    },
-  };
-  let genesisBlock = {
-    blockSignature: Buffer.from('10').toString('hex'),
-    id            : 10,
-    payloadHash   : Buffer.from('10').toString('hex'),
-  };
+  let constants;
+  let appConfig;
+  let genesisBlock;
 
   before(() => {
     sandbox   = sinon.sandbox.create();
+  });
+
+  beforeEach(() => {
+    retryStub        = sandbox.stub();
+    promiseRetryStub = sandbox.stub().callsFake(sandbox.spy((w) => Promise.resolve(w(retryStub))));
+    genesisBlock = {
+      blockSignature: Buffer.from('10'),
+      id            : 10,
+      payloadHash   : Buffer.from('10'),
+    };
+    appConfig    = {
+      loading: {
+        loadPerIteration: 10,
+        snapshot        : false,
+      },
+      forging: {
+        transactionsPolling: false
+      }
+    };
+    constants    = {
+      activeDelegates: 1,
+      epochTime      : { getTime: sinon.stub().returns(1000) },
+      maxPeers       : 100,
+    } as any;
     container = createContainer();
 
     container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
@@ -85,12 +99,6 @@ describe('modules/loader', () => {
     container.rebind(Symbols.modules.loader).to(ProxyLoaderModule.LoaderModule);
 
     instance = container.get(Symbols.modules.loader);
-  });
-
-  beforeEach(() => {
-    retryStub        = sandbox.stub();
-    promiseRetryStub = sandbox.stub().callsFake(sandbox.spy((w) => Promise.resolve(w(retryStub))));
-
     (instance as any).jobsQueue.register                              = sandbox.stub().callsFake((val, fn) => fn());
     (instance as  any).defaultSequence.addAndPromise                  = sandbox.stub().callsFake((w) => Promise.resolve(w()));
     instance                                                          = container.get(Symbols.modules.loader);
@@ -98,22 +106,6 @@ describe('modules/loader', () => {
   });
 
   afterEach(() => {
-    constants    = {
-      activeDelegates: 1,
-      epochTime      : { getTime: sinon.stub().returns(1000) },
-      maxPeers       : 100,
-    } as any;
-    appConfig    = {
-      loading: {
-        loadPerIteration: 10,
-        snapshot        : false,
-      },
-    };
-    genesisBlock = {
-      blockSignature: Buffer.from('10').toString('hex'),
-      id            : 10,
-      payloadHash   : Buffer.from('10').toString('hex'),
-    };
     sandbox.restore();
   });
 
@@ -456,494 +448,192 @@ describe('modules/loader', () => {
   });
 
   describe('.loadBlockChain', () => {
-
-    let results;
-    let genBlock;
-    let loadResult;
-    let blocksCountObj;
-    let unappliedArray;
-    let round;
-    let countDuplicatedDelegatesObj;
-    let res;
-    let missedBlocksInMemAccountsObj;
-    let lastBlock;
-
-    let dbStub: DbStub;
-    let roundsLogicStub: RoundsLogicStub;
-    let appStateStub: AppStateStub;
-    let blocksUtilsModuleStub: BlocksSubmoduleUtilsStub;
-    let busStub: BusStub;
-    let loggerStub: LoggerStub;
+    let blocksModel: typeof BlocksModel;
     let loadStub: SinonStub;
-    let processExitStub: SinonStub;
-    let processEmitStub: SinonStub;
-    let tStub;
-
     beforeEach(() => {
-      dbStub                = container.get<DbStub>(Symbols.generic.db);
-      roundsLogicStub       = container.get<RoundsLogicStub>(Symbols.logic.rounds);
-      appStateStub          = container.get<AppStateStub>(Symbols.logic.appState);
-      blocksUtilsModuleStub = container.get<BlocksSubmoduleUtilsStub>(Symbols.modules.blocksSubModules.utils);
-      busStub               = container.get<BusStub>(Symbols.helpers.bus);
-      loggerStub            = container.get<LoggerStub>(Symbols.helpers.logger);
-
-      round                        = 5;
-      loadResult                   = { data: 'data' };
-      lastBlock                    = 1;
-      blocksCountObj               = { count: 2 };
-      genBlock                     = {
-        blockSignature: Buffer.from('10'),
-        id            : 10,
-        payloadHash   : Buffer.from('10'),
-      };
-      missedBlocksInMemAccountsObj = { count: 2 };
-      unappliedArray               = [{ round: '5' }, { round: '5' }];
-      countDuplicatedDelegatesObj  = { count: 0 };
-      results                      = [
-        blocksCountObj,
-        [genBlock],
-        missedBlocksInMemAccountsObj,
-        unappliedArray,
-        [countDuplicatedDelegatesObj],
-      ];
-
-      (container.get(Symbols.generic.appConfig) as any).loading.loadPerIteration = 10;
-      (container.get(Symbols.helpers.constants) as any).activeDelegates          = constants.activeDelegates;
-
-      res = [[], [], [{}]];
-
-      tStub = {
-        batch: sandbox.stub(),
-        none : sandbox.stub().returns(1),
-        one  : sandbox.stub().returns(1),
-        query: sandbox.stub().returns(1),
-      };
-      dbStub.stubs.task.onCall(0).callsFake((fn) => {
-        fn(tStub);
-        return Promise.resolve(results);
-      });
-      dbStub.stubs.task.onCall(1).callsFake((fn) => {
-        fn(tStub);
-        return Promise.resolve(res);
-      });
-      appStateStub.enqueueResponse('set', {});
-      dbStub.enqueueResponse('task', Promise.resolve(results));
-      dbStub.enqueueResponse('task', Promise.resolve(res));
-      blocksUtilsModuleStub.enqueueResponse('loadLastBlock', Promise.resolve({}));
-      busStub.enqueueResponse('message', Promise.resolve({}));
-      loadStub        = sandbox.stub(instance, 'load').resolves(loadResult);
-      processExitStub = sandbox.stub(process, 'exit');
-      processEmitStub = sandbox.stub(process, 'emit');
-      roundsLogicStub.enqueueResponse('calcRound', round);
-      roundsLogicStub.enqueueResponse('lastInRound', lastBlock);
+      blocksModel = container.get(Symbols.models.blocks);
+      loadStub = sandbox.stub(instance, 'load').resolves();
     });
-
-    afterEach(() => {
-      processExitStub.restore();
-      dbStub.reset();
-      roundsLogicStub.reset();
-      appStateStub.reset();
-      loggerStub.stubReset();
-      blocksUtilsModuleStub.reset();
-      busStub.reset();
-    });
-
-    it('should call db.task', async () => {
+    it('should call load if blocksmodel.count is 1', async () => {
+      const stub = sandbox.stub(blocksModel, 'count').resolves(1);
       await instance.loadBlockChain();
-
-      expect(dbStub.stubs.task.called).to.be.true;
-      expect(dbStub.stubs.task.firstCall.args.length).to.be.equal(1);
-      expect(dbStub.stubs.task.firstCall.args[0]).to.be.a('function');
+      expect(stub.called).is.true;
+      expect(loadStub.called).is.true;
+      expect(loadStub.firstCall.args).is.deep.eq([
+        1,
+        10,
+        null,
+        true,
+      ]);
     });
-
-    it('shoudl call db.task(first call) callback', async () => {
-      await instance.loadBlockChain();
-
-      expect(tStub.batch.calledTwice).to.be.true;
-      expect(tStub.batch.firstCall.args.length).to.be.equal(1);
-      expect(tStub.batch.firstCall.args[0]).to.be.deep.equal([1, 1, 1, 1, 1]);
-
-      expect(tStub.one.calledTwice).to.be.true;
-      expect(tStub.one.firstCall.args.length).to.be.equal(1);
-      expect(tStub.one.firstCall.args[0]).to.be.equal(sql.countBlocks);
-      expect(tStub.one.secondCall.args.length).to.be.equal(1);
-      expect(tStub.one.secondCall.args[0]).to.be.equal(sql.countMemAccounts);
-
-      expect(tStub.query.callCount).to.be.equal(5);
-      expect(tStub.query.firstCall.args.length).to.be.equal(1);
-      expect(tStub.query.firstCall.args[0]).to.be.equal(sql.getGenesisBlock);
-      expect(tStub.query.secondCall.args.length).to.be.equal(1);
-      expect(tStub.query.secondCall.args[0]).to.be.equal(sql.getMemRounds);
-      expect(tStub.query.thirdCall.args.length).to.be.equal(1);
-      expect(tStub.query.thirdCall.args[0]).to.be.equal(sql.countDuplicatedDelegates);
-    });
-
-    it('should call logger.info with blocks count info', async () => {
-      await instance.loadBlockChain();
-
-      expect(loggerStub.stubs.info.called).to.be.true;
-      expect(loggerStub.stubs.info.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal(`Blocks ${blocksCountObj.count}`);
-    });
-
-    it('should return instance.load if blocksCount ===1 1', async () => {
-      blocksCountObj.count = 1;
-
-      const ret = await instance.loadBlockChain();
-
-      expect(loadStub.calledOnce).to.be.true;
-      expect(loadStub.firstCall.args.length).to.be.equal(4);
-      expect(loadStub.firstCall.args[0]).to.be.equal(1);
-      expect(loadStub.firstCall.args[1]).to.be.equal(10);
-      expect(loadStub.firstCall.args[2]).to.be.equal(null);
-      expect(loadStub.firstCall.args[3]).to.be.equal(true);
-
-      expect(ret).to.be.deep.equal(loadResult);
-    });
-
-    it('should set limit in default value if config.loading.loadPerIteration is not exist', async () => {
-      blocksCountObj.count                                                       = 1;
-      (container.get(Symbols.generic.appConfig) as any).loading.loadPerIteration = null;
-
-      await instance.loadBlockChain();
-      expect(loadStub.calledOnce).to.be.true;
-      expect(loadStub.firstCall.args.length).to.be.equal(4);
-      expect(loadStub.firstCall.args[1]).to.be.equal(1000);
-    });
-
-    it('should call logger.info with genesis block info', async () => {
-      await instance.loadBlockChain();
-
-      expect(loggerStub.stubs.info.called).to.be.true;
-      expect(loggerStub.stubs.info.getCall(1).args.length).to.be.equal(1);
-      expect(loggerStub.stubs.info.getCall(1).args[0]).to.be.equal('Genesis block matches with database');
-    });
-
-    it('should throw error if there are failed to match genesis block with database(bad id value)', async () => {
-      dbStub.reset();
-      results[1][0].id = null;
-      dbStub.enqueueResponse('task', Promise.resolve(results));
-      dbStub.enqueueResponse('task', Promise.resolve(res));
-
-      await expect(instance.loadBlockChain()).to.be.rejectedWith('Failed to match genesis block with database');
-    });
-
-    it('should throw if there are failed to match genesis block with database(bad payloadHash value)', async () => {
-      dbStub.reset();
-      results[1][0].payloadHash = Buffer.from('uganda');
-      dbStub.enqueueResponse('task', Promise.resolve(results));
-      dbStub.enqueueResponse('task', Promise.resolve(res));
-
-      await expect(instance.loadBlockChain()).to.be.rejectedWith('Failed to match genesis block with database');
-    });
-
-    it('should throw if there are failed to match genesis block with database(bad blockSignature value)', async () => {
-      dbStub.reset();
-      results[1][0].blockSignature = Buffer.from('uganda');
-      dbStub.enqueueResponse('task', Promise.resolve(results));
-      dbStub.enqueueResponse('task', Promise.resolve(res));
-
-      await   expect(instance.loadBlockChain()).to.be.rejectedWith('Failed to match genesis block with database');
-    });
-
-    it('should call roundsLogic.calcRound', async () => {
-      await instance.loadBlockChain();
-
-      expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;
-      expect(roundsLogicStub.stubs.calcRound.firstCall.args.length).to.be.equal(1);
-      expect(roundsLogicStub.stubs.calcRound.firstCall.args[0]).to.be.equal(blocksCountObj.count);
-    });
-
-    it('should check if genesisBlock does not dinded in DB', async () => {
-      dbStub.reset();
-      results[1][0] = null;
-      dbStub.enqueueResponse('task', Promise.resolve(results));
-      dbStub.enqueueResponse('task', Promise.resolve(res));
-
-      await instance.loadBlockChain();
-
-      expect(loggerStub.stubs.info.getCall(0).calledBefore(
-        roundsLogicStub.stubs.calcRound.getCall(0)
-      )).is.true;
-
-    });
-
-    describe('Check verifySnapshot mode(this.config.loading.snapshot is exist)', async () => {
-
+    describe('with more than 1 block', () => {
+      let countStub: SinonStub;
+      let findGenesisStub: SinonStub;
+      const blocksCount = 2;
       beforeEach(() => {
-        (container.get(Symbols.generic.appConfig) as any).loading.snapshot = true;
+        countStub = sandbox.stub(blocksModel, 'count').resolves(blocksCount);
+        findGenesisStub = sandbox.stub(blocksModel, 'findOne');
+      });
+      it('should throw if findOne height=1 is a different genesis block', async () => {
+        findGenesisStub.resolves({id: '1'});
+        await expect(instance.loadBlockChain()).to.be.rejectedWith('Failed to match genesis block with database');
+
+        // Case 2
+        findGenesisStub.resolves({id: genesisBlock.id, payloadHash: Buffer.from('aa')});
+        await expect(instance.loadBlockChain()).to.be.rejectedWith('Failed to match genesis block with database');
+
+        // Case 3
+        findGenesisStub.resolves({id: genesisBlock.id, payloadHash: genesisBlock.payloadHash, blockSignature: Buffer.from('aa')});
+        await expect(instance.loadBlockChain()).to.be.rejectedWith('Failed to match genesis block with database');
+      });
+      describe('valid genesis in db', () => {
+        let roundsLogic: RoundsLogicStub;
+        let accountsModel: typeof AccountsModel;
+        let accountsCountStub: SinonStub;
+        beforeEach(() => {
+          findGenesisStub.resolves(genesisBlock);
+          roundsLogic = container.get(Symbols.logic.rounds);
+          accountsModel = container.get(Symbols.models.accounts);
+          roundsLogic.enqueueResponse('calcRound', 1);
+          accountsCountStub = sandbox.stub(accountsModel, 'count');
+        });
+        it('should query for current round given the number of current blocks', async () => {
+          roundsLogic.stubs.calcRound.throws(new Error('die'));
+          await expect(instance.loadBlockChain()).to.be.rejectedWith('die');
+          expect(roundsLogic.stubs.calcRound.firstCall.args[0]).eq(blocksCount);
+        });
+        describe('verifySnapshot case', () => {
+          it('should rest config.loading.snapshot to current round if config was boolean');
+          it('should reset snapshot to round-1 if blocksCount is not divisible by activeDelegates');
+          it('should set appState rounds.snapshot to correct value');
+          it('should call load with correct data');
+          it('should process.exit 1 if it was not possible to load until desired block');
+        });
+        it('should call load if no accounts where updated on last block', async () => {
+          accountsCountStub.resolves(0);
+          await instance.loadBlockChain();
+          expect(loadStub.called).is.true;
+          expect(accountsCountStub.firstCall.args[0]).deep.eq({
+            where: { blockId: { } }
+          });
+          expect(accountsCountStub.firstCall.args[0].where.blockId[Op.in]).deep.eq({
+            val: "(SELECT \"id\" from blocks ORDER BY \"height\" DESC LIMIT 1)"
+          });
+          expect(loadStub.firstCall.args).deep.eq([
+            blocksCount,
+            10,
+            'Detected missed blocks in mem_accounts', true
+          ]);
+        });
+        describe('with accounts ok', async () => {
+          let roundsModel: typeof RoundsModel;
+          let roundsFindAllStub: SinonStub;
+          beforeEach(() => {
+            accountsCountStub.onFirstCall().resolves(1);
+            roundsModel = container.get(Symbols.models.rounds);
+            roundsFindAllStub = sandbox.stub(roundsModel, 'findAll');
+          });
+          it('should call load with proper data if there is some other round rows != than current round', async () => {
+            roundsFindAllStub.resolves([{round: 1}, {round: 2}]);
+            await instance.loadBlockChain();
+            expect(roundsFindAllStub.called).is.true;
+            expect(roundsFindAllStub.firstCall.args[0]).is.deep.eq({attributes: ['round'], group: 'round'});
+            expect(loadStub.called).is.true;
+            expect(loadStub.firstCall.args).deep.eq([
+              blocksCount,
+              10,
+              'Detected unapplied rounds in mem_round',
+              true,
+            ]);
+          });
+
+          describe('with rounds data ok', () => {
+            let processExitStub: SinonStub;
+            let sequelizeQueryStub: SinonStub;
+            beforeEach(() => {
+              roundsFindAllStub.resolves([]);
+              processExitStub = sandbox.stub(process, 'exit').throws(new Error('exit'));
+              sequelizeQueryStub = sandbox.stub(roundsModel.sequelize, 'query');
+            });
+            it('should exit if some duplicatedDelegates', async () => {
+              sequelizeQueryStub.onFirstCall().resolves([{count: 1}]);
+              await expect(instance.loadBlockChain()).be.rejectedWith('exit');
+              expect(processExitStub.called).is.true;
+              expect(processExitStub.firstCall.args[0]).eq(1);
+              expect(sequelizeQueryStub.firstCall.args[0]).eq('WITH duplicates AS (SELECT COUNT(1) FROM delegates GROUP BY "transactionId" HAVING COUNT(1) > 1) SELECT count(1) FROM duplicates');
+              expect(sequelizeQueryStub.firstCall.args[1]).deep.eq({ type: sequelize.QueryTypes.SELECT });
+            });
+            describe('with no dup delegates', () => {
+              let restoreUnconfirmedEntriesStub: SinonStub;
+              beforeEach(() => {
+                sequelizeQueryStub.onFirstCall().resolves([{count: 0}]);
+                restoreUnconfirmedEntriesStub = sandbox.stub(accountsModel, 'restoreUnconfirmedEntries').resolves();
+              });
+              it('should call restoreUnconfirmedEntries', async () => {
+                restoreUnconfirmedEntriesStub.rejects(new Error('hey'));
+                await expect(instance.loadBlockChain()).rejectedWith('hey');
+                expect(restoreUnconfirmedEntriesStub.called).is.true;
+              });
+              it('should call load if there are some orphanedMemAccounts', async () => {
+                sequelizeQueryStub.onSecondCall().resolves(['a']);
+                await instance.loadBlockChain();
+                expect(loadStub.called).is.true;
+                expect(loadStub.firstCall.args).deep.eq([
+                  blocksCount, 10, 'Detected orphaned blocks in mem_accounts', true
+                ]);
+                expect(sequelizeQueryStub.secondCall.args[0]).to.be.deep.eq(
+                  "SELECT a.\"blockId\", b.\"id\" FROM mem_accounts a LEFT OUTER JOIN blocks b ON b.\"id\" = a.\"blockId\" WHERE a.\"blockId\" IS NOT NULL AND a.\"blockId\" != '0' AND b.\"id\" IS NULL"
+                );
+              });
+              describe('with no orphan accounts', () => {
+                beforeEach(() => {
+                  sequelizeQueryStub.onSecondCall().resolves([]);
+                });
+                it('should call load if there are no delegates', async () => {
+                  accountsCountStub.onSecondCall().resolves(0);
+                  await instance.loadBlockChain();
+                  expect(loadStub.called).is.true;
+                  expect(loadStub.firstCall.args).deep.eq([
+                    blocksCount, 10, 'No delegates found', true
+                  ]);
+                });
+                describe('with delegates', async () => {
+                  let blocksUtilsStub: BlocksSubmoduleUtilsStub;
+                  let busStub: BusStub;
+                  beforeEach(() => {
+                    accountsCountStub.onSecondCall().resolves(1);
+                    blocksUtilsStub = container.get(Symbols.modules.blocksSubModules.utils);
+                    busStub = container.get(Symbols.helpers.bus);
+                  });
+                  it('call load if loadLastBlock rejects', async () => {
+                    blocksUtilsStub.enqueueResponse('loadLastBlock', Promise.reject('errr'));
+                    await instance.loadBlockChain();
+                    expect(loadStub.called).is.true;
+                    expect(loadStub.firstCall.args).deep.eq([
+                      blocksCount, 10, 'Failed to load last block'
+                    ]);
+                    expect(busStub.stubs.message.called).is.false;
+                  });
+                  it('should loadLastBlock if everything is fine and eventually broadcast message', async () => {
+                    blocksUtilsStub.enqueueResponse('loadLastBlock', Promise.resolve());
+                    busStub.enqueueResponse('message', Promise.resolve());
+                    await instance.loadBlockChain();
+                    expect(blocksUtilsStub.stubs.loadLastBlock.called).is.true;
+                    expect(busStub.stubs.message.called).is.true;
+                    expect(busStub.stubs.message.firstCall.args[0]).eq('blockchainReady');
+                  });
+
+                });
+              });
+
+            });
+          });
+        });
       });
 
-      it('should call logger.info with snapshot mode enabled', async () => {
-        await instance.loadBlockChain();
-
-        expect(loggerStub.stubs.info.callCount).to.be.equal(5);
-
-        expect(loggerStub.stubs.info.getCall(2).args.length).to.be.equal(1);
-        expect(loggerStub.stubs.info.getCall(2).args[0]).to.be.equal('Snapshot mode enabled');
-      });
-
-      it('should call appState.set', async () => {
-        await instance.loadBlockChain();
-
-        expect(appStateStub.stubs.set.calledOnce).to.be.true;
-        expect(appStateStub.stubs.set.firstCall.args.length).to.be.equal(2);
-        expect(appStateStub.stubs.set.firstCall.args[0]).to.be.equal('rounds.snapshot');
-        expect(appStateStub.stubs.set.firstCall.args[1]).to.be.equal(round);
-      });
-
-      // condition blocksCount === 1 already been check
-      it('should check if config.loading.snapshot is number(with normalize to previous round, blocksCount % this.constants.activeDelegates > 0(round<1))', async () => {
-        (container.get(Symbols.helpers.constants) as any).activeDelegates = 5;
-
-        await instance.loadBlockChain();
-
-        expect(appStateStub.stubs.set.firstCall.args[1]).to.be.equal(round - 1);
-      });
-
-      it('should check if config.loading.snapshot is number(with normalize to previous round, blocksCount % this.constants.activeDelegates > 0(round=0))', async () => {
-        (container.get(Symbols.helpers.constants) as any).activeDelegates = 5;
-        roundsLogicStub.reset();
-        roundsLogicStub.enqueueResponse('calcRound', 0);
-        roundsLogicStub.enqueueResponse('lastInRound', lastBlock);
-
-        await instance.loadBlockChain();
-
-        expect(appStateStub.stubs.set.calledOnce).to.be.true;
-        expect(appStateStub.stubs.set.firstCall.args.length).to.be.equal(2);
-        expect(appStateStub.stubs.set.firstCall.args[1]).to.be.equal(1);
-      });
-
-      it('should check if config.loading.snapshot is number and less that round', async () => {
-        const newSnapshot                                                  = round - 2;
-        (container.get(Symbols.generic.appConfig) as any).loading.snapshot = newSnapshot;
-
-        await instance.loadBlockChain();
-
-        expect(appStateStub.stubs.set.calledOnce).to.be.true;
-        expect(appStateStub.stubs.set.firstCall.args.length).to.be.equal(2);
-        expect(appStateStub.stubs.set.firstCall.args[1]).to.be.equal(newSnapshot);
-      });
-
-      it('should call logger.info with "Snapshotting to end of round"', async () => {
-        await instance.loadBlockChain();
-
-        expect(loggerStub.stubs.info.callCount).to.be.equal(5);
-        expect(loggerStub.stubs.info.getCall(3).args.length).to.be.equal(2);
-        expect(loggerStub.stubs.info.getCall(3).args[0]).to.be.equal('Snapshotting to end of round: 5');
-        expect(loggerStub.stubs.info.getCall(3).args[1]).to.be.equal(blocksCountObj.count);
-      });
-
-      it('should call roundsLogic.lastInRound', async () => {
-        await instance.loadBlockChain();
-
-        expect(roundsLogicStub.stubs.lastInRound.calledOnce).to.be.true;
-        expect(roundsLogicStub.stubs.lastInRound.firstCall.args.length).to.be.equal(1);
-        expect(roundsLogicStub.stubs.lastInRound.firstCall.args[0]).to.be.equal(round);
-      });
-
-      it('should call instance.load', async () => {
-        await instance.loadBlockChain();
-
-        expect(loadStub.calledOnce).to.be.true;
-        expect(loadStub.firstCall.args.length).to.be.equal(4);
-        expect(loadStub.firstCall.args[0]).to.be.equal(lastBlock);
-        expect(loadStub.firstCall.args[1]).to.be.equal(appConfig.loading.loadPerIteration);
-        expect(loadStub.firstCall.args[2]).to.be.equal('Blocks Verification enabled');
-        expect(loadStub.firstCall.args[3]).to.be.equal(false);
-      });
-
-      it('should call process.exit', async () => {
-        await instance.loadBlockChain();
-
-        expect(processExitStub.calledOnce).to.be.true;
-        expect(processExitStub.firstCall.args[0]).to.be.equal(0);
-      });
-
-      it('should call logger.error and process.exit lastBlock.height !== (finded) lastBlock', async () => {
-        container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock = { height: 11 } as any;
-
-        await instance.loadBlockChain();
-
-        expect(loggerStub.stubs.error.calledOnce).to.be.true;
-        expect(loggerStub.stubs.error.firstCall.args.length).to.be.equal(1);
-        expect(loggerStub.stubs.error.firstCall.args[0]).to.be
-          .equal(`LastBlock height does not expected block. Expected: ${lastBlock} - Received: ${11}`);
-
-        expect(processExitStub.callCount).to.be.equal(2);
-        expect(processExitStub.firstCall.args[0]).to.be.equal(1);
-      });
     });
 
-    it('should check if instance.config.loading.snapshot is undefined(not Check verifySnapshot mode)', async () => {
-      await instance.loadBlockChain();
 
-      expect(processExitStub.notCalled).to.be.true;
-    });
-
-    it('should return instance.load if has been detected missed blocks in mem_accounts', async () => {
-      dbStub.reset();
-      results[2].count = 0;
-      dbStub.enqueueResponse('task', Promise.resolve(results));
-
-      const ret = await instance.loadBlockChain();
-
-      expect(loadStub.calledOnce).to.be.true;
-      expect(loadStub.firstCall.args.length).to.be.equal(4);
-      expect(loadStub.firstCall.args[0]).to.be.equal(2);
-      expect(loadStub.firstCall.args[1]).to.be.equal(10);
-      expect(loadStub.firstCall.args[2]).to.be.equal('Detected missed blocks in mem_accounts');
-      expect(loadStub.firstCall.args[3]).to.be.equal(true);
-
-      expect(ret).to.be.deep.equal(loadResult);
-    });
-
-    it('should return instance.load if has been detected unapplied rounds in mem_round', async () => {
-      dbStub.reset();
-      results[3][0].round = 'uganda';
-      dbStub.enqueueResponse('task', Promise.resolve(results));
-
-      const ret = await instance.loadBlockChain();
-
-      expect(loadStub.calledOnce).to.be.true;
-      expect(loadStub.firstCall.args.length).to.be.equal(4);
-      expect(loadStub.firstCall.args[0]).to.be.equal(2);
-      expect(loadStub.firstCall.args[1]).to.be.equal(10);
-      expect(loadStub.firstCall.args[2]).to.be.equal('Detected unapplied rounds in mem_round');
-      expect(loadStub.firstCall.args[3]).to.be.equal(true);
-
-      expect(ret).to.be.deep.equal(loadResult);
-    });
-
-    it('should call logger.error and proccess.emit if delegates table has been corrupted with duplicate entries and return with undefined', async () => {
-      dbStub.reset();
-      results[4][0].count = 2;
-      dbStub.enqueueResponse('task', Promise.resolve(results));
-      dbStub.enqueueResponse('task', Promise.resolve(res));
-
-      const ret = await instance.loadBlockChain();
-
-      expect(loggerStub.stubs.error.calledOnce).to.be.true;
-      expect(loggerStub.stubs.error.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal('Delegates table corrupted with duplicated entries');
-
-      expect(processEmitStub.calledOnce).to.be.true;
-      expect(processEmitStub.firstCall.args[0]).to.be.equal('exit');
-      expect(processEmitStub.firstCall.args[1]).to.be.equal(1);
-
-      expect(ret).to.be.undefined;
-    });
-
-    it('should call db.task second time', async () => {
-      await instance.loadBlockChain();
-
-      expect(dbStub.stubs.task.callCount).to.be.equal(2);
-      expect(dbStub.stubs.task.secondCall.args.length).to.be.equal(1);
-      expect(dbStub.stubs.task.secondCall.args[0]).to.be.a('function');
-    });
-
-    it('shoudl call db.task(second call) callback', async () => {
-      await instance.loadBlockChain();
-
-      expect(tStub.batch.calledTwice).to.be.true;
-      expect(tStub.batch.secondCall.args.length).to.be.equal(1);
-      expect(tStub.batch.secondCall.args[0]).to.be.deep.equal([1, 1, 1]);
-
-      expect(tStub.none.calledOnce).to.be.true;
-      expect(tStub.none.firstCall.args.length).to.be.equal(1);
-      expect(tStub.none.firstCall.args[0]).to.be.equal(sql.updateMemAccounts);
-
-      expect(tStub.query.callCount).to.be.equal(5);
-      expect(tStub.query.getCall(3).args.length).to.be.equal(1);
-      expect(tStub.query.getCall(3).args[0]).to.be.equal(sql.getOrphanedMemAccounts);
-      expect(tStub.query.getCall(4).args.length).to.be.equal(1);
-      expect(tStub.query.getCall(4).args[0]).to.be.equal(sql.getDelegates);
-    });
-
-    it('should return instance.load if res[1].length > 0', async () => {
-      dbStub.reset();
-      res[1].push({});
-      dbStub.enqueueResponse('task', Promise.resolve(results));
-      dbStub.enqueueResponse('task', Promise.resolve(res));
-
-      const ret = await instance.loadBlockChain();
-
-      expect(loadStub.calledOnce).to.be.true;
-      expect(loadStub.firstCall.args.length).to.be.equal(4);
-      expect(loadStub.firstCall.args[0]).to.be.equal(2);
-      expect(loadStub.firstCall.args[1]).to.be.equal(10);
-      expect(loadStub.firstCall.args[2]).to.be.equal('Detected orphaned blocks in mem_accounts');
-      expect(loadStub.firstCall.args[3]).to.be.equal(true);
-
-      expect(ret).to.be.deep.equal(loadResult);
-    });
-
-    it('should return instance.load if res[2].length === 0', async () => {
-      dbStub.reset();
-      res[2].pop();
-      dbStub.enqueueResponse('task', Promise.resolve(results));
-      dbStub.enqueueResponse('task', Promise.resolve(res));
-
-      const ret = await instance.loadBlockChain();
-
-      expect(loadStub.calledOnce).to.be.true;
-      expect(loadStub.firstCall.args.length).to.be.equal(4);
-      expect(loadStub.firstCall.args[0]).to.be.equal(2);
-      expect(loadStub.firstCall.args[1]).to.be.equal(10);
-      expect(loadStub.firstCall.args[2]).to.be.equal('No delegates found');
-      expect(loadStub.firstCall.args[3]).to.be.equal(true);
-
-      expect(ret).to.be.deep.equal(loadResult);
-    });
-
-    it('should call blocksUtilsModule.loadLastBlock', async () => {
-      await instance.loadBlockChain();
-
-      expect(blocksUtilsModuleStub.stubs.loadLastBlock.calledOnce).to.be.true;
-      expect(blocksUtilsModuleStub.stubs.loadLastBlock.firstCall.args.length).to.be.equal(0);
-    });
-
-    it('should call logger.info with blockchain ready info', async () => {
-      await instance.loadBlockChain();
-
-      expect(loggerStub.stubs.info.callCount).to.be.equal(3);
-      expect(loggerStub.stubs.info.lastCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.info.lastCall.args[0]).to.be.equal('Blockchain ready');
-    });
-
-    it('should call bus.message', async () => {
-      await instance.loadBlockChain();
-
-      expect(busStub.stubs.message.calledOnce).to.be.true;
-      expect(busStub.stubs.message.firstCall.args.length).to.be.equal(1);
-      expect(busStub.stubs.message.firstCall.args[0]).to.be.equal('blockchainReady');
-    });
-
-    it('should return instance.load if throw', async () => {
-      const error = { message: 'msg' };
-      blocksUtilsModuleStub.reset();
-      blocksUtilsModuleStub.enqueueResponse('loadLastBlock', Promise.reject(error));
-
-      await instance.loadBlockChain();
-
-      expect(loadStub.calledOnce).to.be.true;
-      expect(loadStub.firstCall.args.length).to.be.equal(2);
-      expect(loadStub.firstCall.args[0]).to.be.equal(blocksCountObj.count);
-      expect(loadStub.firstCall.args[1]).to.be.equal(error.message);
-    });
-
-    it('should return instance.load if throw(with default err.message)', async () => {
-      const error = {};
-      blocksUtilsModuleStub.reset();
-      blocksUtilsModuleStub.enqueueResponse('loadLastBlock', Promise.reject(error));
-
-      await instance.loadBlockChain();
-
-      expect(loadStub.calledOnce).to.be.true;
-      expect(loadStub.firstCall.args.length).to.be.equal(2);
-      expect(loadStub.firstCall.args[0]).to.be.equal(blocksCountObj.count);
-      expect(loadStub.firstCall.args[1]).to.be.equal('Failed to load last block');
-    });
 
   });
 

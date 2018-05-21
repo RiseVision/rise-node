@@ -1,7 +1,8 @@
 import * as pgp from 'pg-promise';
+import * as sequelize from 'sequelize';
+import {Op} from 'sequelize';
 import { Column, DataType, Model, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
 import { publicKey } from '../types/sanityTypes';
-import * as sequelize from 'sequelize';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { TransactionType } from '../helpers';
 import { IBaseTransaction } from '../logic/transactions';
@@ -205,10 +206,10 @@ export class AccountsModel extends Model<AccountsModel> {
     }, {
       where: {
         $or: {
-          u_isDelegate     : { $ne: sequelize.col('isDelegate') },
-          u_balance        : { $ne: sequelize.col('balance') },
-          u_secondSignature: { $ne: sequelize.col('secondSignature') },
-          u_username       : { $ne: sequelize.col('username') },
+          u_isDelegate     : { [Op.ne]: sequelize.col('isDelegate') },
+          u_balance        : { [Op.ne]: sequelize.col('balance') },
+          u_secondSignature: { [Op.ne]: sequelize.col('secondSignature') },
+          u_username       : { [Op.ne]: sequelize.col('username') },
         }
       }
     })

@@ -23,10 +23,6 @@ fakeContainer.rebind(Symbols.helpers.ed).toConstantValue(new Ed());
 fakeContainer.rebind(Symbols.logic.blockReward).to(BlockRewardLogic).inSingletonScope();
 fakeContainer.rebind(Symbols.logic.block).to(BlockLogic).inSingletonScope();
 fakeContainer.rebind(Symbols.logic.transaction).to(TransactionLogic).inSingletonScope();
-fakeContainer.bind(Symbols.logic.transactions.send).to(SendTransaction).inSingletonScope();
-fakeContainer.bind(Symbols.logic.transactions.vote).to(VoteTransaction).inSingletonScope();
-fakeContainer.bind(Symbols.logic.transactions.delegate).to(RegisterDelegateTransaction).inSingletonScope();
-fakeContainer.bind(Symbols.logic.transactions.secondSignature).to(SecondSignatureTransaction).inSingletonScope();
 
 const txLogic: TransactionLogic = fakeContainer.get(Symbols.logic.transaction);
 txLogic.attachAssetType(fakeContainer.get(Symbols.logic.transactions.send));

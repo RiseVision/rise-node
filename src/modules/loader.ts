@@ -1,6 +1,7 @@
 import { inject, injectable, postConstruct, tagged } from 'inversify';
 import * as promiseRetry from 'promise-retry';
 import * as sequelize from 'sequelize';
+import {Op} from 'sequelize';
 import SocketIO from 'socket.io';
 import z_schema from 'z-schema';
 import { Bus, constants as constantsType, ILogger, Sequence, wait } from '../helpers/';
@@ -207,41 +208,14 @@ export class LoaderModule implements ILoaderModule {
 
     // Check if we are in verifySnapshot mode.
     if (this.config.loading.snapshot) {
-      this.logger.info('Snapshot mode enabled');
-      if (typeof(this.config.loading.snapshot) === 'boolean') {
-        // threat "true" as "highest round possible"
-        this.config.loading.snapshot = round;
-      }
-      if (this.config.loading.snapshot >= round) {
-        this.config.loading.snapshot = round;
-        if ((blocksCount === 1) || (blocksCount % this.constants.activeDelegates > 0)) {
-          // Normalize to previous round if we
-          this.config.loading.snapshot = (round > 1) ? (round - 1) : 1;
-        }
-      }
-      this.appState.set('rounds.snapshot', this.config.loading.snapshot);
-
-      this.logger.info(`Snapshotting to end of round: ${this.config.loading.snapshot}`, blocksCount);
-      const lastBlock = this.roundsLogic.lastInRound(this.config.loading.snapshot);
-
-      await this.load(
-        lastBlock,
-        limit,
-        'Blocks Verification enabled',
-        false
-      );
-
-      if (this.blocksModule.lastBlock.height !== lastBlock) {
-        // tslint:disable-next-line max-line-length
-        this.logger.error(`LastBlock height does not expected block. Expected: ${lastBlock} - Received: ${this.blocksModule.lastBlock.height}`);
-        process.exit(1);
-      }
-      // await this.blocksChainModule.deleteAfterBlock(this.blocksModule.lastBlock.id);
+      await this.verifySnapshot(round, blocksCount, limit);
       process.exit(0);
     }
 
     const updatedAccountsInLastBlock = await AccountsModel
-      .count({where: {blockId: {$in: sequelize.literal('(SELECT "id" from blocks ORDER BY "height" DESC LIMIT 1)')}}});
+      .count({where: {
+        blockId: {[Op.in]: sequelize.literal('(SELECT "id" from blocks ORDER BY "height" DESC LIMIT 1)')},
+      }});
 
     if (updatedAccountsInLastBlock === 0) {
       return this.load(blocksCount, limit, 'Detected missed blocks in mem_accounts', true);
@@ -259,7 +233,7 @@ export class LoaderModule implements ILoaderModule {
       { type: sequelize.QueryTypes.SELECT });
     if (duplicatedDelegates.count > 0) {
       this.logger.error('Delegates table corrupted with duplicated entries');
-      process.emit('exit', 1);
+      process.exit(1);
       return;
     }
 
@@ -286,6 +260,38 @@ export class LoaderModule implements ILoaderModule {
 
     this.logger.info('Blockchain ready');
     await this.bus.message('blockchainReady');
+  }
+
+  private async verifySnapshot(round: number, blocksCount: number, limit: number) {
+    this.logger.info('Snapshot mode enabled');
+    if (typeof(this.config.loading.snapshot) === 'boolean') {
+      // threat "true" as "highest round possible"
+      this.config.loading.snapshot = round;
+    }
+    if (this.config.loading.snapshot >= round) {
+      this.config.loading.snapshot = round;
+      if (blocksCount % this.constants.activeDelegates > 0) {
+        // Normalize to previous round if we
+        this.config.loading.snapshot = (round > 1) ? (round - 1) : 1;
+      }
+    }
+    this.appState.set('rounds.snapshot', this.config.loading.snapshot);
+
+    this.logger.info(`Snapshotting to end of round: ${this.config.loading.snapshot}`, blocksCount);
+    const lastBlock = this.roundsLogic.lastInRound(this.config.loading.snapshot);
+
+    await this.load(
+      lastBlock,
+      limit,
+      'Blocks Verification enabled',
+      false
+    );
+
+    if (this.blocksModule.lastBlock.height !== lastBlock) {
+      // tslint:disable-next-line max-line-length
+      this.logger.error(`LastBlock height does not expected block. Expected: ${lastBlock} - Received: ${this.blocksModule.lastBlock.height}`);
+      process.exit(1);
+    }
   }
 
   public async load(count: number, limitPerIteration: number, message?: string, emitBlockchainReady = false) {

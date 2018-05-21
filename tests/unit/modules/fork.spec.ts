@@ -8,10 +8,10 @@ import { ForkType } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { SignedBlockType } from '../../../src/logic';
 import { ForkModule } from '../../../src/modules/fork';
-import sql from '../../../src/sql/delegates';
-import { DbStub, LoggerStub, SocketIOStub } from '../../stubs';
+import { LoggerStub, SocketIOStub } from '../../stubs';
 import { createFakeBlock } from '../../utils/blockCrafter';
 import { createContainer } from '../../utils/containerCreator';
+import { ForksStatsModel } from '../../../src/models';
 
 chai.use(chaiAsPromised);
 
@@ -22,7 +22,7 @@ describe('modules/fork', () => {
   let container: Container;
   let sandbox: SinonSandbox;
   let block: SignedBlockType;
-  let dbStub: DbStub;
+  let forksModel: typeof ForksStatsModel;
   let loggerStub: LoggerStub;
   let socketIOStub: SocketIOStub;
 
@@ -32,9 +32,10 @@ describe('modules/fork', () => {
     container.rebind(Symbols.modules.fork).to(ForkModule);
     block = createFakeBlock();
     instance     = container.get(Symbols.modules.fork);
-    dbStub       = container.get(Symbols.generic.db);
     loggerStub   = container.get(Symbols.helpers.logger);
     socketIOStub = container.get(Symbols.generic.socketIO);
+    forksModel = container.get(Symbols.models.forkStats);
+
   });
 
   afterEach(() => {
@@ -42,41 +43,22 @@ describe('modules/fork', () => {
   });
 
   describe('fork', () => {
-    beforeEach(() => {
-      dbStub.enqueueResponse('none', Promise.resolve());
-    });
-
-    it('should call logger.info', async () => {
-      await instance.fork(block, ForkType.TX_ALREADY_CONFIRMED);
-      expect(loggerStub.stubs.info.calledOnce).to.be.true;
-      expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal('Fork');
-      expect(loggerStub.stubs.info.firstCall.args[1]).to.be.deep.equal({
-        block   : {
-          height       : block.height,
-          id           : block.id,
-          previousBlock: block.previousBlock,
-          timestamp    : block.timestamp,
-        },
-        cause   : ForkType.TX_ALREADY_CONFIRMED,
-        delegate: block.generatorPublicKey,
-      });
-    });
-
     it('should call db.none passing the fork object', async () => {
+      const stub = sandbox.stub(forksModel, 'create').resolves();
       await instance.fork(block, ForkType.TX_ALREADY_CONFIRMED);
-      expect(dbStub.stubs.none.calledOnce).to.be.true;
-      expect(dbStub.stubs.none.firstCall.args[0]).to.be.deep.equal(sql.insertFork);
-      expect(dbStub.stubs.none.firstCall.args[1]).to.be.deep.equal({
-        blockHeight      : block.height,
-        blockId          : block.id,
-        blockTimestamp   : block.timestamp,
-        cause            : ForkType.TX_ALREADY_CONFIRMED,
-        delegatePublicKey: block.generatorPublicKey,
-        previousBlock    : block.previousBlock,
+      expect(stub.called).is.true;
+      expect(stub.firstCall.args[0]).deep.eq({
+          blockHeight      : block.height,
+          blockId          : block.id,
+          blockTimestamp   : block.timestamp,
+          cause            : ForkType.TX_ALREADY_CONFIRMED,
+          delegatePublicKey: block.generatorPublicKey,
+          previousBlock    : block.previousBlock,
       });
     });
 
     it('should call io.sockets.emit', async () => {
+      const stub = sandbox.stub(forksModel, 'create').resolves();
       await instance.fork(block, ForkType.TX_ALREADY_CONFIRMED);
       expect(socketIOStub.sockets.emit.calledOnce).to.be.true;
       expect(socketIOStub.sockets.emit.firstCall.args[0]).to.be.deep.equal('delegates/fork');
