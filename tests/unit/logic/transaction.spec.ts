@@ -7,25 +7,26 @@ import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { BigNum, IKeypair, TransactionType } from '../../../src/helpers';
 import {Symbols} from '../../../src/ioc/symbols';
-import { TransactionLogic } from '../../../src/logic';
+import { SignedAndChainedBlockType, TransactionLogic } from '../../../src/logic';
 import { IBaseTransaction, SendTransaction } from '../../../src/logic/transactions';
 import {
   AccountLogicStub, DbStub, EdStub, ExceptionsManagerStub, LoggerStub,
   RoundsLogicStub, SlotsStub, ZSchemaStub
 } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
+import { TransactionsModel } from '../../../src/models';
+import { VerificationType } from '../../../src/ioc/interfaces/logic';
+import { DBCreateOp } from '../../../src/types/genericTypes';
 
 chai.use(chaiAsPromised);
 
 // tslint:disable-next-line no-var-requires
-const genesisBlock     = require('../../../etc/mainnet/genesisBlock.json');
 const expect           = chai.expect;
 
 // tslint:disable no-unused-expression
 describe('logic/transaction', () => {
   let instance: TransactionLogic;
   let container: Container;
-  let dbStub: DbStub;
   let edStub: EdStub;
   let slotsStub: SlotsStub;
   let zSchemaStub: ZSchemaStub;
@@ -38,6 +39,8 @@ describe('logic/transaction', () => {
   let sender: any;
   let requester: any;
   let block: any;
+  let genesisBlock: SignedAndChainedBlockType;
+  let txModel: typeof TransactionsModel;
 
   let tx: IBaseTransaction<any>;
   const sampleBuffer = Buffer.from('35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892', 'hex');
@@ -52,29 +55,20 @@ describe('logic/transaction', () => {
 
   beforeEach(() => {
     container          = createContainer();
-    dbStub           = container.get(Symbols.generic.db);
+    container.rebind(Symbols.logic.transaction).to(TransactionLogic).inSingletonScope();
+    instance = container.get(Symbols.logic.transaction);
     edStub           = container.get(Symbols.helpers.ed);
     slotsStub        = container.get(Symbols.helpers.slots);
     zSchemaStub      = container.get(Symbols.generic.zschema);
     accountLogicStub = container.get(Symbols.logic.account);
     roundsLogicStub  = container.get(Symbols.logic.rounds);
     loggerStub       = container.get(Symbols.helpers.logger);
+    genesisBlock     = container.get(Symbols.generic.genesisBlock);
     excManagerStub   = container.get(Symbols.helpers.exceptionsManager);
+    txModel = container.get(Symbols.models.transactions);
     sendTransaction  = new SendTransaction();
 
-    instance = new TransactionLogic();
     instance.attachAssetType(sendTransaction);
-
-    // inject dependencies
-    (instance as any).db           = dbStub;
-    (instance as any).ed           = edStub;
-    (instance as any).slots        = slotsStub;
-    (instance as any).schema       = zSchemaStub;
-    (instance as any).genesisBlock = genesisBlock;
-    (instance as any).accountLogic = accountLogicStub;
-    (instance as any).roundsLogic  = roundsLogicStub;
-    (instance as any).logger       = loggerStub;
-    (instance as any).excManager   = excManagerStub;
 
     tx = {
       amount         : 108910891000000,
@@ -83,9 +77,9 @@ describe('logic/transaction', () => {
       id             : '8139741256612355994',
       recipientId    : '15256762582730568272R',
       senderId       : '1233456789012345R',
-      senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
-      signature      : 'f8fbf9b8433bf1bbea971dc8b14c6772d33c7dd285d84c5e6c984b10c4141e9f' +
-      'a56ace902b910e05e98b55898d982b3d5b9bf8bd897083a7d1ca1d5028703e03',
+      senderPublicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+      signature      : Buffer.from('f8fbf9b8433bf1bbea971dc8b14c6772d33c7dd285d84c5e6c984b10c4141e9f' +
+      'a56ace902b910e05e98b55898d982b3d5b9bf8bd897083a7d1ca1d5028703e03', 'hex'),
       timestamp      : 0,
       type           : TransactionType.SEND,
     };
@@ -93,23 +87,23 @@ describe('logic/transaction', () => {
     sender = {
       address  : '1233456789012345R',
       balance  : 10000000,
-      publicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
+      publicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex')
     };
 
     requester = {
       address  : '9999999999999999R',
       balance  : 20000000,
-      publicKey: 'e73f4ab9f4794b110ceefecd8f880d5189235526f8a1e2f482264e5d4982fc07',
+      publicKey: Buffer.from('e73f4ab9f4794b110ceefecd8f880d5189235526f8a1e2f482264e5d4982fc07', 'hex'),
     };
 
     block = {
-      blockSignature      : 'a9e12f49432364c1e171dd1f9e2d34f8baffdda0f4ef0989d9439e5d46aba55ef640' +
-      '149ff7ed7d3e3d4e1ad4173ecfd1cc0384f5598175c15434e0d97ce4150d',
-      generatorPublicKey  : '35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892',
+      blockSignature      : Buffer.from('a9e12f49432364c1e171dd1f9e2d34f8baffdda0f4ef0989d9439e5d46aba55ef640' +
+      '149ff7ed7d3e3d4e1ad4173ecfd1cc0384f5598175c15434e0d97ce4150d', 'hex'),
+      generatorPublicKey  : Buffer.from('35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892', 'hex'),
       height              : 1,
       id                  : '13191140260435645922',
       numberOfTransactions: 0,
-      payloadHash         : 'cd8171332c012514864edd8eb6f68fc3ea6cb2afbaf21c56e12751022684cea5',
+      payloadHash         : Buffer.from('cd8171332c012514864edd8eb6f68fc3ea6cb2afbaf21c56e12751022684cea5', 'hex'),
       payloadLength       : 0,
       previousBlock       : null,
       timestamp           : 0,
@@ -299,7 +293,7 @@ describe('logic/transaction', () => {
     });
 
     it('should add the senderPublicKey to the ByteBuffer', () => {
-      const senderPublicKeyBuffer = Buffer.from(tx.senderPublicKey, 'hex');
+      const senderPublicKeyBuffer = tx.senderPublicKey;
       instance.getBytes(tx);
       for (let i = 0; i < senderPublicKeyBuffer.length; i++) {
         expect(sequence[2 + i]).to.be.equal(senderPublicKeyBuffer[i]);
@@ -307,12 +301,11 @@ describe('logic/transaction', () => {
     });
 
     it('should add the requesterPublicKey to the ByteBuffer if tx.requesterPublicKey', () => {
-      tx.requesterPublicKey          = '35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51899';
-      const requesterPublicKeyBuffer = Buffer.from(tx.requesterPublicKey, 'hex');
+      tx.requesterPublicKey          = Buffer.from('35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51899', 'hex');
       instance.getBytes(tx);
-      for (let i = 0; i < requesterPublicKeyBuffer.length; i++) {
+      for (let i = 0; i < tx.requesterPublicKey.length; i++) {
         // We always get here after 34 writes to the ByteBuffer
-        expect(sequence[34 + i]).to.be.equal(requesterPublicKeyBuffer[i]);
+        expect(sequence[34 + i]).to.be.equal(tx.requesterPublicKey[i]);
       }
     });
 
@@ -340,7 +333,7 @@ describe('logic/transaction', () => {
     });
 
     it('should add the asset bytes to the ByteBuffer if not empty', () => {
-      tx.signSignature   = '';
+      tx.signSignature   = Buffer.from('');
       const getBytesStub = sinon.stub(sendTransaction, 'getBytes');
       getBytesStub.returns(sampleBuffer);
       instance.getBytes(tx);
@@ -352,39 +345,37 @@ describe('logic/transaction', () => {
 
     it('should add the signature to the ByteBuffer', () => {
       instance.getBytes(tx);
-      const sigBuf = Buffer.from(tx.signature, 'hex');
-      for (let i = 0; i < sigBuf.length; i++) {
+      for (let i = 0; i < tx.signature.length; i++) {
         // tx.asset is empty so we start from 43
-        expect(sequence[43 + i]).to.be.equal(sigBuf[i]);
+        expect(sequence[43 + i]).to.be.equal(tx.signature[i]);
       }
     });
 
     it('should NOT add the signature to the ByteBuffer if skipSignature', () => {
       instance.getBytes(tx, true, true);
-      const sigBuf = Buffer.from(tx.signature, 'hex');
-      for (let i = 0; i < sigBuf.length; i++) {
+      for (let i = 0; i < tx.signature.length; i++) {
         // tx.asset is empty so we start from 43
         expect(sequence[43 + i]).to.be.equal(undefined);
       }
     });
 
     it('should add the signSignature to the ByteBuffer', () => {
-      tx.signSignature = '93e49ce591472c5c587ff419c02c80e78159a82e0143f87c51dec43a2613cbd9' +
-        '93e49ce591472c5c587ff419c02c80e78159a82e0143f87c51dec43a2613cbd9';
+      tx.signSignature = Buffer.from('93e49ce591472c5c587ff419c02c80e78159a82e0143f87c51dec43a2613cbd9' +
+        '93e49ce591472c5c587ff419c02c80e78159a82e0143f87c51dec43a2613cbd9', 'hex');
       instance.getBytes(tx);
-      const sigBuf = Buffer.from(tx.signSignature, 'hex');
-      for (let i = 0; i < sigBuf.length; i++) {
+
+      for (let i = 0; i < tx.signSignature.length; i++) {
         // tx.asset is empty so we start from 43
-        expect(sequence[107 + i]).to.be.equal(sigBuf[i]);
+        expect(sequence[107 + i]).to.be.equal(tx.signSignature[i]);
       }
     });
 
     it('should NOT add the signSignature to the ByteBuffer if skipSecondSignature', () => {
-      tx.signSignature = '93e49ce591472c5c587ff419c02c80e78159a82e0143f87c51dec43a2613cbd9' +
-        '93e49ce591472c5c587ff419c02c80e78159a82e0143f87c51dec43a2613cbd9';
+      tx.signSignature = Buffer.from('93e49ce591472c5c587ff419c02c80e78159a82e0143f87c51dec43a2613cbd9' +
+        '93e49ce591472c5c587ff419c02c80e78159a82e0143f87c51dec43a2613cbd9', 'hex');
       instance.getBytes(tx, false, true);
-      const sigBuf = Buffer.from(tx.signSignature, 'hex');
-      for (let i = 0; i < sigBuf.length; i++) {
+
+      for (let i = 0; i < tx.signSignature.length; i++) {
         // tx.asset is empty so we start from 43
         expect(sequence[107 + i]).to.be.equal(undefined);
       }
@@ -422,37 +413,36 @@ describe('logic/transaction', () => {
     it('should throw if invalid txtype', () => {
       tx.type = 999999;
       expect(() => {
-        instance.assertKnownTransactionType(tx);
+        instance.assertKnownTransactionType(tx.type);
       }).to.throw(/Unknown transaction type/);
     });
 
     it('should not throw if OK', () => {
       expect(() => {
-        instance.assertKnownTransactionType(tx);
+        instance.assertKnownTransactionType(tx.type);
       }).not.to.throw();
     });
   });
 
   describe('countById', () => {
-    it('should call db.one', async () => {
-      dbStub.stubs.one.returns({});
-      await instance.countById(tx);
-      expect(dbStub.stubs.one.calledOnce).to.be.true;
-      expect(dbStub.stubs.one.firstCall.args[1]).to.be.deep.equal({ id: tx.id });
+    let txModel: typeof TransactionsModel;
+    beforeEach(() => {
+      txModel = container.get(Symbols.models.transactions);
     });
-
-    it('should throw and log if db.one throws', async () => {
-      const e = new Error('dbStub.one Error');
-      dbStub.stubs.one.throws(e);
-      await expect(instance.countById(tx)).to.be.rejectedWith('Transaction#countById error');
-      expect(loggerStub.stubs.error.calledOnce).to.be.true;
-      expect(loggerStub.stubs.error.firstCall.args[0]).to.be.deep.equal(e.stack);
+    it('should call TransactionsModel.count with proper param and return the value from it', async () => {
+      const count = sandbox.stub(txModel, 'count').resolves(10);
+      const res = await instance.countById({id: '11'} as any);
+      expect(res).to.be.deep.eq(10);
+      expect(count.called).is.true;
+      expect(count.firstCall.args[0]).to.be.deep.eq({
+        where: {
+          id: '11'
+        }
+      });
     });
-
-    it('should return the count', async () => {
-      dbStub.stubs.one.returns({ count: 100 });
-      const count = await instance.countById(tx);
-      expect(count).to.be.equal(100);
+    it('should remap error of TransactionsModel.count', async () => {
+      sandbox.stub(txModel, 'count').rejects('HAAAA');
+      await expect(instance.countById({id: '11'} as any)).to.be.rejectedWith('Transaction#countById error');
     });
   });
 
@@ -480,21 +470,12 @@ describe('logic/transaction', () => {
       const retVal = instance.checkBalance(sender.balance + 1, 'balance', tx, sender as any);
       expect(retVal.error).to.match(/Account does not have enough currency/);
     });
-    it('should allow to exceed balance only for genesisBlock', () => {
-      // tslint:disable-next-line
-      tx['blockId'] = genesisBlock.id;
-      // Pass an amount greater than sender balance.
-      const retVal  = instance.checkBalance(sender.balance + 1, 'balance', tx, sender as any);
-      expect(retVal.error).to.be.equal(null);
-    });
   });
 
   describe('process', () => {
-    let txTypeProcessStub;
     let instGetIdStub;
 
     beforeEach(() => {
-      txTypeProcessStub = sandbox.stub(sendTransaction, 'process').resolves();
       instGetIdStub     = sandbox.stub(instance, 'getId').returns(tx.id);
     });
 
@@ -504,7 +485,7 @@ describe('logic/transaction', () => {
         await instance.process(tx, sender, {} as any);
       } catch (e) {
         expect(akttStub.calledOnce).to.be.true;
-        expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx);
+        expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx.type);
       }
     });
 
@@ -523,19 +504,13 @@ describe('logic/transaction', () => {
       expect(instGetIdStub.firstCall.args[0]).to.be.deep.eq(tx);
     });
 
-    it('should call process on the right txType', async () => {
-      await instance.process(tx, sender, {} as any);
-      expect(txTypeProcessStub.calledOnce).to.be.true;
-      expect(txTypeProcessStub.firstCall.args[0]).to.be.deep.equal(tx);
-      expect(txTypeProcessStub.firstCall.args[1]).to.be.deep.equal(sender);
-    });
-
     it('should return the tx with senderId added', async () => {
       const retVal            = await instance.process(tx, sender, {} as any);
       const expectedRetVal    = Object.assign({}, tx);
       expectedRetVal.senderId = sender.address;
       expect(retVal).to.be.deep.equal(expectedRetVal);
     });
+
   });
 
   describe('verify', () => {
@@ -554,6 +529,8 @@ describe('logic/transaction', () => {
       // txType stubs
       calculateFeeStub       = sandbox.stub(sendTransaction, 'calculateFee').returns(tx.fee);
       txTypeVerifyStub       = sandbox.stub(sendTransaction, 'verify').resolves();
+      sender.isMultisignature = () => false;
+
     });
 
     it('should call assertKnownTransactionType', async () => {
@@ -571,9 +548,10 @@ describe('logic/transaction', () => {
       await expect(instance.verify(tx, undefined, requester, 1)).to.be.rejectedWith('Missing sender');
     });
 
-    it('should throw if sender second signature and no signSignature in tx', async () => {
+    it('should throw if sender second signature + multisig and no signSignature in tx', async () => {
       tx.requesterPublicKey  = requester.publicKey;
       sender.multisignatures = [];
+      sender.isMultisignature = () => true;
       sender.secondSignature = 'signature';
       delete tx.signSignature;
       await expect(instance.verify(tx, sender, requester, 1)).to.be.rejectedWith('Missing sender second signature');
@@ -582,14 +560,15 @@ describe('logic/transaction', () => {
     it('should throw if second signature provided and sender has none enabled', async () => {
       delete tx.requesterPublicKey;
       delete sender.secondSignature;
-      tx.signSignature = 'signSignature';
+      tx.signSignature = Buffer.from('signSignature');
       await expect(instance.verify(tx, sender, requester, 1))
         .to.be.rejectedWith('Sender does not have a second signature');
     });
 
     it('should throw if missing requester second signature', async () => {
       tx.requesterPublicKey     = requester.publicKey;
-      requester.secondSignature = 'secondSignature';
+      sender.isMultisignature = () => true;
+      requester.secondSignature = Buffer.from('secondSignature');
       sender.multisignatures = [];
       delete tx.signSignature;
       await expect(instance.verify(tx, sender, requester, 1)).to.be.rejectedWith('Missing requester second signature');
@@ -599,13 +578,14 @@ describe('logic/transaction', () => {
       tx.requesterPublicKey = requester.publicKey;
       delete requester.secondSignature;
       sender.multisignatures = [];
-      tx.signSignature = 'signSignature';
+      sender.isMultisignature = () => true;
+      tx.signSignature = Buffer.from('signSignature');
       await expect(instance.verify(tx, sender, requester, 1))
         .to.be.rejectedWith('Requester does not have a second signature');
     });
 
     it('should throw if sender publicKey and tx.senderPublicKey mismatches', async () => {
-      tx.senderPublicKey = 'anotherPublicKey';
+      tx.senderPublicKey = Buffer.from('anotherPublicKey');
       await expect(instance.verify(tx, sender, requester, 1)).to.be.rejectedWith(/Invalid sender public key/);
     });
 
@@ -635,13 +615,14 @@ describe('logic/transaction', () => {
     });
 
     it('should verify multisignatures', async () => {
-      tx.signatures = ['a', 'b'];
+      tx.signatures = ['aa', 'bb'];
       tx.asset.multisignature = {
         keysgroup: [
-          'xyz',
-          'def',
+          '+cc',
+          '+dd',
         ],
       };
+      sender.isMultisignature = () => true;
       verifySignatureStub.returns(true);
       verifySignatureStub.onCall(2).returns(false);
 
@@ -649,36 +630,40 @@ describe('logic/transaction', () => {
 
       expect(verifySignatureStub.callCount).to.equal(4);
       expect(verifySignatureStub.args[0][0]).to.be.deep.equal(tx);
-      expect(verifySignatureStub.args[0][1]).to.be.equal(sender.publicKey);
+      expect(verifySignatureStub.args[0][1]).to.be.deep.equal(sender.publicKey);
       expect(verifySignatureStub.args[0][2]).to.be.equal(tx.signature);
 
       expect(verifySignatureStub.args[1][0]).to.be.deep.equal(tx);
-      expect(verifySignatureStub.args[1][1]).to.be.equal('yz');
-      expect(verifySignatureStub.args[1][2]).to.be.equal('a');
+      expect(verifySignatureStub.args[1][1]).to.be.deep.equal(Buffer.from('cc', 'hex'));
+      expect(verifySignatureStub.args[1][2]).to.be.deep.equal(Buffer.from('aa', 'hex'));
+      expect(verifySignatureStub.args[1][3]).to.be.deep.equal(VerificationType.ALL);
 
       expect(verifySignatureStub.args[3][0]).to.be.deep.equal(tx);
-      expect(verifySignatureStub.args[3][1]).to.be.equal('ef');
-      expect(verifySignatureStub.args[3][2]).to.be.equal('b');
+      expect(verifySignatureStub.args[3][1]).to.be.deep.equal(Buffer.from('dd', 'hex'));
+      expect(verifySignatureStub.args[3][2]).to.be.deep.equal(Buffer.from('bb', 'hex'));
+      expect(verifySignatureStub.args[3][3]).to.be.deep.equal(VerificationType.ALL);
     });
 
     it('should throw if account does not belong to multisignature group', async () => {
-      // FIXME This must be broken in src/logic/transaction.ts No other way to test this behavior
-      tx.requesterPublicKey  = requester.publicKey;
+      tx.requesterPublicKey  = Buffer.from('bb', 'hex');
       // Initializing this as an empty string is the only way to test this behavior
-      sender.multisignatures = [];
+      sender.multisignatures = ['aa'];
+      sender.isMultisignature = () => true;
       await expect(instance.verify(tx, sender, requester, 1))
         .to.be.rejectedWith('Account does not belong to multisignature group');
     });
 
     it('should call verifySignature', async () => {
       tx.requesterPublicKey  = requester.publicKey;
-      sender.multisignatures = [tx.requesterPublicKey];
+      sender.multisignatures = [tx.requesterPublicKey.toString('hex')];
+      sender.isMultisignature = () => true;
       verifySignatureStub.returns(false);
       await expect(instance.verify(tx, sender, requester, 1)).to.be.rejectedWith('Failed to verify signature');
       expect(verifySignatureStub.calledOnce).to.be.true;
       expect(verifySignatureStub.firstCall.args[0]).to.be.deep.equal(tx);
-      expect(verifySignatureStub.firstCall.args[1]).to.be.equal(tx.requesterPublicKey);
+      expect(verifySignatureStub.firstCall.args[1]).to.be.deep.equal(tx.requesterPublicKey);
       expect(verifySignatureStub.firstCall.args[2]).to.be.equal(tx.signature);
+      expect(verifySignatureStub.firstCall.args[3]).to.be.equal(VerificationType.SIGNATURE);
     });
 
     it('should call verifySignature with secondPublicKey if sender.secondSignature', async () => {
@@ -695,7 +680,7 @@ describe('logic/transaction', () => {
       expect(verifySignatureStub.secondCall.args[0]).to.be.deep.equal(tx);
       expect(verifySignatureStub.secondCall.args[1]).to.be.equal(sender.secondPublicKey);
       expect(verifySignatureStub.secondCall.args[2]).to.be.equal(tx.signSignature);
-      expect(verifySignatureStub.secondCall.args[3]).to.be.equal(true);
+      expect(verifySignatureStub.secondCall.args[3]).to.be.equal(VerificationType.SECOND_SIGNATURE);
     });
 
     it('should throw if signatures are not unique', async () => {
@@ -715,9 +700,10 @@ describe('logic/transaction', () => {
     });
 
     it('should throw Failed to verify multisignature if verifySignature() is skipped', async () => {
-      sender.multisignatures  = ['yz'];
+      sender.multisignatures  = ['aa'];
+      sender.isMultisignature = () => true;
       tx.signatures = ['a', 'b'];
-      tx.requesterPublicKey          = 'yz';
+      tx.requesterPublicKey          = Buffer.from('aa', 'hex');
       tx.asset.multisignature = {
         keysgroup: [
           'xyz',
@@ -733,17 +719,18 @@ describe('logic/transaction', () => {
     });
 
     it('should call verifySignature if tx.signatures not empty', async () => {
-      tx.signatures          = ['a', 'b'];
-      sender.multisignatures = ['c', 'd'];
-
+      tx.signatures          = ['aa', 'bb'];
+      sender.multisignatures = ['cc', 'dd'];
+      sender.isMultisignature = () => true;
       // First call is simple validation with requester or sender publio key
       verifySignatureStub.onCall(0).returns(true);
       // Second call is inside tx.signatures loop
       verifySignatureStub.onCall(1).returns(false);
       await instance.verify(tx, sender, requester, 1);
       expect(verifySignatureStub.secondCall.args[0]).to.be.deep.equal(tx);
-      expect(verifySignatureStub.secondCall.args[1]).to.be.equal(sender.multisignatures[0]);
-      expect(verifySignatureStub.secondCall.args[2]).to.be.equal(tx.signatures[0]);
+      expect(verifySignatureStub.secondCall.args[1]).to.be.deep.equal(Buffer.from(sender.multisignatures[0], 'hex'));
+      expect(verifySignatureStub.secondCall.args[2]).to.be.deep.equal(Buffer.from(tx.signatures[0], 'hex'));
+      expect(verifySignatureStub.secondCall.args[3]).to.be.equal(VerificationType.ALL);
     });
 
     it('should call txType.calculateFee and throw if fee mismatch', async () => {
@@ -863,28 +850,43 @@ describe('logic/transaction', () => {
     });
 
     it('should call assertKnownTransactionType', () => {
-      instance.verifySignature(tx, tx.senderPublicKey, tx.signature);
+      instance.verifySignature(tx, tx.senderPublicKey, tx.signature, VerificationType.ALL);
       expect(akttStub.calledOnce).to.be.true;
-      expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx);
+      expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx.type);
     });
 
     it('should call ed.verify', () => {
-      instance.verifySignature(tx, tx.senderPublicKey, tx.signature);
+      instance.verifySignature(tx, tx.senderPublicKey, tx.signature, VerificationType.ALL);
       expect(edStub.stubs.verify.calledOnce).to.be.true;
       expect(edStub.stubs.verify.firstCall.args[0]).to.be.deep.equal(theHash);
-      expect(edStub.stubs.verify.firstCall.args[1]).to.be.deep.equal(Buffer.from(tx.signature, 'hex'));
-      expect(edStub.stubs.verify.firstCall.args[2]).to.be.deep.equal(Buffer.from(tx.senderPublicKey, 'hex'));
+      expect(edStub.stubs.verify.firstCall.args[1]).to.be.deep.equal(tx.signature);
+      expect(edStub.stubs.verify.firstCall.args[2]).to.be.deep.equal(tx.senderPublicKey);
     });
-
-    it('should call getHash', () => {
-      instance.verifySignature(tx, tx.senderPublicKey, tx.signature);
-      expect(getHashStub.calledOnce).to.be.true;
-      expect(getHashStub.firstCall.args[0]).to.be.deep.equal(tx);
-      expect(getHashStub.firstCall.args[1]).to.be.equal(true);
-      expect(getHashStub.firstCall.args[2]).to.be.equal(true);
+    describe('verificationType', () => {
+      it ('should call getHash with false, false when VerificationType is ALL', () => {
+        instance.verifySignature(tx, tx.senderPublicKey, tx.signature, VerificationType.ALL);
+        expect(getHashStub.calledOnce).to.be.true;
+        expect(getHashStub.firstCall.args[0]).to.be.deep.equal(tx);
+        expect(getHashStub.firstCall.args[1]).to.be.equal(false);
+        expect(getHashStub.firstCall.args[2]).to.be.equal(false);
+      });
+      it ('should call getHash with false, true when VerificationType is SECOND_SIGNATURE', () => {
+        instance.verifySignature(tx, tx.senderPublicKey, tx.signature, VerificationType.SECOND_SIGNATURE);
+        expect(getHashStub.calledOnce).to.be.true;
+        expect(getHashStub.firstCall.args[0]).to.be.deep.equal(tx);
+        expect(getHashStub.firstCall.args[1]).to.be.equal(false);
+        expect(getHashStub.firstCall.args[2]).to.be.equal(true);
+      });
+      it ('should call getHash with true, true when VerificationType is SIGNATURE', () => {
+        instance.verifySignature(tx, tx.senderPublicKey, tx.signature, VerificationType.SIGNATURE);
+        expect(getHashStub.calledOnce).to.be.true;
+        expect(getHashStub.firstCall.args[0]).to.be.deep.equal(tx);
+        expect(getHashStub.firstCall.args[1]).to.be.equal(true);
+        expect(getHashStub.firstCall.args[2]).to.be.equal(true);
+      });
     });
     it('should call false if signature is null', () => {
-      expect(instance.verifySignature(tx, tx.senderPublicKey, null)).to.be.false;
+      expect(instance.verifySignature(tx, tx.senderPublicKey, null, VerificationType.ALL)).to.be.false;
     });
   });
 
@@ -899,9 +901,9 @@ describe('logic/transaction', () => {
       checkBalanceStub = sandbox.stub(instance, 'checkBalance').returns({ exceeded: false });
       // dependency stubs
       roundsLogicStub.stubs.calcRound.returns(1);
-      accountLogicStub.stubs.merge.resolves();
+      accountLogicStub.stubs.merge.returns([{op1: 'op'}]);
       // txType stub
-      txTypeApplyStub = sandbox.stub(sendTransaction, 'apply').resolves();
+      txTypeApplyStub = sandbox.stub(sendTransaction, 'apply').resolves([]);
     });
 
     it('should call ready', async () => {
@@ -961,24 +963,6 @@ describe('logic/transaction', () => {
       expect(txTypeApplyStub.firstCall.args[2]).to.be.deep.equal(sender);
     });
 
-    it('should rollback calling accountLogic.merge twice in case of error, then throw', async () => {
-      txTypeApplyStub.rejects(new Error('applyError'));
-      await expect(instance.apply(tx as any, block, sender)).to.be.rejectedWith('applyError');
-      expect(accountLogicStub.stubs.merge.calledTwice).to.be.true;
-      expect(accountLogicStub.stubs.merge.firstCall.args[0]).to.be.equal(sender.address);
-      expect(accountLogicStub.stubs.merge.firstCall.args[1]).to.be.deep.equal({
-        balance: -108910891000010,
-        blockId: '13191140260435645922',
-        round  : 1,
-      });
-
-      expect(accountLogicStub.stubs.merge.secondCall.args[0]).to.be.equal(sender.address);
-      expect(accountLogicStub.stubs.merge.secondCall.args[1]).to.be.deep.equal({
-        balance: 108910891000010,
-        blockId: '13191140260435645922',
-        round  : 1,
-      });
-    });
   });
 
   describe('undo', () => {
@@ -987,9 +971,9 @@ describe('logic/transaction', () => {
     beforeEach(() => {
       // dependency stubs
       roundsLogicStub.stubs.calcRound.returns(1);
-      accountLogicStub.stubs.merge.resolves(sender);
+      accountLogicStub.stubs.merge.returns([]);
       // txType stub
-      txTypeUndoStub = sandbox.stub(sendTransaction, 'undo').resolves();
+      txTypeUndoStub = sandbox.stub(sendTransaction, 'undo').resolves([]);
     });
 
     it('should call logger.trace', async () => {
@@ -1022,24 +1006,6 @@ describe('logic/transaction', () => {
       expect(txTypeUndoStub.firstCall.args[2]).to.be.deep.equal(sender);
     });
 
-    it('should rollback calling accountLogic.merge in case of error, then throw', async () => {
-      txTypeUndoStub.rejects(new Error('undoError'));
-      await expect(instance.undo(tx as any, block, sender)).to.be.rejectedWith('undoError');
-      expect(accountLogicStub.stubs.merge.calledTwice).to.be.true;
-      expect(accountLogicStub.stubs.merge.firstCall.args[0]).to.be.equal(sender.address);
-      expect(accountLogicStub.stubs.merge.firstCall.args[1]).to.be.deep.equal({
-        balance: 108910891000010,
-        blockId: '13191140260435645922',
-        round  : 1,
-      });
-
-      expect(accountLogicStub.stubs.merge.secondCall.args[0]).to.be.equal(sender.address);
-      expect(accountLogicStub.stubs.merge.secondCall.args[1]).to.be.deep.equal({
-        balance: -108910891000010,
-        blockId: '13191140260435645922',
-        round  : 1,
-      });
-    });
   });
 
   describe('applyUnconfirmed', () => {
@@ -1051,9 +1017,9 @@ describe('logic/transaction', () => {
       checkBalanceStub = sandbox.stub(instance, 'checkBalance').returns({ exceeded: false });
       // dependency stubs
       roundsLogicStub.stubs.calcRound.returns(1);
-      accountLogicStub.stubs.merge.resolves();
+      accountLogicStub.stubs.merge.returns([]);
       // txType stub
-      txTypeApplyUnconfirmedStub = sandbox.stub(sendTransaction, 'applyUnconfirmed').resolves();
+      txTypeApplyUnconfirmedStub = sandbox.stub(sendTransaction, 'applyUnconfirmed').resolves([]);
     });
 
     it('should call checkBalance', async () => {
@@ -1087,20 +1053,6 @@ describe('logic/transaction', () => {
       expect(txTypeApplyUnconfirmedStub.firstCall.args[1]).to.be.deep.equal(sender);
     });
 
-    it('should rollback calling accountLogic.merge in case of error, then throw', async () => {
-      txTypeApplyUnconfirmedStub.rejects(new Error('applyUnconfirmedError'));
-      await expect(instance.applyUnconfirmed(tx as any, sender, requester)).to.be.rejectedWith('applyUnconfirmedError');
-      expect(accountLogicStub.stubs.merge.calledTwice).to.be.true;
-      expect(accountLogicStub.stubs.merge.firstCall.args[0]).to.be.equal(sender.address);
-      expect(accountLogicStub.stubs.merge.firstCall.args[1]).to.be.deep.equal({
-        u_balance: -108910891000010,
-      });
-
-      expect(accountLogicStub.stubs.merge.secondCall.args[0]).to.be.equal(sender.address);
-      expect(accountLogicStub.stubs.merge.secondCall.args[1]).to.be.deep.equal({
-        u_balance: 108910891000010,
-      });
-    });
   });
 
   describe('undoUnconfirmed', () => {
@@ -1109,9 +1061,9 @@ describe('logic/transaction', () => {
     beforeEach(() => {
       // dependency stubs
       roundsLogicStub.stubs.calcRound.returns(1);
-      accountLogicStub.stubs.merge.resolves(sender);
+      accountLogicStub.stubs.merge.returns([]);
       // txType stub
-      txTypeUndoUnconfirmedStub = sandbox.stub(sendTransaction, 'undoUnconfirmed').resolves();
+      txTypeUndoUnconfirmedStub = sandbox.stub(sendTransaction, 'undoUnconfirmed').resolves([]);
     });
 
     it('should call accountLogic.merge', async () => {
@@ -1130,20 +1082,6 @@ describe('logic/transaction', () => {
       expect(txTypeUndoUnconfirmedStub.firstCall.args[1]).to.be.deep.equal(sender);
     });
 
-    it('should rollback calling accountLogic.merge in case of error, then throw', async () => {
-      txTypeUndoUnconfirmedStub.rejects(new Error('undoUnconfirmedError'));
-      await expect(instance.undoUnconfirmed(tx as any, sender)).to.be.rejectedWith('undoUnconfirmedError');
-      expect(accountLogicStub.stubs.merge.calledTwice).to.be.true;
-      expect(accountLogicStub.stubs.merge.firstCall.args[0]).to.be.equal(sender.address);
-      expect(accountLogicStub.stubs.merge.firstCall.args[1]).to.be.deep.equal({
-        u_balance: 108910891000010,
-      });
-
-      expect(accountLogicStub.stubs.merge.secondCall.args[0]).to.be.equal(sender.address);
-      expect(accountLogicStub.stubs.merge.secondCall.args[1]).to.be.deep.equal({
-        u_balance: -108910891000010,
-      });
-    });
   });
 
   describe('dbSave', () => {
@@ -1159,7 +1097,7 @@ describe('logic/transaction', () => {
     it('should call assertKnownTransactionType', () => {
       instance.dbSave(tx as any);
       expect(akttStub.calledOnce).to.be.true;
-      expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx);
+      expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx.type);
     });
 
     it('should return an array', () => {
@@ -1180,39 +1118,24 @@ describe('logic/transaction', () => {
 
     it('should return the correct first object', () => {
       tx.requesterPublicKey = requester.publicKey;
-      const retVal          = instance.dbSave(tx as any);
-      expect(retVal[0]).to.be.deep.equal({
-        fields: [
-          'id',
-          'blockId',
-          'type',
-          'timestamp',
-          'senderPublicKey',
-          'requesterPublicKey',
-          'senderId',
-          'recipientId',
-          'amount',
-          'fee',
-          'signature',
-          'signSignature',
-          'signatures',
-        ],
-        table : 'trs',
-        values: {
-          amount            : tx.amount,
-          blockId           : (tx as any).blockId,
-          fee               : tx.fee,
-          id                : tx.id,
-          recipientId       : tx.recipientId || null,
-          requesterPublicKey: Buffer.from(tx.requesterPublicKey, 'hex'),
-          senderId          : tx.senderId,
-          senderPublicKey   : Buffer.from(tx.senderPublicKey, 'hex'),
-          signSignature     : null,
-          signature         : Buffer.from(tx.signature, 'hex'),
-          signatures        : tx.signatures ? tx.signatures.join(',') : null,
-          timestamp         : tx.timestamp,
-          type              : tx.type,
-        },
+      const retVal          = instance.dbSave({...tx, height: 100, blockId: '11'} as any);
+      expect(retVal[0].model).to.be.deep.eq(txModel);
+      expect(retVal[0].type).to.be.deep.eq('create');
+      expect((retVal[0] as DBCreateOp<any>).values).to.be.deep.eq({
+        amount            : tx.amount,
+        blockId           : '11',
+        fee               : tx.fee,
+        height            : 100,
+        id                : tx.id,
+        recipientId       : tx.recipientId || null,
+        requesterPublicKey: tx.requesterPublicKey,
+        senderId          : tx.senderId,
+        senderPublicKey   : tx.senderPublicKey,
+        signSignature     : null,
+        signature         : tx.signature,
+        signatures        : tx.signatures ? tx.signatures.join(',') : null,
+        timestamp         : tx.timestamp,
+        type              : tx.type,
       });
     });
   });
@@ -1230,7 +1153,7 @@ describe('logic/transaction', () => {
     it('should call assertKnownTransactionType', async () => {
       await instance.afterSave(tx);
       expect(akttStub.calledOnce).to.be.true;
-      expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx);
+      expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx.type);
     });
 
     it('should call afterSave from the txType and return the result of execution', async () => {
@@ -1253,9 +1176,9 @@ describe('logic/transaction', () => {
     });
 
     it('should call assertKnownTransactionType', () => {
-      instance.objectNormalize(tx);
+      instance.objectNormalize({ ... tx, blockId: '10'});
       expect(akttStub.calledOnce).to.be.true;
-      expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx);
+      expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx.type);
     });
 
     it('should remove nulls and undefined', () => {
@@ -1355,7 +1278,7 @@ describe('logic/transaction', () => {
         instance.dbRead(raw);
       }).to.throw();
       expect(akttStub.calledOnce).to.be.true;
-      expect(akttStub.firstCall.args[0]).to.be.deep.equal(convertedTx);
+      expect(akttStub.firstCall.args[0]).to.be.deep.equal(convertedTx.type);
     });
 
     it('should call dbRead from the txType', () => {
@@ -1372,17 +1295,4 @@ describe('logic/transaction', () => {
     });
   });
 
-  describe('restoreAsset', () => {
-    it('should throw if tx is not valid type', async () => {
-      await expect(instance.restoreAsset({type: 102} as any))
-        .to.be.rejectedWith('Unknown transaction type 102');
-    });
-    it('should delegate asset restore to type implementation', async () => {
-      const stub = sandbox.stub(sendTransaction, 'restoreAsset').returns('meow');
-      expect(await instance.restoreAsset({type: TransactionType.SEND} as any))
-        .to.be.eq('meow');
-
-      expect(stub.calledWith({type: TransactionType.SEND})).is.true;
-    });
-  });
 });

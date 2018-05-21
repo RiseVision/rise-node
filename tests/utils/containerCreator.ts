@@ -51,6 +51,9 @@ export const createContainer = (): Container => {
     .toConstantValue(require(`${__dirname}/../integration/config.json`));
   container.bind(Symbols.generic.genesisBlock)
     .toConstantValue(require(`${__dirname}/../integration/genesisBlock.json`));
+  const genesis = container.get(Symbols.generic.genesisBlock)
+  genesis.generatorPublicKey = Buffer.from(genesis.generatorPublicKey, 'hex');
+
   container.bind(Symbols.generic.socketIO).to(SocketIOStub).inSingletonScope();
   container.bind(Symbols.generic.zschema).to(ZSchemaStub).inSingletonScope();
   container.bind(Symbols.generic.sequelize).toConstantValue(new Sequelize({

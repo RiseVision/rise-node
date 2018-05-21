@@ -4,7 +4,17 @@ import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
-import { BigNum, constants, Ed, ExceptionsList, ExceptionsManager, IKeypair, ILogger, Slots } from '../helpers/';
+import {
+  BigNum,
+  catchToLoggerAndRemapError,
+  constants,
+  Ed,
+  ExceptionsList,
+  ExceptionsManager,
+  IKeypair,
+  ILogger,
+  Slots
+} from '../helpers/';
 import { RunThroughExceptions } from '../helpers/decorators/exceptions';
 import { IAccountLogic, IRoundsLogic, ITransactionLogic, VerificationType } from '../ioc/interfaces/logic/';
 import { Symbols } from '../ioc/symbols';
@@ -191,12 +201,8 @@ export class TransactionLogic implements ITransactionLogic {
    * @returns {Promise<number>}
    */
   public async countById(tx: IBaseTransaction<any>): Promise<number> {
-    try {
-      return await this.TransactionsModel.count({ where: { id: tx.id } });
-    } catch (e) {
-      this.logger.error(e.stack);
-      throw new Error('Transaction#countById error');
-    }
+    return await this.TransactionsModel.count({ where: { id: tx.id } })
+      .catch(catchToLoggerAndRemapError('Transaction#countById error', this.logger));
   }
 
   /**
@@ -443,7 +449,6 @@ export class TransactionLogic implements ITransactionLogic {
       sender : sender.address,
     });
     const ops = this.accountLogic.merge(sender.address, {
-      address: sender.address,
       balance: -amountNumber,
       blockId: block.id,
       round  : this.roundsLogic.calcRound(block.height),
