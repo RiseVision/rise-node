@@ -46,8 +46,6 @@ describe('modules/multisignatures', () => {
   before(() => {
     container = createContainer();
     container.rebind(Symbols.modules.multisignatures).to(MultisignaturesModule).inSingletonScope();
-    // Txs
-    container.bind(Symbols.logic.transactions.createmultisig).to(MultiSignatureTransaction).inSingletonScope();
 
   });
 
@@ -72,9 +70,9 @@ describe('modules/multisignatures', () => {
       id             : '8139741256612355994',
       recipientId    : '15256762582730568272R',
       senderId       : '1233456789012345R',
-      senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
-      signature      : 'f8fbf9b8433bf1bbea971dc8b14c6772d33c7dd285d84c5e6c984b10c4141e9f' +
-      'a56ace902b910e05e98b55898d982b3d5b9bf8bd897083a7d1ca1d5028703e03',
+      senderPublicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+      signature      : Buffer.from('f8fbf9b8433bf1bbea971dc8b14c6772d33c7dd285d84c5e6c984b10c4141e9f' +
+      'a56ace902b910e05e98b55898d982b3d5b9bf8bd897083a7d1ca1d5028703e03', 'hex'),
       timestamp      : 0,
       type           : TransactionType.MULTI,
     };
@@ -83,7 +81,10 @@ describe('modules/multisignatures', () => {
     sender    = {
       address  : '1233456789012345R',
       balance  : 10000000,
-      publicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
+      publicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+      isMultisignature() {
+        return true;
+      },
     };
   });
 
@@ -213,7 +214,7 @@ describe('modules/multisignatures', () => {
     beforeEach(() => {
       accountsModuleStub.stubs.getAccount.resolves(sender);
       transactionLogicStub.stubs.verifySignature.returns(true);
-      existingSigner         = tx.senderPublicKey.split('').reverse().join('');
+      existingSigner         = tx.senderPublicKey.toString('hex').split('').reverse().join('');
       sender.multisignatures = [existingSigner];
     });
 
@@ -230,12 +231,12 @@ describe('modules/multisignatures', () => {
     });
 
     it('should add the senderPublicKey to tx.multisignatures if tx.requesterPublicKey', async () => {
-      tx.requesterPublicKey = 'pubkey';
+      tx.requesterPublicKey = Buffer.from('pubkey');
       await (instance as any).processNormalTxSignature(tx, signature);
       expect(Array.isArray(sender.multisignatures)).to.be.true;
       expect(sender.multisignatures.length).to.be.equal(2);
       expect(sender.multisignatures[0]).to.be.equal(existingSigner);
-      expect(sender.multisignatures[1]).to.be.equal(tx.senderPublicKey);
+      expect(sender.multisignatures[1]).to.be.equal(tx.senderPublicKey.toString('hex'));
     });
 
     it('should throw if passed signature is already in tx.signatures', async () => {
@@ -245,24 +246,24 @@ describe('modules/multisignatures', () => {
     });
 
     it('should call transactionLogic.verifySignature until publicKey that verifies is found', async () => {
-      tx.requesterPublicKey = 'reqPubKey';
+      tx.requesterPublicKey = Buffer.from('reqPubKey');
       // In this case, tx.senderpublicKey verifies the passed signature
       transactionLogicStub.reset();
       transactionLogicStub.stubs.verifySignature.onCall(0).returns(false);
       transactionLogicStub.stubs.verifySignature.onCall(1).returns(false);
       transactionLogicStub.stubs.verifySignature.onCall(2).returns(true);
-      sender.multisignatures = ['doesnotVerify1', 'doesnotVerify2']; // tx.senderPublicKey is added...
+      sender.multisignatures = ['aa', 'bb']; // tx.senderPublicKey is added...
       await (instance as any).processNormalTxSignature(tx, signature);
       expect(transactionLogicStub.stubs.verifySignature.callCount).to.be.equal(3);
       expect(transactionLogicStub.stubs.verifySignature.getCall(0).args[0]).to.be.deep.equal(tx);
-      expect(transactionLogicStub.stubs.verifySignature.getCall(0).args[1]).to.be.deep.equal(sender.multisignatures[0]);
-      expect(transactionLogicStub.stubs.verifySignature.getCall(0).args[2]).to.be.deep.equal(signature);
+      expect(transactionLogicStub.stubs.verifySignature.getCall(0).args[1]).to.be.deep.equal(Buffer.from(sender.multisignatures[0], 'hex'));
+      expect(transactionLogicStub.stubs.verifySignature.getCall(0).args[2]).to.be.deep.equal(Buffer.from(signature, 'hex'));
       expect(transactionLogicStub.stubs.verifySignature.getCall(1).args[0]).to.be.deep.equal(tx);
-      expect(transactionLogicStub.stubs.verifySignature.getCall(1).args[1]).to.be.deep.equal(sender.multisignatures[1]);
-      expect(transactionLogicStub.stubs.verifySignature.getCall(1).args[2]).to.be.deep.equal(signature);
+      expect(transactionLogicStub.stubs.verifySignature.getCall(1).args[1]).to.be.deep.equal(Buffer.from(sender.multisignatures[1], 'hex'));
+      expect(transactionLogicStub.stubs.verifySignature.getCall(1).args[2]).to.be.deep.equal(Buffer.from(signature, 'hex'));
       expect(transactionLogicStub.stubs.verifySignature.getCall(2).args[0]).to.be.deep.equal(tx);
       expect(transactionLogicStub.stubs.verifySignature.getCall(2).args[1]).to.be.deep.equal(tx.senderPublicKey);
-      expect(transactionLogicStub.stubs.verifySignature.getCall(2).args[2]).to.be.deep.equal(signature);
+      expect(transactionLogicStub.stubs.verifySignature.getCall(2).args[2]).to.be.deep.equal(Buffer.from(signature, 'hex'));
     });
 
     it('should throw if no publicKey verifying the signature is found', async () => {
@@ -305,16 +306,16 @@ describe('modules/multisignatures', () => {
       transactionLogicStub.reset();
       transactionLogicStub.stubs.verifySignature.onCall(0).returns(false);
       transactionLogicStub.stubs.verifySignature.onCall(1).returns(true);
-      tx.asset.multisignature.keysgroup = ['doesnotVerify', 'verifies'];
+      tx.asset.multisignature.keysgroup = ['+aa', '+bb'];
       await (instance as any).processMultiSigSignature(tx, signature);
       expect(transactionLogicStub.stubs.verifySignature.callCount).to.be.equal(2);
       expect(transactionLogicStub.stubs.verifySignature.getCall(0).args[0]).to.be.deep.equal(tx);
       expect(transactionLogicStub.stubs.verifySignature.getCall(0).args[1]).to.be.deep
-        .equal(tx.asset.multisignature.keysgroup[0].substring(1));
+        .equal(Buffer.from(tx.asset.multisignature.keysgroup[0].substring(1), 'hex'));
       expect(transactionLogicStub.stubs.verifySignature.getCall(0).args[2]).to.be.deep.equal(signature);
       expect(transactionLogicStub.stubs.verifySignature.getCall(1).args[0]).to.be.deep.equal(tx);
       expect(transactionLogicStub.stubs.verifySignature.getCall(1).args[1]).to.be.deep
-        .equal(tx.asset.multisignature.keysgroup[1].substring(1));
+        .equal(Buffer.from(tx.asset.multisignature.keysgroup[1].substring(1), 'hex'));
       expect(transactionLogicStub.stubs.verifySignature.getCall(1).args[2]).to.be.deep.equal(signature);
     });
 
@@ -327,4 +328,5 @@ describe('modules/multisignatures', () => {
         .rejectedWith('Failed to verify signature');
     });
   });
+
 });

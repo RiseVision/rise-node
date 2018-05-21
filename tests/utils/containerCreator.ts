@@ -38,7 +38,7 @@ import SocketIOStub from '../stubs/utils/SocketIOStub';
 import {
   AccountsModel, BlocksModel, DelegatesModel, SignaturesModel, TransactionsModel, MultiSignaturesModel,
   VotesModel, Accounts2DelegatesModel, Accounts2MultisignaturesModel, Accounts2U_DelegatesModel,
-  Accounts2U_MultisignaturesModel, RoundsModel, ForksStatsModel
+  Accounts2U_MultisignaturesModel, RoundsModel, ForksStatsModel, PeersModel
 } from '../../src/models';
 import { Sequelize } from 'sequelize-typescript';
 import { TransactionsModelStub } from '../stubs/models/TransactionsModelStub';
@@ -130,6 +130,7 @@ export const createContainer = (): Container => {
   container.bind(Symbols.models.accounts2Multisignatures).toConstructor(Accounts2MultisignaturesModel);
   container.bind(Symbols.models.accounts2U_Delegates).toConstructor(Accounts2U_DelegatesModel);
   container.bind(Symbols.models.accounts2U_Multisignatures).toConstructor(Accounts2U_MultisignaturesModel);
+  container.bind(Symbols.models.peers).toConstructor(PeersModel);
   container.bind(Symbols.models.rounds).toConstructor(RoundsModel);
   container.bind(Symbols.models.votes).toConstructor(VotesModel);
   container.bind(Symbols.models.signatures).toConstructor(SignaturesModel);
@@ -146,6 +147,6 @@ export const createContainer = (): Container => {
   const sequelize = container.get<Sequelize>(Symbols.generic.sequelize);
   sequelize.addModels([
     AccountsModel, BlocksModel, Accounts2DelegatesModel, Accounts2U_DelegatesModel, Accounts2MultisignaturesModel,
-    Accounts2U_MultisignaturesModel, ForksStatsModel, RoundsModel, TransactionsModel, MultiSignaturesModel, DelegatesModel, SignaturesModel, VotesModel]);
+    Accounts2U_MultisignaturesModel, ForksStatsModel, PeersModel, RoundsModel, TransactionsModel, MultiSignaturesModel, DelegatesModel, SignaturesModel, VotesModel]);
   return container;
 };

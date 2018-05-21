@@ -13,6 +13,7 @@ import DbStub from '../../stubs/helpers/DbStub';
 import LoggerStub from '../../stubs/helpers/LoggerStub';
 import { createContainer } from '../../utils/containerCreator';
 import { createFakePeer, createFakePeers } from '../../utils/fakePeersFactory';
+import { PeersModel } from '../../../src/models';
 
 // tslint:disable no-unused-expression
 describe('modules/peers', () => {
@@ -25,13 +26,18 @@ describe('modules/peers', () => {
       list: [{ ip: '1.2.3.4', port: 1111 }, { ip: '5.6.7.8', port: 2222 }],
     },
   };
+  let sandbox: SinonSandbox;
   beforeEach(() => {
+    sandbox                = sinon.sandbox.create();
     container = createContainer();
     container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
     container.rebind(Symbols.modules.peers).to(PeersModule);
     inst = instR = container.get(Symbols.modules.peers);
     peersLogicStub = container.get(Symbols.logic.peers);
   });
+  afterEach(() => {
+    sandbox.restore();
+  })
   describe('.update', () => {
     beforeEach(() => {
       peersLogicStub.enqueueResponse('upsert', false);
@@ -288,45 +294,51 @@ describe('modules/peers', () => {
   // NON interface tests
 
   describe('.cleanup', () => {
+    let truncateStub: SinonStub;
+    let bulkCreateStub: SinonStub;
+    let rollbackStub: SinonStub;
+    beforeEach(() => {
+      const peersModel = container.get<any>(Symbols.models.peers);
+      truncateStub = sandbox.stub(peersModel, 'truncate');
+      bulkCreateStub = sandbox.stub(peersModel, 'bulkCreate');
+      rollbackStub = sandbox.stub().resolves();
+      sandbox.stub(peersModel.sequelize, 'transaction').resolves({'tx':'tx',
+        commit() { return Promise.resolve()},
+        rollback() { return rollbackStub();},
+      });
+    });
     it('should not save anything if no peers known', async () => {
-      const dbStub = container.get<DbStub>(Symbols.generic.db);
       peersLogicStub.enqueueResponse('list', []);
       await inst.cleanup();
-      expect(dbStub.stubs.tx.called).is.false;
+      expect(bulkCreateStub.called).is.false;
+      expect(truncateStub.called).is.false;
     });
     it('should save peers to database with single tx after cleaning peers table', async () => {
-      const dbStub = container.get<DbStub>(Symbols.generic.db);
       const loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
-      const taskStub = {
-        batch: sinon.stub(),
-        none: sinon.stub(),
-      };
-      dbStub.stubs.tx.callsArgWith(0, taskStub).returns(Promise.resolve());
       const fakePeers = [createFakePeer(), createFakePeer()];
       peersLogicStub.enqueueResponse('list', fakePeers);
       await inst.cleanup();
-      expect(dbStub.stubs.tx.called).is.true;
-      expect(taskStub.batch.called).is.true;
-      expect(taskStub.none.firstCall.args[0]).to.be.eq('DELETE FROM peers');
-      expect(taskStub.none.secondCall.args[0]).to.contain(fakePeers[0].ip);
-      expect(taskStub.none.secondCall.args[0]).to.contain(fakePeers[1].ip);
+      expect(truncateStub.called).is.true;
+      expect(bulkCreateStub.called).is.true;
+      expect(truncateStub.calledBefore(bulkCreateStub)).is.true;
+      expect(bulkCreateStub.firstCall.args[0]).to.be.deep.eq(fakePeers.map((p) => ({...p, broadhash: Buffer.from(p.broadhash, 'hex')})));
       expect(loggerStub.stubs.info.calledOnce).to.be.true;
       expect(loggerStub.stubs.info.firstCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal('Peers exported to database');
+      expect(rollbackStub.called).is.false;
     });
     it('should throw error if db query was rejected', async () => {
-      const error = new Error('error');
-      const dbStub     = container.get<DbStub>(Symbols.generic.db);
       const loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
-      dbStub.stubs.tx.rejects(error);
-      const fakePeers = [createFakePeer(), createFakePeer()];
-      peersLogicStub.enqueueResponse('list', fakePeers);
+      bulkCreateStub.rejects(new Error('error'));
+      peersLogicStub.enqueueResponse('list', [createFakePeer()]);
       await inst.cleanup();
       expect(loggerStub.stubs.error.calledOnce).to.be.true;
       expect(loggerStub.stubs.error.firstCall.args.length).to.be.equal(2);
       expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal('Export peers to database failed');
       expect(loggerStub.stubs.error.firstCall.args[1]).to.be.deep.equal({error: 'error'});
+      expect(rollbackStub.called).is.true;
     });
+
   });
 
   describe('.onBlockchainReady', () => {
@@ -334,12 +346,12 @@ describe('modules/peers', () => {
     let busStub: BusStub;
     let loggerStub: LoggerStub;
     let oldEnv: string;
+    let peersModel: typeof PeersModel;
+    let findAllStub: SinonStub;
     beforeEach(() => {
       oldEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 't';
       pingStub = sinon.stub().returns(Promise.resolve());
-      const dbStub = container.get<DbStub>(Symbols.generic.db);
-      dbStub.enqueueResponse('any', ['a']);
       peersLogicStub.enqueueResponse('create', {pingAndUpdate: pingStub});
       peersLogicStub.enqueueResponse('create', {pingAndUpdate: pingStub});
       peersLogicStub.enqueueResponse('create', {pingAndUpdate: pingStub});
@@ -347,11 +359,14 @@ describe('modules/peers', () => {
 
       loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
       busStub = container.get<BusStub>(Symbols.helpers.bus);
+      peersModel = container.get(Symbols.models.peers);
+      findAllStub = sandbox.stub(peersModel, 'findAll').resolves(['fromDb'])
       busStub.enqueueResponse('message', '');
     });
     afterEach(() => {
       process.env.NODE_ENV = oldEnv;
     });
+
     it('should load peers from db and config and call pingUpdate on all of them', async () => {
       await instR.onBlockchainReady();
       expect(pingStub.callCount).to.be.eq(3);
@@ -374,9 +389,7 @@ describe('modules/peers', () => {
     });
     it('should call logger.error if db query was throw error', async () => {
       const error = new Error('errors');
-      const dbStub         = container.get<DbStub>(Symbols.generic.db);
-      dbStub.reset();
-      dbStub.enqueueResponse('any', Promise.reject(error));
+      findAllStub.rejects(error);
       await instR.onBlockchainReady();
       expect(loggerStub.stubs.error.calledOnce).to.be.true;
       expect(loggerStub.stubs.error.firstCall.args.length).to.be.equal(2);
@@ -407,5 +420,7 @@ describe('modules/peers', () => {
         updated: 0,
       });
     });
+
   });
+
 });
