@@ -1,15 +1,17 @@
 'use strict';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import {Container} from 'inversify';
+import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
 import { TransactionType } from '../../../../src/helpers';
-import {Symbols} from '../../../../src/ioc/symbols';
+import { Symbols } from '../../../../src/ioc/symbols';
 import { SecondSignatureTransaction } from '../../../../src/logic/transactions';
 import secondSignatureSchema from '../../../../src/schema/logic/transactions/secondSignature';
 import { AccountsModuleStub, SystemModuleStub } from '../../../stubs';
 import { createContainer } from '../../../utils/containerCreator';
+import { DBUpdateOp } from '../../../../src/types/genericTypes';
+import { AccountsModel, SignaturesModel } from '../../../../src/models';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -22,6 +24,8 @@ describe('logic/transactions/secondSignature', () => {
   let systemModuleStub: SystemModuleStub;
   let container: Container;
   let instance: SecondSignatureTransaction;
+  let accountsModel: typeof AccountsModel;
+  let signaturesModel: typeof SignaturesModel;
   let tx: any;
   let sender: any;
   let block: any;
@@ -36,6 +40,8 @@ describe('logic/transactions/secondSignature', () => {
     accountsModuleStub = container.get(Symbols.modules.accounts);
     systemModuleStub   = container.get(Symbols.modules.system);
 
+    accountsModel = container.get(Symbols.models.accounts);
+    signaturesModel = container.get(Symbols.models.signatures);
     tx = {
       amount         : 0,
       asset          : {
@@ -46,9 +52,9 @@ describe('logic/transactions/secondSignature', () => {
       fee            : 10,
       id             : '8139741256612355994',
       senderId       : '1233456789012345R',
-      senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
-      signature      : '0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
-      'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2',
+      senderPublicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+      signature      : Buffer.from('0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
+        'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2', 'hex'),
       timestamp      : 0,
       type           : TransactionType.SIGNATURE,
     };
@@ -56,21 +62,23 @@ describe('logic/transactions/secondSignature', () => {
     sender = {
       address  : '1233456789012345R',
       balance  : 10000000,
-      publicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
+      publicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+      isMultisignatures() {
+        return false;
+      },
     };
 
     block = {
       height: 8797,
       id    : '13191140260435645922',
     };
+    container.rebind(Symbols.logic.transactions.secondSignature)
+      .to(SecondSignatureTransaction).inSingletonScope();
 
-    instance = new SecondSignatureTransaction();
+    instance = container.get(Symbols.logic.transactions.secondSignature);
+    (instance as any).schema = zSchemaStub;
 
-    (instance as any).schema         = zSchemaStub;
-    (instance as any).accountsModule = accountsModuleStub;
-    (instance as any).systemModule   = systemModuleStub;
-
-    systemModuleStub.stubs.getFees.returns({ fees: { secondsignature: 1000 } });
+    systemModuleStub.stubs.getFees.returns({fees: {secondsignature: 1000}});
   });
 
   afterEach(() => {
@@ -134,60 +142,54 @@ describe('logic/transactions/secondSignature', () => {
       await expect(instance.verify(tx, sender)).to.be.rejectedWith('Invalid public key');
       expect(zSchemaStub.validate.calledOnce).to.be.true;
       expect(zSchemaStub.validate.firstCall.args[0]).to.be.equal(tx.asset.signature.publicKey);
-      expect(zSchemaStub.validate.firstCall.args[1]).to.be.deep.equal({ format: 'publicKey' });
+      expect(zSchemaStub.validate.firstCall.args[1]).to.be.deep.equal({format: 'publicKey'});
     });
   });
 
   describe('apply', () => {
-    beforeEach(() => {
-      accountsModuleStub.stubs.setAccountAndGet.resolves();
-    });
+    it('should return an update operation with proper data', async () => {
+      const ops = await instance.apply(tx, block, sender);
+      expect(ops.length).is.eq(1);
 
-    it('should call accountsModule.setAccountAndGet and return a promise', async () => {
-      const retVal = instance.apply(tx, block, sender);
-      expect(retVal).to.be.instanceOf(Promise);
-      await retVal;
-      expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.be.deep.equal({
-        address          : sender.address,
-        secondPublicKey  : tx.asset.signature.publicKey,
-        secondSignature  : 1,
+      const op = ops[0] as DBUpdateOp<any>;
+      expect(op.type).eq('update');
+      expect(op.model).deep.eq(accountsModel);
+      expect(op.options).deep.eq({ where: { address: sender.address }});
+      expect(op.values).deep.eq({
+        secondPublicKey: Buffer.from(tx.asset.signature.publicKey, 'hex'),
+        secondSignature: 1,
         u_secondSignature: 0,
       });
     });
   });
 
   describe('undo', () => {
-    beforeEach(() => {
-      accountsModuleStub.stubs.setAccountAndGet.resolves();
-    });
+    it('should return an update operation with proper data', async () => {
+      const ops = await instance.undo(tx, block, sender);
+      expect(ops.length).is.eq(1);
 
-    it('should call accountsModule.setAccountAndGet and return a promise', async () => {
-      const retVal = instance.undo(tx, block, sender);
-      expect(retVal).to.be.instanceOf(Promise);
-      await retVal;
-      expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.be.deep.equal({
-        address          : sender.address,
-        secondPublicKey  : null,
-        secondSignature  : 0,
+      const op = ops[0] as DBUpdateOp<any>;
+      expect(op.type).eq('update');
+      expect(op.model).deep.eq(accountsModel);
+      expect(op.options).deep.eq({ where: { address: sender.address }});
+      expect(op.values).deep.eq({
+        secondPublicKey: null,
+        secondSignature: 0,
         u_secondSignature: 1,
       });
     });
   });
 
   describe('applyUnconfirmed', () => {
-    beforeEach(() => {
-      accountsModuleStub.stubs.setAccountAndGet.resolves();
-    });
+    it('should return an update operation with proper data', async () => {
+      const ops = await instance.applyUnconfirmed(tx, sender);
+      expect(ops.length).is.eq(1);
 
-    it('should call accountsModule.setAccountAndGet and return a promise', async () => {
-      const retVal = instance.applyUnconfirmed(tx, sender);
-      expect(retVal).to.be.instanceOf(Promise);
-      await retVal;
-      expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.be.deep.equal({
-        address          : sender.address,
+      const op = ops[0] as DBUpdateOp<any>;
+      expect(op.type).eq('update');
+      expect(op.model).deep.eq(accountsModel);
+      expect(op.options).deep.eq({ where: { address: sender.address }});
+      expect(op.values).deep.eq({
         u_secondSignature: 1,
       });
     });
@@ -204,17 +206,15 @@ describe('logic/transactions/secondSignature', () => {
   });
 
   describe('undoUnconfirmed', () => {
-    beforeEach(() => {
-      accountsModuleStub.stubs.setAccountAndGet.resolves();
-    });
+    it('should return an update operation with proper data', async () => {
+      const ops = await instance.undoUnconfirmed(tx, sender);
+      expect(ops.length).is.eq(1);
 
-    it('should call accountsModule.setAccountAndGet and return a promise', async () => {
-      const retVal = instance.undoUnconfirmed(tx, sender);
-      expect(retVal).to.be.instanceOf(Promise);
-      await retVal;
-      expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.be.deep.equal({
-        address          : sender.address,
+      const op = ops[0] as DBUpdateOp<any>;
+      expect(op.type).eq('update');
+      expect(op.model).deep.eq(accountsModel);
+      expect(op.options).deep.eq({where: {address: sender.address}});
+      expect(op.values).deep.eq({
         u_secondSignature: 0,
       });
     });
@@ -272,16 +272,14 @@ describe('logic/transactions/secondSignature', () => {
   });
 
   describe('dbSave', () => {
-    it('should return the expected object', () => {
-      expect(instance.dbSave(tx)).to.be.deep.equal({
-        fields: ['publicKey', 'transactionId'],
-        table : 'signatures',
-        values: {
-          publicKey    : Buffer.from(tx.asset.signature.publicKey, 'hex'),
-          transactionId: tx.id,
-        },
-        }
-      );
+    it('should return the expected dbcreateop', () => {
+      const op = instance.dbSave(tx);
+      expect(op.type).eq('create');
+      expect(op.model).deep.eq(signaturesModel);
+      expect((op as any).values).deep.eq({
+        publicKey    : Buffer.from(tx.asset.signature.publicKey, 'hex'),
+        transactionId: tx.id,
+      });
     });
   });
 });

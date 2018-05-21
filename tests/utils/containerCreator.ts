@@ -42,7 +42,11 @@ import {
 } from '../../src/models';
 import { Sequelize } from 'sequelize-typescript';
 import { TransactionsModelStub } from '../stubs/models/TransactionsModelStub';
-import { MultiSignatureTransaction, RegisterDelegateTransaction } from '../../src/logic/transactions';
+import {
+  MultiSignatureTransaction,
+  RegisterDelegateTransaction,
+  SecondSignatureTransaction
+} from '../../src/logic/transactions';
 
 export const createContainer = (): Container => {
   const container = new Container();
@@ -132,6 +136,7 @@ export const createContainer = (): Container => {
   // TRansactions
   container.bind(Symbols.logic.transactions.createmultisig).to(MultiSignatureTransaction).inSingletonScope();
   container.bind(Symbols.logic.transactions.delegate).to(RegisterDelegateTransaction).inSingletonScope();
+  container.bind(Symbols.logic.transactions.secondSignature).to(SecondSignatureTransaction).inSingletonScope();
 
   const sequelize = container.get<Sequelize>(Symbols.generic.sequelize);
   sequelize.addModels([
