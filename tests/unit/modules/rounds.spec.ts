@@ -38,7 +38,6 @@ describe('modules/rounds', () => {
   let accountsModuleStub: AccountsModuleStub;
   let loggerStub: LoggerStub;
   let slotsStub: SlotsStub;
-  let dbStub: DbStub;
   let busStub: BusStub;
   let socketIOStub: SocketIOStub;
   let appStateStub: AppStateStub;
@@ -72,7 +71,6 @@ describe('modules/rounds', () => {
     accountsModuleStub  = container.get(Symbols.modules.accounts);
     loggerStub          = container.get(Symbols.helpers.logger);
     slotsStub           = container.get(Symbols.helpers.slots);
-    dbStub              = container.get(Symbols.generic.db);
     busStub             = container.get(Symbols.helpers.bus);
     socketIOStub        = container.get(Symbols.generic.socketIO);
     appStateStub        = container.get(Symbols.logic.appState);
@@ -89,13 +87,18 @@ describe('modules/rounds', () => {
         generatorPublicKey: block.generatorPublicKey,
         height            : block.height,
         id                : block.id,
-      },
+      } as any,
       finishRound   : false,
       library       : {
         logger: {} as any,
       },
       modules       : {
         accounts: {} as any,
+      },
+      models: {
+        AccountsModel: container.get(Symbols.models.accounts),
+        BlocksModel: container.get(Symbols.models.blocks),
+        RoundsModel: container.get(Symbols.models.rounds),
       },
       round         : 12,
       roundDelegates: [],
@@ -105,7 +108,7 @@ describe('modules/rounds', () => {
     };
     innerTickStub   = sandbox.stub(instance as any, 'innerTick');
     // Expose the passed txGenerator so we can test it
-    innerTickStub.callsFake((blk, backwards, txGen, afterTx = () => Promise.resolve(null)) => {
+    innerTickStub.callsFake((blk, transaction, backwards, txGen, afterTx = () => Promise.resolve(null)) => {
       txGenerator    = txGen;
       afterTxPromise = afterTx;
       return Promise.resolve('innerTick DONE');
@@ -158,54 +161,33 @@ describe('modules/rounds', () => {
     });
   });
 
-  describe('flush', () => {
-    it('should call db.none', async () => {
-      dbStub.stubs.none.resolves();
-      await instance.flush(99);
-      expect(dbStub.stubs.none.calledOnce).to.be.true;
-      expect(dbStub.stubs.none.firstCall.args[0]).to.be.deep.equal(sql.flush);
-      expect(dbStub.stubs.none.firstCall.args[1]).to.be.deep.equal({ round: 99 });
-    });
-
-    it('should return from db.none', async () => {
-      dbStub.stubs.none.resolves('expectedRetVal');
-      const retVal = await instance.flush(99);
-      expect(retVal).to.be.equal('expectedRetVal');
-    });
-
-    it('should call logger.error if db.none throws', async () => {
-      const expectedError = new Error('test');
-      dbStub.stubs.none.rejects(expectedError);
-      await expect(instance.flush(99)).to.be.rejected;
-      expect(loggerStub.stubs.error.calledOnce).to.be.true;
-      expect(loggerStub.stubs.error.firstCall.args[0]).to.be.deep.equal(expectedError.stack);
-    });
-
-    it('should reject if db.none throws', async () => {
-      dbStub.stubs.none.rejects(new Error('test'));
-      await expect(instance.flush(99)).to.be.rejectedWith('Rounds#flush error');
-    });
-  });
-
   describe('backwardTick', () => {
     it('should call innerTick', async () => {
-      await instance.backwardTick(block, previousBlock);
+      await instance.backwardTick(block as any, previousBlock, {transaction: 'tx'} as any);
       expect(innerTickStub.calledOnce).to.be.true;
       expect(innerTickStub.firstCall.args[0]).to.be.deep.equal(block);
-      expect(innerTickStub.firstCall.args[1]).to.be.true;
-      expect(innerTickStub.firstCall.args[2]).to.be.a('function');
+      expect(innerTickStub.firstCall.args[1]).to.be.deep.eq({transaction: 'tx'});
+      expect(innerTickStub.firstCall.args[2]).is.true;
+      expect(innerTickStub.firstCall.args[3]).to.be.a('function');
     });
 
     it('should return from innerTick', async () => {
-      const retVal = await instance.backwardTick(block, previousBlock);
+      const retVal = await instance.backwardTick(block as any , previousBlock, {transaction: 'tx'});
       expect(retVal).to.be.equal('innerTick DONE');
     });
 
     describe('in scoped txGenerator', () => {
+      let dbHelpersStub: DbStub;
+      beforeEach(() => {
+        roundLogicStub.stubs.mergeBlockGenerator.returns(['mergeBlockOp1', 'mergeBlockOp2']);
+        roundLogicStub.stubs.backwardLand.returns(['backwardLandOp1', 'backwardLandOp2']);
+        roundLogicStub.stubs.markBlockId.returns('markBlockIdOp');
+        dbHelpersStub = container.get(Symbols.helpers.db);
+        dbHelpersStub.enqueueResponse('performOps', Promise.resolve());
+      });
       const doCall = async () => {
-        await instance.backwardTick(block, previousBlock);
-        txGeneratorScoped = txGenerator(roundLogicScope);
-        return txGeneratorScoped('task');
+        await instance.backwardTick(block, previousBlock, 'tx');
+        return txGenerator(roundLogicScope);
       };
 
       it('should call logger.debug', async () => {
@@ -218,8 +200,7 @@ describe('modules/rounds', () => {
         await doCall();
         expect(roundLogicStubConstructorSpy.calledOnce).to.be.true;
         expect(roundLogicStubConstructorSpy.firstCall.args[0]).to.be.deep.equal(roundLogicScope);
-        expect(roundLogicStubConstructorSpy.firstCall.args[1]).to.be.equal('task');
-        expect(roundLogicStubConstructorSpy.firstCall.args[2]).to.be.deep.equal((instance as any).slots);
+        expect(roundLogicStubConstructorSpy.firstCall.args[1]).to.be.deep.equal((instance as any).slots);
       });
 
       it('should call roundLogic.mergeBlockGenerator', async () => {
@@ -231,6 +212,17 @@ describe('modules/rounds', () => {
         roundLogicScope.finishRound = true;
         await doCall();
         expect(roundLogicStub.stubs.backwardLand.calledOnce).to.be.true;
+
+        expect(dbHelpersStub.stubs.performOps.firstCall.args).to.be.deep.eq([
+          [
+            'mergeBlockOp1',
+            'mergeBlockOp2',
+            'backwardLandOp1',
+            'backwardLandOp2',
+            'markBlockIdOp',
+          ],
+          'tx',
+        ]);
       });
 
       it('should then not call backwardLand if passed scope.finishRound is false', async () => {
@@ -243,35 +235,51 @@ describe('modules/rounds', () => {
         await doCall();
         expect(roundLogicStub.stubs.markBlockId.calledOnce).to.be.true;
       });
+
+      it('should call performOps with correct data', async () => {
+        await doCall();
+        expect(dbHelpersStub.stubs.performOps.firstCall.args).to.be.deep.eq([
+          [
+            'mergeBlockOp1',
+            'mergeBlockOp2',
+            'markBlockIdOp',
+          ],
+          'tx',
+        ]);
+      });
     });
   });
 
   describe('tick', () => {
     it('should call innerTick', async () => {
-      await instance.tick(block);
+      await instance.tick(block, 'tx' as any);
       expect(innerTickStub.calledOnce).to.be.true;
       expect(innerTickStub.firstCall.args[0]).to.be.deep.equal(block);
-      expect(innerTickStub.firstCall.args[1]).to.be.false;
-      expect(innerTickStub.firstCall.args[2]).to.be.a('function');
+      expect(innerTickStub.firstCall.args[1]).to.be.eq('tx');
+      expect(innerTickStub.firstCall.args[2]).to.be.eq(false);
+      expect(innerTickStub.firstCall.args[3]).to.be.a('function');
     });
 
     it('should return from innerTick', async () => {
-      const retVal = await instance.tick(block);
+      const retVal = await instance.tick(block, 'tx' as any);
       expect(retVal).to.be.equal('innerTick DONE');
     });
 
     describe('in scoped txGenerator', () => {
       let getSnapshotRoundsStub: SinonStub;
       const doCall = async () => {
-        await instance.tick(block);
-        txGeneratorScoped = txGenerator(roundLogicScope);
-        return txGeneratorScoped('task');
+        await instance.tick(block, 'tx' as any);
+        return txGenerator(roundLogicScope);
       };
-
+      let dbHelpersStub: DbStub;
       beforeEach(() => {
         getSnapshotRoundsStub = sandbox.stub(instance as any, 'getSnapshotRounds').returns(0);
+        roundLogicStub.stubs.mergeBlockGenerator.returns(['mergeBlockOp1', 'mergeBlockOp2']);
+        roundLogicStub.stubs.backwardLand.returns(['backwardLandOp1', 'backwardLandOp2']);
+        roundLogicStub.stubs.markBlockId.returns('markBlockIdOp');
+        dbHelpersStub = container.get(Symbols.helpers.db);
+        dbHelpersStub.enqueueResponse('performOps', Promise.resolve());
       });
-
       it('should call logger.debug', async () => {
         await doCall();
         expect(loggerStub.stubs.debug.calledOnce).to.be.true;
@@ -282,8 +290,7 @@ describe('modules/rounds', () => {
         await doCall();
         expect(roundLogicStubConstructorSpy.calledOnce).to.be.true;
         expect(roundLogicStubConstructorSpy.firstCall.args[0]).to.be.deep.equal(roundLogicScope);
-        expect(roundLogicStubConstructorSpy.firstCall.args[1]).to.be.equal('task');
-        expect(roundLogicStubConstructorSpy.firstCall.args[2]).to.be.deep.equal((instance as any).slots);
+        expect(roundLogicStubConstructorSpy.firstCall.args[1]).to.be.deep.equal((instance as any).slots);
       });
 
       it('should call getSnapshotRounds once or twice', async () => {
@@ -292,6 +299,7 @@ describe('modules/rounds', () => {
         expect(getSnapshotRoundsStub.calledOnce).to.be.true;
         getSnapshotRoundsStub.reset();
         getSnapshotRoundsStub.returns(12);
+        dbHelpersStub.enqueueResponse('performOps', Promise.resolve());
         await doCall();
         expect(getSnapshotRoundsStub.calledTwice).to.be.true;
       });
@@ -300,18 +308,39 @@ describe('modules/rounds', () => {
         await doCall();
         expect(roundLogicStubConstructorSpy.calledOnce).to.be.true;
         expect(roundLogicStubConstructorSpy.firstCall.args[0]).to.be.deep.equal(roundLogicScope);
-        expect(roundLogicStubConstructorSpy.firstCall.args[1]).to.be.equal('task');
-        expect(roundLogicStubConstructorSpy.firstCall.args[2]).to.be.deep.equal((instance as any).slots);
+        expect(roundLogicStubConstructorSpy.firstCall.args[1]).to.be.deep.equal((instance as any).slots);
+      });
+      it('should call performOps with correct data', async () => {
+        await doCall();
+
+        expect(dbHelpersStub.stubs.performOps.firstCall.args).to.be.deep.eq([
+          [
+            'mergeBlockOp1',
+            'mergeBlockOp2',
+            'markBlockIdOp',
+          ],
+          'tx',
+        ]);
       });
 
       describe('then, if this was the last block in round', () => {
         beforeEach(() => {
           roundLogicScope.finishRound = true;
+          roundLogicStub.stubs.land.returns(['roundLogicLandOp1']);
         });
 
         it('should call roundLogic.land', async () => {
           await doCall();
           expect(roundLogicStub.stubs.land.calledOnce).to.be.true;
+          expect(dbHelpersStub.stubs.performOps.firstCall.args).to.be.deep.eq([
+            [
+              'mergeBlockOp1',
+              'mergeBlockOp2',
+              'roundLogicLandOp1',
+              'markBlockIdOp',
+            ],
+            'tx',
+          ]);
         });
 
         it('should then call bus.message', async () => {
@@ -352,8 +381,7 @@ describe('modules/rounds', () => {
     });
 
     describe('in afterTxPromise', () => {
-      let taskStub: { batch: SinonStub, none: SinonStub };
-
+      let dbHelperStub: DbStub;
       const doCall = async () => {
         await instance.tick(block);
         return afterTxPromise();
@@ -362,20 +390,15 @@ describe('modules/rounds', () => {
       beforeEach(() => {
         // (block.height + 1) % this.slots.delegates === 0
         block.height = 100;
-        taskStub     = {
-          batch: sandbox.stub(),
-          none : sandbox.stub(),
-        };
-        dbStub.stubs.tx.callsArgWith(0, taskStub);
-        dbStub.stubs.tx.resolves('TX DONE');
+        dbHelperStub = container.get(Symbols.helpers.db);
+        dbHelperStub.enqueueResponse('performOps', Promise.resolve());
       });
 
       it('should not call anything if (block.height + 1) % this.slots.delegates !== 0', async () => {
         block.height = 1;
         await doCall();
+        expect(dbHelperStub.stubs.performOps.called).is.false;
         expect(loggerStub.stubs.debug.notCalled).to.be.true;
-        expect(dbStub.stubs.tx.notCalled).to.be.true;
-        expect(taskStub.batch.notCalled).to.be.true;
         expect(loggerStub.stubs.error.notCalled).to.be.true;
         expect(loggerStub.stubs.trace.notCalled).to.be.true;
       });
@@ -388,48 +411,20 @@ describe('modules/rounds', () => {
 
       it('should call db.tx', async () => {
         await doCall();
-        expect(dbStub.stubs.tx.calledOnce).to.be.true;
-        expect(dbStub.stubs.tx.firstCall.args[0]).to.be.a('function');
+        expect(dbHelperStub.stubs.performOps.called).is.true;
       });
 
-      describe('in db.tx callback', () => {
-        beforeEach(() => {
-          taskStub.none.onCall(0).returns(0);
-          taskStub.none.onCall(1).returns(1);
-          taskStub.none.onCall(2).returns(2);
-          taskStub.none.onCall(3).returns(3);
-        });
-
-        it('should call task.batch', async () => {
-          await doCall();
-          expect(taskStub.batch.calledOnce).to.be.true;
-          expect(taskStub.batch.firstCall.args[0]).to.be.deep.equal([0, 1, 2, 3]);
-        });
-
-        it('should call task.none 4 times', async () => {
-          await doCall();
-          expect(taskStub.none.callCount).to.be.equal(4);
-          expect(taskStub.none.getCall(0).args[0]).to.be.deep.equal(sql.clearRoundSnapshot);
-          expect(taskStub.none.getCall(1).args[0]).to.be.deep.equal(sql.performRoundSnapshot);
-          expect(taskStub.none.getCall(2).args[0]).to.be.deep.equal(sql.clearVotesSnapshot);
-          expect(taskStub.none.getCall(3).args[0]).to.be.deep.equal(sql.performVotesSnapshot);
-        });
-      });
-
-      it('should reject and call logger.error if round tx fails', async () => {
+      it('should reject if round tx fails', async () => {
         const theError = new Error('test');
-        dbStub.stubs.tx.rejects(theError);
+        dbHelperStub.stubs.performOps.rejects(theError);
         await expect(doCall()).to.be.rejectedWith(theError);
-        expect(loggerStub.stubs.error.calledOnce).to.be.true;
-        expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal('Round snapshot failed');
-        expect(loggerStub.stubs.error.firstCall.args[1]).to.be.deep.equal(theError);
       });
 
-      it('should call logger.trace after db.tx', async () => {
+      it('should call logger.trace after db.performOps', async () => {
         await doCall();
         expect(loggerStub.stubs.trace.calledOnce).to.be.true;
         expect(loggerStub.stubs.trace.firstCall.args[0]).to.be.equal('Round snapshot done');
-        expect(dbStub.stubs.tx.calledBefore(loggerStub.stubs.trace)).to.be.true;
+        expect(dbHelperStub.stubs.performOps.calledBefore(loggerStub.stubs.trace)).to.be.true;
       });
     });
   });
@@ -475,7 +470,6 @@ describe('modules/rounds', () => {
       innerTickStub.restore();
       appStateStub.stubs.set.returns(void 0);
       roundsLogicStub.stubs.calcRound.returns(1);
-      dbStub.stubs.tx.resolves();
       block.height = 98;
     });
 
