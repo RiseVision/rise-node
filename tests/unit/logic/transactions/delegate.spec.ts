@@ -11,6 +11,8 @@ import { RegisterDelegateTransaction } from '../../../../src/logic/transactions'
 import delegateSchema from '../../../../src/schema/logic/transactions/delegate';
 import { AccountsModuleStub, SystemModuleStub, ZSchemaStub } from '../../../stubs';
 import { createContainer } from '../../../utils/containerCreator';
+import { DBUpdateOp } from '../../../../src/types/genericTypes';
+import { AccountsModel, DelegatesModel } from '../../../../src/models/';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -23,6 +25,8 @@ describe('logic/transactions/delegate', () => {
   let systemModuleStub: SystemModuleStub;
   let container: Container;
   let instance: RegisterDelegateTransaction;
+  let accountsModel: typeof AccountsModel;
+  let delegatesModel: typeof DelegatesModel;
   let tx: any;
   let sender: any;
   let block: any;
@@ -30,6 +34,8 @@ describe('logic/transactions/delegate', () => {
   beforeEach(() => {
     sandbox            = sinon.sandbox.create();
     container          = createContainer();
+    accountsModel      = container.get(Symbols.models.accounts);
+    delegatesModel      = container.get(Symbols.models.delegates);
     zSchemaStub        = container.get(Symbols.generic.zschema);
     accountsModuleStub = container.get(Symbols.modules.accounts);
     systemModuleStub   = container.get(Symbols.modules.system);
@@ -39,16 +45,16 @@ describe('logic/transactions/delegate', () => {
       asset          : {
         delegate: {
           address  : '74128139741256612355994R',
-          publicKey: 'a2bac0a1525e9605a37e6c6588716f9c941530c74eabdf0b27b10b3817e58fe3',
+          publicKey: Buffer.from('a2bac0a1525e9605a37e6c6588716f9c941530c74eabdf0b27b10b3817e58fe3', 'hex'),
           username : 'topdelegate',
         },
       },
       fee            : 10,
       id             : '8139741256612355994',
       senderId       : '1233456789012345R',
-      senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
-      signature      : '0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
-      'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2',
+      senderPublicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+      signature      : Buffer.from('0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
+      'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2', 'hex'),
       timestamp      : 0,
       type           : TransactionType.DELEGATE,
     };
@@ -56,7 +62,10 @@ describe('logic/transactions/delegate', () => {
     sender = {
       address  : '1233456789012345R',
       balance  : 10000000,
-      publicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
+      publicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+      isMultisignature() {
+        return false;
+      }
     };
 
     block = {
@@ -64,11 +73,8 @@ describe('logic/transactions/delegate', () => {
       id    : '13191140260435645922',
     };
 
-    instance = new RegisterDelegateTransaction();
-
-    (instance as any).schema         = zSchemaStub;
-    (instance as any).accountsModule = accountsModuleStub;
-    (instance as any).systemModule   = systemModuleStub;
+    container.rebind(Symbols.logic.transactions.delegate).to(RegisterDelegateTransaction).inSingletonScope();
+    instance = container.get(Symbols.logic.transactions.delegate);
 
     systemModuleStub.stubs.getFees.returns({ fees: { delegate: 2500 } });
   });
@@ -196,24 +202,29 @@ describe('logic/transactions/delegate', () => {
       accountsModuleStub.stubs.setAccountAndGet.resolves();
     });
 
-    it('should call accountsModule.setAccountAndGet and return a promise', async () => {
-      const retVal = instance.apply(tx, block, sender);
-      expect(retVal).to.be.instanceOf(Promise);
-      await retVal;
-      expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.be.deep.equal({
-        address     : sender.address,
+    it('should return a DBUpdateOp', async () => {
+      const retVal = await instance.apply(tx, block, sender);
+      expect(retVal.length).is.eq(1);
+      const op: DBUpdateOp<any> = retVal[0] as any;
+      expect(op.type).is.eq('update');
+      expect(op.model).is.deep.eq(accountsModel);
+      expect(op.values).is.deep.eq({
         isDelegate  : 1,
         u_isDelegate: 0,
-        u_username  : null,
-        username    : tx.asset.delegate.username,
         vote        : 0,
+        username    : tx.asset.delegate.username,
+        u_username  : null,
+      });
+      expect(op.options).to.be.deep.eq({
+        where: {
+          address: sender.address
+        }
       });
     });
 
-    it('should throw an error', () => {
+    it('should throw an error', async () => {
       sender.isDelegate = 1;
-      expect(() => instance.apply(tx, block, sender)).to.throw('Account is already a delegate');
+      expect(instance.apply(tx, block, sender)).to.be.rejectedWith('Account is already a delegate');
     });
   });
 
@@ -222,18 +233,24 @@ describe('logic/transactions/delegate', () => {
       accountsModuleStub.stubs.setAccountAndGet.resolves();
     });
 
-    it('should call accountsModule.setAccountAndGet and return a promise', async () => {
-      const retVal = instance.undo(tx, block, sender);
-      expect(retVal).to.be.instanceOf(Promise);
-      await retVal;
-      expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.be.deep.equal({
-        address     : sender.address,
+    it('should return a DBUpdateOp', async () => {
+      const retVal = await instance.undo(tx, block, sender);
+      expect(retVal.length).is.eq(1);
+      const op: DBUpdateOp<any> = retVal[0] as any;
+      expect(op.type).is.eq('update');
+      expect(op.model).is.deep.eq(accountsModel);
+      expect(op.values).is.deep.eq({
         isDelegate  : 0,
         u_isDelegate: 1,
-        u_username  : tx.asset.delegate.username,
-        username    : null,
         vote        : 0,
+        username    : null,
+        u_username  : tx.asset.delegate.username,
+      });
+
+      expect(op.options).to.be.deep.eq({
+        where: {
+          address: sender.address
+        }
       });
     });
   });
@@ -243,23 +260,29 @@ describe('logic/transactions/delegate', () => {
       accountsModuleStub.stubs.setAccountAndGet.resolves();
     });
 
-    it('should call accountsModule.setAccountAndGet and return a promise', async () => {
-      const retVal = instance.applyUnconfirmed(tx, sender);
-      expect(retVal).to.be.instanceOf(Promise);
-      await retVal;
-      expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.be.deep.equal({
-        address     : sender.address,
+    it('should return a DBUpdateOp', async () => {
+      const retVal = await instance.applyUnconfirmed(tx, sender);
+      expect(retVal.length).is.eq(1);
+      const op: DBUpdateOp<any> = retVal[0] as any;
+      expect(op.type).is.eq('update');
+      expect(op.model).is.deep.eq(accountsModel);
+      expect(op.values).is.deep.eq({
         isDelegate  : 0,
         u_isDelegate: 1,
-        u_username  : tx.asset.delegate.username,
-        username    : null,
+        u_username    : tx.asset.delegate.username,
+        username  : null,
+      });
+
+      expect(op.options).to.be.deep.eq({
+        where: {
+          address: sender.address
+        }
       });
     });
 
-    it('should throw an error', () => {
+    it('should throw an error', async () => {
       sender.u_isDelegate = 1;
-      expect(() => instance.applyUnconfirmed(tx, sender)).to.throw('Account is already trying to be a delegate');
+      await expect(instance.applyUnconfirmed(tx, sender)).to.rejectedWith('Account is already trying to be a delegate');
 
     });
   });
@@ -269,17 +292,23 @@ describe('logic/transactions/delegate', () => {
       accountsModuleStub.stubs.setAccountAndGet.resolves();
     });
 
-    it('should call accountsModule.setAccountAndGet and return a promise', async () => {
-      const retVal = instance.undoUnconfirmed(tx, sender);
-      expect(retVal).to.be.instanceOf(Promise);
-      await retVal;
-      expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.be.deep.equal({
-        address     : sender.address,
+    it('should return a DBUpdateOp', async () => {
+      const retVal = await instance.undoUnconfirmed(tx, sender);
+      expect(retVal.length).is.eq(1);
+      const op: DBUpdateOp<any> = retVal[0] as any;
+      expect(op.type).is.eq('update');
+      expect(op.model).is.deep.eq(accountsModel);
+      expect(op.values).is.deep.eq({
         isDelegate  : 0,
         u_isDelegate: 0,
         u_username  : null,
         username    : null,
+      });
+
+      expect(op.options).to.be.deep.eq({
+        where: {
+          address: sender.address,
+        },
       });
     });
   });
@@ -348,16 +377,14 @@ describe('logic/transactions/delegate', () => {
   });
 
   describe('dbSave', () => {
-    it('should return the expected object', () => {
-      expect(instance.dbSave(tx)).to.be.deep.equal({
-        fields: ['username', 'transactionId'],
-        table : 'delegates',
-        values: {
-          transactionId: tx.id,
-          username     : tx.asset.delegate.username,
-        },
-        }
-      );
+    it('should return the Createop object', async () => {
+      const createOp = await instance.dbSave(tx);
+      expect(createOp.type).is.eq('create');
+      expect(createOp.model).is.deep.eq(delegatesModel);
+      expect(createOp.values).is.deep.eq({
+        transactionId: tx.id,
+        username: tx.asset.delegate.username,
+      });
     });
   });
 });

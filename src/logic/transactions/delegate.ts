@@ -5,7 +5,7 @@ import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import { AccountsModel, DelegatesModel } from '../../models/';
 import delegateSchema from '../../schema/logic/transactions/delegate';
-import { DBOp } from '../../types/genericTypes';
+import { DBCreateOp, DBOp } from '../../types/genericTypes';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
@@ -220,7 +220,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(tx: IConfirmedTransaction<DelegateAsset> & { senderId: string }): DBOp<DelegatesModel> {
+  public dbSave(tx: IConfirmedTransaction<DelegateAsset> & { senderId: string }): DBCreateOp<DelegatesModel> {
     return {
       model : this.DelegatesModel,
       type  : 'create',
