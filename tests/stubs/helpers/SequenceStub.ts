@@ -6,7 +6,7 @@ import { spyMethod, stubMethod } from '../stubDecorator';
 
 @injectable()
 export class SequenceStub extends BaseStubClass {
-  private realImplementation: Sequence = new Sequence({});
+  public realImplementation: Sequence = new Sequence({});
 
   @spyMethod
   public addAndPromise(w) {

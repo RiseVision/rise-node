@@ -23,6 +23,7 @@ import {
 } from '../../stubs';
 import { createFakeBlock } from '../../utils/blockCrafter';
 import { createContainer } from '../../utils/containerCreator';
+import { RoundsModel } from '../../../src/models';
 
 chai.use(chaiAsPromised);
 
@@ -58,24 +59,24 @@ describe('modules/rounds', () => {
     roundLogicStubConstructor = () => {
       return roundLogicStub;
     };
-    sandbox             = sinon.sandbox.create();
-    container = createContainer();
+    sandbox                   = sinon.sandbox.create();
+    container                 = createContainer();
     container.bind(roundLogicSymbol).to(RoundLogicStub).inSingletonScope();
     container.bind(Symbols.logic.round).to(RoundLogicStub).inSingletonScope();
     container.rebind(Symbols.helpers.constants).toConstantValue(constants);
     container.rebind(Symbols.modules.rounds).to(RoundsModule).inSingletonScope();
-    block         = createFakeBlock();
-    previousBlock = createFakeBlock();
-    instance            = container.get(Symbols.modules.rounds);
-    delegatesModuleStub = container.get(Symbols.modules.delegates);
-    accountsModuleStub  = container.get(Symbols.modules.accounts);
-    loggerStub          = container.get(Symbols.helpers.logger);
-    slotsStub           = container.get(Symbols.helpers.slots);
-    busStub             = container.get(Symbols.helpers.bus);
-    socketIOStub        = container.get(Symbols.generic.socketIO);
-    appStateStub        = container.get(Symbols.logic.appState);
-    roundsLogicStub     = container.get(Symbols.logic.rounds);
-    roundLogicStub      = container.get(roundLogicSymbol);
+    block                        = createFakeBlock();
+    previousBlock                = createFakeBlock();
+    instance                     = container.get(Symbols.modules.rounds);
+    delegatesModuleStub          = container.get(Symbols.modules.delegates);
+    accountsModuleStub           = container.get(Symbols.modules.accounts);
+    loggerStub                   = container.get(Symbols.helpers.logger);
+    slotsStub                    = container.get(Symbols.helpers.slots);
+    busStub                      = container.get(Symbols.helpers.bus);
+    socketIOStub                 = container.get(Symbols.generic.socketIO);
+    appStateStub                 = container.get(Symbols.logic.appState);
+    roundsLogicStub              = container.get(Symbols.logic.rounds);
+    roundLogicStub               = container.get(roundLogicSymbol);
     roundLogicStubConstructorSpy = sandbox.spy(roundLogicStubConstructor);
 
     // TODO check if there is a way to achieve this with inversify...
@@ -95,10 +96,10 @@ describe('modules/rounds', () => {
       modules       : {
         accounts: {} as any,
       },
-      models: {
+      models        : {
         AccountsModel: container.get(Symbols.models.accounts),
-        BlocksModel: container.get(Symbols.models.blocks),
-        RoundsModel: container.get(Symbols.models.rounds),
+        BlocksModel  : container.get(Symbols.models.blocks),
+        RoundsModel  : container.get(Symbols.models.rounds),
       },
       round         : 12,
       roundDelegates: [],
@@ -130,7 +131,7 @@ describe('modules/rounds', () => {
       instance.onFinishRound(99);
       expect(socketIOStub.sockets.emit.calledOnce).to.be.true;
       expect(socketIOStub.sockets.emit.firstCall.args[0]).to.be.equal('rounds/change');
-      expect(socketIOStub.sockets.emit.firstCall.args[1]).to.be.deep.equal({ number: 99 });
+      expect(socketIOStub.sockets.emit.firstCall.args[1]).to.be.deep.equal({number: 99});
     });
   });
 
@@ -172,7 +173,7 @@ describe('modules/rounds', () => {
     });
 
     it('should return from innerTick', async () => {
-      const retVal = await instance.backwardTick(block as any , previousBlock, {transaction: 'tx'});
+      const retVal = await instance.backwardTick(block as any, previousBlock, {transaction: 'tx'});
       expect(retVal).to.be.equal('innerTick DONE');
     });
 
@@ -454,7 +455,7 @@ describe('modules/rounds', () => {
     let sumRoundStub: SinonStub;
     let getOutsidersStub: SinonStub;
     let roundSums;
-
+    let dbHelpersStub: DbStub;
     beforeEach(() => {
       txGeneratorStub    = sandbox.stub();
       afterTxPromiseStub = sandbox.stub();
@@ -470,18 +471,20 @@ describe('modules/rounds', () => {
       innerTickStub.restore();
       appStateStub.stubs.set.returns(void 0);
       roundsLogicStub.stubs.calcRound.returns(1);
-      block.height = 98;
+      block.height  = 98;
+      dbHelpersStub = container.get(Symbols.helpers.db);
+      dbHelpersStub.enqueueResponse('performOps', Promise.resolve());
     });
 
     it('should call roundsLogic.calcRound twice', async () => {
-      await (instance as any).innerTick(block, true, txGeneratorStub, afterTxPromiseStub);
+      await (instance as any).innerTick(block, 'tx', true, txGeneratorStub, afterTxPromiseStub);
       expect(roundsLogicStub.stubs.calcRound.calledTwice).to.be.true;
       expect(roundsLogicStub.stubs.calcRound.firstCall.args[0]).to.be.equal(block.height);
       expect(roundsLogicStub.stubs.calcRound.secondCall.args[0]).to.be.equal(block.height + 1);
     });
 
     it('should call appStateLogic.set twice if all OK', async () => {
-      await (instance as any).innerTick(block, true, txGeneratorStub, afterTxPromiseStub);
+      await (instance as any).innerTick(block, 'tx', true, txGeneratorStub, afterTxPromiseStub);
       expect(appStateStub.stubs.set.calledTwice).to.be.true;
       expect(appStateStub.stubs.set.firstCall.args[0]).to.be.equal('rounds.isTicking');
       expect(appStateStub.stubs.set.firstCall.args[1]).to.be.true;
@@ -491,7 +494,7 @@ describe('modules/rounds', () => {
 
     it('should call sumRound if block.height is 1', async () => {
       block.height = 1;
-      await (instance as any).innerTick(block, true, txGeneratorStub, afterTxPromiseStub);
+      await (instance as any).innerTick(block, 'tx', true, txGeneratorStub, afterTxPromiseStub);
       expect(sumRoundStub.calledOnce).to.be.true;
       expect(sumRoundStub.firstCall.args[0]).to.be.equal(1);
     });
@@ -499,14 +502,15 @@ describe('modules/rounds', () => {
     it('should call sumRound if nextRound !== round', async () => {
       roundsLogicStub.stubs.calcRound.onCall(0).returns(1);
       roundsLogicStub.stubs.calcRound.onCall(1).returns(2);
-      await (instance as any).innerTick(block, true, txGeneratorStub, afterTxPromiseStub);
+      await (instance as any).innerTick(block, 'tx', true, txGeneratorStub, afterTxPromiseStub);
       expect(sumRoundStub.calledOnce).to.be.true;
       expect(sumRoundStub.firstCall.args[0]).to.be.equal(1);
     });
 
     it('should call txGenerator', async () => {
-      await (instance as any).innerTick(block, true, txGeneratorStub, afterTxPromiseStub);
+      await (instance as any).innerTick(block, 'tx', true, txGeneratorStub, afterTxPromiseStub);
       expect(txGeneratorStub.calledOnce).to.be.true;
+      delete txGeneratorStub.firstCall.args[0].models;
       expect(txGeneratorStub.firstCall.args[0]).to.be.deep.equal({
         backwards     : true,
         block,
@@ -524,7 +528,7 @@ describe('modules/rounds', () => {
 
     it('should set roundFees: 0, roundRewards: [0], roundDelegates: [generatorPublicKey] if height = 1', async () => {
       block.height = 1;
-      await (instance as any).innerTick(block, true, txGeneratorStub, afterTxPromiseStub);
+      await (instance as any).innerTick(block, 'rz', true, txGeneratorStub, afterTxPromiseStub);
       const generatedRoundLogicScope = txGeneratorStub.firstCall.args[0];
       expect(generatedRoundLogicScope.roundFees).to.be.equal(0);
       expect(generatedRoundLogicScope.roundRewards).to.be.deep.equal([0]);
@@ -535,7 +539,7 @@ describe('modules/rounds', () => {
       // force finishRound
       roundsLogicStub.stubs.calcRound.onCall(0).returns(1);
       roundsLogicStub.stubs.calcRound.onCall(1).returns(2);
-      await (instance as any).innerTick(block, true, txGeneratorStub, afterTxPromiseStub);
+      await (instance as any).innerTick(block, 'tx', true, txGeneratorStub, afterTxPromiseStub);
       expect(getOutsidersStub.calledOnce).to.be.true;
       expect(getOutsidersStub.firstCall.args[0]).to.be.equal(1);
       expect(getOutsidersStub.firstCall.args[1]).to.be.deep.equal(roundSums.roundDelegates);
@@ -544,8 +548,9 @@ describe('modules/rounds', () => {
     it('should build roundLogicScope as expected', async () => {
       // block height != 1, finishRound = false
       const backwards = true;
-      await (instance as any).innerTick(block, backwards, txGeneratorStub, afterTxPromiseStub);
+      await (instance as any).innerTick(block, 'tx', backwards, txGeneratorStub, afterTxPromiseStub);
       let generatedRoundLogicScope = txGeneratorStub.firstCall.args[0];
+      delete generatedRoundLogicScope.models;
       expect(generatedRoundLogicScope).to.be.deep.equal({
         backwards,
         block,
@@ -565,8 +570,9 @@ describe('modules/rounds', () => {
       txGeneratorStub.reset();
       roundsLogicStub.stubs.calcRound.onCall(0).returns(1);
       roundsLogicStub.stubs.calcRound.onCall(1).returns(2);
-      await (instance as any).innerTick(block, backwards, txGeneratorStub, afterTxPromiseStub);
+      await (instance as any).innerTick(block, 'tx', backwards, txGeneratorStub, afterTxPromiseStub);
       generatedRoundLogicScope = txGeneratorStub.firstCall.args[0];
+      delete generatedRoundLogicScope.models;
       expect(generatedRoundLogicScope).to.be.deep.equal({
         backwards,
         block,
@@ -587,8 +593,9 @@ describe('modules/rounds', () => {
       txGeneratorStub.reset();
       roundsLogicStub.stubs.calcRound.returns(1);
       block.height = 1;
-      await (instance as any).innerTick(block, backwards, txGeneratorStub, afterTxPromiseStub);
+      await (instance as any).innerTick(block, 'tx', backwards, txGeneratorStub, afterTxPromiseStub);
       generatedRoundLogicScope = txGeneratorStub.firstCall.args[0];
+      delete generatedRoundLogicScope.models;
       expect(generatedRoundLogicScope).to.be.deep.equal({
         backwards,
         block,
@@ -608,35 +615,34 @@ describe('modules/rounds', () => {
 
     });
 
-    it('should call db.tx', async () => {
-      txGeneratorStub.returns('tx');
-      await (instance as any).innerTick(block, true, txGeneratorStub, afterTxPromiseStub);
-      expect(dbStub.stubs.tx.calledOnce).to.be.true;
-      expect(dbStub.stubs.tx.firstCall.args[0]).to.be.equal('tx');
-    });
-
-    it('should call afterTxPromise', async () => {
-      await (instance as any).innerTick(block, true, txGeneratorStub, afterTxPromiseStub);
+    it('should call txGenerator and then afterTxPromise', async () => {
+      await (instance as any).innerTick(block, 'tx', true, txGeneratorStub, afterTxPromiseStub);
       expect(afterTxPromiseStub.calledOnce).to.be.true;
-      expect(dbStub.stubs.tx.calledBefore(afterTxPromiseStub)).to.be.true;
+      expect(txGeneratorStub.calledBefore(afterTxPromiseStub)).is.true;
     });
 
-    describe('anything trows in main try block', () => {
-      it('should call logger.warn, call appStateLogic.set and throw the catched error', async () => {
-        const theError  = new Error('test');
-        const backwards = true;
-        dbStub.stubs.tx.rejects(theError);
-        await expect((instance as any).innerTick(block, backwards, txGeneratorStub, afterTxPromiseStub)).to.be
-          .rejectedWith(theError);
-        expect(loggerStub.stubs.warn.calledOnce).to.be.true;
-        expect(loggerStub.stubs.warn.firstCall.args[0]).to.be
-          .equal(`Error while doing modules.innerTick [backwards=${backwards}]`);
-        expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.equal(theError.message);
-        expect(appStateStub.stubs.set.calledTwice).to.be.true;
-        expect(appStateStub.stubs.set.secondCall.args[0]).to.be.equal('rounds.isTicking');
-        expect(appStateStub.stubs.set.secondCall.args[1]).to.be.false;
-      });
+    it('should set isTicking to true and then false if all success', async () => {
+      await (instance as any).innerTick(block, 'tx', true, txGeneratorStub, afterTxPromiseStub);
+      expect(appStateStub.stubs.set.callCount).is.eq(2);
+      expect(appStateStub.stubs.set.firstCall.args[0]).is.eq('rounds.isTicking');
+      expect(appStateStub.stubs.set.firstCall.args[1]).is.eq(true);
+
+      expect(appStateStub.stubs.set.secondCall.args[0]).is.eq('rounds.isTicking');
+      expect(appStateStub.stubs.set.secondCall.args[1]).is.eq(false);
     });
+    it('should set isTicking to true and then false if error', async () => {
+      txGeneratorStub.rejects(new Error('error'));
+      await expect((instance as any).innerTick(block, 'tx', true, txGeneratorStub, afterTxPromiseStub))
+        .rejectedWith('error');
+
+      expect(appStateStub.stubs.set.callCount).is.eq(2);
+      expect(appStateStub.stubs.set.firstCall.args[0]).is.eq('rounds.isTicking');
+      expect(appStateStub.stubs.set.firstCall.args[1]).is.eq(true);
+
+      expect(appStateStub.stubs.set.secondCall.args[0]).is.eq('rounds.isTicking');
+      expect(appStateStub.stubs.set.secondCall.args[1]).is.eq(false);
+    });
+
   });
 
   describe('getOutsiders', () => {
@@ -682,59 +688,38 @@ describe('modules/rounds', () => {
   });
 
   describe('sumRound', () => {
-    let summedRound;
     let round;
-
+    let roundsModel: typeof RoundsModel;
+    let sumRoundStub: SinonStub;
     beforeEach(() => {
-      round       = 99;
-      summedRound = [
-        {
-          delegates: ['d1', 'd2', 'd3'],
-          fees     : 12.33,
-          rewards  : [1, 0.5, 3.99],
-        },
-      ];
-      dbStub.stubs.query.resolves(summedRound);
+      round        = 99;
+      roundsModel  = container.get(Symbols.models.rounds);
+      sumRoundStub = sandbox.stub(roundsModel, 'sumRound').resolves({
+        rewards  : [1.1, 2.2, 3.6],
+        fees     : 10.1,
+        delegates: [Buffer.from('aa', 'hex'), Buffer.from('bb', 'hex')]
+      });
     });
 
-    it('should call logger.debug', async () => {
-      await (instance as any).sumRound(round);
-      expect(loggerStub.stubs.debug.calledOnce).to.be.true;
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Summing round');
-      expect(loggerStub.stubs.debug.firstCall.args[1]).to.be.equal(round);
-    });
-
-    it('should call db.query', async () => {
-      await (instance as any).sumRound(round);
-      expect(dbStub.stubs.query.calledOnce).to.be.true;
-      expect(dbStub.stubs.query.firstCall.args[0]).to.be.deep.equal(sql.summedRound);
-      expect(dbStub.stubs.query.firstCall.args[1]).to.be.deep.equal({
-        activeDelegates: constants.activeDelegates,
+    it('should call RoundsModel.sumRound', async () => {
+      await (instance as any).sumRound(round, 'tx');
+      expect(sumRoundStub.called).is.true;
+      expect(sumRoundStub.firstCall.args).deep.eq([
+        constants.activeDelegates,
         round,
+        'tx'
+      ]);
+    });
+
+    it('should map sumRoundResponse correctly', async () => {
+      const res = await (instance as any).sumRound(round, 'tx');
+      expect(res).to.be.deep.eq({
+        roundRewards: [1, 2, 3],
+        roundFees   : 10,
+        roundDelegates   : [Buffer.from('aa', 'hex'), Buffer.from('bb', 'hex')]
       });
     });
 
-    it('should call logger.error twice and reject if db.query rejects', async () => {
-      const theError = new Error('test');
-      dbStub.stubs.query.rejects(theError);
-      await expect((instance as any).sumRound(round)).to.be.rejectedWith(theError);
-      expect(loggerStub.stubs.error.calledTwice).to.be.true;
-      expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal('Failed to sum round');
-      expect(loggerStub.stubs.error.firstCall.args[1]).to.be.equal(round);
-      expect(loggerStub.stubs.error.secondCall.args[0]).to.be.deep.equal(theError.stack);
-    });
-
-    it('should return an object with floored rewards, floored fees and delegates', async () => {
-      const retVal = await (instance as any).sumRound(round);
-      expect(retVal.roundRewards).not.to.be.undefined;
-      expect(retVal.roundFees).not.to.be.undefined;
-      expect(retVal.roundDelegates).not.to.be.undefined;
-      expect(retVal).to.be.deep.equal({
-        roundDelegates: ['d1', 'd2', 'd3'],
-        roundFees     : 12,
-        roundRewards  : [1, 0, 3],
-      });
-    });
   });
 
 });

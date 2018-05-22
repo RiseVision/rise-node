@@ -48,7 +48,7 @@ describe('src/modules/transport.ts', () => {
   let container: Container;
   let sandbox: SinonSandbox;
   const appConfig = {
-    peers: { options: { timeout: 1000, }, },
+    peers: {options: {timeout: 1000,},},
   };
 
   before(() => {
@@ -78,7 +78,7 @@ describe('src/modules/transport.ts', () => {
 
   let postConstrA: AppStateStub;
   beforeEach(() => {
-    io     = container.get(Symbols.generic.socketIO);
+    io         = container.get(Symbols.generic.socketIO);
     schemaStub = container.get(Symbols.generic.zschema);
 
     constants        = container.get(Symbols.helpers.constants);
@@ -195,11 +195,11 @@ describe('src/modules/transport.ts', () => {
         version: '1.1.1',
       };
 
-      thePeer = { applyHeaders: sandbox.stub() };
+      thePeer = {applyHeaders: sandbox.stub()};
       thePeer.applyHeaders.returns(headers);
 
-      popsicleUseStub      = { use: sandbox.stub().resolves(res) };
-      popsicleStub.plugins = { parse: sandbox.stub().returns(1) };
+      popsicleUseStub      = {use: sandbox.stub().resolves(res)};
+      popsicleStub.plugins = {parse: sandbox.stub().returns(1)};
       popsicleStub.request = sandbox.stub().returns(popsicleUseStub);
 
       removePeerStub = sandbox.stub(inst as any, 'removePeer');
@@ -277,7 +277,7 @@ describe('src/modules/transport.ts', () => {
 
       expect(removePeerStub.calledOnce).to.be.true;
       expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({ peer: thePeer, code: 'HTTPERROR' });
+      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({peer: thePeer, code: 'HTTPERROR'});
       expect(removePeerStub.firstCall.args[1]).to.be.equal(error.message);
     });
 
@@ -290,7 +290,7 @@ describe('src/modules/transport.ts', () => {
 
       expect(removePeerStub.calledOnce).to.be.true;
       expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({ peer: thePeer, code: `ERESPONSE ${res.status}` });
+      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({peer: thePeer, code: `ERESPONSE ${res.status}`});
       expect(removePeerStub.firstCall.args[1]).to.be.equal('put http://undefined:undefinedurl.com');
     });
 
@@ -319,7 +319,7 @@ describe('src/modules/transport.ts', () => {
 
       expect(removePeerStub.calledOnce).to.be.true;
       expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({ peer: thePeer, code: 'EHEADERS' });
+      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({peer: thePeer, code: 'EHEADERS'});
       expect(removePeerStub.firstCall.args[1]).to.be.equal('put http://undefined:undefinedurl.com');
     });
 
@@ -340,7 +340,7 @@ describe('src/modules/transport.ts', () => {
 
       expect(removePeerStub.calledOnce).to.be.true;
       expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({ peer: thePeer, code: 'ENETHASH' });
+      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({peer: thePeer, code: 'ENETHASH'});
       expect(removePeerStub.firstCall.args[1]).to.be.equal('put http://undefined:undefinedurl.com');
     });
 
@@ -362,7 +362,7 @@ describe('src/modules/transport.ts', () => {
 
       expect(removePeerStub.calledOnce).to.be.true;
       expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({ peer: thePeer, code: 'EVERSION 1.1.1' });
+      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({peer: thePeer, code: 'EVERSION 1.1.1'});
       expect(removePeerStub.firstCall.args[1]).to.be.equal('put http://undefined:undefinedurl.com');
 
     });
@@ -393,12 +393,12 @@ describe('src/modules/transport.ts', () => {
     let getFromPeerStub;
 
     beforeEach(() => {
-      options = { fieldhohoho: 'hohohohoho' };
+      options = {fieldhohoho: 'hohohohoho'};
       result  = 'hehehe';
       config  = {};
       peers   = [{}];
 
-      peersModule.enqueueResponse('list', Promise.resolve({ peers }));
+      peersModule.enqueueResponse('list', Promise.resolve({peers}));
       getFromPeerStub = sandbox.stub(inst, 'getFromPeer').returns(result);
     });
 
@@ -477,7 +477,7 @@ describe('src/modules/transport.ts', () => {
 
         expect(loggerTraceStub.getCall(1).args.length).to.be.equal(2);
         expect(loggerTraceStub.getCall(1).args[0]).to.be.equal('Updating peers');
-        expect(loggerTraceStub.getCall(1).args[1]).to.be.deep.equal({ count: peers.length });
+        expect(loggerTraceStub.getCall(1).args[1]).to.be.deep.equal({count: peers.length});
 
         expect(loggerTraceStub.getCall(2).args.length).to.be.equal(2);
         expect(loggerTraceStub.getCall(2).args[0]).to.be.equal('Updating peer');
@@ -533,7 +533,7 @@ describe('src/modules/transport.ts', () => {
       expect(throttleStub.all.calledOnce).to.be.true;
       expect(throttleStub.all.firstCall.args.length).to.be.equal(2);
       expect(throttleStub.all.firstCall.args[0]).to.be.a('array');
-      expect(throttleStub.all.firstCall.args[1]).to.be.deep.equal({ maxInProgress: 50 });
+      expect(throttleStub.all.firstCall.args[1]).to.be.deep.equal({maxInProgress: 50});
     });
 
     describe('Throttle.all callback(for each peer in peers)', () => {
@@ -603,7 +603,7 @@ describe('src/modules/transport.ts', () => {
     let signature;
 
     beforeEach(() => {
-      signature = { transaction: 'trans', signature: 'sign' };
+      signature = {transaction: 'trans', signature: 'sign'};
       broadcast = true;
       broadcasterLogic.enqueueResponse('maxRelays', false);
       broadcasterLogic.enqueueResponse('enqueue', false);
@@ -625,7 +625,7 @@ describe('src/modules/transport.ts', () => {
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[0]).to.be.deep.equal({});
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[1]).to.be.deep.equal({
         api   : '/signatures',
-        data  : { signature },
+        data  : {signature},
         method: 'POST',
       });
     });
@@ -685,7 +685,7 @@ describe('src/modules/transport.ts', () => {
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[0]).to.be.deep.equal({});
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[1]).to.be.deep.equal({
         api   : '/transactions',
-        data  : { transaction },
+        data  : {transaction},
         method: 'POST',
       });
     });
@@ -723,7 +723,12 @@ describe('src/modules/transport.ts', () => {
     let block;
 
     beforeEach(() => {
-      block                                = {};
+      block                                = {
+        blockSignature    : Buffer.from('aa', 'hex'),
+        generatorPublicKey: Buffer.from('bb', 'hex'),
+        payloadHash       : Buffer.from('cc', 'hex'),
+        transactions      : [],
+      };
       broadcast                            = true;
       (inst as any).systemModule.broadhash = 'broadhash';
       systemModule.enqueueResponse('update', Promise.resolve());
@@ -757,7 +762,14 @@ describe('src/modules/transport.ts', () => {
       });
       expect(broadcasterLogic.stubs.broadcast.firstCall.args[1]).to.be.deep.equal({
         api      : '/blocks',
-        data     : { block },
+        data     : {
+          block: {
+            blockSignature    : 'aa',
+            generatorPublicKey: 'bb',
+            payloadHash       : 'cc',
+            transactions      : [],
+          }
+        },
         immediate: true,
         method   : 'POST',
       });
@@ -792,7 +804,7 @@ describe('src/modules/transport.ts', () => {
     it('should ignore broadcast error if any and, more importantly avoid waiting for broadcaster result', async () => {
       broadcasterLogic.reset();
       broadcasterLogic.enqueueResponse('maxRelays', false);
-      let finished = false;
+      let finished  = false;
       const promise = wait(1000)
         .then(() => finished = true);
 
@@ -810,7 +822,7 @@ describe('src/modules/transport.ts', () => {
     let query;
 
     beforeEach(() => {
-      query                = [{ transaction: 'transaction', signature: 'signature' }];
+      query                = [{transaction: 'transaction', signature: 'signature'}];
       receiveSignatureStub = sandbox.stub(inst as any, 'receiveSignature');
     });
 
@@ -840,7 +852,7 @@ describe('src/modules/transport.ts', () => {
     let signature;
 
     beforeEach(() => {
-      signature = { transaction: 'transaction', signature: 'signature' };
+      signature = {transaction: 'transaction', signature: 'signature'};
 
       multisigModule.enqueueResponse('processSignature', Promise.resolve());
     });
@@ -913,8 +925,8 @@ describe('src/modules/transport.ts', () => {
     let removePeerStub: SinonStub;
 
     beforeEach(() => {
-      transaction     = { id: 1999 };
-      peer            = { string: 'string' };
+      transaction     = {id: 1999};
+      peer            = {string: 'string'};
       bundled         = {};
       extraLogMessage = 'extraLogMessage';
 
@@ -949,7 +961,7 @@ describe('src/modules/transport.ts', () => {
 
         expect(removePeerStub.calledOnce).to.be.true;
         expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-        expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({ peer, code: 'ETRANSACTION' });
+        expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({peer, code: 'ETRANSACTION'});
         expect(removePeerStub.firstCall.args[1]).to.be.deep.equal(extraLogMessage);
       });
 
@@ -1068,7 +1080,7 @@ describe('src/modules/transport.ts', () => {
         },
       };
       acceptablePeers = [{}];
-      peer            = { string: 'string' };
+      peer            = {string: 'string'};
 
       schemaStub.stubs.validate.onCall(0).callsArg(2);
       peersLogic.enqueueResponse('acceptable', acceptablePeers);
@@ -1176,4 +1188,5 @@ describe('src/modules/transport.ts', () => {
       expect(logger.stubs.debug.firstCall.args[0]).to.be.equal('Discovered 0 peers - Rejected 0 - AlreadyKnown 1');
     });
   });
+
 });

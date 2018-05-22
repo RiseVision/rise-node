@@ -224,7 +224,7 @@ export class TransactionsModule implements ITransactionsModule {
    * Get transaction by id
    */
   public async getByID<T = any>(id: string): Promise<TransactionsModel> {
-    const tx = await TransactionsModel.findById(id) as any;
+    const tx = await TransactionsModel.findById(id);
     if (tx === null) {
       throw new Error('Transaction not found');
     }

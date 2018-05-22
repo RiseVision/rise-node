@@ -9,6 +9,8 @@ import { Symbols } from '../../../src/ioc/symbols';
 import { SystemModule } from '../../../src/modules';
 import { DbStub, IBlocksStub } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
+import { BlocksModel } from '../../../src/models';
+import { SinonSandbox, SinonStub } from 'sinon';
 
 // tslint:disable no-unused-expression
 describe('modules/system', () => {
@@ -19,8 +21,12 @@ describe('modules/system', () => {
     nethash: 'nethash',
     port   : 1234,
     version: '1.0.0',
+    forging: {
+      pollingInterval: 1000
+    }
   };
   let constants: typeof constantsType;
+  let sandbox: SinonSandbox;
   before(() => {
     container = createContainer();
     constants = {
@@ -44,10 +50,14 @@ describe('modules/system', () => {
   });
 
   beforeEach(() => {
+    sandbox                   = sinon.sandbox.create();
     inst = instB = container.get(Symbols.modules.system);
     container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = {
       height: 10,
     } as any;
+  });
+  afterEach(() => {
+    sandbox.restore();
   });
 
   describe('.getMinVersion', () => {
@@ -135,17 +145,18 @@ describe('modules/system', () => {
   });
 
   describe('.getBroadHash', () => {
-    let dbStub: DbStub;
+    let blocksModel: typeof BlocksModel;
+    let findAllStub: SinonStub;
     beforeEach(() => {
-      dbStub = container.get<DbStub>(Symbols.generic.db);
+      blocksModel = container.get(Symbols.models.blocks);
+      findAllStub = sandbox.stub(blocksModel, 'findAll').resolves([]);
     });
     it('should return broadhash from headers if db.query returns empty array', async () => {
-      dbStub.enqueueResponse('query', Promise.resolve([]));
       instB.headers.broadhash = 'hahaha';
       expect(await inst.getBroadhash()).to.be.eq('hahaha');
     });
     it('should compute broadhash from returned db data', async () => {
-      dbStub.enqueueResponse('query', Promise.resolve([1, 2, 3, 4].map((id) => ({ id }))));
+      findAllStub.resolves([1, 2, 3, 4].map((id) => ({ id })));
       expect(await inst.getBroadhash())
         .to.be.eq('03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4');
 
@@ -191,19 +202,15 @@ describe('modules/system', () => {
   });
 
   describe('.update', () => {
-    let dbStub: DbStub;
-    beforeEach(() => {
-      dbStub = container.get<DbStub>(Symbols.generic.db);
-    });
     it('should update height and broadhash value', async () => {
+      sandbox.stub(inst, 'getBroadhash').resolves('meow');
       inst.headers.height    = 0;
       inst.headers.broadhash = 'haha';
-      dbStub.enqueueResponse('query', Promise.resolve([1, 2, 3, 4, 5].map((id) => ({ id }))));
       container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = {
         height: 2,
       } as any; // ^0.1.2
       await inst.update();
-      expect(inst.headers.broadhash).to.not.be.eq('haha');
+      expect(inst.headers.broadhash).to.be.eq('meow');
       expect(inst.headers.height).to.be.eq(2);
     });
   });
@@ -263,4 +270,5 @@ describe('modules/system', () => {
       expect(inst.broadhash).to.be.deep.eq(inst.headers.broadhash);
     });
   });
+
 });

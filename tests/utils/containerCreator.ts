@@ -49,9 +49,16 @@ import {
 } from '../../src/logic/transactions';
 import DbStub from '../stubs/helpers/DbStub';
 
+let lastContainer: Container = null;
 export const createContainer = (): Container => {
+  if (lastContainer !== null) {
+    // Tear down some things...
+    const sequences = lastContainer.getAll<SequenceStub>(Symbols.helpers.sequence);
+    sequences.forEach((s) => s.realImplementation['nextSequenceTick'] = () => {});
+    lastContainer = null;
+  }
   const container = new Container();
-
+  lastContainer = container;
   // Generics
   container.bind(Symbols.generic.appConfig)
     .toConstantValue(require(`${__dirname}/../integration/config.json`));
@@ -59,15 +66,15 @@ export const createContainer = (): Container => {
     .toConstantValue(require(`${__dirname}/../integration/genesisBlock.json`));
   const genesis = container.get(Symbols.generic.genesisBlock)
   genesis.generatorPublicKey = Buffer.from(genesis.generatorPublicKey, 'hex');
+  genesis.blockSignature = Buffer.from(genesis.blockSignature, 'hex');
 
   container.bind(Symbols.generic.socketIO).to(SocketIOStub).inSingletonScope();
   container.bind(Symbols.generic.zschema).to(ZSchemaStub).inSingletonScope();
   container.bind(Symbols.generic.sequelize).toConstantValue(new Sequelize({
-    database: '__',
-    dialect: 'sqlite',
+    database: 'test',
+    dialect: 'postgres',
     username: 'root',
-    password: '',
-    storage: ':memory:',
+    password: 'test',
     logging: !('SEQ_SILENT' in process.env),
   }));
 
@@ -145,8 +152,14 @@ export const createContainer = (): Container => {
   container.bind(Symbols.logic.transactions.vote).to(VoteTransaction).inSingletonScope();
 
   const sequelize = container.get<Sequelize>(Symbols.generic.sequelize);
-  sequelize.addModels([
+  const models = [
     AccountsModel, BlocksModel, Accounts2DelegatesModel, Accounts2U_DelegatesModel, Accounts2MultisignaturesModel,
-    Accounts2U_MultisignaturesModel, ForksStatsModel, PeersModel, RoundsModel, TransactionsModel, MultiSignaturesModel, DelegatesModel, SignaturesModel, VotesModel]);
+    Accounts2U_MultisignaturesModel, ForksStatsModel, PeersModel, RoundsModel, TransactionsModel, MultiSignaturesModel, DelegatesModel, SignaturesModel, VotesModel];
+  //if (!AccountsModel.findAll) {
+    sequelize.addModels(models);
+  //}
+  models.forEach((m) => m.sequelize = sequelize);
   return container;
 };
+
+

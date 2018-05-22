@@ -312,11 +312,11 @@ describe('modules/multisignatures', () => {
       expect(transactionLogicStub.stubs.verifySignature.getCall(0).args[0]).to.be.deep.equal(tx);
       expect(transactionLogicStub.stubs.verifySignature.getCall(0).args[1]).to.be.deep
         .equal(Buffer.from(tx.asset.multisignature.keysgroup[0].substring(1), 'hex'));
-      expect(transactionLogicStub.stubs.verifySignature.getCall(0).args[2]).to.be.deep.equal(signature);
+      expect(transactionLogicStub.stubs.verifySignature.getCall(0).args[2]).to.be.deep.equal(Buffer.from(signature, 'hex'));
       expect(transactionLogicStub.stubs.verifySignature.getCall(1).args[0]).to.be.deep.equal(tx);
       expect(transactionLogicStub.stubs.verifySignature.getCall(1).args[1]).to.be.deep
         .equal(Buffer.from(tx.asset.multisignature.keysgroup[1].substring(1), 'hex'));
-      expect(transactionLogicStub.stubs.verifySignature.getCall(1).args[2]).to.be.deep.equal(signature);
+      expect(transactionLogicStub.stubs.verifySignature.getCall(1).args[2]).to.be.deep.equal(Buffer.from(signature, 'hex'));
     });
 
     it('should throw if one or more signatures are not verified', async () => {
