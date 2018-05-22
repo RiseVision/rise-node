@@ -1,6 +1,6 @@
 import { expect } from 'chai';
-import { z_schema, TransactionType } from '../../../src/helpers';
-import rawBlock from '../../../src/schema/logic/rawBlock';
+import { TransactionType, z_schema } from '../../../src/helpers';
+import rawBlock from '../../../src/schema/logic/transportBlock';
 
 const schema = new z_schema({});
 describe('rawBlock JSON schema', () => {

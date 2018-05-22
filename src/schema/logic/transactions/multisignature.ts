@@ -14,6 +14,10 @@ export default {
       type    : 'array',
       minItems: constants.multisigConstraints.keysgroup.minItems,
       maxItems: constants.multisigConstraints.keysgroup.maxItems,
+      items: {
+        type: 'string',
+        format: 'publicKey',
+      },
     },
     lifetime : {
       type   : 'integer',

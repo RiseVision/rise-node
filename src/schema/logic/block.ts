@@ -54,6 +54,7 @@ export default {
     transactions        : {
       type       : 'array',
       uniqueItems: true,
+      // TODO add schema for items
     },
     version             : {
       type   : 'integer',

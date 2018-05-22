@@ -51,6 +51,7 @@ export default {
     },
     required  : ['transactionId', 'secret'],
   },
+  // FIXME: remove useless schema?
   addMultisignature: {
     id        : 'multisignatures.addMultisignature',
     type      : 'object',

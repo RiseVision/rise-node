@@ -1,6 +1,6 @@
 // tslint:disable object-literal-sort-keys
 import constants from '../helpers/constants';
-import rawBlock from './logic/rawBlock';
+import rawBlock from './logic/transportBlock';
 
 export default {
   loadBlocksFromPeer: {

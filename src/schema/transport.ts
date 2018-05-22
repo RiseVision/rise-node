@@ -93,6 +93,22 @@ export default {
         type    : 'array',
         minItems: 1,
         maxItems: 25,
+        items: {
+          type: 'object',
+          properties: {
+            transaction: {
+              type: 'string',
+              format: 'id',
+              minLength: 1,
+              maxLength: 20,
+            },
+            signature: {
+              type: 'string',
+              format: 'signature',
+            },
+          },
+          required  : ['transaction', 'signature'],
+        },
       },
     },
     required  : ['signatures'],

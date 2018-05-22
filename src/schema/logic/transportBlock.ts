@@ -1,7 +1,7 @@
 // tslint:disable object-literal-sort-keys
 
 export default {
-  id        : 'Block',
+  id        : 'transportBlock',
   type      : 'object',
   properties: {
     b_id                  : {
@@ -12,7 +12,7 @@ export default {
     },
     b_height              : {
       type  : 'integer',
-      mininmum: 1,
+      minimum: 1,
     },
     b_blockSignature      : {
       type  : 'string',
