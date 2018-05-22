@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { z_schema } from '../../../src/helpers';
+import { z_schema, TransactionType } from '../../../src/helpers';
 import rawBlock from '../../../src/schema/logic/rawBlock';
 
 const schema = new z_schema({});
@@ -83,11 +83,40 @@ describe('rawBlock JSON schema', () => {
     expect(result).to.be.true;
   });
 
-  // TODO add missing tests
-  it('should accept a block with valid SIGNATURE tx data');
-  it('should accept a block with valid DELEGATE tx data');
-  it('should accept a block with valid VOTE tx data');
-  it('should accept a block with valid MULTI tx data');
+  it('should accept a block with valid SIGNATURE tx data', () => {
+    const block = {... validBlockWithTX };
+    block.t_type = TransactionType.SIGNATURE;
+    block.s_publicKey = '70a9c5555eea50685f4c081f81e692f70416ec1a032154ded8f8e0f3ecfadab7';
+    const result = schema.validate(block, rawBlock);
+    expect(result).to.be.true;
+  });
+
+  it('should accept a block with valid DELEGATE tx data', () => {
+    const block = {... validBlockWithTX };
+    block.t_type = TransactionType.DELEGATE;
+    block.d_username = 'rise_delegate';
+    const result = schema.validate(block, rawBlock);
+    expect(result).to.be.true;
+  });
+
+  it('should accept a block with valid VOTE tx data', () => {
+    const block = {... validBlockWithTX };
+    block.t_type = TransactionType.VOTE;
+    block.v_votes = '-123125232342R,+236345346354R';
+    const result = schema.validate(block, rawBlock);
+    expect(result).to.be.true;
+  });
+
+  it('should accept a block with valid MULTI tx data', () => {
+    const block = {... validBlockWithTX };
+    block.t_type = TransactionType.MULTI;
+    block.m_min = 2;
+    block.m_lifetime = 8640000000;
+    block.m_keysgroup = '70a9c5555eea50685f4c081f81e692f70416ec1a032154ded8f8e0f3ecfadab7,' +
+                        '032154ded8f8e0f3ecfadab770a9c5555eea50685f4c081f81e692f70416ec1a';
+    const result = schema.validate(block, rawBlock);
+    expect(result).to.be.true;
+  });
 
   it('should accept a block with null tx data', () => {
     const result = schema.validate(validBlockWithoutTX, rawBlock);
