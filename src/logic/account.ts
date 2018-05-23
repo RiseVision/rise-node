@@ -283,7 +283,7 @@ export class AccountLogic implements IAccountLogic {
     const condition: any = filterObject(filter, ['isDelegate', 'username', 'address', 'publicKey']);
     if (typeof(filter.address) === 'string') {
       condition.address = filter.address.toUpperCase();
-    } else {
+    } else if (typeof (filter.address) !== 'undefined') {
       condition.address = { [Op.in]: filter.address.$in.map((add) => add.toUpperCase()) };
     }
     // Remove fields = undefined (such as limit, offset and sort)

@@ -48,6 +48,7 @@ import {
   SecondSignatureTransaction, SendTransaction, VoteTransaction
 } from '../../src/logic/transactions';
 import DbStub from '../stubs/helpers/DbStub';
+import { MigratorStub } from '../stubs/helpers/MigratorStub';
 
 let lastContainer: Container = null;
 export const createContainer = (): Container => {
@@ -82,6 +83,7 @@ export const createContainer = (): Container => {
   container.bind(Symbols.helpers.bus).to(BusStub).inSingletonScope();
   container.bind(Symbols.helpers.ed).to(EdStub).inSingletonScope();
   container.bind(Symbols.helpers.db).to(DbStub).inSingletonScope();
+  container.bind(Symbols.helpers.migrator).to(MigratorStub).inSingletonScope();
   container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManagerStub).inSingletonScope();
   container.bind(Symbols.helpers.jobsQueue).to(JobsQueueStub).inSingletonScope();
   container.bind(Symbols.helpers.logger).to(LoggerStub).inSingletonScope();

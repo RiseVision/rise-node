@@ -217,13 +217,11 @@ export class AppManager {
 
     this.server = http.createServer(this.expressApp);
     const io    = socketIO(this.server);
-    // const db        = await Database.connect(this.appConfig.db, this.logger);
-    // ((require('fs'))).unlinkSync(`${__dirname}/../sequelize.log`);
+
     const namespace = cls.createNamespace('sequelize-namespace');
 
-    //(Sequelize as any).__proto__.useCls(namespace);
     (Sequelize as any).__proto__.useCLS(namespace);
-    //Sequelize.useCLS(namespace);
+
     const sequelize = new Sequelize({
       // logging(msg) {
       //   (require('fs')).appendFileSync(`${__dirname}/../sequelize.log`, msg+"\n");

@@ -8,7 +8,7 @@ import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import { allControllers, APIErrorHandler } from '../../src/apis';
 import { AppManager } from '../../src/AppManager';
-import { Bus, cache, Database, Ed,  ExceptionsManager, JobsQueue, Sequence, Slots, z_schema } from '../../src/helpers';
+import { Bus, cache, Ed,  ExceptionsManager, JobsQueue, Sequence, Slots, z_schema } from '../../src/helpers';
 import constants from '../../src/helpers/constants';
 import { Symbols } from '../../src/ioc/symbols';
 import { SignedAndChainedBlockType } from '../../src/logic';
@@ -19,6 +19,9 @@ import TransactionLogicStub from '../stubs/logic/TransactionLogicStub';
 import { LoaderModuleStub } from '../stubs/modules/LoaderModuleStub';
 import { ContainerStub } from '../stubs/utils/ContainerStub';
 import { createContainer } from '../utils/containerCreator';
+
+import { Sequelize } from 'sequelize-typescript';
+import { BlockLogicStub } from '../stubs/logic/BlockLogicStub';
 
 const { expect } = chai;
 
@@ -33,15 +36,23 @@ let useExpressServerStub: SinonStub;
 let socketIOStub: SinonStub;
 let cbToPromiseStub: SinonStub;
 let catchToLoggerAndRemapErrorStub: SinonStub;
+const clsObj = {};
+const pgObj = {};
+const seqTypescriptObj = {
+  Model: {},
+  Sequelize,
+};
 
 function expressRunner(...args) {
   return expressStub.apply(this, args);
 }
 
 const ProxyAppManager = proxyquire('../../src/AppManager', {
+  'cls-hooked': clsObj,
+  'pg': pgObj,
+  'sequelize-typescript': seqTypescriptObj,
   './helpers/': {
     Bus,
-    Database,
     Ed,
     ExceptionsManager,
     JobsQueue,
@@ -388,20 +399,20 @@ describe('AppManager', () => {
   });
 
   describe('initAppElements', () => {
-    let databaseConnectStub: SinonStub;
     let cacheConnectStub: SinonStub;
     let createServerStub: SinonStub;
     let getMetadataSpy: SinonSpy;
+    let sequelizeNamespaceAttachStub: SinonStub;
     let excCreators: any[];
 
     beforeEach(() => {
       expressStub         = sandbox.stub().returns('expressApp');
       createServerStub    = sandbox.stub(http, 'createServer').returns('server');
       socketIOStub        = sandbox.stub().returns('socketIO');
-      databaseConnectStub = sandbox.stub(Database, 'connect').resolves('db');
       cacheConnectStub    = sandbox.stub(cache, 'connect').resolves({ client: 'theClient' });
       getMetadataSpy      = sandbox.spy(Reflect, 'getMetadata');
 
+      sequelizeNamespaceAttachStub = sandbox.stub(seqTypescriptObj.Sequelize.__proto__, 'useCLS');
       containerStub = new ContainerStub(sandbox);
       containerStub.get.callsFake((s) => allStubsContainer.get(s));
       excCreators = [
@@ -438,14 +449,6 @@ describe('AppManager', () => {
       expect(instance.expressApp).to.be.equal('expressApp');
     });
 
-    it('should call Database.connect', async () => {
-      await instance.initAppElements();
-      expect(databaseConnectStub.calledOnce).to.be.true;
-      expect(databaseConnectStub.firstCall.args.length).to.be.equal(2);
-      expect(databaseConnectStub.firstCall.args[0]).to.be.deep.equal(appConfig.db);
-      expect(databaseConnectStub.firstCall.args[1]).to.be.deep.equal(loggerStub);
-    });
-
     it('should call cache.connect', async () => {
       await instance.initAppElements();
       expect(cacheConnectStub.calledOnce).to.be.true;
@@ -465,9 +468,9 @@ describe('AppManager', () => {
     });
 
     // Test added to make sure this file is updated every time a new element is bound in container
-    it('should call bind exactly 67 times', async () => {
+    it('should call bind exactly 86 times', async () => {
       await instance.initAppElements();
-      expect(containerStub.bindCount).to.be.equal(67);
+      expect(containerStub.bindCount).to.be.equal(86);
     });
 
     it('should bind each API controller to its symbol', async () => {
@@ -517,12 +520,6 @@ describe('AppManager', () => {
       expect(containerStub.bindings[Symbols.generic.appConfig]).to.be.deep.equal([
         {
           toConstantValue: appConfig,
-        },
-      ]);
-
-      expect(containerStub.bindings[Symbols.generic.db]).to.be.deep.equal([
-        {
-          toConstantValue: 'db',
         },
       ]);
 
@@ -923,7 +920,7 @@ describe('AppManager', () => {
     let transactionLogicStub: TransactionLogicStub;
     let blocksSubmoduleChainStub: BlocksSubmoduleChainStub;
     let loaderModuleStub: LoaderModuleStub;
-
+    let blockLogicStub: BlockLogicStub;
     beforeEach(() => {
       cbToPromiseStub                = sandbox.stub().callsFake((fn) => {
         fn(() => 'cbToPromiseCallbackRetVal');
@@ -934,6 +931,7 @@ describe('AppManager', () => {
       transactionLogicStub           = allStubsContainer.get(Symbols.logic.transaction);
       blocksSubmoduleChainStub       = allStubsContainer.get(Symbols.modules.blocksSubModules.chain);
       loaderModuleStub               = allStubsContainer.get(Symbols.modules.loader);
+      blockLogicStub                 = allStubsContainer.get(Symbols.logic.block);
       listenStub                     = sandbox.stub();
 
       instance      = new ProxyAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
@@ -955,10 +953,12 @@ describe('AppManager', () => {
       transactionLogicStub.stubs.attachAssetType.returns(true);
       blocksSubmoduleChainStub.stubs.saveGenesisBlock.resolves();
       loaderModuleStub.stubs.loadBlockChain.resolves();
+      sandbox.stub(Sequelize.prototype, 'addModels').returns(null);
+      blockLogicStub.enqueueResponse('objectNormalize', null);
     });
 
     afterEach(() => {
-      [busStub, transactionLogicStub, blocksSubmoduleChainStub, loaderModuleStub].forEach((stub: any) => {
+      [busStub, transactionLogicStub, blocksSubmoduleChainStub, loaderModuleStub, blockLogicStub].forEach((stub: any) => {
         if (typeof stub.reset !== 'undefined') {
           stub.reset();
         }
@@ -972,6 +972,12 @@ describe('AppManager', () => {
       await instance.finishBoot();
       expect(containerStub.get.called).to.be.true;
       expect(containerStub.get.firstCall.args[0]).to.be.equal(Symbols.helpers.bus);
+    });
+
+    it('should call objectNormalize over genesisblock', async () => {
+      await instance.finishBoot();
+      expect(blockLogicStub.stubs.objectNormalize.called).is.true;
+      expect(blockLogicStub.stubs.objectNormalize.firstCall.args[0]).deep.eq(genesisBlock);
     });
 
     it('should call getModules() and set them into bus.modules', async () => {
@@ -999,10 +1005,9 @@ describe('AppManager', () => {
     it('should call txLogic.attachAssetType for each returned transaction type', async () => {
       await instance.finishBoot();
       Object.keys(Symbols.logic.transactions).forEach((k, idx) => {
-        expect(transactionLogicStub.stubs.attachAssetType.getCall(idx).args[0]).to.be.deep.equal({
-          stubNotFound: true,
-          symbol      : Symbols.logic.transactions[k],
-        });
+        expect(transactionLogicStub.stubs.attachAssetType.getCall(idx).args[0].type).to.be.deep.equal(
+          allStubsContainer.get(Symbols.logic.transactions[k]).type
+        );
       });
     });
 
