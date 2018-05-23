@@ -1,5 +1,5 @@
 import { inject, injectable, tagged } from 'inversify';
-import { Transaction } from 'sequelize';
+import { Transaction, Op } from 'sequelize';
 import { Bus, catchToLoggerAndRemapError, DBHelper, ILogger, Sequence, TransactionType, wait } from '../../helpers/';
 import { WrapInBalanceSequence } from '../../helpers/decorators/wrapInSequence';
 import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
@@ -93,7 +93,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   }
 
   public async deleteAfterBlock(height: number): Promise<void> {
-    await this.BlocksModel.destroy({where: {$gte: height}});
+    await this.BlocksModel.destroy({where: {[Op.gte]: height}});
   }
 
   /**
@@ -325,7 +325,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
       for (const tx of txs) {
-        const sender = await this.AccountsModel.find({where: {publicKey: tx.senderPublicKey}});
+        const sender = await this.AccountsModel.scope('fullConfirmed').find({where: {publicKey: tx.senderPublicKey}});
         await this.transactionsModule.undo(tx, lb, sender);
         await this.transactionsModule.undoUnconfirmed(tx);
       }
