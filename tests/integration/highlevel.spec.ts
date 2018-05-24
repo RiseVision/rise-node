@@ -109,14 +109,14 @@ describe('highlevel checks', function () {
             )
         );
         const s = initializer.appManager.container.get<Sequelize>(Symbols.generic.sequelize);
-        s.options.logging = true;
+        // s.options.logging = true;
         console.log('TXS:', txs.map(tx => tx.id), senderAccount.address);
 
         await expect(initializer
           .rawMineBlockWithTxs(txs.map((t) => toBufferedTransaction(t))))
           .to
           .rejectedWith(/Account does not have enough currency/);
-        s.options.logging = false;
+        // s.options.logging = false;
 
         const postAcc = accModule.getAccount({address: senderAccount.address });
 
@@ -579,8 +579,10 @@ describe('highlevel checks', function () {
   //       txs.push(signedTx);
   //     }
   //
+  //     const now = Date.now();
   //     await confirmTransactions(txs, false);
-  //
+  //     const took = Date.now() - now;
+  //     console.log(`It Took ${took} for ${txs.length} - TPs: ${txs.length/took* 1000}`);
   //     sequelize.options.logging = false;
   //   });
   // });

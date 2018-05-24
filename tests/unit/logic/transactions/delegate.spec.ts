@@ -171,11 +171,11 @@ describe('logic/transactions/delegate', () => {
       await expect(instance.verify(tx, sender)).to.be.rejectedWith('Username is too long. Maximum is 20 characters');
     });
 
-    it('should throw when username is a possible address', async () => {
+    it('should throw when username is a possible address - given param should be uppercased', async () => {
       zSchemaStub.stubs.validate.onFirstCall().returns(true);
       await expect(instance.verify(tx, sender)).to.be.rejectedWith('Username can not be a potential address');
       expect(zSchemaStub.stubs.validate.calledOnce).to.be.true;
-      expect(zSchemaStub.stubs.validate.firstCall.args[0]).to.be.equal(tx.asset.delegate.username);
+      expect(zSchemaStub.stubs.validate.firstCall.args[0]).to.be.equal(tx.asset.delegate.username.toUpperCase());
       expect(zSchemaStub.stubs.validate.firstCall.args[1].format).to.be.equal('address');
     });
 
