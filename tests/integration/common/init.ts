@@ -208,9 +208,7 @@ export class IntegrationTestInitializer {
       // 'migrations',
       'multisignatures', 'peers', 'rounds_fees', 'signatures', 'trs', 'votes'];
 
-    for (const table of tables) {
-      await migrations.sequelize.query(`TRUNCATE ${table} CASCADE`);
-    }
+    await migrations.sequelize.query(`TRUNCATE ${tables.join(', ')} CASCADE`);
   }
 
 }
