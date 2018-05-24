@@ -1,5 +1,6 @@
 import { inject, injectable, tagged } from 'inversify';
 import * as sequelize from 'sequelize';
+import { Op } from 'sequelize';
 import {
   BlockProgressLogger,
   catchToLoggerAndRemapError,
@@ -140,7 +141,8 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
       .findAll({
         attributes: ['id', 'height'],
         order     : [['height', 'DESC']],
-        where     : {height: {$in: heightsToQuery}},
+        raw       : true,
+        where     : {height: heightsToQuery},
       });
 
     if (blocks.length === 0) {
@@ -194,7 +196,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
         return await this.BlocksModel.findAll({
           include: [this.TransactionsModel],
           order: ['height', 'rowId'],
-          where: {height: {$gt: height, $lt: limit}},
+          where: {height: {[Op.gt]: height, [Op.lt]: limit}},
         });
       }
       return [block];
@@ -214,18 +216,18 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     const params: any                                                         = {};
     params.generatorPublicKey                                                 = filter.generatorPublicKey;
     params.delegates                                                          = this.constants.activeDelegates;
-    const timestampClausole: { timestamp?: { $gte?: number, $lte?: number } } = {timestamp: {}};
+    const timestampClausole: { timestamp?: any } = {timestamp: {}};
 
     if (typeof(filter.start) !== 'undefined') {
-      timestampClausole.timestamp.$gte = filter.start - this.constants.epochTime.getTime() / 1000;
+      timestampClausole.timestamp[Op.gte] = filter.start - this.constants.epochTime.getTime() / 1000;
     }
 
     if (typeof(filter.end) !== 'undefined') {
-      timestampClausole.timestamp.$lte = filter.end - this.constants.epochTime.getTime() / 1000;
+      timestampClausole.timestamp[Op.lte] = filter.end - this.constants.epochTime.getTime() / 1000;
     }
 
-    if (typeof(timestampClausole.timestamp.$gte) === 'undefined'
-      && typeof(timestampClausole.timestamp.$lte) === 'undefined') {
+    if (typeof(timestampClausole.timestamp[Op.gte]) === 'undefined'
+      && typeof(timestampClausole.timestamp[Op.lte]) === 'undefined') {
       delete timestampClausole.timestamp;
     }
 

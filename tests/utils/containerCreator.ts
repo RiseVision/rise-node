@@ -38,7 +38,7 @@ import SocketIOStub from '../stubs/utils/SocketIOStub';
 import {
   AccountsModel, BlocksModel, DelegatesModel, SignaturesModel, TransactionsModel, MultiSignaturesModel,
   VotesModel, Accounts2DelegatesModel, Accounts2MultisignaturesModel, Accounts2U_DelegatesModel,
-  Accounts2U_MultisignaturesModel, RoundsModel, ForksStatsModel, PeersModel
+  Accounts2U_MultisignaturesModel, RoundsModel, ForksStatsModel, PeersModel, RoundsFeesModel
 } from '../../src/models';
 import { Sequelize } from 'sequelize-typescript';
 import { TransactionsModelStub } from '../stubs/models/TransactionsModelStub';
@@ -73,9 +73,10 @@ export const createContainer = (): Container => {
   container.bind(Symbols.generic.zschema).to(ZSchemaStub).inSingletonScope();
   container.bind(Symbols.generic.sequelize).toConstantValue(new Sequelize({
     database: 'test',
-    dialect: 'postgres',
+    dialect: 'sqlite',
     username: 'root',
     password: 'test',
+    storage: ':memory',
     logging: !('SEQ_SILENT' in process.env),
   }));
 
@@ -141,6 +142,7 @@ export const createContainer = (): Container => {
   container.bind(Symbols.models.accounts2U_Multisignatures).toConstructor(Accounts2U_MultisignaturesModel);
   container.bind(Symbols.models.peers).toConstructor(PeersModel);
   container.bind(Symbols.models.rounds).toConstructor(RoundsModel);
+  container.bind(Symbols.models.roundsFees).toConstructor(RoundsFeesModel);
   container.bind(Symbols.models.votes).toConstructor(VotesModel);
   container.bind(Symbols.models.signatures).toConstructor(SignaturesModel);
   container.bind(Symbols.models.delegates).toConstructor(DelegatesModel);
@@ -156,11 +158,9 @@ export const createContainer = (): Container => {
   const sequelize = container.get<Sequelize>(Symbols.generic.sequelize);
   const models = [
     AccountsModel, BlocksModel, Accounts2DelegatesModel, Accounts2U_DelegatesModel, Accounts2MultisignaturesModel,
-    Accounts2U_MultisignaturesModel, ForksStatsModel, PeersModel, RoundsModel, TransactionsModel, MultiSignaturesModel, DelegatesModel, SignaturesModel, VotesModel];
-  //if (!AccountsModel.findAll) {
-    sequelize.addModels(models);
-  //}
-  models.forEach((m) => m.sequelize = sequelize);
+    Accounts2U_MultisignaturesModel, ForksStatsModel, PeersModel, RoundsFeesModel, RoundsModel, TransactionsModel, MultiSignaturesModel, DelegatesModel, SignaturesModel, VotesModel];
+  sequelize.addModels(models);
+
   return container;
 };
 
