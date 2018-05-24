@@ -401,54 +401,55 @@ describe('apis/blocksAPI', () => {
     beforeEach(() => {
       fee                    = { fees: { send: 'send' } };
       blocksModule.lastBlock = { height: 5 } as any;
-      systemModule.broadhash = 'broadhash';
+      // systemModule.broadhash = 'broadhash';
       systemModule.enqueueResponse('getFees', fee);
       systemModule.enqueueResponse('getNethash', 1);
+      systemModule.enqueueResponse('getBroadhash', 'broadhash');
     });
 
-    it('should call systemModule.getFees', () => {
-      instance.getStatus();
+    it('should call systemModule.getFees', async () => {
+      await instance.getStatus();
 
       expect(systemModule.stubs.getFees.calledOnce).to.be.true;
       expect(systemModule.stubs.getFees.firstCall.args.length).to.be.equal(1);
       expect(systemModule.stubs.getFees.firstCall.args[0]).to.be.equal(5);
     });
 
-    it('should call blockRewardLogic.calcMilestone', () => {
-      instance.getStatus();
+    it('should call blockRewardLogic.calcMilestone', async () => {
+      await instance.getStatus();
 
       expect(blockRewardLogic.stubs.calcMilestone.calledOnce).to.be.true;
       expect(blockRewardLogic.stubs.calcMilestone.firstCall.args.length).to.be.equal(1);
       expect(blockRewardLogic.stubs.calcMilestone.firstCall.args[0]).to.be.equal(5);
     });
 
-    it('should call systemModule.getNethash', () => {
-      instance.getStatus();
+    it('should call systemModule.getNethash', async () => {
+      await instance.getStatus();
 
       expect(systemModule.stubs.getNethash.calledOnce).to.be.true;
       expect(systemModule.stubs.getNethash.firstCall.args.length).to.be.equal(0);
     });
 
-    it('should call blockRewardLogic.calcReward', () => {
-      instance.getStatus();
+    it('should call blockRewardLogic.calcReward', async () => {
+      await instance.getStatus();
 
       expect(blockRewardLogic.stubs.calcReward.calledOnce).to.be.true;
       expect(blockRewardLogic.stubs.calcReward.firstCall.args.length).to.be.equal(1);
       expect(blockRewardLogic.stubs.calcReward.firstCall.args[0]).to.be.equal(5);
     });
 
-    it('should call blockRewardLogic.calcSupply', () => {
-      instance.getStatus();
+    it('should call blockRewardLogic.calcSupply', async () => {
+      await instance.getStatus();
 
       expect(blockRewardLogic.stubs.calcSupply.calledOnce).to.be.true;
       expect(blockRewardLogic.stubs.calcSupply.firstCall.args.length).to.be.equal(1);
       expect(blockRewardLogic.stubs.calcSupply.firstCall.args[0]).to.be.equal(5);
     });
 
-    it('should return a status', () => {
+    it('should return a status', async () => {
       const epoch = new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0));
 
-      const ret = instance.getStatus();
+      const ret = await instance.getStatus();
 
       expect(ret).to.be.deep.equal({
         broadhash: 'broadhash',

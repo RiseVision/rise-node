@@ -151,8 +151,8 @@ describe('modules/system', () => {
       blocksModel = container.get(Symbols.models.blocks);
       findAllStub = sandbox.stub(blocksModel, 'findAll').resolves([]);
     });
-    it('should return broadhash from headers if db.query returns empty array', async () => {
-      instB.headers.broadhash = 'hahaha';
+    it('should return broadhash from appConfig  if db.query returns empty array', async () => {
+      instB.appConfig.nethash = 'hahaha'
       expect(await inst.getBroadhash()).to.be.eq('hahaha');
     });
     it('should compute broadhash from returned db data', async () => {
