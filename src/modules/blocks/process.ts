@@ -1,5 +1,6 @@
 import { inject, injectable, tagged } from 'inversify';
 import * as _ from 'lodash';
+import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { constants, ForkType, IKeypair, ILogger, Sequence } from '../../helpers/';
 import { WrapInDBSequence, WrapInDefaultSequence } from '../../helpers/decorators/wrapInSequence';
@@ -170,12 +171,12 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     this.logger.debug('Loading blocks offset', { limit, offset, verify });
 
     const blocks: BlocksModel[] = await this.BlocksModel.findAll({
-      include: [ TransactionsModel ],
+      include: [ this.TransactionsModel ],
       order: ['height', 'rowId'],
       where: {
         height: {
-          $gte: params.offset,
-          $lt : params.limit,
+          [Op.gte]: params.offset,
+          [Op.lt] : params.limit,
         },
       },
     });
