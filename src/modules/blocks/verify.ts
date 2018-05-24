@@ -4,7 +4,11 @@ import { constants as constantsType, ForkType, ILogger, Slots } from '../../help
 import { IBlockLogic, IBlockReward, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
   IAccountsModule,
-  IBlocksModule, IBlocksModuleChain, IBlocksModuleVerify, IDelegatesModule, IForkModule,
+  IBlocksModule,
+  IBlocksModuleChain,
+  IBlocksModuleVerify,
+  IDelegatesModule,
+  IForkModule,
   ITransactionsModule
 } from '../../ioc/interfaces/modules/';
 import { Symbols } from '../../ioc/symbols';
@@ -160,8 +164,10 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
 
   public async onBlockchainReady() {
     const blocks       = await this.BlocksModel.findAll({
-      limit: this.constants.blockSlotWindow,
-      order: [['height', 'desc']],
+      attributes: ['id'],
+      limit     : this.constants.blockSlotWindow,
+      order     : [['height', 'desc']],
+      raw       : true,
     });
     this.lastNBlockIds = blocks.map((b) => b.id);
   }

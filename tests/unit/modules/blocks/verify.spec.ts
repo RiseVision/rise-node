@@ -20,7 +20,9 @@ import { ForkModuleStub } from '../../../stubs/modules/ForkModuleStub';
 import { createContainer } from '../../../utils/containerCreator';
 
 import { createFakeBlock } from '../../../utils/blockCrafter';
-import { createRandomTransactions } from '../../../utils/txCrafter';
+import { createRandomTransactions, toBufferedTransaction } from '../../../utils/txCrafter';
+import { SinonSandbox, SinonStub } from 'sinon';
+import { BlocksModel } from '../../../../src/models';
 
 chai.use(chaiAsPromised);
 
@@ -43,13 +45,14 @@ describe('modules/blocks/verify', () => {
   let txModule: TransactionsModuleStub;
   let accountsModule: AccountsModuleStub;
 
-  let dbStub: DbStub;
-
   let slots: SlotsStub;
 
   let blockLogic: BlockLogicStub;
   let blockRewardLogic: BlockRewardLogicStub;
   let txLogic: TransactionLogicStub;
+
+  let blocksModel: typeof BlocksModel;
+  let sandbox: SinonSandbox;
   beforeEach(() => {
     blocksModule    = container.get(Symbols.modules.blocks);
     blocksChain     = container.get(Symbols.modules.blocksSubModules.chain);
@@ -58,14 +61,18 @@ describe('modules/blocks/verify', () => {
     txModule        = container.get(Symbols.modules.transactions);
     accountsModule  = container.get(Symbols.modules.accounts);
 
-    dbStub = container.get(Symbols.generic.db);
 
     slots = container.get(Symbols.helpers.slots);
 
     blockLogic       = container.get(Symbols.logic.block);
     blockRewardLogic = container.get(Symbols.logic.blockReward);
     txLogic          = container.get(Symbols.logic.transaction);
+
+    blocksModel = container.get(Symbols.models.blocks);
+    sandbox = sinon.createSandbox();
   });
+
+  afterEach(() => sandbox.restore());
 
   describe('onNewBlock', () => {
     it('should add blockid to last known block ids [private] (till constants.blockSlotWindow)', async () => {
@@ -83,9 +90,9 @@ describe('modules/blocks/verify', () => {
 
   describe('onBlockchainReady', () => {
     it('should initialize [private].lastNBlockIds with the last blockSlotWindow block ids from db', async () => {
-      dbStub.enqueueResponse('query', Promise.resolve([{id: '1'}, {id: '2'}, {id: '3'}]));
+      sandbox.stub(blocksModel, 'findAll').resolves([{id: '1'}, {id: '2'}, {id: '3'}]);
       await instReal.onBlockchainReady();
-      // tslint:disable-next-line: no-string-literal
+      // tslint:disable-next-line: no-string-literalahusdhuahsud
       expect(instReal['lastNBlockIds']).to.be.deep.eq(['1', '2', '3']);
     });
   });
@@ -125,7 +132,7 @@ describe('modules/blocks/verify', () => {
           expect(res.errors).is.empty;
         });
         it('error if signature is invalid', async () => {
-          block.blockSignature = new Array(64).fill(null).map(() => 'aa').join('');
+          block.blockSignature = Buffer.from(new Array(64).fill(null).map(() => 'aa').join(''), 'hex');
           const res            = await inst[what](block);
           expect(res.errors).to.be.deep.eq(['Failed to verify block signature']);
           expect(res.verified).is.false;
@@ -167,7 +174,7 @@ describe('modules/blocks/verify', () => {
             block     = createFakeBlock({
               previousBlock: {id: '1', height: 100} as any,
               timestamp    : block.timestamp,
-              transactions : txs.concat([txs[0]]),
+              transactions : txs.concat([txs[0]]).map((t) => toBufferedTransaction(t)),
             });
             const res = await inst[what](block);
             expect(res.errors).to.contain(`Encountered duplicate transaction: ${txs[0].id}`);
@@ -179,7 +186,7 @@ describe('modules/blocks/verify', () => {
             block     = createFakeBlock({
               previousBlock: {id: '1', height: 100} as any,
               timestamp    : block.timestamp,
-              transactions : txs,
+              transactions : txs.map((t) => toBufferedTransaction(t)),
             });
             const res = await inst[what](block);
             expect(res.errors).to.contain('Error: meow');
@@ -190,7 +197,7 @@ describe('modules/blocks/verify', () => {
             block     = createFakeBlock({
               previousBlock: {id: '1', height: 100} as any,
               timestamp    : block.timestamp,
-              transactions : txs,
+              transactions : txs.map((t) => toBufferedTransaction(t)),
             });
             const res = await inst[what](block);
             expect(res.errors).to.contain('Invalid payload hash');
@@ -201,7 +208,7 @@ describe('modules/blocks/verify', () => {
             block             = createFakeBlock({
               previousBlock: {id: '1', height: 100} as any,
               timestamp    : block.timestamp,
-              transactions : txs,
+              transactions : txs.map((t) => toBufferedTransaction(t)),
             });
             block.totalAmount = block.totalAmount + 1;
             const res         = await inst[what](block);
@@ -213,7 +220,7 @@ describe('modules/blocks/verify', () => {
             block          = createFakeBlock({
               previousBlock: {id: '1', height: 100} as any,
               timestamp    : block.timestamp,
-              transactions : txs,
+              transactions : txs.map((t) => toBufferedTransaction(t)),
             });
             block.totalFee = block.totalFee + 1;
             const res      = await inst[what](block);
@@ -315,6 +322,10 @@ describe('modules/blocks/verify', () => {
   });
 
   describe('processBlock', () => {
+    let findByIdStub: SinonStub;
+    beforeEach(() => {
+      findByIdStub = sandbox.stub(blocksModel, 'findById');
+    })
     it('rejects if is cleaning', async () => {
       await inst.cleanup();
       await expect(inst.processBlock(null, true, true))
@@ -334,15 +345,14 @@ describe('modules/blocks/verify', () => {
     it('should throw if block already exists in db', async () => {
       sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors  : [], verified: true }));
       blockLogic.enqueueResponse('objectNormalize', {id: '1', normalized: 'block'});
-
-      dbStub.enqueueResponse('query', Promise.resolve([{}]));
+      findByIdStub.resolves({})
       await expect(inst.processBlock(null, true, true))
         .to.be.rejectedWith('Block 1 already exists');
     });
     it('should throw if delegate.blockSlot is wrong', async () => {
       sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors  : [], verified: true }));
       blockLogic.enqueueResponse('objectNormalize', {id: '1', normalized: 'block'});
-      dbStub.enqueueResponse('query', Promise.resolve([]));
+      findByIdStub.resolves(null);
       delegatesModule.enqueueResponse('assertValidBlockSlot', Promise.reject('error'));
 
       await expect(inst.processBlock(null, true, true))
@@ -351,7 +361,7 @@ describe('modules/blocks/verify', () => {
     it('should fork 3 if delegate.blockSlot is wrong', async () => {
       sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors  : [], verified: true }));
       blockLogic.enqueueResponse('objectNormalize', {id: '1', normalized: 'block'});
-      dbStub.enqueueResponse('query', Promise.resolve([]));
+      findByIdStub.resolves(null);
       delegatesModule.enqueueResponse('assertValidBlockSlot', Promise.reject('error'));
 
       await expect(inst.processBlock(null, true, true))
@@ -371,7 +381,7 @@ describe('modules/blocks/verify', () => {
         sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors  : [], verified: true }));
         normalizedBlock = {id: '1', normalized: 'block', transactions: txs};
         blockLogic.enqueueResponse('objectNormalize', normalizedBlock);
-        dbStub.enqueueResponse('query', Promise.resolve([]));
+        findByIdStub.resolves(null);
         delegatesModule.enqueueResponse('assertValidBlockSlot', Promise.resolve());
         blocksChain.enqueueResponse('applyBlock', Promise.resolve());
 
@@ -438,7 +448,7 @@ describe('modules/blocks/verify', () => {
     it('should call blocksChain.applyBlock propagating broadcast and saveblock values if all ok', async () => {
       sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors  : [], verified: true }));
       blockLogic.enqueueResponse('objectNormalize', {id: '1', normalized: 'block', transactions: [] });
-      dbStub.enqueueResponse('query', Promise.resolve([]));
+      findByIdStub.resolves(null);
       delegatesModule.enqueueResponse('assertValidBlockSlot', Promise.resolve());
       blocksChain.enqueueResponse('applyBlock', Promise.resolve());
 
