@@ -166,25 +166,22 @@ export class PeersModule implements IPeersModule {
       return;
     }
     // Wrap sql queries in transaction and execute
-    const transaction = await this.PeersModel.sequelize.transaction();
-    try {
-      await this.PeersModel.truncate({transaction});
+    await this.PeersModel.sequelize.transaction(async (transaction) => {
+      await this.PeersModel.truncate({ transaction });
       await this.PeersModel.bulkCreate(
         peers
           .map((p) => {
             if (p.broadhash) {
-              return {...p, ...{broadhash: Buffer.from(p.broadhash, 'hex')}};
+              return { ...p, ...{ broadhash: Buffer.from(p.broadhash, 'hex') } };
             }
             return p;
           }),
-        {transaction}
+        { transaction }
       );
-      await transaction.commit();
       this.logger.info('Peers exported to database');
-    } catch (err) {
-      this.logger.error('Export peers to database failed', {error: err.message || err});
-      await transaction.rollback();
-    }
+    }).catch((err) => {
+      this.logger.error('Export peers to database failed', { error: err.message || err });
+    });
 
   }
 
