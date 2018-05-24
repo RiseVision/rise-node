@@ -86,7 +86,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       throw new Error('Username is too long. Maximum is 20 characters');
     }
 
-    if (this.schema.validate(tx.asset.delegate.username, { format: 'address' })) {
+    if (this.schema.validate(tx.asset.delegate.username.toUpperCase(), { format: 'address' })) {
       throw new Error('Username can not be a potential address');
     }
 

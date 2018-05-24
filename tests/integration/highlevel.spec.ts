@@ -30,7 +30,7 @@ import {
 import { Ed, JobsQueue, wait } from '../../src/helpers';
 import BigNumber from 'bignumber.js';
 import { toBufferedTransaction } from '../utils/txCrafter';
-import { BlocksModel } from '../../src/models';
+import { BlocksModel, TransactionsModel } from '../../src/models';
 import { Sequelize } from 'sequelize-typescript';
 
 // tslint:disable no-unused-expression
@@ -48,6 +48,9 @@ describe('highlevel checks', function () {
   let txLogic: ITransactionLogic;
   let systemModule: ISystemModule;
   let ed: Ed;
+
+  let txModel: typeof TransactionsModel;
+  let blocksModel: typeof BlocksModel;
   beforeEach(async () => {
     const {wallet: randomAccount} = await createRandomAccountWithFunds(funds);
     senderAccount                 = randomAccount;
@@ -59,6 +62,8 @@ describe('highlevel checks', function () {
     txPool                        = initializer.appManager.container.get(Symbols.logic.transactionPool);
     txLogic                       = initializer.appManager.container.get(Symbols.logic.transaction);
     systemModule                  = initializer.appManager.container.get(Symbols.modules.system);
+    txModel                       = initializer.appManager.container.get(Symbols.models.transactions);
+    blocksModel                   = initializer.appManager.container.get(Symbols.models.blocks);
   });
   afterEach(async function () {
     this.timeout(100000);
@@ -443,7 +448,7 @@ describe('highlevel checks', function () {
         await supertest(initializer.appManager.expressApp)
           .post('/peer/blocks')
           .set(fieldheader)
-          .send({block: BlocksModel.toStringBlockType(block)})
+          .send({block: blocksModel.toStringBlockType(block, txModel, blocksModule)})
           .expect(200);
 
         expect(blocksModule.lastBlock.blockSignature).to.be.deep.eq(block.blockSignature);
@@ -517,7 +522,7 @@ describe('highlevel checks', function () {
           supertest(initializer.appManager.expressApp)
             .post('/peer/blocks')
             .set(fieldheader)
-            .send({block: BlocksModel.toStringBlockType(block)})
+            .send({block: blocksModel.toStringBlockType(block, txModel, blocksModule)})
             .expect(200)
         ]);
 
