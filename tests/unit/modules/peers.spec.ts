@@ -296,16 +296,12 @@ describe('modules/peers', () => {
   describe('.cleanup', () => {
     let truncateStub: SinonStub;
     let bulkCreateStub: SinonStub;
-    let rollbackStub: SinonStub;
+    let txStub: SinonStub;
     beforeEach(() => {
       const peersModel = container.get<any>(Symbols.models.peers);
       truncateStub = sandbox.stub(peersModel, 'truncate');
       bulkCreateStub = sandbox.stub(peersModel, 'bulkCreate');
-      rollbackStub = sandbox.stub().resolves();
-      sandbox.stub(peersModel.sequelize, 'transaction').resolves({'tx':'tx',
-        commit() { return Promise.resolve()},
-        rollback() { return rollbackStub();},
-      });
+      txStub = sandbox.stub(peersModel.sequelize, 'transaction').callsFake((t) => t('tx'))
     });
     it('should not save anything if no peers known', async () => {
       peersLogicStub.enqueueResponse('list', []);
@@ -325,9 +321,8 @@ describe('modules/peers', () => {
       expect(loggerStub.stubs.info.calledOnce).to.be.true;
       expect(loggerStub.stubs.info.firstCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal('Peers exported to database');
-      expect(rollbackStub.called).is.false;
     });
-    it('should throw error if db query was rejected', async () => {
+    it('should NOT throw error if db query was rejected', async () => {
       const loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
       bulkCreateStub.rejects(new Error('error'));
       peersLogicStub.enqueueResponse('list', [createFakePeer()]);
@@ -336,7 +331,6 @@ describe('modules/peers', () => {
       expect(loggerStub.stubs.error.firstCall.args.length).to.be.equal(2);
       expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal('Export peers to database failed');
       expect(loggerStub.stubs.error.firstCall.args[1]).to.be.deep.equal({error: 'error'});
-      expect(rollbackStub.called).is.true;
     });
 
   });
