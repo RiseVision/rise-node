@@ -1,9 +1,9 @@
 import { expect } from 'chai';
 import { TransactionType, z_schema } from '../../../src/helpers';
-import rawBlock from '../../../src/schema/logic/transportBlock';
+import transportBlockSchema from '../../../src/schema/logic/transportBlock';
 
 const schema = new z_schema({});
-describe('rawBlock JSON schema', () => {
+describe('transportBlock JSON schema', () => {
   // tslint:disable
   let validBlockWithTX = {
     "b_id"                  : "2937216933941712415",
@@ -77,9 +77,8 @@ describe('rawBlock JSON schema', () => {
 
   // tslint:enable
   // tslint:disable no-unused-expression
-
   it('should accept a block with valid SEND tx data', () => {
-    const result = schema.validate(validBlockWithTX, rawBlock);
+    const result = schema.validate(validBlockWithTX, transportBlockSchema);
     expect(result).to.be.true;
   });
 
@@ -87,7 +86,7 @@ describe('rawBlock JSON schema', () => {
     const block = {... validBlockWithTX };
     block.t_type = TransactionType.SIGNATURE;
     block.s_publicKey = '70a9c5555eea50685f4c081f81e692f70416ec1a032154ded8f8e0f3ecfadab7';
-    const result = schema.validate(block, rawBlock);
+    const result = schema.validate(block, transportBlockSchema);
     expect(result).to.be.true;
   });
 
@@ -95,7 +94,7 @@ describe('rawBlock JSON schema', () => {
     const block = {... validBlockWithTX };
     block.t_type = TransactionType.DELEGATE;
     block.d_username = 'rise_delegate';
-    const result = schema.validate(block, rawBlock);
+    const result = schema.validate(block, transportBlockSchema);
     expect(result).to.be.true;
   });
 
@@ -103,7 +102,7 @@ describe('rawBlock JSON schema', () => {
     const block = {... validBlockWithTX };
     block.t_type = TransactionType.VOTE;
     block.v_votes = '-123125232342R,+236345346354R';
-    const result = schema.validate(block, rawBlock);
+    const result = schema.validate(block, transportBlockSchema);
     expect(result).to.be.true;
   });
 
@@ -114,12 +113,12 @@ describe('rawBlock JSON schema', () => {
     block.m_lifetime = 8640000000;
     block.m_keysgroup = '70a9c5555eea50685f4c081f81e692f70416ec1a032154ded8f8e0f3ecfadab7,' +
                         '032154ded8f8e0f3ecfadab770a9c5555eea50685f4c081f81e692f70416ec1a';
-    const result = schema.validate(block, rawBlock);
+    const result = schema.validate(block, transportBlockSchema);
     expect(result).to.be.true;
   });
 
   it('should accept a block with null tx data', () => {
-    const result = schema.validate(validBlockWithoutTX, rawBlock);
+    const result = schema.validate(validBlockWithoutTX, transportBlockSchema);
     expect(result).to.be.true;
   });
 
@@ -166,7 +165,7 @@ describe('rawBlock JSON schema', () => {
       it('should reject ' + key + ' with a value of ' + JSON.stringify(badBlock[key]), () => {
         const block = { ... validBlockWithTX };
         block[key] = badBlock[key];
-        expect(schema.validate(block, rawBlock)).to.be.false;
+        expect(schema.validate(block, transportBlockSchema)).to.be.false;
       });
     });
   });
@@ -180,7 +179,7 @@ describe('rawBlock JSON schema', () => {
     ].forEach((el) => {
       const block = { ... validBlockWithTX };
       delete block[el];
-      expect(schema.validate(block, rawBlock)).to.be.false;
+      expect(schema.validate(block, transportBlockSchema)).to.be.false;
     });
   });
 });

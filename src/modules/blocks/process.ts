@@ -220,7 +220,6 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         method: 'GET',
       });
 
-    // TODO: test schema of loadBlocksFromPeer
     if (!this.schema.validate(blocksFromPeer.blocks, schema.loadBlocksFromPeer)) {
       throw new Error('Received invalid blocks data');
     }

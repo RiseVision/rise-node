@@ -54,7 +54,34 @@ export default {
     transactions        : {
       type       : 'array',
       uniqueItems: true,
-      // TODO add schema for items
+      maxItems: 25,
+      items: {
+        type      : 'object',
+        // Minimal schema to initially verify that mandatory fields are valid. Transactions are then revalidated
+        properties: {
+          id                : {
+            type     : 'string',
+            format   : 'id',
+            minLength: 1,
+            maxLength: 20,
+          },
+          type              : {
+            type: 'integer',
+          },
+          timestamp         : {
+            type: 'integer',
+          },
+          senderPublicKey   : {
+            type  : 'string',
+            format: 'publicKey',
+          },
+          signature         : {
+            type  : 'string',
+            format: 'signature',
+          },
+        },
+        required  : ['type', 'timestamp', 'senderPublicKey', 'signature'],
+      },
     },
     version             : {
       type   : 'integer',
