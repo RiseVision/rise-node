@@ -421,92 +421,70 @@ describe('modules/blocks/chain', () => {
       dbHelperStub = container.get(Symbols.helpers.db);
       busStub.enqueueResponse('message', null);
       txLogic.stubs.afterSave.resolves();
-      txLogic.stubs.dbSave.returns({ table: 'transactions', values: { id: '1' }, fields: ['id'] });
+      txLogic.stubs.dbSave.callsFake((ob) => ({saveOp: 'save', txID: ob.id, txType: ob.type}));
       blockLogic.enqueueResponse('dbSave', { table: 'blocks', values: { id: '1' }, fields: ['id'] });
       dbHelperStub.enqueueResponse('performOps', Promise.resolve());
     });
-    it('should call wrap all db stuff in db.tx', async () => {
-      const txStub = {
-        batch: sinon.stub().resolves(),
-        none : sinon.stub(),
-      };
-      dbStub.stubs.tx.resetBehavior();
-      dbStub.stubs.tx.resetHistory();
-      dbStub.stubs.tx.callsArgWith(0, txStub);
-      // simulate another table for clustering
-      txLogic.stubs.dbSave.onCall(3).returns({ table: 'vote_table', values: { id: '1' }, fields: ['id'] });
-
-      const transactions = createRandomTransactions({ send: 5, vote: 3 });
-      await inst.saveBlock({ transactions } as any);
-
-      expect(dbStub.stubs.tx.called).is.true;
-      expect(txStub.batch.called).is.true;
-
+    it('should call performOps using tx object', async () => {
+      const transactions = createRandomTransactions({send: 2});
+      await inst.saveBlock({ transactions } as any, 'dbTX');
+      expect(dbHelperStub.stubs.performOps.called).is.true;
+      expect(dbHelperStub.stubs.performOps.firstCall.args[1]).is.eq('dbTX');
     });
-    it('should call dbSave for all transactions in block', async () => {
-      const txStub = {
-        batch: sinon.stub().resolves(),
-        none : sinon.stub(),
-      };
-      dbStub.stubs.tx.resetHistory();
-      dbStub.stubs.tx.resetBehavior();
-      dbStub.stubs.tx.callsArgWith(0, txStub);
+    it('should call dbSave for block and for each transaction and use the output for performOps', async () => {
+      const transactions = createRandomTransactions({send: 2, vote: 2});
+      await inst.saveBlock({ transactions } as any, 'dbTX');
+      expect(txLogic.stubs.dbSave.called).is.true;
+      expect(txLogic.stubs.dbSave.callCount).is.eq(4);
 
-      const transactions = createRandomTransactions({ send: 5, vote: 3 });
-      await inst.saveBlock({ transactions } as any);
-      // Check that txLogic.dbSave was called one for each tx.
-      for (let i = 0; i < transactions.length; i++) {
-        expect(txLogic.stubs.dbSave.getCall(i).args[0]).to.be.deep.eq(transactions[i]);
-      }
+      expect(blockLogic.stubs.dbSave.called).is.true;
+      expect(dbHelperStub.stubs.performOps.firstCall.args[0]).to.be.deep.eq([
+        { table: 'blocks', values: { id: '1' }, fields: ['id'] },
+        ... transactions.map((t) => ({saveOp: 'save', txID: t.id, txType: t.type})),
+      ]);
     });
     it('should emit bus message for transactionsSaved', async () => {
       const transactions = createRandomTransactions({ send: 5, vote: 3 });
-      dbStub.enqueueResponse('tx', Promise.resolve());
-      await inst.saveBlock({ transactions } as any);
+      await inst.saveBlock({ transactions } as any, 'dbTX' as any);
       expect(busStub.stubs.message.called).is.true;
       expect(busStub.stubs.message.firstCall.args[0]).is.eq('transactionsSaved');
       expect(busStub.stubs.message.firstCall.args[1]).is.deep.eq(transactions);
     });
     it('should call txlogic.afterSave for each bundled tx', async () => {
-      dbStub.stubs.tx.resolves();
       const transactions = createRandomTransactions({ send: 5 });
-      await inst.saveBlock({ transactions } as any);
+      await inst.saveBlock({ transactions } as any, 'dbTX' as any);
       expect(txLogic.stubs.afterSave.callCount).is.eq(5);
       for (let i = 0; i < 5; i++) {
         expect(txLogic.stubs.afterSave.getCall(i).args[0]).to.be.deep.eq(transactions[i]);
       }
     });
     it('should work even if block does not have any transaction', async () => {
-      const txStub = {
-        batch: sinon.stub().resolves(),
-        none : sinon.stub(),
-      };
-      dbStub.stubs.tx.resetHistory();
-      dbStub.stubs.tx.resetBehavior();
-      dbStub.stubs.tx.callsArgWith(0, txStub);
-      await inst.saveBlock({ transactions: [] } as any);
+      await inst.saveBlock({ transactions: [] } as any, 'dbTX' as any);
     });
   });
 
   describe('saveGenesisBlock', () => {
-    it('should call db.query to check if genesis already exists', async () => {
-      dbStub.enqueueResponse('query', Promise.resolve([{ id: '16985986483000875063' }]));
-      await inst.saveGenesisBlock();
-      expect(dbStub.stubs.query.calledOnce).is.true;
-      expect(dbStub.stubs.query.firstCall.args[1]).to.be.deep.eq({ id: '16985986483000875063' });
+    let findByIdStub: SinonStub;
+    let txStub: SinonStub;
+    let saveBlockStub: SinonStub;
+    beforeEach(() => {
+      findByIdStub = sandbox.stub(blocksModel, 'findById');
+      txStub = sandbox.stub(blocksModel.sequelize, 'transaction').callsFake((t) => t('tx'));
+      saveBlockStub = sandbox.stub(inst, 'saveBlock');
     });
-    it('should call saveBlock only if genesis does not exist', async () => {
-      dbStub.enqueueResponse('query', Promise.resolve([]));
-
-      const stub = sinon.stub(inst, 'saveBlock');
+    it('should call db.query to check if genesis already exists and not call saveBlock', async () => {
+      findByIdStub.resolves({ id: '16985986483000875063' });
       await inst.saveGenesisBlock();
-      expect(stub.called).is.true;
-      expect(stub.calledOnce).is.true;
-
-      stub.resetHistory();
-      dbStub.enqueueResponse('query', Promise.resolve([{ id: 'aaa' }]));
+      expect(txStub.called).is.false;
+      expect(saveBlockStub.called).is.false;
+    });
+    it('should call saveBlock and pass tx if genesis does not exist', async () => {
+      findByIdStub.resolves(null);
       await inst.saveGenesisBlock();
-      expect(stub.called).is.false;
+      expect(txStub.called).is.true;
+      expect(saveBlockStub.called).is.true;
+      expect(txStub.calledBefore(saveBlockStub)).is.true;
+      expect(saveBlockStub.firstCall.args[1]).is.eq('tx');
     });
   });
 
@@ -540,4 +518,5 @@ describe('modules/blocks/chain', () => {
       timers.restore();
     });
   });
+
 });
