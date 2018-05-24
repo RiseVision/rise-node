@@ -148,10 +148,10 @@ export class BlocksAPI {
   }
 
   @Get('/getStatus')
-  public getStatus() {
+  public async getStatus() {
     const lastBlock = this.blocksModule.lastBlock;
     return {
-      broadhash: this.systemModule.broadhash,
+      broadhash: await this.systemModule.getBroadhash(),
       epoch    : this.constants.epochTime,
       fee      : this.systemModule.getFees(lastBlock.height).fees.send,
       height   : lastBlock.height,

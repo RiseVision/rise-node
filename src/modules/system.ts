@@ -170,7 +170,7 @@ export class SystemModule implements ISystemModule {
       raw       : true,
     });
     if (rows.length <= 1) {
-      return this.headers.broadhash;
+      return this.appConfig.nethash;
     }
 
     const seed = rows.map((r) => r.id).join('');

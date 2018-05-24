@@ -38,7 +38,7 @@ describe('api/delegates', () => {
   initializer.autoRestoreEach();
   before(async function() {
     this.timeout(10000);
-    await initializer.rawMineBlocks(101);
+    await initializer.rawMineBlocks(100);
   });
 
   describe('/', () => {
@@ -118,7 +118,7 @@ describe('api/delegates', () => {
     checkIntParam('height', '/api/delegates/fee', { min: 1 });
     checkReturnObjKeyVal('fromHeight', 1, '/api/delegates/fee');
     checkReturnObjKeyVal('toHeight', null, '/api/delegates/fee');
-    checkReturnObjKeyVal('height', 103, '/api/delegates/fee');
+    checkReturnObjKeyVal('height', 102, '/api/delegates/fee');
 
     it('should return fee value for delegate', async () => {
       return supertest(initializer.appManager.expressApp)
@@ -174,10 +174,10 @@ describe('api/delegates', () => {
             vote: 108912391000000,
             producedblocks: 1,
             missedblocks: 1,
-            rank: 63,
+            rank: 64,
             approval: 0.99,
             productivity: 50,
-            rate: 63,
+            rate: 64,
           });
         });
     });
@@ -321,7 +321,7 @@ describe('api/delegates', () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/delegates/getNextForgers').expect(200)
         .then((response) => {
-          expect(response.body.currentBlockSlot).to.be.deep.equal(102);
+          expect(response.body.currentBlockSlot).to.be.deep.equal(100);
         });
     });
 

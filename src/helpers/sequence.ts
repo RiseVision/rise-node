@@ -1,4 +1,5 @@
 import * as cls from 'cls-hooked';
+import { Namespace } from 'continuation-local-storage';
 
 interface IPromiseTask {
   worker(): Promise<any>;
@@ -10,11 +11,12 @@ interface IPromiseTask {
  */
 export class Sequence {
   private sequence: IPromiseTask[] = [];
-  private namespace: any;
+  private namespace: Namespace;
   private config: {
     onWarning: (curPending: number, warnLimit: number) => void,
     warningLimit: number
   };
+  private running: boolean         = false;
 
   constructor(private tag: symbol, cfg) {
     this.config = {
@@ -26,7 +28,6 @@ export class Sequence {
     };
 
     this.namespace = cls.createNamespace(this.tag);
-    setImmediate(() => this.nextSequenceTick());
   }
 
   /**
@@ -50,28 +51,39 @@ export class Sequence {
         },
       };
       this.sequence.push(task);
+      if (!this.running) {
+        setImmediate(() => this.tick());
+      }
     });
   }
 
-  private tick(cb) {
-    const task: IPromiseTask = this.sequence.shift();
-    if (!task) {
-      return setImmediate(cb);
+  private tick() {
+    // console.log('tick', this.running);
+    if (this.running) {
+      return;
     }
-    this.namespace.run(() => {
+    this.running = true;
+    this.namespace.run(async () => {
+      if (this.config.onWarning && this.sequence.length >= this.config.warningLimit) {
+        this.config.onWarning(this.sequence.length, this.config.warningLimit);
+      }
       this.namespace.set('running', true);
-      task.worker()
-        .then(() => {
-          this.namespace.set('running', false);
-          cb();
-        });
+      const totalTasks = this.sequence.length;
+
+      for (let i = 0; i < totalTasks; i++) {
+        const task: IPromiseTask = this.sequence.shift();
+        try {
+          await task.worker();
+        } catch (e) {
+          // unreachable code?
+        }
+      }
+      this.namespace.set('running', false);
+      this.running = false;
+      if (this.sequence.length > 0) {
+        this.tick();
+      }
     });
   }
 
-  private nextSequenceTick() {
-    if (this.config.onWarning && this.sequence.length >= this.config.warningLimit) {
-      this.config.onWarning(this.sequence.length, this.config.warningLimit);
-    }
-    this.tick(() => setTimeout(() => this.nextSequenceTick(), 3));
-  }
 }

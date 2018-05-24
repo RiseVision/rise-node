@@ -128,7 +128,7 @@ describe('api/blocks', () => {
         .expect(200)
         .then((response) => {
           expect(response.body.broadhash)
-            .to.be.eq('d4c807e3ea6b36f3860754d708f536d22891c91e963214c78640f83962ff8cb9');
+            .to.be.eq('f68c3359a8cc863e5f4bf8aee984022e1e5faf74dc4f3c12c5ae922ce7b078a9');
         });
     });
   });
