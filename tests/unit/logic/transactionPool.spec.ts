@@ -39,7 +39,7 @@ describe('logic/transactionPool - InnerTXQueue', () => {
 
   beforeEach(() => {
     instance = new InnerTXQueue();
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     hasSpy = sandbox.spy(instance, 'has');
   });
 
@@ -283,7 +283,7 @@ describe('logic/transactionPool - TransactionPool', () => {
   };
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     container = createContainer();
     instance = new TransactionPool();
     fakeBus = {message: sandbox.stub().resolves()};
@@ -1141,7 +1141,7 @@ describe('logic/transactionPool - afterConstruction', () => {
   let expireTransactionsStub;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     instance = new TransactionPool();
     jqStub = new JobsQueueStub();
     jqStub.stubs.register.callsFake((name: string, job: () => Promise<any>) => {

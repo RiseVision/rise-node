@@ -195,17 +195,18 @@ export class AccountLogic implements IAccountLogic {
    * - mem_accounts2u_multisignatures
    * @returns {Promise<void>}
    */
-  public removeTables(): Promise<void> {
-    return Promise.all([
-      this.AccountsModel.drop({ cascade: true }),
-      this.RoundsModel.drop({ cascade: true }),
-      this.Accounts2DelegatesModel.drop({ cascade: true }),
-      this.Accounts2MultisignaturesModel.drop({ cascade: true }),
-      this.Accounts2U_DelegatesModel.drop({ cascade: true }),
-      this.Accounts2U_MultisignaturesModel.drop({ cascade: true }),
-    ])
-      .then(() => void 0)
-      .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
+  public async removeTables(): Promise<void> {
+    const models = [
+      this.AccountsModel,
+      this.RoundsModel,
+      this.Accounts2DelegatesModel,
+      this.Accounts2MultisignaturesModel,
+      this.Accounts2U_DelegatesModel,
+      this.Accounts2U_MultisignaturesModel];
+    for (const model of models) {
+      await model.drop({cascade: true})
+        .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
+    }
   }
 
   /**

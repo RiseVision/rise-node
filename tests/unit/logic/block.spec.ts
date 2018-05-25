@@ -48,7 +48,7 @@ describe('logic/block', () => {
   const buffer = bb.toBuffer();
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     container = createContainer();
     createHashSpy = sandbox.spy(crypto, 'createHash');
     dummyTransactions = [

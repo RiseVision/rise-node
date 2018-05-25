@@ -59,7 +59,7 @@ describe('modules/rounds', () => {
     roundLogicStubConstructor = () => {
       return roundLogicStub;
     };
-    sandbox                   = sinon.sandbox.create();
+    sandbox                   = sinon.createSandbox();
     container                 = createContainer();
     container.bind(roundLogicSymbol).to(RoundLogicStub).inSingletonScope();
     container.bind(Symbols.logic.round).to(RoundLogicStub).inSingletonScope();

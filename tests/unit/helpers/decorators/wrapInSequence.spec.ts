@@ -28,7 +28,7 @@ describe('helpers/decorators/wrapInSequence', () => {
   let sequenceStub: SequenceStub;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     container = createContainer();
     defineMetadataSpy = sandbox.spy(Reflect, 'defineMetadata');
     target = () => 123;

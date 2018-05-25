@@ -37,7 +37,7 @@ describe('modules/transactions', () => {
   let transactionLogicStub: TransactionLogicStub;
 
   beforeEach(() => {
-    sandbox              = sinon.sandbox.create();
+    sandbox              = sinon.createSandbox();
     container = createContainer();
     container.rebind(Symbols.modules.transactions).to(TransactionsModule);
     instance             = container.get(Symbols.modules.transactions);

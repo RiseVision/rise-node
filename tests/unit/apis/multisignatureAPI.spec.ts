@@ -38,7 +38,7 @@ describe('apis/multisignatureAPI', () => {
 
   beforeEach(() => {
     container = createContainer();
-    sandbox   = sinon.sandbox.create();
+    sandbox   = sinon.createSandbox();
     container
       .bind(Symbols.api.multisignatures)
       .to(MultisignatureAPI);

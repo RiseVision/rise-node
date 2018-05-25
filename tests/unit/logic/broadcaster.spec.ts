@@ -26,7 +26,7 @@ describe('logic/broadcaster', () => {
   let container: Container;
 
   beforeEach(() => {
-    sandbox                = sinon.sandbox.create({
+    sandbox                = sinon.createSandbox({
       useFakeTimers: true,
     });
     container          = createContainer();

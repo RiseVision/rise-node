@@ -27,7 +27,7 @@ describe('modules/fork', () => {
   let socketIOStub: SocketIOStub;
 
   beforeEach(() => {
-    sandbox      = sinon.sandbox.create();
+    sandbox      = sinon.createSandbox();
     container = createContainer();
     container.rebind(Symbols.modules.fork).to(ForkModule);
     block = createFakeBlock();

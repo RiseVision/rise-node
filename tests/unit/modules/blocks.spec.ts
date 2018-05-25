@@ -19,7 +19,7 @@ describe('modules/blocks', () => {
   let sandbox: SinonSandbox;
 
   beforeEach(() => {
-    sandbox   = sinon.sandbox.create();
+    sandbox   = sinon.createSandbox();
     container = createContainer();
     container.rebind(Symbols.modules.blocks).to(BlocksModule);
     inst = instB = container.get<any>(Symbols.modules.blocks);

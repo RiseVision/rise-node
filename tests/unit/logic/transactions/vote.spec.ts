@@ -37,7 +37,7 @@ describe('logic/transactions/vote', () => {
 
 
   beforeEach(() => {
-    sandbox             = sinon.sandbox.create();
+    sandbox             = sinon.createSandbox();
     container          = createContainer();
     zSchemaStub         = {
       getLastErrors: () => [],

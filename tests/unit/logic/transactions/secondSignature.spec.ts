@@ -31,7 +31,7 @@ describe('logic/transactions/secondSignature', () => {
   let block: any;
 
   beforeEach(() => {
-    sandbox            = sinon.sandbox.create();
+    sandbox            = sinon.createSandbox();
     container          = createContainer();
     zSchemaStub        = {
       getLastErrors: () => [],

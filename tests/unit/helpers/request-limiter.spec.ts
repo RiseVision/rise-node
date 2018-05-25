@@ -30,7 +30,7 @@ describe('helpers/request-limiter', () => {
   let appUseSpy: any;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     appEnableSpy = sandbox.spy(app, 'enable');
     appUseSpy = sandbox.spy(app, 'use');
   });

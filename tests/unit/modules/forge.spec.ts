@@ -51,7 +51,7 @@ describe('modules/forge', () => {
   let loadKeypairs: () => void;
 
   beforeEach(() => {
-    sandbox    = sinon.sandbox.create();
+    sandbox    = sinon.createSandbox();
     container = createContainer();
     clock      = sandbox.useFakeTimers();
     fakeConfig = { forging: { secret: ['secret1', 'secret2'] } };

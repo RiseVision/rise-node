@@ -36,7 +36,7 @@ describe('apis/utils/validatePeerHeaders', () => {
   let peersModuleStub: PeersModuleStub;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     request = {
       headers: { port: 5555, version: '1.0', nethash: 'zxy' },
       ip: '80.1.2.3',

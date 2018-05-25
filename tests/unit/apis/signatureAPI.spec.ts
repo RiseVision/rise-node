@@ -24,7 +24,7 @@ describe('apis/signatureAPI', () => {
 
   beforeEach(() => {
     container = createContainer();
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     container
       .bind(Symbols.api.signatures)
       .to(SignaturesAPI)

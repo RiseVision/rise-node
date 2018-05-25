@@ -11,12 +11,12 @@ export class BaseStubClass {
   public static stubs: { [method: string]: SinonStub } = {};
   public static stubConfigs: Array<{ method: string, withDefaultAllowed: boolean }>;
   private static nextResponses: { [method: string]: any[] } = {};
-  private static sandbox: SinonSandbox = sinon.sandbox.create();
+  private static sandbox: SinonSandbox = sinon.createSandbox();
   private static oldImplementations: { [k: string]: () => {} } = {};
 
   public stubs: { [method: string]: SinonStub };
   public spies: { [method: string]: SinonSpy };
-  public sandbox: SinonSandbox = sinon.sandbox.create();
+  public sandbox: SinonSandbox = sinon.createSandbox();
 
   private nextResponses: { [method: string]: any[] } = {};
   private stubConfigs: Array<{ method: string, withDefaultAllowed: boolean }>;
@@ -60,7 +60,7 @@ export class BaseStubClass {
     this.nextResponses = {};
     this.sandbox.restore();
     this.stubs = this.stubs || {};
-    this.sandbox = sinon.sandbox.create();
+    this.sandbox = sinon.createSandbox();
     for (const c of this.stubConfigs) {
       this.oldImplementations[c.method] = this[c.method];
       this.stubs[c.method] = this.sandbox.stub(this, c.method as any);
@@ -83,7 +83,7 @@ export class BaseStubClass {
     this.sandbox.restore();
     this.stubs   = this.stubs || {};
     this.spies   = this.spies || {};
-    this.sandbox = sinon.sandbox.create();
+    this.sandbox = sinon.createSandbox();
 
     for (const c of this.stubConfigs) {
       this.oldImplementations[c.method] = this[c.method];

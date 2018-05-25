@@ -31,7 +31,7 @@ describe('apis/accountsAPI', () => {
   let systemModule: SystemModuleStub;
 
   beforeEach(() => {
-    sandbox   = sinon.sandbox.create();
+    sandbox   = sinon.createSandbox();
     container = createContainer();
     container.bind(Symbols.api.accounts).to(ProxyAccountsAPI.AccountsAPI);
 

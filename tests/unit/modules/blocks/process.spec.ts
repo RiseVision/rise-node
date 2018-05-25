@@ -43,7 +43,7 @@ describe('modules/blocks/process', () => {
   let inst: IBlocksModuleProcess;
   let instR: BlocksModuleProcess;
   let container: Container;
-  const sandbox = sinon.sandbox.create();
+  const sandbox = sinon.createSandbox();
   beforeEach(() => {
     container = createContainer();
     container.rebind(Symbols.modules.blocksSubModules.process).to(BlocksModuleProcess);

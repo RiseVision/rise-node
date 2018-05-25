@@ -22,7 +22,7 @@ describe('modules/accounts', () => {
   let container: Container;
 
   beforeEach(() => {
-    sandbox          = sinon.sandbox.create();
+    sandbox          = sinon.createSandbox();
     container        = createContainer();
     accountLogicStub = container.get(Symbols.logic.account);
     container.rebind<IAccountsModule>(Symbols.modules.accounts).to(AccountsModule).inSingletonScope();

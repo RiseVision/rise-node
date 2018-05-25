@@ -64,7 +64,7 @@ describe("modules/loader", () => {
   let genesisBlock;
 
   before(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
   });
 
   beforeEach(() => {

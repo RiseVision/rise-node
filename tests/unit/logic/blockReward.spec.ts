@@ -12,7 +12,7 @@ describe('logic/blockReward', () => {
   let sandbox: SinonSandbox;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     instance = new BlockRewardLogic();
     (instance as any).constants = constants;
     // Usually autocalled by inversify on construct

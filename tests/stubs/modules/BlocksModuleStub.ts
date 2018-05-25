@@ -25,7 +25,7 @@ export default class BlocksModuleStub implements IBlocksModule {
   constructor() {
     const orig       = new BlocksModule();
     this.lastReceipt = orig.lastReceipt;
-    this.sandbox     = sinon.sandbox.create();
+    this.sandbox     = sinon.createSandbox();
 
     this.spies = {
       lastReceipt: {

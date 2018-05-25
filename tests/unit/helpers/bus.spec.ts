@@ -20,7 +20,7 @@ describe('helpers/bus', () => {
   let functionStub: any;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     instance = new Bus();
     promiseStub = sandbox.stub().resolves(true);
     promiseStub2 = sandbox.stub().resolves(true);

@@ -57,7 +57,7 @@ describe('modules/delegates', () => {
   let signedBlock: SignedBlockType;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     container = createContainer();
 
     roundsLogicStub        = container.get(Symbols.logic.rounds);

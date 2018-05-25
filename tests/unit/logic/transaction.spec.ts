@@ -114,7 +114,7 @@ describe('logic/transaction', () => {
     };
 
     edStub.stubs.sign.returns(sampleBuffer);
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
   });
 
   afterEach(() => {

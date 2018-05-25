@@ -19,7 +19,7 @@ describe('helpers/decorators/iocSymbol', () => {
   let target;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     defineMetadataSpy = sandbox.spy(Reflect, 'defineMetadata');
     target = () => 123;
   });

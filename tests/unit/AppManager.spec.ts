@@ -99,7 +99,7 @@ describe('AppManager', () => {
   });
 
   beforeEach(() => {
-    sandbox    = sinon.sandbox.create();
+    sandbox    = sinon.createSandbox();
     serverStub = {
       close : sandbox.stub(),
       listen: sandbox.stub(),

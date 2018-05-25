@@ -3,7 +3,6 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as fs from 'fs';
 import { Container } from 'inversify';
-import * as jsonSqlCreator from 'json-sql';
 import * as path from 'path';
 import { Op } from 'sequelize';
 import * as sinon from 'sinon';
@@ -13,13 +12,17 @@ import { LoggerStub, ZSchemaStub } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
 import { IAccountLogic } from '../../../src/ioc/interfaces/logic';
 import { AccountLogic } from '../../../src/logic/';
-import { Accounts2DelegatesModel, Accounts2MultisignaturesModel, AccountsModel } from '../../../src/models';
+import {
+  Accounts2DelegatesModel,
+  Accounts2MultisignaturesModel,
+  AccountsModel,
+  RoundsModel
+} from '../../../src/models';
 import { FieldsInModel } from '../../../src/types/utils';
 import { DBCreateOp, DBCustomOp, DBRemoveOp, DBUpdateOp } from '../../../src/types/genericTypes';
 
 chai.use(chaiAsPromised);
-const jsonSql = jsonSqlCreator();
-jsonSql.setDialect('postgresql');
+
 
 const table = 'mem_accounts';
 
@@ -40,7 +43,7 @@ describe('logic/account', () => {
   let roundsModel: typeof RoundsModel;
   let accountsModel: typeof AccountsModel;
   beforeEach(() => {
-    sandbox   = sinon.sandbox.create();
+    sandbox   = sinon.createSandbox();
     container = createContainer();
     container.rebind(Symbols.logic.account).to(AccountLogic);
     loggerStub              = container.get(Symbols.helpers.logger);

@@ -25,7 +25,7 @@ describe('helpers/httpApi', () => {
   let sendObject: any;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     loggerFake = { log: () => true };
     loggerSpy = sandbox.spy(loggerFake, 'log');
     req = { method: 'aaa', url: 'bbb', ip: '80.3.10.20' };

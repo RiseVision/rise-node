@@ -22,7 +22,7 @@ describe('helpers/logger', () => {
   let consoleLogSpy: any;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     logFileFake = {};
     logFileFake.write = () => true;
     logFileWriteSpy = sandbox.spy(logFileFake, 'write');

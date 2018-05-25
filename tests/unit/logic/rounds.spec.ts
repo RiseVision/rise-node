@@ -17,7 +17,7 @@ describe('logic/rounds', () => {
   let container: Container;
 
   beforeEach(() => {
-    sandbox             = sinon.sandbox.create();
+    sandbox             = sinon.createSandbox();
     container          = createContainer();
     slotsStub               = container.get(Symbols.helpers.slots);
     instance                = new RoundsLogic();

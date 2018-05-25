@@ -23,7 +23,7 @@ describe('modules/cache', () => {
   let redisClientStub: RedisClientStub;
 
   beforeEach(() => {
-    sandbox         = sinon.sandbox.create();
+    sandbox         = sinon.createSandbox();
     container       = createContainer();
     container.bind(Symbols.generic.redisClient).to(RedisClientStub).inSingletonScope();
     container.bind(Symbols.modules.cache).to(Cache);

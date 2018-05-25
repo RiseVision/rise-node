@@ -43,7 +43,7 @@ describe('logic/transactions/createmultisig', () => {
   let container: Container;
 
   beforeEach(() => {
-    sandbox              = sinon.sandbox.create();
+    sandbox              = sinon.createSandbox();
     container            = createContainer();
     accountsModel = container.get(Symbols.models.accounts);
     multisigModel = container.get(Symbols.models.multisignatures);

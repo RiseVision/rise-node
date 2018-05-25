@@ -21,7 +21,7 @@ describe('helpers/config', () => {
   let exitStub;
 
   beforeEach(() => {
-    sandbox   = sinon.sandbox.create();
+    sandbox   = sinon.createSandbox();
     exitStub  = sandbox.stub(process, 'exit');
   });
 

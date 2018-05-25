@@ -50,7 +50,7 @@ describe('modules/system', () => {
   });
 
   beforeEach(() => {
-    sandbox                   = sinon.sandbox.create();
+    sandbox                   = sinon.createSandbox();
     inst = instB = container.get(Symbols.modules.system);
     container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = {
       height: 10,
