@@ -75,7 +75,7 @@ describe('api/delegates', () => {
           .then((response) => {
             expect(response.body.success).is.true;
             expect(Array.isArray(response.body.delegates)).to.be.true;
-            expect(response.body.delegates).to.be.ascendingBy(sortKey);
+            (expect(response.body.delegates).to.be as any).ascendingBy(sortKey);
           });
       });
 
@@ -86,7 +86,7 @@ describe('api/delegates', () => {
           .then((response) => {
             expect(response.body.success).is.true;
             expect(Array.isArray(response.body.delegates)).to.be.true;
-            expect(response.body.delegates).to.be.descendingBy(sortKey);
+            (expect(response.body.delegates).to.be as any).descendingBy(sortKey);
           });
       });
     });
@@ -461,7 +461,7 @@ describe('api/delegates', () => {
         getRandomDelegateWallet(),
         wallet.address
       );
-      await confirmTransactions([tx], 1);
+      await confirmTransactions([tx], false);
       // Try to enable forging on this new non-delegate account
       return supertest(initializer.appManager.expressApp)
         .post('/api/delegates/forging/enable')
@@ -554,7 +554,7 @@ describe('api/delegates', () => {
         getRandomDelegateWallet(),
         wallet.address
       );
-      await confirmTransactions([tx], 1);
+      await confirmTransactions([tx], false);
       const forgeModule = initializer.appManager.container.get<IForgeModule>(Symbols.modules.forge);
       forgeModule.enableForge({
         privateKey: Buffer.from('aaaa', 'hex'),
