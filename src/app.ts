@@ -109,7 +109,7 @@ if (program.log) {
 
 if (program.snapshot) {
   if (typeof(program.snapshot) === 'string') {
-    appConfig.loading.snapshot = Math.abs(Math.floor(program.snapshot));
+    appConfig.loading.snapshot = Math.abs(Math.floor(parseInt(program.snapshot, 10)));
   } else {
     appConfig.loading.snapshot = true;
   }
