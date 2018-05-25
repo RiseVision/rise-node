@@ -48,10 +48,10 @@ describe('modules/accounts', () => {
     it('should derive address from publicKey if not provided', async () => {
       accountLogicStub.enqueueResponse('generateAddressByPublicKey', '123L');
       accountLogicStub.enqueueResponse('get', 'result');
-      await accountModule.getAccount({publicKey: '1235'});
+      await accountModule.getAccount({publicKey: Buffer.from('1235', 'hex')});
 
       expect(accountLogicStub.stubs.generateAddressByPublicKey.called).is.true;
-      expect(accountLogicStub.stubs.generateAddressByPublicKey.firstCall.args[0]).is.eq('1235');
+      expect(accountLogicStub.stubs.generateAddressByPublicKey.firstCall.args[0]).is.deep.eq(Buffer.from('1235', 'hex'));
       expect(accountLogicStub.stubs.get.called).is.true;
       expect(accountLogicStub.stubs.get.firstCall.args[0]).to.be.deep.eq({
         address: '123L',
@@ -94,10 +94,10 @@ describe('modules/accounts', () => {
       accountLogicStub.enqueueResponse('generateAddressByPublicKey', '1L');
       accountLogicStub.enqueueResponse('set', null);
       accountLogicStub.enqueueResponse('get', null);
-      await accountModule.setAccountAndGet({publicKey: 'public'});
+      await accountModule.setAccountAndGet({publicKey: Buffer.from('public')});
       expect(accountLogicStub.stubs.generateAddressByPublicKey.called).is.true;
       expect(accountLogicStub.stubs.generateAddressByPublicKey.firstCall.args[0])
-        .to.be.deep.eq('public');
+        .to.be.deep.eq(Buffer.from('public'));
     });
     it('should call accountLogic.set with address and data', async () => {
       accountLogicStub.enqueueResponse('set', null);
@@ -129,10 +129,10 @@ describe('modules/accounts', () => {
     it('should derive address from publicKey if not provided', () => {
       accountLogicStub.enqueueResponse('generateAddressByPublicKey', '1L');
       accountLogicStub.enqueueResponse('merge', null);
-      accountModule.mergeAccountAndGetOPs({publicKey: 'public'});
+      accountModule.mergeAccountAndGetOPs({publicKey: Buffer.from('public')});
       expect(accountLogicStub.stubs.generateAddressByPublicKey.called).is.true;
       expect(accountLogicStub.stubs.generateAddressByPublicKey.firstCall.args[0])
-        .to.be.deep.eq('public');
+        .to.be.deep.eq(Buffer.from('public'));
     });
     it('should call accountLogic.merge with address and return its value', async () => {
       accountLogicStub.enqueueResponse('merge', 'mergeResult');
@@ -158,17 +158,17 @@ describe('modules/accounts', () => {
       accountLogicStub.enqueueResponse('merge', null);
 
 
-      await accountModule.mergeAccountAndGet({publicKey: 'public'});
+      await accountModule.mergeAccountAndGet({publicKey: Buffer.from('public')});
       expect(accountLogicStub.stubs.generateAddressByPublicKey.called).is.true;
       expect(accountLogicStub.stubs.generateAddressByPublicKey.firstCall.args[0])
-        .to.be.deep.eq('public');
+        .to.be.deep.eq(Buffer.from('public'));
     });
     it('should return whatever getAccount does after calling performOps', async () => {
       dbHelperStub.enqueueResponse('performOps', Promise.resolve());
       accountLogicStub.enqueueResponse('generateAddressByPublicKey', '1L');
       accountLogicStub.enqueueResponse('merge', null);
 
-      const res = await accountModule.mergeAccountAndGet({publicKey: 'public'});
+      const res = await accountModule.mergeAccountAndGet({publicKey: Buffer.from('public')});
       expect(res).eq('hey'); // set in beforeEach
       expect(dbHelperStub.stubs.performOps.firstCall.calledBefore(
         getAccountStub.firstCall

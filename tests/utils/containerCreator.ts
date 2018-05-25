@@ -50,22 +50,14 @@ import {
 import DbStub from '../stubs/helpers/DbStub';
 import { MigratorStub } from '../stubs/helpers/MigratorStub';
 
-let lastContainer: Container = null;
 export const createContainer = (): Container => {
-  if (lastContainer !== null) {
-    // Tear down some things...
-    const sequences = lastContainer.getAll<SequenceStub>(Symbols.helpers.sequence);
-    sequences.forEach((s) => s.realImplementation['nextSequenceTick'] = () => {});
-    lastContainer = null;
-  }
   const container = new Container();
-  lastContainer = container;
   // Generics
   container.bind(Symbols.generic.appConfig)
     .toConstantValue(require(`${__dirname}/../integration/config.json`));
   container.bind(Symbols.generic.genesisBlock)
     .toConstantValue(require(`${__dirname}/../integration/genesisBlock.json`));
-  const genesis = container.get(Symbols.generic.genesisBlock)
+  const genesis = container.get<any>(Symbols.generic.genesisBlock)
   genesis.generatorPublicKey = Buffer.from(genesis.generatorPublicKey, 'hex');
   genesis.blockSignature = Buffer.from(genesis.blockSignature, 'hex');
 
@@ -73,10 +65,11 @@ export const createContainer = (): Container => {
   container.bind(Symbols.generic.zschema).to(ZSchemaStub).inSingletonScope();
   container.bind(Symbols.generic.sequelize).toConstantValue(new Sequelize({
     database: 'test',
-    dialect: 'sqlite',
+    //dialect: 'sqlite',
+    dialect: 'postgres',
     username: 'root',
     password: 'test',
-    storage: ':memory',
+    //storage: ':memory',
     logging: !('SEQ_SILENT' in process.env),
   }));
 

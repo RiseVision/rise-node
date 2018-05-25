@@ -94,11 +94,10 @@
     "reflect-metadata": "^0.1.10",
     "shx": "^0.2.2",
     "sinon": "=5.0.10",
-    "sqlite3": "^4.0.0",
     "supertest": "=3.1.0",
-    "ts-node": "^5.0.1",
+    "ts-node": "=6.0.5",
     "tslint": "=5.10.0",
     "tslint-sonarts": "^1.6.0",
-    "typescript": "=2.6.2"
+    "typescript": "=2.8.3"
   }
 }

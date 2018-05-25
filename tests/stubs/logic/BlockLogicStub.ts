@@ -22,7 +22,7 @@ export class BlockLogicStub extends BaseStubClass implements IBlockLogic {
   }
 
   @stubMethod()
-  public sign(block: BlockType, key: IKeypair): string {
+  public sign(block: BlockType, key: IKeypair): Buffer {
     return undefined;
   }
 

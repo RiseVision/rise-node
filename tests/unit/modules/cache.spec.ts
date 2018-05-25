@@ -10,6 +10,7 @@ import { Symbols } from '../../../src/ioc/symbols';
 import { Cache, DummyCache } from '../../../src/modules';
 import { RedisClientStub } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
+import { toBufferedTransaction } from '../../utils/txCrafter';
 
 chai.use(chaiAsPromised);
 
@@ -495,7 +496,7 @@ describe('modules/cache', () => {
           timestamp      : 0,
           type           : TransactionType.MULTI,
         },
-      ];
+      ].map((t) => toBufferedTransaction(t as any));
       // tslint:enable max-line-length
 
       let removeByPatternStub;

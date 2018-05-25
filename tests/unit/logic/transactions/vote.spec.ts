@@ -10,6 +10,7 @@ import voteSchema from '../../../../src/schema/logic/transactions/vote';
 import { AccountLogicStub, DelegatesModuleStub, RoundsLogicStub, SystemModuleStub } from '../../../stubs';
 import { createContainer } from '../../../utils/containerCreator';
 import { AccountsModel, VotesModel } from '../../../../src/models';
+import { DBCreateOp } from '../../../../src/types/genericTypes';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -396,7 +397,7 @@ describe('logic/transactions/vote', () => {
 
   describe('dbSave', () => {
     it('should return the expecteddb object', () => {
-      const op = instance.dbSave(tx);
+      const op: DBCreateOp<any> = instance.dbSave(tx) as any;
       expect(op.type).eq('create');
       expect(op.model).deep.eq(votesModel);
       expect(op.values).deep.eq({

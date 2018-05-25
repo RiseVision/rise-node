@@ -330,7 +330,7 @@ export class BlockLogic implements IBlockLogic {
     return block as any;
   }
 
-  public dbRead(rawBlock: RawFullBlockListType): SignedBlockType {
+  public dbRead(rawBlock: RawFullBlockListType): SignedBlockType & { totalForged: string, readonly generatorId: string} {
     if (!rawBlock.b_id) {
       return null;
     } else {

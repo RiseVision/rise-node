@@ -97,7 +97,7 @@ export class TransportModule implements ITransportModule {
     const thePeer = this.peersLogic.create(peer);
     const req     = {
       body   : null,
-      headers: this.systemModule.headers,
+      headers: this.systemModule.headers as any,
       method : options.method,
       timeout: this.appConfig.peers.options.timeout,
       url    : `http://${peer.ip}:${peer.port}${url}`,

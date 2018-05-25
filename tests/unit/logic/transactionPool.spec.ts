@@ -336,9 +336,9 @@ describe('logic/transactionPool - TransactionPool', () => {
       id             : '8139741256612355994',
       recipientId    : '15256762582730568272R',
       senderId       : '1233456789012345R',
-      senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
-      signature      : 'f8fbf9b8433bf1bbea971dc8b14c6772d33c7dd285d84c5e6c984b10c4141e9f' +
-                       'a56ace902b910e05e98b55898d982b3d5b9bf8bd897083a7d1ca1d5028703e03',
+      senderPublicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+      signature      : Buffer.from('f8fbf9b8433bf1bbea971dc8b14c6772d33c7dd285d84c5e6c984b10c4141e9f' +
+                       'a56ace902b910e05e98b55898d982b3d5b9bf8bd897083a7d1ca1d5028703e03', 'hex'),
       timestamp      : 0,
       type           : TransactionType.SEND,
     };
@@ -586,9 +586,9 @@ describe('logic/transactionPool - TransactionPool', () => {
     it('should not call to txTimeout() if tx is empty', async () => {
       await addMixedTransactionsAndFillPool();
       const txTimeoutSpy = sandbox.spy(instance as any, 'txTimeout');
-      instance['unconfirmed'].listWithPayload.restore();
-      instance['queued'].listWithPayload.restore();
-      instance['multisignature'].listWithPayload.restore();
+      (instance['unconfirmed'].listWithPayload as any).restore();
+      (instance['queued'].listWithPayload as any).restore();
+      (instance['multisignature'].listWithPayload as any).restore();
       sandbox.stub(instance['unconfirmed'], 'listWithPayload').returns([{payload: {foo: 'bar1'}}]);
       sandbox.stub(instance['queued'], 'listWithPayload').returns([{payload: {foo: 'bar2'}}]);
       sandbox.stub(instance['multisignature'], 'listWithPayload').returns([{payload: {foo: 'bar3'}}]);
@@ -704,7 +704,7 @@ describe('logic/transactionPool - TransactionPool', () => {
 
   describe('processBundled #2', () => {
     it('should not call processVerifyTransaction if tx is empty', async () => {
-      instance['bundled'].list.restore();
+      (instance['bundled'].list as any).restore();
       sandbox.stub(instance['bundled'], 'list').returns([undefined, undefined]);
       const processVerifyTransactionSpy = sandbox
         .spy(instance as any, 'processVerifyTransaction');
@@ -966,7 +966,7 @@ describe('logic/transactionPool - TransactionPool', () => {
     });
 
     it('should return an empty array if transactions are empty', async () => {
-      instance['unconfirmed'].list.restore();
+      (instance['unconfirmed'].list as any).restore();
       const unconfirmedStub = sandbox.stub(instance['unconfirmed'], 'list').returns([undefined, undefined]);
       const retVal = await instance.undoUnconfirmedList(txModuleStub);
       expect(retVal).to.be.equalTo([]);
@@ -1042,7 +1042,7 @@ describe('logic/transactionPool - TransactionPool', () => {
       accountsModuleStub.stubs.getAccount.resolves(requester);
       sender.multisignatures = ['a', 'b'];
       sender.isMultisignature = () => true;
-      tx.requesterPublicKey = 'requesterPublicKey';
+      tx.requesterPublicKey = Buffer.from('requesterPublicKey');
       await (instance as any).processVerifyTransaction(tx, false);
       expect(accountsModuleStub.stubs.getAccount.calledOnce).to.be.true;
       const expectedParam = {publicKey: tx.requesterPublicKey};
@@ -1055,7 +1055,7 @@ describe('logic/transactionPool - TransactionPool', () => {
       accountsModuleStub.stubs.getAccount.resolves(requester);
       sender.multisignatures = ['a', 'b'];
       sender.isMultisignature = () => true;
-      tx.requesterPublicKey = 'requesterPublicKey';
+      tx.requesterPublicKey = Buffer.from('requesterPublicKey');
       await (instance as any).processVerifyTransaction(tx, false);
       expect(accountsModuleStub.stubs.getAccount.notCalled).to.be.true;
     });
@@ -1073,7 +1073,7 @@ describe('logic/transactionPool - TransactionPool', () => {
       delete sender.multisignatures;
       accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
       accountsModuleStub.stubs.getAccount.resolves(requester);
-      tx.requesterPublicKey = 'requesterPublicKey';
+      tx.requesterPublicKey = Buffer.from('requesterPublicKey');
 
       await (instance as any).processVerifyTransaction(tx, false);
       expect(accountsModuleStub.stubs.getAccount.notCalled).to.be.true;
@@ -1084,7 +1084,7 @@ describe('logic/transactionPool - TransactionPool', () => {
       accountsModuleStub.stubs.getAccount.resolves(requester);
       sender.multisignatures = ['a', 'b'];
       sender.isMultisignature = () => true;
-      tx.requesterPublicKey = 'requesterPublicKey';
+      tx.requesterPublicKey = Buffer.from('requesterPublicKey');
       // Will have a valid requester
       await (instance as any).processVerifyTransaction(tx, false);
       expect(transactionLogicStub.stubs.process.calledOnce).to.be.true;

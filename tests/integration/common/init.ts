@@ -1,10 +1,8 @@
 import { expect } from 'chai';
-import * as monitor from 'pg-monitor';
 import 'reflect-metadata';
 import { Bus, constants, loggerCreator, Slots } from '../../../src/helpers';
 import { AppManager } from '../../../src/AppManager';
 import { Symbols } from '../../../src/ioc/symbols';
-import { IDatabase } from 'pg-promise';
 import {
   IBlocksModule,
   IBlocksModuleChain,

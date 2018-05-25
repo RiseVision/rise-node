@@ -110,7 +110,7 @@ describe('logic/account', () => {
         { expression: '("rewards")::bigint', alias: 'rewards' },
         { field: 'virgin' },
       ];
-      expect(account.fields).to.deep.equal(fields);
+      expect((account as any).fields).to.deep.equal(fields);
     });
 
     it('filter should match', () => {
@@ -169,7 +169,7 @@ describe('logic/account', () => {
         virgin           : { type: 'boolean' },
         vote             : { type: 'integer' },
       };
-      expect(account.filter).to.deep.equal(filter);
+      expect((account as any).filter).to.deep.equal(filter);
     });
 
     it('conv should match', () => {
@@ -202,7 +202,7 @@ describe('logic/account', () => {
         virgin           : Boolean,
         vote             : Number,
       };
-      expect(account.conv).to.deep.equal(conv);
+      expect((account as any).conv).to.deep.equal(conv);
     });
 
     it('editable', () => {
@@ -229,7 +229,7 @@ describe('logic/account', () => {
         'fees',
         'rewards',
       ];
-      expect(account.editable).to.deep.equal(editable);
+      expect((account as any).editable).to.deep.equal(editable);
     });
   });
 
@@ -302,7 +302,7 @@ describe('logic/account', () => {
       expect(zSchemaStub.stubs.validate.getCall(0).args[1]).to.deep.equal({
         id        : 'Account',
         object    : true,
-        properties: account.filter,
+        properties: (account as any).filter,
       });
       // it should call getLastErrors
       expect(zSchemaStub.stubs.getLastErrors.calledOnce).to.be.true;
@@ -320,7 +320,7 @@ describe('logic/account', () => {
       expect(zSchemaStub.stubs.validate.getCall(0).args[1]).to.deep.equal({
         id        : 'Account',
         object    : true,
-        properties: account.filter,
+        properties: (account as any).filter,
       });
     });
   });
@@ -491,7 +491,7 @@ describe('logic/account', () => {
           isDelegate: 1,
           username  : 'user',
           brother   : 'thers a place to rediscovar'
-        });
+        } as any);
 
         expect(findAllStub.firstCall.args[0].where).to.be.deep.eq({
           address   : '1',

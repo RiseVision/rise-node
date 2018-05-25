@@ -4,6 +4,7 @@ import { SignedBlockType } from '../../../src/logic';
 import { IBaseTransaction, IConfirmedTransaction } from '../../../src/logic/transactions';
 import { BaseStubClass } from '../BaseStubClass';
 import { stubMethod } from '../stubDecorator';
+import { TransactionsModel } from '../../../src/models/';
 
 @injectable()
 export class TransactionsModuleStub extends BaseStubClass implements ITransactionsModule {
@@ -54,7 +55,7 @@ export class TransactionsModuleStub extends BaseStubClass implements ITransactio
   }
 
   @stubMethod()
-  public removeUnconfirmedTransaction(id: string): void {
+  public removeUnconfirmedTransaction(id: string): boolean {
     return undefined;
   }
 
@@ -64,18 +65,15 @@ export class TransactionsModuleStub extends BaseStubClass implements ITransactio
     return undefined;
   }
 
-
   @stubMethod()
   public applyUnconfirmedIds(ids: string[]): Promise<void> {
     return undefined;
   }
 
-
   @stubMethod()
   public applyUnconfirmedList(): Promise<void> {
     return undefined;
   }
-
 
   @stubMethod()
   public undoUnconfirmedList(): Promise<string[]> {
@@ -129,7 +127,7 @@ export class TransactionsModuleStub extends BaseStubClass implements ITransactio
   }
 
   @stubMethod()
-  public getByID<T = any>(id: string): Promise<IConfirmedTransaction<T>> {
+  public getByID<T = any>(id: string): Promise<TransactionsModel> {
     return undefined;
   }
 }

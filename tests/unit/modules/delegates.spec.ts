@@ -21,6 +21,7 @@ import {
 import { CreateHashSpy } from '../../stubs/utils/CreateHashSpy';
 import { generateAccounts } from '../../utils/accountsUtils';
 import { createContainer } from '../../utils/containerCreator';
+import { BlocksModel } from '../../../src/models';
 
 chai.use(chaiAsPromised);
 
@@ -37,6 +38,8 @@ describe('modules/delegates', () => {
   let roundsLogicStub: RoundsLogicStub;
   let slotsStub: SlotsStub;
   let schemaStub: ZSchemaStub;
+
+  let blocksModel: typeof BlocksModel;
 
   let createHashSpy: CreateHashSpy;
 
@@ -79,12 +82,12 @@ describe('modules/delegates', () => {
 
     createHashSpy                                     = new CreateHashSpy(crypto, sandbox);
     const lastBlock                                   = {
-      blockSignature      : 'blockSignature',
-      generatorPublicKey  : 'pubKey',
+      blockSignature      : Buffer.from('blockSignature'),
+      generatorPublicKey  : Buffer.from('genPublicKey'),
       height              : 12422,
       id                  : 'blockID',
       numberOfTransactions: 0,
-      payloadHash         : '',
+      payloadHash         : Buffer.from('payloadHash'),
       payloadLength       : 0,
       previousBlock       : 'previous',
       reward              : 15,
@@ -93,8 +96,8 @@ describe('modules/delegates', () => {
       totalFee            : 0,
       version             : 1,
     };
-
-    blocksModuleStub.lastBlock                        = lastBlock;
+    blocksModel = container.get(Symbols.models.blocks);
+    blocksModuleStub.lastBlock                        = blocksModel.classFromPOJO(lastBlock);
     blockRewardLogicStub.stubConfig.calcSupply.return = totalSupply;
     signedBlock                                       = Object.assign({}, lastBlock);
     signedBlock.height++;
@@ -108,9 +111,9 @@ describe('modules/delegates', () => {
     it('should call checkDelegates and return the result', async () => {
       const checkDelegatesStub = sandbox.stub(instance as any, 'checkDelegates');
       checkDelegatesStub.resolves('test');
-      const retVal = await instance.checkConfirmedDelegates(pubKey, votes);
+      const retVal = await instance.checkConfirmedDelegates(Buffer.from(pubKey, 'hex'), votes);
       expect(checkDelegatesStub.calledOnce).to.be.true;
-      expect(checkDelegatesStub.firstCall.args[0]).to.be.equal(pubKey);
+      expect(checkDelegatesStub.firstCall.args[0]).to.be.deep.equal(Buffer.from(pubKey, 'hex'));
       expect(checkDelegatesStub.firstCall.args[1]).to.be.deep.equal(votes);
       expect(checkDelegatesStub.firstCall.args[2]).to.be.equal('confirmed');
       expect(retVal).to.be.equal('test');
@@ -121,9 +124,9 @@ describe('modules/delegates', () => {
     it('should call checkDelegates and return the result', async () => {
       const checkDelegatesStub = sandbox.stub(instance as any, 'checkDelegates');
       checkDelegatesStub.resolves('test');
-      const retVal = await instance.checkUnconfirmedDelegates(pubKey, votes);
+      const retVal = await instance.checkUnconfirmedDelegates(Buffer.from(pubKey, 'hex'), votes);
       expect(checkDelegatesStub.calledOnce).to.be.true;
-      expect(checkDelegatesStub.firstCall.args[0]).to.be.equal(pubKey);
+      expect(checkDelegatesStub.firstCall.args[0]).to.be.deep.equal(Buffer.from(pubKey, 'hex'));
       expect(checkDelegatesStub.firstCall.args[1]).to.be.deep.equal(votes);
       expect(checkDelegatesStub.firstCall.args[2]).to.be.equal('unconfirmed');
       expect(retVal).to.be.equal('test');
