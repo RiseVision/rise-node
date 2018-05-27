@@ -3,7 +3,6 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as fs from 'fs';
 import { Container } from 'inversify';
-import * as jsonSqlCreator from 'json-sql';
 import * as path from 'path';
 import { Op } from 'sequelize';
 import * as sinon from 'sinon';
@@ -13,13 +12,17 @@ import { LoggerStub, ZSchemaStub } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
 import { IAccountLogic } from '../../../src/ioc/interfaces/logic';
 import { AccountLogic } from '../../../src/logic/';
-import { Accounts2DelegatesModel, Accounts2MultisignaturesModel, AccountsModel } from '../../../src/models';
+import {
+  Accounts2DelegatesModel,
+  Accounts2MultisignaturesModel,
+  AccountsModel,
+  RoundsModel
+} from '../../../src/models';
 import { FieldsInModel } from '../../../src/types/utils';
 import { DBCreateOp, DBCustomOp, DBRemoveOp, DBUpdateOp } from '../../../src/types/genericTypes';
 
 chai.use(chaiAsPromised);
-const jsonSql = jsonSqlCreator();
-jsonSql.setDialect('postgresql');
+
 
 const table = 'mem_accounts';
 
@@ -40,7 +43,7 @@ describe('logic/account', () => {
   let roundsModel: typeof RoundsModel;
   let accountsModel: typeof AccountsModel;
   beforeEach(() => {
-    sandbox   = sinon.sandbox.create();
+    sandbox   = sinon.createSandbox();
     container = createContainer();
     container.rebind(Symbols.logic.account).to(AccountLogic);
     loggerStub              = container.get(Symbols.helpers.logger);
@@ -107,7 +110,7 @@ describe('logic/account', () => {
         { expression: '("rewards")::bigint', alias: 'rewards' },
         { field: 'virgin' },
       ];
-      expect(account.fields).to.deep.equal(fields);
+      expect((account as any).fields).to.deep.equal(fields);
     });
 
     it('filter should match', () => {
@@ -166,7 +169,7 @@ describe('logic/account', () => {
         virgin           : { type: 'boolean' },
         vote             : { type: 'integer' },
       };
-      expect(account.filter).to.deep.equal(filter);
+      expect((account as any).filter).to.deep.equal(filter);
     });
 
     it('conv should match', () => {
@@ -199,7 +202,7 @@ describe('logic/account', () => {
         virgin           : Boolean,
         vote             : Number,
       };
-      expect(account.conv).to.deep.equal(conv);
+      expect((account as any).conv).to.deep.equal(conv);
     });
 
     it('editable', () => {
@@ -226,7 +229,7 @@ describe('logic/account', () => {
         'fees',
         'rewards',
       ];
-      expect(account.editable).to.deep.equal(editable);
+      expect((account as any).editable).to.deep.equal(editable);
     });
   });
 
@@ -299,7 +302,7 @@ describe('logic/account', () => {
       expect(zSchemaStub.stubs.validate.getCall(0).args[1]).to.deep.equal({
         id        : 'Account',
         object    : true,
-        properties: account.filter,
+        properties: (account as any).filter,
       });
       // it should call getLastErrors
       expect(zSchemaStub.stubs.getLastErrors.calledOnce).to.be.true;
@@ -317,7 +320,7 @@ describe('logic/account', () => {
       expect(zSchemaStub.stubs.validate.getCall(0).args[1]).to.deep.equal({
         id        : 'Account',
         object    : true,
-        properties: account.filter,
+        properties: (account as any).filter,
       });
     });
   });
@@ -488,7 +491,7 @@ describe('logic/account', () => {
           isDelegate: 1,
           username  : 'user',
           brother   : 'thers a place to rediscovar'
-        });
+        } as any);
 
         expect(findAllStub.firstCall.args[0].where).to.be.deep.eq({
           address   : '1',

@@ -50,7 +50,7 @@ describe('modules/multisignatures', () => {
   });
 
   beforeEach(() => {
-    sandbox                = sinon.sandbox.create();
+    sandbox                = sinon.createSandbox();
     instance               = container.get(Symbols.modules.multisignatures);
     transactionsModuleStub = container.get(Symbols.modules.transactions);
     accountsModuleStub     = container.get(Symbols.modules.accounts);

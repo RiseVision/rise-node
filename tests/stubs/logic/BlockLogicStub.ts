@@ -22,7 +22,7 @@ export class BlockLogicStub extends BaseStubClass implements IBlockLogic {
   }
 
   @stubMethod()
-  public sign(block: BlockType, key: IKeypair): string {
+  public sign(block: BlockType, key: IKeypair): Buffer {
     return undefined;
   }
 
@@ -42,7 +42,7 @@ export class BlockLogicStub extends BaseStubClass implements IBlockLogic {
   }
 
   @stubMethod()
-  public dbRead(rawBlock: any): SignedBlockType {
+  public dbRead(rawBlock: any): SignedBlockType & { totalForged: string, readonly generatorId: string } {
     return undefined;
   }
 

@@ -32,7 +32,7 @@ import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
 import { ForkModuleStub } from '../../../stubs/modules/ForkModuleStub';
 import { createContainer } from '../../../utils/containerCreator';
 import { createFakePeer } from '../../../utils/fakePeersFactory';
-import { createRandomTransactions } from '../../../utils/txCrafter';
+import { createRandomTransactions, toBufferedTransaction } from '../../../utils/txCrafter';
 import { BlocksModel } from '../../../../src/models';
 import { SinonStub } from 'sinon';
 
@@ -43,7 +43,7 @@ describe('modules/blocks/process', () => {
   let inst: IBlocksModuleProcess;
   let instR: BlocksModuleProcess;
   let container: Container;
-  const sandbox = sinon.sandbox.create();
+  const sandbox = sinon.createSandbox();
   beforeEach(() => {
     container = createContainer();
     container.rebind(Symbols.modules.blocksSubModules.process).to(BlocksModuleProcess);
@@ -436,7 +436,8 @@ describe('modules/blocks/process', () => {
     let txs: Array<IBaseTransaction<any>>;
     beforeEach(() => {
       blocksModule.lastBlock = {id: '1', height: 10} as any;
-      txs                    = createRandomTransactions({send: 3, vote: 2});
+      txs                    = createRandomTransactions({send: 3, vote: 2})
+        .map((t) => toBufferedTransaction(t));
       accountsModule.stubs.getAccount.resolves({account: 'account'});
       txModule.stubs.getUnconfirmedTransactionList.callsFake(() => txs);
       blockLogic.enqueueResponse('create', {block: 'block'});

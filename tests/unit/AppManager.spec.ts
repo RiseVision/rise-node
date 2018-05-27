@@ -99,7 +99,7 @@ describe('AppManager', () => {
   });
 
   beforeEach(() => {
-    sandbox    = sinon.sandbox.create();
+    sandbox    = sinon.createSandbox();
     serverStub = {
       close : sandbox.stub(),
       listen: sandbox.stub(),
@@ -412,7 +412,7 @@ describe('AppManager', () => {
       cacheConnectStub    = sandbox.stub(cache, 'connect').resolves({ client: 'theClient' });
       getMetadataSpy      = sandbox.spy(Reflect, 'getMetadata');
 
-      sequelizeNamespaceAttachStub = sandbox.stub(seqTypescriptObj.Sequelize.__proto__, 'useCLS');
+      sequelizeNamespaceAttachStub = sandbox.stub((seqTypescriptObj.Sequelize as any).__proto__, 'useCLS');
       containerStub = new ContainerStub(sandbox);
       containerStub.get.callsFake((s) => allStubsContainer.get(s));
       excCreators = [
@@ -1006,7 +1006,7 @@ describe('AppManager', () => {
       await instance.finishBoot();
       Object.keys(Symbols.logic.transactions).forEach((k, idx) => {
         expect(transactionLogicStub.stubs.attachAssetType.getCall(idx).args[0].type).to.be.deep.equal(
-          allStubsContainer.get(Symbols.logic.transactions[k]).type
+          allStubsContainer.get<any>(Symbols.logic.transactions[k]).type
         );
       });
     });

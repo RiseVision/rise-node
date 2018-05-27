@@ -45,7 +45,7 @@ describe('apis/delegatesAPI', () => {
   let accountsModel: typeof AccountsModel;
   let accounts2delegatesModel: typeof Accounts2DelegatesModel;
   beforeEach(() => {
-    sandbox   = sinon.sandbox.create();
+    sandbox   = sinon.createSandbox();
     container = createContainer();
     container.bind(Symbols.api.delegates).to(DelegatesAPI);
 

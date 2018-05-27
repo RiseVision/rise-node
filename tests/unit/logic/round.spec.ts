@@ -29,7 +29,7 @@ describe('logic/round', () => {
   let roundsModel: typeof RoundsModel;
   let blocksModel: typeof BlocksModel;
   beforeEach(() => {
-    sandbox       = sinon.sandbox.create();
+    sandbox       = sinon.createSandbox();
     container     = createContainer();
     accountsModel = container.get(Symbols.models.accounts);
     roundsModel   = container.get(Symbols.models.rounds);

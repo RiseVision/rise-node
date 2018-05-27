@@ -17,7 +17,7 @@ describe('helpers/inserts', () => {
   let result: any;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
   });
 
   afterEach(() => {

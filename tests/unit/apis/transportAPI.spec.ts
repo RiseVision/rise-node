@@ -83,7 +83,7 @@ describe('apis/transportAPI', () => {
       Symbols.modules.blocksSubModules.utils
     );
 
-    sandbox                = sinon.sandbox.create();
+    sandbox                = sinon.createSandbox();
     txs                    = createRandomTransactions({ send: 10 }).map((t) => toBufferedTransaction(t));
     fakeBlock              = createFakeBlock({
       previousBlock: { id: '1', height: 100 } as any,

@@ -18,7 +18,7 @@ describe('appState', () => {
   });
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     valueSpy = sandbox.spy(jsonpath, 'value');
     instance = new ProxyAppState.AppState();
     computedStub = sandbox.stub().returns('returnVal');

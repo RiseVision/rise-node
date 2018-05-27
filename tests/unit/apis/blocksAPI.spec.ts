@@ -30,7 +30,7 @@ describe('apis/blocksAPI', () => {
   let fakeBlock: BlocksModel;
   let blocksModel: typeof BlocksModel;
   beforeEach(() => {
-    sandbox   = sinon.sandbox.create();
+    sandbox   = sinon.createSandbox();
     container = createContainer();
     container.bind(Symbols.api.blocks).to(BlocksAPI);
 

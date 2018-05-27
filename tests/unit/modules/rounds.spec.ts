@@ -23,7 +23,7 @@ import {
 } from '../../stubs';
 import { createFakeBlock } from '../../utils/blockCrafter';
 import { createContainer } from '../../utils/containerCreator';
-import { RoundsModel } from '../../../src/models';
+import { BlocksModel, RoundsModel } from '../../../src/models';
 
 chai.use(chaiAsPromised);
 
@@ -33,7 +33,7 @@ describe('modules/rounds', () => {
   let instance: RoundsModule;
   let container: Container;
   let sandbox: SinonSandbox;
-  let block: SignedBlockType;
+  let block: BlocksModel;
   let previousBlock: SignedBlockType;
   let delegatesModuleStub: DelegatesModuleStub;
   let accountsModuleStub: AccountsModuleStub;
@@ -59,14 +59,14 @@ describe('modules/rounds', () => {
     roundLogicStubConstructor = () => {
       return roundLogicStub;
     };
-    sandbox                   = sinon.sandbox.create();
+    sandbox                   = sinon.createSandbox();
     container                 = createContainer();
     container.bind(roundLogicSymbol).to(RoundLogicStub).inSingletonScope();
     container.bind(Symbols.logic.round).to(RoundLogicStub).inSingletonScope();
     container.rebind(Symbols.helpers.constants).toConstantValue(constants);
     container.rebind(Symbols.modules.rounds).to(RoundsModule).inSingletonScope();
-    block                        = createFakeBlock();
-    previousBlock                = createFakeBlock();
+    block                        = BlocksModel.classFromPOJO(createFakeBlock());
+    previousBlock                = BlocksModel.classFromPOJO(createFakeBlock());
     instance                     = container.get(Symbols.modules.rounds);
     delegatesModuleStub          = container.get(Symbols.modules.delegates);
     accountsModuleStub           = container.get(Symbols.modules.accounts);
@@ -173,7 +173,9 @@ describe('modules/rounds', () => {
     });
 
     it('should return from innerTick', async () => {
-      const retVal = await instance.backwardTick(block as any, previousBlock, {transaction: 'tx'});
+      const retVal = await instance.backwardTick(block as any,
+        previousBlock,
+        {transaction: 'tx'} as any);
       expect(retVal).to.be.equal('innerTick DONE');
     });
 
@@ -187,7 +189,7 @@ describe('modules/rounds', () => {
         dbHelpersStub.enqueueResponse('performOps', Promise.resolve());
       });
       const doCall = async () => {
-        await instance.backwardTick(block, previousBlock, 'tx');
+        await instance.backwardTick(block, previousBlock, 'tx' as any);
         return txGenerator(roundLogicScope);
       };
 
@@ -384,7 +386,7 @@ describe('modules/rounds', () => {
     describe('in afterTxPromise', () => {
       let dbHelperStub: DbStub;
       const doCall = async () => {
-        await instance.tick(block);
+        await instance.tick(block, 'tx' as any);
         return afterTxPromise();
       };
 

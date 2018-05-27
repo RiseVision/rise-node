@@ -32,7 +32,7 @@ describe('logic/transactions/delegate', () => {
   let block: any;
 
   beforeEach(() => {
-    sandbox            = sinon.sandbox.create();
+    sandbox            = sinon.createSandbox();
     container          = createContainer();
     accountsModel      = container.get(Symbols.models.accounts);
     delegatesModel      = container.get(Symbols.models.delegates);

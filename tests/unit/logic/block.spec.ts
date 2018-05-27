@@ -13,6 +13,7 @@ import { BlockRewardLogicStub, TransactionLogicStub, ZSchemaStub } from '../../s
 import { createContainer } from '../../utils/containerCreator';
 import { BlocksModel } from '../../../src/models';
 import { IBlockLogic } from '../../../src/ioc/interfaces/index';
+import { DBCreateOp } from '../../../src/types/genericTypes';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -48,7 +49,7 @@ describe('logic/block', () => {
   const buffer = bb.toBuffer();
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     container = createContainer();
     createHashSpy = sandbox.spy(crypto, 'createHash');
     dummyTransactions = [
@@ -137,7 +138,7 @@ describe('logic/block', () => {
     it('should return a new block', () => {
       const oldValue = constants.maxPayloadLength;
       constants.maxPayloadLength = 10;
-      instance.transaction.getBytes.onCall(2).returns('1234567890abc');
+      (instance as any).transaction.getBytes.onCall(2).returns('1234567890abc');
       const newBlock = instance.create(data);
       expect(newBlock).to.be.an.instanceof(Object);
       expect(newBlock.totalFee).to.equal(8);
@@ -236,7 +237,7 @@ describe('logic/block', () => {
 
   describe('dbSave', () => {
     it('should return a specific object', () => {
-      const result = instance.dbSave(dummyBlock);
+      const result: DBCreateOp<BlocksModel> = instance.dbSave(dummyBlock) as any;
       expect(result.model).to.be.deep.eq(blocksModel);
       expect(result.type).to.be.deep.eq('create');
       const toSave = {... dummyBlock};
@@ -317,7 +318,7 @@ describe('logic/block', () => {
       b_totalAmount: 0,
       b_totalFee: 100,
       b_version: 11,
-    };
+    } as any;
 
     it('should return a specific format', () => {
       const block = instance.dbRead(raw);

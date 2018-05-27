@@ -401,7 +401,7 @@ describe('api/transport', () => {
 
       const verifyModule = initializer.appManager.container.get<IBlocksModuleVerify>(Symbols.modules.blocksSubModules.verify);
       const forksModule  = initializer.appManager.container.get<IForkModule>(Symbols.modules.fork);
-      const stub         = sinon.stub(verifyModule, 'verifyBlockSlotWindow').returns([]);
+      const stub         = sinon.stub(verifyModule as any, 'verifyBlockSlotWindow').returns([]);
       const spyFork      = sinon.spy(forksModule, 'fork');
 
       const response = await  supertest(initializer.appManager.expressApp)

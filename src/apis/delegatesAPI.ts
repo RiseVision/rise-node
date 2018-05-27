@@ -56,7 +56,6 @@ export class DelegatesAPI {
   @inject(Symbols.models.transactions)
   private TransactionsModel: typeof TransactionsModel;
 
-
   @Get('/')
   @ValidateSchema()
   public async getDelegates(@SchemaValid(schema.getDelegates, { castNumbers: true })

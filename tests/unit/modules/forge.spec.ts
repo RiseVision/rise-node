@@ -24,6 +24,7 @@ import {
 } from '../../stubs';
 import { CreateHashSpy } from '../../stubs/utils/CreateHashSpy';
 import { createContainer } from '../../utils/containerCreator';
+import { BlocksModel } from '../../../src/models';
 
 chai.use(chaiAsPromised);
 
@@ -51,7 +52,7 @@ describe('modules/forge', () => {
   let loadKeypairs: () => void;
 
   beforeEach(() => {
-    sandbox    = sinon.sandbox.create();
+    sandbox    = sinon.createSandbox();
     container = createContainer();
     clock      = sandbox.useFakeTimers();
     fakeConfig = { forging: { secret: ['secret1', 'secret2'] } };
@@ -95,13 +96,13 @@ describe('modules/forge', () => {
     instance.blocksProcessModule = blocksProcessModuleStub;
 
     createHashSpy              = new CreateHashSpy(crypto, sandbox);
-    blocksModuleStub.lastBlock = {
-      blockSignature      : 'blockSignature',
-      generatorPublicKey  : 'pubKey',
+    blocksModuleStub.lastBlock = BlocksModel.classFromPOJO({
+      blockSignature      : Buffer.from('blockSignature'),
+      generatorPublicKey  : Buffer.from('pubKey'),
       height              : 12422,
       id                  : 'blockID',
       numberOfTransactions: 0,
-      payloadHash         : '',
+      payloadHash         : Buffer.from('payload'),
       payloadLength       : 0,
       previousBlock       : 'previous',
       reward              : 15,
@@ -109,7 +110,7 @@ describe('modules/forge', () => {
       totalAmount         : 0,
       totalFee            : 0,
       version             : 1,
-    };
+    });
     loadKeypairs               = () => {
       instance.enabledKeys = {
         aaaa: true,

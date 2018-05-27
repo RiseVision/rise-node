@@ -8,7 +8,7 @@ import { SinonSandbox, SinonStub } from 'sinon';
 import { BigNum, IKeypair, TransactionType } from '../../../src/helpers';
 import {Symbols} from '../../../src/ioc/symbols';
 import { SignedAndChainedBlockType, TransactionLogic } from '../../../src/logic';
-import { IBaseTransaction, SendTransaction } from '../../../src/logic/transactions';
+import { IBaseTransaction, IConfirmedTransaction, SendTransaction } from '../../../src/logic/transactions';
 import {
   AccountLogicStub, DbStub, EdStub, ExceptionsManagerStub, LoggerStub,
   RoundsLogicStub, SlotsStub, ZSchemaStub
@@ -42,7 +42,7 @@ describe('logic/transaction', () => {
   let genesisBlock: SignedAndChainedBlockType;
   let txModel: typeof TransactionsModel;
 
-  let tx: IBaseTransaction<any>;
+  let tx: IConfirmedTransaction<any>;
   const sampleBuffer = Buffer.from('35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892', 'hex');
 
   const publicKeyHex      = '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3';
@@ -81,6 +81,8 @@ describe('logic/transaction', () => {
       signature      : Buffer.from('f8fbf9b8433bf1bbea971dc8b14c6772d33c7dd285d84c5e6c984b10c4141e9f' +
       'a56ace902b910e05e98b55898d982b3d5b9bf8bd897083a7d1ca1d5028703e03', 'hex'),
       timestamp      : 0,
+      height         : 10,
+      blockId        : '11',
       type           : TransactionType.SEND,
     };
 
@@ -114,7 +116,7 @@ describe('logic/transaction', () => {
     };
 
     edStub.stubs.sign.returns(sampleBuffer);
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
   });
 
   afterEach(() => {
@@ -809,11 +811,11 @@ describe('logic/transaction', () => {
     it('should reject tx if requesetPublicKey and account is not multisign', async () => {
       sender.multisignatures  = null;
       tx.signatures = ['a', 'b'];
-      tx.requesterPublicKey          = 'yz';
+      tx.requesterPublicKey          = Buffer.from('aa', 'hex');
       tx.asset.multisignature = {
         keysgroup: [
-          'xyz',
-          'def',
+          '+aa',
+          '+ef',
         ],
       };
       verifySignatureStub.returns(true);
@@ -824,11 +826,11 @@ describe('logic/transaction', () => {
     it('should reject tx if requesterPublicKey, account is multisign but requester is null', async () => {
       sender.multisignatures  = ['a'];
       tx.signatures = ['a', 'b'];
-      tx.requesterPublicKey          = 'yz';
+      tx.requesterPublicKey          = Buffer.from('aa', 'hex');
       tx.asset.multisignature = {
         keysgroup: [
-          'xyz',
-          'def',
+          '+aa',
+          '+ef',
         ],
       };
       verifySignatureStub.returns(true);
@@ -1176,7 +1178,7 @@ describe('logic/transaction', () => {
     });
 
     it('should call assertKnownTransactionType', () => {
-      instance.objectNormalize({ ... tx, blockId: '10'});
+      instance.objectNormalize({ ... tx, blockId: '10'} as any);
       expect(akttStub.calledOnce).to.be.true;
       expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx.type);
     });

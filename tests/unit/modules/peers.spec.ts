@@ -28,7 +28,7 @@ describe('modules/peers', () => {
   };
   let sandbox: SinonSandbox;
   beforeEach(() => {
-    sandbox                = sinon.sandbox.create();
+    sandbox                = sinon.createSandbox();
     container = createContainer();
     container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
     container.rebind(Symbols.modules.peers).to(PeersModule);
@@ -191,7 +191,7 @@ describe('modules/peers', () => {
     let firstPeers: BasePeerType[];
     let secondPeers: BasePeerType[];
     before(() => {
-      s = sinon.sandbox.create();
+      s = sinon.createSandbox();
     });
     beforeEach(() => {
       getByFilterStub = s.stub(inst, 'getByFilter');

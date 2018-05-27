@@ -5,6 +5,7 @@ import { BaseStubClass } from '../../BaseStubClass';
 import { IKeypair } from '../../../../src/helpers';
 import { stubMethod } from '../../stubDecorator';
 import { IPeerLogic } from '../../../../src/ioc/interfaces/logic';
+import { BlocksModel } from '../../../../src/models';
 
 
 @injectable()
@@ -14,29 +15,30 @@ export class BlocksSubmoduleProcessStub extends BaseStubClass implements IBlocks
     return Promise.resolve();
   }
 
-  @stubMethod(true)
-  public generateBlock(keypair: IKeypair, timestamp: number): Promise<any> {
-    return Promise.resolve();
-  }
-
-  @stubMethod(true)
-  public getCommonBlock(peer: IPeerLogic, height: number): Promise<{ id: string; previousBlock: string; height: number } | void> {
-    return Promise.resolve();
+  @stubMethod()
+  public getCommonBlock(peer: IPeerLogic, height: number): Promise<{ id: string, previousBlock: string, height: number } | void>{
+    return null;
   }
 
   @stubMethod()
-  public loadBlocksFromPeer(rawPeer: IPeerLogic | BasePeerType): Promise<SignedBlockType> {
-    return undefined;
+  public loadBlocksOffset(limit: number, offset: number, verify: boolean): Promise<BlocksModel>{
+    return null;
   }
 
   @stubMethod()
-  public loadBlocksOffset(limit: number, offset: number, verify: boolean): Promise<SignedAndChainedBlockType> {
-    return undefined;
+  public loadBlocksFromPeer(rawPeer: IPeerLogic | BasePeerType): Promise<SignedBlockType>{
+    return null;
   }
 
-  @stubMethod(true)
-  public onReceiveBlock(block: SignedBlockType): Promise<any> {
-    return Promise.resolve();
+  @stubMethod()
+  public generateBlock(keypair: IKeypair, timestamp: number): Promise<any>{
+    return null;
   }
+
+  @stubMethod()
+  public onReceiveBlock(block: SignedBlockType): Promise<any>{
+    return null;
+  }
+
 
 }

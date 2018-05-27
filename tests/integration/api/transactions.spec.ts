@@ -286,7 +286,6 @@ describe('api/transactions', () => {
       it('should limit ret txs by limit and offset it', async () => {
         const {count, transactions} = await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}`)
           .then((resp) => resp.body);
-
         // offset!
         await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}&offset=1`)
           .then((resp) => {

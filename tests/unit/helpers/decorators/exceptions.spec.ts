@@ -58,7 +58,7 @@ describe('helpers/decorators/exceptions', () => {
     };
 
     beforeEach(() => {
-      sandbox = sinon.sandbox.create();
+      sandbox = sinon.createSandbox();
       handlerSpies.wrongValue.canHandle = sandbox.spy(mockHandlerWrongValue, 'canHandle');
       handlerSpies.wrongValue.handle = sandbox.spy(mockHandlerWrongValue, 'handle');
       handlerSpies.emptyString.canHandle = sandbox.spy(mockHandlerEmptyString, 'canHandle');

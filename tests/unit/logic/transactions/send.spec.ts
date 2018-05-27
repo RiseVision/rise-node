@@ -9,8 +9,8 @@ import { Symbols } from '../../../../src/ioc/symbols';
 import { SendTransaction } from '../../../../src/logic/transactions';
 import { AccountLogicStub, BlocksModelStub, RoundsLogicStub, SystemModuleStub } from '../../../stubs';
 import { createContainer } from '../../../utils/containerCreator';
-import AccountsModelStub from '../../../stubs/models/AccountsModelStub';
 import { AccountsModel } from '../../../../src/models';
+import { DBUpsertOp } from '../../../../src/types/genericTypes';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -30,7 +30,7 @@ describe('logic/transactions/send', () => {
   let block: any;
 
   beforeEach(() => {
-    sandbox   = sinon.sandbox.create();
+    sandbox   = sinon.createSandbox();
     container = createContainer();
     accountLogicStub = container.get(Symbols.logic.account);
     accountsModel = container.get(Symbols.models.accounts);
@@ -120,7 +120,7 @@ describe('logic/transactions/send', () => {
 
   describe('undo', () => {
     it('should return an array of objects', async () => {
-      const result = await instance.undo(tx, block, sender);
+      const result: DBUpsertOp<any> = await instance.undo(tx, block, sender) as any;
       expect(result).to.be.an('array');
       expect(result[0]).to.be.an('object').that.includes.all.keys('model', 'type', 'values');
       expect(result[0].model).to.be.deep.eq(accountsModel);

@@ -27,7 +27,7 @@ describe('apis/peersAPI', () => {
 
   beforeEach(() => {
     container = createContainer();
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     container.bind(Symbols.generic.versionBuild).toConstantValue(versionBuild);
     container
       .bind(Symbols.api.peers)

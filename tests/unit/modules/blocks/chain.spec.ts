@@ -22,7 +22,12 @@ import BlocksModuleStub from '../../../stubs/modules/BlocksModuleStub';
 import { RoundsModuleStub } from '../../../stubs/modules/RoundsModuleStub';
 import { generateAccounts } from '../../../utils/accountsUtils';
 import { createContainer } from '../../../utils/containerCreator';
-import { createRandomTransactions, createSendTransaction, createVoteTransaction } from '../../../utils/txCrafter';
+import {
+  createRandomTransactions,
+  createSendTransaction,
+  createVoteTransaction,
+  toBufferedTransaction
+} from '../../../utils/txCrafter';
 import { BlocksModel } from '../../../../src/models';
 import DbStub from '../../../stubs/helpers/DbStub';
 
@@ -180,12 +185,12 @@ describe('modules/blocks/chain', () => {
         createVoteTransaction(accounts[2], 1, { asset: { votes: [`+${accounts[0].publicKey}`] } }),
         createVoteTransaction(accounts[3], 1, { asset: { votes: [`+${accounts[0].publicKey}`] } }),
         createVoteTransaction(accounts[4], 1, { asset: { votes: [`+${accounts[0].publicKey}`] } }),
-      ];
+      ].map((t) => toBufferedTransaction(t));
       sendTxs  = [
         createSendTransaction(accounts[0], accounts[0].address, 1, { amount: 10 }),
         createSendTransaction(accounts[1], accounts[0].address, 1, { amount: 10 }),
         createSendTransaction(accounts[2], accounts[0].address, 1, { amount: 10 }),
-      ];
+      ].map((t) => toBufferedTransaction(t));
       allTxs   = sendTxs.concat(voteTxs);
 
       sandbox.stub(blocksModel.sequelize, 'transaction').callsFake((c) => c('t'));
@@ -427,13 +432,13 @@ describe('modules/blocks/chain', () => {
     });
     it('should call performOps using tx object', async () => {
       const transactions = createRandomTransactions({send: 2});
-      await inst.saveBlock({ transactions } as any, 'dbTX');
+      await inst.saveBlock({ transactions } as any, 'dbTX' as any);
       expect(dbHelperStub.stubs.performOps.called).is.true;
       expect(dbHelperStub.stubs.performOps.firstCall.args[1]).is.eq('dbTX');
     });
     it('should call dbSave for block and for each transaction and use the output for performOps', async () => {
       const transactions = createRandomTransactions({send: 2, vote: 2});
-      await inst.saveBlock({ transactions } as any, 'dbTX');
+      await inst.saveBlock({ transactions } as any, 'dbTX' as any);
       expect(txLogic.stubs.dbSave.called).is.true;
       expect(txLogic.stubs.dbSave.callCount).is.eq(4);
 

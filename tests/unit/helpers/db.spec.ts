@@ -3,7 +3,7 @@ import { DBHelper } from '../../../src/helpers/';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { expect } from 'chai';
-import { DBOp } from '../../../src/types/genericTypes';
+import { DBOp, DBUpdateOp } from '../../../src/types/genericTypes';
 
 // tslint:disable no-unused-expression
 describe('helpers/db', () => {
@@ -60,8 +60,8 @@ describe('helpers/db', () => {
 
     it('update should call handleUpdate', async () => {
       const stub                 = sandbox.stub(instance, 'handleUpdate').returns(':)');
-      const op: DBOp<FakeModel>  = { type: 'update', model: FakeModel, values: { test: 'hey' } };
-      const op2: DBOp<FakeModel> = { type: 'update', model: FakeModel, values: { test: 'hey2' } };
+      const op: DBUpdateOp<FakeModel>  = { type: 'update', model: FakeModel, values: { test: 'hey' }, options: null };
+      const op2: DBUpdateOp<FakeModel> = { type: 'update', model: FakeModel, values: { test: 'hey2' }, options: null };
       await instance.performOps([op, op2]);
       expect(stub.callCount).is.eq(2);
       expect(stub.firstCall.args[0]).to.be.deep.eq(op);
@@ -131,7 +131,7 @@ describe('helpers/db', () => {
   it('handleDelete should call sequelize.querygenerator.deleteQuery', () => {
     FakeModel.getTableName = () => 'theTable';
     const stub = sandbox.stub(instance['sequelize']['qi'], 'deleteQuery');
-    instance.handleDelete({type: 'delete', values: { test: 'hey'}, model: FakeModel, options: {where: {test: 'hAy'}}});
+    instance.handleDelete({type: 'remove', model: FakeModel, options: {where: {test: 'hAy'}}});
 
     expect(stub.firstCall.args[0]).to.be.eq('theTable');
     expect(stub.firstCall.args[1]).to.be.deep.eq({test: 'hAy'});

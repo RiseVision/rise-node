@@ -29,7 +29,7 @@ describe('apis/utils/forgingApisWatchGuard', () => {
 
   beforeEach(() => {
     container = createContainer();
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
 
     container
       .bind(Symbols.api.utils.forgingApisWatchGuard)

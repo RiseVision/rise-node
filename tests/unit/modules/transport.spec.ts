@@ -52,7 +52,7 @@ describe('src/modules/transport.ts', () => {
   };
 
   before(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
   });
 
   beforeEach(() => {

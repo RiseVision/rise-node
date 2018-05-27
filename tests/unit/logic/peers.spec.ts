@@ -21,7 +21,7 @@ describe('logic/peers', () => {
   let sandbox: SinonSandbox;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     container = createContainer();
     loggerStub = container.get(Symbols.helpers.logger);
     peerLogicStub = new PeerLogicStub();

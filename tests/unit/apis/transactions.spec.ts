@@ -35,7 +35,7 @@ describe('apis/transactionsAPI', () => {
 
   beforeEach(() => {
     container = createContainer();
-    sandbox   = sinon.sandbox.create();
+    sandbox   = sinon.createSandbox();
 
     container
       .bind(Symbols.api.transactions)

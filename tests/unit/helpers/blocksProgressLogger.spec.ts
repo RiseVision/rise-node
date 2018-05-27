@@ -21,7 +21,7 @@ describe('helpers/blocksProgressLogger', () => {
   let container: Container;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     container = createContainer();
     loggerStub = container.get(Symbols.helpers.logger);
     instance = new BlockProgressLogger(10, 2, 'My message', loggerStub);

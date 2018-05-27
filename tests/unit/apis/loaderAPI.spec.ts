@@ -30,7 +30,7 @@ describe('apis/blocksAPI', () => {
   let constants;
 
   beforeEach(() => {
-    sandbox   = sinon.sandbox.create();
+    sandbox   = sinon.createSandbox();
     container = createContainer();
     container.bind(Symbols.api.loader).to(LoaderAPI);
 

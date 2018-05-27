@@ -26,7 +26,7 @@ describe('apis/utils/attachPeerHeaders', () => {
   beforeEach(() => {
     container = createContainer();
     container.bind(Symbols.api.utils.attachPeerHeaderToResponseObject).to(AttachPeerHeaders);
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     response = {set: () => true};
     responseSpy = sandbox.spy(response, 'set');
     request = {};
