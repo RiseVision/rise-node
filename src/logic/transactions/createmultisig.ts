@@ -178,6 +178,8 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
                      sender: AccountsModel): Promise<Array<DBOp<any>>> {
     delete this.unconfirmedSignatures[sender.address];
 
+    sender.applyDiffArray('multisignatures', tx.asset.multisignature.keysgroup);
+
     const ops = this.accountLogic.merge(
       sender.address,
       {
@@ -212,7 +214,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     const multiInvert = Diff.reverse(tx.asset.multisignature.keysgroup);
 
     this.unconfirmedSignatures[sender.address] = true;
-
+    sender.applyDiffArray('multisignatures', multiInvert);
     return this.accountLogic.merge(
       sender.address,
       {
@@ -230,7 +232,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
       throw new Error('Signature on this account is pending confirmation');
     }
     this.unconfirmedSignatures[sender.address] = true;
-
+    sender.applyDiffArray('u_multisignatures', tx.asset.multisignature.keysgroup);
     return this.accountLogic.merge(
       sender.address,
       {
@@ -244,7 +246,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
   public async undoUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: any): Promise<Array<DBOp<any>>> {
     const multiInvert = Diff.reverse(tx.asset.multisignature.keysgroup);
     delete this.unconfirmedSignatures[sender.address];
-
+    sender.applyDiffArray('u_multisignatures', multiInvert);
     return this.accountLogic.merge(
       sender.address,
       {

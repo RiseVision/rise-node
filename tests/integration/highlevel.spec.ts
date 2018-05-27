@@ -30,7 +30,7 @@ import {
 import { Ed, JobsQueue, wait } from '../../src/helpers';
 import BigNumber from 'bignumber.js';
 import { toBufferedTransaction } from '../utils/txCrafter';
-import { BlocksModel, TransactionsModel } from '../../src/models';
+import { AccountsModel, BlocksModel, TransactionsModel } from '../../src/models';
 import { Sequelize } from 'sequelize-typescript';
 
 // tslint:disable no-unused-expression

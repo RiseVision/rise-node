@@ -1,6 +1,6 @@
 import * as pgp from 'pg-promise';
 import * as sequelize from 'sequelize';
-import {Op} from 'sequelize';
+import { Op } from 'sequelize';
 import { Column, DataType, Model, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
 import { publicKey } from '../types/sanityTypes';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
@@ -20,20 +20,20 @@ const buildArrayArgAttribute = function (table: string): any {
  * Precomputed fields required by txType based on confirmed state
  * @type {{true: {}; false: {}}}
  */
-const fieldsByTxType = {
+const fieldsByTxType         = {
   // Unconfirmed
   false: {},
   // Confirmed
-  true: {},
+  true : {},
 };
 for (const txType in TransactionType) {
-  fieldsByTxType.true[txType] = allFields;
+  fieldsByTxType.true[txType]  = allFields;
   fieldsByTxType.false[txType] = allFields;
 }
-fieldsByTxType.false[TransactionType.VOTE] = allFields.concat('u_delegates');
-fieldsByTxType.true[TransactionType.VOTE] = allFields.concat('delegates');
+fieldsByTxType.false[TransactionType.VOTE]  = allFields.concat('u_delegates');
+fieldsByTxType.true[TransactionType.VOTE]   = allFields.concat('delegates');
 fieldsByTxType.false[TransactionType.MULTI] = allFields.concat('u_multisignatures');
-fieldsByTxType.true[TransactionType.MULTI] = allFields.concat('multisignatures');
+fieldsByTxType.true[TransactionType.MULTI]  = allFields.concat('multisignatures');
 
 @Scopes({
   full         : {
@@ -156,6 +156,19 @@ export class AccountsModel extends Model<AccountsModel> {
     return toRet;
   }
 
+  public applyDiffArray(toWhat: 'delegates' | 'u_delegates' | 'multisignatures' | 'u_multisignatures', diff: any) {
+    this[toWhat] = this[toWhat] || [];
+    diff.filter((v) => v.startsWith('-'))
+      .forEach((v) => this[toWhat].splice(this[toWhat].indexOf(v.substr(1)), 1));
+    diff.filter((v) => v.startsWith('+'))
+      .forEach((v) => this[toWhat].push(v.substr(1)));
+  }
+
+  public applyValues(items: Partial<this>) {
+    Object.keys(items).forEach((k) => this[k] = items[k]);
+  }
+
+
   public static searchDelegate(q: string, limit: number, orderBy: string, orderHow: 'ASC' | 'DESC' = 'ASC') {
     if (['ASC', 'DESC'].indexOf(orderHow.toLocaleUpperCase()) === -1) {
       throw new Error('Invalid ordering mechanism')
@@ -193,7 +206,7 @@ export class AccountsModel extends Model<AccountsModel> {
 
   }
 
-  public static fieldsFor(tx: ITransaction<any>|IBaseTransaction<any>, confirmed: boolean): FieldsInModel<AccountsModel> {
+  public static fieldsFor(tx: ITransaction<any> | IBaseTransaction<any>, confirmed: boolean): FieldsInModel<AccountsModel> {
     return fieldsByTxType[`${confirmed}`][tx.type];
   }
 

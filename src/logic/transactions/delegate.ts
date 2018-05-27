@@ -102,19 +102,18 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
 
   // tslint:disable-next-line max-line-length
   public async apply(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
-    const data: any = {
-      isDelegate  : 1,
-      u_isDelegate: 0,
+    const data = {
+      isDelegate  : 1 as any,
+      u_isDelegate: 0 as any,
       vote        : 0,
+      u_username  : null,
+      username    : tx.asset.delegate.username,
     };
-    if (tx.asset.delegate.username) {
-      data.u_username = null;
-      data.username   = tx.asset.delegate.username;
-    }
     // TODO: Else? tx is not a valid tx. so why bothering doing an if ^^ ?
     if (sender.isDelegate === 1) {
       throw new Error('Account is already a delegate');
     }
+    sender.applyValues(data);
     return [{
       model  : this.AccountsModel,
       options: {
@@ -127,15 +126,14 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
 
   // tslint:disable-next-line max-line-length
   public async undo(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
-    const data: any = {
-      isDelegate  : 0,
-      u_isDelegate: 1,
+    const data = {
+      isDelegate  : 0 as 0 | 1,
+      u_isDelegate: 1 as 0 | 1,
       vote        : 0,
+      username    : null,
+      u_username  : tx.asset.delegate.username,
     };
-    if (tx.asset.delegate.username) {
-      data.username   = null;
-      data.u_username = tx.asset.delegate.username;
-    }
+    sender.applyValues(data);
     return [{
       model  : this.AccountsModel,
       options: {
@@ -150,17 +148,16 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
    * Stores in accounts that sender is now an unconfirmed delegate
    */
   public async applyUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
-    const data: any = {
-      isDelegate  : 0,
-      u_isDelegate: 1,
+    const data = {
+      isDelegate  : 0 as 0 | 1,
+      u_isDelegate: 1 as 0 | 1,
+      username    : null,
+      u_username  : tx.asset.delegate.username,
     };
-    if (tx.asset.delegate.username) {
-      data.username   = null;
-      data.u_username = tx.asset.delegate.username;
-    }
     if (sender.u_isDelegate === 1) {
       throw new Error('Account is already trying to be a delegate');
     }
+    sender.applyValues(data);
     return [{
       model  : this.AccountsModel,
       options: {
@@ -172,15 +169,13 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
   }
 
   public async undoUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
-    const data: any = {
-      isDelegate  : 0,
-      u_isDelegate: 0,
+    const data = {
+      isDelegate  : 0 as 0 | 1,
+      u_isDelegate: 0 as 0 | 1,
+      username    : null,
+      u_username  : null,
     };
-    if (tx.asset.delegate.username) {
-      data.username   = null;
-      data.u_username = null;
-    }
-
+    sender.applyValues(data);
     return [{
       model  : this.AccountsModel,
       options: {

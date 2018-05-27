@@ -52,12 +52,12 @@ export class DelegatesModule implements IDelegatesModule {
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
-  public async checkConfirmedDelegates(pk: Buffer, votes: string[]) {
-    return this.checkDelegates(pk, votes, 'confirmed');
+  public async checkConfirmedDelegates(account: AccountsModel, votes: string[]) {
+    return this.checkDelegates(account, votes, 'confirmed');
   }
 
-  public async checkUnconfirmedDelegates(pk: Buffer, votes: string[]) {
-    return this.checkDelegates(pk, votes, 'unconfirmed');
+  public async checkUnconfirmedDelegates(account: AccountsModel, votes: string[]) {
+    return this.checkDelegates(account, votes, 'unconfirmed');
   }
 
   /**
@@ -195,14 +195,12 @@ export class DelegatesModule implements IDelegatesModule {
 
   /**
    * Checks vote integrity for account and controls total votes do not exceed active delegates.
-   * @param {publicKey} pk
+   * @param {AccountsModel} account
    * @param votes
    * @param state
    * @return {Promise<void>}
    */
-  private async checkDelegates(pk: Buffer, votes: string[], state: 'confirmed' | 'unconfirmed') {
-    const account = await this.accountsModule.getAccount({publicKey: pk});
-
+  private async checkDelegates(account: AccountsModel, votes: string[], state: 'confirmed' | 'unconfirmed') {
     if (!account) {
       throw new Error('Account not found');
     }

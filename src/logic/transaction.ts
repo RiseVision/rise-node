@@ -442,6 +442,7 @@ export class TransactionLogic implements ITransactionLogic {
 
     const amountNumber = amount.toNumber();
 
+    sender.balance -= amountNumber;
     this.logger.trace('Logic/Transaction->apply', {
       balance: -amountNumber,
       blockId: block.id,
@@ -467,6 +468,7 @@ export class TransactionLogic implements ITransactionLogic {
       .plus(tx.fee.toString())
       .toNumber();
 
+    sender.balance += amount;
     this.logger.trace('Logic/Transaction->undo', {
       balance: amount,
       blockId: block.id,
@@ -496,6 +498,7 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     const amountNumber = amount.toNumber();
+    sender.u_balance -= amountNumber;
 
     const ops = this.accountLogic.merge(
       sender.address,
@@ -513,6 +516,8 @@ export class TransactionLogic implements ITransactionLogic {
     const amount: number = new BigNum(tx.amount.toString())
       .plus(tx.fee.toString())
       .toNumber();
+
+    sender.u_balance += amount;
 
     const ops = this.accountLogic.merge(
       sender.address,

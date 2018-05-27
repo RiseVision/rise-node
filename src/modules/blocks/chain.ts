@@ -1,5 +1,5 @@
 import { inject, injectable, tagged } from 'inversify';
-import { Transaction, Op } from 'sequelize';
+import { Op, Transaction } from 'sequelize';
 import { Bus, catchToLoggerAndRemapError, DBHelper, ILogger, Sequence, TransactionType, wait } from '../../helpers/';
 import { WrapInBalanceSequence } from '../../helpers/decorators/wrapInSequence';
 import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
@@ -13,8 +13,9 @@ import {
 } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType } from '../../logic/';
-import { IBaseTransaction, IConfirmedTransaction } from '../../logic/transactions/';
+import { IConfirmedTransaction } from '../../logic/transactions/';
 import { AccountsModel, BlocksModel, TransactionsModel } from '../../models/';
+import { DBOp } from '../../types/genericTypes';
 
 @injectable()
 export class BlocksModuleChain implements IBlocksModuleChain {
@@ -63,7 +64,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * Lock for processing.
    * @type {boolean}
    */
-  private isCleaning: boolean = false;
+          private isCleaning: boolean = false;
 
   private isProcessing: boolean = false;
 
@@ -93,7 +94,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   }
 
   public async deleteAfterBlock(height: number): Promise<void> {
-    await this.BlocksModel.destroy({where: {[Op.gte]: height}});
+    await this.BlocksModel.destroy({ where: { [Op.gte]: height } });
   }
 
   /**
@@ -151,11 +152,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         // FIXME: Poor performance - every transaction cause SQL query to be executed
         // WARNING: DB_WRITE
         const sender = await this.accountsModule
-          .setAccountAndGet({publicKey: tx.senderPublicKey});
+          .setAccountAndGet({ publicKey: tx.senderPublicKey });
 
         // Apply tx.
-        await this.transactionsModule.applyUnconfirmed({...tx, blockId: block.id}, sender);
-        await this.transactionsModule.apply({...tx, blockId: block.id}, block, sender);
+        await this.transactionsModule.applyUnconfirmed({ ...tx, blockId: block.id }, sender);
+        await this.transactionsModule.apply({ ...tx, blockId: block.id }, block, sender);
 
         tracker.applyNext();
       }
@@ -188,58 +189,44 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
       // Apply transaction to unconfirmed mem_accounts field
       // Divide transactions by senderAccounts.
-      const txsBySender: { [address: string]: Array<IBaseTransaction<any>> } = {};
-      block.transactions.forEach((tx) => {
-        txsBySender[tx.senderId] = txsBySender[tx.senderId] || [];
-        txsBySender[tx.senderId].push(tx);
+      const allSenders: Array<{ publicKey: Buffer, address: string }> = [];
+      block.transactions.forEach((t) => {
+        if (!allSenders.find((item) => item.address === t.senderId)) {
+          allSenders.push({ address: t.senderId, publicKey: t.senderPublicKey });
+        }
       });
-
-      // Apply Unconfirmed parallelly grouped by sender.
-      await Promise.all(Object.keys(txsBySender).map(async (address) => {
-        const txs  = txsBySender[address];
-        let sender = null;
-        for (const transaction of txs) {
-          sender = sender ?
-            await this.accountsModule
-              .getAccount({ address: transaction.senderId }, this.AccountsModel.fieldsFor(transaction, false)) :
-            await this.accountsModule
-              .setAccountAndGet({ publicKey: transaction.senderPublicKey });
-          await this.transactionsModule.applyUnconfirmed(transaction, sender)
-            .catch((err) => {
-              this.logger.error(`Failed to applyUnconfirmed transaction ${transaction.id} - ${err.message || err}`);
-              this.logger.error(err);
-              this.logger.error('Transaction', transaction);
-              throw err;
-            });
-
-          // Remove the transaction from the node queue, if it was present.
-          const idx = unconfirmedTransactionIds.indexOf(transaction.id);
-          if (idx !== -1) {
-            unconfirmedTransactionIds.splice(idx, 1);
-          }
+      const senderAccounts = await this.AccountsModel.scope('full').findAll({ where: { address: allSenders.map((item) => item.address) } });
+      const sendersMap: { [address: string]: AccountsModel } = {};
+      for (const senderAccount of senderAccounts) {
+        sendersMap[senderAccount.address] = senderAccount;
+      }
+      await Promise.all(allSenders.map(async ({ address, publicKey }) => {
+        if (!sendersMap[address] || !sendersMap[address].publicKey) {
+          sendersMap[address] = await this.accountsModule.setAccountAndGet({ publicKey });
         }
       }));
 
-      // Apply confirmed parallelly
-      await Promise.all(Object.keys(txsBySender).map(async (address) => {
-        const txs  = txsBySender[address];
-        for (const transaction of txs) {
-          const sender = await this.accountsModule.getAccount(
-            { address: transaction.senderId },
-            this.AccountsModel.fieldsFor(transaction, true)
-          );
-          await this.transactionsModule.apply(transaction, block, sender)
-            .catch((err) => {
-              this.logger.error(`Failed to apply transaction: ${transaction.id}`, err);
-              this.logger.error('Transaction', transaction);
-              throw err;
-            });
-
-          // Transaction applied, removed from the unconfirmed list.
-          this.transactionsModule.removeUnconfirmedTransaction(transaction.id);
+      // Apply unconfirmed
+      const ops: Array<DBOp<any>> = [];
+      for (const tx of block.transactions) {
+        ops.push(
+          ... await this.transactionLogic.applyUnconfirmed(tx, sendersMap[tx.senderId])
+        );
+        const idx = unconfirmedTransactionIds.indexOf(tx.id);
+        if (idx !== -1) {
+          unconfirmedTransactionIds.splice(idx, 1);
         }
-      }));
+      }
 
+      // Apply
+      for (const tx of block.transactions) {
+        ops.push(
+          ... await this.transactionLogic.apply(tx as any, block, sendersMap[tx.senderId])
+        );
+        this.transactionsModule.removeUnconfirmedTransaction(tx.id);
+      }
+
+      await this.dbHelper.performOps(ops);
       this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
       if (saveBlock) {
         try {
@@ -316,7 +303,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    */
   @WrapInBalanceSequence
   private async popLastBlock(lb: BlocksModel): Promise<BlocksModel> {
-    const previousBlock = await this.BlocksModel.findById(lb.previousBlock, {include: [this.TransactionsModel]});
+    const previousBlock = await this.BlocksModel.findById(lb.previousBlock, { include: [this.TransactionsModel] });
 
     if (previousBlock === null) {
       throw new Error('previousBlock is null');
@@ -325,12 +312,12 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
       for (const tx of txs) {
-        const sender = await this.AccountsModel.scope('fullConfirmed').find({where: {publicKey: tx.senderPublicKey}});
+        const sender = await this.AccountsModel.scope('fullConfirmed').find({ where: { publicKey: tx.senderPublicKey } });
         await this.transactionsModule.undo(tx, lb, sender);
         await this.transactionsModule.undoUnconfirmed(tx);
       }
       await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
-      await lb.destroy({transaction: dbTX});
+      await lb.destroy({ transaction: dbTX });
     });
 
     return previousBlock;
