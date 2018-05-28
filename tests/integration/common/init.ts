@@ -49,7 +49,7 @@ export class IntegrationTestInitializer {
       const blockModule = self.appManager.container
         .get<IBlocksModule>(Symbols.modules.blocks);
       const howMany      = blockModule.lastBlock.height - height;
-      this.timeout(howMany * 100 + 150);
+      this.timeout(howMany * 5000 + 150);
       await self.rawDeleteBlocks(howMany);
       expect(blockModule.lastBlock.height).to.be.eq(height);
     });

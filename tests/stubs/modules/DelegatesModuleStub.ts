@@ -1,10 +1,10 @@
 import { injectable } from 'inversify';
 import { IDelegatesModule } from '../../../src/ioc/interfaces/modules';
-import { MemAccountsData, SignedBlockType } from '../../../src/logic';
-import { publicKey } from '../../../src/types/sanityTypes';
+import { SignedBlockType } from '../../../src/logic';
+import { AccountsModel } from '../../../src/models';
 import { BaseStubClass } from '../BaseStubClass';
 import { stubMethod } from '../stubDecorator';
-import { AccountsModel } from '../../../src/models';
+
 
 @injectable()
 export class DelegatesModuleStub extends BaseStubClass  implements IDelegatesModule {
@@ -25,12 +25,12 @@ export class DelegatesModuleStub extends BaseStubClass  implements IDelegatesMod
   }
 
   @stubMethod()
-  public checkConfirmedDelegates(pk: Buffer, votes: string[]): Promise<void> {
+  public checkConfirmedDelegates(aaccount: AccountsModel, votes: string[]): Promise<void> {
     return null;
   }
 
   @stubMethod()
-  public checkUnconfirmedDelegates(pk: Buffer, votes: string[]): Promise<void> {
+  public checkUnconfirmedDelegates(account: AccountsModel, votes: string[]): Promise<void> {
     return null;
   }
 

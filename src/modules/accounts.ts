@@ -7,6 +7,7 @@ import { AccountFilterData, MemAccountsData } from '../logic/';
 import { AccountsModel } from '../models/';
 import { DBOp } from '../types/genericTypes';
 import { FieldsInModel } from '../types/utils';
+import { IBaseTransaction } from '../logic/transactions';
 
 @injectable()
 export class AccountsModule implements IAccountsModule {
@@ -15,6 +16,9 @@ export class AccountsModule implements IAccountsModule {
   private accountLogic: IAccountLogic;
   @inject(Symbols.helpers.db)
   private dbHelper: DBHelper;
+
+  @inject(Symbols.models.accounts)
+  private AccountsModel: typeof AccountsModel;
 
   public cleanup() {
     return Promise.resolve();
@@ -32,13 +36,46 @@ export class AccountsModule implements IAccountsModule {
     return this.accountLogic.getAll(filter, fields);
   }
 
+  public async resolveAccountsForTransactions(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: AccountsModel }> {
+    const allSenders: Array<{ publicKey: Buffer, address: string }> = [];
+    txs.forEach((tx) => {
+      if (!allSenders.find((item) => item.address === tx.senderId)) {
+        allSenders.push({ address: tx.senderId, publicKey: tx.senderPublicKey });
+      }
+      if (tx.requesterPublicKey) {
+        const requesterAddress = this.accountLogic.generateAddressByPublicKey(tx.requesterPublicKey);
+        if (!allSenders.find((item) => item.address === requesterAddress)) {
+          allSenders.push({ address: requesterAddress, publicKey: tx.requesterPublicKey });
+        }
+      }
+    });
+
+    const senderAccounts = await this.AccountsModel.scope('full')
+      .findAll({where: { address: allSenders.map((s) => s.address)}});
+
+    const sendersMap: { [address: string]: AccountsModel } = {};
+    for (const senderAccount of senderAccounts) {
+      sendersMap[senderAccount.address] = senderAccount;
+    }
+    await Promise.all(allSenders.map(async ({ address, publicKey }) => {
+      if (!sendersMap[address]) {
+        throw new Error(`Account ${address} not found in db.`);
+      }
+      if (!sendersMap[address].publicKey) {
+        sendersMap[address] = await this.setAccountAndGet({ publicKey });
+      }
+    }));
+
+    return sendersMap;
+  }
+
   /**
    * Sets some data to specific account
    * @param {MemAccountsData} data
    * @returns {Promise<MemAccountsData>}
    */
   // tslint:disable-next-line max-line-length
-  public async setAccountAndGet(data: ({ publicKey: string } | { address: string }) & Partial<AccountsModel>): Promise<AccountsModel> {
+  public async setAccountAndGet(data: ({ publicKey: Buffer } | { address: string }) & Partial<AccountsModel>): Promise<AccountsModel> {
     data              = this.fixAndCheckInputParams(data);
     // no need to reset address!
     const { address } = data;

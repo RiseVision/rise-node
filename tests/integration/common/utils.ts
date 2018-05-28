@@ -17,6 +17,7 @@ import { Symbols } from '../../../src/ioc/symbols';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import * as txCrafter from '../../utils/txCrafter';
 import { toBufferedTransaction } from '../../utils/txCrafter';
+import constants from '../../../src/helpers/constants';
 
 const delegates    = require('../genesisDelegates.json');
 const genesisBlock = require('../genesisBlock.json');
@@ -59,6 +60,7 @@ export const getKeypairByPkey = (pk: publicKey): IKeypair => {
 
 export const confirmTransactions = async (txs: Array<ITransaction<any>>, withTxPool: boolean) => {
   txs = txs.slice();
+  const consts = initializer.appManager.container.get<typeof constants>(Symbols.helpers.constants);
   if (withTxPool) {
     const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
     try {
@@ -66,14 +68,18 @@ export const confirmTransactions = async (txs: Array<ITransaction<any>>, withTxP
     } catch (e) {
       console.warn('receive tx err', e);
     }
-    await initializer.rawMineBlocks(Math.ceil(txs.length / 25));
+    await initializer.rawMineBlocks(Math.ceil(txs.length / consts.maxTxsPerBlock));
     for (const tx of txs) {
      expect(txModule.transactionInPool(tx.id)).is.false; // (`TX ${tx.id} is still in pool :(`);
     }
     return;
   } else {
+    //const log = txs.length / consts.maxTxsPerBlock > 10;
     while (txs.length > 0) {
-      await initializer.rawMineBlockWithTxs(txs.splice(0, 25).map((t) => toBufferedTransaction(t)));
+      //if (log) {
+      //  console.log(`Missing: ${txs.length}`);
+      //}
+      await initializer.rawMineBlockWithTxs(txs.splice(0, consts.maxTxsPerBlock).map((t) => toBufferedTransaction(t)));
     }
   }
 };

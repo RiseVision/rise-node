@@ -21,7 +21,7 @@ import {
 import { CreateHashSpy } from '../../stubs/utils/CreateHashSpy';
 import { generateAccounts } from '../../utils/accountsUtils';
 import { createContainer } from '../../utils/containerCreator';
-import { BlocksModel } from '../../../src/models';
+import { AccountsModel, BlocksModel } from '../../../src/models';
 
 chai.use(chaiAsPromised);
 
@@ -40,6 +40,7 @@ describe('modules/delegates', () => {
   let schemaStub: ZSchemaStub;
 
   let blocksModel: typeof BlocksModel;
+  let accountsModel: typeof AccountsModel;
 
   let createHashSpy: CreateHashSpy;
 
@@ -97,6 +98,7 @@ describe('modules/delegates', () => {
       version             : 1,
     };
     blocksModel = container.get(Symbols.models.blocks);
+    accountsModel = container.get(Symbols.models.accounts);
     blocksModuleStub.lastBlock                        = blocksModel.classFromPOJO(lastBlock);
     blockRewardLogicStub.stubConfig.calcSupply.return = totalSupply;
     signedBlock                                       = Object.assign({}, lastBlock);
@@ -111,9 +113,10 @@ describe('modules/delegates', () => {
     it('should call checkDelegates and return the result', async () => {
       const checkDelegatesStub = sandbox.stub(instance as any, 'checkDelegates');
       checkDelegatesStub.resolves('test');
-      const retVal = await instance.checkConfirmedDelegates(Buffer.from(pubKey, 'hex'), votes);
+      const acc = new AccountsModel({ publicKey: Buffer.from(pubKey, 'hex') });
+      const retVal = await instance.checkConfirmedDelegates(acc, votes);
       expect(checkDelegatesStub.calledOnce).to.be.true;
-      expect(checkDelegatesStub.firstCall.args[0]).to.be.deep.equal(Buffer.from(pubKey, 'hex'));
+      expect(checkDelegatesStub.firstCall.args[0]).to.be.deep.equal(acc);
       expect(checkDelegatesStub.firstCall.args[1]).to.be.deep.equal(votes);
       expect(checkDelegatesStub.firstCall.args[2]).to.be.equal('confirmed');
       expect(retVal).to.be.equal('test');
@@ -124,9 +127,10 @@ describe('modules/delegates', () => {
     it('should call checkDelegates and return the result', async () => {
       const checkDelegatesStub = sandbox.stub(instance as any, 'checkDelegates');
       checkDelegatesStub.resolves('test');
-      const retVal = await instance.checkUnconfirmedDelegates(Buffer.from(pubKey, 'hex'), votes);
+      const acc = new AccountsModel({ publicKey: Buffer.from(pubKey, 'hex') });
+      const retVal = await instance.checkUnconfirmedDelegates(acc, votes);
       expect(checkDelegatesStub.calledOnce).to.be.true;
-      expect(checkDelegatesStub.firstCall.args[0]).to.be.deep.equal(Buffer.from(pubKey, 'hex'));
+      expect(checkDelegatesStub.firstCall.args[0]).to.be.deep.equal(acc);
       expect(checkDelegatesStub.firstCall.args[1]).to.be.deep.equal(votes);
       expect(checkDelegatesStub.firstCall.args[2]).to.be.equal('unconfirmed');
       expect(retVal).to.be.equal('test');

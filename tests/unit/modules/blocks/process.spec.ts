@@ -296,6 +296,7 @@ describe('modules/blocks/process', () => {
         blocksModelFindAllStub.resolves([{id: '1'}, {id: '2'}]);
         blocksChain.enqueueResponse('applyBlock', Promise.resolve());
         blocksChain.enqueueResponse('applyBlock', Promise.resolve());
+        accountsModule.stubs.resolveAccountsForTransactions.resolves({});
       });
       it('if verify=true it should call blockVerifyModule on each block', async () => {
         // 2 blocks

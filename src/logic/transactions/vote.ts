@@ -142,7 +142,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   public async undoUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     this.objectNormalize(tx);
     const reversedVotes = Diff.reverse(tx.asset.votes);
-    sender.applyDiffArray('delegates', reversedVotes);
+    sender.applyDiffArray('u_delegates', reversedVotes);
     return this.accountLogic.merge(
       sender.address,
       {

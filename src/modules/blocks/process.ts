@@ -207,7 +207,12 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         // FIXME: Looks like we are missing some validations here, because applyBlock is
         // different than processBlock used elesewhere
         // - that need to be checked and adjusted to be consistent
-        await this.blocksChainModule.applyBlock(block, false, false);
+        await this.blocksChainModule.applyBlock(
+          block,
+          false,
+          false,
+          await this.accountsModule.resolveAccountsForTransactions(block.transactions)
+          );
       }
 
       this.blocksModule.lastBlock = block;

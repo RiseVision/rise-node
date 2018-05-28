@@ -41,8 +41,6 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
   private transactionLogic: ITransactionLogic;
 
   // Modules
-  @inject(Symbols.modules.accounts)
-  private accountsModule: IAccountsModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 

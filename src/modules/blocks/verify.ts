@@ -14,7 +14,7 @@ import {
 import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType, } from '../../logic/';
 import { IConfirmedTransaction } from '../../logic/transactions/';
-import { BlocksModel } from '../../models';
+import { AccountsModel, BlocksModel } from '../../models';
 
 @injectable()
 export class BlocksModuleVerify implements IBlocksModuleVerify {
@@ -148,18 +148,22 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       });
 
     // check transactions
-    for (const tx of block.transactions) {
-      // It will throw if tx is not valid somehow.
-      // FIXME ? wrong type for tx detected by TS
-      await this.checkTransaction(block, tx as any);
-    }
+    const accountsMap = await this.accountsModule.resolveAccountsForTransactions(block.transactions);
+    await Promise.all(block.transactions
+      .map((tx) => this.checkTransaction(block, tx as any, accountsMap))
+    );
 
     // if nothing has thrown till here then block is valid and can be applied.
     // The block and the transactions are OK i.e:
     // * Block and transactions have valid values (signatures, block slots, etc...)
     // * The check against database state passed (for instance sender has enough LSK, votes are under 101, etc...)
     // We thus update the database with the transactions values, save the block and tick it
-    return this.blocksChainModule.applyBlock(block as SignedAndChainedBlockType, broadcast, saveBlock);
+    return this.blocksChainModule.applyBlock(
+      block as SignedAndChainedBlockType,
+      broadcast,
+      saveBlock,
+      accountsMap
+    );
   }
 
   public async onBlockchainReady() {
@@ -349,7 +353,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
    * FIXME: Some checks are probably redundant, see: logic.transactionPool
    * If it does not throw the tx should be valid.
    */
-  private async checkTransaction(block: SignedBlockType, tx: IConfirmedTransaction<any>): Promise<void> {
+  private async checkTransaction(block: SignedBlockType, tx: IConfirmedTransaction<any>, accountsMap: {[address: string]: AccountsModel}): Promise<void> {
     tx.id      = this.transactionLogic.getId(tx);
     // Apply block id to the tx
     tx.blockId = block.id;
@@ -369,16 +373,11 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     // get account from db if exists
     // We try to fetch account without an upsert and eventually upsert the account if necessary.
     // this is just for optimization purposes.
-    const acc = await this.accountsModule.getAccount({publicKey: tx.senderPublicKey})
-      .then((a) => a.publicKey === null ? this.accountsModule.setAccountAndGet({publicKey: tx.senderPublicKey}) : a);
+    const acc = accountsMap[tx.senderId];
 
     let requester = null;
     if (tx.requesterPublicKey) {
-      requester = await this.accountsModule.getAccount({publicKey: tx.requesterPublicKey})
-        .then((a) => a.publicKey === null
-          ? this.accountsModule.setAccountAndGet({publicKey: tx.requesterPublicKey})
-          : a
-        );
+      requester = accountsMap[this.accountsModule.generateAddressByPublicKey(tx.requesterPublicKey)];
     }
     // Verify will throw if any error occurs during validation.
     await this.transactionLogic.verify(tx, acc, requester, block.height);

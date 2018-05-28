@@ -169,7 +169,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
   }
 
-  public async applyBlock(block: SignedAndChainedBlockType, broadcast: boolean, saveBlock: boolean) {
+  public async applyBlock(block: SignedAndChainedBlockType, broadcast: boolean, saveBlock: boolean, accountsMap: {[address: string]: AccountsModel}) {
     if (this.isCleaning) {
       return; // Avoid processing a new block if it is cleaning.
     }
@@ -189,28 +189,12 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
       // Apply transaction to unconfirmed mem_accounts field
       // Divide transactions by senderAccounts.
-      const allSenders: Array<{ publicKey: Buffer, address: string }> = [];
-      block.transactions.forEach((t) => {
-        if (!allSenders.find((item) => item.address === t.senderId)) {
-          allSenders.push({ address: t.senderId, publicKey: t.senderPublicKey });
-        }
-      });
-      const senderAccounts = await this.AccountsModel.scope('full').findAll({ where: { address: allSenders.map((item) => item.address) } });
-      const sendersMap: { [address: string]: AccountsModel } = {};
-      for (const senderAccount of senderAccounts) {
-        sendersMap[senderAccount.address] = senderAccount;
-      }
-      await Promise.all(allSenders.map(async ({ address, publicKey }) => {
-        if (!sendersMap[address] || !sendersMap[address].publicKey) {
-          sendersMap[address] = await this.accountsModule.setAccountAndGet({ publicKey });
-        }
-      }));
 
       // Apply unconfirmed
       const ops: Array<DBOp<any>> = [];
       for (const tx of block.transactions) {
         ops.push(
-          ... await this.transactionLogic.applyUnconfirmed(tx, sendersMap[tx.senderId])
+          ... await this.transactionLogic.applyUnconfirmed(tx, accountsMap[tx.senderId])
         );
         const idx = unconfirmedTransactionIds.indexOf(tx.id);
         if (idx !== -1) {
@@ -221,12 +205,12 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       // Apply
       for (const tx of block.transactions) {
         ops.push(
-          ... await this.transactionLogic.apply(tx as any, block, sendersMap[tx.senderId])
+          ... await this.transactionLogic.apply(tx as any, block, accountsMap[tx.senderId])
         );
         this.transactionsModule.removeUnconfirmedTransaction(tx.id);
       }
 
-      await this.dbHelper.performOps(ops);
+      await this.dbHelper.performOps(ops, dbTX);
       this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
       if (saveBlock) {
         try {
@@ -312,7 +296,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
       for (const tx of txs) {
-        const sender = await this.AccountsModel.scope('fullConfirmed').find({ where: { publicKey: tx.senderPublicKey } });
+        const sender = await this.AccountsModel.scope('fullConfirmed')
+          .find({ where: { publicKey: tx.senderPublicKey } });
         await this.transactionsModule.undo(tx, lb, sender);
         await this.transactionsModule.undoUnconfirmed(tx);
       }

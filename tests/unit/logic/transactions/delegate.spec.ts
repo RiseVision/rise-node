@@ -3,7 +3,7 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import {Container} from 'inversify';
 import * as sinon from 'sinon';
-import { SinonSandbox } from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import * as helpers from '../../../../src/helpers';
 import { TransactionType } from '../../../../src/helpers';
 import {Symbols} from '../../../../src/ioc/symbols';
@@ -65,6 +65,9 @@ describe('logic/transactions/delegate', () => {
       publicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
       isMultisignature() {
         return false;
+      },
+      applyValues() {
+        throw new Error('please stub me :)')
       }
     };
 
@@ -198,8 +201,22 @@ describe('logic/transactions/delegate', () => {
   });
 
   describe('apply', () => {
+    let applyValuesStub: SinonStub;
     beforeEach(() => {
       accountsModuleStub.stubs.setAccountAndGet.resolves();
+      applyValuesStub = sandbox.stub(sender, 'applyValues');
+    });
+
+    it('should call sender.applyValues with proper data', async () => {
+      await instance.apply(tx, block, sender);
+      expect(applyValuesStub.called).is.true;
+      expect(applyValuesStub.firstCall.args[0]).deep.eq({
+        u_isDelegate: 0,
+        isDelegate: 1,
+        username: 'topdelegate',
+        u_username: null,
+        vote: 0
+      });
     });
 
     it('should return a DBUpdateOp', async () => {
@@ -229,10 +246,22 @@ describe('logic/transactions/delegate', () => {
   });
 
   describe('undo', () => {
+    let applyValuesStub: SinonStub;
     beforeEach(() => {
       accountsModuleStub.stubs.setAccountAndGet.resolves();
+      applyValuesStub = sandbox.stub(sender, 'applyValues');
     });
-
+    it('should call sender.applyValues with proper data', async () => {
+      await instance.undo(tx, block, sender);
+      expect(applyValuesStub.called).is.true;
+      expect(applyValuesStub.firstCall.args[0]).deep.eq({
+        u_isDelegate: 1,
+        isDelegate: 0,
+        username: null,
+        u_username: 'topdelegate',
+        vote: 0
+      });
+    });
     it('should return a DBUpdateOp', async () => {
       const retVal = await instance.undo(tx, block, sender);
       expect(retVal.length).is.eq(1);
@@ -256,8 +285,20 @@ describe('logic/transactions/delegate', () => {
   });
 
   describe('applyUnconfirmed', () => {
+    let applyValuesStub: SinonStub;
     beforeEach(() => {
       accountsModuleStub.stubs.setAccountAndGet.resolves();
+      applyValuesStub = sandbox.stub(sender, 'applyValues');
+    });
+    it('should call sender.applyValues with proper data', async () => {
+      await instance.applyUnconfirmed(tx, sender);
+      expect(applyValuesStub.called).is.true;
+      expect(applyValuesStub.firstCall.args[0]).deep.eq({
+        isDelegate: 0,
+        u_isDelegate: 1,
+        u_username: 'topdelegate',
+        username: null
+      });
     });
 
     it('should return a DBUpdateOp', async () => {
@@ -288,8 +329,20 @@ describe('logic/transactions/delegate', () => {
   });
 
   describe('undoUnconfirmed', () => {
+    let applyValuesStub: SinonStub;
     beforeEach(() => {
       accountsModuleStub.stubs.setAccountAndGet.resolves();
+      applyValuesStub = sandbox.stub(sender, 'applyValues');
+    });
+    it('should call sender.applyValues with proper data', async () => {
+      await instance.undoUnconfirmed(tx, sender);
+      expect(applyValuesStub.called).is.true;
+      expect(applyValuesStub.firstCall.args[0]).deep.eq({
+        isDelegate: 0,
+        u_isDelegate: 0,
+        u_username: null,
+        username: null
+      });
     });
 
     it('should return a DBUpdateOp', async () => {
