@@ -218,7 +218,7 @@ describe('api/delegates', () => {
     checkPubKey('publicKey', '/api/delegates/voters');
     it('should return accounts that voted for delegate', async () => {
       const {wallet: newAcc} = await createRandomAccountWithFunds(1e10);
-      await createVoteTransaction(1, newAcc, 'eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44', true)
+      await createVoteTransaction(1, newAcc, 'eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44', true);
       return supertest(initializer.appManager.expressApp)
         .get('/api/delegates/voters?publicKey=eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44')
         .expect(200)

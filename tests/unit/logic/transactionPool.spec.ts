@@ -920,60 +920,6 @@ describe('logic/transactionPool - TransactionPool', () => {
 
   });
 
-  describe('undoUnconfirmedList', () => {
-    let txModuleStub: TransactionsModuleStub;
-    const unconfirmedIds = [ 'tx_10', 'tx_8', 'tx_6', 'tx_4', 'tx_2' ];
-
-    beforeEach(async () => {
-      await addMixedTransactionsAndFillPool();
-      txModuleStub = new TransactionsModuleStub();
-    });
-
-    it('should return an array of ids', async () => {
-      txModuleStub.stubs.undoUnconfirmed.resolves(true);
-      const retVal = await instance.undoUnconfirmedList(txModuleStub);
-      expect(retVal).to.be.equalTo(unconfirmedIds);
-    });
-
-    it('should call list on unconfirmed queue', async () => {
-      txModuleStub.stubs.undoUnconfirmed.resolves(true);
-      await instance.undoUnconfirmedList(txModuleStub);
-      expect(spiedQueues.unconfirmed.list.calledOnce).to.be.true;
-      expect(spiedQueues.unconfirmed.list.firstCall.args[0]).to.be.false;
-    });
-
-    it('should call undoUnconfirmed on txModule for each tx', async () => {
-      txModuleStub.stubs.undoUnconfirmed.resolves(true);
-      await instance.undoUnconfirmedList(txModuleStub);
-      expect(txModuleStub.stubs.undoUnconfirmed.callCount).to.be.equal(unconfirmedIds.length);
-      expect(txModuleStub.stubs.undoUnconfirmed.firstCall.args[0]).to.be.
-      deep.equal(instance.unconfirmed.get(unconfirmedIds[0]));
-    });
-
-    it('should call logger.error if undoUnconfirmed rejects', async () => {
-      txModuleStub.stubs.undoUnconfirmed.rejects('err');
-      await instance.undoUnconfirmedList(txModuleStub);
-      expect(loggerStub.stubs.error.callCount).to.be.equal(unconfirmedIds.length);
-      expect(loggerStub.stubs.error.firstCall.args[0]).to.match(/Failed to undo unconfirmed transaction/);
-    });
-
-    it('should call removeUnconfirmedTransaction if undoUnconfirmed throws',  async () => {
-      const removeUnconfirmedTransactionSpy = sandbox.spy(instance as any, 'removeUnconfirmedTransaction');
-      txModuleStub.stubs.undoUnconfirmed.rejects('err');
-      await instance.undoUnconfirmedList(txModuleStub);
-      expect(removeUnconfirmedTransactionSpy.callCount).to.be.equal(unconfirmedIds.length);
-      expect(removeUnconfirmedTransactionSpy.firstCall.args[0]).to.be.equal(unconfirmedIds[0]);
-    });
-
-    it('should return an empty array if transactions are empty', async () => {
-      (instance['unconfirmed'].list as any).restore();
-      const unconfirmedStub = sandbox.stub(instance['unconfirmed'], 'list').returns([undefined, undefined]);
-      const retVal = await instance.undoUnconfirmedList(txModuleStub);
-      expect(retVal).to.be.equalTo([]);
-      expect(unconfirmedStub.calledOnce).to.be.true;
-    });
-  });
-
   describe('reindexAllQueues', () => {
     it('should call reindex on all queues', () => {
       (instance as any).reindexAllQueues();

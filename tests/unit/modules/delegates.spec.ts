@@ -386,35 +386,27 @@ describe('modules/delegates', () => {
   describe('checkDelegates', () => {
     let theAccount: any;
     beforeEach(() => {
-      theAccount             = {... testAccounts[0] };
+      theAccount             = new AccountsModel({address: testAccounts[0].address });
       theAccount.publicKey = Buffer.from(testAccounts[0].publicKey, 'hex');
       theAccount.privKey = Buffer.from(testAccounts[0].privKey, 'hex');
       theAccount.delegates   = [];
       theAccount.u_delegates = [];
-      accountsModuleStub.stubs.getAccount.resolves(theAccount);
+      accountsModuleStub.stubs.getAccount.onFirstCall().resolves({});
     });
 
-    it('should call accountsModule.getAccount', async () => {
-      await (instance as any).checkDelegates(theAccount.publicKey, [], 'confirmed');
-      expect(accountsModuleStub.stubs.getAccount.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.getAccount.firstCall.args[0]).to.be.deep.
-        equal({ publicKey: theAccount.publicKey });
-    });
-
-    it('should throw if account not found', async () => {
-      accountsModuleStub.stubs.getAccount.resolves(null);
-      await expect((instance as any).checkDelegates(theAccount.publicKey, [], 'confirmed')).to.be.
+    it('should throw if account not provided', async () => {
+      await expect((instance as any).checkDelegates(null, [], 'confirmed')).to.be.
         rejectedWith('Account not found');
     });
 
     it('should throw if invalid math operator found in votes', async () => {
-      await expect((instance as any).checkDelegates(theAccount.publicKey, ['*123'], 'confirmed')).to.be.
+      await expect((instance as any).checkDelegates(theAccount, ['*123'], 'confirmed')).to.be.
         rejectedWith('Invalid math operator');
     });
 
     it('should call schema.validate for each pk', async () => {
       schemaStub.stubs.validate.returns(true);
-      await (instance as any).checkDelegates(theAccount.publicKey, votes, 'confirmed');
+      await (instance as any).checkDelegates(theAccount, votes, 'confirmed');
       expect(schemaStub.stubs.validate.callCount).to.be.equal(votes.length);
       votes.forEach((pk, i) => {
         expect(schemaStub.stubs.validate.getCall(i).args[0]).to.be.equal(pk.substr(1));
@@ -424,40 +416,40 @@ describe('modules/delegates', () => {
 
     it('should throw if invalid public key in votes', async () => {
       schemaStub.stubs.validate.returns(false);
-      await expect((instance as any).checkDelegates(theAccount.publicKey, votes, 'confirmed')).to.be.
+      await expect((instance as any).checkDelegates(theAccount, votes, 'confirmed')).to.be.
         rejectedWith('Invalid public key');
     });
 
     it('should throw if trying to vote again for the same delegate', async () => {
       theAccount.delegates.push(votes[0].substr(1));
-      await expect((instance as any).checkDelegates(theAccount.publicKey, votes, 'confirmed')).to.be.
+      await expect((instance as any).checkDelegates(theAccount, votes, 'confirmed')).to.be.
         rejectedWith('Failed to add vote, account has already voted for this delegate');
     });
 
     it('should throw if trying to remove vote for a non-voted delegate', async () => {
       const unvotes = votes.slice();
       unvotes[0]    = unvotes[0].replace('+', '-');
-      await expect((instance as any).checkDelegates(theAccount.publicKey, unvotes, 'confirmed')).to.be.
+      await expect((instance as any).checkDelegates(theAccount, unvotes, 'confirmed')).to.be.
         rejectedWith('Failed to remove vote, account has not voted for this delegate');
     });
 
     it('should call accountsModule.getAccount on vote publicKey', async () => {
-      await (instance as any).checkDelegates(theAccount.publicKey, votes, 'confirmed');
-      expect(accountsModuleStub.stubs.getAccount.callCount).to.be.equal(2);
-      expect(accountsModuleStub.stubs.getAccount.secondCall.args[0]).to.be.deep.equal({
+      await (instance as any).checkDelegates(theAccount, votes, 'confirmed');
+      expect(accountsModuleStub.stubs.getAccount.callCount).to.be.equal(1);
+      expect(accountsModuleStub.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({
         isDelegate: 1,
         publicKey : Buffer.from(votes[0].substr(1), 'hex'),
       });
     });
 
-    it('should throw if account not found', async () => {
-      accountsModuleStub.stubs.getAccount.onFirstCall().resolves(theAccount);
-      accountsModuleStub.stubs.getAccount.onSecondCall().resolves(null);
-      await expect((instance as any).checkDelegates(theAccount.publicKey, votes, 'confirmed')).to.be.
+    it('should throw if delegate not found', async () => {
+      accountsModuleStub.stubs.getAccount.onFirstCall().resolves(null);
+      await expect((instance as any).checkDelegates(theAccount, votes, 'confirmed')).to.be.
         rejectedWith('Delegate not found');
     });
 
     it('should throw if trying to vote or unvote too many delegates', async () => {
+      accountsModuleStub.stubs.getAccount.onSecondCall().resolves({});
       const wrongVotes = ['+deleg1', '+deleg2'];
       await expect((instance as any).checkDelegates(theAccount.publicKey, wrongVotes, 'confirmed')).to.be.
         rejectedWith('Maximum number of 1 votes exceeded (1 too many)');

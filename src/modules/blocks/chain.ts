@@ -155,8 +155,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
           .setAccountAndGet({ publicKey: tx.senderPublicKey });
 
         // Apply tx.
-        await this.transactionsModule.applyUnconfirmed({ ...tx, blockId: block.id }, sender);
-        await this.transactionsModule.apply({ ...tx, blockId: block.id }, block, sender);
+        const ops = [
+          ... await this.transactionLogic.applyUnconfirmed({... tx, blockId: block.id} as any, sender),
+          ... await this.transactionLogic.apply({... tx, blockId: block.id} as any, block, sender),
+        ];
+        await this.dbHelper.performOps(ops);
 
         tracker.applyNext();
       }
@@ -169,21 +172,12 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
   }
 
-  public async applyBlock(block: SignedAndChainedBlockType, broadcast: boolean, saveBlock: boolean, accountsMap: {[address: string]: AccountsModel}) {
+  public async applyBlock(block: SignedAndChainedBlockType, broadcast: boolean, saveBlock: boolean, accountsMap: { [address: string]: AccountsModel }) {
     if (this.isCleaning) {
       return; // Avoid processing a new block if it is cleaning.
     }
     // Prevent shutdown during database writes.
     this.isProcessing = true;
-
-    // List of unconfirmed transactions ids.
-    // Rewind any unconfirmed transactions before applying block.
-    const unconfirmedTransactionIds = await this.transactionsModule.undoUnconfirmedList()
-      .catch((err) => {
-        // Fatal error, memory tables will be inconsistent
-        this.logger.error('Failed to undo unconfirmed list', err);
-        return process.exit(0);
-      });
 
     // Start atomic block saving.
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
@@ -193,13 +187,18 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       // Apply unconfirmed
       const ops: Array<DBOp<any>> = [];
       for (const tx of block.transactions) {
-        ops.push(
-          ... await this.transactionLogic.applyUnconfirmed(tx, accountsMap[tx.senderId])
-        );
-        const idx = unconfirmedTransactionIds.indexOf(tx.id);
-        if (idx !== -1) {
-          unconfirmedTransactionIds.splice(idx, 1);
+        if (this.transactionsModule.transactionUnconfirmed(tx.id)) {
+          continue;
         }
+        ops.push(
+          ... await this.transactionLogic.applyUnconfirmed(
+            tx,
+            accountsMap[tx.senderId],
+            tx.requesterPublicKey
+              ? accountsMap[this.accountsModule.generateAddressByPublicKey(tx.requesterPublicKey)]
+              : undefined
+          )
+        );
       }
 
       // Apply
@@ -231,9 +230,6 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       this.isProcessing = false;
       throw err;
     });
-
-    // restore the (yet) unconfirmed ids.
-    await this.transactionsModule.applyUnconfirmedIds(unconfirmedTransactionIds);
 
     block = null;
 
@@ -295,12 +291,13 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     const txs = lb.transactions.slice().reverse();
 
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
+      const accountsMap = await this.accountsModule.resolveAccountsForTransactions(txs);
+      const ops: Array<DBOp<any>> = [];
       for (const tx of txs) {
-        const sender = await this.AccountsModel.scope('fullConfirmed')
-          .find({ where: { publicKey: tx.senderPublicKey } });
-        await this.transactionsModule.undo(tx, lb, sender);
-        await this.transactionsModule.undoUnconfirmed(tx);
+        ops.push(... await this.transactionLogic.undo(tx, lb, accountsMap[tx.senderId]));
+        ops.push(... await this.transactionLogic.undoUnconfirmed(tx, accountsMap[tx.senderId]));
       }
+      await this.dbHelper.performOps(ops, dbTX);
       await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
       await lb.destroy({ transaction: dbTX });
     });

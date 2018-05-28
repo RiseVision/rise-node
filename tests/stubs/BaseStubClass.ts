@@ -14,8 +14,8 @@ export class BaseStubClass {
   private static sandbox: SinonSandbox = sinon.createSandbox();
   private static oldImplementations: { [k: string]: () => {} } = {};
 
-  public stubs: { [method: string]: SinonStub };
-  public spies: { [method: string]: SinonSpy };
+  public stubs: { [T in keyof this]: SinonStub };
+  public spies: { [T in keyof this]: SinonSpy };
   public sandbox: SinonSandbox = sinon.createSandbox();
 
   private nextResponses: { [method: string]: any[] } = {};
@@ -81,8 +81,8 @@ export class BaseStubClass {
   public reset() {
     this.nextResponses = {};
     this.sandbox.restore();
-    this.stubs   = this.stubs || {};
-    this.spies   = this.spies || {};
+    this.stubs   = this.stubs || {} as any;
+    this.spies   = this.spies || {} as any;
     this.sandbox = sinon.createSandbox();
 
     for (const c of this.stubConfigs) {

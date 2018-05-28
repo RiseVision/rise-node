@@ -51,6 +51,4 @@ export interface ITransactionPoolLogic {
   // tslint:disable-next-line
   applyUnconfirmedList(txs: Array<IBaseTransaction<any> | string>, txModule: ITransactionsModule): Promise<void>;
 
-  undoUnconfirmedList(txModule: ITransactionsModule): Promise<string[]>;
-
 }

@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import 'reflect-metadata';
-import { Bus, constants, loggerCreator, Slots } from '../../../src/helpers';
+import { Bus, constants, loggerCreator, Sequence, Slots } from '../../../src/helpers';
 import { AppManager } from '../../../src/AppManager';
 import { Symbols } from '../../../src/ioc/symbols';
 import {
@@ -17,6 +17,7 @@ import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { toBufferedTransaction } from '../../utils/txCrafter';
 import { MigrationsModel } from '../../../src/models';
 import { IBaseTransaction } from '../../../src/logic/transactions';
+import { SequenceStub } from '../../stubs';
 
 export class IntegrationTestInitializer {
   public appManager: AppManager;
@@ -114,6 +115,10 @@ export class IntegrationTestInitializer {
     const blocksVerifyModule     = this.appManager.container.get<IBlocksModuleVerify>(Symbols.modules.blocksSubModules.verify);
     const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
     const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
+    const balancesSequence = this.appManager.container.getTagged<Sequence>(
+      Symbols.helpers.sequence,
+      Symbols.helpers.sequence,
+      Symbols.tags.helpers.balancesSequence);
     const height = blockModule.lastBlock.height;
 
     const delegates  = await delegatesModule.generateDelegateList(height + 1);
@@ -127,8 +132,8 @@ export class IntegrationTestInitializer {
       timestamp    : slots.getSlotTime(theSlot),
       transactions,
     });
-
-    await blocksVerifyModule.processBlock(newBlock, false, true);
+    // mimic process.onReceiveBlock which is wrapped within a BalanceSequence.
+    await balancesSequence.addAndPromise(() => blocksVerifyModule.processBlock(newBlock, false, true));
     return newBlock;
   }
 

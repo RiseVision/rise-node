@@ -1,11 +1,12 @@
-import { inject, injectable } from 'inversify';
-import { constants as constantsType, DBHelper, ILogger } from '../helpers/';
+import { inject, injectable, tagged } from 'inversify';
+import { constants as constantsType, DBHelper, ILogger, Sequence } from '../helpers/';
+
 import { ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
-import { SignedAndChainedBlockType, SignedBlockType } from '../logic/';
-import { IBaseTransaction, IConfirmedTransaction } from '../logic/transactions/';
-import { AccountsModel, BlocksModel, TransactionsModel } from '../models';
+import { SignedAndChainedBlockType} from '../logic/';
+import { IBaseTransaction} from '../logic/transactions/';
+import { AccountsModel, TransactionsModel } from '../models';
 
 @injectable()
 export class TransactionsModule implements ITransactionsModule {
@@ -15,6 +16,7 @@ export class TransactionsModule implements ITransactionsModule {
   private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
+
   @inject(Symbols.helpers.db)
   private dbHelper: DBHelper;
   @inject(Symbols.helpers.logger)
@@ -36,6 +38,10 @@ export class TransactionsModule implements ITransactionsModule {
    */
   public transactionInPool(id: string): boolean {
     return this.transactionPool.transactionInPool(id);
+  }
+
+  public transactionUnconfirmed(id: string): boolean {
+    return this.transactionPool.unconfirmed.has(id);
   }
 
   /**
@@ -108,48 +114,6 @@ export class TransactionsModule implements ITransactionsModule {
   }
 
   /**
-   * Applies unconfirmed list to unconfirmed Ids.
-   */
-  public applyUnconfirmedIds(ids: string[]): Promise<void> {
-    return this.transactionPool.applyUnconfirmedList(ids, this);
-  }
-
-  /**
-   * Applies unconfirmed list
-   */
-  public applyUnconfirmedList(): Promise<void> {
-    return this.transactionPool.applyUnconfirmedList(
-      this.transactionPool.unconfirmed.list(true),
-      this
-    );
-  }
-
-  /**
-   * Undoes unconfirmed list from queue.
-   */
-  public undoUnconfirmedList(): Promise<string[]> {
-    return this.transactionPool.undoUnconfirmedList(this);
-  }
-
-  /**
-   * Applies confirmed transaction.
-   */
-  public async apply(transaction: IConfirmedTransaction<any>,
-                     block: SignedBlockType, sender: AccountsModel): Promise<void> {
-    this.logger.debug('Applying confirmed transaction', transaction.id);
-    await this.dbHelper.performOps(await this.transactionLogic.apply(transaction, block, sender));
-  }
-
-  /**
-   * Undoes confirmed transaction.
-   */
-  public async undo(transaction: IConfirmedTransaction<any>,
-                    block: BlocksModel, sender: AccountsModel): Promise<void> {
-    this.logger.debug('Undoing confirmed transaction', transaction.id);
-    await this.dbHelper.performOps(await this.transactionLogic.undo(transaction, block, sender));
-  }
-
-  /**
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
   // tslint:disable-next-line max-line-length
@@ -210,14 +174,6 @@ export class TransactionsModule implements ITransactionsModule {
   public async fillPool(): Promise<void> {
     const newUnconfirmedTXs = await this.transactionPool.fillPool();
     await this.transactionPool.applyUnconfirmedList(newUnconfirmedTXs, this);
-  }
-
-  /**
-   * Checks if `modules` is loaded.
-   * @return {boolean} True if `modules` is loaded.
-   */
-  public isLoaded() {
-    return true;
   }
 
   /**

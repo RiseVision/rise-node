@@ -96,9 +96,15 @@ describe('modules/blocks/chain', () => {
         destroy      : destroyStub,
       } as any;
       roundsModule.enqueueResponse('backwardTick', Promise.resolve());
-      txModule.stubs.undo.returns(Promise.resolve());
-      txModule.stubs.undoUnconfirmed.returns(Promise.resolve());
-      accountsModule.stubs.getAccount.callsFake((a) => a);
+      txLogic.stubs.undoUnconfirmed.resolves([]);
+      txLogic.stubs.undo.resolves([]);
+      dbStub.stubs.performOps.resolves();
+      // accountsModule.stubs.getAccount.callsFake((a) => a);
+      accountsModule.stubs.resolveAccountsForTransactions.callsFake((txs)=> {
+        const toRet = {};
+        txs.forEach((tx) => toRet[tx.senderId] = tx.senderId);
+        return toRet;
+      });
       sandbox.stub(blocksModel.sequelize, 'transaction').callsFake((cb) => {
         return cb('tx');
       });
@@ -123,10 +129,10 @@ describe('modules/blocks/chain', () => {
     });
     it('should undo and undoUnconfirmed all included transactions', async () => {
       await inst.deleteLastBlock();
-      expect(txModule.stubs.undo.callCount).to.be.eq(3);
-      expect(txModule.stubs.undoUnconfirmed.callCount).to.be.eq(3);
+      expect(txLogic.stubs.undo.callCount).to.be.eq(3);
+      expect(txLogic.stubs.undoUnconfirmed.callCount).to.be.eq(3);
       for (let i = 0; i < 3; i++) {
-        expect(txModule.stubs.undo.getCall(i).calledBefore(txModule.stubs.undoUnconfirmed.getCall(i))).is.true;
+        expect(txLogic.stubs.undo.getCall(i).calledBefore(txLogic.stubs.undoUnconfirmed.getCall(i))).is.true;
       }
     });
     it('should call roundsModule backwardTick', async () => {
@@ -177,8 +183,9 @@ describe('modules/blocks/chain', () => {
     let allTxs: Array<IBaseTransaction<any>>;
     beforeEach(() => {
       accountsModule.stubs.setAccountAndGet.returns({});
-      txModule.stubs.applyUnconfirmed.returns(Promise.resolve());
-      txModule.stubs.apply.returns(Promise.resolve());
+      txLogic.stubs.applyUnconfirmed.returns(Promise.resolve([]));
+      txLogic.stubs.apply.returns(Promise.resolve([]));
+      dbStub.stubs.performOps.resolves(null);
       roundsModule.enqueueResponse('tick', Promise.resolve());
       accounts = generateAccounts(5);
       voteTxs  = [
@@ -201,29 +208,30 @@ describe('modules/blocks/chain', () => {
       await inst.applyGenesisBlock({ id: 'id', transactions: sendTxs.concat(voteTxs) } as any);
 
       const totalTxs = voteTxs.length + sendTxs.length;
-      expect(txModule.stubs.applyUnconfirmed.callCount).is.eq(totalTxs);
-      expect(txModule.stubs.apply.callCount).is.eq(totalTxs);
+      expect(txLogic.stubs.applyUnconfirmed.callCount).is.eq(totalTxs);
+      expect(txLogic.stubs.apply.callCount).is.eq(totalTxs);
+      expect(dbStub.stubs.performOps.callCount).is.eq(totalTxs);
 
       // Check applyunconfirmed got called before apply
       for (let i = 0; i < totalTxs; i++) {
-        expect(txModule.stubs.applyUnconfirmed.getCall(i).calledBefore(
-          txModule.stubs.apply.getCall(i)
+        expect(txLogic.stubs.applyUnconfirmed.getCall(i).calledBefore(
+          txLogic.stubs.apply.getCall(i)
         )).is.true;
       }
 
       // Check that first were applied the send transactions
       for (let i = 0; i < sendTxs.length; i++) {
-        expect(txModule.stubs.applyUnconfirmed.getCall(i).args[0]).to.be.deep.eq({ ...sendTxs[i], blockId: 'id' });
-        expect(txModule.stubs.apply.getCall(i).args[0]).to.be.deep.eq({ ...sendTxs[i], blockId: 'id' });
+        expect(txLogic.stubs.applyUnconfirmed.getCall(i).args[0]).to.be.deep.eq({ ...sendTxs[i], blockId: 'id' });
+        expect(txLogic.stubs.apply.getCall(i).args[0]).to.be.deep.eq({ ...sendTxs[i], blockId: 'id' });
       }
 
       // And then all vote txs
       for (let i = 0; i < voteTxs.length; i++) {
-        expect(txModule.stubs.applyUnconfirmed.getCall(i + sendTxs.length).args[0]).to.be.deep.eq({
+        expect(txLogic.stubs.applyUnconfirmed.getCall(i + sendTxs.length).args[0]).to.be.deep.eq({
           ...voteTxs[i],
           blockId: 'id'
         });
-        expect(txModule.stubs.apply.getCall(i + sendTxs.length).args[0]).to.be.deep.eq({
+        expect(txLogic.stubs.apply.getCall(i + sendTxs.length).args[0]).to.be.deep.eq({
           ...voteTxs[i],
           blockId: 'id'
         });
@@ -234,11 +242,11 @@ describe('modules/blocks/chain', () => {
       shuffle(allTxs);
       await inst.applyGenesisBlock({ transactions: allTxs } as any);
       for (let i = 0; i < sendTxs.length; i++) {
-        expect(txModule.stubs.applyUnconfirmed.getCall(i).args[0].type).to
+        expect(txLogic.stubs.applyUnconfirmed.getCall(i).args[0].type).to
           .be.eq(TransactionType.SEND);
       }
       for (let i = 0; i < voteTxs.length; i++) {
-        expect(txModule.stubs.applyUnconfirmed.getCall(i + sendTxs.length).args[0].type).to
+        expect(txLogic.stubs.applyUnconfirmed.getCall(i + sendTxs.length).args[0].type).to
           .be.eq(TransactionType.VOTE);
       }
     });
@@ -261,7 +269,7 @@ describe('modules/blocks/chain', () => {
       expect(roundsModule.stubs.tick.called).is.true;
     });
     it('should fail and process.exit if one tx fail to apply', async () => {
-      txModule.stubs.applyUnconfirmed.rejects();
+      txLogic.stubs.applyUnconfirmed.rejects();
       await inst.applyGenesisBlock({ transactions: voteTxs.concat(sendTxs) } as any);
       expect(processExitStub.called).is.true;
     });
@@ -297,16 +305,17 @@ describe('modules/blocks/chain', () => {
       accountsModule.stubs.getAccount.returns({});
       txLogic.stubs.applyUnconfirmed.callsFake((tx) => Promise.resolve([`applyUnconfirmed${tx.id}`]));
       txLogic.stubs.apply.callsFake((tx) => Promise.resolve([`apply${tx.id}`]));
+      txModule.stubs.transactionUnconfirmed.returns(false);
       dbStub.enqueueResponse('performOps', Promise.resolve());
       txModule.stubs.removeUnconfirmedTransaction.returns(null);
       txModule.stubs.undoUnconfirmedList.returns(Promise.resolve([]));
-      txModule.stubs.applyUnconfirmedIds.returns(Promise.resolve());
       saveBlockStub = sinon.stub(inst, 'saveBlock');
       roundsModule.enqueueResponse('tick', Promise.resolve());
       busStub.enqueueResponse('message', Promise.resolve());
       txStub = sandbox.stub(blocksModel.sequelize, 'transaction').callsFake((t) => t('tx'));
     });
 
+    it('should skip applyUnconfirmed if txModule.transactionUnconfirmed returns true');
     it('should return undefined if cleanup in processing and set instance.isCleaning in true', async () => {
       await inst.cleanup();
       expect(await inst.applyBlock({ transactions: allTxs } as any, false, false, accountsMap)).to.be.undefined;
@@ -319,10 +328,6 @@ describe('modules/blocks/chain', () => {
       await p;
       // tslint:disable-next-line: no-string-literal
       expect(inst['isProcessing']).to.be.false;
-    });
-    it('should undo all unconfirmed transactions', async () => {
-      await inst.applyBlock({ transactions: allTxs } as any, false, false, accountsMap);
-      expect(txModule.stubs.undoUnconfirmedList.called).is.true;
     });
     it('should applyUnconfirmed every tx in block', async () => {
       await inst.applyBlock({ transactions: allTxs } as any, false, false, accountsMap);
@@ -379,32 +384,6 @@ describe('modules/blocks/chain', () => {
       expect(roundsModule.stubs.tick.called).is.true;
       expect(roundsModule.stubs.tick.firstCall.args[0]).is.deep.eq(block);
     });
-    it('should applyUnconfirmedIds with not confirmed transactions', async () => {
-      const block     = { transactions: allTxs } as any;
-      const randomTxs = [
-        createSendTransaction(createRandomWallet(), '1R', 1, { amount: 1 }),
-        createSendTransaction(createRandomWallet(), '2R', 1, { amount: 1 }),
-        createVoteTransaction(createRandomWallet(), 1, { assets: { votes: ['+b'] } }),
-      ];
-      txModule.stubs.undoUnconfirmedList.resolves(randomTxs.concat(allTxs.slice(0, 5)).map((tx) => tx.id));
-      await inst.applyBlock(block, false, false, accountsMap);
-      expect(txModule.stubs.applyUnconfirmedIds.called).is.true;
-      expect(txModule.stubs.applyUnconfirmedIds.firstCall.args[0]).to.be.deep.eq(randomTxs.map((tx) => tx.id));
-    });
-
-    describe('exit failures', () => {
-      it('should eventually call process.exit if already unconfirmed txs cannot be undone', async () => {
-        txModule.stubs.undoUnconfirmedList.rejects();
-        const block = { transactions: allTxs } as any;
-        try {
-          await inst.applyBlock(block, false, false, accountsMap);
-        } catch (e) {
-          void 0;
-        }
-        expect(processExitStub.called).is.true;
-      });
-
-    });
 
     it('should wrap all ops within tx', async () => {
       const preStub  = sandbox.stub();
@@ -419,8 +398,8 @@ describe('modules/blocks/chain', () => {
       await inst.applyBlock(block, false, true, accountsMap);
       expect(preStub.called).is.true;
       expect(postStub.called).is.true;
-      expect(preStub.calledBefore(txModule.stubs.applyUnconfirmed)).is.true;
-      expect(preStub.calledBefore(txModule.stubs.apply)).is.true;
+      expect(preStub.calledBefore(txLogic.stubs.applyUnconfirmed)).is.true;
+      expect(preStub.calledBefore(txLogic.stubs.apply)).is.true;
       expect(preStub.calledBefore(saveBlockStub)).is.true;
       expect(preStub.calledBefore(roundsModule.stubs.tick)).is.true;
 
@@ -428,10 +407,6 @@ describe('modules/blocks/chain', () => {
       expect(postStub.calledAfter(txLogic.stubs.apply)).is.true;
       expect(postStub.calledAfter(saveBlockStub)).is.true;
       expect(postStub.calledAfter(roundsModule.stubs.tick)).is.true;
-
-      // Out of tx.
-      expect(preStub.calledAfter(txModule.stubs.undoUnconfirmedList)).is.true;
-      expect(postStub.calledBefore(txModule.stubs.applyUnconfirmedIds)).is.true;
 
     });
 

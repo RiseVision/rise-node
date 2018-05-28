@@ -361,26 +361,6 @@ export class TransactionPool implements ITransactionPoolLogic {
     }
   }
 
-  @WrapInBalanceSequence
-  public async undoUnconfirmedList(txModule: ITransactionsModule): Promise<string[]> {
-    const ids: string[] = [];
-    const txs           = this.unconfirmed.list(false);
-    for (const tx of txs) {
-      if (!tx) {
-        continue;
-      }
-      ids.push(tx.id);
-      await txModule.undoUnconfirmed(tx)
-        .catch((err) => {
-          if (err) {
-            this.logger.error(`Failed to undo unconfirmed transaction: ${tx.id}`, err);
-            this.removeUnconfirmedTransaction(tx.id);
-          }
-        });
-    }
-    return ids;
-  }
-
   /**
    * Calls reindex to each queue to clean memory
    */
