@@ -13,10 +13,9 @@ import { IBaseTransaction } from '../logic/transactions';
 export default function exceptionTx14712341342146176146(excManager: ExceptionsManager) {
   const handler: IExceptionHandler<ITransactionLogic> = {
     canHandle(obj: ITransactionLogic, amount: number, balanceKey: 'balance' | 'u_balance', tx: IBaseTransaction<void>) {
-      return balanceKey === 'u_balance' &&
-        tx.id === '10425551571020716913' &&
+      return tx.id === '10425551571020716913' &&
         tx.senderPublicKey.toString('hex') === 'bcbdeb90a958880088465bc0614d8b877214a33284d460a917208730399f4140' &&
-        tx.signature.toString('hex') === '48bb8adfc375378af8b2dc873595905fe910711b93a71ed5548ffcaa39194e7bb470ea15b5398ed016ddc6d37eee7c62c6e67ba627d5037eee76030e7f1bfe0c';
+        tx.signature.toString('hex') === '48bb8adfc375378af8b2dc873595905fe910711b93a71ed5548ffcaa39194e7bb470ea15b5398ed016ddc6d37eee7c62c6e67ba627d5037eee76030e7f1bfe0c';;
     },
     handle() {
       return { error: false, exceeded: false };
