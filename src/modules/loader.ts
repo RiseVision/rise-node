@@ -630,12 +630,10 @@ export class LoaderModule implements ILoaderModule {
     }
 
     const { transactions }: { transactions: Array<ITransportTransaction<any>> } = res.body;
-    for (const tx of transactions) {
-      try {
-        await this.transportModule.receiveTransaction(tx, peer, true, 'LoaderModule.loadTransactions', false);
-      } catch (err) {
-        this.logger.debug(err, tx);
-      }
+    try {
+      await this.transportModule.receiveTransactions(transactions, peer, false);
+    } catch (err) {
+      this.logger.debug(err);
     }
 
   }

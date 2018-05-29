@@ -288,20 +288,6 @@ export class TransactionPool implements ITransactionPoolLogic {
   }
 
   /**
-   * Cycles through the transactions and calls processNewTransaction.
-   * It will fail at the first not valid tx
-   * @param {Array<IBaseTransaction<any>>} txs
-   * @param {boolean} broadcast
-   * @param {boolean} bundled
-   */
-  public async receiveTransactions(txs: Array<IBaseTransaction<any>>,
-                                   broadcast: boolean, bundled: boolean): Promise<void> {
-    for (const tx of txs) {
-      await this.processNewTransaction(tx, broadcast, bundled);
-    }
-  }
-
-  /**
    * process a new incoming transaction. It may reject in case  the tx is not valid.
    */
   public async processNewTransaction(tx: IBaseTransaction<any>, broadcast: boolean, bundled: boolean): Promise<void> {

@@ -1565,8 +1565,7 @@ describe('modules/loader', () => {
       transactionLogicStub.enqueueResponse('objectNormalize', {});
       transactionLogicStub.enqueueResponse('objectNormalize', {});
 
-      transportModuleStub.enqueueResponse('receiveTransaction', {});
-      transportModuleStub.enqueueResponse('receiveTransaction', {});
+      transportModuleStub.enqueueResponse('receiveTransactions', {});
     });
 
     afterEach(() => {
@@ -1639,62 +1638,27 @@ describe('modules/loader', () => {
     it('should call transportModule.receiveTransaction for each tx', async () => {
       await (instance as any).loadTransactions();
 
-      expect(transportModuleStub.stubs.receiveTransaction.calledTwice).to.be
+      expect(transportModuleStub.stubs.receiveTransactions.calledOnce).to.be
         .true;
 
-      expect(
-        transportModuleStub.stubs.receiveTransaction.firstCall.args.length
-      ).to.be.equal(5);
-      expect(
-        transportModuleStub.stubs.receiveTransaction.firstCall.args[0]
-      ).to.deep.equal(tx1);
-      expect(
-        transportModuleStub.stubs.receiveTransaction.firstCall.args[1]
-      ).to.deep.equal(peer);
-      expect(
-        transportModuleStub.stubs.receiveTransaction.firstCall.args[2]
-      ).to.deep.equal(true);
-      expect(
-        transportModuleStub.stubs.receiveTransaction.firstCall.args[3]
-      ).to.deep.equal('LoaderModule.loadTransactions');
-      expect(
-        transportModuleStub.stubs.receiveTransaction.firstCall.args[4]
-      ).to.deep.equal(false);
-
-      expect(
-        transportModuleStub.stubs.receiveTransaction.secondCall.args.length
-      ).to.be.equal(5);
-      expect(
-        transportModuleStub.stubs.receiveTransaction.secondCall.args[1]
-      ).to.deep.equal(peer);
-      expect(
-        transportModuleStub.stubs.receiveTransaction.secondCall.args[2]
-      ).to.deep.equal(true);
-      expect(
-        transportModuleStub.stubs.receiveTransaction.secondCall.args[3]
-      ).to.deep.equal('LoaderModule.loadTransactions');
-      expect(
-        transportModuleStub.stubs.receiveTransaction.secondCall.args[4]
-      ).to.deep.equal(false);
+      expect(transportModuleStub.stubs.receiveTransactions.firstCall.args[0]).deep.eq([tx1, tx2])
+      expect(transportModuleStub.stubs.receiveTransactions.firstCall.args[1]).deep.eq(peer)
+      expect(transportModuleStub.stubs.receiveTransactions.firstCall.args[2]).deep.eq(false)
     });
 
     it('should call logger.debug if transportModule.receiveTransaction throw error', async () => {
       const error = new Error('error');
       transportModuleStub.reset();
       transportModuleStub.stubs.getFromPeer.resolves(res);
-      transportModuleStub.stubs.receiveTransaction.rejects(error);
+      transportModuleStub.stubs.receiveTransactions.rejects(error);
 
       await (instance as any).loadTransactions();
 
-      expect(loggerStub.stubs.debug.calledTwice).to.be.true;
+      expect(loggerStub.stubs.debug.calledOnce).to.be.true;
 
-      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal(error);
-      expect(loggerStub.stubs.debug.firstCall.args[1]).to.be.equal(tx1);
 
-      expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(2);
-      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal(error);
-      expect(loggerStub.stubs.debug.secondCall.args[1]).to.be.equal(tx2);
     });
   });
 

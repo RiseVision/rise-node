@@ -195,26 +195,6 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error(`Unknown transaction type ${type}`);
     }
   }
-
-  /**
-   * Counts transaction by id
-   * @returns {Promise<number>}
-   */
-  public async countById(tx: IBaseTransaction<any>): Promise<number> {
-    return await this.TransactionsModel.count({ where: { id: tx.id } })
-      .catch(catchToLoggerAndRemapError('Transaction#countById error', this.logger));
-  }
-
-  /**
-   * Checks the tx is not confirmed or rejects otherwise
-   */
-  public async assertNonConfirmed(tx: IBaseTransaction<any>): Promise<void> {
-    const count = await this.countById(tx);
-    if (count > 0) {
-      throw new Error(`Transaction is already confirmed ${tx.id}`);
-    }
-  }
-
   /**
    * Checks if balanceKey is less than amount for sender
    */
@@ -392,7 +372,6 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     await this.types[tx.type].verify(tx, sender);
-    await this.assertNonConfirmed(tx);
   }
 
   /**

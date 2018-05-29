@@ -426,41 +426,6 @@ describe('logic/transaction', () => {
     });
   });
 
-  describe('countById', () => {
-    let txModel: typeof TransactionsModel;
-    beforeEach(() => {
-      txModel = container.get(Symbols.models.transactions);
-    });
-    it('should call TransactionsModel.count with proper param and return the value from it', async () => {
-      const count = sandbox.stub(txModel, 'count').resolves(10);
-      const res = await instance.countById({id: '11'} as any);
-      expect(res).to.be.deep.eq(10);
-      expect(count.called).is.true;
-      expect(count.firstCall.args[0]).to.be.deep.eq({
-        where: {
-          id: '11'
-        }
-      });
-    });
-    it('should remap error of TransactionsModel.count', async () => {
-      sandbox.stub(txModel, 'count').rejects('HAAAA');
-      await expect(instance.countById({id: '11'} as any)).to.be.rejectedWith('Transaction#countById error');
-    });
-  });
-
-  describe('assertNonConfirmed', () => {
-    it('should call countById', async () => {
-      const countByIdStub = sandbox.stub(instance, 'countById').returns(0);
-      await instance.assertNonConfirmed(tx);
-      expect(countByIdStub.calledOnce).to.be.true;
-    });
-
-    it('should throw if count > 0', async () => {
-      sandbox.stub(instance, 'countById').returns(100);
-      await expect(instance.assertNonConfirmed(tx)).to.be.rejectedWith(/Transaction is already confirmed/);
-    });
-  });
-
   describe('checkBalance', () => {
     it('should return error:null if OK', () => {
       const retVal = instance.checkBalance(1000, 'balance', tx, sender as any);
@@ -518,7 +483,6 @@ describe('logic/transaction', () => {
   describe('verify', () => {
     let verifySignatureStub: SinonStub;
     let checkBalanceStub: SinonStub;
-    let assertNonConfirmedStub: SinonStub;
     let calculateFeeStub: SinonStub;
     let txTypeVerifyStub: SinonStub;
 
@@ -527,7 +491,6 @@ describe('logic/transaction', () => {
       // instance stubs
       verifySignatureStub    = sandbox.stub(instance, 'verifySignature').returns(true);
       checkBalanceStub       = sandbox.stub(instance, 'checkBalance').returns({ exceeded: false });
-      assertNonConfirmedStub = sandbox.stub(instance, 'assertNonConfirmed').resolves();
       // txType stubs
       calculateFeeStub       = sandbox.stub(sendTransaction, 'calculateFee').returns(tx.fee);
       txTypeVerifyStub       = sandbox.stub(sendTransaction, 'verify').resolves();
@@ -801,11 +764,6 @@ describe('logic/transaction', () => {
       expect(txTypeVerifyStub.calledOnce).to.be.true;
       expect(txTypeVerifyStub.firstCall.args[0]).to.be.deep.equal(tx);
       expect(txTypeVerifyStub.firstCall.args[1]).to.be.deep.equal(sender);
-    });
-
-    it('should call assertNonConfirmed', async () => {
-      await instance.verify(tx, sender, requester, 1);
-      expect(assertNonConfirmedStub.calledOnce).to.be.true;
     });
 
     it('should reject tx if requesetPublicKey and account is not multisign', async () => {

@@ -430,6 +430,7 @@ describe('logic/broadcaster', () => {
 
     beforeEach(() => {
       tx = { id: 'id' };
+      transactionsModuleStub.stubs.filterConfirmedIds.resolves([]);
     });
 
     it('should return false when tx undefined', async () => {
@@ -444,33 +445,33 @@ describe('logic/broadcaster', () => {
       expect(transactionsModuleStub.stubs.transactionInPool.calledOnce).to.be.true;
       expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args.length).to.be.equal(1);
       expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args[0]).to.be.equal(tx.id);
-      expect(transactionLogicStub.stubs.assertNonConfirmed.called).to.be.false;
+      expect(transactionsModuleStub.stubs.filterConfirmedIds.called).to.be.false;
       expect(result).to.be.true;
     });
 
-    it('should behave correctly when tx is not in pool and assert does not throw error', async () => {
+    it('should behave correctly when tx is not in pool not in db already confirmed', async () => {
       transactionsModuleStub.stubs.transactionInPool.returns(false);
-      transactionLogicStub.stubs.assertNonConfirmed.resolves();
+      transactionsModuleStub.stubs.filterConfirmedIds.resolves([]);
       const result = await (instance as any).filterTransaction(tx);
       expect(transactionsModuleStub.stubs.transactionInPool.calledOnce).to.be.true;
       expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args.length).to.be.equal(1);
       expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args[0]).to.be.equal(tx.id);
-      expect(transactionLogicStub.stubs.assertNonConfirmed.calledOnce).to.be.true;
-      expect(transactionLogicStub.stubs.assertNonConfirmed.firstCall.args.length).to.be.equal(1);
-      expect(transactionLogicStub.stubs.assertNonConfirmed.firstCall.args[0]).to.be.equal(tx);
+      expect(transactionsModuleStub.stubs.filterConfirmedIds.calledOnce).to.be.true;
+      expect(transactionsModuleStub.stubs.filterConfirmedIds.firstCall.args.length).to.be.equal(1);
+      expect(transactionsModuleStub.stubs.filterConfirmedIds.firstCall.args[0]).to.be.deep.equal([tx.id]);
       expect(result).to.be.true;
     });
 
-    it('should behave correctly when tx is not in pool; assert throws error', async () => {
+    it('should behave correctly when tx is not in pool; but tx is in db confirmed', async () => {
       transactionsModuleStub.stubs.transactionInPool.returns(false);
-      transactionLogicStub.stubs.assertNonConfirmed.throws(new Error());
+      transactionsModuleStub.stubs.filterConfirmedIds.resolves(['ahah', tx.id, 'eheh']);
       const result = await (instance as any).filterTransaction(tx);
       expect(transactionsModuleStub.stubs.transactionInPool.calledOnce).to.be.true;
       expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args.length).to.be.equal(1);
       expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args[0]).to.be.equal(tx.id);
-      expect(transactionLogicStub.stubs.assertNonConfirmed.calledOnce).to.be.true;
-      expect(transactionLogicStub.stubs.assertNonConfirmed.firstCall.args.length).to.be.equal(1);
-      expect(transactionLogicStub.stubs.assertNonConfirmed.firstCall.args[0]).to.be.equal(tx);
+      expect(transactionsModuleStub.stubs.filterConfirmedIds.calledOnce).to.be.true;
+      expect(transactionsModuleStub.stubs.filterConfirmedIds.firstCall.args.length).to.be.equal(1);
+      expect(transactionsModuleStub.stubs.filterConfirmedIds.firstCall.args[0]).to.be.deep.equal([tx.id]);
       expect(result).to.be.false;
     });
   });

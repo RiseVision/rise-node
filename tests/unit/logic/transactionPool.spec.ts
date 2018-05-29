@@ -713,33 +713,6 @@ describe('logic/transactionPool - TransactionPool', () => {
     });
   });
 
-  describe('receiveTransactions', () => {
-    let processNewTransactionStub: SinonStub;
-
-    beforeEach(() => {
-      processNewTransactionStub = sandbox.stub(instance, 'processNewTransaction').resolves();
-    });
-
-    afterEach(() => {
-      processNewTransactionStub.restore();
-    });
-
-    it('should return a promise', () => {
-      const retVal = instance.receiveTransactions([tx, tx2, tx3], false, false);
-      expect(retVal).to.be.instanceof(Promise);
-    });
-
-    it('should call processNewTransaction for each of the passed txs', async () => {
-      await instance.receiveTransactions([tx, tx2], false, false);
-      expect(processNewTransactionStub.callCount).to.be.equal(2);
-      expect(processNewTransactionStub.firstCall.args[0]).to.be.deep.equal(tx);
-      expect(processNewTransactionStub.firstCall.args[1]).to.be.false;
-      expect(processNewTransactionStub.firstCall.args[2]).to.be.false;
-      expect(processNewTransactionStub.secondCall.args[0]).to.be.deep.equal(tx2);
-      expect(processNewTransactionStub.secondCall.args[1]).to.be.false;
-      expect(processNewTransactionStub.secondCall.args[2]).to.be.false;
-    });
-  });
 
   describe('processNewTransaction', () => {
     let processVerifyTransactionStub: SinonStub;

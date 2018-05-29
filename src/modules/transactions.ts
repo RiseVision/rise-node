@@ -117,6 +117,7 @@ export class TransactionsModule implements ITransactionsModule {
   /**
    * Checks kind of unconfirmed transaction and process it, resets queue
    * if limit reached.
+   * NOTE: transaction must be unknown and already checked AGAINST database for its non existence.
    */
   public processUnconfirmedTransaction(transaction: IBaseTransaction<any>,
                                        broadcast: boolean, bundled: boolean): Promise<void> {
@@ -157,17 +158,6 @@ export class TransactionsModule implements ITransactionsModule {
     await this.dbHelper.performOps(await this.transactionLogic.undoUnconfirmed(transaction, sender));
   }
 
-  /**
-   * Receives transactions
-   */
-  public receiveTransactions(transactions: Array<IBaseTransaction<any>>,
-                             broadcast: boolean, bundled: boolean): Promise<void> {
-    return this.transactionPool.receiveTransactions(
-      transactions,
-      broadcast,
-      bundled
-    );
-  }
 
   public async count(): Promise<{ confirmed: number, multisignature: number, queued: number, unconfirmed: number }> {
     return {

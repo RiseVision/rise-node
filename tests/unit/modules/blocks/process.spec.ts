@@ -441,6 +441,7 @@ describe('modules/blocks/process', () => {
         .map((t) => toBufferedTransaction(t));
       accountsModule.stubs.getAccount.resolves({account: 'account'});
       txModule.stubs.getUnconfirmedTransactionList.callsFake(() => txs);
+      txModule.stubs.filterConfirmedIds.resolves([]);
       blockLogic.enqueueResponse('create', {block: 'block'});
       txLogic.stubs.ready.returns(true);
       txLogic.stubs.verify.resolves();
@@ -500,6 +501,23 @@ describe('modules/blocks/process', () => {
       await inst.generateBlock({key: 'pair'} as any, 1);
       expect(loggerStub.stubs.error.calledOnce).is.true;
       expect(loggerStub.stubs.error.firstCall.args[0]).is.equal(error.stack);
+    });
+    it('should skip tx if it was already confirmed (removing and unconfirming it in the process)', async () => {
+      txModule.stubs.filterConfirmedIds.resolves([txs[1].id]);
+      txModule.stubs.undoUnconfirmed.resolves();
+      txModule.stubs.removeUnconfirmedTransaction.returns(true);
+      await inst.generateBlock({key: 'pair'} as any, 1);
+      expect(blockLogic.stubs.create.firstCall.args[0]).is.deep.eq({
+        keypair      : {key: 'pair'},
+        previousBlock: blocksModule.lastBlock,
+        timestamp    : 1,
+        transactions : txs.filter((tx, idx) => idx !== 1),
+      });
+
+      expect(txModule.stubs.undoUnconfirmed.calledOnce).is.true;
+      expect(txModule.stubs.removeUnconfirmedTransaction.calledOnce).is.true;
+      expect(txModule.stubs.undoUnconfirmed.firstCall.args[0]).is.deep.eq(txs[1]);
+      expect(txModule.stubs.removeUnconfirmedTransaction.firstCall.args[0]).is.eq(txs[1].id);
     });
   });
 

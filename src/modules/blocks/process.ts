@@ -277,10 +277,19 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     const txs           = this.transactionsModule.getUnconfirmedTransactionList(false, constants.maxTxsPerBlock);
 
     const ready: Array<IBaseTransaction<any>> = [];
+    const confirmedTxs = await this.transactionsModule.filterConfirmedIds(txs.map((tx) => tx.id));
     for (const tx of txs) {
       const sender = await this.accountsModule.getAccount({ publicKey: tx.senderPublicKey });
       if (!sender) {
         throw new Error('Sender not found');
+      }
+
+      if (confirmedTxs.indexOf(tx.id) !== -1) {
+        // TODO: this should be unnecessary as there shouldnt be any chance for the txs to be in unconfirmedstate
+        // if it was already confirmed.
+        await this.transactionsModule.undoUnconfirmed(tx);
+        await this.transactionsModule.removeUnconfirmedTransaction(tx.id);
+        continue;
       }
 
       if (!this.transactionLogic.ready(tx, sender)) {

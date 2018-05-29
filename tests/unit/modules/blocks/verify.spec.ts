@@ -336,7 +336,8 @@ describe('modules/blocks/verify', () => {
         });
         return toRet;
       });
-    })
+      txModule.stubs.filterConfirmedIds.resolves([]);
+    });
     it('rejects if is cleaning', async () => {
       await inst.cleanup();
       await expect(inst.processBlock(null, true, true))
@@ -396,20 +397,19 @@ describe('modules/blocks/verify', () => {
         delegatesModule.enqueueResponse('assertValidBlockSlot', Promise.resolve());
         blocksChain.enqueueResponse('applyBlock', Promise.resolve());
 
-        txLogic.stubs.getId.returns('1');
-        txLogic.stubs.assertNonConfirmed.resolves();
+        txLogic.stubs.getId.callsFake((t) => t.id);
         accountsModule.stubs.getAccount.resolves({});
         txLogic.stubs.verify.resolves();
 
       });
 
-      it('should assertNonConfirmed for all txs', async () => {
-        await inst.processBlock(null, true, true);
-        expect(txLogic.stubs.assertNonConfirmed.callCount).to.be.eq(txs.length);
-        for (let i = 0; i < txs.length; i++) {
-          expect(txLogic.stubs.assertNonConfirmed.getCall(i).args[0]).to.be.deep.eq(txs[i]);
-        }
-      });
+      // it('should assertNonConfirmed for all txs', async () => {
+      //   await inst.processBlock(null, true, true);
+      //   expect(txLogic.stubs.assertNonConfirmed.callCount).to.be.eq(txs.length);
+      //   for (let i = 0; i < txs.length; i++) {
+      //     expect(txLogic.stubs.assertNonConfirmed.getCall(i).args[0]).to.be.deep.eq(txs[i]);
+      //   }
+      // });
       it('should call resolveAccountsForTransactions with all txs in block', async () => {
         await inst.processBlock(null, true, true);
         expect(accountsModule.stubs.resolveAccountsForTransactions.callCount).to.be.eq(1);
@@ -427,16 +427,22 @@ describe('modules/blocks/verify', () => {
       });
       it('should properly handle tx already confirmed', async () => {
         txModule.stubs.undoUnconfirmed.resolves();
-        txModule.stubs.removeUnconfirmedTransaction.resolves();
-        txLogic.stubs.assertNonConfirmed.onSecondCall().rejects(new Error('error'));
-        await expect(inst.processBlock(null, true, true)).to.be.rejectedWith('error');
+        txModule.stubs.removeUnconfirmedTransaction.onFirstCall().returns(true);
+        txModule.stubs.removeUnconfirmedTransaction.onSecondCall().returns(false);
+        const alreadyConfirmedId1 = normalizedBlock.transactions[1].id;
+        const alreadyConfirmedId2 = normalizedBlock.transactions[2].id;
+        txModule.stubs.filterConfirmedIds.resolves([alreadyConfirmedId1, alreadyConfirmedId2]);
+        await expect(inst.processBlock(normalizedBlock, true, true)).to.be.rejectedWith('Transactions already confirmed: ' + alreadyConfirmedId1);
 
         // should send fork
         expect(forkModule.stubs.fork.called).is.true;
         expect(forkModule.stubs.fork.firstCall.args).is.deep.eq([normalizedBlock, ForkType.TX_ALREADY_CONFIRMED]);
+
         // shoudl call uncoUnconfirmed and removeUnconfirmed
+
+        expect(txModule.stubs.removeUnconfirmedTransaction.calledTwice).is.true;
         expect(txModule.stubs.undoUnconfirmed.calledOnce).is.true;
-        expect(txModule.stubs.removeUnconfirmedTransaction.calledOnce).is.true;
+        expect(txModule.stubs.undoUnconfirmed.firstCall.args[0]).is.deep.eq(normalizedBlock.transactions[1]);
 
       });
       it('should get requesterPublicKey account and pass it to verify if tx has it', async () => {

@@ -362,6 +362,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       await this.forkModule.fork(block, ForkType.TX_ALREADY_CONFIRMED);
       for (const confirmedID of confirmedIDs) {
         if (this.transactionsModule.removeUnconfirmedTransaction(confirmedID)) {
+          console.log(block.transactions);
           await this.transactionsModule.undoUnconfirmed(block.transactions.filter((t) => t.id === confirmedID)[0]);
         }
       }
@@ -376,6 +377,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
    * Check transaction - perform transaction validation when processing block
    * FIXME: Some checks are probably redundant, see: logic.transactionPool
    * If it does not throw the tx should be valid.
+   * NOTE: this must be called with an unconfirmed transaction
    */
   private async checkTransaction(block: SignedBlockType, tx: IConfirmedTransaction<any>, accountsMap: {[address: string]: AccountsModel}): Promise<void> {
 

@@ -60,16 +60,6 @@ export default class TransactionLogicStub extends BaseStubClass implements ITran
   }
 
   @stubMethod()
-  public countById(tx: IBaseTransaction<any>): Promise<number> {
-    return null;
-  }
-
-  @stubMethod()
-  public assertNonConfirmed(tx: IBaseTransaction<any>): Promise<void> {
-    return null;
-  }
-
-  @stubMethod()
   public checkBalance(amount: number | BigNumber, balanceKey: 'balance' | 'u_balance', tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: any): { error: string; exceeded: boolean } {
     return null;
   }

@@ -317,18 +317,6 @@ describe('modules/transactions', () => {
     });
   });
 
-  describe('receiveTransactions', () => {
-    it('should call txPool.receiveTransactions', async () => {
-      transactionPoolStub.stubs.receiveTransactions.returns(true);
-      const transactions = ['tx1', 'tx2'];
-      await instance.receiveTransactions(transactions as any, false, true);
-      expect(transactionPoolStub.stubs.receiveTransactions.calledOnce).to.be.true;
-      expect(transactionPoolStub.stubs.receiveTransactions.firstCall.args.length).to.be.equal(3);
-      expect(transactionPoolStub.stubs.receiveTransactions.firstCall.args[0]).to.be.deep.equal(transactions);
-      expect(transactionPoolStub.stubs.receiveTransactions.firstCall.args[1]).to.be.false;
-      expect(transactionPoolStub.stubs.receiveTransactions.firstCall.args[2]).to.be.true;
-    });
-  });
 
   describe('count', () => {
     let txModel: typeof TransactionsModel;

@@ -51,13 +51,9 @@ export default class TransportModuleStub extends BaseStubClass implements ITrans
   }
 
   @stubMethod()
-  public receiveTransactions(transactions: Array<ITransportTransaction<any>>, peer: IPeerLogic, extraLogMessage: string): Promise<void> {
+  public receiveTransactions(transactions: Array<ITransportTransaction<any>>, peer: IPeerLogic, broadcast: boolean): Promise<void> {
     return null;
   }
 
-  @stubMethod()
-  public receiveTransaction(transaction: ITransportTransaction<any>, peer: IPeerLogic, bundled: boolean, extraLogMessage: string, broadcast?: boolean): Promise<string> {
-    return null;
-  }
 
 }

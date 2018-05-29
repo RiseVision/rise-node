@@ -81,12 +81,6 @@ export interface ITransactionsModule extends IModule {
    */
   undoUnconfirmed(transaction: IBaseTransaction<any>): Promise<void>;
 
-  /**
-   * Receives transactions
-   */
-  receiveTransactions(transactions: Array<IBaseTransaction<any>>,
-                      broadcast: boolean, bundled: boolean): Promise<void>;
-
   count(): Promise<{ confirmed: number, multisignature: number, queued: number, unconfirmed: number }>;
 
   /**

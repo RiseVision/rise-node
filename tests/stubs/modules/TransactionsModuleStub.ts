@@ -20,6 +20,11 @@ export class TransactionsModuleStub extends BaseStubClass implements ITransactio
   }
 
   @stubMethod()
+  public filterConfirmedIds(ids: string[]): Promise<string[]> {
+    return null;
+  }
+
+  @stubMethod()
   public transactionUnconfirmed(id: string): boolean {
     return undefined;
   }
@@ -82,12 +87,6 @@ export class TransactionsModuleStub extends BaseStubClass implements ITransactio
 
   @stubMethod()
   public undoUnconfirmed(transaction): Promise<void> {
-    return undefined;
-  }
-
-  @stubMethod()
-  public receiveTransactions(transactions: Array<IBaseTransaction<any>>,
-                             broadcast: boolean, bundled: boolean): Promise<void> {
     return undefined;
   }
 
