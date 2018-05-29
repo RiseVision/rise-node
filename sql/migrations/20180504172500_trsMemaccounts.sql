@@ -32,5 +32,5 @@ ALTER table mem_accounts
   ADD CONSTRAINT upperAddress CHECK(upper("address") = "address");
 COMMIT;
 
-CREATE UNIQUE INDEX IF NOT EXISTS "idx_accounts_address" on "mem_accounts"("address");
-CREATE UNIQUE INDEX IF NOT EXISTS "idx_trs_id" on "trs"("id");
+-- CREATE UNIQUE INDEX IF NOT EXISTS "idx_accounts_address" on "mem_accounts"("address");
+-- CREATE UNIQUE INDEX IF NOT EXISTS "idx_trs_id" on "trs"("id");

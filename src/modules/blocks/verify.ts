@@ -149,9 +149,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
 
     // check transactions
     const accountsMap = await this.accountsModule.resolveAccountsForTransactions(block.transactions);
-    await Promise.all(block.transactions
-      .map((tx) => this.checkTransaction(block, tx as any, accountsMap))
-    );
+    await this.checkBlockTransactions(block, accountsMap);
 
     // if nothing has thrown till here then block is valid and can be applied.
     // The block and the transactions are OK i.e:
@@ -348,27 +346,38 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     return [];
   }
 
+  private async checkBlockTransactions(block: SignedBlockType, accountsMap: {[address: string]: AccountsModel}) {
+    const allIds = [];
+    for (const tx of block.transactions) {
+      tx.id      = this.transactionLogic.getId(tx);
+      // Apply block id to the tx
+      tx['blockId'] = block.id;
+      allIds.push(tx.id);
+    }
+
+    // check that none of the transaction exists in db.
+    const confirmedIDs = await this.transactionsModule.filterConfirmedIds(allIds);
+    if (confirmedIDs.length > 0) {
+      // Error, some of the included transactions are included
+      await this.forkModule.fork(block, ForkType.TX_ALREADY_CONFIRMED);
+      for (const confirmedID of confirmedIDs) {
+        if (this.transactionsModule.removeUnconfirmedTransaction(confirmedID)) {
+          await this.transactionsModule.undoUnconfirmed(block.transactions.filter((t) => t.id === confirmedID)[0]);
+        }
+      }
+      throw new Error(`Transactions already confirmed: ${confirmedIDs.join(', ')}`);
+    }
+
+    await Promise.all(block.transactions
+      .map((tx) => this.checkTransaction(block, tx as IConfirmedTransaction<any>, accountsMap))
+    );
+  }
   /**
    * Check transaction - perform transaction validation when processing block
    * FIXME: Some checks are probably redundant, see: logic.transactionPool
    * If it does not throw the tx should be valid.
    */
   private async checkTransaction(block: SignedBlockType, tx: IConfirmedTransaction<any>, accountsMap: {[address: string]: AccountsModel}): Promise<void> {
-    tx.id      = this.transactionLogic.getId(tx);
-    // Apply block id to the tx
-    tx.blockId = block.id;
-
-    // Check if tx is in db already if so -> fork type 2.
-    await this.transactionLogic.assertNonConfirmed(tx)
-      .catch(async (err) => {
-        await this.forkModule.fork(block, ForkType.TX_ALREADY_CONFIRMED);
-        // undo the offending tx
-
-        if (this.transactionsModule.removeUnconfirmedTransaction(tx.id)) {
-          await this.transactionsModule.undoUnconfirmed(tx);
-        }
-        return Promise.reject(err);
-      });
 
     // get account from db if exists
     // We try to fetch account without an upsert and eventually upsert the account if necessary.

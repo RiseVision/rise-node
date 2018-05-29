@@ -127,6 +127,10 @@ export type DBCreateOp<T extends Model<T>> = BaseDBOp<T> & {
   type: 'create',
   values: FilteredModelAttributes<T>;
 };
+export type DBBulkCreateOp<T extends Model<T>> = BaseDBOp<T> & {
+  type: 'bulkCreate',
+  values: Array<FilteredModelAttributes<T>>;
+};
 export type DBRemoveOp<T extends Model<T>> = BaseDBOp<T> & {
   type: 'remove',
   options: DestroyOptions;
@@ -141,4 +145,9 @@ export type DBUpsertOp<T extends Model<T>> = BaseDBOp<T> & {
   options?: UpsertOptions
 };
 
-export type DBOp<T extends Model<T>> = DBCreateOp<T> | DBUpdateOp<T> | DBCustomOp<T> | DBRemoveOp<T> | DBUpsertOp<T>;
+export type DBOp<T extends Model<T>> = DBCreateOp<T>
+  // | DBBulkCreateOp<T>
+  | DBUpdateOp<T>
+  | DBCustomOp<T>
+  | DBRemoveOp<T>
+  | DBUpsertOp<T>;

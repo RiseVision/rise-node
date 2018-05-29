@@ -7,7 +7,7 @@ import { Sequelize } from 'sequelize-typescript';
 import { IBlocksModule, ISystemModule } from '../../src/ioc/interfaces/modules';
 import { reportedIT } from './benchutils';
 
-const numTransactions = 25000;
+const numTransactions = 15000;
 describe('TPS', function () {
   this.timeout(1000000);
   initializer.setup();
@@ -25,10 +25,11 @@ describe('TPS', function () {
       delegateAccounts.push(new LiskWallet(findDelegateByUsername(`genesisDelegate${i + 1}`).secret, 'R'));
     }
   });
-  beforeEach(() => {
+  beforeEach(async () => {
     consts       = initializer.appManager.container.get<typeof constants>(Symbols.helpers.constants);
     sequelize    = initializer.appManager.container.get<Sequelize>(Symbols.generic.sequelize);
     systemModule = initializer.appManager.container.get(Symbols.modules.system);
+    await initializer.rawMineBlocks(1); // Avoid round apply on first block.
   });
 
   // reportedIT('with always different accounts', [250, 25, 2500], async function (blockSize: number) {

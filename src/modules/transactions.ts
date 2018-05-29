@@ -45,6 +45,16 @@ export class TransactionsModule implements ITransactionsModule {
   }
 
   /**
+   * filters the provided input ids returning only the ids that are
+   * @param {string[]} ids transaction ids.
+   * @return {Promise<string[]>} already existing ids
+   */
+  public async filterConfirmedIds(ids: string[]): Promise<string[]> {
+    const idObjs = await this.TXModel.findAll({ attributes: ['id'], raw: true, where: { id: ids } });
+    return idObjs.map((idObj) => idObj.id);
+  }
+
+  /**
    * Get unconfirmed transaction from pool by id
    */
   public getUnconfirmedTransaction<T = any>(id: string): IBaseTransaction<T> {

@@ -18,6 +18,13 @@ export interface ITransactionsModule extends IModule {
   transactionUnconfirmed(id: string): boolean;
 
   /**
+   * filters the provided input ids returning only the ids that are
+   * @param {string[]} ids transaction ids.
+   * @return {Promise<string[]>} already existing ids
+   */
+  filterConfirmedIds(ids: string[]): Promise<string[]>;
+
+  /**
    * Get unconfirmed transaction from pool by id
    */
   getUnconfirmedTransaction<T = any>(id: string): IBaseTransaction<T>;

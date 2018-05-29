@@ -3,7 +3,17 @@ import * as sequelize from 'sequelize';
 import { Op, Sequelize } from 'sequelize';
 import { Model } from 'sequelize-typescript';
 import { Symbols } from '../ioc/symbols';
-import { DBCreateOp, DBOp, DBRemoveOp, DBUpdateOp, DBUpsertOp } from '../types/genericTypes';
+import { DBBulkCreateOp, DBCreateOp, DBOp, DBRemoveOp, DBUpdateOp, DBUpsertOp } from '../types/genericTypes';
+// import * as squel from 'squel';
+// const squelPostgres = squel.useFlavour('postgres');
+// squelPostgres.registerValueHandler(Buffer, buffer => {
+//  return {
+//    formatted: true,
+//    value: "E'\\\\x" + buffer.toString('hex') + "'",
+//    rawNesting: true,
+//  } as any;
+// });
+
 //
 // const debugWrap = (obj: any, met: string, myRes: string) =>  {
 //   const old = obj[met];
@@ -46,6 +56,13 @@ export class DBHelper {
     );
   }
 
+  // public handleBulkInsert(insertOp: DBBulkCreateOp<any>) {
+  //  return squelPostgres.insert({ nameQuoteCharacter: '"', autoQuoteTableNames: true, autoQuoteFieldNames:true })
+  //    .into(insertOp.model.getTableName() as string)
+  //    .setFieldsRows(insertOp.values)
+  //    .toString();
+  // }
+
   public handleUpsert(upsertOp: DBUpsertOp<any>) {
     return this.sequelize.getQueryInterface().QueryGenerator.upsertQuery(
       upsertOp.model.getTableName(),
@@ -83,6 +100,9 @@ export class DBHelper {
         continue; // Null op.
       }
       switch (op.type) {
+        // case 'bulkCreate':
+        //  ops.push(this.handleBulkInsert(op));
+        //  break;
         case 'create':
           ops.push(this.handleInsert(op));
           // debugWrap(op.model.sequelize.getQueryInterface().QueryGenerator, 'insertQuery', this.handleInsert(op));

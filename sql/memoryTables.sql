@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS "mem_accounts"(
 );
 
 CREATE INDEX IF NOT EXISTS "mem_accounts_balance" ON "mem_accounts"("balance");
-CREATE UNIQUE INDEX IF NOT EXISTS "idx_accounts_address" on "mem_accounts"("address");
+-- CREATE UNIQUE INDEX IF NOT EXISTS "idx_accounts_address" on "mem_accounts"("address");
 
 CREATE TABLE IF NOT EXISTS "mem_round"(
   "address" VARCHAR(22),
