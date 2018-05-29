@@ -22,6 +22,7 @@ export * from './logger';
 export * from './migrator';
 export * from './orderBy';
 export * from './promiseUtils';
+export * from './protobuf';
 export * from './RoundChanges';
 export * from './sequence';
 export * from './slots';

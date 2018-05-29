@@ -39,6 +39,7 @@ export const Symbols = {
     jobsQueue        : Symbol('jobsQueue'),
     logger           : Symbol('logger'),
     migrator         : Symbol('migrator'),
+    protoBuf         : Symbol('protoBuf'),
     sequence         : Symbol('sequence'),
     slots            : Symbol('slots'),
   },
