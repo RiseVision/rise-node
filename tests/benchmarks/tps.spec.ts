@@ -7,7 +7,7 @@ import { Sequelize } from 'sequelize-typescript';
 import { IBlocksModule, ISystemModule } from '../../src/ioc/interfaces/modules';
 import { reportedIT } from './benchutils';
 
-const numTransactions = 5000;
+const numTransactions = 25000;
 describe('TPS', function () {
   this.timeout(1000000);
   initializer.setup();
@@ -31,7 +31,7 @@ describe('TPS', function () {
     systemModule = initializer.appManager.container.get(Symbols.modules.system);
   });
 
-  reportedIT('with always different accounts', [250, 25], async function (blockSize: number) {
+  reportedIT('with always different accounts', [250, 25, 2500], async function (blockSize: number) {
 
     const txs             = [];
     const oldTxsPerBlock  = consts.maxTxsPerBlock;
@@ -78,7 +78,7 @@ describe('TPS', function () {
     return txs.length / took * 1000;
   });
 
-  reportedIT('with always same sender accounts', [250, 25], async (blockSize) => {
+  reportedIT('with always same sender accounts', [250, 25, 2500], async (blockSize) => {
     const txs             = [];
     const oldTxsPerBlock  = consts.maxTxsPerBlock;
     consts.maxTxsPerBlock = blockSize;

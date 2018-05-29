@@ -1,18 +1,18 @@
-import * as chai from "chai";
-import { expect } from "chai";
-import * as chaiAsPromised from "chai-as-promised";
-import { Container } from "inversify";
-import * as proxyquire from "proxyquire";
-import * as sequelize from "sequelize";
-import { Op } from "sequelize";
-import * as sinon from "sinon";
-import { SinonSandbox, SinonStub } from "sinon";
-import * as helpers from "../../../src/helpers";
-import { Symbols } from "../../../src/ioc/symbols";
-import { PeerType } from "../../../src/logic";
-import { LoaderModule } from "../../../src/modules";
-import loaderSchema from "../../../src/schema/loader";
-import sql from "../../../src/sql/loader";
+import * as chai from 'chai';
+import { expect } from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import * as proxyquire from 'proxyquire';
+import * as sequelize from 'sequelize';
+import { Op } from 'sequelize';
+import * as sinon from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as helpers from '../../../src/helpers';
+import { Symbols } from '../../../src/ioc/symbols';
+import { PeerType } from '../../../src/logic';
+import { LoaderModule } from '../../../src/modules';
+import loaderSchema from '../../../src/schema/loader';
+import sql from '../../../src/sql/loader';
 import {
   AccountLogicStub,
   AppStateStub,
@@ -37,10 +37,10 @@ import {
   TransactionsModuleStub,
   TransportModuleStub,
   ZSchemaStub
-} from "../../stubs";
-import { createContainer } from "../../utils/containerCreator";
-import { createFakePeers } from "../../utils/fakePeersFactory";
-import { AccountsModel, BlocksModel, RoundsModel } from "../../../src/models";
+} from '../../stubs';
+import { createContainer } from '../../utils/containerCreator';
+import { createFakePeers } from '../../utils/fakePeersFactory';
+import { AccountsModel, BlocksModel, RoundsModel } from '../../../src/models';
 
 chai.use(chaiAsPromised);
 
@@ -48,13 +48,13 @@ let promiseRetryStub: any;
 
 // tslint:disable no-unused-expression
 // tslint:disable no-unused-expression max-line-length
-const ProxyLoaderModule = proxyquire("../../../src/modules/loader", {
-  "promise-retry": (...args) => {
+const ProxyLoaderModule = proxyquire('../../../src/modules/loader', {
+  'promise-retry': (...args) => {
     return promiseRetryStub.apply(this, args);
-  }
+  },
 });
 
-describe("modules/loader", () => {
+describe('modules/loader', () => {
   let instance: LoaderModule;
   let container: Container;
   let sandbox: SinonSandbox;
@@ -71,25 +71,25 @@ describe("modules/loader", () => {
     retryStub = sandbox.stub();
     promiseRetryStub = sandbox
       .stub()
-      .callsFake(sandbox.spy(w => Promise.resolve(w(retryStub))));
+      .callsFake(sandbox.spy((w) => Promise.resolve(w(retryStub))));
     genesisBlock = {
-      blockSignature: Buffer.from("10"),
+      blockSignature: Buffer.from('10'),
       id: 10,
-      payloadHash: Buffer.from("10")
+      payloadHash: Buffer.from('10'),
     };
     appConfig = {
       loading: {
         loadPerIteration: 10,
-        snapshot: false
+        snapshot: false,
       },
       forging: {
-        transactionsPolling: false
-      }
+        transactionsPolling: false,
+      },
     };
     constants = {
       activeDelegates: 1,
       epochTime: { getTime: sinon.stub().returns(1000) },
-      maxPeers: 100
+      maxPeers: 100,
     } as any;
     container = createContainer();
 
@@ -106,11 +106,11 @@ describe("modules/loader", () => {
       .callsFake((val, fn) => fn());
     (instance as any).defaultSequence.addAndPromise = sandbox
       .stub()
-      .callsFake(w => Promise.resolve(w()));
+      .callsFake((w) => Promise.resolve(w()));
     instance = container.get(Symbols.modules.loader);
     container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock = {
       height: 1,
-      id: 1
+      id: 1,
     } as any;
   });
 
@@ -118,16 +118,16 @@ describe("modules/loader", () => {
     sandbox.restore();
   });
 
-  describe(".initialize", () => {
-    it("should set instance.network to default value after the creation of the object", () => {
+  describe('.initialize', () => {
+    it('should set instance.network to default value after the creation of the object', () => {
       expect((instance as any).network).to.be.deep.equal({
         height: 0,
-        peers: []
+        peers: [],
       });
     });
   });
 
-  describe(".getNetwork", () => {
+  describe('.getNetwork', () => {
     let peersModuleStub: PeersModuleStub;
     let peersLogicStub: PeersLogicStub;
     let loggerStub: LoggerStub;
@@ -141,7 +141,7 @@ describe("modules/loader", () => {
       peersLogicStub = container.get(Symbols.logic.peers);
       loggerStub = container.get(Symbols.helpers.logger);
 
-      peersLogicStub.stubs.create.callsFake(peer => peer);
+      peersLogicStub.stubs.create.callsFake((peer) => peer);
     });
 
     afterEach(() => {
@@ -149,13 +149,13 @@ describe("modules/loader", () => {
       loggerStub.stubReset();
     });
 
-    it("should return unchanged instance.network if (network.height <= 0 and Math.abs(expressive) === 1)", async () => {
+    it('should return unchanged instance.network if (network.height <= 0 and Math.abs(expressive) === 1)', async () => {
       container.get<BlocksModuleStub>(Symbols.modules.blocks).lastBlock = {
-        height: 0
+        height: 0,
       } as any;
       (instance as any).network = {
         height: 1,
-        peers: []
+        peers: [],
       };
 
       const result = await instance.getNetwork();
@@ -163,20 +163,20 @@ describe("modules/loader", () => {
       expect(result).to.be.deep.equal({ height: 1, peers: [] });
     });
 
-    it("should call instance.peersModule.list if instance.network.height > 0", async () => {
+    it('should call instance.peersModule.list if instance.network.height > 0', async () => {
       (instance as any).network = {
         height: 1,
-        peers: []
+        peers: [],
       };
-      peersModuleStub.enqueueResponse("list", { peers });
+      peersModuleStub.enqueueResponse('list', { peers });
 
       await instance.getNetwork();
 
       expect(peersModuleStub.stubs.list.calledOnce).to.be.true;
     });
 
-    it("should call instance.logger.trace methods", async () => {
-      peersModuleStub.enqueueResponse("list", { peers });
+    it('should call instance.logger.trace methods', async () => {
+      peersModuleStub.enqueueResponse('list', { peers });
 
       await instance.getNetwork();
 
@@ -184,95 +184,95 @@ describe("modules/loader", () => {
 
       expect(loggerStub.stubs.trace.getCall(0).args.length).to.be.equal(2);
       expect(loggerStub.stubs.trace.getCall(0).args[0]).to.be.equal(
-        "Good peers - received"
+        'Good peers - received'
       );
       expect(loggerStub.stubs.trace.getCall(0).args[1]).to.be.deep.equal({
-        count: peers.length
+        count: peers.length,
       });
 
       expect(loggerStub.stubs.trace.getCall(1).args.length).to.be.equal(2);
       expect(loggerStub.stubs.trace.getCall(1).args[0]).to.be.equal(
-        "Good peers - filtered"
+        'Good peers - filtered'
       );
       expect(loggerStub.stubs.trace.getCall(1).args[1]).to.be.deep.equal({
-        count: peers.length
+        count: peers.length,
       });
 
       expect(loggerStub.stubs.trace.getCall(2).args.length).to.be.equal(2);
       expect(loggerStub.stubs.trace.getCall(2).args[0]).to.be.equal(
-        "Good peers - accepted"
+        'Good peers - accepted'
       );
       expect(loggerStub.stubs.trace.getCall(2).args[1]).to.be.deep.equal({
-        count: 2
+        count: 2,
       });
     });
 
-    it("should call instance.logger.debug methods", async () => {
-      peersModuleStub.enqueueResponse("list", { peers });
+    it('should call instance.logger.debug methods', async () => {
+      peersModuleStub.enqueueResponse('list', { peers });
 
       await instance.getNetwork();
 
       expect(loggerStub.stubs.debug.callCount).to.be.equal(1);
       expect(loggerStub.stubs.debug.getCall(0).args.length).to.be.equal(2);
       expect(loggerStub.stubs.debug.getCall(0).args[0]).to.be.equal(
-        "Good peers"
+        'Good peers'
       );
       expect(loggerStub.stubs.debug.getCall(0).args[1]).to.be.deep.equal([
         undefined,
-        undefined
+        undefined,
       ]);
     });
 
-    it("should call instance peersLogic.create", async () => {
-      peersModuleStub.enqueueResponse("list", { peers });
+    it('should call instance peersLogic.create', async () => {
+      peersModuleStub.enqueueResponse('list', { peers });
 
       await instance.getNetwork();
       expect(peersLogicStub.stubs.create.called).to.be.true;
     });
 
-    it("should return instance.network with empty peersArray prop if each of peersModule.list() peers is null", async () => {
-      peersModuleStub.enqueueResponse("list", { peers: [null, null] });
+    it('should return instance.network with empty peersArray prop if each of peersModule.list() peers is null', async () => {
+      peersModuleStub.enqueueResponse('list', { peers: [null, null] });
 
       const ret = await instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 0, peers: [] });
       expect((instance as any).network).to.be.deep.equal({
         height: 0,
-        peers: []
+        peers: [],
       });
     });
 
-    it("should return instance.network with empty peersArray prop if each of peersModule.list() peers has height < lastBlock.height ", async () => {
+    it('should return instance.network with empty peersArray prop if each of peersModule.list() peers has height < lastBlock.height ', async () => {
       container.get<BlocksModuleStub>(
         Symbols.modules.blocks
       ).lastBlock.height = 5;
-      peersModuleStub.enqueueResponse("list", { peers });
+      peersModuleStub.enqueueResponse('list', { peers });
 
       const ret = await instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 0, peers: [] });
     });
 
-    it("should return instance.network with two peers in  peersArray prop", async () => {
-      peersModuleStub.enqueueResponse("list", { peers });
+    it('should return instance.network with two peers in  peersArray prop', async () => {
+      peersModuleStub.enqueueResponse('list', { peers });
 
       const ret = await instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 2, peers });
     });
 
-    it("should return a sorted peersArray", async () => {
+    it('should return a sorted peersArray', async () => {
       peers[1].height += 3;
-      peersModuleStub.enqueueResponse("list", { peers });
+      peersModuleStub.enqueueResponse('list', { peers });
 
       const ret = await instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 4, peers: [peers[1], peers[0]] });
     });
 
-    it("should return instance.network with one item in peersArray(check .findGoodPeers second .filter)", async () => {
+    it('should return instance.network with one item in peersArray(check .findGoodPeers second .filter)', async () => {
       peers[0].height = 10;
-      peersModuleStub.enqueueResponse("list", { peers });
+      peersModuleStub.enqueueResponse('list', { peers });
 
       const ret = await instance.getNetwork();
 
@@ -281,31 +281,31 @@ describe("modules/loader", () => {
     });
   });
 
-  describe(".getRandomPeer", () => {
+  describe('.getRandomPeer', () => {
     let getNetworkStub;
     let peers: PeerType[];
 
     beforeEach(() => {
       peers = createFakePeers(3);
       getNetworkStub = sandbox
-        .stub(instance as any, "getNetwork")
+        .stub(instance as any, 'getNetwork')
         .resolves({ peers });
     });
 
-    it("should call instance.getNetwork", async () => {
+    it('should call instance.getNetwork', async () => {
       await instance.getRandomPeer();
 
       expect(getNetworkStub.calledOnce).to.be.true;
     });
 
-    it("should return random peer", async () => {
+    it('should return random peer', async () => {
       const ret = await instance.getRandomPeer();
 
       expect(peers).to.include(ret);
     });
   });
 
-  describe("get .isSyncing", () => {
+  describe('get .isSyncing', () => {
     let appStateStub: AppStateStub;
 
     beforeEach(() => {
@@ -316,29 +316,29 @@ describe("modules/loader", () => {
       appStateStub.reset();
     });
 
-    it("should call appState.get", () => {
-      appStateStub.enqueueResponse("get", true);
+    it('should call appState.get', () => {
+      appStateStub.enqueueResponse('get', true);
       instance.isSyncing;
 
       expect(appStateStub.stubs.get.calledOnce).to.true;
     });
 
-    it("should return loader.isSyncing state", () => {
-      appStateStub.enqueueResponse("get", true);
+    it('should return loader.isSyncing state', () => {
+      appStateStub.enqueueResponse('get', true);
       const ret = instance.isSyncing;
 
       expect(ret).to.be.true;
     });
 
-    it("should return false if appState.get returned undefined", () => {
-      appStateStub.enqueueResponse("get", undefined);
+    it('should return false if appState.get returned undefined', () => {
+      appStateStub.enqueueResponse('get', undefined);
       const ret = instance.isSyncing;
 
       expect(ret).to.be.false;
     });
   });
 
-  describe(".onPeersReady", () => {
+  describe('.onPeersReady', () => {
     let syncTimerStub: SinonStub;
     let loadTransactionsStub: SinonStub;
     let loadSignaturesStub: SinonStub;
@@ -349,14 +349,14 @@ describe("modules/loader", () => {
       loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
 
       loadTransactionsStub = sandbox
-        .stub(instance as any, "loadTransactions")
+        .stub(instance as any, 'loadTransactions')
         .resolves({});
       loadSignaturesStub = sandbox
-        .stub(instance as any, "loadSignatures")
+        .stub(instance as any, 'loadSignatures')
         .resolves({});
-      syncTimerStub = sandbox.stub(instance as any, "syncTimer").resolves();
+      syncTimerStub = sandbox.stub(instance as any, 'syncTimer').resolves();
 
-      error = new Error("error");
+      error = new Error('error');
       instance.loaded = true;
     });
 
@@ -364,39 +364,39 @@ describe("modules/loader", () => {
       loggerStub.stubReset();
     });
 
-    it("should call instance.syncTimer", async () => {
+    it('should call instance.syncTimer', async () => {
       await instance.onPeersReady();
 
       expect(syncTimerStub.calledOnce).to.be.true;
       expect(syncTimerStub.firstCall.args.length).to.be.equal(0);
     });
 
-    it("should call promiseRetry", async () => {
+    it('should call promiseRetry', async () => {
       await instance.onPeersReady();
 
       expect(promiseRetryStub.calledTwice).to.be.true;
 
       expect(promiseRetryStub.firstCall.args.length).to.be.equal(2);
-      expect(promiseRetryStub.firstCall.args[0]).to.be.a("function");
+      expect(promiseRetryStub.firstCall.args[0]).to.be.a('function');
       expect(promiseRetryStub.firstCall.args[1]).to.be.deep.equal({
-        retries: 5
+        retries: 5,
       });
 
       expect(promiseRetryStub.secondCall.args.length).to.be.equal(2);
-      expect(promiseRetryStub.secondCall.args[0]).to.be.a("function");
+      expect(promiseRetryStub.secondCall.args[0]).to.be.a('function');
       expect(promiseRetryStub.secondCall.args[1]).to.be.deep.equal({
-        retries: 5
+        retries: 5,
       });
     });
 
-    it("should call instance.loadTransaction", async () => {
+    it('should call instance.loadTransaction', async () => {
       await instance.onPeersReady();
 
       expect(loadTransactionsStub.calledOnce).to.be.true;
       expect(loadTransactionsStub.firstCall.args.length).to.be.equal(0);
     });
 
-    it("should call logger.warn when instance.loadTransactions throw error", async () => {
+    it('should call logger.warn when instance.loadTransactions throw error', async () => {
       loadTransactionsStub.rejects(error);
 
       await instance.onPeersReady();
@@ -404,7 +404,7 @@ describe("modules/loader", () => {
       expect(loggerStub.stubs.warn.calledOnce).to.be.true;
       expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
       expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal(
-        "Error loading transactions... Retrying... "
+        'Error loading transactions... Retrying... '
       );
       expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.equal(error);
 
@@ -413,7 +413,7 @@ describe("modules/loader", () => {
       expect(retryStub.firstCall.args[0]).to.be.equal(error);
     });
 
-    it("should call logger.log when promiseRetry throw error(twice)", async () => {
+    it('should call logger.log when promiseRetry throw error(twice)', async () => {
       promiseRetryStub.rejects(error);
 
       await instance.onPeersReady();
@@ -421,25 +421,25 @@ describe("modules/loader", () => {
       expect(loggerStub.stubs.log.calledTwice).to.be.true;
       expect(loggerStub.stubs.log.firstCall.args.length).to.be.equal(2);
       expect(loggerStub.stubs.log.firstCall.args[0]).to.be.equal(
-        "Unconfirmed transactions loader error"
+        'Unconfirmed transactions loader error'
       );
       expect(loggerStub.stubs.log.firstCall.args[1]).to.be.equal(error);
 
       expect(loggerStub.stubs.log.secondCall.args.length).to.be.equal(2);
       expect(loggerStub.stubs.log.secondCall.args[0]).to.be.equal(
-        "Multisig pending transactions loader error"
+        'Multisig pending transactions loader error'
       );
       expect(loggerStub.stubs.log.secondCall.args[1]).to.be.equal(error);
     });
 
-    it("should call instance.loadSignature", async () => {
+    it('should call instance.loadSignature', async () => {
       await instance.onPeersReady();
 
       expect(loadSignaturesStub.calledOnce).to.be.true;
       expect(loadSignaturesStub.firstCall.args.length).to.be.equal(0);
     });
 
-    it("should call logger.warn when instance.promiseRetry throw error", async () => {
+    it('should call logger.warn when instance.promiseRetry throw error', async () => {
       loadSignaturesStub.rejects(error);
 
       await instance.onPeersReady();
@@ -447,7 +447,7 @@ describe("modules/loader", () => {
       expect(loggerStub.stubs.warn.calledOnce).to.be.true;
       expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
       expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal(
-        "Error loading transactions... Retrying... "
+        'Error loading transactions... Retrying... '
       );
       expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.equal(error);
 
@@ -456,7 +456,7 @@ describe("modules/loader", () => {
       expect(retryStub.firstCall.args[0]).to.be.equal(error);
     });
 
-    it("should not call instance.loadTransaction if instance.loaded is null", async () => {
+    it('should not call instance.loadTransaction if instance.loaded is null', async () => {
       instance.loaded = false;
 
       await instance.onPeersReady();
@@ -465,16 +465,16 @@ describe("modules/loader", () => {
     });
   });
 
-  describe(".onBlockchainReady", () => {
-    it("should set instance.loaded in true", () => {
+  describe('.onBlockchainReady', () => {
+    it('should set instance.loaded in true', () => {
       instance.onBlockchainReady();
 
       expect((instance as any).loaded).to.be.true;
     });
   });
 
-  describe(".cleanup", () => {
-    it("should set instance.loaded in true and returned a promise.resolve", async () => {
+  describe('.cleanup', () => {
+    it('should set instance.loaded in true and returned a promise.resolve', async () => {
       const ret = instance.cleanup();
 
       expect((instance as any).loaded).to.be.false;
@@ -483,54 +483,54 @@ describe("modules/loader", () => {
     });
   });
 
-  describe(".loadBlockChain", () => {
+  describe('.loadBlockChain', () => {
     let blocksModel: typeof BlocksModel;
     let loadStub: SinonStub;
     beforeEach(() => {
       blocksModel = container.get(Symbols.models.blocks);
-      loadStub = sandbox.stub(instance, "load").resolves();
+      loadStub = sandbox.stub(instance, 'load').resolves();
     });
-    it("should call load if blocksmodel.count is 1", async () => {
-      const stub = sandbox.stub(blocksModel, "count").resolves(1);
+    it('should call load if blocksmodel.count is 1', async () => {
+      const stub = sandbox.stub(blocksModel, 'count').resolves(1);
       await instance.loadBlockChain();
       expect(stub.called).is.true;
       expect(loadStub.called).is.true;
       expect(loadStub.firstCall.args).is.deep.eq([1, 10, null, true]);
     });
-    describe("with more than 1 block", () => {
+    describe('with more than 1 block', () => {
       let countStub: SinonStub;
       let findGenesisStub: SinonStub;
       const blocksCount = 2;
       beforeEach(() => {
-        countStub = sandbox.stub(blocksModel, "count").resolves(blocksCount);
-        findGenesisStub = sandbox.stub(blocksModel, "findOne");
+        countStub = sandbox.stub(blocksModel, 'count').resolves(blocksCount);
+        findGenesisStub = sandbox.stub(blocksModel, 'findOne');
       });
-      it("should throw if findOne height=1 is a different genesis block", async () => {
-        findGenesisStub.resolves({ id: "1" });
+      it('should throw if findOne height=1 is a different genesis block', async () => {
+        findGenesisStub.resolves({ id: '1' });
         await expect(instance.loadBlockChain()).to.be.rejectedWith(
-          "Failed to match genesis block with database"
+          'Failed to match genesis block with database'
         );
 
         // Case 2
         findGenesisStub.resolves({
           id: genesisBlock.id,
-          payloadHash: Buffer.from("aa")
+          payloadHash: Buffer.from('aa'),
         });
         await expect(instance.loadBlockChain()).to.be.rejectedWith(
-          "Failed to match genesis block with database"
+          'Failed to match genesis block with database'
         );
 
         // Case 3
         findGenesisStub.resolves({
           id: genesisBlock.id,
           payloadHash: genesisBlock.payloadHash,
-          blockSignature: Buffer.from("aa")
+          blockSignature: Buffer.from('aa'),
         });
         await expect(instance.loadBlockChain()).to.be.rejectedWith(
-          "Failed to match genesis block with database"
+          'Failed to match genesis block with database'
         );
       });
-      describe("valid genesis in db", () => {
+      describe('valid genesis in db', () => {
         let roundsLogic: RoundsLogicStub;
         let accountsModel: typeof AccountsModel;
         let accountsCountStub: SinonStub;
@@ -538,136 +538,136 @@ describe("modules/loader", () => {
           findGenesisStub.resolves(genesisBlock);
           roundsLogic = container.get(Symbols.logic.rounds);
           accountsModel = container.get(Symbols.models.accounts);
-          roundsLogic.enqueueResponse("calcRound", 1);
-          accountsCountStub = sandbox.stub(accountsModel, "count");
+          roundsLogic.enqueueResponse('calcRound', 1);
+          accountsCountStub = sandbox.stub(accountsModel, 'count');
         });
-        it("should query for current round given the number of current blocks", async () => {
-          roundsLogic.stubs.calcRound.throws(new Error("die"));
-          await expect(instance.loadBlockChain()).to.be.rejectedWith("die");
+        it('should query for current round given the number of current blocks', async () => {
+          roundsLogic.stubs.calcRound.throws(new Error('die'));
+          await expect(instance.loadBlockChain()).to.be.rejectedWith('die');
           expect(roundsLogic.stubs.calcRound.firstCall.args[0]).eq(blocksCount);
         });
-        describe("verifySnapshot case", () => {
+        describe('verifySnapshot case', () => {
           it(
-            "should rest config.loading.snapshot to current round if config was boolean"
+            'should rest config.loading.snapshot to current round if config was boolean'
           );
           it(
-            "should reset snapshot to round-1 if blocksCount is not divisible by activeDelegates"
+            'should reset snapshot to round-1 if blocksCount is not divisible by activeDelegates'
           );
-          it("should set appState rounds.snapshot to correct value");
-          it("should call load with correct data");
+          it('should set appState rounds.snapshot to correct value');
+          it('should call load with correct data');
           it(
-            "should process.exit 1 if it was not possible to load until desired block"
+            'should process.exit 1 if it was not possible to load until desired block'
           );
         });
-        it("should call load if no accounts where updated on last block", async () => {
+        it('should call load if no accounts where updated on last block', async () => {
           accountsCountStub.resolves(0);
           await instance.loadBlockChain();
           expect(loadStub.called).is.true;
           expect(accountsCountStub.firstCall.args[0]).deep.eq({
-            where: { blockId: {} }
+            where: { blockId: {} },
           });
           expect(
             accountsCountStub.firstCall.args[0].where.blockId[Op.in]
           ).deep.eq({
-            val: '(SELECT "id" from blocks ORDER BY "height" DESC LIMIT 1)'
+            val: '(SELECT "id" from blocks ORDER BY "height" DESC LIMIT 1)',
           });
           expect(loadStub.firstCall.args).deep.eq([
             blocksCount,
             10,
-            "Detected missed blocks in mem_accounts",
-            true
+            'Detected missed blocks in mem_accounts',
+            true,
           ]);
         });
-        describe("with accounts ok", async () => {
+        describe('with accounts ok', async () => {
           let roundsModel: typeof RoundsModel;
           let roundsFindAllStub: SinonStub;
           beforeEach(() => {
             accountsCountStub.onFirstCall().resolves(1);
             roundsModel = container.get(Symbols.models.rounds);
-            roundsFindAllStub = sandbox.stub(roundsModel, "findAll");
+            roundsFindAllStub = sandbox.stub(roundsModel, 'findAll');
           });
-          it("should call load with proper data if there is some other round rows != than current round", async () => {
+          it('should call load with proper data if there is some other round rows != than current round', async () => {
             roundsFindAllStub.resolves([{ round: 1 }, { round: 2 }]);
             await instance.loadBlockChain();
             expect(roundsFindAllStub.called).is.true;
             expect(roundsFindAllStub.firstCall.args[0]).is.deep.eq({
-              attributes: ["round"],
-              group: "round"
+              attributes: ['round'],
+              group: 'round',
             });
             expect(loadStub.called).is.true;
             expect(loadStub.firstCall.args).deep.eq([
               blocksCount,
               10,
-              "Detected unapplied rounds in mem_round",
-              true
+              'Detected unapplied rounds in mem_round',
+              true,
             ]);
           });
 
-          describe("with rounds data ok", () => {
+          describe('with rounds data ok', () => {
             let processExitStub: SinonStub;
             let sequelizeQueryStub: SinonStub;
             beforeEach(() => {
               roundsFindAllStub.resolves([]);
               processExitStub = sandbox
-                .stub(process, "exit")
-                .throws(new Error("exit"));
-              sequelizeQueryStub = sandbox.stub(roundsModel.sequelize, "query");
+                .stub(process, 'exit')
+                .throws(new Error('exit'));
+              sequelizeQueryStub = sandbox.stub(roundsModel.sequelize, 'query');
             });
-            it("should exit if some duplicatedDelegates", async () => {
+            it('should exit if some duplicatedDelegates', async () => {
               sequelizeQueryStub.onFirstCall().resolves([{ count: 1 }]);
-              await expect(instance.loadBlockChain()).be.rejectedWith("exit");
+              await expect(instance.loadBlockChain()).be.rejectedWith('exit');
               expect(processExitStub.called).is.true;
               expect(processExitStub.firstCall.args[0]).eq(1);
               expect(sequelizeQueryStub.firstCall.args[0]).eq(
                 'WITH duplicates AS (SELECT COUNT(1) FROM delegates GROUP BY "transactionId" HAVING COUNT(1) > 1) SELECT count(1) FROM duplicates'
               );
               expect(sequelizeQueryStub.firstCall.args[1]).deep.eq({
-                type: sequelize.QueryTypes.SELECT
+                type: sequelize.QueryTypes.SELECT,
               });
             });
-            describe("with no dup delegates", () => {
+            describe('with no dup delegates', () => {
               let restoreUnconfirmedEntriesStub: SinonStub;
               beforeEach(() => {
                 sequelizeQueryStub.onFirstCall().resolves([{ count: 0 }]);
                 restoreUnconfirmedEntriesStub = sandbox
-                  .stub(accountsModel, "restoreUnconfirmedEntries")
+                  .stub(accountsModel, 'restoreUnconfirmedEntries')
                   .resolves();
               });
-              it("should call restoreUnconfirmedEntries", async () => {
-                restoreUnconfirmedEntriesStub.rejects(new Error("hey"));
-                await expect(instance.loadBlockChain()).rejectedWith("hey");
+              it('should call restoreUnconfirmedEntries', async () => {
+                restoreUnconfirmedEntriesStub.rejects(new Error('hey'));
+                await expect(instance.loadBlockChain()).rejectedWith('hey');
                 expect(restoreUnconfirmedEntriesStub.called).is.true;
               });
-              it("should call load if there are some orphanedMemAccounts", async () => {
-                sequelizeQueryStub.onSecondCall().resolves(["a"]);
+              it('should call load if there are some orphanedMemAccounts', async () => {
+                sequelizeQueryStub.onSecondCall().resolves(['a']);
                 await instance.loadBlockChain();
                 expect(loadStub.called).is.true;
                 expect(loadStub.firstCall.args).deep.eq([
                   blocksCount,
                   10,
-                  "Detected orphaned blocks in mem_accounts",
-                  true
+                  'Detected orphaned blocks in mem_accounts',
+                  true,
                 ]);
                 expect(sequelizeQueryStub.secondCall.args[0]).to.be.deep.eq(
                   'SELECT a."blockId", b."id" FROM mem_accounts a LEFT OUTER JOIN blocks b ON b."id" = a."blockId" WHERE a."blockId" IS NOT NULL AND a."blockId" != \'0\' AND b."id" IS NULL'
                 );
               });
-              describe("with no orphan accounts", () => {
+              describe('with no orphan accounts', () => {
                 beforeEach(() => {
                   sequelizeQueryStub.onSecondCall().resolves([]);
                 });
-                it("should call load if there are no delegates", async () => {
+                it('should call load if there are no delegates', async () => {
                   accountsCountStub.onSecondCall().resolves(0);
                   await instance.loadBlockChain();
                   expect(loadStub.called).is.true;
                   expect(loadStub.firstCall.args).deep.eq([
                     blocksCount,
                     10,
-                    "No delegates found",
-                    true
+                    'No delegates found',
+                    true,
                   ]);
                 });
-                describe("with delegates", async () => {
+                describe('with delegates', async () => {
                   let blocksUtilsStub: BlocksSubmoduleUtilsStub;
                   let busStub: BusStub;
                   beforeEach(() => {
@@ -677,31 +677,31 @@ describe("modules/loader", () => {
                     );
                     busStub = container.get(Symbols.helpers.bus);
                   });
-                  it("call load if loadLastBlock rejects", async () => {
+                  it('call load if loadLastBlock rejects', async () => {
                     blocksUtilsStub.enqueueResponse(
-                      "loadLastBlock",
-                      Promise.reject("errr")
+                      'loadLastBlock',
+                      Promise.reject('errr')
                     );
                     await instance.loadBlockChain();
                     expect(loadStub.called).is.true;
                     expect(loadStub.firstCall.args).deep.eq([
                       blocksCount,
                       10,
-                      "Failed to load last block"
+                      'Failed to load last block',
                     ]);
                     expect(busStub.stubs.message.called).is.false;
                   });
-                  it("should loadLastBlock if everything is fine and eventually broadcast message", async () => {
+                  it('should loadLastBlock if everything is fine and eventually broadcast message', async () => {
                     blocksUtilsStub.enqueueResponse(
-                      "loadLastBlock",
+                      'loadLastBlock',
                       Promise.resolve()
                     );
-                    busStub.enqueueResponse("message", Promise.resolve());
+                    busStub.enqueueResponse('message', Promise.resolve());
                     await instance.loadBlockChain();
                     expect(blocksUtilsStub.stubs.loadLastBlock.called).is.true;
                     expect(busStub.stubs.message.called).is.true;
                     expect(busStub.stubs.message.firstCall.args[0]).eq(
-                      "blockchainReady"
+                      'blockchainReady'
                     );
                   });
                 });
@@ -713,7 +713,7 @@ describe("modules/loader", () => {
     });
   });
 
-  describe(".load", () => {
+  describe('.load', () => {
     let count;
     let limitPerIteration;
     let message;
@@ -731,13 +731,13 @@ describe("modules/loader", () => {
     beforeEach(() => {
       count = 2;
       limitPerIteration = 3;
-      message = "message";
+      message = 'message';
       emitBlockchainReady = true;
-      lastBlock = { data: "data" };
+      lastBlock = { data: 'data' };
       error = {
         block: {
           height: 1,
-          id: 1
+          id: 1,
         }
       };
 
@@ -751,10 +751,10 @@ describe("modules/loader", () => {
         Symbols.modules.blocksSubModules.chain
       );
 
-      accountLogicStub.enqueueResponse("removeTables", Promise.resolve({}));
-      accountLogicStub.enqueueResponse("createTables", Promise.resolve({}));
+      accountLogicStub.enqueueResponse('removeTables', Promise.resolve({}));
+      accountLogicStub.enqueueResponse('createTables', Promise.resolve({}));
       blocksProcessModuleStub.enqueueResponse(
-        "loadBlocksOffset",
+        'loadBlocksOffset',
         Promise.resolve(lastBlock)
       );
     });
@@ -767,7 +767,7 @@ describe("modules/loader", () => {
       loggerStub.stubReset();
     });
 
-    it("should call logger.warn twice if message exist", async () => {
+    it('should call logger.warn twice if message exist', async () => {
       await instance.load(count, limitPerIteration, message);
 
       expect(loggerStub.stubs.warn.calledTwice).to.be.true;
@@ -777,40 +777,40 @@ describe("modules/loader", () => {
 
       expect(loggerStub.stubs.warn.secondCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.warn.secondCall.args[0]).to.be.equal(
-        "Recreating memory tables"
+        'Recreating memory tables'
       );
     });
 
-    it("should not call logger.warn if message is not exist", async () => {
+    it('should not call logger.warn if message is not exist', async () => {
       await instance.load(count, limitPerIteration);
 
       expect(loggerStub.stubs.warn.notCalled).to.be.true;
     });
 
-    it("should call accountLogic.removeTables", async () => {
+    it('should call accountLogic.removeTables', async () => {
       await instance.load(count, limitPerIteration);
 
       expect(accountLogicStub.stubs.removeTables.calledOnce).to.be.true;
     });
 
-    it("should call accountLogic.createTables", async () => {
+    it('should call accountLogic.createTables', async () => {
       await instance.load(count, limitPerIteration);
 
       expect(accountLogicStub.stubs.createTables.calledOnce).to.be.true;
     });
 
-    it("should call logger.info count > 1", async () => {
+    it('should call logger.info count > 1', async () => {
       await instance.load(count, limitPerIteration);
 
       expect(loggerStub.stubs.info.calledOnce).to.be.true;
 
       expect(loggerStub.stubs.info.firstCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal(
-        "Rebuilding blockchain, current block height: " + 1
+        'Rebuilding blockchain, current block height: ' + 1
       );
     });
 
-    it("should call blocksProcessModule.loadBlocksOffset", async () => {
+    it('should call blocksProcessModule.loadBlocksOffset', async () => {
       await instance.load(count, limitPerIteration);
 
       expect(blocksProcessModuleStub.stubs.loadBlocksOffset.calledOnce).to.be
@@ -830,8 +830,8 @@ describe("modules/loader", () => {
       ).to.be.equal(true);
     });
 
-    it("should call logger.info and bus.message if emitBlockchainReady exist", async () => {
-      busStub.enqueueResponse("message", "");
+    it('should call logger.info and bus.message if emitBlockchainReady exist', async () => {
+      busStub.enqueueResponse('message', '');
 
       await instance.load(
         count,
@@ -843,33 +843,33 @@ describe("modules/loader", () => {
       expect(loggerStub.stubs.info.calledTwice).to.be.true;
       expect(loggerStub.stubs.info.secondCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.info.secondCall.args[0]).to.be.equal(
-        "Blockchain ready"
+        'Blockchain ready'
       );
 
       expect(busStub.stubs.message.calledOnce).to.be.true;
       expect(busStub.stubs.message.firstCall.args.length).to.be.equal(1);
       expect(busStub.stubs.message.firstCall.args[0]).to.be.equal(
-        "blockchainReady"
+        'blockchainReady'
       );
     });
 
-    it("should not call logger.info if count <= 1", async () => {
+    it('should not call logger.info if count <= 1', async () => {
       await instance.load(1, limitPerIteration);
 
       expect(loggerStub.stubs.info.notCalled).to.be.true;
     });
 
-    it("should be no iterations if count less than offset( < 0)", async () => {
+    it('should be no iterations if count less than offset( < 0)', async () => {
       await instance.load(-1, limitPerIteration);
 
       expect(blocksProcessModuleStub.stubs.loadBlocksOffset.notCalled).to.be
         .true;
     });
 
-    it("should call logger.error if throw error", async () => {
+    it('should call logger.error if throw error', async () => {
       loggerStub.stubs.info.throws(error);
-      busStub.enqueueResponse("message", "");
-      blocksChainModuleStub.enqueueResponse("deleteAfterBlock", {});
+      busStub.enqueueResponse('message', '');
+      blocksChainModuleStub.enqueueResponse('deleteAfterBlock', {});
 
       await instance.load(
         count,
@@ -883,10 +883,10 @@ describe("modules/loader", () => {
       expect(loggerStub.stubs.error.firstCall.args[0]).to.be.deep.equal(error);
     });
 
-    it("should call logger.error twice if throw error and error.block exist", async () => {
+    it('should call logger.error twice if throw error and error.block exist', async () => {
       loggerStub.stubs.info.throws(error);
-      busStub.enqueueResponse("message", "");
-      blocksChainModuleStub.enqueueResponse("deleteAfterBlock", {});
+      busStub.enqueueResponse('message', '');
+      blocksChainModuleStub.enqueueResponse('deleteAfterBlock', {});
 
       await instance.load(
         count,
@@ -898,19 +898,19 @@ describe("modules/loader", () => {
       expect(loggerStub.stubs.error.calledThrice).to.be.true;
       expect(loggerStub.stubs.error.secondCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.error.secondCall.args[0]).to.be.deep.equal(
-        "Blockchain failed at: " + error.block.height
+        'Blockchain failed at: ' + error.block.height
       );
 
       expect(loggerStub.stubs.error.thirdCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.error.thirdCall.args[0]).to.be.deep.equal(
-        "Blockchain clipped"
+        'Blockchain clipped'
       );
     });
 
-    it("should call blocksChainModule.deleteAfterBlock if throw error and error.block exist", async () => {
+    it('should call blocksChainModule.deleteAfterBlock if throw error and error.block exist', async () => {
       loggerStub.stubs.info.throws(error);
-      busStub.enqueueResponse("message", "");
-      blocksChainModuleStub.enqueueResponse("deleteAfterBlock", {});
+      busStub.enqueueResponse('message', '');
+      blocksChainModuleStub.enqueueResponse('deleteAfterBlock', {});
 
       await instance.load(
         count,
@@ -929,10 +929,10 @@ describe("modules/loader", () => {
       ).to.be.equal(error.block.id);
     });
 
-    it("should call bus.message if throw error and error.block exist", async () => {
+    it('should call bus.message if throw error and error.block exist', async () => {
       loggerStub.stubs.info.throws(error);
-      busStub.enqueueResponse("message", "");
-      blocksChainModuleStub.enqueueResponse("deleteAfterBlock", {});
+      busStub.enqueueResponse('message', '');
+      blocksChainModuleStub.enqueueResponse('deleteAfterBlock', {});
 
       await instance.load(
         count,
@@ -944,11 +944,11 @@ describe("modules/loader", () => {
       expect(busStub.stubs.message.calledOnce).to.be.true;
       expect(busStub.stubs.message.firstCall.args.length).to.be.equal(1);
       expect(busStub.stubs.message.firstCall.args[0]).to.be.equal(
-        "blockchainReady"
+        'blockchainReady'
       );
     });
 
-    it("should throw error if throw error in try block and error.block is not exist", async () => {
+    it('should throw error if throw error in try block and error.block is not exist', async () => {
       delete error.block;
       loggerStub.stubs.info.throws(error);
 
@@ -958,7 +958,7 @@ describe("modules/loader", () => {
     });
   });
 
-  describe(".sync", () => {
+  describe('.sync', () => {
     let busStub: BusStub;
     let transactionsModuleStub: TransactionsModuleStub;
     let broadcasterLogicStub: BroadcasterLogicStub;
@@ -968,10 +968,10 @@ describe("modules/loader", () => {
     let loadBlocksFromNetworkStub: SinonStub;
 
     beforeEach(() => {
-      syncTriggerStub = sandbox.stub(instance as any, "syncTrigger");
+      syncTriggerStub = sandbox.stub(instance as any, 'syncTrigger');
       loadBlocksFromNetworkStub = sandbox.stub(
         instance as any,
-        "loadBlocksFromNetwork"
+        'loadBlocksFromNetwork'
       );
 
       busStub = container.get<BusStub>(Symbols.helpers.bus);
@@ -986,19 +986,11 @@ describe("modules/loader", () => {
       );
       loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
 
-      busStub.enqueueResponse("message", Promise.resolve());
-      busStub.enqueueResponse("message", Promise.resolve());
-      transactionsModuleStub.enqueueResponse(
-        "undoUnconfirmedList",
-        Promise.resolve()
-      );
-      transactionsModuleStub.enqueueResponse(
-        "applyUnconfirmedList",
-        Promise.resolve()
-      );
-      broadcasterLogicStub.enqueueResponse("getPeers", Promise.resolve());
-      broadcasterLogicStub.enqueueResponse("getPeers", Promise.resolve());
-      systemModuleStub.enqueueResponse("update", Promise.resolve());
+      busStub.enqueueResponse('message', Promise.resolve());
+      busStub.enqueueResponse('message', Promise.resolve());
+      broadcasterLogicStub.enqueueResponse('getPeers', Promise.resolve());
+      broadcasterLogicStub.enqueueResponse('getPeers', Promise.resolve());
+      systemModuleStub.enqueueResponse('update', Promise.resolve());
     });
 
     afterEach(() => {
@@ -1009,55 +1001,55 @@ describe("modules/loader", () => {
       systemModuleStub.reset();
     });
 
-    it("call logger.info methods", async () => {
+    it('call logger.info methods', async () => {
       await (instance as any).sync();
 
       expect(loggerStub.stubs.info.callCount).to.be.equal(2);
 
       expect(loggerStub.stubs.info.firstCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal(
-        "Starting sync"
+        'Starting sync'
       );
 
       expect(loggerStub.stubs.info.secondCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.info.secondCall.args[0]).to.be.equal(
-        "Finished sync"
+        'Finished sync'
       );
     });
 
-    it("call logger.debug methods", async () => {
+    it('call logger.debug methods', async () => {
       await (instance as any).sync();
 
       expect(loggerStub.stubs.debug.callCount).to.be.equal(2);
 
       expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal(
-        "Establishing broadhash consensus before sync"
+        'Establishing broadhash consensus before sync'
       );
 
       expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal(
-        "Establishing broadhash consensus after sync"
+        'Establishing broadhash consensus after sync'
       );
     });
 
-    it('call bus"s methods', async () => {
+    it('call bus\'s methods', async () => {
       await (instance as any).sync();
 
       expect(busStub.stubs.message.calledTwice).to.be.true;
 
       expect(busStub.stubs.message.firstCall.args.length).to.be.equal(1);
       expect(busStub.stubs.message.firstCall.args[0]).to.be.equal(
-        "syncStarted"
+        'syncStarted'
       );
 
       expect(busStub.stubs.message.secondCall.args.length).to.be.equal(1);
       expect(busStub.stubs.message.secondCall.args[0]).to.be.equal(
-        "syncFinished"
+        'syncFinished'
       );
     });
 
-    it("call broadcasterLogic methods", async () => {
+    it('call broadcasterLogic methods', async () => {
       await (instance as any).sync();
 
       expect(broadcasterLogicStub.stubs.getPeers.calledTwice).to.be.true;
@@ -1077,7 +1069,7 @@ describe("modules/loader", () => {
       ).to.be.deep.equal({ limit: constants.maxPeers });
     });
 
-    it("call instance.syncTrigger", async () => {
+    it('call instance.syncTrigger', async () => {
       await (instance as any).sync();
 
       expect(syncTriggerStub.calledTwice).to.be.true;
@@ -1089,7 +1081,7 @@ describe("modules/loader", () => {
       expect(syncTriggerStub.secondCall.args[0]).to.be.false;
     });
 
-    it("check instance field", async () => {
+    it('check instance field', async () => {
       await (instance as any).sync();
 
       expect((instance as any).isActive).to.be.false;
@@ -1097,7 +1089,7 @@ describe("modules/loader", () => {
     });
   });
 
-  describe(".loadBlocksFromNetwork", () => {
+  describe('.loadBlocksFromNetwork', () => {
     let getRandomPeerStub: SinonStub;
     let loggerStub: LoggerStub;
     let blocksProcessModuleStub: BlocksSubmoduleProcessStub;
@@ -1107,7 +1099,7 @@ describe("modules/loader", () => {
     let lastValidBlock;
 
     beforeEach(() => {
-      randomPeer = { string: "string", height: 2 };
+      randomPeer = { string: 'string', height: 2 };
       lastValidBlock = { height: 1, id: 1, timestamp: 0 } as any;
 
       blocksModuleStub = container.get<BlocksModuleStub>(
@@ -1119,10 +1111,10 @@ describe("modules/loader", () => {
       );
 
       getRandomPeerStub = sandbox
-        .stub(instance as any, "getRandomPeer")
+        .stub(instance as any, 'getRandomPeer')
         .resolves(randomPeer);
       blocksProcessModuleStub.enqueueResponse(
-        "loadBlocksFromPeer",
+        'loadBlocksFromPeer',
         Promise.resolve(lastValidBlock)
       );
     });
@@ -1133,18 +1125,18 @@ describe("modules/loader", () => {
       blocksModuleStub.sandbox.resetHistory();
     });
 
-    it("should call promiseRetry", async () => {
+    it('should call promiseRetry', async () => {
       await (instance as any).loadBlocksFromNetwork();
 
       expect(promiseRetryStub.calledOnce).to.be.true;
       expect(promiseRetryStub.firstCall.args.length).to.be.equal(1);
-      expect(promiseRetryStub.firstCall.args[0]).to.be.a("function");
+      expect(promiseRetryStub.firstCall.args[0]).to.be.a('function');
     });
 
-    it("should call wait if typeof(randomPeer) === undefined", async () => {
+    it('should call wait if typeof(randomPeer) === undefined', async () => {
       getRandomPeerStub.onCall(0).resolves(undefined);
       getRandomPeerStub.onCall(1).resolves(randomPeer);
-      const waitStub = sandbox.stub(helpers, "wait");
+      const waitStub = sandbox.stub(helpers, 'wait');
 
       await (instance as any).loadBlocksFromNetwork();
 
@@ -1155,14 +1147,14 @@ describe("modules/loader", () => {
       expect(waitStub.firstCall.args[0]).to.be.equal(1000);
     });
 
-    describe("lastBlock.height !== 1", () => {
+    describe('lastBlock.height !== 1', () => {
       let commonBlock;
 
       beforeEach(() => {
         commonBlock = {};
 
         promiseRetryStub.onCall(0).callsFake(
-          sandbox.spy(w => {
+          sandbox.spy((w) => {
             container.get<BlocksModuleStub>(
               Symbols.modules.blocks
             ).lastBlock = { height: 2, id: 1 } as any;
@@ -1172,7 +1164,7 @@ describe("modules/loader", () => {
 
         // second call for set the lastBlock.height in 1 for cycle finish
         promiseRetryStub.onCall(1).callsFake(
-          sandbox.spy(w => {
+          sandbox.spy((w) => {
             container.get<BlocksModuleStub>(
               Symbols.modules.blocks
             ).lastBlock = { height: 1, id: 1 } as any;
@@ -1181,9 +1173,9 @@ describe("modules/loader", () => {
         );
       });
 
-      it("should call logger.info", async () => {
+      it('should call logger.info', async () => {
         blocksProcessModuleStub.enqueueResponse(
-          "getCommonBlock",
+          'getCommonBlock',
           Promise.resolve(commonBlock)
         );
 
@@ -1192,13 +1184,13 @@ describe("modules/loader", () => {
         expect(loggerStub.stubs.info.calledOnce).to.be.true;
         expect(loggerStub.stubs.info.firstCall.args.length).to.be.equal(1);
         expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal(
-          "Looking for common block with: string"
+          'Looking for common block with: string'
         );
       });
 
-      it("should call blocksProcessModule.getCommonBlock", async () => {
+      it('should call blocksProcessModule.getCommonBlock', async () => {
         blocksProcessModuleStub.enqueueResponse(
-          "getCommonBlock",
+          'getCommonBlock',
           Promise.resolve(commonBlock)
         );
 
@@ -1217,32 +1209,32 @@ describe("modules/loader", () => {
         ).to.be.equal(2);
       });
 
-      it("should call logger.error and return after if commonBlock is null", async () => {
-        blocksProcessModuleStub.enqueueResponse("getCommonBlock", null);
+      it('should call logger.error and return after if commonBlock is null', async () => {
+        blocksProcessModuleStub.enqueueResponse('getCommonBlock', null);
 
         await (instance as any).loadBlocksFromNetwork();
 
         expect(loggerStub.stubs.error.calledOnce).to.be.true;
         expect(loggerStub.stubs.error.firstCall.args.length).to.be.equal(1);
         expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal(
-          "Failed to find common block with: string"
+          'Failed to find common block with: string'
         );
         expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal(
-          "Failed to find common block with: string"
+          'Failed to find common block with: string'
         );
 
         expect(retryStub.calledOnce).to.be.true;
         expect(retryStub.firstCall.args.length).to.be.equal(1);
         expect(retryStub.firstCall.args[0]).to.be.instanceof(Error);
         expect(retryStub.firstCall.args[0].message).to.be.deep.equal(
-          "Failed to find common block"
+          'Failed to find common block'
         );
       });
 
-      it("should call logger.error twice and return after if blocksProcessModule.getCommonBlock thro error", async () => {
-        const error = new Error("error");
+      it('should call logger.error twice and return after if blocksProcessModule.getCommonBlock thro error', async () => {
+        const error = new Error('error');
         blocksProcessModuleStub.enqueueResponse(
-          "getCommonBlock",
+          'getCommonBlock',
           Promise.reject(error)
         );
 
@@ -1252,7 +1244,7 @@ describe("modules/loader", () => {
 
         expect(loggerStub.stubs.error.firstCall.args.length).to.be.equal(1);
         expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal(
-          "Failed to find common block with: string"
+          'Failed to find common block with: string'
         );
 
         expect(loggerStub.stubs.error.secondCall.args.length).to.be.equal(1);
@@ -1264,7 +1256,7 @@ describe("modules/loader", () => {
       });
     });
 
-    it("should call blocksProcessModule.loadBlocksFromPeer", async () => {
+    it('should call blocksProcessModule.loadBlocksFromPeer', async () => {
       await (instance as any).loadBlocksFromNetwork();
 
       expect(blocksProcessModuleStub.stubs.loadBlocksFromPeer.calledOnce).to.be
@@ -1277,7 +1269,7 @@ describe("modules/loader", () => {
       ).to.be.equal(randomPeer);
     });
 
-    it("should call blocksModule.lastReceipt.update", async () => {
+    it('should call blocksModule.lastReceipt.update', async () => {
       await (instance as any).loadBlocksFromNetwork();
 
       expect(blocksModuleStub.spies.lastReceipt.update.calledOnce).to.be.true;
@@ -1289,15 +1281,15 @@ describe("modules/loader", () => {
       ).to.be.equal(1);
     });
 
-    it("should call logger.error twice and return after if blocksProcessModule.loadBlocksFromPeer thro error", async () => {
-      const error = new Error("error");
+    it('should call logger.error twice and return after if blocksProcessModule.loadBlocksFromPeer thro error', async () => {
+      const error = new Error('error');
       blocksProcessModuleStub.reset();
       blocksProcessModuleStub.enqueueResponse(
-        "loadBlocksFromPeer",
+        'loadBlocksFromPeer',
         Promise.reject(error)
       );
       blocksProcessModuleStub.enqueueResponse(
-        "loadBlocksFromPeer",
+        'loadBlocksFromPeer',
         Promise.resolve(lastValidBlock)
       );
 
@@ -1312,24 +1304,24 @@ describe("modules/loader", () => {
 
       expect(loggerStub.stubs.error.secondCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.error.secondCall.args[0]).to.be.equal(
-        "Failed to load blocks from: string"
+        'Failed to load blocks from: string'
       );
 
       expect(retryStub.firstCall.args[0]).to.be.deep.equal(error);
     });
 
-    it("should start second iterate in the cycle if lastValidBlock.id === lastBlock.id", async () => {
+    it('should start second iterate in the cycle if lastValidBlock.id === lastBlock.id', async () => {
       blocksProcessModuleStub.reset();
       blocksProcessModuleStub.enqueueResponse(
-        "loadBlocksFromPeer",
+        'loadBlocksFromPeer',
         Promise.resolve({
           height: 1,
           id: 12,
-          timestamp: 0
+          timestamp: 0,
         } as any)
       );
       blocksProcessModuleStub.enqueueResponse(
-        "loadBlocksFromPeer",
+        'loadBlocksFromPeer',
         Promise.resolve(lastValidBlock)
       );
 
@@ -1340,7 +1332,7 @@ describe("modules/loader", () => {
     });
   });
 
-  describe(".loadSignatures", () => {
+  describe('.loadSignatures', () => {
     let getRandomPeerStub: SinonStub;
     let loggerStub: LoggerStub;
     let transportModuleStub: TransportModuleStub;
@@ -1352,28 +1344,28 @@ describe("modules/loader", () => {
     let randomPeer;
 
     beforeEach(() => {
-      randomPeer = { string: "string" };
+      randomPeer = { string: 'string' };
       res = {
         body: {
           signatures: [
             {
               signatures: [
                 {
-                  signature: "sig11"
-                }
+                  signature: 'sig11',
+                },
               ],
-              transaction: "tr11"
+              transaction: 'tr11',
             },
             {
               signatures: [
                 {
-                  signature: "sig22"
-                }
+                  signature: 'sig22',
+                },
               ],
-              transaction: "tr22"
-            }
-          ]
-        }
+              transaction: 'tr22',
+            },
+          ],
+        },
       };
 
       loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
@@ -1391,15 +1383,15 @@ describe("modules/loader", () => {
       );
 
       getRandomPeerStub = sandbox
-        .stub(instance as any, "getRandomPeer")
+        .stub(instance as any, 'getRandomPeer')
         .resolves(randomPeer);
-      transportModuleStub.enqueueResponse("getFromPeer", res);
+      transportModuleStub.enqueueResponse('getFromPeer', res);
       multisigModuleStub.enqueueResponse(
-        "processSignature",
+        'processSignature',
         Promise.resolve({})
       );
       multisigModuleStub.enqueueResponse(
-        "processSignature",
+        'processSignature',
         Promise.resolve({})
       );
     });
@@ -1412,14 +1404,14 @@ describe("modules/loader", () => {
       multisigModuleStub.reset();
     });
 
-    it("should call instance.getRandomPeer", async () => {
+    it('should call instance.getRandomPeer', async () => {
       await (instance as any).loadSignatures();
 
       expect(getRandomPeerStub.calledOnce).to.be.true;
       expect(getRandomPeerStub.firstCall.args.length).to.be.equal(0);
     });
 
-    it("should call logger.log", async () => {
+    it('should call logger.log', async () => {
       await (instance as any).loadSignatures();
 
       expect(loggerStub.stubs.log.calledOnce).to.be.true;
@@ -1429,7 +1421,7 @@ describe("modules/loader", () => {
       );
     });
 
-    it("should call transportModule.getFromPeer", async () => {
+    it('should call transportModule.getFromPeer', async () => {
       await (instance as any).loadSignatures();
 
       expect(transportModuleStub.stubs.getFromPeer.calledOnce).to.be.true;
@@ -1442,12 +1434,12 @@ describe("modules/loader", () => {
       expect(
         transportModuleStub.stubs.getFromPeer.firstCall.args[1]
       ).to.be.deep.equal({
-        api: "/signatures",
-        method: "GET"
+        api: '/signatures',
+        method: 'GET',
       });
     });
 
-    it("should call schema.validate", async () => {
+    it('should call schema.validate', async () => {
       await (instance as any).loadSignatures();
 
       expect(schemaStub.stubs.validate.calledOnce).to.be.true;
@@ -1460,16 +1452,16 @@ describe("modules/loader", () => {
       );
     });
 
-    it("should throw if validate was failed ", async () => {
+    it('should throw if validate was failed ', async () => {
       schemaStub.reset();
-      schemaStub.enqueueResponse("validate", false);
+      schemaStub.enqueueResponse('validate', false);
 
       await expect((instance as any).loadSignatures()).to.be.rejectedWith(
-        "Failed to validate /signatures schema"
+        'Failed to validate /signatures schema'
       );
     });
 
-    it("should call multisigModule.processSignature", async () => {
+    it('should call multisigModule.processSignature', async () => {
       await (instance as any).loadSignatures();
 
       expect(multisigModuleStub.stubs.processSignature.calledTwice).to.be.true;
@@ -1480,8 +1472,8 @@ describe("modules/loader", () => {
       expect(
         multisigModuleStub.stubs.processSignature.firstCall.args[0]
       ).to.be.deep.equal({
-        signature: { signature: "sig11" },
-        transaction: "tr11"
+        signature: { signature: 'sig11' },
+        transaction: 'tr11',
       });
 
       expect(
@@ -1490,13 +1482,13 @@ describe("modules/loader", () => {
       expect(
         multisigModuleStub.stubs.processSignature.secondCall.args[0]
       ).to.be.deep.equal({
-        signature: { signature: "sig22" },
-        transaction: "tr22"
+        signature: { signature: 'sig22' },
+        transaction: 'tr22',
       });
     });
 
-    it("should call logger.warn if multisigModule.processSignature throw error", async () => {
-      const error = "error";
+    it('should call logger.warn if multisigModule.processSignature throw error', async () => {
+      const error = 'error';
 
       multisigModuleStub.stubs.processSignature.rejects(error);
       await (instance as any).loadSignatures();
@@ -1505,7 +1497,7 @@ describe("modules/loader", () => {
 
       expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
       expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal(
-        "Cannot process multisig signature for tr11 "
+        'Cannot process multisig signature for tr11 '
       );
       expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.instanceof(Error);
       expect(loggerStub.stubs.warn.firstCall.args[1].name).to.be.deep.equal(
@@ -1514,7 +1506,7 @@ describe("modules/loader", () => {
 
       expect(loggerStub.stubs.warn.secondCall.args.length).to.be.equal(2);
       expect(loggerStub.stubs.warn.secondCall.args[0]).to.be.equal(
-        "Cannot process multisig signature for tr22 "
+        'Cannot process multisig signature for tr22 '
       );
       expect(loggerStub.stubs.warn.secondCall.args[1]).to.be.instanceof(Error);
       expect(loggerStub.stubs.warn.secondCall.args[1].name).to.be.deep.equal(
@@ -1523,7 +1515,7 @@ describe("modules/loader", () => {
     });
   });
 
-  describe(".loadTransactions", () => {
+  describe('.loadTransactions', () => {
     let getRandomPeerStub: SinonStub;
     let loggerStub: LoggerStub;
     let transportModuleStub: TransportModuleStub;
@@ -1539,13 +1531,13 @@ describe("modules/loader", () => {
     let tx2;
 
     beforeEach(() => {
-      peer = { string: "string", ip: "127.0.0.uganda", port: 65488 };
+      peer = { string: 'string', ip: '127.0.0.uganda', port: 65488 };
       tx1 = { id: 1 };
       tx2 = { id: 2 };
       res = {
         body: {
-          transactions: [tx1, tx2]
-        }
+          transactions: [tx1, tx2],
+        },
       };
 
       transactionLogicStub = container.get<TransactionLogicStub>(
@@ -1567,14 +1559,14 @@ describe("modules/loader", () => {
       );
 
       getRandomPeerStub = sandbox
-        .stub(instance as any, "getRandomPeer")
+        .stub(instance as any, 'getRandomPeer')
         .resolves(peer);
-      transportModuleStub.enqueueResponse("getFromPeer", res);
-      transactionLogicStub.enqueueResponse("objectNormalize", {});
-      transactionLogicStub.enqueueResponse("objectNormalize", {});
+      transportModuleStub.enqueueResponse('getFromPeer', res);
+      transactionLogicStub.enqueueResponse('objectNormalize', {});
+      transactionLogicStub.enqueueResponse('objectNormalize', {});
 
-      transportModuleStub.enqueueResponse("receiveTransaction", {});
-      transportModuleStub.enqueueResponse("receiveTransaction", {});
+      transportModuleStub.enqueueResponse('receiveTransaction', {});
+      transportModuleStub.enqueueResponse('receiveTransaction', {});
     });
 
     afterEach(() => {
@@ -1587,14 +1579,14 @@ describe("modules/loader", () => {
       sequenceStub.reset();
     });
 
-    it("should call instance.getRandomPeer", async () => {
+    it('should call instance.getRandomPeer', async () => {
       await (instance as any).loadTransactions();
 
       expect(getRandomPeerStub.calledOnce).to.be.true;
       expect(getRandomPeerStub.firstCall.args.length).to.be.equal(0);
     });
 
-    it("should call logger.log", async () => {
+    it('should call logger.log', async () => {
       await (instance as any).loadTransactions();
 
       expect(loggerStub.stubs.log.calledOnce).to.be.true;
@@ -1604,7 +1596,7 @@ describe("modules/loader", () => {
       );
     });
 
-    it("should call transportModule.getFromPeer", async () => {
+    it('should call transportModule.getFromPeer', async () => {
       await (instance as any).loadTransactions();
 
       expect(transportModuleStub.stubs.getFromPeer.calledOnce).to.be.true;
@@ -1617,12 +1609,12 @@ describe("modules/loader", () => {
       expect(
         transportModuleStub.stubs.getFromPeer.firstCall.args[1]
       ).to.be.deep.equal({
-        api: "/transactions",
-        method: "GET"
+        api: '/transactions',
+        method: 'GET',
       });
     });
 
-    it("should call schema.validate", async () => {
+    it('should call schema.validate', async () => {
       await (instance as any).loadTransactions();
 
       expect(schemaStub.stubs.validate.calledOnce).to.be.true;
@@ -1635,16 +1627,16 @@ describe("modules/loader", () => {
       );
     });
 
-    it("should throw if validate was failed ", async () => {
+    it('should throw if validate was failed ', async () => {
       schemaStub.reset();
-      schemaStub.enqueueResponse("validate", false);
+      schemaStub.enqueueResponse('validate', false);
 
       await expect((instance as any).loadTransactions()).to.be.rejectedWith(
-        "Cannot validate load transactions schema against peer"
+        'Cannot validate load transactions schema against peer'
       );
     });
 
-    it("should call transportModule.receiveTransaction for each tx", async () => {
+    it('should call transportModule.receiveTransaction for each tx', async () => {
       await (instance as any).loadTransactions();
 
       expect(transportModuleStub.stubs.receiveTransaction.calledTwice).to.be
@@ -1664,7 +1656,7 @@ describe("modules/loader", () => {
       ).to.deep.equal(true);
       expect(
         transportModuleStub.stubs.receiveTransaction.firstCall.args[3]
-      ).to.deep.equal("LoaderModule.loadTransactions");
+      ).to.deep.equal('LoaderModule.loadTransactions');
       expect(
         transportModuleStub.stubs.receiveTransaction.firstCall.args[4]
       ).to.deep.equal(false);
@@ -1680,14 +1672,14 @@ describe("modules/loader", () => {
       ).to.deep.equal(true);
       expect(
         transportModuleStub.stubs.receiveTransaction.secondCall.args[3]
-      ).to.deep.equal("LoaderModule.loadTransactions");
+      ).to.deep.equal('LoaderModule.loadTransactions');
       expect(
         transportModuleStub.stubs.receiveTransaction.secondCall.args[4]
       ).to.deep.equal(false);
     });
 
-    it("should call logger.debug if transportModule.receiveTransaction throw error", async () => {
-      const error = new Error("error");
+    it('should call logger.debug if transportModule.receiveTransaction throw error', async () => {
+      const error = new Error('error');
       transportModuleStub.reset();
       transportModuleStub.stubs.getFromPeer.resolves(res);
       transportModuleStub.stubs.receiveTransaction.rejects(error);
@@ -1706,7 +1698,7 @@ describe("modules/loader", () => {
     });
   });
 
-  describe(".syncTrigger", () => {
+  describe('.syncTrigger', () => {
     let loggerStub: LoggerStub;
     let appStateStub: AppStateStub;
     let socketIoStub: SocketIOStub;
@@ -1723,7 +1715,7 @@ describe("modules/loader", () => {
       (inst as any).io = socketIoStub;
       (inst as any).blocksModule = { lastBlock: { height: 1 } };
 
-      appStateStub.enqueueResponse("set", {});
+      appStateStub.enqueueResponse('set', {});
     });
 
     afterEach(() => {
@@ -1733,87 +1725,87 @@ describe("modules/loader", () => {
       (inst as any).syncIntervalId = null;
     });
 
-    describe("if turnOn==false && this.syncIntervalId", () => {
+    describe('if turnOn==false && this.syncIntervalId', () => {
       let syncIntervalId: NodeJS.Timer;
 
       beforeEach(() => {
         syncIntervalId = {
           ref: () => void 0,
-          unref: () => void 0
+          unref: () => void 0,
         };
         (inst as any).syncIntervalId = syncIntervalId;
       });
 
-      it("should call logger.trace", () => {
+      it('should call logger.trace', () => {
         (inst as any).syncTrigger(false);
 
         expect(loggerStub.stubs.trace.calledOnce).to.be.true;
         expect(loggerStub.stubs.trace.firstCall.args.length).to.be.equal(1);
         expect(loggerStub.stubs.trace.firstCall.args[0]).to.be.equal(
-          "Clearing sync interval"
+          'Clearing sync interval'
         );
 
         expect((inst as any).syncIntervalId).to.be.null;
       });
 
-      it("should call appState.set", async () => {
+      it('should call appState.set', async () => {
         (inst as any).syncTrigger(false);
 
         expect(appStateStub.stubs.set.calledOnce).to.be.true;
         expect(appStateStub.stubs.set.firstCall.args.length).to.be.equal(2);
         expect(appStateStub.stubs.set.firstCall.args[0]).to.be.equal(
-          "loader.isSyncing"
+          'loader.isSyncing'
         );
         expect(appStateStub.stubs.set.firstCall.args[1]).to.be.equal(false);
       });
     });
 
-    describe("turnOn === true && !this.syncIntervalId", () => {
-      it("should call logger.trace", () => {
+    describe('turnOn === true && !this.syncIntervalId', () => {
+      it('should call logger.trace', () => {
         (inst as any).syncTrigger(true);
 
         expect(loggerStub.stubs.trace.calledOnce).to.be.true;
         expect(loggerStub.stubs.trace.firstCall.args.length).to.be.equal(1);
         expect(loggerStub.stubs.trace.firstCall.args[0]).to.be.equal(
-          "Setting sync interval"
+          'Setting sync interval'
         );
       });
 
-      it("should call appState.set", async () => {
+      it('should call appState.set', async () => {
         (inst as any).syncTrigger(true);
 
         expect(appStateStub.stubs.set.calledOnce).to.be.true;
         expect(appStateStub.stubs.set.firstCall.args.length).to.be.equal(2);
         expect(appStateStub.stubs.set.firstCall.args[0]).to.be.equal(
-          "loader.isSyncing"
+          'loader.isSyncing'
         );
         expect(appStateStub.stubs.set.firstCall.args[1]).to.be.equal(true);
       });
 
-      it('should call setTimeout"s callback', () => {
+      it('should call setTimeout\'s callback', () => {
         const timers = sinon.useFakeTimers(Date.now());
 
         (inst as any).syncTrigger(true);
 
-        expect(loggerStub.stubs.trace.calledWith("Sync trigger")).to.be.false;
+        expect(loggerStub.stubs.trace.calledWith('Sync trigger')).to.be.false;
 
         timers.tick(1000);
 
-        expect(loggerStub.stubs.trace.calledWith("Sync trigger")).to.be.true;
+        expect(loggerStub.stubs.trace.calledWith('Sync trigger')).to.be.true;
         timers.restore();
       });
     });
 
-    it("check if turnOn === false && !this.syncIntervalId", () => {
+    it('check if turnOn === false && !this.syncIntervalId', () => {
       (inst as any).syncTrigger(false);
 
       expect(loggerStub.stubs.trace.notCalled).to.be.true;
     });
 
-    it("check if turnOn === true && this.syncIntervalId", () => {
+    it('check if turnOn === true && this.syncIntervalId', () => {
       (inst as any).syncIntervalId = {
         ref: () => void 0,
-        unref: () => void 0
+        unref: () => void 0,
       };
 
       (inst as any).syncTrigger(true);
@@ -1822,7 +1814,7 @@ describe("modules/loader", () => {
     });
   });
 
-  describe(".syncTimer", () => {
+  describe('.syncTimer', () => {
     let jobsQueueStub: JobsQueueStub;
     let lastReceiptStubs;
     let loggerStub: LoggerStub;
@@ -1832,25 +1824,25 @@ describe("modules/loader", () => {
     let lastReceipt;
 
     beforeEach(() => {
-      lastReceipt = "lastReceipt";
+      lastReceipt = 'lastReceipt';
 
       lastReceiptStubs = {
         get: sandbox.stub().returns(lastReceipt),
-        isStale: sandbox.stub().returns(true)
+        isStale: sandbox.stub().returns(true),
       };
       jobsQueueStub = container.get<JobsQueueStub>(Symbols.helpers.jobsQueue);
       loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
       appState = container.get<IAppStateStub>(Symbols.logic.appState);
       syncStub = sandbox
-        .stub(instance as any, "sync")
+        .stub(instance as any, 'sync')
         .resolves(Promise.resolve({}));
 
       (container.get<BlocksModuleStub>(
         Symbols.modules.blocks
       ) as any).lastReceipt = lastReceiptStubs;
 
-      appState.enqueueResponse("get", true);
-      appState.enqueueResponse("get", false);
+      appState.enqueueResponse('get', true);
+      appState.enqueueResponse('get', false);
 
       (instance as any).loaded = true;
     });
@@ -1861,55 +1853,55 @@ describe("modules/loader", () => {
       jobsQueueStub.reset();
     });
 
-    it("should call logger.trace", async () => {
+    it('should call logger.trace', async () => {
       await (instance as any).syncTimer();
 
       expect(loggerStub.stubs.trace.calledTwice).to.be.true;
 
       expect(loggerStub.stubs.trace.firstCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.trace.firstCall.args[0]).to.be.equal(
-        "Setting sync timer"
+        'Setting sync timer'
       );
 
       expect(loggerStub.stubs.trace.secondCall.args.length).to.be.equal(2);
       expect(loggerStub.stubs.trace.secondCall.args[0]).to.be.equal(
-        "Sync timer trigger"
+        'Sync timer trigger'
       );
       expect(loggerStub.stubs.trace.secondCall.args[1]).to.be.deep.equal({
         last_receipt: lastReceipt,
         loaded: true,
-        syncing: true
+        syncing: true,
       });
     });
 
-    it("should call jobsQueue.register", async () => {
+    it('should call jobsQueue.register', async () => {
       const jobsQueueRegisterStub = (instance as any).jobsQueue.register;
       await (instance as any).syncTimer();
 
       expect(jobsQueueRegisterStub.calledOnce).to.be.true;
       expect(jobsQueueRegisterStub.firstCall.args.length).to.be.equal(3);
       expect(jobsQueueRegisterStub.firstCall.args[0]).to.be.equal(
-        "loaderSyncTimer"
+        'loaderSyncTimer'
       );
-      expect(jobsQueueRegisterStub.firstCall.args[1]).to.be.a("function");
+      expect(jobsQueueRegisterStub.firstCall.args[1]).to.be.a('function');
       expect(jobsQueueRegisterStub.firstCall.args[2]).to.be.equal(1000);
     });
 
-    it("should call blocksModule.lastReceipt.get", async () => {
+    it('should call blocksModule.lastReceipt.get', async () => {
       await (instance as any).syncTimer();
 
       expect(lastReceiptStubs.get.calledOnce).to.be.true;
       expect(lastReceiptStubs.get.firstCall.args.length).to.be.equal(0);
     });
 
-    it("should call blocksModule.lastReceipt.isStale", async () => {
+    it('should call blocksModule.lastReceipt.isStale', async () => {
       await (instance as any).syncTimer();
 
       expect(lastReceiptStubs.isStale.calledOnce).to.be.true;
       expect(lastReceiptStubs.isStale.firstCall.args.length).to.be.equal(0);
     });
 
-    it("should call instance.sync", async () => {
+    it('should call instance.sync', async () => {
       await (instance as any).syncTimer();
 
       process.nextTick(() => {
@@ -1918,7 +1910,7 @@ describe("modules/loader", () => {
       });
     });
 
-    it("should call logger.warn if instance.sync throw error", async () => {
+    it('should call logger.warn if instance.sync throw error', async () => {
       syncStub.rejects({});
 
       await (instance as any).syncTimer();
@@ -1929,7 +1921,7 @@ describe("modules/loader", () => {
       });
     });
 
-    it("should not call instance.sync if instance.loaded is false", async () => {
+    it('should not call instance.sync if instance.loaded is false', async () => {
       (instance as any).loaded = false;
 
       await (instance as any).syncTimer();
@@ -1937,17 +1929,17 @@ describe("modules/loader", () => {
       expect(retryStub.notCalled).to.be.true;
     });
 
-    it("should not call instance.synTc if !instance.isSyncing is false", async () => {
+    it('should not call instance.synTc if !instance.isSyncing is false', async () => {
       appState.reset();
-      appState.enqueueResponse("get", true);
-      appState.enqueueResponse("get", true);
+      appState.enqueueResponse('get', true);
+      appState.enqueueResponse('get', true);
 
       await (instance as any).syncTimer();
 
       expect(syncStub.notCalled).to.be.true;
     });
 
-    it("should not call instance.sync if blocksModule.lastReceipt.isStale return false", async () => {
+    it('should not call instance.sync if blocksModule.lastReceipt.isStale return false', async () => {
       lastReceiptStubs.isStale.returns(false);
 
       await (instance as any).syncTimer();
