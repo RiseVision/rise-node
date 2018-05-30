@@ -322,7 +322,9 @@ describe('api/transactions', () => {
           txs.push(tx);
         }
         const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
-        await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
+        for (const tx of txs) {
+          await txModule.processUnconfirmedTransaction(toBufferedTransaction(tx), false, false);
+        }
       });
       it('should return 5 queued', async () => {
         return supertest(initializer.appManager.expressApp)

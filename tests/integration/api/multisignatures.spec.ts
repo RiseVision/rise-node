@@ -32,7 +32,7 @@ describe('api/multisignatures', () => {
       const keys = [createRandomWallet(), createRandomWallet(), createRandomWallet()];
       const signedTx = createMultiSignTransaction(sender, 3, keys.map((k) => '+' + k.publicKey));
       // await initializer.rawMineBlockWithTxs([toBufferedTransaction(signedTx)]))
-      await txModule.receiveTransactions([toBufferedTransaction(signedTx)], false, false);
+      await txModule.processUnconfirmedTransaction(toBufferedTransaction(signedTx), false, false);
       await initializer.rawMineBlocks(1);
       const signatures = keys.map((k) => ed.sign(
         txLogic.getHash(toBufferedTransaction(signedTx), false, false),
@@ -86,7 +86,7 @@ describe('api/multisignatures', () => {
       sender = senderData.wallet;
       const keys = [createRandomWallet(), createRandomWallet(), createRandomWallet()];
       signedTx = createMultiSignTransaction(sender, 3, keys.map((k) => '+' + k.publicKey));
-      await txModule.receiveTransactions([toBufferedTransaction(signedTx)], false, false);
+      await txModule.processUnconfirmedTransaction(toBufferedTransaction(signedTx), false, false);
       await initializer.rawMineBlocks(1);
       return supertest(initializer.appManager.expressApp)
         .get('/api/multisignatures/pending?publicKey=' + sender.publicKey)
@@ -108,7 +108,7 @@ describe('api/multisignatures', () => {
       sender = senderData.wallet;
       const keys = [createRandomWallet(), createRandomWallet(), createRandomWallet()];
       signedTx = createMultiSignTransaction(sender, 3, keys.map((k) => '+' + k.publicKey));
-      await txModule.receiveTransactions([toBufferedTransaction(signedTx)], false, false);
+      await txModule.processUnconfirmedTransaction(toBufferedTransaction(signedTx), false, false);
       await initializer.rawMineBlocks(1);
       return supertest(initializer.appManager.expressApp)
         .get('/api/multisignatures/pending?publicKey=' + sender.publicKey)

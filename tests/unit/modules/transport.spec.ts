@@ -28,6 +28,7 @@ import {
   ZSchemaStub,
 } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
+import { createRandomTransactions } from '../../utils/txCrafter';
 
 chai.use(chaiAsPromised);
 
@@ -881,11 +882,13 @@ describe('src/modules/transport.ts', () => {
     let extraLogMessage;
 
     beforeEach(() => {
-      transactions    = [{}];
+      transactions    = createRandomTransactions({send: 2});
       peer            = { ip: 'ip', port: 'port' };
       extraLogMessage = 'extraLogMessage';
       transactionLogic.stubs.objectNormalize.callsFake((tx) => tx);
       transactionModule.stubs.filterConfirmedIds.resolves([]);
+      transactionModule.stubs.processUnconfirmedTransaction.resolves();
+      peersModule.stubs.remove.returns(null);
     });
 
     describe('transactionLogic.objectNormalize throw error', () => {
@@ -928,9 +931,23 @@ describe('src/modules/transport.ts', () => {
       expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args[0]).to.be.deep.equal(transactions[0]);
       expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args[1]).to.be.equal(false);
       expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args[2]).to.be.equal(true);
+
+      expect(transactionModule.stubs.processUnconfirmedTransaction.secondCall.args.length).to.be.equal(3);
+      expect(transactionModule.stubs.processUnconfirmedTransaction.secondCall.args[0]).to.be.deep.equal(transactions[1]);
+      expect(transactionModule.stubs.processUnconfirmedTransaction.secondCall.args[1]).to.be.equal(false);
+      expect(transactionModule.stubs.processUnconfirmedTransaction.secondCall.args[2]).to.be.equal(true);
     });
 
-    it('should filter out already confirmed ids');
+    it('should filter out already confirmed ids', async () => {
+      transactionModule.stubs.filterConfirmedIds.resolves([transactions[1].id]);
+      await inst.receiveTransactions(transactions, peer, true);
+      expect(transactionModule.stubs.processUnconfirmedTransaction.calledOnce).is.true;
+      expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args).deep.eq([
+        transactions[0],
+        true,
+        true,
+      ]);
+    });
   });
 
   describe('removePeer', () => {

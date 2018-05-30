@@ -303,7 +303,7 @@ export class TransportModule implements ITransportModule {
     const confirmedIDs = await this.transactionModule.filterConfirmedIds(txs.map((tx) => tx.id));
 
     for (const tx of txs) {
-      if (confirmedIDs.indexOf(tx.id)) {
+      if (confirmedIDs.indexOf(tx.id) !== -1) {
         continue; // Transaction already confirmed.
       }
       this.logger.debug(`Received transaction ${tx.id} from peer: ${peer.string}`);

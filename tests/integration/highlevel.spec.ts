@@ -25,7 +25,7 @@ import {
   createSendTransaction,
   createVoteTransaction, easyCreateMultiSignAccount,
   getRandomDelegateWallet,
-  findDelegateByUsername,
+  findDelegateByUsername, enqueueAndProcessTransactions,
 } from './common/utils';
 import { Ed, JobsQueue, wait } from '../../src/helpers';
 import BigNumber from 'bignumber.js';
@@ -133,7 +133,7 @@ describe('highlevel checks', function () {
           await createVoteTransaction(0, senderAccount, delegate1.publicKey, true),
           await createVoteTransaction(0, senderAccount, delegate2.publicKey, true),
         ];
-        await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
+        await enqueueAndProcessTransactions(txs);
         await initializer.rawMineBlocks(1);
         expect(blocksModule.lastBlock.transactions.length).to.be.eq(1);
         expect(blocksModule.lastBlock.height).to.be.eq(3);
@@ -144,7 +144,7 @@ describe('highlevel checks', function () {
           await createVoteTransaction(0, senderAccount, delegate.publicKey, true, {timestamp: 1}),
           await createVoteTransaction(0, senderAccount, delegate.publicKey, true),
         ];
-        await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
+        await enqueueAndProcessTransactions(txs);
         await initializer.rawMineBlocks(1);
         expect(blocksModule.lastBlock.transactions.length).to.be.eq(1);
         expect(blocksModule.lastBlock.height).to.be.eq(3);
@@ -155,11 +155,7 @@ describe('highlevel checks', function () {
           await createVoteTransaction(0, senderAccount, delegate.publicKey, true),
           await createVoteTransaction(0, senderAccount, delegate.publicKey, false),
         ];
-        try {
-          await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
-        } catch (e) {
-          void 0;
-        }
+        await enqueueAndProcessTransactions(txs);
         await initializer.rawMineBlocks(1);
         expect(blocksModule.lastBlock.transactions.length).to.be.eq(1);
         expect(blocksModule.lastBlock.transactions[0].id).to.be.eq(txs[0].id);
@@ -287,8 +283,7 @@ describe('highlevel checks', function () {
           await createRegDelegateTransaction(0, senderAccount, 'vekexasia'),
           await createRegDelegateTransaction(0, senderAccount, 'meow'),
         ];
-
-        await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
+        await enqueueAndProcessTransactions(txs);
         await initializer.rawMineBlocks(1);
         const acc = await accModule.getAccount({address: senderAccount.address});
         expect(acc.username).is.eq('meow');
@@ -349,7 +344,7 @@ describe('highlevel checks', function () {
         const signedTx = toBufferedTransaction(
           createMultiSignTransaction(senderAccount, 4, keys.map((k) => `+${k.publicKey}`))
         );
-        return expect(txModule.receiveTransactions([signedTx], false, false)).to.be
+        return expect(txModule.processUnconfirmedTransaction(signedTx, false, false)).to.be
           .rejectedWith('Invalid multisignature min. Must be less than or equal to keysgroup size');
       });
       it('should keep tx in multisignature tx pool until all signature arrives, even if min is 2', async () => {
@@ -357,7 +352,7 @@ describe('highlevel checks', function () {
         const signedTx = toBufferedTransaction(
           createMultiSignTransaction(senderAccount, 2, keys.map((k) => `+${k.publicKey}`))
         );
-        await txModule.receiveTransactions([signedTx], false, false);
+        await txModule.processUnconfirmedTransaction(signedTx, false, false);
         await initializer.rawMineBlocks(1);
         // In pool => valid and not included in block.
         expect(txPool.multisignature.has(signedTx.id)).is.true;
@@ -553,4 +548,5 @@ describe('highlevel checks', function () {
       expect(u_balance).to.be.eq(balance, 'unconfirmed balance');
     });
   });
+
 });
