@@ -10,54 +10,102 @@ import { ILogger } from './logger';
 export class ProtoBufHelper {
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
-  private messageTypes: { [k: string]: Root };
+  private protos: { [k: string]: Root } = {};
 
   @postConstruct()
   public init() {
     this.loadProtos();
   }
 
-  public validate(payload: any, namespace: string, messageType?: string): boolean {
+  /**
+   * Verifies that payload satisfies the requirements of the message type definition
+   * @param {object} payload The data to be transported via ProtoBuf
+   * @param {string} namespace The proto file to load messages from
+   * @param {string} messageType (optional) specific message type to lookup in the proto
+   * @returns {boolean} true if message is verified, else false.
+   */
+  public validate(payload: object, namespace: string, messageType?: string): boolean {
     const message = this.getMessageInstance(namespace, messageType);
     const result = message.verify(payload);
     if (result === null) {
       return true;
     } else {
-      this.logger.error(result);
+      this.logger.debug(`Protobuf validate error. ${result}`, JSON.stringify({payload, namespace, messageType}));
       return false;
     }
   }
 
-  public encode(payload: any, namespace: string, messageType?: string): Buffer {
-
+  /**
+   * Encode Object to Protocol Buffer
+   * @param {object} payload The data to be transported via ProtoBuf
+   * @param {string} namespace The proto file to load messages from
+   * @param {string} messageType (optional) specific message type to lookup in the proto
+   * @returns {Buffer} a Buffer containing the ProtoBuf encoded data
+   */
+  public encode(payload: object, namespace: string, messageType?: string): (Uint8Array|Buffer) {
+    if (!this.validate(payload, namespace, messageType)) {
+      return null;
+    }
+    const message = this.getMessageInstance(namespace, messageType);
+    return message.encode(payload).finish();
   }
 
+  /**
+   * Decodes Protocol Buffer Data to Object
+   * @param {Buffer} data ProtoBuf encoded data
+   * @param {string} namespace The proto file to load messages from
+   * @param {string} messageType (optional) specific message type to lookup in the proto
+   * @returns {any}
+   */
   public decode(data: Buffer, namespace: string, messageType?: string): any {
-
+    const message = this.getMessageInstance(namespace, messageType);
+    if (message !== null) {
+      try {
+        return message.decode(data);
+      } catch (e) {
+        if (e instanceof protobuf.util.ProtocolError) {
+          // e.instance holds the so far decoded message with missing required fields
+          throw new Error(`ProtoBuf Protocol Error ${e.message}`);
+        } else {
+          // wire format is invalid
+          throw new Error(`ProtoBuf Wire format invalid ${e.message}`);
+        }
+      }
+    }
+    return null;
   }
 
-  private getMessageInstance(namespace:string, messageType?: any): Type {
-    const typeToLookup = messageType ? `${namespace}.${messageType}` : `${namespace}.${namespace}`;
-    if (typeof this.messageTypes[namespace] !== 'undefined') {
-      return this.messageTypes[namespace].lookupType(typeToLookup;
+  private getMessageInstance(namespace: string, messageType?: any): Type {
+    const typeToLookup = messageType ? `${messageType}` : `${namespace}`;
+    if (typeof this.protos[namespace] !== 'undefined') {
+      let instance: Type;
+      const proto = this.protos[namespace];
+      try {
+        instance = proto.lookupType(typeToLookup);
+      } catch (e) {
+        this.logger.error(`ProtoBuf: cannot find message ${typeToLookup} in ${namespace}`);
+        return null;
+      }
+      return instance;
     } else {
       this.logger.error(`Unable to find ProtoBuf with package ${namespace} and messageType ${messageType}`);
     }
   }
 
   private loadProtos() {
-    const files = fs.readdirSync('./proto/');
+    const protoDir = path.join(process.cwd(), 'src', 'proto');
+    const files = fs.readdirSync(protoDir);
     files.forEach((filePath: string) => {
       if (filePath.match(/\.proto$/)) {
         const namespace = path.basename(filePath, '.proto');
-        protobuf.load(filePath, (err: Error, root: Root) => {
-          if (err) {
-            this.logger.error(err.message);
-            throw err;
-          } else {
-            this.messageTypes[namespace] = root;
-          }
-        });
+        let root: Root;
+        try {
+          root = protobuf.loadSync(path.join(protoDir, filePath));
+          this.protos[namespace] = root;
+        } catch (err) {
+          this.logger.error(err.message);
+          throw err;
+        }
       }
     });
   }
