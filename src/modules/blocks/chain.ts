@@ -172,6 +172,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
   }
 
+  @WrapInBalanceSequence
   public async applyBlock(block: SignedAndChainedBlockType, broadcast: boolean, saveBlock: boolean, accountsMap: { [address: string]: AccountsModel }) {
     if (this.isCleaning) {
       return; // Avoid processing a new block if it is cleaning.

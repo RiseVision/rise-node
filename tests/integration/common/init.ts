@@ -115,10 +115,10 @@ export class IntegrationTestInitializer {
     const blocksVerifyModule     = this.appManager.container.get<IBlocksModuleVerify>(Symbols.modules.blocksSubModules.verify);
     const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
     const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
-    const balancesSequence = this.appManager.container.getTagged<Sequence>(
+    const defaultSequence = this.appManager.container.getTagged<Sequence>(
       Symbols.helpers.sequence,
       Symbols.helpers.sequence,
-      Symbols.tags.helpers.balancesSequence);
+      Symbols.tags.helpers.defaultSequence);
     const height = blockModule.lastBlock.height;
 
     const delegates  = await delegatesModule.generateDelegateList(height + 1);
@@ -133,7 +133,7 @@ export class IntegrationTestInitializer {
       transactions,
     });
     // mimic process.onReceiveBlock which is wrapped within a BalanceSequence.
-    await balancesSequence.addAndPromise(() => blocksVerifyModule.processBlock(newBlock, false, true));
+    await defaultSequence.addAndPromise(() => blocksVerifyModule.processBlock(newBlock, false, true));
     return newBlock;
   }
 

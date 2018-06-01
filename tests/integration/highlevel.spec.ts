@@ -271,7 +271,6 @@ describe('highlevel checks', function () {
       it('should not allow same account 2 delegate registrations', async () => {
         await createRegDelegateTransaction(1, senderAccount, 'vekexasia');
         await createRegDelegateTransaction(1, senderAccount, 'meow');
-
         const acc = await accModule.getAccount({address: senderAccount.address});
         expect(acc.username).is.eq('vekexasia');
 
@@ -286,10 +285,14 @@ describe('highlevel checks', function () {
         await enqueueAndProcessTransactions(txs);
         await initializer.rawMineBlocks(1);
         const acc = await accModule.getAccount({address: senderAccount.address});
-        expect(acc.username).is.eq('meow');
+        expect(acc.username).is.eq('vekexasia');
 
-        expect(await accModule.getAccount({username: 'vekexasia'})).is.undefined;
+        expect(await accModule.getAccount({username: 'meow'})).is.undefined;
         expect(blocksModule.lastBlock.transactions.length).is.eq(1);
+
+        // Both transactions should not be in pool
+        expect(txModule.transactionInPool(txs[1].id)).is.false;
+        expect(txModule.transactionInPool(txs[0].id)).is.false;
       });
     });
 
@@ -496,34 +499,40 @@ describe('highlevel checks', function () {
           .map((what, idx) => createSendTransaction(0, fundPerTx, senderAccount, '1R', {timestamp: idx}))
       );
 
-
-      for (let i = 0; i < 500; i++) {
+      const total = 1000;
+      for (let i = 0; i < total; i++) {
         const block = await initializer.generateBlock(txs.slice(i, i + 1));
-        console.log (`####`);
-        console.log(block.transactions[0].id);
-        console.log (`####`);
+        if (i%(total/10 | 0) === 0) {
+          console.log('Done', i);
+        }
 
-        // Send the current (same) transaction
-        await supertest(initializer.appManager.expressApp)
-            .post('/peer/transactions')
-            .set(fieldheader)
-            .send({transaction: txs.slice(i, i+1)[0]})
-            .expect(200);
 
 
         await Promise.all([
           // simulate fillPool (forgeModule calling it)
           // wait(Math.random() * 100).then(() => jobsQueue.bau['delegatesNextForge']()),
           // Broadcast block with current transaction
-          supertest(initializer.appManager.expressApp)
+          wait(Math.random() * 10).then(() => supertest(initializer.appManager.expressApp)
             .post('/peer/blocks')
             .set(fieldheader)
             .send({block: blocksModel.toStringBlockType(block, txModel, blocksModule)})
-            .expect(200)
-        ]);
+            .expect(200)),
+          // Send the current (same) transaction
+          wait(Math.random()*10).then(() => supertest(initializer.appManager.expressApp)
+            .post('/peer/transactions')
+            .set(fieldheader)
+            .send({transaction: txs.slice(i, i+1)[0]})
+            .expect(200))
+
+      ]);
 
         expect(blocksModule.lastBlock.blockSignature).to.be.deep.eq(block.blockSignature);
 
+
+        if (txModule.getMergedTransactionList().length > 0) {
+          console.log(txModule.getMergedTransactionList().length, i);
+        }
+        // expect(txModule.getMergedTransactionList().length).is.eq(0);
         // Check balances are correct so that no other applyUnconfirmed happened.
         // NOTE: this could fail as <<<--HERE-->>> an applyUnconfirmed (of NEXT tx) could
         // have happened
@@ -534,10 +543,7 @@ describe('highlevel checks', function () {
           .minus(systemModule.getFees().fees.send * (i + 1))
           .toNumber(), 'confirmed balance');
 
-        expect(new BigNumber(u_balance).toNumber()).to.be.eq(Math.max(0, new BigNumber(funds)
-          .minus(fundPerTx * (i + 1))
-          .minus(systemModule.getFees().fees.send * (i + 1))
-          .toNumber()), 'unconfirmed balance');
+        expect(new BigNumber(u_balance).toNumber()).to.be.eq(new BigNumber(balance).toNumber(), 'unconfirmed balance');
 
         expect(blocksModule.lastBlock.height).to.be.eq( startHeight + i + 1);
         // console.log('Current Balance is : ', balance, u_balance);

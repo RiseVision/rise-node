@@ -362,7 +362,6 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       await this.forkModule.fork(block, ForkType.TX_ALREADY_CONFIRMED);
       for (const confirmedID of confirmedIDs) {
         if (this.transactionsModule.removeUnconfirmedTransaction(confirmedID)) {
-          console.log(block.transactions);
           await this.transactionsModule.undoUnconfirmed(block.transactions.filter((t) => t.id === confirmedID)[0]);
         }
       }

@@ -111,6 +111,7 @@ export class TransactionsModule implements ITransactionsModule {
     const wasUnconfirmed = this.transactionPool.unconfirmed.remove(id);
     this.transactionPool.queued.remove(id);
     this.transactionPool.multisignature.remove(id);
+    this.transactionPool.bundled.remove(id);
     return wasUnconfirmed;
   }
 
@@ -157,7 +158,6 @@ export class TransactionsModule implements ITransactionsModule {
     this.logger.debug(`Undoing unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${sender.u_balance}`);
     await this.dbHelper.performOps(await this.transactionLogic.undoUnconfirmed(transaction, sender));
   }
-
 
   public async count(): Promise<{ confirmed: number, multisignature: number, queued: number, unconfirmed: number }> {
     return {
