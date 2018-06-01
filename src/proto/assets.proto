@@ -1,9 +1,9 @@
 syntax = "proto3";
 
 message multiSignatureAsset {
-    string username = 1;
-    bytes publicKey = 2;
-    uint64 address = 3;
+    uint32 min = 1;
+    uint32 lifetime = 2;
+    repeated string keysgroup = 3;
 }
 
 message delegateAsset {

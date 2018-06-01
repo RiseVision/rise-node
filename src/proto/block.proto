@@ -1,42 +1,7 @@
 syntax = "proto3";
+
 import "./transaction.proto";
 
-/*
-            "b_id": "11041511312112071522",
-			"b_version": 0,
-			"b_timestamp": 63687960,
-			"b_height": 1010415,
-			"b_previousBlock": "15247353070814622495",
-			"b_numberOfTransactions": 12,
-			"b_totalAmount": "14222266080",
-			"b_totalFee": "120000000",
-			"b_reward": "1500000000",
-			"b_payloadLength": 2172,
-			"b_payloadHash": "e9b56f86b95f5718347e42c5edfd4c14527157413c95a46bd3f3810b1599c4ff",
-			"b_generatorPublicKey": "c0ce656b31f6f579ed797a78b2ee4038dd887a2b15c5b13067ef94cc34bb8efd",
-			"b_blockSignature": "3e31b53e7deea1cd7db5233820ac098d53edd157da2b92d76a0a502878626533197426f6f3d98773d6a307910e5627220df4284a39875b6b6317cc298313ce0f",
-
-			"t_id": "13114775819496110649",
-			"t_rowId": 394406,
-			"t_type": 0,
-			"t_timestamp": 63687940,
-			"t_senderPublicKey": "73af180fdb1754490fa73dfb800b982df9c445ea5304f65f4b26abc8b2c315e8",
-			"t_senderId": "7889374079483640385R",
-			"t_recipientId": "9235177462228541125R",
-			"t_amount": "20816797",
-			"t_fee": "10000000",
-			"t_signature": "8a5ee4aab82f91a90558b2a13c3a3c978184b7b16dcf8f197669148015cff5d136a4a54773c1a835ac9051a254aa684ee1f48d66bd40c152067fee07c15b3809",
-			"t_signSignature": "8870d3d15c28cebc4a0a4dd82eedb84b6ffcde18cb4a348fcc49aaa46e69ece77bae986a93ee0295a3e01cc46a19c693691f87d1d9c5c225316aeeb60c28c00c",
-
-			"s_publicKey": null,
-			"d_username": null,
-			"v_votes": null,
-			"m_min": null,
-			"m_lifetime": null,
-			"m_keysgroup": null,
-			"t_requesterPublicKey": null,
-			"t_signatures": null
-*/
 message block {
     uint64 id = 1;
     uint32 version = 2;
