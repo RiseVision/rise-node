@@ -1,5 +1,6 @@
 import { inject, injectable, tagged } from 'inversify';
 import { Op, Transaction } from 'sequelize';
+import * as _ from 'lodash';
 import { Bus, catchToLoggerAndRemapError, DBHelper, ILogger, Sequence, TransactionType, wait } from '../../helpers/';
 import { WrapInBalanceSequence } from '../../helpers/decorators/wrapInSequence';
 import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
@@ -153,9 +154,13 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         // WARNING: DB_WRITE
         const sender = await this.accountsModule
           .setAccountAndGet({ publicKey: tx.senderPublicKey });
-
         // Apply tx.
-        const ops = [
+        const ops: Array<DBOp<any>> = [
+          {
+            model: this.AccountsModel,
+            query: this.AccountsModel.createBulkAccountsSQL([tx.recipientId]),
+            type: 'custom',
+          },
           ... await this.transactionLogic.applyUnconfirmed({... tx, blockId: block.id} as any, sender),
           ... await this.transactionLogic.apply({... tx, blockId: block.id} as any, block, sender),
         ];
@@ -187,9 +192,22 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
       // Apply transaction to unconfirmed mem_accounts field
       // Divide transactions by senderAccounts.
-
+      // Fetch recipient accounts and create non existing ones.
       // Apply unconfirmed
       const ops: Array<DBOp<any>> = [];
+
+      const recipients = _.sortedUniq(block.transactions
+        .map((tx) => tx.recipientId)
+        .filter((recipient) => recipient)
+        .sort()
+      );
+
+      ops.push({
+        type: 'custom',
+        query: await this.AccountsModel.createBulkAccountsSQL(recipients),
+        model: this.AccountsModel,
+      });
+
       for (const tx of block.transactions) {
         if (this.transactionsModule.transactionUnconfirmed(tx.id)) {
           continue;

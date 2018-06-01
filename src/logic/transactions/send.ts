@@ -46,12 +46,6 @@ export class SendTransaction extends BaseTransactionType<void, null> {
   public async apply(tx: IConfirmedTransaction<void>,
                      block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     return [
-      // Create account if does not exist
-      {
-        model : this.AccountsModel,
-        type  : 'upsert',
-        values: { address: tx.recipientId.toUpperCase() },
-      },
       ... this.accountLogic.merge(tx.recipientId, {
         balance  : tx.amount,
         blockId  : block.id,
@@ -62,14 +56,7 @@ export class SendTransaction extends BaseTransactionType<void, null> {
   }
 
   public async undo(tx: IConfirmedTransaction<void>, block: SignedBlockType, sender: any): Promise<Array<DBOp<any>>> {
-    // Create account if does not exist.
     return [
-      // Create account if does not exist
-      {
-        model : this.AccountsModel,
-        type  : 'upsert',
-        values: { address: tx.recipientId.toUpperCase() },
-      },
       ... this.accountLogic.merge(tx.recipientId, {
         balance  : -tx.amount,
         blockId  : block.id,

@@ -227,4 +227,21 @@ export class AccountsModel extends Model<AccountsModel> {
       }
     })
   }
+
+
+  public static createBulkAccountsSQL(addresses: string[]) {
+    if (!addresses) {
+      return '';
+    }
+    addresses = addresses.filter((addr) => addr);
+    if (addresses.length === 0) {
+      return '';
+    }
+    return pgp.as.format(`
+    INSERT into mem_accounts(address)
+    SELECT address from (VALUES $1:raw ) i (address)
+    LEFT JOIN mem_accounts m1 USING(address)
+    WHERE m1.address IS NULL`,
+      addresses.map((address) => pgp.as.format('($1)', address)).join(', '));
+  }
 }

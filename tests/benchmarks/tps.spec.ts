@@ -111,9 +111,9 @@ describe('TPS', function () {
   // });
 
   reportedIT('with always same (non-voting) sender accounts', [
-    // 25, 50, 100, 200, 300, 400, 500,
-    //1000
-    //, 2000,
+    25, 50, 100, 200, 300, 400, 500,
+    1000,
+    , 2000,
     3000
   ], async (blockSize) => {
     const txs             = [];

@@ -359,14 +359,19 @@ describe('modules/blocks/chain', () => {
         );
       }
     });
-    it('should call dbStub with infos obtained from ops returned by applyUnconfirmed and apply', async () => {
+    it('should call dbStub with infos obtained from ops returned by applyUnconfirmed and apply and creation of recipients', async () => {
       await inst.applyBlock({ transactions: allTxs } as any, false, false, accountsMap);
       expect(dbStub.stubs.performOps.called).is.true;
       expect(dbStub.stubs.performOps.callCount).is.eq(1);
-      expect(dbStub.stubs.performOps.firstCall.args[0]).is.deep.eq(allTxs
+      expect(dbStub.stubs.performOps.firstCall.args[0].slice(1)).is.deep.eq(allTxs
         .map((t) => `applyUnconfirmed${t.id}`)
         .concat(allTxs.map((t) => `apply${t.id}`)));
       expect(dbStub.stubs.performOps.firstCall.args[1]).to.be.deep.eq('tx');
+
+      for (let sendTx of sendTxs) {
+        expect(dbStub.stubs.performOps.firstCall.args[0][0].query).contain(sendTx.recipientId);
+      }
+
     });
     it('should eventually call saveBlock if true is passed, not otherwise', async () => {
       const block = { transactions: allTxs } as any;

@@ -93,13 +93,7 @@ describe('logic/transactions/send', () => {
     it('should return an array of objects', async () => {
       const result = await instance.apply(tx, block, sender);
       expect(result).to.be.an('array');
-      expect(result[0]).to.be.an('object').that.includes.all.keys('model', 'type', 'values');
-      expect(result[0]).to.be.deep.eq({
-        model: container.get(Symbols.models.accounts),
-        type: 'upsert',
-        values: { address: '1234567890R' },
-      });
-      expect(result[1]).to.deep.equal({foo: 'bar'});
+      expect(result[0]).to.deep.equal({foo: 'bar'});
       expect(accountLogicStub.stubs.merge.calledOnce).to.be.true;
       expect(accountLogicStub.stubs.merge.args[0][0]).to.equal(tx.recipientId);
       expect(accountLogicStub.stubs.merge.args[0][1]).to.deep.equal({
@@ -122,11 +116,7 @@ describe('logic/transactions/send', () => {
     it('should return an array of objects', async () => {
       const result: DBUpsertOp<any> = await instance.undo(tx, block, sender) as any;
       expect(result).to.be.an('array');
-      expect(result[0]).to.be.an('object').that.includes.all.keys('model', 'type', 'values');
-      expect(result[0].model).to.be.deep.eq(accountsModel);
-      expect(result[0].type).to.equal('upsert');
-      expect(result[0].values).to.deep.equal({address: '1234567890R'});
-      expect(result[1]).to.deep.equal({foo: 'bar'});
+      expect(result[0]).to.deep.equal({foo: 'bar'});
       expect(accountLogicStub.stubs.merge.calledOnce).to.be.true;
       expect(accountLogicStub.stubs.merge.args[0][0]).to.equal(tx.recipientId);
       expect(accountLogicStub.stubs.merge.args[0][1]).to.deep.equal({
