@@ -14,7 +14,7 @@ import { Symbols } from '../../../../src/ioc/symbols';
 import { IBaseTransaction } from '../../../../src/logic/transactions';
 import { BlocksModuleChain } from '../../../../src/modules/blocks/';
 import { createRandomWallet } from '../../../integration/common/utils';
-import { BlocksSubmoduleUtilsStub, BusStub, TransactionsModuleStub } from '../../../stubs';
+import { BlocksSubmoduleUtilsStub, BusStub, SequenceStub, TransactionsModuleStub } from '../../../stubs';
 import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
 import TransactionLogicStub from '../../../stubs/logic/TransactionLogicStub';
 import AccountsModuleStub from '../../../stubs/modules/AccountsModuleStub';
@@ -61,6 +61,8 @@ describe('modules/blocks/chain', () => {
   let dbStub: DbStub;
   let blocksModel: typeof BlocksModel;
   let destroyStub: SinonStub;
+  let balancesSequence: SequenceStub;
+
   beforeEach(() => {
     sandbox        = sinon.createSandbox();
     accountsModule = container.get(Symbols.modules.accounts);
@@ -73,7 +75,8 @@ describe('modules/blocks/chain', () => {
     blocksModel    = container.get(Symbols.models.blocks);
     dbStub         = container.get(Symbols.helpers.db);
     destroyStub    = sandbox.stub(blocksModel, 'destroy').resolves();
-
+    balancesSequence = container.getTagged(Symbols.helpers.sequence,
+      Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence);
     busStub = container.get(Symbols.helpers.bus);
   });
   afterEach(() => sandbox.restore());
@@ -314,6 +317,11 @@ describe('modules/blocks/chain', () => {
       busStub.enqueueResponse('message', Promise.resolve());
       txStub = sandbox.stub(blocksModel.sequelize, 'transaction').callsFake((t) => t('tx'));
     });
+    it('should be wrapped in balanceSequence', async () => {
+      expect(balancesSequence.spies.addAndPromise.called).is.false;
+      await inst.applyBlock({transactions: allTxs} as any, false, false, accountsMap);
+      expect(balancesSequence.spies.addAndPromise.called).is.true;
+    })
 
     it('should skip applyUnconfirmed if txModule.transactionUnconfirmed returns true');
     it('should return undefined if cleanup in processing and set instance.isCleaning in true', async () => {
@@ -322,10 +330,11 @@ describe('modules/blocks/chain', () => {
       expect(txModule.stubs.undoUnconfirmedList.notCalled).to.be.true;
     });
     it('should set .isProcessing to true to prevent shutdowns', async () => {
-      const p = inst.applyBlock({ transactions: allTxs } as any, false, false, accountsMap);
-      // tslint:disable-next-line: no-string-literal
-      expect(inst['isProcessing']).to.be.true;
-      await p;
+      txStub.callsFake((t) => {
+        expect(inst['isProcessing']).to.be.true;
+        return t('tx');
+      });
+      await inst.applyBlock({ transactions: allTxs } as any, false, false, accountsMap);
       // tslint:disable-next-line: no-string-literal
       expect(inst['isProcessing']).to.be.false;
     });

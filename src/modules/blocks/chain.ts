@@ -64,7 +64,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * Lock for processing.
    * @type {boolean}
    */
-          private isCleaning: boolean = false;
+  private isCleaning: boolean = false;
 
   private isProcessing: boolean = false;
 
@@ -173,7 +173,10 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   }
 
   @WrapInBalanceSequence
-  public async applyBlock(block: SignedAndChainedBlockType, broadcast: boolean, saveBlock: boolean, accountsMap: { [address: string]: AccountsModel }) {
+  public async applyBlock(block: SignedAndChainedBlockType,
+                          broadcast: boolean,
+                          saveBlock: boolean,
+                          accountsMap: { [address: string]: AccountsModel }) {
     if (this.isCleaning) {
       return; // Avoid processing a new block if it is cleaning.
     }

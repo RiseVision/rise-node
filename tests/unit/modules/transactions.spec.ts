@@ -19,6 +19,7 @@ import {
 import { createContainer } from '../../utils/containerCreator';
 import DbStub from '../../stubs/helpers/DbStub';
 import { TransactionsModel } from '../../../src/models';
+import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
 
 chai.use(chaiAsPromised);
 
@@ -346,10 +347,13 @@ describe('modules/transactions', () => {
   });
 
   describe('fillPool', () => {
-    const newUnconfirmedTXs = ['tx1', 'tx2'];
+    const newUnconfirmedTXs = createRandomTransactions({send: 2, vote: 1})
+      .map((t) => toBufferedTransaction(t));
+    let filterConfIDsStub: SinonStub;
     beforeEach(() => {
-      transactionPoolStub.stubs.fillPool.resolves(newUnconfirmedTXs);
+      transactionPoolStub.stubs.fillPool.resolves(newUnconfirmedTXs.slice());
       transactionPoolStub.stubs.applyUnconfirmedList.resolves();
+      filterConfIDsStub = sandbox.stub(instance, 'filterConfirmedIds').resolves([]);
     });
 
     it('should call txPool.fillPool', async () => {
@@ -365,8 +369,25 @@ describe('modules/transactions', () => {
       expect(transactionPoolStub.stubs.applyUnconfirmedList.firstCall.args[0]).to.be.deep.equal(newUnconfirmedTXs);
       expect(transactionPoolStub.stubs.applyUnconfirmedList.firstCall.args[1]).to.be.deep.equal(instance);
     });
-  });
 
+    it('should query for confirmed ids', async () => {
+      await instance.fillPool();
+      expect(filterConfIDsStub.called).is.true;
+      expect(filterConfIDsStub.firstCall.args[0]).is.deep.eq(newUnconfirmedTXs.map((t) => t.id));
+    });
+
+    it('should exclude already confirmed transaction', async () => {
+      filterConfIDsStub.resolves([newUnconfirmedTXs[1].id]);
+      await instance.fillPool();
+      expect(transactionPoolStub.stubs.applyUnconfirmedList.calledOnce).to.be.true;
+      expect(transactionPoolStub.stubs.applyUnconfirmedList.firstCall.args.length).to.be.equal(2);
+      expect(transactionPoolStub.stubs.applyUnconfirmedList.firstCall.args[0]).to.be.deep.equal([
+        newUnconfirmedTXs[0],
+        newUnconfirmedTXs[2],
+      ]);
+      expect(transactionPoolStub.stubs.applyUnconfirmedList.firstCall.args[1]).to.be.deep.equal(instance);
+    });
+  });
 
   describe('getByID', () => {
     let txModel: typeof TransactionsModel;

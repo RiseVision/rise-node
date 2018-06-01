@@ -482,7 +482,6 @@ describe('highlevel checks', function () {
        * instead of sending the "next block" tx we send the current block tx
        * in the hope that a dual applyUnconfirmed gets done causing inconsistency.
        */
-      const jobsQueue = initializer.appManager.container.get<JobsQueue>(Symbols.helpers.jobsQueue);
 
       const fieldheader = {
         nethash: 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
@@ -491,7 +490,7 @@ describe('highlevel checks', function () {
       };
 
       const startHeight = blocksModule.lastBlock.height;
-      const fundPerTx = 1;
+      const fundPerTx   = 1;
 
       // Create some 1 satoshi transactions
       const txs = await Promise.all(
@@ -499,13 +498,12 @@ describe('highlevel checks', function () {
           .map((what, idx) => createSendTransaction(0, fundPerTx, senderAccount, '1R', {timestamp: idx}))
       );
 
-      const total = 1000;
+      const total = 900;
       for (let i = 0; i < total; i++) {
         const block = await initializer.generateBlock(txs.slice(i, i + 1));
-        if (i%(total/10 | 0) === 0) {
+        if (i % (total / 10 | 0) === 0) {
           console.log('Done', i);
         }
-
 
 
         await Promise.all([
@@ -518,13 +516,13 @@ describe('highlevel checks', function () {
             .send({block: blocksModel.toStringBlockType(block, txModel, blocksModule)})
             .expect(200)),
           // Send the current (same) transaction
-          wait(Math.random()*10).then(() => supertest(initializer.appManager.expressApp)
+          wait(Math.random() * 10).then(() => supertest(initializer.appManager.expressApp)
             .post('/peer/transactions')
             .set(fieldheader)
-            .send({transaction: txs.slice(i, i+1)[0]})
+            .send({transaction: txs.slice(i, i + 1)[0]})
             .expect(200))
 
-      ]);
+        ]);
 
         expect(blocksModule.lastBlock.blockSignature).to.be.deep.eq(block.blockSignature);
 
@@ -536,7 +534,7 @@ describe('highlevel checks', function () {
         // Check balances are correct so that no other applyUnconfirmed happened.
         // NOTE: this could fail as <<<--HERE-->>> an applyUnconfirmed (of NEXT tx) could
         // have happened
-        const { u_balance, balance } = await accModule.getAccount({address: senderAccount.address});
+        const {u_balance, balance} = await accModule.getAccount({address: senderAccount.address});
         // console.log('End loop - test begins');
         expect(new BigNumber(balance).toNumber()).to.be.eq(new BigNumber(funds)
           .minus(fundPerTx * (i + 1))
@@ -545,7 +543,7 @@ describe('highlevel checks', function () {
 
         expect(new BigNumber(u_balance).toNumber()).to.be.eq(new BigNumber(balance).toNumber(), 'unconfirmed balance');
 
-        expect(blocksModule.lastBlock.height).to.be.eq( startHeight + i + 1);
+        expect(blocksModule.lastBlock.height).to.be.eq(startHeight + i + 1);
         // console.log('Current Balance is : ', balance, u_balance);
       }
 

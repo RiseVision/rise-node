@@ -173,6 +173,14 @@ export class TransactionsModule implements ITransactionsModule {
    */
   public async fillPool(): Promise<void> {
     const newUnconfirmedTXs = await this.transactionPool.fillPool();
+    const ids = newUnconfirmedTXs.map((tx) => tx.id);
+    const alreadyConfirmedIDs = await this.filterConfirmedIds(ids);
+    for (const confirmedID of alreadyConfirmedIDs) {
+      this.logger.debug(`TX ${confirmedID} was already confirmed but still in pool`);
+      this.removeUnconfirmedTransaction(confirmedID);
+      const idx = newUnconfirmedTXs.findIndex((a) => a.id === confirmedID);
+      newUnconfirmedTXs.splice(idx, 1);
+    }
     await this.transactionPool.applyUnconfirmedList(newUnconfirmedTXs, this);
   }
 
