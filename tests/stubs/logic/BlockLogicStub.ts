@@ -1,7 +1,7 @@
 import { injectable } from 'inversify';
 import { IKeypair } from '../../../src/helpers';
 import { IBlockLogic } from '../../../src/ioc/interfaces/logic';
-import { BlockType, SignedAndChainedBlockType, SignedBlockType } from '../../../src/logic';
+import { BlockType, IBytesBlock, SignedAndChainedBlockType, SignedBlockType } from '../../../src/logic';
 import { IBaseTransaction } from '../../../src/logic/transactions';
 import { BaseStubClass } from '../BaseStubClass';
 import { stubMethod } from '../stubDecorator';
@@ -43,6 +43,11 @@ export class BlockLogicStub extends BaseStubClass implements IBlockLogic {
 
   @stubMethod()
   public dbRead(rawBlock: any): SignedBlockType & { totalForged: string, readonly generatorId: string } {
+    return undefined;
+  }
+
+  @stubMethod()
+  public fromBytes(blk: IBytesBlock): SignedBlockType {
     return undefined;
   }
 

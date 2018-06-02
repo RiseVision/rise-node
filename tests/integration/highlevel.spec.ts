@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { dposOffline, LiskWallet } from 'dpos-offline';
 import * as supertest from 'supertest';
-import { ITransactionLogic, ITransactionPoolLogic } from '../../src/ioc/interfaces/logic';
+import { IBlockLogic, ITransactionLogic, ITransactionPoolLogic } from '../../src/ioc/interfaces/logic';
 import {
   IAccountsModule,
   IBlocksModule,
@@ -29,9 +29,10 @@ import {
 } from './common/utils';
 import { Ed, JobsQueue, wait } from '../../src/helpers';
 import BigNumber from 'bignumber.js';
-import { toBufferedTransaction } from '../utils/txCrafter';
+import { create2ndSigTX, toBufferedTransaction } from '../utils/txCrafter';
 import { BlocksModel, TransactionsModel } from '../../src/models';
 import { Sequelize } from 'sequelize-typescript';
+import { BlockLogic, IBytesBlock } from '../../src/logic';
 
 // tslint:disable no-unused-expression
 chai.use(chaiAsPromised);
@@ -40,6 +41,7 @@ describe('highlevel checks', function () {
   const funds = Math.pow(10, 11);
   let senderAccount: LiskWallet;
   initializer.setup();
+  let blockLogic: IBlockLogic;
   let blocksModule: IBlocksModule;
   let accModule: IAccountsModule;
   let txModule: ITransactionsModule;
@@ -64,6 +66,7 @@ describe('highlevel checks', function () {
     systemModule                  = initializer.appManager.container.get(Symbols.modules.system);
     txModel                       = initializer.appManager.container.get(Symbols.models.transactions);
     blocksModel                   = initializer.appManager.container.get(Symbols.models.blocks);
+    blockLogic                    = initializer.appManager.container.get(Symbols.logic.block);
   });
   afterEach(async function () {
     this.timeout(100000);
@@ -552,6 +555,47 @@ describe('highlevel checks', function () {
       expect(u_balance).to.be.eq(balance, 'unconfirmed balance');
     });
   });
+
+  describe('blockLogic / transactionLogic .fromBytes()', () => {
+      let instance: BlockLogic;
+      let transactions;
+      let block;
+      let otherAccounts;
+      beforeEach(async () => {
+        otherAccounts = await createRandomAccountWithFunds(123);
+        transactions = [
+          await createSendTransaction(1, 1, senderAccount, otherAccounts.wallet.address),
+          await createVoteTransaction(1, senderAccount, otherAccounts.delegate.publicKey, true),
+        ];
+        block = await initializer.generateBlock(transactions);
+      });
+
+      it('should create block and transactions identical to the original one', () => {
+        block.transactions = transactions.map((tx) => {
+          tx.senderPublicKey = Buffer.from(tx.senderPublicKey, 'hex');
+          tx.signature = Buffer.from(tx.signature, 'hex');
+          tx.height = block.height;
+          tx.blockId = block.id;
+          return tx;
+        });
+        const origBytes = BlockLogic.getBytes(block);
+        const bytesBlock: IBytesBlock = {
+          bytes: origBytes as any,
+          transactions: transactions.map((tx) => {
+            return {
+              bytes: txLogic.getBytes(tx) as any,
+              hasRequesterPublicKey: typeof tx.requesterPublicKey !== 'undefined' && tx.requesterPublicKey != null,
+              hasSignSignature: typeof tx.signSignature !== 'undefined' && tx.signSignature != null,
+              fee: tx.fee
+            };
+          }),
+          height: block.height
+        };
+        const fromBytesBlock = blockLogic.fromBytes(bytesBlock);
+        expect(fromBytesBlock).to.be.deep.eq(block);
+      });
+  });
+
   // describe('he', () => {
   //   it('bau', async function () {
   //     this.timeout(1000000)

@@ -46,6 +46,13 @@ export interface IConfirmedTransaction<T> extends IBaseTransaction<T> {
   confirmations?: number;
 }
 
+export interface IBytesTransaction {
+  bytes: Buffer;
+  hasRequesterPublicKey: boolean;
+  hasSignSignature: boolean;
+  fee: number;
+}
+
 const emptyBuffer = new Buffer(0);
 
 /**

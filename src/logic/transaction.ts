@@ -22,7 +22,8 @@ import { AccountsModel, TransactionsModel } from '../models/';
 import txSchema from '../schema/logic/transaction';
 import { DBOp } from '../types/genericTypes';
 import { SignedAndChainedBlockType, SignedBlockType } from './block';
-import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
+import { BaseTransactionType, IBaseTransaction,
+         IBytesTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
 
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
@@ -181,13 +182,13 @@ export class TransactionLogic implements ITransactionLogic {
   }
 
   // tslint:disable-next-line
-  public fromBytes(tx: { bytes: Buffer, fee: number, hasRequesterPublicKey: boolean, hasSignSignature: boolean }): IBaseTransaction<any> {
-    const bb = ByteBuffer.wrap(tx.bytes, 'binary');
+  public fromBytes(tx: IBytesTransaction): IBaseTransaction<any> {
+    const bb = ByteBuffer.wrap(tx.bytes, 'binary', true);
     const type = bb.readByte(0);
     const timestamp = bb.readInt(1);
-    const senderPublicKey = bb.copy(2, 34).toBuffer() as any;
+    const senderPublicKey = bb.copy(5, 37).toBuffer() as any;
     let requesterPublicKey = null;
-    let offset = 34;
+    let offset = 37;
 
     // Read requesterPublicKey if available
     if (tx.hasRequesterPublicKey) {
@@ -211,7 +212,7 @@ export class TransactionLogic implements ITransactionLogic {
     const amount = bb.readLong(offset);
     offset += 8;
 
-    const signature = bb.copy(bb.buffer.length - 64, bb.buffer.length) as any;
+    const signature = bb.copy(bb.buffer.length - 64, bb.buffer.length).toBuffer() as any;
 
     // Read signSignature if available
     const signSignature = tx.hasSignSignature ?
@@ -234,13 +235,20 @@ export class TransactionLogic implements ITransactionLogic {
       recipientId,
       requesterPublicKey,
       senderPublicKey,
-      signSignature,
       signature,
       timestamp,
       type,
     };
+    if (tx.hasRequesterPublicKey) {
+      transaction.requesterPublicKey = requesterPublicKey;
+    }
+    if (tx.hasSignSignature) {
+      transaction.signSignature = signSignature;
+    }
     if (assetLength > 0) {
       transaction.asset = this.types[type].fromBytes(assetBytes, transaction);
+    } else {
+      transaction.asset = {};
     }
     return transaction;
   }

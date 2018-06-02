@@ -95,7 +95,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     return {
       votes: [].concat.apply([],
         votesString.split('').map(
-          (x, i) => i % 33 ? [] : votesString.slice(i, i + 33)
+          (x, i) => i % 65 ? [] : votesString.slice(i, i + 65)
         )
       ),
     };

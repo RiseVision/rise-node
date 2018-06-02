@@ -85,7 +85,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     // Cut keys string into 32-bytes chunks
     const keysgroup = [].concat.apply([],
       keysString.split('').map(
-        (x, i) => i % 32 ? [] : keysString.slice(i, i + 32)
+        (x, i) => i % 64 ? [] : keysString.slice(i, i + 64)
       )
     );
     return {
@@ -93,7 +93,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         keysgroup,
         lifetime,
         min,
-      }
+      },
     };
   }
 

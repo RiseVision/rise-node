@@ -11,7 +11,7 @@ import logicBlockSchema from '../schema/logic/block';
 import { DBOp } from '../types/genericTypes';
 import { RawFullBlockListType } from '../types/rawDBTypes';
 import { BlockRewardLogic } from './blockReward';
-import { IBaseTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
+import { IBaseTransaction, IBytesTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
 
 // import * as OldImplementation from './_block.js';
 
@@ -46,15 +46,23 @@ export type SignedAndChainedTransportBlockType = SignedBlockType<string> & {
   transactions?: Array<ITransportTransaction<any>>
 };
 
+export interface IBytesBlock {
+  bytes: Buffer;
+  transactions: IBytesTransaction[];
+  height?: number;
+}
+
 @injectable()
 export class BlockLogic implements IBlockLogic {
   /**
    * Calculates block id.
    * @param {BlockType} block
+   * @param {Buffer} fromBytes
    * @returns {string}
    */
-  public static getId(block: BlockType): string {
-    const hash = crypto.createHash('sha256').update(this.getBytes(block)).digest();
+  public static getId(block: BlockType, fromBytes?: Buffer): string {
+    const bytes = fromBytes ? fromBytes : this.getBytes(block);
+    const hash = crypto.createHash('sha256').update(bytes).digest();
     const temp = Buffer.alloc(8);
     for (let i = 0; i < 8; i++) {
       temp[i] = hash[7 - i];
@@ -358,4 +366,61 @@ export class BlockLogic implements IBlockLogic {
     }
   }
 
+  /**
+   * Restores a block from its bytes
+   */
+  public fromBytes(blk: IBytesBlock): SignedBlockType {
+    const bb = ByteBuffer.wrap(blk.bytes, 'binary', true);
+    const version = bb.readInt(0);
+    const timestamp = bb.readInt(4);
+
+    // PreviousBlock is valid only if it's not 8 bytes with 0 value
+    const previousIdBytes = bb.copy(8, 16);
+    let previousValid = false;
+    for (let i = 0; i < 8; i++) {
+      if (previousIdBytes.readByte(i) !== 0) {
+        previousValid = true;
+        break;
+      }
+    }
+    const previousBlock = previousValid ?
+      BigNum.fromBuffer(previousIdBytes.toBuffer() as any).toString() : null;
+
+    const numberOfTransactions = bb.readInt(16);
+    const totalAmount = bb.readLong(20).toNumber();
+    const totalFee = bb.readLong(28).toNumber();
+    const reward = bb.readLong(36).toNumber();
+    const payloadLength = bb.readInt(44);
+    const payloadHash = bb.copy(48, 80).toBuffer() as any;
+    const generatorPublicKey = bb.copy(80, 112).toBuffer() as any;
+    const blockSignature = bb.buffer.length === 176 ? bb.copy(112, 176).toBuffer() as any : null;
+    const id = BlockLogic.getId(null, blk.bytes);
+    const transactions = blk.transactions.map((tx) => {
+      const baseTx = this.transaction.fromBytes(tx);
+      return {
+        ...baseTx,
+        blockId: id,
+        height: blk.height,
+        senderId: BlockLogic.getAddressByPublicKey(baseTx.senderPublicKey)
+      };
+    });
+
+    // tslint:disable object-literal-sort-keys
+    return {
+      id,
+      version,
+      timestamp,
+      previousBlock,
+      numberOfTransactions,
+      totalAmount,
+      totalFee,
+      reward,
+      payloadLength,
+      payloadHash,
+      generatorPublicKey,
+      blockSignature,
+      transactions,
+      height: blk.height,
+    };
+  }
 }
