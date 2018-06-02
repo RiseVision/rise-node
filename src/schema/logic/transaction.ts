@@ -25,6 +25,7 @@ export default {
     },
     timestamp         : {
       type: 'integer',
+      minimum: 0,
     },
     senderPublicKey   : {
       type  : 'string',
