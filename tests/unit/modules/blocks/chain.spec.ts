@@ -321,7 +321,24 @@ describe('modules/blocks/chain', () => {
       expect(balancesSequence.spies.addAndPromise.called).is.false;
       await inst.applyBlock({transactions: allTxs} as any, false, false, accountsMap);
       expect(balancesSequence.spies.addAndPromise.called).is.true;
-    })
+    });
+
+    it('should save block in blocksModule', async () => {
+      await inst.applyBlock({id: '1', transactions: allTxs} as any, false, false, accountsMap);
+      expect(blocksModule.lastBlock).instanceof(BlocksModel);
+      expect(blocksModule.lastBlock.id).eq('1');
+      expect(blocksModule.lastBlock.transactions).deep.eq(allTxs);
+      // expect (blocksModule.lastBlock).deep.eq({transactions: allTxs});
+    });
+    it('should not save block in blocksModule if roundsModuleTick fails', async () => {
+      // The reason for this is that the transaction will rollback database if anything before roundsModuleTick fails
+      // tick (included)
+      blocksModule.lastBlock = 'hey' as any;
+      roundsModule.stubs.tick.rejects(new Error('tick Error'));
+      await expect(inst.applyBlock({id: '1', transactions: allTxs} as any, false, false, accountsMap))
+        .rejectedWith('tick Error');
+      expect(blocksModule.lastBlock).is.eq('hey');
+    });
 
     it('should skip applyUnconfirmed if txModule.transactionUnconfirmed returns true');
     it('should return undefined if cleanup in processing and set instance.isCleaning in true', async () => {

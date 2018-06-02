@@ -232,7 +232,6 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       }
 
       await this.dbHelper.performOps(ops, dbTX);
-      this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
       if (saveBlock) {
         try {
           await this.saveBlock(block, dbTX);
@@ -247,6 +246,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       await this.bus.message('newBlock', block, broadcast);
 
       await this.roundsModule.tick(block, dbTX);
+
+      this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
     }).catch((err) => {
       // Allow cleanup as processing finished even if rollback.
       this.isProcessing = false;

@@ -46,9 +46,6 @@ export class LoaderModule implements ILoaderModule {
   private io: SocketIO.Server;
 
   // Helpers
-  @inject(Symbols.helpers.sequence)
-  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
-  private balancesSequence: Sequence;
   @inject(Symbols.helpers.bus)
   private bus: Bus;
   @inject(Symbols.helpers.constants)

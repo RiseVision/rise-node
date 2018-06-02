@@ -100,6 +100,24 @@ describe('attackVectors/edgeCases', () => {
       });
     });
 
+    describe('timestamp edge cases', () => {
+      it('should not include tx with negative timestamp', async () => {
+        const tx     = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
+        tx.timestamp = -1;
+        await expect(initializer.rawMineBlockWithTxs(
+          [tx].map((t) => toBufferedTransaction(t)),
+        )).to.rejectedWith('Failed to validate transaction schema: Value -1 is less than minimum 0');
+      });
+      it('should reject timestamp with more than 32bit', async () => {
+        const tx = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address, {
+          timestamp: Math.pow(2, 32) + 1,
+        });
+        await expect(initializer.rawMineBlockWithTxs(
+          [tx].map((t) => toBufferedTransaction(t)),
+        )).to.rejectedWith('Invalid transaction timestamp. Timestamp is in the future');
+      });
+    });
+
     describe('amount edge cases', () => {
       it('shouldnt allow a block with txs that overspend a single account', async () => {
         const preHeight = blocksModule.lastBlock.height;
