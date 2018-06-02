@@ -86,6 +86,21 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     return tx.asset.votes ? Buffer.from(tx.asset.votes.join(''), 'utf8') : null;
   }
 
+  /**
+   * Returns asset, given Buffer containing it
+   */
+  public fromBytes(bytes: Buffer, tx?: IBaseTransaction<any>): VoteAsset {
+    const votesString = bytes.toString('utf8');
+    // Splits the votes into 33 bytes chunks (1 for the sign, 32 for the publicKey)
+    return {
+      votes: [].concat.apply([],
+        votesString.split('').map(
+          (x, i) => i % 33 ? [] : votesString.slice(i, i + 33)
+        )
+      ),
+    };
+  }
+
   // tslint:disable-next-line max-line-length
   public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     await this.checkConfirmedDelegates(tx);

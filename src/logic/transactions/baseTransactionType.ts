@@ -71,6 +71,13 @@ export abstract class BaseTransactionType<T, M extends Model<any>> {
     return emptyBuffer;
   }
 
+  /**
+   * Returns asset, given Buffer containing it
+   */
+  public fromBytes(bytes: Buffer, tx: IBaseTransaction<any>): T {
+    return null;
+  }
+
   public apply(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     return Promise.resolve([]);
   }

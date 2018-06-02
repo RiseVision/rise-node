@@ -11,6 +11,7 @@ import multiSigSchema from '../../schema/logic/transactions/multisignature';
 import { DBCreateOp, DBOp } from '../../types/genericTypes';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
+import { VoteAsset } from './vote';
 
 // tslint:disable-next-line interface-over-type-literal
 export type MultisigAsset = {
@@ -71,6 +72,29 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     bb.flip();
 
     return bb.toBuffer() as any;
+  }
+
+  /**
+   * Returns asset, given Buffer containing it
+   */
+  public fromBytes(bytes: Buffer, tx: IBaseTransaction<any>): MultisigAsset {
+    const bb = ByteBuffer.wrap(bytes, 'binary');
+    const min = bb.readByte(1);
+    const lifetime = bb.readByte(2);
+    const keysString = bb.copy(3, bb.buffer.length).toString('hex');
+    // Cut keys string into 32-bytes chunks
+    const keysgroup = [].concat.apply([],
+      keysString.split('').map(
+        (x, i) => i % 32 ? [] : keysString.slice(i, i + 32)
+      )
+    );
+    return {
+      multisignature: {
+        keysgroup,
+        lifetime,
+        min,
+      }
+    };
   }
 
   public async verify(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModel): Promise<void> {

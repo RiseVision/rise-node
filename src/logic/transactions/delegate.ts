@@ -8,6 +8,7 @@ import delegateSchema from '../../schema/logic/transactions/delegate';
 import { DBCreateOp, DBOp } from '../../types/genericTypes';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
+import { VoteAsset } from './vote';
 
 // tslint:disable-next-line interface-over-type-literal
 export type DelegateAsset = {
@@ -49,6 +50,21 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       return null;
     }
     return Buffer.from(tx.asset.delegate.username, 'utf8');
+  }
+
+  /**
+   * Returns asset, given Buffer containing it
+   */
+  public fromBytes(bytes: Buffer, tx: IBaseTransaction<any>): DelegateAsset {
+    /**
+     * FIXME? Only sender can request his own delegate username?
+     */
+    return {
+      delegate: {
+        publicKey: tx.senderPublicKey.toString('hex'),
+        username: bytes.toString('utf8'),
+      },
+    };
   }
 
   public async verify(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModel): Promise<void> {

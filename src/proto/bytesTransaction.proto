@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+
+message bytesTransaction {
+    bytes transactionBytes = 1;
+    bool hasRequesterPublicKey = 2;
+    uint32 fee = 3;
+}
