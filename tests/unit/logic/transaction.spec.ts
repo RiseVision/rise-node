@@ -1055,24 +1055,24 @@ describe('logic/transaction', () => {
     });
 
     it('should call assertKnownTransactionType', () => {
-      instance.dbSave(tx as any);
+      instance.dbSave([tx as any], '1', 2);
       expect(akttStub.calledOnce).to.be.true;
       expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx.type);
     });
 
     it('should return an array', () => {
-      const retVal = instance.dbSave(tx as any);
+      const retVal = instance.dbSave([tx as any], '1', 2);
       expect(Array.isArray(retVal)).to.be.true;
     });
 
     it('should call dbSave from the txType', () => {
-      instance.dbSave(tx as any);
+      instance.dbSave([tx as any], '1', 2);
       expect(txTypeDbSaveStub.calledOnce).to.be.true;
       expect(txTypeDbSaveStub.firstCall.args[0]).to.be.deep.equal(tx);
     });
 
     it('should add the specific SQL from the txType', () => {
-      const retVal = instance.dbSave(tx as any);
+      const retVal = instance.dbSave([tx as any], '1', 2);
       expect(retVal[1]).to.be.deep.equal({ table: 'table', fields: [], values: [] });
     });
 

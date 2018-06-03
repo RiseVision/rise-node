@@ -267,13 +267,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    */
   public async saveBlock(b: SignedBlockType, dbTX: Transaction) {
     const saveOp = this.blockLogic.dbSave(b);
-    const txOps  = b.transactions
-      .map((t: IConfirmedTransaction<any>) => this.transactionLogic.dbSave({
-        ...t,
-        blockId: b.id,
-        height : b.height,
-      }))
-      .reduce((o1, o2) => o1.concat(o2), []);
+    const txOps = this.transactionLogic.dbSave(b.transactions, b.id, b.height);
 
     await this.dbHelper.performOps([saveOp, ...txOps], dbTX);
 

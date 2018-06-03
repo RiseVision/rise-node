@@ -110,7 +110,7 @@ export interface ITransactionLogic {
    */
   undoUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel): Promise<Array<DBOp<any>>>;
 
-  dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<DBOp<any>>;
+  dbSave(txs: Array<IBaseTransaction<any> & {senderId: string}>, blockId: string, height: number): Array<DBOp<any>>;
 
   afterSave(tx: IBaseTransaction<any>): Promise<void>;
 

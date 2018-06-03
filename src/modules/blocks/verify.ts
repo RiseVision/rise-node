@@ -355,6 +355,16 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       allIds.push(tx.id);
     }
 
+    // Check for duplicated transactions now that ids are set.
+    allIds.sort();
+    let prevId = allIds[0];
+    for (let i = 1; i < allIds.length; i++) {
+      if (prevId === allIds[i]) {
+        throw new Error(`Duplicated transaction found in block with id ${prevId}`);
+      }
+      prevId = allIds[i];
+    }
+
     // check that none of the transaction exists in db.
     const confirmedIDs = await this.transactionsModule.filterConfirmedIds(allIds);
     if (confirmedIDs.length > 0) {

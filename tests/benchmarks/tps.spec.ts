@@ -7,7 +7,7 @@ import { Sequelize } from 'sequelize-typescript';
 import { IBlocksModule, ISystemModule } from '../../src/ioc/interfaces/modules';
 import { reportedIT } from './benchutils';
 
-const numTransactions = 9000;
+const numTransactions = 90000;
 describe('TPS', function () {
   this.timeout(1000000);
   initializer.setup();
@@ -18,7 +18,7 @@ describe('TPS', function () {
   let sequelize: Sequelize;
   let systemModule: ISystemModule;
   before(() => {
-    for (let i = 0; i < 50000; i++) {
+    for (let i = 0; i < 100000; i++) {
       accounts.push(createRandomWallet());
     }
     for (let i = 0; i < 101; i++) {
@@ -111,7 +111,9 @@ describe('TPS', function () {
   // });
 
   reportedIT('with always same (non-voting) sender accounts', [
-    25, 50, 100, 200, 300, 400, 500,
+    25, 50, 100, 200,
+    300,
+    , 400, 500,
     1000,
     , 2000,
     3000
@@ -120,7 +122,7 @@ describe('TPS', function () {
     const oldTxsPerBlock  = consts.maxTxsPerBlock;
     consts.maxTxsPerBlock = blockSize;
     const sendFee         = systemModule.getFees().fees.send;
-    const blocks          = Math.ceil(numTransactions / consts.maxTxsPerBlock);
+    const blocks          = Math.min(90, Math.ceil(numTransactions / consts.maxTxsPerBlock));
 
     for (let i = 0; i < blockSize; i++) {
       const del = findDelegateByUsername(`genesisDelegate1`);
