@@ -53,7 +53,7 @@ export default {
     },
     transactions        : {
       type       : 'array',
-      uniqueItems: true,
+      // uniqueItems: true,
     },
     version             : {
       type   : 'integer',
