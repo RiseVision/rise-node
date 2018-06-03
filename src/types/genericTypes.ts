@@ -146,7 +146,7 @@ export type DBUpsertOp<T extends Model<T>> = BaseDBOp<T> & {
 };
 
 export type DBOp<T extends Model<T>> = DBCreateOp<T>
-  // | DBBulkCreateOp<T>
+  | DBBulkCreateOp<T>
   | DBUpdateOp<T>
   | DBCustomOp<T>
   | DBRemoveOp<T>
