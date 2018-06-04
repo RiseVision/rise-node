@@ -11,6 +11,7 @@ export default {
     },
     height              : {
       type: 'integer',
+      minimum: 1,
     },
     blockSignature      : {
       type  : 'object',
@@ -22,6 +23,7 @@ export default {
     },
     numberOfTransactions: {
       type: 'integer',
+      minimum: 0,
     },
     payloadHash         : {
       type  : 'object',
@@ -29,6 +31,7 @@ export default {
     },
     payloadLength       : {
       type: 'integer',
+      minimum: 0,
     },
     previousBlock       : {
       type     : 'string',
@@ -38,6 +41,7 @@ export default {
     },
     timestamp           : {
       type: 'integer',
+      minimum: 0,
     },
     totalAmount         : {
       type   : 'integer',
@@ -53,15 +57,26 @@ export default {
     },
     transactions        : {
       type       : 'array',
-      // uniqueItems: true,
     },
     version             : {
       type   : 'integer',
       minimum: 0,
     },
   },
-  required  : ['blockSignature', 'generatorPublicKey',
-    'numberOfTransactions', 'payloadHash', 'payloadLength',
-    'timestamp', 'totalAmount', 'totalFee', 'reward', 'transactions', 'version'],
-  // "additionalProperties": false
+  required  : [
+    'blockSignature',
+    'generatorPublicKey',
+    'height',
+    'id',
+    'numberOfTransactions',
+    'payloadHash',
+    'payloadLength',
+    'previousBlock',
+    'reward',
+    'timestamp',
+    'totalAmount',
+    'totalFee',
+    'transactions',
+    'version',
+  ],
 };

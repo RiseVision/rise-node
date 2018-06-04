@@ -69,5 +69,5 @@ export default {
       type: 'object',
     },
   },
-  required  : ['type', 'timestamp', 'senderPublicKey', 'signature'],
+  required  : ['type', 'timestamp', 'senderPublicKey', 'signature', 'fee', 'amount'],
 };

@@ -23,6 +23,7 @@ import { TransactionsModel } from '../../../src/models';
 import { VerificationType } from '../../../src/ioc/interfaces/logic';
 import { DBBulkCreateOp } from '../../../src/types/genericTypes';
 import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
+import { z_schema } from '../../../src/helpers/z_schema';
 
 chai.use(chaiAsPromised);
 
@@ -1201,6 +1202,95 @@ describe('logic/transaction', () => {
       expect(txTypeObjectNormalizeStub.calledOnce).to.be.true;
       expect(txTypeObjectNormalizeStub.firstCall.args[0]).to.be.deep.equal(tx);
       expect(retVal).to.be.equal('txType objectNormalize');
+    });
+
+    describe('with real schema validation', () => {
+      beforeEach(() => {
+        container.rebind(Symbols.logic.transaction).to(TransactionLogic).inSingletonScope();
+
+        container.rebind(Symbols.generic.zschema).toConstantValue(new z_schema({}));
+        instance = container.get(Symbols.logic.transaction);
+        akttStub                  = sandbox.stub(instance, 'assertKnownTransactionType').returns(true);
+        instance.attachAssetType(sendTransaction);
+      });
+      it('valid', () => {
+        instance.objectNormalize(tx);
+      });
+
+      ['signature', 'signSignature'].forEach((sig) => {
+        it(`should validate ${sig}`, () => {
+          // wrong length or buf string
+          tx[sig] = Buffer.alloc(32);
+          expect(() => instance.objectNormalize(tx)).to.throw('format signatureBuf');
+          tx[sig] = Buffer.alloc(32).toString('hex') as any;
+          expect(() => instance.objectNormalize(tx)).to.throw('format signatureBuf');
+          tx[sig] = 'hey' as any;
+          expect(() => instance.objectNormalize(tx)).to.throw('format signatureBuf');
+
+          // valid as string
+          tx[sig] = Buffer.alloc(64).toString('hex') as any;
+          instance.objectNormalize(tx);
+        });
+      });
+      it('signature field is mandatory', () => {
+        delete tx.signature;
+        expect(() => instance.objectNormalize(tx)).to.throw();
+        tx.signature = null;
+        expect(() => instance.objectNormalize(tx)).to.throw();
+      });
+
+      ['senderPublicKey', 'requesterPublicKey'].forEach((pk) => {
+        it('should validate '+pk, () => {
+          // wrong length or buf string
+          tx[pk] = Buffer.alloc(31);
+          expect(() => instance.objectNormalize(tx)).to.throw('format publicKeyBuf');
+          tx[pk] = Buffer.alloc(31).toString('hex') as any;
+          expect(() => instance.objectNormalize(tx)).to.throw('format publicKeyBuf');
+          tx[pk] = 'hey' as any;
+          expect(() => instance.objectNormalize(tx)).to.throw('format publicKeyBuf');
+
+          // valid as string
+          tx[pk] = Buffer.alloc(32).toString('hex') as any;
+          instance.objectNormalize(tx);
+        });
+      });
+      it('senderPublicKey is mandatory', () => {
+        delete tx.senderPublicKey;
+        expect(() => instance.objectNormalize(tx)).to.throw();
+        tx.senderPublicKey = null;
+        expect(() => instance.objectNormalize(tx)).to.throw();
+      });
+      it('should validate timestamp', () => {
+        delete tx.timestamp;
+        expect(() => instance.objectNormalize(tx)).to.throw();
+        tx.timestamp = null;
+        expect(() => instance.objectNormalize(tx)).to.throw();
+        tx.timestamp = -1;
+        expect(() => instance.objectNormalize(tx)).to.throw('Value -1 is less than minimum');
+      });
+      ['senderId', 'recipientId'].forEach((add) => {
+        it(`should validate address field ${add}`, () => {
+          tx[add] = 'asd';
+          expect(() => instance.objectNormalize(tx)).to.throw('format address');
+          tx[add] = '';
+          expect(() => instance.objectNormalize(tx)).to.throw('too short');
+          tx[add] = Array(22).fill('1').join('') + 'R';
+          expect(() => instance.objectNormalize(tx)).to.throw('too long');
+        });
+      });
+
+      ['fee', 'amount'].forEach((field) => {
+        it(`should validate ${field}`, () => {
+          delete tx[field];
+          expect(() => instance.objectNormalize(tx)).to.throw();
+          tx[field] = null;
+          expect(() => instance.objectNormalize(tx)).to.throw();
+          tx[field] = -1;
+          expect(() => instance.objectNormalize(tx)).to.throw('Value -1 is less than minimum');
+          tx[field] = 10999999991000000 + 10000;
+          expect(() => instance.objectNormalize(tx)).to.throw('is greater than maximum');
+        });
+      });
     });
   });
 
