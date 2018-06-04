@@ -3,7 +3,7 @@ import 'reflect-metadata';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { dposOffline, LiskWallet } from 'dpos-offline';
+import { LiskWallet } from 'dpos-offline';
 import * as supertest from 'supertest';
 import { ITransactionLogic, ITransactionPoolLogic } from '../../src/ioc/interfaces/logic';
 import {
@@ -17,22 +17,23 @@ import { Symbols } from '../../src/ioc/symbols';
 import initializer from './common/init';
 import {
   confirmTransactions,
-  createMultiSignTransaction, createRandomAccountsWithFunds,
+  createMultiSignTransaction,
   createRandomAccountWithFunds,
   createRandomWallet,
   createRegDelegateTransaction,
   createSecondSignTransaction,
   createSendTransaction,
-  createVoteTransaction, easyCreateMultiSignAccount,
+  createVoteTransaction,
+  easyCreateMultiSignAccount,
+  enqueueAndProcessBundledTransaction,
+  enqueueAndProcessTransactions,
   getRandomDelegateWallet,
-  findDelegateByUsername, enqueueAndProcessTransactions,
 } from './common/utils';
-import { Ed, JobsQueue, wait } from '../../src/helpers';
+import { Ed, wait } from '../../src/helpers';
 import BigNumber from 'bignumber.js';
 import { toBufferedTransaction } from '../utils/txCrafter';
-import { AccountsModel, BlocksModel, TransactionsModel } from '../../src/models';
+import { BlocksModel, TransactionsModel } from '../../src/models';
 import { Sequelize } from 'sequelize-typescript';
-import constants from '../../src/helpers/constants';
 
 // tslint:disable no-unused-expression
 chai.use(chaiAsPromised);
@@ -438,36 +439,28 @@ describe('highlevel checks', function () {
           .map((what, idx) => createSendTransaction(0, fundPerTx, senderAccount, '1R', {timestamp: idx}))
       );
 
-      // send to transport the txs that will be in bundled
-      await supertest(initializer.appManager.expressApp)
-        .post('/peer/transactions')
-        .set(fieldheader)
-        .send({transactions: txs.slice(0, 2)})
-        .expect(200);
-
       await txPool.processBundled();
       await txModule.fillPool();
-      for (let i = 0; i < 25; i++) {
+      const total = 900;
+      for (let i = 0; i < total; i++) {
+        if (i % (total / 10 | 0) === 0) {
+          console.log('Done', i);
+        }
         const block = await initializer.generateBlock(txs.slice(25 + i, 25 + i + 1));
-        //console.log (`####`);
-        //console.log (`LOOP ${i} Adding ${txs.slice(25 + i)[0].id}`);
-        //console.log (`####`);
 
-        // Send the NEXT transaction (next block) (non bundled)
-        wait(Math.random() * 100)
-          .then(() => supertest(initializer.appManager.expressApp)
-          .post('/peer/transactions')
-          .set(fieldheader)
-          .send({transaction: txs.slice(25 + i + 1, 25 + i + 2)[0]})
-          .expect(200))
-          .catch((err) => void 0 /*SILENT*/);
+        await Promise.all([
+          wait(Math.random() * 10)
+            .then(() => enqueueAndProcessBundledTransaction(txs.slice(25 + i + 1, 25 + i + 2)[0])),
+          // Broadcast block with current transaction
+          wait(Math.random() * 10)
+            .then(() => supertest(initializer.appManager.expressApp)
+              .post('/peer/blocks')
+              .set(fieldheader)
+              .send({ block: blocksModel.toStringBlockType(block, txModel, blocksModule) })
+              .expect(200)
+            )
+        ]);
 
-        // Broadcast block with current transaction
-        await supertest(initializer.appManager.expressApp)
-          .post('/peer/blocks')
-          .set(fieldheader)
-          .send({block: blocksModel.toStringBlockType(block, txModel, blocksModule)})
-          .expect(200);
 
         expect(blocksModule.lastBlock.blockSignature).to.be.deep.eq(block.blockSignature);
 
@@ -482,8 +475,8 @@ describe('highlevel checks', function () {
           .toNumber(), 'confirmed balance');
 
         expect(new BigNumber(u_balance).toNumber()).to.be.eq(Math.max(0, new BigNumber(funds)
-          .minus(fundPerTx * (i + 1 + 2))
-          .minus(systemModule.getFees().fees.send * (i + 1 + 2))
+          .minus(fundPerTx * (i + 1 + 1))
+          .minus(systemModule.getFees().fees.send * (i + 1 + 1))
           .toNumber()), 'unconfirmed balance');
 
         expect(blocksModule.lastBlock.height).to.be.eq( startHeight + i + 1);
@@ -535,11 +528,7 @@ describe('highlevel checks', function () {
             .send({block: blocksModel.toStringBlockType(block, txModel, blocksModule)})
             .expect(200)),
           // Send the current (same) transaction
-          wait(Math.random() * 10).then(() => supertest(initializer.appManager.expressApp)
-            .post('/peer/transactions')
-            .set(fieldheader)
-            .send({transaction: txs.slice(i, i + 1)[0]})
-            .expect(200))
+          wait(Math.random() * 10).then(() => enqueueAndProcessTransactions(txs.slice(i, i+1)))
 
         ]);
 

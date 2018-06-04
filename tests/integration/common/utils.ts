@@ -3,7 +3,7 @@ import * as crypto from 'crypto';
 import { dposOffline } from 'dpos-offline';
 import * as uuid from 'uuid';
 import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
-import { Ed, IKeypair } from '../../../src/helpers';
+import { Ed, IKeypair, Sequence } from '../../../src/helpers';
 import { publicKey } from '../../../src/types/sanityTypes';
 import initializer from './init';
 import {
@@ -106,6 +106,7 @@ export const createWallet = (secret: string): LiskWallet => {
 
 export const enqueueAndProcessBundledTransaction = async (tx: ITransaction<any>) => {
   const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
+  const defaultSequence = initializer.appManager.container.getTagged<Sequence>(Symbols.helpers.sequence, Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence);
   const txPool = initializer.appManager.container.get<ITransactionPoolLogic>(Symbols.logic.transactionPool);
   try {
     await txModule.processUnconfirmedTransaction(toBufferedTransaction(tx), false);
@@ -113,9 +114,9 @@ export const enqueueAndProcessBundledTransaction = async (tx: ITransaction<any>)
     console.warn('receive tx err', e);
   }
   await txPool.processBundled();
-  await txModule.fillPool();
+  // ForgeModule calls fillpool within a dft sequence.
+  await defaultSequence.addAndPromise(() => txModule.fillPool());
 }
-
 
 export const createVoteTransaction = async (confirmations: number, from: LiskWallet, to: publicKey, add: boolean, obj: any = {}): Promise<ITransaction> => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
