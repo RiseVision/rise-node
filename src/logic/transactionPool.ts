@@ -269,11 +269,14 @@ export class TransactionPool implements ITransactionPoolLogic {
       }
 
       try {
-        await this.processVerifyTransaction(
+        const sender = await this.processVerifyTransaction(
           tx,
           true
         );
         this.bundled.remove(tx.id);
+        if (sender.isMultisignature()) {
+          tx.signatures = tx.signatures || []; // make sure that queueTransaction knows where to enqueue the tx.
+        }
         try {
           this.queueTransaction(tx, false /* After processing the tx becomes unbundled */);
         } catch (e) {

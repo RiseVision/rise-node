@@ -143,7 +143,7 @@ export class TransportAPI {
   @Post('/signatures')
   @ValidateSchema()
   public async postSignatures(
-    @SchemaValid(transportSchema.signatures, 'Invalid signatures body')
+    @SchemaValid(transportSchema.signatures.properties.signatures, 'Invalid signatures body')
     @BodyParam('signatures') signatures: Array<{ transaction: string, signature: string }>) {
 
     return this.transportModule.receiveSignatures(signatures);

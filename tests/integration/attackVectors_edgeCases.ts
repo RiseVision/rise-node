@@ -98,6 +98,14 @@ describe('attackVectors/edgeCases', () => {
         expect(txPool.transactionInPool(tx.id)).is.false;
         await expect(txModule.getByID(tx.id)).to.be.rejectedWith('Transaction not found');
       });
+      it('should disallow block with invalid tx', async () => {
+        const tx     = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
+        tx.amount = -1;
+        const tx2    = await createSendTransaction(0, 2, senderAccount, createRandomWallet().address);
+        await expect(initializer.rawMineBlockWithTxs(
+          [tx, tx2].map((t) => toBufferedTransaction(t)),
+        )).to.rejectedWith('Failed to validate transaction schema: Value -1 is less than minimum 0');
+      });
     });
 
     describe('timestamp edge cases', () => {

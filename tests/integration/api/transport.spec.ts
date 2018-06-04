@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import * as supertest from 'supertest';
-import { IBlockLogic, IPeersLogic, ITransactionPoolLogic } from '../../../src/ioc/interfaces/logic';
+import { IBlockLogic, IPeersLogic, ITransactionLogic, ITransactionPoolLogic } from '../../../src/ioc/interfaces/logic';
 import {
   IBlocksModule,
   IBlocksModuleVerify,
@@ -13,6 +13,7 @@ import { Symbols } from '../../../src/ioc/symbols';
 
 import initializer from '../common/init';
 import {
+  createMultiSignAccount,
   createRandomAccountWithFunds,
   createRandomWallet,
   createSendTransaction,
@@ -24,7 +25,7 @@ import { PeerType, SignedBlockType } from '../../../src/logic';
 import { BlocksModel, TransactionsModel } from '../../../src/models';
 import { ISlots } from '../../../src/ioc/interfaces/helpers';
 import * as sinon from 'sinon';
-import { ForkType } from '../../../src/helpers';
+import { Ed, ForkType } from '../../../src/helpers';
 import constants from '../../../src/helpers/constants';
 import { toBufferedTransaction } from '../../utils/txCrafter';
 
@@ -195,11 +196,99 @@ describe('api/transport', () => {
     });
   });
 
-  describe('/signatures', () => {
+  describe('/signatures [GET & POST]', () => {
+    let blocksModule: IBlocksModule;
+    let txModule: ITransactionsModule;
+    let txLogic: ITransactionLogic;
+    let ed: Ed;
+    let txPool: ITransactionPoolLogic;
+    let multisigKeys: LiskWallet[];
+    let multisigAccount: LiskWallet;
+    beforeEach(async () => {
+      blocksModule     = initializer.appManager.container.get(Symbols.modules.blocks);
+      txModule         = initializer.appManager.container.get(Symbols.modules.transactions);
+      ed               = initializer.appManager.container.get(Symbols.helpers.ed);
+      txLogic          = initializer.appManager.container.get(Symbols.logic.transaction);
+      txPool           = initializer.appManager.container.get(Symbols.logic.transactionPool);
+      const { wallet } = await createRandomAccountWithFunds(5000000000);
+      const { keys }  = await createMultiSignAccount(
+        wallet,
+        [createRandomWallet(), createRandomWallet(), createRandomWallet()],
+        3
+        );
+
+      multisigAccount = wallet;
+      multisigKeys = keys;
+    });
     checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
       .get('/peer/signatures'));
     checkReturnObjKeyVal('signatures', [], '/peer/signatures', headers);
-    it('should return multisig signatures missing some sigs');
+    it('should return multisig signatures missing some sigs', async () => {
+      const tx = await createSendTransaction(0, 1, multisigAccount, '1R');
+      await supertest(initializer.appManager.expressApp)
+        .post('/peer/transactions')
+        .set(headers)
+        .send({transaction: tx})
+        .expect(200, {success: true});
+      await txPool.processBundled();
+      await txModule.fillPool();
+      await initializer.rawMineBlocks(1);
+      expect(blocksModule.lastBlock.numberOfTransactions).eq(0);
+
+      // add 2 out of 3 signatures.
+      const sigs = [];
+      for (let i = 0; i < multisigKeys.length; i++) {
+        const signature = ed.sign(
+          txLogic.getHash(toBufferedTransaction(tx), false, false),
+          {
+            privateKey: Buffer.from(multisigKeys[i].privKey, 'hex'),
+            publicKey : Buffer.from(multisigKeys[i].publicKey, 'hex'),
+          }
+        );
+        await supertest(initializer.appManager.expressApp)
+          .post('/peer/signatures')
+          .set(headers)
+          .send({
+            signatures: [{
+              signature  : signature.toString('hex'),
+              transaction: tx.id,
+            }],
+          })
+          .expect(200, {success: true});
+
+        sigs.push(signature.toString('hex'));
+        await supertest(initializer.appManager.expressApp)
+          .get('/peer/signatures')
+          .set(headers)
+          .expect(200, {
+            success   : true,
+            signatures: [{
+              signatures : sigs,
+              transaction: tx.id
+            }],
+          });
+      }
+      // all signatures.
+      await supertest(initializer.appManager.expressApp)
+        .get('/peer/signatures')
+        .set(headers)
+        .expect(200, {
+          success: true,
+          signatures: [
+            {signatures: sigs, transaction: tx.id}
+          ],
+        });
+
+      await initializer.rawMineBlocks(1);
+      
+      // After block is mined no more sigs are here.
+      await supertest(initializer.appManager.expressApp)
+        .get('/peer/signatures')
+        .set(headers)
+        .expect(200, {success: true, signatures: []});
+
+      expect(blocksModule.lastBlock.transactions.length).eq(1);
+    });
   });
 
   describe('/transactions', () => {

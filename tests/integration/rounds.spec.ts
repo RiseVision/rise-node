@@ -133,6 +133,7 @@ describe('rounds', () => {
     // should contain same delegates (even if sorted in another order)
     expect(Object.keys(preOBJ).sort()).to.be.deep.eq(Object.keys(postOBJ).sort());
     expect(preOBJ).to.not.be.deep.eq(postOBJ);
+    expect(preLastBlock).to.not.be.deep.eq(postOBJ);
     return { preOBJ, preLastBlock, postOBJ };
   }
 
@@ -168,7 +169,7 @@ describe('rounds', () => {
   });
   describe('endRound + rollback', () => {
     it('rollback should return to original preOBJ', async function () {
-      this.timeout(10000);
+      this.timeout(20000);
       const { preLastBlock} = await getPREPostOBJ();
 
       await initializer.rawDeleteBlocks(1);
@@ -177,7 +178,7 @@ describe('rounds', () => {
       expect(nowOBJ).to.be.deep.eq(preLastBlock);
     });
     it('end + rollback + end should give same result as end only', async function () {
-      this.timeout(10000);
+      this.timeout(20000);
       const { postOBJ } = await getPREPostOBJ();
 
       await initializer.rawDeleteBlocks(1);
