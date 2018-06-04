@@ -9,7 +9,7 @@
     "cacheEnabled": false,
     "db": {
         "host": "localhost",
-        "port": 5433,
+        "port": 5432,
         "database": "test",
         "user": "test",
         "password": "password",
