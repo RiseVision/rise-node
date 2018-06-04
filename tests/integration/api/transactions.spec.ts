@@ -283,18 +283,23 @@ describe('api/transactions', () => {
       });
     });
     describe('limit and offset', () => {
+      beforeEach(async () => {
+        await createRandomAccountWithFunds(Math.pow(10, 11));
+        await createRandomAccountWithFunds(Math.pow(10, 11));
+        await createRandomAccountWithFunds(Math.pow(10, 11));
+      });
       it('should limit ret txs by limit and offset it', async () => {
-        const {count, transactions} = await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}`)
+        const {count, transactions} = await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}&orderBy=height:desc`)
           .then((resp) => resp.body);
         // offset!
-        await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}&offset=1`)
+        await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}&offset=1&orderBy=height:desc`)
           .then((resp) => {
             expect(resp.body.count).to.be.eq(count);
             expect(resp.body.transactions[0]).to.be.deep.eq(transactions[1]);
           });
 
         // limit and offset
-        await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}&offset=2&limit=1`)
+        await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}&offset=2&limit=1&orderBy=height:desc`)
           .then((resp) => {
             expect(resp.body.count).to.be.eq(count);
             expect(resp.body.transactions.length).to.be.eq(1);
