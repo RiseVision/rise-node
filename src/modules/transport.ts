@@ -309,8 +309,7 @@ export class TransportModule implements ITransportModule {
       this.logger.debug(`Received transaction ${tx.id} from peer: ${peer.string}`);
       await this.transactionModule.processUnconfirmedTransaction(
         tx,
-        broadcast,
-        true
+        broadcast
       );
     }
   }

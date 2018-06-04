@@ -3,7 +3,7 @@ import * as supertest from 'supertest';
 import initializer from '../common/init';
 import { checkPubKey, checkRequiredParam, checkReturnObjKeyVal } from './utils';
 import {
-  createMultiSignTransaction, createRandomAccountWithFunds, createRandomWallet
+  createMultiSignTransaction, createRandomAccountWithFunds, createRandomWallet, enqueueAndProcessBundledTransaction
 } from '../common/utils';
 import { Symbols } from '../../../src/ioc/symbols';
 import { LiskWallet } from 'dpos-offline';
@@ -11,7 +11,7 @@ import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { ITransactionsModule, ITransportModule } from '../../../src/ioc/interfaces/modules';
 import { toBufferedTransaction } from '../../utils/txCrafter';
 import { Ed } from '../../../src/helpers';
-import { ITransactionLogic } from '../../../src/ioc/interfaces/logic';
+import { ITransactionLogic, ITransactionPoolLogic } from '../../../src/ioc/interfaces/logic';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/multisignatures', () => {
@@ -24,6 +24,7 @@ describe('api/multisignatures', () => {
     checkReturnObjKeyVal('accounts', [], '/api/multisignatures/accounts?publicKey=e0f1c6cca365cd61bbb01cfb454828a698fa4b7170e85a597dde510567f9dda5');
     it('should return correct accounts info if account is, indeed a multisig account', async () => {
       const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
+      const txPool = initializer.appManager.container.get<ITransactionPoolLogic>(Symbols.logic.transactionPool);
       const transportModule = initializer.appManager.container.get<ITransportModule>(Symbols.modules.transport);
       const ed = initializer.appManager.container.get<Ed>(Symbols.helpers.ed);
       const txLogic = initializer.appManager.container.get<ITransactionLogic>(Symbols.logic.transaction);
@@ -32,7 +33,11 @@ describe('api/multisignatures', () => {
       const keys = [createRandomWallet(), createRandomWallet(), createRandomWallet()];
       const signedTx = createMultiSignTransaction(sender, 3, keys.map((k) => '+' + k.publicKey));
       // await initializer.rawMineBlockWithTxs([toBufferedTransaction(signedTx)]))
-      await txModule.processUnconfirmedTransaction(toBufferedTransaction(signedTx), false, false);
+
+      await txModule.processUnconfirmedTransaction(toBufferedTransaction(signedTx), false);
+      await txPool.processBundled();
+      await txModule.fillPool();
+
       await initializer.rawMineBlocks(1);
       const signatures = keys.map((k) => ed.sign(
         txLogic.getHash(toBufferedTransaction(signedTx), false, false),
@@ -86,7 +91,8 @@ describe('api/multisignatures', () => {
       sender = senderData.wallet;
       const keys = [createRandomWallet(), createRandomWallet(), createRandomWallet()];
       signedTx = createMultiSignTransaction(sender, 3, keys.map((k) => '+' + k.publicKey));
-      await txModule.processUnconfirmedTransaction(toBufferedTransaction(signedTx), false, false);
+      await enqueueAndProcessBundledTransaction(signedTx);
+      //await txModule.processUnconfirmedTransaction(toBufferedTransaction(signedTx), false, false);
       await initializer.rawMineBlocks(1);
       return supertest(initializer.appManager.expressApp)
         .get('/api/multisignatures/pending?publicKey=' + sender.publicKey)
@@ -108,7 +114,8 @@ describe('api/multisignatures', () => {
       sender = senderData.wallet;
       const keys = [createRandomWallet(), createRandomWallet(), createRandomWallet()];
       signedTx = createMultiSignTransaction(sender, 3, keys.map((k) => '+' + k.publicKey));
-      await txModule.processUnconfirmedTransaction(toBufferedTransaction(signedTx), false, false);
+      await enqueueAndProcessBundledTransaction(signedTx);
+      //await txModule.processUnconfirmedTransaction(toBufferedTransaction(signedTx), false, false);
       await initializer.rawMineBlocks(1);
       return supertest(initializer.appManager.expressApp)
         .get('/api/multisignatures/pending?publicKey=' + sender.publicKey)

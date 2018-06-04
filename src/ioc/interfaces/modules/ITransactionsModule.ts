@@ -68,8 +68,7 @@ export interface ITransactionsModule extends IModule {
    * Checks kind of unconfirmed transaction and process it, resets queue
    * if limit reached.
    */
-  processUnconfirmedTransaction(transaction: IBaseTransaction<any>,
-                                broadcast: boolean, bundled: boolean): Promise<void>;
+  processUnconfirmedTransaction(transaction: IBaseTransaction<any>, broadcast: boolean): Promise<void>;
 
   /**
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.

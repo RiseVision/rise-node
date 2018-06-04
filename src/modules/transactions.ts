@@ -121,8 +121,8 @@ export class TransactionsModule implements ITransactionsModule {
    * NOTE: transaction must be unknown and already checked AGAINST database for its non existence.
    */
   public processUnconfirmedTransaction(transaction: IBaseTransaction<any>,
-                                       broadcast: boolean, bundled: boolean): Promise<void> {
-    return this.transactionPool.processNewTransaction(transaction, broadcast, bundled);
+                                       broadcast: boolean): Promise<void> {
+    return this.transactionPool.processNewTransaction(transaction, broadcast);
   }
 
   /**

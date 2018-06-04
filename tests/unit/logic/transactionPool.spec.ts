@@ -750,7 +750,6 @@ describe('logic/transactionPool - TransactionPool', () => {
     });
   });
 
-
   describe('processNewTransaction', () => {
     let processVerifyTransactionStub: SinonStub;
 
@@ -763,27 +762,27 @@ describe('logic/transactionPool - TransactionPool', () => {
     });
 
     it('should return a promise', () => {
-      const retVal = instance.processNewTransaction(tx, false, false);
+      const retVal = instance.processNewTransaction(tx, false);
       expect(retVal).to.be.instanceof(Promise);
     });
 
     it('should call transactionInPool', async () => {
       const transactionInPoolSpy = sandbox.spy(instance, 'transactionInPool');
-      await instance.processNewTransaction(tx, false, false);
+      await instance.processNewTransaction(tx, false);
       expect(transactionInPoolSpy.calledOnce).to.be.true;
       expect(transactionInPoolSpy.firstCall.args[0]).to.be.equal(tx.id);
     });
 
     it('should reject if transaction is in pool', async () => {
       const allTxs = await addMixedTransactionsAndFillPool();
-      await expect(instance.processNewTransaction(allTxs[0], false, false)).to.be.
+      await expect(instance.processNewTransaction(allTxs[0], false)).to.be.
       rejectedWith(/Transaction is already processed/);
     });
 
     it('should call reindexAllQueues if more than 1000 txs were processed', async () => {
       const reindexallQueuesSpy = sandbox.spy(instance as any, 'reindexAllQueues');
       (instance as any).processed = 1000;
-      await instance.processNewTransaction(tx, false, false);
+      await instance.processNewTransaction(tx, false);
       expect(reindexallQueuesSpy.calledOnce).to.be.true;
       expect((instance as any).processed).to.be.equal(1);
     });
@@ -792,53 +791,12 @@ describe('logic/transactionPool - TransactionPool', () => {
       // we make processVerifyTransaction reject in order to stop execution before next call of queueTransaction
       processVerifyTransactionStub.rejects();
       const queueTransactionSpy = sandbox.spy(instance, 'queueTransaction');
-      try {
-        await instance.processNewTransaction(tx, false, true);
-      } catch (e) {
-        void(0);
-      }
+      await instance.processNewTransaction(tx, false);
       expect(queueTransactionSpy.calledOnce).to.be.true;
       expect(queueTransactionSpy.firstCall.args[0]).to.be.deep.equal(tx);
       expect(queueTransactionSpy.firstCall.args[1]).to.be.true;
     });
 
-    it('should not call queueTransaction if bundled is false', async () => {
-      // we make processVerifyTransaction reject in order to stop execution before next call of queueTransaction
-      processVerifyTransactionStub.rejects();
-      const queueTransactionSpy = sandbox.spy(instance, 'queueTransaction');
-      try {
-        await instance.processNewTransaction(tx, false, false);
-      } catch (e) {
-        void(0);
-      }
-      expect(queueTransactionSpy.notCalled).to.be.true;
-    });
-
-    it('should call processVerifyTransaction', async () => {
-      await instance.processNewTransaction(tx, false, false);
-      expect(processVerifyTransactionStub.calledOnce).to.be.true;
-      expect(processVerifyTransactionStub.firstCall.args[0]).to.be.deep.equal(tx);
-      expect(processVerifyTransactionStub.firstCall.args[1]).to.be.false;
-    });
-
-    it('should call queueTransaction', async () => {
-      const queueTransactionSpy = sandbox.spy(instance, 'queueTransaction');
-      await instance.processNewTransaction(tx, false, false);
-      expect(queueTransactionSpy.calledOnce).to.be.true;
-      expect(queueTransactionSpy.firstCall.args[0]).to.be.deep.equal(tx);
-      expect(queueTransactionSpy.firstCall.args[1]).to.be.false;
-    });
-
-    it('should not call queueTransaction if processVerifyTransaction rejected', async () => {
-      processVerifyTransactionStub.rejects();
-      const queueTransactionSpy = sandbox.spy(instance, 'queueTransaction');
-      try {
-        await instance.processNewTransaction(tx, false, false);
-      } catch (e) {
-        void(0);
-      }
-      expect(queueTransactionSpy.notCalled).to.be.true;
-    });
   });
 
   describe('applyUnconfirmedList', () => {

@@ -927,15 +927,13 @@ describe('src/modules/transport.ts', () => {
       await inst.receiveTransactions(transactions, peer, false);
 
       expect(transactionModule.stubs.processUnconfirmedTransaction.calledTwice).to.be.true;
-      expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args.length).to.be.equal(3);
+      expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args.length).to.be.equal(2);
       expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args[0]).to.be.deep.equal(transactions[0]);
       expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args[1]).to.be.equal(false);
-      expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args[2]).to.be.equal(true);
 
-      expect(transactionModule.stubs.processUnconfirmedTransaction.secondCall.args.length).to.be.equal(3);
+      expect(transactionModule.stubs.processUnconfirmedTransaction.secondCall.args.length).to.be.equal(2);
       expect(transactionModule.stubs.processUnconfirmedTransaction.secondCall.args[0]).to.be.deep.equal(transactions[1]);
       expect(transactionModule.stubs.processUnconfirmedTransaction.secondCall.args[1]).to.be.equal(false);
-      expect(transactionModule.stubs.processUnconfirmedTransaction.secondCall.args[2]).to.be.equal(true);
     });
 
     it('should filter out already confirmed ids', async () => {
@@ -944,7 +942,6 @@ describe('src/modules/transport.ts', () => {
       expect(transactionModule.stubs.processUnconfirmedTransaction.calledOnce).is.true;
       expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args).deep.eq([
         transactions[0],
-        true,
         true,
       ]);
     });

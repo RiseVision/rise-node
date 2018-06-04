@@ -323,8 +323,10 @@ describe('api/transactions', () => {
         }
         const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
         for (const tx of txs) {
-          await txModule.processUnconfirmedTransaction(toBufferedTransaction(tx), false, false);
+          await txModule.processUnconfirmedTransaction(toBufferedTransaction(tx), false);
         }
+        const txPool = initializer.appManager.container.get<ITransactionPoolLogic>(Symbols.logic.transactionPool);
+        await txPool.processBundled();
       });
       it('should return 5 queued', async () => {
         return supertest(initializer.appManager.expressApp)
@@ -335,8 +337,8 @@ describe('api/transactions', () => {
           });
       });
       it('should return 5 unconfirmed if fillPool', async () => {
-        const txPool = initializer.appManager.container.get<ITransactionPoolLogic>(Symbols.logic.transactionPool);
-        await txPool.fillPool();
+        const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
+        await txModule.fillPool();
         return supertest(initializer.appManager.expressApp)
           .get('/api/transactions/count')
           .expect(200)

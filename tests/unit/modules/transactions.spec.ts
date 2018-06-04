@@ -204,12 +204,11 @@ describe('modules/transactions', () => {
     it('should call txPool.processNewTransaction and return', () => {
       const tx = { the: 'tx' };
       transactionPoolStub.stubs.processNewTransaction.returns('done');
-      const retVal = instance.processUnconfirmedTransaction(tx as any, false, true);
+      const retVal = instance.processUnconfirmedTransaction(tx as any, false);
       expect(transactionPoolStub.stubs.processNewTransaction.calledOnce).to.be.true;
-      expect(transactionPoolStub.stubs.processNewTransaction.firstCall.args.length).to.be.equal(3);
+      expect(transactionPoolStub.stubs.processNewTransaction.firstCall.args.length).to.be.equal(2);
       expect(transactionPoolStub.stubs.processNewTransaction.firstCall.args[0]).to.be.deep.equal(tx);
       expect(transactionPoolStub.stubs.processNewTransaction.firstCall.args[1]).to.be.equal(false);
-      expect(transactionPoolStub.stubs.processNewTransaction.firstCall.args[2]).to.be.equal(true);
       expect(retVal).to.be.equal('done');
     });
   });

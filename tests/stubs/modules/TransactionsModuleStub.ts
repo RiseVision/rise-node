@@ -70,8 +70,7 @@ export class TransactionsModuleStub extends BaseStubClass implements ITransactio
   }
 
   @stubMethod()
-  public processUnconfirmedTransaction(transaction: IBaseTransaction<any>,
-                                       broadcast: boolean, bundled: boolean): Promise<void> {
+  public processUnconfirmedTransaction(transaction: IBaseTransaction<any>, broadcast: boolean): Promise<void> {
     return undefined;
   }
 

@@ -323,7 +323,7 @@ describe('highlevel checks', function () {
         ];
         await confirmTransactions(txs, true);
         const acc = await accModule.getAccount({address: senderAccount.address});
-        expect(acc.secondPublicKey.toString('hex')).to.be.eq(pk2);
+        expect(acc.secondPublicKey.toString('hex')).to.be.eq(pk);
         expect(acc.secondSignature).to.be.eq(1);
         expect(blocksModule.lastBlock.transactions.length).is.eq(1);
       });
@@ -344,25 +344,30 @@ describe('highlevel checks', function () {
       });
       it('should not allow min > than keys', async () => {
         const keys     = new Array(3).fill(null).map(() => createRandomWallet());
-        const signedTx = toBufferedTransaction(
-          createMultiSignTransaction(senderAccount, 4, keys.map((k) => `+${k.publicKey}`))
-        );
-        return expect(txModule.processUnconfirmedTransaction(signedTx, false, false)).to.be
-          .rejectedWith('Invalid multisignature min. Must be less than or equal to keysgroup size');
+        const signedTx = createMultiSignTransaction(senderAccount, 4, keys.map((k) => `+${k.publicKey}`));
+        await confirmTransactions([signedTx], true);
+
+        expect(blocksModule.lastBlock.transactions.length).eq(0);
+        const acc = await accModule.getAccount({address: senderAccount.address});
+        expect(acc.isMultisignature()).is.false;
+        //return expect(txModule.processUnconfirmedTransaction(signedTx, false, false)).to.be
+        //  .rejectedWith('Invalid multisignature min. Must be less than or equal to keysgroup size');
       });
       it('should keep tx in multisignature tx pool until all signature arrives, even if min is 2', async () => {
         const keys     = new Array(3).fill(null).map(() => createRandomWallet());
         const signedTx = toBufferedTransaction(
           createMultiSignTransaction(senderAccount, 2, keys.map((k) => `+${k.publicKey}`))
         );
-        await txModule.processUnconfirmedTransaction(signedTx, false, false);
+        await txModule.processUnconfirmedTransaction(signedTx, false);
+        await txPool.processBundled();
+        await txModule.fillPool();
         await initializer.rawMineBlocks(1);
         // In pool => valid and not included in block.
         expect(txPool.multisignature.has(signedTx.id)).is.true;
 
         // let it sign by all.
         const signatures = keys.map((k) => ed.sign(
-          txLogic.getHash(signedTx, true, false),
+          txLogic.getHash(signedTx, false, false),
           {
             privateKey: Buffer.from(k.privKey, 'hex'),
             publicKey : Buffer.from(k.publicKey, 'hex'),
@@ -374,11 +379,25 @@ describe('highlevel checks', function () {
             signature  : signatures[i],
             transaction: signedTx.id,
           }]);
+          await txModule.fillPool();
           await initializer.rawMineBlocks(1);
           const acc = await accModule.getAccount({address: senderAccount.address});
           expect(acc.multisignatures).to.be.null;
           expect(txPool.multisignature.has(signedTx.id)).is.true;
         }
+
+        //Lets confirm account
+        await transportModule.receiveSignatures([{
+          signature  : signatures[signatures.length-1],
+          transaction: signedTx.id,
+        }]);
+        await txModule.fillPool();
+        await initializer.rawMineBlocks(1);
+        const acc = await accModule.getAccount({address: senderAccount.address});
+        expect(acc.multisignatures).to.not.be.null;
+        expect(acc.isMultisignature()).is.true;
+        expect(txPool.multisignature.has(signedTx.id)).is.false;
+
       });
     });
 

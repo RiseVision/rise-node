@@ -293,7 +293,7 @@ export class TransactionPool implements ITransactionPoolLogic {
   /**
    * process a new incoming transaction. It may reject in case  the tx is not valid.
    */
-  public async processNewTransaction(tx: IBaseTransaction<any>, broadcast: boolean, bundled: boolean): Promise<void> {
+  public async processNewTransaction(tx: IBaseTransaction<any>, broadcast: boolean): Promise<void> {
     if (this.transactionInPool(tx.id)) {
       return Promise.reject(`Transaction is already processed: ${tx.id}`);
     }
@@ -304,15 +304,7 @@ export class TransactionPool implements ITransactionPoolLogic {
       this.processed = 1; // TODO: Maybe one day use a different counter to keep stats clean
     }
 
-    if (bundled) {
-      return this.queueTransaction(tx, bundled);
-    }
-
-    await this.processVerifyTransaction(tx, broadcast);
-    // IF i'm here it means verify went through and did not throw.
-    // So lets enqueue the transaction!
-    this.queueTransaction(tx, bundled);
-
+    return this.queueTransaction(tx, true);
   }
 
   /**

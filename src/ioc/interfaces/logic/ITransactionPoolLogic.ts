@@ -32,7 +32,7 @@ export interface ITransactionPoolLogic {
   /**
    * process a new incoming transaction. It may reject in case  the tx is not valid.
    */
-  processNewTransaction(tx: IBaseTransaction<any>, broadcast: boolean, bundled: boolean): Promise<void>;
+  processNewTransaction(tx: IBaseTransaction<any>, broadcast: boolean): Promise<void>;
 
   /**
    * Calls processVerifyTransaction for each transaction and applies
