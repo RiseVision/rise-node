@@ -100,7 +100,7 @@ export default class TransactionLogicStub extends BaseStubClass implements ITran
   }
 
   @stubMethod()
-  public dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<DBOp<any>> {
+  public dbSave(txs: Array<IBaseTransaction<any> & { senderId: string }>, blockId: string, height: number): Array<DBOp<any>> {
     return null;
   }
 

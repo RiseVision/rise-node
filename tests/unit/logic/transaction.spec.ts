@@ -2,21 +2,27 @@ import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
-import {Container} from 'inversify';
+import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { BigNum, IKeypair, TransactionType } from '../../../src/helpers';
-import {Symbols} from '../../../src/ioc/symbols';
+import { Symbols } from '../../../src/ioc/symbols';
 import { SignedAndChainedBlockType, TransactionLogic } from '../../../src/logic';
-import { IBaseTransaction, IConfirmedTransaction, SendTransaction } from '../../../src/logic/transactions';
+import { IConfirmedTransaction, SendTransaction, VoteTransaction } from '../../../src/logic/transactions';
 import {
-  AccountLogicStub, DbStub, EdStub, ExceptionsManagerStub, LoggerStub,
-  RoundsLogicStub, SlotsStub, ZSchemaStub
+  AccountLogicStub,
+  EdStub,
+  ExceptionsManagerStub,
+  LoggerStub,
+  RoundsLogicStub,
+  SlotsStub,
+  ZSchemaStub
 } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
 import { TransactionsModel } from '../../../src/models';
 import { VerificationType } from '../../../src/ioc/interfaces/logic';
-import { DBCreateOp } from '../../../src/types/genericTypes';
+import { DBBulkCreateOp } from '../../../src/types/genericTypes';
+import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
 
 chai.use(chaiAsPromised);
 
@@ -69,6 +75,7 @@ describe('logic/transaction', () => {
     sendTransaction  = new SendTransaction();
 
     instance.attachAssetType(sendTransaction);
+
 
     tx = {
       amount         : 108910891000000,
@@ -1078,10 +1085,10 @@ describe('logic/transaction', () => {
 
     it('should return the correct first object', () => {
       tx.requesterPublicKey = requester.publicKey;
-      const retVal          = instance.dbSave({...tx, height: 100, blockId: '11'} as any);
+      const retVal          = instance.dbSave([tx], '11', 100);
       expect(retVal[0].model).to.be.deep.eq(txModel);
-      expect(retVal[0].type).to.be.deep.eq('create');
-      expect((retVal[0] as DBCreateOp<any>).values).to.be.deep.eq({
+      expect(retVal[0].type).to.be.deep.eq('bulkCreate');
+      expect((retVal[0] as DBBulkCreateOp<any>).values[0]).to.be.deep.eq({
         amount            : tx.amount,
         blockId           : '11',
         fee               : tx.fee,
@@ -1097,6 +1104,30 @@ describe('logic/transaction', () => {
         timestamp         : tx.timestamp,
         type              : tx.type,
       });
+    });
+
+    it('should cluster multiple txs together in single bulkCreate and append sub assets db ops', () => {
+      instance.attachAssetType(new VoteTransaction());
+      const txs    = createRandomTransactions({ send: 2, vote: 3 })
+        .map((t) => toBufferedTransaction(t))
+        .map((t) => ({ ...t, senderId: t.recipientId }));
+      const retVal = instance.dbSave(txs, '11', 100);
+      expect(retVal[0].model).to.be.deep.eq(txModel);
+      expect(retVal[0].type).to.be.deep.eq('bulkCreate');
+      const op: DBBulkCreateOp<any> = retVal[0] as any;
+      expect(op.values).to.be.an('array');
+      for (let i = 0; i < txs.length; i++) {
+        const expectedValue = {
+          ... txs[i],
+          blockId: '11',
+          height : 100,
+          signatures: null,
+        };
+        delete expectedValue.asset;
+        expect(op.values[i]).deep.eq(expectedValue);
+      }
+
+      expect(retVal.length).gt(1);
     });
   });
 

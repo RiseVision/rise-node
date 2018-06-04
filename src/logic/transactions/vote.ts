@@ -28,8 +28,6 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   private accountLogic: IAccountLogic;
 
   // Module
-  @inject(Symbols.modules.accounts)
-  private accountsModule: IAccountsModule;
   @inject(Symbols.modules.delegates)
   private delegatesModule: IDelegatesModule;
   @inject(Symbols.modules.system)

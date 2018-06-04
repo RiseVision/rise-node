@@ -449,7 +449,7 @@ describe('modules/blocks/chain', () => {
       dbHelperStub = container.get(Symbols.helpers.db);
       busStub.enqueueResponse('message', null);
       txLogic.stubs.afterSave.resolves();
-      txLogic.stubs.dbSave.callsFake((ob) => ({saveOp: 'save', txID: ob.id, txType: ob.type}));
+      txLogic.stubs.dbSave.callsFake((txs) => txs.map((ob) => ({saveOp: 'save', txID: ob.id, txType: ob.type})));
       blockLogic.enqueueResponse('dbSave', { table: 'blocks', values: { id: '1' }, fields: ['id'] });
       dbHelperStub.enqueueResponse('performOps', Promise.resolve());
     });
@@ -463,7 +463,7 @@ describe('modules/blocks/chain', () => {
       const transactions = createRandomTransactions({send: 2, vote: 2});
       await inst.saveBlock({ transactions } as any, 'dbTX' as any);
       expect(txLogic.stubs.dbSave.called).is.true;
-      expect(txLogic.stubs.dbSave.callCount).is.eq(4);
+      expect(txLogic.stubs.dbSave.callCount).is.eq(1);
 
       expect(blockLogic.stubs.dbSave.called).is.true;
       expect(dbHelperStub.stubs.performOps.firstCall.args[0]).to.be.deep.eq([
