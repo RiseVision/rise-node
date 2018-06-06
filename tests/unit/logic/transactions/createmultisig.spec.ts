@@ -4,7 +4,7 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
-import { SinonSandbox, SinonSpy } from 'sinon';
+import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as helpers from '../../../../src/helpers';
 import { TransactionType } from '../../../../src/helpers';
 import { Symbols } from '../../../../src/ioc/symbols';
@@ -84,6 +84,7 @@ describe('logic/transactions/createmultisig', () => {
       isMultisignature() {
         return false;
       },
+      applyDiffArray() {},
     };
 
     block = {
@@ -284,14 +285,16 @@ describe('logic/transactions/createmultisig', () => {
   });
 
   describe('apply', () => {
+    let applyDiffArrayStub: SinonStub;
     beforeEach(() => {
       accountLogicStub.stubs.merge.returns([]);
       roundsLogicStub.stubs.calcRound.returns(123);
       accountLogicStub.stubs.generateAddressByPublicKey.returns('123123124125R');
       accountsModuleStub.stubs.setAccountAndGet.resolves();
+      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
     });
 
-    it('should call accountLogic.merge', async () => {
+    it('should call accountLogic.merge and applyDiffArray', async () => {
       await instance.apply(tx, block, sender);
       expect(accountLogicStub.stubs.merge.calledOnce).to.be.true;
       expect(accountLogicStub.stubs.merge.firstCall.args[0]).to.be.equal(sender.address);
@@ -302,6 +305,10 @@ describe('logic/transactions/createmultisig', () => {
         multisignatures: tx.asset.multisignature.keysgroup,
         round          : 123,
       });
+
+      expect(applyDiffArrayStub.called).is.true;
+      expect(applyDiffArrayStub.firstCall.args[0]).is.deep.eq('multisignatures');
+      expect(applyDiffArrayStub.firstCall.args[1]).is.deep.eq(tx.asset.multisignature.keysgroup);
     });
 
     it('should call roundsLogic.calcRound', async () => {
@@ -335,6 +342,7 @@ describe('logic/transactions/createmultisig', () => {
 
   describe('undo', () => {
     let reverseSpy: SinonSpy;
+    let applyDiffArrayStub: SinonStub;
 
     beforeEach(() => {
       accountLogicStub.stubs.merge.returns(true);
@@ -342,6 +350,7 @@ describe('logic/transactions/createmultisig', () => {
       accountLogicStub.stubs.generateAddressByPublicKey.returns('123123124125R');
       accountsModuleStub.stubs.setAccountAndGet.resolves();
       reverseSpy = sandbox.spy(helpers.Diff, 'reverse');
+      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
     });
 
     afterEach(() => {
@@ -352,6 +361,13 @@ describe('logic/transactions/createmultisig', () => {
       await instance.undo(tx, block, sender);
       expect(reverseSpy.calledOnce).to.be.true;
       expect(reverseSpy.firstCall.args[0]).to.be.equalTo(tx.asset.multisignature.keysgroup);
+    });
+
+    it('should call applyDiffArray over sender with correct reversed input', async () => {
+      await instance.undo(tx, block, sender);
+      expect(applyDiffArrayStub.called).is.true;
+      expect(applyDiffArrayStub.firstCall.args[0]).eq('multisignatures');
+      expect(applyDiffArrayStub.firstCall.args[1]).deep.eq(reverseSpy.firstCall.returnValue);
     });
 
     it('should set unconfirmedSignatures[sender.address] to true', async () => {
@@ -380,13 +396,22 @@ describe('logic/transactions/createmultisig', () => {
   });
 
   describe('applyUnconfirmed', () => {
+    let applyDiffArrayStub: SinonStub;
     beforeEach(() => {
       accountLogicStub.stubs.merge.returns(true);
+      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
     });
 
     it('should throw if signature is not confirmed yet', () => {
       (instance as any).unconfirmedSignatures[sender.address] = true;
       expect(instance.applyUnconfirmed(tx, sender)).to.be.rejectedWith('Signature on this account is pending confirmation');
+    });
+
+    it('should call sender.applyDiffArray with proper data', async () => {
+      await instance.applyUnconfirmed(tx, sender);
+      expect(applyDiffArrayStub.called).is.true;
+      expect(applyDiffArrayStub.firstCall.args[0]).eq('u_multisignatures');
+      expect(applyDiffArrayStub.firstCall.args[1]).deep.eq(tx.asset.multisignature.keysgroup);
     });
 
     it('should call accountLogic.merge', async () => {
@@ -403,10 +428,12 @@ describe('logic/transactions/createmultisig', () => {
 
   describe('undoUnconfirmed', () => {
     let reverseSpy: SinonSpy;
+    let applyDiffArrayStub: SinonStub;
 
     beforeEach(() => {
       accountLogicStub.stubs.merge.returns(true);
       reverseSpy = sandbox.spy(helpers.Diff, 'reverse');
+      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
     });
 
     afterEach(() => {
@@ -417,6 +444,13 @@ describe('logic/transactions/createmultisig', () => {
       await instance.undoUnconfirmed(tx, sender);
       expect(reverseSpy.calledOnce).to.be.true;
       expect(reverseSpy.firstCall.args[0]).to.be.equalTo(tx.asset.multisignature.keysgroup);
+    });
+
+    it('should call sender.applyDiffArray with proper data', async () => {
+      await instance.undoUnconfirmed(tx, sender);
+      expect(applyDiffArrayStub.called).is.true;
+      expect(applyDiffArrayStub.firstCall.args[0]).eq('u_multisignatures');
+      expect(applyDiffArrayStub.firstCall.args[1]).deep.eq(reverseSpy.firstCall.returnValue);
     });
 
     it('should delete unconfirmedSignatures[sender.address]', async () => {

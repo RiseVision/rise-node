@@ -269,11 +269,14 @@ export class TransactionPool implements ITransactionPoolLogic {
       }
 
       try {
-        await this.processVerifyTransaction(
+        const sender = await this.processVerifyTransaction(
           tx,
           true
         );
         this.bundled.remove(tx.id);
+        if (sender.isMultisignature()) {
+          tx.signatures = tx.signatures || []; // make sure that queueTransaction knows where to enqueue the tx.
+        }
         try {
           this.queueTransaction(tx, false /* After processing the tx becomes unbundled */);
         } catch (e) {
@@ -288,23 +291,9 @@ export class TransactionPool implements ITransactionPoolLogic {
   }
 
   /**
-   * Cycles through the transactions and calls processNewTransaction.
-   * It will fail at the first not valid tx
-   * @param {Array<IBaseTransaction<any>>} txs
-   * @param {boolean} broadcast
-   * @param {boolean} bundled
-   */
-  public async receiveTransactions(txs: Array<IBaseTransaction<any>>,
-                                   broadcast: boolean, bundled: boolean): Promise<void> {
-    for (const tx of txs) {
-      await this.processNewTransaction(tx, broadcast, bundled);
-    }
-  }
-
-  /**
    * process a new incoming transaction. It may reject in case  the tx is not valid.
    */
-  public async processNewTransaction(tx: IBaseTransaction<any>, broadcast: boolean, bundled: boolean): Promise<void> {
+  public async processNewTransaction(tx: IBaseTransaction<any>, broadcast: boolean): Promise<void> {
     if (this.transactionInPool(tx.id)) {
       return Promise.reject(`Transaction is already processed: ${tx.id}`);
     }
@@ -315,15 +304,7 @@ export class TransactionPool implements ITransactionPoolLogic {
       this.processed = 1; // TODO: Maybe one day use a different counter to keep stats clean
     }
 
-    if (bundled) {
-      return this.queueTransaction(tx, bundled);
-    }
-
-    await this.processVerifyTransaction(tx, broadcast);
-    // IF i'm here it means verify went through and did not throw.
-    // So lets enqueue the transaction!
-    this.queueTransaction(tx, bundled);
-
+    return this.queueTransaction(tx, true);
   }
 
   /**
@@ -359,26 +340,6 @@ export class TransactionPool implements ITransactionPoolLogic {
         this.removeUnconfirmedTransaction(theTx.id);
       }
     }
-  }
-
-  @WrapInBalanceSequence
-  public async undoUnconfirmedList(txModule: ITransactionsModule): Promise<string[]> {
-    const ids: string[] = [];
-    const txs           = this.unconfirmed.list(false);
-    for (const tx of txs) {
-      if (!tx) {
-        continue;
-      }
-      ids.push(tx.id);
-      await txModule.undoUnconfirmed(tx)
-        .catch((err) => {
-          if (err) {
-            this.logger.error(`Failed to undo unconfirmed transaction: ${tx.id}`, err);
-            this.removeUnconfirmedTransaction(tx.id);
-          }
-        });
-    }
-    return ids;
   }
 
   /**

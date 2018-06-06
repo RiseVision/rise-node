@@ -106,7 +106,7 @@ export abstract class BaseTransactionType<T, M extends Model<any>> {
   public abstract dbRead(raw: any): T;
 
   // tslint:disable-next-line max-line-length
-  public abstract dbSave(tx: IConfirmedTransaction<T> & { senderId: string }): DBOp<M>;
+  public abstract dbSave(tx: IBaseTransaction<T> & { senderId: string }, blockId?: string, height?: number): DBOp<M>;
 
   public afterSave(tx: IBaseTransaction<T>): Promise<void> {
     return Promise.resolve();

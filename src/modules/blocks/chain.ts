@@ -1,5 +1,6 @@
 import { inject, injectable, tagged } from 'inversify';
-import { Transaction, Op } from 'sequelize';
+import { Op, Transaction } from 'sequelize';
+import * as _ from 'lodash';
 import { Bus, catchToLoggerAndRemapError, DBHelper, ILogger, Sequence, TransactionType, wait } from '../../helpers/';
 import { WrapInBalanceSequence } from '../../helpers/decorators/wrapInSequence';
 import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
@@ -13,8 +14,9 @@ import {
 } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType } from '../../logic/';
-import { IBaseTransaction, IConfirmedTransaction } from '../../logic/transactions/';
+import { IConfirmedTransaction } from '../../logic/transactions/';
 import { AccountsModel, BlocksModel, TransactionsModel } from '../../models/';
+import { DBOp } from '../../types/genericTypes';
 
 @injectable()
 export class BlocksModuleChain implements IBlocksModuleChain {
@@ -93,7 +95,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   }
 
   public async deleteAfterBlock(height: number): Promise<void> {
-    await this.BlocksModel.destroy({where: {[Op.gte]: height}});
+    await this.BlocksModel.destroy({ where: { [Op.gte]: height } });
   }
 
   /**
@@ -151,11 +153,18 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         // FIXME: Poor performance - every transaction cause SQL query to be executed
         // WARNING: DB_WRITE
         const sender = await this.accountsModule
-          .setAccountAndGet({publicKey: tx.senderPublicKey});
-
+          .setAccountAndGet({ publicKey: tx.senderPublicKey });
         // Apply tx.
-        await this.transactionsModule.applyUnconfirmed({...tx, blockId: block.id}, sender);
-        await this.transactionsModule.apply({...tx, blockId: block.id}, block, sender);
+        const ops: Array<DBOp<any>> = [
+          {
+            model: this.AccountsModel,
+            query: this.AccountsModel.createBulkAccountsSQL([tx.recipientId]),
+            type: 'custom',
+          },
+          ... await this.transactionLogic.applyUnconfirmed({... tx, blockId: block.id} as any, sender),
+          ... await this.transactionLogic.apply({... tx, blockId: block.id} as any, block, sender),
+        ];
+        await this.dbHelper.performOps(ops);
 
         tracker.applyNext();
       }
@@ -168,79 +177,61 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
   }
 
-  public async applyBlock(block: SignedAndChainedBlockType, broadcast: boolean, saveBlock: boolean) {
+  @WrapInBalanceSequence
+  public async applyBlock(block: SignedAndChainedBlockType,
+                          broadcast: boolean,
+                          saveBlock: boolean,
+                          accountsMap: { [address: string]: AccountsModel }) {
     if (this.isCleaning) {
       return; // Avoid processing a new block if it is cleaning.
     }
     // Prevent shutdown during database writes.
     this.isProcessing = true;
 
-    // List of unconfirmed transactions ids.
-    // Rewind any unconfirmed transactions before applying block.
-    const unconfirmedTransactionIds = await this.transactionsModule.undoUnconfirmedList()
-      .catch((err) => {
-        // Fatal error, memory tables will be inconsistent
-        this.logger.error('Failed to undo unconfirmed list', err);
-        return process.exit(0);
-      });
-
     // Start atomic block saving.
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
       // Apply transaction to unconfirmed mem_accounts field
       // Divide transactions by senderAccounts.
-      const txsBySender: { [address: string]: Array<IBaseTransaction<any>> } = {};
-      block.transactions.forEach((tx) => {
-        txsBySender[tx.senderId] = txsBySender[tx.senderId] || [];
-        txsBySender[tx.senderId].push(tx);
+      // Fetch recipient accounts and create non existing ones.
+      // Apply unconfirmed
+      const ops: Array<DBOp<any>> = [];
+
+      const recipients = _.sortedUniq(block.transactions
+        .map((tx) => tx.recipientId)
+        .filter((recipient) => recipient)
+        .sort()
+      );
+
+      ops.push({
+        type: 'custom',
+        query: await this.AccountsModel.createBulkAccountsSQL(recipients),
+        model: this.AccountsModel,
       });
 
-      // Apply Unconfirmed parallelly grouped by sender.
-      await Promise.all(Object.keys(txsBySender).map(async (address) => {
-        const txs  = txsBySender[address];
-        let sender = null;
-        for (const transaction of txs) {
-          sender = sender ?
-            await this.accountsModule
-              .getAccount({ address: transaction.senderId }, this.AccountsModel.fieldsFor(transaction, false)) :
-            await this.accountsModule
-              .setAccountAndGet({ publicKey: transaction.senderPublicKey });
-          await this.transactionsModule.applyUnconfirmed(transaction, sender)
-            .catch((err) => {
-              this.logger.error(`Failed to applyUnconfirmed transaction ${transaction.id} - ${err.message || err}`);
-              this.logger.error(err);
-              this.logger.error('Transaction', transaction);
-              throw err;
-            });
-
-          // Remove the transaction from the node queue, if it was present.
-          const idx = unconfirmedTransactionIds.indexOf(transaction.id);
-          if (idx !== -1) {
-            unconfirmedTransactionIds.splice(idx, 1);
-          }
+      for (const tx of block.transactions) {
+        if (this.transactionsModule.transactionUnconfirmed(tx.id)) {
+          continue;
         }
-      }));
+        ops.push(
+          ... await this.transactionLogic.applyUnconfirmed(
+            tx,
+            accountsMap[tx.senderId],
+            tx.requesterPublicKey
+              ? accountsMap[this.accountsModule.generateAddressByPublicKey(tx.requesterPublicKey)]
+              : undefined
+          )
+        );
+      }
 
-      // Apply confirmed parallelly
-      await Promise.all(Object.keys(txsBySender).map(async (address) => {
-        const txs  = txsBySender[address];
-        for (const transaction of txs) {
-          const sender = await this.accountsModule.getAccount(
-            { address: transaction.senderId },
-            this.AccountsModel.fieldsFor(transaction, true)
-          );
-          await this.transactionsModule.apply(transaction, block, sender)
-            .catch((err) => {
-              this.logger.error(`Failed to apply transaction: ${transaction.id}`, err);
-              this.logger.error('Transaction', transaction);
-              throw err;
-            });
+      // Apply
+      for (const tx of block.transactions) {
+        ops.push(
+          ... await this.transactionLogic.apply(tx as any, block, accountsMap[tx.senderId])
+        );
+        this.transactionsModule.removeUnconfirmedTransaction(tx.id);
+      }
 
-          // Transaction applied, removed from the unconfirmed list.
-          this.transactionsModule.removeUnconfirmedTransaction(transaction.id);
-        }
-      }));
-
-      this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
+      await this.dbHelper.performOps(ops, dbTX);
       if (saveBlock) {
         try {
           await this.saveBlock(block, dbTX);
@@ -255,14 +246,13 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       await this.bus.message('newBlock', block, broadcast);
 
       await this.roundsModule.tick(block, dbTX);
+
+      this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
     }).catch((err) => {
       // Allow cleanup as processing finished even if rollback.
       this.isProcessing = false;
       throw err;
     });
-
-    // restore the (yet) unconfirmed ids.
-    await this.transactionsModule.applyUnconfirmedIds(unconfirmedTransactionIds);
 
     block = null;
 
@@ -277,13 +267,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    */
   public async saveBlock(b: SignedBlockType, dbTX: Transaction) {
     const saveOp = this.blockLogic.dbSave(b);
-    const txOps  = b.transactions
-      .map((t: IConfirmedTransaction<any>) => this.transactionLogic.dbSave({
-        ...t,
-        blockId: b.id,
-        height : b.height,
-      }))
-      .reduce((o1, o2) => o1.concat(o2), []);
+    const txOps = this.transactionLogic.dbSave(b.transactions, b.id, b.height);
 
     await this.dbHelper.performOps([saveOp, ...txOps], dbTX);
 
@@ -316,7 +300,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    */
   @WrapInBalanceSequence
   private async popLastBlock(lb: BlocksModel): Promise<BlocksModel> {
-    const previousBlock = await this.BlocksModel.findById(lb.previousBlock, {include: [this.TransactionsModel]});
+    const previousBlock = await this.BlocksModel.findById(lb.previousBlock, { include: [this.TransactionsModel] });
 
     if (previousBlock === null) {
       throw new Error('previousBlock is null');
@@ -324,13 +308,15 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     const txs = lb.transactions.slice().reverse();
 
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
+      const accountsMap = await this.accountsModule.resolveAccountsForTransactions(txs);
+      const ops: Array<DBOp<any>> = [];
       for (const tx of txs) {
-        const sender = await this.AccountsModel.scope('fullConfirmed').find({where: {publicKey: tx.senderPublicKey}});
-        await this.transactionsModule.undo(tx, lb, sender);
-        await this.transactionsModule.undoUnconfirmed(tx);
+        ops.push(... await this.transactionLogic.undo(tx, lb, accountsMap[tx.senderId]));
+        ops.push(... await this.transactionLogic.undoUnconfirmed(tx, accountsMap[tx.senderId]));
       }
+      await this.dbHelper.performOps(ops, dbTX);
       await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
-      await lb.destroy({transaction: dbTX});
+      await lb.destroy({ transaction: dbTX });
     });
 
     return previousBlock;

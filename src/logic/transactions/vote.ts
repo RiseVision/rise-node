@@ -9,7 +9,6 @@ import voteSchema from '../../schema/logic/transactions/vote';
 import { DBOp } from '../../types/genericTypes';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
-import { SignaturesModel } from '../../models';
 
 // tslint:disable-next-line interface-over-type-literal
 export type VoteAsset = {
@@ -29,8 +28,6 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   private accountLogic: IAccountLogic;
 
   // Module
-  @inject(Symbols.modules.accounts)
-  private accountsModule: IAccountsModule;
   @inject(Symbols.modules.delegates)
   private delegatesModule: IDelegatesModule;
   @inject(Symbols.modules.system)
@@ -79,7 +76,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
       throw new Error('Multiple votes for same delegate are not allowed');
     }
 
-    return this.checkConfirmedDelegates(tx);
+    return this.checkConfirmedDelegates(tx, sender);
   }
 
   public getBytes(tx: IBaseTransaction<VoteAsset>, skipSignature: boolean, skipSecondSignature: boolean): Buffer {
@@ -106,8 +103,8 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
 
   // tslint:disable-next-line max-line-length
   public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
-    await this.checkConfirmedDelegates(tx);
-
+    await this.checkConfirmedDelegates(tx, sender);
+    sender.applyDiffArray('delegates', tx.asset.votes);
     return this.accountLogic.merge(
       sender.address,
       {
@@ -122,6 +119,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   public async undo(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     this.objectNormalize(tx);
     const invertedVotes = Diff.reverse(tx.asset.votes);
+    sender.applyDiffArray('delegates', invertedVotes);
     return this.accountLogic.merge(
       sender.address,
       {
@@ -135,19 +133,20 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   /**
    * Checks vote integrity of tx sender
    */
-  public checkUnconfirmedDelegates(tx: IBaseTransaction<VoteAsset>): Promise<any> {
-    return this.delegatesModule.checkUnconfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
+  public checkUnconfirmedDelegates(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<any> {
+    return this.delegatesModule.checkUnconfirmedDelegates(sender, tx.asset.votes);
   }
 
   /**
    * Checks vote integrity of sender
    */
-  public checkConfirmedDelegates(tx: IBaseTransaction<VoteAsset>): Promise<any> {
-    return this.delegatesModule.checkConfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
+  public checkConfirmedDelegates(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<any> {
+    return this.delegatesModule.checkConfirmedDelegates(sender, tx.asset.votes);
   }
 
   public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
-    await this.checkUnconfirmedDelegates(tx);
+    await this.checkUnconfirmedDelegates(tx, sender);
+    sender.applyDiffArray('u_delegates', tx.asset.votes);
     return this.accountLogic.merge(
       sender.address,
       {
@@ -158,10 +157,12 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
 
   public async undoUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     this.objectNormalize(tx);
+    const reversedVotes = Diff.reverse(tx.asset.votes);
+    sender.applyDiffArray('u_delegates', reversedVotes);
     return this.accountLogic.merge(
       sender.address,
       {
-        u_delegates: Diff.reverse(tx.asset.votes),
+        u_delegates: reversedVotes,
       }
     );
   }

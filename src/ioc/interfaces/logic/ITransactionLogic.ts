@@ -69,17 +69,6 @@ export interface ITransactionLogic {
   assertKnownTransactionType(type: number): void;
 
   /**
-   * Counts transaction by id
-   * @returns {Promise<number>}
-   */
-  countById(tx: IBaseTransaction<any>): Promise<number>;
-
-  /**
-   * Checks the tx is not confirmed or rejects otherwise
-   */
-  assertNonConfirmed(tx: IBaseTransaction<any>): Promise<void>;
-
-  /**
    * Checks if balanceKey is less than amount for sender
    */
   checkBalance(amount: number | BigNumber, balanceKey: 'balance' | 'u_balance',
@@ -122,7 +111,7 @@ export interface ITransactionLogic {
    */
   undoUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel): Promise<Array<DBOp<any>>>;
 
-  dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<DBOp<any>>;
+  dbSave(txs: Array<IBaseTransaction<any> & {senderId: string}>, blockId: string, height: number): Array<DBOp<any>>;
 
   afterSave(tx: IBaseTransaction<any>): Promise<void>;
 

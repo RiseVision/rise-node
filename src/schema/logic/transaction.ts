@@ -25,6 +25,7 @@ export default {
     },
     timestamp         : {
       type: 'integer',
+      minimum: 0,
     },
     senderPublicKey   : {
       type  : 'object',
@@ -68,5 +69,5 @@ export default {
       type: 'object',
     },
   },
-  required  : ['type', 'timestamp', 'senderPublicKey', 'signature'],
+  required  : ['type', 'timestamp', 'senderPublicKey', 'signature', 'fee', 'amount'],
 };

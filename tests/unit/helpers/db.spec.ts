@@ -55,7 +55,7 @@ describe('helpers/db', () => {
       expect(stub.firstCall.args[0]).to.be.deep.eq(op);
       expect(stub.secondCall.args[0]).to.be.deep.eq(op2);
       expect(stubQuery.callCount).is.eq(1);
-      expect(stubQuery.firstCall.args[0]).to.be.deep.eq(':);\n:)');
+      expect(stubQuery.firstCall.args[0]).to.be.deep.eq(':);:)');
     });
 
     it('update should call handleUpdate', async () => {
@@ -67,7 +67,7 @@ describe('helpers/db', () => {
       expect(stub.firstCall.args[0]).to.be.deep.eq(op);
       expect(stub.secondCall.args[0]).to.be.deep.eq(op2);
       expect(stubQuery.callCount).is.eq(1);
-      expect(stubQuery.firstCall.args[0]).to.be.deep.eq(':);\n:)');
+      expect(stubQuery.firstCall.args[0]).to.be.deep.eq(':);:)');
     });
     it('update should call handleDelete', async () => {
       const stub                 = sandbox.stub(instance, 'handleDelete').returns(':)');
@@ -78,7 +78,7 @@ describe('helpers/db', () => {
       expect(stub.firstCall.args[0]).to.be.deep.eq(op);
       expect(stub.secondCall.args[0]).to.be.deep.eq(op2);
       expect(stubQuery.callCount).is.eq(1);
-      expect(stubQuery.firstCall.args[0]).to.be.deep.eq(':);\n:)');
+      expect(stubQuery.firstCall.args[0]).to.be.deep.eq(':);:)');
     });
     it('update should call handleUpsert', async () => {
       const stub                 = sandbox.stub(instance, 'handleUpsert').returns(':)');
@@ -89,7 +89,7 @@ describe('helpers/db', () => {
       expect(stub.firstCall.args[0]).to.be.deep.eq(op);
       expect(stub.secondCall.args[0]).to.be.deep.eq(op2);
       expect(stubQuery.callCount).is.eq(1);
-      expect(stubQuery.firstCall.args[0]).to.be.deep.eq(':);\n:)');
+      expect(stubQuery.firstCall.args[0]).to.be.deep.eq(':);:)');
     });
 
   });

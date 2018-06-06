@@ -74,7 +74,10 @@ describe('logic/transactions/vote', () => {
     sender = {
       address  : '1233456789012345R',
       balance  : 10000000,
-      publicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex')
+      publicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+      applyDiffArray() {
+        throw new Error('please stub applyDiffArray');
+      },
     };
 
     block = {
@@ -188,10 +191,19 @@ describe('logic/transactions/vote', () => {
 
   describe('apply', () => {
     let checkConfirmedDelegatesStub: SinonStub;
+    let applyDiffArrayStub: SinonStub;
     beforeEach(() => {
       checkConfirmedDelegatesStub = sandbox.stub(instance, 'checkConfirmedDelegates').resolves();
       roundsLogicStub.stubs.calcRound.returns(111);
       accountLogicStub.stubs.merge.resolves();
+      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
+    });
+
+    it('should call applyDiffArray with proper values', async () => {
+      await instance.apply(tx, block, sender);
+      expect(applyDiffArrayStub.called).is.true;
+      expect(applyDiffArrayStub.firstCall.args[0]).deep.eq('delegates');
+      expect(applyDiffArrayStub.firstCall.args[1]).deep.eq(tx.asset.votes);
     });
 
     it('should call checkConfirmedDelegates', async () => {
@@ -224,10 +236,21 @@ describe('logic/transactions/vote', () => {
 
   describe('undo', () => {
     let objectNormalizeStub: SinonStub;
+    let applyDiffArrayStub: SinonStub;
     beforeEach(() => {
       objectNormalizeStub = sandbox.stub(instance, 'objectNormalize').resolves();
       roundsLogicStub.stubs.calcRound.returns(111);
       accountLogicStub.stubs.merge.resolves();
+      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
+    });
+    it('should call applyDiffArray with proper values', async () => {
+      await instance.undo(tx, block, sender);
+      expect(applyDiffArrayStub.called).is.true;
+      expect(applyDiffArrayStub.firstCall.args[0]).deep.eq('delegates');
+      expect(applyDiffArrayStub.firstCall.args[1]).deep.eq([
+        '+7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381',
+        '-05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a',
+      ]);
     });
 
     it('should call objectNormalize', async () => {
@@ -264,9 +287,10 @@ describe('logic/transactions/vote', () => {
   describe('checkConfirmedDelegates', () => {
     it('should call delegatesModule.checkConfirmedDelegates and return its result', () => {
       delegatesModuleStub.stubs.checkConfirmedDelegates.returns('test');
-      const retVal = instance.checkConfirmedDelegates(tx);
+      const accountsModel1 = new AccountsModel();
+      const retVal = instance.checkConfirmedDelegates(tx, accountsModel1);
       expect(delegatesModuleStub.stubs.checkConfirmedDelegates.calledOnce).to.be.true;
-      expect(delegatesModuleStub.stubs.checkConfirmedDelegates.firstCall.args[0]).to.be.equal(tx.senderPublicKey);
+      expect(delegatesModuleStub.stubs.checkConfirmedDelegates.firstCall.args[0]).to.be.deep.equal(accountsModel1);
       expect(delegatesModuleStub.stubs.checkConfirmedDelegates.firstCall.args[1]).to.be.equalTo(tx.asset.votes);
       expect(retVal).to.be.equal('test');
     });
@@ -275,9 +299,10 @@ describe('logic/transactions/vote', () => {
   describe('checkUnconfirmedDelegates', () => {
     it('should call delegatesModule.checkUnconfirmedDelegates and return its result', () => {
       delegatesModuleStub.stubs.checkUnconfirmedDelegates.returns('test');
-      const retVal = instance.checkUnconfirmedDelegates(tx);
+      const accountsModel1 = new AccountsModel();
+      const retVal = instance.checkUnconfirmedDelegates(tx, accountsModel1);
       expect(delegatesModuleStub.stubs.checkUnconfirmedDelegates.calledOnce).to.be.true;
-      expect(delegatesModuleStub.stubs.checkUnconfirmedDelegates.firstCall.args[0]).to.be.equal(tx.senderPublicKey);
+      expect(delegatesModuleStub.stubs.checkUnconfirmedDelegates.firstCall.args[0]).to.be.deep.equal(accountsModel1);
       expect(delegatesModuleStub.stubs.checkUnconfirmedDelegates.firstCall.args[1]).to.be.equalTo(tx.asset.votes);
       expect(retVal).to.be.equal('test');
     });
@@ -285,10 +310,19 @@ describe('logic/transactions/vote', () => {
 
   describe('applyUnconfirmed', () => {
     let checkUnconfirmedDelegatesStub: SinonStub;
+    let applyDiffArrayStub: SinonStub;
     beforeEach(() => {
       checkUnconfirmedDelegatesStub = sandbox.stub(instance, 'checkUnconfirmedDelegates').resolves('yesItIs');
       roundsLogicStub.stubs.calcRound.returns(111);
       accountLogicStub.stubs.merge.resolves();
+      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
+    });
+
+    it('should call applyDiffArray with proper values', async () => {
+      await instance.applyUnconfirmed(tx, sender);
+      expect(applyDiffArrayStub.called).is.true;
+      expect(applyDiffArrayStub.firstCall.args[0]).deep.eq('u_delegates');
+      expect(applyDiffArrayStub.firstCall.args[1]).deep.eq(tx.asset.votes);
     });
 
     it('should call checkUnconfirmedDelegates', async () => {
@@ -314,10 +348,22 @@ describe('logic/transactions/vote', () => {
 
   describe('undoUnconfirmed', () => {
     let objectNormalizeStub: SinonStub;
+    let applyDiffArrayStub: SinonStub;
+
     beforeEach(() => {
       objectNormalizeStub = sandbox.stub(instance, 'objectNormalize').resolves();
       roundsLogicStub.stubs.calcRound.returns(111);
       accountLogicStub.stubs.merge.resolves();
+      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
+    });
+    it('should call applyDiffArray with proper values', async () => {
+      await instance.undoUnconfirmed(tx, sender);
+      expect(applyDiffArrayStub.called).is.true;
+      expect(applyDiffArrayStub.firstCall.args[0]).deep.eq('u_delegates');
+      expect(applyDiffArrayStub.firstCall.args[1]).deep.eq([
+        '+7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381',
+        '-05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a',
+      ]);
     });
 
     it('should call objectNormalize', async () => {

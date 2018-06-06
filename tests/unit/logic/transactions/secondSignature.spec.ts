@@ -3,7 +3,7 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
-import { SinonSandbox } from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import { TransactionType } from '../../../../src/helpers';
 import { Symbols } from '../../../../src/ioc/symbols';
 import { SecondSignatureTransaction } from '../../../../src/logic/transactions';
@@ -66,6 +66,9 @@ describe('logic/transactions/secondSignature', () => {
       isMultisignatures() {
         return false;
       },
+      applyValues() {
+        throw new Error('please stub applyValues');
+      }
     };
 
     block = {
@@ -147,6 +150,19 @@ describe('logic/transactions/secondSignature', () => {
   });
 
   describe('apply', () => {
+    let applyValuesStub: SinonStub;
+    beforeEach(() => {
+      applyValuesStub = sandbox.stub(sender, 'applyValues');
+    });
+    it('should call sender.applyValues with proper data', async () => {
+      await instance.apply(tx, block, sender);
+      expect(applyValuesStub.called).is.true;
+      expect(applyValuesStub.firstCall.args[0]).deep.eq({
+        u_secondSignature: 0,
+        secondSignature: 1,
+        secondPublicKey: Buffer.from(tx.asset.signature.publicKey, 'hex')
+      });
+    });
     it('should return an update operation with proper data', async () => {
       const ops = await instance.apply(tx, block, sender);
       expect(ops.length).is.eq(1);
@@ -164,6 +180,19 @@ describe('logic/transactions/secondSignature', () => {
   });
 
   describe('undo', () => {
+    let applyValuesStub: SinonStub;
+    beforeEach(() => {
+      applyValuesStub = sandbox.stub(sender, 'applyValues');
+    });
+    it('should call sender.applyValues with proper data', async () => {
+      await instance.undo(tx, block, sender);
+      expect(applyValuesStub.called).is.true;
+      expect(applyValuesStub.firstCall.args[0]).deep.eq({
+        u_secondSignature: 1,
+        secondSignature: 0,
+        secondPublicKey: null,
+      });
+    });
     it('should return an update operation with proper data', async () => {
       const ops = await instance.undo(tx, block, sender);
       expect(ops.length).is.eq(1);
@@ -181,6 +210,17 @@ describe('logic/transactions/secondSignature', () => {
   });
 
   describe('applyUnconfirmed', () => {
+    let applyValuesStub: SinonStub;
+    beforeEach(() => {
+      applyValuesStub = sandbox.stub(sender, 'applyValues');
+    });
+    it('should call sender.applyValues with proper data', async () => {
+      await instance.applyUnconfirmed(tx, sender);
+      expect(applyValuesStub.called).is.true;
+      expect(applyValuesStub.firstCall.args[0]).deep.eq({
+        u_secondSignature: 1,
+      });
+    });
     it('should return an update operation with proper data', async () => {
       const ops = await instance.applyUnconfirmed(tx, sender);
       expect(ops.length).is.eq(1);
@@ -206,6 +246,17 @@ describe('logic/transactions/secondSignature', () => {
   });
 
   describe('undoUnconfirmed', () => {
+    let applyValuesStub: SinonStub;
+    beforeEach(() => {
+      applyValuesStub = sandbox.stub(sender, 'applyValues');
+    });
+    it('should call sender.applyValues with proper data', async () => {
+      await instance.undoUnconfirmed(tx, sender);
+      expect(applyValuesStub.called).is.true;
+      expect(applyValuesStub.firstCall.args[0]).deep.eq({
+        u_secondSignature: 0,
+      });
+    });
     it('should return an update operation with proper data', async () => {
       const ops = await instance.undoUnconfirmed(tx, sender);
       expect(ops.length).is.eq(1);

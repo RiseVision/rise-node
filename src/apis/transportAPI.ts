@@ -143,7 +143,7 @@ export class TransportAPI {
   @Post('/signatures')
   @ValidateSchema()
   public async postSignatures(
-    @SchemaValid(transportSchema.signatures, 'Invalid signatures body')
+    @SchemaValid(transportSchema.signatures.properties.signatures, 'Invalid signatures body')
     @BodyParam('signatures') signatures: Array<{ transaction: string, signature: string }>) {
 
     return this.transportModule.receiveSignatures(signatures);
@@ -163,13 +163,11 @@ export class TransportAPI {
       ip  : req.ip,
       port: parseInt(req.headers.port as string, 10),
     });
-    if (txs) {
-      await this.transportModule.receiveTransactions(txs, thePeer, `${req.method} ${req.url}`);
-      return {};
-    } else if (tx) {
-      await this.transportModule.receiveTransaction(tx, thePeer, false, `${req.method} ${req.url}`);
-
+    txs = txs || (tx ? [tx] : [] );
+    if (txs.length > 0) {
+      await this.transportModule.receiveTransactions(txs, thePeer, true);
     }
+    return {};
   }
 
   @Get('/blocks/common')

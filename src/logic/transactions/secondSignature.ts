@@ -84,6 +84,12 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
 
   public async apply(tx: IConfirmedTransaction<SecondSignatureAsset>, block: SignedBlockType,
                      sender: AccountsModel): Promise<Array<DBOp<any>>> {
+    const secondPublicKey = Buffer.from(tx.asset.signature.publicKey, 'hex');
+    sender.applyValues({
+      secondPublicKey,
+      secondSignature  : 1,
+      u_secondSignature: 0,
+    });
     return [{
       model  : this.AccountsModel,
       options: {
@@ -91,7 +97,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
       },
       type   : 'update',
       values : {
-        secondPublicKey  : new Buffer(tx.asset.signature.publicKey, 'hex'),
+        secondPublicKey,
         secondSignature  : 1,
         u_secondSignature: 0,
       },
@@ -101,6 +107,12 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   public async undo(tx: IConfirmedTransaction<SecondSignatureAsset>,
                     block: SignedBlockType,
                     sender: AccountsModel): Promise<Array<DBOp<any>>> {
+
+    sender.applyValues({
+      secondPublicKey  : null,
+      secondSignature  : 0,
+      u_secondSignature: 1,
+    });
     return [{
       model  : this.AccountsModel,
       options: {
@@ -120,6 +132,9 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     if (sender.u_secondSignature || sender.secondSignature) {
       throw new Error('Second signature already enabled');
     }
+    sender.applyValues({
+      u_secondSignature: 1,
+    });
     return [{
       model  : this.AccountsModel,
       options: {
@@ -134,6 +149,10 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
 
   public async undoUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>,
                                sender: AccountsModel): Promise<Array<DBOp<any>>> {
+
+    sender.applyValues({
+      u_secondSignature: 0,
+    });
     return [{
       model  : this.AccountsModel,
       options: {

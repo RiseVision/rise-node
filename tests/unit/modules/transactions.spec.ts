@@ -19,6 +19,7 @@ import {
 import { createContainer } from '../../utils/containerCreator';
 import DbStub from '../../stubs/helpers/DbStub';
 import { TransactionsModel } from '../../../src/models';
+import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
 
 chai.use(chaiAsPromised);
 
@@ -203,111 +204,12 @@ describe('modules/transactions', () => {
     it('should call txPool.processNewTransaction and return', () => {
       const tx = { the: 'tx' };
       transactionPoolStub.stubs.processNewTransaction.returns('done');
-      const retVal = instance.processUnconfirmedTransaction(tx as any, false, true);
+      const retVal = instance.processUnconfirmedTransaction(tx as any, false);
       expect(transactionPoolStub.stubs.processNewTransaction.calledOnce).to.be.true;
-      expect(transactionPoolStub.stubs.processNewTransaction.firstCall.args.length).to.be.equal(3);
+      expect(transactionPoolStub.stubs.processNewTransaction.firstCall.args.length).to.be.equal(2);
       expect(transactionPoolStub.stubs.processNewTransaction.firstCall.args[0]).to.be.deep.equal(tx);
       expect(transactionPoolStub.stubs.processNewTransaction.firstCall.args[1]).to.be.equal(false);
-      expect(transactionPoolStub.stubs.processNewTransaction.firstCall.args[2]).to.be.equal(true);
       expect(retVal).to.be.equal('done');
-    });
-  });
-
-  describe('applyUnconfirmedIds', () => {
-    it('should call txPool.applyUnconfirmedList and return', () => {
-      const ids = ['id1', 'id2'];
-      transactionPoolStub.stubs.applyUnconfirmedList.returns('done');
-      const retVal = instance.applyUnconfirmedIds(ids);
-      expect(transactionPoolStub.stubs.applyUnconfirmedList.calledOnce).to.be.true;
-      expect(transactionPoolStub.stubs.applyUnconfirmedList.firstCall.args.length).to.be.equal(2);
-      expect(transactionPoolStub.stubs.applyUnconfirmedList.firstCall.args[0]).to.be.deep.equal(ids);
-      expect(transactionPoolStub.stubs.applyUnconfirmedList.firstCall.args[1]).to.be.deep.equal(instance);
-      expect(retVal).to.be.equal('done');
-    });
-  });
-
-  describe('applyUnconfirmedList', () => {
-    it('should call unconfirmed.list and pass result to txPool.applyUnconfirmedList, then return', () => {
-      const ids = ['id1', 'id2'];
-      transactionPoolStub.unconfirmed.stubs.list.returns(ids);
-      transactionPoolStub.stubs.applyUnconfirmedList.returns('done');
-      const retVal = instance.applyUnconfirmedList();
-      expect(transactionPoolStub.unconfirmed.stubs.list.calledOnce).to.be.true;
-      expect(transactionPoolStub.unconfirmed.stubs.list.firstCall.args.length).to.be.equal(1);
-      expect(transactionPoolStub.unconfirmed.stubs.list.firstCall.args[0]).to.be.deep.equal(true);
-      expect(transactionPoolStub.stubs.applyUnconfirmedList.calledOnce).to.be.true;
-      expect(transactionPoolStub.stubs.applyUnconfirmedList.firstCall.args.length).to.be.equal(2);
-      expect(transactionPoolStub.stubs.applyUnconfirmedList.firstCall.args[0]).to.be.deep.equal(ids);
-      expect(transactionPoolStub.stubs.applyUnconfirmedList.firstCall.args[1]).to.be.deep.equal(instance);
-      expect(retVal).to.be.equal('done');
-    });
-  });
-
-  describe('undoUnconfirmedList', () => {
-    it('should call txPool.undoUnconfirmedList and return', async () => {
-      const retPromise = Promise.resolve(['test']);
-      transactionPoolStub.stubs.undoUnconfirmedList.returns(retPromise);
-      const retVal = await instance.undoUnconfirmedList();
-      expect(transactionPoolStub.stubs.undoUnconfirmedList.calledOnce).to.be.true;
-      expect(transactionPoolStub.stubs.undoUnconfirmedList.firstCall.args.length).to.be.equal(1);
-      expect(transactionPoolStub.stubs.undoUnconfirmedList.firstCall.args[0]).to.be.deep.equal(instance);
-      expect(retVal).to.be.deep.equal(['test']);
-    });
-  });
-
-  describe('apply', () => {
-    const tx     = { the: 'tx', id: 'tx1' };
-    const block  = { the: 'block' };
-    const sender = { the: 'sender' };
-    beforeEach(() => {
-      dbHelperStub.enqueueResponse('performOps', Promise.resolve());
-    });
-
-    it('should call logger.debug', async () => {
-      transactionLogicStub.stubs.apply.returns('done');
-      await instance.apply(tx as any, block as any, sender as any);
-      expect(loggerStub.stubs.debug.calledOnce).to.be.true;
-      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(2);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.deep.equal('Applying confirmed transaction');
-      expect(loggerStub.stubs.debug.firstCall.args[1]).to.be.deep.equal(tx.id);
-    });
-
-    it('should call txPool.apply and return', async () => {
-      transactionLogicStub.stubs.apply.returns('done');
-      await instance.apply(tx as any, block as any, sender as any);
-      expect(transactionLogicStub.stubs.apply.calledOnce).to.be.true;
-      expect(transactionLogicStub.stubs.apply.firstCall.args.length).to.be.equal(3);
-      expect(transactionLogicStub.stubs.apply.firstCall.args[0]).to.be.deep.equal(tx);
-      expect(transactionLogicStub.stubs.apply.firstCall.args[1]).to.be.deep.equal(block);
-      expect(transactionLogicStub.stubs.apply.firstCall.args[2]).to.be.deep.equal(sender);
-    });
-  });
-
-  describe('undo', () => {
-    const tx     = { the: 'tx', id: 'tx1' };
-    const block  = { the: 'block' };
-    const sender = { the: 'sender' };
-    beforeEach(() => {
-      dbHelperStub.enqueueResponse('performOps', Promise.resolve());
-    });
-    it('should call logger.debug', async () => {
-      transactionLogicStub.stubs.undo.returns('done');
-
-      await instance.undo(tx as any, block as any, sender as any);
-      expect(loggerStub.stubs.debug.calledOnce).to.be.true;
-      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(2);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.deep.equal('Undoing confirmed transaction');
-      expect(loggerStub.stubs.debug.firstCall.args[1]).to.be.deep.equal(tx.id);
-    });
-
-    it('should call txPool.undo and return', async () => {
-      transactionLogicStub.stubs.undo.returns('done');
-      await instance.undo(tx as any, block as any, sender as any);
-      expect(transactionLogicStub.stubs.undo.calledOnce).to.be.true;
-      expect(transactionLogicStub.stubs.undo.firstCall.args.length).to.be.equal(3);
-      expect(transactionLogicStub.stubs.undo.firstCall.args[0]).to.be.deep.equal(tx);
-      expect(transactionLogicStub.stubs.undo.firstCall.args[1]).to.be.deep.equal(block);
-      expect(transactionLogicStub.stubs.undo.firstCall.args[2]).to.be.deep.equal(sender);
     });
   });
 
@@ -415,18 +317,6 @@ describe('modules/transactions', () => {
     });
   });
 
-  describe('receiveTransactions', () => {
-    it('should call txPool.receiveTransactions', async () => {
-      transactionPoolStub.stubs.receiveTransactions.returns(true);
-      const transactions = ['tx1', 'tx2'];
-      await instance.receiveTransactions(transactions as any, false, true);
-      expect(transactionPoolStub.stubs.receiveTransactions.calledOnce).to.be.true;
-      expect(transactionPoolStub.stubs.receiveTransactions.firstCall.args.length).to.be.equal(3);
-      expect(transactionPoolStub.stubs.receiveTransactions.firstCall.args[0]).to.be.deep.equal(transactions);
-      expect(transactionPoolStub.stubs.receiveTransactions.firstCall.args[1]).to.be.false;
-      expect(transactionPoolStub.stubs.receiveTransactions.firstCall.args[2]).to.be.true;
-    });
-  });
 
   describe('count', () => {
     let txModel: typeof TransactionsModel;
@@ -456,10 +346,13 @@ describe('modules/transactions', () => {
   });
 
   describe('fillPool', () => {
-    const newUnconfirmedTXs = ['tx1', 'tx2'];
+    const newUnconfirmedTXs = createRandomTransactions({send: 2, vote: 1})
+      .map((t) => toBufferedTransaction(t));
+    let filterConfIDsStub: SinonStub;
     beforeEach(() => {
-      transactionPoolStub.stubs.fillPool.resolves(newUnconfirmedTXs);
+      transactionPoolStub.stubs.fillPool.resolves(newUnconfirmedTXs.slice());
       transactionPoolStub.stubs.applyUnconfirmedList.resolves();
+      filterConfIDsStub = sandbox.stub(instance, 'filterConfirmedIds').resolves([]);
     });
 
     it('should call txPool.fillPool', async () => {
@@ -475,11 +368,23 @@ describe('modules/transactions', () => {
       expect(transactionPoolStub.stubs.applyUnconfirmedList.firstCall.args[0]).to.be.deep.equal(newUnconfirmedTXs);
       expect(transactionPoolStub.stubs.applyUnconfirmedList.firstCall.args[1]).to.be.deep.equal(instance);
     });
-  });
 
-  describe('isLoaded', () => {
-    it('should return true', () => {
-      expect(instance.isLoaded()).to.be.true;
+    it('should query for confirmed ids', async () => {
+      await instance.fillPool();
+      expect(filterConfIDsStub.called).is.true;
+      expect(filterConfIDsStub.firstCall.args[0]).is.deep.eq(newUnconfirmedTXs.map((t) => t.id));
+    });
+
+    it('should exclude already confirmed transaction', async () => {
+      filterConfIDsStub.resolves([newUnconfirmedTXs[1].id]);
+      await instance.fillPool();
+      expect(transactionPoolStub.stubs.applyUnconfirmedList.calledOnce).to.be.true;
+      expect(transactionPoolStub.stubs.applyUnconfirmedList.firstCall.args.length).to.be.equal(2);
+      expect(transactionPoolStub.stubs.applyUnconfirmedList.firstCall.args[0]).to.be.deep.equal([
+        newUnconfirmedTXs[0],
+        newUnconfirmedTXs[2],
+      ]);
+      expect(transactionPoolStub.stubs.applyUnconfirmedList.firstCall.args[1]).to.be.deep.equal(instance);
     });
   });
 

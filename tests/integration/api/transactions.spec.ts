@@ -283,18 +283,23 @@ describe('api/transactions', () => {
       });
     });
     describe('limit and offset', () => {
+      beforeEach(async () => {
+        await createRandomAccountWithFunds(Math.pow(10, 11));
+        await createRandomAccountWithFunds(Math.pow(10, 11));
+        await createRandomAccountWithFunds(Math.pow(10, 11));
+      });
       it('should limit ret txs by limit and offset it', async () => {
-        const {count, transactions} = await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}`)
+        const {count, transactions} = await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}&orderBy=height:desc`)
           .then((resp) => resp.body);
         // offset!
-        await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}&offset=1`)
+        await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}&offset=1&orderBy=height:desc`)
           .then((resp) => {
             expect(resp.body.count).to.be.eq(count);
             expect(resp.body.transactions[0]).to.be.deep.eq(transactions[1]);
           });
 
         // limit and offset
-        await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}&offset=2&limit=1`)
+        await supertest(initializer.appManager.expressApp).get(`/api/transactions?type=${TransactionType.SEND}&offset=2&limit=1&orderBy=height:desc`)
           .then((resp) => {
             expect(resp.body.count).to.be.eq(count);
             expect(resp.body.transactions.length).to.be.eq(1);
@@ -322,7 +327,11 @@ describe('api/transactions', () => {
           txs.push(tx);
         }
         const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
-        await txModule.receiveTransactions(txs.map((t) => toBufferedTransaction(t)), false, false);
+        for (const tx of txs) {
+          await txModule.processUnconfirmedTransaction(toBufferedTransaction(tx), false);
+        }
+        const txPool = initializer.appManager.container.get<ITransactionPoolLogic>(Symbols.logic.transactionPool);
+        await txPool.processBundled();
       });
       it('should return 5 queued', async () => {
         return supertest(initializer.appManager.expressApp)
@@ -333,8 +342,8 @@ describe('api/transactions', () => {
           });
       });
       it('should return 5 unconfirmed if fillPool', async () => {
-        const txPool = initializer.appManager.container.get<ITransactionPoolLogic>(Symbols.logic.transactionPool);
-        await txPool.fillPool();
+        const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
+        await txModule.fillPool();
         return supertest(initializer.appManager.expressApp)
           .get('/api/transactions/count')
           .expect(200)

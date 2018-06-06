@@ -52,6 +52,7 @@
     "socket.io": "=2.1.1",
     "sodium": "=2.0.3",
     "source-map-support": "=0.5.6",
+    "squel": "^5.12.1",
     "strftime": "=0.10.0",
     "uuid": "^3.1.0",
     "z-schema": "=3.22.0"

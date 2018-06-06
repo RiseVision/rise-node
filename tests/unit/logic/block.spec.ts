@@ -14,6 +14,9 @@ import { createContainer } from '../../utils/containerCreator';
 import { BlocksModel } from '../../../src/models';
 import { IBlockLogic } from '../../../src/ioc/interfaces/index';
 import { DBCreateOp } from '../../../src/types/genericTypes';
+import { z_schema } from '../../../src/helpers/z_schema';
+import { createFakeBlock } from '../../utils/blockCrafter';
+import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -263,7 +266,236 @@ describe('logic/block', () => {
       expect(zschemastub.stubs.validate.called).to.be.true;
     });
   });
+  describe('objectNormalize with real data', () => {
+    beforeEach(() => {
+      container = createContainer();
+      container.rebind(Symbols.generic.zschema).toConstantValue(new z_schema({}));
+      container.rebind(Symbols.logic.block).to(BlockLogic);
+      instance = container.get(Symbols.logic.block);
+      transactionLogicStub = container.get(Symbols.logic.transaction);
+      transactionLogicStub.stubs.objectNormalize.returns(null);
+    });
+    it('should pass with fake but correct block', () => {
+      const b = createFakeBlock();
+      instance.objectNormalize(b);
+    });
+    it('should return buffers on proper fields', () => {
+      const b = createFakeBlock();
+      b.generatorPublicKey = b.generatorPublicKey.toString('hex') as any;
+      const res = instance.objectNormalize(b);
+      expect(res.generatorPublicKey).instanceOf(Buffer);
+    });
+    it('should reject if height < 1', () => {
+      const b = createFakeBlock();
+      b.height = 0;
+      expect(() => instance.objectNormalize(b)).to.throw('Failed to validate block schema: Value 0 is less than minimum 1');
+    });
+    it('should reject if id is exceeding length', () => {
+      const b = createFakeBlock();
+      b.id =  Array(21).fill('1').join('');
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Failed to validate block schema: String is too long');
+    });
+    it('should reject if id is defined but zero length', () => {
+      const b = createFakeBlock();
+      b.id =  '';
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Failed to validate block schema: String is too short');
+    });
+    it('should reject if id is defined invalid', () => {
+      const b = createFakeBlock();
+      b.id =  'a1a';
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Failed to validate block schema: Object didn\'t pass validation for format id: a1a');
+    });
+    it('should validate blockSignature', () => {
+      const b          = createFakeBlock();
+      delete b.blockSignature;
+      expect(() => instance.objectNormalize(b))
+        .to.throw();
+      b.blockSignature = null;
+      expect(() => instance.objectNormalize(b))
+        .to.throw();
 
+      // blocksignature not long 64bytes
+      b.blockSignature = Buffer.alloc(0);
+      const error = 'Failed to validate block schema: Object didn\'t pass validation for format signatureBuf';
+      expect(() => instance.objectNormalize(b))
+        .to.throw(error);
+
+      // blockSignature as string not long enough
+      b.blockSignature = Buffer.alloc(32).toString('hex') as any;
+      expect(() => instance.objectNormalize(b))
+        .to.throw(error);
+
+      // valid buffer
+      b.blockSignature = Buffer.alloc(64);
+      instance.objectNormalize(b);
+
+      // Valid string
+      b.blockSignature = Buffer.alloc(64).toString('hex') as any;
+      instance.objectNormalize(b);
+    });
+    it('should validate generatorPublicKEy', () => {
+      const b          = createFakeBlock();
+      delete b.generatorPublicKey;
+      expect(() => instance.objectNormalize(b))
+        .to.throw();
+      b.generatorPublicKey = null;
+      expect(() => instance.objectNormalize(b))
+        .to.throw();
+
+      // blocksignature not long 64bytes
+      b.generatorPublicKey = Buffer.alloc(0);
+      const error = 'Failed to validate block schema: Object didn\'t pass validation for format publicKeyBuf';
+      expect(() => instance.objectNormalize(b))
+        .to.throw(error);
+
+      // blockSignature as string not long enough
+      b.generatorPublicKey = Buffer.alloc(31).toString('hex') as any;
+      expect(() => instance.objectNormalize(b))
+        .to.throw(error);
+
+      // valid buffer
+      b.generatorPublicKey = Buffer.alloc(32);
+      instance.objectNormalize(b);
+
+      // Valid string
+      b.generatorPublicKey = Buffer.alloc(32).toString('hex') as any;
+      instance.objectNormalize(b);
+    });
+    it('should validate numberOfTransactions field', () => {
+      const b = createFakeBlock();
+
+      delete b.numberOfTransactions;
+      expect(() => instance.objectNormalize(b)).to.throw();
+      b.numberOfTransactions = null;
+      expect(() => instance.objectNormalize(b)).to.throw();
+
+      b.numberOfTransactions = -1;
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Value -1 is less than minimum');
+    });
+    it('should validate payloadHash field', () => {
+      const b = createFakeBlock();
+      delete b.payloadHash;
+      expect(() => instance.objectNormalize(b)).to.throw();
+      b.payloadHash = null;
+      expect(() => instance.objectNormalize(b)).to.throw();
+      // payloadHash not long 32bytes
+      b.payloadHash = Buffer.alloc(0);
+      const error = 'Failed to validate block schema: Object didn\'t pass validation for format sha256Buf';
+      expect(() => instance.objectNormalize(b))
+        .to.throw(error);
+
+      // payloadHash as string not long enough
+      b.payloadHash = Buffer.alloc(31).toString('hex') as any;
+      expect(() => instance.objectNormalize(b))
+        .to.throw(error);
+
+      // valid buffer
+      b.payloadHash = Buffer.alloc(32);
+      instance.objectNormalize(b);
+
+      // Valid string
+      b.payloadHash = Buffer.alloc(32).toString('hex') as any;
+      instance.objectNormalize(b);
+    });
+    it('should validate payloadLength', () => {
+      const b = createFakeBlock();
+      delete b.payloadLength;
+      expect(() => instance.objectNormalize(b)).to.throw();
+      b.payloadLength = null;
+      expect(() => instance.objectNormalize(b)).to.throw();
+      b.payloadLength = -1;
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Value -1 is less than minimum');
+    });
+    it('should validate previousBlock field', () => {
+      const b = createFakeBlock();
+      delete b.previousBlock;
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Missing required property: previousBlock');
+
+      b.previousBlock = 'a1a';
+      expect(() => instance.objectNormalize(b))
+        .to.throw(' Object didn\'t pass validation for format id: a1a');
+    });
+    it('should validate timestamp field', () => {
+      const b = createFakeBlock();
+      delete b.timestamp;
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Missing required property: timestamp');
+
+      b.timestamp = -1;
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Value -1 is less than minimum 0');
+    });
+    it('should validate totalAmount', () => {
+      const b = createFakeBlock();
+      delete b.totalAmount;
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Missing required property: totalAmount');
+
+      b.totalAmount = -1;
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Value -1 is less than minimum 0');
+    });
+    it('should validate totalFee', () => {
+      const b = createFakeBlock();
+      delete b.totalFee;
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Missing required property: totalFee');
+
+      b.totalFee = -1;
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Value -1 is less than minimum 0');
+    });
+    it('should validate reward', () => {
+      const b = createFakeBlock();
+      delete b.reward;
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Missing required property: reward');
+
+      b.reward = -1;
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Value -1 is less than minimum 0');
+    });
+    it('should validate height', () => {
+      const b = createFakeBlock();
+      delete b.height;
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Missing required property: height');
+
+      b.height = 0;
+      expect(() => instance.objectNormalize(b))
+        .to.throw();
+    });
+    it('should validate version', () => {
+      const b = createFakeBlock();
+      delete b.version;
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Missing required property: version');
+
+      b.version = -1;
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Value -1 is less than minimum 0');
+    });
+
+    it('should validate transactions', () => {
+      let b = createFakeBlock();
+      delete b.transactions;
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Missing required property: transactions');
+      b.transactions = null;
+      expect(() => instance.objectNormalize(b))
+        .to.throw('Missing required property: transactions');
+
+      b = createFakeBlock({transactions: createRandomTransactions({send: 2}).map((tx) => toBufferedTransaction(tx))});
+      instance.objectNormalize(b);
+      expect(transactionLogicStub.stubs.objectNormalize.callCount).eq(2);
+    });
+  });
   describe('objectNormalize() with a bad block schema', () => {
     it('should throw an exception if schema validation fails', () => {
       zschemastub.enqueueResponse('getLastErrors', []);

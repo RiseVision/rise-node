@@ -57,7 +57,7 @@ export class TransactionPoolStub extends BaseStubClass {
   }
 
   @stubMethod()
-  public processNewTransaction(tx: IBaseTransaction<any>, broadcast: boolean, bundled: boolean): Promise<void> {
+  public processNewTransaction(tx: IBaseTransaction<any>, broadcast: boolean): Promise<void> {
     return undefined;
   }
 

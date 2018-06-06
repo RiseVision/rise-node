@@ -7,12 +7,12 @@ export interface IDelegatesModule extends IModule {
   /**
    * Checks that the account on pk has vote integrity for the unconfirmed state
    */
-  checkConfirmedDelegates(pk: Buffer, votes: string[]): Promise<void>;
+  checkConfirmedDelegates(account: AccountsModel, votes: string[]): Promise<void>;
 
   /**
    * Checks that the account on pk has vote integrity for the confirmed state
    */
-  checkUnconfirmedDelegates(pk: Buffer, votes: string[]): Promise<void>;
+  checkUnconfirmedDelegates(account: AccountsModel, votes: string[]): Promise<void>;
 
   /**
    * Generate a randomized list for the round of which the given height is into.

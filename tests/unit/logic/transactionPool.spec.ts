@@ -646,7 +646,7 @@ describe('logic/transactionPool - TransactionPool', () => {
 
     it('should call remove on bundled for each tx', async () => {
       const bundledCount = instance.bundled.count;
-      sandbox.stub(instance as any, 'processVerifyTransaction').resolves(true);
+      sandbox.stub(instance as any, 'processVerifyTransaction').resolves({isMultisignature() { return false; }});
       await instance.processBundled();
       expect(spiedQueues.bundled.remove.called).to.be.true;
       expect(spiedQueues.bundled.remove.callCount).to.be.equal(bundledCount);
@@ -656,7 +656,7 @@ describe('logic/transactionPool - TransactionPool', () => {
       const bundledCount = instance.bundled.count;
 
       const processVerifyTransactionStub = sandbox
-        .stub(instance as any, 'processVerifyTransaction').resolves(true);
+        .stub(instance as any, 'processVerifyTransaction').resolves({isMultisignature() { return false; }});
       await instance.processBundled();
       expect(processVerifyTransactionStub.called).to.be.true;
       expect(processVerifyTransactionStub.callCount).to.be.equal(bundledCount);
@@ -665,7 +665,7 @@ describe('logic/transactionPool - TransactionPool', () => {
     it('should call queueTransaction for each valid tx if processVerifyTransaction does not throw', async () => {
       const bundledCount = instance.bundled.count;
       const queueTransactionSpy = sandbox.spy(instance as any, 'queueTransaction');
-      sandbox.stub(instance as any, 'processVerifyTransaction').resolves(true);
+      sandbox.stub(instance as any, 'processVerifyTransaction').resolves({isMultisignature() { return false; }});
       await instance.processBundled();
       expect(queueTransactionSpy.called).to.be.true;
       expect(queueTransactionSpy.callCount).to.be.equal(bundledCount);
@@ -680,7 +680,7 @@ describe('logic/transactionPool - TransactionPool', () => {
 
     it('should call logger.warn if queueTransaction fails', async () => {
       const queueTransactionStub = sandbox.stub(instance as any, 'queueTransaction').throws('err');
-      sandbox.stub(instance as any, 'processVerifyTransaction').resolves(true);
+      sandbox.stub(instance as any, 'processVerifyTransaction').resolves({isMultisignature() { return false; }});
       await instance.processBundled();
       expect(queueTransactionStub.called).to.be.true;
       expect(loggerStub.stubs.warn.called).to.be.true;
@@ -700,6 +700,43 @@ describe('logic/transactionPool - TransactionPool', () => {
       expect(spiedQueues.bundled.remove.called).to.be.true;
       expect(spiedQueues.bundled.remove.firstCall.args[0]).to.match(/^tx_/);
     });
+
+    it('should add signatures to the transaction if sender is multisignature and tx does not have it', async () => {
+      const bundledCount = instance.bundled.count;
+      instance.bundled.list(true).forEach((tx, idx) => {
+        if ((idx + 1) < bundledCount / 2) {
+          if (idx % 2 === 0) {
+            tx.signatures = ['sig ' + idx];
+          }
+        }
+      });
+      let callIndex = 0;
+      sandbox.stub(instance as any, 'processVerifyTransaction').callsFake(() => {
+        callIndex++;
+        if (callIndex < bundledCount / 2) {
+          return {
+            isMultisignature() {
+              return true;
+            },
+          };
+        } else {
+          return {
+            isMultisignature() {
+              return false;
+            },
+          };
+        }
+      });
+      await instance.processBundled();
+
+      expect(spiedQueues.multisignature.add.callCount).eq(Math.floor(bundledCount / 2));
+      for (let i = 0; i + 1 < bundledCount / 2; i += 2) {
+        expect(spiedQueues.multisignature.add.getCall(i).args[0].signatures).to.be.deep.eq([`sig ${i}`]);
+      }
+      for (let i = 1; i + 1 < bundledCount / 2; i += 2) {
+        expect(spiedQueues.multisignature.add.getCall(i).args[0].signatures).to.be.deep.eq([]);
+      }
+    });
   });
 
   describe('processBundled #2', () => {
@@ -710,34 +747,6 @@ describe('logic/transactionPool - TransactionPool', () => {
         .spy(instance as any, 'processVerifyTransaction');
       await instance.processBundled();
       expect(processVerifyTransactionSpy.called).to.be.false;
-    });
-  });
-
-  describe('receiveTransactions', () => {
-    let processNewTransactionStub: SinonStub;
-
-    beforeEach(() => {
-      processNewTransactionStub = sandbox.stub(instance, 'processNewTransaction').resolves();
-    });
-
-    afterEach(() => {
-      processNewTransactionStub.restore();
-    });
-
-    it('should return a promise', () => {
-      const retVal = instance.receiveTransactions([tx, tx2, tx3], false, false);
-      expect(retVal).to.be.instanceof(Promise);
-    });
-
-    it('should call processNewTransaction for each of the passed txs', async () => {
-      await instance.receiveTransactions([tx, tx2], false, false);
-      expect(processNewTransactionStub.callCount).to.be.equal(2);
-      expect(processNewTransactionStub.firstCall.args[0]).to.be.deep.equal(tx);
-      expect(processNewTransactionStub.firstCall.args[1]).to.be.false;
-      expect(processNewTransactionStub.firstCall.args[2]).to.be.false;
-      expect(processNewTransactionStub.secondCall.args[0]).to.be.deep.equal(tx2);
-      expect(processNewTransactionStub.secondCall.args[1]).to.be.false;
-      expect(processNewTransactionStub.secondCall.args[2]).to.be.false;
     });
   });
 
@@ -753,27 +762,27 @@ describe('logic/transactionPool - TransactionPool', () => {
     });
 
     it('should return a promise', () => {
-      const retVal = instance.processNewTransaction(tx, false, false);
+      const retVal = instance.processNewTransaction(tx, false);
       expect(retVal).to.be.instanceof(Promise);
     });
 
     it('should call transactionInPool', async () => {
       const transactionInPoolSpy = sandbox.spy(instance, 'transactionInPool');
-      await instance.processNewTransaction(tx, false, false);
+      await instance.processNewTransaction(tx, false);
       expect(transactionInPoolSpy.calledOnce).to.be.true;
       expect(transactionInPoolSpy.firstCall.args[0]).to.be.equal(tx.id);
     });
 
     it('should reject if transaction is in pool', async () => {
       const allTxs = await addMixedTransactionsAndFillPool();
-      await expect(instance.processNewTransaction(allTxs[0], false, false)).to.be.
+      await expect(instance.processNewTransaction(allTxs[0], false)).to.be.
       rejectedWith(/Transaction is already processed/);
     });
 
     it('should call reindexAllQueues if more than 1000 txs were processed', async () => {
       const reindexallQueuesSpy = sandbox.spy(instance as any, 'reindexAllQueues');
       (instance as any).processed = 1000;
-      await instance.processNewTransaction(tx, false, false);
+      await instance.processNewTransaction(tx, false);
       expect(reindexallQueuesSpy.calledOnce).to.be.true;
       expect((instance as any).processed).to.be.equal(1);
     });
@@ -782,53 +791,12 @@ describe('logic/transactionPool - TransactionPool', () => {
       // we make processVerifyTransaction reject in order to stop execution before next call of queueTransaction
       processVerifyTransactionStub.rejects();
       const queueTransactionSpy = sandbox.spy(instance, 'queueTransaction');
-      try {
-        await instance.processNewTransaction(tx, false, true);
-      } catch (e) {
-        void(0);
-      }
+      await instance.processNewTransaction(tx, false);
       expect(queueTransactionSpy.calledOnce).to.be.true;
       expect(queueTransactionSpy.firstCall.args[0]).to.be.deep.equal(tx);
       expect(queueTransactionSpy.firstCall.args[1]).to.be.true;
     });
 
-    it('should not call queueTransaction if bundled is false', async () => {
-      // we make processVerifyTransaction reject in order to stop execution before next call of queueTransaction
-      processVerifyTransactionStub.rejects();
-      const queueTransactionSpy = sandbox.spy(instance, 'queueTransaction');
-      try {
-        await instance.processNewTransaction(tx, false, false);
-      } catch (e) {
-        void(0);
-      }
-      expect(queueTransactionSpy.notCalled).to.be.true;
-    });
-
-    it('should call processVerifyTransaction', async () => {
-      await instance.processNewTransaction(tx, false, false);
-      expect(processVerifyTransactionStub.calledOnce).to.be.true;
-      expect(processVerifyTransactionStub.firstCall.args[0]).to.be.deep.equal(tx);
-      expect(processVerifyTransactionStub.firstCall.args[1]).to.be.false;
-    });
-
-    it('should call queueTransaction', async () => {
-      const queueTransactionSpy = sandbox.spy(instance, 'queueTransaction');
-      await instance.processNewTransaction(tx, false, false);
-      expect(queueTransactionSpy.calledOnce).to.be.true;
-      expect(queueTransactionSpy.firstCall.args[0]).to.be.deep.equal(tx);
-      expect(queueTransactionSpy.firstCall.args[1]).to.be.false;
-    });
-
-    it('should not call queueTransaction if processVerifyTransaction rejected', async () => {
-      processVerifyTransactionStub.rejects();
-      const queueTransactionSpy = sandbox.spy(instance, 'queueTransaction');
-      try {
-        await instance.processNewTransaction(tx, false, false);
-      } catch (e) {
-        void(0);
-      }
-      expect(queueTransactionSpy.notCalled).to.be.true;
-    });
   });
 
   describe('applyUnconfirmedList', () => {
@@ -918,60 +886,6 @@ describe('logic/transactionPool - TransactionPool', () => {
       expect(removeUnconfirmedTransactionSpy.firstCall.args[0]).to.be.equal(unconfirmedIds[0]);
     });
 
-  });
-
-  describe('undoUnconfirmedList', () => {
-    let txModuleStub: TransactionsModuleStub;
-    const unconfirmedIds = [ 'tx_10', 'tx_8', 'tx_6', 'tx_4', 'tx_2' ];
-
-    beforeEach(async () => {
-      await addMixedTransactionsAndFillPool();
-      txModuleStub = new TransactionsModuleStub();
-    });
-
-    it('should return an array of ids', async () => {
-      txModuleStub.stubs.undoUnconfirmed.resolves(true);
-      const retVal = await instance.undoUnconfirmedList(txModuleStub);
-      expect(retVal).to.be.equalTo(unconfirmedIds);
-    });
-
-    it('should call list on unconfirmed queue', async () => {
-      txModuleStub.stubs.undoUnconfirmed.resolves(true);
-      await instance.undoUnconfirmedList(txModuleStub);
-      expect(spiedQueues.unconfirmed.list.calledOnce).to.be.true;
-      expect(spiedQueues.unconfirmed.list.firstCall.args[0]).to.be.false;
-    });
-
-    it('should call undoUnconfirmed on txModule for each tx', async () => {
-      txModuleStub.stubs.undoUnconfirmed.resolves(true);
-      await instance.undoUnconfirmedList(txModuleStub);
-      expect(txModuleStub.stubs.undoUnconfirmed.callCount).to.be.equal(unconfirmedIds.length);
-      expect(txModuleStub.stubs.undoUnconfirmed.firstCall.args[0]).to.be.
-      deep.equal(instance.unconfirmed.get(unconfirmedIds[0]));
-    });
-
-    it('should call logger.error if undoUnconfirmed rejects', async () => {
-      txModuleStub.stubs.undoUnconfirmed.rejects('err');
-      await instance.undoUnconfirmedList(txModuleStub);
-      expect(loggerStub.stubs.error.callCount).to.be.equal(unconfirmedIds.length);
-      expect(loggerStub.stubs.error.firstCall.args[0]).to.match(/Failed to undo unconfirmed transaction/);
-    });
-
-    it('should call removeUnconfirmedTransaction if undoUnconfirmed throws',  async () => {
-      const removeUnconfirmedTransactionSpy = sandbox.spy(instance as any, 'removeUnconfirmedTransaction');
-      txModuleStub.stubs.undoUnconfirmed.rejects('err');
-      await instance.undoUnconfirmedList(txModuleStub);
-      expect(removeUnconfirmedTransactionSpy.callCount).to.be.equal(unconfirmedIds.length);
-      expect(removeUnconfirmedTransactionSpy.firstCall.args[0]).to.be.equal(unconfirmedIds[0]);
-    });
-
-    it('should return an empty array if transactions are empty', async () => {
-      (instance['unconfirmed'].list as any).restore();
-      const unconfirmedStub = sandbox.stub(instance['unconfirmed'], 'list').returns([undefined, undefined]);
-      const retVal = await instance.undoUnconfirmedList(txModuleStub);
-      expect(retVal).to.be.equalTo([]);
-      expect(unconfirmedStub.calledOnce).to.be.true;
-    });
   });
 
   describe('reindexAllQueues', () => {

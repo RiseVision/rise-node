@@ -20,7 +20,7 @@ import { IAccountLogic, IRoundsLogic, ITransactionLogic, VerificationType } from
 import { Symbols } from '../ioc/symbols';
 import { AccountsModel, TransactionsModel } from '../models/';
 import txSchema from '../schema/logic/transaction';
-import { DBOp } from '../types/genericTypes';
+import { DBBulkCreateOp, DBOp } from '../types/genericTypes';
 import { SignedAndChainedBlockType, SignedBlockType } from './block';
 import { BaseTransactionType, IBaseTransaction,
          IBytesTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
@@ -264,26 +264,6 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error(`Unknown transaction type ${type}`);
     }
   }
-
-  /**
-   * Counts transaction by id
-   * @returns {Promise<number>}
-   */
-  public async countById(tx: IBaseTransaction<any>): Promise<number> {
-    return await this.TransactionsModel.count({ where: { id: tx.id } })
-      .catch(catchToLoggerAndRemapError('Transaction#countById error', this.logger));
-  }
-
-  /**
-   * Checks the tx is not confirmed or rejects otherwise
-   */
-  public async assertNonConfirmed(tx: IBaseTransaction<any>): Promise<void> {
-    const count = await this.countById(tx);
-    if (count > 0) {
-      throw new Error(`Transaction is already confirmed ${tx.id}`);
-    }
-  }
-
   /**
    * Checks if balanceKey is less than amount for sender
    */
@@ -461,7 +441,6 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     await this.types[tx.type].verify(tx, sender);
-    await this.assertNonConfirmed(tx);
   }
 
   /**
@@ -511,6 +490,7 @@ export class TransactionLogic implements ITransactionLogic {
 
     const amountNumber = amount.toNumber();
 
+    sender.balance -= amountNumber;
     this.logger.trace('Logic/Transaction->apply', {
       balance: -amountNumber,
       blockId: block.id,
@@ -536,6 +516,7 @@ export class TransactionLogic implements ITransactionLogic {
       .plus(tx.fee.toString())
       .toNumber();
 
+    sender.balance += amount;
     this.logger.trace('Logic/Transaction->undo', {
       balance: amount,
       blockId: block.id,
@@ -565,6 +546,7 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     const amountNumber = amount.toNumber();
+    sender.u_balance -= amountNumber;
 
     const ops = this.accountLogic.merge(
       sender.address,
@@ -583,6 +565,8 @@ export class TransactionLogic implements ITransactionLogic {
       .plus(tx.fee.toString())
       .toNumber();
 
+    sender.u_balance += amount;
+
     const ops = this.accountLogic.merge(
       sender.address,
       { u_balance: amount }
@@ -591,41 +575,45 @@ export class TransactionLogic implements ITransactionLogic {
     return ops;
   }
 
-  public dbSave(tx: IConfirmedTransaction<any> & { senderId: string }): Array<DBOp<any>> {
-    this.assertKnownTransactionType(tx.type);
-    const senderPublicKey    = tx.senderPublicKey;
-    const signature          = tx.signature;
-    const signSignature      = tx.signSignature ? tx.signSignature : null;
-    const requesterPublicKey = tx.requesterPublicKey ? tx.requesterPublicKey : null;
-
-    // tslint:disable object-literal-sort-keys
-    const toRet: DBOp<TransactionsModel> = {
-      model : this.TransactionsModel,
-      type  : 'create',
-      values: {
-        id         : tx.id,
-        blockId    : tx.blockId,
-        height     : tx.height,
-        type       : tx.type,
-        timestamp  : tx.timestamp,
-        senderPublicKey,
-        requesterPublicKey,
-        senderId   : tx.senderId,
-        recipientId: tx.recipientId || null,
-        amount     : tx.amount,
-        fee        : tx.fee,
-        signature,
-        signSignature,
-        signatures : tx.signatures ? tx.signatures.join(',') : null,
-      },
-    };
-    // tslint:enable object-literal-sort-keys
-
-    const typeSQL = this.types[tx.type].dbSave(tx);
-    if (typeSQL) {
-      return [toRet, typeSQL];
+  public dbSave(txs: Array<IBaseTransaction<any> & { senderId: string }>, blockId: string, height: number): Array<DBOp<any>> {
+    if (txs.length === 0) {
+      return [];
     }
-    return [toRet];
+    const bulkCreate: DBBulkCreateOp<TransactionsModel> = {
+      model: this.TransactionsModel,
+      type: 'bulkCreate',
+      values: txs.map((tx) => {
+        this.assertKnownTransactionType(tx.type);
+        const senderPublicKey    = tx.senderPublicKey;
+        const signature          = tx.signature;
+        const signSignature      = tx.signSignature ? tx.signSignature : null;
+        const requesterPublicKey = tx.requesterPublicKey ? tx.requesterPublicKey : null;
+        return {
+          // tslint:disable object-literal-sort-keys
+          id         : tx.id,
+          blockId,
+          height,
+          type       : tx.type,
+          timestamp  : tx.timestamp,
+          senderPublicKey,
+          requesterPublicKey,
+          senderId   : tx.senderId,
+          recipientId: tx.recipientId || null,
+          amount     : tx.amount,
+          fee        : tx.fee,
+          signature,
+          signSignature,
+          signatures : tx.signatures ? tx.signatures.join(',') : null,
+          // tslint:enable object-literal-sort-keys
+
+        };
+      }),
+    };
+    const subOps: Array<DBOp<any>> = txs
+      .map((tx) => this.types[tx.type].dbSave(tx, blockId, height))
+      .filter((op) => op);
+
+    return [bulkCreate, ...subOps];
   }
 
   public async afterSave(tx: IBaseTransaction<any>): Promise<void> {

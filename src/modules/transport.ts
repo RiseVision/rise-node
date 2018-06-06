@@ -22,6 +22,7 @@ import { BlocksModel, TransactionsModel } from '../models';
 import peersSchema from '../schema/peers';
 import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
+import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
 
 // tslint:disable-next-line
 export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };
@@ -40,7 +41,7 @@ export class TransportModule implements ITransportModule {
   // Helpers
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
-  private balancesSequence: Sequence;
+  public balancesSequence: Sequence;
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
   @inject(Symbols.helpers.jobsQueue)
@@ -276,53 +277,40 @@ export class TransportModule implements ITransportModule {
 
   @ValidateSchema()
   // tslint:disable-next-line
+  @WrapInBalanceSequence
   public async receiveTransactions(@SchemaValid(schema.transactions.properties.transactions, 'Invalid transactions body')
                                      transactions: Array<ITransportTransaction<any>>,
                                    peer: IPeerLogic,
-                                   extraLogMessage: string) {
+                                   broadcast: boolean) {
+    // normalize transactions
+    const txs: Array<IBaseTransaction<any>> = [];
     for (const tx of transactions) {
       try {
-        await this.receiveTransaction(tx, peer, true, extraLogMessage);
-      } catch (err) {
-        this.logger.debug(err, tx);
+        txs.push(this.transactionLogic.objectNormalize(tx));
+      } catch (e) {
+        this.logger.debug('Transaction normalization failed', {
+          err   : e.toString(),
+          id    : tx.id,
+          module: 'transport',
+          tx,
+        });
+        this.removePeer({ peer, code: 'ETRANSACTION' }, 'ReceiveTransactions Error');
+        throw new Error(`Invalid transaction body ${e.message}`);
       }
     }
-  }
 
-  /**
-   * Checks tx is ok by normalizing it and eventually remove peer if tx is not valid
-   * calls processUnconfirmedTransaction over it.
-   * @returns {Promise<void>}
-   */
-  // tslint:disable-next-line max-line-length
-  public async receiveTransaction(transaction: ITransportTransaction<any>, peer: IPeerLogic, bundled: boolean, extraLogMessage: string): Promise<string> {
-    let tx: IBaseTransaction<any>;
-    try {
-      tx = this.transactionLogic.objectNormalize(transaction);
-    } catch (e) {
-      this.logger.debug('Transaction normalization failed', {
-        err   : e.toString(),
-        id    : transaction.id,
-        module: 'transport',
-        tx    : transaction,
-      });
-      this.removePeer({ peer, code: 'ETRANSACTION' }, extraLogMessage);
-      throw new Error(`Invalid transaction body ${e.message}`);
-    }
+    // filter out already confirmed transactions
+    const confirmedIDs = await this.transactionModule.filterConfirmedIds(txs.map((tx) => tx.id));
 
-    try {
-      await this.balancesSequence.addAndPromise(async () => {
-        this.logger.debug(`Received transaction ${tx.id} from peer: ${peer.string}`);
-        await this.transactionModule.processUnconfirmedTransaction(
-          tx,
-          true,
-          bundled
-        );
-      });
-      return tx.id;
-    } catch (err) {
-      this.logger.debug(`Transaction ${tx.id} error ${err}`, tx);
-      throw new Error(err);
+    for (const tx of txs) {
+      if (confirmedIDs.indexOf(tx.id) !== -1) {
+        continue; // Transaction already confirmed.
+      }
+      this.logger.debug(`Received transaction ${tx.id} from peer: ${peer.string}`);
+      await this.transactionModule.processUnconfirmedTransaction(
+        tx,
+        broadcast
+      );
     }
   }
 

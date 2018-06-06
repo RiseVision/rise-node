@@ -46,9 +46,6 @@ export class LoaderModule implements ILoaderModule {
   private io: SocketIO.Server;
 
   // Helpers
-  @inject(Symbols.helpers.sequence)
-  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
-  private balancesSequence: Sequence;
   @inject(Symbols.helpers.bus)
   private bus: Bus;
   @inject(Symbols.helpers.constants)
@@ -630,12 +627,10 @@ export class LoaderModule implements ILoaderModule {
     }
 
     const { transactions }: { transactions: Array<ITransportTransaction<any>> } = res.body;
-    for (const tx of transactions) {
-      try {
-        await this.transportModule.receiveTransaction(tx, peer, true, 'LoaderModule.loadTransactions', false);
-      } catch (err) {
-        this.logger.debug(err, tx);
-      }
+    try {
+      await this.transportModule.receiveTransactions(transactions, peer, false);
+    } catch (err) {
+      this.logger.debug(err);
     }
 
   }

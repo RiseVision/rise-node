@@ -2,21 +2,28 @@ import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
-import {Container} from 'inversify';
+import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { BigNum, IKeypair, TransactionType } from '../../../src/helpers';
-import {Symbols} from '../../../src/ioc/symbols';
+import { Symbols } from '../../../src/ioc/symbols';
 import { SignedAndChainedBlockType, TransactionLogic } from '../../../src/logic';
-import { IBaseTransaction, IConfirmedTransaction, SendTransaction } from '../../../src/logic/transactions';
+import { IConfirmedTransaction, SendTransaction, VoteTransaction } from '../../../src/logic/transactions';
 import {
-  AccountLogicStub, DbStub, EdStub, ExceptionsManagerStub, LoggerStub,
-  RoundsLogicStub, SlotsStub, ZSchemaStub
+  AccountLogicStub,
+  EdStub,
+  ExceptionsManagerStub,
+  LoggerStub,
+  RoundsLogicStub,
+  SlotsStub,
+  ZSchemaStub
 } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
 import { TransactionsModel } from '../../../src/models';
 import { VerificationType } from '../../../src/ioc/interfaces/logic';
-import { DBCreateOp } from '../../../src/types/genericTypes';
+import { DBBulkCreateOp } from '../../../src/types/genericTypes';
+import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
+import { z_schema } from '../../../src/helpers/z_schema';
 
 chai.use(chaiAsPromised);
 
@@ -69,6 +76,7 @@ describe('logic/transaction', () => {
     sendTransaction  = new SendTransaction();
 
     instance.attachAssetType(sendTransaction);
+
 
     tx = {
       amount         : 108910891000000,
@@ -426,41 +434,6 @@ describe('logic/transaction', () => {
     });
   });
 
-  describe('countById', () => {
-    let txModel: typeof TransactionsModel;
-    beforeEach(() => {
-      txModel = container.get(Symbols.models.transactions);
-    });
-    it('should call TransactionsModel.count with proper param and return the value from it', async () => {
-      const count = sandbox.stub(txModel, 'count').resolves(10);
-      const res = await instance.countById({id: '11'} as any);
-      expect(res).to.be.deep.eq(10);
-      expect(count.called).is.true;
-      expect(count.firstCall.args[0]).to.be.deep.eq({
-        where: {
-          id: '11'
-        }
-      });
-    });
-    it('should remap error of TransactionsModel.count', async () => {
-      sandbox.stub(txModel, 'count').rejects('HAAAA');
-      await expect(instance.countById({id: '11'} as any)).to.be.rejectedWith('Transaction#countById error');
-    });
-  });
-
-  describe('assertNonConfirmed', () => {
-    it('should call countById', async () => {
-      const countByIdStub = sandbox.stub(instance, 'countById').returns(0);
-      await instance.assertNonConfirmed(tx);
-      expect(countByIdStub.calledOnce).to.be.true;
-    });
-
-    it('should throw if count > 0', async () => {
-      sandbox.stub(instance, 'countById').returns(100);
-      await expect(instance.assertNonConfirmed(tx)).to.be.rejectedWith(/Transaction is already confirmed/);
-    });
-  });
-
   describe('checkBalance', () => {
     it('should return error:null if OK', () => {
       const retVal = instance.checkBalance(1000, 'balance', tx, sender as any);
@@ -518,7 +491,6 @@ describe('logic/transaction', () => {
   describe('verify', () => {
     let verifySignatureStub: SinonStub;
     let checkBalanceStub: SinonStub;
-    let assertNonConfirmedStub: SinonStub;
     let calculateFeeStub: SinonStub;
     let txTypeVerifyStub: SinonStub;
 
@@ -527,7 +499,6 @@ describe('logic/transaction', () => {
       // instance stubs
       verifySignatureStub    = sandbox.stub(instance, 'verifySignature').returns(true);
       checkBalanceStub       = sandbox.stub(instance, 'checkBalance').returns({ exceeded: false });
-      assertNonConfirmedStub = sandbox.stub(instance, 'assertNonConfirmed').resolves();
       // txType stubs
       calculateFeeStub       = sandbox.stub(sendTransaction, 'calculateFee').returns(tx.fee);
       txTypeVerifyStub       = sandbox.stub(sendTransaction, 'verify').resolves();
@@ -801,11 +772,6 @@ describe('logic/transaction', () => {
       expect(txTypeVerifyStub.calledOnce).to.be.true;
       expect(txTypeVerifyStub.firstCall.args[0]).to.be.deep.equal(tx);
       expect(txTypeVerifyStub.firstCall.args[1]).to.be.deep.equal(sender);
-    });
-
-    it('should call assertNonConfirmed', async () => {
-      await instance.verify(tx, sender, requester, 1);
-      expect(assertNonConfirmedStub.calledOnce).to.be.true;
     });
 
     it('should reject tx if requesetPublicKey and account is not multisign', async () => {
@@ -1097,33 +1063,33 @@ describe('logic/transaction', () => {
     });
 
     it('should call assertKnownTransactionType', () => {
-      instance.dbSave(tx as any);
+      instance.dbSave([tx as any], '1', 2);
       expect(akttStub.calledOnce).to.be.true;
       expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx.type);
     });
 
     it('should return an array', () => {
-      const retVal = instance.dbSave(tx as any);
+      const retVal = instance.dbSave([tx as any], '1', 2);
       expect(Array.isArray(retVal)).to.be.true;
     });
 
     it('should call dbSave from the txType', () => {
-      instance.dbSave(tx as any);
+      instance.dbSave([tx as any], '1', 2);
       expect(txTypeDbSaveStub.calledOnce).to.be.true;
       expect(txTypeDbSaveStub.firstCall.args[0]).to.be.deep.equal(tx);
     });
 
     it('should add the specific SQL from the txType', () => {
-      const retVal = instance.dbSave(tx as any);
+      const retVal = instance.dbSave([tx as any], '1', 2);
       expect(retVal[1]).to.be.deep.equal({ table: 'table', fields: [], values: [] });
     });
 
     it('should return the correct first object', () => {
       tx.requesterPublicKey = requester.publicKey;
-      const retVal          = instance.dbSave({...tx, height: 100, blockId: '11'} as any);
+      const retVal          = instance.dbSave([tx], '11', 100);
       expect(retVal[0].model).to.be.deep.eq(txModel);
-      expect(retVal[0].type).to.be.deep.eq('create');
-      expect((retVal[0] as DBCreateOp<any>).values).to.be.deep.eq({
+      expect(retVal[0].type).to.be.deep.eq('bulkCreate');
+      expect((retVal[0] as DBBulkCreateOp<any>).values[0]).to.be.deep.eq({
         amount            : tx.amount,
         blockId           : '11',
         fee               : tx.fee,
@@ -1139,6 +1105,30 @@ describe('logic/transaction', () => {
         timestamp         : tx.timestamp,
         type              : tx.type,
       });
+    });
+
+    it('should cluster multiple txs together in single bulkCreate and append sub assets db ops', () => {
+      instance.attachAssetType(new VoteTransaction());
+      const txs    = createRandomTransactions({ send: 2, vote: 3 })
+        .map((t) => toBufferedTransaction(t))
+        .map((t) => ({ ...t, senderId: t.recipientId }));
+      const retVal = instance.dbSave(txs, '11', 100);
+      expect(retVal[0].model).to.be.deep.eq(txModel);
+      expect(retVal[0].type).to.be.deep.eq('bulkCreate');
+      const op: DBBulkCreateOp<any> = retVal[0] as any;
+      expect(op.values).to.be.an('array');
+      for (let i = 0; i < txs.length; i++) {
+        const expectedValue = {
+          ... txs[i],
+          blockId: '11',
+          height : 100,
+          signatures: null,
+        };
+        delete expectedValue.asset;
+        expect(op.values[i]).deep.eq(expectedValue);
+      }
+
+      expect(retVal.length).gt(1);
     });
   });
 
@@ -1212,6 +1202,95 @@ describe('logic/transaction', () => {
       expect(txTypeObjectNormalizeStub.calledOnce).to.be.true;
       expect(txTypeObjectNormalizeStub.firstCall.args[0]).to.be.deep.equal(tx);
       expect(retVal).to.be.equal('txType objectNormalize');
+    });
+
+    describe('with real schema validation', () => {
+      beforeEach(() => {
+        container.rebind(Symbols.logic.transaction).to(TransactionLogic).inSingletonScope();
+
+        container.rebind(Symbols.generic.zschema).toConstantValue(new z_schema({}));
+        instance = container.get(Symbols.logic.transaction);
+        akttStub                  = sandbox.stub(instance, 'assertKnownTransactionType').returns(true);
+        instance.attachAssetType(sendTransaction);
+      });
+      it('valid', () => {
+        instance.objectNormalize(tx);
+      });
+
+      ['signature', 'signSignature'].forEach((sig) => {
+        it(`should validate ${sig}`, () => {
+          // wrong length or buf string
+          tx[sig] = Buffer.alloc(32);
+          expect(() => instance.objectNormalize(tx)).to.throw('format signatureBuf');
+          tx[sig] = Buffer.alloc(32).toString('hex') as any;
+          expect(() => instance.objectNormalize(tx)).to.throw('format signatureBuf');
+          tx[sig] = 'hey' as any;
+          expect(() => instance.objectNormalize(tx)).to.throw('format signatureBuf');
+
+          // valid as string
+          tx[sig] = Buffer.alloc(64).toString('hex') as any;
+          instance.objectNormalize(tx);
+        });
+      });
+      it('signature field is mandatory', () => {
+        delete tx.signature;
+        expect(() => instance.objectNormalize(tx)).to.throw();
+        tx.signature = null;
+        expect(() => instance.objectNormalize(tx)).to.throw();
+      });
+
+      ['senderPublicKey', 'requesterPublicKey'].forEach((pk) => {
+        it('should validate '+pk, () => {
+          // wrong length or buf string
+          tx[pk] = Buffer.alloc(31);
+          expect(() => instance.objectNormalize(tx)).to.throw('format publicKeyBuf');
+          tx[pk] = Buffer.alloc(31).toString('hex') as any;
+          expect(() => instance.objectNormalize(tx)).to.throw('format publicKeyBuf');
+          tx[pk] = 'hey' as any;
+          expect(() => instance.objectNormalize(tx)).to.throw('format publicKeyBuf');
+
+          // valid as string
+          tx[pk] = Buffer.alloc(32).toString('hex') as any;
+          instance.objectNormalize(tx);
+        });
+      });
+      it('senderPublicKey is mandatory', () => {
+        delete tx.senderPublicKey;
+        expect(() => instance.objectNormalize(tx)).to.throw();
+        tx.senderPublicKey = null;
+        expect(() => instance.objectNormalize(tx)).to.throw();
+      });
+      it('should validate timestamp', () => {
+        delete tx.timestamp;
+        expect(() => instance.objectNormalize(tx)).to.throw();
+        tx.timestamp = null;
+        expect(() => instance.objectNormalize(tx)).to.throw();
+        tx.timestamp = -1;
+        expect(() => instance.objectNormalize(tx)).to.throw('Value -1 is less than minimum');
+      });
+      ['senderId', 'recipientId'].forEach((add) => {
+        it(`should validate address field ${add}`, () => {
+          tx[add] = 'asd';
+          expect(() => instance.objectNormalize(tx)).to.throw('format address');
+          tx[add] = '';
+          expect(() => instance.objectNormalize(tx)).to.throw('too short');
+          tx[add] = Array(22).fill('1').join('') + 'R';
+          expect(() => instance.objectNormalize(tx)).to.throw('too long');
+        });
+      });
+
+      ['fee', 'amount'].forEach((field) => {
+        it(`should validate ${field}`, () => {
+          delete tx[field];
+          expect(() => instance.objectNormalize(tx)).to.throw();
+          tx[field] = null;
+          expect(() => instance.objectNormalize(tx)).to.throw();
+          tx[field] = -1;
+          expect(() => instance.objectNormalize(tx)).to.throw('Value -1 is less than minimum');
+          tx[field] = 10999999991000000 + 10000;
+          expect(() => instance.objectNormalize(tx)).to.throw('is greater than maximum');
+        });
+      });
     });
   });
 

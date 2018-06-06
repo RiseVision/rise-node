@@ -22,7 +22,7 @@ import { createContainer } from '../../../utils/containerCreator';
 import { createFakeBlock } from '../../../utils/blockCrafter';
 import { createRandomTransactions, toBufferedTransaction } from '../../../utils/txCrafter';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { BlocksModel } from '../../../../src/models';
+import { AccountsModel, BlocksModel } from '../../../../src/models';
 
 chai.use(chaiAsPromised);
 
@@ -325,7 +325,19 @@ describe('modules/blocks/verify', () => {
     let findByIdStub: SinonStub;
     beforeEach(() => {
       findByIdStub = sandbox.stub(blocksModel, 'findById');
-    })
+      accountsModule.enqueueResponse('generateAddressByPublicKey', 'address');
+      accountsModule.stubs.resolveAccountsForTransactions.callsFake((txs) => {
+        const toRet = {};
+        txs.forEach((tx) => {
+          toRet[tx.senderId] = new AccountsModel({address: tx.senderId});
+          if (tx.requesterPublicKey) {
+            toRet['address'] = new AccountsModel({address: 'address'});
+          }
+        });
+        return toRet;
+      });
+      txModule.stubs.filterConfirmedIds.resolves([]);
+    });
     it('rejects if is cleaning', async () => {
       await inst.cleanup();
       await expect(inst.processBlock(null, true, true))
@@ -385,73 +397,72 @@ describe('modules/blocks/verify', () => {
         delegatesModule.enqueueResponse('assertValidBlockSlot', Promise.resolve());
         blocksChain.enqueueResponse('applyBlock', Promise.resolve());
 
-        txLogic.stubs.getId.returns('1');
-        txLogic.stubs.assertNonConfirmed.resolves();
+        txLogic.stubs.getId.callsFake((t) => t.id);
         accountsModule.stubs.getAccount.resolves({});
         txLogic.stubs.verify.resolves();
+
       });
 
-      it('should assertNonConfirmed for all txs', async () => {
+      // it('should assertNonConfirmed for all txs', async () => {
+      //   await inst.processBlock(null, true, true);
+      //   expect(txLogic.stubs.assertNonConfirmed.callCount).to.be.eq(txs.length);
+      //   for (let i = 0; i < txs.length; i++) {
+      //     expect(txLogic.stubs.assertNonConfirmed.getCall(i).args[0]).to.be.deep.eq(txs[i]);
+      //   }
+      // });
+      it('should call resolveAccountsForTransactions with all txs in block', async () => {
         await inst.processBlock(null, true, true);
-        expect(txLogic.stubs.assertNonConfirmed.callCount).to.be.eq(txs.length);
-        for (let i = 0; i < txs.length; i++) {
-          expect(txLogic.stubs.assertNonConfirmed.getCall(i).args[0]).to.be.deep.eq(txs[i]);
-        }
-      });
-      it('should getAccount for each sender and pass it  to txLogic.verify', async () => {
-        await inst.processBlock(null, true, true);
-        expect(accountsModule.stubs.getAccount.callCount).to.be.eq(txs.length);
-        for (let i = 0; i < txs.length; i++) {
-          expect(accountsModule.stubs.getAccount.getCall(i).args[0]).to.be.deep.eq({
-            publicKey: txs[i].senderPublicKey,
-          });
-        }
+        expect(accountsModule.stubs.resolveAccountsForTransactions.callCount).to.be.eq(1);
+        expect(accountsModule.stubs.resolveAccountsForTransactions.firstCall.args[0]).to.be.eq(txs);
       });
       it('should call verify on each tx', async () => {
         await inst.processBlock(null, true, true);
         expect(txLogic.stubs.verify.callCount).to.be.eq(txs.length);
         for (let i = 0; i < txs.length; i++) {
-          expect(txLogic.stubs.verify.getCall(i).args).to.be.deep.eq([
-            txs[i],
-            {}, // Account
-            null, // requester account,
-            undefined, // block height
-          ]);
+          expect(txLogic.stubs.verify.getCall(i).args[0]).to.be.deep.eq(txs[i]);
+          expect(txLogic.stubs.verify.getCall(i).args[1]).to.be.deep.eq(accountsModule.stubs.resolveAccountsForTransactions.getCall(0).returnValue[(txs[i] as any).senderId]);
+          expect(txLogic.stubs.verify.getCall(i).args[2]).to.be.deep.eq(null); // requester account
+          expect(txLogic.stubs.verify.getCall(i).args[3]).to.be.deep.eq(undefined); // Block height
         }
       });
       it('should properly handle tx already confirmed', async () => {
         txModule.stubs.undoUnconfirmed.resolves();
-        txModule.stubs.removeUnconfirmedTransaction.resolves();
-        txLogic.stubs.assertNonConfirmed.onSecondCall().rejects(new Error('error'));
-        await expect(inst.processBlock(null, true, true)).to.be.rejectedWith('error');
+        txModule.stubs.removeUnconfirmedTransaction.onFirstCall().returns(true);
+        txModule.stubs.removeUnconfirmedTransaction.onSecondCall().returns(false);
+        const alreadyConfirmedId1 = normalizedBlock.transactions[1].id;
+        const alreadyConfirmedId2 = normalizedBlock.transactions[2].id;
+        txModule.stubs.filterConfirmedIds.resolves([alreadyConfirmedId1, alreadyConfirmedId2]);
+        await expect(inst.processBlock(normalizedBlock, true, true)).to.be.rejectedWith('Transactions already confirmed: ' + alreadyConfirmedId1);
 
         // should send fork
         expect(forkModule.stubs.fork.called).is.true;
         expect(forkModule.stubs.fork.firstCall.args).is.deep.eq([normalizedBlock, ForkType.TX_ALREADY_CONFIRMED]);
+
         // shoudl call uncoUnconfirmed and removeUnconfirmed
+
+        expect(txModule.stubs.removeUnconfirmedTransaction.calledTwice).is.true;
         expect(txModule.stubs.undoUnconfirmed.calledOnce).is.true;
-        expect(txModule.stubs.removeUnconfirmedTransaction.calledOnce).is.true;
+        expect(txModule.stubs.undoUnconfirmed.firstCall.args[0]).is.deep.eq(normalizedBlock.transactions[1]);
 
       });
       it('should get requesterPublicKey account and pass it to verify if tx has it', async () => {
         txs[0].requesterPublicKey = 'abc';
         await inst.processBlock(null, true, true);
-        expect(txLogic.stubs.verify.firstCall.args).to.be.deep.eq([
-          txs[0],
-          {}, // Account
-          {}, // Requester Public Account,
-          undefined,
-        ]);
+        expect(txLogic.stubs.verify.firstCall.args[0]).to.be.deep.eq(txs[0]);
+        expect(txLogic.stubs.verify.firstCall.args[1]).to.be.deep.eq(accountsModule.stubs.resolveAccountsForTransactions.getCall(0).returnValue[(txs[0] as any).senderId]);
+        expect(txLogic.stubs.verify.firstCall.args[2]).to.be.deep.eq(accountsModule.stubs.resolveAccountsForTransactions.getCall(0).returnValue['address']);
+        expect(txLogic.stubs.verify.firstCall.args[3]).to.be.deep.eq(undefined);
+
       });
     });
 
-    it('should call blocksChain.applyBlock propagating broadcast and saveblock values if all ok', async () => {
+    it('should call blocksChain.applyBlock propagating broadcast,saveblock and accounts values if all ok', async () => {
       sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors  : [], verified: true }));
       blockLogic.enqueueResponse('objectNormalize', {id: '1', normalized: 'block', transactions: [] });
       findByIdStub.resolves(null);
       delegatesModule.enqueueResponse('assertValidBlockSlot', Promise.resolve());
       blocksChain.enqueueResponse('applyBlock', Promise.resolve());
-
+      accountsModule.stubs.resolveAccountsForTransactions.resolves({'a': 'b'});
       await inst.processBlock(null, true, false);
 
       expect(blocksChain.stubs.applyBlock.calledOnce).is.true;
@@ -459,6 +470,7 @@ describe('modules/blocks/verify', () => {
         {id: '1', normalized: 'block', transactions: [] },
         true, // broadcast
         false, // saveblock
+        {'a': 'b'}
       ]);
     });
   });

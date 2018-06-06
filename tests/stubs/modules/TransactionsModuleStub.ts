@@ -20,6 +20,16 @@ export class TransactionsModuleStub extends BaseStubClass implements ITransactio
   }
 
   @stubMethod()
+  public filterConfirmedIds(ids: string[]): Promise<string[]> {
+    return null;
+  }
+
+  @stubMethod()
+  public transactionUnconfirmed(id: string): boolean {
+    return undefined;
+  }
+
+  @stubMethod()
   public getUnconfirmedTransaction<T = any>(id: string): IBaseTransaction<T> {
     return undefined;
   }
@@ -60,33 +70,12 @@ export class TransactionsModuleStub extends BaseStubClass implements ITransactio
   }
 
   @stubMethod()
-  public processUnconfirmedTransaction(transaction: IBaseTransaction<any>,
-                                       broadcast: boolean, bundled: boolean): Promise<void> {
-    return undefined;
-  }
-
-  @stubMethod()
-  public applyUnconfirmedIds(ids: string[]): Promise<void> {
-    return undefined;
-  }
-
-  @stubMethod()
-  public applyUnconfirmedList(): Promise<void> {
+  public processUnconfirmedTransaction(transaction: IBaseTransaction<any>, broadcast: boolean): Promise<void> {
     return undefined;
   }
 
   @stubMethod()
   public undoUnconfirmedList(): Promise<string[]> {
-    return undefined;
-  }
-
-  @stubMethod()
-  public apply(transaction: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void> {
-    return undefined;
-  }
-
-  @stubMethod()
-  public undo(transaction: IConfirmedTransaction<any>, block: SignedBlockType, sender: any): Promise<void> {
     return undefined;
   }
 
@@ -97,12 +86,6 @@ export class TransactionsModuleStub extends BaseStubClass implements ITransactio
 
   @stubMethod()
   public undoUnconfirmed(transaction): Promise<void> {
-    return undefined;
-  }
-
-  @stubMethod()
-  public receiveTransactions(transactions: Array<IBaseTransaction<any>>,
-                             broadcast: boolean, bundled: boolean): Promise<void> {
     return undefined;
   }
 

@@ -4,8 +4,8 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as Throttle from 'promise-parallel-throttle';
 import * as proxyquire from 'proxyquire';
-import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import { wait } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { PeerState } from '../../../src/logic';
@@ -28,6 +28,7 @@ import {
   ZSchemaStub,
 } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
+import { createRandomTransactions } from '../../utils/txCrafter';
 
 chai.use(chaiAsPromised);
 
@@ -48,7 +49,7 @@ describe('src/modules/transport.ts', () => {
   let container: Container;
   let sandbox: SinonSandbox;
   const appConfig = {
-    peers: {options: {timeout: 1000,},},
+    peers: { options: { timeout: 1000, }, },
   };
 
   before(() => {
@@ -195,11 +196,11 @@ describe('src/modules/transport.ts', () => {
         version: '1.1.1',
       };
 
-      thePeer = {applyHeaders: sandbox.stub()};
+      thePeer = { applyHeaders: sandbox.stub() };
       thePeer.applyHeaders.returns(headers);
 
-      popsicleUseStub      = {use: sandbox.stub().resolves(res)};
-      popsicleStub.plugins = {parse: sandbox.stub().returns(1)};
+      popsicleUseStub      = { use: sandbox.stub().resolves(res) };
+      popsicleStub.plugins = { parse: sandbox.stub().returns(1) };
       popsicleStub.request = sandbox.stub().returns(popsicleUseStub);
 
       removePeerStub = sandbox.stub(inst as any, 'removePeer');
@@ -277,7 +278,7 @@ describe('src/modules/transport.ts', () => {
 
       expect(removePeerStub.calledOnce).to.be.true;
       expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({peer: thePeer, code: 'HTTPERROR'});
+      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({ peer: thePeer, code: 'HTTPERROR' });
       expect(removePeerStub.firstCall.args[1]).to.be.equal(error.message);
     });
 
@@ -290,7 +291,7 @@ describe('src/modules/transport.ts', () => {
 
       expect(removePeerStub.calledOnce).to.be.true;
       expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({peer: thePeer, code: `ERESPONSE ${res.status}`});
+      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({ peer: thePeer, code: `ERESPONSE ${res.status}` });
       expect(removePeerStub.firstCall.args[1]).to.be.equal('put http://undefined:undefinedurl.com');
     });
 
@@ -319,7 +320,7 @@ describe('src/modules/transport.ts', () => {
 
       expect(removePeerStub.calledOnce).to.be.true;
       expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({peer: thePeer, code: 'EHEADERS'});
+      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({ peer: thePeer, code: 'EHEADERS' });
       expect(removePeerStub.firstCall.args[1]).to.be.equal('put http://undefined:undefinedurl.com');
     });
 
@@ -340,7 +341,7 @@ describe('src/modules/transport.ts', () => {
 
       expect(removePeerStub.calledOnce).to.be.true;
       expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({peer: thePeer, code: 'ENETHASH'});
+      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({ peer: thePeer, code: 'ENETHASH' });
       expect(removePeerStub.firstCall.args[1]).to.be.equal('put http://undefined:undefinedurl.com');
     });
 
@@ -362,7 +363,7 @@ describe('src/modules/transport.ts', () => {
 
       expect(removePeerStub.calledOnce).to.be.true;
       expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({peer: thePeer, code: 'EVERSION 1.1.1'});
+      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({ peer: thePeer, code: 'EVERSION 1.1.1' });
       expect(removePeerStub.firstCall.args[1]).to.be.equal('put http://undefined:undefinedurl.com');
 
     });
@@ -393,12 +394,12 @@ describe('src/modules/transport.ts', () => {
     let getFromPeerStub;
 
     beforeEach(() => {
-      options = {fieldhohoho: 'hohohohoho'};
+      options = { fieldhohoho: 'hohohohoho' };
       result  = 'hehehe';
       config  = {};
       peers   = [{}];
 
-      peersModule.enqueueResponse('list', Promise.resolve({peers}));
+      peersModule.enqueueResponse('list', Promise.resolve({ peers }));
       getFromPeerStub = sandbox.stub(inst, 'getFromPeer').returns(result);
     });
 
@@ -477,7 +478,7 @@ describe('src/modules/transport.ts', () => {
 
         expect(loggerTraceStub.getCall(1).args.length).to.be.equal(2);
         expect(loggerTraceStub.getCall(1).args[0]).to.be.equal('Updating peers');
-        expect(loggerTraceStub.getCall(1).args[1]).to.be.deep.equal({count: peers.length});
+        expect(loggerTraceStub.getCall(1).args[1]).to.be.deep.equal({ count: peers.length });
 
         expect(loggerTraceStub.getCall(2).args.length).to.be.equal(2);
         expect(loggerTraceStub.getCall(2).args[0]).to.be.equal('Updating peer');
@@ -533,7 +534,7 @@ describe('src/modules/transport.ts', () => {
       expect(throttleStub.all.calledOnce).to.be.true;
       expect(throttleStub.all.firstCall.args.length).to.be.equal(2);
       expect(throttleStub.all.firstCall.args[0]).to.be.a('array');
-      expect(throttleStub.all.firstCall.args[1]).to.be.deep.equal({maxInProgress: 50});
+      expect(throttleStub.all.firstCall.args[1]).to.be.deep.equal({ maxInProgress: 50 });
     });
 
     describe('Throttle.all callback(for each peer in peers)', () => {
@@ -603,7 +604,7 @@ describe('src/modules/transport.ts', () => {
     let signature;
 
     beforeEach(() => {
-      signature = {transaction: 'trans', signature: 'sign'};
+      signature = { transaction: 'trans', signature: 'sign' };
       broadcast = true;
       broadcasterLogic.enqueueResponse('maxRelays', false);
       broadcasterLogic.enqueueResponse('enqueue', false);
@@ -625,7 +626,7 @@ describe('src/modules/transport.ts', () => {
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[0]).to.be.deep.equal({});
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[1]).to.be.deep.equal({
         api   : '/signatures',
-        data  : {signature},
+        data  : { signature },
         method: 'POST',
       });
     });
@@ -685,7 +686,7 @@ describe('src/modules/transport.ts', () => {
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[0]).to.be.deep.equal({});
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[1]).to.be.deep.equal({
         api   : '/transactions',
-        data  : {transaction},
+        data  : { transaction },
         method: 'POST',
       });
     });
@@ -822,7 +823,7 @@ describe('src/modules/transport.ts', () => {
     let query;
 
     beforeEach(() => {
-      query                = [{transaction: 'transaction', signature: 'signature'}];
+      query                = [{ transaction: 'transaction', signature: 'signature' }];
       receiveSignatureStub = sandbox.stub(inst as any, 'receiveSignature');
     });
 
@@ -852,7 +853,7 @@ describe('src/modules/transport.ts', () => {
     let signature;
 
     beforeEach(() => {
-      signature = {transaction: 'transaction', signature: 'signature'};
+      signature = { transaction: 'transaction', signature: 'signature' };
 
       multisigModule.enqueueResponse('processSignature', Promise.resolve());
     });
@@ -880,67 +881,14 @@ describe('src/modules/transport.ts', () => {
     let peer;
     let extraLogMessage;
 
-    let receiveTransactionStub: SinonStub;
-
     beforeEach(() => {
-      transactions    = [{}];
-      peer            = {};
+      transactions    = createRandomTransactions({send: 2});
+      peer            = { ip: 'ip', port: 'port' };
       extraLogMessage = 'extraLogMessage';
-
-      receiveTransactionStub = sandbox.stub(inst as any, 'receiveTransaction');
-    });
-
-    it('should call multisigModule.processSignature', async () => {
-      await inst.receiveTransactions(transactions, peer, extraLogMessage);
-
-      expect(receiveTransactionStub.calledOnce).to.be.true;
-      expect(receiveTransactionStub.firstCall.args.length).to.be.equal(4);
-      expect(receiveTransactionStub.firstCall.args[0]).to.be.deep.equal(transactions[0]);
-      expect(receiveTransactionStub.firstCall.args[1]).to.be.deep.equal(peer);
-      expect(receiveTransactionStub.firstCall.args[2]).to.be.equal(true);
-      expect(receiveTransactionStub.firstCall.args[3]).to.be.equal(extraLogMessage);
-
-    });
-
-    it('should throw error multisigModule.processSignature throw error', async () => {
-      const error = new Error('error');
-      receiveTransactionStub.rejects(error);
-
-      await inst.receiveTransactions(transactions, peer, extraLogMessage);
-
-      expect(logger.stubs.debug.calledOnce).to.be.true;
-      expect(logger.stubs.debug.firstCall.args.length).to.be.equal(2);
-      expect(logger.stubs.debug.firstCall.args[0]).to.be.equal(error);
-      expect(logger.stubs.debug.firstCall.args[1]).to.be.deep.equal(transactions[0]);
-    });
-  });
-
-  describe('receiveTransaction', () => {
-
-    let transaction;
-    let peer;
-    let bundled;
-    let extraLogMessage;
-
-    let removePeerStub: SinonStub;
-
-    beforeEach(() => {
-      transaction     = {id: 1999};
-      peer            = {string: 'string'};
-      bundled         = {};
-      extraLogMessage = 'extraLogMessage';
-
-      transactionLogic.enqueueResponse('objectNormalize', transaction);
-      transactionModule.enqueueResponse('processUnconfirmedTransaction', Promise.resolve({}));
-      removePeerStub = sandbox.stub(inst as any, 'removePeer');
-    });
-
-    it('should call transactionLogic.objectNormalize', async () => {
-      await inst.receiveTransaction(transaction, peer, bundled, extraLogMessage);
-
-      expect(transactionLogic.stubs.objectNormalize.calledOnce).to.be.true;
-      expect(transactionLogic.stubs.objectNormalize.firstCall.args.length).to.be.equal(1);
-      expect(transactionLogic.stubs.objectNormalize.firstCall.args[0]).to.be.deep.equal(transaction);
+      transactionLogic.stubs.objectNormalize.callsFake((tx) => tx);
+      transactionModule.stubs.filterConfirmedIds.resolves([]);
+      transactionModule.stubs.processUnconfirmedTransaction.resolves();
+      peersModule.stubs.remove.returns(null);
     });
 
     describe('transactionLogic.objectNormalize throw error', () => {
@@ -953,80 +901,49 @@ describe('src/modules/transport.ts', () => {
       });
 
       it('should throw error', async () => {
-        await  expect(inst.receiveTransaction(transaction, peer, bundled, extraLogMessage)).to.be.rejectedWith('Invalid transaction body error');
+        await expect(inst.receiveTransactions(transactions, peer, false)).to.be.rejectedWith('Invalid transaction body error');
       });
 
       it('should call removePeer', async () => {
-        await  expect(inst.receiveTransaction(transaction, peer, bundled, extraLogMessage)).to.be.rejectedWith('Invalid transaction body error');
+        await expect(inst.receiveTransactions(transactions, peer, false)).to.be.rejectedWith('Invalid transaction body error');
 
-        expect(removePeerStub.calledOnce).to.be.true;
-        expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-        expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({peer, code: 'ETRANSACTION'});
-        expect(removePeerStub.firstCall.args[1]).to.be.deep.equal(extraLogMessage);
+        expect(peersModule.stubs.remove.calledOnce).to.be.true;
+        expect(peersModule.stubs.remove.firstCall.args.length).to.be.equal(2);
+        expect(peersModule.stubs.remove.firstCall.args[0]).to.be.deep.equal(peer.ip);
+        expect(peersModule.stubs.remove.firstCall.args[1]).to.be.deep.equal(peer.port);
       });
 
-      it('should call logger.debug', async () => {
-        await  expect(inst.receiveTransaction(transaction, peer, bundled, extraLogMessage)).to.be.rejectedWith('Invalid transaction body error');
-
-        expect(logger.stubs.debug.calledOnce).to.be.true;
-        expect(logger.stubs.debug.firstCall.args.length).to.be.equal(2);
-        expect(logger.stubs.debug.firstCall.args[0]).to.be.equal('Transaction normalization failed');
-        expect(logger.stubs.debug.firstCall.args[1]).to.be.deep.equal({
-          err   : error.toString(),
-          id    : transaction.id,
-          module: 'transport',
-          tx    : transaction,
-        });
-      });
     });
 
     it('should call balancesSequence.addAndPromise', async () => {
-      await inst.receiveTransaction(transaction, peer, bundled, extraLogMessage);
+      await inst.receiveTransactions(transactions, peer, false);
 
       expect(balancesSequence.spies.addAndPromise.calledOnce).to.be.true;
       expect(balancesSequence.spies.addAndPromise.firstCall.args.length).to.be.equal(1);
       expect(balancesSequence.spies.addAndPromise.firstCall.args[0]).to.be.a('function');
     });
 
-    it('should call logger.debug', async () => {
-      await inst.receiveTransaction(transaction, peer, bundled, extraLogMessage);
-
-      expect(logger.stubs.debug.calledOnce).to.be.true;
-      expect(logger.stubs.debug.firstCall.args.length).to.be.equal(1);
-      expect(logger.stubs.debug.firstCall.args[0]).to.be.equal('Received transaction 1999 from peer: string');
-    });
-
     it('should call transactionModule.processUnconfirmedTransaction', async () => {
-      await inst.receiveTransaction(transaction, peer, bundled, extraLogMessage);
+      await inst.receiveTransactions(transactions, peer, false);
 
-      expect(transactionModule.stubs.processUnconfirmedTransaction.calledOnce).to.be.true;
-      expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args.length).to.be.equal(3);
-      expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args[0]).to.be.deep.equal(transaction);
-      expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args[1]).to.be.equal(true);
-      expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args[2]).to.be.equal(bundled);
+      expect(transactionModule.stubs.processUnconfirmedTransaction.calledTwice).to.be.true;
+      expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args.length).to.be.equal(2);
+      expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args[0]).to.be.deep.equal(transactions[0]);
+      expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args[1]).to.be.equal(false);
+
+      expect(transactionModule.stubs.processUnconfirmedTransaction.secondCall.args.length).to.be.equal(2);
+      expect(transactionModule.stubs.processUnconfirmedTransaction.secondCall.args[0]).to.be.deep.equal(transactions[1]);
+      expect(transactionModule.stubs.processUnconfirmedTransaction.secondCall.args[1]).to.be.equal(false);
     });
 
-    it('should return transaction.id if success', async () => {
-      const ret = await inst.receiveTransaction(transaction, peer, bundled, extraLogMessage);
-
-      expect(ret).to.be.equal(transaction.id);
-    });
-
-    it('should logger.debug if balancesSequence.addAndPromise throw', async () => {
-      const error = Error('error');
-      transactionModule.stubs.processUnconfirmedTransaction.rejects(error);
-
-      await  expect(inst.receiveTransaction(transaction, peer, bundled, extraLogMessage)).to.be.rejectedWith(error.message);
-
-      expect(logger.stubs.debug.calledTwice).to.be.true;
-      expect(logger.stubs.debug.secondCall.args.length).to.be.equal(2);
-      expect(logger.stubs.debug.secondCall.args[0]).to.be.equal('Transaction 1999 error Error: error');
-    });
-    it('should throw error if balancesSequence.addAndPromise throw', async () => {
-      const error = Error('error');
-      transactionModule.stubs.processUnconfirmedTransaction.rejects(error);
-
-      await  expect(inst.receiveTransaction(transaction, peer, bundled, extraLogMessage)).to.be.rejectedWith(error.message);
+    it('should filter out already confirmed ids', async () => {
+      transactionModule.stubs.filterConfirmedIds.resolves([transactions[1].id]);
+      await inst.receiveTransactions(transactions, peer, true);
+      expect(transactionModule.stubs.processUnconfirmedTransaction.calledOnce).is.true;
+      expect(transactionModule.stubs.processUnconfirmedTransaction.firstCall.args).deep.eq([
+        transactions[0],
+        true,
+      ]);
     });
   });
 
@@ -1080,7 +997,7 @@ describe('src/modules/transport.ts', () => {
         },
       };
       acceptablePeers = [{}];
-      peer            = {string: 'string'};
+      peer            = { string: 'string' };
 
       schemaStub.stubs.validate.onCall(0).callsArg(2);
       peersLogic.enqueueResponse('acceptable', acceptablePeers);

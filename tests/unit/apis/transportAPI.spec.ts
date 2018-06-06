@@ -70,7 +70,6 @@ describe('apis/transportAPI', () => {
     ]);
     transportModuleStub = container.get(Symbols.modules.transport);
     transportModuleStub.enqueueResponse('receiveTransactions', true);
-    transportModuleStub.enqueueResponse('receiveTransaction', true);
     transportModuleStub.enqueueResponse('receiveSignatures', Promise.resolve());
     peersLogicStub = container.get(Symbols.logic.peers);
     thePeer        = { ip: '8.8.8.8', port: 1234 };
@@ -171,11 +170,8 @@ describe('apis/transportAPI', () => {
       expect(
         transportModuleStub.stubs.receiveTransactions.args[0][1]
       ).to.deep.equal(thePeer);
-      expect(transportModuleStub.stubs.receiveTransactions.args[0][2]).to.equal(
-        'post /foo'
-      );
+      expect(transportModuleStub.stubs.receiveTransactions.args[0][2]).to.be.true;
       expect(result).to.deep.equal({});
-      expect(transportModuleStub.stubs.receiveTransaction.called).to.be.false;
     });
 
     it('One transaction', async () => {
@@ -191,21 +187,16 @@ describe('apis/transportAPI', () => {
       );
       expect(peersLogicStub.stubs.create.calledOnce).to.be.true;
       expect(peersLogicStub.stubs.create.args[0][0]).to.deep.equal(thePeer);
-      expect(transportModuleStub.stubs.receiveTransaction.calledOnce).to.be
+      expect(transportModuleStub.stubs.receiveTransactions.calledOnce).to.be
         .true;
       expect(
-        transportModuleStub.stubs.receiveTransaction.args[0][0]
-      ).to.deep.equal({ id: 100 });
+        transportModuleStub.stubs.receiveTransactions.args[0][0]
+      ).to.deep.equal([{ id: 100 }]);
       expect(
-        transportModuleStub.stubs.receiveTransaction.args[0][1]
+        transportModuleStub.stubs.receiveTransactions.args[0][1]
       ).to.deep.equal(thePeer);
-      expect(transportModuleStub.stubs.receiveTransaction.args[0][2]).to.be
-        .false;
-      expect(transportModuleStub.stubs.receiveTransaction.args[0][3]).to.equal(
-        'post /foo2'
-      );
-      expect(transportModuleStub.stubs.receiveTransactions.called).to.be
-        .false;
+      expect(transportModuleStub.stubs.receiveTransactions.args[0][2]).to.be
+        .true;
     });
 
     it('Without transactions and transaction', async () => {
@@ -221,8 +212,6 @@ describe('apis/transportAPI', () => {
       );
       expect(peersLogicStub.stubs.create.calledOnce).to.be.true;
       expect(peersLogicStub.stubs.create.args[0][0]).to.deep.equal(thePeer);
-      expect(transportModuleStub.stubs.receiveTransaction.calledOnce).to.be
-        .false;
       expect(transportModuleStub.stubs.receiveTransactions.called).to.be
         .false;
     });
