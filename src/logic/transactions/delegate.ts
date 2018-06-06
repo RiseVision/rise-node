@@ -56,9 +56,9 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
    * Returns asset, given Buffer containing it
    */
   public fromBytes(bytes: Buffer, tx: IBaseTransaction<any>): DelegateAsset {
-    /**
-     * FIXME? Only sender can request his own delegate username?
-     */
+    if (bytes === null) {
+      return {} as any;
+    }
     return {
       delegate: {
         publicKey: tx.senderPublicKey.toString('hex'),

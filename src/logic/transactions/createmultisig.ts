@@ -78,6 +78,9 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
    * Returns asset, given Buffer containing it
    */
   public fromBytes(bytes: Buffer, tx: IBaseTransaction<any>): MultisigAsset {
+    if (bytes === null) {
+      return {} as any;
+    }
     const bb = ByteBuffer.wrap(bytes, 'binary');
     const min = bb.readByte(1);
     const lifetime = bb.readByte(2);

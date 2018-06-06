@@ -90,6 +90,9 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
    * Returns asset, given Buffer containing it
    */
   public fromBytes(bytes: Buffer, tx?: IBaseTransaction<any>): VoteAsset {
+    if (bytes === null) {
+      return {} as any;
+    }
     const votesString = bytes.toString('utf8');
     // Splits the votes into 33 bytes chunks (1 for the sign, 32 for the publicKey)
     return {

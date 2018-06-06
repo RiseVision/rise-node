@@ -245,11 +245,7 @@ export class TransactionLogic implements ITransactionLogic {
     if (tx.hasSignSignature) {
       transaction.signSignature = signSignature;
     }
-    if (assetLength > 0) {
-      transaction.asset = this.types[type].fromBytes(assetBytes, transaction);
-    } else {
-      transaction.asset = {};
-    }
+    transaction.asset = this.types[type].fromBytes(assetBytes, transaction);
     return transaction;
   }
 
