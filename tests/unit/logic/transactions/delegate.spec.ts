@@ -211,10 +211,10 @@ describe('logic/transactions/delegate', () => {
       await instance.apply(tx, block, sender);
       expect(applyValuesStub.called).is.true;
       expect(applyValuesStub.firstCall.args[0]).deep.eq({
-        u_isDelegate: 0,
+        u_isDelegate: 1,
         isDelegate: 1,
         username: 'topdelegate',
-        u_username: null,
+        u_username: 'topdelegate',
         vote: 0
       });
     });
@@ -227,10 +227,10 @@ describe('logic/transactions/delegate', () => {
       expect(op.model).is.deep.eq(accountsModel);
       expect(op.values).is.deep.eq({
         isDelegate  : 1,
-        u_isDelegate: 0,
+        u_isDelegate: 1,
         vote        : 0,
         username    : tx.asset.delegate.username,
-        u_username  : null,
+        u_username  : tx.asset.delegate.username,
       });
       expect(op.options).to.be.deep.eq({
         where: {

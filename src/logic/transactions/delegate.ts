@@ -104,9 +104,9 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
   public async apply(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     const data = {
       isDelegate  : 1 as any,
-      u_isDelegate: 0 as any,
+      u_isDelegate: 1 as any,
       vote        : 0,
-      u_username  : null,
+      u_username  : tx.asset.delegate.username,
       username    : tx.asset.delegate.username,
     };
     // TODO: Else? tx is not a valid tx. so why bothering doing an if ^^ ?
