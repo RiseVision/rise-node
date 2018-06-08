@@ -186,6 +186,8 @@ export class AppManager {
 
     app.use(middleware.applyAPIAccessRules(this.appConfig));
 
+    app.use(middleware.protoBuf());
+
     // Init HTTP Apis
     const container = this.container;
     useContainerForHTTP({

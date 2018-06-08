@@ -48,4 +48,29 @@ export const middleware = {
       }
     };
   },
+
+  /**
+   * Handles Protocol Buffer requests
+   */
+  protoBuf() {
+    return (req: Request, res: Response, next: NextFunction) => {
+      if (!req.is('application/octet-stream')) {
+        return next();
+      }
+
+      const data: Buffer[] = [];
+
+      req.on('data', (chunk: Buffer) => {
+        data.push(chunk);
+      });
+
+      req.on('end', () => {
+        if (data.length <= 0 ) {
+          return next();
+        }
+        (req as any).protoBuf = Buffer.concat(data);
+        next();
+      });
+    };
+  },
 };
