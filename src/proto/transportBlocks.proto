@@ -1,0 +1,6 @@
+syntax = "proto3";
+import "./bytesBlock.proto";
+
+message transportBlocks {
+    repeated bytesBlock blocks = 1;
+}

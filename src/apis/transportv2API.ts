@@ -6,7 +6,7 @@ import * as z_schema from 'z-schema';
 import { Bus, constants as constantsType, ProtoBufHelper, } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
-import { IBlockLogic, IPeersLogic } from '../ioc/interfaces/logic';
+import { IBlockLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
   IBlocksModule,
   IBlocksModuleUtils,
@@ -15,7 +15,8 @@ import {
   ITransportModule
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { IBaseTransaction } from '../logic/transactions';
+import { BlockLogic, IBytesBlock } from '../logic';
+import { IBaseTransaction, IBytesTransaction } from '../logic/transactions';
 import { BlocksModel } from '../models';
 import transportSchema from '../schema/transport';
 import { AttachPeerHeaders } from './utils/attachPeerHeaders';
@@ -31,6 +32,8 @@ export class TransportV2API {
   public schema: z_schema;
   @inject(Symbols.logic.block)
   private blockLogic: IBlockLogic;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
   @inject(Symbols.modules.blocksSubModules.utils)
@@ -55,16 +58,16 @@ export class TransportV2API {
   private BlocksModel: typeof BlocksModel;
 
   @Get('/list')
-  public async list() {
-    // const { peers } = await this.peersModule.list({ limit: this.constants.maxPeers });
-    // return { peers };
+  public async list(@Res() res: Response) {
+    const { peers } = await this.peersModule.list({ limit: this.constants.maxPeers });
+    return this.sendResponse(res, { peers }, 'transportPeers');
   }
 
   @Get('/signatures')
   public signatures(@Res() res: Response) {
     const txs: Array<IBaseTransaction<any>> =
             this.transactionsModule.getMultisignatureTransactionList(true, this.constants.maxSharedTxs);
-    const signatures = [];
+    const signatures                        = [];
     for (const tx of txs) {
       if (tx.signatures && tx.signatures.length > 0) {
         signatures.push({
@@ -79,15 +82,16 @@ export class TransportV2API {
   }
 
   @Post('/signatures')
-  public async postSignatures(@Body() data: Buffer, @Res() res: Response) {
+  public async postSignatures(@Req() req: Request, @Res() res: Response) {
     // TODO validate data after decoding
     // return this.transportModule.receiveSignatures(signatures);
   }
 
   @Get('/transactions')
   public transactions(@Res() res: Response) {
-    // const transactions = this.transactionsModule.getMergedTransactionList(this.constants.maxSharedTxs);
-    // return { transactions };
+    const transactions                 = this.transactionsModule.getMergedTransactionList(this.constants.maxSharedTxs);
+    const byteTxs: IBytesTransaction[] = transactions.map((tx) => this.generateBytesTransaction(tx));
+    return this.sendResponse(res, { transactions: byteTxs }, 'transportTransactions');
   }
 
   @Post('/transactions')
@@ -123,18 +127,17 @@ export class TransportV2API {
   public async getBlocks(@SchemaValid(transportSchema.blocks.properties.lastBlockId)
                          @QueryParam('lastBlockId') lastBlockId: string,
                          @Res() res: Response) {
-    // Get 34 blocks with all data (joins) from provided block id
-    // According to maxium payload of 58150 bytes per block with every transaction being a vote
-    // Discounting maxium compression setting used in middleware
-    // Maximum transport payload = 2000000 bytes
-    // const dbBlocks = await this.blocksModuleUtils.loadBlocksData({
-    //   lastId: lastBlockId,
-    //   limit : 34,
-    // });
-    // ....
+    // TODO define number of blocks to get per response dynamically, based on max payload size and lastBlockId
+    const dbBlocks = await this.blocksModuleUtils.loadBlocksData({
+      lastId: lastBlockId,
+      limit : 2000,
+    });
+    const blocks   = await Promise.all(dbBlocks
+      .map(async (block): Promise<IBytesBlock> => this.generateBytesBlock(block)));
+    return this.sendResponse(res, { blocks }, 'transportBlocks');
   }
 
-  private sendResponse(res: Response,  payload: any, pbNamespace: string, pbMessageType?: string) {
+  private sendResponse(res: Response, payload: any, pbNamespace: string, pbMessageType?: string) {
     res.contentType('application/octet-stream');
     if (this.protoBuf.validate(payload, pbNamespace, pbMessageType)) {
       return res.status(200).end(this.protoBuf.encode(payload, pbNamespace, pbMessageType), 'binary');
@@ -146,5 +149,22 @@ export class TransportV2API {
   private error(res: Response, message: string, code = 500) {
     const payload = { message };
     return res.status(code).end(this.protoBuf.encode(payload, 'APIError'), 'binary');
+  }
+
+  private generateBytesTransaction(tx: IBaseTransaction<any>): IBytesTransaction {
+    return {
+      bytes                : this.transactionLogic.getBytes(tx),
+      fee                  : tx.fee,
+      hasRequesterPublicKey: typeof tx.requesterPublicKey !== 'undefined' && tx.requesterPublicKey != null,
+      hasSignSignature     : typeof tx.signSignature !== 'undefined' && tx.signSignature != null,
+    };
+  }
+
+  private generateBytesBlock(block: BlocksModel): IBytesBlock {
+    return {
+      bytes       : BlockLogic.getBytes(block),
+      height      : block.height,
+      transactions: block.transactions.map((tx) => this.generateBytesTransaction(tx)),
+    };
   }
 }
