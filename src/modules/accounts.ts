@@ -8,7 +8,7 @@ import { AccountsModel } from '../models/';
 import { DBOp } from '../types/genericTypes';
 import { FieldsInModel } from '../types/utils';
 import { IBaseTransaction } from '../logic/transactions';
-import { profilePromise } from '../helpers/decorators/profile';
+
 
 @injectable()
 export class AccountsModule implements IAccountsModule {
@@ -37,7 +37,6 @@ export class AccountsModule implements IAccountsModule {
     return this.accountLogic.getAll(filter, fields);
   }
 
-  @profilePromise(1)
   public async resolveAccountsForTransactions(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: AccountsModel }> {
     const allSenders: Array<{ publicKey: Buffer, address: string }> = [];
     txs.forEach((tx) => {
