@@ -5,7 +5,7 @@ import { Body, Controller, Get, Post, QueryParam, Req, Res, UseBefore } from 'ro
 import * as z_schema from 'z-schema';
 import { Bus, constants as constantsType, ProtoBufHelper, } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
-import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { assertValidSchema, SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { IBlockLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
   IBlocksModule,
@@ -83,8 +83,16 @@ export class TransportV2API {
 
   @Post('/signatures')
   public async postSignatures(@Req() req: Request, @Res() res: Response) {
-    // TODO validate data after decoding
-    // return this.transportModule.receiveSignatures(signatures);
+    let signatures;
+    try {
+      signatures = this.parseRequest(req, 'transportSignatures');
+      assertValidSchema(this.schema, signatures, {obj: transportSchema.signatures.properties.signatures,
+        opts:{errorString: 'Error validating schema.'}});
+    } catch (err) {
+      return this.error(res, err.message);
+    }
+    await this.transportModule.receiveSignatures(signatures);
+    return this.sendResponse(res, {success: true}, 'APISuccess');
   }
 
   @Get('/transactions')
@@ -166,5 +174,15 @@ export class TransportV2API {
       height      : block.height,
       transactions: block.transactions.map((tx) => this.generateBytesTransaction(tx)),
     };
+  }
+
+  private parseRequest(req: Request, pbNamespace: string, pbMessageType?: string): any {
+    if (!(req as any).protoBuf) { throw new Error('No binary data in request body'); }
+    const payload = (req as any).protoBuf;
+    if (!this.protoBuf.validate(payload, pbNamespace, pbMessageType)) {
+      throw new Error(`Invalid binary data for message ${pbNamespace} ${pbMessageType}`);
+    } else {
+      return this.protoBuf.decode(payload, pbNamespace, pbMessageType);
+    }
   }
 }
