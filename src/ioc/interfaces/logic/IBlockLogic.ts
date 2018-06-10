@@ -14,11 +14,9 @@ export interface IBlockLogic {
   table: string;
   dbFields: string[];
 
-  /**
-   * Use static method instead
-   * @deprecated
-   */
   getId(block: BlockType): string;
+  getBytes(block: BlockType | SignedBlockType, includeSignature?: boolean): Buffer;
+  getHash(block: BlockType, includeSignature?: boolean): Buffer;
 
   create(data: {
     keypair: IKeypair, timestamp: number,

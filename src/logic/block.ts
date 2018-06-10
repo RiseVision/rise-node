@@ -48,93 +48,6 @@ export type SignedAndChainedTransportBlockType = SignedBlockType<string> & {
 
 @injectable()
 export class BlockLogic implements IBlockLogic {
-  /**
-   * Calculates block id.
-   * @param {BlockType} block
-   * @returns {string}
-   */
-  public static getId(block: BlockType): string {
-    const hash = crypto.createHash('sha256').update(this.getBytes(block)).digest();
-    const temp = Buffer.alloc(8);
-    for (let i = 0; i < 8; i++) {
-      temp[i] = hash[7 - i];
-    }
-    return BigNum.fromBuffer(temp).toString();
-  }
-
-  public static getHash(block: BlockType, includeSignature: boolean = true) {
-    return crypto.createHash('sha256')
-      .update(this.getBytes(block, includeSignature))
-      .digest();
-  }
-
-  public static getBytes(block: BlockType | SignedBlockType, includeSignature: boolean = true): Buffer {
-    const size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64;
-    const bb   = new ByteBuffer(size, true /* little endian */);
-    bb.writeInt(block.version);
-    bb.writeInt(block.timestamp);
-
-    if (block.previousBlock) {
-      const pb = new BigNum(block.previousBlock)
-        .toBuffer({ size: 8 });
-
-      for (let i = 0; i < 8; i++) {
-        bb.writeByte(pb[i]);
-      }
-    } else {
-      for (let i = 0; i < 8; i++) {
-        bb.writeByte(0);
-      }
-    }
-
-    bb.writeInt(block.numberOfTransactions);
-
-    // tslint:disable no-string-literal
-    bb['writeLong'](block.totalAmount);
-    bb['writeLong'](block.totalFee);
-    bb['writeLong'](block.reward);
-    // tslint:enable no-string-literal
-
-    bb.writeInt(block.payloadLength);
-
-    const payloadHashBuffer = block.payloadHash;
-    // tslint:disable-next-line
-    for (let i = 0; i < payloadHashBuffer.length; i++) {
-      bb.writeByte(payloadHashBuffer[i]);
-    }
-
-    const generatorPublicKeyBuffer = block.generatorPublicKey;
-    // tslint:disable-next-line
-    for (let i = 0; i < generatorPublicKeyBuffer.length; i++) {
-      bb.writeByte(generatorPublicKeyBuffer[i]);
-    }
-
-    if (typeof((block as SignedBlockType).blockSignature) !== 'undefined' && includeSignature) {
-      const blockSignatureBuffer = (block as SignedBlockType).blockSignature;
-      // tslint:disable-next-line
-      for (let i = 0; i < blockSignatureBuffer.length; i++) {
-        bb.writeByte(blockSignatureBuffer[i]);
-      }
-    }
-
-    bb.flip();
-
-    return bb.toBuffer() as any;
-  }
-
-  private static getAddressByPublicKey(publicKey: Buffer | string) {
-    if (typeof(publicKey) === 'string') {
-      publicKey = new Buffer(publicKey, 'hex');
-    }
-    const publicKeyHash = crypto.createHash('sha256')
-      .update(publicKey).digest();
-    const temp          = Buffer.alloc(8);
-
-    for (let i = 0; i < 8; i++) {
-      temp[i] = publicKeyHash[7 - i];
-    }
-    return `${BigNum.fromBuffer(temp).toString()}R`;
-  }
 
   public table    = 'blocks';
   public dbFields = [
@@ -164,14 +77,6 @@ export class BlockLogic implements IBlockLogic {
 
   @inject(Symbols.models.blocks)
   private BlocksModel: typeof BlocksModel;
-
-  /**
-   * Use static method instead
-   * @deprecated
-   */
-  public getId(block: BlockType): string {
-    return BlockLogic.getId(block);
-  }
 
   /**
    * the schema for logic block
@@ -258,7 +163,7 @@ export class BlockLogic implements IBlockLogic {
    */
   public sign(block: BlockType, key: IKeypair): Buffer {
     return this.ed.sign(
-      BlockLogic.getHash(block, false),
+      this.getHash(block, false),
       key
     );
   }
@@ -273,7 +178,7 @@ export class BlockLogic implements IBlockLogic {
     //  .verifySignature(block);
     // console.log(res);
     return this.ed.verify(
-      BlockLogic.getHash(block, false),
+      this.getHash(block, false),
       block.blockSignature,
       block.generatorPublicKey
     );
@@ -334,10 +239,11 @@ export class BlockLogic implements IBlockLogic {
     if (!rawBlock.b_id) {
       return null;
     } else {
+      const self = this;
       const block       = {
         blockSignature      : Buffer.from(rawBlock.b_blockSignature, 'hex'),
         get generatorId() {
-          return BlockLogic.getAddressByPublicKey(rawBlock.b_generatorPublicKey);
+          return self.getAddressByPublicKey(rawBlock.b_generatorPublicKey);
         },
         generatorPublicKey  : Buffer.from(rawBlock.b_generatorPublicKey, 'hex'),
         height              : parseInt(`${rawBlock.b_height}`, 10),
@@ -356,6 +262,94 @@ export class BlockLogic implements IBlockLogic {
       block.totalForged = new BigNum(block.totalFee).plus(new BigNum(block.reward)).toString();
       return block;
     }
+  }
+
+  /**
+   * Calculates block id.
+   * @param {BlockType} block
+   * @returns {string}
+   */
+  public getId(block: BlockType): string {
+    const hash = crypto.createHash('sha256').update(this.getBytes(block)).digest();
+    const temp = Buffer.alloc(8);
+    for (let i = 0; i < 8; i++) {
+      temp[i] = hash[7 - i];
+    }
+    return BigNum.fromBuffer(temp).toString();
+  }
+
+  public getHash(block: BlockType, includeSignature: boolean = true) {
+    return crypto.createHash('sha256')
+      .update(this.getBytes(block, includeSignature))
+      .digest();
+  }
+
+  public getBytes(block: BlockType | SignedBlockType, includeSignature: boolean = true): Buffer {
+    const size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64;
+    const bb   = new ByteBuffer(size, true /* little endian */);
+    bb.writeInt(block.version);
+    bb.writeInt(block.timestamp);
+
+    if (block.previousBlock) {
+      const pb = new BigNum(block.previousBlock)
+        .toBuffer({ size: 8 });
+
+      for (let i = 0; i < 8; i++) {
+        bb.writeByte(pb[i]);
+      }
+    } else {
+      for (let i = 0; i < 8; i++) {
+        bb.writeByte(0);
+      }
+    }
+
+    bb.writeInt(block.numberOfTransactions);
+
+    // tslint:disable no-string-literal
+    bb['writeLong'](block.totalAmount);
+    bb['writeLong'](block.totalFee);
+    bb['writeLong'](block.reward);
+    // tslint:enable no-string-literal
+
+    bb.writeInt(block.payloadLength);
+
+    const payloadHashBuffer = block.payloadHash;
+    // tslint:disable-next-line
+    for (let i = 0; i < payloadHashBuffer.length; i++) {
+      bb.writeByte(payloadHashBuffer[i]);
+    }
+
+    const generatorPublicKeyBuffer = block.generatorPublicKey;
+    // tslint:disable-next-line
+    for (let i = 0; i < generatorPublicKeyBuffer.length; i++) {
+      bb.writeByte(generatorPublicKeyBuffer[i]);
+    }
+
+    if (typeof((block as SignedBlockType).blockSignature) !== 'undefined' && includeSignature) {
+      const blockSignatureBuffer = (block as SignedBlockType).blockSignature;
+      // tslint:disable-next-line
+      for (let i = 0; i < blockSignatureBuffer.length; i++) {
+        bb.writeByte(blockSignatureBuffer[i]);
+      }
+    }
+
+    bb.flip();
+
+    return bb.toBuffer() as any;
+  }
+
+  private getAddressByPublicKey(publicKey: Buffer | string) {
+    if (typeof(publicKey) === 'string') {
+      publicKey = new Buffer(publicKey, 'hex');
+    }
+    const publicKeyHash = crypto.createHash('sha256')
+      .update(publicKey).digest();
+    const temp          = Buffer.alloc(8);
+
+    for (let i = 0; i < 8; i++) {
+      temp[i] = publicKeyHash[7 - i];
+    }
+    return `${BigNum.fromBuffer(temp).toString()}R`;
   }
 
 }

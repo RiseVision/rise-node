@@ -190,19 +190,19 @@ describe('logic/block', () => {
     });
   });
 
-  describe('[static] getBytes', () => {
+  describe('getBytes', () => {
     it('should return a Buffer', () => {
-      expect(BlockLogic.getBytes(dummyBlock)).to.be.an.instanceof(Buffer);
+      expect(instance.getBytes(dummyBlock)).to.be.an.instanceof(Buffer);
     });
 
     it('should return a Buffer of a given length', () => {
-      expect(BlockLogic.getBytes(dummyBlock).length).to.lte(4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64);
+      expect(instance.getBytes(dummyBlock).length).to.lte(4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64);
     });
   });
 
-  describe('[static] getHash', () => {
+  describe('getHash', () => {
     it('should return a hash of Uint8Array type', () => {
-      const hash = BlockLogic.getHash(dummyBlock);
+      const hash = instance.getHash(dummyBlock);
       expect(hash).to.be.an.instanceof(Uint8Array);
       expect(hash).to.be.ofSize(32);
       const dummyHash = Uint8Array.from(
@@ -213,12 +213,12 @@ describe('logic/block', () => {
     });
 
     it('should call crypto.createHash', () => {
-      BlockLogic.getHash(dummyBlock);
+      instance.getHash(dummyBlock);
       expect(createHashSpy.calledOnce).to.be.true;
     });
   });
 
-  describe('[static] verifySignature', () => {
+  describe('verifySignature', () => {
     it('should call ed.verify and return the same result', () => {
       const verifySpy = sinon.spy(ed, 'verify');
       const signed = instance.create(data);
@@ -230,7 +230,7 @@ describe('logic/block', () => {
 
     it('should call BlockLogic.getHash', () => {
       const signed = instance.create(data);
-      const getHashSpy = sinon.spy(BlockLogic, 'getHash');
+      const getHashSpy = sinon.spy(instance, 'getHash');
       instance.verifySignature(signed);
       expect(getHashSpy.calledOnce).to.be.true;
       expect(getHashSpy.firstCall.args[0]).to.be.deep.eq(signed);
@@ -515,19 +515,19 @@ describe('logic/block', () => {
     });
   });
 
-  describe('[static] getId', () => {
+  describe('getId', () => {
     it('should returns an id string', () => {
-      expect(BlockLogic.getId(dummyBlock)).to.equal('1931531116681750305');
+      expect(instance.getId(dummyBlock)).to.equal('1931531116681750305');
     });
 
     it('should call crypto.createHash', () => {
-      BlockLogic.getId(dummyBlock);
+      instance.getId(dummyBlock);
       expect(createHashSpy.called).to.be.true;
     });
 
     it('should call BlockLogic.getBytes with block', () => {
-      const getBytesSpy = sinon.spy(BlockLogic, 'getBytes');
-      BlockLogic.getId(dummyBlock);
+      const getBytesSpy = sinon.spy(instance, 'getBytes');
+      instance.getId(dummyBlock);
       expect(getBytesSpy.called).to.be.true;
       expect(getBytesSpy.firstCall.args[0]).to.be.deep.equal(dummyBlock);
       getBytesSpy.restore();
@@ -576,7 +576,7 @@ describe('logic/block', () => {
     });
 
     it('should not call this.getAddressByPublicKey with b_generatorPublicKey until generatorId is read', () => {
-      const getAddressByPublicKeySpy = sinon.spy(BlockLogic as any, 'getAddressByPublicKey');
+      const getAddressByPublicKeySpy = sinon.spy(instance as any, 'getAddressByPublicKey');
       const result = instance.dbRead(raw);
       expect(getAddressByPublicKeySpy.called).to.be.false;
       result.generatorId;

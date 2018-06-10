@@ -46,4 +46,14 @@ export class BlockLogicStub extends BaseStubClass implements IBlockLogic {
     return undefined;
   }
 
+  @stubMethod()
+  public getBytes(block: BlockType | SignedBlockType, includeSignature: boolean) {
+    return undefined;
+  }
+
+  @stubMethod()
+  public getHash(block: BlockType, includeSignature: boolean) {
+    return undefined;
+  }
+
 }
