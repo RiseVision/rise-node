@@ -7,7 +7,7 @@ import 'source-map-support/register';
 import { AppManager } from './AppManager';
 import { allExceptionCreator } from './exceptions';
 import {
-  config as configCreator, constants as constantsType, loggerCreator,
+  config as configCreator, constants as constantsType, ExceptionType, loggerCreator,
   promiseToCB,
 } from './helpers/';
 import { SignedAndChainedBlockType } from './logic/';
@@ -114,6 +114,8 @@ if (program.snapshot) {
     appConfig.loading.snapshot = true;
   }
 }
+// tslint:disable-next-line
+const exceptions: ExceptionType[] = require(`../etc/${program.net}/exceptions.json`);
 
 const logger = loggerCreator({
   echo      : appConfig.consoleLogLevel,
@@ -132,7 +134,8 @@ async function boot(constants: typeof constantsType): Promise<AppManager> {
     versionBuild,
     genesisBlock,
     constants,
-    allExceptionCreator
+    allExceptionCreator,
+    exceptions,
   );
   await manager.boot();
   return manager;

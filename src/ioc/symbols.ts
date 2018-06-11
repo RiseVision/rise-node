@@ -71,6 +71,7 @@ export const Symbols = {
     accounts2U_Multisignatures: Symbol('accounts2U_multisignatures'),
     blocks                    : Symbol('blocksModel'),
     delegates                 : Symbol('delegatesModel'),
+    exceptions                : Symbol('exceptionsModel'),
     forkStats                 : Symbol('forkStatsModel'),
     info                      : Symbol('infoModel'),
     migrations                : Symbol('migrationsModel'),

@@ -25,7 +25,7 @@ import {
   constants as constantsType,
   DBHelper,
   Ed,
-  ExceptionsManager,
+  ExceptionsManager, ExceptionType,
   ILogger,
   JobsQueue,
   middleware,
@@ -67,7 +67,7 @@ import {
   Accounts2U_MultisignaturesModel,
   AccountsModel,
   BlocksModel,
-  DelegatesModel,
+  DelegatesModel, ExceptionModel,
   ForksStatsModel, InfoModel, MigrationsModel,
   MultiSignaturesModel,
   PeersModel,
@@ -112,7 +112,8 @@ export class AppManager {
               private versionBuild: string,
               private genesisBlock: SignedAndChainedBlockType,
               private constants: typeof constantsType,
-              private excCreators: Array<(ex: ExceptionsManager) => void>) {
+              private excCreators: Array<(ex: ExceptionsManager) => void>,
+              private exceptions: ExceptionType[]) {
     this.appConfig.nethash = genesisBlock.payloadHash.toString('hex');
     // this.container.applyMiddleware(theLogger);
     // Sets the int8 (64bit integer) to be parsed as int instead of being returned as text
@@ -351,6 +352,7 @@ export class AppManager {
     this.container.bind(Symbols.models.accounts2U_Multisignatures).toConstructor(Accounts2U_MultisignaturesModel);
     this.container.bind(Symbols.models.blocks).toConstructor(BlocksModel);
     this.container.bind(Symbols.models.delegates).toConstructor(DelegatesModel);
+    this.container.bind(Symbols.models.exceptions).toConstructor(ExceptionModel);
     this.container.bind(Symbols.models.forkStats).toConstructor(ForksStatsModel);
     this.container.bind(Symbols.models.info).toConstructor(InfoModel);
     this.container.bind(Symbols.models.migrations).toConstructor(MigrationsModel);
@@ -376,6 +378,9 @@ export class AppManager {
 
     // Start migrations/runtime queries.
     await this.container.get<Migrator>(Symbols.helpers.migrator).init();
+    // Update exceptions table
+    await this.container.get<ExceptionsManager>(Symbols.helpers.exceptionsManager)
+      .createOrUpdateExceptions(this.exceptions);
 
     const infoModel = this.container.get<typeof InfoModel>(Symbols.models.info);
     // Create or restore nonce!

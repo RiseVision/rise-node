@@ -1,5 +1,7 @@
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import 'reflect-metadata';
+import { ExceptionModel } from '../models';
+import { Symbols } from '../ioc/symbols';
 
 export const ExceptionsList = {
   assertValidSlot    : Symbol('assertValidSlot'),
@@ -14,9 +16,19 @@ export interface IExceptionHandler<K> {
   handle(obj: K, ...args: any[]);
 }
 
+// tslint:disable-next-line
+export type ExceptionType = {
+  type: string;
+  address: string;
+  maxCount: number;
+};
+
 @injectable()
 export class ExceptionsManager {
   private handlers: { [k: string]: { [h: string]: IExceptionHandler<any> } } = {};
+
+  @inject(Symbols.models.exceptions)
+  private exceptionModel: typeof ExceptionModel;
 
   public registerExceptionHandler<T= any>(what: symbol, handlerKey: string, handler: IExceptionHandler<T>) {
     this.handlers[what]             = this.handlers[what] || {};
@@ -31,4 +43,14 @@ export class ExceptionsManager {
         .map((k) => this.handlers[what][k]);
     }
   }
+
+  public async createOrUpdateExceptions(exceptions: ExceptionType[]) {
+    for (const exception of exceptions) {
+      await this.exceptionModel.findOrCreate({
+        defaults: {remainingCount: exception.maxCount},
+        where   : {type: exception.type, key: exception.address},
+      });
+    }
+  }
+
 }
