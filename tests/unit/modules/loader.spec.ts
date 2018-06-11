@@ -41,6 +41,7 @@ import {
 import { createContainer } from '../../utils/containerCreator';
 import { createFakePeers } from '../../utils/fakePeersFactory';
 import { AccountsModel, BlocksModel, RoundsModel } from '../../../src/models';
+import { wait } from '../../../src/helpers';
 
 chai.use(chaiAsPromised);
 
@@ -1097,6 +1098,7 @@ describe('modules/loader', () => {
 
     let randomPeer;
     let lastValidBlock;
+    let isStaleStub: SinonStub;
 
     beforeEach(() => {
       randomPeer = { string: 'string', height: 2 };
@@ -1117,6 +1119,9 @@ describe('modules/loader', () => {
         'loadBlocksFromPeer',
         Promise.resolve(lastValidBlock)
       );
+      blocksModuleStub.lastReceipt.isStale = () => false;
+
+      isStaleStub = blocksModuleStub.sandbox.stub(blocksModuleStub.lastReceipt, 'isStale').returns(false);
     });
 
     afterEach(() => {
@@ -1129,8 +1134,9 @@ describe('modules/loader', () => {
       await (instance as any).loadBlocksFromNetwork();
 
       expect(promiseRetryStub.calledOnce).to.be.true;
-      expect(promiseRetryStub.firstCall.args.length).to.be.equal(1);
+      expect(promiseRetryStub.firstCall.args.length).to.be.equal(2);
       expect(promiseRetryStub.firstCall.args[0]).to.be.a('function');
+      expect(promiseRetryStub.firstCall.args[1]).to.be.deep.eq({ retries: 3, maxTimeout: 2000 });
     });
 
     it('should call wait if typeof(randomPeer) === undefined', async () => {
@@ -1231,7 +1237,7 @@ describe('modules/loader', () => {
         );
       });
 
-      it('should call logger.error twice and return after if blocksProcessModule.getCommonBlock thro error', async () => {
+      it('should call logger.error one and return after if blocksProcessModule.getCommonBlock thro error', async () => {
         const error = new Error('error');
         blocksProcessModuleStub.enqueueResponse(
           'getCommonBlock',
@@ -1239,17 +1245,11 @@ describe('modules/loader', () => {
         );
 
         await (instance as any).loadBlocksFromNetwork();
-
-        expect(loggerStub.stubs.error.calledTwice).to.be.true;
+        expect(loggerStub.stubs.error.calledOnce).to.be.true;
 
         expect(loggerStub.stubs.error.firstCall.args.length).to.be.equal(1);
         expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal(
           'Failed to find common block with: string'
-        );
-
-        expect(loggerStub.stubs.error.secondCall.args.length).to.be.equal(1);
-        expect(loggerStub.stubs.error.secondCall.args[0]).to.be.equal(
-          error.toString()
         );
 
         expect(retryStub.firstCall.args[0]).to.be.deep.equal(error);
@@ -1329,6 +1329,26 @@ describe('modules/loader', () => {
 
       expect(blocksProcessModuleStub.stubs.loadBlocksFromPeer.calledTwice).to.be
         .true;
+    });
+    it('should not iterate forever if loadBlocksFromPeer throws', async function() {
+      this.timeout(10000);
+
+      container.rebind(Symbols.modules.loader).to(LoaderModule);
+      instance = container.get(Symbols.modules.loader);
+      sandbox
+        .stub(instance as any, 'getRandomPeer')
+        .resolves(randomPeer);
+      blocksProcessModuleStub.reset();
+      // 3 retries + first
+      for (let i = 0; i < 4; i++) {
+        blocksProcessModuleStub.stubs.loadBlocksFromPeer
+          .onCall(i)
+          .rejects(new Error(`${i}`));
+      }
+      await wait(1000);
+      await (instance as any).loadBlocksFromNetwork();
+
+      expect(blocksProcessModuleStub.stubs.loadBlocksFromPeer.callCount).eq(4);
     });
   });
 

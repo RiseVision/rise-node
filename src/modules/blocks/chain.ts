@@ -150,8 +150,6 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     try {
       for (const tx of block.transactions) {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
-        // FIXME: Poor performance - every transaction cause SQL query to be executed
-        // WARNING: DB_WRITE
         const sender = await this.accountsModule
           .setAccountAndGet({ publicKey: tx.senderPublicKey });
         // Apply tx.
@@ -237,7 +235,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
           await this.saveBlock(block, dbTX);
         } catch (err) {
           this.logger.error('Failed to save block...');
-          this.logger.error('Block', block);
+          this.logger.error('Block', block.id);
           throw err;
         }
         this.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');

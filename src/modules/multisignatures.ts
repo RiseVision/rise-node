@@ -37,7 +37,6 @@ export class MultisignaturesModule implements IMultisignaturesModule {
   public async processSignature(tx: { signature: string, transaction: string }) {
     const transaction = this.transactionsModule.getMultisignatureTransaction(tx.transaction);
     if (!transaction) {
-      console.log('meow');
       throw new Error('Transaction not found');
     }
 

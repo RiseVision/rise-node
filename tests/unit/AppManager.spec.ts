@@ -535,12 +535,6 @@ describe('AppManager', () => {
         },
       ]);
 
-      expect(containerStub.bindings[Symbols.generic.nonce]).to.be.deep.equal([
-        {
-          toConstantValue: (instance as any).nonce,
-        },
-      ]);
-
       expect(containerStub.bindings[Symbols.generic.redisClient]).to.be.deep.equal([
         {
           toConstantValue: 'theClient',
@@ -920,6 +914,8 @@ describe('AppManager', () => {
     let transactionLogicStub: TransactionLogicStub;
     let blocksSubmoduleChainStub: BlocksSubmoduleChainStub;
     let loaderModuleStub: LoaderModuleStub;
+    let infoFindOrCreateStub: SinonStub;
+    let infoUpsertStub: SinonStub;
     let blockLogicStub: BlockLogicStub;
     beforeEach(() => {
       cbToPromiseStub                = sandbox.stub().callsFake((fn) => {
@@ -936,7 +932,6 @@ describe('AppManager', () => {
 
       instance      = new ProxyAppManager.AppManager(appConfig, loggerStub, '1.0', genesisBlock, constants, []);
       getModulesSpy = sandbox.spy(instance as any, 'getModules');
-
       containerStub = new ContainerStub(sandbox);
       containerStub.get.callsFake((s) => {
         let retVal: any;
@@ -954,6 +949,12 @@ describe('AppManager', () => {
       blocksSubmoduleChainStub.stubs.saveGenesisBlock.resolves();
       loaderModuleStub.stubs.loadBlockChain.resolves();
       sandbox.stub(Sequelize.prototype, 'addModels').returns(null);
+      infoFindOrCreateStub = sandbox
+        .stub(allStubsContainer.get<any>(Symbols.models.info), 'findOrCreate')
+        .returns([{value: '1', key: 'nonce'}]);
+      infoUpsertStub = sandbox
+        .stub(allStubsContainer.get<any>(Symbols.models.info), 'upsert')
+        .resolves();
       blockLogicStub.enqueueResponse('objectNormalize', null);
     });
 
@@ -968,11 +969,6 @@ describe('AppManager', () => {
       });
     });
 
-    it('should call container.get for helpers.bus', async () => {
-      await instance.finishBoot();
-      expect(containerStub.get.called).to.be.true;
-      expect(containerStub.get.firstCall.args[0]).to.be.equal(Symbols.helpers.bus);
-    });
 
     it('should call objectNormalize over genesisblock', async () => {
       await instance.finishBoot();
@@ -1072,6 +1068,20 @@ describe('AppManager', () => {
       expect(catchToLoggerAndRemapErrorStub.firstCall.args.length).to.be.equal(2);
       expect(catchToLoggerAndRemapErrorStub.firstCall.args[0]).to.be.equal('Cannot load blockchain');
       expect(catchToLoggerAndRemapErrorStub.firstCall.args[1]).to.be.deep.equal(loggerStub);
+    });
+
+    it('should query/update info table', async () => {
+      await instance.finishBoot();
+      expect(infoFindOrCreateStub.calledOnce).is.true;
+      expect(infoFindOrCreateStub.firstCall.args[0]).to.haveOwnProperty('where');
+      expect(infoFindOrCreateStub.firstCall.args[0].where).to.deep.eq({key: 'nonce'});
+      expect(infoFindOrCreateStub.firstCall.args[0]).to.haveOwnProperty('defaults');
+      expect(containerStub.bindings[Symbols.generic.nonce][0].toConstantValue).be.eq('1');
+      expect(infoUpsertStub.calledOnce).is.true;
+      expect(infoUpsertStub.firstCall.args[0]).is.deep.eq({
+        key: 'genesisAccount',
+        value: '14709573872795067383R'
+      });
     });
   });
 

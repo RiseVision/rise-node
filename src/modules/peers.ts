@@ -152,9 +152,9 @@ export class PeersModule implements IPeersModule {
   }
 
   public async onBlockchainReady() {
-    await this.insertSeeds();
-    await this.dbLoad();
     if (process.env.NODE_ENV !== 'test') {
+      await this.insertSeeds();
+      await this.dbLoad();
       await this.bus.message('peersReady');
     }
   }

@@ -84,7 +84,7 @@ export class IntegrationTestInitializer {
     expect(blockModule.lastBlock.height).to.be.eq(height - howMany);
   }
 
-  public async generateBlock(transactions: Array<ITransaction<any>> = []): Promise<SignedBlockType> {
+  public async generateBlock(transactions: Array<ITransaction<any>> = []): Promise<SignedBlockType & {height: number}> {
     const blockLogic      = this.appManager.container.get<IBlockLogic>(Symbols.logic.block);
     const blockModule     = this.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
     const height          = blockModule.lastBlock.height;
@@ -179,13 +179,13 @@ export class IntegrationTestInitializer {
 
   private createAppManager() {
     this.appManager = new AppManager(
-      require('../config.json'),
+      JSON.parse(JSON.stringify(require('../config.json'))),
       loggerCreator({
-        echo    : 'error',
+        echo    : 'none',
         filename: '/dev/null',
       }),
       'integration-version',
-      require('../genesisBlock.json'),
+      JSON.parse(JSON.stringify(require('../genesisBlock.json'))),
       constants,
       []
     );
@@ -206,6 +206,7 @@ export class IntegrationTestInitializer {
     const migrations: typeof MigrationsModel = this.appManager.container.get(Symbols.models.migrations);
     await this.appManager.tearDown();
     const tables = ['blocks', 'delegates', 'forks_stat', 'mem_accounts',
+      'info',
       'mem_accounts2delegates',
       'mem_accounts2multisignatures', 'mem_accounts2u_delegates', 'mem_accounts2u_multisignatures', 'mem_round',
       // 'migrations',
