@@ -148,10 +148,10 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     );
 
     try {
+      await this.AccountsModel.sequelize
+        .query(`ALTER TABLE ${this.AccountsModel.getTableName()} DISABLE TRIGGER trg_memaccounts_update;`);
       for (const tx of block.transactions) {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
-        // FIXME: Poor performance - every transaction cause SQL query to be executed
-        // WARNING: DB_WRITE
         const sender = await this.accountsModule
           .setAccountAndGet({ publicKey: tx.senderPublicKey });
         // Apply tx.
@@ -168,6 +168,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
         tracker.applyNext();
       }
+      await this.AccountsModel.sequelize
+        .query(`ALTER TABLE ${this.AccountsModel.getTableName()} ENABLE TRIGGER trg_memaccounts_update;`);
     } catch (err) {
       // Genesis is not valid?
       this.logger.error(err);

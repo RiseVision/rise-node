@@ -37,7 +37,23 @@ CREATE TABLE IF NOT EXISTS "mem_accounts"(
 );
 
 CREATE INDEX IF NOT EXISTS "mem_accounts_balance" ON "mem_accounts"("balance");
--- CREATE UNIQUE INDEX IF NOT EXISTS "idx_accounts_address" on "mem_accounts"("address");
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_accounts_address" on "mem_accounts"("address");
+
+-- TRIGGER TO ensure an existing account (that can only be created by a transaction) cannot go lower than zero
+CREATE OR REPLACE FUNCTION proc_balance_check() RETURNS TRIGGER AS $$
+  BEGIN
+    IF NEW."balance" < 0 OR NEW."u_balance" < 0 THEN
+      RAISE EXCEPTION 'Address % cannot go < 0 on balance', NEW.address;
+    END IF;
+    RETURN NEW;
+  END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_memaccounts_update
+  BEFORE UPDATE OF balance,u_balance
+  on mem_accounts
+  FOR EACH ROW EXECUTE PROCEDURE proc_balance_check();
+
 
 CREATE TABLE IF NOT EXISTS "mem_round"(
   "address" VARCHAR(22),
