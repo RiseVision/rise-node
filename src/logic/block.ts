@@ -89,7 +89,7 @@ export class BlockLogic implements IBlockLogic {
     keypair: IKeypair, timestamp: number,
     transactions: Array<IBaseTransaction<any>>,
     previousBlock?: SignedAndChainedBlockType
-  }): SignedBlockType {
+  }): SignedAndChainedBlockType {
     const transactions = data.transactions;
     transactions.sort((a, b) => {
       if (a.type < b.type) {
@@ -133,7 +133,7 @@ export class BlockLogic implements IBlockLogic {
       payloadHash.update(bytes);
     }
 
-    const block: SignedBlockType = {
+    const block: SignedAndChainedBlockType = {
       blockSignature      : undefined,
       generatorPublicKey  : data.keypair.publicKey,
       height              : data.previousBlock.height + 1,

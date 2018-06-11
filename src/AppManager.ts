@@ -68,7 +68,7 @@ import {
   AccountsModel,
   BlocksModel,
   DelegatesModel,
-  ForksStatsModel, MigrationsModel,
+  ForksStatsModel, InfoModel, MigrationsModel,
   MultiSignaturesModel,
   PeersModel,
   RoundsFeesModel,
@@ -103,7 +103,6 @@ export class AppManager {
   public container: Container = new Container();
   public expressApp: express.Express;
 
-  private nonce: string    = uuid.v4();
   private schema: z_schema = new z_schema({});
   private isCleaning       = false;
   private server: http.Server;
@@ -264,7 +263,8 @@ export class AppManager {
     this.container.bind(Symbols.generic.appConfig).toConstantValue(this.appConfig);
     this.container.bind(Symbols.generic.expressApp).toConstantValue(this.expressApp);
     this.container.bind(Symbols.generic.genesisBlock).toConstantValue(this.genesisBlock);
-    this.container.bind(Symbols.generic.nonce).toConstantValue(this.nonce);
+    // Nonce is restore in finishBoot.
+    // this.container.bind(Symbols.generic.nonce).toConstantValue(this.nonce);
     this.container.bind(Symbols.generic.redisClient).toConstantValue(theCache.client);
     this.container.bind(Symbols.generic.sequelize).toConstantValue(sequelize);
     this.container.bind(Symbols.generic.sequelizeNamespace).toConstantValue(namespace);
@@ -352,6 +352,7 @@ export class AppManager {
     this.container.bind(Symbols.models.blocks).toConstructor(BlocksModel);
     this.container.bind(Symbols.models.delegates).toConstructor(DelegatesModel);
     this.container.bind(Symbols.models.forkStats).toConstructor(ForksStatsModel);
+    this.container.bind(Symbols.models.info).toConstructor(InfoModel);
     this.container.bind(Symbols.models.migrations).toConstructor(MigrationsModel);
     this.container.bind(Symbols.models.multisignatures).toConstructor(MultiSignaturesModel);
     this.container.bind(Symbols.models.peers).toConstructor(PeersModel);
@@ -368,8 +369,20 @@ export class AppManager {
   }
 
   public async finishBoot() {
-    const bus       = this.container.get<Bus>(Symbols.helpers.bus);
     const sequelize = this.container.get<Sequelize>(Symbols.generic.sequelize);
+    // Register models
+    const models = this.getElementsFromContainer<typeof Model>(Symbols.models);
+    sequelize.addModels(models);
+
+    // Start migrations/runtime queries.
+    await this.container.get<Migrator>(Symbols.helpers.migrator).init();
+
+    const infoModel = this.container.get<typeof InfoModel>(Symbols.models.info);
+    // Create or restore nonce!
+    const [val] = await infoModel
+      .findOrCreate({where: {key: 'nonce'}, defaults: {value: uuid.v4()}});
+    this.container.bind(Symbols.generic.nonce).toConstantValue(val.value);
+    const bus       = this.container.get<Bus>(Symbols.helpers.bus);
     bus.modules     = this.getModules();
 
     // Register transaction types.
@@ -377,12 +390,8 @@ export class AppManager {
     const txs     = this.getElementsFromContainer<BaseTransactionType<any, any>>(Symbols.logic.transactions);
     txs.forEach((tx) => txLogic.attachAssetType(tx));
 
-    // Register models
-    const models = this.getElementsFromContainer<typeof Model>(Symbols.models);
-    sequelize.addModels(models);
-
-    // Start migrations/runtime queries.
-    await this.container.get<Migrator>(Symbols.helpers.migrator).init();
+    await infoModel
+      .upsert({key: 'genesisAccount', value: this.genesisBlock.transactions[0].senderId});
 
     // Move the genesis from string signatures to buffer signatures
     this.genesisBlock.previousBlock = '1'; // exception for genesisblock

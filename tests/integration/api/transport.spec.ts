@@ -27,7 +27,7 @@ import { ISlots } from '../../../src/ioc/interfaces/helpers';
 import * as sinon from 'sinon';
 import { Ed, ForkType } from '../../../src/helpers';
 import constants from '../../../src/helpers/constants';
-import { toBufferedTransaction } from '../../utils/txCrafter';
+import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
 
 // tslint:disable no-unused-expression max-line-length
 const headers = {
@@ -385,7 +385,20 @@ describe('api/transport', () => {
     checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
       .get('/peer/blocks/'));
     it('should throw if lastBlockId is not a valid number');
-    it('should query last 34 blocks from given lastId');
+    it('should query last 34 blocks from given lastId', async () => {
+      const { wallet } = await createRandomAccountWithFunds(Math.pow(10, 10));
+      const txs = (await Promise.all(new Array(25).fill(null)
+        .map((_, idx) => createSendTransaction(0, idx+1, wallet, '1R'))))
+        .map((tx) => toBufferedTransaction(tx));
+      const b = await initializer.rawMineBlockWithTxs([]);
+
+      const r = await supertest(initializer.appManager.expressApp)
+        .get('/peer/blocks?lastBlockId='+b.previousBlock)
+        .set(headers)
+        .expect(200);
+      console.log(JSON.stringify(r.body).length);
+      console.log(r.body.blocks.length);
+    });
   });
 
   describe('/blocks [post]', () => {

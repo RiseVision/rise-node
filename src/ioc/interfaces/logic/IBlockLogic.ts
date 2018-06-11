@@ -22,7 +22,7 @@ export interface IBlockLogic {
     keypair: IKeypair, timestamp: number,
     transactions: Array<IBaseTransaction<any>>,
     previousBlock?: SignedAndChainedBlockType
-  }): SignedBlockType;
+  }): SignedAndChainedBlockType;
 
   /**
    * Sign the block

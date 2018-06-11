@@ -17,7 +17,7 @@ export class BlockLogicStub extends BaseStubClass implements IBlockLogic {
   }
 
   @stubMethod()
-  public create(data: { keypair: IKeypair; timestamp: number; transactions: Array<IBaseTransaction<any>>; previousBlock?: SignedAndChainedBlockType }): SignedBlockType {
+  public create(data: { keypair: IKeypair; timestamp: number; transactions: Array<IBaseTransaction<any>>; previousBlock?: SignedAndChainedBlockType }) {
     return undefined;
   }
 

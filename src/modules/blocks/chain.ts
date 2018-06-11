@@ -148,8 +148,6 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     );
 
     try {
-      await this.AccountsModel.sequelize
-        .query(`ALTER TABLE ${this.AccountsModel.getTableName()} DISABLE TRIGGER trg_memaccounts_update;`);
       for (const tx of block.transactions) {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
         const sender = await this.accountsModule
@@ -168,8 +166,6 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
         tracker.applyNext();
       }
-      await this.AccountsModel.sequelize
-        .query(`ALTER TABLE ${this.AccountsModel.getTableName()} ENABLE TRIGGER trg_memaccounts_update;`);
     } catch (err) {
       // Genesis is not valid?
       this.logger.error(err);
@@ -239,7 +235,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
           await this.saveBlock(block, dbTX);
         } catch (err) {
           this.logger.error('Failed to save block...');
-          this.logger.error('Block', block);
+          this.logger.error('Block', block.id);
           throw err;
         }
         this.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');

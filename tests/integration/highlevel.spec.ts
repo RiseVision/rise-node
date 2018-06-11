@@ -99,7 +99,7 @@ describe('highlevel checks', function () {
 
       it('should not allow block with tx exceeding account balance', async () => {
         const preHeight = blocksModule.lastBlock.height;
-        const acc = accModule.getAccount({address: senderAccount.address});
+        const acc = await accModule.getAccount({address: senderAccount.address});
         const txs = await Promise.all(
           new Array(3).fill(null)
             .map(() => createSendTransaction(
@@ -110,9 +110,9 @@ describe('highlevel checks', function () {
               )
             )
         );
-        const s = initializer.appManager.container.get<Sequelize>(Symbols.generic.sequelize);
+        //const s = initializer.appManager.container.get<Sequelize>(Symbols.generic.sequelize);
         // s.options.logging = true;
-        console.log('TXS:', txs.map(tx => tx.id), senderAccount.address);
+        //console.log('TXS:', txs.map(tx => tx.id), senderAccount.address);
 
         await expect(initializer
           .rawMineBlockWithTxs(txs.map((t) => toBufferedTransaction(t))))
@@ -120,8 +120,9 @@ describe('highlevel checks', function () {
           .rejectedWith(/Account does not have enough currency/);
         // s.options.logging = false;
 
-        const postAcc = accModule.getAccount({address: senderAccount.address });
-
+        const postAcc = await accModule.getAccount({address: senderAccount.address });
+        expect(postAcc.balance).eq(acc.balance);
+        expect(postAcc.u_balance).eq(acc.u_balance);
         expect(blocksModule.lastBlock.height).to.be.eq(preHeight);
       });
     });
