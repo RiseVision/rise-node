@@ -26,5 +26,6 @@ export interface IPeersLogic {
    * @param {PeerType[]} peers
    * @returns {PeerType[]}
    */
+  acceptable(peers: IPeerLogic[]): IPeerLogic[];
   acceptable(peers: PeerType[]): PeerType[];
 }

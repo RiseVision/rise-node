@@ -70,7 +70,7 @@ export class PeersModule implements IPeersModule {
    * Gets the peers using the given filter.
    * if orderBy Is not specified then returned peers are shuffled.
    */
-  public async getByFilter(filter: PeerFilter): Promise<PeerType[]> {
+  public async getByFilter(filter: PeerFilter): Promise<IPeerLogic[]> {
     const allowedFields = ['ip', 'port', 'state', 'os', 'version', 'broadhash', 'height', 'nonce'];
     const limit         = filter.limit ? Math.abs(filter.limit) : 0;
     const offset        = filter.offset ? Math.abs(filter.offset) : 0;
@@ -82,7 +82,7 @@ export class PeersModule implements IPeersModule {
             // Descending
             (a[field] < b[field] ? 1 : -1);
 
-    const peers = this.peersLogic.list(true)
+    const peers = this.peersLogic.list(false)
       .filter((peer) => {
         let passed       = true;
         const filterKeys = Object.keys(filter);
@@ -117,7 +117,7 @@ export class PeersModule implements IPeersModule {
    * Gets peers list and calculated consensus.
    */
   // tslint:disable-next-line max-line-length
-  public async list(options: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }): Promise<{ consensus: number, peers: PeerType[] }> {
+  public async list(options: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }): Promise<{ consensus: number, peers: IPeerLogic[] }> {
     options.limit         = options.limit || this.constants.maxPeers;
     options.broadhash     = options.broadhash || this.systemModule.broadhash;
     options.allowedStates = options.allowedStates || [PeerState.CONNECTED];

@@ -151,7 +151,10 @@ export class TransportModule implements ITransportModule {
     config.limit         = 1;
     config.allowedStates = [PeerState.CONNECTED, PeerState.DISCONNECTED];
     const { peers }      = await this.peersModule.list(config);
-    return this.getFromPeer<T>(peers[0], options);
+    if (peers.length === 0) {
+      throw new Error('No peer available');
+    }
+    return peers[0].makeRequest<T>(options);
   }
 
   public cleanup() {

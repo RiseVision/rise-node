@@ -18,11 +18,11 @@ export interface IPeersModule extends IModule {
   /**
    * Gets the peers using the given filter.
    */
-  getByFilter(filter: PeerFilter): Promise<PeerType[]>;
+  getByFilter(filter: PeerFilter): Promise<IPeerLogic[]>;
 
   /**
    * Gets peers list and calculated consensus.
    */
   // tslint:disable-next-line max-line-length
-  list(options: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }): Promise<{ consensus: number, peers: PeerType[] }>;
+  list(options: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }): Promise<{ consensus: number, peers: IPeerLogic[] }>;
 }

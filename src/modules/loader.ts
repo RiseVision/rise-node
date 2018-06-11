@@ -617,16 +617,16 @@ export class LoaderModule implements ILoaderModule {
   private async loadTransactions() {
     const peer = await this.getRandomPeer();
     this.logger.log(`Loading transactions from: ${peer.string}`);
-    const res = await this.transportModule.getFromPeer<any>(peer, {
+    const body = await peer.makeRequest<any>({
       api   : '/transactions',
       method: 'GET',
     });
 
-    if (!this.schema.validate(res.body, loaderSchema.loadTransactions)) {
+    if (!this.schema.validate(body, loaderSchema.loadTransactions)) {
       throw new Error('Cannot validate load transactions schema against peer');
     }
 
-    const { transactions }: { transactions: Array<ITransportTransaction<any>> } = res.body;
+    const { transactions }: { transactions: Array<ITransportTransaction<any>> } = body;
     try {
       await this.transportModule.receiveTransactions(transactions, peer, false);
     } catch (err) {
