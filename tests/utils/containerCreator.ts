@@ -38,7 +38,8 @@ import SocketIOStub from '../stubs/utils/SocketIOStub';
 import {
   AccountsModel, BlocksModel, DelegatesModel, SignaturesModel, TransactionsModel, MultiSignaturesModel,
   VotesModel, Accounts2DelegatesModel, Accounts2MultisignaturesModel, Accounts2U_DelegatesModel,
-  Accounts2U_MultisignaturesModel, RoundsModel, ForksStatsModel, PeersModel, RoundsFeesModel, InfoModel
+  Accounts2U_MultisignaturesModel, RoundsModel, ForksStatsModel, PeersModel, RoundsFeesModel, InfoModel, ExceptionModel,
+  MigrationsModel
 } from '../../src/models';
 import { Sequelize } from 'sequelize-typescript';
 import { TransactionsModelStub } from '../stubs/models/TransactionsModelStub';
@@ -127,7 +128,9 @@ export const createContainer = (): Container => {
   // Models
   container.bind(Symbols.models.accounts).toConstructor(AccountsModel);
   container.bind(Symbols.models.blocks).toConstructor(BlocksModel);
+  container.bind(Symbols.models.exceptions).toConstructor(ExceptionModel);
   container.bind(Symbols.models.forkStats).toConstructor(ForksStatsModel);
+  container.bind(Symbols.models.migrations).toConstructor(MigrationsModel);
   container.bind(Symbols.models.info).toConstructor(InfoModel);
   container.bind(Symbols.models.transactions).toConstructor(TransactionsModel);
   container.bind(Symbols.models.accounts2Delegates).toConstructor(Accounts2DelegatesModel);
@@ -152,7 +155,7 @@ export const createContainer = (): Container => {
   const sequelize = container.get<Sequelize>(Symbols.generic.sequelize);
   const models = [
     AccountsModel, BlocksModel, Accounts2DelegatesModel, Accounts2U_DelegatesModel, Accounts2MultisignaturesModel,
-    Accounts2U_MultisignaturesModel, ForksStatsModel, InfoModel, PeersModel, RoundsFeesModel, RoundsModel, TransactionsModel, MultiSignaturesModel, DelegatesModel, SignaturesModel, VotesModel];
+    Accounts2U_MultisignaturesModel, ExceptionModel, ForksStatsModel, InfoModel, MigrationsModel, PeersModel, RoundsFeesModel, RoundsModel, TransactionsModel, MultiSignaturesModel, DelegatesModel, SignaturesModel, VotesModel];
   sequelize.addModels(models);
 
   return container;

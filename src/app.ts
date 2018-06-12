@@ -114,8 +114,6 @@ if (program.snapshot) {
     appConfig.loading.snapshot = true;
   }
 }
-// tslint:disable-next-line
-const exceptions: ExceptionType[] = require(`../etc/${program.net}/exceptions.json`);
 
 const logger = loggerCreator({
   echo      : appConfig.consoleLogLevel,
@@ -134,8 +132,7 @@ async function boot(constants: typeof constantsType): Promise<AppManager> {
     versionBuild,
     genesisBlock,
     constants,
-    allExceptionCreator,
-    exceptions,
+    allExceptionCreator
   );
   await manager.boot();
   return manager;

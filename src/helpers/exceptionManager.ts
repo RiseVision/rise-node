@@ -44,7 +44,7 @@ export class ExceptionsManager {
     }
   }
 
-  public async createOrUpdateExceptions(exceptions: ExceptionType[]) {
+  public async createOrUpdateDBExceptions(exceptions: ExceptionType[]) {
     for (const exception of exceptions) {
       await this.exceptionModel.findOrCreate({
         defaults: {remainingCount: exception.maxCount},

@@ -20,6 +20,7 @@ CREATE OR REPLACE FUNCTION proc_balance_check() RETURNS TRIGGER AS $$
       -- count then raise exception
       IF NOT EXISTS(SELECT * from info where "key" = 'genesisAccount' and "value" = NEW."address") THEN
         -- CHECK IF account is among an exception
+        RAISE WARNING 'Account % Running through exceptions', NEW.address;
         IF EXISTS (SELECT * from exceptions where "type" = 'account' AND "key" = NEW."address" AND "remainingCount" > 0) THEN
           UPDATE exceptions SET "remainingCount" = "remainingCount" - 1 where "type" = 'account' AND "key" = NEW."address";
         ELSE

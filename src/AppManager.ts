@@ -112,8 +112,7 @@ export class AppManager {
               private versionBuild: string,
               private genesisBlock: SignedAndChainedBlockType,
               private constants: typeof constantsType,
-              private excCreators: Array<(ex: ExceptionsManager) => void>,
-              private exceptions: ExceptionType[]) {
+              private excCreators: Array<(ex: ExceptionsManager) => Promise<void>>) {
     this.appConfig.nethash = genesisBlock.payloadHash.toString('hex');
     // this.container.applyMiddleware(theLogger);
     // Sets the int8 (64bit integer) to be parsed as int instead of being returned as text
@@ -363,25 +362,17 @@ export class AppManager {
     this.container.bind(Symbols.models.signatures).toConstructor(SignaturesModel);
     this.container.bind(Symbols.models.transactions).toConstructor(TransactionsModel);
     this.container.bind(Symbols.models.votes).toConstructor(VotesModel);
-
-    // Add exceptions by attaching exception handlers to the manager.
-    const exceptionsManager = this.container.get<ExceptionsManager>(Symbols.helpers.exceptionsManager);
-    this.excCreators
-      .forEach((exc) => exc(exceptionsManager));
-  }
-
-  public async finishBoot() {
-    const sequelize = this.container.get<Sequelize>(Symbols.generic.sequelize);
     // Register models
-    const models = this.getElementsFromContainer<typeof Model>(Symbols.models);
-    sequelize.addModels(models);
+    sequelize.addModels(this.getElementsFromContainer<typeof Model>(Symbols.models));
 
     // Start migrations/runtime queries.
     await this.container.get<Migrator>(Symbols.helpers.migrator).init();
-    // Update exceptions table
-    await this.container.get<ExceptionsManager>(Symbols.helpers.exceptionsManager)
-      .createOrUpdateExceptions(this.exceptions);
+    // Add exceptions by attaching exception handlers to the manager.
+    const exceptionsManager = this.container.get<ExceptionsManager>(Symbols.helpers.exceptionsManager);
+    await Promise.all(this.excCreators.map((exc) => exc(exceptionsManager)));
+  }
 
+  public async finishBoot() {
     const infoModel = this.container.get<typeof InfoModel>(Symbols.models.info);
     // Create or restore nonce!
     const [val] = await infoModel

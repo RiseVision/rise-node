@@ -19,4 +19,5 @@ export default function block_127765(excManager: ExceptionsManager) {
       },
     }
   );
+  return Promise.resolve();
 }

@@ -34,4 +34,5 @@ export default function exceptionTx14712341342146176146(excManager: ExceptionsMa
     'tx_14712341342146176146',
     handler
   );
+  return Promise.resolve();
 }
