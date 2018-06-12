@@ -138,7 +138,9 @@ export class AccountsAPI {
     if (!this.appConfig.topAccounts) {
       throw new APIError('Top Accounts is not enabled', 403);
     }
-    const {limit, offset} = params;
+    let {limit, offset} = params;
+    limit = limit || 100;
+    offset = offset || 0;
     const returnFields: FieldsInModel<AccountsModel> = ['address', 'balance', 'publicKey'];
     const accs = await this.accountsModule
       .getAccounts({

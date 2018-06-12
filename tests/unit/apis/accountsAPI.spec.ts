@@ -429,7 +429,18 @@ describe('apis/accountsAPI', () => {
       await expect(instance.topAccounts({})).to.be.rejectedWith('Top Accounts is not enabled');
       expect(accountsModule.stubs.getAccounts.called).is.false;
     });
+    it('should propagate request correctly with default params when not provided', async () => {
+      appConfig.topAccounts = true;
+      accountsModule.stubs.getAccounts.resolves([]);
 
+      await instance.topAccounts({});
+      expect(accountsModule.stubs.getAccounts.calledOnce).is.true;
+      expect(accountsModule.stubs.getAccounts.firstCall.args[0]).deep.eq({
+        sort: { balance: -1 },
+        limit: 100,
+        offset: 0
+      });
+    });
     it('should query accountsModule.getAccounts with proper params', async () => {
       accountsModule.stubs.getAccounts.resolves([]);
       const res = await instance.topAccounts({limit: 1, offset: 10});

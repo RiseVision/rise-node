@@ -224,6 +224,16 @@ describe('api/accounts', () => {
         .get('/api/accounts/top')
         .expect(403);
     });
+    it('should limit topAccounts response to 100 results with 0 offset when no params', async () => {
+      const ac = initializer.appManager.container.get<AppConfig>(Symbols.generic.appConfig);
+      ac.topAccounts = true;
+      const {body}     = await supertest(initializer.appManager.expressApp)
+        .get(`/api/accounts/top`)
+        .expect(200);
+      expect(body.accounts.length).eq(100);
+      // just check first as the sequence check is done in the next test
+      expect(body.accounts[0].address).eq('1R');
+    });
     it('should return accounts in ordered by balance honoring limits and offset', async () => {
       const ac = initializer.appManager.container.get<AppConfig>(Symbols.generic.appConfig);
       ac.topAccounts = true;
