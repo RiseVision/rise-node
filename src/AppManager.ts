@@ -165,7 +165,6 @@ export class AppManager {
     app.use(cors());
     app.options('*', cors());
 
-    app.use(express.static(`${__dirname}/../public`));
     app.use(bodyParser.raw({ limit: '2mb' }));
     app.use(bodyParser.urlencoded({ extended: true, limit: '2mb', parameterLimit: 5000 }));
     app.use(bodyParser.json({ limit: '2mb' }));
