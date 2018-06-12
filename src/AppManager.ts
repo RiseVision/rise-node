@@ -259,110 +259,19 @@ export class AppManager {
     this.container.bind(Symbols.api.utils.attachPeerHeaderToResponseObject).to(AttachPeerHeaders).inSingletonScope();
 
     // Generics
-    this.container.bind(Symbols.generic.appConfig).toConstantValue(this.appConfig);
-    this.container.bind(Symbols.generic.expressApp).toConstantValue(this.expressApp);
-    this.container.bind(Symbols.generic.genesisBlock).toConstantValue(this.genesisBlock);
-    // Nonce is restore in finishBoot.
-    // this.container.bind(Symbols.generic.nonce).toConstantValue(this.nonce);
-    this.container.bind(Symbols.generic.redisClient).toConstantValue(theCache.client);
-    this.container.bind(Symbols.generic.sequelize).toConstantValue(sequelize);
-    this.container.bind(Symbols.generic.sequelizeNamespace).toConstantValue(namespace);
-    this.container.bind(Symbols.generic.socketIO).toConstantValue(io);
-    this.container.bind(Symbols.generic.versionBuild).toConstantValue(this.versionBuild);
-    this.container.bind(Symbols.generic.zschema).toConstantValue(this.schema);
+    this.genericsElements(theCache, sequelize, namespace, io);
 
     // Helpers
-    this.container.bind(Symbols.helpers.bus).toConstantValue(bus);
-    this.container.bind(Symbols.helpers.constants).toConstantValue(this.constants);
-    this.container.bind(Symbols.helpers.db).to(DBHelper).inSingletonScope();
-    this.container.bind(Symbols.helpers.ed).toConstantValue(ed);
-    this.container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManager).inSingletonScope();
-    this.container.bind(Symbols.helpers.jobsQueue).to(JobsQueue).inSingletonScope();
-    this.container.bind(Symbols.helpers.logger).toConstantValue(this.logger);
-    this.container.bind(Symbols.helpers.migrator).to(Migrator).inSingletonScope();
-    // this.container.bind(Symbols.helpers.sequence).toConstantValue();
-    const self = this;
-    [Symbols.tags.helpers.dbSequence, Symbols.tags.helpers.defaultSequence, Symbols.tags.helpers.balancesSequence]
-      .forEach((sequenceTag) => {
-        this.container.bind(Symbols.helpers.sequence)
-          .toConstantValue(new Sequence(sequenceTag, {
-            onWarning(current) {
-              self.logger.warn(`${sequenceTag.toString()} queue`, current);
-            },
-          }))
-          .whenTargetTagged(Symbols.helpers.sequence, sequenceTag);
-      });
-    this.container.bind(Symbols.helpers.slots).to(Slots).inSingletonScope();
+    this.helperElements(bus, ed);
 
     // Logic
-    this.container.bind(Symbols.logic.account).to(AccountLogic).inSingletonScope();
-    this.container.bind(Symbols.logic.appState).to(AppState).inSingletonScope();
-    this.container.bind(Symbols.logic.block).to(BlockLogic).inSingletonScope();
-    this.container.bind(Symbols.logic.blockReward).to(BlockRewardLogic).inSingletonScope();
-    this.container.bind(Symbols.logic.broadcaster).to(BroadcasterLogic).inSingletonScope();
-    this.container.bind(Symbols.logic.peer).to(PeerLogic);
-    this.container.bind(Symbols.logic.peerFactory).toFactory((ctx) => {
-      return (peer: BasePeerType) => {
-        const p = ctx.container.get<IPeerLogic>(Symbols.logic.peer);
-        p.accept({ ... {}, ...peer });
-        return p;
-      };
-    });
-    this.container.bind(Symbols.logic.peers).to(PeersLogic).inSingletonScope();
-    this.container.bind(Symbols.logic.round).toConstructor(RoundLogic);
-    this.container.bind(Symbols.logic.rounds).to(RoundsLogic).inSingletonScope();
-    this.container.bind(Symbols.logic.transaction).to(TransactionLogic).inSingletonScope();
-    this.container.bind(Symbols.logic.transactionPool).to(TransactionPool).inSingletonScope();
-    this.container.bind(Symbols.logic.transactions.send).to(SendTransaction).inSingletonScope();
-    this.container.bind(Symbols.logic.transactions.vote).to(VoteTransaction).inSingletonScope();
-    this.container.bind(Symbols.logic.transactions.createmultisig).to(MultiSignatureTransaction).inSingletonScope();
-    this.container.bind(Symbols.logic.transactions.delegate).to(RegisterDelegateTransaction).inSingletonScope();
-    this.container.bind(Symbols.logic.transactions.secondSignature).to(SecondSignatureTransaction).inSingletonScope();
+    this.logicElements();
 
     // Modules
-    this.container.bind(Symbols.modules.accounts).to(AccountsModule).inSingletonScope();
-    this.container.bind(Symbols.modules.blocks).to(BlocksModule).inSingletonScope();
-    this.container.bind(Symbols.modules.blocksSubModules.chain).to(BlocksModuleChain).inSingletonScope();
-    this.container.bind(Symbols.modules.blocksSubModules.process).to(BlocksModuleProcess).inSingletonScope();
-    this.container.bind(Symbols.modules.blocksSubModules.utils).to(BlocksModuleUtils).inSingletonScope();
-    this.container.bind(Symbols.modules.blocksSubModules.verify).to(BlocksModuleVerify).inSingletonScope();
-    if (this.appConfig.cacheEnabled) {
-      this.container.bind(Symbols.modules.cache).to(Cache).inSingletonScope();
-    } else {
-      this.container.bind(Symbols.modules.cache).to(DummyCache).inSingletonScope();
-    }
-    this.container.bind(Symbols.modules.delegates).to(DelegatesModule).inSingletonScope();
-    this.container.bind(Symbols.modules.forge).to(ForgeModule).inSingletonScope();
-    this.container.bind(Symbols.modules.fork).to(ForkModule).inSingletonScope();
-    this.container.bind(Symbols.modules.loader).to(LoaderModule).inSingletonScope();
-    this.container.bind(Symbols.modules.multisignatures).to(MultisignaturesModule).inSingletonScope();
-    this.container.bind(Symbols.modules.peers).to(PeersModule).inSingletonScope();
-    this.container.bind(Symbols.modules.rounds).to(RoundsModule).inSingletonScope();
-    this.container.bind(Symbols.modules.system).to(SystemModule).inSingletonScope();
-    this.container.bind(Symbols.modules.transactions).to(TransactionsModule).inSingletonScope();
-    this.container.bind(Symbols.modules.transport).to(TransportModule).inSingletonScope();
+    this.modulesElements();
 
     // Add models
-    this.container.bind(Symbols.models.accounts).toConstructor(AccountsModel);
-    this.container.bind(Symbols.models.accounts2Delegates).toConstructor(Accounts2DelegatesModel);
-    this.container.bind(Symbols.models.accounts2Multisignatures).toConstructor(Accounts2MultisignaturesModel);
-    this.container.bind(Symbols.models.accounts2U_Delegates).toConstructor(Accounts2U_DelegatesModel);
-    this.container.bind(Symbols.models.accounts2U_Multisignatures).toConstructor(Accounts2U_MultisignaturesModel);
-    this.container.bind(Symbols.models.blocks).toConstructor(BlocksModel);
-    this.container.bind(Symbols.models.delegates).toConstructor(DelegatesModel);
-    this.container.bind(Symbols.models.exceptions).toConstructor(ExceptionModel);
-    this.container.bind(Symbols.models.forkStats).toConstructor(ForksStatsModel);
-    this.container.bind(Symbols.models.info).toConstructor(InfoModel);
-    this.container.bind(Symbols.models.migrations).toConstructor(MigrationsModel);
-    this.container.bind(Symbols.models.multisignatures).toConstructor(MultiSignaturesModel);
-    this.container.bind(Symbols.models.peers).toConstructor(PeersModel);
-    this.container.bind(Symbols.models.roundsFees).toConstructor(RoundsFeesModel);
-    this.container.bind(Symbols.models.rounds).toConstructor(RoundsModel);
-    this.container.bind(Symbols.models.signatures).toConstructor(SignaturesModel);
-    this.container.bind(Symbols.models.transactions).toConstructor(TransactionsModel);
-    this.container.bind(Symbols.models.votes).toConstructor(VotesModel);
-    // Register models
-    sequelize.addModels(this.getElementsFromContainer<typeof Model>(Symbols.models));
+    this.modelsElements(sequelize);
 
     // Start migrations/runtime queries.
     await this.container.get<Migrator>(Symbols.helpers.migrator).init();
@@ -410,6 +319,117 @@ export class AppManager {
     // const aM = this.container.get<IAccountsModule>(Symbols.modules.accounts);
     // const bit = await aM.getAccount({address: '15326312953541715317R'});
     // console.log(bit);
+  }
+
+  private modelsElements(sequelize) {
+    this.container.bind(Symbols.models.accounts).toConstructor(AccountsModel);
+    this.container.bind(Symbols.models.accounts2Delegates).toConstructor(Accounts2DelegatesModel);
+    this.container.bind(Symbols.models.accounts2Multisignatures).toConstructor(Accounts2MultisignaturesModel);
+    this.container.bind(Symbols.models.accounts2U_Delegates).toConstructor(Accounts2U_DelegatesModel);
+    this.container.bind(Symbols.models.accounts2U_Multisignatures).toConstructor(Accounts2U_MultisignaturesModel);
+    this.container.bind(Symbols.models.blocks).toConstructor(BlocksModel);
+    this.container.bind(Symbols.models.delegates).toConstructor(DelegatesModel);
+    this.container.bind(Symbols.models.exceptions).toConstructor(ExceptionModel);
+    this.container.bind(Symbols.models.forkStats).toConstructor(ForksStatsModel);
+    this.container.bind(Symbols.models.info).toConstructor(InfoModel);
+    this.container.bind(Symbols.models.migrations).toConstructor(MigrationsModel);
+    this.container.bind(Symbols.models.multisignatures).toConstructor(MultiSignaturesModel);
+    this.container.bind(Symbols.models.peers).toConstructor(PeersModel);
+    this.container.bind(Symbols.models.roundsFees).toConstructor(RoundsFeesModel);
+    this.container.bind(Symbols.models.rounds).toConstructor(RoundsModel);
+    this.container.bind(Symbols.models.signatures).toConstructor(SignaturesModel);
+    this.container.bind(Symbols.models.transactions).toConstructor(TransactionsModel);
+    this.container.bind(Symbols.models.votes).toConstructor(VotesModel);
+    // Register models
+    sequelize.addModels(this.getElementsFromContainer<typeof Model>(Symbols.models));
+  }
+
+  private modulesElements() {
+    this.container.bind(Symbols.modules.accounts).to(AccountsModule).inSingletonScope();
+    this.container.bind(Symbols.modules.blocks).to(BlocksModule).inSingletonScope();
+    this.container.bind(Symbols.modules.blocksSubModules.chain).to(BlocksModuleChain).inSingletonScope();
+    this.container.bind(Symbols.modules.blocksSubModules.process).to(BlocksModuleProcess).inSingletonScope();
+    this.container.bind(Symbols.modules.blocksSubModules.utils).to(BlocksModuleUtils).inSingletonScope();
+    this.container.bind(Symbols.modules.blocksSubModules.verify).to(BlocksModuleVerify).inSingletonScope();
+    if (this.appConfig.cacheEnabled) {
+      this.container.bind(Symbols.modules.cache).to(Cache).inSingletonScope();
+    } else {
+      this.container.bind(Symbols.modules.cache).to(DummyCache).inSingletonScope();
+    }
+    this.container.bind(Symbols.modules.delegates).to(DelegatesModule).inSingletonScope();
+    this.container.bind(Symbols.modules.forge).to(ForgeModule).inSingletonScope();
+    this.container.bind(Symbols.modules.fork).to(ForkModule).inSingletonScope();
+    this.container.bind(Symbols.modules.loader).to(LoaderModule).inSingletonScope();
+    this.container.bind(Symbols.modules.multisignatures).to(MultisignaturesModule).inSingletonScope();
+    this.container.bind(Symbols.modules.peers).to(PeersModule).inSingletonScope();
+    this.container.bind(Symbols.modules.rounds).to(RoundsModule).inSingletonScope();
+    this.container.bind(Symbols.modules.system).to(SystemModule).inSingletonScope();
+    this.container.bind(Symbols.modules.transactions).to(TransactionsModule).inSingletonScope();
+    this.container.bind(Symbols.modules.transport).to(TransportModule).inSingletonScope();
+  }
+
+  private logicElements() {
+    this.container.bind(Symbols.logic.account).to(AccountLogic).inSingletonScope();
+    this.container.bind(Symbols.logic.appState).to(AppState).inSingletonScope();
+    this.container.bind(Symbols.logic.block).to(BlockLogic).inSingletonScope();
+    this.container.bind(Symbols.logic.blockReward).to(BlockRewardLogic).inSingletonScope();
+    this.container.bind(Symbols.logic.broadcaster).to(BroadcasterLogic).inSingletonScope();
+    this.container.bind(Symbols.logic.peer).to(PeerLogic);
+    this.container.bind(Symbols.logic.peerFactory).toFactory((ctx) => {
+      return (peer: BasePeerType) => {
+        const p = ctx.container.get<IPeerLogic>(Symbols.logic.peer);
+        p.accept({ ... {}, ...peer });
+        return p;
+      };
+    });
+    this.container.bind(Symbols.logic.peers).to(PeersLogic).inSingletonScope();
+    this.container.bind(Symbols.logic.round).toConstructor(RoundLogic);
+    this.container.bind(Symbols.logic.rounds).to(RoundsLogic).inSingletonScope();
+    this.container.bind(Symbols.logic.transaction).to(TransactionLogic).inSingletonScope();
+    this.container.bind(Symbols.logic.transactionPool).to(TransactionPool).inSingletonScope();
+    this.container.bind(Symbols.logic.transactions.send).to(SendTransaction).inSingletonScope();
+    this.container.bind(Symbols.logic.transactions.vote).to(VoteTransaction).inSingletonScope();
+    this.container.bind(Symbols.logic.transactions.createmultisig).to(MultiSignatureTransaction).inSingletonScope();
+    this.container.bind(Symbols.logic.transactions.delegate).to(RegisterDelegateTransaction).inSingletonScope();
+    this.container.bind(Symbols.logic.transactions.secondSignature).to(SecondSignatureTransaction).inSingletonScope();
+  }
+
+  private helperElements(bus, ed) {
+    this.container.bind(Symbols.helpers.bus).toConstantValue(bus);
+    this.container.bind(Symbols.helpers.constants).toConstantValue(this.constants);
+    this.container.bind(Symbols.helpers.db).to(DBHelper).inSingletonScope();
+    this.container.bind(Symbols.helpers.ed).toConstantValue(ed);
+    this.container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManager).inSingletonScope();
+    this.container.bind(Symbols.helpers.jobsQueue).to(JobsQueue).inSingletonScope();
+    this.container.bind(Symbols.helpers.logger).toConstantValue(this.logger);
+    this.container.bind(Symbols.helpers.migrator).to(Migrator).inSingletonScope();
+    // this.container.bind(Symbols.helpers.sequence).toConstantValue();
+    const self = this;
+    [Symbols.tags.helpers.dbSequence, Symbols.tags.helpers.defaultSequence, Symbols.tags.helpers.balancesSequence]
+      .forEach((sequenceTag) => {
+        this.container.bind(Symbols.helpers.sequence)
+          .toConstantValue(new Sequence(sequenceTag, {
+            onWarning(current) {
+              self.logger.warn(`${sequenceTag.toString()} queue`, current);
+            },
+          }))
+          .whenTargetTagged(Symbols.helpers.sequence, sequenceTag);
+      });
+    this.container.bind(Symbols.helpers.slots).to(Slots).inSingletonScope();
+  }
+
+  private genericsElements(theCache, sequelize, namespace, io) {
+    this.container.bind(Symbols.generic.appConfig).toConstantValue(this.appConfig);
+    this.container.bind(Symbols.generic.expressApp).toConstantValue(this.expressApp);
+    this.container.bind(Symbols.generic.genesisBlock).toConstantValue(this.genesisBlock);
+    // Nonce is restore in finishBoot.
+    // this.container.bind(Symbols.generic.nonce).toConstantValue(this.nonce);
+    this.container.bind(Symbols.generic.redisClient).toConstantValue(theCache.client);
+    this.container.bind(Symbols.generic.sequelize).toConstantValue(sequelize);
+    this.container.bind(Symbols.generic.sequelizeNamespace).toConstantValue(namespace);
+    this.container.bind(Symbols.generic.socketIO).toConstantValue(io);
+    this.container.bind(Symbols.generic.versionBuild).toConstantValue(this.versionBuild);
+    this.container.bind(Symbols.generic.zschema).toConstantValue(this.schema);
   }
 
   private getElementsFromContainer<T = any>(symbols: { [k: string]: symbol | { [k: string]: symbol } }): T[] {
