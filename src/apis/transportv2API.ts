@@ -15,7 +15,7 @@ import {
   ITransportModule
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { BlockLogic, IBytesBlock } from '../logic';
+import { IBytesBlock, SignedAndChainedBlockType } from '../logic';
 import { IBaseTransaction, IBytesTransaction } from '../logic/transactions';
 import { BlocksModel } from '../models';
 import transportSchema from '../schema/transport';
@@ -104,30 +104,36 @@ export class TransportV2API {
 
   @Post('/transactions')
   public async postTransactions(@Body() data: Buffer, @Req() req: Request, @Res() res: Response) {
-    // TODO validate data after decoding
-    // const thePeer = this.peersLogic.create({
-    //   ip  : req.ip,
-    //   port: parseInt(req.headers.port as string, 10),
-    // });
-    // txs = txs || (tx ? [tx] : [] );
-    // if (txs.length > 0) {
-    //   await this.transportModule.receiveTransactions(txs, thePeer, true);
-    // }
-    // return {};
+    let transactions;
+    try {
+      const requestData = this.parseRequest(req, 'transportTransactions');
+      transactions = requestData.transactions ? requestData.transactions : [];
+    } catch (err) {
+      return this.error(res, err.message);
+    }
+    const thePeer = this.peersLogic.create({
+      ip  : req.ip,
+      port: parseInt(req.headers.port as string, 10),
+    });
+    if (transactions.length > 0) {
+      await this.transportModule.receiveTransactions(transactions, thePeer, true);
+    }
+    return this.sendResponse(res, {success: true}, 'APISuccess');
   }
 
   @Post('/blocks')
   public async postBlock(@Body() data: Buffer, @Req() req: Request, @Res() res: Response) {
-    // TODO validate data after decoding
-    // let normalizedBlock: SignedAndChainedBlockType;
-    // try {
-    //   normalizedBlock = this.blockLogic.objectNormalize(block);
-    // } catch (e) {
-    //   this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
-    //   throw e;
-    // }
-    // await this.bus.message('receiveBlock', normalizedBlock);
-    // return { blockId: normalizedBlock.id };
+    let normalizedBlock: SignedAndChainedBlockType;
+    try {
+      const requestData = this.parseRequest(req, 'transportBlocks', 'transportBlock');
+      normalizedBlock = this.blockLogic.objectNormalize(requestData.block);
+    } catch (e) {
+      this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
+      throw e;
+    }
+    await this.bus.message('receiveBlock', normalizedBlock);
+    return this.sendResponse(res, {success: true, blockId: normalizedBlock.id},
+      'transportBlocks', 'transportBlockResponse');
   }
 
   @Get('/blocks')
@@ -170,7 +176,7 @@ export class TransportV2API {
 
   private generateBytesBlock(block: BlocksModel): IBytesBlock {
     return {
-      bytes       : BlockLogic.getBytes(block),
+      bytes       : this.blockLogic.getBytes(block),
       height      : block.height,
       transactions: block.transactions.map((tx) => this.generateBytesTransaction(tx)),
     };

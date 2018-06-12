@@ -4,3 +4,12 @@ import "./bytesBlock.proto";
 message transportBlocks {
     repeated bytesBlock blocks = 1;
 }
+
+message transportBlock {
+    bytesBlock block = 1;
+}
+
+message transportBlockResponse {
+    bool success = 1;
+    string blockId = 2;
+}
