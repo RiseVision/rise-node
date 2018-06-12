@@ -6,6 +6,7 @@
     "logFileName": "logs/rise-testnet.log",
     "consoleLogLevel": "info",
     "trustProxy": false,
+    "topAccounts": false,
     "cacheEnabled": false,
     "db": {
         "host": "localhost",

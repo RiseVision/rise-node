@@ -44,7 +44,7 @@ export interface ITransportModule extends IModule {
    * @returns {Promise<void>}
    */
   receiveTransactions(transactions: Array<ITransportTransaction<any>>,
-                      peer: IPeerLogic,
+                      peer: IPeerLogic | null,
                       broadcast: boolean): Promise<void>;
 
 

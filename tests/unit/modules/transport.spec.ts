@@ -945,6 +945,19 @@ describe('src/modules/transport.ts', () => {
         true,
       ]);
     });
+
+    describe('peer null', () => {
+      it('should not remove null peer if failed to objectNormalize', async () => {
+        transactionLogic.stubs.objectNormalize.throws(new Error('error'));
+        await expect(inst.receiveTransactions(transactions, null, false)).to.be
+          .rejectedWith('Invalid transaction body error');
+
+        expect(peersModule.stubs.remove.calledOnce).to.be.false;
+      });
+      it('not throw for peer.* access if txs are ok', async () => {
+        await inst.receiveTransactions(transactions, null, false)
+      });
+    });
   });
 
   describe('removePeer', () => {

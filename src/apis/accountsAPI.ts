@@ -1,5 +1,6 @@
 import { inject, injectable } from 'inversify';
 import * as isEmpty from 'is-empty';
+import * as filterObject from 'filter-object';
 import { Body, Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
@@ -7,8 +8,11 @@ import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidat
 import { IAccountsModule, IDelegatesModule, ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import accountSchema from '../schema/accounts';
+import { AppConfig } from '../types/genericTypes';
 import { publicKey } from '../types/sanityTypes';
 import { APIError, DeprecatedAPIError } from './errors';
+import { FieldsInModel } from '../types/utils';
+import { AccountsModel } from '../models';
 
 @JsonController('/api/accounts')
 @injectable()
@@ -22,6 +26,9 @@ export class AccountsAPI {
   private delegatesModule: IDelegatesModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
+
+  @inject(Symbols.generic.appConfig)
+  private appConfig: AppConfig;
 
   @Get('/')
   @ValidateSchema()
@@ -122,6 +129,33 @@ export class AccountsAPI {
     return {
       fee: this.systemModule.getFees(params.height).fees.delegate,
     };
+  }
+
+  @Get('/top')
+  @ValidateSchema()
+  public async topAccounts(@SchemaValid(accountSchema.top)
+                           @QueryParams() params: { limit?: number, offset?: number }) {
+    if (!this.appConfig.topAccounts) {
+      throw new APIError('Top Accounts is not enabled', 403);
+    }
+    const {limit, offset} = params;
+    const returnFields: FieldsInModel<AccountsModel> = ['address', 'balance', 'publicKey'];
+    const accs = await this.accountsModule
+      .getAccounts({
+          limit,
+          offset,
+          sort: {balance: -1},
+        },
+        returnFields
+      );
+
+    return accs
+      .map((acc) => filterObject(acc, returnFields))
+      .map((acc) => {
+        // Remap publicKey to string.
+        acc.publicKey = acc.publicKey ? acc.publicKey.toString('hex') : null;
+        return acc;
+      });
   }
 
   @Post('/open')

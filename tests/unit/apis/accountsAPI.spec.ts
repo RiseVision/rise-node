@@ -11,6 +11,7 @@ import { AccountsModuleStub, DelegatesModuleStub, SystemModuleStub, } from '../.
 import ZSchemaStub from '../../stubs/helpers/ZSchemaStub';
 import { createContainer } from '../../utils/containerCreator';
 import { AccountsModel } from '../../../src/models';
+import { AppConfig } from '../../../src/types/genericTypes';
 
 chai.use(chaiAsPromised);
 
@@ -411,4 +412,48 @@ describe('apis/accountsAPI', () => {
 
   });
 
+  describe('topAccounts', () => {
+    let appConfig: AppConfig;
+    beforeEach(() => {
+      appConfig = container.get(Symbols.generic.appConfig);
+      appConfig.topAccounts = true; // Enable it.
+    });
+
+    it('should reject with appConfig.topAccounts not defined', async () => {
+      delete appConfig.topAccounts;
+      await expect(instance.topAccounts({})).to.be.rejectedWith('Top Accounts is not enabled');
+      expect(accountsModule.stubs.getAccounts.called).is.false;
+    });
+    it('should reject with appConfig.topAccounts set to false', async () => {
+      appConfig.topAccounts = false;
+      await expect(instance.topAccounts({})).to.be.rejectedWith('Top Accounts is not enabled');
+      expect(accountsModule.stubs.getAccounts.called).is.false;
+    });
+
+    it('should query accountsModule.getAccounts with proper params', async () => {
+      accountsModule.stubs.getAccounts.resolves([]);
+      const res = await instance.topAccounts({limit: 1, offset: 10});
+      expect(accountsModule.stubs.getAccounts.calledOnce).is.true;
+      expect(accountsModule.stubs.getAccounts.firstCall.args[0]).deep.eq({
+        sort: { balance: -1 },
+        limit: 1,
+        offset: 10
+      });
+      expect(accountsModule.stubs.getAccounts.firstCall.args[1]).deep.eq(
+        ['address', 'balance', 'publicKey']
+      );
+      expect(res).to.be.deep.eq([]);
+    });
+    it('should remap getAccountsREsult properly', async () => {
+      accountsModule.stubs.getAccounts.resolves([
+        { address: '1', balance: 10, toBeRemoved: 'hey'},
+        { address: '2', balance: 12, publicKey: Buffer.alloc(32).fill('a')},
+      ]);
+      const res = await instance.topAccounts({});
+      expect(res).to.be.deep.eq([
+        { address: '1', balance: 10, publicKey: null},
+        { address: '2', balance: 12, publicKey: '6161616161616161616161616161616161616161616161616161616161616161'}
+      ]);
+    });
+  });
 });

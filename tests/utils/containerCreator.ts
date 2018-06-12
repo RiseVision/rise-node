@@ -55,9 +55,9 @@ export const createContainer = (): Container => {
   const container = new Container();
   // Generics
   container.bind(Symbols.generic.appConfig)
-    .toConstantValue(require(`${__dirname}/../integration/config.json`));
+    .toConstantValue(JSON.parse(JSON.stringify(require(`${__dirname}/../integration/config.json`))));
   container.bind(Symbols.generic.genesisBlock)
-    .toConstantValue(require(`${__dirname}/../integration/genesisBlock.json`));
+    .toConstantValue(JSON.parse(JSON.stringify(require(`${__dirname}/../integration/genesisBlock.json`))));
   const genesis = container.get<any>(Symbols.generic.genesisBlock)
   genesis.generatorPublicKey = Buffer.from(genesis.generatorPublicKey, 'hex');
   genesis.blockSignature = Buffer.from(genesis.blockSignature, 'hex');

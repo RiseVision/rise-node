@@ -12,6 +12,7 @@ import { TransactionsModuleStub, ZSchemaStub } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
 import { TransactionsModel } from '../../../src/models';
 import BlocksModuleStub from '../../stubs/modules/BlocksModuleStub';
+import TransportModuleStub from '../../stubs/modules/TransportModuleStub';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -26,6 +27,7 @@ describe('apis/transactionsAPI', () => {
   let container: Container;
   let result: any;
   let transactionsModuleStub: TransactionsModuleStub;
+  let transportModuleStub: TransportModuleStub
   let castSpy: any;
   let schema: ZSchemaStub;
   let dummyTxs: any;
@@ -99,6 +101,7 @@ describe('apis/transactionsAPI', () => {
     instance          = container.get(Symbols.api.transactions);
     transactionsModel = container.get(Symbols.models.transactions);
     blocksModuleStub  = container.get<BlocksModuleStub>(Symbols.modules.blocks);
+    transportModuleStub = container.get(Symbols.modules.transport);
   });
 
   afterEach(() => {
@@ -558,8 +561,23 @@ describe('apis/transactionsAPI', () => {
     });
   });
   describe('put', () => {
-    it('should throw deprecated', async () => {
-      await expect(instance.put()).to.be.rejectedWith('Method is deprecated');
+    it('should throw if no transaction is provided', async () => {
+      await expect(instance.put(null))
+        .to.be.rejectedWith('Transaction not provided');
+    });
+    it('should call transportModule.receiveTransactions with proper params', async () => {
+      transportModuleStub.stubs.receiveTransactions.resolves();
+      await instance.put({the: 'tx'} as any);
+      expect(transportModuleStub.stubs.receiveTransactions.calledOnce).is.true;
+      expect(transportModuleStub.stubs.receiveTransactions.firstCall.args).deep.eq([
+        [{the: 'tx'}],
+        null, // peer,
+        true, // Broadcast
+      ]);
+    });
+    it('should reject if receiveTransactions rejects', async () => {
+      transportModuleStub.stubs.receiveTransactions.rejects(new Error('meow'));
+      await expect(instance.put({} as any)).to.be.rejectedWith('meow');
     });
   });
 });

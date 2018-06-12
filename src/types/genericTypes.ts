@@ -27,6 +27,7 @@ export interface AppConfig {
   logFileName: string;
   trustProxy: boolean;
   cacheEnabled: boolean;
+  topAccounts: boolean;
   db: AppConfigDatabase;
 
   redis: {

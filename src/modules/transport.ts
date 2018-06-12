@@ -280,7 +280,7 @@ export class TransportModule implements ITransportModule {
   @WrapInBalanceSequence
   public async receiveTransactions(@SchemaValid(schema.transactions.properties.transactions, 'Invalid transactions body')
                                      transactions: Array<ITransportTransaction<any>>,
-                                   peer: IPeerLogic,
+                                   peer: IPeerLogic | null,
                                    broadcast: boolean) {
     // normalize transactions
     const txs: Array<IBaseTransaction<any>> = [];
@@ -294,7 +294,9 @@ export class TransportModule implements ITransportModule {
           module: 'transport',
           tx,
         });
-        this.removePeer({ peer, code: 'ETRANSACTION' }, 'ReceiveTransactions Error');
+        if (peer) {
+          this.removePeer({ peer, code: 'ETRANSACTION' }, 'ReceiveTransactions Error');
+        }
         throw new Error(`Invalid transaction body ${e.message}`);
       }
     }
@@ -306,7 +308,7 @@ export class TransportModule implements ITransportModule {
       if (confirmedIDs.indexOf(tx.id) !== -1) {
         continue; // Transaction already confirmed.
       }
-      this.logger.debug(`Received transaction ${tx.id} from peer: ${peer.string}`);
+      this.logger.debug(`Received transaction ${tx.id} ${peer ? `from peer ${peer.string}` : ' '}`);
       await this.transactionModule.processUnconfirmedTransaction(
         tx,
         broadcast
