@@ -124,7 +124,7 @@ export class AccountsAPI {
 
   @Get('/delegates/fee')
   @ValidateSchema()
-  public async getDelegatesFee(@SchemaValid(accountSchema.getDelegatesFee)
+  public async getDelegatesFee(@SchemaValid(accountSchema.getDelegatesFee, {castNumbers: true})
                                @QueryParams() params: { height: number }) {
     return {
       fee: this.systemModule.getFees(params.height).fees.delegate,
@@ -133,7 +133,7 @@ export class AccountsAPI {
 
   @Get('/top')
   @ValidateSchema()
-  public async topAccounts(@SchemaValid(accountSchema.top)
+  public async topAccounts(@SchemaValid(accountSchema.top, {castNumbers: true})
                            @QueryParams() params: { limit?: number, offset?: number }) {
     if (!this.appConfig.topAccounts) {
       throw new APIError('Top Accounts is not enabled', 403);
@@ -149,13 +149,12 @@ export class AccountsAPI {
         returnFields
       );
 
-    return accs
-      .map((acc) => filterObject(acc, returnFields))
-      .map((acc) => {
-        // Remap publicKey to string.
-        acc.publicKey = acc.publicKey ? acc.publicKey.toString('hex') : null;
-        return acc;
-      });
+    return {
+      accounts: accs
+        .map((acc) => acc.toPOJO())
+        .map((acc) => filterObject(acc, returnFields)),
+
+    };
   }
 
   @Post('/open')

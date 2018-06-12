@@ -11,7 +11,7 @@ import {
   ITransactionsModule
 } from '../../../src/ioc/interfaces/modules';
 import { getKeypairByPkey } from './utils';
-import { SignedBlockType } from '../../../src/logic';
+import { SignedAndChainedBlockType, SignedBlockType } from '../../../src/logic';
 import { IBlockLogic } from '../../../src/ioc/interfaces/logic';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { toBufferedTransaction } from '../../utils/txCrafter';
@@ -112,13 +112,8 @@ export class IntegrationTestInitializer {
   public async rawMineBlockWithTxs(transactions: Array<IBaseTransaction<any>>) {
     const blockLogic = this.appManager.container.get<IBlockLogic>(Symbols.logic.block);
     const blockModule     = this.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
-    const blocksVerifyModule     = this.appManager.container.get<IBlocksModuleVerify>(Symbols.modules.blocksSubModules.verify);
     const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
     const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
-    const defaultSequence = this.appManager.container.getTagged<Sequence>(
-      Symbols.helpers.sequence,
-      Symbols.helpers.sequence,
-      Symbols.tags.helpers.defaultSequence);
     const height = blockModule.lastBlock.height;
 
     const delegates  = await delegatesModule.generateDelegateList(height + 1);
@@ -133,8 +128,17 @@ export class IntegrationTestInitializer {
       transactions,
     });
     // mimic process.onReceiveBlock which is wrapped within a BalanceSequence.
-    await defaultSequence.addAndPromise(() => blocksVerifyModule.processBlock(newBlock, false, true));
+    await this.postBlock(newBlock);
     return newBlock;
+  }
+
+  public async postBlock(block: SignedAndChainedBlockType) {
+    const blocksVerifyModule     = this.appManager.container.get<IBlocksModuleVerify>(Symbols.modules.blocksSubModules.verify);
+    const defaultSequence = this.appManager.container.getTagged<Sequence>(
+      Symbols.helpers.sequence,
+      Symbols.helpers.sequence,
+      Symbols.tags.helpers.defaultSequence);
+    await defaultSequence.addAndPromise(() => blocksVerifyModule.processBlock(block, false, true));
   }
 
   public async rawMineBlocks(howMany: number): Promise<number> {

@@ -1,7 +1,13 @@
 import { expect } from 'chai';
 import * as supertest from 'supertest';
 import initializer from '../common/init';
-import { checkAddress, checkPubKey } from './utils';
+import { checkAddress, checkIntParam, checkPubKey } from './utils';
+import { AppConfig } from '../../../src/types/genericTypes';
+import { Symbols } from '../../../src/ioc/symbols';
+import { confirmTransactions, createSendTransaction, findDelegateByUsername } from '../common/utils';
+import { LiskWallet } from 'dpos-offline';
+import { toBufferedTransaction } from '../../utils/txCrafter';
+import { IAccountsModule, IBlocksModule, ISystemModule } from '../../../src/ioc/interfaces/modules';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/accounts', () => {
@@ -183,5 +189,58 @@ describe('api/accounts', () => {
           });
         });
     });
+  });
+
+  describe('/top', () => {
+    initializer.autoRestoreEach();
+    beforeEach(async () => {
+      const txs = [];
+      const accModule = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts);
+      const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
+      // Create 101 txs so that genesis1 has 101satoshi , genesis2 100 ... genesisN 101-N+1
+      for (let i = 0; i < 101; i++) {
+        const del   = findDelegateByUsername(`genesisDelegate${i + 1}`);
+        const lw    = new LiskWallet(del.secret, 'R');
+        const account = await accModule.getAccount({address: del.address});
+
+        const transaction = toBufferedTransaction(await createSendTransaction(
+          0,
+          account.balance - systemModule.getFees().fees.send - (101 - i),
+          lw,
+          '1R',
+          {timestamp: i})
+        );
+        transaction.senderId = del.address;
+        txs.push(transaction);
+      }
+      await confirmTransactions(txs, false);
+    });
+    checkIntParam('limit', '/api/accounts/top', {min: 0, max: 100});
+    checkIntParam('offset', '/api/accounts/top', {min: 0});
+    it('should return error if appConfig.topAccounts is false', async () => {
+      const ac = initializer.appManager.container.get<AppConfig>(Symbols.generic.appConfig);
+      ac.topAccounts = false;
+      await supertest(initializer.appManager.expressApp)
+        .get('/api/accounts/top')
+        .expect(403);
+    });
+    it('should return accounts in ordered by balance honoring limits and offset', async () => {
+      const ac = initializer.appManager.container.get<AppConfig>(Symbols.generic.appConfig);
+      ac.topAccounts = true;
+      for (let i = 0; i < 10; i++) {
+        const {body}     = await supertest(initializer.appManager.expressApp)
+          .get(`/api/accounts/top?limit=${10}&offset=${i * 10 + 1}`)
+          .expect(200);
+        const {accounts} = body;
+        expect(accounts.length).to.be.eq(10);
+        for (let j = 0; j < 10; j++) {
+          expect(accounts[j].balance).eq(101 - (i * 10) - j);
+          expect(accounts[j].address).be
+            .eq(findDelegateByUsername(`genesisDelegate${i * 10 + j + 1}`).address);
+        }
+      }
+
+    });
+
   });
 });

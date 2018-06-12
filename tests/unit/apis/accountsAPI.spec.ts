@@ -442,18 +442,20 @@ describe('apis/accountsAPI', () => {
       expect(accountsModule.stubs.getAccounts.firstCall.args[1]).deep.eq(
         ['address', 'balance', 'publicKey']
       );
-      expect(res).to.be.deep.eq([]);
+      expect(res).to.be.deep.eq({accounts: []});
     });
-    it('should remap getAccountsREsult properly', async () => {
+    it('should remap getAccountsResult properly', async () => {
       accountsModule.stubs.getAccounts.resolves([
-        { address: '1', balance: 10, toBeRemoved: 'hey'},
-        { address: '2', balance: 12, publicKey: Buffer.alloc(32).fill('a')},
+        new AccountsModel({ address: '1', balance: 10, u_balance: 11} as any),
+        new AccountsModel({ address: '2', balance: 12, publicKey: Buffer.alloc(32).fill('a')}),
       ]);
       const res = await instance.topAccounts({});
-      expect(res).to.be.deep.eq([
-        { address: '1', balance: 10, publicKey: null},
-        { address: '2', balance: 12, publicKey: '6161616161616161616161616161616161616161616161616161616161616161'}
-      ]);
+      expect(res).to.be.deep.eq({
+        accounts: [
+          {address: '1', balance: 10, publicKey: null},
+          {address: '2', balance: 12, publicKey: '6161616161616161616161616161616161616161616161616161616161616161'}
+        ],
+      });
     });
   });
 });

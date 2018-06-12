@@ -3,13 +3,14 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
-import {SinonSandbox, SinonStub} from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import { IAccountsModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { AccountsModule } from '../../../src/modules';
 import AccountLogicStub from '../../stubs/logic/AccountLogicStub';
 import { createContainer } from '../../utils/containerCreator';
 import DbStub from '../../stubs/helpers/DbStub';
+import { AccountsModel } from '../../../src/models';
 
 chai.use(chaiAsPromised);
 
@@ -26,7 +27,7 @@ describe('modules/accounts', () => {
     container        = createContainer();
     accountLogicStub = container.get(Symbols.logic.account);
     container.rebind<IAccountsModule>(Symbols.modules.accounts).to(AccountsModule).inSingletonScope();
-    accountModule    = container.get<any>(Symbols.modules.accounts);
+    accountModule = container.get<any>(Symbols.modules.accounts);
   });
 
   afterEach(() => {
@@ -145,7 +146,7 @@ describe('modules/accounts', () => {
     let dbHelperStub: DbStub;
     let getAccountStub: SinonStub;
     beforeEach(() => {
-      dbHelperStub = container.get(Symbols.helpers.db);
+      dbHelperStub   = container.get(Symbols.helpers.db);
       getAccountStub = sandbox.stub(accountModule, 'getAccount').resolves('hey');
     });
     it('should throw if no publicKey and address is provided', async () => {
@@ -185,6 +186,68 @@ describe('modules/accounts', () => {
       expect(accountLogicStub.stubs.generateAddressByPublicKey.called).is.true;
       expect(accountLogicStub.stubs.generateAddressByPublicKey.firstCall.args[0]).to.be.eq('pubKey');
     });
+  });
+
+  describe('resolveAccountsForTransactions', () => {
+    let accountsModel: typeof AccountsModel;
+    let findAllStub: SinonStub;
+    let setAccountAndGetStub: SinonStub;
+    beforeEach(() => {
+      accountsModel = container.get(Symbols.models.accounts);
+      findAllStub   = sandbox.stub().resolves([]);
+      sandbox.stub(accountsModel, 'scope')
+        .returns({findAll: findAllStub});
+      setAccountAndGetStub = sandbox.stub(accountModule, 'setAccountAndGet')
+        .callsFake(
+          ({publicKey}) => Promise
+            .resolve({publicKey, address: `add${publicKey.toString('hex')}`})
+        );
+    });
+    it('shouldnt complain about empty txs array', async () => {
+      const res = await accountModule.resolveAccountsForTransactions([]);
+      expect(res).to.be.deep.eq({});
+
+      // should call findAll with empty array
+      expect(findAllStub.calledOnce).is.true;
+      expect(findAllStub.firstCall.args[0]).deep.eq({where: {address: []}});
+    });
+    it('should throw if account is not found in db', async () => {
+      await expect(accountModule.resolveAccountsForTransactions([
+        {senderId: 'add11', senderPublicKey: Buffer.from('11', 'hex')} as any
+      ])).rejectedWith('Account add11 not found in db');
+    });
+    it('should throw if account has diff publicKey in db', async () => {
+      findAllStub.resolves([{address: 'add11', publicKey: Buffer.from('22', 'hex')}]);
+      await expect(accountModule.resolveAccountsForTransactions([
+        {senderId: 'add11', senderPublicKey: Buffer.from('11', 'hex')} as any
+      ])).rejectedWith('Stealing attempt type.2 for add11');
+    });
+    it('should setAccountAndGet if nopublickey set in db and throw if address does not match', async () => {
+      findAllStub.resolves([{address: 'add11'}]);
+      await expect(accountModule.resolveAccountsForTransactions([
+        {senderId: 'add11', senderPublicKey: Buffer.from('22', 'hex')} as any
+      ])).rejectedWith('Stealing attempt type.1 for add11');
+      expect(setAccountAndGetStub.called).is.true;
+      expect(setAccountAndGetStub.firstCall.args[0])
+        .is.deep.eq({publicKey: Buffer.from('22', 'hex')});
+    });
+    it('should also query for requesterPublicKey', async () => {
+      accountLogicStub.stubs.generateAddressByPublicKey.returns('add33');
+      findAllStub.resolves([
+        {address: 'add11', publicKey: Buffer.from('11', 'hex')},
+        {address: 'add33', publicKey: Buffer.from('33', 'hex')},
+        ]);
+      await accountModule.resolveAccountsForTransactions([{
+        senderId: 'add11',
+          senderPublicKey: Buffer.from('11', 'hex'),
+          requesterPublicKey: Buffer.from('33', 'hex')} as any
+      ]);
+      expect(findAllStub.calledOnce).is.true;
+      expect(findAllStub.firstCall.args[0]).is.deep.eq({
+        where: { address: ['add11', 'add33']}
+      });
+    });
+
   });
 
 });

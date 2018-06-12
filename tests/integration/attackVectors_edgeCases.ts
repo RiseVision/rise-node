@@ -62,6 +62,54 @@ describe('attackVectors/edgeCases', () => {
   });
   describe('blocks', () => {
     describe('wrong txs', () => {
+      describe('steal attempt', () => {
+        it('senderId from virgin account', async () => {
+
+          const {wallet: randomAccount} = await createRandomAccountWithFunds(10000);
+          const tx     = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
+          tx['senderId'] = randomAccount.address;
+
+          const preSenderAccPOJO = (await accModule.getAccount({address: senderAccount.address})).toPOJO();
+          const preRandomAccPOJO = (await accModule.getAccount({address: randomAccount.address})).toPOJO();
+          const lastId = blocksModule.lastBlock.id;
+
+          await expect(initializer.rawMineBlockWithTxs(
+            [tx].map((t) => toBufferedTransaction(t)),
+          )).rejectedWith(`Stealing attempt type.1 for ${randomAccount.address}`);
+
+          const postSenderAccPOJO = (await accModule.getAccount({address: senderAccount.address})).toPOJO();
+          const postRandomAccPOJO = (await accModule.getAccount({address: randomAccount.address})).toPOJO();
+
+          expect(preRandomAccPOJO).deep.eq(postRandomAccPOJO);
+          expect(postSenderAccPOJO).deep.eq({...preSenderAccPOJO, publicKey: senderAccount.publicKey});
+        });
+        it('senderId from non virgin account', async () => {
+          const {wallet: randomAccount} = await createRandomAccountWithFunds(10000);
+          // Initialize account
+          await createSendTransaction(1, 1, randomAccount, randomAccount.address);
+          const tx     = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
+          tx['senderId'] = randomAccount.address;
+          const preSenderAccPOJO = (await accModule.getAccount({address: senderAccount.address})).toPOJO();
+          const preRandomAccPOJO = (await accModule.getAccount({address: randomAccount.address})).toPOJO();
+
+          await expect(initializer.rawMineBlockWithTxs(
+            [tx].map((t) => toBufferedTransaction(t)),
+          )).rejectedWith(`Stealing attempt type.2 for ${randomAccount.address}`);
+
+          const postSenderAccPOJO = (await accModule.getAccount({address: senderAccount.address})).toPOJO();
+          const postRandomAccPOJO = (await accModule.getAccount({address: randomAccount.address})).toPOJO();
+
+          expect(preSenderAccPOJO).deep.eq(postSenderAccPOJO);
+          expect(preRandomAccPOJO).deep.eq(postRandomAccPOJO);
+        });
+      });
+      it('should reject block having tx without senderId', async () => {
+        const tx     = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
+        const block = await initializer.generateBlock([tx]);
+        delete block.transactions[0].senderId;
+        await expect(initializer.postBlock(block)).rejectedWith('Missing required property: senderId');
+      });
+
       it('should disallow block with same tx twice', async () => {
         const lastId = blocksModule.lastBlock.id;
         const tx     = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
