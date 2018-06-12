@@ -28,9 +28,9 @@ export default function exceptionTx1563714189640390961(excManager: ExceptionsMan
   );
   return excManager.createOrUpdateDBExceptions([
     {
-      type    : 'account',
       address : '15844723232461775384R',
-      maxCount: 2 * 2, // Will also handle tx 5557619371011868150
+      maxCount: 4, // Will also handle tx 5557619371011868150,
+      type    : 'account',
     },
   ]);
 }
