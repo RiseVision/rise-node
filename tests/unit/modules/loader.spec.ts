@@ -8,11 +8,11 @@ import { Op } from 'sequelize';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as helpers from '../../../src/helpers';
+import { wait } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { PeerType } from '../../../src/logic';
 import { LoaderModule } from '../../../src/modules';
 import loaderSchema from '../../../src/schema/loader';
-import sql from '../../../src/sql/loader';
 import {
   AccountLogicStub,
   AppStateStub,
@@ -22,7 +22,6 @@ import {
   BlocksSubmoduleUtilsStub,
   BroadcasterLogicStub,
   BusStub,
-  DbStub,
   IAppStateStub,
   JobsQueueStub,
   LoggerStub,
@@ -41,7 +40,6 @@ import {
 import { createContainer } from '../../utils/containerCreator';
 import { createFakePeers } from '../../utils/fakePeersFactory';
 import { AccountsModel, BlocksModel, RoundsModel } from '../../../src/models';
-import { wait } from '../../../src/helpers';
 
 chai.use(chaiAsPromised);
 
@@ -303,6 +301,10 @@ describe('modules/loader', () => {
       const ret = await instance.getRandomPeer();
 
       expect(peers).to.include(ret);
+    });
+    it('should reject if no peers', async () => {
+      getNetworkStub.resolves({ peers: [] });
+      await expect(instance.getRandomPeer()).rejectedWith('No acceptable peers for the operation');
     });
   });
 
@@ -1661,11 +1663,29 @@ describe('modules/loader', () => {
       expect(transportModuleStub.stubs.receiveTransactions.calledOnce).to.be
         .true;
 
-      expect(transportModuleStub.stubs.receiveTransactions.firstCall.args[0]).deep.eq([tx1, tx2])
-      expect(transportModuleStub.stubs.receiveTransactions.firstCall.args[1]).deep.eq(peer)
-      expect(transportModuleStub.stubs.receiveTransactions.firstCall.args[2]).deep.eq(false)
+      expect(transportModuleStub.stubs.receiveTransactions.firstCall.args[0]).deep.eq([tx1, tx2]);
+      expect(transportModuleStub.stubs.receiveTransactions.firstCall.args[1]).deep.eq(peer);
+      expect(transportModuleStub.stubs.receiveTransactions.firstCall.args[2]).deep.eq(false);
+    });
+    it('shoudlnt call transport.receiveTransaction if no transactions were returned', async () => {
+      transportModuleStub.stubs.getFromPeer.resolves({ body: { transactions: [] }});
+
+      await (instance as any).loadTransactions();
+
+      expect(transportModuleStub.stubs.receiveTransactions.calledOnce).to.be
+        .false;
     });
 
+    it('should split transactions in groups of 25 ', async () => {
+      transportModuleStub.stubs.getFromPeer.resolves({ body: { transactions: new Array(51).fill(null).map((_, idx) => idx) }});
+
+      await (instance as any).loadTransactions();
+
+      expect(transportModuleStub.stubs.receiveTransactions.calledThrice).to.be.true;
+      expect(transportModuleStub.stubs.receiveTransactions.firstCall.args[0]).deep.eq([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]);
+      expect(transportModuleStub.stubs.receiveTransactions.secondCall.args[0]).deep.eq([25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]);
+      expect(transportModuleStub.stubs.receiveTransactions.thirdCall.args[0]).deep.eq([50]);
+    });
     it('should call logger.debug if transportModule.receiveTransaction throw error', async () => {
       const error = new Error('error');
       transportModuleStub.reset();
@@ -1674,10 +1694,10 @@ describe('modules/loader', () => {
 
       await (instance as any).loadTransactions();
 
-      expect(loggerStub.stubs.debug.calledOnce).to.be.true;
+      expect(loggerStub.stubs.warn.calledOnce).to.be.true;
 
-      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal(error);
+      expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(1);
+      expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal(error);
 
     });
   });
