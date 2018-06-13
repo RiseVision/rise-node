@@ -166,7 +166,8 @@ describe('src/modules/transport.ts', () => {
     });
   });
 
-  describe('getFromPeer', () => {
+  describe('getFromPeer', function () {
+    this.timeout(2100);
 
     let peer;
     let options;

@@ -501,9 +501,10 @@ describe('apis/transactionsAPI', () => {
         transactions: [
           { id: 100, senderPublicKey: 'aa', recipientId: 'bb' },
           { id: 200, senderPublicKey: 'aa', recipientId: 'bb' },
+          { id: 300, senderPublicKey: 'cc', recipientId: 'bb' },
+          { id: 400, senderPublicKey: 'aa', recipientId: 'dd' },
         ],
       });
-      expect(result.transactions).to.be.ofSize(2);
     });
 
     it('filtering by senderPublicKey', async () => {

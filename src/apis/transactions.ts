@@ -11,7 +11,7 @@ import { IBlocksModule, ITransactionsModule, ITransportModule } from '../ioc/int
 import { Symbols } from '../ioc/symbols';
 import { TransactionsModel } from '../models';
 import schema from '../schema/transactions';
-import { APIError, DeprecatedAPIError } from './errors';
+import { APIError } from './errors';
 import { ISlots } from '../ioc/interfaces/helpers';
 import { ITransportTransaction } from '../logic/transactions';
 
@@ -180,10 +180,21 @@ export class TransactionsAPI {
     return {
       count       : txs.length,
       transactions: txs
-        .filter((tx) => params.senderPublicKey ?
-          Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
-          true)
-        .filter((tx) => params.address ? params.address === tx.recipientId : true)
+        .filter((tx) => {
+          // Either senderPublicKey or address matching as recipientId
+          // or all if no params were set.
+          return ( !params.senderPublicKey && !params.address) ||
+            (
+              params.senderPublicKey ?
+                Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
+                false
+            ) ||
+            (
+              params.address ?
+                params.address === tx.recipientId :
+                false
+            );
+        })
         .map((tx) => this.TXModel.toTransportTransaction(tx, this.blocksModule)),
     };
   }
