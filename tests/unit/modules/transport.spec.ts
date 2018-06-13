@@ -270,6 +270,17 @@ describe('src/modules/transport.ts', () => {
       });
     });
 
+    it('should call popsicle twice (retry) if rejects and return 2nd result', async function () {
+      this.timeout(2100);
+      const start = Date.now();
+      popsicleUseStub.use.onFirstCall().rejects(error);
+      popsicleUseStub.use.onSecondCall().resolves({status: 500});
+      await expect(inst.getFromPeer(peer, options)).to.be.rejectedWith('bad response code 500');
+
+      expect(popsicleUseStub.use.calledTwice).is.true;
+      expect(Date.now() - start).gt(2000);
+    });
+
     it('should call removePeer and return rejected promise if popsicle throw', async () => {
       error = new Error('error');
       popsicleUseStub.use.rejects(error);

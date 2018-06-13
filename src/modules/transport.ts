@@ -1,10 +1,12 @@
 import { inject, injectable, postConstruct, tagged } from 'inversify';
 import * as popsicle from 'popsicle';
 import * as Throttle from 'promise-parallel-throttle';
+import * as promiseRetry from 'promise-retry';
 import SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
 import { cbToPromise, constants as constantsType, ILogger, Sequence } from '../helpers/';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
@@ -22,7 +24,6 @@ import { BlocksModel, TransactionsModel } from '../models';
 import peersSchema from '../schema/peers';
 import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
-import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
 
 // tslint:disable-next-line
 export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };
@@ -39,6 +40,7 @@ export class TransportModule implements ITransportModule {
   public schema: z_schema;
 
   // Helpers
+  // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
   public balancesSequence: Sequence;
@@ -108,10 +110,17 @@ export class TransportModule implements ITransportModule {
       req.body = options.data;
     }
 
-    let res;
+    let res: popsicle.Response;
     try {
-      res = await popsicle.request(req)
-        .use(popsicle.plugins.parse(['json'], false));
+      res = await promiseRetry(
+        (retry) => popsicle.request(req)
+          .use(popsicle.plugins.parse(['json'], false))
+          .catch(retry),
+        {
+          minTimeout: 2000, /* this is the timeout for the retry. Lets wait at least 2seconds before retrying. */
+          retries: 1,
+        }
+      );
     } catch (err) {
       this.removePeer({ peer: thePeer, code: 'HTTPERROR' }, err.message);
       return Promise.reject(err);
@@ -119,10 +128,10 @@ export class TransportModule implements ITransportModule {
 
     if (res.status !== 200) {
       this.removePeer({ peer: thePeer, code: `ERESPONSE ${res.status}` }, `${req.method} ${req.url}`);
-      return Promise.reject(new Error(`Received bad response code ${res.status} ${res.method} ${res.url}`));
+      return Promise.reject(new Error(`Received bad response code ${res.status} ${req.method} ${res.url}`));
     }
 
-    const headers: PeerHeaders = thePeer.applyHeaders(res.headers);
+    const headers: PeerHeaders = thePeer.applyHeaders(res.headers as any);
     if (!this.schema.validate(headers, schema.headers)) {
       this.removePeer({ peer: thePeer, code: 'EHEADERS' }, `${req.method} ${req.url}`);
       return Promise.reject(new Error(`Invalid response headers ${JSON.stringify(headers)} ${req.method} ${req.url}`));
