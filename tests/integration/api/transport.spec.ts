@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import * as supertest from 'supertest';
+import * as z_schema from 'z-schema';
 import { IBlockLogic, IPeersLogic, ITransactionLogic, ITransactionPoolLogic } from '../../../src/ioc/interfaces/logic';
 import {
   IBlocksModule,
@@ -35,6 +36,76 @@ const headers = {
   version: '0.1.10',
   port   : 1
 };
+
+const transportTXSchema = {
+  id        : 'Transaction',
+  type      : 'object',
+  properties: {
+    id                : {
+      type     : 'string',
+      format   : 'id',
+      minLength: 1,
+      maxLength: 20,
+    },
+    height            : {
+      type: 'integer',
+    },
+    blockId           : {
+      type     : 'string',
+      format   : 'id',
+      minLength: 1,
+      maxLength: 20,
+    },
+    type              : {
+      type: 'integer',
+    },
+    timestamp         : {
+      type: 'integer',
+      minimum: 0,
+    },
+    senderPublicKey   : {
+      type: 'string',
+      format  : 'publicKey',
+    },
+    requesterPublicKey: {
+      type: 'string',
+      format  : 'publicKey',
+    },
+    senderId          : {
+      type     : 'string',
+      format   : 'address',
+      minLength: 1,
+      maxLength: 22,
+    },
+    recipientId       : {
+      type     : 'string',
+      format   : 'address',
+      minLength: 1,
+      maxLength: 22,
+    },
+    amount            : {
+      type   : 'integer',
+      minimum: 0
+    },
+    fee               : {
+      type   : 'integer',
+      minimum: 0
+    },
+    signature         : {
+      type: 'string',
+      format  : 'signature',
+    },
+    signSignature     : {
+      type  : 'string',
+      format: 'signature',
+    },
+    asset             : {
+      type: 'object',
+    },
+  },
+  required  : ['type', 'timestamp', 'senderId', 'senderPublicKey', 'signature', 'fee', 'amount'],
+};
+
 
 function checkHeadersValidation(p: () => supertest.Test) {
   it('should fail if version is not provided', () => {
@@ -294,7 +365,34 @@ describe('api/transport', () => {
   describe('/transactions', () => {
     checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
       .get('/peer/transactions'));
-    it('should return all transactions in queue');
+    it('should return all transactions in queue', async function () {
+      this.timeout(10000);
+      const txModule         = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
+      const txPool           = initializer.appManager.container.get<ITransactionPoolLogic>(Symbols.logic.transactionPool);
+      const { wallet } = await createRandomAccountWithFunds(Math.pow(10, 8));
+      const account          = wallet;
+      const tx1  = await createSendTransaction(0, 1, account, createRandomWallet().address);
+      const tx2  = await createSendTransaction(0, 2, account, createRandomWallet().address);
+      await supertest(initializer.appManager.expressApp)
+        .post('/peer/transactions')
+        .set(headers)
+        .send({ transactions: [tx1, tx2] })
+        .expect(200);
+      await txPool.processBundled();
+      // await txModule.fillPool();
+
+      const {body} = await supertest(initializer.appManager.expressApp)
+        .get('/peer/transactions')
+        .set(headers)
+        .expect(200);
+      expect(body.transactions.length).eq(2);
+
+      const zschema = initializer.appManager.container.get<z_schema>(Symbols.generic.zschema);
+      for(const t of body.transactions) {
+        const res = zschema.validate(t, transportTXSchema);
+        expect(res).is.eq(true);
+      }
+    });
   });
 
   describe('/transactions [POST]', function () {

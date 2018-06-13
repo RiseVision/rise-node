@@ -17,7 +17,7 @@ import {
 import { Symbols } from '../ioc/symbols';
 import { SignedAndChainedBlockType, SignedAndChainedTransportBlockType } from '../logic';
 import { IBaseTransaction, ITransportTransaction } from '../logic/transactions';
-import { BlocksModel } from '../models';
+import { BlocksModel, TransactionsModel } from '../models';
 import transportSchema from '../schema/transport';
 import { RawFullBlockListType } from '../types/rawDBTypes';
 import { Partial } from '../types/utils';
@@ -106,6 +106,8 @@ export class TransportAPI {
   // models
   @inject(Symbols.models.blocks)
   private BlocksModel: typeof BlocksModel;
+  @inject(Symbols.models.transactions)
+  private TransactionsModel: typeof TransactionsModel;
 
   @Get('/height')
   public height() {
@@ -152,7 +154,11 @@ export class TransportAPI {
   @Get('/transactions')
   public transactions() {
     const transactions = this.transactionsModule.getMergedTransactionList(this.constants.maxSharedTxs);
-    return { transactions };
+
+    return {
+      transactions: transactions
+        .map((tx) => this.TransactionsModel.toTransportTransaction(tx, this.blocksModule))
+    };
   }
 
   @Post('/transactions')
