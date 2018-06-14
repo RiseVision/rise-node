@@ -1,7 +1,10 @@
 import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
-import { constants, ILogger} from '../helpers/';
+import { IAPIRequest } from '../apis/requests/BaseRequest';
+import { PostSignaturesRequest } from '../apis/requests/PostSignaturesRequest';
+import { PostTransactionsRequest } from '../apis/requests/PostTransactionsRequest';
+import { constants, ILogger } from '../helpers/';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
 import { IPeersModule, ITransactionsModule } from '../ioc/interfaces/modules';
@@ -14,9 +17,7 @@ import { IBaseTransaction } from './transactions/';
 
 export type BroadcastTaskOptions = {
   immediate?: boolean;
-  data: any;
-  api: string;
-  method: string;
+  request: IAPIRequest;
 };
 export type BroadcastTask = {
   options: BroadcastTaskOptions;
@@ -30,15 +31,17 @@ export class BroadcasterLogic implements IBroadcasterLogic {
 
   // Broadcast routes
   public routes = [{
-    collection: 'transactions',
-    method    : 'POST',
-    object    : 'transaction',
-    path      : '/transactions',
+    collection    : 'transactions',
+    method        : 'POST',
+    object        : 'transaction',
+    path          : '/transactions',
+    requestHandler: PostTransactionsRequest,
   }, {
-    collection: 'signatures',
-    method    : 'POST',
-    object    : 'signature',
-    path      : '/signatures',
+    collection    : 'signatures',
+    method        : 'POST',
+    object        : 'signature',
+    path          : '/signatures',
+    requestHandler: PostSignaturesRequest,
   }];
 
   // Generics
@@ -77,10 +80,10 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     this.jobsQueue.register(
       'broadcasterNextRelease',
       () => this.releaseQueue()
-          .catch((err) => {
-            this.logger.log('Broadcast timer', err);
-            return;
-          }),
+        .catch((err) => {
+          this.logger.log('Broadcast timer', err);
+          return;
+        }),
       this.config.broadcasts.broadcastInterval
     );
   }
@@ -92,8 +95,8 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     const originalLimit = params.limit;
 
     const peersList = await this.peersModule.list(params);
-    const peers = peersList.peers;
-    let consensus = peersList.consensus;
+    const peers     = peersList.peers;
+    let consensus   = peersList.consensus;
 
     if (originalLimit === this.constants.maxPeers) {
       if (this.config.forging.force) {
@@ -113,7 +116,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
                            limit?: number, broadhash?: string,
                            peers?: PeerType[]
                          } = {},
-                         options: any): Promise<{ peer: PeerType[] }> {
+                         options: BroadcastTaskOptions): Promise<{ peer: PeerType[] }> {
 
     params.limit     = params.limit || this.constants.maxPeers;
     params.broadhash = params.broadhash || null;
@@ -132,11 +135,14 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     await PromiseThrottle.all(
       peers
         .map((p) => this.peersLogic.create(p))
-        .map((peer) => () => peer.makeRequest(options)
-          .catch((err) => {
-            this.logger.debug(`Failed to broadcast to peer: ${peer.string}`, err);
-            return null;
-          })
+        .map((peer) => () => {
+            options.request.setPeer(peer);
+            return peer.makeRequest(options.request)
+              .catch((err) => {
+                this.logger.debug(`Failed to broadcast to peer: ${peer.string}`, err);
+                return null;
+              });
+          }
         ),
       { maxInProgress: this.config.broadcasts.parallelLimit }
     );
@@ -171,8 +177,11 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     for (const task of this.queue) {
       if (task.options.immediate) {
         newQueue.push(task);
-      } else if (task.options.data) {
-        if (await this.filterTransaction((task.options.data.transaction || task.options.data.signature))) {
+      } else if (task.options.request.getOrigOptions().data) {
+        if (await this.filterTransaction(
+            (task.options.request.getOrigOptions().data.transaction
+              || task.options.request.getOrigOptions().data.signature))
+        ) {
           newQueue.push(task);
         }
       } else {
@@ -202,24 +211,23 @@ export class BroadcasterLogic implements IBroadcasterLogic {
    * Group broadcast requests by API.
    */
   private squashQueue(broadcasts: BroadcastTask[]): BroadcastTask[] {
-    const groupedByAPI = _.groupBy(broadcasts, (b) => b.options.api);
+    const groupedByAPI = _.groupBy(broadcasts, (b) => typeof b.options.request);
 
     const squashed: BroadcastTask[] = [];
 
     this.routes
     // Filter out empty grouped requests
-      .filter((route) => Array.isArray(groupedByAPI[route.path]))
+      .filter((route) => Array.isArray(groupedByAPI[typeof route.requestHandler]))
       .forEach((route) => {
         const data             = {};
-        data[route.collection] = groupedByAPI[route.path]
-          .map((b) => b.options.data[route.object])
+        data[route.collection] = groupedByAPI[typeof route.requestHandler]
+          .map((b) => b.options.request.getOrigOptions().data[route.object])
           .filter((item) => !!item); // needs to be defined.
+        const reqHandler       = new route.requestHandler({ data });
         squashed.push({
           options: {
-            api      : route.path,
-            data,
             immediate: false,
-            method   : route.method,
+            request  : reqHandler,
           },
         });
       });
@@ -240,7 +248,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     await this.filterQueue();
     let broadcasts = this.queue.splice(0, this.config.broadcasts.releaseLimit);
 
-    broadcasts  = this.squashQueue(broadcasts);
+    broadcasts = this.squashQueue(broadcasts);
 
     try {
       for (const brc of broadcasts) {

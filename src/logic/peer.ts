@@ -1,9 +1,9 @@
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
+import { IAPIRequest } from '../apis/requests/BaseRequest';
 import { IPeerLogic } from '../ioc/interfaces/logic/';
 import { ITransportModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { PeerRequestOptions } from '../modules';
 
 export enum PeerState {
   BANNED       = 0,
@@ -170,9 +170,11 @@ export class PeerLogic implements PeerType, IPeerLogic {
     return copy;
   }
 
-  public makeRequest<T>(requestOptions: PeerRequestOptions): Promise<T> {
+  public makeRequest<T>(requestHandler: IAPIRequest): Promise<T> {
+    requestHandler.setPeer(this);
+    const requestOptions = requestHandler.getRequestOptions();
     return this.transportModule.getFromPeer<T>(this, requestOptions)
-      .then(({body}) => body);
+      .then((res) => requestHandler.getResponseData(res));
   }
 
   public pingAndUpdate(): Promise<void> {

@@ -3,8 +3,13 @@ import * as popsicle from 'popsicle';
 import * as Throttle from 'promise-parallel-throttle';
 import SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
+import { IAPIRequest } from '../apis/requests/BaseRequest';
+import { PeersListRequest } from '../apis/requests/PeersListRequest';
+import { PostSignaturesRequest } from '../apis/requests/PostSignaturesRequest';
+import { PostTransactionsRequest } from '../apis/requests/PostTransactionsRequest';
 import { cbToPromise, constants as constantsType, ILogger, Sequence } from '../helpers/';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
@@ -22,10 +27,9 @@ import { BlocksModel, TransactionsModel } from '../models';
 import peersSchema from '../schema/peers';
 import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
-import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
 
 // tslint:disable-next-line
-export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };
+export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any, isProtoBuf?: boolean, query?: any };
 
 @injectable()
 export class TransportModule implements ITransportModule {
@@ -147,14 +151,14 @@ export class TransportModule implements ITransportModule {
   }
 
   // tslint:disable-next-line max-line-length
-  public async getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }, options: PeerRequestOptions) {
+  public async getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }, requestHandler: IAPIRequest) {
     config.limit         = 1;
     config.allowedStates = [PeerState.CONNECTED, PeerState.DISCONNECTED];
     const { peers }      = await this.peersModule.list(config);
     if (peers.length === 0) {
       throw new Error('No peer available');
     }
-    return peers[0].makeRequest<T>(options);
+    return peers[0].makeRequest<T>(requestHandler);
   }
 
   public cleanup() {
@@ -199,7 +203,8 @@ export class TransportModule implements ITransportModule {
    */
   public onSignature(signature: { transaction: string, signature: string, relays?: number }, broadcast: boolean) {
     if (broadcast && !this.broadcasterLogic.maxRelays(signature)) {
-      this.broadcasterLogic.enqueue({}, { api: '/signatures', data: { signature }, method: 'POST' });
+      const requestHandler = new PostSignaturesRequest({data: {signature}});
+      this.broadcasterLogic.enqueue({}, { request: requestHandler });
       this.io.sockets.emit('signature/change', signature);
     }
   }
@@ -211,14 +216,13 @@ export class TransportModule implements ITransportModule {
    */
   public onUnconfirmedTransaction(transaction: IBaseTransaction<any> & { relays?: number }, broadcast: boolean) {
     if (broadcast && !this.broadcasterLogic.maxRelays(transaction)) {
-
-      this.broadcasterLogic.enqueue({}, {
-        api   : '/transactions',
+      const requestHandler = new PostTransactionsRequest({
         data  : {
           transaction: this.TransactionsModel.toTransportTransaction(transaction, this.blocksModule),
         },
-        method: 'POST',
       });
+
+      this.broadcasterLogic.enqueue({}, { request: requestHandler });
       this.io.sockets.emit('transactions/change', transaction);
     }
   }
@@ -330,12 +334,10 @@ export class TransportModule implements ITransportModule {
    */
   private async discoverPeers(): Promise<void> {
     this.logger.trace('Transport->discoverPeers');
+    const requestHandler: IAPIRequest = new PeersListRequest({data: null});
     const response = await this.getFromRandomPeer<any>(
       {},
-      {
-        api   : '/list',
-        method: 'GET',
-      }
+      requestHandler
     );
 
     await cbToPromise((cb) => this.schema.validate(response.body, peersSchema.discover.peers, cb));
