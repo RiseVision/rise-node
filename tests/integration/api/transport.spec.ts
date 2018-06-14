@@ -252,6 +252,7 @@ describe('api/transport', () => {
         nethash  : 'nethash',
         nonce    : 'nonce',
         os       : 'os',
+        version  : '1.0.0',
       } as any);
       peersModule.update(peer);
 

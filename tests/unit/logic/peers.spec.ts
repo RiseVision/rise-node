@@ -290,6 +290,9 @@ describe('logic/peers', () => {
   });
 
   describe('acceptable', () => {
+    beforeEach(() => {
+      systemModuleStub.stubs.versionCompatible.returns(true);
+    });
     it('should call systemModule.getNonce if ip is not private', () => {
       // non-private ip
       peerLogicStub.ip = '8.8.8.8';
@@ -314,7 +317,17 @@ describe('logic/peers', () => {
       const retVal = instance.acceptable([peer1, peer2]);
       expect(retVal).to.be.deep.equal([peer1]);
     });
+    it('should filter out peers with incompatible version', () => {
+      systemModuleStub.enqueueResponse('getNonce', 'otherValue');
+      const peer1 = new PeerLogicStub();
+      const peer2 = new PeerLogicStub();
+      peer1.ip = '8.8.8.8';
+      peer2.ip = '8.8.8.7';
+      systemModuleStub.stubs.versionCompatible.onSecondCall().returns(false);
+      const retVal = instance.acceptable([peer1, peer2]);
+      expect(retVal).to.be.deep.eq([peer1]);
 
+    });
     it('should filter out peers with my same nonce', () => {
       systemModuleStub.enqueueResponse('getNonce', 'systemNonce');
 
