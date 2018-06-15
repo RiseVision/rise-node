@@ -409,4 +409,9 @@ describe('api/transactions', () => {
       });
     });
   });
+
+  describe('/put', () => {
+    it('should reject if transaction is empty');
+    it('should reject if transaction is not valid');
+  });
 });

@@ -135,7 +135,7 @@ export class PeersLogic implements IPeersLogic {
   }
 
   /**
-   * Filters peers with private ips or same nonce
+   * Filters peers with private ips, same nonce or incompatible version
    */
   public acceptable(peers: IPeerLogic[]): IPeerLogic[];
   public acceptable(peers: PeerType[]): PeerType[];
@@ -148,6 +148,7 @@ export class PeersLogic implements IPeersLogic {
         }
         return !ip.isPrivate(peer.ip) && peer.nonce !== this.systemModule.getNonce() && (peer.os !== 'lisk-js-api');
       })
+      .filter((peer) => this.systemModule.versionCompatible(peer.version))
       .value();
   }
 

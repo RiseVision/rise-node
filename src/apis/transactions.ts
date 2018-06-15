@@ -1,18 +1,19 @@
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
-import { Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
+import { BodyParam, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { castFieldsToNumberUsingSchema, removeEmptyObjKeys, TransactionType } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { assertValidSchema, SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { ITransactionLogic } from '../ioc/interfaces/logic';
-import { IBlocksModule, ITransactionsModule } from '../ioc/interfaces/modules';
+import { IBlocksModule, ITransactionsModule, ITransportModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { TransactionsModel } from '../models';
 import schema from '../schema/transactions';
-import { APIError, DeprecatedAPIError } from './errors';
+import { APIError } from './errors';
 import { ISlots } from '../ioc/interfaces/helpers';
+import { ITransportTransaction } from '../logic/transactions';
 
 @JsonController('/api/transactions')
 @injectable()
@@ -28,6 +29,8 @@ export class TransactionsAPI {
   private blocksModule: IBlocksModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
+  @inject(Symbols.modules.transport)
+  private transportModule: ITransportModule;
 
   @inject(Symbols.models.transactions)
   private TXModel: typeof TransactionsModel;
@@ -177,10 +180,21 @@ export class TransactionsAPI {
     return {
       count       : txs.length,
       transactions: txs
-        .filter((tx) => params.senderPublicKey ?
-          Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
-          true)
-        .filter((tx) => params.address ? params.address === tx.recipientId : true)
+        .filter((tx) => {
+          // Either senderPublicKey or address matching as recipientId
+          // or all if no params were set.
+          return ( !params.senderPublicKey && !params.address) ||
+            (
+              params.senderPublicKey ?
+                Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
+                false
+            ) ||
+            (
+              params.address ?
+                params.address === tx.recipientId :
+                false
+            );
+        })
         .map((tx) => this.TXModel.toTransportTransaction(tx, this.blocksModule)),
     };
   }
@@ -197,11 +211,16 @@ export class TransactionsAPI {
   }
 
   @Put()
-  /**
-   * @deprecated
-   */
-  public async put() {
-    throw new DeprecatedAPIError();
+  public async put(@BodyParam('transaction') transaction: ITransportTransaction<any>) {
+    if (!transaction) {
+      throw new APIError('Transaction not provided', 500);
+    }
+    // Schema validation is done in transportModule
+    await this.transportModule.receiveTransactions(
+      [transaction],
+      null,
+      true
+    );
   }
 
   private createWhereClause(body: any) {

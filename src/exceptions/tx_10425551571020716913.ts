@@ -26,4 +26,10 @@ export default function exceptionTx14712341342146176146(excManager: ExceptionsMa
     'tx_10425551571020716913',
     handler
   );
+
+  return excManager.createOrUpdateDBExceptions([{
+    address: '9518100838820316713R',
+    maxCount: 4,
+    type: 'account',
+  }]);
 }

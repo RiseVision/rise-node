@@ -25,4 +25,5 @@ export default function exceptionTx5557619371011868150(excManager: ExceptionsMan
     'tx_5557619371011868150',
     handler
   );
+  return Promise.resolve();
 }

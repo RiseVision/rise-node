@@ -131,6 +131,9 @@ export class LoaderModule implements ILoaderModule {
 
   public async getRandomPeer(): Promise<IPeerLogic> {
     const { peers } = await this.getNetwork();
+    if (peers.length === 0) {
+      throw new Error('No acceptable peers for the operation');
+    }
     return peers[Math.floor(Math.random() * peers.length)];
   }
 
@@ -537,7 +540,7 @@ export class LoaderModule implements ILoaderModule {
           this.logger.info('Polling transactions and signatures');
           await this.syncTransactions();
           await this.syncSignatures();
-          this.logger.info('Finshed polling');
+          this.logger.info('Finished polling');
         }
       }
     }, this.syncInterval);
@@ -635,10 +638,14 @@ export class LoaderModule implements ILoaderModule {
     }
 
     const { transactions }: { transactions: Array<ITransportTransaction<any>> } = body;
-    try {
-      await this.transportModule.receiveTransactions(transactions, peer, false);
-    } catch (err) {
-      this.logger.debug(err);
+
+    const trans = transactions || [];
+    while (trans.length > 0) {
+      try {
+        await this.transportModule.receiveTransactions(trans.splice(0, 25), peer, false);
+      } catch (err) {
+        this.logger.warn(err);
+      }
     }
 
   }

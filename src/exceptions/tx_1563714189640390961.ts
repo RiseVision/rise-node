@@ -1,7 +1,7 @@
 import { ExceptionsList, ExceptionsManager, IExceptionHandler } from '../helpers';
 import { ITransactionLogic } from '../ioc/interfaces/logic';
-import { MemAccountsData } from '../logic/';
-import { IBaseTransaction} from '../logic/transactions';
+import { IBaseTransaction } from '../logic/transactions';
+
 /**
  * Failed to apply transaction 1563714189640390961 - Account does not have enough currency: 15844723232461775384R
  * balance: 455.55354484 - 456.06082124 (0.5 diff)
@@ -9,9 +9,9 @@ import { IBaseTransaction} from '../logic/transactions';
  *
  * Affected block was: 491466
  */
-export default function exceptionTx14712341342146176146(excManager: ExceptionsManager) {
+export default function exceptionTx1563714189640390961(excManager: ExceptionsManager) {
   const handler: IExceptionHandler<ITransactionLogic> = {
-    canHandle(obj: ITransactionLogic, amount: number, balanceKey: 'balance'|'u_balance', tx: IBaseTransaction<void>) {
+    canHandle(obj: ITransactionLogic, amount: number, balanceKey: 'balance' | 'u_balance', tx: IBaseTransaction<void>) {
       return tx.id === '1563714189640390961' &&
         tx.senderPublicKey.toString('hex') === '0275d0ee6f100cd429bbdc8556e3d1f49cca610f093c2e51e02cf038e8813282' &&
         // tslint:disable-next-line
@@ -26,4 +26,11 @@ export default function exceptionTx14712341342146176146(excManager: ExceptionsMa
     'tx_1563714189640390961',
     handler
   );
+  return excManager.createOrUpdateDBExceptions([
+    {
+      address : '15844723232461775384R',
+      maxCount: 4, // Will also handle tx 5557619371011868150,
+      type    : 'account',
+    },
+  ]);
 }

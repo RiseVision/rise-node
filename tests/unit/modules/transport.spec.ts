@@ -166,7 +166,8 @@ describe('src/modules/transport.ts', () => {
     });
   });
 
-  describe('getFromPeer', () => {
+  describe('getFromPeer', function () {
+    this.timeout(2100);
 
     let peer;
     let options;
@@ -268,6 +269,17 @@ describe('src/modules/transport.ts', () => {
         timeout: 1000,
         url    : 'http://undefined:undefinedurl.com',
       });
+    });
+
+    it('should call popsicle twice (retry) if rejects and return 2nd result', async function () {
+      this.timeout(2100);
+      const start = Date.now();
+      popsicleUseStub.use.onFirstCall().rejects(error);
+      popsicleUseStub.use.onSecondCall().resolves({status: 500});
+      await expect(inst.getFromPeer(peer, options)).to.be.rejectedWith('bad response code 500');
+
+      expect(popsicleUseStub.use.calledTwice).is.true;
+      expect(Date.now() - start).gt(2000);
     });
 
     it('should call removePeer and return rejected promise if popsicle throw', async () => {
@@ -944,6 +956,19 @@ describe('src/modules/transport.ts', () => {
         transactions[0],
         true,
       ]);
+    });
+
+    describe('peer null', () => {
+      it('should not remove null peer if failed to objectNormalize', async () => {
+        transactionLogic.stubs.objectNormalize.throws(new Error('error'));
+        await expect(inst.receiveTransactions(transactions, null, false)).to.be
+          .rejectedWith('Invalid transaction body error');
+
+        expect(peersModule.stubs.remove.calledOnce).to.be.false;
+      });
+      it('not throw for peer.* access if txs are ok', async () => {
+        await inst.receiveTransactions(transactions, null, false)
+      });
     });
   });
 

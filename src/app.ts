@@ -7,7 +7,7 @@ import 'source-map-support/register';
 import { AppManager } from './AppManager';
 import { allExceptionCreator } from './exceptions';
 import {
-  config as configCreator, constants as constantsType, loggerCreator,
+  config as configCreator, constants as constantsType, ExceptionType, loggerCreator,
   promiseToCB,
 } from './helpers/';
 import { SignedAndChainedBlockType } from './logic/';

@@ -389,10 +389,6 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
    * NOTE: this must be called with an unconfirmed transaction
    */
   private async checkTransaction(block: SignedBlockType, tx: IConfirmedTransaction<any>, accountsMap: {[address: string]: AccountsModel}): Promise<void> {
-
-    // get account from db if exists
-    // We try to fetch account without an upsert and eventually upsert the account if necessary.
-    // this is just for optimization purposes.
     const acc = accountsMap[tx.senderId];
 
     let requester = null;

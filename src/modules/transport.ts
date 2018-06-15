@@ -1,6 +1,7 @@
 import { inject, injectable, postConstruct, tagged } from 'inversify';
 import * as popsicle from 'popsicle';
 import * as Throttle from 'promise-parallel-throttle';
+import * as promiseRetry from 'promise-retry';
 import SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
 import { IAPIRequest } from '../apis/requests/BaseRequest';
@@ -43,6 +44,7 @@ export class TransportModule implements ITransportModule {
   public schema: z_schema;
 
   // Helpers
+  // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
   public balancesSequence: Sequence;
@@ -112,10 +114,17 @@ export class TransportModule implements ITransportModule {
       req.body = options.data;
     }
 
-    let res;
+    let res: popsicle.Response;
     try {
-      res = await popsicle.request(req)
-        .use(popsicle.plugins.parse(['json'], false));
+      res = await promiseRetry(
+        (retry) => popsicle.request(req)
+          .use(popsicle.plugins.parse(['json'], false))
+          .catch(retry),
+        {
+          minTimeout: 2000, /* this is the timeout for the retry. Lets wait at least 2seconds before retrying. */
+          retries: 1,
+        }
+      );
     } catch (err) {
       this.removePeer({ peer: thePeer, code: 'HTTPERROR' }, err.message);
       return Promise.reject(err);
@@ -123,10 +132,10 @@ export class TransportModule implements ITransportModule {
 
     if (res.status !== 200) {
       this.removePeer({ peer: thePeer, code: `ERESPONSE ${res.status}` }, `${req.method} ${req.url}`);
-      return Promise.reject(new Error(`Received bad response code ${res.status} ${res.method} ${res.url}`));
+      return Promise.reject(new Error(`Received bad response code ${res.status} ${req.method} ${res.url}`));
     }
 
-    const headers: PeerHeaders = thePeer.applyHeaders(res.headers);
+    const headers: PeerHeaders = thePeer.applyHeaders(res.headers as any);
     if (!this.schema.validate(headers, schema.headers)) {
       this.removePeer({ peer: thePeer, code: 'EHEADERS' }, `${req.method} ${req.url}`);
       return Promise.reject(new Error(`Invalid response headers ${JSON.stringify(headers)} ${req.method} ${req.url}`));
@@ -287,7 +296,7 @@ export class TransportModule implements ITransportModule {
   @WrapInBalanceSequence
   public async receiveTransactions(@SchemaValid(schema.transactions.properties.transactions, 'Invalid transactions body')
                                      transactions: Array<ITransportTransaction<any>>,
-                                   peer: IPeerLogic,
+                                   peer: IPeerLogic | null,
                                    broadcast: boolean) {
     // normalize transactions
     const txs: Array<IBaseTransaction<any>> = [];
@@ -301,7 +310,9 @@ export class TransportModule implements ITransportModule {
           module: 'transport',
           tx,
         });
-        this.removePeer({ peer, code: 'ETRANSACTION' }, 'ReceiveTransactions Error');
+        if (peer) {
+          this.removePeer({ peer, code: 'ETRANSACTION' }, 'ReceiveTransactions Error');
+        }
         throw new Error(`Invalid transaction body ${e.message}`);
       }
     }
@@ -313,7 +324,7 @@ export class TransportModule implements ITransportModule {
       if (confirmedIDs.indexOf(tx.id) !== -1) {
         continue; // Transaction already confirmed.
       }
-      this.logger.debug(`Received transaction ${tx.id} from peer: ${peer.string}`);
+      this.logger.debug(`Received transaction ${tx.id} ${peer ? `from peer ${peer.string}` : ' '}`);
       await this.transactionModule.processUnconfirmedTransaction(
         tx,
         broadcast

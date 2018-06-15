@@ -1,5 +1,6 @@
 import { inject, injectable } from 'inversify';
 import * as isEmpty from 'is-empty';
+import * as filterObject from 'filter-object';
 import { Body, Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
@@ -7,8 +8,11 @@ import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidat
 import { IAccountsModule, IDelegatesModule, ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import accountSchema from '../schema/accounts';
+import { AppConfig } from '../types/genericTypes';
 import { publicKey } from '../types/sanityTypes';
 import { APIError, DeprecatedAPIError } from './errors';
+import { FieldsInModel } from '../types/utils';
+import { AccountsModel } from '../models';
 
 @JsonController('/api/accounts')
 @injectable()
@@ -22,6 +26,9 @@ export class AccountsAPI {
   private delegatesModule: IDelegatesModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
+
+  @inject(Symbols.generic.appConfig)
+  private appConfig: AppConfig;
 
   @Get('/')
   @ValidateSchema()
@@ -117,10 +124,38 @@ export class AccountsAPI {
 
   @Get('/delegates/fee')
   @ValidateSchema()
-  public async getDelegatesFee(@SchemaValid(accountSchema.getDelegatesFee)
+  public async getDelegatesFee(@SchemaValid(accountSchema.getDelegatesFee, {castNumbers: true})
                                @QueryParams() params: { height: number }) {
     return {
       fee: this.systemModule.getFees(params.height).fees.delegate,
+    };
+  }
+
+  @Get('/top')
+  @ValidateSchema()
+  public async topAccounts(@SchemaValid(accountSchema.top, {castNumbers: true})
+                           @QueryParams() params: { limit?: number, offset?: number }) {
+    if (!this.appConfig.topAccounts) {
+      throw new APIError('Top Accounts is not enabled', 403);
+    }
+    let {limit, offset} = params;
+    limit = limit || 100;
+    offset = offset || 0;
+    const returnFields: FieldsInModel<AccountsModel> = ['address', 'balance', 'publicKey'];
+    const accs = await this.accountsModule
+      .getAccounts({
+          limit,
+          offset,
+          sort: {balance: -1},
+        },
+        returnFields
+      );
+
+    return {
+      accounts: accs
+        .map((acc) => acc.toPOJO())
+        .map((acc) => filterObject(acc, returnFields)),
+
     };
   }
 

@@ -52,18 +52,26 @@ export class AccountsModule implements IAccountsModule {
     });
 
     const senderAccounts = await this.AccountsModel.scope('full')
-      .findAll({where: { address: allSenders.map((s) => s.address)}});
+        .findAll({where: {address: allSenders.map((s) => s.address)}});
 
     const sendersMap: { [address: string]: AccountsModel } = {};
     for (const senderAccount of senderAccounts) {
       sendersMap[senderAccount.address] = senderAccount;
     }
+
     await Promise.all(allSenders.map(async ({ address, publicKey }) => {
       if (!sendersMap[address]) {
         throw new Error(`Account ${address} not found in db.`);
       }
       if (!sendersMap[address].publicKey) {
         sendersMap[address] = await this.setAccountAndGet({ publicKey });
+      }
+      // sanity checks. A transaction could be broadcasted
+      if (sendersMap[address].address !== address) {
+        throw new Error(`Stealing attempt type.1 for ${address}`);
+      }
+      if (!sendersMap[address].publicKey.equals(publicKey)) {
+        throw new Error(`Stealing attempt type.2 for ${address}`);
       }
     }));
 
@@ -116,13 +124,15 @@ export class AccountsModule implements IAccountsModule {
     return this.accountLogic.generateAddressByPublicKey(pk);
   }
 
-  private fixAndCheckInputParams<T extends { address?: string, publicKey?: Buffer } = any>(what: T): T {
+  private fixAndCheckInputParams<T extends { address?: string, publicKey?: Buffer } = any>(what: T): T & {address: string} {
     if (!what.address && !what.publicKey) {
       throw new Error('Missing address and public key');
     }
-    if (!what.address) {
+    // We calculate address in the case it was not provided or
+    // in case publicKey was provided (even if address was provided for security reasons)
+    if (what.publicKey || !what.address) {
       what.address = this.accountLogic.generateAddressByPublicKey(what.publicKey);
     }
-    return what;
+    return what as any;
   }
 }
