@@ -24,6 +24,7 @@ import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
 import { AppConfig } from '../types/genericTypes';
 import Timer = NodeJS.Timer;
+import {GetTransactionsRequest} from '../apis/requests/GetTransactionsRequest';
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
@@ -628,10 +629,7 @@ export class LoaderModule implements ILoaderModule {
   private async loadTransactions() {
     const peer = await this.getRandomPeer();
     this.logger.log(`Loading transactions from: ${peer.string}`);
-    const body = await peer.makeRequest<any>({
-      api   : '/transactions',
-      method: 'GET',
-    });
+    const body = await peer.makeRequest<any>(new GetTransactionsRequest());
 
     if (!this.schema.validate(body, loaderSchema.loadTransactions)) {
       throw new Error('Cannot validate load transactions schema against peer');

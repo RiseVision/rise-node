@@ -18,7 +18,7 @@ export abstract class BaseRequest implements IAPIRequest {
   protected readonly baseUrl: string;
   protected readonly supportsProtoBuf: boolean = false;
 
-  constructor(options: {data: any}) {
+  constructor(options: {data: any} = {data: null}) {
     this.options = options;
   }
 
