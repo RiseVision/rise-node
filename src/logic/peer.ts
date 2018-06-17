@@ -4,6 +4,7 @@ import { IAPIRequest } from '../apis/requests/BaseRequest';
 import { IPeerLogic } from '../ioc/interfaces/logic/';
 import { ITransportModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
+import { HeightRequest } from '../apis/requests/HeightRequest';
 
 export enum PeerState {
   BANNED       = 0,
@@ -178,8 +179,7 @@ export class PeerLogic implements PeerType, IPeerLogic {
   }
 
   public pingAndUpdate(): Promise<void> {
-    return this.transportModule.getFromPeer(this, {api: '/height', method: 'GET'})
-      .then(() => null);
+    return this.makeRequest(new HeightRequest({data: null})).then(() => null);
   }
 
   public get nullable() {

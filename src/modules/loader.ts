@@ -25,6 +25,7 @@ import sql from '../sql/loader';
 import { AppConfig } from '../types/genericTypes';
 import Timer = NodeJS.Timer;
 import {GetTransactionsRequest} from '../apis/requests/GetTransactionsRequest';
+import { GetSignaturesRequest } from '../apis/requests/GetSignaturesRequest';
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
@@ -590,19 +591,14 @@ export class LoaderModule implements ILoaderModule {
   private async loadSignatures() {
     const randomPeer = await this.getRandomPeer();
     this.logger.log(`Loading signatures from: ${randomPeer.string}`);
-    const res = await this.transportModule.getFromPeer<any>(
-      randomPeer,
-      {
-        api   : '/signatures',
-        method: 'GET',
-      });
+    const res = await randomPeer.makeRequest<{signatures: any[]}>(new GetSignaturesRequest({data: null}));
 
-    if (!this.schema.validate(res.body, loaderSchema.loadSignatures)) {
+    if (!this.schema.validate(res, loaderSchema.loadSignatures)) {
       throw new Error('Failed to validate /signatures schema');
     }
 
     // FIXME: signatures array
-    const { signatures }: { signatures: any[] } = res.body;
+    const { signatures }: { signatures: any[] } = res;
 
     // Process multisignature transactions and validate signatures in sequence
     await this.defaultSequence.addAndPromise(async () => {

@@ -28,6 +28,9 @@ import { BlocksModel, TransactionsModel } from '../models';
 import peersSchema from '../schema/peers';
 import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
+import { PostBlocksRequest } from '../apis/requests/PostBlocksRequest';
+import { Request } from 'popsicle/dist/request';
+import { Response } from 'popsicle/dist/response';
 
 // tslint:disable-next-line
 export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any, isProtoBuf?: boolean, query?: any };
@@ -113,12 +116,21 @@ export class TransportModule implements ITransportModule {
     if (options.data) {
       req.body = options.data;
     }
+    if (options.isProtoBuf) {
+      req.headers.acccept = 'application/octet-stream';
+    }
+
+    const nullPlugin: popsicle.Middleware = (request: Request, next: () => Promise<Response>) =>  {
+      return next().then((response) => response);
+    };
+
+    const parsingPlugin = options.isProtoBuf ? nullPlugin : popsicle.plugins.parse(['json'], false);
 
     let res: popsicle.Response;
     try {
       res = await promiseRetry(
         (retry) => popsicle.request(req)
-          .use(popsicle.plugins.parse(['json'], false))
+          .use(parsingPlugin)
           .catch(retry),
         {
           minTimeout: 2000, /* this is the timeout for the retry. Lets wait at least 2seconds before retrying. */
@@ -213,7 +225,7 @@ export class TransportModule implements ITransportModule {
   public onSignature(signature: { transaction: string, signature: string, relays?: number }, broadcast: boolean) {
     if (broadcast && !this.broadcasterLogic.maxRelays(signature)) {
       const requestHandler = new PostSignaturesRequest({data: {signature}});
-      this.broadcasterLogic.enqueue({}, { request: requestHandler });
+      this.broadcasterLogic.enqueue({}, { requestHandler });
       this.io.sockets.emit('signature/change', signature);
     }
   }
@@ -231,7 +243,7 @@ export class TransportModule implements ITransportModule {
         },
       });
 
-      this.broadcasterLogic.enqueue({}, { request: requestHandler });
+      this.broadcasterLogic.enqueue({}, { requestHandler });
       this.io.sockets.emit('transactions/change', transaction);
     }
   }
@@ -248,6 +260,10 @@ export class TransportModule implements ITransportModule {
 
       await this.systemModule.update();
       if (!this.broadcasterLogic.maxRelays(block)) {
+        const reqHandler = new PostBlocksRequest({
+          data: { block: this.BlocksModel.toStringBlockType(block, this.TransactionsModel, this.blocksModule) },
+        });
+
         // We avoid awaiting the broadcast result as it could result in unnecessary peer removals.
         // Ex: Peer A, B, C
         // A broadcasts block to B which wants to rebroadcast to A (which is waiting for B to respond) =>
@@ -256,10 +272,8 @@ export class TransportModule implements ITransportModule {
         /* await */
         this.broadcasterLogic.broadcast({ limit: this.constants.maxPeers, broadhash },
           {
-            api      : '/blocks',
-            data     : { block: this.BlocksModel.toStringBlockType(block, this.TransactionsModel, this.blocksModule) },
             immediate: true,
-            method   : 'POST',
+            requestHandler: reqHandler,
           })
           .catch((err) => this.logger.warn('Error broadcasting block', err));
       }

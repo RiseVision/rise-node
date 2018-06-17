@@ -5,8 +5,7 @@ export class GetTransactionsRequest extends BaseRequest {
   protected readonly supportsProtoBuf = true;
 
   public getResponseData(res) {
-    // TODO Implement me! :)
-    return res.body;
+    return this.isProtoBuf() ? this.decodeProtoBufResponse(res, 'transportTransactions') : res.body;
   }
 
   protected getBaseUrl() {

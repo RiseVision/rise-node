@@ -17,7 +17,7 @@ import { IBaseTransaction } from './transactions/';
 
 export type BroadcastTaskOptions = {
   immediate?: boolean;
-  request: IAPIRequest;
+  requestHandler: IAPIRequest;
 };
 export type BroadcastTask = {
   options: BroadcastTaskOptions;
@@ -32,15 +32,11 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   // Broadcast routes
   public routes = [{
     collection    : 'transactions',
-    method        : 'POST',
     object        : 'transaction',
-    path          : '/transactions',
     requestHandler: PostTransactionsRequest,
   }, {
     collection    : 'signatures',
-    method        : 'POST',
     object        : 'signature',
-    path          : '/signatures',
     requestHandler: PostSignaturesRequest,
   }];
 
@@ -136,8 +132,8 @@ export class BroadcasterLogic implements IBroadcasterLogic {
       peers
         .map((p) => this.peersLogic.create(p))
         .map((peer) => () => {
-            options.request.setPeer(peer);
-            return peer.makeRequest(options.request)
+            options.requestHandler.setPeer(peer);
+            return peer.makeRequest(options.requestHandler)
               .catch((err) => {
                 this.logger.debug(`Failed to broadcast to peer: ${peer.string}`, err);
                 return null;
@@ -177,10 +173,10 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     for (const task of this.queue) {
       if (task.options.immediate) {
         newQueue.push(task);
-      } else if (task.options.request.getOrigOptions().data) {
+      } else if (task.options.requestHandler.getOrigOptions().data) {
         if (await this.filterTransaction(
-            (task.options.request.getOrigOptions().data.transaction
-              || task.options.request.getOrigOptions().data.signature))
+            (task.options.requestHandler.getOrigOptions().data.transaction
+              || task.options.requestHandler.getOrigOptions().data.signature))
         ) {
           newQueue.push(task);
         }
@@ -211,23 +207,31 @@ export class BroadcasterLogic implements IBroadcasterLogic {
    * Group broadcast requests by API.
    */
   private squashQueue(broadcasts: BroadcastTask[]): BroadcastTask[] {
-    const groupedByAPI = _.groupBy(broadcasts, (b) => typeof b.options.request);
+    const getReqType = (b: BroadcastTask): string => {
+      this.routes.forEach((route) => {
+        if (b.options.requestHandler instanceof route.requestHandler) {
+          return route.collection;
+        }
+      });
+      return 'unknown';
+    };
+    const groupedByAPI = _.groupBy(broadcasts, (b) => getReqType(b));
 
     const squashed: BroadcastTask[] = [];
 
     this.routes
     // Filter out empty grouped requests
-      .filter((route) => Array.isArray(groupedByAPI[typeof route.requestHandler]))
+      .filter((route) => Array.isArray(groupedByAPI[route.collection]))
       .forEach((route) => {
         const data             = {};
-        data[route.collection] = groupedByAPI[typeof route.requestHandler]
-          .map((b) => b.options.request.getOrigOptions().data[route.object])
+        data[route.collection] = groupedByAPI[route.collection]
+          .map((b) => b.options.requestHandler.getOrigOptions().data[route.object])
           .filter((item) => !!item); // needs to be defined.
         const reqHandler       = new route.requestHandler({ data });
         squashed.push({
           options: {
             immediate: false,
-            request  : reqHandler,
+            requestHandler: reqHandler,
           },
         });
       });

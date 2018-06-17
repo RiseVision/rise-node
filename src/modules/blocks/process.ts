@@ -2,6 +2,8 @@ import { inject, injectable, tagged } from 'inversify';
 import * as _ from 'lodash';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
+import { CommonBlockRequest } from '../../apis/requests/CommonBlockRequest';
+import { GetBlocksRequest } from '../../apis/requests/GetBlocksRequest';
 import { constants, ForkType, IKeypair, ILogger, Sequence } from '../../helpers/';
 import { WrapInDBSequence, WrapInDefaultSequence } from '../../helpers/decorators/wrapInSequence';
 import { ISlots } from '../../ioc/interfaces/helpers';
@@ -115,11 +117,9 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   // tslint:disable-next-line max-line-length
   public async getCommonBlock(peer: IPeerLogic, height: number): Promise<{ id: string, previousBlock: string, height: number } | void> {
     const { ids }              = await this.blocksUtilsModule.getIdSequence(height);
-    const { body: commonResp } = await this.transportModule
-      .getFromPeer<{ common: { id: string, previousBlock: string, height: number } }>(peer, {
-        api   : `/blocks/common?ids=${ids.join(',')}`,
-        method: 'GET',
-      });
+    const commonResp = await peer.makeRequest<{ common: { id: string, previousBlock: string, height: number } }>(
+      new CommonBlockRequest({data: null, query: { ids: ids.join(',')}})
+    );
     // FIXME: Need better checking here, is base on 'common' property enough?
     if (!commonResp.common) {
       if (this.appStateLogic.getComputed('node.poorConsensus')) {
@@ -234,12 +234,9 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     const peer = this.peersLogic.create(rawPeer);
 
     this.logger.info(`Loading blocks from ${peer.string}`);
-
-    const { body: blocksFromPeer } = await this.transportModule
-      .getFromPeer<{ blocks: RawFullBlockListType[] }>(peer, {
-        api   : `/blocks?lastBlockId=${lastValidBlock.id}`,
-        method: 'GET',
-      });
+    const blocksFromPeer = await peer.makeRequest<{ blocks: RawFullBlockListType[] }>(
+      new GetBlocksRequest({data: null, query: {lastBlockId: lastValidBlock.id}})
+    );
 
     // TODO: fix schema of loadBlocksFromPeer
     if (!this.schema.validate(blocksFromPeer.blocks, schema.loadBlocksFromPeer)) {

@@ -1,15 +1,8 @@
-import { inject, injectable } from 'inversify';
-import { ProtoBufHelper } from '../../helpers';
-import { Symbols } from '../../ioc/symbols';
 import { BaseRequest } from './BaseRequest';
 
-@injectable()
 export class PostBlocksRequest extends BaseRequest {
   protected readonly method = 'POST';
   protected readonly supportsProtoBuf = true;
-
-  @inject(Symbols.helpers.protoBuf)
-  private protoBufHelper: ProtoBufHelper;
 
   public getRequestOptions() {
     const reqOptions = super.getRequestOptions();
@@ -21,11 +14,6 @@ export class PostBlocksRequest extends BaseRequest {
       }
     }
     return reqOptions;
-  }
-
-  public getResponseData(res) {
-    // TODO Implement me! :)
-    return res.body;
   }
 
   protected getBaseUrl() {

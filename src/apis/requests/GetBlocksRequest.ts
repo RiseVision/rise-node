@@ -5,8 +5,7 @@ export class GetBlocksRequest extends BaseRequest {
   protected readonly supportsProtoBuf = true;
 
   public getResponseData(res) {
-    // TODO Implement me! :)
-    return res.body;
+    return this.isProtoBuf() ? this.decodeProtoBufResponse(res, 'transportBlocks') : res.body;
   }
 
   protected getBaseUrl() {
