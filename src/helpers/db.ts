@@ -34,6 +34,10 @@ squelPostgres.registerValueHandler(Buffer, buffer => {
 //     return origRet;
 //   };
 // }
+
+/**
+ * DBHelper offer different methods for to get a query string from a BaseDBOp object.
+ */
 @injectable()
 export class DBHelper {
 
@@ -42,8 +46,6 @@ export class DBHelper {
 
   /**
    * Prepare and return an update query
-   * @param {DBUpdateOp<any>} updateOp
-   * @returns {string}
    */
   public handleUpdate(updateOp: DBUpdateOp<any>) {
     return this.sequelize.getQueryInterface().QueryGenerator.updateQuery(
@@ -56,8 +58,6 @@ export class DBHelper {
 
   /**
    * Prepare and return an insert query
-   * @param {DBCreateOp<any>} insertOp
-   * @returns {string}
    */
   public handleInsert(insertOp: DBCreateOp<any>) {
     return this.sequelize.getQueryInterface().QueryGenerator.insertQuery(
@@ -70,8 +70,6 @@ export class DBHelper {
 
   /**
    * Prepare and return a multi-row insert query
-   * @param {DBBulkCreateOp<any>} insertOp
-   * @returns {string}
    */
   public handleBulkInsert(insertOp: DBBulkCreateOp<any>) {
    return squelPostgres.insert({ nameQuoteCharacter: '"', autoQuoteTableNames: true, autoQuoteFieldNames:true })
@@ -81,9 +79,7 @@ export class DBHelper {
   }
 
   /**
-   * Prepare and return an update or insert query
-   * @param {DBUpsertOp<any>} upsertOp
-   * @returns {string}
+   * Prepare and return an insert or update query
    */
   public handleUpsert(upsertOp: DBUpsertOp<any>) {
     return this.sequelize.getQueryInterface().QueryGenerator.upsertQuery(
@@ -99,8 +95,6 @@ export class DBHelper {
 
   /**
    * Prepare and return a delete query
-   * @param {DBRemoveOp<any>} deleteOp
-   * @returns {string}
    */
   public handleDelete(deleteOp: DBRemoveOp<any>) {
     return this.sequelize.getQueryInterface().QueryGenerator.deleteQuery(
@@ -137,9 +131,6 @@ export class DBHelper {
 
   /**
    * Return the given operations as query strings split in chunks
-   * @param {Array<DBOp<any>>} what
-   * @param {number} chunkSize
-   * @returns {Iterator<string>}
    */
   public* splitOps(what: Array<DBOp<any>>, chunkSize: number): Iterator<string> {
     let tempOps = [];
