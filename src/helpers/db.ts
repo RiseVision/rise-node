@@ -40,6 +40,11 @@ export class DBHelper {
   @inject(Symbols.generic.sequelize)
   private sequelize: Sequelize;
 
+  /**
+   * Prepare and return an update query
+   * @param {DBUpdateOp<any>} updateOp
+   * @returns {string}
+   */
   public handleUpdate(updateOp: DBUpdateOp<any>) {
     return this.sequelize.getQueryInterface().QueryGenerator.updateQuery(
       updateOp.model.getTableName(),
@@ -49,6 +54,11 @@ export class DBHelper {
       );
   }
 
+  /**
+   * Prepare and return an insert query
+   * @param {DBCreateOp<any>} insertOp
+   * @returns {string}
+   */
   public handleInsert(insertOp: DBCreateOp<any>) {
     return this.sequelize.getQueryInterface().QueryGenerator.insertQuery(
       insertOp.model.getTableName(),
@@ -58,6 +68,11 @@ export class DBHelper {
     );
   }
 
+  /**
+   * Prepare and return a multi-row insert query
+   * @param {DBBulkCreateOp<any>} insertOp
+   * @returns {string}
+   */
   public handleBulkInsert(insertOp: DBBulkCreateOp<any>) {
    return squelPostgres.insert({ nameQuoteCharacter: '"', autoQuoteTableNames: true, autoQuoteFieldNames:true })
      .into(insertOp.model.getTableName() as string)
@@ -65,6 +80,11 @@ export class DBHelper {
      .toString();
   }
 
+  /**
+   * Prepare and return an update or insert query
+   * @param {DBUpsertOp<any>} upsertOp
+   * @returns {string}
+   */
   public handleUpsert(upsertOp: DBUpsertOp<any>) {
     return this.sequelize.getQueryInterface().QueryGenerator.upsertQuery(
       upsertOp.model.getTableName(),
@@ -77,6 +97,11 @@ export class DBHelper {
     );
   }
 
+  /**
+   * Prepare and return a delete query
+   * @param {DBRemoveOp<any>} deleteOp
+   * @returns {string}
+   */
   public handleDelete(deleteOp: DBRemoveOp<any>) {
     return this.sequelize.getQueryInterface().QueryGenerator.deleteQuery(
       deleteOp.model.getTableName(),
@@ -110,7 +135,12 @@ export class DBHelper {
     await this.sequelize.query(chunk.value, baseOptions);
   }
 
-
+  /**
+   * Return the given operations as query strings split in chunks
+   * @param {Array<DBOp<any>>} what
+   * @param {number} chunkSize
+   * @returns {Iterator<string>}
+   */
   public* splitOps(what: Array<DBOp<any>>, chunkSize: number): Iterator<string> {
     let tempOps = [];
     for (const op of what) {
