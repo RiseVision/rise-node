@@ -36,7 +36,7 @@ squelPostgres.registerValueHandler(Buffer, buffer => {
 // }
 
 /**
- * DBHelper offer different methods for to get a query string from a BaseDBOp object.
+ * DBHelper offer different methods for to get a query string from a DBOp object.
  */
 @injectable()
 export class DBHelper {
