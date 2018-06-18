@@ -10,6 +10,7 @@ export const Symbols = {
     successInterceptor: Symbol('successInterceptor'),
     transactions      : Symbol('transactionsAPI'),
     transport         : Symbol('transportAPI'),
+    transportV2       : Symbol('transportV2API'),
     utils             : {
       attachPeerHeaderToResponseObject: Symbol('attachPeerHeaderToResponseObject'),
       errorHandler                    : Symbol('errorHandler'),

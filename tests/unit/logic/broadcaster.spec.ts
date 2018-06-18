@@ -5,7 +5,7 @@ import { SinonSandbox, SinonStub } from 'sinon';
 import {Symbols} from '../../../src/ioc/symbols';
 import { BroadcasterLogic, BroadcastTaskOptions } from '../../../src/logic';
 import {
-  JobsQueueStub, LoggerStub, PeersLogicStub, PeersModuleStub,
+  APIRequestStub, JobsQueueStub, LoggerStub, PeersLogicStub, PeersModuleStub,
   TransactionLogicStub, TransactionsModuleStub
 } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
@@ -178,10 +178,7 @@ describe('logic/broadcaster', () => {
     beforeEach(() => {
       params  = {};
       options = {
-        api      : 'api',
-        data     : {},
-        immediate: true,
-        method   : 'method',
+        requestHandler: new APIRequestStub(),
       };
     });
 
@@ -193,13 +190,8 @@ describe('logic/broadcaster', () => {
       expect(spy.calledOnce).to.be.true;
       expect(spy.firstCall.args.length).to.be.equal(1);
       expect(spy.firstCall.args[0]).to.be.deep.equal({
-        options: {
-          api      : 'api',
-          data     : {},
-          immediate: false,
-          method   : 'method',
-        },
-        params : {},
+        options: options,
+        params : params,
       });
     });
 
@@ -207,13 +199,8 @@ describe('logic/broadcaster', () => {
       instance.enqueue(params, options);
 
       expect(instance.queue).to.be.deep.equal([{
-        options: {
-          api      : 'api',
-          data     : {},
-          immediate: false,
-          method   : 'method',
-        },
-        params : {},
+        options: options,
+        params : params,
       }]);
     });
 
@@ -237,7 +224,7 @@ describe('logic/broadcaster', () => {
         limit    : 100,
         peers    : null,
       };
-      options      = {};
+      options      = { requestHandler: new APIRequestStub() };
       peers        = [{}, {}];
       createdPeers = [
         { string: 'first', makeRequest: sandbox.stub().resolves(), },
@@ -318,7 +305,7 @@ describe('logic/broadcaster', () => {
       expect(makeRequestCallCount).to.be.equal(peers.length);
       peers.forEach((peer, index) => {
         expect(stubs[index].makeRequest.args.length).to.be.equal(1);
-        expect(stubs[index].makeRequest.firstCall.args[0]).to.be.deep.equal(options);
+        expect(stubs[index].makeRequest.firstCall.args[0]).to.be.deep.equal(options.requestHandler);
       });
     });
 
@@ -375,12 +362,11 @@ describe('logic/broadcaster', () => {
     beforeEach(() => {
       task = {
         options: {
-          data     : {
-            transaction: 'transaction',
-          },
           immediate: true,
+          requestHandler: new APIRequestStub(),
         },
       };
+      task.options.requestHandler.stubs.getOrigOptions.returns({data: { transaction: 'transaction'}});
 
       instance.queue.push(task);
       length = instance.queue.length;

@@ -239,6 +239,7 @@ describe('AppManager', () => {
       fakeMiddleware.logClientConnections = sandbox.stub().returns('logClientConnections');
       fakeMiddleware.attachResponseHeader = sandbox.stub().returns('attachResponseHeader');
       fakeMiddleware.applyAPIAccessRules  = sandbox.stub().returns('applyAPIAccessRules');
+      fakeMiddleware.protoBuf             = sandbox.stub().returns('protoBuf');
 
       applyExpressLimitsStub  = sandbox.stub();
       compressionStub         = sandbox.stub().returns('compression');
@@ -461,9 +462,9 @@ describe('AppManager', () => {
     });
 
     // Test added to make sure this file is updated every time a new element is bound in container
-    it('should call bind exactly 86 times', async () => {
+    it('should call bind exactly 88 times', async () => {
       await instance.initAppElements();
-      expect(containerStub.bindCount).to.be.equal(87);
+      expect(containerStub.bindCount).to.be.equal(88);
     });
 
     it('should bind each API controller to its symbol', async () => {

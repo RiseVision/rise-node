@@ -48,6 +48,7 @@ import {BlocksModelStub} from './models/BlocksModelStub';
 import ByteBufferStub from './utils/ByteBufferStub';
 import RedisClientStub from './utils/RedisClientStub';
 import SocketIOStub from './utils/SocketIOStub';
+import { APIRequestStub } from './apis/requests/APIRequestStub';
 
 export {
   AccountsModelStub,
@@ -91,5 +92,6 @@ export {
   IAppStateStub,
   BroadcasterLogicStub,
   MultisignaturesModuleStub,
-  SequenceStub
+  SequenceStub,
+  APIRequestStub
 };

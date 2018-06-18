@@ -20,13 +20,13 @@ export class PeersModuleStub extends BaseStubClass implements IPeersModule {
   }
 
   @stubMethod()
-  public getByFilter(filter: PeerFilter): Promise<PeerType[]> {
+  public getByFilter(filter: PeerFilter): Promise<IPeerLogic[]> {
     return undefined;
   }
 
   @stubMethod()
   // tslint:disable-next-line max-line-length
-  public list(options: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }): Promise<{ consensus: number, peers: PeerType[] }> {
+  public list(options: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }): Promise<{ consensus: number, peers: IPeerLogic[] }> {
     return undefined;
   }
 

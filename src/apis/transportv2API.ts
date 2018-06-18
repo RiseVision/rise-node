@@ -24,7 +24,7 @@ import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
 
 @Controller('/v2/peer')
 @injectable()
-@IoCSymbol(Symbols.api.transport)
+@IoCSymbol(Symbols.api.transportV2)
 @UseBefore(ValidatePeerHeaders)
 @UseBefore(AttachPeerHeaders)
 export class TransportV2API {
