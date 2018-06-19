@@ -9,7 +9,6 @@ import { DBOp } from '../types/genericTypes';
 import { FieldsInModel } from '../types/utils';
 import { IBaseTransaction } from '../logic/transactions';
 
-
 @injectable()
 export class AccountsModule implements IAccountsModule {
 
@@ -94,27 +93,11 @@ export class AccountsModule implements IAccountsModule {
     return this.accountLogic.get({ address });
   }
 
-  public mergeAccountAndGetOPs(diff: any): Array<DBOp<any>> {
+  public mergeAccountAndGetOPs(diff: AccountDiffType): Array<DBOp<any>> {
     diff              = this.fixAndCheckInputParams(diff);
     const { address } = diff;
     delete diff.address;
     return this.accountLogic.merge(address, diff);
-  }
-
-  /**
-   * merge some data on the account
-   * @param {MemAccountsData} diff
-   * @returns {Promise<MemAccountsData>}
-   */
-
-  public async mergeAccountAndGet(diff: AccountDiffType): Promise<AccountsModel> {
-    diff = this.fixAndCheckInputParams(diff);
-
-    const { address } = diff;
-    delete diff.address;
-    const ops = this.accountLogic.merge(address, diff);
-    await this.dbHelper.performOps(ops);
-    return this.getAccount({ address });
   }
 
   /**
