@@ -10,12 +10,21 @@ import { TransactionType } from '../../../../src/helpers';
 import { Symbols } from '../../../../src/ioc/symbols';
 import { MultiSignatureTransaction } from '../../../../src/logic/transactions';
 import {
-  AccountLogicStub, AccountsModuleStub, RoundsLogicStub, SystemModuleStub,
-  TransactionLogicStub, ZSchemaStub
+  AccountLogicStub,
+  AccountsModuleStub,
+  RoundsLogicStub,
+  SystemModuleStub,
+  TransactionLogicStub,
+  ZSchemaStub
 } from '../../../stubs';
 import { createContainer } from '../../../utils/containerCreator';
-import { AccountsModel, MultiSignaturesModel } from '../../../../src/models';
-import { DBCreateOp } from '../../../../src/types/genericTypes';
+import {
+  Accounts2MultisignaturesModel,
+  Accounts2U_MultisignaturesModel,
+  AccountsModel,
+  MultiSignaturesModel, TransactionsModel
+} from '../../../../src/models';
+import { DBCreateOp, DBRemoveOp, DBUpdateOp } from '../../../../src/types/genericTypes';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -37,16 +46,23 @@ describe('logic/transactions/createmultisig', () => {
   let accountsModel: typeof AccountsModel;
   let multisigModel: typeof MultiSignaturesModel;
   let instance: MultiSignatureTransaction;
+  let accounts2MultisigModel: typeof Accounts2MultisignaturesModel;
+  let accounts2UMultisigModel: typeof Accounts2U_MultisignaturesModel;
+  let txModel: typeof TransactionsModel;
   let tx: any;
   let sender: any;
   let block: any;
   let container: Container;
 
   beforeEach(() => {
-    sandbox              = sinon.createSandbox();
-    container            = createContainer();
-    accountsModel = container.get(Symbols.models.accounts);
-    multisigModel = container.get(Symbols.models.multisignatures);
+    sandbox                 = sinon.createSandbox();
+    container               = createContainer();
+    accountsModel           = container.get(Symbols.models.accounts);
+    accounts2MultisigModel  = container.get(Symbols.models.accounts2Multisignatures);
+    accounts2UMultisigModel = container.get(Symbols.models.accounts2U_Multisignatures);
+    multisigModel           = container.get(Symbols.models.multisignatures);
+    txModel                 = container.get(Symbols.models.transactions);
+
     socketIOStub         = {
       sockets: {
         emit: sandbox.stub(),
@@ -77,15 +93,11 @@ describe('logic/transactions/createmultisig', () => {
       type           : TransactionType.MULTI,
     };
 
-    sender = {
+    sender = new accountsModel({
       address  : '1233456789012345R',
       balance  : 10000000,
       publicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
-      isMultisignature() {
-        return false;
-      },
-      applyDiffArray() {},
-    };
+    });
 
     block = {
       height: 8797,
@@ -292,29 +304,43 @@ describe('logic/transactions/createmultisig', () => {
       accountLogicStub.stubs.generateAddressByPublicKey.returns('123123124125R');
       accountsModuleStub.stubs.setAccountAndGet.resolves();
       applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
+      sandbox.stub(sender, 'applyValues');
     });
 
-    it('should call accountLogic.merge and applyDiffArray', async () => {
-      await instance.apply(tx, block, sender);
-      expect(accountLogicStub.stubs.merge.calledOnce).to.be.true;
-      expect(accountLogicStub.stubs.merge.firstCall.args[0]).to.be.equal(sender.address);
-      expect(accountLogicStub.stubs.merge.firstCall.args[1]).to.be.deep.equal({
-        blockId        : block.id,
-        multilifetime  : tx.asset.multisignature.lifetime,
-        multimin       : tx.asset.multisignature.min,
-        multisignatures: tx.asset.multisignature.keysgroup,
-        round          : 123,
+    it('should return correct ops', async () => {
+      const ops = await instance.apply(tx, block, sender);
+
+      // first op is about account
+      expect(ops[0]).deep.eq({
+        model: accountsModel,
+        options: { where: { address: sender.address }},
+        type: 'update',
+        values: {
+          blockId: block.id,
+          multilifetime: 33,
+          multimin: 2,
+        },
       });
 
-      expect(applyDiffArrayStub.called).is.true;
-      expect(applyDiffArrayStub.firstCall.args[0]).is.deep.eq('multisignatures');
-      expect(applyDiffArrayStub.firstCall.args[1]).is.deep.eq(tx.asset.multisignature.keysgroup);
-    });
+      // second op is about removing currently stored memaccounts2_multisignatures table entries
+      expect(ops[1]).deep.eq({
+        model: accounts2MultisigModel,
+        options: { where: { accountId: sender.address }},
+        type: 'remove',
+      });
 
-    it('should call roundsLogic.calcRound', async () => {
-      await instance.apply(tx, block, sender);
-      expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;
-      expect(roundsLogicStub.stubs.calcRound.firstCall.args[0]).to.be.equal(block.height);
+      for (let i = 0; i < tx.asset.multisignature.keysgroup.length; i++) {
+        const key = tx.asset.multisignature.keysgroup[i].substr(1);
+        const [first, second] = ops.slice(2 + i * 2, 2 + i * 2 + 2);
+        expect(first.type).eq('upsert');
+        expect((first as any).values).deep.eq({ address: '123123124125R', publicKey: Buffer.from(key, 'hex') });
+
+        expect(second.type).eq('create');
+        expect(second.model).deep.eq(accounts2MultisigModel);
+        expect((second as any).values).deep.eq({ accountId: sender.address, dependentId: key });
+
+      }
+
     });
 
     it('should call accountLogic.generateAddressByPublicKey for each key', async () => {
@@ -322,28 +348,23 @@ describe('logic/transactions/createmultisig', () => {
       expect(accountLogicStub.stubs.generateAddressByPublicKey.callCount).to.be.equal(tx.asset.multisignature.keysgroup.length);
       expect(accountLogicStub.stubs.generateAddressByPublicKey.firstCall.args[0]).to.be.equal(tx.asset.multisignature.keysgroup[0].substring(1));
     });
-    it('should create AccountsModel upsert operations for each key', async () => {
-      const res = await instance.apply(tx, block, sender);
-      expect(res.length).to.be.gte(2);
-      expect(res[res.length - 1].type).eq('upsert');
-      expect(res[res.length - 2].type).eq('upsert');
-      expect(res[res.length - 1].model).is.deep.eq(accountsModel);
-      expect(res[res.length - 2].model).is.deep.eq(accountsModel);
-      expect((res[res.length - 2] as DBCreateOp<any>).values).is.deep.eq({
-        address  : '123123124125R',
-        publicKey: Buffer.from(tx.asset.multisignature.keysgroup[0].substr(1), 'hex')
-      });
-      expect((res[res.length - 1] as DBCreateOp<any>).values).is.deep.eq({
-        address  : '123123124125R',
-        publicKey: Buffer.from(tx.asset.multisignature.keysgroup[1].substr(1), 'hex')
-      });
+
+    it('should manipulate sender and apply values properly', async () => {
+      sender = new accountsModel(sender);
+      await instance.apply(tx, block, sender);
+      expect(sender.multisignatures).deep.eq([
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+      ]);
+      expect(sender.multimin).deep.eq(2);
+      expect(sender.multilifetime).deep.eq(33);
     });
   });
 
   describe('undo', () => {
     let reverseSpy: SinonSpy;
     let applyDiffArrayStub: SinonStub;
-
+    let txFindOneStub: SinonStub;
     beforeEach(() => {
       accountLogicStub.stubs.merge.returns(true);
       roundsLogicStub.stubs.calcRound.returns(123);
@@ -351,6 +372,7 @@ describe('logic/transactions/createmultisig', () => {
       accountsModuleStub.stubs.setAccountAndGet.resolves();
       reverseSpy = sandbox.spy(helpers.Diff, 'reverse');
       applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
+      txFindOneStub = sandbox.stub(txModel, 'findOne').resolves(null);
     });
 
     afterEach(() => {
@@ -375,17 +397,35 @@ describe('logic/transactions/createmultisig', () => {
       expect((instance as any).unconfirmedSignatures[sender.address]).to.be.true;
     });
 
-    it('should call accountLogic.merge', async () => {
-      await instance.undo(tx, block, sender);
-      expect(accountLogicStub.stubs.merge.calledOnce).to.be.true;
-      expect(accountLogicStub.stubs.merge.firstCall.args[0]).to.be.equal(sender.address);
-      expect(accountLogicStub.stubs.merge.firstCall.args[1]).to.be.deep.equal({
-        blockId        : block.id,
-        multilifetime  : -tx.asset.multisignature.lifetime,
-        multimin       : -tx.asset.multisignature.min,
-        multisignatures: tx.asset.multisignature.keysgroup.map((a) => a.replace('+', '-')),
-        round          : 123,
+    describe('returned ops', () => {
+      let applySpy: SinonSpy;
+      beforeEach(() => {
+        applySpy = sandbox.spy(instance, 'apply');
       });
+      it('should not call apply if no prev tx', async () => {
+        txFindOneStub.resolves(null);
+        await instance.undo(tx, block, sender);
+        expect(applySpy.called).false;
+      });
+      it('should return proper ops when account was not previously multisig (no prev tx)', async () => {
+        txFindOneStub.resolves(null);
+        const ops = await instance.undo(tx, block, sender);
+        expect(ops.length).eq(2);
+
+        const firstOp: DBUpdateOp<any> = ops[0] as any;
+        const secondOp: DBRemoveOp<any> = ops[1] as any;
+        expect(firstOp.type).eq('update');
+        expect(firstOp.model).deep.eq(accountsModel);
+        expect(firstOp.options).deep.eq({where: { address: sender.address }});
+        expect(firstOp.values).deep.eq({blockId: '0', multimin: 0, multilifetime: 0 });
+
+        expect(secondOp.type).eq('remove');
+        expect(secondOp.model).deep.eq(accounts2MultisigModel);
+        expect(secondOp.options).deep.eq({where: { accountId: sender.address }});
+
+
+
+      })
     });
 
     it('should call roundsLogic.calcRound', async () => {
