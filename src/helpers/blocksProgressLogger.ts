@@ -1,16 +1,25 @@
 import { ILogger } from './index';
 
+/**
+ * Class used for to log the applied transactions
+ */
 export class BlockProgressLogger {
   private target: number;
   private step: number;
   private applied: number = 0;
 
+  /**
+   * Class constructor
+   */
   constructor(txCount: number, logsFrequency: number, private msg: string, private logger: ILogger) {
     this.target = txCount;
     this.step   = Math.floor(txCount / logsFrequency);
 
   }
 
+  /**
+   * Reset the applied transaction to zero
+   */
   public reset() {
     this.applied = 0;
   }
