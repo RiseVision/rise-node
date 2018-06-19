@@ -282,14 +282,13 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     const multisignatures = (sender.multisignatures || sender.u_multisignatures || []).slice();
-    if (multisignatures.length === 0) {
-      if (tx.asset && tx.asset.multisignature && tx.asset.multisignature.keysgroup) {
-        for (const key of tx.asset.multisignature.keysgroup) {
-          if (!key || typeof key !== 'string') {
-            throw new Error('Invalid member in keysgroup');
-          }
-          multisignatures.push(key.slice(1));
+
+    if (tx.asset && tx.asset.multisignature && tx.asset.multisignature.keysgroup) {
+      for (const key of tx.asset.multisignature.keysgroup) {
+        if (!key || typeof key !== 'string') {
+          throw new Error('Invalid member in keysgroup');
         }
+        multisignatures.push(key.slice(1));
       }
     }
 

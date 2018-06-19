@@ -280,6 +280,7 @@ export class TransportModule implements ITransportModule {
     try {
       await this.multisigModule.processSignature(signature);
     } catch (e) {
+      console.log(e.stack);
       throw new Error(`Error processing signature: ${e.message || e}`);
     }
   }

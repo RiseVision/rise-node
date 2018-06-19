@@ -208,9 +208,9 @@ describe('logic/transactions/createmultisig', () => {
       await expect(instance.verify(tx, sender)).to.be.rejectedWith(/Invalid multisignature lifetime./);
     });
 
-    it('should throw when account has multisig enabled', async () => {
+    it('should not throw when account has multisig enabled', async () => {
       sender.multisignatures = ['senderSig1', 'senderSig2'];
-      await expect(instance.verify(tx, sender)).to.be.rejectedWith('Account already has multisignatures enabled');
+      await instance.verify(tx, sender);
     });
 
     it('should throw when recipientId is invalid', async () => {
@@ -458,16 +458,41 @@ describe('logic/transactions/createmultisig', () => {
       expect((instance as any).unconfirmedSignatures[sender.address]).to.be.undefined;
     });
 
-    it('should call accountLogic.merge', async () => {
-      await instance.undoUnconfirmed(tx, sender);
-      expect(accountLogicStub.stubs.merge.calledOnce).to.be.true;
-      expect(accountLogicStub.stubs.merge.firstCall.args[0]).to.be.equal(sender.address);
-      expect(accountLogicStub.stubs.merge.firstCall.args[1]).to.be.deep.equal({
-        u_multilifetime  : -tx.asset.multisignature.lifetime,
-        u_multimin       : -tx.asset.multisignature.min,
-        u_multisignatures: tx.asset.multisignature.keysgroup.map((a) => a.replace('+', '-')),
+    it('should return correct data if prev state was no multisig', async () => {
+      const ops = await instance.undoUnconfirmed(tx, sender);
+      expect(ops[0].type).eq('remove');
+      expect((ops[0] as any).options).deep.eq({where: {accountId: sender.address}});
+
+      expect(ops[1].type).eq('update');
+      expect((ops[1] as any).options).deep.eq({where: { address: sender.address }});
+      expect((ops[1] as any).values).deep.eq({
+        u_multilifetime: { col: 'multilifetime'},
+        u_multimin: { col: 'multimin'},
       });
+
+      expect(ops.length).eq(2);
     });
+
+    it('should return correct ops if account was multisig', async () => {
+      sender.multisignatures = ['aa', 'bb'];
+      const ops = await instance.undoUnconfirmed(tx, sender);
+      expect(ops[0].type).eq('remove');
+      expect((ops[0] as any).options).deep.eq({where: {accountId: sender.address}});
+
+      expect(ops[1].type).eq('upsert');
+      expect((ops[1] as any).values).deep.eq( {accountId: sender.address, dependentId: 'aa'});
+      expect(ops[2].type).eq('upsert');
+      expect((ops[2] as any).values).deep.eq( {accountId: sender.address, dependentId: 'bb'});
+
+      expect(ops[3].type).eq('update');
+      expect((ops[3] as any).options).deep.eq({where: { address: sender.address }});
+      expect((ops[3] as any).values).deep.eq({
+        u_multilifetime: { col: 'multilifetime'},
+        u_multimin: { col: 'multimin'},
+      });
+
+      expect(ops.length).eq(4);
+    })
   });
 
   describe('objectNormalize', () => {
@@ -574,4 +599,5 @@ describe('logic/transactions/createmultisig', () => {
       expect(instance.ready(tx, sender)).to.be.false;
     });
   });
+
 });

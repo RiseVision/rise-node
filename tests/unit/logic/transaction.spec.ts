@@ -672,23 +672,22 @@ describe('logic/transaction', () => {
         .to.be.rejectedWith('Failed to verify multisignature');
     });
 
-    it('should throw Failed to verify multisignature if verifySignature() is skipped', async () => {
+    it('should throw Failed to verify multisignature if verifySignature() is fails', async () => {
       sender.multisignatures  = ['aa'];
       sender.isMultisignature = () => true;
       tx.signatures = ['a', 'b'];
       tx.requesterPublicKey          = Buffer.from('aa', 'hex');
       tx.asset.multisignature = {
         keysgroup: [
-          'xyz',
-          'def',
+          '+yz',
+          '+ef',
         ],
       };
-      verifySignatureStub.returns(true);
-      verifySignatureStub.onCall(2).returns(false);
-
+      verifySignatureStub.returns(false);
+      verifySignatureStub.onCall(0).returns(true);
+      verifySignatureStub.onCall(2).returns(true);
       await expect(instance.verify(tx, sender, requester, 1))
         .to.be.rejectedWith('Failed to verify multisignature');
-
     });
 
     it('should call verifySignature if tx.signatures not empty', async () => {

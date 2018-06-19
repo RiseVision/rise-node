@@ -44,10 +44,11 @@ export const createSendTransaction = (from: LiskWallet, recipient: string, fee: 
   const t = new dposOffline.transactions.SendTx()
     .withTimestamp(0);
   Object.keys(obj).forEach((k) => t.set(k as any, obj[k]));
-  return t
+  return from.signTransaction(
+    t
     .withFees(fee)
     .withRecipientId(recipient)
-    .sign(from);
+  );
 };
 
 export const createVoteTransaction = (from: LiskWallet, fee: number, obj: any = {}): ITransaction => {

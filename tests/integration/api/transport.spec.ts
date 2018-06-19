@@ -310,6 +310,7 @@ describe('api/transport', () => {
       // add 2 out of 3 signatures.
       const sigs = [];
       for (let i = 0; i < multisigKeys.length; i++) {
+        console.log(i);
         const signature = ed.sign(
           txLogic.getHash(toBufferedTransaction(tx), false, false),
           {
@@ -329,7 +330,7 @@ describe('api/transport', () => {
           .expect(200, {success: true});
 
         sigs.push(signature.toString('hex'));
-        await supertest(initializer.appManager.expressApp)
+        const {body} = await supertest(initializer.appManager.expressApp)
           .get('/peer/signatures')
           .set(headers)
           .expect(200, {
@@ -339,6 +340,7 @@ describe('api/transport', () => {
               transaction: tx.id
             }],
           });
+        console.log(body);
       }
       // all signatures.
       await supertest(initializer.appManager.expressApp)
@@ -352,7 +354,10 @@ describe('api/transport', () => {
         });
 
       await initializer.rawMineBlocks(1);
-      
+
+
+      console.log('ciao');
+      console.log(blocksModule.lastBlock.transactions);
       // After block is mined no more sigs are here.
       await supertest(initializer.appManager.expressApp)
         .get('/peer/signatures')

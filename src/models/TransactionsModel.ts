@@ -8,7 +8,7 @@ import { IBlocksModule } from '../ioc/interfaces/index';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 
-const fields                 = ['id', 'rowId', 'blockId', 'height', 'type', 'timestamp', 'senderPublicKey', 'senderId', 'recipientId', 'amount', 'fee', 'signature', 'signSignature', 'requesterPublicKey'];
+const fields                 = ['id', 'rowId', 'blockId', 'height', 'type', 'timestamp', 'senderPublicKey', 'senderId', 'recipientId', 'amount', 'fee', 'signature', 'signSignature', 'requesterPublicKey', 'signatures'];
 const buildArrayArgAttribute = function (table: string, what: string, alias?: string): any {
   return [sequelize.literal(`(SELECT "${what}" FROM ${table} WHERE "transactionId" = "TransactionsModel"."id")`), alias || what];
 };

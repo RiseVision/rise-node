@@ -83,7 +83,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    */
   public async deleteLastBlock(): Promise<BlocksModel> {
     const lastBlock = this.blocksModule.lastBlock;
-    this.logger.warn('Deleting last block', lastBlock);
+    this.logger.warn('Deleting last block', { id: lastBlock.id, height: lastBlock.height });
 
     if (lastBlock.height === 1) {
       throw new Error('Cannot delete genesis block');
