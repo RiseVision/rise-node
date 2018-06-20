@@ -164,22 +164,6 @@ describe('modules/multisignatures', () => {
       expect(sequenceStub.spies.addAndPromise.firstCall.args[0]).to.be.a('function');
     });
 
-    it('should call transactionsModule.getMultisignatureTransaction (in worker)', async () => {
-      await instance.processSignature({ signature, transaction: tx.id });
-      expect(transactionsModuleStub.stubs.getMultisignatureTransaction.calledTwice).to.be.true;
-      expect(transactionsModuleStub.stubs.getMultisignatureTransaction.secondCall.args[0]).to.be.deep.equal(tx.id);
-    });
-
-    it('should throw if transactionsModule.getMultisignatureTransaction returns falsey (in worker)', async () => {
-      transactionsModuleStub.reset();
-      transactionsModuleStub.stubs.getMultisignatureTransaction.onCall(0).resolves(tx);
-      transactionsModuleStub.stubs.getMultisignatureTransaction.onCall(1).returns(false);
-      await expect(instance.processSignature({
-        signature,
-        transaction: tx.id,
-      })).to.be.rejectedWith('Transaction not found');
-    });
-
     it('should call accountsModule.getAccount (in worker)', async () => {
       await instance.processSignature({ signature, transaction: tx.id });
       expect(accountsModuleStub.stubs.getAccount.calledOnce).to.be.true;
@@ -218,21 +202,9 @@ describe('modules/multisignatures', () => {
       sender.multisignatures = [existingSigner];
     });
 
-    it('should call accountsModule.getAccount', async () => {
-      await (instance as any).processNormalTxSignature(tx, signature);
-      expect(accountsModuleStub.stubs.getAccount.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({ address: tx.senderId });
-    });
-
-    it('should throw if accountsModule.getAccount returns falsey', async () => {
-      accountsModuleStub.stubs.getAccount.resolves(false);
-      await expect((instance as any).processNormalTxSignature(tx, signature)).to.be
-        .rejectedWith('Multisignature account not found');
-    });
-
     it('should add the senderPublicKey to tx.multisignatures if tx.requesterPublicKey', async () => {
       tx.requesterPublicKey = Buffer.from('pubkey');
-      await (instance as any).processNormalTxSignature(tx, signature);
+      await (instance as any).processNormalTxSignature(tx, signature, sender);
       expect(Array.isArray(sender.multisignatures)).to.be.true;
       expect(sender.multisignatures.length).to.be.equal(2);
       expect(sender.multisignatures[0]).to.be.equal(existingSigner);
@@ -241,7 +213,7 @@ describe('modules/multisignatures', () => {
 
     it('should throw if passed signature is already in tx.signatures', async () => {
       tx.signatures = [signature];
-      await expect((instance as any).processNormalTxSignature(tx, signature)).to.be
+      await expect((instance as any).processNormalTxSignature(tx, signature, sender)).to.be
         .rejectedWith('Signature already exists');
     });
 
@@ -253,7 +225,7 @@ describe('modules/multisignatures', () => {
       transactionLogicStub.stubs.verifySignature.onCall(1).returns(false);
       transactionLogicStub.stubs.verifySignature.onCall(2).returns(true);
       sender.multisignatures = ['aa', 'bb']; // tx.senderPublicKey is added...
-      await (instance as any).processNormalTxSignature(tx, signature);
+      await (instance as any).processNormalTxSignature(tx, signature, sender);
       expect(transactionLogicStub.stubs.verifySignature.callCount).to.be.equal(3);
       expect(transactionLogicStub.stubs.verifySignature.getCall(0).args[0]).to.be.deep.equal(tx);
       expect(transactionLogicStub.stubs.verifySignature.getCall(0).args[1]).to.be.deep.equal(Buffer.from(sender.multisignatures[0], 'hex'));
@@ -271,12 +243,12 @@ describe('modules/multisignatures', () => {
       transactionLogicStub.stubs.verifySignature.onCall(0).returns(false);
       transactionLogicStub.stubs.verifySignature.onCall(1).returns(false);
       sender.multisignatures = ['doesnotVerify1', 'doesnotVerify2'];
-      await expect((instance as any).processNormalTxSignature(tx, signature)).to.be
+      await expect((instance as any).processNormalTxSignature(tx, signature, sender)).to.be
         .rejectedWith('Failed to verify signature');
     });
 
     it('should call call io.sockets.emit', async () => {
-      await (instance as any).processNormalTxSignature(tx, signature);
+      await (instance as any).processNormalTxSignature(tx, signature, sender);
       expect(socketIOStub.sockets.emit.calledOnce).to.be.true;
       expect(socketIOStub.sockets.emit.firstCall.args[0]).to.be.equal('multisignatures/signature/change');
       expect(socketIOStub.sockets.emit.firstCall.args[1]).to.be.deep.equal(tx);
@@ -291,13 +263,13 @@ describe('modules/multisignatures', () => {
 
     it('should throw if tx already has the multisignature.signatures asset', async () => {
       tx.asset.multisignature.signatures = [];
-      await expect((instance as any).processMultiSigSignature(tx, signature)).to.be
+      await expect((instance as any).processMultiSigSignature(tx, signature, sender)).to.be
         .rejectedWith('Permission to sign transaction denied');
     });
 
     it('should throw if tx.signatures already contains the passed signature', async () => {
       tx.signatures = [signature];
-      await expect((instance as any).processMultiSigSignature(tx, signature)).to.be
+      await expect((instance as any).processMultiSigSignature(tx, signature, sender)).to.be
         .rejectedWith('Permission to sign transaction denied');
     });
 
@@ -307,7 +279,7 @@ describe('modules/multisignatures', () => {
       transactionLogicStub.stubs.verifySignature.onCall(0).returns(false);
       transactionLogicStub.stubs.verifySignature.onCall(1).returns(true);
       tx.asset.multisignature.keysgroup = ['+aa', '+bb'];
-      await (instance as any).processMultiSigSignature(tx, signature);
+      await (instance as any).processMultiSigSignature(tx, signature, sender);
       expect(transactionLogicStub.stubs.verifySignature.callCount).to.be.equal(2);
       expect(transactionLogicStub.stubs.verifySignature.getCall(0).args[0]).to.be.deep.equal(tx);
       expect(transactionLogicStub.stubs.verifySignature.getCall(0).args[1]).to.be.deep
@@ -323,8 +295,9 @@ describe('modules/multisignatures', () => {
       transactionLogicStub.reset();
       transactionLogicStub.stubs.verifySignature.onCall(0).returns(false);
       transactionLogicStub.stubs.verifySignature.onCall(1).returns(false);
-      tx.asset.multisignature.keysgroup = ['doesnotVerify1', 'doesnotVerify2'];
-      await expect((instance as any).processMultiSigSignature(tx, signature)).to.be
+      sender.isMultisignature = () => false;
+      tx.asset.multisignature.keysgroup = ['+aa', '+bb'];
+      await expect((instance as any).processMultiSigSignature(tx, signature, sender)).to.be
         .rejectedWith('Failed to verify signature');
     });
   });

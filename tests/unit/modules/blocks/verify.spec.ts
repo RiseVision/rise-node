@@ -4,13 +4,13 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import { Ed, ForkType, Slots } from '../../../../src/helpers';
 import { IBlocksModuleVerify } from '../../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../../src/ioc/symbols';
 import { BlockLogic, BlockRewardLogic, SignedBlockType } from '../../../../src/logic';
 import { BlocksModuleVerify } from '../../../../src/modules/blocks/';
 import { BlocksSubmoduleChainStub, DelegatesModuleStub, SlotsStub, TransactionsModuleStub } from '../../../stubs';
-import DbStub from '../../../stubs/helpers/DbStub';
 import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
 import BlockRewardLogicStub from '../../../stubs/logic/BlockRewardLogicStub';
 import TransactionLogicStub from '../../../stubs/logic/TransactionLogicStub';
@@ -21,7 +21,6 @@ import { createContainer } from '../../../utils/containerCreator';
 
 import { createFakeBlock } from '../../../utils/blockCrafter';
 import { createRandomTransactions, toBufferedTransaction } from '../../../utils/txCrafter';
-import { SinonSandbox, SinonStub } from 'sinon';
 import { AccountsModel, BlocksModel } from '../../../../src/models';
 
 chai.use(chaiAsPromised);
@@ -398,18 +397,21 @@ describe('modules/blocks/verify', () => {
         blocksChain.enqueueResponse('applyBlock', Promise.resolve());
 
         txLogic.stubs.getId.callsFake((t) => t.id);
-        accountsModule.stubs.getAccount.resolves({});
         txLogic.stubs.verify.resolves();
-
+        txLogic.stubs.ready.returns(true);
       });
+      it('should call ready for each tx and throw if one of them is not (ready)', async () => {
+        txLogic.stubs.ready.onCall(13).returns(false);
+        await expect(inst.processBlock(null, true, true))
+          .rejectedWith(`Transaction ${txs[13].id} is not ready`);
 
-      // it('should assertNonConfirmed for all txs', async () => {
-      //   await inst.processBlock(null, true, true);
-      //   expect(txLogic.stubs.assertNonConfirmed.callCount).to.be.eq(txs.length);
-      //   for (let i = 0; i < txs.length; i++) {
-      //     expect(txLogic.stubs.assertNonConfirmed.getCall(i).args[0]).to.be.deep.eq(txs[i]);
-      //   }
-      // });
+        // check calls!
+        expect(txLogic.stubs.ready.callCount).eq(10 + 4);
+        for (let i = 0; i < txs.length; i++) {
+          expect(txLogic.stubs.ready.getCall(i).args[0]).deep.eq(txs[i]);
+          expect(txLogic.stubs.ready.getCall(i).args[1].address).deep.eq(txs[i].senderId);
+        }
+      });
       it('should call resolveAccountsForTransactions with all txs in block', async () => {
         await inst.processBlock(null, true, true);
         expect(accountsModule.stubs.resolveAccountsForTransactions.callCount).to.be.eq(1);

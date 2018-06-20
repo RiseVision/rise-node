@@ -109,7 +109,6 @@ export class MultisignaturesModule implements IMultisignaturesModule {
       throw new Error('Permission to sign transaction denied');
     }
     let verify    = false;
-    console.log(tx);
     const allKeys = tx.asset.multisignature.keysgroup
       // add wannabe multisig member keys
       .map((k) => k.substring(1))

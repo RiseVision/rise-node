@@ -169,7 +169,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         throw new Error('Invalid math operator in multisignature keysgroup');
       }
 
-      if (!this.schema.validate(pubKey, {format: 'publicKey'})) {
+      if (!this.schema.validate(pubKey, { format: 'publicKey' })) {
         throw new Error('Invalid publicKey in multisignature keysgroup');
       }
     }
@@ -180,33 +180,46 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     }
   }
 
-  public async apply(tx: IConfirmedTransaction<MultisigAsset>,
-                     block: SignedBlockType,
-                     sender: AccountsModel): Promise<Array<DBOp<any>>> {
-    delete this.unconfirmedSignatures[sender.address];
-    sender.multisignatures = [];
-    sender.applyDiffArray('multisignatures', tx.asset.multisignature.keysgroup);
-    sender.applyValues({ multimin: tx.asset.multisignature.min, multilifetime: tx.asset.multisignature.lifetime });
+  private calcOps(type: 'confirmed' | 'unconfirmed', asset: MultisigAsset, blockId: string, sender: AccountsModel): Array<DBOp<any>> {
+    if (type === 'confirmed') {
+      sender.multisignatures = [];
+      sender.applyDiffArray('multisignatures', asset.multisignature.keysgroup);
+      sender.applyValues({ multimin: asset.multisignature.min, multilifetime: asset.multisignature.lifetime });
+    } else {
+      sender.u_multisignatures = [];
+      sender.applyDiffArray('u_multisignatures', asset.multisignature.keysgroup);
+      sender.applyValues({ u_multimin: asset.multisignature.min, u_multilifetime: asset.multisignature.lifetime });
+    }
+
     const ops: Array<DBOp<any>> = [];
+    let updateValue: any;
+    if (type === 'unconfirmed') {
+      updateValue = {
+        u_multilifetime: asset.multisignature.lifetime,
+        u_multimin     : asset.multisignature.min,
+      };
+    } else {
+      updateValue = {
+        blockId,
+        multilifetime: asset.multisignature.lifetime,
+        multimin     : asset.multisignature.min,
+      };
+    }
     ops.push({
       model  : this.AccountsModel,
       options: { where: { address: sender.address } },
       type   : 'update',
-      values : {
-        blockId      : block.id,
-        multilifetime: tx.asset.multisignature.lifetime,
-        multimin     : tx.asset.multisignature.min,
-      },
+      values : updateValue,
     });
     ops.push({
-      model  : this.Accounts2MultisignaturesModel,
+      model  : type === 'confirmed' ? this.Accounts2MultisignaturesModel : this.Accounts2UMultisignaturesModel,
       options: { where: { accountId: sender.address } },
       type   : 'remove',
     });
 
     // insert new entries to accounts2MultisignaturesModel
     // Generate accounts
-    for (const key of tx.asset.multisignature.keysgroup) {
+    for (const key of asset.multisignature.keysgroup) {
       // index 0 has "+" or "-"
       const realKey = key.substr(1);
       const address = this.accountLogic.generateAddressByPublicKey(realKey);
@@ -220,7 +233,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
           },
         },
         {
-          model : this.Accounts2MultisignaturesModel,
+          model : type === 'confirmed' ? this.Accounts2MultisignaturesModel : this.Accounts2UMultisignaturesModel,
           type  : 'create',
           values: {
             accountId  : sender.address,
@@ -232,32 +245,38 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     return ops;
   }
 
+  public async apply(tx: IConfirmedTransaction<MultisigAsset>,
+                     block: SignedBlockType,
+                     sender: AccountsModel): Promise<Array<DBOp<any>>> {
+    delete this.unconfirmedSignatures[sender.address];
+    return this.calcOps('confirmed', tx.asset, block.id, sender);
+  }
+
   public async undo(tx: IConfirmedTransaction<MultisigAsset>,
                     block: SignedBlockType,
                     sender: AccountsModel): Promise<Array<DBOp<any>>> {
     // to restore to the previous state we try to fetch the previous multisig transaction
     // if there is any then we apply that tx after rollbacking. otherwise we reset to 0 all the fields.
-    const ops: Array<DBOp<any>> = [];
     // seek for prev txs for such account.
-    let prevTX = await this.TransactionsModel.findOne({
+    const prevTX = await this.TransactionsModel.findOne({
       limit: 1,
       order: [['height', 'DESC']],
       where: {
-        id      : {[Op.ne]: tx.id},
+        id      : { [Op.ne]: tx.id },
         senderId: sender.address,
         type    : TransactionType.MULTI,
       },
     });
+    let asset: MultisigAsset;
     // If no previous tx then we create a "fake" resetting tx and we call apply that will reset
     // the account state given that the asset values are all empty.
     if (!prevTX) {
-      prevTX = { asset: { multisignature: { min: 0, lifetime: 0, keysgroup: [] } } } as any;
+      asset = { multisignature: { min: 0, lifetime: 0, keysgroup: [] } };
+    } else {
+      asset = prevTX.asset;
     }
-    sender.multisignatures = [];
-    ops.push(... await this.apply(prevTX, {...block, id: '0'}, sender));
-
     this.unconfirmedSignatures[sender.address] = true;
-    return ops;
+    return this.calcOps('confirmed', asset, '0', sender);
   }
 
   public async applyUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: any): Promise<Array<DBOp<any>>> {
@@ -265,54 +284,14 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
       throw new Error('Signature on this account is pending confirmation');
     }
     this.unconfirmedSignatures[sender.address] = true;
-    sender.applyDiffArray('u_multisignatures', tx.asset.multisignature.keysgroup);
-    const ops: Array<DBOp<any>> = [];
-    ops.push({
-      model  : this.AccountsModel,
-      options: {where: {address: sender.address}},
-      type   : 'update',
-      values : {
-        u_multilifetime: tx.asset.multisignature.lifetime,
-        u_multimin     : tx.asset.multisignature.min,
-      },
-    });
-    // Remove current values from unconfirmed mutlisignature table (has an effect only if this was already a multisig account)
-    ops.push({
-      model  : this.Accounts2UMultisignaturesModel,
-      options: {where: {accountId: sender.address}},
-      type   : 'remove',
-    });
-    // Generate accounts
-    for (const key of tx.asset.multisignature.keysgroup) {
-      // index 0 has "+" or "-"
-      const realKey = key.substr(1);
-      const address = this.accountLogic.generateAddressByPublicKey(realKey);
-      ops.push(
-        {
-          model : this.AccountsModel,
-          type  : 'upsert',
-          values: {
-            address,
-            publicKey: Buffer.from(realKey, 'hex'),
-          },
-        },
-        {
-          model : this.Accounts2UMultisignaturesModel,
-          type  : 'upsert',
-          values: {
-            accountId  : sender.address,
-            dependentId: realKey,
-          },
-        });
-
-    }
-    return ops;
+    return this.calcOps('unconfirmed', tx.asset, null, sender);
   }
 
   public async undoUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
-    const multiInvert = Diff.reverse(tx.asset.multisignature.keysgroup);
     delete this.unconfirmedSignatures[sender.address];
-    sender.applyDiffArray('u_multisignatures', multiInvert);
+    sender.u_multisignatures = (sender.multisignatures || []).slice();
+    sender.u_multimin = sender.multimin;
+    sender.u_multilifetime = sender.multilifetime;
     // Copy confirmed values over as most of the heavy lifting is done there.
 
     return [
@@ -320,7 +299,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
       {
         model  : this.Accounts2UMultisignaturesModel,
         type   : 'remove',
-        options: {where: {accountId: sender.address}},
+        options: { where: { accountId: sender.address } },
       },
       // copy confirmed values from 2_multisignatures to 2u_multisignatures.
       ... (sender.multisignatures || []).map((k) => ({
@@ -334,7 +313,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
       //
       {
         model  : this.AccountsModel,
-        options: {where: {address: tx.senderId}},
+        options: { where: { address: tx.senderId } },
         type   : 'update',
         values : {
           u_multilifetime: sequelize.col('multilifetime'),
@@ -368,7 +347,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         multisignature.keysgroup = raw.m_keysgroup.split(',');
       }
 
-      return {multisignature};
+      return { multisignature };
     }
   }
 

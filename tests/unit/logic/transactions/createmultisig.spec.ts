@@ -4,8 +4,7 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
-import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
-import * as helpers from '../../../../src/helpers';
+import { SinonSandbox, SinonStub } from 'sinon';
 import { TransactionType } from '../../../../src/helpers';
 import { Symbols } from '../../../../src/ioc/symbols';
 import { MultiSignatureTransaction } from '../../../../src/logic/transactions';
@@ -22,9 +21,10 @@ import {
   Accounts2MultisignaturesModel,
   Accounts2U_MultisignaturesModel,
   AccountsModel,
-  MultiSignaturesModel, TransactionsModel
+  MultiSignaturesModel,
+  TransactionsModel
 } from '../../../../src/models';
-import { DBCreateOp, DBRemoveOp, DBUpdateOp } from '../../../../src/types/genericTypes';
+import { DBCreateOp, DBRemoveOp, DBUpdateOp, DBUpsertOp } from '../../../../src/types/genericTypes';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -311,26 +311,18 @@ describe('logic/transactions/createmultisig', () => {
       const ops = await instance.apply(tx, block, sender);
 
       // first op is about account
-      expect(ops[0]).deep.eq({
-        model: accountsModel,
-        options: { where: { address: sender.address }},
-        type: 'update',
-        values: {
-          blockId: block.id,
-          multilifetime: 33,
-          multimin: 2,
-        },
-      });
+      expect(ops[0].type).eq('update');
+      expect(ops[0].model).deep.eq(accountsModel);
+      expect((ops[0] as any).values).deep.eq({ blockId: block.id, multilifetime: 33, multimin: 2 });
+      expect((ops[0] as any).options).deep.eq({ where: { address: sender.address } });
 
       // second op is about removing currently stored memaccounts2_multisignatures table entries
-      expect(ops[1]).deep.eq({
-        model: accounts2MultisigModel,
-        options: { where: { accountId: sender.address }},
-        type: 'remove',
-      });
+      expect(ops[1].type).eq('remove');
+      expect(ops[1].model).deep.eq(accounts2MultisigModel);
+      expect((ops[1] as any).options).deep.eq({ where: { accountId: sender.address } });
 
       for (let i = 0; i < tx.asset.multisignature.keysgroup.length; i++) {
-        const key = tx.asset.multisignature.keysgroup[i].substr(1);
+        const key             = tx.asset.multisignature.keysgroup[i].substr(1);
         const [first, second] = ops.slice(2 + i * 2, 2 + i * 2 + 2);
         expect(first.type).eq('upsert');
         expect((first as any).values).deep.eq({ address: '123123124125R', publicKey: Buffer.from(key, 'hex') });
@@ -340,7 +332,6 @@ describe('logic/transactions/createmultisig', () => {
         expect((second as any).values).deep.eq({ accountId: sender.address, dependentId: key });
 
       }
-
     });
 
     it('should call accountLogic.generateAddressByPublicKey for each key', async () => {
@@ -362,7 +353,6 @@ describe('logic/transactions/createmultisig', () => {
   });
 
   describe('undo', () => {
-    let reverseSpy: SinonSpy;
     let applyDiffArrayStub: SinonStub;
     let txFindOneStub: SinonStub;
     beforeEach(() => {
@@ -370,26 +360,8 @@ describe('logic/transactions/createmultisig', () => {
       roundsLogicStub.stubs.calcRound.returns(123);
       accountLogicStub.stubs.generateAddressByPublicKey.returns('123123124125R');
       accountsModuleStub.stubs.setAccountAndGet.resolves();
-      reverseSpy = sandbox.spy(helpers.Diff, 'reverse');
       applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
       txFindOneStub = sandbox.stub(txModel, 'findOne').resolves(null);
-    });
-
-    afterEach(() => {
-      reverseSpy.restore();
-    });
-
-    it('should call Diff.reverse', async () => {
-      await instance.undo(tx, block, sender);
-      expect(reverseSpy.calledOnce).to.be.true;
-      expect(reverseSpy.firstCall.args[0]).to.be.equalTo(tx.asset.multisignature.keysgroup);
-    });
-
-    it('should call applyDiffArray over sender with correct reversed input', async () => {
-      await instance.undo(tx, block, sender);
-      expect(applyDiffArrayStub.called).is.true;
-      expect(applyDiffArrayStub.firstCall.args[0]).eq('multisignatures');
-      expect(applyDiffArrayStub.firstCall.args[1]).deep.eq(reverseSpy.firstCall.returnValue);
     });
 
     it('should set unconfirmedSignatures[sender.address] to true', async () => {
@@ -398,15 +370,7 @@ describe('logic/transactions/createmultisig', () => {
     });
 
     describe('returned ops', () => {
-      let applySpy: SinonSpy;
-      beforeEach(() => {
-        applySpy = sandbox.spy(instance, 'apply');
-      });
-      it('should not call apply if no prev tx', async () => {
-        txFindOneStub.resolves(null);
-        await instance.undo(tx, block, sender);
-        expect(applySpy.called).false;
-      });
+
       it('should return proper ops when account was not previously multisig (no prev tx)', async () => {
         txFindOneStub.resolves(null);
         const ops = await instance.undo(tx, block, sender);
@@ -422,24 +386,62 @@ describe('logic/transactions/createmultisig', () => {
         expect(secondOp.type).eq('remove');
         expect(secondOp.model).deep.eq(accounts2MultisigModel);
         expect(secondOp.options).deep.eq({where: { accountId: sender.address }});
+      });
+      it('should return proper ops when account was previously multisig (prevtx)', async () => {
+        txFindOneStub.resolves({ asset: { multisignature: { min: 10, lifetime: 20, keysgroup: ['+aaaa', '+bbbb'] } } });
+        const ops = await instance.undo(tx, block, sender);
+        expect(ops.length).eq(2 + 2 * 2);
 
+        const firstOp: DBUpdateOp<any> = ops[0] as any;
 
+        expect(firstOp.type).eq('update');
+        expect(firstOp.model).deep.eq(accountsModel);
+        expect(firstOp.options).deep.eq({where: { address: sender.address }});
+        expect(firstOp.values).deep.eq({blockId: '0', multimin: 10, multilifetime: 20 });
 
-      })
+        const secondOp: DBRemoveOp<any> = ops[1] as any;
+        expect(secondOp.type).eq('remove');
+        expect(secondOp.model).deep.eq(accounts2MultisigModel);
+        expect(secondOp.options).deep.eq({where: { accountId: sender.address }});
+
+        for (let i = 0; i < 2; i++) {
+          const op1: DBUpsertOp<any> = ops[2 + 2 * i] as any;
+          const op2: DBCreateOp<any> = ops[2 + 2 * i + 1] as any;
+          const pk                   = i === 0 ? 'aaaa' : 'bbbb';
+          expect(op1.type).eq('upsert');
+          expect(op1.model).deep.eq(accountsModel);
+          expect(op1.values).deep.eq({ address: '123123124125R', publicKey: Buffer.from(pk, 'hex') });
+
+          expect(op2.type).eq('create');
+          expect(op2.model).deep.eq(accounts2MultisigModel);
+          expect(op2.values).deep.eq({ accountId: sender.address, dependentId: pk });
+        }
+      });
     });
 
-    it('should call roundsLogic.calcRound', async () => {
+    it('should update sender object properly', async () => {
+      sender = new AccountsModel(sender);
       await instance.undo(tx, block, sender);
-      expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;
-      expect(roundsLogicStub.stubs.calcRound.firstCall.args[0]).to.be.equal(block.height);
+      expect(sender.isMultisignature()).false;
+      expect(sender.multisignatures).deep.eq([]);
+      expect(sender.multimin).deep.eq(0);
+      expect(sender.multilifetime).deep.eq(0);
+    });
+    it('should update sender obj properly if rollback to prev multisig state', async () => {
+      sender = new AccountsModel(sender);
+      txFindOneStub.resolves({ asset: { multisignature: { min: 10, lifetime: 20, keysgroup: ['+aaaa', '+bbbb'] } } });
+      await instance.undo(tx, block, sender);
+      expect(sender.isMultisignature()).true;
+      expect(sender.multisignatures).deep.eq(['aaaa', 'bbbb']);
+      expect(sender.multimin).deep.eq(10);
+      expect(sender.multilifetime).deep.eq(20);
     });
   });
 
   describe('applyUnconfirmed', () => {
-    let applyDiffArrayStub: SinonStub;
     beforeEach(() => {
       accountLogicStub.stubs.merge.returns(true);
-      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
+      accountLogicStub.stubs.generateAddressByPublicKey.returns('12345R');
     });
 
     it('should throw if signature is not confirmed yet', () => {
@@ -447,50 +449,64 @@ describe('logic/transactions/createmultisig', () => {
       expect(instance.applyUnconfirmed(tx, sender)).to.be.rejectedWith('Signature on this account is pending confirmation');
     });
 
-    it('should call sender.applyDiffArray with proper data', async () => {
+    it('should update sender object properly', async () => {
       await instance.applyUnconfirmed(tx, sender);
-      expect(applyDiffArrayStub.called).is.true;
-      expect(applyDiffArrayStub.firstCall.args[0]).eq('u_multisignatures');
-      expect(applyDiffArrayStub.firstCall.args[1]).deep.eq(tx.asset.multisignature.keysgroup);
+      expect(sender.u_multisignatures).deep.eq([
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+      ]);
+      expect(sender.u_multimin).deep.eq(2);
+      expect(sender.u_multilifetime).deep.eq(33);
     });
+    it('should return proper ops', async () => {
+      const ops = await instance.applyUnconfirmed(tx, sender);
 
-    it('should call accountLogic.merge', async () => {
-      await instance.applyUnconfirmed(tx, sender);
-      expect(accountLogicStub.stubs.merge.calledOnce).to.be.true;
-      expect(accountLogicStub.stubs.merge.firstCall.args[0]).to.be.equal(sender.address);
-      expect(accountLogicStub.stubs.merge.firstCall.args[1]).to.be.deep.equal({
-        u_multilifetime  : tx.asset.multisignature.lifetime,
-        u_multimin       : tx.asset.multisignature.min,
-        u_multisignatures: tx.asset.multisignature.keysgroup,
-      });
+      // first op is about account
+      expect(ops[0].type).eq('update');
+      expect(ops[0].model).deep.eq(accountsModel);
+      expect((ops[0] as any).values).deep.eq({u_multilifetime: 33, u_multimin: 2});
+      expect((ops[0] as any).options).deep.eq({where: { address: sender.address }});
+
+      // second op is about removing currently stored memaccounts2_multisignatures table entries
+      expect(ops[1].type).eq('remove');
+      expect(ops[1].model).deep.eq(accounts2UMultisigModel);
+      expect((ops[1] as any).options).deep.eq({ where: { accountId: sender.address } });
+
+      for (let i = 0; i < tx.asset.multisignature.keysgroup.length; i++) {
+        const key             = tx.asset.multisignature.keysgroup[i].substr(1);
+        const [first, second] = ops.slice(2 + i * 2, 2 + i * 2 + 2);
+        expect(first.type).eq('upsert');
+        expect((first as any).values).deep.eq({ address: '12345R', publicKey: Buffer.from(key, 'hex') });
+
+        expect(second.type).eq('create');
+        expect(second.model).deep.eq(accounts2UMultisigModel);
+        expect((second as any).values).deep.eq({ accountId: sender.address, dependentId: key });
+
+      }
+
     });
   });
 
   describe('undoUnconfirmed', () => {
-    let reverseSpy: SinonSpy;
-    let applyDiffArrayStub: SinonStub;
 
-    beforeEach(() => {
-      accountLogicStub.stubs.merge.returns(true);
-      reverseSpy = sandbox.spy(helpers.Diff, 'reverse');
-      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
-    });
-
-    afterEach(() => {
-      reverseSpy.restore();
-    });
-
-    it('should call Diff.reverse', async () => {
+    it('should update sender object properly', async () => {
+      sender.multimin      = 0;
+      sender.multilifetime = 0;
       await instance.undoUnconfirmed(tx, sender);
-      expect(reverseSpy.calledOnce).to.be.true;
-      expect(reverseSpy.firstCall.args[0]).to.be.equalTo(tx.asset.multisignature.keysgroup);
-    });
+      expect(sender.isMultisignature()).false;
+      expect(sender.u_multimin).eq(0);
+      expect(sender.u_multilifetime).eq(0);
+      expect(sender.u_multisignatures).deep.eq([]);
 
-    it('should call sender.applyDiffArray with proper data', async () => {
+      // if confirmed is multi
+      sender.multisignatures = ['aaaa', 'bbbb'];
+      sender.multimin        = 2;
+      sender.multilifetime   = 3;
       await instance.undoUnconfirmed(tx, sender);
-      expect(applyDiffArrayStub.called).is.true;
-      expect(applyDiffArrayStub.firstCall.args[0]).eq('u_multisignatures');
-      expect(applyDiffArrayStub.firstCall.args[1]).deep.eq(reverseSpy.firstCall.returnValue);
+      expect(sender.isMultisignature()).true;
+      expect(sender.u_multimin).eq(2);
+      expect(sender.u_multilifetime).eq(3);
+      expect(sender.u_multisignatures).deep.eq(['aaaa', 'bbbb']);
     });
 
     it('should delete unconfirmedSignatures[sender.address]', async () => {
@@ -532,7 +548,7 @@ describe('logic/transactions/createmultisig', () => {
       });
 
       expect(ops.length).eq(4);
-    })
+    });
   });
 
   describe('objectNormalize', () => {
@@ -621,13 +637,44 @@ describe('logic/transactions/createmultisig', () => {
       tx.signatures = {};
       expect(instance.ready(tx, sender)).to.be.false;
     });
+    describe('account already multisig', () => {
+      beforeEach(() => {
+        sender = new AccountsModel(sender);
+        sender.multisignatures = ['aaaa','bbbb'];
+        sender.multilifetime = 72;
+        sender.multimin = 2;
 
-    it('return false if no sender.multisignatures and signatures arrays lengths are not the same', () => {
-      sender.multisignatures = ['1', '2', '3'];
-      tx.signatures          = ['1', '2'];
-      expect(instance.ready(tx, sender)).to.be.false;
+        tx.asset.multisignature.keysgroup = ['+cc','+dd','+ee'];
+      });
+      it('should false if no 5 sigs provided', () => {
+        tx.signatures = new Array(4).fill('a');
+        expect(instance.ready(tx, sender)).false;
+        tx.signatures = new Array(5).fill('a');
+        expect(instance.ready(tx, sender)).true;
+      });
+      it('should return true if 3 sigs when keysgroup overlap', () => {
+        sender.multisignatures = ['cc', 'ee'];
+        tx.asset.multisignature.keysgroup = ['+cc', '+dd', '+ee'];
+        tx.signatures = [];
+        expect(instance.ready(tx, sender)).false;
+        tx.signatures.push('a');
+        expect(instance.ready(tx, sender)).false;
+        tx.signatures.push('a');
+        expect(instance.ready(tx, sender)).false;
+        tx.signatures.push('a');
+        expect(instance.ready(tx, sender)).true;
+      });
     });
-
+    describe('account not being multisig', () => {
+      beforeEach(() => {
+        sender = new AccountsModel(sender);
+        tx.asset.multisignature.keysgroup = ['+cc','+dd','+ee'];
+      });
+      it('should require account 3 sigs', () => {
+        tx.signatures = ['1','2','3'];
+        expect(instance.ready(tx, sender)).true;
+      })
+    });
     it('return true if no sender.multisignatures and signatures arrays lengths are the same', () => {
       // precondition is already there
       expect(instance.ready(tx, sender)).to.be.true;
