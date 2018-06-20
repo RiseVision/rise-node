@@ -48,8 +48,11 @@ export class MultisignaturesModule implements IMultisignaturesModule {
       throw new Error('Sender not found');
     }
 
+    // this looks useless but in reality due to the fact that this instance is also within the pool
+    // it will update its data.
+    transaction.signatures = transaction.signatures || [];
+
     if (transaction.type === TransactionType.MULTI) {
-      transaction.signatures = transaction.signatures || [];
       await this.processMultiSigSignature(transaction, tx.signature, sender);
     } else {
       if (!sender.isMultisignature()) {
@@ -58,9 +61,8 @@ export class MultisignaturesModule implements IMultisignaturesModule {
       // Tx is a normal tx but needs to be signed.
       await this.processNormalTxSignature(transaction, tx.signature, sender);
     }
-    // this looks useless but in reality due to the fact that this instance is also within the pool
-    // it will update its data.
-    transaction.signatures = transaction.signatures || [];
+
+    // Signature is verified so we add it to the valid signatures.
     transaction.signatures.push(tx.signature);
 
     // update readyness so that it can be inserted into pool
