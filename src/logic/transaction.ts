@@ -290,10 +290,7 @@ export class TransactionLogic implements ITransactionLogic {
         }
         multisignatures.push(key.slice(1));
       }
-    }
-
-    if (tx.requesterPublicKey) {
-      multisignatures.push(tx.requesterPublicKey.toString('hex'));
+    } else if (tx.requesterPublicKey) {
       if (sender.multisignatures.indexOf(tx.requesterPublicKey.toString('hex')) < 0) {
         throw new Error('Account does not belong to multisignature group');
       }
@@ -326,9 +323,6 @@ export class TransactionLogic implements ITransactionLogic {
       for (const sig of tx.signatures) {
         let valid = false;
         for (let s = 0; s < multisignatures.length && !valid; s++) {
-          if (tx.requesterPublicKey && multisignatures[s] === tx.requesterPublicKey.toString('hex')) {
-            continue;
-          }
           valid = this.verifySignature(
             tx,
             Buffer.from(multisignatures[s], 'hex'),
