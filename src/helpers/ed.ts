@@ -5,7 +5,14 @@ export interface IKeypair {
   privateKey: Buffer;
 }
 
+/**
+ * Useful cryptographic functions
+ */
 export class Ed {
+
+  /**
+   * Creates a key pair from a hash
+   */
   public makeKeypair(hash: Buffer): IKeypair {
     const keypair = sodium.crypto_sign_seed_keypair(hash);
 
