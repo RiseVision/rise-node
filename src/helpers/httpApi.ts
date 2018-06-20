@@ -3,6 +3,9 @@ import { AppConfig } from '../types/genericTypes';
 import { checkIpInList } from './checkIpInList';
 import { ILogger } from './logger';
 
+/**
+ * Middleware functions used in the HTTP endpoints.
+ */
 export const middleware = {
   /**
    * Logs api client connections.
