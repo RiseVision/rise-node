@@ -23,6 +23,9 @@ export type ExceptionType = {
   maxCount: number;
 };
 
+/**
+ * Exceptions Manager
+ */
 @injectable()
 export class ExceptionsManager {
   private handlers: { [k: string]: { [h: string]: IExceptionHandler<any> } } = {};
@@ -30,11 +33,17 @@ export class ExceptionsManager {
   @inject(Symbols.models.exceptions)
   private exceptionModel: typeof ExceptionModel;
 
+  /**
+   * Register an exception handler
+   */
   public registerExceptionHandler<T= any>(what: symbol, handlerKey: string, handler: IExceptionHandler<T>) {
     this.handlers[what]             = this.handlers[what] || {};
     this.handlers[what][handlerKey] = handler;
   }
 
+  /**
+   * Returns an exception handler by key
+   */
   public handlersForKey<T = any>(what: symbol): Array<IExceptionHandler<T>> {
     if (typeof(this.handlers[what]) === 'undefined') {
       return [];
@@ -44,6 +53,9 @@ export class ExceptionsManager {
     }
   }
 
+  /**
+   * Create or update DB exceptions
+   */
   public async createOrUpdateDBExceptions(exceptions: ExceptionType[]) {
     for (const exception of exceptions) {
       await this.exceptionModel.findOrCreate({
