@@ -427,54 +427,61 @@ export class LoaderModule implements ILoaderModule {
     }
   }
 
+  private async innerLoad() {
+    let loaded = false;
+
+    const randomPeer  = await this.getRandomPeer();
+    const lastBlock   = this.blocksModule.lastBlock;
+    if (typeof(randomPeer) === 'undefined') {
+      await wait(1000);
+      // This could happen when we received a block but we did not get the updated peer list.
+      throw new Error('No random peer');
+    }
+
+    if (lastBlock.height !== 1) {
+      this.logger.info(`Looking for common block with: ${randomPeer.string}`);
+      try {
+        const commonBlock = await this.blocksProcessModule.getCommonBlock(randomPeer, lastBlock.height);
+        if (!commonBlock) {
+          throw new Error('Failed to find common block');
+        }
+      } catch (err) {
+        this.logger.error(`Failed to find common block with: ${randomPeer.string}`);
+        throw err;
+      }
+    }
+    // Now that we know that peer is reliable we can sync blocks with him!!
+    this.blocksToSync = randomPeer.height;
+    try {
+      const lastValidBlock: SignedBlockType = await this.blocksProcessModule.loadBlocksFromPeer(randomPeer);
+
+      loaded = lastValidBlock.id === lastBlock.id;
+      // update blocksmodule last receipt with last block timestamp!
+      this.blocksModule.lastReceipt
+        .update(Math.floor(this.constants.epochTime.getTime() / 1000 + lastValidBlock.timestamp));
+    } catch (err) {
+      this.logger.error(err.toString());
+      this.logger.error('Failed to load blocks from: ' + randomPeer.string);
+      throw err;
+    }
+    return loaded;
+  }
   /**
    * Loads blocks from the network
    */
   private async loadBlocksFromNetwork() {
     let loaded = false;
-
     do {
-      await promiseRetry(async (retry) => {
-        const randomPeer                 = await this.getRandomPeer();
-        const lastBlock: SignedBlockType = this.blocksModule.lastBlock;
+      loaded = await promiseRetry(
+        (retry) => this.innerLoad().catch(retry),
+        { retries: 3, maxTimeout: 2000 }
+      )
+        .catch((e) => {
+          this.logger.warn('Something went wrong when trying to sync block from network', e);
+          return true;
+        });
+    } while (!loaded);
 
-        if (typeof(randomPeer) === 'undefined') {
-          // This could happen when we received a block but we did not get the updated peer list.
-          await wait(1000);
-          return;
-        }
-
-        if (lastBlock.height !== 1) {
-          this.logger.info(`Looking for common block with: ${randomPeer.string}`);
-          try {
-            const commonBlock = await this.blocksProcessModule.getCommonBlock(randomPeer, lastBlock.height);
-            if (!commonBlock) {
-              this.logger.error(`Failed to find common block with: ${randomPeer.string}`);
-              return retry(new Error('Failed to find common block'));
-            }
-          } catch (err) {
-            this.logger.error(`Failed to find common block with: ${randomPeer.string}`);
-            this.logger.error(err.toString());
-            return retry(err);
-          }
-        }
-
-        // Now that we know that peer is reliable we can sync blocks with him!!
-        this.blocksToSync = randomPeer.height;
-        try {
-          const lastValidBlock: SignedBlockType = await this.blocksProcessModule.loadBlocksFromPeer(randomPeer);
-
-          loaded = lastValidBlock.id === lastBlock.id;
-          // update blocksmodule last receipt with last block timestamp!
-          this.blocksModule.lastReceipt
-            .update(Math.floor(this.constants.epochTime.getTime() / 1000 + lastValidBlock.timestamp));
-        } catch (err) {
-          this.logger.error(err.toString());
-          this.logger.error('Failed to load blocks from: ' + randomPeer.string);
-          return retry(err);
-        }
-      });
-    } while (!loaded) ;
   }
 
   /**

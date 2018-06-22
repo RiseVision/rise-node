@@ -231,9 +231,17 @@ export class PeersModule implements IPeersModule {
       const peer = this.peersLogic.create(seed);
       this.logger.trace(`Processing seed peer ${peer.string}`);
       // Sets the peer as connected. Seed can be offline but it will be removed later.
-      await peer.pingAndUpdate();
-      updated++;
+      try {
+        await peer.pingAndUpdate();
+        updated++;
+      } catch (e) {
+        // seed peer is down?
+        this.logger.warn(`Seed ${peer.string} is down`, e);
+      }
     }));
+    if (updated === 0) {
+      throw new Error('No valid seed peers');
+    }
     this.logger.info('Peers->insertSeeds - Peers discovered', {
       total: this.appConfig.peers.list.length,
       updated,
