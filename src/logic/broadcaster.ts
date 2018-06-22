@@ -208,12 +208,8 @@ export class BroadcasterLogic implements IBroadcasterLogic {
    */
   private squashQueue(broadcasts: BroadcastTask[]): BroadcastTask[] {
     const getReqType = (b: BroadcastTask): string => {
-      this.routes.forEach((route) => {
-        if (b.options.requestHandler instanceof route.requestHandler) {
-          return route.collection;
-        }
-      });
-      return 'unknown';
+      const theRoute = this.routes.find((route) => (b.options.requestHandler instanceof route.requestHandler));
+      return theRoute ? theRoute.collection : 'unknown';
     };
     const groupedByAPI = _.groupBy(broadcasts, (b) => getReqType(b));
 

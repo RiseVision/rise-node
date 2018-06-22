@@ -10,6 +10,8 @@ import {
 } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
 import { constants } from './../../../src/helpers/';
+import { PostTransactionsRequest } from '../../../src/apis/requests/PostTransactionsRequest';
+import { PostSignaturesRequest } from '../../../src/apis/requests/PostSignaturesRequest';
 
 // tslint:disable no-unused-expression
 describe('logic/broadcaster', () => {
@@ -469,21 +471,22 @@ describe('logic/broadcaster', () => {
     beforeEach(() => {
       routes     = [{
         collection: 'collection1',
-        method    : 'method1',
         object    : 'object1',
-        path      : 'type1',
+        requestHandler: PostTransactionsRequest,
       }, {
         collection: 'collection2',
-        method    : 'method2',
         object    : 'object2',
-        path      : 'type2',
+        requestHandler: PostSignaturesRequest,
       }];
+      const rh1 = new PostTransactionsRequest({data: { object1: 'object1' }});
+      const rh2 = new PostSignaturesRequest({data: { object2: 'object2' }});
+      const rh3 = new PostTransactionsRequest({data: { object1: 'object1_2' }});
       broadcasts = [{
-        options: { api: 'type1', data: { object1: 'object1' } },
+        options: { api: 'type1', requestHandler: rh1 },
       }, {
-        options: { api: 'type2', data: { object2: 'object2' } },
+        options: { api: 'type2', requestHandler: rh2 },
       }, {
-        options: { api: 'type1', data: { object1: 'object1' } },
+        options: { api: 'type1', requestHandler: rh3 },
       }];
 
       instance.routes = routes;
@@ -491,29 +494,28 @@ describe('logic/broadcaster', () => {
 
     it('should return the expected result', () => {
       const result = (instance as any).squashQueue(broadcasts);
-
       expect(result).to.be.deep.equal([{
         options: {
-          api      : routes[0].path,
-          data     : {
-            [routes[0].collection]: [
-              broadcasts[0].options.data.object1,
-              broadcasts[2].options.data.object1,
-            ],
-          },
           immediate: false,
-          method   : routes[0].method,
+          requestHandler: new routes[0].requestHandler({
+            data     : {
+              [routes[0].collection]: [
+                broadcasts[0].options.requestHandler.getOrigOptions().data.object1,
+                broadcasts[2].options.requestHandler.getOrigOptions().data.object1,
+              ],
+            },
+          }),
         },
       }, {
         options: {
-          api      : routes[1].path,
-          data     : {
-            [routes[1].collection]: [
-              broadcasts[1].options.data.object2,
-            ],
-          },
           immediate: false,
-          method   : routes[1].method,
+          requestHandler: new routes[1].requestHandler({
+            data     : {
+              [routes[1].collection]: [
+                broadcasts[1].options.requestHandler.getOrigOptions().data.object2,
+              ],
+            },
+          }),
         },
       }]);
     });
