@@ -1302,8 +1302,9 @@ describe('modules/loader', () => {
       await (instance as any).loadBlocksFromNetwork();
 
       expect(promiseRetryStub.calledOnce).to.be.true;
-      expect(promiseRetryStub.firstCall.args.length).to.be.equal(1);
+      expect(promiseRetryStub.firstCall.args.length).to.be.equal(2);
       expect(promiseRetryStub.firstCall.args[0]).to.be.a('function');
+      expect(promiseRetryStub.firstCall.args[1]).deep.eq({ retries: 3, maxTimeout: 2000 });
     });
 
     it('should call wait if typeof(randomPeer) === undefined', async () => {
@@ -1384,13 +1385,10 @@ describe('modules/loader', () => {
 
         await (instance as any).loadBlocksFromNetwork();
 
-        expect(loggerStub.stubs.error.calledTwice).to.be.true;
+        expect(loggerStub.stubs.error.calledOnce).to.be.true;
 
         expect(loggerStub.stubs.error.firstCall.args.length).to.be.equal(1);
         expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal('Failed to find common block with: string');
-
-        expect(loggerStub.stubs.error.secondCall.args.length).to.be.equal(1);
-        expect(loggerStub.stubs.error.secondCall.args[0]).to.be.equal(error.toString());
 
         expect(retryStub.firstCall.args[0]).to.be.deep.equal(error);
       });
