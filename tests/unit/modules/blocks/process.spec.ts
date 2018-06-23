@@ -35,6 +35,10 @@ import { createFakePeer } from '../../../utils/fakePeersFactory';
 import { createRandomTransactions, toBufferedTransaction } from '../../../utils/txCrafter';
 import { BlocksModel } from '../../../../src/models';
 import { SinonStub } from 'sinon';
+import { IPeerLogic } from '../../../../src/ioc/interfaces/logic';
+import PeerLogicStub from '../../../stubs/logic/PeerLogicStub';
+import { CommonBlockRequest } from '../../../../src/apis/requests/CommonBlockRequest';
+import { GetBlocksRequest } from '../../../../src/apis/requests/GetBlocksRequest';
 
 chai.use(chaiAsPromised);
 
@@ -111,100 +115,80 @@ describe('modules/blocks/process', () => {
 
   describe('getCommonBlock', () => {
     let blocksModelCountStub: SinonStub;
+    let peerStub: PeerLogicStub;
     beforeEach(() => {
+      peerStub = new PeerLogicStub();
       blocksUtils.enqueueResponse('getIdSequence', {ids: ['1', '2', '3', '4', '5']});
       blocksModelCountStub = sandbox.stub(blocksModel, 'count').resolves(1);
+    });
+    afterEach(() => {
+      peerStub.stubReset();
     });
     it('should get idSequence first', async () => {
       try {
         await inst.getCommonBlock(null, 10);
       } catch (e) {
-        return false;
+        void 0;
       }
       expect(blocksUtils.stubs.getIdSequence.called).is.true;
       expect(blocksUtils.stubs.getIdSequence.firstCall.args[0]).is.eq(10);
     });
-    it('should call transportModule getFromPeer with proper data', async () => {
+    it('should call peer.makeRequest with proper data', async () => {
       transportModule.enqueueResponse('getFromPeer', Promise.resolve());
       try {
-        await inst.getCommonBlock({peer: 'peer'} as any, 10);
+        await inst.getCommonBlock(peerStub as any, 10);
       } catch (e) {
-        return false;
+        void 0;
       }
-      expect(transportModule.stubs.getFromPeer.called).is.true;
-      expect(transportModule.stubs.getFromPeer.firstCall.args[0]).to.be.deep.eq({peer: 'peer'});
-      expect(transportModule.stubs.getFromPeer.firstCall.args[1]).to.be.deep.eq({
-        api   : '/blocks/common?ids=1,2,3,4,5',
+      expect(peerStub.stubs.makeRequest.called).is.true;
+      expect(peerStub.stubs.makeRequest.firstCall.args[0]).to.be.instanceOf(CommonBlockRequest);
+      expect(peerStub.stubs.makeRequest.firstCall.args[0]).to.be.deep.eq({
         method: 'GET',
-      });
-    });
-    describe('no match with peer (null common)', () => {
-      beforeEach(() => {
-        transportModule.enqueueResponse('getFromPeer', Promise.resolve({body: {common: null}}));
-      });
-      it('should check consensus', async () => {
-        appState.stubs.getComputed.returns(true);
-        blocksChain.enqueueResponse('recoverChain', Promise.resolve());
-        await inst.getCommonBlock({peer: 'peer'} as any, 10);
-
-        expect(appState.stubs.getComputed.called).is.true;
-        expect(appState.stubs.getComputed.firstCall.args[0]).is.eq('node.poorConsensus');
-      });
-      it('should call recoverChain if consensus is low', async () => {
-        appState.stubs.getComputed.returns(true);
-        blocksChain.enqueueResponse('recoverChain', Promise.resolve());
-        await inst.getCommonBlock({peer: 'peer'} as any, 10);
-
-        expect(blocksChain.stubs.recoverChain.calledOnce).is.true;
-      });
-      it('should throw error if consensus is adeguate', async () => {
-        appState.stubs.getComputed.returns(false);
-        await expect(inst.getCommonBlock({peer: 'peer'} as any, 10)).to
-          .be.rejectedWith('Chain comparison failed');
+        options: {
+          data: null,
+          query: {
+            ids: '1,2,3,4,5',
+            },
+          },
+        supportsProtoBuf: false,
       });
     });
     it('should fail if peer response is not valid', async () => {
-      transportModule.enqueueResponse('getFromPeer', Promise.resolve({body: {common: '1'}}));
+      peerStub.stubConfig.makeRequest.return = Promise.resolve({common: '1'});
       schemaStub.enqueueResponse('validate', false);
       schemaStub.enqueueResponse('getLastErrors', []);
-
-      await expect(inst.getCommonBlock({peer: 'peer'} as any, 10))
+      await expect(inst.getCommonBlock(peerStub as any, 10))
         .to.be.rejectedWith('Cannot validate commonblock response');
     });
     it('should check response against db to avoid malicious peers', async () => {
-      transportModule.enqueueResponse('getFromPeer', Promise.resolve({
-        body: {
-          common: {
-            height       : 1,
-            id           : 'id',
-            previousBlock: 'pb',
-          },
+      peerStub.stubConfig.makeRequest.return = Promise.resolve({
+        common: {
+          height       : 1,
+          id           : 'id',
+          previousBlock: 'pb',
         },
-      }));
-
-      await inst.getCommonBlock({p: 'p'} as any, 10);
+      });
+      await inst.getCommonBlock(peerStub as any, 10);
       expect(blocksModelCountStub.calledOnce).is.true;
       expect(blocksModelCountStub.firstCall.args[0]).deep.eq({
         where: {
           height       : 1,
           id           : 'id',
           previousBlock: 'pb',
-        }
+        },
       });
     });
 
     // tslint:disable-next-line: max-line-length
     it('should trigger recoverChain if returned commonblock does not return anything from db and poor consensus', async () => {
-      transportModule.enqueueResponse('getFromPeer', Promise.resolve({
-        body: {
-          common: {},
-        },
-      }));
+      peerStub.stubConfig.makeRequest.return = Promise.resolve({
+        common: {},
+      });
       blocksModelCountStub.resolves(0);
       appState.enqueueResponse('getComputed', true); // poor consensus
       blocksChain.enqueueResponse('recoverChain', Promise.resolve());
 
-      await inst.getCommonBlock({p: 'p'} as any, 10);
+      await inst.getCommonBlock(peerStub as any, 10);
       expect(blocksChain.stubs.recoverChain.calledOnce).is.true;
       expect(appState.stubs.getComputed.calledOnce).is.true;
       expect(appState.stubs.getComputed.firstCall.args[0]).is.eq('node.poorConsensus');
@@ -213,15 +197,38 @@ describe('modules/blocks/process', () => {
 
     // tslint:disable-next-line: max-line-length
     it('should throw error if returned common block does not return anything from db and NOT poor consensus', async () => {
-      transportModule.enqueueResponse('getFromPeer', Promise.resolve({
-        body: {
-          common: {},
-        },
-      }));
+      peerStub.stubConfig.makeRequest.return = Promise.resolve({
+        common: {},
+      });
       blocksModelCountStub.resolves(0);
       appState.enqueueResponse('getComputed', false); // poor consensus
 
-      await expect(inst.getCommonBlock({p: 'p'} as any, 10)).to.be.rejectedWith('Chain comparison failed with peer');
+      await expect(inst.getCommonBlock(peerStub as any, 10)).to.be.rejectedWith('Chain comparison failed with peer');
+    });
+    describe('no match with peer (null common)', () => {
+      beforeEach(() => {
+        peerStub.stubConfig.makeRequest.return = Promise.resolve({body: {common: null}});
+      });
+      it('should check consensus', async () => {
+        appState.stubs.getComputed.returns(true);
+        blocksChain.enqueueResponse('recoverChain', Promise.resolve());
+        await inst.getCommonBlock(peerStub as any, 10);
+
+        expect(appState.stubs.getComputed.called).is.true;
+        expect(appState.stubs.getComputed.firstCall.args[0]).is.eq('node.poorConsensus');
+      });
+      it('should call recoverChain if consensus is low', async () => {
+        appState.stubs.getComputed.returns(true);
+        blocksChain.enqueueResponse('recoverChain', Promise.resolve());
+        await inst.getCommonBlock(peerStub as any, 10);
+
+        expect(blocksChain.stubs.recoverChain.calledOnce).is.true;
+      });
+      it('should throw error if consensus is adeguate', async () => {
+        appState.stubs.getComputed.returns(false);
+        await expect(inst.getCommonBlock(peerStub as any, 10)).to
+          .be.rejectedWith('Chain comparison failed');
+      });
     });
   });
 
@@ -348,24 +355,29 @@ describe('modules/blocks/process', () => {
   describe('loadBlocksFromPeer', () => {
     let fakePeer;
     beforeEach(() => {
-      fakePeer = createFakePeer();
+      fakePeer = createFakePeer() as any;
+      fakePeer.makeRequest = sandbox.stub();
       peersLogic.enqueueResponse('create', fakePeer);
-
     });
-    it('should transport.getFromPeer with correct api and method', async () => {
-      transportModule.enqueueResponse('getFromPeer', Promise.resolve({body: {}}));
+    it('should call peer.makeRequest', async () => {
+      fakePeer.makeRequest.resolves({body: {}});
       blocksUtils.enqueueResponse('readDbRows', []);
       blocksModule.lastBlock = {id: '1'} as any;
       await inst.loadBlocksFromPeer(null);
-      expect(transportModule.stubs.getFromPeer.calledOnce).is.true;
-      expect(transportModule.stubs.getFromPeer.firstCall.args[0]).is.deep.eq(fakePeer);
-      expect(transportModule.stubs.getFromPeer.firstCall.args[1]).is.deep.eq({
-        api   : '/blocks?lastBlockId=1',
+      expect(fakePeer.makeRequest.firstCall.args[0]).is.instanceOf(GetBlocksRequest);
+      expect(fakePeer.makeRequest.firstCall.args[0]).is.deep.eq({
         method: 'GET',
+        options: {
+          data: null,
+          query: {
+            lastBlockId: '1',
+          },
+        },
+        supportsProtoBuf: true,
       });
     });
     it('should validate response against schema', async () => {
-      transportModule.enqueueResponse('getFromPeer', Promise.resolve({body: {blocks: ['1', '2', '3']}}));
+      fakePeer.makeRequest.resolves({blocks: ['1', '2', '3']});
       blocksUtils.enqueueResponse('readDbRows', []);
       blocksModule.lastBlock = {id: '1'} as any;
       schemaStub.enqueueResponse('validate', false);
@@ -377,7 +389,7 @@ describe('modules/blocks/process', () => {
       expect(schemaStub.stubs.validate.firstCall.args[0]).is.deep.eq(['1', '2', '3']);
     });
     it('should read returned data through utilsModule', async () => {
-      transportModule.enqueueResponse('getFromPeer', Promise.resolve({body: {blocks: ['1', '2', '3']}}));
+      fakePeer.makeRequest.resolves({blocks: ['1', '2', '3']});
       blocksUtils.enqueueResponse('readDbRows', []);
       blockVerify.stubs.processBlock.resolves();
       blocksModule.lastBlock = {id: '1'} as any;
@@ -388,7 +400,7 @@ describe('modules/blocks/process', () => {
       expect(blocksUtils.stubs.readDbRows.firstCall.args[0]).is.deep.eq(['1', '2', '3']);
     });
     it('should call processBlock on each block', async () => {
-      transportModule.enqueueResponse('getFromPeer', Promise.resolve({body: {blocks: []}}));
+      fakePeer.makeRequest.resolves({blocks: []});
       blocksUtils.enqueueResponse('readDbRows', ['1', '2', '3']);
       blockVerify.stubs.processBlock.resolves();
       blocksModule.lastBlock = {id: '1'} as any;
@@ -402,7 +414,7 @@ describe('modules/blocks/process', () => {
       expect(blockVerify.stubs.processBlock.getCall(0).args[2]).to.be.deep.eq(true);
     });
     it('should throw if one processBlock fails', async () => {
-      transportModule.enqueueResponse('getFromPeer', Promise.resolve({body: {blocks: []}}));
+      fakePeer.makeRequest.resolves({blocks: []});
       blocksUtils.enqueueResponse('readDbRows', ['1', '2', '3']);
       blockVerify.stubs.processBlock.resolves();
       blockVerify.stubs.processBlock.onCall(2).rejects();
@@ -413,7 +425,7 @@ describe('modules/blocks/process', () => {
 
     });
     it('should return the last validBlock', async () => {
-      transportModule.enqueueResponse('getFromPeer', Promise.resolve({body: {blocks: []}}));
+      fakePeer.makeRequest.resolves({blocks: []});
       blocksUtils.enqueueResponse('readDbRows', ['1', '2', '3']);
       blockVerify.stubs.processBlock.resolves();
       blocksModule.lastBlock = {id: '1'} as any;
@@ -421,7 +433,7 @@ describe('modules/blocks/process', () => {
       expect(await inst.loadBlocksFromPeer(null)).to.be.eq('3');
     });
     it('should not process anything if is cleaning', async () => {
-      transportModule.enqueueResponse('getFromPeer', Promise.resolve({body: {blocks: []}}));
+      fakePeer.makeRequest.resolves({blocks: []});
       blocksUtils.enqueueResponse('readDbRows', ['1', '2', '3']);
       blockVerify.stubs.processBlock.resolves();
       blocksModule.lastBlock  = {id: '1'} as any;

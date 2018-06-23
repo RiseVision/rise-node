@@ -180,7 +180,7 @@ describe('src/modules/transport.ts', () => {
     let removePeerStub: SinonStub;
 
     beforeEach(() => {
-      peer    = {};
+      peer    = { makeRequest: sandbox.stub()};
       options = {
         method: 'put',
         url   : 'url.com',
@@ -409,7 +409,7 @@ describe('src/modules/transport.ts', () => {
       options = { fieldhohoho: 'hohohohoho' };
       result  = 'hehehe';
       config  = {};
-      peers   = [{}];
+      peers   = [{makeRequest: sandbox.stub()}];
 
       peersModule.enqueueResponse('list', Promise.resolve({ peers }));
       getFromPeerStub = sandbox.stub(inst, 'getFromPeer').returns(result);

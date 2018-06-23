@@ -9,6 +9,9 @@ export default class PeerLogicStub {
     },
     update: {
       return: any
+    },
+    makeRequest: {
+      return: any
     }
   };
 
@@ -53,10 +56,12 @@ export default class PeerLogicStub {
   public stubReset() {
     this.stubs      = {
       accept: sinon.stub(),
+      makeRequest: sinon.stub(),
       update: sinon.stub(),
     };
     this.stubConfig = {
       accept: { return: {}, },
+      makeRequest: { return: {body: 'stubbedResponse'}, },
       update: { return: this, },
     };
   }
@@ -73,5 +78,10 @@ export default class PeerLogicStub {
   public update(...args) {
     this.stubs.update.apply(this, args);
     return this.stubConfig.update.return;
+  }
+
+  public makeRequest(...args) {
+    this.stubs.makeRequest.apply(this, args);
+    return this.stubConfig.makeRequest.return;
   }
 }
