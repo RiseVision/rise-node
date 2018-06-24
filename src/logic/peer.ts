@@ -1,10 +1,10 @@
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
 import { IAPIRequest } from '../apis/requests/BaseRequest';
+import { HeightRequest } from '../apis/requests/HeightRequest';
 import { IPeerLogic } from '../ioc/interfaces/logic/';
 import { ITransportModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { HeightRequest } from '../apis/requests/HeightRequest';
 
 export enum PeerState {
   BANNED       = 0,

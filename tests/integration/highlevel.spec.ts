@@ -586,7 +586,7 @@ describe('highlevel checks', function () {
           tx.blockId = block.id;
           return tx;
         });
-        const origBytes = BlockLogic.getBytes(block);
+        const origBytes = blockLogic.getBytes(block);
         const bytesBlock: IBytesBlock = {
           bytes: origBytes as any,
           transactions: transactions.map((tx) => {

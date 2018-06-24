@@ -4,9 +4,9 @@ import * as ip from 'ip';
 import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
 import { SinonSpy } from 'sinon';
+import { HeightRequest } from '../../../src/apis/requests/HeightRequest';
 import { PeerState, PeerType } from '../../../src/logic';
 import { APIRequestStub, TransportModuleStub } from '../../stubs';
-import { IAPIRequest } from '../../../src/apis/requests/BaseRequest';
 
 const expect          = chai.expect;
 const ProxyPeerLogic = proxyquire('../../../src/logic/peer.ts', {ip});
@@ -480,16 +480,13 @@ describe('logic/peer', () => {
   });
 
   describe('pingAndUpdate', () => {
-    it('should call transportModule.getFromPeer', () => {
-      transportModuleStub.enqueueResponse('getFromPeer', Promise.resolve({body: '1'}));
+    it('should call makeRequest', () => {
+      const makeRequestStub = sinon.stub(instance, 'makeRequest');
+      makeRequestStub.resolves('1');
       let p;
       p = instance.pingAndUpdate();
-      expect(transportModuleStub.stubs.getFromPeer.called).to.be.true;
-      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[1]).to.be.deep.equal({
-        isProtoBuf: false,
-        method: 'GET',
-        url   : '/peer/height',
-      });
+      expect(makeRequestStub.calledOnce).to.be.true;
+      expect(makeRequestStub.firstCall.args[0]).to.be.deep.equal(new HeightRequest({data: null}));
       expect(p).to.be.fulfilled;
     });
 

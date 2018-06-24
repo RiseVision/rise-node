@@ -6,6 +6,10 @@ import * as Throttle from 'promise-parallel-throttle';
 import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
+import { PostTransactionsRequest } from '../../../src/apis/requests/PostTransactionsRequest';
+import { PostBlocksRequest } from '../../../src/apis/requests/PostBlocksRequest';
+import { PeersListRequest } from '../../../src/apis/requests/PeersListRequest';
+import { PostSignaturesRequest } from '../../../src/apis/requests/PostSignaturesRequest';
 import { wait } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { PeerState } from '../../../src/logic';
@@ -13,6 +17,7 @@ import { TransportModule } from '../../../src/modules';
 import peersSchema from '../../../src/schema/peers';
 import schema from '../../../src/schema/transport';
 import {
+  APIRequestStub,
   AppStateStub,
   BroadcasterLogicStub,
   JobsQueueStub,
@@ -401,22 +406,21 @@ describe('src/modules/transport.ts', () => {
     let config;
     let peers;
     let result;
-    let options;
+    let requestHandler;
 
     let getFromPeerStub;
 
     beforeEach(() => {
-      options = { fieldhohoho: 'hohohohoho' };
+      requestHandler = new APIRequestStub();
       result  = 'hehehe';
       config  = {};
-      peers   = [{makeRequest: sandbox.stub()}];
+      peers   = [{makeRequest: sandbox.stub().returns(result)}];
 
       peersModule.enqueueResponse('list', Promise.resolve({ peers }));
-      getFromPeerStub = sandbox.stub(inst, 'getFromPeer').returns(result);
     });
 
     it('should call peersModule.list', async () => {
-      await inst.getFromRandomPeer(config, options);
+      await inst.getFromRandomPeer(config, requestHandler);
 
       expect(peersModule.stubs.list.calledOnce).to.be.true;
       expect(peersModule.stubs.list.firstCall.args.length).to.be.equal(1);
@@ -426,19 +430,18 @@ describe('src/modules/transport.ts', () => {
       });
     });
 
-    it('should call getFromPeer and return result', async () => {
-      expect(await inst.getFromRandomPeer(config, options)).to.be.equal(result);
-      expect(getFromPeerStub.calledOnce).to.be.true;
-      expect(getFromPeerStub.firstCall.args.length).to.be.equal(2);
-      expect(getFromPeerStub.firstCall.args[0]).to.be.deep.equal(peers[0]);
-      expect(getFromPeerStub.firstCall.args[1]).to.be.deep.equal(options);
+    it('should call makeRequest and return result', async () => {
+      expect(await inst.getFromRandomPeer(config, requestHandler)).to.be.equal(result);
+      expect(peers[0].makeRequest.calledOnce).to.be.true;
+      expect(peers[0].makeRequest.firstCall.args.length).to.be.equal(1);
+      expect(peers[0].makeRequest.firstCall.args[0]).to.be.deep.equal(requestHandler);
+      expect(peers[0].makeRequest.firstCall.args[0]).to.be.instanceOf(APIRequestStub);
     });
   });
 
   describe('cleanup', () => {
     it('should set loaded in false and return promise.resolve', () => {
       expect(inst.cleanup()).to.be.fulfilled;
-
       expect((inst as any).loaded).to.be.false;
     });
   });
@@ -636,10 +639,9 @@ describe('src/modules/transport.ts', () => {
       expect(broadcasterLogic.stubs.enqueue.calledOnce).to.be.true;
       expect(broadcasterLogic.stubs.enqueue.firstCall.args.length).to.be.equal(2);
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[0]).to.be.deep.equal({});
+      expect(broadcasterLogic.stubs.enqueue.firstCall.args[1].requestHandler).to.be.instanceOf(PostSignaturesRequest);
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[1]).to.be.deep.equal({
-        api   : '/signatures',
-        data  : { signature },
-        method: 'POST',
+        requestHandler: new PostSignaturesRequest({data: { signature } }),
       });
     });
 
@@ -697,9 +699,7 @@ describe('src/modules/transport.ts', () => {
       expect(broadcasterLogic.stubs.enqueue.firstCall.args.length).to.be.equal(2);
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[0]).to.be.deep.equal({});
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[1]).to.be.deep.equal({
-        api   : '/transactions',
-        data  : { transaction },
-        method: 'POST',
+        requestHandler: new PostTransactionsRequest({data: {transaction}}),
       });
     });
 
@@ -774,17 +774,17 @@ describe('src/modules/transport.ts', () => {
         limit    : constants.maxPeers,
       });
       expect(broadcasterLogic.stubs.broadcast.firstCall.args[1]).to.be.deep.equal({
-        api      : '/blocks',
-        data     : {
-          block: {
-            blockSignature    : 'aa',
-            generatorPublicKey: 'bb',
-            payloadHash       : 'cc',
-            transactions      : [],
-          }
-        },
         immediate: true,
-        method   : 'POST',
+        requestHandler: new PostBlocksRequest({
+          data     : {
+            block: {
+              blockSignature    : 'aa',
+              generatorPublicKey: 'bb',
+              payloadHash       : 'cc',
+              transactions      : [],
+            },
+          },
+        }),
       });
     });
 
@@ -1045,10 +1045,7 @@ describe('src/modules/transport.ts', () => {
       expect(getFromRandomPeerStub.calledOnce).to.be.true;
       expect(getFromRandomPeerStub.firstCall.args.length).to.be.equal(2);
       expect(getFromRandomPeerStub.firstCall.args[0]).to.be.deep.equal({});
-      expect(getFromRandomPeerStub.firstCall.args[1]).to.be.deep.equal({
-        api   : '/list',
-        method: 'GET',
-      });
+      expect(getFromRandomPeerStub.firstCall.args[1]).to.be.deep.equal(new PeersListRequest({data: null}));
     });
 
     it('should call schemaStub.validate resolves', async () => {
