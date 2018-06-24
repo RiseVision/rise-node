@@ -22,6 +22,10 @@ export interface ILogger {
   setLevel(lvl: string): void;
 }
 const startTime = Date.now();
+
+/**
+ * Build and return the Logger object
+ */
 export default (config: any = {}): ILogger => {
   config                 = config || {};
   const exports: ILogger = {} as any;
