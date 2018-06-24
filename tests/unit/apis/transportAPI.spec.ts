@@ -52,9 +52,10 @@ describe('apis/transportAPI', () => {
     blocksModel       = container.get(Symbols.models.blocks);
     transactionsModel = container.get(Symbols.models.transactions);
     peersModuleStub   = container.get(Symbols.modules.peers);
+    const fakePeers = ['a', 'b', 'c'].map((p) => { return {object: () => {return p}}});
     peersModuleStub.enqueueResponse('list', {
       consensus: 123,
-      peers    : ['a', 'b', 'c'],
+      peers    : fakePeers,
     });
     peersModuleStub.enqueueResponse('remove', true);
     transactionsModuleStub = container.get(Symbols.modules.transactions);

@@ -3,6 +3,7 @@ import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { IPeerLogic } from '../ioc/interfaces/logic';
 import { IPeersModule, ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { PeerState } from '../logic/';
@@ -33,12 +34,15 @@ export class PeersAPI {
   @ValidateSchema()
   public async getPeers(@SchemaValid(peersSchema.getPeers, { castNumbers: true })
                         @QueryParams() params: any) {
+    let peers: IPeerLogic[];
     try {
-      const peers = await this.peersModule.getByFilter(params);
-      return { peers };
+      peers = await this.peersModule.getByFilter(params);
     } catch (err) {
       throw new APIError('Failed to get peers', 200);
     }
+    return {
+      peers: peers.map((peer) => peer.object()),
+    };
   }
 
   @Get('/get')

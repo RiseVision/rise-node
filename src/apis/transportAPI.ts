@@ -122,7 +122,7 @@ export class TransportAPI {
   @Get('/list')
   public async list() {
     const { peers } = await this.peersModule.list({ limit: this.constants.maxPeers });
-    return { peers };
+    return { peers: peers.map(((peer) => peer.object())) };
   }
 
   @Get('/signatures')
