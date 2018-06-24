@@ -7,6 +7,10 @@ export class Inserts {
   public rawType = true;
   // tslint:disable-next-line
   public _rawDBType = true;
+
+  /**
+   * Class constructor
+   */
   constructor(private record: { table: string, values: any, fields: string[] },
               private values: any,
               private concat: boolean = false) {
@@ -18,14 +22,23 @@ export class Inserts {
     }
   }
 
+  /**
+   * Return the fields in a template format
+   */
   public namedTemplate() {
     return this.record.fields.map((field) => `\${${field}}`).join(',');
   }
 
+  /**
+   * Alias of namedTemplate()
+   */
   public get _template() {
     return this.namedTemplate();
   }
 
+  /**
+   * Prepare and return the query template
+   */
   public template() {
     let values: string;
     const fields = this.record.fields.map(pgp.as.name).join(',');
@@ -44,6 +57,9 @@ export class Inserts {
     );
   }
 
+  /**
+   * Replaces the variables in the template with their values
+   */
   public toPostgres() {
     return this.values
       .map((v) => `(${pgp.as.format(this._template, v)})`)
