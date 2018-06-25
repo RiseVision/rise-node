@@ -106,7 +106,7 @@ export class TransactionsAPI {
     const txOBJ     = (await this.transactionsModule.getByID(id));
     await this.txLogic.attachAssets([txOBJ]);
 
-    const tx = txOBJ.toTransport<any>(this.blocksModule);
+    const tx = txOBJ.toTransport(this.blocksModule);
     if (tx.type === TransactionType.VOTE) {
       // tslint:disable-next-line
       tx['votes'] = {
