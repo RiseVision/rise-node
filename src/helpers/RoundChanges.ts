@@ -2,6 +2,9 @@ import BigNumber from 'bignumber.js';
 import Bignum from './bignum';
 import {Slots} from './slots';
 
+/**
+ * Calculates rewards
+ */
 export class RoundChanges {
   private roundFees: number;
   private roundRewards: number[];
@@ -11,6 +14,9 @@ export class RoundChanges {
   // The fees that are excluded by math precision
   private feesRemaining: BigNumber;
 
+  /**
+   * Initialize properties and calculates fees
+   */
   constructor(scope: { roundFees?: number, roundRewards: number[] }, private slots: Slots) {
     this.roundFees    = Math.floor(scope.roundFees) || 0;
     this.roundRewards = scope.roundRewards || [];
