@@ -39,13 +39,15 @@ export class MultiSignaturesModel extends Model<MultiSignaturesModel> {
   constructor(values?: FilteredModelAttributes<MultiSignaturesModel>, options?: IBuildOptions) {
     super(values, options);
 
-    this.keysgroup.split(',')
-      .forEach((vote) => {
-        if (vote.startsWith('+')) {
-          this.added.push(vote.substr(1));
-        } else {
-          this.removed.push(vote.substr(1));
-        }
-      });
+    if (typeof(this.keysgroup) === 'string') {
+      this.keysgroup.split(',')
+        .forEach((key) => {
+          if (key.startsWith('+')) {
+            this.added.push(key.substr(1));
+          } else if (key.startsWith('-')) {
+            this.removed.push(key.substr(1));
+          }
+        });
+    }
   }
 }

@@ -28,7 +28,7 @@ export class VotesModel extends Model<VotesModel> {
         .forEach((vote) => {
           if (vote.startsWith('+')) {
             this.added.push(vote.substr(1));
-          } else {
+          } else if (vote.startsWith('-')){
             this.removed.push(vote.substr(1));
           }
         });
