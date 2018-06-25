@@ -258,4 +258,24 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     }
     return ops;
   }
+
+  public async attachAssets(txs: Array<IConfirmedTransaction<VoteAsset>>) {
+    const res = await this.VotesModel
+      .findAll({
+        where: { transactionId: txs.map((tx) => tx.id) },
+      });
+
+    const indexes = {};
+    res.forEach((tx, idx) => indexes[tx.transactionId] = idx);
+
+    txs.forEach((tx) => {
+      if (typeof(indexes[tx.id]) === 'undefined') {
+        throw new Error(`Couldn't restore asset for Vote tx: ${tx.id}`);
+      }
+      const info = res[indexes[tx.id]];
+      tx.asset   = {
+        votes: info.votes.split(','),
+      };
+    });
+  }
 }

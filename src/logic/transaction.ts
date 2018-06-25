@@ -1,6 +1,7 @@
 import { BigNumber } from 'bignumber.js';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
+import * as _ from 'lodash';
 import { inject, injectable } from 'inversify';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
@@ -607,6 +608,18 @@ export class TransactionLogic implements ITransactionLogic {
       tx.asset = asset;
     }
     return tx;
+  }
+
+  public async attachAssets(txs: Array<IConfirmedTransaction<any>>): Promise<void> {
+    if (txs === null) {
+      return;
+    }
+    const txsByGroup = _.groupBy(txs, (i) => i.type);
+    for (const type in txsByGroup) {
+      const loopTXs = txsByGroup[type];
+      this.assertKnownTransactionType(loopTXs[0].type);
+      await this.types[loopTXs[0].type].attachAssets(loopTXs);
+    }
   }
 
 }

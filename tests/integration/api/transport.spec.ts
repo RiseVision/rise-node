@@ -340,7 +340,6 @@ describe('api/transport', () => {
               transaction: tx.id
             }],
           });
-        console.log(body);
       }
       // all signatures.
       await supertest(initializer.appManager.expressApp)
@@ -355,9 +354,6 @@ describe('api/transport', () => {
 
       await initializer.rawMineBlocks(1);
 
-
-      console.log('ciao');
-      console.log(blocksModule.lastBlock.transactions);
       // After block is mined no more sigs are here.
       await supertest(initializer.appManager.expressApp)
         .get('/peer/signatures')

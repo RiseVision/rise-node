@@ -355,6 +355,7 @@ describe('logic/transactions/createmultisig', () => {
   describe('undo', () => {
     let applyDiffArrayStub: SinonStub;
     let txFindOneStub: SinonStub;
+    let attachAssetsStub: SinonStub;
     beforeEach(() => {
       accountLogicStub.stubs.merge.returns(true);
       roundsLogicStub.stubs.calcRound.returns(123);
@@ -362,6 +363,7 @@ describe('logic/transactions/createmultisig', () => {
       accountsModuleStub.stubs.setAccountAndGet.resolves();
       applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
       txFindOneStub = sandbox.stub(txModel, 'findOne').resolves(null);
+      attachAssetsStub = sandbox.stub(instance, 'attachAssets').resolves();
     });
 
     it('should set unconfirmedSignatures[sender.address] to true', async () => {
@@ -435,6 +437,48 @@ describe('logic/transactions/createmultisig', () => {
       expect(sender.multisignatures).deep.eq(['aaaa', 'bbbb']);
       expect(sender.multimin).deep.eq(10);
       expect(sender.multilifetime).deep.eq(20);
+    });
+  });
+
+  describe('attachAssets', () => {
+    let modelFindAllStub: SinonStub;
+    beforeEach(() => {
+      modelFindAllStub = sandbox.stub(multisigModel, 'findAll');
+    });
+    it('should do do nothing if result is empty', async () => {
+      modelFindAllStub.resolves([]);
+      await instance.attachAssets([]);
+    });
+    it('should throw if a tx was provided but not returned by model.findAll', async () => {
+      modelFindAllStub.resolves([]);
+      await expect(instance.attachAssets([{id: 'ciao'}] as any))
+        .rejectedWith('Couldn\'t restore asset for Signature tx: ciao');
+    });
+    it('should use model result and modify original arr', async () => {
+      modelFindAllStub.resolves([
+        { transactionId: 2, min: 90, lifetime: 33, keysgroup: '+dd,+ee,+ff'},
+        { transactionId: 1, min: 10, lifetime: 30, keysgroup: '+aa,+bb,+cc'},
+      ]);
+      const txs: any = [{id: 1}, {id: 2}];
+
+      await instance.attachAssets(txs);
+
+      expect(txs[0]).deep.eq({
+        id: 1, asset: {
+          multisignature: {
+            min      : 10, lifetime: 30,
+            keysgroup: ['+aa', '+bb', '+cc'],
+          },
+        },
+      });
+      expect(txs[1]).deep.eq({
+        id: 2, asset: {
+          multisignature: {
+            min      : 90, lifetime: 33,
+            keysgroup: ['+dd', '+ee', '+ff'],
+          },
+        },
+      });
     });
   });
 

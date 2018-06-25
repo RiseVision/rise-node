@@ -180,71 +180,6 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     }
   }
 
-  private calcOps(type: 'confirmed' | 'unconfirmed', asset: MultisigAsset, blockId: string, sender: AccountsModel): Array<DBOp<any>> {
-    if (type === 'confirmed') {
-      sender.multisignatures = [];
-      sender.applyDiffArray('multisignatures', asset.multisignature.keysgroup);
-      sender.applyValues({ multimin: asset.multisignature.min, multilifetime: asset.multisignature.lifetime });
-    } else {
-      sender.u_multisignatures = [];
-      sender.applyDiffArray('u_multisignatures', asset.multisignature.keysgroup);
-      sender.applyValues({ u_multimin: asset.multisignature.min, u_multilifetime: asset.multisignature.lifetime });
-    }
-
-    const ops: Array<DBOp<any>> = [];
-    let updateValue: any;
-    if (type === 'unconfirmed') {
-      updateValue = {
-        u_multilifetime: asset.multisignature.lifetime,
-        u_multimin     : asset.multisignature.min,
-      };
-    } else {
-      updateValue = {
-        blockId,
-        multilifetime: asset.multisignature.lifetime,
-        multimin     : asset.multisignature.min,
-      };
-    }
-    ops.push({
-      model  : this.AccountsModel,
-      options: { where: { address: sender.address } },
-      type   : 'update',
-      values : updateValue,
-    });
-    ops.push({
-      model  : type === 'confirmed' ? this.Accounts2MultisignaturesModel : this.Accounts2UMultisignaturesModel,
-      options: { where: { accountId: sender.address } },
-      type   : 'remove',
-    });
-
-    // insert new entries to accounts2MultisignaturesModel
-    // Generate accounts
-    for (const key of asset.multisignature.keysgroup) {
-      // index 0 has "+" or "-"
-      const realKey = key.substr(1);
-      const address = this.accountLogic.generateAddressByPublicKey(realKey);
-      ops.push(
-        {
-          model : this.AccountsModel,
-          type  : 'upsert',
-          values: {
-            address,
-            publicKey: Buffer.from(realKey, 'hex'),
-          },
-        },
-        {
-          model : type === 'confirmed' ? this.Accounts2MultisignaturesModel : this.Accounts2UMultisignaturesModel,
-          type  : 'create',
-          values: {
-            accountId  : sender.address,
-            dependentId: realKey,
-          },
-        });
-
-    }
-    return ops;
-  }
-
   public async apply(tx: IConfirmedTransaction<MultisigAsset>,
                      block: SignedBlockType,
                      sender: AccountsModel): Promise<Array<DBOp<any>>> {
@@ -258,7 +193,7 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     // to restore to the previous state we try to fetch the previous multisig transaction
     // if there is any then we apply that tx after rollbacking. otherwise we reset to 0 all the fields.
     // seek for prev txs for such account.
-    const prevTX = await this.TransactionsModel.findOne({
+    const prevTX = await this.TransactionsModel.findOne<TransactionsModel<MultisigAsset>>({
       limit: 1,
       order: [['height', 'DESC']],
       where: {
@@ -267,12 +202,14 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         type    : TransactionType.MULTI,
       },
     });
+
     let asset: MultisigAsset;
     // If no previous tx then we create a "fake" resetting tx and we call apply that will reset
     // the account state given that the asset values are all empty.
     if (!prevTX) {
       asset = { multisignature: { min: 0, lifetime: 0, keysgroup: [] } };
     } else {
+      await this.attachAssets([prevTX]);
       asset = prevTX.asset;
     }
     this.unconfirmedSignatures[sender.address] = true;
@@ -392,5 +329,94 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     } else {
       return tx.signatures.length === txKeys.length;
     }
+  }
+
+  public async attachAssets(txs: Array<IConfirmedTransaction<MultisigAsset>>) {
+    const res = await this.MultiSignaturesModel
+      .findAll({
+        where: { transactionId: txs.map((tx) => tx.id) },
+      });
+
+    const indexes = {};
+    res.forEach((tx, idx) => indexes[tx.transactionId] = idx);
+
+    txs.forEach((tx) => {
+      if (typeof(indexes[tx.id]) === 'undefined') {
+        throw new Error(`Couldn't restore asset for Signature tx: ${tx.id}`);
+      }
+      const info = res[indexes[tx.id]];
+      tx.asset   = {
+        multisignature: {
+          min: info.min,
+          lifetime: info.lifetime,
+          keysgroup: info.keysgroup.split(','),
+        },
+      };
+    });
+  }
+
+  private calcOps(type: 'confirmed' | 'unconfirmed', asset: MultisigAsset, blockId: string, sender: AccountsModel): Array<DBOp<any>> {
+    if (type === 'confirmed') {
+      sender.multisignatures = [];
+      sender.applyDiffArray('multisignatures', asset.multisignature.keysgroup);
+      sender.applyValues({ multimin: asset.multisignature.min, multilifetime: asset.multisignature.lifetime });
+    } else {
+      sender.u_multisignatures = [];
+      sender.applyDiffArray('u_multisignatures', asset.multisignature.keysgroup);
+      sender.applyValues({ u_multimin: asset.multisignature.min, u_multilifetime: asset.multisignature.lifetime });
+    }
+
+    const ops: Array<DBOp<any>> = [];
+    let updateValue: any;
+    if (type === 'unconfirmed') {
+      updateValue = {
+        u_multilifetime: asset.multisignature.lifetime,
+        u_multimin     : asset.multisignature.min,
+      };
+    } else {
+      updateValue = {
+        blockId,
+        multilifetime: asset.multisignature.lifetime,
+        multimin     : asset.multisignature.min,
+      };
+    }
+    ops.push({
+      model  : this.AccountsModel,
+      options: { where: { address: sender.address } },
+      type   : 'update',
+      values : updateValue,
+    });
+    ops.push({
+      model  : type === 'confirmed' ? this.Accounts2MultisignaturesModel : this.Accounts2UMultisignaturesModel,
+      options: { where: { accountId: sender.address } },
+      type   : 'remove',
+    });
+
+    // insert new entries to accounts2MultisignaturesModel
+    // Generate accounts
+    for (const key of asset.multisignature.keysgroup) {
+      // index 0 has "+" or "-"
+      const realKey = key.substr(1);
+      const address = this.accountLogic.generateAddressByPublicKey(realKey);
+      ops.push(
+        {
+          model : this.AccountsModel,
+          type  : 'upsert',
+          values: {
+            address,
+            publicKey: Buffer.from(realKey, 'hex'),
+          },
+        },
+        {
+          model : type === 'confirmed' ? this.Accounts2MultisignaturesModel : this.Accounts2UMultisignaturesModel,
+          type  : 'create',
+          values: {
+            accountId  : sender.address,
+            dependentId: realKey,
+          },
+        });
+
+    }
+    return ops;
   }
 }

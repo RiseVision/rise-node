@@ -416,13 +416,9 @@ describe('logic/transactions/delegate', () => {
     it('should return the delegate object', () => {
       const retVal = instance.dbRead({
         d_username       : 'thebestdelegate',
-        t_senderId       : 'address',
-        t_senderPublicKey: 'pubKey',
       });
       expect(retVal).to.be.deep.equal({
         delegate: {
-          address  : 'address',
-          publicKey: 'pubKey',
           username : 'thebestdelegate',
         },
       });
@@ -437,6 +433,46 @@ describe('logic/transactions/delegate', () => {
       expect(createOp.values).is.deep.eq({
         transactionId: tx.id,
         username: tx.asset.delegate.username,
+      });
+    });
+  });
+
+  describe('attachAssets', () => {
+    let modelFindAllStub: SinonStub;
+    beforeEach(() => {
+      modelFindAllStub = sandbox.stub(delegatesModel, 'findAll');
+    });
+    it('should do do nothing if result is empty', async () => {
+      modelFindAllStub.resolves([]);
+      await instance.attachAssets([]);
+    });
+    it('should throw if a tx was provided but not returned by model.findAll', async () => {
+      modelFindAllStub.resolves([]);
+      await expect(instance.attachAssets([{id: 'ciao'}] as any))
+        .rejectedWith('Couldn\'t restore asset for Delegate tx: ciao');
+    });
+    it('should use model result and modify original arr', async () => {
+      modelFindAllStub.resolves([
+        { transactionId: 2, username: 'second'},
+        { transactionId: 1, username: 'first'},
+      ]);
+      const txs: any = [{id: 1}, {id: 2}];
+
+      await instance.attachAssets(txs);
+
+      expect(txs[0]).deep.eq({
+        id: 1, asset: {
+          delegate: {
+            username: 'first'
+          },
+        },
+      });
+      expect(txs[1]).deep.eq({
+        id: 2, asset: {
+          delegate: {
+            username: 'second'
+          },
+        },
       });
     });
   });

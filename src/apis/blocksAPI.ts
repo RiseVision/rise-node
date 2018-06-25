@@ -5,7 +5,7 @@ import { constants as constantsType, removeEmptyObjKeys, Sequence } from '../hel
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { WrapInDBSequence } from '../helpers/decorators/wrapInSequence';
-import { IBlockLogic, IBlockReward } from '../ioc/interfaces/logic';
+import { IBlockLogic, IBlockReward, ITransactionLogic } from '../ioc/interfaces/logic';
 import { IBlocksModule, ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { BlocksModel, TransactionsModel } from '../models';
@@ -34,6 +34,8 @@ export class BlocksAPI {
   private blockRewardLogic: IBlockReward;
   @inject(Symbols.logic.block)
   private blockLogic: IBlockLogic;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
 
   // Modules
   @inject(Symbols.modules.blocks)
@@ -70,6 +72,9 @@ export class BlocksAPI {
       order  : orderBy,
       where  : whereClause,
     });
+    // attach assets to blocks.transactions
+    await Promise.all(blocks.map((b) => this.transactionLogic.attachAssets(b.transactions)
+      .then(() => b)));
     // console.log(blocks);
     return {
       blocks: blocks.map((b) => this.BlocksModel.toStringBlockType(
@@ -91,6 +96,7 @@ export class BlocksAPI {
       if (b === null) {
         throw new APIError('Block not found', 200);
       }
+      await this.transactionLogic.attachAssets(b.transactions);
       return this.BlocksModel.toStringBlockType(b, this.TransactionsModel, this.blocksModule);
     });
     return { block };

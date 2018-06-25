@@ -1,55 +1,13 @@
-import { Column, DataType, DefaultScope, ForeignKey, HasOne, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import { Column, DataType, ForeignKey, Model, PrimaryKey, Table } from 'sequelize-typescript';
 import { TransactionType } from '../helpers';
-import * as sequelize from 'sequelize';
-import { MultiSignaturesModel } from './MultiSignaturesModel';
-import { BlocksModel } from './BlocksModel';
+import { IBlocksModule } from '../ioc/interfaces/';
 import { IBaseTransaction, ITransportTransaction } from '../logic/transactions';
-import { IBlocksModule } from '../ioc/interfaces/index';
-import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
+import { BlocksModel } from './BlocksModel';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
+import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
-const fields                 = ['id', 'rowId', 'blockId', 'height', 'type', 'timestamp', 'senderPublicKey', 'senderId', 'recipientId', 'amount', 'fee', 'signature', 'signSignature', 'requesterPublicKey', 'signatures'];
-const buildArrayArgAttribute = function (table: string, what: string, alias?: string): any {
-  return [sequelize.literal(`(SELECT "${what}" FROM ${table} WHERE "transactionId" = "TransactionsModel"."id")`), alias || what];
-};
-
-@DefaultScope({
-  attributes: [
-    ...fields,
-    buildArrayArgAttribute('votes', 'votes'),
-    buildArrayArgAttribute('signatures', 'publicKey', 'secondSignPublicKey'),
-    buildArrayArgAttribute('delegates', 'username'),
-  ],
-  include   : [{
-    model: () => MultiSignaturesModel,
-  }],
-})
 @Table({ tableName: 'trs' })
-export class TransactionsModel extends Model<TransactionsModel> {
-
-  constructor(values?: FilteredModelAttributes<TransactionsModel>, options?: IBuildOptions) {
-    super(values, options);
-    if (values && values.asset) {
-      switch (this.type) {
-        case TransactionType.DELEGATE:
-          this.username = values.asset.delegate.username as any;
-          break;
-        case TransactionType.SIGNATURE:
-          this.secondSignPublicKey = values.asset.signature.publicKey  as any;
-          break;
-        case TransactionType.VOTE:
-          this.votes = (values.asset.votes  as any).join(',');
-          break;
-        case TransactionType.MULTI:
-          this.multisigData = {
-            keysgroup: (values.asset.multisignature.keysgroup as any).join(','),
-            lifetime : values.asset.multisignature.lifetime,
-            min      : values.asset.multisignature.min,
-          } as any;
-          break;
-      }
-    }
-  }
+export class TransactionsModel<Asset = any> extends Model<TransactionsModel<Asset>> {
 
   @PrimaryKey
   @Column
@@ -95,6 +53,13 @@ export class TransactionsModel extends Model<TransactionsModel> {
   @Column(DataType.BLOB)
   public requesterPublicKey: Buffer;
 
+  constructor(values?: FilteredModelAttributes<TransactionsModel<Asset>>, options?: IBuildOptions) {
+    super(values, options);
+    if (values && values.asset) {
+      this.asset = values.asset as any;
+    }
+  }
+
   @Column(DataType.STRING)
   public get signatures(): string[] {
     if (this.getDataValue('signatures')) {
@@ -107,51 +72,16 @@ export class TransactionsModel extends Model<TransactionsModel> {
     this.setDataValue('signatures', Array.isArray(value) ? value.join(',') : value);
   }
 
-  @HasOne(() => MultiSignaturesModel)
-  private multisigData: MultiSignaturesModel;
+  public asset: Asset = null;
 
-  @Column
-  private username: string;
-
-  @Column
-  private votes: string;
-
-  @Column(DataType.BLOB)
-  private secondSignPublicKey: Buffer;
-
-  public get asset(): any {
-    switch (this.type) {
-      case TransactionType.DELEGATE:
-        return { delegate: { username: this.username } };
-      case TransactionType.VOTE:
-        return { votes: this.votes ? this.votes.split(',') : [] };
-      case TransactionType.MULTI:
-        return {
-          multisignature: {
-            min      : this.multisigData.min,
-            lifetime : this.multisigData.lifetime,
-            keysgroup: this.multisigData.keysgroup.split(','),
-          },
-        };
-      case TransactionType.SIGNATURE:
-        return { signature: { publicKey: this.secondSignPublicKey.toString('hex') } };
-      default:
-        return {};
-    }
-  }
-
-  public toTransport<T>(blocksModule: IBlocksModule): ITransportTransaction<T> {
+  public toTransport(blocksModule: IBlocksModule): ITransportTransaction<Asset> {
     return TransactionsModel.toTransportTransaction(this, blocksModule);
   }
 
-  public static toTransportTransaction<T>(t: IBaseTransaction<any>, blocksModule: IBlocksModule): ITransportTransaction<T> & { confirmations?: number } {
+  public static toTransportTransaction<Asset>(t: IBaseTransaction<Asset>, blocksModule: IBlocksModule): ITransportTransaction<Asset> & { confirmations?: number } {
     let obj;
     if (t instanceof TransactionsModel) {
       obj = { ... t.toJSON(), asset: t.asset };
-      delete obj.multisigData;
-      delete obj.votes;
-      delete obj.username;
-      delete obj.secondSignPublicKey;
     } else {
       obj = { ...t };
     }
@@ -166,6 +96,5 @@ export class TransactionsModel extends Model<TransactionsModel> {
     }
     return obj as any;
   }
-
 
 }

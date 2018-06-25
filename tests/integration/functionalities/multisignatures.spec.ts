@@ -315,6 +315,7 @@ describe('functionalities.multisignature', () => {
         // Tx.
         const db = await TxModel.findById(tx.id);
         expect(db).exist;
+        await txLogic.attachAssets([db]);
         expect(db.toTransport(blocksModule)).deep.eq({
           ...tx,
           height       : b.height,

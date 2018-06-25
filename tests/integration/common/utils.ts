@@ -222,8 +222,7 @@ export const createRegDelegateTransaction = async (confirmations: number, from: 
     ... {
       asset: {
         delegate: {
-          username : name,
-          publicKey: from.publicKey
+          username : name
         },
       },
     },
@@ -242,6 +241,7 @@ export const createSendTransaction = async (confirmations: number, amount: numbe
   const tx           = txCrafter.createSendTransaction(from, dest, systemModule.getFees().fees.send, { ...{ amount }, ...opts });
   tx['senderId']     = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts)
     .generateAddressByPublicKey(tx.senderPublicKey);
+  tx.asset = null;
   if (confirmations > 0) {
     await confirmTransactions([tx], true);
   }

@@ -188,6 +188,10 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         return;
       }
       this.logger.debug('Processing block', block.id);
+
+      // Attach assets to block transactions
+      await this.transactionLogic.attachAssets(block.transactions);
+
       if (verify && block.id !== this.genesisBlock.id) {
         // Sanity check of the block, if values are coherent.
         // No access to database.

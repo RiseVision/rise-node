@@ -303,6 +303,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     if (previousBlock === null) {
       throw new Error('previousBlock is null');
     }
+    await this.transactionLogic.attachAssets(previousBlock.transactions);
+
     const txs = lb.transactions.slice().reverse();
 
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
