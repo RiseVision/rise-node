@@ -7,13 +7,17 @@ import { Symbols } from '../ioc/symbols';
 import { MigrationsModel } from '../models';
 import MyBigNumb from './bignum';
 
-
+/**
+ * Executes pending migrations
+ */
 @injectable()
 export class Migrator {
   @inject(Symbols.models.migrations)
   private MigrationsModel: typeof MigrationsModel;
 
-
+  /**
+   * Search, retrieves, and executes pending migrations
+   */
   public async init(): Promise<void> {
     const hasMigrations   = await this.checkMigrations();
     const lastMigration   = await this.getLastMigration(hasMigrations);
@@ -23,6 +27,9 @@ export class Migrator {
     await this.applyRuntimeQueryFile();
   }
 
+  /**
+   * Check if there are migrations
+   */
   private async checkMigrations(): Promise<boolean> {
     const [row] = await this.MigrationsModel.sequelize
       .query('SELECT to_regclass(\'migrations\')', { raw: true, type: sequelize.QueryTypes.SELECT });
@@ -80,6 +87,9 @@ export class Migrator {
       .filter((d) => !lastMigration || d.id.isGreaterThan(lastMigration));
   }
 
+  /**
+   * Executes pending migrations
+   */
   private async applyPendingMigrations(pendingMigrations: Array<{ id: BigNumber, name: string, path: string }>) {
     for (const m of pendingMigrations) {
       console.log(m.path);
