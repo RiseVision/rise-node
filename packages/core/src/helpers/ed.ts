@@ -1,10 +1,5 @@
 import {api as sodium} from 'sodium';
 
-export interface IKeypair {
-  publicKey: Buffer;
-  privateKey: Buffer;
-}
-
 export class Ed {
   public makeKeypair(hash: Buffer): IKeypair {
     const keypair = sodium.crypto_sign_seed_keypair(hash);

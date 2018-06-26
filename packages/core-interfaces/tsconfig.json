@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target":                       "es2017",
+    "module":                       "commonjs",
+    "emitDecoratorMetadata":        true,
+    "experimentalDecorators":       true,
+    "allowJs":                      false,
+    "moduleResolution":             "node",
+    "outDir":                       "dist",
+    "declaration":                  true,
+    "allowSyntheticDefaultImports": true,
+    "inlineSourceMap":              true,
+    "inlineSources":                true,
+    "lib":                          [
+      "dom",
+      "es7"
+    ]
+  },
+  "include":         [
+    "./src/**/*"
+  ],
+  "exclude":         [
+    "tests",
+    "public",
+    "dist",
+    "coverage",
+    "node_modules"
+  ]
+}

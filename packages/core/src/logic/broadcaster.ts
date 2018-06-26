@@ -12,16 +12,6 @@ import { IBaseTransaction } from './transactions/';
 
 // tslint:disable interface-over-type-literal
 
-export type BroadcastTaskOptions = {
-  immediate?: boolean;
-  data: any;
-  api: string;
-  method: string;
-};
-export type BroadcastTask = {
-  options: BroadcastTaskOptions;
-  params?: any
-};
 
 // tslint:enable interface-over-type-literal
 @injectable()

@@ -1,0 +1,21 @@
+{
+  "name": "@risevision/core-types",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "transpile": "tsc"
+  },
+  "types": "dist/index.d.ts",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@risevision/core-interfaces": "^1.0.0",
+    "sequelize": "^4.38.0",
+    "sequelize-typescript": "^0.6.5"
+  },
+  "devDependencies": {
+    "shx": "=0.2.2",
+    "typescript": "=2.8.3"
+  }
+}

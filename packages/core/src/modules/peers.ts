@@ -11,7 +11,6 @@ import { PeersModel } from '../models';
 import { AppConfig } from '../types/genericTypes';
 
 // tslint:disable-next-line
-export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip?: string, port?: number, broadhash?: string, state?: PeerState };
 
 @injectable()
 export class PeersModule implements IPeersModule {

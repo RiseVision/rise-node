@@ -9,32 +9,6 @@ import { DBCustomOp, DBOp } from '../types/genericTypes';
 import { address } from '../types/sanityTypes';
 import { SignedBlockType } from './block';
 
-// tslint:disable-next-line
-export type RoundLogicScope = {
-  backwards: boolean;
-  round: number;
-  // List of address which missed a block in this round
-  roundOutsiders: address[];
-  roundDelegates: Buffer[];
-  roundFees: any;
-  roundRewards: number[];
-  finishRound: boolean;
-  library: {
-    logger: ILogger
-  },
-  models: {
-    AccountsModel: typeof AccountsModel,
-    BlocksModel: typeof BlocksModel,
-    RoundsModel: typeof RoundsModel,
-  }
-  modules: {
-    accounts: IAccountsModule;
-  }
-  block: SignedBlockType
-  // must be populated with the votes in round when is needed
-  votes?: Array<{ delegate: string, amount: number }>
-};
-
 // This cannot be injected directly as it needs to be created.
 // rounds module.
 export class RoundLogic implements IRoundLogic {

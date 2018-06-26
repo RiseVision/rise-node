@@ -26,7 +26,6 @@ import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
 
 // tslint:disable-next-line
-export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };
 
 @injectable()
 export class TransportModule implements ITransportModule {

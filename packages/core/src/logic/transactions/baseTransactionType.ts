@@ -6,45 +6,7 @@ import { AccountsModel } from '../../models/';
 import { SignedBlockType } from '../block';
 import { DBOp } from '../../types/genericTypes';
 
-export interface ITransportTransaction<T> {
-  type: TransactionType;
-  amount: number;
-  senderId?: string;
-  senderPublicKey: string;
-  requesterPublicKey?: string;
-  timestamp: number;
-  asset?: T;
-  recipientId: string;
-  signature: string;
-  id: string;
-  fee: number;
-  signatures?: string[];
-  signSignature?: string;
-}
 
-export interface IBaseTransaction<T> {
-  type: TransactionType;
-  amount: number;
-  senderId?: string;
-  senderPublicKey: Buffer;
-  requesterPublicKey?: Buffer;
-  timestamp: number;
-  asset?: T;
-  recipientId: string;
-  signature: Buffer;
-  id: string;
-  fee: number;
-  signatures?: string[];
-  signSignature?: Buffer;
-}
-
-export interface IConfirmedTransaction<T> extends IBaseTransaction<T> {
-  blockId: string;
-  height?: number;
-  senderId: string;
-  recipientPublicKey?: string;
-  confirmations?: number;
-}
 
 const emptyBuffer = new Buffer(0);
 
