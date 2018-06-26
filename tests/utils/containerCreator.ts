@@ -158,6 +158,8 @@ export const createContainer = (): Container => {
     Accounts2U_MultisignaturesModel, ExceptionModel, ForksStatsModel, InfoModel, MigrationsModel, PeersModel, RoundsFeesModel, RoundsModel, TransactionsModel, MultiSignaturesModel, DelegatesModel, SignaturesModel, VotesModel];
   sequelize.addModels(models);
 
+  // add container to models.
+  models.forEach((model) => model.container = this.container);
   return container;
 };
 

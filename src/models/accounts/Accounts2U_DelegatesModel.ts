@@ -1,15 +1,14 @@
-// tslint:disable
 import {
-  Table,
   Column,
-  Model,
   ForeignKey, PrimaryKey,
+  Table,
 } from 'sequelize-typescript';
-import 'reflect-metadata';
 import { AccountsModel } from '../AccountsModel';
+import { BaseModel } from '../BaseModel';
 
 @Table({tableName: 'mem_accounts2u_delegates'})
-export class Accounts2U_DelegatesModel extends Model<Accounts2U_DelegatesModel> {
+// tslint:disable-next-line class-name
+export class Accounts2U_DelegatesModel extends BaseModel<Accounts2U_DelegatesModel> {
   @PrimaryKey
   @Column
   public dependentId: string;

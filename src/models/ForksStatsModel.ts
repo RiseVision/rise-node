@@ -1,11 +1,9 @@
-// tslint:disable
-import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
-import 'reflect-metadata';
+import { Column, DataType, PrimaryKey, Table } from 'sequelize-typescript';
 import { ForkType } from '../helpers';
-
+import { BaseModel } from './BaseModel';
 
 @Table({ tableName: 'forks_stat' })
-export class ForksStatsModel extends Model<ForksStatsModel> {
+export class ForksStatsModel extends BaseModel<ForksStatsModel> {
   @PrimaryKey
   @Column(DataType.BLOB)
   public delegatePublicKey: Buffer;

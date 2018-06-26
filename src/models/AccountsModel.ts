@@ -1,8 +1,9 @@
 import * as pgp from 'pg-promise';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
-import { Column, DataType, Model, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
+import { Column, DataType, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
 import { publicKey } from '../types/sanityTypes';
+import { BaseModel } from './BaseModel';
 
 const fields            = ['username', 'isDelegate', 'secondSignature', 'address', 'publicKey', 'secondPublicKey', 'balance', 'vote', 'rate', 'multimin', 'multilifetime', 'blockId', 'producedblocks', 'missedblocks', 'fees', 'rewards', 'virgin'];
 const unconfirmedFields = ['u_isDelegate', 'u_secondSignature', 'u_username', 'u_balance', 'u_multimin', 'u_multilifetime'];
@@ -33,7 +34,7 @@ const buildArrayArgAttribute = function (table: string): any {
   },
 })
 @Table({ tableName: 'mem_accounts' })
-export class AccountsModel extends Model<AccountsModel> {
+export class AccountsModel extends BaseModel<AccountsModel> {
   @Column
   public username: string;
   @Column

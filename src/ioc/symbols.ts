@@ -22,6 +22,7 @@ export const Symbols = {
     appConfig         : Symbol('appConfig'),
     expressApp        : Symbol('expressApp'),
     genesisBlock      : Symbol('genesisBlock'),
+    hookSystem        : Symbol('hookSystem'),
     nonce             : Symbol('nonce'),
     redisClient       : Symbol('redisClient'),
     sequelize         : Symbol('sequelize'),

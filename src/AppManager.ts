@@ -5,10 +5,11 @@ import * as cors from 'cors';
 import * as express from 'express';
 import * as http from 'http';
 import { Container } from 'inversify';
+import { InMemoryFilterModel, WordPressHookSystem } from 'mangiafuoco';
 import * as pg from 'pg';
 import 'reflect-metadata';
 import { useContainer as useContainerForHTTP, useExpressServer } from 'routing-controllers';
-import { Model, Sequelize } from 'sequelize-typescript';
+import { Sequelize } from 'sequelize-typescript';
 import * as socketIO from 'socket.io';
 import * as uuid from 'uuid';
 import { allControllers, APIErrorHandler } from './apis';
@@ -25,7 +26,7 @@ import {
   constants as constantsType,
   DBHelper,
   Ed,
-  ExceptionsManager, ExceptionType,
+  ExceptionsManager,
   ILogger,
   JobsQueue,
   middleware,
@@ -66,6 +67,7 @@ import {
   Accounts2U_DelegatesModel,
   Accounts2U_MultisignaturesModel,
   AccountsModel,
+  BaseModel,
   BlocksModel,
   DelegatesModel, ExceptionModel,
   ForksStatsModel, InfoModel, MigrationsModel,
@@ -92,16 +94,15 @@ import {
   TransactionsModule,
   TransportModule
 } from './modules/';
+
 import { BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify } from './modules/blocks/';
 import { ForkModule } from './modules/fork';
 import { AppConfig } from './types/genericTypes';
 
-// import {makeLoggerMiddleware} from 'inversify-logger-middleware';
-// const theLogger = makeLoggerMiddleware();
-
 export class AppManager {
   public container: Container = new Container();
   public expressApp: express.Express;
+  public hookSystem: WordPressHookSystem = new WordPressHookSystem(new InMemoryFilterModel());
 
   private schema: z_schema = new z_schema({});
   private isCleaning       = false;
@@ -271,7 +272,17 @@ export class AppManager {
     this.modulesElements();
 
     // Add models
-    this.modelsElements(sequelize);
+    await this.modelsElements(sequelize);
+
+    // hooks
+    await this.hookSystem.do_action('container_post_init', this.container);
+
+    // allow plugins to just modify models
+    const models = this.getElementsFromContainer<typeof BaseModel>(Symbols.models);
+    await Promise.all(models.map(async (model) => {
+      await this.hookSystem.do_action('model_init', model);
+      await this.hookSystem.do_action(`model_init-${model.getTableName()}`, model);
+    }));
 
     // Start migrations/runtime queries.
     await this.container.get<Migrator>(Symbols.helpers.migrator).init();
@@ -341,7 +352,12 @@ export class AppManager {
     this.container.bind(Symbols.models.transactions).toConstructor(TransactionsModel);
     this.container.bind(Symbols.models.votes).toConstructor(VotesModel);
     // Register models
-    sequelize.addModels(this.getElementsFromContainer<typeof Model>(Symbols.models));
+    const models = this.getElementsFromContainer<typeof BaseModel>(Symbols.models);
+    sequelize.addModels(models);
+
+    // add container to models.
+    models.forEach((model) => model.container = this.container);
+
   }
 
   private modulesElements() {
@@ -419,6 +435,7 @@ export class AppManager {
   }
 
   private genericsElements(theCache, sequelize, namespace, io) {
+    this.container.bind(Symbols.generic.hookSystem).toConstantValue(this.hookSystem);
     this.container.bind(Symbols.generic.appConfig).toConstantValue(this.appConfig);
     this.container.bind(Symbols.generic.expressApp).toConstantValue(this.expressApp);
     this.container.bind(Symbols.generic.genesisBlock).toConstantValue(this.genesisBlock);

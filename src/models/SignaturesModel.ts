@@ -1,11 +1,9 @@
-import { BelongsTo, Column, DataType, ForeignKey, IBuildOptions, Model, PrimaryKey, Table } from 'sequelize-typescript';
-import { TransactionType } from '../helpers';
+import { BelongsTo, Column, DataType, ForeignKey, PrimaryKey, Table } from 'sequelize-typescript';
+import { BaseModel } from './BaseModel';
 import { TransactionsModel } from './TransactionsModel';
-import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { publicKey } from '../types/sanityTypes';
 
 @Table({tableName: 'signatures'})
-export class SignaturesModel extends Model<SignaturesModel> {
+export class SignaturesModel extends BaseModel<SignaturesModel> {
   @Column(DataType.BLOB)
   public publicKey: Buffer;
 

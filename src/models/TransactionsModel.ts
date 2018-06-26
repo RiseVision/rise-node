@@ -1,13 +1,14 @@
-import { Column, DataType, ForeignKey, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import { Column, DataType, ForeignKey, PrimaryKey, Table } from 'sequelize-typescript';
+import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
+import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 import { TransactionType } from '../helpers';
 import { IBlocksModule } from '../ioc/interfaces/';
 import { IBaseTransaction, ITransportTransaction } from '../logic/transactions';
+import { BaseModel } from './BaseModel';
 import { BlocksModel } from './BlocksModel';
-import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
-import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
 @Table({ tableName: 'trs' })
-export class TransactionsModel<Asset = any> extends Model<TransactionsModel<Asset>> {
+export class TransactionsModel<Asset = any> extends BaseModel<TransactionsModel<Asset>> {
 
   @PrimaryKey
   @Column

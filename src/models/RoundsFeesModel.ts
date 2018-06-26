@@ -1,12 +1,12 @@
 import {
   Column,
   DataType,
-  Model,
   Table
 } from 'sequelize-typescript';
+import { BaseModel } from './BaseModel';
 
 @Table({tableName: 'rounds_fees'})
-export class RoundsFeesModel extends Model<RoundsFeesModel> {
+export class RoundsFeesModel extends BaseModel<RoundsFeesModel> {
   @Column
   public height: number;
 

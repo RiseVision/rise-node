@@ -1,12 +1,13 @@
-import { Column, DataType, HasMany, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import { Column, DataType, HasMany, PrimaryKey, Table } from 'sequelize-typescript';
 import { SignedBlockType } from '../logic';
 import { TransactionsModel } from './TransactionsModel';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 import { IBlocksModule } from '../ioc/interfaces/modules';
+import { BaseModel } from './BaseModel';
 
 @Table({ tableName: 'blocks' })
-export class BlocksModel extends Model<BlocksModel> {
+export class BlocksModel extends BaseModel<BlocksModel> {
 
   constructor(values?: FilteredModelAttributes<BlocksModel>, options?: IBuildOptions) {
     super(values, options);

@@ -1,9 +1,9 @@
-import { BelongsTo, Column, ForeignKey, Model, PrimaryKey, Sequelize, Table } from 'sequelize-typescript';
+import { BelongsTo, Column, ForeignKey, PrimaryKey, Table } from 'sequelize-typescript';
+import { BaseModel } from './BaseModel';
 import { TransactionsModel } from './TransactionsModel';
-import { DelegatesModule } from '../modules';
 
 @Table({tableName: 'delegates'})
-export class DelegatesModel extends Model<DelegatesModel> {
+export class DelegatesModel extends BaseModel<DelegatesModel> {
   @PrimaryKey
   @Column
   public username: string;

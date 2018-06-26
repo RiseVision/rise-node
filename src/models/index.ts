@@ -1,8 +1,10 @@
+import 'relfect-metadata';
 export * from './accounts/Accounts2DelegatesModel';
 export * from './accounts/Accounts2MultisignaturesModel';
 export * from './accounts/Accounts2U_DelegatesModel';
 export * from './accounts/Accounts2U_MultisignaturesModel';
 export * from './AccountsModel';
+export * from './BaseModel';
 export * from './BlocksModel';
 export * from './DelegatesModel';
 export * from './ExceptionModel';

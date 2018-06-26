@@ -1,14 +1,13 @@
 import {
   Column,
   DataType,
-  Model,
-  Sequelize,
   Table
 } from 'sequelize-typescript';
 import { PeerState } from '../logic';
+import { BaseModel } from './BaseModel';
 
 @Table({tableName: 'peers'})
-export class PeersModel extends Model<PeersModel> {
+export class PeersModel extends BaseModel<PeersModel> {
   @Column
   public ip: string;
 
@@ -34,19 +33,3 @@ export class PeersModel extends Model<PeersModel> {
   public height: number;
 
 }
-
-//const s = new Sequelize({
-//  database: 'rise_db',
-//  dialect : 'postgres',
-//  password: 'password',
-//  username: 'rise',
-//});
-//
-//s.addModels([PeersModel]);
-//
-//PeersModel.findOne({})
-//  .then((p) => {
-//    console.log(p);
-//    console.log(p.state === PeerState.CONNECTED);
-//    console.log(PeerState.CONNECTED);
-//  })

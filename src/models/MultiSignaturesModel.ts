@@ -1,22 +1,18 @@
 import {
   BelongsTo,
   Column,
-  DataType,
   ForeignKey,
   IBuildOptions,
-  Model,
   PrimaryKey,
-  Sequelize,
   Table
 } from 'sequelize-typescript';
-import { TransactionType } from '../helpers';
-import { TransactionsModel } from './TransactionsModel';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 import { publicKey } from '../types/sanityTypes';
-import { DelegatesModel } from './DelegatesModel';
+import { BaseModel } from './BaseModel';
+import { TransactionsModel } from './TransactionsModel';
 
 @Table({tableName: 'multisignatures'})
-export class MultiSignaturesModel extends Model<MultiSignaturesModel> {
+export class MultiSignaturesModel extends BaseModel<MultiSignaturesModel> {
   @Column
   public min: number;
 

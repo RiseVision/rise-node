@@ -1,11 +1,12 @@
 import * as sequelize from 'sequelize';
 import { Transaction } from 'sequelize';
-import { Column, DataType, Model, Table } from 'sequelize-typescript';
+import { Column, DataType, Table } from 'sequelize-typescript';
 import * as sequelizeUtils from 'sequelize/lib/utils';
 import { publicKey } from '../types/sanityTypes';
+import { BaseModel } from './BaseModel';
 
 @Table({ tableName: 'mem_round' })
-export class RoundsModel extends Model<RoundsModel> {
+export class RoundsModel extends BaseModel<RoundsModel> {
   @Column
   public address: string;
 

@@ -1,11 +1,8 @@
-// tslint:disable
-import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
-import 'reflect-metadata';
-import { ForkType } from '../helpers';
-
+import { Column, PrimaryKey, Table } from 'sequelize-typescript';
+import { BaseModel } from './BaseModel';
 
 @Table({ tableName: 'migrations' })
-export class MigrationsModel extends Model<MigrationsModel> {
+export class MigrationsModel extends BaseModel<MigrationsModel> {
   @PrimaryKey
   @Column
   public id: string;

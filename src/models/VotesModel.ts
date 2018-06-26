@@ -1,11 +1,11 @@
-import { BelongsTo, Column, DataType, ForeignKey, IBuildOptions, Model, PrimaryKey, Table } from 'sequelize-typescript';
-import { TransactionType } from '../helpers';
-import { TransactionsModel } from './TransactionsModel';
+import { BelongsTo, Column, ForeignKey, IBuildOptions, PrimaryKey, Table } from 'sequelize-typescript';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 import { publicKey } from '../types/sanityTypes';
+import { BaseModel } from './BaseModel';
+import { TransactionsModel } from './TransactionsModel';
 
 @Table({tableName: 'votes'})
-export class VotesModel extends Model<VotesModel> {
+export class VotesModel extends BaseModel<VotesModel> {
   @PrimaryKey
   @Column
   public votes: string;
