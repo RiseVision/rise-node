@@ -1,5 +1,5 @@
 {
-  "name": "Rise-node",
+  "name": "@risevision/core",
   "version": "1.0.0",
   "private": true,
   "scripts": {
