@@ -1,8 +1,7 @@
-import { RedisClient } from 'redis';
 import { IModule } from './IModule';
 
 export interface ICacheModule extends IModule {
-  readonly isConnected: boolean | RedisClient | boolean;
+  readonly isConnected: boolean;
 
   assertConnected(): Promise<void>;
 

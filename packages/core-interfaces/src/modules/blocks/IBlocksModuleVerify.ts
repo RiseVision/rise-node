@@ -1,4 +1,4 @@
-import { SignedBlockType } from '../../../../logic';
+import { SignedBlockType } from '@risevision/core-types';
 import { IModule } from '../IModule';
 
 export interface IBlocksModuleVerify extends IModule {

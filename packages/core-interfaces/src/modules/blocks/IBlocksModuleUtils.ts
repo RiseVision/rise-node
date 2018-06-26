@@ -1,8 +1,5 @@
-import { BlockProgressLogger } from '../../../../helpers';
-import { SignedAndChainedBlockType } from '../../../../logic';
-import { BlocksModel } from '../../../../models';
-import { RawFullBlockListType } from '../../../../types/rawDBTypes';
-import { publicKey } from '../../../../types/sanityTypes';
+import { publicKey, RawFullBlockListType, SignedAndChainedBlockType } from '@risevision/core-types';
+import { IBlocksModel } from '../../models';
 
 export interface IBlocksModuleUtils {
   readDbRows(rows: RawFullBlockListType[]): SignedAndChainedBlockType[];
@@ -11,13 +8,13 @@ export interface IBlocksModuleUtils {
    * Loads full blocks from database and normalize them
    *
    */
-  loadBlocksPart(filter: { limit?: number, id?: string, lastId?: string }): Promise<BlocksModel[]>;
+  loadBlocksPart(filter: { limit?: number, id?: string, lastId?: string }): Promise<IBlocksModel[]>;
 
   /**
    * Loads the last block from db and normalizes it.
    * @return {Promise<SignedBlockType>}
    */
-  loadLastBlock(): Promise<BlocksModel>;
+  loadLastBlock(): Promise<IBlocksModel>;
 
   /**
    * Gets block IDs sequence - last block id, ids of first blocks of last 5 rounds and genesis block id.
@@ -25,9 +22,10 @@ export interface IBlocksModuleUtils {
    */
   getIdSequence(height: number): Promise<{ firstHeight: number, ids: string[] }>;
 
-  loadBlocksData(filter: { limit?: number, id?: string, lastId?: string }): Promise<BlocksModel[]>;
+  loadBlocksData(filter: { limit?: number, id?: string, lastId?: string }): Promise<IBlocksModel[]>;
 
-  getBlockProgressLogger(txCount: number, logsFrequency: number, msg: string): BlockProgressLogger;
+  // TODO: BlocksModuleProcess missing interface?
+  getBlockProgressLogger(txCount: number, logsFrequency: number, msg: string): any;
 
   /**
    * Gets block rewards for a delegate for time period

@@ -1,4 +1,6 @@
+import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { Transaction } from 'sequelize';
+import { IBlocksModel } from '../models';
 import { IModule } from './IModule';
 
 export interface IRoundsModule extends IModule {
@@ -9,7 +11,7 @@ export interface IRoundsModule extends IModule {
    * @param {SignedBlockType} previousBlock
    * @param {Transaction} transaction
    */
-  backwardTick(block: BlocksModel, previousBlock: BlocksModel, transaction: Transaction): Promise<void>;
+  backwardTick(block: IBlocksModel, previousBlock: IBlocksModel, transaction: Transaction): Promise<void>;
 
-  tick(block: BlocksModel|SignedAndChainedBlockType, transaction: Transaction): Promise<void>;
+  tick(block: IBlocksModel|SignedAndChainedBlockType, transaction: Transaction): Promise<void>;
 }

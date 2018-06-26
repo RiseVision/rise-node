@@ -1,7 +1,7 @@
+import { SignedAndChainedBlockType, SignedBlockType } from '@risevision/core-types';
 import { Transaction } from 'sequelize';
-import { SignedAndChainedBlockType, SignedBlockType } from '../../../../logic';
+import { IAccountsModel } from '../../models';
 import { IModule } from '../IModule';
-import { AccountsModel } from '../../../../models';
 
 export interface IBlocksModuleChain extends IModule {
 
@@ -36,7 +36,7 @@ export interface IBlocksModuleChain extends IModule {
    */
   applyGenesisBlock(block: SignedAndChainedBlockType): Promise<void>;
 
-  applyBlock(block: SignedAndChainedBlockType, broadcast: boolean, saveBlock: boolean, accountsMap: {[address: string]: AccountsModel}): Promise<void>;
+  applyBlock(block: SignedAndChainedBlockType, broadcast: boolean, saveBlock: boolean, accountsMap: {[address: string]: IAccountsModel}): Promise<void>;
 
   /**
    * Save block with transactions to database

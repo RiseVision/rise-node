@@ -1,8 +1,7 @@
-import { IKeypair } from '../../../../helpers';
-import { BasePeerType, SignedAndChainedBlockType, SignedBlockType } from '../../../../logic';
+import { BasePeerType, IKeypair, SignedBlockType } from '@risevision/core-types';
 import { IPeerLogic } from '../../logic';
+import { IBlocksModel } from '../../models';
 import { IModule } from '../IModule';
-import { BlocksModel } from '../../../../models';
 
 export interface IBlocksModuleProcess extends IModule {
   /**
@@ -22,7 +21,7 @@ export interface IBlocksModuleProcess extends IModule {
    * @param {boolean} verify
    * @return {Promise<void>}
    */
-  loadBlocksOffset(limit: number, offset: number, verify: boolean): Promise<BlocksModel>;
+  loadBlocksOffset(limit: number, offset: number, verify: boolean): Promise<IBlocksModel>;
 
   /**
    * Query remote peer for block, process them and return last processed (and valid) block

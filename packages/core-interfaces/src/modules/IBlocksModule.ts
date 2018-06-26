@@ -1,7 +1,7 @@
-import { BlocksModel } from '../../../models/BlocksModel';
+import { IBlocksModel } from '../models';
 import { IModule } from './IModule';
 
 export interface IBlocksModule extends IModule {
   lastReceipt: { get: () => number, isStale: () => boolean, update: (time?: number) => void };
-  lastBlock: BlocksModel;
+  lastBlock: IBlocksModel;
 }

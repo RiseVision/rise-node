@@ -1,56 +1,42 @@
 import { publicKey } from '@risevision/core-types';
 import { IBaseModel } from './IBaseModel';
-import { Model } from 'sequelize-typescript';
-
 
 export class IAccountsModel extends IBaseModel<IAccountsModel> {
-  username: string;
-  isDelegate: 0 | 1;
-
-  secondSignature: 0 | 1;
-
-  address: string;
-
-  publicKey: Buffer;
-
-  secondPublicKey: Buffer;
-
-  balance: number;
-
-  vote: number;
-
-  rate: number;
-
-  multimin: number;
-
-  multilifetime: number;
-
-  blockId: string;
-
-  producedblocks: number;
-
-  missedblocks: number;
-
-  fees: number;
-  rewards: number;
-  virgin: 0 | 1;
+  public username: string;
+  public isDelegate: 0 | 1;
+  public secondSignature: 0 | 1;
+  public address: string;
+  public publicKey: Buffer;
+  public secondPublicKey: Buffer;
+  public balance: number;
+  public vote: number;
+  public rate: number;
+  public multimin: number;
+  public multilifetime: number;
+  public blockId: string;
+  public producedblocks: number;
+  public missedblocks: number;
+  public fees: number;
+  public rewards: number;
+  public virgin: 0 | 1;
 
   // Unconfirmed stuff
-  u_isDelegate: 0 | 1;
-  u_secondSignature: 0 | 1;
-  u_username: string;
-  u_balance: number;
-  u_multilifetime: number;
-  u_multimin: number;
-
-  multisignatures?: publicKey[];
-  u_multisignatures?: publicKey[];
-  delegates?: publicKey[];
-  u_delegates?: publicKey[];
+  public u_isDelegate: 0 | 1;
+  public u_secondSignature: 0 | 1;
+  public u_username: string;
+  public u_balance: number;
+  public u_multilifetime: number;
+  public u_multimin: number;
+  public multisignatures?: publicKey[];
+  public u_multisignatures?: publicKey[];
+  public delegates?: publicKey[];
+  public u_delegates?: publicKey[];
 
   readonly hexPublicKey: publicKey;
 
-  isMultisignature(): boolean;
+  public isMultisignature(): boolean { return null; };
 
-  toPOJO(): { [k: string]: string | number }
+  public toPOJO(): { [k: string]: string | number } {
+    return null;
+  }
 }

@@ -1,7 +1,14 @@
-import { IModule } from './IModule';
-import { BasePeerType, SignedBlockType, IBaseTransaction, ITransportTransaction, PeerState } from '@risevision/core-types';
+import {
+  BasePeerType,
+  IBaseTransaction,
+  ITransportTransaction,
+  PeerState,
+  SignedBlockType
+} from '@risevision/core-types';
 import { IPeerLogic } from '../logic';
+import { IModule } from './IModule';
 
+// tslint:disable-next-line interface-over-type-literal
 export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };
 
 export interface ITransportModule extends IModule {
@@ -29,7 +36,7 @@ export interface ITransportModule extends IModule {
    */
   onNewBlock(block: SignedBlockType & { relays?: number }, broadcast: boolean): Promise<void>;
 
-  receiveSignatures(signatures: Array<{ transaction: string, signature: string }> ): Promise<void>;
+  receiveSignatures(signatures: Array<{ transaction: string, signature: string }>): Promise<void>;
 
   /**
    * Validate signature with schema and calls processSignature from module multisignautre

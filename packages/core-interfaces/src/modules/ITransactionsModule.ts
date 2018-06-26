@@ -1,4 +1,5 @@
 import { IBaseTransaction, IConfirmedTransaction } from '@risevision/core-types';
+import { IAccountsModel, ITransactionsModel } from '../models';
 import { IModule } from './IModule';
 
 export interface ITransactionsModule extends IModule {
@@ -68,7 +69,7 @@ export interface ITransactionsModule extends IModule {
   /**
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
-  applyUnconfirmed(transaction: IBaseTransaction<any>|IConfirmedTransaction<any>, sender: AccountsModel): Promise<void>;
+  applyUnconfirmed(transaction: IBaseTransaction<any>|IConfirmedTransaction<any>, sender: IAccountsModel): Promise<void>;
 
   /**
    * Validates account and Undoes unconfirmed transaction.
@@ -85,6 +86,6 @@ export interface ITransactionsModule extends IModule {
   /**
    * Get transaction by id
    */
-  getByID<T = any>(id: string): Promise<TransactionsModel>;
+  getByID<T = any>(id: string): Promise<ITransactionsModel>;
 
 }

@@ -1,12 +1,11 @@
 import { DBOp, FieldsInModel, IBaseTransaction, publicKey } from '@risevision/core-types';
-import { IModule } from './IModule';
-import { AccountsModel } from '../../../core-models/src';
+import { AccountDiffType, AccountFilterData } from '../logic';
 import { IAccountsModel } from '../models';
-
+import { IModule } from './IModule';
 
 export interface IAccountsModule extends IModule {
 
-  resolveAccountsForTransactions(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: AccountsModel }>;
+  resolveAccountsForTransactions(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: IAccountsModel }>;
 
   getAccount(filter: AccountFilterData, fields?: FieldsInModel<IAccountsModel>): Promise<IAccountsModel>;
 
@@ -16,7 +15,7 @@ export interface IAccountsModule extends IModule {
    * Sets some data to specific account
    */
   // tslint:disable-next-line max-line-length
-  setAccountAndGet(data: Partial<AccountsModel>  & ({ publicKey: Buffer } | { address: string })): Promise<AccountsModel>;
+  setAccountAndGet(data: Partial<IAccountsModel>  & ({ publicKey: Buffer } | { address: string })): Promise<IAccountsModel>;
 
   mergeAccountAndGetOPs(diff: AccountDiffType): Array<DBOp<any>>;
 

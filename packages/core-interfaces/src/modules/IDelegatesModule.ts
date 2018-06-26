@@ -1,17 +1,18 @@
 import { SignedBlockType } from '@risevision/core-types';
 import { IModule } from './IModule';
+import { IAccountsModel } from '../models';
 
 export interface IDelegatesModule extends IModule {
 
   /**
    * Checks that the account on pk has vote integrity for the unconfirmed state
    */
-  checkConfirmedDelegates(account: AccountsModel, votes: string[]): Promise<void>;
+  checkConfirmedDelegates(account: IAccountsModel, votes: string[]): Promise<void>;
 
   /**
    * Checks that the account on pk has vote integrity for the confirmed state
    */
-  checkUnconfirmedDelegates(account: AccountsModel, votes: string[]): Promise<void>;
+  checkUnconfirmedDelegates(account: IAccountsModel, votes: string[]): Promise<void>;
 
   /**
    * Generate a randomized list for the round of which the given height is into.
@@ -25,7 +26,7 @@ export interface IDelegatesModule extends IModule {
    */
   getDelegates(query: { limit?: number, offset?: number, orderBy: string }): Promise<{
     delegates: Array<{
-      delegate: AccountsModel,
+      delegate: IAccountsModel,
       info: { rank: number, approval: number, productivity: number }
     }>
     count: number,
