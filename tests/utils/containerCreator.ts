@@ -15,6 +15,7 @@ import {
 } from '../stubs';
 import EdStub from '../stubs/helpers/EdStub';
 import JobsQueueStub from '../stubs/helpers/jobsQueueStub';
+import { ProtoBufHelperStub } from '../stubs/helpers/ProtoBufHelperStub';
 import { SequenceStub } from '../stubs/helpers/SequenceStub';
 import { SlotsStub } from '../stubs/helpers/SlotsStub';
 import ZSchemaStub from '../stubs/helpers/ZSchemaStub';
@@ -82,6 +83,7 @@ export const createContainer = (): Container => {
   container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManagerStub).inSingletonScope();
   container.bind(Symbols.helpers.jobsQueue).to(JobsQueueStub).inSingletonScope();
   container.bind(Symbols.helpers.logger).to(LoggerStub).inSingletonScope();
+  container.bind(Symbols.helpers.protoBuf).to(ProtoBufHelperStub).inSingletonScope();
   container.bind(Symbols.helpers.sequence).to(SequenceStub).inSingletonScope().whenTargetTagged(
     Symbols.helpers.sequence,
     Symbols.tags.helpers.defaultSequence,
