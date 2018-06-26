@@ -197,4 +197,25 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     };
   }
 
+  public async attachAssets(txs: Array<IConfirmedTransaction<SecondSignatureAsset>>) {
+    const res = await this.SignaturesModel
+      .findAll({
+        where: { transactionId: txs.map((tx) => tx.id) },
+      });
+
+    const indexes = {};
+    res.forEach((tx, idx) => indexes[tx.transactionId] = idx);
+
+    txs.forEach((tx) => {
+      if (typeof(indexes[tx.id]) === 'undefined') {
+        throw new Error(`Couldn't restore asset for Signature tx: ${tx.id}`);
+      }
+      const info = res[indexes[tx.id]];
+      tx.asset   = {
+        signature: {
+          publicKey: info.publicKey.toString('hex'),
+        },
+      };
+    });
+  }
 }

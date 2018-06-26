@@ -10,7 +10,7 @@ import {
 import { MemAccountsData, SignedBlockType } from '../../../src/logic';
 import BigNumber from 'bignumber.js';
 import { IKeypair } from '../../../src/helpers';
-import { stubMethod } from '../stubDecorator';
+import { spyMethod, stubMethod } from '../stubDecorator';
 import { Model } from 'sequelize-typescript';
 import { AccountsModel } from '../../../src/models';
 import { VerificationType } from '../../../src/ioc/interfaces/logic/ITransactionLogic';
@@ -124,4 +124,9 @@ export default class TransactionLogicStub extends BaseStubClass implements ITran
   public fromBytes(tx: IBytesTransaction): IBaseTransaction<any> {
     return null;
   }
+  @stubMethod(true)
+  public attachAssets(txs: Array<IConfirmedTransaction<any>>): Promise<void> {
+    return Promise.resolve();
+  }
+
 }

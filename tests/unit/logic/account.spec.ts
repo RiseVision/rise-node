@@ -622,38 +622,7 @@ describe('logic/account', () => {
       expect((ops[0] as DBCustomOp<any>).query).to.be.eq('INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT \'1R\', (10)::bigint, "dependentId", \'1\', 1 FROM mem_accounts2delegates WHERE "accountId" = \'1R\'');
       expect((ops[1] as DBUpdateOp<any>).values).to.be.deep.eq({ balance: { val: 'balance + 10' }, blockId: '1' })
     });
-    it('should handle delegates', () => {
-      const ops: any         = account.merge('1R', { delegates: ['+a', '-b', '-c'], blockId: '1', round: 1 })
-      // expect(ops.length).eq(5);
-      const removeDelegateOp = ops.filter((op) => op.type === 'remove')[0] as DBRemoveOp<any>;
-      expect(removeDelegateOp.model).to.be.deep.eq(accounts2DelegatesModel);
-      expect(removeDelegateOp.options.where).to.be.deep.eq({
-        accountId  : '1R',
-        dependentId: {}, // FIXME when sinon supports symbols comparison
-      });
-      expect(removeDelegateOp.options.where.dependentId[Op.in]).to.be.deep.eq(['b', 'c']);
 
-      // a
-      const createDelegateRowOp = ops.filter((op) => op.type === 'create')[0] as DBCreateOp<any>;
-      expect(createDelegateRowOp.model).to.be.deep.eq(accounts2DelegatesModel);
-      expect(createDelegateRowOp.values).to.be.deep.eq({ accountId: '1R', dependentId: 'a' });
-
-      // Check delegates mem_rounds insertions/deletion for a and b,c
-      const customRoundsOps = ops.filter((op) => op.type === 'custom' && op.model === roundsModel) as Array<DBCustomOp<any>>;
-      expect(customRoundsOps.filter((op) => op.query.indexOf("'a'") !== -1)[0].query).to.contain('(balance)');
-      expect(customRoundsOps.filter((op) => op.query.indexOf("'b'") !== -1)[0].query).to.contain('(-balance)');
-      expect(customRoundsOps.filter((op) => op.query.indexOf("'c'") !== -1)[0].query).to.contain('(-balance)');
-    });
-    it('should handle multisignatures', () => {
-      const ops: any = account.merge('1R', {
-        multisignatures: ['+a', '-b', '+c'],
-      });
-      expect(ops.filter((op) => op.type === 'create')[0].values).to.be.deep.eq({ accountId: '1R', dependentId: 'a' });
-      expect(ops.filter((op) => op.type === 'create')[1].values).to.be.deep.eq({ accountId: '1R', dependentId: 'c' });
-
-      expect(ops.filter((op) => op.type === 'remove')[0].options.where.accountId).to.be.deep.eq('1R');
-      expect(ops.filter((op) => op.type === 'remove')[0].options.where.dependentId[Op.in]).to.be.deep.eq(['b']);
-    });
     it('should remove account virginity on u_balance', () => {
       const ops: any = account.merge('1R', { u_balance: -1 });
       expect(ops[0].values).to.be.deep.eq({

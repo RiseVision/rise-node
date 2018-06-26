@@ -333,4 +333,44 @@ describe('logic/transactions/secondSignature', () => {
       });
     });
   });
+
+  describe('attachAssets', () => {
+    let modelFindAllStub: SinonStub;
+    beforeEach(() => {
+      modelFindAllStub = sandbox.stub(signaturesModel, 'findAll');
+    });
+    it('should do do nothing if result is empty', async () => {
+      modelFindAllStub.resolves([]);
+      await instance.attachAssets([]);
+    });
+    it('should throw if a tx was provided but not returned by model.findAll', async () => {
+      modelFindAllStub.resolves([]);
+      await expect(instance.attachAssets([{id: 'ciao'}] as any))
+        .rejectedWith('Couldn\'t restore asset for Signature tx: ciao');
+    });
+    it('should use model result and modify original arr', async () => {
+      modelFindAllStub.resolves([
+        { transactionId: 2, publicKey: Buffer.from('bb', 'hex')},
+        { transactionId: 1, publicKey: Buffer.from('aa', 'hex')},
+      ]);
+      const txs: any = [{id: 1}, {id: 2}];
+
+      await instance.attachAssets(txs);
+
+      expect(txs[0]).deep.eq({
+        id: 1, asset: {
+          signature: {
+            publicKey: 'aa',
+          },
+        },
+      });
+      expect(txs[1]).deep.eq({
+        id: 2, asset: {
+          signature: {
+            publicKey: 'bb',
+          },
+        },
+      });
+    });
+  });
 });

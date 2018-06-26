@@ -13,6 +13,7 @@ import { createContainer } from '../../utils/containerCreator';
 import { TransactionsModel } from '../../../src/models';
 import BlocksModuleStub from '../../stubs/modules/BlocksModuleStub';
 import TransportModuleStub from '../../stubs/modules/TransportModuleStub';
+import TransactionLogicStub from '../../stubs/logic/TransactionLogicStub';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -27,6 +28,7 @@ describe('apis/transactionsAPI', () => {
   let container: Container;
   let result: any;
   let transactionsModuleStub: TransactionsModuleStub;
+  let txLogicStub: TransactionLogicStub;
   let transportModuleStub: TransportModuleStub
   let castSpy: any;
   let schema: ZSchemaStub;
@@ -67,7 +69,6 @@ describe('apis/transactionsAPI', () => {
     transactionsModuleStub.enqueueResponse(
       'getByID',
       Promise.resolve(new TransactionsModel({
-        votes: ['+100', '+50', '-25'].join(',') ,
         id   : 456,
         type : TransactionType.VOTE,
       } as any))
@@ -102,6 +103,7 @@ describe('apis/transactionsAPI', () => {
     transactionsModel = container.get(Symbols.models.transactions);
     blocksModuleStub  = container.get<BlocksModuleStub>(Symbols.modules.blocks);
     transportModuleStub = container.get(Symbols.modules.transport);
+    txLogicStub = container.get(Symbols.logic.transaction);
   });
 
   afterEach(() => {
@@ -297,6 +299,13 @@ describe('apis/transactionsAPI', () => {
 
   describe('getTX()', () => {
     it('should return a transaction with a votes property if tx type is VOTE', async () => {
+      txLogicStub.stubs.attachAssets.callsFake((txs) => {
+        txs.forEach((tx) => {
+          tx.asset = {
+            votes: ['+100', '+50', '-25']
+          };
+        });
+      });
       result   = await instance.getTX({ id: '123' });
       const tx = {
         asset: {
@@ -317,6 +326,15 @@ describe('apis/transactionsAPI', () => {
       transactionsModuleStub.stubs.getByID.returns(
         Promise.resolve(new TransactionsModel({ id: 456, type: TransactionType.DELEGATE }))
       );
+      txLogicStub.stubs.attachAssets.callsFake((txs) => {
+        txs.forEach((tx) => {
+          tx.asset = {
+            delegate: {
+              username: 'meow'
+            },
+          };
+        });
+      });
       result = await instance.getTX({ id: '123' });
       expect(result).to.deep.equal({
         transaction: {
@@ -324,10 +342,10 @@ describe('apis/transactionsAPI', () => {
           type: TransactionType.DELEGATE,
           asset: {
             delegate: {
-              username: undefined,
-            }
+              username: 'meow',
+            },
           },
-          signatures: []
+          signatures: [],
         },
       });
     });

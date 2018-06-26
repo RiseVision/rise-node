@@ -125,4 +125,10 @@ export interface ITransactionLogic {
   dbRead(raw: any): IConfirmedTransaction<any>;
 
   fromBytes(tx: IBytesTransaction): IBaseTransaction<any>;
+  /**
+   * Attach Asset object to each transaction passed
+   * @param {Array<IConfirmedTransaction<any>>} txs
+   * @return {Promise<void>}
+   */
+  attachAssets(txs: Array<IConfirmedTransaction<any>>): Promise<void>;
 }

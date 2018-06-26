@@ -14,8 +14,6 @@ import { VoteAsset } from './vote';
 export type DelegateAsset = {
   delegate: {
     username: string;
-    publicKey: string;
-    address?: string;
   }
 };
 
@@ -221,9 +219,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
       // tslint:disable object-literal-sort-keys
       return {
         delegate: {
-          username : raw.d_username,
-          publicKey: raw.t_senderPublicKey,
-          address  : raw.t_senderId,
+          username: raw.d_username
         },
       };
       // tslint:enable object-literal-sort-keys
@@ -242,4 +238,25 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     };
   }
 
+  public async attachAssets(txs: Array<IConfirmedTransaction<DelegateAsset>>) {
+    const res = await this.DelegatesModel
+      .findAll({
+        where: { transactionId: txs.map((tx) => tx.id) },
+      });
+
+    const indexes = {};
+    res.forEach((tx, idx) => indexes[tx.transactionId] = idx);
+
+    txs.forEach((tx) => {
+      if (typeof(indexes[tx.id]) === 'undefined') {
+        throw new Error(`Couldn't restore asset for Delegate tx: ${tx.id}`);
+      }
+      const info = res[indexes[tx.id]];
+      tx.asset   = {
+        delegate: {
+          username: info.username,
+        },
+      };
+    });
+  }
 }

@@ -81,6 +81,8 @@ export class TransactionsAPI {
       order : orderBy,
       where,
     });
+    // Reattach transactions asset
+    await this.txLogic.attachAssets(transactions);
 
     return {
       count,
@@ -101,8 +103,10 @@ export class TransactionsAPI {
     @QueryParams() params: { id: string }) {
 
     const { id } = params;
-    const tx     = (await this.transactionsModule.getByID(id)).toTransport<any>(this.blocksModule);
+    const txOBJ     = (await this.transactionsModule.getByID(id));
+    await this.txLogic.attachAssets([txOBJ]);
 
+    const tx = txOBJ.toTransport(this.blocksModule);
     if (tx.type === TransactionType.VOTE) {
       // tslint:disable-next-line
       tx['votes'] = {

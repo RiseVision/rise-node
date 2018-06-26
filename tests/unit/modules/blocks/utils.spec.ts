@@ -144,7 +144,7 @@ describe('modules/utils', () => {
   describe('loadLastBlock', () => {
     let findOneStub: SinonStub;
     beforeEach(() => {
-      findOneStub               = sandbox.stub(blocksModel, 'findOne').resolves();
+      findOneStub               = sandbox.stub(blocksModel, 'findOne').resolves({});
       inst['TransactionsModel'] = 'txModel'; // useful for chai deep equality.
     });
     it('should query db', async () => {
@@ -156,7 +156,12 @@ describe('modules/utils', () => {
         limit  : 1
       });
     });
-
+    it('should call txLogic.attachAssets over block txs', async () => {
+      findOneStub.resolves({transactions: ['a','b']});
+      await inst.loadLastBlock();
+      expect(txLogic.stubs.attachAssets.calledOnce).is.true;
+      expect(txLogic.stubs.attachAssets.firstCall.args[0]).deep.eq(['a', 'b']);
+    });
     it('should set blocksModule.lastBlock to lastloadedBlock', async () => {
       findOneStub.resolves({ id: '1', transactions: [] });
       await inst.loadLastBlock();

@@ -396,6 +396,9 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       requester = accountsMap[this.accountsModule.generateAddressByPublicKey(tx.requesterPublicKey)];
     }
     // Verify will throw if any error occurs during validation.
+    if (!this.transactionLogic.ready(tx, acc)) {
+      throw new Error(`Transaction ${tx.id} is not ready`);
+    }
     await this.transactionLogic.verify(tx, acc, requester, block.height);
 
   }

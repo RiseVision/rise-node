@@ -118,6 +118,9 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
       order  : [['height', 'DESC']],
       limit  : 1,
     });
+    // attach transaction assets
+    await this.transactionLogic.attachAssets(b.transactions);
+
     this.blocksModule.lastBlock = b;
     return b;
   }
@@ -201,6 +204,12 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
       }
       return [block];
     })
+    // Attach assets to each block transaction.
+      .then((blocks) => Promise.all(
+        blocks.map((b) => this.transactionLogic.attachAssets(b.transactions)
+          .then(() => b))
+        )
+      )
       .catch(catchToLoggerAndRemapError<BlocksModel[]>('Blocks#loadBlockData error', this.logger));
   }
 

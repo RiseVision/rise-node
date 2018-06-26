@@ -111,12 +111,15 @@ describe('TPS', function () {
   // });
 
   reportedIT('with always same (non-voting) sender accounts', [
-    25, 50, 100, 200,
-    300,
-    , 400, 500,
-    1000,
+    // 25, 50, 100, 200,
+    // 300,
+    // , 400, 500,
+    // 1000,
     , 2000,
-    3000
+    3000,
+    4000,
+    5000,
+
   ], async (blockSize) => {
     const txs             = [];
     const oldTxsPerBlock  = consts.maxTxsPerBlock;

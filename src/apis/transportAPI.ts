@@ -157,7 +157,7 @@ export class TransportAPI {
 
     return {
       transactions: transactions
-        .map((tx) => this.TransactionsModel.toTransportTransaction(tx, this.blocksModule))
+        .map((tx) => this.TransactionsModel.toTransportTransaction(tx, this.blocksModule)),
     };
   }
 
