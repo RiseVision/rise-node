@@ -3,6 +3,9 @@ import { ISlots } from '../ioc/interfaces/helpers/ISlots';
 import { Symbols } from '../ioc/symbols';
 import constantsType from './constants';
 
+/**
+ * Helper for to calculate slots from epoch time and vice-versa
+ */
 @injectable()
 export class Slots implements ISlots {
   @inject(Symbols.helpers.constants)
@@ -30,10 +33,16 @@ export class Slots implements ISlots {
     return Math.floor((time - t) / 1000);
   }
 
+  /**
+   * Calculates slot number from epoch time
+   */
   public getSlotNumber(epochTime: number = this.getTime()) {
     return Math.floor(epochTime / this.interval);
   }
 
+  /**
+   * Calculates time from a slot number
+   */
   public getSlotTime(slot: number) {
     return slot * this.interval;
   }
