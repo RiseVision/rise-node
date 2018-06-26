@@ -18,6 +18,9 @@ export class Sequence {
   };
   private running: boolean         = false;
 
+  /**
+   * Class constructor
+   */
   constructor(private tag: symbol, cfg) {
     this.config = {
       ...{
@@ -37,6 +40,9 @@ export class Sequence {
     return this.sequence.length;
   }
 
+  /**
+   * Add a new task to the queue
+   */
   public addAndPromise<T>(worker: () => Promise<T>): Promise<T> {
     if (this.namespace.get('running') === true) {
       // console.log('PREVIOUSLY: ',this.namespace.get('stack'));
@@ -57,6 +63,9 @@ export class Sequence {
     });
   }
 
+  /**
+   * Execute next task in the queue
+   */
   private tick() {
     // console.log('tick', this.running);
     if (this.running) {
