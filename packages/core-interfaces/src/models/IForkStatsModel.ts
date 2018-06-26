@@ -1,16 +1,16 @@
 import { ForkType } from '@risevision/core-types';
 import { IBaseModel } from './IBaseModel';
 
-export interface IForkStatsModel extends IBaseModel<IForkStatsModel> {
-  delegatePublicKey: Buffer;
+export class IForkStatsModel extends IBaseModel<IForkStatsModel> {
+  public delegatePublicKey: Buffer;
 
-  blockTimestamp: number;
+  public blockTimestamp: number;
 
-  blockId: string;
+  public blockId: string;
 
-  blockHeight: number;
+  public blockHeight: number;
 
-  previousBlock: string;
+  public previousBlock: string;
 
-  cause: ForkType;
+  public cause: ForkType;
 }

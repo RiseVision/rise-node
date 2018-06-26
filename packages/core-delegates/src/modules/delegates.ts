@@ -18,7 +18,6 @@ import { BlockRewardLogic, SignedBlockType } from '../logic/';
 import { AccountsModel } from '../models';
 import { publicKey } from '../types/sanityTypes';
 
-
 @injectable()
 export class DelegatesModule implements IDelegatesModule {
   private loaded: boolean               = false;

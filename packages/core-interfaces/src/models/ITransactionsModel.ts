@@ -2,37 +2,39 @@ import { ITransportTransaction, publicKey, TransactionType } from '@risevision/c
 import { IBlocksModule } from '../modules';
 import { IBaseModel } from './IBaseModel';
 
-export interface ITransactionsModel<Asset = any> extends IBaseModel<ITransactionsModel<Asset>> {
+export class ITransactionsModel<Asset = any> extends IBaseModel<ITransactionsModel<Asset>> {
 
-  id: string;
+  public id: string;
 
-  rowId: number;
+  public rowId: number;
 
-  height: number;
+  public height: number;
 
-  blockId: string;
+  public blockId: string;
 
-  type: TransactionType;
+  public type: TransactionType;
 
-  timestamp: number;
+  public timestamp: number;
 
-  senderPublicKey: Buffer;
+  public senderPublicKey: Buffer;
 
-  senderId: string;
+  public senderId: string;
 
-  recipientId: string;
+  public recipientId: string;
 
-  amount: number;
+  public amount: number;
 
-  fee: number;
-  signature: Buffer;
-  signSignature: Buffer;
+  public fee: number;
+  public signature: Buffer;
+  public signSignature: Buffer;
 
-  requesterPublicKey: Buffer;
+  public requesterPublicKey: Buffer;
 
-  asset: Asset;
+  public asset: Asset;
 
-  signatures: publicKey[];
+  public signatures: publicKey[];
 
-  toTransport(bm: IBlocksModule): ITransportTransaction<Asset>;
+  public toTransport(bm: IBlocksModule): ITransportTransaction<Asset> {
+    return null;
+  }
 }

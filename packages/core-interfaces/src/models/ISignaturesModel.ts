@@ -1,7 +1,7 @@
 import { IBaseModel } from './IBaseModel';
 
-export interface ISignaturesModel extends IBaseModel<ISignaturesModel> {
-  publicKey: Buffer;
+export class ISignaturesModel extends IBaseModel<ISignaturesModel> {
+  public publicKey: Buffer;
 
-  transactionId: string;
+  public transactionId: string;
 }

@@ -1,6 +1,7 @@
-import {api as sodium} from 'sodium';
+import { IKeypair } from '@risevision/core-types';
+import { api as sodium } from 'sodium';
 
-export class Ed {
+export class Crypto {
   public makeKeypair(hash: Buffer): IKeypair {
     const keypair = sodium.crypto_sign_seed_keypair(hash);
 

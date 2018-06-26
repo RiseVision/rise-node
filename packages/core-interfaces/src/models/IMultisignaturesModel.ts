@@ -1,15 +1,16 @@
 import { publicKey } from '@risevision/core-types';
 import { IBaseModel } from './IBaseModel';
 
-export interface IMultisignaturesModel extends IBaseModel<IMultisignaturesModel> {
-  min: number;
+export class IMultisignaturesModel extends IBaseModel<IMultisignaturesModel> {
+  public min: number;
 
-  lifetime: number;
+  public lifetime: number;
 
-  keysgroup: string;
+  public keysgroup: string;
 
-  transactionId: string;
+  public transactionId: string;
 
-  readonly added: publicKey[];
-  readonly removed: publicKey[];
+  public added: publicKey[];
+
+  public removed: publicKey[];
 }

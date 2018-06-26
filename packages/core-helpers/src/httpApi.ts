@@ -1,5 +1,5 @@
+import { AppConfig } from '@risevision/core-types';
 import { NextFunction, Request, Response } from 'express';
-import { AppConfig } from '../types/genericTypes';
 import { checkIpInList } from './checkIpInList';
 import { ILogger } from './logger';
 

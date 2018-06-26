@@ -1,6 +1,5 @@
+import { IConfirmedTransaction, SignedAndChainedBlockType, SignedBlockType } from '@risevision/core-types';
 import * as changeCase from 'change-case';
-import { SignedAndChainedBlockType, SignedBlockType } from '../logic/';
-import { IConfirmedTransaction } from '../logic/transactions/';
 
 export class Bus {
   public modules: any[];

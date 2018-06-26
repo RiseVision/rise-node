@@ -1,5 +1,5 @@
+import { IJobsQueue } from '@risevision/core-interfaces';
 import { injectable } from 'inversify';
-import { IJobsQueue } from '../ioc/interfaces/helpers';
 
 @injectable()
 export class JobsQueue implements IJobsQueue {

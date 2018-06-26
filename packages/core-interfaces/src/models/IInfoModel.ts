@@ -1,6 +1,6 @@
 import { IBaseModel } from './IBaseModel';
 
-export interface IInfoModel extends IBaseModel<IInfoModel> {
-  key: string;
-  value: string;
+export class IInfoModel extends IBaseModel<IInfoModel> {
+  public key: string;
+  public value: string;
 }

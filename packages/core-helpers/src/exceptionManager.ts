@@ -1,6 +1,6 @@
+import { IExceptionModel } from '@risevision/core-interfaces';
 import { inject, injectable } from 'inversify';
 import 'reflect-metadata';
-import { ExceptionModel } from '../models';
 import { Symbols } from '../ioc/symbols';
 
 export const ExceptionsList = {
@@ -28,7 +28,7 @@ export class ExceptionsManager {
   private handlers: { [k: string]: { [h: string]: IExceptionHandler<any> } } = {};
 
   @inject(Symbols.models.exceptions)
-  private exceptionModel: typeof ExceptionModel;
+  private exceptionModel: typeof IExceptionModel;
 
   public registerExceptionHandler<T= any>(what: symbol, handlerKey: string, handler: IExceptionHandler<T>) {
     this.handlers[what]             = this.handlers[what] || {};

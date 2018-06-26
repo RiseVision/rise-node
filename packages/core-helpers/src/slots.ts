@@ -1,12 +1,12 @@
+import { ISlots } from '@risevision/core-interfaces';
+import { ConstantsType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
-import { ISlots } from '../ioc/interfaces/helpers/ISlots';
 import { Symbols } from '../ioc/symbols';
-import constantsType from './constants';
 
 @injectable()
 export class Slots implements ISlots {
   @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
+  private constants: ConstantsType;
 
   /**
    * Active delegates

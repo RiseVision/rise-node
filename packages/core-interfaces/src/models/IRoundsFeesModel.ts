@@ -1,11 +1,11 @@
 import { IBaseModel } from './IBaseModel';
 
-export interface IRoundsFeesModel extends IBaseModel<IRoundsFeesModel> {
-  height: number;
+export class IRoundsFeesModel extends IBaseModel<IRoundsFeesModel> {
+  public height: number;
 
-  fees: number;
+  public fees: number;
 
-  timestamp: number;
+  public timestamp: number;
 
-  publicKey: Buffer;
+  public publicKey: Buffer;
 }

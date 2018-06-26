@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Changes the operator sign
  * @param {string[]} diff

@@ -1,4 +1,4 @@
-import {ILogger} from './logger';
+import { ILogger } from '@risevision/core-interfaces';
 
 export type cback<T = void> = (err: Error, data?: T) => void;
 

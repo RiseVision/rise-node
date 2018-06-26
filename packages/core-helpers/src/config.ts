@@ -1,9 +1,12 @@
+import { AppConfig } from '@risevision/core-types';
 import * as fs from 'fs';
 import * as path from 'path';
-import configSchema from '../schema/config';
-import { AppConfig } from '../types/genericTypes';
 import constants from './constants';
-import {z_schema as ZSchema} from './z_schema';
+import { z_schema as ZSchema } from './z_schema';
+
+// tslint:disable-next-line no-var-requires
+const configSchema = require('../schema/config.json');
+
 // tslint:disable no-console
 /**
  * Loads config from path
@@ -39,7 +42,7 @@ export default function config(configPath: string): AppConfig {
       configData.forging.transactionsPolling = false;
     }
     if (configData.forging.transactionsPolling && typeof configData.forging.pollingInterval === 'undefined') {
-      configData.forging.pollingInterval = Math.round(constants.blockTime / 2 ) * 1000;
+      configData.forging.pollingInterval = Math.round(constants.blockTime / 2) * 1000;
     }
     return configData;
   }

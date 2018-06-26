@@ -1,20 +1,20 @@
 import { PeerState } from '@risevision/core-types';
 import { IBaseModel } from './IBaseModel';
 
-export interface IPeersModel extends IBaseModel<IPeersModel> {
-  ip: string;
+export class IPeersModel extends IBaseModel<IPeersModel> {
+  public ip: string;
 
-  port: number;
+  public port: number;
 
-  state: PeerState;
+  public state: PeerState;
 
-  os: string;
+  public os: string;
 
-  version: string;
+  public version: string;
 
-  clock: number;
+  public clock: number;
 
-  broadhash: Buffer;
+  public broadhash: Buffer;
 
-  height: number;
+  public height: number;
 }

@@ -1,4 +1,4 @@
-import { BaseModel, TransactionsModel } from '@risevision/core/src/models/';
+import { BaseModel, TransactionsModel } from '@risevision/core-models';
 import { BelongsTo, Column, ForeignKey, PrimaryKey, Table } from 'sequelize-typescript';
 
 @Table({tableName: 'delegates'})

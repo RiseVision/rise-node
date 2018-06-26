@@ -20,9 +20,9 @@ export type ConstantsType = {
   rewards: Array<{ height: number, reward: number }>
   totalAmount: number,
   unconfirmedTransactionTimeOut: number, // 1080 blocks
-  multisigConstraints: Array<{
+  multisigConstraints: {
     min: { minimum: number, maximum: number },
     lifetime: { minimum: number, maximum: number },
     keysgroup: { minimum: number, maximum: number },
-  }>
+  }
 };

@@ -7,7 +7,6 @@ interface IPromiseTask {
 
 /**
  * Creates a FIFO sequence array and default settings with config values.
- * Calls __tick with 3
  */
 export class Sequence {
   private sequence: IPromiseTask[] = [];

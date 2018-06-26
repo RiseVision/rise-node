@@ -1,14 +1,13 @@
+import { DBBulkCreateOp, DBCreateOp, DBOp, DBRemoveOp, DBUpdateOp, DBUpsertOp } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as sequelize from 'sequelize';
 import { Op, Sequelize, Transaction } from 'sequelize';
 import { Model } from 'sequelize-typescript';
-import { Symbols } from '../ioc/symbols';
-import { DBBulkCreateOp, DBCreateOp, DBOp, DBRemoveOp, DBUpdateOp, DBUpsertOp } from '../types/genericTypes';
 import * as squel from 'squel';
 import { wait } from './promiseUtils';
 
 const squelPostgres = squel.useFlavour('postgres');
-squelPostgres.registerValueHandler(Buffer, buffer => {
+squelPostgres.registerValueHandler(Buffer, (buffer) => {
  return {
    formatted: true,
    value: "E'\\\\x" + buffer.toString('hex') + "'",
@@ -16,24 +15,6 @@ squelPostgres.registerValueHandler(Buffer, buffer => {
  } as any;
 });
 
-//
-// const debugWrap = (obj: any, met: string, myRes: string) =>  {
-//   const old = obj[met];
-//   obj[met] = (...args) => {
-//     const origRet = old.apply(obj, args);
-//     // console.log(met);
-//     if (origRet !== myRes) {
-//       console.log('FAIL');
-//       console.log(args);
-//       console.log(myRes);
-//       console.log('----');
-//       console.log(origRet);
-//       process.exit(1);
-//     }
-//     obj[met] = old;
-//     return origRet;
-//   };
-// }
 @injectable()
 export class DBHelper {
 
@@ -109,7 +90,6 @@ export class DBHelper {
     }
     await this.sequelize.query(chunk.value, baseOptions);
   }
-
 
   public* splitOps(what: Array<DBOp<any>>, chunkSize: number): Iterator<string> {
     let tempOps = [];

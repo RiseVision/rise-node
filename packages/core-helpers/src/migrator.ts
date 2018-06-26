@@ -3,16 +3,13 @@ import * as fs from 'fs';
 import { inject, injectable } from 'inversify';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
-import { Symbols } from '../ioc/symbols';
-import { MigrationsModel } from '../models';
 import MyBigNumb from './bignum';
-
+import { IMigrationsModel } from '@risevision/core-interfaces';
 
 @injectable()
 export class Migrator {
   @inject(Symbols.models.migrations)
-  private MigrationsModel: typeof MigrationsModel;
-
+  private MigrationsModel: typeof IMigrationsModel;
 
   public async init(): Promise<void> {
     const hasMigrations   = await this.checkMigrations();
@@ -82,7 +79,6 @@ export class Migrator {
 
   private async applyPendingMigrations(pendingMigrations: Array<{ id: BigNumber, name: string, path: string }>) {
     for (const m of pendingMigrations) {
-      console.log(m.path);
       await this.MigrationsModel.sequelize.query(fs.readFileSync(m.path, { encoding: 'utf8' }));
     }
     return pendingMigrations;
@@ -104,7 +100,8 @@ export class Migrator {
    */
   private applyRuntimeQueryFile() {
     return Promise.resolve(
-      this.MigrationsModel.sequelize.query(fs.readFileSync(path.join(process.cwd(), 'sql', 'runtime.sql'), { encoding: 'utf8' }))
+      this.MigrationsModel.sequelize
+        .query(fs.readFileSync(path.join(process.cwd(), 'sql', 'runtime.sql'), { encoding: 'utf8' }))
     );
   }
 }

@@ -1,4 +1,3 @@
-import * as isEmpty from 'is-empty';
 /**
  * Removes empty stuff from object either recursively or not
  * @param {T} obj

@@ -1,4 +1,5 @@
 // tslint:disable no-console object-literal-sort-keys
+import { ILogger } from '@risevision/core-interfaces';
 import * as CircularJSON from 'circular-json';
 import 'colors';
 import * as fs from 'fs';
@@ -7,20 +8,6 @@ import * as util from 'util';
 
 const strftime = tstrftime.timezone('+0000');
 
-type logFn = (message?: string, data?: string | any) => void;
-
-export interface ILogger {
-  none: logFn;
-  trace: logFn;
-  debug: logFn;
-  log: logFn;
-  info: logFn;
-  warn: logFn;
-  error: logFn;
-  fatal: logFn;
-
-  setLevel(lvl: string): void;
-}
 const startTime = Date.now();
 export default (config: any = {}): ILogger => {
   config                 = config || {};

@@ -1,7 +1,6 @@
-'use strict';
+import { AppConfig } from '@risevision/core-types';
 import { Application } from 'express';
 import * as RateLimit from 'express-rate-limit';
-import { AppConfig } from '../types/genericTypes';
 
 export interface IRateLimiterOpts {
   delayAfter: number;

@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js';
 import Bignum from './bignum';
-import {Slots} from './slots';
+import { Slots } from './slots';
 
 export class RoundChanges {
   private roundFees: number;
@@ -12,9 +12,9 @@ export class RoundChanges {
   private feesRemaining: BigNumber;
 
   constructor(scope: { roundFees?: number, roundRewards: number[] }, private slots: Slots) {
-    this.roundFees    = Math.floor(scope.roundFees) || 0;
-    this.roundRewards = scope.roundRewards || [];
-    this.fees = new Bignum(this.roundFees.toPrecision(15)).dividedBy(this.slots.delegates)
+    this.roundFees     = Math.floor(scope.roundFees) || 0;
+    this.roundRewards  = scope.roundRewards || [];
+    this.fees          = new Bignum(this.roundFees.toPrecision(15)).dividedBy(this.slots.delegates)
       .integerValue(BigNumber.ROUND_FLOOR);
     this.feesRemaining = new Bignum(this.roundFees.toPrecision(15)).minus(this.fees.times(this.slots.delegates));
   }
@@ -24,7 +24,7 @@ export class RoundChanges {
    * Fees and feesRemaining based on slots
    */
   public at(index: number): { balance: number, fees: number, feesRemaining: number, rewards: number } {
-    const rewards       = this.roundRewards[index] ? new Bignum(this.roundRewards[index].toPrecision(15))
+    const rewards = this.roundRewards[index] ? new Bignum(this.roundRewards[index].toPrecision(15))
       .integerValue(BigNumber.ROUND_FLOOR) : 0;
 
     return {
