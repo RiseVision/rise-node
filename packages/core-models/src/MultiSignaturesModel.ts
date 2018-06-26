@@ -1,6 +1,6 @@
+import { IMultisignaturesModel } from '@risevision/core-interfaces';
 import { publicKey } from '@risevision/core-types';
 import {
-  BelongsTo,
   Column,
   ForeignKey,
   IBuildOptions,
@@ -8,12 +8,11 @@ import {
   Table
 } from 'sequelize-typescript';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { IBaseModel } from './BaseModel';
+import { BaseModel } from './BaseModel';
 import { TransactionsModel } from './TransactionsModel';
 
-
 @Table({tableName: 'multisignatures'})
-export class MultiSignaturesModel extends IBaseModel<MultiSignaturesModel> {
+export class MultiSignaturesModel extends BaseModel<MultiSignaturesModel> implements IMultisignaturesModel {
   @Column
   public min: number;
 

@@ -1,9 +1,11 @@
+// tslint:disable
 import { publicKey } from '@risevision/core-types';
+import { IAccountsModel } from '@risevision/core-interfaces';
 import * as pgp from 'pg-promise';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import { Column, DataType, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
-import { IBaseModel } from './BaseModel';
+import { BaseModel } from './BaseModel';
 
 const fields            = ['username', 'isDelegate', 'secondSignature', 'address', 'publicKey', 'secondPublicKey', 'balance', 'vote', 'rate', 'multimin', 'multilifetime', 'blockId', 'producedblocks', 'missedblocks', 'fees', 'rewards', 'virgin'];
 const unconfirmedFields = ['u_isDelegate', 'u_secondSignature', 'u_username', 'u_balance', 'u_multimin', 'u_multilifetime'];
@@ -14,7 +16,7 @@ const buildArrayArgAttribute = function (table: string): any {
   return [sequelize.literal(`(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2${table} WHERE "accountId" = "AccountsModel"."address")`), table];
 };
 
-Scopes({
+@Scopes({
   full         : {
     attributes: [
       ...allFields,
@@ -33,7 +35,7 @@ Scopes({
   },
 })
 @Table({ tableName: 'mem_accounts' })
-export class AccountsModel extends IBaseModel<AccountsModel> {
+export class AccountsModel extends BaseModel<AccountsModel> implements IAccountsModel {
   @Column
   public username: string;
   @Column
@@ -97,7 +99,6 @@ export class AccountsModel extends IBaseModel<AccountsModel> {
   public u_multilifetime: number;
   @Column
   public u_multimin: number;
-
 
   @Column(DataType.TEXT)
   public multisignatures?: publicKey[];
@@ -184,7 +185,7 @@ export class AccountsModel extends IBaseModel<AccountsModel> {
   }
 
   public static restoreUnconfirmedEntries() {
-    return this.update({
+    return Promise.resolve(this.update({
       u_isDelegate     : sequelize.col('isDelegate'),
       u_balance        : sequelize.col('balance'),
       u_secondSignature: sequelize.col('secondSignature'),
@@ -198,7 +199,7 @@ export class AccountsModel extends IBaseModel<AccountsModel> {
           u_username       : { [Op.ne]: sequelize.col('username') },
         },
       },
-    });
+    }));
   }
 
   public static createBulkAccountsSQL(addresses: string[]) {

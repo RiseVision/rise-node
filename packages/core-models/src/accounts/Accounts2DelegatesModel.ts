@@ -1,14 +1,12 @@
-import {
-  Column,
-  ForeignKey, PrimaryKey,
-  Table,
-} from 'sequelize-typescript';
+import { IAccounts2DelegatesModel } from '@risevision/core-interfaces';
+import { Column, ForeignKey, PrimaryKey, Table, } from 'sequelize-typescript';
 import { AccountsModel } from '../AccountsModel';
-import { IBaseModel } from '../BaseModel';
+import { BaseModel } from '../BaseModel';
 
-@Table({tableName: 'mem_accounts2delegates'})
+
+@Table({ tableName: 'mem_accounts2delegates' })
 // tslint:disable-next-line class-name
-export class Accounts2DelegatesModel extends IBaseModel<Accounts2DelegatesModel> {
+export class Accounts2DelegatesModel extends BaseModel<Accounts2DelegatesModel> implements IAccounts2DelegatesModel {
   @PrimaryKey
   @Column
   public dependentId: string;

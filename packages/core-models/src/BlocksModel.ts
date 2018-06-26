@@ -1,13 +1,13 @@
-import { IBlocksModule } from '@risevision/core-interfaces';
+import { IBlocksModel, IBlocksModule } from '@risevision/core-interfaces';
 import { SignedBlockType } from '@risevision/core-types';
 import { Column, DataType, HasMany, PrimaryKey, Table } from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { IBaseModel } from './BaseModel';
+import { BaseModel } from './BaseModel';
 import { TransactionsModel } from './TransactionsModel';
 
 @Table({ tableName: 'blocks' })
-export class BlocksModel extends IBaseModel<BlocksModel> {
+export class BlocksModel extends BaseModel<BlocksModel> implements IBlocksModel {
 
   constructor(values?: FilteredModelAttributes<BlocksModel>, options?: IBuildOptions) {
     super(values, options);

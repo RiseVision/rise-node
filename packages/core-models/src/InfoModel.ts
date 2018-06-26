@@ -1,8 +1,9 @@
+import { IInfoModel } from '@risevision/core-interfaces';
 import { Column, PrimaryKey, Table } from 'sequelize-typescript';
-import { IBaseModel } from './BaseModel';
+import { BaseModel } from './BaseModel';
 
 @Table({ tableName: 'info' })
-export class InfoModel extends IBaseModel<InfoModel> {
+export class InfoModel extends BaseModel<InfoModel> implements IInfoModel {
   @PrimaryKey
   @Column
   public key: string;

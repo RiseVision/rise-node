@@ -1,8 +1,9 @@
+import { IMigrationsModel } from '@risevision/core-interfaces';
 import { Column, PrimaryKey, Table } from 'sequelize-typescript';
-import { IBaseModel } from './BaseModel';
+import { BaseModel } from './BaseModel';
 
 @Table({ tableName: 'migrations' })
-export class MigrationsModel extends IBaseModel<MigrationsModel> {
+export class MigrationsModel extends BaseModel<MigrationsModel> implements IMigrationsModel {
   @PrimaryKey
   @Column
   public id: string;
