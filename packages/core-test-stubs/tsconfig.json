@@ -13,6 +13,7 @@
     "inlineSourceMap":              true,
     "inlineSources":                true,
     "lib":                          [
+      "dom",
       "es7"
     ],
     "paths": {
