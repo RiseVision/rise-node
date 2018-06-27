@@ -7,8 +7,8 @@ export class PostTransactionsRequest extends BaseRequest {
   public getRequestOptions() {
     const reqOptions = super.getRequestOptions();
     if (this.isProtoBuf()) {
-      if (this.protoBufHelper.validate(reqOptions.data, 'transportTransactions')) {
-        reqOptions.data = this.protoBufHelper.encode(reqOptions.data, 'transportBlocks', 'transportBlock');
+      if (BaseRequest.protoBufHelper.validate(reqOptions.data, 'transportTransactions')) {
+        reqOptions.data = BaseRequest.protoBufHelper.encode(reqOptions.data, 'transportBlocks', 'transportBlock');
       } else {
         throw new Error('Failed to encode ProtoBuf');
       }
