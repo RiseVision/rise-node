@@ -12,7 +12,10 @@
   "license": "ISC",
   "dependencies": {
     "@risevision/core-interfaces": "^1.0.0",
-    "@risevision/core-types": "^1.0.0"
+    "@risevision/core-types": "^1.0.0",
+    "@risevision/core-models": "^1.0.0",
+    "@risevision/core-helpers": "^1.0.0",
+    "dpos-offline": "=1.6.0"
   },
   "devDependencies": {
     "shx": "=0.2.2",

@@ -1,13 +1,9 @@
+import { IAccountsModel, IBlocksModel, IRoundLogic, IRoundsModel, RoundLogicScope } from '@risevision/core-interfaces';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
-import { ILogger, RoundChanges, Slots } from '../helpers/';
-import { IRoundLogic } from '../ioc/interfaces/logic/';
-import { IAccountsModule } from '../ioc/interfaces/modules';
-import { AccountsModel, BlocksModel, RoundsModel } from '../models';
-import roundSQL from '../sql/logic/rounds';
-import { DBCustomOp, DBOp } from '../types/genericTypes';
-import { address } from '../types/sanityTypes';
-import { SignedBlockType } from './block';
+import { Slots } from '../helpers/slots';
+import { DBCustomOp, DBOp } from '@risevision/core-types';
+import { RoundChanges } from '@risevision/core-helpers';
 
 // This cannot be injected directly as it needs to be created.
 // rounds module.
@@ -111,7 +107,7 @@ export class RoundLogic implements IRoundLogic {
   /**
    * Remove blocks higher than this block height
    */
-  public truncateBlocks(): DBOp<BlocksModel> {
+  public truncateBlocks(): DBOp<IBlocksModel> {
     return {
       model  : this.scope.models.BlocksModel,
       options: { where: { height: { [Op.gt]: this.scope.block.height } } },
@@ -123,7 +119,7 @@ export class RoundLogic implements IRoundLogic {
    * Performed when rollbacking last block of a round.
    * It restores the round snapshot from sql
    */
-  public restoreRoundSnapshot(): DBOp<RoundsModel> {
+  public restoreRoundSnapshot(): DBOp<IRoundsModel> {
     return {
       model: this.scope.models.RoundsModel,
       query: roundSQL.restoreRoundSnapshot,
@@ -135,7 +131,7 @@ export class RoundLogic implements IRoundLogic {
    * Performed when rollbacking last block of a round.
    * It restores the votes snapshot from sql
    */
-  public restoreVotesSnapshot(): DBOp<AccountsModel> {
+  public restoreVotesSnapshot(): DBOp<IAccountsModel> {
     return {
       model: this.scope.models.AccountsModel,
       query: roundSQL.restoreVotesSnapshot,

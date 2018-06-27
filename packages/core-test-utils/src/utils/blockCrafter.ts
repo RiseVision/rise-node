@@ -1,21 +1,8 @@
+import { Symbols } from '@risevision/core-helpers';
 import * as crypto from 'crypto';
 import * as uuid from 'uuid';
-import { Ed, IKeypair } from '../../src/helpers';
-import { IBlockLogic } from '../../src/ioc/interfaces/logic';
-import { Symbols } from '../../src/ioc/symbols';
-import {
-  BlockLogic,
-  BlockRewardLogic,
-  SignedAndChainedBlockType,
-  SignedBlockType,
-  TransactionLogic
-} from '../../src/logic';
-import {
-  IBaseTransaction,
-  RegisterDelegateTransaction, SecondSignatureTransaction,
-  SendTransaction,
-  VoteTransaction
-} from '../../src/logic/transactions';
+
+
 import { createContainer } from './containerCreator';
 
 const fakeContainer = createContainer();

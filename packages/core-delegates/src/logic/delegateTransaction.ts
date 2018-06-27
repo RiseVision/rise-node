@@ -1,13 +1,16 @@
+import { removeEmptyObjKeys, Symbols } from '@risevision/core-helpers';
+import { IAccountsModel, IAccountsModule, IBaseTransactionType, ISystemModule } from '@risevision/core-interfaces';
 import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
-import { removeEmptyObjKeys, TransactionType } from '../../helpers/';
-import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
-import { Symbols } from '../../ioc/symbols';
-import { AccountsModel, DelegatesModel } from '../../models/';
-import delegateSchema from '../../schema/logic/transactions/delegate';
-import { DBCreateOp, DBOp } from '../../types/genericTypes';
-import { SignedBlockType } from '../block';
-import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
+import { DelegatesModel } from '../models/DelegatesModel';
+import {
+  DBCreateOp,
+  DBOp,
+  IBaseTransaction,
+  IConfirmedTransaction,
+  SignedBlockType,
+  TransactionType
+} from '@risevision/core-types';
 
 // tslint:disable-next-line interface-over-type-literal
 export type DelegateAsset = {
@@ -30,7 +33,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
   private systemModule: ISystemModule;
 
   @inject(Symbols.models.accounts)
-  private AccountsModel: typeof AccountsModel;
+  private AccountsModel: typeof IAccountsModel;
   @inject(Symbols.models.delegates)
   private DelegatesModel: typeof DelegatesModel;
 
@@ -38,7 +41,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     super(TransactionType.DELEGATE);
   }
 
-  public calculateFee(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModel, height: number): number {
+  public calculateFee(tx: IBaseTransaction<DelegateAsset>, sender: IAccountsModel, height: number): number {
     return this.systemModule.getFees(height).fees.delegate;
   }
 
@@ -49,7 +52,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     return Buffer.from(tx.asset.delegate.username, 'utf8');
   }
 
-  public async verify(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModel): Promise<void> {
+  public async verify(tx: IBaseTransaction<DelegateAsset>, sender: IAccountsModel): Promise<void> {
     if (tx.recipientId) {
       throw new Error('Invalid recipient');
     }
@@ -99,7 +102,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
   }
 
   // tslint:disable-next-line max-line-length
-  public async apply(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+  public async apply(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     const data = {
       isDelegate  : 1 as any,
       u_isDelegate: 1 as any,
@@ -123,7 +126,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
   }
 
   // tslint:disable-next-line max-line-length
-  public async undo(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+  public async undo(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     const data = {
       isDelegate  : 0 as 0 | 1,
       u_isDelegate: 1 as 0 | 1,
@@ -145,7 +148,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
   /**
    * Stores in accounts that sender is now an unconfirmed delegate
    */
-  public async applyUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+  public async applyUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     const data = {
       isDelegate  : 0 as 0 | 1,
       u_isDelegate: 1 as 0 | 1,
@@ -166,7 +169,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     }];
   }
 
-  public async undoUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+  public async undoUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     const data = {
       isDelegate  : 0 as 0 | 1,
       u_isDelegate: 0 as 0 | 1,

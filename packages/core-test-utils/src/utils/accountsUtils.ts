@@ -1,6 +1,5 @@
-import { dposOffline } from 'dpos-offline';
+import { dposOffline, LiskWallet } from 'dpos-offline';
 import * as uuid from 'uuid';
-import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 
 export const generateAccount = (): LiskWallet => {
   return new dposOffline.wallets.LiskLikeWallet(uuid.v4(), 'R');

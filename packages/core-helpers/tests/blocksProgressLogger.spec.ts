@@ -1,11 +1,11 @@
+import {LoggerStub} from '@risevision/core-test-stubs';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import {Container} from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
 import { BlockProgressLogger, Symbols } from '../src/';
-import { LoggerStub } from '../../stubs';
-import { createContainer } from '../../utils/containerCreator';
+
 
 // tslint:disable no-var-requires no-string-literal no-unused-expression
 const assertArrays = require('chai-arrays');

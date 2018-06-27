@@ -13,7 +13,7 @@ import {
   TransactionPoolStub,
   TransactionsModuleStub,
 } from '../stubs';
-import EdStub from '../stubs/helpers/EdStub';
+import EdStub from '../src/';
 import JobsQueueStub from '../stubs/helpers/jobsQueueStub';
 import { SequenceStub } from '../stubs/helpers/SequenceStub';
 import { SlotsStub } from '../stubs/helpers/SlotsStub';

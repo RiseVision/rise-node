@@ -18,7 +18,8 @@
     "paths": {
       "@risevision/core-models": ["../core-models/*"],
       "@risevision/core-interfaces": ["../core-interfaces/*"],
-      "@risevision/core-types": ["../core-types/*"]
+      "@risevision/core-types": ["../core-types/*"],
+      "@risevision/core-test-stubs": ["../core-test-stubs/*"]
     }
   },
   "exclude":         [
