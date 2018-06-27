@@ -462,9 +462,9 @@ describe('AppManager', () => {
     });
 
     // Test added to make sure this file is updated every time a new element is bound in container
-    it('should call bind exactly 88 times', async () => {
+    it('should call bind exactly 89 times', async () => {
       await instance.initAppElements();
-      expect(containerStub.bindCount).to.be.equal(88);
+      expect(containerStub.bindCount).to.be.equal(89);
     });
 
     it('should bind each API controller to its symbol', async () => {
@@ -589,6 +589,13 @@ describe('AppManager', () => {
       expect(containerStub.bindings[Symbols.helpers.logger]).to.be.deep.equal([
         {
           toConstantValue: (instance as any).logger,
+        },
+      ]);
+
+      expect(containerStub.bindings[Symbols.helpers.protoBuf]).to.be.deep.equal([
+        {
+          inSingletonScope: true,
+          to              : 'ProtoBufHelper',
         },
       ]);
 

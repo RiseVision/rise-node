@@ -96,6 +96,7 @@ import {
 import { BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify } from './modules/blocks/';
 import { ForkModule } from './modules/fork';
 import { AppConfig } from './types/genericTypes';
+import { BaseRequest } from './apis/requests/BaseRequest';
 
 // import {makeLoggerMiddleware} from 'inversify-logger-middleware';
 // const theLogger = makeLoggerMiddleware();
@@ -419,6 +420,8 @@ export class AppManager {
           .whenTargetTagged(Symbols.helpers.sequence, sequenceTag);
       });
     this.container.bind(Symbols.helpers.slots).to(Slots).inSingletonScope();
+    this.container.bind(Symbols.helpers.protoBuf).to(ProtoBufHelper).inSingletonScope();
+    BaseRequest.protoBufHelper = this.container.get(Symbols.helpers.protoBuf);
   }
 
   private genericsElements(theCache, sequelize, namespace, io) {

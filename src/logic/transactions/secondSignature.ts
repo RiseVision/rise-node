@@ -53,7 +53,7 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
    */
   public fromBytes(bytes: Buffer, tx?: IBaseTransaction<any>): SecondSignatureAsset {
     if (bytes === null) {
-      return {} as any;
+      return null;
     }
     // Splits the votes into 33 bytes chunks (1 for the sign, 32 for the publicKey)
     return {

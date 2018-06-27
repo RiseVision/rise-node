@@ -14,16 +14,15 @@ export interface IAPIRequest {
   getOrigOptions(): PeerRequestOptions;
 }
 
-@injectable()
 export abstract class BaseRequest implements IAPIRequest {
+  // AppManager will inject the dependency here
+  public static protoBufHelper: ProtoBufHelper;
+
   protected readonly method: 'GET' | 'POST';
   protected readonly baseUrl: string;
   protected readonly supportsProtoBuf: boolean = false;
   protected options: any;
   protected peer: IPeerLogic;
-
-  @inject(Symbols.helpers.protoBuf)
-  protected protoBufHelper: ProtoBufHelper;
 
   constructor(options: {data: any, query?: any} = {data: null}) {
     this.options = options;
@@ -76,14 +75,14 @@ export abstract class BaseRequest implements IAPIRequest {
 
   protected decodeProtoBufResponse(res: popsicle.Response, pbNamespace: string, pbMessageType?: string): any {
     if (res.status === 200) {
-      if (this.protoBufHelper.validate(res.body, pbNamespace, pbMessageType)) {
-        return this.protoBufHelper.decode(res.body, pbNamespace, pbMessageType);
+      if (BaseRequest.protoBufHelper.validate(res.body, pbNamespace, pbMessageType)) {
+        return BaseRequest.protoBufHelper.decode(res.body, pbNamespace, pbMessageType);
       } else {
         throw new Error('Cannot decode response');
       }
     } else {
-      if (this.protoBufHelper.validate(res.body, 'APIError')) {
-        return this.protoBufHelper.decode(res.body, 'APIError');
+      if (BaseRequest.protoBufHelper.validate(res.body, 'APIError')) {
+        return BaseRequest.protoBufHelper.decode(res.body, 'APIError');
       } else {
         throw new Error('Cannot decode error response');
       }

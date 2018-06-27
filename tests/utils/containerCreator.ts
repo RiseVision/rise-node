@@ -51,6 +51,7 @@ import {
 } from '../../src/logic/transactions';
 import DbStub from '../stubs/helpers/DbStub';
 import { MigratorStub } from '../stubs/helpers/MigratorStub';
+import { BaseRequest } from '../../src/apis/requests/BaseRequest';
 
 export const createContainer = (): Container => {
   const container = new Container();
@@ -84,6 +85,8 @@ export const createContainer = (): Container => {
   container.bind(Symbols.helpers.jobsQueue).to(JobsQueueStub).inSingletonScope();
   container.bind(Symbols.helpers.logger).to(LoggerStub).inSingletonScope();
   container.bind(Symbols.helpers.protoBuf).to(ProtoBufHelperStub).inSingletonScope();
+  BaseRequest.protoBufHelper = container.get(Symbols.helpers.protoBuf);
+
   container.bind(Symbols.helpers.sequence).to(SequenceStub).inSingletonScope().whenTargetTagged(
     Symbols.helpers.sequence,
     Symbols.tags.helpers.defaultSequence,

@@ -82,7 +82,7 @@ export abstract class BaseTransactionType<T, M extends Model<any>> {
    * Returns asset, given Buffer containing it
    */
   public fromBytes(bytes: Buffer, tx: IBaseTransaction<any>): T {
-    return {} as any;
+    return null;
   }
 
   public apply(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {

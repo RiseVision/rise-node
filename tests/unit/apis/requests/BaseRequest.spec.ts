@@ -184,4 +184,61 @@ describe('apis/requests/BaseRequest', () => {
     });
   });
 
+  describe('decodeProtoBufResponse', () => {
+
+    describe('when response status is 200', () => {
+      const res = {status: 200, body: Buffer.from('', 'hex')};
+      it('should call protoBufHelper.validate with the specific namespace and message type', () => {
+        protoBufStub.enqueueResponse('validate', true);
+        protoBufStub.enqueueResponse('decode', 'decodedResult');
+        const resp = (instance as any).decodeProtoBufResponse(res, 'namespace', 'messageType');
+        expect(protoBufStub.stubs.validate.calledOnce).to.be.true;
+        expect(protoBufStub.stubs.validate.firstCall.args).to.be.deep.equal([res.body, 'namespace', 'messageType']);
+      });
+
+      it('should call protoBufHelper.decode and return if it message is validated', () => {
+        protoBufStub.enqueueResponse('validate', true);
+        protoBufStub.enqueueResponse('decode', 'decodedResult');
+        const resp = (instance as any).decodeProtoBufResponse(res, 'namespace', 'messageType');
+        expect(protoBufStub.stubs.decode.calledOnce).to.be.true;
+        expect(protoBufStub.stubs.decode.firstCall.args).to.be.deep.equal([res.body, 'namespace', 'messageType']);
+        expect(resp).to.be.equal('decodedResult');
+      });
+
+      it('should throw if validation fails', () => {
+        protoBufStub.enqueueResponse('validate', false);
+        protoBufStub.enqueueResponse('decode', 'decodedResult');
+        expect(() => {(instance as any).decodeProtoBufResponse(res, 'namespace', 'messageType');})
+          .to.throw('Cannot decode response');
+      });
+    });
+
+    describe('when response status is NOT 200', () => {
+      const res = {status: 500, body: Buffer.from('', 'hex')};
+      it('should call protoBufHelper.validate with APIError namespace', () => {
+        protoBufStub.enqueueResponse('validate', true);
+        protoBufStub.enqueueResponse('decode', 'decodedResult');
+        const resp = (instance as any).decodeProtoBufResponse(res, 'namespace', 'messageType');
+        expect(protoBufStub.stubs.validate.calledOnce).to.be.true;
+        expect(protoBufStub.stubs.validate.firstCall.args).to.be.deep.equal([res.body, 'APIError']);
+      });
+
+      it('should call protoBufHelper.decode and return if it message is validated', () => {
+        protoBufStub.enqueueResponse('validate', true);
+        protoBufStub.enqueueResponse('decode', 'decodedErr');
+        const resp = (instance as any).decodeProtoBufResponse(res, 'namespace', 'messageType');
+        expect(protoBufStub.stubs.decode.calledOnce).to.be.true;
+        expect(protoBufStub.stubs.decode.firstCall.args).to.be.deep.equal([res.body, 'APIError']);
+        expect(resp).to.be.equal('decodedErr');
+      });
+
+      it('should throw if validation fails', () => {
+        protoBufStub.enqueueResponse('validate', false);
+        protoBufStub.enqueueResponse('decode', 'decodedResult');
+        expect(() => {(instance as any).decodeProtoBufResponse(res, 'namespace', 'messageType'); })
+          .to.throw('Cannot decode error response');
+      });
+    });
+  });
+
 });
