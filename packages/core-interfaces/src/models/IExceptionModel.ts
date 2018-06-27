@@ -1,9 +1,9 @@
 import { IBaseModel } from './IBaseModel';
 
 export class IExceptionModel extends IBaseModel<IExceptionModel> {
-  key: string;
+  public key: string;
 
-  type: string;
+  public type: string;
 
-  remainingCount: number;
+  public remainingCount: number;
 }

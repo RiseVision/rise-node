@@ -9,7 +9,7 @@ import {
 import BigNumber from 'bignumber.js';
 import { Model } from 'sequelize-typescript';
 import { IAccountsModel } from '../models';
-import { IBaseTransactionImplementation } from './IBaseTransactionImplementation';
+import { IBaseTransactionType } from './IBaseTransactionType';
 
 /**
  * VerificationType When checking against signature.
@@ -30,7 +30,7 @@ export enum VerificationType {
 }
 export interface ITransactionLogic {
 
-  attachAssetType<K, M extends Model<any>>(instance: IBaseTransactionImplementation<K, M>): IBaseTransactionImplementation<K, M>;
+  attachAssetType<K, M extends Model<any>>(instance: IBaseTransactionType<K, M>): IBaseTransactionType<K, M>;
 
   /**
    * Creates and returns signature
