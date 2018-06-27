@@ -5,6 +5,7 @@ import * as path from 'path';
 import * as sequelize from 'sequelize';
 import MyBigNumb from './bignum';
 import { IMigrationsModel } from '@risevision/core-interfaces';
+import { Symbols } from './symbols';
 
 @injectable()
 export class Migrator {

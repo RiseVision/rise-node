@@ -1,7 +1,7 @@
 import { ISlots } from '@risevision/core-interfaces';
 import { ConstantsType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
-import { Symbols } from '../ioc/symbols';
+import { Symbols } from './symbols';
 
 @injectable()
 export class Slots implements ISlots {

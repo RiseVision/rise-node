@@ -1,7 +1,7 @@
+import { ILogger } from '@risevision/core-interfaces';
 import { AppConfig } from '@risevision/core-types';
 import { NextFunction, Request, Response } from 'express';
 import { checkIpInList } from './checkIpInList';
-import { ILogger } from './logger';
 
 export const middleware = {
   /**

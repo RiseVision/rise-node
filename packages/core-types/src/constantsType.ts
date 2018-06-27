@@ -23,6 +23,6 @@ export type ConstantsType = {
   multisigConstraints: {
     min: { minimum: number, maximum: number },
     lifetime: { minimum: number, maximum: number },
-    keysgroup: { minimum: number, maximum: number },
+    keysgroup: { minItems: number, maxItems: number },
   }
 };

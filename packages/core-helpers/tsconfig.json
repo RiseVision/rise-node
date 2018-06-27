@@ -17,9 +17,9 @@
       "es7"
     ],
     "paths": {
-      "@risevision/core-models": "../core-models/*",
-      "@risevision/core-interfaces": "../core-interfaces/*",
-      "@risevision/core-types": "../core-types/*"
+      "@risevision/core-models": ["../core-models/*"],
+      "@risevision/core-interfaces": ["../core-interfaces/*"],
+      "@risevision/core-types": ["../core-types/*"]
     }
   },
   "exclude":         [

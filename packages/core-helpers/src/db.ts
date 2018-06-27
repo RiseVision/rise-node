@@ -5,6 +5,7 @@ import { Op, Sequelize, Transaction } from 'sequelize';
 import { Model } from 'sequelize-typescript';
 import * as squel from 'squel';
 import { wait } from './promiseUtils';
+import { Symbols } from './symbols';
 
 const squelPostgres = squel.useFlavour('postgres');
 squelPostgres.registerValueHandler(Buffer, (buffer) => {

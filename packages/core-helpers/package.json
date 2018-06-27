@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "transpile": "shx rm -rf dist; tsc"
   },
   "author": "",
   "license": "ISC",
@@ -24,6 +25,8 @@
     "z-schema": "=3.22.0"
   },
   "devDependencies": {
-    "@types/node": "^9.6.0"
+    "shx": "=0.2.2",
+    "@types/node": "^9.6.0",
+    "typescript": "=2.8.3"
   }
 }

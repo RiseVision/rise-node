@@ -1,26 +1,30 @@
+import {
+  ExceptionsList,
+  ExceptionsManager,
+  OrderBy,
+  RunThroughExceptions,
+  Slots,
+  Symbols
+} from '@risevision/core-helpers';
+import {
+  IAccountsModel,
+  IAccountsModule,
+  IAppState,
+  IBlockReward,
+  IBlocksModule,
+  IDelegatesModule,
+  ILogger,
+  IRoundsLogic,
+  ITransactionsModule
+} from '@risevision/core-interfaces';
+import { ConstantsType, publicKey, SignedBlockType } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
-import { ConstantsType } from '@risevision/core-types';
-import {
-  xceptionsList, ExceptionsManager,
-  ILogger,
-  OrderBy,
-  Slots,
-} from '../helpers/';
-import { RunThroughExceptions } from '../helpers/decorators/exceptions';
-import { IAppState, IRoundsLogic, } from '../ioc/interfaces/logic';
-import {
-  IAccountsModule, IBlocksModule, IDelegatesModule, ITransactionsModule,
-} from '../ioc/interfaces/modules';
-import { Symbols } from '../ioc/symbols';
-import { BlockRewardLogic, SignedBlockType } from '../logic/';
-import { AccountsModel } from '../models';
-import { publicKey } from '../types/sanityTypes';
 
 @injectable()
 export class DelegatesModule implements IDelegatesModule {
-  private loaded: boolean               = false;
+  private loaded: boolean = false;
 
   // Generic
   @inject(Symbols.generic.zschema)
@@ -41,7 +45,7 @@ export class DelegatesModule implements IDelegatesModule {
   @inject(Symbols.logic.appState)
   private appState: IAppState;
   @inject(Symbols.logic.blockReward)
-  private blockReward: BlockRewardLogic;
+  private blockReward: IBlockReward;
   @inject(Symbols.logic.rounds)
   private roundsLogic: IRoundsLogic;
 
@@ -53,11 +57,11 @@ export class DelegatesModule implements IDelegatesModule {
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
-  public async checkConfirmedDelegates(account: AccountsModel, votes: string[]) {
+  public async checkConfirmedDelegates(account: IAccountsModel, votes: string[]) {
     return this.checkDelegates(account, votes, 'confirmed');
   }
 
-  public async checkUnconfirmedDelegates(account: AccountsModel, votes: string[]) {
+  public async checkUnconfirmedDelegates(account: IAccountsModel, votes: string[]) {
     return this.checkDelegates(account, votes, 'unconfirmed');
   }
 
@@ -90,7 +94,7 @@ export class DelegatesModule implements IDelegatesModule {
    */
   public async getDelegates(query: { limit?: number, offset?: number, orderBy: string }): Promise<{
     delegates: Array<{
-      delegate: AccountsModel,
+      delegate: IAccountsModel,
       info: { rank: number, approval: number, productivity: number }
     }>,
     count: number,
@@ -105,7 +109,7 @@ export class DelegatesModule implements IDelegatesModule {
 
     const delegates = await this.accountsModule.getAccounts({
         isDelegate: 1,
-        sort      : {vote: -1, publicKey: 1},
+        sort      : { vote: -1, publicKey: 1 },
       },
       ['username', 'address', 'publicKey', 'vote', 'missedblocks', 'producedblocks']
     );
@@ -120,7 +124,7 @@ export class DelegatesModule implements IDelegatesModule {
     const totalSupply = this.blockReward.calcSupply(lastBlock.height);
 
     // tslint:disable-next-line
-    const crunchedDelegates: Array<{delegate: AccountsModel, info: { rank: number, approval: number, productivity: number }}> = [];
+    const crunchedDelegates: Array<{ delegate: IAccountsModel, info: { rank: number, approval: number, productivity: number } }> = [];
     for (let i = 0; i < delegates.length; i++) {
 
       const rank     = i + 1;
@@ -135,11 +139,11 @@ export class DelegatesModule implements IDelegatesModule {
 
       crunchedDelegates.push({
         delegate: delegates[i],
-        info: {rank, approval, productivity},
+        info    : { rank, approval, productivity },
       });
     }
 
-    const orderBy = OrderBy(query.orderBy, {quoteField: false});
+    const orderBy = OrderBy(query.orderBy, { quoteField: false });
 
     if (orderBy.error) {
       throw new Error(orderBy.error);
@@ -189,7 +193,7 @@ export class DelegatesModule implements IDelegatesModule {
     const rows = await this.accountsModule.getAccounts({
       isDelegate: 1,
       limit     : this.slots.delegates,
-      sort      : {vote: -1, publicKey: 1},
+      sort      : { vote: -1, publicKey: 1 },
     }, ['publicKey']);
     return rows.map((r) => r.publicKey);
   }
@@ -201,7 +205,7 @@ export class DelegatesModule implements IDelegatesModule {
    * @param state
    * @return {Promise<void>}
    */
-  private async checkDelegates(account: AccountsModel, votes: string[], state: 'confirmed' | 'unconfirmed') {
+  private async checkDelegates(account: IAccountsModel, votes: string[], state: 'confirmed' | 'unconfirmed') {
     if (!account) {
       throw new Error('Account not found');
     }
@@ -224,7 +228,7 @@ export class DelegatesModule implements IDelegatesModule {
 
       const curPK = vote.substr(1);
 
-      if (!this.schema.validate(curPK, {format: 'publicKey', type: 'string'})) {
+      if (!this.schema.validate(curPK, { format: 'publicKey', type: 'string' })) {
         throw new Error('Invalid public key');
       }
 
@@ -237,7 +241,7 @@ export class DelegatesModule implements IDelegatesModule {
 
       // check voted (or unvoted) is actually a delegate.
       // TODO: This can be optimized as it's only effective when "Adding" a vote.
-      const del = await this.accountsModule.getAccount({publicKey: new Buffer(curPK, 'hex'), isDelegate: 1});
+      const del = await this.accountsModule.getAccount({ publicKey: new Buffer(curPK, 'hex'), isDelegate: 1 });
       if (!del) {
         throw new Error('Delegate not found');
       }

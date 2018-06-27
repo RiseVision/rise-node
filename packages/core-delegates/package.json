@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "@risevision/core-models": "^1.0.0",
+    "@risevision/core-helpers": "^1.0.0",
     "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
     "sequelize": "^4.38.0",

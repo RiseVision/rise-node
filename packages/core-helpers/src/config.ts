@@ -1,7 +1,7 @@
 import { AppConfig } from '@risevision/core-types';
 import * as fs from 'fs';
 import * as path from 'path';
-import constants from './constants';
+import {constants} from './constants';
 import { z_schema as ZSchema } from './z_schema';
 
 // tslint:disable-next-line no-var-requires

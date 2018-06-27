@@ -1,7 +1,7 @@
 import { IExceptionModel } from '@risevision/core-interfaces';
 import { inject, injectable } from 'inversify';
 import 'reflect-metadata';
-import { Symbols } from '../ioc/symbols';
+import { Symbols } from './symbols';
 
 export const ExceptionsList = {
   assertValidSlot    : Symbol('assertValidSlot'),
