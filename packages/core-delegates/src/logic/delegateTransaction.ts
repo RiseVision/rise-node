@@ -1,5 +1,6 @@
 import { removeEmptyObjKeys, Symbols } from '@risevision/core-helpers';
-import { IAccountsModel, IAccountsModule, IBaseTransactionType, ISystemModule } from '@risevision/core-interfaces';
+import { IAccountsModel, IAccountsModule, ISystemModule } from '@risevision/core-interfaces';
+import { BaseTransactionType } from '@risevision/core-transactions';
 import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
 import { DelegatesModel } from '../models/DelegatesModel';

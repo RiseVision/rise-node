@@ -1,55 +1,53 @@
 import { Container } from 'inversify';
-import { constants } from '../../src/helpers';
-import { Symbols } from '../../src/ioc/symbols';
+import { constants, Symbols } from '@risevision/core-helpers';
+import SocketIOStub from './SocketIOStub';
+import ZSchemaStub from '../../dist/helpers/ZSchemaStub';
 import {
-  AccountsModelStub,
-  BlocksModelStub,
-  BlocksSubmoduleChainStub, BlocksSubmoduleVerifyStub,
-  BroadcasterLogicStub, BusStub, DelegatesModuleStub,
+  AppStateStub,
+  BlocksSubmoduleChainStub,
+  BlocksSubmoduleProcessStub,
+  BlocksSubmoduleUtilsStub,
+  BlocksSubmoduleVerifyStub,
+  BroadcasterLogicStub,
+  BusStub, DelegatesModuleStub,
   ExceptionsManagerStub,
-  LoggerStub,
   PeersLogicStub, PeersModuleStub,
-  SystemModuleStub,
-  TransactionPoolStub,
-  TransactionsModuleStub,
-} from '../stubs';
-import EdStub from '../src/';
-import JobsQueueStub from '../stubs/helpers/jobsQueueStub';
-import { SequenceStub } from '../stubs/helpers/SequenceStub';
-import { SlotsStub } from '../stubs/helpers/SlotsStub';
-import ZSchemaStub from '../stubs/helpers/ZSchemaStub';
-import AccountLogicStub from '../stubs/logic/AccountLogicStub';
-import { AppStateStub } from '../stubs/logic/AppStateStub';
-import { BlockLogicStub } from '../stubs/logic/BlockLogicStub';
-import BlockRewardLogicStub from '../stubs/logic/BlockRewardLogicStub';
-import RoundsLogicStub from '../stubs/logic/RoundsLogicStub';
-import TransactionLogicStub from '../stubs/logic/TransactionLogicStub';
-import AccountsModuleStub from '../stubs/modules/AccountsModuleStub';
-import { BlocksSubmoduleProcessStub } from '../stubs/modules/blocks/BlocksSubmoduleProcessStub';
-import { BlocksSubmoduleUtilsStub } from '../stubs/modules/blocks/BlocksSubmoduleUtilsStub';
-import BlocksModuleStub from '../stubs/modules/BlocksModuleStub';
-import { ForgeModuleStub } from '../stubs/modules/ForgeModuleStub';
-import { ForkModuleStub } from '../stubs/modules/ForkModuleStub';
-import { LoaderModuleStub } from '../stubs/modules/LoaderModuleStub';
-import MultisignaturesModuleStub from '../stubs/modules/MultisignaturesModuleStub';
-import { RoundsModuleStub } from '../stubs/modules/RoundsModuleStub';
-import TransportModuleStub from '../stubs/modules/TransportModuleStub';
-import SocketIOStub from '../stubs/utils/SocketIOStub';
-import {
-  AccountsModel, BlocksModel, DelegatesModel, SignaturesModel, TransactionsModel, MultiSignaturesModel,
-  VotesModel, Accounts2DelegatesModel, Accounts2MultisignaturesModel, Accounts2U_DelegatesModel,
-  Accounts2U_MultisignaturesModel, RoundsModel, ForksStatsModel, PeersModel, RoundsFeesModel, InfoModel, ExceptionModel,
-  MigrationsModel
-} from '../../src/models';
+  SequenceStub,
+  SlotsStub, SystemModuleStub,
+  TransactionPoolStub, TransactionsModuleStub
+} from '..';
+import CryptoStub from '../helpers/CryptoStub';
+import DbStub from '../helpers/DbStub';
 import { Sequelize } from 'sequelize-typescript';
-import { TransactionsModelStub } from '../stubs/models/TransactionsModelStub';
+import { MigratorStub } from '../helpers/MigratorStub';
+import JobsQueueStub from '../helpers/jobsQueueStub';
+import LoggerStub from '../helpers/LoggerStub';
+import AccountLogicStub from '../logic/AccountLogicStub';
+import { BlockLogicStub } from '../logic/BlockLogicStub';
+import BlockRewardLogicStub from '../logic/BlockRewardLogicStub';
+import TransactionLogicStub from '../logic/TransactionLogicStub';
+import RoundsLogicStub from '../logic/RoundsLogicStub';
+import AccountsModuleStub from '../modules/AccountsModuleStub';
+import BlocksModuleStub from '../modules/BlocksModuleStub';
+import { ForgeModuleStub } from '../modules/ForgeModuleStub';
+import { ForkModuleStub } from '../modules/ForkModuleStub';
+import { LoaderModuleStub } from '../modules/LoaderModuleStub';
+import MultisignaturesModuleStub from '../modules/MultisignaturesModuleStub';
+import { RoundsModuleStub } from '../modules/RoundsModuleStub';
+import TransportModuleStub from '../modules/TransportModuleStub';
 import {
-  MultiSignatureTransaction,
-  RegisterDelegateTransaction,
-  SecondSignatureTransaction, SendTransaction, VoteTransaction
-} from '../../src/logic/transactions';
-import DbStub from '../stubs/helpers/DbStub';
-import { MigratorStub } from '../stubs/helpers/MigratorStub';
+  Accounts2DelegatesModel, Accounts2MultisignaturesModel, Accounts2U_DelegatesModel, Accounts2U_MultisignaturesModel,
+  AccountsModel,
+  BlocksModel,
+  ExceptionModel,
+  ForksStatsModel,
+  InfoModel,
+  MigrationsModel, MultiSignaturesModel, PeersModel, RoundsFeesModel, RoundsModel, SignaturesModel, TransactionsModel
+} from '@risevision/core-models';
+import { VotesModel } from '../../../core-delegates/src/models/VotesModel';
+import { DelegatesModel } from '../../../core-delegates/src/models/DelegatesModel';
+import { VoteTransaction } from '../../../core-delegates/src/logic/voteTransaction';
+import TransactionTypeStub from '../logic/transactions/TransactionTypeStub';
 
 export const createContainer = (): Container => {
   const container = new Container();
@@ -76,7 +74,7 @@ export const createContainer = (): Container => {
 
   container.bind(Symbols.helpers.constants).toConstantValue({ ...{}, ...constants });
   container.bind(Symbols.helpers.bus).to(BusStub).inSingletonScope();
-  container.bind(Symbols.helpers.crypto).to(EdStub).inSingletonScope();
+  container.bind(Symbols.helpers.crypto).to(CryptoStub).inSingletonScope();
   container.bind(Symbols.helpers.db).to(DbStub).inSingletonScope();
   container.bind(Symbols.helpers.migrator).to(MigratorStub).inSingletonScope();
   container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManagerStub).inSingletonScope();
@@ -146,11 +144,11 @@ export const createContainer = (): Container => {
   container.bind(Symbols.models.multisignatures).toConstructor(MultiSignaturesModel);
 
   // TRansactions
-  container.bind(Symbols.logic.transactions.createmultisig).to(MultiSignatureTransaction).inSingletonScope();
-  container.bind(Symbols.logic.transactions.delegate).to(RegisterDelegateTransaction).inSingletonScope();
-  container.bind(Symbols.logic.transactions.secondSignature).to(SecondSignatureTransaction).inSingletonScope();
-  container.bind(Symbols.logic.transactions.send).to(SendTransaction).inSingletonScope();
-  container.bind(Symbols.logic.transactions.vote).to(VoteTransaction).inSingletonScope();
+  container.bind(Symbols.logic.transactions.createmultisig).to(TransactionTypeStub).inSingletonScope();
+  container.bind(Symbols.logic.transactions.delegate).to(TransactionTypeStub).inSingletonScope();
+  container.bind(Symbols.logic.transactions.secondSignature).to(TransactionTypeStub).inSingletonScope();
+  container.bind(Symbols.logic.transactions.send).to(TransactionTypeStub).inSingletonScope();
+  container.bind(Symbols.logic.transactions.vote).to(TransactionTypeStub).inSingletonScope();
 
   const sequelize = container.get<Sequelize>(Symbols.generic.sequelize);
   const models = [

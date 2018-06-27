@@ -1,8 +1,9 @@
 {
-  "name": "@risevision/core-test-stubs",
+  "name": "@risevision/core-test-utils",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "transpile": "shx rm -rf dist; tsc",

@@ -1,6 +1,7 @@
 import { ITransportTransaction, publicKey, TransactionType } from '@risevision/core-types';
 import { IBlocksModule } from '../modules';
 import { IBaseModel } from './IBaseModel';
+import { IBaseTransaction } from '../../../core-types/dist';
 
 export class ITransactionsModel<Asset = any> extends IBaseModel<ITransactionsModel<Asset>> {
 
@@ -35,6 +36,10 @@ export class ITransactionsModel<Asset = any> extends IBaseModel<ITransactionsMod
   public signatures: publicKey[];
 
   public toTransport(bm: IBlocksModule): ITransportTransaction<Asset> {
+    return null;
+  }
+
+  public static toTransportTransaction<Asset>(t: IBaseTransaction<Asset>, blocksModule: IBlocksModule): ITransportTransaction<Asset> & { confirmations?: number } {
     return null;
   }
 }

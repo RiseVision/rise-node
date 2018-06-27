@@ -34,9 +34,19 @@ export class IAccountsModel extends IBaseModel<IAccountsModel> {
 
   readonly hexPublicKey: publicKey;
 
-  public isMultisignature(): boolean { return null; };
+  public isMultisignature(): boolean {
+    return null;
+  };
 
   public toPOJO(): { [k: string]: string | number } {
+    return null;
+  }
+
+  public applyDiffArray(toWhat: 'delegates' | 'u_delegates' | 'multisignatures' | 'u_multisignatures', diff: any) {
+    return null;
+  }
+
+  public applyValues(items: Partial<this>) {
     return null;
   }
 }

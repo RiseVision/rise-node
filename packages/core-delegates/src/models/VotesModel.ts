@@ -1,25 +1,27 @@
-import { BaseModel, TransactionsModel } from '@risevision/core/src/models/';
-import { publicKey } from '@risevision/core/src/types/sanityTypes';
+import { ITransactionsModel } from '@risevision/core-interfaces';
+import { BaseModel } from '@risevision/core-models';
+import { publicKey } from '@risevision/core-types';
 
 import { BelongsTo, Column, ForeignKey, IBuildOptions, PrimaryKey, Table } from 'sequelize-typescript';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
-@Table({tableName: 'votes'})
+@Table({ tableName: 'votes' })
 export class VotesModel extends BaseModel<VotesModel> {
   @PrimaryKey
   @Column
   public votes: string;
 
   @PrimaryKey
-  @ForeignKey(() => TransactionsModel)
+  @ForeignKey(() => ITransactionsModel)
   @Column
   public transactionId: string;
 
-  @BelongsTo(() => TransactionsModel)
-  public transaction: TransactionsModel;
+  @BelongsTo(() => ITransactionsModel)
+  public transaction: ITransactionsModel;
 
-  public added: publicKey[] = [];
+  public added: publicKey[]   = [];
   public removed: publicKey[] = [];
+
   constructor(values?: FilteredModelAttributes<VotesModel>, options?: IBuildOptions) {
     super(values, options);
 
@@ -28,7 +30,7 @@ export class VotesModel extends BaseModel<VotesModel> {
         .forEach((vote) => {
           if (vote.startsWith('+')) {
             this.added.push(vote.substr(1));
-          } else if (vote.startsWith('-')){
+          } else if (vote.startsWith('-')) {
             this.removed.push(vote.substr(1));
           }
         });
