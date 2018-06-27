@@ -55,11 +55,10 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
    */
   public fromBytes(bytes: Buffer, tx: IBaseTransaction<any>): DelegateAsset {
     if (bytes === null) {
-      return {} as any;
+      return null;
     }
     return {
       delegate: {
-        publicKey: tx.senderPublicKey.toString('hex'),
         username: bytes.toString('utf8'),
       },
     };
