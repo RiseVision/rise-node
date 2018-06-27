@@ -76,7 +76,7 @@ export const createContainer = (): Container => {
 
   container.bind(Symbols.helpers.constants).toConstantValue({ ...{}, ...constants });
   container.bind(Symbols.helpers.bus).to(BusStub).inSingletonScope();
-  container.bind(Symbols.helpers.ed).to(EdStub).inSingletonScope();
+  container.bind(Symbols.helpers.crypto).to(EdStub).inSingletonScope();
   container.bind(Symbols.helpers.db).to(DbStub).inSingletonScope();
   container.bind(Symbols.helpers.migrator).to(MigratorStub).inSingletonScope();
   container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManagerStub).inSingletonScope();

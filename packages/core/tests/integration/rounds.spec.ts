@@ -48,7 +48,7 @@ describe('rounds', () => {
   let rounds: IRoundsModule;
   let ed: Ed;
   beforeEach(async () => {
-    ed              = initializer.appManager.container.get(Symbols.helpers.ed);
+    ed              = initializer.appManager.container.get(Symbols.helpers.crypto);
     blocksModule    = initializer.appManager.container.get(Symbols.modules.blocks);
     delegatesModule = initializer.appManager.container.get(Symbols.modules.delegates);
     accModule       = initializer.appManager.container.get(Symbols.modules.accounts);

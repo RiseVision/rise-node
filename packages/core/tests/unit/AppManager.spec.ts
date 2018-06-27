@@ -566,10 +566,10 @@ describe('AppManager', () => {
         },
       ]);
 
-      expect(Array.isArray(containerStub.bindings[Symbols.helpers.ed])).to.be.true;
-      expect(containerStub.bindings[Symbols.helpers.ed].length).to.be.equal(1);
-      expect(containerStub.bindings[Symbols.helpers.ed][0].toConstantValue).to.not.be.undefined;
-      expect(containerStub.bindings[Symbols.helpers.ed][0].toConstantValue.constructor.name).to.be.equal('Ed');
+      expect(Array.isArray(containerStub.bindings[Symbols.helpers.crypto])).to.be.true;
+      expect(containerStub.bindings[Symbols.helpers.crypto].length).to.be.equal(1);
+      expect(containerStub.bindings[Symbols.helpers.crypto][0].toConstantValue).to.not.be.undefined;
+      expect(containerStub.bindings[Symbols.helpers.crypto][0].toConstantValue.constructor.name).to.be.equal('Ed');
 
       expect(containerStub.bindings[Symbols.helpers.exceptionsManager]).to.be.deep.equal([
         {

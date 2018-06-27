@@ -114,7 +114,7 @@ describe('modules/blocks/verify', () => {
       container.rebind(Symbols.helpers.slots).to(Slots);
       container.rebind(Symbols.logic.block).to(BlockLogic);
       container.rebind(Symbols.logic.blockReward).to(BlockRewardLogic);
-      container.rebind(Symbols.helpers.ed).toConstantValue(new Ed());
+      container.rebind(Symbols.helpers.crypto).toConstantValue(new Ed());
       inst = instReal = container.get(Symbols.modules.blocksSubModules.verify);
 
       // Suppress custom implementations for verifyReceipt & verifyBlock

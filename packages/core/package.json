@@ -15,7 +15,6 @@
   "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
   "license": "GPL-3.0",
   "dependencies": {
-    "@risevision/core-interfaces": "^1.0.0",
     "async-exit-hook": "^2.0.1",
     "body-parser": "=1.18.3",
     "bytebuffer": "=5.0.1",

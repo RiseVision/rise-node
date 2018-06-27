@@ -414,7 +414,7 @@ export class AppManager {
     this.container.bind(Symbols.helpers.bus).toConstantValue(bus);
     this.container.bind(Symbols.helpers.constants).toConstantValue(this.constants);
     this.container.bind(Symbols.helpers.db).to(DBHelper).inSingletonScope();
-    this.container.bind(Symbols.helpers.ed).toConstantValue(ed);
+    this.container.bind(Symbols.helpers.crypto).toConstantValue(ed);
     this.container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManager).inSingletonScope();
     this.container.bind(Symbols.helpers.jobsQueue).to(JobsQueue).inSingletonScope();
     this.container.bind(Symbols.helpers.logger).toConstantValue(this.logger);

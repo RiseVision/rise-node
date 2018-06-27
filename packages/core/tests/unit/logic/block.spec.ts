@@ -113,7 +113,7 @@ describe('logic/block', () => {
     callback = sandbox.spy();
     zschemastub = container.get(Symbols.generic.zschema);
     blockRewardLogicStub = container.get(Symbols.logic.blockReward);
-    container.rebind(Symbols.helpers.ed).toConstantValue(ed);
+    container.rebind(Symbols.helpers.crypto).toConstantValue(ed);
     container.rebind(Symbols.logic.block).to(BlockLogic).inSingletonScope();
     instance = container.get(Symbols.logic.block);
     transactionLogicStub = container.get(Symbols.logic.transaction);

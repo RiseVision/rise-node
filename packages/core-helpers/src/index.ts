@@ -20,10 +20,8 @@ export * from './logger';
 export * from './migrator';
 export * from './orderBy';
 export * from './promiseUtils';
-export * from './RoundChanges';
 export * from './sequence';
 export * from './symbols';
-export * from './slots';
 export * from './z_schema';
 
 export * from './decorators';

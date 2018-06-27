@@ -20,6 +20,7 @@
       "@risevision/core-models": ["../core-models/*"],
       "@risevision/core-interfaces": ["../core-interfaces/*"],
       "@risevision/core-types": ["../core-types/*"],
+      "@risevision/core-helpers": ["../core-helpers/*"],
       "@risevision/core-test-stubs": ["../core-test-stubs/*"]
     }
   },

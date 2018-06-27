@@ -59,7 +59,7 @@ describe('modules/forge', () => {
 
     jobsQueueStub           = container.get(Symbols.helpers.jobsQueue);
     loggerStub              = container.get(Symbols.helpers.logger);
-    edStub                  = container.get(Symbols.helpers.ed);
+    edStub                  = container.get(Symbols.helpers.crypto);
     slotsStub               = container.get(Symbols.helpers.slots);
     appStateStub            = container.get(Symbols.logic.appState);
     broadcasterLogicStub    = container.get(Symbols.logic.broadcaster);

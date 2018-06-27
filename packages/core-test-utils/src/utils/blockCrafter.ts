@@ -6,7 +6,7 @@ import * as uuid from 'uuid';
 import { createContainer } from './containerCreator';
 
 const fakeContainer = createContainer();
-fakeContainer.rebind(Symbols.helpers.ed).toConstantValue(new Ed());
+fakeContainer.rebind(Symbols.helpers.crypto).toConstantValue(new Ed());
 fakeContainer.rebind(Symbols.logic.blockReward).to(BlockRewardLogic).inSingletonScope();
 fakeContainer.rebind(Symbols.logic.block).to(BlockLogic).inSingletonScope();
 fakeContainer.rebind(Symbols.logic.transaction).to(TransactionLogic).inSingletonScope();
@@ -26,7 +26,7 @@ export const createFakeBlock = (cfg: {
   previousBlock?: SignedAndChainedBlockType
 } = {}): SignedBlockType => {
   const blockLogic: IBlockLogic = fakeContainer.get(Symbols.logic.block);
-  const ed: Ed                  = fakeContainer.get(Symbols.helpers.ed);
+  const ed: Ed                  = fakeContainer.get(Symbols.helpers.crypto);
   const keypair                 = cfg.keypair || ed.makeKeypair(crypto
     .createHash('sha256').update(uuid.v4(), 'utf8')
     .digest());

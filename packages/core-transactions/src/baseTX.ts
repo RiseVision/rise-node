@@ -1,12 +1,14 @@
+import { IAccountsModel, IBaseTransactionType } from '@risevision/core-interfaces';
+import {
+  DBOp,
+  IBaseTransaction,
+  IConfirmedTransaction,
+  SignedBlockType,
+  TransactionType
+} from '@risevision/core-types';
+
 import { injectable, unmanaged } from 'inversify';
-import { IDatabase } from 'pg-promise';
 import { Model } from 'sequelize-typescript';
-import { TransactionType } from '../../helpers/';
-import { AccountsModel } from '../../models/';
-import { SignedBlockType } from '../block';
-import { DBOp } from '../../types/genericTypes';
-
-
 
 const emptyBuffer = new Buffer(0);
 
@@ -14,7 +16,7 @@ const emptyBuffer = new Buffer(0);
  * Describes a Base Transaction Object
  */
 @injectable()
-export abstract class BaseTransactionType<T, M extends Model<any>> {
+export abstract class BaseTX<T, M extends Model<any>> implements IBaseTransactionType<T, M> {
 
   constructor(@unmanaged() private txType: TransactionType) {
   }
@@ -23,9 +25,9 @@ export abstract class BaseTransactionType<T, M extends Model<any>> {
     return this.txType;
   }
 
-  public abstract calculateFee(tx: IBaseTransaction<T>, sender: AccountsModel, height: number): number;
+  public abstract calculateFee(tx: IBaseTransaction<T>, sender: IAccountsModel, height: number): number;
 
-  public verify(tx: IBaseTransaction<T>, sender: AccountsModel): Promise<void> {
+  public verify(tx: IBaseTransaction<T>, sender: IAccountsModel): Promise<void> {
     return Promise.resolve();
   }
 
@@ -33,19 +35,19 @@ export abstract class BaseTransactionType<T, M extends Model<any>> {
     return emptyBuffer;
   }
 
-  public apply(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+  public apply(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     return Promise.resolve([]);
   }
 
-  public applyUnconfirmed(tx: IBaseTransaction<T>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+  public applyUnconfirmed(tx: IBaseTransaction<T>, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     return Promise.resolve([]);
   }
 
-  public undo(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+  public undo(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     return Promise.resolve([]);
   }
 
-  public undoUnconfirmed(tx: IBaseTransaction<T>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+  public undoUnconfirmed(tx: IBaseTransaction<T>, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     return Promise.resolve([]);
   }
 
@@ -60,7 +62,7 @@ export abstract class BaseTransactionType<T, M extends Model<any>> {
     return Promise.resolve();
   }
 
-  public ready(tx: IBaseTransaction<T>, sender: AccountsModel): boolean {
+  public ready(tx: IBaseTransaction<T>, sender: IAccountsModel): boolean {
     if (Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
       if (!Array.isArray(tx.signatures)) {
         return false;

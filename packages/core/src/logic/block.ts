@@ -42,7 +42,7 @@ export class BlockLogic implements IBlockLogic {
 
   @inject(Symbols.logic.blockReward)
   private blockReward: BlockRewardLogic;
-  @inject(Symbols.helpers.ed)
+  @inject(Symbols.helpers.crypto)
   private ed: Ed;
   @inject(Symbols.logic.transaction)
   private transaction: ITransactionLogic;
@@ -134,7 +134,7 @@ export class BlockLogic implements IBlockLogic {
    * @returns {string}
    */
   public sign(block: BlockType, key: IKeypair): Buffer {
-    return this.ed.sign(
+    return this.crypto.sign(
       this.getHash(block, false),
       key
     );
@@ -149,7 +149,7 @@ export class BlockLogic implements IBlockLogic {
     // const res = new OldImplementation(this.ed, this.zschema, this.transaction, null)
     //  .verifySignature(block);
     // console.log(res);
-    return this.ed.verify(
+    return this.crypto.verify(
       this.getHash(block, false),
       block.blockSignature,
       block.generatorPublicKey

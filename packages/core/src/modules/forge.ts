@@ -36,7 +36,7 @@ export class ForgeModule implements IForgeModule {
   // helpers
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
-  @inject(Symbols.helpers.ed)
+  @inject(Symbols.helpers.crypto)
   private ed: Ed;
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
@@ -196,7 +196,7 @@ export class ForgeModule implements IForgeModule {
     this.logger.info(`Loading ${secrets.length} delegates from config`);
 
     for (const secret of secrets) {
-      const keypair = this.ed.makeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
+      const keypair = this.crypto.makeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
       const account = await this.accountsModule.getAccount({ publicKey: keypair.publicKey });
       if (!account) {
         throw new Error(`Account with publicKey: ${keypair.publicKey.toString('hex')} not found`);

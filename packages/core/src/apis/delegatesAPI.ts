@@ -37,7 +37,7 @@ export class DelegatesAPI {
   private blocksUtils: IBlocksModuleUtils;
   @inject(Symbols.modules.delegates)
   private delegatesModule: IDelegatesModule;
-  @inject(Symbols.helpers.ed)
+  @inject(Symbols.helpers.crypto)
   private ed: Ed;
   @inject(Symbols.modules.forge)
   private forgeModule: IForgeModule;
@@ -270,7 +270,7 @@ export class DelegatesAPI {
   @UseBefore(ForgingApisWatchGuard)
   public async forgingEnable(@SchemaValid(schema.disableForging)
                              @Body() params: { secret: string, publicKey: string }) {
-    const kp = this.ed.makeKeypair(crypto
+    const kp = this.crypto.makeKeypair(crypto
       .createHash('sha256').update(params.secret, 'utf8')
       .digest());
 
@@ -299,7 +299,7 @@ export class DelegatesAPI {
   @UseBefore(ForgingApisWatchGuard)
   public async forgingDisable(@SchemaValid(schema.disableForging)
                               @Body() params: { secret: string, publicKey: string }) {
-    const kp = this.ed.makeKeypair(crypto
+    const kp = this.crypto.makeKeypair(crypto
       .createHash('sha256').update(params.secret, 'utf8')
       .digest());
 

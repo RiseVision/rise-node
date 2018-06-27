@@ -64,7 +64,7 @@ describe('logic/transaction', () => {
     container          = createContainer();
     container.rebind(Symbols.logic.transaction).to(TransactionLogic).inSingletonScope();
     instance = container.get(Symbols.logic.transaction);
-    edStub           = container.get(Symbols.helpers.ed);
+    edStub           = container.get(Symbols.helpers.crypto);
     slotsStub        = container.get(Symbols.helpers.slots);
     zSchemaStub      = container.get(Symbols.generic.zschema);
     accountLogicStub = container.get(Symbols.logic.account);

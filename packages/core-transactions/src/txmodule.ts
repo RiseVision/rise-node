@@ -1,12 +1,15 @@
-import { inject, injectable, tagged } from 'inversify';
-import { constants as constantsType, DBHelper, ILogger, Sequence } from '../helpers/';
-
-import { ITransactionLogic, ITransactionPoolLogic } from '../ioc/interfaces/logic';
-import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules/';
-import { Symbols } from '../ioc/symbols';
-import { SignedAndChainedBlockType} from '../logic/';
-import { IBaseTransaction} from '../logic/transactions/';
-import { AccountsModel, TransactionsModel } from '../models';
+import { DBHelper, Symbols } from '@risevision/core-helpers';
+import {
+  IAccountsModel,
+  IAccountsModule,
+  ILogger,
+  ITransactionLogic,
+  ITransactionPoolLogic,
+  ITransactionsModel,
+  ITransactionsModule
+} from '@risevision/core-interfaces';
+import { ConstantsType, IBaseTransaction, SignedAndChainedBlockType } from '@risevision/core-types';
+import { inject, injectable } from 'inversify';
 
 @injectable()
 export class TransactionsModule implements ITransactionsModule {
@@ -15,7 +18,7 @@ export class TransactionsModule implements ITransactionsModule {
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
+  private constants: ConstantsType;
 
   @inject(Symbols.helpers.db)
   private dbHelper: DBHelper;
@@ -27,7 +30,7 @@ export class TransactionsModule implements ITransactionsModule {
   private transactionLogic: ITransactionLogic;
 
   @inject(Symbols.models.transactions)
-  private TXModel: typeof TransactionsModel;
+  private TXModel: typeof ITransactionsModel;
 
   public cleanup() {
     return Promise.resolve();
@@ -129,7 +132,7 @@ export class TransactionsModule implements ITransactionsModule {
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
   // tslint:disable-next-line max-line-length
-  public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: AccountsModel): Promise<void> {
+  public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: IAccountsModel): Promise<void> {
     // tslint:disable-next-line max-line-length
     this.logger.debug(`Applying unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${(sender || { u_balance: undefined }).u_balance}`);
 
@@ -172,8 +175,8 @@ export class TransactionsModule implements ITransactionsModule {
    * Fills the pool.
    */
   public async fillPool(): Promise<void> {
-    const newUnconfirmedTXs = await this.transactionPool.fillPool();
-    const ids = newUnconfirmedTXs.map((tx) => tx.id);
+    const newUnconfirmedTXs   = await this.transactionPool.fillPool();
+    const ids                 = newUnconfirmedTXs.map((tx) => tx.id);
     const alreadyConfirmedIDs = await this.filterConfirmedIds(ids);
     for (const confirmedID of alreadyConfirmedIDs) {
       this.logger.debug(`TX ${confirmedID} was already confirmed but still in pool`);
@@ -187,8 +190,8 @@ export class TransactionsModule implements ITransactionsModule {
   /**
    * Get transaction by id
    */
-  public async getByID<T = any>(id: string): Promise<TransactionsModel> {
-    const tx = await TransactionsModel.findById(id);
+  public async getByID<T = any>(id: string): Promise<ITransactionsModel> {
+    const tx = await this.TXModel.findById(id);
     if (tx === null) {
       throw new Error('Transaction not found');
     }

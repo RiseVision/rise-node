@@ -56,7 +56,7 @@ describe('highlevel checks', function () {
   beforeEach(async () => {
     const {wallet: randomAccount} = await createRandomAccountWithFunds(funds);
     senderAccount                 = randomAccount;
-    ed                            = initializer.appManager.container.get(Symbols.helpers.ed);
+    ed                            = initializer.appManager.container.get(Symbols.helpers.crypto);
     blocksModule                  = initializer.appManager.container.get(Symbols.modules.blocks);
     accModule                     = initializer.appManager.container.get(Symbols.modules.accounts);
     txModule                      = initializer.appManager.container.get(Symbols.modules.transactions);
