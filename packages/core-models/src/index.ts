@@ -12,7 +12,6 @@ export * from './InfoModel';
 export * from './MigrationsModel';
 export * from './MultiSignaturesModel';
 export * from './PeersModel';
-export * from './RoundsModel';
 export * from './RoundsFeesModel';
 export * from './PeersModel';
 export * from './SignaturesModel';

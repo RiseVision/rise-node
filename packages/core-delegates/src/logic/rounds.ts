@@ -1,6 +1,7 @@
-import { Slots, Symbols } from '@risevision/core-helpers';
+import { Symbols } from '@risevision/core-helpers';
 import { IRoundsLogic } from '@risevision/core-interfaces';
 import { inject, injectable } from 'inversify';
+import { Slots } from '../helpers/slots';
 
 @injectable()
 export class RoundsLogic implements IRoundsLogic {

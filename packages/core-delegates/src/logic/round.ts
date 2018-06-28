@@ -3,7 +3,17 @@ import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import { Slots } from '../helpers/slots';
 import { DBCustomOp, DBOp } from '@risevision/core-types';
-import { RoundChanges } from '@risevision/core-helpers';
+import { RoundChanges } from '../helpers/RoundChanges';
+import * as fs from 'fs';
+
+const restoreRoundSnasphotSQL = fs.readFileSync(
+  `${__dirname}/../../sql/restoreRoundSnapshot.sql`,
+  { encoding: 'utf8' }
+);
+const restoreVotesSnasphotSQL = fs.readFileSync(
+  `${__dirname}/../../sql/restoreVotesSnapshot.sql`,
+  { encoding: 'utf8' }
+);
 
 // This cannot be injected directly as it needs to be created.
 // rounds module.
@@ -122,8 +132,8 @@ export class RoundLogic implements IRoundLogic {
   public restoreRoundSnapshot(): DBOp<IRoundsModel> {
     return {
       model: this.scope.models.RoundsModel,
-      query: roundSQL.restoreRoundSnapshot,
-      type: 'custom',
+      query: restoreRoundSnasphotSQL,
+      type : 'custom',
     };
   }
 
@@ -134,8 +144,8 @@ export class RoundLogic implements IRoundLogic {
   public restoreVotesSnapshot(): DBOp<IAccountsModel> {
     return {
       model: this.scope.models.AccountsModel,
-      query: roundSQL.restoreVotesSnapshot,
-      type: 'custom',
+      query: restoreVotesSnasphotSQL,
+      type : 'custom',
     };
   }
 

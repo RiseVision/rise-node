@@ -1,4 +1,4 @@
-import {LoggerStub} from '@risevision/core-test-stubs';
+import {LoggerStub} from '@risevision/core-test-utils';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import {Container} from 'inversify';

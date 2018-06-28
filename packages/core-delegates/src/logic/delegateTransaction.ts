@@ -1,6 +1,6 @@
 import { removeEmptyObjKeys, Symbols } from '@risevision/core-helpers';
 import { IAccountsModel, IAccountsModule, ISystemModule } from '@risevision/core-interfaces';
-import { BaseTransactionType } from '@risevision/core-transactions';
+import { BaseTx } from '@risevision/core-transactions';
 import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
 import { DelegatesModel } from '../models/DelegatesModel';
@@ -13,6 +13,8 @@ import {
   TransactionType
 } from '@risevision/core-types';
 
+const delegateAssetSchema = require('../../schema/asset.json');
+
 // tslint:disable-next-line interface-over-type-literal
 export type DelegateAsset = {
   delegate: {
@@ -21,7 +23,7 @@ export type DelegateAsset = {
 };
 
 @injectable()
-export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAsset, DelegatesModel> {
+export class RegisterDelegateTransaction extends BaseTx<DelegateAsset, DelegatesModel> {
 
   // Generic
   @inject(Symbols.generic.zschema)
@@ -191,7 +193,7 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
   public objectNormalize(tx: IBaseTransaction<DelegateAsset>): IBaseTransaction<DelegateAsset> {
     removeEmptyObjKeys(tx.asset.delegate);
 
-    const report = this.schema.validate(tx.asset.delegate, delegateSchema);
+    const report = this.schema.validate(tx.asset.delegate, delegateAssetSchema);
     if (!report) {
       throw new Error(`Failed to validate delegate schema: ${this.schema.getLastErrors()
         .map((err) => err.message).join(', ')}`);

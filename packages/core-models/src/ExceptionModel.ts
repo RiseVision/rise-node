@@ -1,8 +1,7 @@
-import { Column, PrimaryKey, Table } from 'sequelize-typescript';
-import { BaseModel } from './BaseModel';
+import { Column, Model, PrimaryKey, Table } from 'sequelize-typescript';
 
 @Table({ tableName: 'exceptions' })
-export class ExceptionModel extends BaseModel<ExceptionModel> {
+export class ExceptionModel extends Model<ExceptionModel> {
   @PrimaryKey
   @Column
   public key: string;

@@ -1,0 +1,13 @@
+{
+  "id"        : "Delegate",
+  "type"      : "object",
+  "properties": {
+    "username": {
+      "type"  : "string",
+      "format": "username"
+    }
+  },
+  "required"  : [
+    "username"
+  ]
+}

@@ -4,8 +4,9 @@ import { IAccountsModel } from '@risevision/core-interfaces';
 import * as pgp from 'pg-promise';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
-import { Column, DataType, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
+import { Column, DataType, Model, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
 import { BaseModel } from './BaseModel';
+import { Container } from 'inversify';
 
 const fields            = ['username', 'isDelegate', 'secondSignature', 'address', 'publicKey', 'secondPublicKey', 'balance', 'vote', 'rate', 'multimin', 'multilifetime', 'blockId', 'producedblocks', 'missedblocks', 'fees', 'rewards', 'virgin'];
 const unconfirmedFields = ['u_isDelegate', 'u_secondSignature', 'u_username', 'u_balance', 'u_multimin', 'u_multilifetime'];
@@ -35,7 +36,10 @@ const buildArrayArgAttribute = function (table: string): any {
   },
 })
 @Table({ tableName: 'mem_accounts' })
-export class AccountsModel extends BaseModel<AccountsModel> implements IAccountsModel {
+export class AccountsModel extends Model<AccountsModel> implements IAccountsModel {
+  public static container: Container;
+  public static options: any;
+
   @Column
   public username: string;
   @Column

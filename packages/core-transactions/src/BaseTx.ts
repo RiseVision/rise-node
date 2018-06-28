@@ -16,7 +16,7 @@ const emptyBuffer = new Buffer(0);
  * Describes a Base Transaction Object
  */
 @injectable()
-export abstract class BaseTX<T, M extends Model<any>> implements IBaseTransactionType<T, M> {
+export abstract class BaseTx<T, M extends Model<any>> implements IBaseTransactionType<T, M> {
 
   constructor(@unmanaged() private txType: TransactionType) {
   }

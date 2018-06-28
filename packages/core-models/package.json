@@ -10,12 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "reflect-metadata": "^0.1.10",
     "@risevision/core-interfaces": "^1.0.0",
-    "@risevision/core-types": "^1.0.0",
-    "pg-promise": "=7.3.2",
-    "sequelize": "^4.38.0",
-    "sequelize-typescript": "=0.6.5"
+    "@risevision/core-types": "^1.0.0"
   },
   "devDependencies": {
     "shx": "=0.2.2",

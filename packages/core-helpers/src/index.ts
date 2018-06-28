@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import BigNum from './bignum';
 import config from './config';
 
-import * as Diff from './diff';
+export * from './diff';
 import loggerCreator from './logger';
 import applyExpressLimits from './request-limiter';
 
@@ -30,6 +30,5 @@ export {
   applyExpressLimits,
   BigNum,
   config,
-  Diff,
   loggerCreator
 };

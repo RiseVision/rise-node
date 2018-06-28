@@ -1,22 +1,23 @@
 import { ITransactionsModel } from '@risevision/core-interfaces';
-import { BaseModel } from '@risevision/core-models';
+import { BaseModel, TransactionsModel } from '@risevision/core-models';
 import { publicKey } from '@risevision/core-types';
 
-import { BelongsTo, Column, ForeignKey, IBuildOptions, PrimaryKey, Table } from 'sequelize-typescript';
+import { BelongsTo, Column, ForeignKey, IBuildOptions, Model, PrimaryKey, Table } from 'sequelize-typescript';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
+import { Container } from 'inversify';
 
 @Table({ tableName: 'votes' })
-export class VotesModel extends BaseModel<VotesModel> {
+export class VotesModel extends Model<VotesModel> {
   @PrimaryKey
   @Column
   public votes: string;
 
   @PrimaryKey
-  @ForeignKey(() => ITransactionsModel)
+  @ForeignKey(() => TransactionsModel)
   @Column
   public transactionId: string;
 
-  @BelongsTo(() => ITransactionsModel)
+  @BelongsTo(() => TransactionsModel)
   public transaction: ITransactionsModel;
 
   public added: publicKey[]   = [];

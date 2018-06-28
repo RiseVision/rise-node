@@ -1,18 +1,18 @@
 import { IMultisignaturesModel } from '@risevision/core-interfaces';
 import { publicKey } from '@risevision/core-types';
+import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
+import { TransactionsModel } from './TransactionsModel';
 import {
   Column,
   ForeignKey,
   IBuildOptions,
+  Model,
   PrimaryKey,
-  Table
+  Table,
 } from 'sequelize-typescript';
-import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { BaseModel } from './BaseModel';
-import { TransactionsModel } from './TransactionsModel';
 
-@Table({tableName: 'multisignatures'})
-export class MultiSignaturesModel extends BaseModel<MultiSignaturesModel> implements IMultisignaturesModel {
+@Table({ tableName: 'multisignatures' })
+export class MultiSignaturesModel extends Model<MultiSignaturesModel> implements IMultisignaturesModel {
   @Column
   public min: number;
 
@@ -27,8 +27,9 @@ export class MultiSignaturesModel extends BaseModel<MultiSignaturesModel> implem
   @Column
   public transactionId: string;
 
-  public added: publicKey[] = [];
+  public added: publicKey[]   = [];
   public removed: publicKey[] = [];
+
   constructor(values?: FilteredModelAttributes<MultiSignaturesModel>, options?: IBuildOptions) {
     super(values, options);
 

@@ -22,7 +22,7 @@
       "@risevision/core-interfaces": ["../core-interfaces/*"],
       "@risevision/core-types": ["../core-types/*"],
       "@risevision/core-helpers": ["../core-helpers/*"],
-      "@risevision/core-test-stubs": ["../core-test-stubs/*"]
+      "@risevision/core-test-utils": ["../core-test-utils/*"]
     }
   },
   "exclude":         [

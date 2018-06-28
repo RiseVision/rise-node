@@ -1,10 +1,9 @@
 import { IPeersModel } from '@risevision/core-interfaces';
 import { PeerState } from '@risevision/core-types';
-import { Column, DataType, Table } from 'sequelize-typescript';
-import { BaseModel } from './BaseModel';
+import { Column, DataType, Model, Table } from 'sequelize-typescript';
 
 @Table({ tableName: 'peers' })
-export class PeersModel extends BaseModel<PeersModel> implements IPeersModel {
+export class PeersModel extends Model<PeersModel> implements IPeersModel {
   @Column
   public ip: string;
 

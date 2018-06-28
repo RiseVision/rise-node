@@ -11,7 +11,7 @@ import {
   IAccountLogic,
   IAccountsModel,
   ILogger,
-  IRoundsLogic,
+  IRoundsLogic, ISlots,
   ITransactionLogic,
   ITransactionsModel,
   VerificationType
@@ -33,8 +33,7 @@ import * as _ from 'lodash';
 import { inject, injectable } from 'inversify';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
-import { BaseTX } from './baseTX';
-import { Slots } from '../../core-delegates/src/helpers/slots';
+import { BaseTx } from './BaseTx';
 
 const txSchema = require('../../schema/transaction.json');
 
@@ -63,15 +62,15 @@ export class TransactionLogic implements ITransactionLogic {
   private schema: z_schema;
 
   @inject(Symbols.helpers.slots)
-  private slots: Slots;
+  private slots: ISlots;
 
   @inject(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
-  private types: { [k: number]: BaseTX<any, any> } = {};
+  private types: { [k: number]: BaseTx<any, any> } = {};
 
-  public attachAssetType<K, M extends Model<any>>(instance: BaseTX<K, M>): BaseTX<K, M> {
-    if (!(instance instanceof BaseTX)) {
+  public attachAssetType<K, M extends Model<any>>(instance: BaseTx<K, M>): BaseTx<K, M> {
+    if (!(instance instanceof BaseTx)) {
       throw new Error('Invalid instance interface');
     }
     this.types[instance.type] = instance;

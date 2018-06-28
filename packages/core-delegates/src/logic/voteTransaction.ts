@@ -1,21 +1,26 @@
-import { inject, injectable } from 'inversify';
-import * as z_schema from 'z-schema';
-import { constants, Diff, TransactionType } from '../../helpers/';
-import { IAccountLogic, IRoundsLogic } from '../../ioc/interfaces/logic';
-import { IDelegatesModule, ISystemModule } from '../../ioc/interfaces/modules';
-import { Symbols } from '../../ioc/symbols';
+import { Diff, Symbols } from '@risevision/core-helpers';
 import {
-  Accounts2DelegatesModel,
-  Accounts2U_DelegatesModel,
-  AccountsModel,
-  RoundsModel,
-  VotesModel
-} from '../../models/';
-import voteSchema from '../../schema/logic/transactions/vote';
-import { DBCustomOp, DBOp } from '../../types/genericTypes';
-import { SignedBlockType } from '../block';
-import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
+  IAccountLogic,
+  IAccounts2DelegatesModel,
+  IAccounts2U_DelegatesModel, IAccountsModel, IDelegatesModule,
+  IRoundsLogic, ISystemModule
+} from '@risevision/core-interfaces';
+import { BaseTx } from '@risevision/core-transactions';
+import {
+  ConstantsType, DBCustomOp,
+  DBOp,
+  IBaseTransaction,
+  IConfirmedTransaction,
+  SignedBlockType,
+  TransactionType
+} from '@risevision/core-types';
+import { inject, injectable } from 'inversify';
 import { Model } from 'sequelize-typescript';
+import * as z_schema from 'z-schema';
+import { VotesModel } from '../models/VotesModel';
+import { RoundsModel } from '../models/RoundsModel';
+
+const voteSchema = require('../../schema/vote.json');
 
 // tslint:disable-next-line interface-over-type-literal
 export type VoteAsset = {
@@ -23,10 +28,13 @@ export type VoteAsset = {
 };
 
 @injectable()
-export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> {
+export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   // Generic
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
+
+  @inject(Symbols.helpers.constants)
+  private constants: ConstantsType;
 
   // Logic
   @inject(Symbols.logic.rounds)
@@ -44,23 +52,24 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   @inject(Symbols.models.votes)
   private VotesModel: typeof VotesModel;
   @inject(Symbols.models.accounts2U_Delegates)
-  private Accounts2U_DelegatesModel: typeof Accounts2U_DelegatesModel;
+  private Accounts2U_DelegatesModel: typeof IAccounts2U_DelegatesModel;
   @inject(Symbols.models.accounts2Delegates)
-  private Accounts2DelegatesModel: typeof Accounts2DelegatesModel;
+  private Accounts2DelegatesModel: typeof IAccounts2DelegatesModel;
   @inject(Symbols.models.accounts)
-  private AccountsModel: typeof AccountsModel;
+  private AccountsModel: typeof IAccountsModel;
   @inject(Symbols.models.rounds)
   private RoundsModel: typeof RoundsModel;
 
   constructor() {
     super(TransactionType.VOTE);
+    voteSchema.properties.votes.maxItems = this.constants.maxVotesPerTransaction;
   }
 
-  public calculateFee(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel, height: number): number {
+  public calculateFee(tx: IBaseTransaction<VoteAsset>, sender: IAccountsModel, height: number): number {
     return this.systemModule.getFees(height).fees.vote;
   }
 
-  public async verify(tx: IBaseTransaction<VoteAsset> & { senderId: string }, sender: AccountsModel): Promise<void> {
+  public async verify(tx: IBaseTransaction<VoteAsset> & { senderId: string }, sender: IAccountsModel): Promise<void> {
     if (tx.recipientId !== tx.senderId) {
       throw new Error('Missing recipient');
     }
@@ -77,8 +86,8 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
       throw new Error('Invalid votes. Must not be empty');
     }
 
-    if (tx.asset.votes && tx.asset.votes.length > constants.maxVotesPerTransaction) {
-      throw new Error(`Voting limit exceeded. Maximum is ${constants.maxVotesPerTransaction} votes per transaction`);
+    if (tx.asset.votes && tx.asset.votes.length > this.constants.maxVotesPerTransaction) {
+      throw new Error(`Voting limit exceeded. Maximum is ${this.constants.maxVotesPerTransaction} votes per transaction`);
     }
 
     // Assert vote is valid
@@ -99,7 +108,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   }
 
   // tslint:disable-next-line max-line-length
-  public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+  public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     await this.checkConfirmedDelegates(tx, sender);
     sender.applyDiffArray('delegates', tx.asset.votes);
     const ops = this.calculateOPs(this.Accounts2DelegatesModel, block.id, tx.asset.votes, sender.address);
@@ -122,7 +131,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   }
 
   // tslint:disable-next-line max-line-length
-  public async undo(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+  public async undo(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     this.objectNormalize(tx);
     const invertedVotes = Diff.reverse(tx.asset.votes);
     sender.applyDiffArray('delegates', invertedVotes);
@@ -146,13 +155,13 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     return ops;
   }
 
-  public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+  public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     await this.checkUnconfirmedDelegates(tx, sender);
     sender.applyDiffArray('u_delegates', tx.asset.votes);
     return this.calculateOPs(this.Accounts2U_DelegatesModel, null, tx.asset.votes, sender.address);
   }
 
-  public async undoUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+  public async undoUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     this.objectNormalize(tx);
     const reversedVotes = Diff.reverse(tx.asset.votes);
     sender.applyDiffArray('u_delegates', reversedVotes);
@@ -162,14 +171,14 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   /**
    * Checks vote integrity of tx sender
    */
-  public checkUnconfirmedDelegates(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<any> {
+  public checkUnconfirmedDelegates(tx: IBaseTransaction<VoteAsset>, sender: IAccountsModel): Promise<any> {
     return this.delegatesModule.checkUnconfirmedDelegates(sender, tx.asset.votes);
   }
 
   /**
    * Checks vote integrity of sender
    */
-  public checkConfirmedDelegates(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<any> {
+  public checkConfirmedDelegates(tx: IBaseTransaction<VoteAsset>, sender: IAccountsModel): Promise<any> {
     return this.delegatesModule.checkConfirmedDelegates(sender, tx.asset.votes);
   }
 

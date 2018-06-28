@@ -1,6 +1,6 @@
 import { IBlocksModule, ITransactionsModel } from '@risevision/core-interfaces';
 import { IBaseTransaction, ITransportTransaction, TransactionType } from '@risevision/core-types';
-import { Column, DataType, ForeignKey, PrimaryKey, Table } from 'sequelize-typescript';
+import { Column, DataType, ForeignKey, Model, PrimaryKey, Table } from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 import { BaseModel } from './BaseModel';
@@ -8,7 +8,7 @@ import { BlocksModel } from './BlocksModel';
 
 @Table({ tableName: 'trs' })
 // tslint:disable-next-line max-line-length
-export class TransactionsModel<Asset = any> extends BaseModel<TransactionsModel<Asset>> implements ITransactionsModel<Asset> {
+export class TransactionsModel<Asset = any> extends Model<TransactionsModel<Asset>> implements ITransactionsModel<Asset> {
 
   @PrimaryKey
   @Column

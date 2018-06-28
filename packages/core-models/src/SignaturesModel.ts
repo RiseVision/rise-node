@@ -1,10 +1,9 @@
 import { ISignaturesModel } from '@risevision/core-interfaces';
-import { BelongsTo, Column, DataType, ForeignKey, PrimaryKey, Table } from 'sequelize-typescript';
-import { BaseModel } from './BaseModel';
+import { BelongsTo, Column, DataType, ForeignKey, Model, PrimaryKey, Table } from 'sequelize-typescript';
 import { TransactionsModel } from './TransactionsModel';
 
 @Table({ tableName: 'signatures' })
-export class SignaturesModel extends BaseModel<SignaturesModel> implements ISignaturesModel {
+export class SignaturesModel extends Model<SignaturesModel> implements ISignaturesModel {
   @Column(DataType.BLOB)
   public publicKey: Buffer;
 
