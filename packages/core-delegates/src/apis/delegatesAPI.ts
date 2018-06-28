@@ -1,3 +1,18 @@
+import { APIError, DeprecatedAPIError, PrivateApisGuard } from '@risevision/core-apis';
+import { Crypto, IoCSymbol, SchemaValid, Symbols, ValidateSchema } from '@risevision/core-helpers';
+import {
+  IAccounts2DelegatesModel,
+  IAccountsModel,
+  IAccountsModule,
+  IBlocksModel,
+  IBlocksModule,
+  IBlocksModuleUtils,
+  IDelegatesModule,
+  IForgeModule,
+  ISystemModule,
+  ITransactionsModel,
+} from '@risevision/core-interfaces';
+import { ConstantsType, publicKey } from '@risevision/core-types';
 import BigNumber from 'bignumber.js';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
@@ -5,20 +20,10 @@ import { inject, injectable } from 'inversify';
 import { Body, Get, JsonController, Post, Put, QueryParam, QueryParams, UseBefore } from 'routing-controllers';
 import * as sequelize from 'sequelize';
 import * as z_schema from 'z-schema';
-import { IoCSymbol, SchemaValid, Crypto, Symbols, ValidateSchema } from '@risevision/core-helpers';
-import {
-  IAccounts2DelegatesModel, IAccountsModel,
-  IAccountsModule, IBlocksModel,
-  IBlocksModule,
-  IBlocksModuleUtils,
-  IDelegatesModule,
-  IForgeModule, ISystemModule, ITransactionsModel,
-} from '@risevision/core-interfaces';
-import { Slots } from '../helpers/slots';
-import { APIError } from '../../../core-apis/src/errors/ApiError';
-import { publicKey } from '@risevision/core-types';
-import { ForgingApisWatchGuard } from '../../../core/src/apis/utils/forgingApisWatchGuard';
 
+import { Slots } from '../helpers/slots';
+
+import schema from '../../schema/delegates.json';
 
 @JsonController('/api/delegates')
 @injectable()
@@ -26,6 +31,8 @@ import { ForgingApisWatchGuard } from '../../../core/src/apis/utils/forgingApisW
 export class DelegatesAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
+  @inject(Symbols.helpers.constants)
+  public constants: ConstantsType;
   @inject(Symbols.modules.accounts)
   private accounts: IAccountsModule;
   @inject(Symbols.modules.blocks)
@@ -196,7 +203,7 @@ export class DelegatesAPI {
     }
     const delQuery  = this.AccountsModel.searchDelegate(
       params.q,
-      params.limit || constants.activeDelegates,
+      params.limit || this.constants.activeDelegates,
       orderBy[0],
       orderBy[1] as any
     );
@@ -244,7 +251,7 @@ export class DelegatesAPI {
   // internal stuff.
   @Get('/forging/status')
   @ValidateSchema()
-  @UseBefore(ForgingApisWatchGuard)
+  @UseBefore(PrivateApisGuard)
   public async getForgingStatus(@SchemaValid(schema.forgingStatus)
                                 @QueryParams() params: { publicKey: publicKey }) {
     if (params.publicKey) {
@@ -264,7 +271,7 @@ export class DelegatesAPI {
 
   @Post('/forging/enable')
   @ValidateSchema()
-  @UseBefore(ForgingApisWatchGuard)
+  @UseBefore(PrivateApisGuard)
   public async forgingEnable(@SchemaValid(schema.disableForging)
                              @Body() params: { secret: string, publicKey: string }) {
     const kp = this.crypto.makeKeypair(crypto
@@ -293,7 +300,7 @@ export class DelegatesAPI {
 
   @Post('/forging/disable')
   @ValidateSchema()
-  @UseBefore(ForgingApisWatchGuard)
+  @UseBefore(PrivateApisGuard)
   public async forgingDisable(@SchemaValid(schema.disableForging)
                               @Body() params: { secret: string, publicKey: string }) {
     const kp = this.crypto.makeKeypair(crypto

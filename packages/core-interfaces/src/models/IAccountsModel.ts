@@ -1,4 +1,4 @@
-import { publicKey } from '@risevision/core-types';
+import { address, publicKey } from '@risevision/core-types';
 import { IBaseModel } from './IBaseModel';
 
 export class IAccountsModel extends IBaseModel<IAccountsModel> {
@@ -48,5 +48,13 @@ export class IAccountsModel extends IBaseModel<IAccountsModel> {
 
   public applyValues(items: Partial<this>) {
     return null;
+  }
+
+  public static searchDelegate(q: string, limit: number, orderBy: string, orderHow: 'ASC' | 'DESC' = 'ASC'): string {
+    throw new Error('NotImplementedException');
+  }
+
+  public static createBulkAccountsSQL(addresses: address[]): string {
+    throw new Error('NotImplementedException');
   }
 }
