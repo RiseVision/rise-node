@@ -25,7 +25,7 @@ export type ExceptionType = {
 
 @injectable()
 export class ExceptionsManager {
-  private handlers: { [k: string]: { [h: string]: IExceptionHandler<any> } } = {};
+  private handlers: { [k in symbol]: { [h: string]: IExceptionHandler<any> } } = {};
 
   @inject(Symbols.models.exceptions)
   private exceptionModel: typeof IExceptionModel;

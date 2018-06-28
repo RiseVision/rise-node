@@ -18,13 +18,13 @@
     "@risevision/core-types": "^1.0.0",
     "sequelize": "=4.38.0",
     "inversify": "=4.13.0",
-    "sequelize-typescript": "=0.6.5",
+    "sequelize-typescript": "=0.6.6-beta.1",
     "z-schema": "=3.22.0"
   },
   "devDependencies": {
     "shx": "=0.2.2",
     "@types/node": "^9.6.0",
     "ts-node": "=6.0.5",
-    "typescript": "=2.8.3"
+    "typescript": "=2.9.2"
   }
 }

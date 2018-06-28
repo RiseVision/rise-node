@@ -7,7 +7,7 @@ import { BaseModel } from './BaseModel';
 import { TransactionsModel } from './TransactionsModel';
 
 @Table({ tableName: 'blocks' })
-export class BlocksModel extends Model<BlocksModel> implements IBlocksModel {
+export class BlocksModel extends BaseModel<BlocksModel> implements IBlocksModel {
 
   constructor(values?: FilteredModelAttributes<BlocksModel>, options?: IBuildOptions) {
     super(values, options);

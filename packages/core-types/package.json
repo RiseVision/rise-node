@@ -12,10 +12,10 @@
   "dependencies": {
     "@risevision/core-interfaces": "^1.0.0",
     "sequelize": "=4.38.0",
-    "sequelize-typescript": "=0.6.5"
+    "sequelize-typescript": "=0.6.6-beta.1"
   },
   "devDependencies": {
     "shx": "=0.2.2",
-    "typescript": "=2.8.3"
+    "typescript": "=2.9.2"
   }
 }

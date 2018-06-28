@@ -47,7 +47,7 @@
     "routing-controllers": "=0.7.7",
     "semver": "=5.5.0",
     "sequelize": "=4.38.0",
-    "sequelize-typescript": "=0.6.5",
+    "sequelize-typescript": "=0.6.6-beta.1",
     "shuffle-array": "^1.0.1",
     "socket.io": "=2.1.1",
     "sodium": "=2.0.3",
@@ -101,6 +101,6 @@
     "ts-node": "=6.0.5",
     "tslint": "=5.10.0",
     "tslint-sonarts": "^1.6.0",
-    "typescript": "=2.8.3"
+    "typescript": "=2.9.2"
   }
 }

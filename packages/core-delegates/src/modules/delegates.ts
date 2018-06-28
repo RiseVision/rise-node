@@ -3,7 +3,6 @@ import {
   ExceptionsManager,
   OrderBy,
   RunThroughExceptions,
-  Slots,
   Symbols
 } from '@risevision/core-helpers';
 import {
@@ -21,6 +20,7 @@ import { ConstantsType, publicKey, SignedBlockType } from '@risevision/core-type
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
+import { Slots } from '../helpers/slots';
 
 @injectable()
 export class DelegatesModule implements IDelegatesModule {

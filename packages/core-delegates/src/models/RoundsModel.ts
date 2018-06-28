@@ -1,13 +1,14 @@
-import { BaseModel } from '@risevision/core-models';
 import { IRoundsModel } from '@risevision/core-interfaces';
+import { BaseModel } from '@risevision/core-models';
 import { publicKey } from '@risevision/core-types';
 import * as sequelize from 'sequelize';
 import { Transaction } from 'sequelize';
-import { Column, DataType, Model, Table } from 'sequelize-typescript';
+import { Column, DataType, Table } from 'sequelize-typescript';
 import * as sequelizeUtils from 'sequelize/lib/utils';
+import { DelegatesModel } from './DelegatesModel';
 
 @Table({ tableName: 'mem_round' })
-export class RoundsModel extends Model<RoundsModel> implements IRoundsModel, BaseModel<RoundsModel> {
+export class RoundsModel extends BaseModel<DelegatesModel> implements IRoundsModel {
   @Column
   public address: string;
 

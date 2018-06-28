@@ -11,19 +11,21 @@
     "declaration":                  true,
     "allowSyntheticDefaultImports": true,
     "inlineSourceMap":              true,
-    "skipLibCheck" : true,
-
     "inlineSources":                true,
     "lib":                          [
       "dom",
       "es7"
     ],
     "paths": {
-
+      "@risevision/core-models": ["../core-models/*"],
+      "@risevision/core-interfaces": ["../core-interfaces/*"],
+      "@risevision/core-types": ["../core-types/*"],
+      "@risevision/core-helpers": ["../core-helpers/*"],
+      "@risevision/core-transactions": ["../core-transactions/*"]
     }
   },
   "include": [
-    "./src/models/VotesModel.ts"
+    "./src/**/*.ts"
   ],
   "exclude":         [
     "tests",

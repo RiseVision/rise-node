@@ -2,7 +2,7 @@ import { BaseModel, TransactionsModel } from '@risevision/core-models';
 import { BelongsTo, Column, ForeignKey, Model, PrimaryKey, Table } from 'sequelize-typescript';
 
 @Table({tableName: 'delegates'})
-export class DelegatesModel extends Model<DelegatesModel> implements BaseModel<DelegatesModel> {
+export class DelegatesModel extends BaseModel<DelegatesModel> {
   @PrimaryKey
   @Column
   public username: string;
@@ -16,5 +16,3 @@ export class DelegatesModel extends Model<DelegatesModel> implements BaseModel<D
   public transaction: TransactionsModel = null;
 
 }
-
-
