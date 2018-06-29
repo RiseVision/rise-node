@@ -39,6 +39,9 @@ export function ValidateSchema() {
   };
 }
 
+/**
+ * Validate a Schema
+ */
 export function assertValidSchema(schema: z_schema,
                                   objToValidate: any,
                                   schemaToValidate: { obj: any, opts: { errorString?: string } }) {
