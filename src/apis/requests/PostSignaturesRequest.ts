@@ -6,7 +6,7 @@ export class PostSignaturesRequest extends BaseRequest {
   public getRequestOptions() {
     const reqOptions = super.getRequestOptions();
     if (this.isProtoBuf()) {
-      if (BaseRequest.protoBufHelper.validate(reqOptions.data, 'transportSignatures', 'transportBlock')) {
+      if (BaseRequest.protoBufHelper.validate(reqOptions.data, 'transportSignatures')) {
         reqOptions.data = BaseRequest.protoBufHelper.encode(reqOptions.data, 'transportSignatures');
       } else {
         throw new Error('Failed to encode ProtoBuf');
