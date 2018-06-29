@@ -1,5 +1,8 @@
 import { ExceptionsManager } from '../exceptionManager';
 
+/**
+ * Decorator that allow to sync running through exceptions
+ */
 export function RunThroughExceptions(which: symbol) {
   return (target: { excManager: ExceptionsManager },
           method: string,
