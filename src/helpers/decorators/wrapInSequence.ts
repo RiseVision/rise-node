@@ -1,5 +1,8 @@
 import { Sequence } from '../sequence';
 
+/**
+ * Decorator to wrap method in Sequence
+ */
 export function WrapInSequence<T>(which: 'balancesSequence' | 'dbSequence' | 'defaultSequence') {
   return (target: T,
           method: string,
