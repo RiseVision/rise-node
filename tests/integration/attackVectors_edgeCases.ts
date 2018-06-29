@@ -225,6 +225,31 @@ describe('attackVectors/edgeCases', () => {
         expect(postAcc.balance).to.be.eq(0);
         expect(postAcc.u_balance).to.be.eq(0);
       });
+
+      it('should accept block with fullspending tx and undoUnconfirm tx which might cause overspending', async () => {
+
+        const tx1 = await createSendTransaction(0, funds - systemModule.getFees().fees.send, senderAccount, '1R');
+        const tx2 = await createSendTransaction(0, funds - systemModule.getFees().fees.send, senderAccount, '2R');
+
+        await transportModule.receiveTransactions([tx1], null, false);
+        await txPool.processBundled();
+        await txModule.fillPool();
+
+        expect(txModule.transactionUnconfirmed(tx1.id)).is.true;
+
+        await initializer.rawMineBlockWithTxs([toBufferedTransaction(tx2)]);
+
+        // After processing the tx should still be in pool but not unconfirmed
+        expect(txModule.transactionInPool(tx1.id)).is.true;
+        expect(txModule.transactionUnconfirmed(tx1.id)).is.false;
+
+        // Aftee processBundled and fillPool kicks in then failure should kick in.
+        // removing the tx from the pool
+        await txPool.processBundled();
+        await txModule.fillPool();
+        expect(txModule.transactionInPool(tx1.id)).is.false;
+
+      });
     });
 
     describe('votes', async () => {

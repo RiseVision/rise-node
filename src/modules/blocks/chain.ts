@@ -1,3 +1,4 @@
+import bs = require('binary-search');
 import { inject, injectable, tagged } from 'inversify';
 import { Op, Transaction } from 'sequelize';
 import * as _ from 'lodash';
@@ -14,7 +15,6 @@ import {
 } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType } from '../../logic/';
-import { IConfirmedTransaction } from '../../logic/transactions/';
 import { AccountsModel, BlocksModel, TransactionsModel } from '../../models/';
 import { DBOp } from '../../types/genericTypes';
 
@@ -186,12 +186,19 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     // Prevent shutdown during database writes.
     this.isProcessing = true;
 
+    // Find all transactions that are in unconfirmedstate && that are overlapping
+    // Overlapping txs are txs that have same sender of at least one of the tx
+    // in the block but are NOT in the block.
+    // Overlapping txs needs to be undoUnconfirmed since they could eventually exclude a tx
+    // bundled within a block
+    const allUnconfirmedTxs = this.transactionsModule.getUnconfirmedTransactionList(false);
+    const allBlockTXIds = block.transactions.map((tx) => tx.id).sort();
+    const overlappingTXs = allUnconfirmedTxs.filter((tx) => {
+      const exists = bs(allBlockTXIds, tx.id, (a, b) => a.localeCompare(b)) >= 0;
+      return !exists && typeof(accountsMap[tx.senderId]) !== 'undefined';
+    });
     // Start atomic block saving.
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
-      // Apply transaction to unconfirmed mem_accounts field
-      // Divide transactions by senderAccounts.
-      // Fetch recipient accounts and create non existing ones.
-      // Apply unconfirmed
       const ops: Array<DBOp<any>> = [];
 
       const recipients = _.sortedUniq(block.transactions
@@ -199,6 +206,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         .filter((recipient) => recipient)
         .sort()
       );
+
+      // undo all overlapping txs.
+      for (const overTX of overlappingTXs) {
+        ops.push(... await this.transactionLogic.undoUnconfirmed(overTX, accountsMap[overTX.senderId]));
+      }
 
       ops.push({
         type: 'custom',
@@ -251,6 +263,14 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       this.isProcessing = false;
       throw err;
     });
+
+    // remove overlapping txs from unconfirmed and move it to queued to allow re-process
+    // If some of the overlapping txs are now "invalid" they will be discared within the next
+    // txPool.processBundled loop.
+    for (const overTX of overlappingTXs) {
+      this.transactionsModule.removeUnconfirmedTransaction(overTX.id);
+      await this.transactionsModule.processUnconfirmedTransaction(overTX, false);
+    }
 
     block = null;
 
