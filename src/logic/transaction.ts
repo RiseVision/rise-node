@@ -1,6 +1,7 @@
 import { BigNumber } from 'bignumber.js';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
+import * as _ from 'lodash';
 import { inject, injectable } from 'inversify';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
@@ -282,19 +283,15 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     const multisignatures = (sender.multisignatures || sender.u_multisignatures || []).slice();
-    if (multisignatures.length === 0) {
-      if (tx.asset && tx.asset.multisignature && tx.asset.multisignature.keysgroup) {
-        for (const key of tx.asset.multisignature.keysgroup) {
-          if (!key || typeof key !== 'string') {
-            throw new Error('Invalid member in keysgroup');
-          }
-          multisignatures.push(key.slice(1));
-        }
-      }
-    }
 
-    if (tx.requesterPublicKey) {
-      multisignatures.push(tx.requesterPublicKey.toString('hex'));
+    if (tx.asset && tx.asset.multisignature && tx.asset.multisignature.keysgroup) {
+      for (const key of tx.asset.multisignature.keysgroup) {
+        if (!key || typeof key !== 'string') {
+          throw new Error('Invalid member in keysgroup');
+        }
+        multisignatures.push(key.slice(1));
+      }
+    } else if (tx.requesterPublicKey) {
       if (sender.multisignatures.indexOf(tx.requesterPublicKey.toString('hex')) < 0) {
         throw new Error('Account does not belong to multisignature group');
       }
@@ -327,9 +324,6 @@ export class TransactionLogic implements ITransactionLogic {
       for (const sig of tx.signatures) {
         let valid = false;
         for (let s = 0; s < multisignatures.length && !valid; s++) {
-          if (tx.requesterPublicKey && multisignatures[s] === tx.requesterPublicKey.toString('hex')) {
-            continue;
-          }
           valid = this.verifySignature(
             tx,
             Buffer.from(multisignatures[s], 'hex'),
@@ -614,6 +608,18 @@ export class TransactionLogic implements ITransactionLogic {
       tx.asset = asset;
     }
     return tx;
+  }
+
+  public async attachAssets(txs: Array<IConfirmedTransaction<any>>): Promise<void> {
+    if (txs === null) {
+      return;
+    }
+    const txsByGroup = _.groupBy(txs, (i) => i.type);
+    for (const type in txsByGroup) {
+      const loopTXs = txsByGroup[type];
+      this.assertKnownTransactionType(loopTXs[0].type);
+      await this.types[loopTXs[0].type].attachAssets(loopTXs);
+    }
   }
 
 }

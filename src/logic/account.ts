@@ -335,8 +335,6 @@ export class AccountLogic implements IAccountLogic {
    */
   public merge(address: string, diff: AccountDiffType): Array<DBOp<any>> {
     const update: any             = {};
-    const remove: any             = {};
-    const insert: any             = {};
     address                       = address.toUpperCase();
     const dbOps: Array<DBOp<any>> = [];
 
@@ -389,98 +387,9 @@ export class AccountLogic implements IAccountLogic {
             }
           }
           break;
-        case Array:
-
-          for (const val of (trueValue as string[])) {
-            const sign: string = val[0];
-            if (sign !== '-') {
-              const theVal      = sign === '+' ? val.slice(1) : val;
-              insert[fieldName] = insert[fieldName] || [];
-              insert[fieldName].push(theVal);
-              if (fieldName === 'delegates') {
-                dbOps.push({
-                  model: this.RoundsModel,
-                  query: this.RoundsModel.insertMemRoundDelegatesSQL({
-                    add     : true,
-                    address,
-                    blockId : diff.blockId,
-                    delegate: theVal,
-                    round   : diff.round,
-                  }),
-                  type : 'custom',
-                });
-              }
-            } else {
-              const theVal      = val.slice(1);
-              remove[fieldName] = remove[fieldName] || [];
-              remove[fieldName].push(theVal);
-              if (fieldName === 'delegates') {
-                dbOps.push({
-                  model: this.RoundsModel,
-                  query: this.RoundsModel.insertMemRoundDelegatesSQL({
-                    add     : false,
-                    address,
-                    blockId : diff.blockId,
-                    delegate: theVal,
-                    round   : diff.round,
-                  }),
-                  type : 'custom',
-                });
-              }
-            }
-          }
-          break;
       }
 
     }
-
-    const elToModel = (el: string) => {
-      switch (el) {
-        case 'delegates':
-          return this.Accounts2DelegatesModel;
-        case 'u_delegates':
-          return this.Accounts2U_DelegatesModel;
-        case 'multisignatures':
-          return this.Accounts2MultisignaturesModel;
-        case 'u_multisignatures':
-          return this.Accounts2U_MultisignaturesModel;
-        default:
-          throw new Error(`Unknown el ${el}`);
-      }
-    };
-
-    // Create insert ops.
-    Object.keys(insert)
-      .forEach((el) => {
-        const model = elToModel(el);
-        insert[el].forEach((dependentId) => {
-          dbOps.push({
-            model,
-            type  : 'create',
-            values: {
-              accountId: address,
-              dependentId,
-            },
-          });
-        });
-      });
-
-    // Create remove ops
-    Object.keys(remove)
-      .forEach((el) => {
-        const model = elToModel(el);
-        dbOps.push({
-          model,
-          options: {
-            where: {
-              accountId  : address,
-              dependentId: { [Op.in]: remove[el] },
-            },
-          },
-          type   : 'remove',
-        });
-
-      });
 
     dbOps.push({
       model  : this.AccountsModel,

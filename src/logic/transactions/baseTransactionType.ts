@@ -109,4 +109,13 @@ export abstract class BaseTransactionType<T, M extends Model<any>> {
     }
   }
 
+  /**
+   * Fetchs Assets From Datastore and returns the same txs with the asset field properly populated.
+   * @param {Array<IBaseTransaction<T>>} txs
+   * @return {Promise<Array<IBaseTransaction<T>>>}
+   */
+  public attachAssets(txs: Array<IConfirmedTransaction<T>>): Promise<void> {
+    return Promise.resolve();
+  }
+
 }

@@ -47,11 +47,6 @@ export default class AccountsModuleStub extends BaseStubClass implements IAccoun
   }
 
   @stubMethod()
-  public mergeAccountAndGet(diff: AccountDiffType): Promise<AccountsModel>{
-    return null;
-  }
-
-  @stubMethod()
   public generateAddressByPublicKey(pk: publicKey|Buffer): string{
     return null;
   }

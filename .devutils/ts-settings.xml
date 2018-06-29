@@ -1,32 +1,23 @@
-<code_scheme name="RISE TypeScript Code Scheme" version="173">
+<code_scheme name="RISE" version="173">
   <JSCodeStyleSettings>
     <option name="ALIGN_OBJECT_PROPERTIES" value="2" />
     <option name="ALIGN_VAR_STATEMENTS" value="2" />
-    <option name="USE_DOUBLE_QUOTES" value="false" />
+    <option name="IMPORTS_WRAP" value="1" />
     <option name="SPACES_WITHIN_OBJECT_LITERAL_BRACES" value="true" />
+    <option name="SPACES_WITHIN_IMPORTS" value="true" />
   </JSCodeStyleSettings>
   <JSON>
-    <option name="PROPERTY_ALIGNMENT" value="2" />
+    <option name="PROPERTY_ALIGNMENT" value="1" />
   </JSON>
-  <MarkdownNavigatorCodeStyleSettings>
-    <option name="RIGHT_MARGIN" value="72" />
-  </MarkdownNavigatorCodeStyleSettings>
   <PHPCodeStyleSettings>
     <option name="ALIGN_KEY_VALUE_PAIRS" value="true" />
-    <option name="ALIGN_ASSIGNMENTS" value="true" />
-    <option name="PHPDOC_BLANK_LINES_AROUND_PARAMETERS" value="true" />
-    <option name="LOWER_CASE_BOOLEAN_CONST" value="true" />
-    <option name="LOWER_CASE_NULL_CONST" value="true" />
-    <option name="BLANK_LINE_BEFORE_RETURN_STATEMENT" value="true" />
-    <option name="KEEP_RPAREN_AND_LBRACE_ON_ONE_LINE" value="true" />
-    <option name="SPACES_AROUND_VAR_WITHIN_BRACKETS" value="true" />
-    <option name="SPACE_BEFORE_UNARY_NOT" value="true" />
-    <option name="SPACE_AFTER_UNARY_NOT" value="true" />
+    <option name="COMMA_AFTER_LAST_ARRAY_ELEMENT" value="true" />
   </PHPCodeStyleSettings>
   <TypeScriptCodeStyleSettings>
     <option name="ALIGN_OBJECT_PROPERTIES" value="2" />
     <option name="ALIGN_VAR_STATEMENTS" value="2" />
     <option name="USE_DOUBLE_QUOTES" value="false" />
+    <option name="OBJECT_LITERAL_WRAP" value="0" />
     <option name="SPACES_WITHIN_OBJECT_LITERAL_BRACES" value="true" />
     <option name="SPACES_WITHIN_IMPORTS" value="true" />
   </TypeScriptCodeStyleSettings>
@@ -47,12 +38,6 @@
       <option name="TAB_SIZE" value="2" />
     </indentOptions>
   </codeStyleSettings>
-  <codeStyleSettings language="JSON">
-    <indentOptions>
-      <option name="CONTINUATION_INDENT_SIZE" value="4" />
-      <option name="TAB_SIZE" value="2" />
-    </indentOptions>
-  </codeStyleSettings>
   <codeStyleSettings language="Jade">
     <indentOptions>
       <option name="INDENT_SIZE" value="2" />
@@ -67,44 +52,12 @@
     </indentOptions>
   </codeStyleSettings>
   <codeStyleSettings language="PHP">
-    <option name="KEEP_CONTROL_STATEMENT_IN_ONE_LINE" value="false" />
     <option name="CLASS_BRACE_STYLE" value="1" />
     <option name="METHOD_BRACE_STYLE" value="1" />
-    <option name="SPECIAL_ELSE_IF_TREATMENT" value="true" />
-    <option name="ALIGN_MULTILINE_CHAINED_METHODS" value="true" />
-    <option name="ALIGN_MULTILINE_PARAMETERS" value="false" />
-    <option name="ALIGN_MULTILINE_FOR" value="false" />
-    <option name="ALIGN_MULTILINE_BINARY_OPERATION" value="true" />
-    <option name="SPACE_AROUND_UNARY_OPERATOR" value="true" />
-    <option name="SPACE_WITHIN_PARENTHESES" value="true" />
-    <option name="SPACE_WITHIN_METHOD_CALL_PARENTHESES" value="true" />
-    <option name="SPACE_WITHIN_METHOD_PARENTHESES" value="true" />
-    <option name="SPACE_WITHIN_IF_PARENTHESES" value="true" />
-    <option name="SPACE_WITHIN_WHILE_PARENTHESES" value="true" />
-    <option name="SPACE_WITHIN_FOR_PARENTHESES" value="true" />
-    <option name="SPACE_WITHIN_CATCH_PARENTHESES" value="true" />
-    <option name="SPACE_WITHIN_SWITCH_PARENTHESES" value="true" />
-    <option name="SPACE_WITHIN_ARRAY_INITIALIZER_BRACES" value="true" />
-    <option name="SPACE_AFTER_TYPE_CAST" value="true" />
-    <option name="METHOD_PARAMETERS_LPAREN_ON_NEXT_LINE" value="true" />
-    <option name="METHOD_PARAMETERS_RPAREN_ON_NEXT_LINE" value="true" />
-    <option name="PARENTHESES_EXPRESSION_LPAREN_WRAP" value="true" />
-    <option name="PARENTHESES_EXPRESSION_RPAREN_WRAP" value="true" />
-    <option name="KEEP_SIMPLE_METHODS_IN_ONE_LINE" value="true" />
-    <option name="FOR_STATEMENT_LPAREN_ON_NEXT_LINE" value="true" />
-    <option name="FOR_STATEMENT_RPAREN_ON_NEXT_LINE" value="true" />
-    <option name="ARRAY_INITIALIZER_WRAP" value="5" />
-    <option name="ARRAY_INITIALIZER_LBRACE_ON_NEXT_LINE" value="true" />
-    <option name="ARRAY_INITIALIZER_RBRACE_ON_NEXT_LINE" value="true" />
-    <option name="IF_BRACE_FORCE" value="3" />
-    <option name="DOWHILE_BRACE_FORCE" value="3" />
-    <option name="WHILE_BRACE_FORCE" value="3" />
-    <option name="FOR_BRACE_FORCE" value="3" />
     <indentOptions>
       <option name="INDENT_SIZE" value="2" />
       <option name="CONTINUATION_INDENT_SIZE" value="2" />
       <option name="TAB_SIZE" value="2" />
-      <option name="SMART_TABS" value="true" />
     </indentOptions>
   </codeStyleSettings>
   <codeStyleSettings language="TypeScript">

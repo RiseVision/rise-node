@@ -4,6 +4,13 @@ import initializer from '../common/init';
 import { checkIntParam, checkPubKey, checkRequiredParam, checkReturnObjKeyVal } from './utils';
 import { IBlocksModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
+import { create2ndSigTX, createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
+import {
+  createRandomAccountsWithFunds,
+  createRandomAccountWithFunds, createRandomWallet, createRegDelegateTransaction, createSecondSignTransaction,
+  createSendTransaction,
+  createVoteTransaction, getRandomDelegateWallet
+} from '../common/utils';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/blocks', () => {
@@ -71,6 +78,24 @@ describe('api/blocks', () => {
       it('should filter block by totalAmount');
       it('should filter block by totalFee');
       it('should filter block by generatorPublicKey');
+
+      it('should return block\'s transactions with assets per each tx', async () => {
+        const data = await createRandomAccountsWithFunds(4, 1e10);
+        const txs = [
+          await createSendTransaction(0, 1, data[0].account, '1R'),
+          await createSecondSignTransaction(0, data[3].account, createRandomWallet().publicKey),
+          await createRegDelegateTransaction(0, data[2].account, 'meoaaw'),
+          await createVoteTransaction(0, data[1].account, getRandomDelegateWallet().publicKey, true),
+        ];
+        await initializer.rawMineBlockWithTxs(txs.map((t) => toBufferedTransaction(t)));
+        const { body } = await supertest(initializer.appManager.expressApp)
+          .get('/api/blocks/?limit=1&orderBy=height:desc')
+          .expect(200);
+        expect(body.blocks[0].transactions[0].asset).deep.eq(txs[0].asset);
+        expect(body.blocks[0].transactions[1].asset).deep.eq(txs[1].asset);
+        expect(body.blocks[0].transactions[2].asset).deep.eq(txs[2].asset);
+        expect(body.blocks[0].transactions[3].asset).deep.eq(txs[3].asset);
+      });
     });
   });
 
@@ -94,6 +119,24 @@ describe('api/blocks', () => {
           expect(response.body.success).is.false;
           expect(response.body.error).to.be.eq('Block not found');
         });
+    });
+
+    it('should return block\'s transactions with assets per each tx', async () => {
+      const data = await createRandomAccountsWithFunds(4, 1e10);
+      const txs = [
+        await createSendTransaction(0, 1, data[0].account, '1R'),
+        await createSecondSignTransaction(0, data[3].account, createRandomWallet().publicKey),
+        await createRegDelegateTransaction(0, data[2].account, 'meoaaw'),
+        await createVoteTransaction(0, data[1].account, getRandomDelegateWallet().publicKey, true),
+      ];
+      const b = await initializer.rawMineBlockWithTxs(txs.map((t) => toBufferedTransaction(t)));
+      const { body } = await supertest(initializer.appManager.expressApp)
+        .get(`/api/blocks/get?id=${b.id}`)
+        .expect(200);
+      expect(body.block.transactions[0].asset).deep.eq(txs[0].asset);
+      expect(body.block.transactions[1].asset).deep.eq(txs[1].asset);
+      expect(body.block.transactions[2].asset).deep.eq(txs[2].asset);
+      expect(body.block.transactions[3].asset).deep.eq(txs[3].asset);
     });
 
   });
