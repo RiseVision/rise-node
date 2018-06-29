@@ -1,4 +1,8 @@
 import * as fs from 'fs';
+
+/**
+ * Decorator for to generate profiling reports
+ */
 export function profilePromise(snap: number  = 100) {
   return (target: any,
           method: string,
@@ -26,6 +30,9 @@ export function profilePromise(snap: number  = 100) {
   };
 }
 
+/**
+ * Decorator for to generate profiling reports (bis)
+ */
 export function profile(snap: number = 100) {
   return (target: any,
           method: string,
