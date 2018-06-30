@@ -1,16 +1,27 @@
+import { APIError } from '@risevision/core-apis';
+import {
+  IoCSymbol,
+  removeEmptyObjKeys,
+  SchemaValid,
+  Sequence,
+  Symbols,
+  ValidateSchema,
+  WrapInDBSequence
+} from '@risevision/core-helpers';
+import {
+  IBlockLogic,
+  IBlockReward,
+  IBlocksModel,
+  IBlocksModule,
+  ISystemModule,
+  ITransactionLogic,
+  ITransactionsModel,
+} from '@risevision/core-interfaces';
+import { ConstantsType } from '@risevision/core-types';
 import { inject, injectable, tagged } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import { constants as constantsType, removeEmptyObjKeys, Sequence } from '../helpers';
-import { IoCSymbol } from '../helpers/decorators/iocSymbol';
-import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
-import { WrapInDBSequence } from '../helpers/decorators/wrapInSequence';
-import { IBlockLogic, IBlockReward, ITransactionLogic } from '../ioc/interfaces/logic';
-import { IBlocksModule, ISystemModule } from '../ioc/interfaces/modules';
-import { Symbols } from '../ioc/symbols';
-import { BlocksModel, TransactionsModel } from '../models';
-import blocksSchema from '../schema/blocks';
-import { APIError } from './errors';
+import blocksSchema from '../../schema/blocks.json';
 
 @JsonController('/api/blocks')
 @IoCSymbol(Symbols.api.blocks)
@@ -23,7 +34,7 @@ export class BlocksAPI {
 
   // Helpers
   @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
+  private constants: ConstantsType;
   // tslint:disable-next-line
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence)
@@ -44,9 +55,9 @@ export class BlocksAPI {
   private systemModule: ISystemModule;
 
   @inject(Symbols.models.blocks)
-  private BlocksModel: typeof BlocksModel;
+  private BlocksModel: typeof IBlocksModel;
   @inject(Symbols.models.transactions)
-  private TransactionsModel: typeof TransactionsModel;
+  private TransactionsModel: typeof ITransactionsModel;
 
   @Get('/')
   @ValidateSchema()

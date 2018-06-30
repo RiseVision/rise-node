@@ -1,8 +1,8 @@
+import { IBaseTransaction } from '@risevision/core-types';
 import { dposOffline } from 'dpos-offline';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
 import { generateAccount } from './accountsUtils';
-import { IBaseTransaction } from '../../src/logic/transactions';
 
 export const toBufferedTransaction    = <T>(t: ITransaction<any>): IBaseTransaction<T> => {
   return {

@@ -1,4 +1,4 @@
-{tsc javascript heap out of memory
+{
   "compilerOptions": {
     "target"                      : "es2017",
     "module"                      : "commonjs",
@@ -9,12 +9,22 @@
     "outDir"                      : "dist",
     "allowSyntheticDefaultImports": true,
     "inlineSourceMap"             : true,
+    "resolveJsonModule":            true,
     "inlineSources"               : true,
     "lib"                         : [
       "dom",
       "es7"
-    ]
+    ],
+    "paths": {
+      "@risevision/core-models": ["../core-models/*"],
+      "@risevision/core-interfaces": ["../core-interfaces/*"],
+      "@risevision/core-types": ["../core-types/*"],
+      "@risevision/core-helpers": ["../core-helpers/*"]
+    }
   },
+  "include": [
+    "./src/**/*.ts"
+  ],
   "exclude"        : [
     "tests",
     "node_modules",

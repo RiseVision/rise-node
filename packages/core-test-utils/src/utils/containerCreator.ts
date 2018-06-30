@@ -1,7 +1,6 @@
 import { Container } from 'inversify';
 import { constants, Symbols } from '@risevision/core-helpers';
 import SocketIOStub from './SocketIOStub';
-import ZSchemaStub from '../../dist/helpers/ZSchemaStub';
 import {
   AppStateStub,
   BlocksSubmoduleChainStub,
@@ -9,12 +8,16 @@ import {
   BlocksSubmoduleUtilsStub,
   BlocksSubmoduleVerifyStub,
   BroadcasterLogicStub,
-  BusStub, DelegatesModuleStub,
+  BusStub,
+  DelegatesModuleStub,
   ExceptionsManagerStub,
-  PeersLogicStub, PeersModuleStub,
+  PeersLogicStub,
+  PeersModuleStub,
   SequenceStub,
-  SlotsStub, SystemModuleStub,
-  TransactionPoolStub, TransactionsModuleStub
+  SlotsStub,
+  SystemModuleStub,
+  TransactionPoolStub,
+  TransactionsModuleStub
 } from '..';
 import CryptoStub from '../helpers/CryptoStub';
 import DbStub from '../helpers/DbStub';
@@ -36,18 +39,16 @@ import MultisignaturesModuleStub from '../modules/MultisignaturesModuleStub';
 import { RoundsModuleStub } from '../modules/RoundsModuleStub';
 import TransportModuleStub from '../modules/TransportModuleStub';
 import {
-  Accounts2DelegatesModel, Accounts2MultisignaturesModel, Accounts2U_DelegatesModel, Accounts2U_MultisignaturesModel,
   AccountsModel,
   BlocksModel,
   ExceptionModel,
   ForksStatsModel,
   InfoModel,
-  MigrationsModel, MultiSignaturesModel, PeersModel, RoundsFeesModel, RoundsModel, SignaturesModel, TransactionsModel
+  MigrationsModel,
+  TransactionsModel
 } from '@risevision/core-models';
-import { VotesModel } from '../../../core-delegates/src/models/VotesModel';
-import { DelegatesModel } from '../../../core-delegates/src/models/DelegatesModel';
-import { VoteTransaction } from '../../../core-delegates/src/logic/voteTransaction';
 import TransactionTypeStub from '../logic/transactions/TransactionTypeStub';
+import ZSchemaStub from '../helpers/ZSchemaStub';
 
 export const createContainer = (): Container => {
   const container = new Container();
@@ -56,20 +57,20 @@ export const createContainer = (): Container => {
     .toConstantValue(JSON.parse(JSON.stringify(require(`${__dirname}/../integration/config.json`))));
   container.bind(Symbols.generic.genesisBlock)
     .toConstantValue(JSON.parse(JSON.stringify(require(`${__dirname}/../integration/genesisBlock.json`))));
-  const genesis = container.get<any>(Symbols.generic.genesisBlock)
+  const genesis              = container.get<any>(Symbols.generic.genesisBlock)
   genesis.generatorPublicKey = Buffer.from(genesis.generatorPublicKey, 'hex');
-  genesis.blockSignature = Buffer.from(genesis.blockSignature, 'hex');
+  genesis.blockSignature     = Buffer.from(genesis.blockSignature, 'hex');
 
   container.bind(Symbols.generic.socketIO).to(SocketIOStub).inSingletonScope();
   container.bind(Symbols.generic.zschema).to(ZSchemaStub).inSingletonScope();
   container.bind(Symbols.generic.sequelize).toConstantValue(new Sequelize({
     database: 'test',
     //dialect: 'sqlite',
-    dialect: 'postgres',
+    dialect : 'postgres',
     username: 'root',
     password: 'test',
     //storage: ':memory',
-    logging: !('SEQ_SILENT' in process.env),
+    logging : !('SEQ_SILENT' in process.env),
   }));
 
   container.bind(Symbols.helpers.constants).toConstantValue({ ...{}, ...constants });
@@ -131,17 +132,6 @@ export const createContainer = (): Container => {
   container.bind(Symbols.models.migrations).toConstructor(MigrationsModel);
   container.bind(Symbols.models.info).toConstructor(InfoModel);
   container.bind(Symbols.models.transactions).toConstructor(TransactionsModel);
-  container.bind(Symbols.models.accounts2Delegates).toConstructor(Accounts2DelegatesModel);
-  container.bind(Symbols.models.accounts2Multisignatures).toConstructor(Accounts2MultisignaturesModel);
-  container.bind(Symbols.models.accounts2U_Delegates).toConstructor(Accounts2U_DelegatesModel);
-  container.bind(Symbols.models.accounts2U_Multisignatures).toConstructor(Accounts2U_MultisignaturesModel);
-  container.bind(Symbols.models.peers).toConstructor(PeersModel);
-  container.bind(Symbols.models.rounds).toConstructor(RoundsModel);
-  container.bind(Symbols.models.roundsFees).toConstructor(RoundsFeesModel);
-  container.bind(Symbols.models.votes).toConstructor(VotesModel);
-  container.bind(Symbols.models.signatures).toConstructor(SignaturesModel);
-  container.bind(Symbols.models.delegates).toConstructor(DelegatesModel);
-  container.bind(Symbols.models.multisignatures).toConstructor(MultiSignaturesModel);
 
   // TRansactions
   container.bind(Symbols.logic.transactions.createmultisig).to(TransactionTypeStub).inSingletonScope();
@@ -151,9 +141,9 @@ export const createContainer = (): Container => {
   container.bind(Symbols.logic.transactions.vote).to(TransactionTypeStub).inSingletonScope();
 
   const sequelize = container.get<Sequelize>(Symbols.generic.sequelize);
-  const models = [
+  const models    = [
     AccountsModel, BlocksModel, Accounts2DelegatesModel, Accounts2U_DelegatesModel, Accounts2MultisignaturesModel,
-    Accounts2U_MultisignaturesModel, ExceptionModel, ForksStatsModel, InfoModel, MigrationsModel, PeersModel, RoundsFeesModel, RoundsModel, TransactionsModel, MultiSignaturesModel, DelegatesModel, SignaturesModel, VotesModel];
+    Accounts2U_MultisignaturesModel, ExceptionModel, ForksStatsModel, InfoModel, MigrationsModel, TransactionsModel];
   sequelize.addModels(models);
 
   // add container to models.

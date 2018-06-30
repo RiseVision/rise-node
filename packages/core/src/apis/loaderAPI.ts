@@ -1,10 +1,8 @@
+import { IoCSymbol, Symbols } from '@risevision/core-helpers';
+import { IAppState, IBlocksModule, ILoaderModule, ISystemModule } from '@risevision/core-interfaces';
+import { ConstantsType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController } from 'routing-controllers';
-import { constants as constantsType } from '../helpers/';
-import { IoCSymbol } from '../helpers/decorators/iocSymbol';
-import { IAppState } from '../ioc/interfaces/logic';
-import { IBlocksModule, ILoaderModule, ISystemModule } from '../ioc/interfaces/modules';
-import { Symbols } from '../ioc/symbols';
 
 @JsonController('/api/loader/status')
 @IoCSymbol(Symbols.api.loader)
@@ -14,7 +12,7 @@ export class LoaderAPI {
   @inject(Symbols.logic.appState)
   private appState: IAppState;
   @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
+  private constants: ConstantsType;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
   @inject(Symbols.modules.loader)
@@ -45,7 +43,7 @@ export class LoaderAPI {
     if (this.blocksModule.lastBlock) {
       const secondsAgo = Math.floor(Date.now() / 1000) -
         (Math.floor(this.constants.epochTime.getTime() / 1000) + this.blocksModule.lastBlock.timestamp);
-      status = secondsAgo < this.constants.blockReceiptTimeOut;
+      status           = secondsAgo < this.constants.blockReceiptTimeOut;
     }
 
     return { success: status };

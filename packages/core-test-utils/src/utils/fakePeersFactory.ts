@@ -1,5 +1,5 @@
+import { PeerState, PeerType } from '@risevision/core-types';
 import { v4 } from 'uuid';
-import { PeerState, PeerType } from '../../src/logic';
 
 export const createFakePeer = (item: any = {}): PeerType => {
   return {
