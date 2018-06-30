@@ -1,28 +1,16 @@
-import * as crypto from 'crypto';
-import { inject, injectable, tagged } from 'inversify';
-import {
-  catchToLoggerAndRemapError,
-  constants as constantsType,
-  Ed,
-  IKeypair,
-  ILogger,
-  Sequence,
-  Slots
-} from '../helpers';
-import { WrapInDefaultSequence } from '../helpers/decorators/wrapInSequence';
-import { IJobsQueue } from '../ioc/interfaces/helpers';
-import { IAppState, IBroadcasterLogic } from '../ioc/interfaces/logic';
+import { catchToLoggerAndRemapError, Crypto, Sequence, Symbols, WrapInDefaultSequence } from '@risevision/core-helpers';
 import {
   IAccountsModule,
-  IBlocksModule,
-  IBlocksModuleProcess,
-  IDelegatesModule,
+  IAppState, IBlocksModule, IBlocksModuleProcess,
+  IBroadcasterLogic, IDelegatesModule,
   IForgeModule,
-  ITransactionsModule
-} from '../ioc/interfaces/modules';
-import { Symbols } from '../ioc/symbols';
-import { AppConfig } from '../types/genericTypes';
-import { publicKey } from '../types/sanityTypes';
+  IJobsQueue,
+  ILogger, ITransactionsModule
+} from '@risevision/core-interfaces';
+import { AppConfig, ConstantsType, IKeypair, publicKey } from '@risevision/core-types';
+import * as crypto from 'crypto';
+import { inject, injectable, tagged } from 'inversify';
+import { Slots } from '../helpers/slots';
 
 @injectable()
 export class ForgeModule implements IForgeModule {
@@ -35,9 +23,9 @@ export class ForgeModule implements IForgeModule {
 
   // helpers
   @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
+  private constants: ConstantsType;
   @inject(Symbols.helpers.crypto)
-  private ed: Ed;
+  private crypto: Crypto;
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)

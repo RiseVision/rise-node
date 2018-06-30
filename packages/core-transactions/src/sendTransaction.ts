@@ -1,15 +1,24 @@
+import { Symbols } from '@risevision/core-helpers';
+import {
+  IAccountLogic,
+  IAccountsModel,
+  IAccountsModule,
+  IRoundsLogic,
+  ISystemModule
+} from '@risevision/core-interfaces';
+import {
+  DBOp,
+  IBaseTransaction,
+  IConfirmedTransaction,
+  SignedBlockType,
+  TransactionType
+} from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
-import { TransactionType } from '../../helpers/';
-import { IAccountLogic, IRoundsLogic } from '../../ioc/interfaces/logic';
-import { IAccountsModule, ISystemModule } from '../../ioc/interfaces/modules';
-import { Symbols } from '../../ioc/symbols';
-import { AccountsModel } from '../../models';
-import { DBOp } from '../../types/genericTypes';
-import { SignedBlockType } from '../block';
-import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
+import { BaseTx } from './BaseTx';
+
 
 @injectable()
-export class SendTransaction extends BaseTransactionType<void, null> {
+export class SendTransaction extends BaseTx<void, null> {
 
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
@@ -23,13 +32,13 @@ export class SendTransaction extends BaseTransactionType<void, null> {
   private systemModule: ISystemModule;
 
   @inject(Symbols.models.accounts)
-  private AccountsModel: typeof AccountsModel;
+  private AccountsModel: typeof IAccountsModel;
 
   constructor() {
     super(TransactionType.SEND);
   }
 
-  public calculateFee(tx: IBaseTransaction<void>, sender: any, height: number): number {
+  public calculateFee(tx: IBaseTransaction<void>, sender: IAccountsModel, height: number): number {
     return this.systemModule.getFees(height).fees.send;
   }
 
