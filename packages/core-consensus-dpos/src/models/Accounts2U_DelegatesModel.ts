@@ -1,6 +1,6 @@
 import { IAccounts2U_DelegatesModel } from '@risevision/core-interfaces';
+import { AccountsModel } from '@risevision/core-models';
 import { Column, ForeignKey, Model, PrimaryKey, Table, } from 'sequelize-typescript';
-import { AccountsModel } from '../AccountsModel';
 
 @Table({ tableName: 'mem_accounts2u_delegates' })
 // tslint:disable-next-line class-name

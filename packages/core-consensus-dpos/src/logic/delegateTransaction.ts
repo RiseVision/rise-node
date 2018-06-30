@@ -3,7 +3,7 @@ import { IAccountsModel, IAccountsModule, ISystemModule } from '@risevision/core
 import { BaseTx } from '@risevision/core-transactions';
 import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
-import { DelegatesModel } from '../models/DelegatesModel';
+import { DelegatesModel } from '../models/';
 import {
   DBCreateOp,
   DBOp,
@@ -13,7 +13,7 @@ import {
   TransactionType
 } from '@risevision/core-types';
 
-const delegateAssetSchema = require('../../schema/asset.json');
+import delegateAssetSchema from '../../schema/asset.json';
 
 // tslint:disable-next-line interface-over-type-literal
 export type DelegateAsset = {
