@@ -1,12 +1,16 @@
+import { Bus, Sequence, Symbols, WrapInBalanceSequence } from '@risevision/core-helpers';
+import {
+  IAccountsModel,
+  IAccountsModule,
+  ILogger,
+  IMultisignaturesModule,
+  ITransactionLogic,
+  ITransactionPoolLogic, ITransactionsModule, VerificationType
+} from '@risevision/core-interfaces';
+import { IBaseTransaction, TransactionType } from '@risevision/core-types';
 import { inject, injectable, tagged } from 'inversify';
 import SocketIO from 'socket.io';
-import { Bus, ILogger, Sequence, TransactionType } from '../helpers/';
-import { ITransactionLogic, ITransactionPoolLogic, VerificationType } from '../ioc/interfaces/logic';
-import { IAccountsModule, IMultisignaturesModule, ITransactionsModule } from '../ioc/interfaces/modules';
-import { Symbols } from '../ioc/symbols';
-import { IBaseTransaction, MultisigAsset, MultiSignatureTransaction } from '../logic/transactions/';
-import { AccountsModel } from '../models';
-import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
+import { MultisigAsset, MultiSignatureTransaction } from './transaction';
 
 @injectable()
 export class MultisignaturesModule implements IMultisignaturesModule {
@@ -76,7 +80,7 @@ export class MultisignaturesModule implements IMultisignaturesModule {
     return null;
   }
 
-  private async processNormalTxSignature(tx: IBaseTransaction<any>, signature: string, sender: AccountsModel) {
+  private async processNormalTxSignature(tx: IBaseTransaction<any>, signature: string, sender: IAccountsModel) {
     const multisignatures = sender.multisignatures;
 
     if (tx.requesterPublicKey) {
@@ -105,7 +109,7 @@ export class MultisignaturesModule implements IMultisignaturesModule {
 
   }
 
-  private async processMultiSigSignature(tx: IBaseTransaction<MultisigAsset>, signature: string, sender: AccountsModel) {
+  private async processMultiSigSignature(tx: IBaseTransaction<MultisigAsset>, signature: string, sender: IAccountsModel) {
     // tslint:disable-next-line
     if (tx.asset.multisignature['signatures'] || tx.signatures.indexOf(signature) !== -1) {
       throw new Error('Permission to sign transaction denied');

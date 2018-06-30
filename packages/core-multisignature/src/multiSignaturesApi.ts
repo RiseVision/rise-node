@@ -1,22 +1,26 @@
+import { APIError, DeprecatedAPIError } from '@risevision/core-apis';
 import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import { ILogger } from '../helpers';
-import { IoCSymbol } from '../helpers/decorators/iocSymbol';
-import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
-import { ITransactionLogic, VerificationType } from '../ioc/interfaces/logic';
-import { IAccountsModule, IBlocksModule, ITransactionsModule } from '../ioc/interfaces/modules';
-import { Symbols } from '../ioc/symbols';
-import { Accounts2MultisignaturesModel, BlocksModel, TransactionsModel } from '../models';
-import multisigSchema from '../schema/multisignatures';
-import { publicKey as pkType } from '../types/sanityTypes';
-import { APIError, DeprecatedAPIError } from './errors';
+import { IoCSymbol, SchemaValid, Symbols, ValidateSchema } from '@risevision/core-helpers';
+import {
+  IAccountsModule,
+  IBlocksModule,
+  ILogger,
+  ITransactionLogic,
+  ITransactionsModel,
+  ITransactionsModule,
+  VerificationType
+} from '@risevision/core-interfaces';
+import { publicKey } from '@risevision/core-types';
+import apiSchema from '../schema/apischema.json';
+import { Accounts2MultisignaturesModel } from './models';
 
 @JsonController('/api/multisignatures')
 @injectable()
 @IoCSymbol(Symbols.api.multisignatures)
-export class MultisignatureAPI {
+export class MultiSignaturesApi {
   // Generics
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
@@ -41,12 +45,13 @@ export class MultisignatureAPI {
   @inject(Symbols.models.accounts2Multisignatures)
   private Accounts2MultisignaturesModel: typeof Accounts2MultisignaturesModel;
   @inject(Symbols.models.transactions)
-  private TransactionsModel: typeof TransactionsModel;
+  private TransactionsModel: typeof ITransactionsModel;
+
 
   @Get('/accounts')
   @ValidateSchema()
-  public async getAccounts(@SchemaValid(multisigSchema.getAccounts)
-                           @QueryParams() params: { publicKey: pkType }) {
+  public async getAccounts(@SchemaValid(apiSchema.getAccounts)
+                           @QueryParams() params: { publicKey: publicKey }) {
     const rows = await this.Accounts2MultisignaturesModel.findAll({
       // attributes: ['accountId'],
       where: { dependentId: params.publicKey },
@@ -86,11 +91,10 @@ export class MultisignatureAPI {
 
   @Get('/pending')
   @ValidateSchema()
-  public async getPending(@SchemaValid(multisigSchema.pending)
-                          @QueryParams() params: { publicKey: pkType }) {
-    const { publicKey } = params;
-    const bufPubKey     = Buffer.from(publicKey, 'hex');
-    const txs           = this.transactions.getMultisignatureTransactionList(false)
+  public async getPending(@SchemaValid(apiSchema.pending)
+                          @QueryParams() params: { publicKey: publicKey }) {
+    const bufPubKey = Buffer.from(params.publicKey, 'hex');
+    const txs       = this.transactions.getMultisignatureTransactionList(false)
       .filter((tx) => tx.senderPublicKey.equals(bufPubKey));
 
     const toRet = [];

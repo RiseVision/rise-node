@@ -1,7 +1,6 @@
 import { IMultisignaturesModel } from '@risevision/core-interfaces';
+import { TransactionsModel } from '@risevision/core-models';
 import { publicKey } from '@risevision/core-types';
-import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { TransactionsModel } from './TransactionsModel';
 import {
   Column,
   ForeignKey,
@@ -10,6 +9,7 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
+import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
 @Table({ tableName: 'multisignatures' })
 export class MultiSignaturesModel extends Model<MultiSignaturesModel> implements IMultisignaturesModel {
