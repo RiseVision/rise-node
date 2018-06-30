@@ -1,11 +1,10 @@
+import { Symbols } from '@risevision/core-helpers';
+import { ILogger, IPeerLogic, IPeersLogic, ISystemModule } from '@risevision/core-interfaces';
+import { BasePeerType, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
-import { ILogger } from '../helpers';
-import { IPeerLogic, IPeersLogic } from '../ioc/interfaces/logic/';
-import {ISystemModule} from '../ioc/interfaces/modules';
-import { Symbols } from '../ioc/symbols';
-import { BasePeerType, PeerLogic, PeerState, PeerType } from './peer';
+import { PeerLogic } from './peer';
 
 @injectable()
 export class PeersLogic implements IPeersLogic {

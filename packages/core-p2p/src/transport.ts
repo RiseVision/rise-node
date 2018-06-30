@@ -1,31 +1,48 @@
+import {
+  cbToPromise,
+  SchemaValid,
+  Sequence,
+  Symbols,
+  ValidateSchema,
+  WrapInBalanceSequence
+} from '@risevision/core-helpers';
+import {
+  IAppState,
+  IBlocksModel,
+  IBlocksModule,
+  IBroadcasterLogic,
+  IJobsQueue,
+  ILogger,
+  IMultisignaturesModule,
+  IPeerLogic,
+  IPeersLogic,
+  IPeersModule,
+  ISystemModule,
+  ITransactionLogic,
+  ITransactionsModel,
+  ITransactionsModule,
+  ITransportModule
+} from '@risevision/core-interfaces';
+import {
+  AppConfig,
+  BasePeerType,
+  ConstantsType,
+  IBaseTransaction,
+  ITransportTransaction,
+  PeerHeaders,
+  PeerRequestOptions,
+  PeerState,
+  SignedBlockType
+} from '@risevision/core-types';
 import { inject, injectable, postConstruct, tagged } from 'inversify';
 import * as popsicle from 'popsicle';
 import * as Throttle from 'promise-parallel-throttle';
 import * as promiseRetry from 'promise-retry';
 import SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
-import { cbToPromise, constants as constantsType, ILogger, Sequence } from '../helpers/';
-import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
-import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
-import { IJobsQueue } from '../ioc/interfaces/helpers';
-import { IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
-import {
-  IBlocksModule,
-  IMultisignaturesModule,
-  IPeersModule,
-  ISystemModule,
-  ITransactionsModule,
-  ITransportModule
-} from '../ioc/interfaces/modules/';
-import { Symbols } from '../ioc/symbols';
-import { BasePeerType, PeerHeaders, PeerState, SignedBlockType } from '../logic/';
-import { IBaseTransaction, ITransportTransaction } from '../logic/transactions/';
-import { BlocksModel, TransactionsModel } from '../models';
-import peersSchema from '../schema/peers';
-import schema from '../schema/transport';
-import { AppConfig } from '../types/genericTypes';
 
-// tslint:disable-next-line
+import peersSchema from '../schema/peers.json';
+import transportSchema from '../schema/transport.json';
 
 @injectable()
 export class TransportModule implements ITransportModule {
@@ -44,7 +61,7 @@ export class TransportModule implements ITransportModule {
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
   public balancesSequence: Sequence;
   @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
+  private constants: ConstantsType;
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
@@ -74,9 +91,9 @@ export class TransportModule implements ITransportModule {
 
   // models
   @inject(Symbols.models.blocks)
-  private BlocksModel: typeof BlocksModel;
+  private BlocksModel: typeof IBlocksModel;
   @inject(Symbols.models.transactions)
-  private TransactionsModel: typeof TransactionsModel;
+  private TransactionsModel: typeof ITransactionsModel;
 
   private loaded: boolean = false;
 
@@ -117,7 +134,7 @@ export class TransportModule implements ITransportModule {
           .catch(retry),
         {
           minTimeout: 2000, /* this is the timeout for the retry. Lets wait at least 2seconds before retrying. */
-          retries: 1,
+          retries   : 1,
         }
       );
     } catch (err) {
@@ -131,7 +148,7 @@ export class TransportModule implements ITransportModule {
     }
 
     const headers: PeerHeaders = thePeer.applyHeaders(res.headers as any);
-    if (!this.schema.validate(headers, schema.headers)) {
+    if (!this.schema.validate(headers, transportSchema.headers)) {
       this.removePeer({ peer: thePeer, code: 'EHEADERS' }, `${req.method} ${req.url}`);
       return Promise.reject(new Error(`Invalid response headers ${JSON.stringify(headers)} ${req.method} ${req.url}`));
     }
@@ -274,7 +291,7 @@ export class TransportModule implements ITransportModule {
    * Validate signature with schema and calls processSignature from module multisignautre
    */
   @ValidateSchema()
-  public async receiveSignature(@SchemaValid(schema.signature, 'Invalid signature body')
+  public async receiveSignature(@SchemaValid(transportSchema.signature, 'Invalid signature body')
                                   signature: { transaction: string, signature: string }) {
     try {
       await this.multisigModule.processSignature(signature);
@@ -286,7 +303,7 @@ export class TransportModule implements ITransportModule {
   @ValidateSchema()
   // tslint:disable-next-line
   @WrapInBalanceSequence
-  public async receiveTransactions(@SchemaValid(schema.transactions.properties.transactions, 'Invalid transactions body')
+  public async receiveTransactions(@SchemaValid(transportSchema.transactions.properties.transactions, 'Invalid transactions body')
                                      transactions: Array<ITransportTransaction<any>>,
                                    peer: IPeerLogic | null,
                                    broadcast: boolean) {

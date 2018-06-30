@@ -1,16 +1,11 @@
+import { Bus, Symbols } from '@risevision/core-helpers';
+import { ILogger, IPeerLogic, IPeersModel, IPeersModule } from '@risevision/core-interfaces';
+import { AppConfig, ConstantsType, PeerFilter, PeerType, PeerState } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
 import * as shuffle from 'shuffle-array';
-import { Bus, constants as constantsType, ILogger } from '../helpers/';
-import { IPeerLogic, IPeersLogic } from '../ioc/interfaces/logic/';
-import { IPeersModule } from '../ioc/interfaces/modules/';
-import { Symbols } from '../ioc/symbols';
-import { PeerState, PeerType } from '../logic/';
-import { PeersModel } from '../models';
-import { AppConfig } from '../types/genericTypes';
-
-// tslint:disable-next-line
+import { PeersLogic } from './peersLogic';
 
 @injectable()
 export class PeersModule implements IPeersModule {
@@ -23,20 +18,20 @@ export class PeersModule implements IPeersModule {
   @inject(Symbols.helpers.bus)
   private bus: Bus;
   @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
+  private constants: ConstantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
   // Logic
   @inject(Symbols.logic.peers)
-  private peersLogic: IPeersLogic;
+  private peersLogic: PeersLogic;
 
   // Modules
   @inject(Symbols.modules.system)
   private systemModule;
 
   @inject(Symbols.models.peers)
-  private PeersModel: typeof PeersModel;
+  private PeersModel: typeof IPeersModel;
 
   public cleanup() {
     // save on cleanup.

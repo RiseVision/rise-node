@@ -1,10 +1,9 @@
+import { Symbols } from '@risevision/core-helpers';
+import { IPeerLogic } from '@risevision/core-interfaces';
+import { BasePeerType, PeerHeaders, PeerRequestOptions, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
-import { IPeerLogic } from '../ioc/interfaces/logic/';
-import { ITransportModule } from '../ioc/interfaces/modules';
-import { Symbols } from '../ioc/symbols';
-import { PeerRequestOptions } from '../modules';
-
+import { TransportModule } from './transport';
 
 const nullable = [
   'os',
@@ -56,7 +55,7 @@ export class PeerLogic implements PeerType, IPeerLogic {
   public string: string;
 
   @inject(Symbols.modules.transport)
-  private transportModule: ITransportModule;
+  private transportModule: TransportModule;
 
   public accept(peer: BasePeerType) {
     // Normalize peer data
