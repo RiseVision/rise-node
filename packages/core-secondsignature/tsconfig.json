@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target":                       "es2017",
+    "module":                       "commonjs",
+    "emitDecoratorMetadata":        true,
+    "experimentalDecorators":       true,
+    "allowJs":                      false,
+    "moduleResolution":             "node",
+    "outDir":                       "dist",
+    "baseUrl":                      ".",
+    "declaration":                  true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule":            true,
+    "inlineSourceMap":              true,
+    "inlineSources":                true,
+    "lib":                          [
+      "dom",
+      "es7"
+    ],
+    "paths": {
+      "@risevision/core-apis": ["../core-apis/*"],
+      "@risevision/core-models": ["../core-models/*"],
+      "@risevision/core-interfaces": ["../core-interfaces/*"],
+      "@risevision/core-types": ["../core-types/*"],
+      "@risevision/core-helpers": ["../core-helpers/*"],
+      "@risevision/core-test-utils": ["../core-test-utils/*"],
+      "@risevision/core-transactions": ["../core-transactions/*"]
+    }
+  },
+  "exclude":         [
+    "tests",
+    "public",
+    "dist",
+    "coverage",
+    "node_modules"
+  ]
+}

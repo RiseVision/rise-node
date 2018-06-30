@@ -3,7 +3,6 @@ import { IBaseTransaction, ITransportTransaction, TransactionType } from '@risev
 import { Column, DataType, ForeignKey, Model, PrimaryKey, Table } from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { BaseModel } from './BaseModel';
 import { BlocksModel } from './BlocksModel';
 
 @Table({ tableName: 'trs' })

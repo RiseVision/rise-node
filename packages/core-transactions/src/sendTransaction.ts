@@ -16,7 +16,6 @@ import {
 import { inject, injectable } from 'inversify';
 import { BaseTx } from './BaseTx';
 
-
 @injectable()
 export class SendTransaction extends BaseTx<void, null> {
 
@@ -42,7 +41,7 @@ export class SendTransaction extends BaseTx<void, null> {
     return this.systemModule.getFees(height).fees.send;
   }
 
-  public async verify(tx: IBaseTransaction<void>, sender: any): Promise<void> {
+  public async verify(tx: IBaseTransaction<void>, sender: IAccountsModel): Promise<void> {
     if (!tx.recipientId) {
       throw new Error('Missing recipient');
     }
@@ -53,7 +52,7 @@ export class SendTransaction extends BaseTx<void, null> {
   }
 
   public async apply(tx: IConfirmedTransaction<void>,
-                     block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+                     block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     return [
       ... this.accountLogic.merge(tx.recipientId, {
         balance  : tx.amount,
@@ -64,7 +63,7 @@ export class SendTransaction extends BaseTx<void, null> {
     ];
   }
 
-  public async undo(tx: IConfirmedTransaction<void>, block: SignedBlockType, sender: any): Promise<Array<DBOp<any>>> {
+  public async undo(tx: IConfirmedTransaction<void>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     return [
       ... this.accountLogic.merge(tx.recipientId, {
         balance  : -tx.amount,

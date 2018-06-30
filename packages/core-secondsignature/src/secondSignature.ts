@@ -1,9 +1,19 @@
+import { Symbols } from '@risevision/core-helpers';
+import { BaseTx } from '@risevision/core-transactions';
 import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
-import { SignaturesModel } from '@risevision/core-models';
-import { Symbols } from '@risevision/core-helpers';
-import { BaseTx } from '../BaseTx';
-import { IAccountsModule, ISystemModule } from '@risevision/core-interfaces';
+import { IAccountsModel, IAccountsModule, ISystemModule } from '@risevision/core-interfaces';
+import {
+  DBOp,
+  IBaseTransaction,
+  IConfirmedTransaction,
+  SignedBlockType,
+  TransactionType
+} from '@risevision/core-types';
+
+import secondSignatureSchema from '../schema/secondSignature.json';
+import { SignaturesModel } from './SignaturesModel';
+
 // tslint:disable-next-line interface-over-type-literal
 export type SecondSignatureAsset = {
   signature: {
@@ -25,7 +35,7 @@ export class SecondSignatureTransaction extends BaseTx<SecondSignatureAsset, Sig
 
   // models
   @inject(Symbols.models.accounts)
-  private AccountsModel: typeof AccountsModel;
+  private AccountsModel: typeof IAccountsModel;
   @inject(Symbols.models.signatures)
   private SignaturesModel: typeof SignaturesModel;
 
@@ -33,7 +43,7 @@ export class SecondSignatureTransaction extends BaseTx<SecondSignatureAsset, Sig
     super(TransactionType.SIGNATURE);
   }
 
-  public calculateFee(tx: IBaseTransaction<SecondSignatureAsset>, sender: AccountsModel, height: number): number {
+  public calculateFee(tx: IBaseTransaction<SecondSignatureAsset>, sender: IAccountsModel, height: number): number {
     return this.systemModule.getFees(height).fees.secondsignature;
   }
 
@@ -42,7 +52,7 @@ export class SecondSignatureTransaction extends BaseTx<SecondSignatureAsset, Sig
     return Buffer.from(tx.asset.signature.publicKey, 'hex');
   }
 
-  public async verify(tx: IBaseTransaction<SecondSignatureAsset>, sender: AccountsModel): Promise<void> {
+  public async verify(tx: IBaseTransaction<SecondSignatureAsset>, sender: IAccountsModel): Promise<void> {
     if (!tx.asset || !tx.asset.signature) {
       throw new Error('Invalid transaction asset');
     }
@@ -62,7 +72,7 @@ export class SecondSignatureTransaction extends BaseTx<SecondSignatureAsset, Sig
   }
 
   public async apply(tx: IConfirmedTransaction<SecondSignatureAsset>, block: SignedBlockType,
-                     sender: AccountsModel): Promise<Array<DBOp<any>>> {
+                     sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     const secondPublicKey = Buffer.from(tx.asset.signature.publicKey, 'hex');
     sender.applyValues({
       secondPublicKey,
@@ -85,7 +95,7 @@ export class SecondSignatureTransaction extends BaseTx<SecondSignatureAsset, Sig
 
   public async undo(tx: IConfirmedTransaction<SecondSignatureAsset>,
                     block: SignedBlockType,
-                    sender: AccountsModel): Promise<Array<DBOp<any>>> {
+                    sender: IAccountsModel): Promise<Array<DBOp<any>>> {
 
     sender.applyValues({
       secondPublicKey  : null,
@@ -107,7 +117,7 @@ export class SecondSignatureTransaction extends BaseTx<SecondSignatureAsset, Sig
   }
 
   public async applyUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>,
-                                sender: AccountsModel): Promise<Array<DBOp<any>>> {
+                                sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     if (sender.u_secondSignature || sender.secondSignature) {
       throw new Error('Second signature already enabled');
     }
@@ -127,7 +137,7 @@ export class SecondSignatureTransaction extends BaseTx<SecondSignatureAsset, Sig
   }
 
   public async undoUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>,
-                               sender: AccountsModel): Promise<Array<DBOp<any>>> {
+                               sender: IAccountsModel): Promise<Array<DBOp<any>>> {
 
     sender.applyValues({
       u_secondSignature: 0,
