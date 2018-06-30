@@ -56,5 +56,5 @@ export interface IBlockLogic {
 
   dbRead(rawBlock: RawFullBlockListType): SignedBlockType & { totalForged: string, readonly generatorId: string };
 
-  fromBytes(blk: IBytesBlock): SignedBlockType;
+  fromBytes(blk: IBytesBlock): SignedAndChainedBlockType;
 }

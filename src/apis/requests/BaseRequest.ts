@@ -74,18 +74,20 @@ export abstract class BaseRequest implements IAPIRequest {
   }
 
   protected decodeProtoBufResponse(res: popsicle.Response, pbNamespace: string, pbMessageType?: string): any {
+    let retVal: any;
     if (res.status === 200) {
-      if (BaseRequest.protoBufHelper.validate(res.body, pbNamespace, pbMessageType)) {
-        return BaseRequest.protoBufHelper.decode(res.body, pbNamespace, pbMessageType);
-      } else {
+      try {
+        retVal = BaseRequest.protoBufHelper.decode(res.body, pbNamespace, pbMessageType);
+      } catch (e) {
         throw new Error('Cannot decode response');
       }
     } else {
-      if (BaseRequest.protoBufHelper.validate(res.body, 'APIError')) {
-        return BaseRequest.protoBufHelper.decode(res.body, 'APIError');
-      } else {
+      try {
+        retVal = BaseRequest.protoBufHelper.decode(res.body, 'APIError');
+      } catch (e) {
         throw new Error('Cannot decode error response');
       }
     }
+    return retVal;
   }
 }

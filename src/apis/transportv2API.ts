@@ -103,7 +103,7 @@ export class TransportV2API {
   }
 
   @Post('/transactions')
-  public async postTransactions(@Body() data: Buffer, @Req() req: Request, @Res() res: Response) {
+  public async postTransactions(@Req() req: Request, @Res() res: Response) {
     let transactions;
     try {
       const requestData = this.parseRequest(req, 'transportTransactions');
@@ -116,7 +116,9 @@ export class TransportV2API {
       port: parseInt(req.headers.port as string, 10),
     });
     if (transactions.length > 0) {
-      await this.transportModule.receiveTransactions(transactions, thePeer, true);
+      await this.transportModule.receiveTransactions(transactions.map(
+        (tx: IBytesTransaction) => this.transactionLogic.fromBytes(tx)
+      ), thePeer, true);
     }
     return this.sendResponse(res, {success: true}, 'APISuccess');
   }
@@ -126,7 +128,7 @@ export class TransportV2API {
     let normalizedBlock: SignedAndChainedBlockType;
     try {
       const requestData = this.parseRequest(req, 'transportBlocks', 'transportBlock');
-      normalizedBlock = this.blockLogic.objectNormalize(requestData.block);
+      normalizedBlock = this.blockLogic.objectNormalize(this.blockLogic.fromBytes(requestData.block));
     } catch (e) {
       this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
       throw e;
@@ -161,6 +163,7 @@ export class TransportV2API {
   }
 
   private error(res: Response, message: string, code = 500) {
+    res.contentType('application/octet-stream');
     const payload = { message };
     return res.status(code).end(this.protoBuf.encode(payload, 'APIError'), 'binary');
   }
@@ -185,10 +188,12 @@ export class TransportV2API {
   private parseRequest(req: Request, pbNamespace: string, pbMessageType?: string): any {
     if (!(req as any).protoBuf) { throw new Error('No binary data in request body'); }
     const payload = (req as any).protoBuf;
-    if (!this.protoBuf.validate(payload, pbNamespace, pbMessageType)) {
+    let retVal: any;
+    try {
+      retVal = this.protoBuf.decode(payload, pbNamespace, pbMessageType);
+    } catch (e) {
       throw new Error(`Invalid binary data for message ${pbNamespace} ${pbMessageType}`);
-    } else {
-      return this.protoBuf.decode(payload, pbNamespace, pbMessageType);
     }
+    return retVal;
   }
 }

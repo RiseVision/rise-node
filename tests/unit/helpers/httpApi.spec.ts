@@ -205,4 +205,60 @@ describe('helpers/httpApi', () => {
       });
     });
   });
+
+  describe('protoBuf()', () => {
+    beforeEach(() => {
+      req.is = sandbox.stub();
+      req.on = sandbox.stub();
+    });
+
+    it('should check if request is application/octet-stream', () => {
+      const pb = middleware.protoBuf();
+      pb(req, res, next);
+      expect(req.is.calledOnce).to.be.true;
+      expect(req.is.firstCall.args).to.be.deep.equal(['application/octet-stream']);
+    });
+
+    it('should call next if request is not octet-stream', () => {
+      req.is.returns(false);
+      const pb = middleware.protoBuf();
+      pb(req, res, next);
+      expect(next.calledOnce).to.be.true;
+      expect(req.protoBuf).to.be.undefined;
+    });
+
+    it('should call req.on() twice if request is octet-stream', () => {
+      req.is.returns(true);
+      const pb = middleware.protoBuf();
+      pb(req, res, next);
+      expect(req.on.calledTwice).to.be.true;
+      expect(req.on.firstCall.args[0]).to.be.equal('data');
+      expect(req.on.firstCall.args[1]).to.be.a('function');
+      expect(req.on.secondCall.args[0]).to.be.equal('end');
+      expect(req.on.secondCall.args[1]).to.be.a('function');
+    });
+
+    it('should not add protoBuf property to req on request end if no data was sent', () => {
+      req.is.returns(true);
+      const pb = middleware.protoBuf();
+      pb(req, res, next);
+      const onEndCback = req.on.secondCall.args[1];
+      onEndCback();
+      expect(req.protoBuf).to.be.undefined;
+      expect(next.calledOnce).to.be.true;
+    });
+
+    it('should add protoBuf property to req on request end', () => {
+      req.is.returns(true);
+      const pb = middleware.protoBuf();
+      pb(req, res, next);
+      const onDataCback = req.on.firstCall.args[1];
+      const onEndCback = req.on.secondCall.args[1];
+      onDataCback(Buffer.from('aaaa', 'hex'));
+      onDataCback(Buffer.from('0000', 'hex'));
+      onDataCback(Buffer.from('5555', 'hex'));
+      onEndCback();
+      expect(req.protoBuf).to.be.deep.equal(Buffer.from('aaaa00005555', 'hex'));
+    });
+  });
 });
