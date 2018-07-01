@@ -14,7 +14,6 @@ export type AccountFilterData = {
 
 export type AccountDiffType = {[k in keyof IAccountsModel]?: IAccountsModel[k]} & {round?: number};
 export interface IAccountLogic {
-  objectNormalize(account: any);
 
   /**
    * Creates memory tables related to accounts

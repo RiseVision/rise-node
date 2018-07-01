@@ -1,31 +1,35 @@
-import * as crypto from 'crypto';
-import { inject, injectable } from 'inversify';
-import { constants as constantsType, ForkType, ILogger, Slots } from '../../helpers/';
-import { IBlockLogic, IBlockReward, ITransactionLogic } from '../../ioc/interfaces/logic';
+import { Symbols } from '@risevision/core-helpers';
 import {
+  IAccountsModel,
   IAccountsModule,
+  IBlockLogic,
+  IBlockReward,
+  IBlocksModel,
   IBlocksModule,
   IBlocksModuleChain,
   IBlocksModuleVerify,
   IDelegatesModule,
   IForkModule,
+  ILogger,
+  ISlots,
+  ITransactionLogic,
   ITransactionsModule
-} from '../../ioc/interfaces/modules/';
-import { Symbols } from '../../ioc/symbols';
-import { SignedAndChainedBlockType, SignedBlockType, } from '../../logic/';
-import { IConfirmedTransaction } from '../../logic/transactions/';
-import { AccountsModel, BlocksModel } from '../../models';
+} from '@risevision/core-interfaces';
+import { ConstantsType, ForkType, SignedAndChainedBlockType, SignedBlockType } from '@risevision/core-types';
+import * as crypto from 'crypto';
+import { inject, injectable } from 'inversify';
+import { IConfirmedTransaction } from '../../../../core-types/src/transactions';
 
 @injectable()
 export class BlocksModuleVerify implements IBlocksModuleVerify {
 
   // Helpers
   @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
+  private constants: ConstantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.helpers.slots)
-  private slots: Slots;
+  private slots: ISlots;
 
   // Logic
   @inject(Symbols.logic.block)
@@ -51,7 +55,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
 
   // Models
   @inject(Symbols.models.blocks)
-  private BlocksModel: typeof BlocksModel;
+  private BlocksModel: typeof IBlocksModel;
 
   /**
    * Contains the last N block Ids used to perform validations
@@ -127,7 +131,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
 
     // after verifyBlock block also have 'height' field so it's a SignedAndChainedBlock
     // That's because of verifyReceipt.
-    const {verified, errors} = await this.verifyBlock(block);
+    const { verified, errors } = await this.verifyBlock(block);
 
     if (!verified) {
       this.logger.error(`Block ${block.id} verification failed`, errors.join(', '));
@@ -206,6 +210,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     }
     return [];
   }
+
   /**
    * Verifies block signature and returns an array populated with errors.
    * @param {SignedBlockType} block
@@ -346,10 +351,10 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     return [];
   }
 
-  private async checkBlockTransactions(block: SignedBlockType, accountsMap: {[address: string]: AccountsModel}) {
+  private async checkBlockTransactions(block: SignedBlockType, accountsMap: { [address: string]: IAccountsModel }) {
     const allIds = [];
     for (const tx of block.transactions) {
-      tx.id      = this.transactionLogic.getId(tx);
+      tx.id         = this.transactionLogic.getId(tx);
       // Apply block id to the tx
       tx['blockId'] = block.id;
       allIds.push(tx.id);
@@ -382,13 +387,14 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       .map((tx) => this.checkTransaction(block, tx as IConfirmedTransaction<any>, accountsMap))
     );
   }
+
   /**
    * Check transaction - perform transaction validation when processing block
    * FIXME: Some checks are probably redundant, see: logic.transactionPool
    * If it does not throw the tx should be valid.
    * NOTE: this must be called with an unconfirmed transaction
    */
-  private async checkTransaction(block: SignedBlockType, tx: IConfirmedTransaction<any>, accountsMap: {[address: string]: AccountsModel}): Promise<void> {
+  private async checkTransaction(block: SignedBlockType, tx: IConfirmedTransaction<any>, accountsMap: { [address: string]: IAccountsModel }): Promise<void> {
     const acc = accountsMap[tx.senderId];
 
     let requester = null;

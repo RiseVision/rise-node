@@ -1,22 +1,30 @@
-import { inject, injectable, tagged } from 'inversify';
-import { Op, Transaction } from 'sequelize';
-import * as _ from 'lodash';
-import { Bus, catchToLoggerAndRemapError, DBHelper, ILogger, Sequence, TransactionType, wait } from '../../helpers/';
-import { WrapInBalanceSequence } from '../../helpers/decorators/wrapInSequence';
-import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
+  Bus,
+  catchToLoggerAndRemapError,
+  DBHelper,
+  Sequence,
+  Symbols,
+  wait,
+  WrapInBalanceSequence
+} from '@risevision/core-helpers';
+import {
+  IAccountsModel,
   IAccountsModule,
+  IBlockLogic,
+  IBlocksModel,
   IBlocksModule,
   IBlocksModuleChain,
   IBlocksModuleUtils,
+  ILogger,
   IRoundsModule,
+  ITransactionLogic,
+  ITransactionsModel,
   ITransactionsModule
-} from '../../ioc/interfaces/modules';
-import { Symbols } from '../../ioc/symbols';
-import { SignedAndChainedBlockType, SignedBlockType } from '../../logic/';
-import { IConfirmedTransaction } from '../../logic/transactions/';
-import { AccountsModel, BlocksModel, TransactionsModel } from '../../models/';
-import { DBOp } from '../../types/genericTypes';
+} from '@risevision/core-interfaces';
+import { DBOp, SignedAndChainedBlockType, SignedBlockType, TransactionType } from '@risevision/core-types';
+import { inject, injectable, tagged } from 'inversify';
+import * as _ from 'lodash';
+import { Op, Transaction } from 'sequelize';
 
 @injectable()
 export class BlocksModuleChain implements IBlocksModuleChain {
@@ -56,16 +64,16 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   private transactionsModule: ITransactionsModule;
 
   @inject(Symbols.models.accounts)
-  private AccountsModel: typeof AccountsModel;
+  private AccountsModel: typeof IAccountsModel;
   @inject(Symbols.models.blocks)
-  private BlocksModel: typeof BlocksModel;
+  private BlocksModel: typeof IBlocksModel;
   @inject(Symbols.models.transactions)
-  private TransactionsModel: typeof TransactionsModel;
+  private TransactionsModel: typeof ITransactionsModel;
   /**
    * Lock for processing.
    * @type {boolean}
    */
-  private isCleaning: boolean = false;
+          private isCleaning: boolean = false;
 
   private isProcessing: boolean = false;
 
@@ -81,7 +89,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * Deletes last block and returns the "new" lastBlock (previous basically)
    * @returns {Promise<SignedBlockType>}
    */
-  public async deleteLastBlock(): Promise<BlocksModel> {
+  public async deleteLastBlock(): Promise<IBlocksModel> {
     const lastBlock = this.blocksModule.lastBlock;
     this.logger.warn('Deleting last block', { id: lastBlock.id, height: lastBlock.height });
 
@@ -150,17 +158,17 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     try {
       for (const tx of block.transactions) {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
-        const sender = await this.accountsModule
+        const sender                = await this.accountsModule
           .setAccountAndGet({ publicKey: tx.senderPublicKey });
         // Apply tx.
         const ops: Array<DBOp<any>> = [
           {
             model: this.AccountsModel,
             query: this.AccountsModel.createBulkAccountsSQL([tx.recipientId]),
-            type: 'custom',
+            type : 'custom',
           },
-          ... await this.transactionLogic.applyUnconfirmed({... tx, blockId: block.id} as any, sender),
-          ... await this.transactionLogic.apply({... tx, blockId: block.id} as any, block, sender),
+          ... await this.transactionLogic.applyUnconfirmed({ ...tx, blockId: block.id } as any, sender),
+          ... await this.transactionLogic.apply({ ...tx, blockId: block.id } as any, block, sender),
         ];
         await this.dbHelper.performOps(ops);
 
@@ -179,7 +187,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   public async applyBlock(block: SignedAndChainedBlockType,
                           broadcast: boolean,
                           saveBlock: boolean,
-                          accountsMap: { [address: string]: AccountsModel }) {
+                          accountsMap: { [address: string]: IAccountsModel }) {
     if (this.isCleaning) {
       return; // Avoid processing a new block if it is cleaning.
     }
@@ -201,9 +209,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       );
 
       ops.push({
-        type: 'custom',
-        query: await this.AccountsModel.createBulkAccountsSQL(recipients),
         model: this.AccountsModel,
+        query: await this.AccountsModel.createBulkAccountsSQL(recipients),
+        type : 'custom',
       });
 
       for (const tx of block.transactions) {
@@ -265,7 +273,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    */
   public async saveBlock(b: SignedBlockType, dbTX: Transaction) {
     const saveOp = this.blockLogic.dbSave(b);
-    const txOps = this.transactionLogic.dbSave(b.transactions, b.id, b.height);
+    const txOps  = this.transactionLogic.dbSave(b.transactions, b.id, b.height);
 
     await this.dbHelper.performOps([saveOp, ...txOps], dbTX);
 
@@ -297,7 +305,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * @returns {Promise<SignedBlockType>}
    */
   @WrapInBalanceSequence
-  private async popLastBlock(lb: BlocksModel): Promise<BlocksModel> {
+  private async popLastBlock(lb: IBlocksModel): Promise<IBlocksModel> {
     const previousBlock = await this.BlocksModel.findById(lb.previousBlock, { include: [this.TransactionsModel] });
 
     if (previousBlock === null) {
@@ -308,7 +316,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     const txs = lb.transactions.slice().reverse();
 
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
-      const accountsMap = await this.accountsModule.resolveAccountsForTransactions(txs);
+      const accountsMap           = await this.accountsModule.resolveAccountsForTransactions(txs);
       const ops: Array<DBOp<any>> = [];
       for (const tx of txs) {
         ops.push(... await this.transactionLogic.undo(tx, lb, accountsMap[tx.senderId]));

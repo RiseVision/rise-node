@@ -57,4 +57,8 @@ export class IAccountsModel extends IBaseModel<IAccountsModel> {
   public static createBulkAccountsSQL(addresses: address[]): string {
     throw new Error('NotImplementedException');
   }
+
+  public static restoreUnconfirmedEntries(): Promise<void> {
+    throw new Error('NotImplementedException');
+  }
 }

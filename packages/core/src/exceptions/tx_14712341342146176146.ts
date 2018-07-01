@@ -1,7 +1,6 @@
-import { ExceptionsList, ExceptionsManager, IExceptionHandler } from '../helpers';
-import { ITransactionLogic } from '../ioc/interfaces/logic';
-import { IBaseTransaction } from '../logic/transactions';
-import { VoteAsset } from '../logic/transactions';
+import { ExceptionsList, ExceptionsManager, IExceptionHandler } from '@risevision/core-helpers';
+import { ITransactionLogic } from '@risevision/core-interfaces';
+import { IBaseTransaction } from '@risevision/core-types';
 /**
  * This transaction was broadcasted with 14572759844663166621 in the same
  * block and it was not allowed to be included as it removes a vote that
@@ -14,7 +13,7 @@ import { VoteAsset } from '../logic/transactions';
  */
 export default function exceptionTx14712341342146176146(excManager: ExceptionsManager) {
   const handler: IExceptionHandler<ITransactionLogic> = {
-    canHandle(obj: ITransactionLogic, tx: IBaseTransaction<VoteAsset>) {
+    canHandle(obj: ITransactionLogic, tx: IBaseTransaction<any>) {
       return tx.id === '14712341342146176146' &&
         tx.senderPublicKey.toString('hex') === '505a860f782db11937a1183732770878c45215567856670a9219c27ada80f22e' &&
         // tslint:disable-next-line

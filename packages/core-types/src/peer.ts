@@ -9,6 +9,7 @@ export type PeerHeaders = {
   nethash: string;
   port: number;
   version: string;
+  firewalled: 'true'|'false',
   broadhash?: string;
   height?: number;
   nonce?: string;

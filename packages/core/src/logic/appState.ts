@@ -1,6 +1,6 @@
+import { IAppState } from '@risevision/core-interfaces';
 import { injectable } from 'inversify';
 import * as jsonpath from 'jsonpath';
-import { IAppState } from '../ioc/interfaces/logic';
 
 /**
  * Container for modules and application loading state.

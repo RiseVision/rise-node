@@ -1,6 +1,7 @@
-import { ExceptionsList, ExceptionsManager } from '../helpers';
-import { IDelegatesModule } from '../ioc/interfaces/modules';
-import { SignedBlockType } from '../logic';
+import { ExceptionsList, ExceptionsManager } from '@risevision/core-helpers';
+import { IDelegatesModule } from '@risevision/core-interfaces';
+import { SignedBlockType } from '@risevision/core-types';
+
 // assertValidBlockSlot(block: SignedBlockType): Promise<void>;
 export default function block_127765(excManager: ExceptionsManager) {
   excManager.registerExceptionHandler(

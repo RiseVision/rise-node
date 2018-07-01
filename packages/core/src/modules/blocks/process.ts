@@ -1,20 +1,9 @@
-import { inject, injectable, tagged } from 'inversify';
-import * as _ from 'lodash';
-import { Op } from 'sequelize';
-import * as z_schema from 'z-schema';
-import { constants, ForkType, IKeypair, ILogger, Sequence } from '../../helpers/';
-import { WrapInDBSequence, WrapInDefaultSequence } from '../../helpers/decorators/wrapInSequence';
-import { ISlots } from '../../ioc/interfaces/helpers';
-import {
-  IAppState,
-  IBlockLogic,
-  IPeerLogic,
-  IPeersLogic,
-  IRoundsLogic,
-  ITransactionLogic
-} from '../../ioc/interfaces/logic';
+import { Sequence, Symbols, WrapInDBSequence, WrapInDefaultSequence } from '@risevision/core-helpers';
 import {
   IAccountsModule,
+  IAppState,
+  IBlockLogic,
+  IBlocksModel,
   IBlocksModule,
   IBlocksModuleChain,
   IBlocksModuleProcess,
@@ -22,19 +11,31 @@ import {
   IBlocksModuleVerify,
   IDelegatesModule,
   IForkModule,
+  ILogger,
+  IPeerLogic,
+  IPeersLogic,
+  IRoundsLogic,
+  ISlots,
+  ITransactionLogic,
+  ITransactionsModel,
   ITransactionsModule,
   ITransportModule
-} from '../../ioc/interfaces/modules/';
-import { Symbols } from '../../ioc/symbols';
+} from '@risevision/core-interfaces';
 import {
   BasePeerType,
+  ConstantsType,
+  ForkType,
+  IBaseTransaction,
+  IKeypair,
+  RawFullBlockListType,
   SignedAndChainedBlockType,
-  SignedBlockType,
-} from '../../logic/';
-import { IBaseTransaction } from '../../logic/transactions/';
-import { BlocksModel, TransactionsModel } from '../../models';
-import schema from '../../schema/blocks';
-import { RawFullBlockListType } from '../../types/rawDBTypes';
+  SignedBlockType
+} from '@risevision/core-types';
+import { inject, injectable, tagged } from 'inversify';
+import * as _ from 'lodash';
+import { Op } from 'sequelize';
+import * as z_schema from 'z-schema';
+import schema from '../../../schema/blocks.json';
 
 @injectable()
 export class BlocksModuleProcess implements IBlocksModuleProcess {
@@ -44,6 +45,8 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
+  @inject(Symbols.helpers.constants)
+  private constants: ConstantsType;
 
   // Helpers
   // tslint:disable-next-line member-ordering
@@ -93,9 +96,9 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
   // models
   @inject(Symbols.models.blocks)
-  private BlocksModel: typeof BlocksModel;
+  private BlocksModel: typeof IBlocksModel;
   @inject(Symbols.models.transactions)
-  private TransactionsModel: typeof TransactionsModel;
+  private TransactionsModel: typeof ITransactionsModel;
 
   private isCleaning: boolean = false;
 
@@ -164,16 +167,16 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
    */
   @WrapInDBSequence
   // tslint:disable-next-line max-line-length
-  public async loadBlocksOffset(limit: number, offset: number = 0, verify: boolean): Promise<BlocksModel> {
+  public async loadBlocksOffset(limit: number, offset: number = 0, verify: boolean): Promise<IBlocksModel> {
     const newLimit = limit + (offset || 0);
     const params   = { limit: newLimit, offset: offset || 0 };
 
     this.logger.debug('Loading blocks offset', { limit, offset, verify });
 
-    const blocks: BlocksModel[] = await this.BlocksModel.findAll({
-      include: [ this.TransactionsModel ],
-      order: ['height', 'rowId'],
-      where: {
+    const blocks: IBlocksModel[] = await this.BlocksModel.findAll({
+      include: [this.TransactionsModel],
+      order  : ['height', 'rowId'],
+      where  : {
         height: {
           [Op.gte]: params.offset,
           [Op.lt] : params.limit,
@@ -216,7 +219,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
           false,
           false,
           await this.accountsModule.resolveAccountsForTransactions(block.transactions)
-          );
+        );
       }
 
       this.blocksModule.lastBlock = block;
@@ -226,11 +229,6 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     return this.blocksModule.lastBlock;
   }
 
-  /**
-   * Query remote peer for block, process them and return last processed (and valid) block
-   * @param {PeerLogic | BasePeerType} rawPeer
-   * @return {Promise<SignedBlockType>}
-   */
   public async loadBlocksFromPeer(rawPeer: IPeerLogic | BasePeerType): Promise<SignedBlockType> {
     let lastValidBlock: SignedBlockType = this.blocksModule.lastBlock;
 
@@ -278,10 +276,10 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
    */
   public async generateBlock(keypair: IKeypair, timestamp: number) {
     const previousBlock = this.blocksModule.lastBlock;
-    const txs           = this.transactionsModule.getUnconfirmedTransactionList(false, constants.maxTxsPerBlock);
+    const txs           = this.transactionsModule.getUnconfirmedTransactionList(false, this.constants.maxTxsPerBlock);
 
     const ready: Array<IBaseTransaction<any>> = [];
-    const confirmedTxs = await this.transactionsModule.filterConfirmedIds(txs.map((tx) => tx.id));
+    const confirmedTxs                        = await this.transactionsModule.filterConfirmedIds(txs.map((tx) => tx.id));
     for (const tx of txs) {
       const sender = await this.accountsModule.getAccount({ publicKey: tx.senderPublicKey });
       if (!sender) {
@@ -384,7 +382,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   /**
    * Receive block detected as fork cause 1: Consecutive height but different previous block id
    */
-  private async receiveForkOne(block: SignedBlockType, lastBlock: BlocksModel) {
+  private async receiveForkOne(block: SignedBlockType, lastBlock: IBlocksModel) {
     const tmpBlock = _.clone(block);
 
     // Fork: Consecutive height but different previous block id

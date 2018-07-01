@@ -1,6 +1,6 @@
-import { ExceptionsList, ExceptionsManager, IExceptionHandler } from '../helpers';
-import { ITransactionLogic } from '../ioc/interfaces/logic';
-import { IBaseTransaction } from '../logic/transactions';
+import { ExceptionsList, ExceptionsManager, IExceptionHandler } from '@risevision/core-helpers';
+import { ITransactionLogic } from '@risevision/core-interfaces';
+import { IBaseTransaction } from '@risevision/core-types';
 // tslint:disable max-line-length
 /**
  * Failed to apply transaction: 10425551571020716913 - Account does not have enough RISE: 9518100838820316713R balance: 0.72736073

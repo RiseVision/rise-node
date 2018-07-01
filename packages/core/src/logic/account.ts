@@ -1,3 +1,6 @@
+import { BigNum, catchToLoggerAndRemapError, Symbols} from '@risevision/core-helpers';
+import { AccountDiffType, IAccountLogic, IAccountsModel, IBlocksModel, ILogger } from '@risevision/core-interfaces';
+import { DBOp, FieldsInModel, ModelAttributes } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as filterObject from 'filter-object';
@@ -6,23 +9,9 @@ import * as path from 'path';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-import { BigNum, catchToLoggerAndRemapError, ILogger } from '../helpers/';
-import { IAccountLogic } from '../ioc/interfaces/';
-import { Symbols } from '../ioc/symbols';
-import {
-  Accounts2DelegatesModel,
-  Accounts2MultisignaturesModel,
-  Accounts2U_DelegatesModel,
-  Accounts2U_MultisignaturesModel,
-  AccountsModel,
-  RoundsModel
-} from '../models/';
-import { DBOp } from '../types/genericTypes';
-import { FieldsInModel, ModelAttributes } from '../types/utils';
 import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
 
-import { AccountDiffType } from '../ioc/interfaces/logic';
 
 // tslint:disable-next-line
 export type OptionalsMemAccounts = {
@@ -125,20 +114,10 @@ export class AccountLogic implements IAccountLogic {
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
-  @inject(Symbols.models.accounts2Delegates)
-  private Accounts2DelegatesModel: typeof Accounts2DelegatesModel;
-  @inject(Symbols.models.accounts2Multisignatures)
-  private Accounts2MultisignaturesModel: typeof Accounts2MultisignaturesModel;
-  @inject(Symbols.models.accounts2U_Delegates)
-  // tslint:disable-next-line
-  private Accounts2U_DelegatesModel: typeof Accounts2U_DelegatesModel;
-  @inject(Symbols.models.accounts2U_Multisignatures)
-  // tslint:disable-next-line
-  private Accounts2U_MultisignaturesModel: typeof Accounts2U_MultisignaturesModel;
   @inject(Symbols.models.accounts)
-  private AccountsModel: typeof AccountsModel;
+  private AccountsModel: typeof IAccountsModel;
   @inject(Symbols.models.rounds)
-  private RoundsModel: typeof RoundsModel;
+  private RoundsModel: typeof IRoundsModel;
 
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
@@ -199,33 +178,16 @@ export class AccountLogic implements IAccountLogic {
     const models = [
       this.AccountsModel,
       this.RoundsModel,
-      this.Accounts2DelegatesModel,
-      this.Accounts2MultisignaturesModel,
-      this.Accounts2U_DelegatesModel,
-      this.Accounts2U_MultisignaturesModel];
+      // this.Accounts2DelegatesModel,
+      // this.Accounts2MultisignaturesModel,
+      // this.Accounts2U_DelegatesModel,
+      // this.Accounts2U_MultisignaturesModel
+    ];
+    // TODO: Fix ^^
     for (const model of models) {
       await model.drop({cascade: true})
         .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
     }
-  }
-
-  /**
-   * Runs the account through schema validation and eventually throw if not valid
-   * @param {any} account
-   * TODO: Describe account
-   */
-  public objectNormalize(account: any) {
-    const report: boolean = this.schema.validate(account, {
-      id        : 'Account',
-      object    : true,
-      properties: this.filter,
-    });
-
-    if (!report) {
-      throw new Error(`Failed to validate account schema: ${this.schema.getLastErrors()
-        .map((err) => err.message).join(', ')}`);
-    }
-    return account;
   }
 
   /**
@@ -260,7 +222,7 @@ export class AccountLogic implements IAccountLogic {
    * Get account information for specific fields and filtering criteria
    */
   // tslint:disable-next-line max-line-length
-  public get(filter: AccountFilterData, fields?: FieldsInModel<AccountsModel>): Promise<AccountsModel> {
+  public get(filter: AccountFilterData, fields?: FieldsInModel<IAccountsModel>): Promise<IAccountsModel> {
     return this.getAll(filter, fields)
       .then((res) => res[0]);
   }
@@ -268,7 +230,7 @@ export class AccountLogic implements IAccountLogic {
   /**
    * Get accountS information for specific fields and filtering criteria.
    */
-  public getAll(filter: AccountFilterData, fields?: FieldsInModel<AccountsModel>): Promise<AccountsModel[]> {
+  public getAll(filter: AccountFilterData, fields?: FieldsInModel<IAccountsModel>): Promise<IAccountsModel[]> {
     if (!Array.isArray(fields)) {
       fields = this.fields.map((field) => field.alias || field.field) as any;
     }
@@ -320,7 +282,7 @@ export class AccountLogic implements IAccountLogic {
    * @param {string} address
    * @param fields
    */
-  public async set(address: string, fields: ModelAttributes<AccountsModel>) {
+  public async set(address: string, fields: ModelAttributes<IAccountsModel>) {
     this.assertPublicKey(fields.publicKey);
     address        = String(address).toUpperCase();
     fields.address = address;

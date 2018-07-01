@@ -1,20 +1,20 @@
+import { BlockProgressLogger, catchToLoggerAndRemapError, Sequence, Symbols } from '@risevision/core-helpers';
+import {
+  IAccountsModel,
+  IBlockLogic,
+  IBlocksModel,
+  IBlocksModule,
+  IBlocksModuleUtils,
+  ILogger,
+  IRoundsFeesModel,
+  IRoundsLogic,
+  ITransactionLogic,
+  ITransactionsModel
+} from '@risevision/core-interfaces';
+import { ConstantsType, publicKey, RawFullBlockListType, SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable, tagged } from 'inversify';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
-import {
-  BlockProgressLogger,
-  catchToLoggerAndRemapError,
-  constants as constantType,
-  ILogger,
-  Sequence
-} from '../../helpers/';
-import { IBlockLogic, IRoundsLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
-import { IBlocksModule, IBlocksModuleUtils } from '../../ioc/interfaces/modules/';
-import { Symbols } from '../../ioc/symbols';
-import { SignedAndChainedBlockType } from '../../logic/';
-import { AccountsModel, BlocksModel, RoundsFeesModel, TransactionsModel } from '../../models';
-import { RawFullBlockListType } from '../../types/rawDBTypes';
-import { publicKey } from '../../types/sanityTypes';
 
 @injectable()
 export class BlocksModuleUtils implements IBlocksModuleUtils {
@@ -25,7 +25,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
 
   // Helpers
   @inject(Symbols.helpers.constants)
-  private constants: typeof constantType;
+  private constants: ConstantsType;
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence)
   private dbSequence: Sequence;
@@ -42,13 +42,13 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
 
   // models
   @inject(Symbols.models.accounts)
-  private AccountsModel: typeof AccountsModel;
+  private AccountsModel: typeof IAccountsModel;
   @inject(Symbols.models.blocks)
-  private BlocksModel: typeof BlocksModel;
+  private BlocksModel: typeof IBlocksModel;
   @inject(Symbols.models.transactions)
-  private TransactionsModel: typeof TransactionsModel;
+  private TransactionsModel: typeof ITransactionsModel;
   @inject(Symbols.models.roundsFees)
-  private RoundsFeesModel: typeof RoundsFeesModel;
+  private RoundsFeesModel: typeof IRoundsFeesModel;
 
   // Modules
   @inject(Symbols.modules.blocks)
@@ -112,8 +112,8 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
    * Loads the last block from db and normalizes it.
    * @return {Promise<BlocksModel>}
    */
-  public async loadLastBlock(): Promise<BlocksModel> {
-    const b                     = await this.BlocksModel.findOne({
+  public async loadLastBlock(): Promise<IBlocksModel> {
+    const b = await this.BlocksModel.findOne({
       include: [this.TransactionsModel],
       order  : [['height', 'DESC']],
       limit  : 1,
@@ -140,12 +140,12 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
       heightsToQuery.push(firstInRound - this.constants.activeDelegates * i);
     }
 
-    const blocks: Array<{ id: string, height: number }> = await BlocksModel
+    const blocks: Array<{ id: string, height: number }> = await this.BlocksModel
       .findAll({
         attributes: ['id', 'height'],
         order     : [['height', 'DESC']],
         raw       : true,
-        where     : {height: heightsToQuery},
+        where     : { height: heightsToQuery },
       });
 
     if (blocks.length === 0) {
@@ -172,12 +172,12 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
 
     const ids: string[] = blocks.map((r) => r.id);
 
-    return {firstHeight: blocks[0].height, ids};
+    return { firstHeight: blocks[0].height, ids };
   }
 
   // tslint:disable-next-line max-line-length
-  public async loadBlocksData(filter: { limit?: number, id?: string, lastId?: string }): Promise<BlocksModel[]> {
-    const params: any = {limit: filter.limit || 1};
+  public async loadBlocksData(filter: { limit?: number, id?: string, lastId?: string }): Promise<IBlocksModel[]> {
+    const params: any = { limit: filter.limit || 1 };
     if (filter.id && filter.lastId) {
       throw new Error('Invalid filter: Received both id and lastId');
     } else if (filter.id) {
@@ -185,10 +185,10 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     } else if (filter.lastId) {
       params.lastId = filter.lastId;
     }
-    return await this.dbSequence.addAndPromise<BlocksModel[]>(async () => {
+    return await this.dbSequence.addAndPromise<IBlocksModel[]>(async () => {
       const block = await this.BlocksModel.findOne({
         include: [this.TransactionsModel],
-        where  : {id: filter.lastId || filter.id || null},
+        where  : { id: filter.lastId || filter.id || null },
       });
 
       const height = block !== null ? block.height : 0;
@@ -198,8 +198,8 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
         const limit = height + (parseInt(`${filter.limit}`, 10) || 1);
         return await this.BlocksModel.findAll({
           include: [this.TransactionsModel],
-          order: ['height', 'rowId'],
-          where: {height: {[Op.gt]: height, [Op.lt]: limit}},
+          order  : ['height', 'rowId'],
+          where  : { height: { [Op.gt]: height, [Op.lt]: limit } },
         });
       }
       return [block];
@@ -210,7 +210,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
           .then(() => b))
         )
       )
-      .catch(catchToLoggerAndRemapError<BlocksModel[]>('Blocks#loadBlockData error', this.logger));
+      .catch(catchToLoggerAndRemapError<IBlocksModel[]>('Blocks#loadBlockData error', this.logger));
   }
 
   public getBlockProgressLogger(txCount: number, logsFrequency: number, msg: string) {
@@ -222,10 +222,10 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
    */
   // tslint:disable-next-line max-line-length
   public async aggregateBlockReward(filter: { generatorPublicKey: publicKey, start?: number, end?: number }): Promise<{ fees: number, rewards: number, count: number }> {
-    const params: any                                                         = {};
-    params.generatorPublicKey                                                 = filter.generatorPublicKey;
-    params.delegates                                                          = this.constants.activeDelegates;
-    const timestampClausole: { timestamp?: any } = {timestamp: {}};
+    const params: any                            = {};
+    params.generatorPublicKey                    = filter.generatorPublicKey;
+    params.delegates                             = this.constants.activeDelegates;
+    const timestampClausole: { timestamp?: any } = { timestamp: {} };
 
     if (typeof(filter.start) !== 'undefined') {
       timestampClausole.timestamp[Op.gte] = filter.start - this.constants.epochTime.getTime() / 1000;
@@ -241,8 +241,8 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     }
 
     const bufPublicKey = Buffer.from(params.generatorPublicKey, 'hex');
-    const acc          = await AccountsModel
-      .findOne({where: {isDelegate: 1, publicKey: bufPublicKey}});
+    const acc          = await this.AccountsModel
+      .findOne({ where: { isDelegate: 1, publicKey: bufPublicKey } });
     if (acc === null) {
       throw new Error('Account not found or is not a delegate');
     }

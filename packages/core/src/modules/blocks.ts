@@ -1,16 +1,15 @@
+import { Symbols } from '@risevision/core-helpers';
+import { IBlocksModel, IBlocksModule, ILogger } from '@risevision/core-interfaces';
+import { ConstantsType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
-import { constants as constantsType, ILogger, wait } from '../helpers/';
-import { IBlocksModule } from '../ioc/interfaces/modules';
-import { Symbols } from '../ioc/symbols';
-import { BlocksModel } from '../models';
 
 // TODO Eventually remove this module and use appState instead.
 @injectable()
 export class BlocksModule implements IBlocksModule {
-  public lastBlock: BlocksModel;
+  public lastBlock: IBlocksModel;
   public lastReceipt: { get: () => number, isStale: () => boolean, update: (time?: number) => void };
   @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
+  private constants: ConstantsType;
   private internalLastReceipt: number;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;

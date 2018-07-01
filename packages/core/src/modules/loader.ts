@@ -1,41 +1,59 @@
 import { inject, injectable, postConstruct, tagged } from 'inversify';
 import * as promiseRetry from 'promise-retry';
 import * as sequelize from 'sequelize';
-import {Op} from 'sequelize';
+import { Op } from 'sequelize';
 import SocketIO from 'socket.io';
 import z_schema from 'z-schema';
-import { Bus, constants as constantsType, ILogger, Sequence, wait } from '../helpers/';
-import { WrapInDefaultSequence } from '../helpers/decorators/wrapInSequence';
-import { IJobsQueue } from '../ioc/interfaces/helpers';
+import { Bus, Sequence, Symbols, wait, WrapInDefaultSequence } from '@risevision/core-helpers';
 import {
-  IAccountLogic, IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, IRoundsLogic,
-  ITransactionLogic
-} from '../ioc/interfaces/logic';
+  IAccountLogic,
+  IAccountsModel,
+  IAppState,
+  IBlocksModel,
+  IBlocksModule,
+  IBlocksModuleChain,
+  IBlocksModuleProcess,
+  IBlocksModuleUtils,
+  IBlocksModuleVerify,
+  IBroadcasterLogic,
+  IDelegatesModel,
+  IJobsQueue,
+  ILoaderModule,
+  ILogger,
+  IMultisignaturesModule,
+  IPeerLogic,
+  IPeersLogic,
+  IPeersModule,
+  IRoundsLogic,
+  IRoundsModel,
+  ISystemModule,
+  ITransactionLogic,
+  ITransactionsModule,
+  ITransportModule
+} from '@risevision/core-interfaces';
+import {
+  AppConfig,
+  ITransportTransaction,
+  PeerType,
+  SignedAndChainedBlockType,
+  SignedBlockType
+} from '@risevision/core-types';
 
-import {
-  IBlocksModule, IBlocksModuleChain, IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify,
-  ILoaderModule, IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule, ITransportModule
-} from '../ioc/interfaces/modules/';
-import { Symbols } from '../ioc/symbols';
-import { PeerType, SignedAndChainedBlockType, SignedBlockType, } from '../logic/';
-import { ITransportTransaction } from '../logic/transactions/';
-import { AccountsModel, BlocksModel, DelegatesModel, RoundsModel } from '../models';
-import loaderSchema from '../schema/loader';
+import loaderSchema from '../../schema/loader.json';
 import sql from '../sql/loader';
-import { AppConfig } from '../types/genericTypes';
 import Timer = NodeJS.Timer;
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
 
-  public loaded: boolean                       = false;
-  private blocksToSync: number                 = 0;
-  private isActive: boolean                    = false;
-  private lastblock: BlocksModel               = null;
+  public loaded: boolean          = false;
+  private blocksToSync: number    = 0;
+  private isActive: boolean       = false;
+  private lastblock: IBlocksModel = null;
   private network: { height: number, peers: IPeerLogic[] };
-  private retries: number                      = 5;
-  private syncInterval                         = 1000;
-  private syncIntervalId: Timer                = null;
+  private retries: number         = 5;
+  private syncInterval            = 1000;
+  private syncIntervalId: Timer   = null;
 
   // Generic
   @inject(Symbols.generic.appConfig)
@@ -99,13 +117,13 @@ export class LoaderModule implements ILoaderModule {
 
   // Models
   @inject(Symbols.models.accounts)
-  private AccountsModel: typeof AccountsModel;
+  private AccountsModel: typeof IAccountsModel;
   @inject(Symbols.models.blocks)
-  private BlocksModel: typeof BlocksModel;
+  private BlocksModel: typeof IBlocksModel;
   @inject(Symbols.models.delegates)
-  private DelegatesModel: typeof DelegatesModel;
+  private DelegatesModel: typeof IDelegatesModel;
   @inject(Symbols.models.rounds)
-  private RoundsModel: typeof RoundsModel;
+  private RoundsModel: typeof IRoundsModel;
 
   @postConstruct()
   public initialize() {
@@ -120,8 +138,8 @@ export class LoaderModule implements ILoaderModule {
 
   public async getNetwork() {
     if (!(
-        this.network.height > 0 &&
-        Math.abs(this.network.height - this.blocksModule.lastBlock.height) === 1)
+      this.network.height > 0 &&
+      Math.abs(this.network.height - this.blocksModule.lastBlock.height) === 1)
     ) {
       const { peers } = await this.peersModule.list({});
       this.network    = this.findGoodPeers(peers);
@@ -190,7 +208,7 @@ export class LoaderModule implements ILoaderModule {
       return this.load(1, limit, null, true);
     }
 
-    const genesisBlock = await this.BlocksModel.findOne({where: { height: 1}});
+    const genesisBlock = await this.BlocksModel.findOne({ where: { height: 1 } });
     // If there's a genesis in db lets check its validity against code version
     if (genesisBlock) {
       const matches = (
@@ -212,16 +230,18 @@ export class LoaderModule implements ILoaderModule {
       process.exit(0);
     }
 
-    const updatedAccountsInLastBlock = await AccountsModel
-      .count({where: {
-        blockId: {[Op.in]: sequelize.literal('(SELECT "id" from blocks ORDER BY "height" DESC LIMIT 1)')},
-      }});
+    const updatedAccountsInLastBlock = await this.AccountsModel
+      .count({
+        where: {
+          blockId: { [Op.in]: sequelize.literal('(SELECT "id" from blocks ORDER BY "height" DESC LIMIT 1)') },
+        }
+      });
 
     if (updatedAccountsInLastBlock === 0) {
       return this.load(blocksCount, limit, 'Detected missed blocks in mem_accounts', true);
     }
 
-    const rounds = await this.RoundsModel.findAll({ attributes: ['round'], group: 'round'});
+    const rounds    = await this.RoundsModel.findAll({ attributes: ['round'], group: 'round' });
     const unapplied = rounds.filter((r) => r.round !== round);
     if (unapplied.length > 0) {
       // round is not applied.
@@ -247,7 +267,7 @@ export class LoaderModule implements ILoaderModule {
       return this.load(blocksCount, limit, 'Detected orphaned blocks in mem_accounts', true);
     }
 
-    const delegatesCount = await this.AccountsModel.count({where: {isDelegate: 1}});
+    const delegatesCount = await this.AccountsModel.count({ where: { isDelegate: 1 } });
     if (delegatesCount === 0) {
       return this.load(blocksCount, limit, 'No delegates found', true);
     }
@@ -295,7 +315,7 @@ export class LoaderModule implements ILoaderModule {
   }
 
   public async load(count: number, limitPerIteration: number, message?: string, emitBlockchainReady = false) {
-    let offset          = 0;
+    let offset = 0;
     if (message) {
       this.logger.warn(message);
       this.logger.warn('Recreating memory tables');
@@ -421,8 +441,8 @@ export class LoaderModule implements ILoaderModule {
   private async innerLoad() {
     let loaded = false;
 
-    const randomPeer             = await this.getRandomPeer();
-    const lastBlock: BlocksModel = this.blocksModule.lastBlock;
+    const randomPeer = await this.getRandomPeer();
+    const lastBlock  = this.blocksModule.lastBlock;
     if (typeof(randomPeer) === 'undefined') {
       await wait(1000);
       // This could happen when we received a block but we did not get the updated peer list.
@@ -457,6 +477,7 @@ export class LoaderModule implements ILoaderModule {
     }
     return loaded;
   }
+
   /**
    * Loads blocks from the network
    */

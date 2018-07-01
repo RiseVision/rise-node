@@ -1,12 +1,11 @@
+import { Symbols } from '@risevision/core-helpers';
+import { IBlocksModel, IBlocksModule, ISystemModule } from '@risevision/core-interfaces';
+import { AppConfig, ConstantsType, PeerHeaders } from '@risevision/core-types';
+
 import * as crypto from 'crypto';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as os from 'os';
 import * as semver from 'semver';
-import { constants as constantType } from '../helpers/';
-import { IBlocksModule, ISystemModule } from '../ioc/interfaces/modules/';
-import { Symbols } from '../ioc/symbols';
-import { BlocksModel } from '../models';
-import { AppConfig, PeerHeaders } from '../types/genericTypes';
 
 const rcRegExp = /[a-z]+$/;
 
@@ -21,7 +20,7 @@ export class SystemModule implements ISystemModule {
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
   @inject(Symbols.helpers.constants)
-  private constants: typeof constantType;
+  private constants: ConstantsType;
   @inject(Symbols.generic.nonce)
   private nonce: string;
 
@@ -31,7 +30,7 @@ export class SystemModule implements ISystemModule {
 
   // Models
   @inject(Symbols.models.blocks)
-  private BlocksModel: typeof BlocksModel;
+  private BlocksModel: typeof IBlocksModel;
 
   @postConstruct()
   public postConstruct() {
@@ -160,7 +159,6 @@ export class SystemModule implements ISystemModule {
    * Gets private nethash or creates a new one, based on input param and data.
    * @implements {library.db.query}
    * @implements {crypto.createHash}
-   * @return {hash|setImmediateCallback} err | private nethash or new hash.
    */
   public async getBroadhash() {
     const rows: Array<{ id: string }> = await this.BlocksModel.findAll({
@@ -197,7 +195,7 @@ export class SystemModule implements ISystemModule {
     }
 
     return {
-      fees      : this.constants.fees[i].fees,
+      fees      : this.constants.fees[i].fees as any,
       fromHeight: this.constants.fees[i].height,
       height,
       toHeight  : i === this.constants.fees.length - 1 ? null : this.constants.fees[i + 1].height - 1,

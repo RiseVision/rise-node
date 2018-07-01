@@ -1,13 +1,8 @@
+import { DBHelper, Symbols } from '@risevision/core-helpers';
+import { AccountDiffType, IAccountLogic, IAccountsModel, IAccountsModule, } from '@risevision/core-interfaces';
+import { DBOp, FieldsInModel, IBaseTransaction } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
-import { DBHelper } from '../helpers';
-import { AccountDiffType, IAccountLogic } from '../ioc/interfaces/logic';
-import { IAccountsModule } from '../ioc/interfaces/modules';
-import { Symbols } from '../ioc/symbols';
-import { AccountFilterData, MemAccountsData } from '../logic/';
-import { AccountsModel } from '../models/';
-import { DBOp } from '../types/genericTypes';
-import { FieldsInModel } from '../types/utils';
-import { IBaseTransaction } from '../logic/transactions';
+import { AccountFilterData } from '../logic/';
 
 @injectable()
 export class AccountsModule implements IAccountsModule {
@@ -18,13 +13,13 @@ export class AccountsModule implements IAccountsModule {
   private dbHelper: DBHelper;
 
   @inject(Symbols.models.accounts)
-  private AccountsModel: typeof AccountsModel;
+  private AccountsModel: typeof IAccountsModel;
 
   public cleanup() {
     return Promise.resolve();
   }
 
-  public getAccount(filter: AccountFilterData, fields?: FieldsInModel<AccountsModel>): Promise<AccountsModel> {
+  public getAccount(filter: AccountFilterData, fields?: FieldsInModel<IAccountsModel>): Promise<IAccountsModel> {
     if (filter.publicKey) {
       filter.address = this.accountLogic.generateAddressByPublicKey(filter.publicKey);
       delete filter.publicKey;
@@ -32,11 +27,11 @@ export class AccountsModule implements IAccountsModule {
     return this.accountLogic.get(filter, fields);
   }
 
-  public getAccounts(filter: AccountFilterData, fields: FieldsInModel<AccountsModel>): Promise<AccountsModel[]> {
+  public getAccounts(filter: AccountFilterData, fields: FieldsInModel<IAccountsModel>): Promise<IAccountsModel[]> {
     return this.accountLogic.getAll(filter, fields);
   }
 
-  public async resolveAccountsForTransactions(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: AccountsModel }> {
+  public async resolveAccountsForTransactions(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: IAccountsModel }> {
     const allSenders: Array<{ publicKey: Buffer, address: string }> = [];
     txs.forEach((tx) => {
       if (!allSenders.find((item) => item.address === tx.senderId)) {
@@ -51,9 +46,9 @@ export class AccountsModule implements IAccountsModule {
     });
 
     const senderAccounts = await this.AccountsModel.scope('full')
-        .findAll({where: {address: allSenders.map((s) => s.address)}});
+      .findAll({ where: { address: allSenders.map((s) => s.address) } });
 
-    const sendersMap: { [address: string]: AccountsModel } = {};
+    const sendersMap: { [address: string]: IAccountsModel } = {};
     for (const senderAccount of senderAccounts) {
       sendersMap[senderAccount.address] = senderAccount;
     }
@@ -77,13 +72,8 @@ export class AccountsModule implements IAccountsModule {
     return sendersMap;
   }
 
-  /**
-   * Sets some data to specific account
-   * @param {MemAccountsData} data
-   * @returns {Promise<MemAccountsData>}
-   */
   // tslint:disable-next-line max-line-length
-  public async setAccountAndGet(data: ({ publicKey: Buffer } | { address: string }) & Partial<AccountsModel>): Promise<AccountsModel> {
+  public async setAccountAndGet(data: ({ publicKey: Buffer } | { address: string }) & Partial<IAccountsModel>): Promise<IAccountsModel> {
     data              = this.fixAndCheckInputParams(data);
     // no need to reset address!
     const { address } = data;
@@ -107,7 +97,7 @@ export class AccountsModule implements IAccountsModule {
     return this.accountLogic.generateAddressByPublicKey(pk);
   }
 
-  private fixAndCheckInputParams<T extends { address?: string, publicKey?: Buffer } = any>(what: T): T & {address: string} {
+  private fixAndCheckInputParams<T extends { address?: string, publicKey?: Buffer } = any>(what: T): T & { address: string } {
     if (!what.address && !what.publicKey) {
       throw new Error('Missing address and public key');
     }

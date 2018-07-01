@@ -1,19 +1,24 @@
+import { IBlockLogic, IBlocksModel, ITransactionLogic } from '@risevision/core-interfaces';
+import { BigNum, Crypto, Symbols } from '@risevision/core-helpers';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
 import z_schema from 'z-schema';
-import { BigNum, constants, Ed, IKeypair } from '../helpers/';
-import { IBlockLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
-import { Symbols } from '../ioc/symbols';
-import { BlocksModel } from '../models';
-import logicBlockSchema from '../schema/logic/block';
-import { DBOp } from '../types/genericTypes';
-import { RawFullBlockListType } from '../types/rawDBTypes';
 import { BlockRewardLogic } from './blockReward';
-import { IBaseTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
+import {
+  BlockType,
+  ConstantsType,
+  DBOp,
+  IBaseTransaction,
+  IKeypair,
+  RawFullBlockListType,
+  SignedAndChainedBlockType,
+  SignedAndChainedTransportBlockType,
+  SignedBlockType
+} from '@risevision/core-types';
 
-// import * as OldImplementation from './_block.js';
+import blockSchema from '../../schema/block.json';
 
 // tslint:disable-next-line interface-over-type-literal
 
@@ -40,22 +45,17 @@ export class BlockLogic implements IBlockLogic {
   @inject(Symbols.generic.zschema)
   public zschema: z_schema;
 
+  @inject(Symbols.helpers.constants)
+  private constants: ConstantsType;
   @inject(Symbols.logic.blockReward)
   private blockReward: BlockRewardLogic;
   @inject(Symbols.helpers.crypto)
-  private ed: Ed;
+  private crypto: Crypto;
   @inject(Symbols.logic.transaction)
   private transaction: ITransactionLogic;
 
   @inject(Symbols.models.blocks)
-  private BlocksModel: typeof BlocksModel;
-
-  /**
-   * the schema for logic block
-   */
-  get schema(): typeof logicBlockSchema {
-    return logicBlockSchema;
-  }
+  private BlocksModel: typeof IBlocksModel;
 
   public create(data: {
     keypair: IKeypair, timestamp: number,
@@ -92,7 +92,7 @@ export class BlockLogic implements IBlockLogic {
     for (const transaction of transactions) {
       const bytes: Buffer = this.transaction.getBytes(transaction);
 
-      if (size + bytes.length > constants.maxPayloadLength) {
+      if (size + bytes.length > this.constants.maxPayloadLength) {
         break;
       }
 
@@ -123,7 +123,7 @@ export class BlockLogic implements IBlockLogic {
     };
 
     block.blockSignature = this.sign(block, data.keypair);
-    block.id = this.getId(block);
+    block.id             = this.getId(block);
     return this.objectNormalize(block);
   }
 
@@ -161,11 +161,11 @@ export class BlockLogic implements IBlockLogic {
    * @param {BlockType} block
    * TODO: Change method name to something more meaningful as this does NOT save
    */
-  public dbSave(block: SignedBlockType): DBOp<BlocksModel & { id: string }> {
-    const values = {...filterObject(block, this.dbFields) };
+  public dbSave(block: SignedBlockType): DBOp<IBlocksModel & { id: string }> {
+    const values = { ...filterObject(block, this.dbFields) };
     return {
-      model : this.BlocksModel,
-      type  : 'create',
+      model: this.BlocksModel,
+      type : 'create',
       values,
     };
   }
@@ -192,7 +192,7 @@ export class BlockLogic implements IBlockLogic {
 
     const report = this.zschema.validate(
       block,
-      this.schema
+      blockSchema
     );
     if (!report) {
       throw new Error(`Failed to validate block schema: ${this.zschema
@@ -207,11 +207,11 @@ export class BlockLogic implements IBlockLogic {
     return block as any;
   }
 
-  public dbRead(rawBlock: RawFullBlockListType): SignedBlockType & { totalForged: string, readonly generatorId: string} {
+  public dbRead(rawBlock: RawFullBlockListType): SignedBlockType & { totalForged: string, readonly generatorId: string } {
     if (!rawBlock.b_id) {
       return null;
     } else {
-      const self = this;
+      const self        = this;
       const block       = {
         blockSignature      : Buffer.from(rawBlock.b_blockSignature, 'hex'),
         get generatorId() {

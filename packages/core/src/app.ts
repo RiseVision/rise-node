@@ -6,11 +6,10 @@ import * as jp from 'jsonpath';
 import 'source-map-support/register';
 import { AppManager } from './AppManager';
 import { allExceptionCreator } from './exceptions';
-import {
-  config as configCreator, constants as constantsType, ExceptionType, loggerCreator,
-  promiseToCB,
-} from './helpers/';
-import { SignedAndChainedBlockType } from './logic/';
+// import {
+//   config as configCreator, constants as constantsType, ExceptionType, loggerCreator,
+//   promiseToCB,
+// } from './helpers/';
 
 declare const gc; // garbage collection if exposed.
 
@@ -55,7 +54,7 @@ program
   .parse(process.argv);
 
 // tslint:disable-next-line
-const genesisBlock: SignedAndChainedBlockType = require(`../etc/${program.net}/genesisBlock.json`);
+const genesisBlock = require(`../etc/${program.net}/genesisBlock.json`);
 
 let extraConfig = {};
 if (program.extraConfig) {
