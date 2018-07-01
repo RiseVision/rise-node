@@ -7,9 +7,19 @@
         "maxTxsPerQueue": {
           "type": "integer",
           "minValue": 0
+        },
+        "bundledInterval": {
+          "$comment": "ms interval to process bundled transactions",
+          "type": "integer",
+          "minValue": 1
+        },
+        "expiryInterval": {
+          "$comment": "ms interval to check for expired transactions",
+          "type": "integer",
+          "minValue": 1
         }
       },
-      "required": [ "maxTxsPerQueue" ]
+      "required": [ "maxTxsPerQueue", "bundledInterval", "expiryInterval" ]
     }
   },
   "required"  : [

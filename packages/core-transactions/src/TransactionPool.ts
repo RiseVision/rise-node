@@ -8,8 +8,9 @@ import {
   ITransactionPoolLogic,
   ITransactionsModule
 } from '@risevision/core-interfaces';
-import { AppConfig, ConstantsType, IBaseTransaction, TransactionType } from '@risevision/core-types';
+import { ConstantsType, IBaseTransaction, TransactionType } from '@risevision/core-types';
 import { inject, injectable, postConstruct, tagged } from 'inversify';
+import { ExtendedAppConfig } from './extensions/appconfig';
 import { InnerTXQueue } from './poolTXsQueue';
 
 // tslint:disable-next-line
@@ -23,7 +24,7 @@ export class TransactionPool implements ITransactionPoolLogic {
 
   // generic
   @inject(Symbols.generic.appConfig)
-  private config: AppConfig;
+  private config: ExtendedAppConfig;
   @inject(Symbols.helpers.constants)
   private constants: ConstantsType;
 
@@ -54,8 +55,9 @@ export class TransactionPool implements ITransactionPoolLogic {
 
   @postConstruct()
   public afterConstruction() {
-    this.bundledInterval = this.config.broadcasts.broadcastInterval;
-    this.bundleLimit     = this.config.broadcasts.releaseLimit;
+    this.bundledInterval = this.config.transactions.bundledInterval;
+    this.bundleLimit     = this.config.transactions.bundleLimit;
+    this.expiryInterval     = this.config.transactions.expiryInterval;
     this.jobsQueue.register(
       'transactionPoolNextBundle',
       () => this.processBundled(),
