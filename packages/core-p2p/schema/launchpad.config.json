@@ -1,0 +1,123 @@
+{
+  "type"      : "object",
+  "properties": {
+    "peers"     : {
+      "type"      : "object",
+      "properties": {
+        "list"   : {
+          "type"       : "array",
+          "uniqueItems": true,
+          "items"      : {
+            "type"      : "object",
+            "properties": {
+              "ip"  : {
+                "type"  : "string",
+                "format": "ip"
+              },
+              "port": {
+                "type"    : "integer",
+                "minValue": 1,
+                "maxValue": 65535
+              }
+            },
+            "required"  : [
+              "ip",
+              "port"
+            ]
+          }
+        },
+        "options": {
+          "type"      : "object",
+          "properties": {
+            "limits" : {
+              "type"      : "object",
+              "properties": {
+                "max"       : {
+                  "$comment": "Maximum number of requests per timeframe",
+                  "type"    : "integer",
+                  "minValue": 0
+                },
+                "delayMs"   : {
+                  "$comment": "Delay in ms after 'delayAfter' - 0 to fullspeed",
+                  "type"    : "integer",
+                  "minValue": 0
+                },
+                "delayAfter": {
+                  "$comment": "Begins slowing down responses after this number of requests within windowMs",
+                  "type"    : "integer",
+                  "minValue": 0
+                },
+                "windowMs"  : {
+                  "$comment": "Window in ms where limits above apply.",
+                  "type"    : "integer",
+                  "minValue": 0
+                }
+              },
+              "required"  : [
+                "max",
+                "delayMs",
+                "delayAfter",
+                "windowMs"
+              ]
+            },
+            "timeout": {
+              "$comment": "Timeout in ms for a peer-to-peer request after which the peer is considered dead",
+              "type"    : "integer",
+              "minValue": 1000
+            }
+          },
+          "required"  : [
+            "limits",
+            "timeout"
+          ]
+        }
+      },
+      "required"  : [
+        "list",
+        "options"
+      ]
+    },
+    "broadcasts": {
+      "$comment"  : "Defines various limits for brodcasting operation.",
+      "type"      : "object",
+      "properties": {
+        "broadcastInterval": {
+          "$comment": "Defines the interval of time in ms where broadcast queues are spooled",
+          "type": "integer",
+          "minValue": 0
+        },
+        "broadcastLimit"   : {
+          "$comment": "Defines the number of maximum peers to broadcast the message to",
+          "type": "integer",
+          "minValue": 0
+        },
+        "parallelLimit"    : {
+          "$comment": "Defines the number of requests to perform in parallel",
+          "type": "integer",
+          "minValue": 0
+        },
+        "releaseLimit"     : {
+          "$comment": "Defines the number of requests to spool from queue",
+          "type": "integer",
+          "minValue": 0
+        },
+        "relayLimit"       : {
+          "$comment": "Defines the maximum number of relay for each message.",
+          "type": "integer",
+          "minValue": 0
+        }
+      },
+      "required"  : [
+        "broadcastInterval",
+        "broadcastLimit",
+        "parallelLimit",
+        "releaseLimit",
+        "relayLimit"
+      ]
+    }
+  },
+  "required"  : [
+    "peers",
+    "broadcasts"
+  ]
+}

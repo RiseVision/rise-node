@@ -54,14 +54,10 @@ export interface AppConfig {
   };
 
   peers: {
-    enabled: boolean;
     list: Array<{
       ip: string,
       port: number
     }>,
-    access: {
-      blackList: any[];
-    },
     options: {
       limits: {
         max: number
@@ -82,7 +78,9 @@ export interface AppConfig {
   };
 
   transactions: {
-    maxTxsPerQueue: number
+    maxTxsPerQueue: number,
+    bundledInterval: number,
+    bundleLimit: number,
   };
 
   forging: {

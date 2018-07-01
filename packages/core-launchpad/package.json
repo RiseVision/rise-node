@@ -1,0 +1,22 @@
+{
+  "name": "@risevision/core-launchpad",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "transpile": "shx rm -rf dist; tsc"
+  },
+  "types": "dist/index.d.ts",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@risevision/core-types": "^1.0.0",
+    "inversify": "=4.13.0",
+    "sequelize": "=4.38.0",
+    "sequelize-typescript": "=0.6.6-beta.1"
+  },
+  "devDependencies": {
+    "shx": "=0.2.2",
+    "typescript": "=2.9.2"
+  }
+}

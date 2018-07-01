@@ -1,0 +1,28 @@
+{
+  "type"      : "object",
+  "properties": {
+    "forging": {
+      "type"  : "object",
+      "properties": {
+        "secret": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "transactionsPolling": {
+          "type":"boolean"
+        },
+        "pollingInterval": {
+          "type": "integer",
+          "minValue": 5000
+        }
+      },
+      "required": []
+    }
+  },
+  "required"  : [
+    "forging"
+  ]
+}
