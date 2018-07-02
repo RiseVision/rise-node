@@ -7,6 +7,10 @@ import { DBOp } from '../../../types/genericTypes';
 
 export type AccountDiffType = {[k in keyof AccountsModel]?: AccountsModel[k]} & {round?: number};
 export interface IAccountLogic {
+
+  /**
+   * Runs the account through schema validation and eventually throw if not valid
+   */
   objectNormalize(account: any);
 
   /**
@@ -62,5 +66,8 @@ export interface IAccountLogic {
    */
   remove(address: string): Promise<number>;
 
+  /**
+   * Generate address from a publicKey
+   */
   generateAddressByPublicKey(pk: publicKey | Buffer): string;
 }
