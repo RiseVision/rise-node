@@ -2,9 +2,6 @@ import { ConstantsType } from '@risevision/core-types';
 // tslint:disable object-literal-sort-keys
 
 export const constants: ConstantsType = {
-  activeDelegates              : 101,
-  maximumVotes                 : 1,
-  maxVotesPerTransaction       : 2,
   blockSlotWindow              : 5, // window of which a slot could be accepted.
   blockTime                    : 30,
   blockReceiptTimeOut          : 30 * 2, // 2 blocks

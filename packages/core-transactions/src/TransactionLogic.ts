@@ -1,6 +1,5 @@
 import {
   BigNum,
-  constants,
   Crypto,
   ExceptionsList,
   ExceptionsManager,
@@ -9,14 +8,13 @@ import {
 } from '@risevision/core-helpers';
 import {
   IAccountLogic,
-  IAccountsModel,
-  ILogger,
-  IRoundsLogic, ISlots,
+  IAccountsModel, ILogger,
   ITransactionLogic,
   ITransactionsModel,
   VerificationType
-} from '@risevision/core-interfaces'
+} from '@risevision/core-interfaces';
 import {
+  ConstantsType,
   DBBulkCreateOp,
   DBOp,
   IBaseTransaction,
@@ -34,11 +32,15 @@ import { inject, injectable } from 'inversify';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
 import { BaseTx } from './BaseTx';
+import { WordPressHookSystem } from 'mangiafuoco';
 
 const txSchema = require('../../schema/transaction.json');
 
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
+
+  @inject(Symbols.helpers.constants)
+  private constants: ConstantsType;
 
   @inject(Symbols.helpers.exceptionsManager)
   public excManager: ExceptionsManager;
@@ -55,17 +57,13 @@ export class TransactionLogic implements ITransactionLogic {
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
-  @inject(Symbols.logic.rounds)
-  private roundsLogic: IRoundsLogic;
-
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
 
-  @inject(Symbols.helpers.slots)
-  private slots: ISlots;
-
   @inject(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
+  @inject(Symbols.generic.hookSystem)
+  private hookSystem: WordPressHookSystem;
 
   private types: { [k: number]: BaseTx<any, any> } = {};
 
@@ -359,7 +357,7 @@ export class TransactionLogic implements ITransactionLogic {
 
     // Check amount
     if (tx.amount < 0 || // no negative amount
-      tx.amount > constants.totalAmount || // cant go beyond totalAmount
+      tx.amount > this.constants.totalAmount || // cant go beyond totalAmount
       Math.floor(tx.amount) !== tx.amount || // Cant be decimal
       tx.amount.toString().indexOf('e') >= 0 // Cant be written in exponential notation
     ) {
@@ -373,10 +371,11 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error(senderBalance.error);
     }
 
-    // Check timestamp
-    if (this.slots.getSlotNumber(tx.timestamp) > this.slots.getSlotNumber()) {
-      throw new Error('Invalid transaction timestamp. Timestamp is in the future');
-    }
+    await this.hookSystem.do_action('verify-tx', tx);
+    // // Check timestamp
+    // if (this.slots.getSlotNumber(tx.timestamp) > this.slots.getSlotNumber()) {
+    //   throw new Error('Invalid transaction timestamp. Timestamp is in the future');
+    // }
 
     await this.types[tx.type].verify(tx, sender);
   }
@@ -432,14 +431,15 @@ export class TransactionLogic implements ITransactionLogic {
     this.logger.trace('Logic/Transaction->apply', {
       balance: -amountNumber,
       blockId: block.id,
-      round  : this.roundsLogic.calcRound(block.height),
+      // round  : this.roundsLogic.calcRound(block.height),
       sender : sender.address,
     });
     const ops = this.accountLogic.merge(sender.address, {
       balance: -amountNumber,
       blockId: block.id,
-      round  : this.roundsLogic.calcRound(block.height),
+      // round  : this.roundsLogic.calcRound(block.height),
     });
+    await this.hookSystem.apply_filters('tx-apply', ops, tx, block, sender);
     ops.push(... await this.types[tx.type].apply(tx, block, sender));
     return ops;
   }

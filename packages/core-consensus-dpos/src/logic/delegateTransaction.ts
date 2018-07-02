@@ -1,9 +1,6 @@
 import { removeEmptyObjKeys, Symbols } from '@risevision/core-helpers';
 import { IAccountsModel, IAccountsModule, ISystemModule } from '@risevision/core-interfaces';
 import { BaseTx } from '@risevision/core-transactions';
-import { inject, injectable } from 'inversify';
-import * as z_schema from 'z-schema';
-import { DelegatesModel } from '../models/';
 import {
   DBCreateOp,
   DBOp,
@@ -12,7 +9,10 @@ import {
   SignedBlockType,
   TransactionType
 } from '@risevision/core-types';
-
+import { inject, injectable } from 'inversify';
+import * as z_schema from 'z-schema';
+import { dPoSSymbols } from '../helpers/';
+import { DelegatesModel } from '../models/';
 import delegateAssetSchema from '../../schema/asset.json';
 
 // tslint:disable-next-line interface-over-type-literal
@@ -37,7 +37,7 @@ export class RegisterDelegateTransaction extends BaseTx<DelegateAsset, Delegates
 
   @inject(Symbols.models.accounts)
   private AccountsModel: typeof IAccountsModel;
-  @inject(Symbols.models.delegates)
+  @inject(dPoSSymbols.models.delegates)
   private DelegatesModel: typeof DelegatesModel;
 
   constructor() {
@@ -209,7 +209,7 @@ export class RegisterDelegateTransaction extends BaseTx<DelegateAsset, Delegates
       // tslint:disable object-literal-sort-keys
       return {
         delegate: {
-          username: raw.d_username
+          username: raw.d_username,
         },
       };
       // tslint:enable object-literal-sort-keys

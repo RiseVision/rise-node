@@ -2,8 +2,6 @@ import { Diff, Symbols } from '@risevision/core-helpers';
 import {
   IAccountLogic,
   IAccountsModel,
-  IDelegatesModule,
-  IRoundsLogic,
   ISystemModule
 } from '@risevision/core-interfaces';
 import { BaseTx } from '@risevision/core-transactions';
@@ -20,8 +18,10 @@ import { inject, injectable } from 'inversify';
 import { Model } from 'sequelize-typescript';
 import * as z_schema from 'z-schema';
 import { Accounts2DelegatesModel, Accounts2U_DelegatesModel, RoundsModel, VotesModel } from '../models/';
-
 import voteSchema from '../../schema/vote.json';
+import { DposConstantsType, dPoSSymbols } from '../helpers/';
+import { DelegatesModule } from '../modules/';
+import { RoundsLogic } from './rounds';
 
 // tslint:disable-next-line interface-over-type-literal
 export type VoteAsset = {
@@ -34,36 +34,36 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
 
-  @inject(Symbols.helpers.constants)
-  private constants: ConstantsType;
+  @inject(dPoSSymbols.dposConstants)
+  private dposConstants: DposConstantsType;
 
   // Logic
-  @inject(Symbols.logic.rounds)
-  private roundsLogic: IRoundsLogic;
+  @inject(dPoSSymbols.logic.rounds)
+  private roundsLogic: RoundsLogic;
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
 
   // Module
-  @inject(Symbols.modules.delegates)
-  private delegatesModule: IDelegatesModule;
+  @inject(dPoSSymbols.modules.delegates)
+  private delegatesModule: DelegatesModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
   // models
-  @inject(Symbols.models.votes)
+  @inject(dPoSSymbols.models.votes)
   private VotesModel: typeof VotesModel;
-  @inject(Symbols.models.accounts2U_Delegates)
+  @inject(dPoSSymbols.models.accounts2UDelegates)
   private Accounts2U_DelegatesModel: typeof Accounts2U_DelegatesModel;
-  @inject(Symbols.models.accounts2Delegates)
+  @inject(dPoSSymbols.models.accounts2Delegates)
   private Accounts2DelegatesModel: typeof Accounts2DelegatesModel;
   @inject(Symbols.models.accounts)
   private AccountsModel: typeof IAccountsModel;
-  @inject(Symbols.models.rounds)
+  @inject(dPoSSymbols.models.rounds)
   private RoundsModel: typeof RoundsModel;
 
   constructor() {
     super(TransactionType.VOTE);
-    voteSchema.properties.votes.maxItems = this.constants.maxVotesPerTransaction;
+    voteSchema.properties.votes.maxItems = this.dposConstants.maxVotesPerTransaction;
   }
 
   public calculateFee(tx: IBaseTransaction<VoteAsset>, sender: IAccountsModel, height: number): number {
@@ -87,8 +87,8 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
       throw new Error('Invalid votes. Must not be empty');
     }
 
-    if (tx.asset.votes && tx.asset.votes.length > this.constants.maxVotesPerTransaction) {
-      throw new Error(`Voting limit exceeded. Maximum is ${this.constants.maxVotesPerTransaction} votes per transaction`);
+    if (tx.asset.votes && tx.asset.votes.length > this.dposConstants.maxVotesPerTransaction) {
+      throw new Error(`Voting limit exceeded. Maximum is ${this.dposConstants.maxVotesPerTransaction} votes per transaction`);
     }
 
     // Assert vote is valid

@@ -2,7 +2,6 @@ export const Symbols = {
   api    : {
     accounts          : Symbol('accountsAPI'),
     blocks            : Symbol('blocksAPI'),
-    delegates         : Symbol('delegatesAPI'),
     loader            : Symbol('loader'),
     multisignatures   : Symbol('multisignaturesAPI'),
     peers             : Symbol('peersAPI'),
@@ -41,7 +40,6 @@ export const Symbols = {
     logger           : Symbol('logger'),
     migrator         : Symbol('migrator'),
     sequence         : Symbol('sequence'),
-    slots            : Symbol('slots'),
   },
   logic  : {
     account        : Symbol('accountLogic'),
@@ -52,8 +50,6 @@ export const Symbols = {
     peer           : Symbol('peerL'),
     peerFactory    : Symbol('Factory<peerL>'),
     peers          : Symbol('peersL'),
-    round          : Symbol('round'),
-    rounds         : Symbol('roundsL'),
     transaction    : Symbol('transactionL'),
     transactionPool: Symbol('transactionPoolL'),
     transactions   : {
@@ -66,23 +62,17 @@ export const Symbols = {
   },
   models : {
     accounts                  : Symbol('accountsModel'),
-    accounts2Delegates        : Symbol('accounts2delegatesModel'),
     accounts2Multisignatures  : Symbol('accounts2multisignatures'),
-    accounts2U_Delegates      : Symbol('accounts2U_delegatesModel'),
     accounts2U_Multisignatures: Symbol('accounts2U_multisignatures'),
     blocks                    : Symbol('blocksModel'),
-    delegates                 : Symbol('delegatesModel'),
     exceptions                : Symbol('exceptionsModel'),
     forkStats                 : Symbol('forkStatsModel'),
     info                      : Symbol('infoModel'),
     migrations                : Symbol('migrationsModel'),
     multisignatures           : Symbol('multisignaturesModel'),
     peers                     : Symbol('peersModel'),
-    rounds                    : Symbol('roundsModel'),
-    roundsFees                : Symbol('roundsFeesModel'),
     signatures                : Symbol('signaturesModel'),
     transactions              : Symbol('transactionsModel'),
-    votes                     : Symbol('votesModel')
   },
   modules: {
     accounts        : Symbol('accountsM'),
@@ -94,8 +84,6 @@ export const Symbols = {
       verify : Symbol('blocks_submodule_verify'),
     },
     cache           : Symbol('cacheM'),
-    delegates       : Symbol('delegatesM'),
-    forge           : Symbol('forgeM'),
     fork            : Symbol('forkM'),
     loader          : Symbol('loaderM'),
     multisignatures : Symbol('multisignaturesM'),

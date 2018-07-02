@@ -20,14 +20,13 @@ import { inject, injectable } from 'inversify';
 import { Body, Get, JsonController, Post, Put, QueryParam, QueryParams, UseBefore } from 'routing-controllers';
 import * as sequelize from 'sequelize';
 import * as z_schema from 'z-schema';
-
-import { Slots } from '../helpers/slots';
+import { dPoSSymbols, Slots } from '../helpers/';
 
 import schema from '../../schema/delegates.json';
 
 @JsonController('/api/delegates')
 @injectable()
-@IoCSymbol(Symbols.api.delegates)
+@IoCSymbol(dPoSSymbols.delegatesAPI)
 export class DelegatesAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
@@ -39,19 +38,19 @@ export class DelegatesAPI {
   private blocks: IBlocksModule;
   @inject(Symbols.modules.blocksSubModules.utils)
   private blocksUtils: IBlocksModuleUtils;
-  @inject(Symbols.modules.delegates)
+  @inject(dPoSSymbols.modules.delegates)
   private delegatesModule: IDelegatesModule;
   @inject(Symbols.helpers.crypto)
   private crypto: Crypto;
-  @inject(Symbols.modules.forge)
+  @inject(dPoSSymbols.modules.forge)
   private forgeModule: IForgeModule;
-  @inject(Symbols.helpers.slots)
+  @inject(dPoSSymbols.helpers.slots)
   private slots: Slots;
   @inject(Symbols.modules.system)
   private system: ISystemModule;
 
   // models
-  @inject(Symbols.models.accounts2Delegates)
+  @inject(dPoSSymbols.models.accounts2Delegates)
   private Accounts2DelegatesModel: typeof IAccounts2DelegatesModel;
   @inject(Symbols.models.accounts)
   private AccountsModel: typeof IAccountsModel;

@@ -11,19 +11,19 @@ import {
   IAppState,
   IBlockReward,
   IBlocksModule,
-  IDelegatesModule,
-  ILogger,
-  IRoundsLogic,
+  ILogger, IModule,
   ITransactionsModule
 } from '@risevision/core-interfaces';
 import { ConstantsType, publicKey, SignedBlockType } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
-import { Slots } from '../helpers/slots';
+import { Slots } from '../helpers/';
+import { DposConstantsType, dPoSSymbols } from '../helpers/';
+import { RoundsLogic } from '../logic/rounds';
 
 @injectable()
-export class DelegatesModule implements IDelegatesModule {
+export class DelegatesModule implements IModule {
   private loaded: boolean = false;
 
   // Generic
@@ -32,13 +32,13 @@ export class DelegatesModule implements IDelegatesModule {
 
   // Helpers
   @inject(Symbols.helpers.constants)
-  private constants: ConstantsType;
+  private dposConstants: DposConstantsType;
   // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.exceptionsManager)
   public excManager: ExceptionsManager;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
-  @inject(Symbols.helpers.slots)
+  @inject(dPoSSymbols.helpers.slots)
   private slots: Slots;
 
   // Logic
@@ -46,8 +46,8 @@ export class DelegatesModule implements IDelegatesModule {
   private appState: IAppState;
   @inject(Symbols.logic.blockReward)
   private blockReward: IBlockReward;
-  @inject(Symbols.logic.rounds)
-  private roundsLogic: IRoundsLogic;
+  @inject(dPoSSymbols.logic.rounds)
+  private roundsLogic: RoundsLogic;
 
   // Modules
   @inject(Symbols.modules.accounts)
@@ -114,7 +114,7 @@ export class DelegatesModule implements IDelegatesModule {
       ['username', 'address', 'publicKey', 'vote', 'missedblocks', 'producedblocks']
     );
 
-    const limit  = Math.min(this.constants.activeDelegates, query.limit || this.constants.activeDelegates);
+    const limit  = Math.min(this.dposConstants.activeDelegates, query.limit || this.dposConstants.activeDelegates);
     const offset = query.offset || 0;
 
     const count     = delegates.length;
@@ -249,9 +249,9 @@ export class DelegatesModule implements IDelegatesModule {
 
     const total = existingVotes + additions - removals;
 
-    if (total > this.constants.maximumVotes) {
-      const exceeded = total - this.constants.maximumVotes;
-      throw new Error(`Maximum number of ${this.constants.maximumVotes} votes exceeded (${exceeded} too many)`);
+    if (total > this.dposConstants.maximumVotes) {
+      const exceeded = total - this.dposConstants.maximumVotes;
+      throw new Error(`Maximum number of ${this.dposConstants.maximumVotes} votes exceeded (${exceeded} too many)`);
     }
   }
 }

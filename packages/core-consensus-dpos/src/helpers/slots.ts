@@ -2,9 +2,12 @@ import { Symbols } from '@risevision/core-helpers';
 import { ISlots } from '@risevision/core-interfaces';
 import { ConstantsType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
+import { DposConstantsType, dPoSSymbols } from './';
 
 @injectable()
 export class Slots implements ISlots {
+  @inject(dPoSSymbols.dposConstants)
+  private dposConstants: DposConstantsType;
   @inject(Symbols.helpers.constants)
   private constants: ConstantsType;
 
@@ -12,7 +15,7 @@ export class Slots implements ISlots {
    * Active delegates
    */
   public get delegates() {
-    return this.constants.activeDelegates;
+    return this.dposConstants.activeDelegates;
   }
 
   /**

@@ -1,12 +1,11 @@
-import { Symbols } from '@risevision/core-helpers';
-import { IRoundsLogic } from '@risevision/core-interfaces';
 import { inject, injectable } from 'inversify';
-import { Slots } from '../helpers/slots';
+import { Slots } from '../helpers/';
+import { dPoSSymbols } from '../helpers/';
 
 @injectable()
-export class RoundsLogic implements IRoundsLogic {
+export class RoundsLogic {
 
-  @inject(Symbols.helpers.slots)
+  @inject(dPoSSymbols.helpers.slots)
   private slots: Slots;
   /**
    * Return round calculated given the blockheight

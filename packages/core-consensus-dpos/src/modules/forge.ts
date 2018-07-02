@@ -2,18 +2,18 @@ import { catchToLoggerAndRemapError, Crypto, Sequence, Symbols, WrapInDefaultSeq
 import {
   IAccountsModule,
   IAppState, IBlocksModule, IBlocksModuleProcess,
-  IBroadcasterLogic, IDelegatesModule,
-  IForgeModule,
+  IBroadcasterLogic,
   IJobsQueue,
-  ILogger, ITransactionsModule
+  ILogger, IModule, ITransactionsModule
 } from '@risevision/core-interfaces';
 import { AppConfig, ConstantsType, IKeypair, publicKey } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import { inject, injectable, tagged } from 'inversify';
-import { Slots } from '../helpers/slots';
+import { DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
+import { DelegatesModule } from './delegates';
 
 @injectable()
-export class ForgeModule implements IForgeModule {
+export class ForgeModule implements IModule {
   public enabledKeys: { [k: string]: true }   = {};
   private keypairs: { [k: string]: IKeypair } = {};
 
@@ -34,7 +34,7 @@ export class ForgeModule implements IForgeModule {
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence)
   public defaultSequence: Sequence;
-  @inject(Symbols.helpers.slots)
+  @inject(dPoSSymbols.helpers.slots)
   private slots: Slots;
 
   // logic
@@ -50,10 +50,14 @@ export class ForgeModule implements IForgeModule {
   private blocksModule: IBlocksModule;
   @inject(Symbols.modules.blocksSubModules.process)
   private blocksProcessModule: IBlocksModuleProcess;
-  @inject(Symbols.modules.delegates)
-  private delegatesModule: IDelegatesModule;
+  @inject(dPoSSymbols.modules.delegates)
+  private delegatesModule: DelegatesModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
+
+  public cleanup(): Promise<void> {
+    return Promise.resolve();
+  }
 
   public getEnabledKeys(): publicKey[] {
     return Object.keys(this.enabledKeys)
@@ -77,7 +81,7 @@ export class ForgeModule implements IForgeModule {
   public enableForge(pk?: IKeypair) {
     const thePK: publicKey = typeof(pk) !== 'undefined' ? pk.publicKey.toString('hex') : undefined;
     if (typeof thePK !== 'undefined') {
-      this.keypairs[thePK]   = pk;
+      this.keypairs[thePK] = pk;
     }
 
     Object.keys(this.keypairs)
@@ -95,7 +99,7 @@ export class ForgeModule implements IForgeModule {
   }
 
   public async onBlockchainReady() {
-    setTimeout( () => {
+    setTimeout(() => {
       this.jobsQueue.register(
         'delegatesNextForge',
         () => this.delegatesNextForge(),
@@ -224,5 +228,6 @@ export class ForgeModule implements IForgeModule {
     return null;
 
   }
+
 
 }

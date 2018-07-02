@@ -1,9 +1,13 @@
-import { IAccountsModel, IBlocksModel, IRoundLogic, IRoundsModel, RoundLogicScope } from '@risevision/core-interfaces';
+import {
+  IAccountsModel, IAccountsModule,
+  IBlocksModel,
+  ILogger,
+  IRoundsModel,
+} from '@risevision/core-interfaces';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
-import { Slots } from '../helpers/slots';
-import { DBCustomOp, DBOp } from '@risevision/core-types';
-import { RoundChanges } from '../helpers/RoundChanges';
+import { RoundChanges, Slots } from '../helpers/';
+import { address, DBCustomOp, DBOp, SignedBlockType } from '@risevision/core-types';
 import * as fs from 'fs';
 
 const restoreRoundSnasphotSQL = fs.readFileSync(
@@ -15,9 +19,38 @@ const restoreVotesSnasphotSQL = fs.readFileSync(
   { encoding: 'utf8' }
 );
 
+export type RoundLogicScope = {
+  backwards: boolean;
+  round: number;
+  // List of address which missed a block in this round
+  roundOutsiders: address[];
+  roundDelegates: Buffer[];
+  roundFees: any;
+  roundRewards: number[];
+  finishRound: boolean;
+  library: {
+    logger: ILogger
+  },
+  models: {
+    AccountsModel: typeof IAccountsModel,
+    BlocksModel: typeof IBlocksModel,
+    RoundsModel: typeof IRoundsModel,
+  }
+  modules: {
+    accounts: IAccountsModule;
+  }
+  block: SignedBlockType
+  // must be populated with the votes in round when is needed
+  votes?: Array<{ delegate: string, amount: number }>
+};
+
+export interface IRoundLogicNewable {
+  new (scope: RoundLogicScope, slots: Slots): RoundLogic;
+}
+
 // This cannot be injected directly as it needs to be created.
 // rounds module.
-export class RoundLogic implements IRoundLogic {
+export class RoundLogic {
   constructor(public scope: RoundLogicScope, private slots: Slots) {
     let reqProps = ['library', 'modules', 'block', 'round', 'backwards'];
     if (scope.finishRound) {
