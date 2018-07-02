@@ -6,8 +6,14 @@ export interface ISlots {
    */
   getTime(time: number): number;
 
+  /**
+   * Calculates slot number from epoch time
+   */
   getSlotNumber(epochTime?: number): number;
 
+  /**
+   * Calculates time from a slot number
+   */
   getSlotTime(slot: number): number;
 
   /**
