@@ -14,10 +14,24 @@ export interface IBlockLogic {
   table: string;
   dbFields: string[];
 
+  /**
+   * Calculates block id.
+   */
   getId(block: BlockType): string;
+
+  /**
+   * Calculates bytes from a given block
+   */
   getBytes(block: BlockType | SignedBlockType, includeSignature?: boolean): Buffer;
+
+  /**
+   * Calculates hash from a given block
+   */
   getHash(block: BlockType, includeSignature?: boolean): Buffer;
 
+  /**
+   * Creates a new block
+   */
   create(data: {
     keypair: IKeypair, timestamp: number,
     transactions: Array<IBaseTransaction<any>>,
@@ -53,5 +67,8 @@ export interface IBlockLogic {
   objectNormalize(block: SignedAndChainedTransportBlockType): SignedAndChainedBlockType;
   objectNormalize<T extends BlockType<Buffer | string>>(block: T): T;
 
+  /**
+   * Converts a raw block to a block object
+   */
   dbRead(rawBlock: RawFullBlockListType): SignedBlockType & { totalForged: string, readonly generatorId: string };
 }
