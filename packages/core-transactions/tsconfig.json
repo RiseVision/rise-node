@@ -26,6 +26,7 @@
       "@risevision/core-test-utils": ["../core-test-utils/*"]
     }
   },
+  "include": ["./src/**/*.ts"],
   "exclude":         [
     "tests",
     "public",

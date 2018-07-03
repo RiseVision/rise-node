@@ -7,8 +7,6 @@ import {
   IBlocksModel,
   IBlocksModule,
   IBlocksModuleUtils,
-  IDelegatesModule,
-  IForgeModule,
   ISystemModule,
   ITransactionsModel,
 } from '@risevision/core-interfaces';
@@ -21,7 +19,7 @@ import { Body, Get, JsonController, Post, Put, QueryParam, QueryParams, UseBefor
 import * as sequelize from 'sequelize';
 import * as z_schema from 'z-schema';
 import { dPoSSymbols, Slots } from '../helpers/';
-
+import { DelegatesModule, ForgeModule } from '../modules';
 import schema from '../../schema/delegates.json';
 
 @JsonController('/api/delegates')
@@ -39,11 +37,11 @@ export class DelegatesAPI {
   @inject(Symbols.modules.blocksSubModules.utils)
   private blocksUtils: IBlocksModuleUtils;
   @inject(dPoSSymbols.modules.delegates)
-  private delegatesModule: IDelegatesModule;
+  private delegatesModule: DelegatesModule;
   @inject(Symbols.helpers.crypto)
   private crypto: Crypto;
   @inject(dPoSSymbols.modules.forge)
-  private forgeModule: IForgeModule;
+  private forgeModule: ForgeModule;
   @inject(dPoSSymbols.helpers.slots)
   private slots: Slots;
   @inject(Symbols.modules.system)
@@ -202,7 +200,7 @@ export class DelegatesAPI {
     }
     const delQuery  = this.AccountsModel.searchDelegate(
       params.q,
-      params.limit || this.constants.activeDelegates,
+      params.limit || 101, //TODO: this.constants.activeDelegates,
       orderBy[0],
       orderBy[1] as any
     );
