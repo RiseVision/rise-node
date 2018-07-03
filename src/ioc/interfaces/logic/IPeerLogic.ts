@@ -18,8 +18,14 @@ export interface IPeerLogic {
   readonly immutable: string[];
   readonly properties: string[];
 
+  /**
+   * Validates and Normalize PeerType
+   */
   accept(peer: BasePeerType): this;
 
+  /**
+   * Normalize peer data
+   */
   normalize<T extends { height?: number, port?: number, state?: PeerState }>(peer: T): T;
 
   /**
@@ -27,8 +33,14 @@ export interface IPeerLogic {
    */
   parseInt(integer: number, fallback: number): number;
 
+  /**
+   * Replaces current PeerHeaders with new ones
+   */
   applyHeaders(h: PeerHeaders): PeerHeaders;
 
+  /**
+   * Replace PeerType or PeerHeaders with new ones
+   */
   update(peer: PeerType | PeerHeaders): this;
 
   /**
@@ -36,6 +48,9 @@ export interface IPeerLogic {
    */
   object(): PeerType;
 
+  /**
+   * Make a request from this peer
+   */
   makeRequest<T>(options: PeerRequestOptions): Promise<T>;
 
   /**
