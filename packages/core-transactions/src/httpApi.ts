@@ -8,7 +8,7 @@ import {
 } from '@risevision/core-helpers';
 import {
   IBlocksModule,
-  ISlots, ITransactionLogic,
+  ITimeToEpoch, ITransactionLogic,
   ITransactionsModel,
   ITransactionsModule,
   ITransportModule
@@ -19,8 +19,7 @@ import * as _ from 'lodash';
 import { BodyParam, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-
-const schema = require('../../schema/api.json');
+import schema from '../schema/api.json';
 
 @JsonController('/api/transactions')
 @injectable()
@@ -29,8 +28,8 @@ export class TransactionsAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
 
-  @inject(Symbols.helpers.slots)
-  public slots: ISlots;
+  @inject(Symbols.helpers.timeToEpoch)
+  public timeToEpoch: ITimeToEpoch;
 
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
@@ -274,13 +273,13 @@ export class TransactionsAPI {
 
     if (body.fromUnixTime) {
       whereClause.timestamp[Op.gte] = Math.max(
-        this.slots.getTime(body.fromUnixTime),
+        this.timeToEpoch.getTime(body.fromUnixTime * 1000),
         Number.isInteger(whereClause.timestamp[Op.gte]) ? whereClause.timestamp[Op.gte] : 0
       );
     }
     if (body.toUnixTime) {
       whereClause.timestamp[Op.lte] = Math.min(
-        this.slots.getTime(body.toUnixTime),
+        this.timeToEpoch.getTime(body.toUnixTime * 1000),
         Number.isInteger(whereClause.timestamp[Op.lte]) ? whereClause.timestamp[Op.lte] : 0
       );
     }

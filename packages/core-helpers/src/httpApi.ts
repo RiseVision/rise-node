@@ -30,22 +30,23 @@ export const middleware = {
    * Applies rules of public / internal API described in config.json.
    */
   applyAPIAccessRules(config: AppConfig) {
-    return (req: Request, res: Response, next: NextFunction) => {
-      if (req.url.match(/^\/peer[\/]?.*/)) {
-        const internalApiAllowed = config.peers.enabled && !checkIpInList(config.peers.access.blackList,
-          req.ip);
-        rejectDisallowed(internalApiAllowed, config.peers.enabled);
-      } else {
-        const publicApiAllowed = config.api.enabled && (config.api.access.public ||
-          checkIpInList(config.api.access.whiteList, req.ip));
-        rejectDisallowed(publicApiAllowed, config.api.enabled);
-      }
-
-      function rejectDisallowed(apiAllowed, isEnabled) {
-        return apiAllowed ? next() : isEnabled ?
-          res.status(403).send({ success: false, error: 'API access denied' }) :
-          res.status(500).send({ success: false, error: 'API access disabled' });
-      }
-    };
+    // TODO: migrate me
+    // return (req: Request, res: Response, next: NextFunction) => {
+    //   if (req.url.match(/^\/peer[\/]?.*/)) {
+    //     const internalApiAllowed = config.peers.enabled && !checkIpInList(config.peers.access.blackList,
+    //       req.ip);
+    //     rejectDisallowed(internalApiAllowed, config.peers.enabled);
+    //   } else {
+    //     const publicApiAllowed = config.api.enabled && (config.api.access.public ||
+    //       checkIpInList(config.api.access.whiteList, req.ip));
+    //     rejectDisallowed(publicApiAllowed, config.api.enabled);
+    //   }
+    //
+    //   function rejectDisallowed(apiAllowed, isEnabled) {
+    //     return apiAllowed ? next() : isEnabled ?
+    //       res.status(403).send({ success: false, error: 'API access denied' }) :
+    //       res.status(500).send({ success: false, error: 'API access disabled' });
+    //   }
+    // };
   },
 };

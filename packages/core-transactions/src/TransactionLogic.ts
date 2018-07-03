@@ -27,14 +27,13 @@ import {
 import { BigNumber } from 'bignumber.js';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
-import * as _ from 'lodash';
 import { inject, injectable } from 'inversify';
+import * as _ from 'lodash';
+import { WordPressHookSystem } from 'mangiafuoco';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
+import txSchema from '../schema/transaction.json';
 import { BaseTx } from './BaseTx';
-import { WordPressHookSystem } from 'mangiafuoco';
-
-const txSchema = require('../../schema/transaction.json');
 
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
@@ -439,9 +438,8 @@ export class TransactionLogic implements ITransactionLogic {
       blockId: block.id,
       // round  : this.roundsLogic.calcRound(block.height),
     });
-    await this.hookSystem.apply_filters('tx-apply', ops, tx, block, sender);
     ops.push(... await this.types[tx.type].apply(tx, block, sender));
-    return ops;
+    return await this.hookSystem.apply_filters('tx-apply', ops, tx, block, sender);
   }
 
   /**
@@ -458,7 +456,7 @@ export class TransactionLogic implements ITransactionLogic {
     this.logger.trace('Logic/Transaction->undo', {
       balance: amount,
       blockId: block.id,
-      round  : this.roundsLogic.calcRound(block.height),
+      // round  : this.roundsLogic.calcRound(block.height),
       sender : sender.address,
     });
     const ops = this.accountLogic.merge(
@@ -466,11 +464,11 @@ export class TransactionLogic implements ITransactionLogic {
       {
         balance: amount,
         blockId: block.id,
-        round  : this.roundsLogic.calcRound(block.height),
+        // round  : this.roundsLogic.calcRound(block.height),
       }
     );
     ops.push(... await this.types[tx.type].undo(tx, block, sender));
-    return ops;
+    return await this.hookSystem.apply_filters('tx-undo', ops, tx, block, sender);
   }
 
   @RunThroughExceptions(ExceptionsList.tx_applyUnconfirmed)

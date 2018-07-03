@@ -40,6 +40,7 @@ export const Symbols = {
     logger           : Symbol('logger'),
     migrator         : Symbol('migrator'),
     sequence         : Symbol('sequence'),
+    timeToEpoch      : Symbol('timeToEpoch'),
   },
   logic  : {
     account        : Symbol('accountLogic'),

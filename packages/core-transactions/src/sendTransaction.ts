@@ -3,7 +3,6 @@ import {
   IAccountLogic,
   IAccountsModel,
   IAccountsModule,
-  IRoundsLogic,
   ISystemModule
 } from '@risevision/core-interfaces';
 import {
@@ -15,6 +14,7 @@ import {
 } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import { BaseTx } from './BaseTx';
+import { WordPressHookSystem } from 'mangiafuoco';
 
 @injectable()
 export class SendTransaction extends BaseTx<void, null> {
@@ -24,8 +24,8 @@ export class SendTransaction extends BaseTx<void, null> {
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
 
-  @inject(Symbols.logic.rounds)
-  private roundsLogic: IRoundsLogic;
+  @inject(Symbols.generic.hookSystem)
+  private hookSystem: WordPressHookSystem;
 
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
@@ -53,25 +53,25 @@ export class SendTransaction extends BaseTx<void, null> {
 
   public async apply(tx: IConfirmedTransaction<void>,
                      block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
-    return [
+    return await this.hookSystem.apply_filters('apply_send_tx_ops', [
       ... this.accountLogic.merge(tx.recipientId, {
         balance  : tx.amount,
         blockId  : block.id,
-        round    : this.roundsLogic.calcRound(block.height),
+        // round    : this.roundsLogic.calcRound(block.height),
         u_balance: tx.amount,
       }),
-    ];
+    ], tx, block, sender);
   }
 
   public async undo(tx: IConfirmedTransaction<void>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
-    return [
+    return await this.hookSystem.apply_filters('undo_send_tx_ops', [
       ... this.accountLogic.merge(tx.recipientId, {
         balance  : -tx.amount,
         blockId  : block.id,
-        round    : this.roundsLogic.calcRound(block.height),
+        // round    : this.roundsLogic.calcRound(block.height),
         u_balance: -tx.amount,
       }),
-    ];
+    ], tx, block, sender);
   }
 
   public objectNormalize(tx: IBaseTransaction<void>): IBaseTransaction<void> {

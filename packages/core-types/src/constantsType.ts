@@ -1,8 +1,5 @@
 // tslint:disable-next-line
 export type ConstantsType = {
-  activeDelegates: number
-  maximumVotes: number
-  maxVotesPerTransaction: number,
   blockSlotWindow: number,
   blockTime: number,
   blockReceiptTimeOut: number, // 2 blocks
@@ -20,9 +17,4 @@ export type ConstantsType = {
   rewards: Array<{ height: number, reward: number }>
   totalAmount: number,
   unconfirmedTransactionTimeOut: number, // 1080 blocks
-  multisigConstraints: {
-    min: { minimum: number, maximum: number },
-    lifetime: { minimum: number, maximum: number },
-    keysgroup: { minItems: number, maxItems: number },
-  }
 };

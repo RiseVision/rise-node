@@ -11,6 +11,7 @@
     "declaration":                  true,
     "allowSyntheticDefaultImports": true,
     "inlineSourceMap":              true,
+    "resolveJsonModule":            true,
     "inlineSources":                true,
     "lib":                          [
       "dom",
