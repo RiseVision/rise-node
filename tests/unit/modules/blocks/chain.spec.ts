@@ -20,7 +20,7 @@ import TransactionLogicStub from '../../../stubs/logic/TransactionLogicStub';
 import AccountsModuleStub from '../../../stubs/modules/AccountsModuleStub';
 import BlocksModuleStub from '../../../stubs/modules/BlocksModuleStub';
 import { RoundsModuleStub } from '../../../stubs/modules/RoundsModuleStub';
-import { generateAccounts } from '../../../utils/accountsUtils';
+import { generateAccount, generateAccounts } from '../../../utils/accountsUtils';
 import { createContainer } from '../../../utils/containerCreator';
 import {
   createRandomTransactions,
@@ -287,7 +287,7 @@ describe('modules/blocks/chain', () => {
     let txStub: SinonStub;
     let accountsMap: {[address: string]: AccountsModel};
     beforeEach(() => {
-      accounts = generateAccounts(5);
+      accounts = generateAccounts(6);
       voteTxs  = [
         createVoteTransaction(accounts[0], 1, { asset: { votes: [`+${accounts[0].publicKey}`] } }),
         createVoteTransaction(accounts[1], 1, { asset: { votes: [`+${accounts[0].publicKey}`] } }),
@@ -313,9 +313,54 @@ describe('modules/blocks/chain', () => {
       txModule.stubs.removeUnconfirmedTransaction.returns(null);
       txModule.stubs.undoUnconfirmedList.returns(Promise.resolve([]));
       saveBlockStub = sinon.stub(inst, 'saveBlock');
+      txModule.stubs.getUnconfirmedTransactionList.returns([]);
       roundsModule.enqueueResponse('tick', Promise.resolve());
       busStub.enqueueResponse('message', Promise.resolve());
       txStub = sandbox.stub(blocksModel.sequelize, 'transaction').callsFake((t) => t('tx'));
+    });
+    describe('with txs in pool', () => {
+      let conflictingTX: ITransaction<any>;
+      let conflictingTX2: ITransaction<any>;
+      let nonConflictingTX: ITransaction<any>;
+      beforeEach(() => {
+        conflictingTX = createSendTransaction(accounts[0], accounts[1].address, 2, { amount: 2});
+        conflictingTX2 = createSendTransaction(accounts[1], accounts[1].address, 2, { amount: 2});
+        nonConflictingTX = createSendTransaction(generateAccount(), accounts[1].address, 2, { amount: 2});
+        txModule.stubs.getUnconfirmedTransactionList.returns([
+          allTxs[0], // eisting tx
+          conflictingTX,
+          conflictingTX2,
+          nonConflictingTX,
+        ]);
+        txLogic.stubs.undoUnconfirmed.returns(['op1']);
+        txModule.stubs.processUnconfirmedTransaction.resolves();
+      });
+      it('should call undoUnconfirmed only on conflictingTX', async () => {
+        await inst.applyBlock({transactions: allTxs} as any, false, false, accountsMap);
+        expect(txLogic.stubs.undoUnconfirmed.calledTwice).is.true;
+        expect(txLogic.stubs.undoUnconfirmed.firstCall.args[0]).is.deep.eq(conflictingTX);
+        expect(txLogic.stubs.undoUnconfirmed.secondCall.args[0]).is.deep.eq(conflictingTX2);
+      });
+      it('should removeUnconfirmedTX & processUnconfirmed on the conflictingTX after block is processed', async () => {
+        await inst.applyBlock({transactions: allTxs} as any, false, true, accountsMap);
+        expect(txModule.stubs.processUnconfirmedTransaction.calledTwice).is.true;
+        expect(txModule.stubs.processUnconfirmedTransaction.firstCall.args[0]).is.deep.eq(conflictingTX);
+        expect(txModule.stubs.processUnconfirmedTransaction.secondCall.args[0]).is.deep.eq(conflictingTX2);
+
+        expect(txModule.stubs.removeUnconfirmedTransaction.callCount).is.eq(allTxs.length + 2 );
+        expect(txModule.stubs.removeUnconfirmedTransaction.getCall(allTxs.length).args[0]).is.deep.eq(conflictingTX.id);
+        expect(txModule.stubs.removeUnconfirmedTransaction.getCall(allTxs.length + 1).args[0]).is.deep.eq(conflictingTX2.id);
+
+        expect(txModule.stubs.processUnconfirmedTransaction.calledAfter(saveBlockStub)).true;
+        expect(txModule.stubs.processUnconfirmedTransaction.firstCall.calledAfter(txModule.stubs.removeUnconfirmedTransaction.getCall(allTxs.length))).true;
+        expect(txModule.stubs.processUnconfirmedTransaction.secondCall.calledAfter(txModule.stubs.removeUnconfirmedTransaction.getCall(allTxs.length+1))).true;
+      });
+      it('should not removeUnconfirmed or processUnconfirmed if block apply failed', async () => {
+        saveBlockStub.rejects(new Error('hey'));
+        await expect(inst.applyBlock({transactions: allTxs} as any, false, true, accountsMap)).rejectedWith('hey');
+        expect(txModule.stubs.processUnconfirmedTransaction.notCalled).is.true;
+      });
+
     });
     it('should be wrapped in balanceSequence', async () => {
       expect(balancesSequence.spies.addAndPromise.called).is.false;
@@ -340,7 +385,12 @@ describe('modules/blocks/chain', () => {
       expect(blocksModule.lastBlock).is.eq('hey');
     });
 
-    it('should skip applyUnconfirmed if txModule.transactionUnconfirmed returns true');
+    it('should skip applyUnconfirmed if txModule.transactionUnconfirmed returns true', async () => {
+      txModule.stubs.transactionUnconfirmed.onSecondCall().returns(true);
+      expect(await inst.applyBlock({ transactions: allTxs } as any, false, false, accountsMap)).to.be.undefined;
+      expect(txLogic.stubs.applyUnconfirmed.callCount).eq(allTxs.length - 1);
+    });
+
     it('should return undefined if cleanup in processing and set instance.isCleaning in true', async () => {
       await inst.cleanup();
       expect(await inst.applyBlock({ transactions: allTxs } as any, false, false, accountsMap)).to.be.undefined;

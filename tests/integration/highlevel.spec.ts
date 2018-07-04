@@ -450,11 +450,13 @@ describe('highlevel checks', function () {
         if (i % (total / 10 | 0) === 0) {
           console.log('Done', i);
         }
-        const block = await initializer.generateBlock(txs.slice(25 + i, 25 + i + 1));
+        const curTx = txs.slice(25 + i, 25 + i + 1)[0];
+        const nextTx = txs.slice(25 + i + 1, 25 + i + 2)[0];
+        const block = await initializer.generateBlock([curTx]);
 
         await Promise.all([
           wait(Math.random() * 10)
-            .then(() => enqueueAndProcessBundledTransaction(txs.slice(25 + i + 1, 25 + i + 2)[0])),
+            .then(() => enqueueAndProcessBundledTransaction(nextTx)),
           // Broadcast block with current transaction
           wait(Math.random() * 10)
             .then(() => supertest(initializer.appManager.expressApp)
@@ -467,6 +469,12 @@ describe('highlevel checks', function () {
 
 
         expect(blocksModule.lastBlock.blockSignature).to.be.deep.eq(block.blockSignature);
+
+        // Next TX should be in pool we ensure it gets processed by refilling pool
+        expect(txModule.transactionInPool(nextTx.id)).true;
+        await txPool.processBundled();
+        await txModule.fillPool();
+        expect(txModule.transactionUnconfirmed(nextTx.id)).true;
 
         // Check balances are correct so that no other applyUnconfirmed happened.
         // NOTE: this could fail as <<<--HERE-->>> an applyUnconfirmed (of NEXT tx) could
