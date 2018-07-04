@@ -2,7 +2,6 @@ import { Symbols } from '@risevision/core-helpers';
 import {
   IAccountLogic,
   IAccountsModel,
-  IRoundsLogic,
   ISystemModule,
   ITransactionLogic,
   ITransactionsModel,
@@ -10,7 +9,6 @@ import {
 } from '@risevision/core-interfaces';
 import { BaseTx } from '@risevision/core-transactions';
 import {
-  ConstantsType,
   DBCreateOp,
   DBOp,
   DBUpsertOp,
@@ -27,6 +25,7 @@ import { Op } from 'sequelize';
 import * as SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
 
+import { MultisigConstantsType, multisigSymbols } from './helpers';
 import { Accounts2MultisignaturesModel, Accounts2U_MultisignaturesModel, MultiSignaturesModel } from './models/';
 
 // tslint:disable-next-line interface-over-type-literal
@@ -48,14 +47,13 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
   private io: SocketIO.Server;
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
-  @inject(Symbols.helpers.constants)
-  private constants: ConstantsType;
+
+  @inject(multisigSymbols.multisigConstants)
+  private constants: MultisigConstantsType;
 
   // Logic
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
-  @inject(Symbols.logic.rounds)
-  private roundsLogic: IRoundsLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
 
@@ -97,6 +95,7 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     },
     required  : ['min', 'keysgroup', 'lifetime'],
   };
+
   // tslint:enable object-literal-sort-keys
 
   constructor() {

@@ -1,13 +1,11 @@
-import { Symbols } from '@risevision/core-helpers';
-import { SendTxApplyFilter, SendTxUndoFilter, TxApplyFilter, TxUndoFilter } from '@risevision/core-transactions';
+import { BigNum, Symbols } from '@risevision/core-helpers';
+import { SendTxApplyFilter, TxApplyFilter, TxUndoFilter } from '@risevision/core-transactions';
 import { address, DBCustomOp, DBOp, IConfirmedTransaction, SignedBlockType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
-import { IWPHookSubscriber, OnWPAction, OnWPFilter, WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
-import { RoundsModel } from '../models';
+import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { dPoSSymbols, Slots } from '../helpers';
-import { BigNum } from '@risevision/core-helpers';
 import { RoundsLogic } from '../logic/rounds';
-import { IAccountsModel } from '@risevision/core-interfaces';
+import { RoundsModel } from '../models';
 
 @injectable()
 export class Transactionshooks extends WPHooksSubscriber(Object) {
