@@ -1,8 +1,7 @@
 // tslint:disable-next-line interface-name
 import { Model } from 'sequelize-typescript';
-import { ModelAttributes, Partial } from './utils';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { CreateOptions, DestroyOptions, UpdateOptions, UpsertOptions } from 'sequelize';
+import { DestroyOptions, UpdateOptions, UpsertOptions } from 'sequelize';
 
 export interface AppConfigDatabase {
   host: string;
@@ -30,29 +29,6 @@ export interface AppConfig {
   topAccounts: boolean;
   db: AppConfigDatabase;
 
-  redis: {
-    host: string,
-    port: number,
-    db: number,
-    password: string;
-  };
-
-  api: {
-    enabled: boolean;
-    access: {
-      public: boolean;
-      whiteList: string[]
-    },
-    options: {
-      limits: {
-        max: number,
-        delayMs: number,
-        delayAfter: number,
-        windowMs: number,
-      }
-    }
-  };
-
   peers: {
     list: Array<{
       ip: string,
@@ -69,28 +45,10 @@ export interface AppConfig {
     }
   };
 
-  broadcasts: {
-    broadcastInterval: number
-    broadcastLimit: number
-    parallelLimit: number
-    releaseLimit: number
-    relayLimit: number
-  };
-
   transactions: {
     maxTxsPerQueue: number,
     bundledInterval: number,
     bundleLimit: number,
-  };
-
-  forging: {
-    force: boolean
-    secret: string[]
-    access: {
-      whiteList: string[]
-    }
-    transactionsPolling?: boolean
-    pollingInterval?: number
   };
 
   loading: {
@@ -99,6 +57,7 @@ export interface AppConfig {
     loadPerIteration: number,
   };
 
+  modules: string[],
   nethash: string;
 }
 

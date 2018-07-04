@@ -1,7 +1,5 @@
 import 'reflect-metadata';
 import BigNum from './bignum';
-import config from './config';
-
 export * from './diff';
 import loggerCreator from './logger';
 import applyExpressLimits from './request-limiter';
@@ -11,6 +9,7 @@ export * from './bus';
 export * from './checkIpInList';
 export * from './db';
 export * from './crypto';
+export * from './configCreator';
 export * from './constants';
 export * from './httpApi';
 export * from './exceptionManager';
@@ -29,6 +28,5 @@ export * from './decorators';
 export {
   applyExpressLimits,
   BigNum,
-  config,
   loggerCreator
 };

@@ -1,7 +1,7 @@
 import { AppConfig } from '@risevision/core-types';
 import * as fs from 'fs';
 import * as path from 'path';
-import {constants} from './constants';
+import { constants } from './constants';
 import { z_schema as ZSchema } from './z_schema';
 
 // tslint:disable-next-line no-var-requires
@@ -13,7 +13,7 @@ const configSchema = require('../schema/config.json');
  * @param {string} configPath
  * @returns {Buffer}
  */
-export default function config(configPath: string): AppConfig {
+export function configCreator(configPath: string): AppConfig {
   let configData: any = fs.readFileSync(path.resolve(process.cwd(), (configPath || 'config.json')), 'utf8');
 
   if (!configData.length) {
@@ -44,6 +44,8 @@ export default function config(configPath: string): AppConfig {
     if (configData.forging.transactionsPolling && typeof configData.forging.pollingInterval === 'undefined') {
       configData.forging.pollingInterval = Math.round(constants.blockTime / 2) * 1000;
     }
+
+    // load modules
     return configData;
   }
 }

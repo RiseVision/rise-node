@@ -17,7 +17,8 @@
       "es7"
     ],
     "paths": {
-      "@risevision/core-types": ["../core-types/*"]
+      "@risevision/core-types": ["../core-types/*"],
+      "@risevision/core-helpers": ["../core-helpers/*"]
     }
   },
   "include"        : [

@@ -43,7 +43,8 @@ export default function applyLimitsToApp(app: Application, config: AppConfig) {
     app.enable('trust proxy');
   }
 
-  app.use('/api/', new RateLimit(applyLimits(config.api.options.limits)));
-  app.use('/peer/', new RateLimit(applyLimits(config.peers.options.limits)));
+  // TODO: re-add me
+  // app.use('/api/', new RateLimit(applyLimits(config.api.options.limits)));
+  // app.use('/peer/', new RateLimit(applyLimits(config.peers.options.limits)));
 
 }
