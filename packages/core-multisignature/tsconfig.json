@@ -11,7 +11,6 @@
     "declaration":                  true,
     "allowSyntheticDefaultImports": true,
     "inlineSourceMap":              true,
-    "resolveJsonModule":            true,
     "inlineSources":                true,
     "lib":                          [
       "dom",
@@ -21,6 +20,7 @@
       "@risevision/core-models": ["../core-models/*"],
       "@risevision/core-interfaces": ["../core-interfaces/*"],
       "@risevision/core-types": ["../core-types/*"],
+      "@risevision/core-launchpad": ["../core-launchpad/*"],
       "@risevision/core-helpers": ["../core-helpers/*"],
       "@risevision/core-transactions": ["../core-transactions/*"]
     }

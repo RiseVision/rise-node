@@ -14,8 +14,9 @@ import {
   VerificationType
 } from '@risevision/core-interfaces';
 import { publicKey } from '@risevision/core-types';
-import apiSchema from '../schema/apischema.json';
 import { Accounts2MultisignaturesModel } from './models';
+
+const apiSchema = require('../schema/apischema.json');
 
 @JsonController('/api/multisignatures')
 @injectable()
