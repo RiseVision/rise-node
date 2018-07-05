@@ -11,6 +11,7 @@ import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import * as fs from 'fs';
 import { inject, injectable } from 'inversify';
+import { WordPressHookSystem } from 'mangiafuoco';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
@@ -52,6 +53,9 @@ export class AccountLogic implements IAccountLogic {
 
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
+
+  @inject(Symbols.generic.hookSystem)
+  private hookSystem: WordPressHookSystem;
 
   constructor() {
     this.model = accountsModelCreator(this.table);
@@ -106,19 +110,20 @@ export class AccountLogic implements IAccountLogic {
    * @returns {Promise<void>}
    */
   public async removeTables(): Promise<void> {
-    const models = [
+    const models = await this.hookSystem.apply_filters('account_models', [
       this.AccountsModel,
       // this.RoundsModel,
       // this.Accounts2DelegatesModel,
       // this.Accounts2MultisignaturesModel,
       // this.Accounts2U_DelegatesModel,
       // this.Accounts2U_MultisignaturesModel
-    ];
+    ]);
     // TODO: Fix ^^
     for (const model of models) {
       await model.drop({ cascade: true })
         .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
     }
+    await this.hookSystem.do_action('account_removedTables');
   }
 
   /**
