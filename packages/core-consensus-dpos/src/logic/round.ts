@@ -4,11 +4,12 @@ import {
   ILogger,
   IRoundsModel,
 } from '@risevision/core-interfaces';
+import { address, DBCustomOp, DBOp, SignedBlockType } from '@risevision/core-types';
+import * as fs from 'fs';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import { RoundChanges, Slots } from '../helpers/';
-import { address, DBCustomOp, DBOp, SignedBlockType } from '@risevision/core-types';
-import * as fs from 'fs';
+import { RoundsModel } from '../models';
 
 const restoreRoundSnasphotSQL = fs.readFileSync(
   `${__dirname}/../../sql/restoreRoundSnapshot.sql`,
@@ -34,7 +35,7 @@ export type RoundLogicScope = {
   models: {
     AccountsModel: typeof IAccountsModel,
     BlocksModel: typeof IBlocksModel,
-    RoundsModel: typeof IRoundsModel,
+    RoundsModel: typeof RoundsModel,
   }
   modules: {
     accounts: IAccountsModule;

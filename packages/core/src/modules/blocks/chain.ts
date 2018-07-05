@@ -16,7 +16,6 @@ import {
   IBlocksModuleChain,
   IBlocksModuleUtils,
   ILogger,
-  IRoundsModule,
   ITransactionLogic,
   ITransactionsModel,
   ITransactionsModule
@@ -24,6 +23,7 @@ import {
 import { DBOp, SignedAndChainedBlockType, SignedBlockType, TransactionType } from '@risevision/core-types';
 import { inject, injectable, tagged } from 'inversify';
 import * as _ from 'lodash';
+import { WordPressHookSystem } from 'mangiafuoco';
 import { Op, Transaction } from 'sequelize';
 
 @injectable()
@@ -32,6 +32,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   // Generic
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
+  @inject(Symbols.generic.hookSystem)
+  private hookSystem: WordPressHookSystem;
 
   // Helpers
   @inject(Symbols.helpers.bus)
@@ -58,8 +60,6 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   private blocksModule: IBlocksModule;
   @inject(Symbols.modules.blocksSubModules.utils)
   private blocksModuleUtils: IBlocksModuleUtils;
-  @inject(Symbols.modules.rounds)
-  private roundsModule: IRoundsModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
@@ -73,7 +73,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * Lock for processing.
    * @type {boolean}
    */
-          private isCleaning: boolean = false;
+  private isCleaning: boolean = false;
 
   private isProcessing: boolean = false;
 
@@ -180,7 +180,10 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       process.exit(0);
     }
     this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
-    await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
+    await this.BlocksModel.sequelize
+      .transaction((tx) => this.hookSystem.do_action('post_block_processed', this.blocksModule.lastBlock, tx));
+    // TODO: add this on dpos-consensus via hook ^^.
+    // await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
   }
 
   @WrapInBalanceSequence
@@ -250,8 +253,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       }
 
       await this.bus.message('newBlock', block, broadcast);
-
-      await this.roundsModule.tick(block, dbTX);
+      await this.hookSystem.do_action('post_block_processed', this.blocksModule.lastBlock, dbTX);
+      // TODO: add this on consensus dpos using hook ^^
+      // await this.roundsModule.tick(block, dbTX);
 
       this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
     }).catch((err) => {
@@ -323,7 +327,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         ops.push(... await this.transactionLogic.undoUnconfirmed(tx, accountsMap[tx.senderId]));
       }
       await this.dbHelper.performOps(ops, dbTX);
-      await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
+      await this.hookSystem.do_action('pre_block_destroy', this.blocksModule.lastBlock, dbTX);
+      // await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
       await lb.destroy({ transaction: dbTX });
     });
 

@@ -18,10 +18,9 @@ import {
   SignedBlockType
 } from '@risevision/core-types';
 
-import blockSchema from '../../schema/block.json';
+const blockSchema = require('../../schema/block.json');
 
 // tslint:disable-next-line interface-over-type-literal
-
 
 @injectable()
 export class BlockLogic implements IBlockLogic {

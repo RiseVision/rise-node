@@ -1,5 +1,6 @@
-import {constants} from '../../helpers/';
-import {IModelField} from './modelField';
+// FIXME: this is used directly. it should not. either remove this model or do something about it.
+import { constants } from '@risevision/core-helpers';
+import { IModelField } from './modelField';
 // tslint:disable
 /**
  * @typedef {Object} account
@@ -31,7 +32,7 @@ import {IModelField} from './modelField';
  * @property {number} rewards
  * @property {boolean} virgin
  */
-export const accountsModelCreator = (table:string): IModelField[] =>  [
+export const accountsModelCreator = (table: string): IModelField[] => [
   {
     name     : 'username',
     type     : 'String',
@@ -174,7 +175,7 @@ export const accountsModelCreator = (table:string): IModelField[] =>  [
       uniqueItems: true
     },
     conv      : Array,
-    expression: '(SELECT ARRAY_AGG("dependentId") FROM '+ table + '2delegates WHERE "accountId" = a."address")'
+    expression: '(SELECT ARRAY_AGG("dependentId") FROM ' + table + '2delegates WHERE "accountId" = a."address")'
   },
   {
     name      : 'u_delegates',
@@ -184,7 +185,7 @@ export const accountsModelCreator = (table:string): IModelField[] =>  [
       uniqueItems: true
     },
     conv      : Array,
-    expression: '(SELECT ARRAY_AGG("dependentId") FROM '+ table + '2u_delegates WHERE "accountId" = a."address")'
+    expression: '(SELECT ARRAY_AGG("dependentId") FROM ' + table + '2u_delegates WHERE "accountId" = a."address")'
   },
   {
     name      : 'multisignatures',
@@ -194,7 +195,7 @@ export const accountsModelCreator = (table:string): IModelField[] =>  [
       uniqueItems: true
     },
     conv      : Array,
-    expression: '(SELECT ARRAY_AGG("dependentId") FROM '+ table + '2multisignatures WHERE "accountId" = a."address")'
+    expression: '(SELECT ARRAY_AGG("dependentId") FROM ' + table + '2multisignatures WHERE "accountId" = a."address")'
   },
   {
     name      : 'u_multisignatures',
@@ -204,7 +205,7 @@ export const accountsModelCreator = (table:string): IModelField[] =>  [
       uniqueItems: true
     },
     conv      : Array,
-    expression: '(SELECT ARRAY_AGG("dependentId") FROM '+ table + '2u_multisignatures WHERE "accountId" = a."address")'
+    expression: '(SELECT ARRAY_AGG("dependentId") FROM ' + table + '2u_multisignatures WHERE "accountId" = a."address")'
   },
   {
     name  : 'multimin',
