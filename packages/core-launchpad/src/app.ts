@@ -133,6 +133,7 @@ if (program.snapshot) {
 }
 
 console.log(appConfig);
+console.log(modules);
 //
 // const logger = loggerCreator({
 //   echo      : appConfig.consoleLogLevel,

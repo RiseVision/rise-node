@@ -19,9 +19,10 @@ import { inject, injectable } from 'inversify';
 import { BodyParam, Get, JsonController, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-import transportSchema from '../../schema/transport.json';
 import { AttachPeerHeaders } from './attachPeerHeaders';
 import { ValidatePeerHeaders } from './validatePeerHeaders';
+
+const transportSchema = require('../../schema/transport.json');
 
 function genTransportBlock(block: IBlocksModel, extra: Partial<RawFullBlockListType>): RawFullBlockListType {
   // tslint:disable object-literal-sort-keys

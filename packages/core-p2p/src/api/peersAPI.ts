@@ -5,7 +5,7 @@ import { AppConfig, PeerState } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import peersSchema from '../../schema/peers.json';
+const peersSchema = require('../../schema/peers.json');
 
 @JsonController('/api/peers')
 @injectable()

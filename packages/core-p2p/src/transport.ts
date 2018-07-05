@@ -41,8 +41,8 @@ import * as promiseRetry from 'promise-retry';
 import SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
 
-import peersSchema from '../schema/peers.json';
-import transportSchema from '../schema/transport.json';
+const peersSchema     = require('../schema/peers.json');
+const transportSchema = require('../schema/transport.json');
 
 @injectable()
 export class TransportModule implements ITransportModule {

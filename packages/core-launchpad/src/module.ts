@@ -36,7 +36,7 @@ export abstract class BaseCoreModule implements ICoreModule {
     return Promise.resolve();
   }
 
-  public afterConfigValidation<T>(config: T): T {
+  public afterConfigValidation<T = any>(config: T): T {
     return config;
   }
 }

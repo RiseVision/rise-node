@@ -10,5 +10,4 @@ export type DposAppConfig = AppConfig & {
     transactionsPolling?: boolean
     pollingInterval?: number
   };
-}
-
+};

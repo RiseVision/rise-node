@@ -4,20 +4,16 @@ import {
   IBroadcasterLogic,
   IJobsQueue,
   ILogger,
-  IPeersLogic, IPeersModule,
-  ITransactionLogic, ITransactionsModule
+  IPeersLogic,
+  IPeersModule,
+  ITransactionLogic,
+  ITransactionsModule
 } from '@risevision/core-interfaces';
-import {
-  AppConfig,
-  BroadcastTask,
-  BroadcastTaskOptions,
-  ConstantsType,
-  IBaseTransaction,
-  PeerType
-} from '@risevision/core-types';
+import { BroadcastTask, BroadcastTaskOptions, ConstantsType, IBaseTransaction, PeerType } from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
+import { P2pConfig, P2PConstantsType, p2pSymbols } from './helpers';
 
 @injectable()
 export class BroadcasterLogic implements IBroadcasterLogic {
@@ -38,11 +34,15 @@ export class BroadcasterLogic implements IBroadcasterLogic {
 
   // Generics
   @inject(Symbols.generic.appConfig)
-  private config: AppConfig;
+  private config: P2pConfig;
 
   // Helpers
+  @inject(p2pSymbols.constants)
+  private p2pConstants: P2PConstantsType;
+
   @inject(Symbols.helpers.constants)
   private constants: ConstantsType;
+
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
@@ -64,19 +64,14 @@ export class BroadcasterLogic implements IBroadcasterLogic {
 
   @postConstruct()
   public afterConstruct() {
-    if (this.config.forging.force) {
-      this.appState.set('node.consensus', undefined);
-    } else {
-      this.appState.set('node.consensus', 100);
-    }
     this.jobsQueue.register(
       'broadcasterNextRelease',
       () => this.releaseQueue()
-          .catch((err) => {
-            this.logger.log('Broadcast timer', err);
-            return;
-          }),
-      this.config.broadcasts.broadcastInterval
+        .catch((err) => {
+          this.logger.log('Broadcast timer', err);
+          return;
+        }),
+      this.p2pConstants.broadcastInterval
     );
   }
 
@@ -87,13 +82,10 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     const originalLimit = params.limit;
 
     const peersList = await this.peersModule.list(params);
-    const peers = peersList.peers;
-    let consensus = peersList.consensus;
+    const peers     = peersList.peers;
+    const consensus   = peersList.consensus;
 
     if (originalLimit === this.constants.maxPeers) {
-      if (this.config.forging.force) {
-        consensus = 100;
-      }
       this.appState.set('node.consensus', consensus);
     }
     return peers;
@@ -121,7 +113,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     this.logger.debug('Begin broadcast', options);
 
     if (params.limit === this.constants.maxPeers) {
-      peers = peers.slice(0, this.config.broadcasts.broadcastLimit);
+      peers = peers.slice(0, this.p2pConstants.broadcastLimit);
     }
 
     await PromiseThrottle.all(
@@ -133,7 +125,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
             return null;
           })
         ),
-      { maxInProgress: this.config.broadcasts.parallelLimit }
+      { maxInProgress: this.p2pConstants.parallelLimit }
     );
     this.logger.debug('End broadcast');
     return { peer: peers };
@@ -147,7 +139,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
       object.relays = 0;
     }
 
-    if (Math.abs(object.relays) >= this.config.broadcasts.relayLimit) {
+    if (Math.abs(object.relays) >= this.p2pConstants.relayLimit) {
       this.logger.debug('Broadcast relays exhausted', object);
       return true;
     } else {
@@ -233,9 +225,9 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     }
 
     await this.filterQueue();
-    let broadcasts = this.queue.splice(0, this.config.broadcasts.releaseLimit);
+    let broadcasts = this.queue.splice(0, this.p2pConstants.releaseLimit);
 
-    broadcasts  = this.squashQueue(broadcasts);
+    broadcasts = this.squashQueue(broadcasts);
 
     try {
       for (const brc of broadcasts) {
