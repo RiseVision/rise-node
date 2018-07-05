@@ -9,7 +9,7 @@ export interface IPeersLogic {
    */
   exists(peer: BasePeerType): boolean;
 
-  get(peer: PeerType | string): void;
+  get(peer: PeerType | string): IPeerLogic;
 
   upsert(peer: PeerType, insertOnly: boolean): boolean;
 

@@ -38,7 +38,7 @@ export class PeersLogic implements IPeersLogic {
     return typeof(this.peers[thePeer.string]) !== 'undefined';
   }
 
-  public get(peer: PeerType | string) {
+  public get(peer: PeerType | string): IPeerLogic {
     if (typeof(peer) === 'string') {
       return this.peers[peer];
     }
