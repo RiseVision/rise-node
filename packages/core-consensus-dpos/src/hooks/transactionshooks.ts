@@ -1,5 +1,5 @@
 import { BigNum, Symbols } from '@risevision/core-helpers';
-import { SendTxApplyFilter, TxApplyFilter, TxUndoFilter } from '@risevision/core-transactions';
+import { SendTxApplyFilter, SendTxUndoFilter, TxApplyFilter, TxUndoFilter } from '@risevision/core-transactions';
 import { address, DBCustomOp, DBOp, IConfirmedTransaction, SignedBlockType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
@@ -47,7 +47,7 @@ export class Transactionshooks extends WPHooksSubscriber(Object) {
     ];
   }
 
-  @TxUndoFilter(() => this.hookSystem)
+  @SendTxUndoFilter(() => this.hookSystem)
   public async onSendTxUndo(ops: Array<DBOp<any>>, tx: IConfirmedTransaction<void>, block: SignedBlockType) {
     const totalAmount = new BigNum(tx.amount.toString()).plus(tx.fee).toNumber();
     return [
