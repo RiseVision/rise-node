@@ -18,10 +18,10 @@ import { inject, injectable } from 'inversify';
 import { Model } from 'sequelize-typescript';
 import * as z_schema from 'z-schema';
 import { Accounts2DelegatesModel, Accounts2U_DelegatesModel, RoundsModel, VotesModel } from '../models/';
-import voteSchema from '../../schema/vote.json';
 import { DposConstantsType, dPoSSymbols } from '../helpers/';
 import { DelegatesModule } from '../modules/';
 import { RoundsLogic } from './rounds';
+const voteSchema = require('../../schema/vote.json');
 
 // tslint:disable-next-line interface-over-type-literal
 export type VoteAsset = {

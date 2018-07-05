@@ -3,8 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
+  "bin": {
+    "rise-launchpad": "./dist/binary.js"
+  },
   "scripts": {
-    "transpile": "shx rm -rf dist; tsc"
+    "transpile": "shx rm -rf dist; tsc; chmod +x dist/binary.js"
   },
   "types": "dist/index.d.ts",
   "author": "",
@@ -12,6 +15,7 @@
   "dependencies": {
     "@risevision/core-types": "^1.0.0",
     "@risevision/core-helpers": "^1.0.0",
+    "app-module-path": "=2.2.0",
     "inversify": "=4.13.0",
     "sequelize": "=4.38.0",
     "pkginfo": "=0.4.1",

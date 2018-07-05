@@ -20,7 +20,7 @@ import * as sequelize from 'sequelize';
 import * as z_schema from 'z-schema';
 import { dPoSSymbols, Slots } from '../helpers/';
 import { DelegatesModule, ForgeModule } from '../modules';
-import schema from '../../schema/delegates.json';
+const schema = require('../../schema/delegates.json');
 
 @JsonController('/api/delegates')
 @injectable()

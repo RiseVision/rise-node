@@ -19,7 +19,7 @@
           "minValue": 5000
         }
       },
-      "required": []
+      "required": ["secret"]
     }
   },
   "required"  : [

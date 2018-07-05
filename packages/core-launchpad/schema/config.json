@@ -1,0 +1,141 @@
+{
+  "config": {
+    "id"        : "appCon",
+    "type"      : "object",
+    "properties": {
+      "port"           : {
+        "type"   : "integer",
+        "minimum": 1,
+        "maximum": 65535
+      },
+      "address"        : {
+        "type"  : "string",
+        "format": "ip"
+      },
+      "version"        : {
+        "type"     : "string",
+        "format"   : "version",
+        "minLength": 5,
+        "maxLength": 12
+      },
+      "fileLogLevel"   : {
+        "type": "string"
+      },
+      "logFileName"    : {
+        "type": "string"
+      },
+      "consoleLogLevel": {
+        "type": "string"
+      },
+      "trustProxy"     : {
+        "type": "boolean"
+      },
+      "cacheEnabled"   : {
+        "type": "boolean"
+      },
+      "db"             : {
+        "type"      : "object",
+        "properties": {
+          "host"              : {
+            "type": "string"
+          },
+          "port"              : {
+            "type"   : "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "database"          : {
+            "type": "string"
+          },
+          "user"              : {
+            "type": "string"
+          },
+          "password"          : {
+            "type": "string"
+          },
+          "poolSize"          : {
+            "type": "integer"
+          },
+          "poolIdleTimeout"   : {
+            "type": "integer"
+          },
+          "reapIntervalMillis": {
+            "type": "integer"
+          },
+          "logEvents"         : {
+            "type": "array"
+          }
+        },
+        "required"  : [
+          "host",
+          "port",
+          "database",
+          "user",
+          "password",
+          "poolSize",
+          "poolIdleTimeout",
+          "reapIntervalMillis",
+          "logEvents"
+        ]
+      },
+
+
+
+
+      "transactions"   : {
+        "type"          : "object",
+        "maxTxsPerQueue": {
+          "type"   : "integer",
+          "minimum": 100,
+          "maximum": 5000
+        },
+        "required"      : [
+          "maxTxsPerQueue"
+        ]
+      },
+
+      "loading"        : {
+        "type"      : "object",
+        "properties": {
+          "verifyOnLoading" : {
+            "type": "boolean"
+          },
+          "loadPerIteration": {
+            "type"   : "integer",
+            "minimum": 1,
+            "maximum": 5000
+          }
+        },
+        "required"  : [
+          "verifyOnLoading",
+          "loadPerIteration"
+        ]
+      },
+      "nethash"        : {
+        "type"  : "string",
+        "format": "hex"
+      },
+      "modules": {
+        "type": "array",
+        "uniqueItems": true,
+        "items"      : {
+          "type": "string"
+        }
+      }
+    },
+    "required"  : [
+      "port",
+      "address",
+      "version",
+      "fileLogLevel",
+      "logFileName",
+      "consoleLogLevel",
+      "trustProxy",
+      "db",
+      "transactions",
+      "loading",
+      "nethash",
+      "modules"
+    ]
+  }
+}

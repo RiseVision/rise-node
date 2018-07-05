@@ -1,7 +1,8 @@
 import { Symbols } from '@risevision/core-helpers';
 import { ConstantsType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
-import { DposConstantsType, dPoSSymbols } from './';
+import { dPoSSymbols } from './symbols';
+import { DposConstantsType } from './constants';
 
 @injectable()
 export class Slots {

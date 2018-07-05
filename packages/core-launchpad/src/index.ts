@@ -1,1 +1,1 @@
-//woop.
+export * from './module';

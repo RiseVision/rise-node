@@ -1,15 +1,19 @@
 import { catchToLoggerAndRemapError, Crypto, Sequence, Symbols, WrapInDefaultSequence } from '@risevision/core-helpers';
 import {
   IAccountsModule,
-  IAppState, IBlocksModule, IBlocksModuleProcess,
+  IAppState,
+  IBlocksModule,
+  IBlocksModuleProcess,
   IBroadcasterLogic,
   IJobsQueue,
-  ILogger, IModule, ITransactionsModule
+  ILogger,
+  IModule,
+  ITransactionsModule
 } from '@risevision/core-interfaces';
-import { AppConfig, ConstantsType, IKeypair, publicKey } from '@risevision/core-types';
+import { ConstantsType, IKeypair, publicKey } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import { inject, injectable, tagged } from 'inversify';
-import { DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
+import { DposAppConfig, dPoSSymbols, Slots } from '../helpers/';
 import { DelegatesModule } from './delegates';
 
 @injectable()
@@ -19,7 +23,7 @@ export class ForgeModule implements IModule {
 
   // Generic
   @inject(Symbols.generic.appConfig)
-  private config: AppConfig;
+  private config: DposAppConfig;
 
   // helpers
   @inject(Symbols.helpers.constants)
@@ -228,6 +232,5 @@ export class ForgeModule implements IModule {
     return null;
 
   }
-
 
 }

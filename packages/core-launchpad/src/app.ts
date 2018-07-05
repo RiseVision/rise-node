@@ -1,18 +1,28 @@
-import {configCreator} from '@risevision/core-helpers';
+
 import * as exitHook from 'async-exit-hook';
 import * as program from 'commander';
 import * as extend from 'extend';
-import * as findPackageJson from 'find-package-json';
+import * as appModulePath from 'app-module-path';
 import * as fs from 'fs';
 import * as jp from 'jsonpath';
 import 'source-map-support/register';
-import { AppManager } from './AppManager';
+// import { AppManager } from './AppManager';
 // import { allExceptionCreator } from './exceptions';
 import { AppConfig } from '@risevision/core-types';
+import { fetchCoreModuleImplementations } from './modulesLoader';
+import { configCreator } from './loadConfigs';
 // import {
 //   config as configCreator, constants as constantsType, ExceptionType, loggerCreator,
 //   promiseToCB,
 // } from './helpers/';
+
+const packageJSONFile = `${process.env.PWD}/package.json`;
+if (!fs.existsSync(packageJSONFile)) {
+  console.error('Error: package.json does not exist in current directory');
+  process.exit(1);
+}
+
+appModulePath.addPath(`${process.env.PWD}/node_modules`);
 
 declare const gc; // garbage collection if exposed.
 
@@ -23,11 +33,16 @@ if (typeof(gc) !== 'undefined') {
   setInterval(gc, 60000);
 }
 
+const callingPackageJSON = require(packageJSONFile);
+
+const modules = fetchCoreModuleImplementations(Object.keys(callingPackageJSON.dependencies));
+
 program
-  .version(require('pkginfo')(module).version)
+  .version(callingPackageJSON.version)
   .option('-p, --port <port>', 'listening port number')
   .option('-a, --address <ip>', 'listening host name or ip')
   .option('-x, --peers [peers...]', 'peers list')
+  .option('--net <net>', 'Network to run on', 'mainnet')
   .option('-l, --log <level>', 'log level')
   .option('-s, --snapshot [round]', 'verify snapshot')
   .option('-c, --config <path>', 'custom config path')
@@ -50,8 +65,12 @@ program
     }
     opts.push({ path, val });
     return opts;
-  })
-  .parse(process.argv);
+  });
+
+// Ask modules to extend commander.
+modules.forEach((m) => m.extendCommander(program));
+
+program.parse(process.argv);
 
 // tslint:disable-next-line
 // const genesisBlock = require(`../etc/${program.net}/genesisBlock.json`);
@@ -61,21 +80,12 @@ if (program.extraConfig) {
   // tslint:disable-next-line no-var-requires
   extraConfig = require(program.extraConfig);
 }
-
 const appConfig: AppConfig = extend(
   true,
   {},
-  configCreator(program.config ? program.config : `./etc/${program.net}/config.json`),
+  configCreator(program.config ? program.config : `${process.env.PWD}/etc/${program.net}/config.json`, modules),
   extraConfig
 );
-const modules = appConfig.modules;
-for (const m of modules) {
-  // import module.
-  require(m);
-  const modulePath = require.resolve(m);
-  const pJson = findPackageJson(modulePath).next().value;
-  console.log(pJson);
-}
 
 if (program.port) {
   appConfig.port = program.port;
@@ -121,6 +131,8 @@ if (program.snapshot) {
     appConfig.loading.snapshot = true;
   }
 }
+
+console.log(appConfig);
 //
 // const logger = loggerCreator({
 //   echo      : appConfig.consoleLogLevel,

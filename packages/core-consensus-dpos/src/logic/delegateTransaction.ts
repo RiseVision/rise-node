@@ -13,7 +13,7 @@ import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
 import { dPoSSymbols } from '../helpers/';
 import { DelegatesModel } from '../models/';
-import delegateAssetSchema from '../../schema/asset.json';
+const delegateAssetSchema = require('../../schema/asset.json');
 
 // tslint:disable-next-line interface-over-type-literal
 export type DelegateAsset = {
