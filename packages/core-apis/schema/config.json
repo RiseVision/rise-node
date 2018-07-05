@@ -14,12 +14,25 @@
               "type": "boolean"
             },
             "whiteList": {
-              "type": "array"
+              "type": "array",
+              "items": {
+                "type"  : "string",
+                "format": "ip"
+              }
+            },
+            "restrictedAPIwhiteList": {
+              "$comment": "Whitelist for restricted/secure APIs",
+              "type": "array",
+              "items": {
+                "type"  : "string",
+                "format": "ip"
+              }
             }
           },
           "required"  : [
             "public",
-            "whiteList"
+            "whiteList",
+            "restrictedAPIwhiteList"
           ]
         },
         "options": {

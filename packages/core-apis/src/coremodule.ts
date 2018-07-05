@@ -1,0 +1,9 @@
+import { BaseCoreModule } from '@risevision/core-launchpad';
+
+const schema = require('../schema/config.json');
+
+export class CoreModule extends BaseCoreModule {
+  configSchema = schema;
+  constants    = {};
+
+}

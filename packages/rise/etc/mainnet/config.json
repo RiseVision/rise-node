@@ -33,6 +33,9 @@
       "public"   : false,
       "whiteList": [
         "127.0.0.1"
+      ],
+      "restrictedAPIwhiteList": [
+        "127.0.0.1"
       ]
     },
     "options": {

@@ -13,6 +13,7 @@
   "dependencies": {
     "@risevision/core-consensus-dpos": "^1.0.0",
     "@risevision/core-p2p": "^1.0.0",
+    "@risevision/core-apis": "^1.0.0",
     "@risevision/core-transactions": "^1.0.0",
     "@risevision/core-multisignature": "^1.0.0",
     "@risevision/core-secondsignature": "^1.0.0",
