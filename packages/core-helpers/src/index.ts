@@ -9,7 +9,6 @@ export * from './bus';
 export * from './checkIpInList';
 export * from './db';
 export * from './crypto';
-export * from './configCreator';
 export * from './constants';
 export * from './httpApi';
 export * from './exceptionManager';

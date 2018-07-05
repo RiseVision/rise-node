@@ -54,7 +54,7 @@
 		"jsonpath": "^1.0.0",
 		"lerna": "^2.11.0",
 		"lodash": "=4.17.10",
-		"mangiafuoco": "=1.2.1",
+		"mangiafuoco": "=1.2.2",
 		"mocha": "=5.2.0",
 		"moment": "=2.22.1",
 		"mute": "^2.0.6",

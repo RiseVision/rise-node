@@ -10,7 +10,7 @@ import { RoundsModel } from '../models';
 @injectable()
 export class Transactionshooks extends WPHooksSubscriber(Object) {
   @inject(Symbols.generic.hookSystem)
-  private hookSystem: WordPressHookSystem;
+  public hookSystem: WordPressHookSystem;
   @inject(dPoSSymbols.models.rounds)
   private roundsModel: typeof RoundsModel;
 
@@ -20,7 +20,7 @@ export class Transactionshooks extends WPHooksSubscriber(Object) {
   @inject(dPoSSymbols.logic.rounds)
   private slots: Slots;
 
-  @TxApplyFilter(() => this.hookSystem)
+  @TxApplyFilter()
   public async onTxApply(ops: Array<DBOp<any>>, tx: IConfirmedTransaction<any>, block: SignedBlockType) {
     const totalAmount = new BigNum(tx.amount.toString()).plus(tx.fee).toNumber();
     return [
@@ -29,7 +29,7 @@ export class Transactionshooks extends WPHooksSubscriber(Object) {
     ];
   }
 
-  @TxUndoFilter(() => this.hookSystem)
+  @TxUndoFilter()
   public async onTxUndo(ops: Array<DBOp<any>>, tx: IConfirmedTransaction<any>, block: SignedBlockType) {
     const totalAmount = new BigNum(tx.amount.toString()).plus(tx.fee).toNumber();
     return [
@@ -38,7 +38,7 @@ export class Transactionshooks extends WPHooksSubscriber(Object) {
     ];
   }
 
-  @SendTxApplyFilter(() => this.hookSystem)
+  @SendTxApplyFilter()
   public async onSendTxApply(ops: Array<DBOp<any>>, tx: IConfirmedTransaction<void>, block: SignedBlockType) {
     const totalAmount = new BigNum(tx.amount.toString()).plus(tx.fee).toNumber();
     return [
@@ -47,7 +47,7 @@ export class Transactionshooks extends WPHooksSubscriber(Object) {
     ];
   }
 
-  @SendTxUndoFilter(() => this.hookSystem)
+  @SendTxUndoFilter()
   public async onSendTxUndo(ops: Array<DBOp<any>>, tx: IConfirmedTransaction<void>, block: SignedBlockType) {
     const totalAmount = new BigNum(tx.amount.toString()).plus(tx.fee).toNumber();
     return [
