@@ -10,7 +10,7 @@ import {
 } from '@risevision/core-interfaces';
 import { ConstantsType, IBaseTransaction, TransactionType } from '@risevision/core-types';
 import { inject, injectable, postConstruct, tagged } from 'inversify';
-import { ExtendedAppConfig } from './extensions/appconfig';
+import { TXAppConfig } from './helpers/appconfig';
 import { InnerTXQueue } from './poolTXsQueue';
 
 // tslint:disable-next-line
@@ -24,7 +24,7 @@ export class TransactionPool implements ITransactionPoolLogic {
 
   // generic
   @inject(Symbols.generic.appConfig)
-  private config: ExtendedAppConfig;
+  private config: TXAppConfig;
   @inject(Symbols.helpers.constants)
   private constants: ConstantsType;
 

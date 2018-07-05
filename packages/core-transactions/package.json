@@ -1,9 +1,12 @@
 {
   "name": "@risevision/core-transactions",
+  "rise_vision": {
+    "module": true
+  },
   "version": "1.0.0",
   "description": "",
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "transpile": "shx rm -rf dist; tsc",
@@ -15,6 +18,7 @@
     "@risevision/core-helpers": "^1.0.0",
     "@risevision/core-apis": "^1.0.0",
     "@risevision/core-interfaces": "^1.0.0",
+    "@risevision/core-launchpad": "^1.0.0",
     "@risevision/core-models": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
     "bignumber.js": "=7.2.1",

@@ -32,8 +32,8 @@ import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
-import txSchema from '../schema/transaction.json';
 import { BaseTx } from './BaseTx';
+const txSchema = require('../schema/transaction.json');
 
 @injectable()
 export class TransactionLogic implements ITransactionLogic {

@@ -19,7 +19,7 @@ import * as _ from 'lodash';
 import { BodyParam, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-import schema from '../schema/api.json';
+const schema = require('../schema/api.json');
 
 @JsonController('/api/transactions')
 @injectable()

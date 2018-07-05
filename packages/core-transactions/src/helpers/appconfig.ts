@@ -1,6 +1,6 @@
-import {AppConfig} from '@risevision/core-types';
+import { AppConfig } from '@risevision/core-types';
 
-export type ExtendedAppConfig = AppConfig & {
+export type TXAppConfig = AppConfig & {
   transactions: {
     maxTxsPerQueue: number,
     bundledInterval: number
