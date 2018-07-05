@@ -1,11 +1,11 @@
 import { APIError, DeprecatedAPIError } from '@risevision/core-apis';
 import { IoCSymbol, SchemaValid, Symbols, ValidateSchema } from '@risevision/core-helpers';
-import { IAccountsModel, IAccountsModule, IDelegatesModule, ISystemModule } from '@risevision/core-interfaces';
+import { IAccountsModel, IAccountsModule, ISystemModule } from '@risevision/core-interfaces';
 import { AppConfig, FieldsInModel, publicKey } from '@risevision/core-types';
 import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
 import * as isEmpty from 'is-empty';
-import { Body, Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
+import { Body, Get, JsonController, Post, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import accountSchema from '../../schema/accounts.json';
 
@@ -17,8 +17,6 @@ export class AccountsAPI {
   public schema: z_schema;
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
-  @inject(Symbols.modules.delegates)
-  private delegatesModule: IDelegatesModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
@@ -86,46 +84,6 @@ export class AccountsAPI {
     return { publicKey: account.hexPublicKey };
   }
 
-  @Get('/delegates')
-  @ValidateSchema()
-  public async getDelegates(@SchemaValid(accountSchema.getDelegates)
-                            @QueryParams() params: { address: string }) {
-    const account = await this.accountsModule
-      .getAccount({ address: params.address });
-    if (!account) {
-      throw new APIError('Account not found', 200);
-    }
-    if (account.delegates) {
-      const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'rank:desc' });
-      return {
-        delegates: delegates
-          .filter((d) => account.delegates.indexOf(d.delegate.hexPublicKey) !== -1)
-          .map((d) => ({
-            username      : d.delegate.username,
-            address       : d.delegate.address,
-            publicKey     : d.delegate.hexPublicKey,
-            vote          : d.delegate.vote,
-            producedblocks: d.delegate.producedblocks,
-            missedblocks  : d.delegate.missedblocks,
-            rate          : d.info.rank,
-            rank          : d.info.rank,
-            approval      : d.info.approval,
-            productivity  : d.info.productivity
-          })),
-      };
-    }
-    return { publicKey: account.publicKey };
-  }
-
-  @Get('/delegates/fee')
-  @ValidateSchema()
-  public async getDelegatesFee(@SchemaValid(accountSchema.getDelegatesFee, { castNumbers: true })
-                               @QueryParams() params: { height: number }) {
-    return {
-      fee: this.systemModule.getFees(params.height).fees.delegate,
-    };
-  }
-
   @Get('/top')
   @ValidateSchema()
   public async topAccounts(@SchemaValid(accountSchema.top, { castNumbers: true })
@@ -158,22 +116,6 @@ export class AccountsAPI {
   @ValidateSchema()
   public async open(@SchemaValid(accountSchema.open)
                     @Body() body: { secret: string }): Promise<any> {
-    throw new DeprecatedAPIError();
-  }
-
-  /**
-   * @deprecated
-   */
-  @Put('/delegates')
-  public async addDelegate() {
-    throw new DeprecatedAPIError();
-  }
-
-  /**
-   * @deprecated
-   */
-  @Post('/generatePublicKey')
-  public async generatePublicKey() {
     throw new DeprecatedAPIError();
   }
 

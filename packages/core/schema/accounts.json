@@ -57,51 +57,6 @@
       "secret"
     ]
   },
-  "getDelegates": {
-    "id": "accounts.getDelegates",
-    "type": "object",
-    "properties": {
-      "address": {
-        "type": "string",
-        "format": "address",
-        "minLength": 1,
-        "maxLength": 22
-      }
-    },
-    "required": [
-      "address"
-    ]
-  },
-  "getDelegatesFee": {
-    "id": "accounts.getDelegatesFee",
-    "type": "object",
-    "properties": {
-      "height": {
-        "type": "integer",
-        "minimum": 1
-      }
-    }
-  },
-  "addDelegates": {
-    "id": "accounts.addDelegates",
-    "type": "object",
-    "properties": {
-      "secret": {
-        "type": "string",
-        "minLength": 1,
-        "maxLength": 100
-      },
-      "publicKey": {
-        "type": "string",
-        "format": "publicKey"
-      },
-      "secondSecret": {
-        "type": "string",
-        "minLength": 1,
-        "maxLength": 100
-      }
-    }
-  },
   "getAccount": {
     "id": "accounts.getAccount",
     "type": "object",
