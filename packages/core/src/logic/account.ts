@@ -1,9 +1,9 @@
-import { BigNum, catchToLoggerAndRemapError, Symbols} from '@risevision/core-helpers';
-import { AccountDiffType, IAccountLogic, IAccountsModel, IBlocksModel, ILogger } from '@risevision/core-interfaces';
+import { BigNum, catchToLoggerAndRemapError, Symbols } from '@risevision/core-helpers';
+import { AccountDiffType, IAccountLogic, IAccountsModel, ILogger } from '@risevision/core-interfaces';
 import { DBOp, FieldsInModel, ModelAttributes } from '@risevision/core-types';
 import * as crypto from 'crypto';
-import * as fs from 'fs';
 import * as filterObject from 'filter-object';
+import * as fs from 'fs';
 import { inject, injectable } from 'inversify';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
@@ -11,7 +11,6 @@ import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
-
 
 // tslint:disable-next-line
 export type OptionalsMemAccounts = {
@@ -116,8 +115,6 @@ export class AccountLogic implements IAccountLogic {
 
   @inject(Symbols.models.accounts)
   private AccountsModel: typeof IAccountsModel;
-  @inject(Symbols.models.rounds)
-  private RoundsModel: typeof IRoundsModel;
 
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
@@ -177,7 +174,7 @@ export class AccountLogic implements IAccountLogic {
   public async removeTables(): Promise<void> {
     const models = [
       this.AccountsModel,
-      this.RoundsModel,
+      // this.RoundsModel,
       // this.Accounts2DelegatesModel,
       // this.Accounts2MultisignaturesModel,
       // this.Accounts2U_DelegatesModel,
@@ -185,7 +182,7 @@ export class AccountLogic implements IAccountLogic {
     ];
     // TODO: Fix ^^
     for (const model of models) {
-      await model.drop({cascade: true})
+      await model.drop({ cascade: true })
         .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
     }
   }
@@ -316,36 +313,12 @@ export class AccountLogic implements IAccountLogic {
           }
           if (Math.abs(trueValue) === trueValue && trueValue !== 0) {
             update[fieldName] = sequelize.literal(`${fieldName} + ${Math.floor(trueValue)}`);
-            if (fieldName === 'balance') {
-              dbOps.push({
-                model: this.RoundsModel,
-                query: this.RoundsModel.insertMemRoundBalanceSQL({
-                  address,
-                  amount : trueValue,
-                  blockId: diff.blockId,
-                  round  : diff.round,
-                }),
-                type : 'custom',
-              });
-            }
           } else if (trueValue < 0) {
             update[fieldName] = sequelize.literal(`${fieldName} - ${Math.floor(Math.abs(trueValue))}`);
             // If decrementing u_balance on account
             if (update.u_balance) {
               // Remove virginity and ensure marked columns become immutable
               update.virgin = 0;
-            }
-            if (fieldName === 'balance') {
-              dbOps.push({
-                model: this.RoundsModel,
-                query: this.RoundsModel.insertMemRoundBalanceSQL({
-                  address,
-                  amount : trueValue,
-                  blockId: diff.blockId,
-                  round  : diff.round,
-                }),
-                type : 'custom',
-              });
             }
           }
           break;
