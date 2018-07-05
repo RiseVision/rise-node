@@ -15,6 +15,7 @@
     "@risevision/core-p2p": "^1.0.0",
     "@risevision/core-transactions": "^1.0.0",
     "@risevision/core-multisignature": "^1.0.0",
+    "@risevision/core-secondsignature": "^1.0.0",
     "@risevision/core-launchpad": "^1.0.0"
   },
   "devDependencies": {

@@ -10,7 +10,6 @@
     "baseUrl":                      ".",
     "declaration":                  true,
     "allowSyntheticDefaultImports": true,
-    "resolveJsonModule":            true,
     "inlineSourceMap":              true,
     "inlineSources":                true,
     "lib":                          [
@@ -23,6 +22,7 @@
       "@risevision/core-interfaces": ["../core-interfaces/*"],
       "@risevision/core-types": ["../core-types/*"],
       "@risevision/core-helpers": ["../core-helpers/*"],
+      "@risevision/core-launchpad": ["../core-launchpad/*"],
       "@risevision/core-test-utils": ["../core-test-utils/*"],
       "@risevision/core-transactions": ["../core-transactions/*"]
     }

@@ -1,5 +1,8 @@
 {
   "name": "@risevision/core-secondsignature",
+  "rise_vision": {
+    "module": true
+  },
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -15,6 +18,7 @@
     "@risevision/core-helpers": "^1.0.0",
     "@risevision/core-apis": "^1.0.0",
     "@risevision/core-interfaces": "^1.0.0",
+    "@risevision/core-launchpad": "^1.0.0",
     "@risevision/core-models": "^1.0.0",
     "@risevision/core-transactions": "^1.0.0",
     "@risevision/core-types": "^1.0.0",

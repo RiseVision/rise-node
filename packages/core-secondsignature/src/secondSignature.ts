@@ -11,7 +11,7 @@ import {
   TransactionType
 } from '@risevision/core-types';
 
-import secondSignatureSchema from '../schema/secondSignature.json';
+const secondSignatureSchema = require('../schema/secondSignature.json');
 import { SignaturesModel } from './SignaturesModel';
 
 // tslint:disable-next-line interface-over-type-literal
