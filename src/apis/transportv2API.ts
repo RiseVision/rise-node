@@ -124,7 +124,7 @@ export class TransportV2API {
   }
 
   @Post('/blocks')
-  public async postBlock(@Body() data: Buffer, @Req() req: Request, @Res() res: Response) {
+  public async postBlock(@Req() req: Request, @Res() res: Response) {
     let normalizedBlock: SignedAndChainedBlockType;
     try {
       const requestData = this.parseRequest(req, 'transportBlocks', 'transportBlock');
