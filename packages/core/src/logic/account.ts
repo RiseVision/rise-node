@@ -1,5 +1,11 @@
 import { BigNum, catchToLoggerAndRemapError, Symbols } from '@risevision/core-helpers';
-import { AccountDiffType, IAccountLogic, IAccountsModel, ILogger } from '@risevision/core-interfaces';
+import {
+  AccountDiffType,
+  AccountFilterData,
+  IAccountLogic,
+  IAccountsModel,
+  ILogger
+} from '@risevision/core-interfaces';
 import { DBOp, FieldsInModel, ModelAttributes } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
@@ -11,78 +17,6 @@ import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
-
-// tslint:disable-next-line
-export type OptionalsMemAccounts = {
-  username?: string;
-  isDelegate?: number;
-  u_isDelegate?: number;
-  secondSignature?: number;
-  u_secondSignature?: number;
-  u_username?: string;
-  address?: string;
-  publicKey?: Buffer;
-  secondPublicKey?: string;
-  balance?: number;
-  u_balance?: number;
-  vote?: number;
-  rate?: number;
-  delegates?: string;
-  u_delegates?: string;
-  multisignatures?: string[];
-  u_multisignatures?: string[];
-  multimin?: number;
-  u_multimin?: number;
-  multilifetime?: number;
-  u_multilifetime?: number;
-  blockId?: string;
-  producedblocks?: number;
-  missedblocks?: number;
-  fees?: number;
-  rewards?: number;
-  virgin?: number;
-};
-// tslint:disable-next-line
-export type MemAccountsData = OptionalsMemAccounts & {
-  username: string;
-  isDelegate: number;
-  u_isDelegate: number;
-  secondSignature: number;
-  u_secondSignature: number;
-  u_username: string;
-  address: string;
-  publicKey: string;
-  secondPublicKey: string;
-  balance: number;
-  u_balance: number;
-  vote: string;
-  rate: number;
-  delegates: string[];
-  u_delegates: string[];
-  multisignatures: string[];
-  u_multisignatures: string[];
-  multimin: number;
-  u_multimin: number;
-  multilifetime: number;
-  u_multilifetime: number;
-  blockId: string;
-  producedblocks: number;
-  missedblocks: number;
-  fees: number;
-  rewards: number;
-  virgin: number;
-};
-
-// tslint:disable-next-line
-export type AccountFilterData = {
-  isDelegate?: 1 | 0;
-  username?: string;
-  address?: string | { $in: string[] };
-  publicKey?: Buffer;
-  limit?: number;
-  offset?: number;
-  sort?: string | { [k: string]: -1 | 1 }
-};
 
 @injectable()
 export class AccountLogic implements IAccountLogic {
