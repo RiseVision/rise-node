@@ -16,7 +16,6 @@ import {
   IBlocksModuleUtils,
   IBlocksModuleVerify,
   IBroadcasterLogic,
-  IDelegatesModel,
   IJobsQueue,
   ILoaderModule,
   ILogger,
@@ -24,7 +23,6 @@ import {
   IPeerLogic,
   IPeersLogic,
   IPeersModule,
-  IRoundsLogic,
   IRoundsModel,
   ISystemModule,
   ITransactionLogic,
@@ -42,6 +40,8 @@ import {
 import loaderSchema from '../../schema/loader.json';
 import sql from '../sql/loader';
 import Timer = NodeJS.Timer;
+import { ConstantsType } from '../../../core-types/src';
+import { WordPressHookSystem } from 'mangiafuoco';
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
@@ -62,12 +62,14 @@ export class LoaderModule implements ILoaderModule {
   private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.generic.socketIO)
   private io: SocketIO.Server;
+  @inject(Symbols.generic.hookSystem)
+  private hookSystem: WordPressHookSystem;
 
   // Helpers
-  @inject(Symbols.helpers.bus)
-  private bus: Bus;
+  // @inject(Symbols.helpers.bus)
+  // private bus: Bus;
   @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
+  private constants: ConstantsType;
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
@@ -88,8 +90,6 @@ export class LoaderModule implements ILoaderModule {
   private broadcasterLogic: IBroadcasterLogic;
   @inject(Symbols.logic.peers)
   private peersLogic: IPeersLogic;
-  @inject(Symbols.logic.rounds)
-  private roundsLogic: IRoundsLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
 
@@ -120,10 +120,6 @@ export class LoaderModule implements ILoaderModule {
   private AccountsModel: typeof IAccountsModel;
   @inject(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
-  @inject(Symbols.models.delegates)
-  private DelegatesModel: typeof IDelegatesModel;
-  @inject(Symbols.models.rounds)
-  private RoundsModel: typeof IRoundsModel;
 
   @postConstruct()
   public initialize() {
@@ -222,12 +218,16 @@ export class LoaderModule implements ILoaderModule {
       this.logger.info('Genesis block matches with database');
     }
 
-    const round = this.roundsLogic.calcRound(blocksCount);
-
     // Check if we are in verifySnapshot mode.
     if (this.config.loading.snapshot) {
-      await this.verifySnapshot(round, blocksCount, limit);
+      await this.verifySnapshot(blocksCount, limit);
       process.exit(0);
+    }
+
+    try {
+      await this.hookSystem.do_action('core/loader/performIntegrityChecks');
+    } catch (e) {
+      return this.load(blocksCount, limit, e.message, true);
     }
 
     const updatedAccountsInLastBlock = await this.AccountsModel
@@ -241,23 +241,24 @@ export class LoaderModule implements ILoaderModule {
       return this.load(blocksCount, limit, 'Detected missed blocks in mem_accounts', true);
     }
 
-    const rounds    = await this.RoundsModel.findAll({ attributes: ['round'], group: 'round' });
-    const unapplied = rounds.filter((r) => r.round !== round);
-    if (unapplied.length > 0) {
-      // round is not applied.
-      return this.load(blocksCount, limit, 'Detected unapplied rounds in mem_round', true);
-    }
+    // const rounds    = await this.RoundsModel.findAll({ attributes: ['round'], group: 'round' });
+    // const unapplied = rounds.filter((r) => r.round !== round);
+    // if (unapplied.length > 0) {
+    //   // round is not applied.
+    //   return this.load(blocksCount, limit, 'Detected unapplied rounds in mem_round', true);
+    // }
+    //
+    // const [duplicatedDelegates] = await this.DelegatesModel.sequelize.query(
+    //   sql.countDuplicatedDelegates,
+    //   { type: sequelize.QueryTypes.SELECT });
+    // if (duplicatedDelegates.count > 0) {
+    //   this.logger.error('Delegates table corrupted with duplicated entries');
+    //   process.exit(1);
+    //   return;
+    // }
 
-    const [duplicatedDelegates] = await this.DelegatesModel.sequelize.query(
-      sql.countDuplicatedDelegates,
-      { type: sequelize.QueryTypes.SELECT });
-    if (duplicatedDelegates.count > 0) {
-      this.logger.error('Delegates table corrupted with duplicated entries');
-      process.exit(1);
-      return;
-    }
-
-    await this.AccountsModel.restoreUnconfirmedEntries();
+    await this.hookSystem.do_action('core/loader/accounts/restoreUnconfirmedEntries');
+    // await this.AccountsModel.restoreUnconfirmedEntries();
 
     const orphanedMemAccounts = await this.AccountsModel.sequelize.query(
       sql.getOrphanedMemAccounts,
@@ -279,37 +280,39 @@ export class LoaderModule implements ILoaderModule {
     }
 
     this.logger.info('Blockchain ready');
-    await this.bus.message('blockchainReady');
+    await this.hookSystem.do_action('core/loader/onBlockchainReady');
   }
 
-  private async verifySnapshot(round: number, blocksCount: number, limit: number) {
+  private async verifySnapshot(blocksCount: number, limit: number) {
     this.logger.info('Snapshot mode enabled');
-    if (typeof(this.config.loading.snapshot) === 'boolean') {
-      // threat "true" as "highest round possible"
-      this.config.loading.snapshot = round;
-    }
-    if (this.config.loading.snapshot >= round) {
-      this.config.loading.snapshot = round;
-      if (blocksCount % this.constants.activeDelegates > 0) {
-        // Normalize to previous round if we
-        this.config.loading.snapshot = (round > 1) ? (round - 1) : 1;
-      }
-    }
-    this.appState.set('rounds.snapshot', this.config.loading.snapshot);
+
+    blocksCount = await this.hookSystem.apply_filters('core/loader/snapshot/blocksCount', blocksCount);
+    // if (typeof(this.config.loading.snapshot) === 'boolean') {
+    //   // threat "true" as "highest round possible"
+    //   this.config.loading.snapshot = round;
+    // }
+    // if (this.config.loading.snapshot >= round) {
+    //   this.config.loading.snapshot = round;
+    //   if (blocksCount % this.constants.activeDelegates > 0) {
+    //     // Normalize to previous round if we
+    //     this.config.loading.snapshot = (round > 1) ? (round - 1) : 1;
+    //   }
+    // }
+    this.config.loading.snapshot = blocksCount;
+    this.appState.set('rounds.snapshot', blocksCount);
 
     this.logger.info(`Snapshotting to end of round: ${this.config.loading.snapshot}`, blocksCount);
-    const lastBlock = this.roundsLogic.lastInRound(this.config.loading.snapshot);
 
     await this.load(
-      lastBlock,
+      blocksCount,
       limit,
       'Blocks Verification enabled',
       false
     );
 
-    if (this.blocksModule.lastBlock.height !== lastBlock) {
+    if (this.blocksModule.lastBlock.height !== blocksCount) {
       // tslint:disable-next-line max-line-length
-      this.logger.error(`LastBlock height does not expected block. Expected: ${lastBlock} - Received: ${this.blocksModule.lastBlock.height}`);
+      this.logger.error(`LastBlock height does not expected block. Expected: ${blocksCount} - Received: ${this.blocksModule.lastBlock.height}`);
       process.exit(1);
     }
   }
@@ -321,9 +324,10 @@ export class LoaderModule implements ILoaderModule {
       this.logger.warn('Recreating memory tables');
     }
 
-    await this.accountLogic.removeTables();
+    await this.hookSystem.do_action('core/loader/load/recreateAccountsDatastores');
+    // await this.accountLogic.removeTables();
 
-    await this.accountLogic.createTables();
+    // await this.accountLogic.createTables();
 
     try {
       while (count >= offset) {
@@ -340,7 +344,7 @@ export class LoaderModule implements ILoaderModule {
       }
       if (emitBlockchainReady) {
         this.logger.info('Blockchain ready');
-        await this.bus.message('blockchainReady');
+        await this.hookSystem.do_action('core/loader/onBlockchainReady');
       }
     } catch (err) {
       this.logger.error(err);
@@ -348,7 +352,7 @@ export class LoaderModule implements ILoaderModule {
         this.logger.error('Blockchain failed at: ' + err.block.height);
         await this.blocksChainModule.deleteAfterBlock(err.block.id);
         this.logger.error('Blockchain clipped');
-        await this.bus.message('blockchainReady');
+        await this.hookSystem.do_action('core/loader/onBlockchainReady');
       } else {
         throw err;
       }
@@ -506,7 +510,7 @@ export class LoaderModule implements ILoaderModule {
   @WrapInDefaultSequence
   private async sync() {
     this.logger.info('Starting sync');
-    await this.bus.message('syncStarted');
+    await this.hookSystem.do_action('core/loader/onSync[started]');
 
     this.isActive = true;
     this.syncTrigger(true);
@@ -531,7 +535,7 @@ export class LoaderModule implements ILoaderModule {
     this.blocksToSync = 0;
 
     this.logger.info('Finished sync');
-    await this.bus.message('syncFinished');
+    await this.hookSystem.do_action('core/loader/onSync[finished]');
 
   }
 

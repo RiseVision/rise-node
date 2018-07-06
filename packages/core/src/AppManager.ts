@@ -275,14 +275,11 @@ export class AppManager {
     await this.modelsElements(sequelize);
 
     // hooks
-    await this.hookSystem.do_action('container_post_init', this.container);
+    await this.hookSystem.do_action('core/init/container', this.container);
 
     // allow plugins to just modify models
     const models = this.getElementsFromContainer<typeof BaseModel>(Symbols.models);
-    await Promise.all(models.map(async (model) => {
-      await this.hookSystem.do_action('model_init', model);
-      await this.hookSystem.do_action(`model_init-${model.getTableName()}`, model);
-    }));
+    await Promise.all(models.map((model) => this.hookSystem.do_action('core/init/model', model)));
 
     // Start migrations/runtime queries.
     await this.container.get<Migrator>(Symbols.helpers.migrator).init();

@@ -181,7 +181,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     }
     this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
     await this.BlocksModel.sequelize
-      .transaction((tx) => this.hookSystem.do_action('post_block_processed', this.blocksModule.lastBlock, tx));
+      .transaction((tx) => this.hookSystem.do_action('core/blocks/chain/applyBlock.post', this.blocksModule.lastBlock, tx));
     // TODO: add this on dpos-consensus via hook ^^.
     // await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
   }
@@ -253,7 +253,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       }
 
       await this.bus.message('newBlock', block, broadcast);
-      await this.hookSystem.do_action('post_block_processed', this.blocksModule.lastBlock, dbTX);
+      await this.hookSystem.do_action('core/blocks/chain/applyBlock.post', this.blocksModule.lastBlock, dbTX);
       // TODO: add this on consensus dpos using hook ^^
       // await this.roundsModule.tick(block, dbTX);
 
@@ -327,9 +327,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         ops.push(... await this.transactionLogic.undoUnconfirmed(tx, accountsMap[tx.senderId]));
       }
       await this.dbHelper.performOps(ops, dbTX);
-      await this.hookSystem.do_action('pre_block_destroy', this.blocksModule.lastBlock, dbTX);
       // await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
       await lb.destroy({ transaction: dbTX });
+      await this.hookSystem.do_action('core/blocks/chain/onDestroyBlock', this.blocksModule.lastBlock, dbTX);
     });
 
     return previousBlock;

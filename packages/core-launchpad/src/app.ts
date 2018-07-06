@@ -125,20 +125,7 @@ for (const m of modules) {
    appConfig = m.patchConfigWithCLIParams(program, appConfig);
  }
 }
-//
-// if (program.peers) {
-//   if (typeof (program.peers) === 'string') {
-//     appConfig.peers.list = program.peers.split(',')
-//       .map((peer) => {
-//         const [ip, port] = peer.split(':');
-//         return { ip, port: port || appConfig.port };
-//       });
-//   } else {
-//     appConfig.peers.list = [];
-//   }
-console.log(modules);
-//
-console.log(JSON.stringify(appConfig, null, 2));
+
 //
 // const logger = loggerCreator({
 //   echo      : appConfig.consoleLogLevel,
