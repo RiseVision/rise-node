@@ -1,7 +1,7 @@
 import { CommanderStatic } from 'commander';
 import { WordPressHookSystem } from 'mangiafuoco';
 
-export interface ICoreModule {
+export interface ICoreModule<ConfigType> {
   configSchema: any;
   constants: any;
   version: string;
@@ -14,10 +14,12 @@ export interface ICoreModule {
 
   teardown(): Promise<void>;
 
-  afterConfigValidation?<T>(config: T): T;
+  afterConfigValidation?<T extends ConfigType>(config: T): T;
+
+  patchConfigWithCLIParams?<T extends ConfigType>(progrma: CommanderStatic, config: T): T;
 }
 
-export abstract class BaseCoreModule implements ICoreModule {
+export abstract class BaseCoreModule<ConfigType = any> implements ICoreModule<ConfigType> {
   public abstract configSchema: any;
   public abstract constants: any;
   public version = null;
@@ -28,6 +30,10 @@ export abstract class BaseCoreModule implements ICoreModule {
     return void 0;
   }
 
+  public patchConfigWithCLIParams<T extends ConfigType>(program: CommanderStatic, config: T): T {
+    return config;
+  }
+
   public setup(hookSystem: WordPressHookSystem): Promise<void> {
     return Promise.resolve();
   }
@@ -36,7 +42,7 @@ export abstract class BaseCoreModule implements ICoreModule {
     return Promise.resolve();
   }
 
-  public afterConfigValidation<T = any>(config: T): T {
+  public afterConfigValidation<T extends ConfigType>(config: T): T {
     return config;
   }
 }

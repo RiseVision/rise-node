@@ -8,7 +8,7 @@ import { ICoreModule } from './module';
 const configSchema = require('../schema/config.json');
 
 // tslint:disable no-console
-export function configCreator(configPath: string, modules: ICoreModule[]): AppConfig {
+export function configCreator(configPath: string, modules: Array<ICoreModule<any>>): AppConfig {
   let configData: any = fs.readFileSync(path.resolve(process.cwd(), (configPath || 'config.json')), 'utf8');
 
   if (!configData.length) {

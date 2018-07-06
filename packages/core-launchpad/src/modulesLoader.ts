@@ -2,8 +2,8 @@ import * as findPkg from 'find-pkg';
 import * as path from 'path';
 import { ICoreModule } from './module';
 
-export function fetchCoreModuleImplementations(modules: string[]): ICoreModule[] {
-  const allModules: ICoreModule[] = [];
+export function fetchCoreModuleImplementations(modules: string[]): Array<ICoreModule<any>> {
+  const allModules: Array<ICoreModule<any>> = [];
   for (const m of modules) {
     try {
       const modulePath              = require.resolve(m, {paths: require.main.paths});
@@ -14,7 +14,7 @@ export function fetchCoreModuleImplementations(modules: string[]): ICoreModule[]
         continue;
       }
       const CoreModule = require(modulePath).CoreModule;
-      const moduleImpl: ICoreModule = new CoreModule();
+      const moduleImpl: ICoreModule<any> = new CoreModule();
 
       if (!moduleImpl.version) {
         moduleImpl.version = packageJson.version;

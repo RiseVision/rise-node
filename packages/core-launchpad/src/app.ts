@@ -41,7 +41,6 @@ program
   .version(callingPackageJSON.version)
   .option('-p, --port <port>', 'listening port number')
   .option('-a, --address <ip>', 'listening host name or ip')
-  .option('-x, --peers [peers...]', 'peers list')
   .option('--net <net>', 'Network to run on', 'mainnet')
   .option('-l, --log <level>', 'log level')
   .option('-s, --snapshot [round]', 'verify snapshot')
@@ -80,7 +79,7 @@ if (program.extraConfig) {
   // tslint:disable-next-line no-var-requires
   extraConfig = require(program.extraConfig);
 }
-const appConfig: AppConfig = extend(
+let appConfig: AppConfig = extend(
   true,
   {},
   configCreator(program.config ? program.config : `${process.env.PWD}/etc/${program.net}/config.json`, modules),
@@ -107,18 +106,6 @@ if (program.overrideConfig) {
     console.warn(`Replaced config ${item.path}: ${oldValue} -> ${item.val}`);
   }
 }
-//
-// if (program.peers) {
-//   if (typeof (program.peers) === 'string') {
-//     appConfig.peers.list = program.peers.split(',')
-//       .map((peer) => {
-//         const [ip, port] = peer.split(':');
-//         return { ip, port: port || appConfig.port };
-//       });
-//   } else {
-//     appConfig.peers.list = [];
-//   }
-// }
 
 if (program.log) {
   appConfig.consoleLogLevel = program.log;
@@ -132,8 +119,26 @@ if (program.snapshot) {
   }
 }
 
-console.log(appConfig);
+// Let submodules patch config through params provided on the CLI.
+for (const m of modules) {
+ if (typeof(m.afterConfigValidation) === 'function') {
+   appConfig = m.patchConfigWithCLIParams(program, appConfig);
+ }
+}
+//
+// if (program.peers) {
+//   if (typeof (program.peers) === 'string') {
+//     appConfig.peers.list = program.peers.split(',')
+//       .map((peer) => {
+//         const [ip, port] = peer.split(':');
+//         return { ip, port: port || appConfig.port };
+//       });
+//   } else {
+//     appConfig.peers.list = [];
+//   }
 console.log(modules);
+//
+console.log(JSON.stringify(appConfig, null, 2));
 //
 // const logger = loggerCreator({
 //   echo      : appConfig.consoleLogLevel,

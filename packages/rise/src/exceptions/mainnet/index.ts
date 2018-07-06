@@ -1,4 +1,4 @@
-import { ExceptionsManager } from '../helpers';
+import { ExceptionsManager } from '@risevision/core-helpers';
 import block127765 from './block_127765';
 import tx_10425551571020716913 from './tx_10425551571020716913';
 import tx_14712341342146176146 from './tx_14712341342146176146';
