@@ -192,7 +192,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
 
 }
 
-describe('api/transport', () => {
+describe('peer/transport', () => {
 
   initializer.setup();
 

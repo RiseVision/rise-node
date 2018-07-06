@@ -1,4 +1,4 @@
-import { inject, injectable } from 'inversify';
+import { Container, inject, injectable } from 'inversify';
 import * as popsicle from 'popsicle';
 import * as querystring from 'querystring';
 import * as semver from 'semver';
@@ -7,28 +7,27 @@ import { IPeerLogic } from '../../ioc/interfaces/logic';
 import { Symbols } from '../../ioc/symbols';
 import { PeerRequestOptions } from '../../modules';
 
-export interface IAPIRequest {
+export interface IAPIRequest<Out, In> {
   getRequestOptions(): PeerRequestOptions;
-  getResponseData(res: any): any;
+  getResponseData(res: {body: Buffer | Out, peer: IPeerLogic}): Out;
   setPeer(peer: IPeerLogic);
-  getOrigOptions(): PeerRequestOptions;
+  getOrigOptions(): { data: In, query?: any};
+  mergeIntoThis(...objs: this[]): void
 }
 
-export abstract class BaseRequest implements IAPIRequest {
+@injectable()
+export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
+  public options: { data: In, query?: any} = {data: null};
   // AppManager will inject the dependency here
-  public static protoBufHelper: ProtoBufHelper;
-
   protected readonly method: 'GET' | 'POST';
   protected readonly baseUrl: string;
   protected readonly supportsProtoBuf: boolean = false;
-  protected options: any;
   protected peer: IPeerLogic;
 
-  constructor(options: {data: any, query?: any} = {data: null}) {
-    this.options = options;
-  }
+  @inject(Symbols.helpers.protoBuf)
+  protected protoBufHelper: ProtoBufHelper;
 
-  public getRequestOptions(): PeerRequestOptions {
+  public getRequestOptions(): PeerRequestOptions<In> {
     const reqOptions: PeerRequestOptions = {
       isProtoBuf: this.isProtoBuf(),
       method: this.getMethod(),
@@ -40,8 +39,11 @@ export abstract class BaseRequest implements IAPIRequest {
     return reqOptions;
   }
 
-  public getResponseData(res) {
-    return this.isProtoBuf() ? this.decodeProtoBufResponse(res, 'APISuccess') : res.body;
+  public getResponseData(res: { body: Buffer | Out, peer: IPeerLogic }): Out {
+    return this.isProtoBuf() ?
+      this.decodeProtoBufResponse(res as any, 'APISuccess') :
+      res.body as Out
+      ;
   }
 
   public isProtoBuf() {
@@ -53,7 +55,11 @@ export abstract class BaseRequest implements IAPIRequest {
     this.peer = peer;
   }
 
-  public getOrigOptions(): PeerRequestOptions {
+  public mergeIntoThis(...objs: this[]) {
+    throw new Error('This is not mergiable - or logic is not implemented in subclass');
+  }
+
+  public getOrigOptions(): { data: In, query?: any} {
     return this.options;
   }
 
@@ -73,21 +79,9 @@ export abstract class BaseRequest implements IAPIRequest {
     return qs.length === 0 ? '' : `?${qs}`;
   }
 
-  protected decodeProtoBufResponse(res: popsicle.Response, pbNamespace: string, pbMessageType?: string): any {
-    let retVal: any;
-    if (res.status === 200) {
-      try {
-        retVal = BaseRequest.protoBufHelper.decode(res.body, pbNamespace, pbMessageType);
-      } catch (e) {
-        throw new Error('Cannot decode response');
-      }
-    } else {
-      try {
-        retVal = BaseRequest.protoBufHelper.decode(res.body, 'APIError');
-      } catch (e) {
-        throw new Error('Cannot decode error response');
-      }
-    }
-    return retVal;
+  protected decodeProtoBufResponse(res: {body: Buffer, peer: IPeerLogic}, pbNamespace: string, pbMessageType?: string): Out {
+    return this.protoBufHelper
+      .decode(res.body, pbNamespace, pbMessageType);
   }
+
 }

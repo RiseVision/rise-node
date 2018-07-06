@@ -1,13 +1,21 @@
 import { BaseRequest } from './BaseRequest';
+import { injectable } from 'inversify';
 
-export class PostSignaturesRequest extends BaseRequest {
+export type PostSignaturesRequestDataType = {
+  signatures: Array<{
+    transaction: string,
+    signatures: Buffer[]
+  }>
+};
+@injectable()
+export class PostSignaturesRequest extends BaseRequest<PostSignaturesRequestDataType, void> {
   protected readonly method = 'POST';
   protected readonly supportsProtoBuf = true;
   public getRequestOptions() {
     const reqOptions = super.getRequestOptions();
     if (this.isProtoBuf()) {
-      if (BaseRequest.protoBufHelper.validate(reqOptions.data, 'transportSignatures')) {
-        reqOptions.data = BaseRequest.protoBufHelper.encode(reqOptions.data, 'transportSignatures');
+      if (this.protoBufHelper.validate(reqOptions.data, 'transportSignatures')) {
+        reqOptions.data = this.protoBufHelper.encode(reqOptions.data, 'transportSignatures');
       } else {
         throw new Error('Failed to encode ProtoBuf');
       }
@@ -18,4 +26,6 @@ export class PostSignaturesRequest extends BaseRequest {
   protected getBaseUrl() {
     return this.isProtoBuf() ? '/v2/peer/signatures' : '/peer/signatures';
   }
+
+
 }

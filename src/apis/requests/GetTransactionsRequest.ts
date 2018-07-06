@@ -1,6 +1,8 @@
 import { BaseRequest } from './BaseRequest';
+import { inject, injectable } from 'inversify';
 
-export class GetTransactionsRequest extends BaseRequest {
+@injectable()
+export class GetTransactionsRequest extends BaseRequest<void, void> {
   protected readonly method = 'GET';
   protected readonly supportsProtoBuf = true;
 

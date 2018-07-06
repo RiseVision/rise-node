@@ -187,7 +187,7 @@ export class TransactionLogic implements ITransactionLogic {
     const bb = ByteBuffer.wrap(tx.bytes, 'binary', true);
     const type = bb.readByte(0);
     const timestamp = bb.readInt(1);
-    const senderPublicKey = bb.copy(5, 37).toBuffer() as any;
+    const senderPublicKey = new Buffer(bb.copy(5, 37).toBuffer());
     let requesterPublicKey = null;
     let offset = 37;
 
@@ -239,6 +239,7 @@ export class TransactionLogic implements ITransactionLogic {
       signature,
       timestamp,
       type,
+      senderId: this.accountLogic.generateAddressByPublicKey(senderPublicKey)
     };
     if (tx.hasRequesterPublicKey) {
       transaction.requesterPublicKey = requesterPublicKey;

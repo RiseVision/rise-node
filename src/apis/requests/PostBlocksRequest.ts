@@ -1,14 +1,20 @@
 import { BaseRequest } from './BaseRequest';
+import { injectable } from 'inversify';
+import { SignedBlockType } from '../../logic';
 
-export class PostBlocksRequest extends BaseRequest {
+export type PostBlocksRequestDataType = { block: SignedBlockType<Buffer> };
+
+// TODO: Convert to SignedBlockType<string> in case of nonprotobuf call
+@injectable()
+export class PostBlocksRequest extends BaseRequest<PostBlocksRequestDataType, void> {
   protected readonly method = 'POST';
   protected readonly supportsProtoBuf = true;
 
   public getRequestOptions() {
     const reqOptions = super.getRequestOptions();
     if (this.isProtoBuf()) {
-      if (BaseRequest.protoBufHelper.validate(reqOptions.data, 'transportBlocks', 'transportBlock')) {
-        reqOptions.data = BaseRequest.protoBufHelper.encode(reqOptions.data, 'transportBlocks', 'transportBlock');
+      if (this.protoBufHelper.validate(reqOptions.data, 'transportBlocks', 'transportBlock')) {
+        reqOptions.data = this.protoBufHelper.encode(reqOptions.data, 'transportBlocks', 'transportBlock');
       } else {
         throw new Error('Failed to encode ProtoBuf');
       }

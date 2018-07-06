@@ -26,6 +26,8 @@ import { AppConfig } from '../types/genericTypes';
 import Timer = NodeJS.Timer;
 import {GetTransactionsRequest} from '../apis/requests/GetTransactionsRequest';
 import { GetSignaturesRequest } from '../apis/requests/GetSignaturesRequest';
+import { requestSymbols } from '../apis/requests/requestSymbols';
+import { RequestFactoryType } from '../apis/requests/requestFactoryType';
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
@@ -108,6 +110,12 @@ export class LoaderModule implements ILoaderModule {
   private DelegatesModel: typeof DelegatesModel;
   @inject(Symbols.models.rounds)
   private RoundsModel: typeof RoundsModel;
+
+  // reuqest
+  @inject(requestSymbols.getSignatures)
+  private gsFactory: RequestFactoryType<void, GetSignaturesRequest>;
+  @inject(requestSymbols.getTransactions)
+  private gtFactory: RequestFactoryType<void, GetTransactionsRequest>;
 
   @postConstruct()
   public initialize() {
@@ -591,7 +599,9 @@ export class LoaderModule implements ILoaderModule {
   private async loadSignatures() {
     const randomPeer = await this.getRandomPeer();
     this.logger.log(`Loading signatures from: ${randomPeer.string}`);
-    const res = await randomPeer.makeRequest<{signatures: any[]}>(new GetSignaturesRequest({data: null}));
+    const res = await randomPeer.makeRequest<{signatures: any[]}>(
+      this.gsFactory({data: null})
+    );
 
     if (!this.schema.validate(res, loaderSchema.loadSignatures)) {
       throw new Error('Failed to validate /signatures schema');
@@ -625,7 +635,7 @@ export class LoaderModule implements ILoaderModule {
   private async loadTransactions() {
     const peer = await this.getRandomPeer();
     this.logger.log(`Loading transactions from: ${peer.string}`);
-    const body = await peer.makeRequest<any>(new GetTransactionsRequest());
+    const body = await peer.makeRequest<any>(this.gtFactory({data: null}));
 
     if (!this.schema.validate(body, loaderSchema.loadTransactions)) {
       throw new Error('Cannot validate load transactions schema against peer');

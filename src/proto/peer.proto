@@ -9,6 +9,6 @@ message peer {
     string broadhash = 6;
     uint32 height = 7;
     uint32 clock = 8;
-    uint32 updated = 9;
+    uint64 updated = 9;
     string nonce = 10;
 }

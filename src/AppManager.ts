@@ -97,6 +97,17 @@ import { BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModule
 import { ForkModule } from './modules/fork';
 import { AppConfig } from './types/genericTypes';
 import { BaseRequest } from './apis/requests/BaseRequest';
+import { CommonBlockRequest } from './apis/requests/CommonBlockRequest';
+import { GetBlocksRequest } from './apis/requests/GetBlocksRequest';
+import { GetSignaturesRequest } from './apis/requests/GetSignaturesRequest';
+import { GetTransactionsRequest } from './apis/requests/GetTransactionsRequest';
+import { HeightRequest } from './apis/requests/HeightRequest';
+import { PeersListRequest } from './apis/requests/PeersListRequest';
+import { PingRequest } from './apis/requests/PingRequest';
+import { PostBlocksRequest } from './apis/requests/PostBlocksRequest';
+import { PostSignaturesRequest } from './apis/requests/PostSignaturesRequest';
+import { PostTransactionsRequest } from './apis/requests/PostTransactionsRequest';
+import { requestSymbols } from './apis/requests/requestSymbols';
 
 // import {makeLoggerMiddleware} from 'inversify-logger-middleware';
 // const theLogger = makeLoggerMiddleware();
@@ -185,7 +196,7 @@ export class AppManager {
 
     app.use(middleware.applyAPIAccessRules(this.appConfig));
 
-    app.use(middleware.protoBuf());
+    // app.use(middleware.protoBuf());
 
     // Init HTTP Apis
     const container = this.container;
@@ -276,6 +287,9 @@ export class AppManager {
 
     // Add models
     this.modelsElements(sequelize);
+
+    // Add all API request elements
+    this.requestElements();
 
     // Start migrations/runtime queries.
     await this.container.get<Migrator>(Symbols.helpers.migrator).init();
@@ -421,7 +435,24 @@ export class AppManager {
       });
     this.container.bind(Symbols.helpers.slots).to(Slots).inSingletonScope();
     this.container.bind(Symbols.helpers.protoBuf).to(ProtoBufHelper).inSingletonScope();
-    BaseRequest.protoBufHelper = this.container.get(Symbols.helpers.protoBuf);
+  }
+
+  private requestElements() {
+    const factory = (what: (new () => any)) => (ctx) => (options) => {
+      const toRet = ctx.container.resolve(what);
+      toRet.options = options;
+      return toRet;
+    };
+    this.container.bind(requestSymbols.commonBlock).toFactory(factory(CommonBlockRequest));
+    this.container.bind(requestSymbols.getBlocks).toFactory(factory(GetBlocksRequest));
+    this.container.bind(requestSymbols.getSignatures).toFactory(factory(GetSignaturesRequest));
+    this.container.bind(requestSymbols.getTransactions).toFactory(factory(GetTransactionsRequest));
+    this.container.bind(requestSymbols.height).toFactory(factory(HeightRequest));
+    this.container.bind(requestSymbols.peersList).toFactory(factory(PeersListRequest));
+    this.container.bind(requestSymbols.ping).toFactory(factory(PingRequest));
+    this.container.bind(requestSymbols.postBlocks).toFactory(factory(PostBlocksRequest));
+    this.container.bind(requestSymbols.postSignatures).toFactory(factory(PostSignaturesRequest));
+    this.container.bind(requestSymbols.postTransactions).toFactory(factory(PostTransactionsRequest));
   }
 
   private genericsElements(theCache, sequelize, namespace, io) {

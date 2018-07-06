@@ -5,9 +5,9 @@ import * as promiseRetry from 'promise-retry';
 import SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
 import { IAPIRequest } from '../apis/requests/BaseRequest';
-import { PeersListRequest } from '../apis/requests/PeersListRequest';
-import { PostSignaturesRequest } from '../apis/requests/PostSignaturesRequest';
-import { PostTransactionsRequest } from '../apis/requests/PostTransactionsRequest';
+import { PeersListRequest, PeersListRequestDataType } from '../apis/requests/PeersListRequest';
+import { PostSignaturesRequest, PostSignaturesRequestDataType } from '../apis/requests/PostSignaturesRequest';
+import { PostTransactionsRequest, PostTransactionsRequestDataType } from '../apis/requests/PostTransactionsRequest';
 import { cbToPromise, constants as constantsType, ILogger, Sequence } from '../helpers/';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
@@ -28,12 +28,14 @@ import { BlocksModel, TransactionsModel } from '../models';
 import peersSchema from '../schema/peers';
 import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
-import { PostBlocksRequest } from '../apis/requests/PostBlocksRequest';
+import { PostBlocksRequest, PostBlocksRequestDataType } from '../apis/requests/PostBlocksRequest';
 import { Request } from 'popsicle/dist/request';
 import { Response } from 'popsicle/dist/response';
+import { requestSymbols } from '../apis/requests/requestSymbols';
+import { RequestFactoryType } from '../apis/requests/requestFactoryType';
 
 // tslint:disable-next-line
-export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any, isProtoBuf?: boolean, query?: any };
+export type PeerRequestOptions<T = any> = { api?: string, url?: string, method: 'GET' | 'POST', data?: T, isProtoBuf?: boolean, query?: any };
 
 @injectable()
 export class TransportModule implements ITransportModule {
@@ -86,6 +88,16 @@ export class TransportModule implements ITransportModule {
   @inject(Symbols.models.transactions)
   private TransactionsModel: typeof TransactionsModel;
 
+  // requests
+  @inject(requestSymbols.postTransactions)
+  private ptrFactory: RequestFactoryType<PostTransactionsRequestDataType, PostTransactionsRequest>;
+  @inject(requestSymbols.postSignatures)
+  private psrFactory: RequestFactoryType<PostSignaturesRequestDataType, PostSignaturesRequest>;
+  @inject(requestSymbols.postBlocks)
+  private pblocksFactory: RequestFactoryType<PostBlocksRequestDataType, PostBlocksRequest>;
+  @inject(requestSymbols.peersList)
+  private plFactory: RequestFactoryType<PeersListRequestDataType, PeersListRequest>;
+
   private loaded: boolean = false;
 
   @postConstruct()
@@ -105,19 +117,24 @@ export class TransportModule implements ITransportModule {
       url = `/peer${options.api}`;
     }
     const thePeer = this.peersLogic.create(peer);
-    const req     = {
-      body   : null,
-      headers: this.systemModule.headers as any,
-      method : options.method,
-      timeout: this.appConfig.peers.options.timeout,
-      url    : `http://${peer.ip}:${peer.port}${url}`,
+    const req = {
+      body     : null,
+      headers  : this.systemModule.headers as any,
+      method   : options.method,
+      timeout  : this.appConfig.peers.options.timeout,
+      transport: undefined,
+      url      : `http://${peer.ip}:${peer.port}${url}`,
     };
 
     if (options.data) {
       req.body = options.data;
     }
     if (options.isProtoBuf) {
-      req.headers.acccept = 'application/octet-stream';
+      req.headers.accept = 'application/octet-stream';
+      req.headers['content-type'] = 'application/octet-stream';
+      req.transport = popsicle.createTransport({ type: 'buffer' });
+    } else {
+      delete req.transport;
     }
 
     const nullPlugin: popsicle.Middleware = (request: Request, next: () => Promise<Response>) =>  {
@@ -163,7 +180,6 @@ export class TransportModule implements ITransportModule {
       // tslint:disable-next-line max-line-length
       return Promise.reject(new Error(`Peer is using incompatible version ${headers.version} ${req.method} ${req.url}`));
     }
-
     this.peersModule.update(thePeer);
     return {
       body: res.body,
@@ -172,7 +188,7 @@ export class TransportModule implements ITransportModule {
   }
 
   // tslint:disable-next-line max-line-length
-  public async getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }, requestHandler: IAPIRequest) {
+  public async getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }, requestHandler: IAPIRequest<T, any>) {
     config.limit         = 1;
     config.allowedStates = [PeerState.CONNECTED, PeerState.DISCONNECTED];
     const { peers }      = await this.peersModule.list(config);
@@ -224,7 +240,14 @@ export class TransportModule implements ITransportModule {
    */
   public onSignature(signature: { transaction: string, signature: string, relays?: number }, broadcast: boolean) {
     if (broadcast && !this.broadcasterLogic.maxRelays(signature)) {
-      const requestHandler = new PostSignaturesRequest({data: {signature}});
+      const requestHandler = this.psrFactory({
+        data: {
+          signatures: [{
+            signatures : [Buffer.from(signature.signature, 'hex')],
+            transaction: signature.transaction,
+          }],
+        },
+      });
       this.broadcasterLogic.enqueue({}, { requestHandler });
       this.io.sockets.emit('signature/change', signature);
     }
@@ -237,9 +260,9 @@ export class TransportModule implements ITransportModule {
    */
   public onUnconfirmedTransaction(transaction: IBaseTransaction<any> & { relays?: number }, broadcast: boolean) {
     if (broadcast && !this.broadcasterLogic.maxRelays(transaction)) {
-      const requestHandler = new PostTransactionsRequest({
-        data  : {
-          transaction: this.TransactionsModel.toTransportTransaction(transaction, this.blocksModule),
+      const requestHandler = this.ptrFactory({
+        data: {
+          transactions: [transaction],
         },
       });
 
@@ -260,9 +283,7 @@ export class TransportModule implements ITransportModule {
 
       await this.systemModule.update();
       if (!this.broadcasterLogic.maxRelays(block)) {
-        const reqHandler = new PostBlocksRequest({
-          data: { block: this.BlocksModel.toStringBlockType(block, this.TransactionsModel, this.blocksModule) },
-        });
+        const reqHandler = this.pblocksFactory({ data: { block } });
 
         // We avoid awaiting the broadcast result as it could result in unnecessary peer removals.
         // Ex: Peer A, B, C
@@ -359,7 +380,8 @@ export class TransportModule implements ITransportModule {
    */
   private async discoverPeers(): Promise<void> {
     this.logger.trace('Transport->discoverPeers');
-    const requestHandler: IAPIRequest = new PeersListRequest({data: null});
+
+    const requestHandler = this.plFactory({data: null});
     const response = await this.getFromRandomPeer<any>(
       {},
       requestHandler

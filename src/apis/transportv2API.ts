@@ -186,8 +186,10 @@ export class TransportV2API {
   }
 
   private parseRequest(req: Request, pbNamespace: string, pbMessageType?: string): any {
-    if (!(req as any).protoBuf) { throw new Error('No binary data in request body'); }
-    const payload = (req as any).protoBuf;
+    if (!Buffer.isBuffer(req.body)) {
+      throw new Error('No binary data in request body');
+    }
+    const payload = req.body;
     let retVal: any;
     try {
       retVal = this.protoBuf.decode(payload, pbNamespace, pbMessageType);

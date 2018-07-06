@@ -2,8 +2,8 @@ import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
 import { IAPIRequest } from '../apis/requests/BaseRequest';
-import { PostSignaturesRequest } from '../apis/requests/PostSignaturesRequest';
-import { PostTransactionsRequest } from '../apis/requests/PostTransactionsRequest';
+import { PostSignaturesRequest, PostSignaturesRequestDataType } from '../apis/requests/PostSignaturesRequest';
+import { PostTransactionsRequest, PostTransactionsRequestDataType } from '../apis/requests/PostTransactionsRequest';
 import { constants, ILogger } from '../helpers/';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
@@ -12,12 +12,14 @@ import { Symbols } from '../ioc/symbols';
 import { AppConfig } from '../types/genericTypes';
 import { PeerType } from './peer';
 import { IBaseTransaction } from './transactions/';
+import { requestSymbols } from '../apis/requests/requestSymbols';
+import { RequestFactoryType } from '../apis/requests/requestFactoryType';
 
 // tslint:disable interface-over-type-literal
 
 export type BroadcastTaskOptions = {
   immediate?: boolean;
-  requestHandler: IAPIRequest;
+  requestHandler: IAPIRequest<any, any>;
 };
 export type BroadcastTask = {
   options: BroadcastTaskOptions;
@@ -28,18 +30,6 @@ export type BroadcastTask = {
 @injectable()
 export class BroadcasterLogic implements IBroadcasterLogic {
   public queue: BroadcastTask[] = [];
-
-  // Broadcast routes
-  public routes = [{
-    collection    : 'transactions',
-    object        : 'transaction',
-    requestHandler: PostTransactionsRequest,
-  }, {
-    collection    : 'signatures',
-    object        : 'signature',
-    requestHandler: PostSignaturesRequest,
-  }];
-
   // Generics
   @inject(Symbols.generic.appConfig)
   private config: AppConfig;
@@ -66,6 +56,11 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
+  @inject(requestSymbols.postTransactions)
+  private ptrFactory: RequestFactoryType<PostTransactionsRequestDataType, PostTransactionsRequest>;
+  @inject(requestSymbols.postSignatures)
+  private psrFactory: RequestFactoryType<PostSignaturesRequestDataType, PostSignaturesRequest>;
+
   @postConstruct()
   public afterConstruct() {
     if (this.config.forging.force) {
@@ -82,6 +77,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
         }),
       this.config.broadcasts.broadcastInterval
     );
+
   }
 
   public async getPeers(params: { limit?: number, broadhash?: string }): Promise<PeerType[]> {
@@ -207,30 +203,21 @@ export class BroadcasterLogic implements IBroadcasterLogic {
    * Group broadcast requests by API.
    */
   private squashQueue(broadcasts: BroadcastTask[]): BroadcastTask[] {
-    const getReqType = (b: BroadcastTask): string => {
-      const theRoute = this.routes.find((route) => (b.options.requestHandler instanceof route.requestHandler));
-      return theRoute ? theRoute.collection : 'unknown';
-    };
-    const groupedByAPI = _.groupBy(broadcasts, (b) => getReqType(b));
+    const byRequests = _.groupBy(broadcasts, ((b) => b.options.requestHandler.constructor.name));
 
     const squashed: BroadcastTask[] = [];
 
-    this.routes
-    // Filter out empty grouped requests
-      .filter((route) => Array.isArray(groupedByAPI[route.collection]))
-      .forEach((route) => {
-        const data             = {};
-        data[route.collection] = groupedByAPI[route.collection]
-          .map((b) => b.options.requestHandler.getOrigOptions().data[route.object])
-          .filter((item) => !!item); // needs to be defined.
-        const reqHandler       = new route.requestHandler({ data });
-        squashed.push({
-          options: {
-            immediate: false,
-            requestHandler: reqHandler,
-          },
-        });
+    for (const type in byRequests) {
+      const requests = byRequests[type];
+      const [first] = requests;
+      first.options.requestHandler.mergeIntoThis(... requests.slice(1).map((item) => item.options.requestHandler));
+      squashed.push({
+        options: {
+          immediate: false,
+          requestHandler: first.options.requestHandler,
+        },
       });
+    }
 
     return squashed;
   }

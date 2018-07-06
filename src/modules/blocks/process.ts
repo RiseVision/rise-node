@@ -37,6 +37,9 @@ import { IBaseTransaction } from '../../logic/transactions/';
 import { BlocksModel, TransactionsModel } from '../../models';
 import schema from '../../schema/blocks';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
+import { requestSymbols } from '../../apis/requests/requestSymbols';
+import { RequestFactoryType } from '../../apis/requests/requestFactoryType';
+import { GetTransactionsRequest } from '../../apis/requests/GetTransactionsRequest';
 
 @injectable()
 export class BlocksModuleProcess implements IBlocksModuleProcess {
@@ -101,6 +104,11 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
   private isCleaning: boolean = false;
 
+  @inject(requestSymbols.getBlocks)
+  private gbFactory: RequestFactoryType<void, GetBlocksRequest>;
+  @inject(requestSymbols.commonBlock)
+  private cbFactory: RequestFactoryType<void, CommonBlockRequest>;
+
   public cleanup() {
     this.isCleaning = true;
     return Promise.resolve();
@@ -118,7 +126,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   public async getCommonBlock(peer: IPeerLogic, height: number): Promise<{ id: string, previousBlock: string, height: number } | void> {
     const { ids }              = await this.blocksUtilsModule.getIdSequence(height);
     const commonResp = await peer.makeRequest<{ common: { id: string, previousBlock: string, height: number } }>(
-      new CommonBlockRequest({data: null, query: { ids: ids.join(',')}})
+      this.cbFactory(({data: null, query: { ids: ids.join(',')}}))
     );
     // FIXME: Need better checking here, is base on 'common' property enough?
     if (!commonResp.common) {
@@ -239,7 +247,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
     this.logger.info(`Loading blocks from ${peer.string}`);
     const blocksFromPeer = await peer.makeRequest<{ blocks: RawFullBlockListType[] }>(
-      new GetBlocksRequest({data: null, query: {lastBlockId: lastValidBlock.id}})
+      this.gbFactory({data: null, query: {lastBlockId: lastValidBlock.id}})
     );
 
     // TODO: fix schema of loadBlocksFromPeer
