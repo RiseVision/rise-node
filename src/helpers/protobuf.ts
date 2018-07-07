@@ -57,11 +57,11 @@ export class ProtoBufHelper {
    * @param {string} messageType (optional) specific message type to lookup in the proto
    * @returns {any}
    */
-  public decode(data: Buffer, namespace: string, messageType?: string): any {
+  public decode<T = any>(data: Buffer, namespace: string, messageType?: string): T {
     const message = this.getMessageInstance(namespace, messageType);
     if (message !== null) {
       try {
-        return message.decode(data);
+        return message.decode(data) as any;
       } catch (e) {
         if (e instanceof protobuf.util.ProtocolError) {
           // e.instance holds the so far decoded message with missing required fields

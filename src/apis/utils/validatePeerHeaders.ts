@@ -36,6 +36,7 @@ export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
     }
     if (!this.systemModule.networkCompatible(request.headers.nethash as string)) {
       this.removePeer(request);
+      // TODO: convert this into an error.
       return next({
         expected: this.systemModule.getNethash(),
         message : 'Request is made on the wrong network',
@@ -45,6 +46,7 @@ export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
 
     if (!this.systemModule.versionCompatible(request.headers.version)) {
       this.removePeer(request);
+      // TODO: Convert this into an error
       return next({
         expected: this.systemModule.getMinVersion(),
         message : 'Request is made from incompatible version',

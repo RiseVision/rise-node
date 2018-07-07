@@ -129,12 +129,10 @@ function checkHeadersValidation(p: () => supertest.Test) {
       .set(tmp)
       .expect(200)
       .then((res) => {
-        if (Buffer.isBuffer(res.body)) {
-          const err = protoBufHelper.decode(res.body, 'APIError');
-          expect(err.message).to.contain('Missing required property: version');
-        } else {
-          expect(res.body.error).to.contain('Missing required property: version');
-        }
+        expect(Buffer.isBuffer(res.body)).true;
+        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
+        expect(err.success).is.false;
+        expect(err.error).to.contain('Missing required property: version');
       });
   });
   it('should fail if nethash is not provided', () => {
@@ -144,7 +142,10 @@ function checkHeadersValidation(p: () => supertest.Test) {
       .set(tmp)
       .expect(200)
       .then((res) => {
-        expect(res.body.error).to.contain('Missing required property: nethash');
+        expect(Buffer.isBuffer(res.body)).true;
+        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
+        expect(err.success).is.false;
+        expect(err.error).to.contain('Missing required property: nethash');
       });
   });
   it('should fail if port is not provided', () => {
@@ -154,7 +155,10 @@ function checkHeadersValidation(p: () => supertest.Test) {
       .set(tmp)
       .expect(200)
       .then((res) => {
-        expect(res.body.error).to.contain('Missing required property: port');
+        expect(Buffer.isBuffer(res.body)).true;
+        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
+        expect(err.success).is.false;
+        expect(err.error).to.contain('Missing required property: port');
       });
   });
 
@@ -165,7 +169,10 @@ function checkHeadersValidation(p: () => supertest.Test) {
       .set(tmp)
       .expect(200)
       .then((res) => {
-        expect(res.body.error.message).to.contain('Request is made on the wrong network');
+        expect(Buffer.isBuffer(res.body)).true;
+        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
+        expect(err.success).is.false;
+        expect(err.error).to.contain('Request is made on the wrong network');
       });
   });
   it('should fail if broadhash is not hex', () => {
@@ -175,7 +182,10 @@ function checkHeadersValidation(p: () => supertest.Test) {
       .set(tmp)
       .expect(200)
       .then((res) => {
-        expect(res.body.error).to.contain('broadhash - Object didn\'t pass validation for format');
+        expect(Buffer.isBuffer(res.body)).true;
+        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
+        expect(err.success).is.false;
+        expect(err.error).to.contain('broadhash - Object didn\'t pass validation for format');
       });
   });
   it('should fail if height is string', () => {
@@ -185,7 +195,10 @@ function checkHeadersValidation(p: () => supertest.Test) {
       .set(tmp)
       .expect(200)
       .then((res) => {
-        expect(res.body.error).to.contain('height - Expected type integer');
+        expect(Buffer.isBuffer(res.body)).true;
+        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
+        expect(err.success).is.false;
+        expect(err.error).to.contain('height - Expected type integer');
       });
   });
   it('should fail if nonce is less than 16 chars', () => {
@@ -195,7 +208,10 @@ function checkHeadersValidation(p: () => supertest.Test) {
       .set(tmp)
       .expect(200)
       .then((res) => {
-        expect(res.body.error).to.contain('nonce - String is too short (15 chars)');
+        expect(Buffer.isBuffer(res.body)).true;
+        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
+        expect(err.success).is.false;
+        expect(err.error).to.contain('nonce - String is too short (15 chars)');
       });
   });
   it('should fail if nonce is longer than 36 chars', () => {
@@ -205,7 +221,10 @@ function checkHeadersValidation(p: () => supertest.Test) {
       .set(tmp)
       .expect(200)
       .then((res) => {
-        expect(res.body.error).to.contain('nonce - String is too long (37 chars)');
+        expect(Buffer.isBuffer(res.body)).true;
+        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
+        expect(err.success).is.false;
+        expect(err.error).to.contain('nonce - String is too long (37 chars)');
       });
   });
 

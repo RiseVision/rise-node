@@ -30,8 +30,12 @@ export class APIErrorHandler implements ExpressErrorMiddlewareInterface {
     } else {
       this.logger.error('API error ' + req.url, error);
     }
-    if (req.is('application/octet-stream')) {
-      res.end(this.protoBuf.encode({error: error.toString()}, 'APIError'));
+    if (req.url.startsWith('/v2/peer')) {
+      if (typeof(error.message) === 'string') {
+        error = error.message;
+      }
+      res.contentType('application/octet-stream')
+        .end(this.protoBuf.encode({success: false, error: error.toString()}, 'APIError'));
     } else {
       res.send({ success: false, error });
     }
