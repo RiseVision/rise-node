@@ -43,6 +43,7 @@ import { requestSymbols } from '../../../src/apis/requests/requestSymbols';
 import { RequestFactoryType } from '../../../src/apis/requests/requestFactoryType';
 import { CommonBlockRequest } from '../../../src/apis/requests/CommonBlockRequest';
 import { IBaseTransaction } from '../../../src/logic/transactions';
+import { GetSignaturesRequest } from '../../../src/apis/requests/GetSignaturesRequest';
 
 // tslint:disable no-unused-expression max-line-length
 const headers = {
@@ -238,6 +239,7 @@ describe('v2/peer/transport', function() {
   let getPeersListFactory: RequestFactoryType<void, PeersListRequest>;
   let ptFactory: RequestFactoryType<{transactions: Array<IBaseTransaction<any>>}, PostTransactionsRequest>;
   let psFactory: RequestFactoryType<PostSignaturesRequestDataType, PostSignaturesRequest>;
+  let gsFactory: RequestFactoryType<void, GetSignaturesRequest>;
 
   beforeEach(() => {
     const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
@@ -247,6 +249,7 @@ describe('v2/peer/transport', function() {
     getPeersListFactory = initializer.appManager.container.get<any>(requestSymbols.peersList);
     ptFactory = initializer.appManager.container.get<any>(requestSymbols.postTransactions);
     psFactory = initializer.appManager.container.get<any>(requestSymbols.postSignatures);
+    gsFactory = initializer.appManager.container.get<any>(requestSymbols.getSignatures);
     peer = peerFactory({ip: '127.0.0.1', port: appConfig.port});
     systemModule.headers.version = '1.2.0';
     peer.version = '1.2.0';
@@ -313,75 +316,61 @@ describe('v2/peer/transport', function() {
           transactions: [toBufferedTransaction(tx)],
         },
       }));
+      expect(sendTxResult.success).to.be.true;
+
       await txPool.processBundled();
       await txModule.fillPool();
       await initializer.rawMineBlocks(1);
       expect(blocksModule.lastBlock.numberOfTransactions).eq(0);
-      //
-      // // add 2 out of 3 signatures.
-      // const sigs = [];
-      // for (let i = 0; i < multisigKeys.length; i++) {
-      //   console.log(i);
-      //   const signature = ed.sign(
-      //     txLogic.getHash(toBufferedTransaction(tx), false, false),
-      //     {
-      //       privateKey: Buffer.from(multisigKeys[i].privKey, 'hex'),
-      //       publicKey : Buffer.from(multisigKeys[i].publicKey, 'hex'),
-      //     }
-      //   );
-      //
-      //   const r = await peer.makeRequest(psFactory({
-      //     data: {
-      //       signatures: [{
-      //         signatures: [signature],
-      //         transaction: tx.id,
-      //       }],
-      //     },
-      //   }));
-      //   console.log(r);
-      //   // await supertest(initializer.appManager.expressApp)
-      //   //   .post('/v2/peer/signatures')
-      //   //   .set(headers)
-      //   //   .send({
-      //   //     signatures: [{
-      //   //       signature  : signature.toString('hex'),
-      //   //       transaction: tx.id,
-      //   //     }],
-      //   //   })
-      //   //   .expect(200, {success: true});
-      //
-      //   sigs.push(signature.toString('hex'));
-      //   const {body} = await supertest(initializer.appManager.expressApp)
-      //     .get('/v2/peer/signatures')
-      //     .set(headers)
-      //     .expect(200, {
-      //       success   : true,
-      //       signatures: [{
-      //         signatures : sigs,
-      //         transaction: tx.id
-      //       }],
-      //     });
-      // }
-      // // all signatures.
-      // await supertest(initializer.appManager.expressApp)
-      //   .get('/v2/peer/signatures')
-      //   .set(headers)
-      //   .expect(200, {
-      //     success: true,
-      //     signatures: [
-      //       {signatures: sigs, transaction: tx.id}
-      //     ],
-      //   });
-      //
-      // await initializer.rawMineBlocks(1);
-      //
-      // // After block is mined no more sigs are here.
-      // await supertest(initializer.appManager.expressApp)
-      //   .get('/v2/peer/signatures')
-      //   .set(headers)
-      //   .expect(200, {success: true, signatures: []});
-      //
-      // expect(blocksModule.lastBlock.transactions.length).eq(1);
+
+      // add 2 out of 3 signatures.
+      const sigs = [];
+      for (const msKey of multisigKeys) {
+        const signature = ed.sign(
+          txLogic.getHash(toBufferedTransaction(tx), false, false),
+          {
+            privateKey: Buffer.from(msKey.privKey, 'hex'),
+            publicKey : Buffer.from(msKey.publicKey, 'hex'),
+          }
+        );
+        const r = await peer.makeRequest(psFactory({
+          data: {
+            signatures: [{
+              signature,
+              transaction: tx.id,
+            }],
+          },
+        }));
+        expect(r.success).to.be.true;
+
+        sigs.push(signature);
+        const r2 = await peer.makeRequest(psFactory({
+          data: {
+            signatures: [{
+              signatures: sigs,
+              transaction: tx.id,
+            }],
+          },
+        }));
+        expect(r2.success).to.be.true;
+      }
+
+      const currentSigs = await peer.makeRequest(gsFactory({data: null}));
+      const expectedSigs = {
+        signatures: [
+          {signatures: sigs.map((s) => s.toString('hex')), transaction: tx.id}
+        ],
+      };
+      console.log(JSON.stringify(currentSigs));
+      console.log(JSON.stringify(expectedSigs));
+      expect(currentSigs).to.be.deep.eq(expectedSigs);
+
+      await initializer.rawMineBlocks(1);
+      const finalSigs = await peer.makeRequest(gsFactory({data: null}));
+      expect(finalSigs).to.be.deep.eq({
+        signatures: [],
+      });
+      expect(blocksModule.lastBlock.transactions.length).eq(1);
     });
   });
   //

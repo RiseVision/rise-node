@@ -82,6 +82,7 @@ export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
   protected decodeProtoBufResponse(res: {body: Buffer, peer: IPeerLogic}, pbNamespace: string, pbMessageType?: string): Out {
     return this.protoBufHelper
       .decode(res.body, pbNamespace, pbMessageType);
+    //TODO: add .toJSON() here making sure that conversions are done properly.
   }
 
 }

@@ -19,7 +19,7 @@ export class PeersListRequest extends BaseRequest<any, PeersListRequestDataType>
   }
 
   protected decodeProtoBufResponse(res: {body: Buffer, peer: IPeerLogic}, pbNamespace: string, pbMessageType?: string) {
-    const result = super.decodeProtoBufResponse(res, pbNamespace, pbMessageType)
+    const result = super.decodeProtoBufResponse(res, pbNamespace, pbMessageType);
     result.peers = result.peers.map((p) => {
       return {...p, updated: p.updated.toNumber()};
     });

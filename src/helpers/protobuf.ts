@@ -8,6 +8,8 @@ import { ILogger } from './logger';
 
 @injectable()
 export class ProtoBufHelper {
+  public lastError: string;
+
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   private protos: { [k: string]: Root } = {};
@@ -30,7 +32,8 @@ export class ProtoBufHelper {
     if (result === null) {
       return true;
     } else {
-      this.logger.debug(`Protobuf validate error. ${result}`, JSON.stringify({payload, namespace, messageType}));
+      this.lastError = `Protobuf verify error [${namespace} ${messageType}]: ${result}`;
+      this.logger.debug(`Protobuf verify error. ${result}`, JSON.stringify({payload, namespace, messageType}));
       return false;
     }
   }

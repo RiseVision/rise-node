@@ -1,4 +1,4 @@
-import BigNumber from 'bignumber.js';
+import * as Long from 'long';
 import { Request, Response } from 'express';
 import { inject, injectable } from 'inversify';
 import { Body, Controller, Get, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
@@ -74,7 +74,7 @@ export class TransportV2API {
           signatures : tx.signatures.map((sig) => {
             return Buffer.from(sig, 'hex');
           }),
-          transaction: new BigNumber(tx.id),
+          transaction: Long.fromString(tx.id),
         });
       }
     }
@@ -85,7 +85,17 @@ export class TransportV2API {
   public async postSignatures(@Req() req: Request, @Res() res: Response) {
     let signatures;
     try {
-      signatures = this.parseRequest(req, 'transportSignatures');
+      signatures = this.parseRequest(req, 'transportSignatures').signatures;
+      signatures = signatures.map((sig) =>  {
+        if (typeof sig.signature !== 'undefined') {
+          sig.signature = sig.signature.toString('hex');
+        }
+        if (typeof sig.signatures !== 'undefined') {
+          sig.signatures = sig.signatures.map((s) => s.toString('hex'));
+        }
+        sig.transaction = sig.transaction.toString();
+        return sig;
+      });
       assertValidSchema(this.schema, signatures, {obj: transportSchema.signatures.properties.signatures,
         opts:{errorString: 'Error validating schema.'}});
     } catch (err) {
@@ -158,7 +168,7 @@ export class TransportV2API {
     if (this.protoBuf.validate(payload, pbNamespace, pbMessageType)) {
       return res.status(200).end(this.protoBuf.encode(payload, pbNamespace, pbMessageType), 'binary');
     } else {
-      return this.error(res, 'Failed to encode response');
+      return this.error(res, 'Failed to encode response - ' + this.protoBuf.lastError);
     }
   }
 

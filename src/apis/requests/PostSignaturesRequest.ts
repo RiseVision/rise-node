@@ -1,10 +1,12 @@
 import { BaseRequest } from './BaseRequest';
 import { injectable } from 'inversify';
+import * as Long from 'long';
 
 export type PostSignaturesRequestDataType = {
   signatures: Array<{
     transaction: string,
-    signatures: Buffer[]
+    signature?: Buffer,
+    signatures?: Buffer[],
   }>
 };
 
@@ -15,6 +17,10 @@ export class PostSignaturesRequest extends BaseRequest<any, PostSignaturesReques
   public getRequestOptions() {
     const reqOptions = super.getRequestOptions();
     if (this.isProtoBuf()) {
+      reqOptions.data.signatures = reqOptions.data.signatures.map((sig) => {
+        sig.transaction = Long.fromString(sig.transaction, true) as any;
+        return sig;
+      }) as any;
       if (this.protoBufHelper.validate(reqOptions.data, 'transportSignatures')) {
         reqOptions.data = this.protoBufHelper.encode(reqOptions.data, 'transportSignatures') as any;
       } else {
@@ -22,7 +28,12 @@ export class PostSignaturesRequest extends BaseRequest<any, PostSignaturesReques
       }
     } else {
       reqOptions.data.signatures = reqOptions.data.signatures.map((s) => {
-        s.signatures = s.signatures.map((ss) => ss.toString('hex')) as any;
+        if (typeof s.signature !== 'undefined') {
+          s.signature = s.signature.toString('hex') as any;
+        }
+        if (typeof s.signatures !== 'undefined') {
+          s.signatures = s.signatures.map((sig) => sig.toString('hex')) as any;
+        }
         return s;
       });
     }

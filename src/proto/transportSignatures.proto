@@ -2,7 +2,8 @@ syntax = "proto3";
 
 message transportSignaturesItem {
     uint64 transaction = 1;
-    repeated bytes signatures = 2;
+    bytes signature = 2;
+    repeated bytes signatures = 3;
 }
 
 message transportSignatures {

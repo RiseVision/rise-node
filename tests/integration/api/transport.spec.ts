@@ -310,7 +310,6 @@ describe('peer/transport', () => {
       // add 2 out of 3 signatures.
       const sigs = [];
       for (let i = 0; i < multisigKeys.length; i++) {
-        console.log(i);
         const signature = ed.sign(
           txLogic.getHash(toBufferedTransaction(tx), false, false),
           {
