@@ -3,7 +3,8 @@ import { expect } from 'chai';
 import * as supertest from 'supertest';
 import initializer from '../common/init';
 import * as url from 'url';
-
+import { Symbols } from '../../../src/ioc/symbols';
+import { ProtoBufHelper } from '../../../src/helpers';
 
 export const checkAddress = (paramName: string, baseUrl: string) => {
   it(`should throw if ${paramName} is not a valid address`, async () => {
@@ -41,18 +42,27 @@ export const checkPostPubKey = (paramName: string, baseUrl: string, body: any) =
       });
   });
 };
-export const checkReturnObjKeyVal = (objKey: string, expectedValue: any, path: string, headers: any = {}) => {
+export const checkReturnObjKeyVal = (objKey: string, expectedValue: any, path: string, headers: any = {}, proto?: {namespace: string, message?: string}) => {
   it(`should return .${objKey} with ${expectedValue}`, async () => {
     return supertest(initializer.appManager.expressApp)
       .get(path)
       .set(headers)
       .expect(200)
       .then((response) => {
-        if (objKey !== 'success') {
-          expect(response.body.success).is.true;
+        let obj = response.body;
+        if (Buffer.isBuffer(response.body)) {
+          if (!proto) {
+            throw new Error('Response seems to be protobuf but no proto file provided');
+          }
+          const protobufHelper = initializer.appManager.container.get<ProtoBufHelper>(Symbols.helpers.protoBuf);
+          obj = protobufHelper.decode(response.body, proto.namespace, proto.message);
+        } else {
+          if (objKey !== 'success') {
+            expect(response.body.success).is.true;
+          }
         }
-        expect(response.body).to.haveOwnProperty(objKey);
-        expect(response.body[objKey]).to.be.deep.eq(expectedValue);
+        expect(obj).to.haveOwnProperty(objKey);
+        expect(obj[objKey]).to.be.deep.eq(expectedValue);
       });
   });
 };

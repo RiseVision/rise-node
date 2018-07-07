@@ -305,7 +305,7 @@ describe('v2/peer/transport', function() {
     });
     checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
       .get('/v2/peer/signatures'));
-    checkReturnObjKeyVal('signatures', [], '/v2/peer/signatures', headers);
+    checkReturnObjKeyVal('signatures', [], '/v2/peer/signatures', headers, {namespace: 'transportSignatures'});
     it('should return multisig signatures missing some sigs', async () => {
       const tx = await createSendTransaction(0, 1, multisigAccount, '1R');
       const sendTxResult = await peer.makeRequest(ptFactory({

@@ -78,7 +78,7 @@ export class TransportV2API {
         });
       }
     }
-    return this.sendResponse(res, { signatures }, 'tranportSignatures');
+    return this.sendResponse(res, { signatures }, 'transportSignatures');
   }
 
   @Post('/signatures')
