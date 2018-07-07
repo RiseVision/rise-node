@@ -127,7 +127,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     delete tmp.version;
     return p()
       .set(tmp)
-      .expect(200)
+      .expect(500)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
         const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
@@ -140,7 +140,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     delete tmp.nethash;
     return p()
       .set(tmp)
-      .expect(200)
+      .expect(500)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
         const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
@@ -153,7 +153,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     delete tmp.port;
     return p()
       .set(tmp)
-      .expect(200)
+      .expect(500)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
         const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
@@ -167,7 +167,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     tmp.nethash = new Array(64).fill(null).map(() => 'a').join('');
     return p()
       .set(tmp)
-      .expect(200)
+      .expect(500)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
         const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
@@ -180,7 +180,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     tmp.broadhash  = 'hh'
     return p()
       .set(tmp)
-      .expect(200)
+      .expect(500)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
         const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
@@ -193,7 +193,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     tmp.height     = 'hh';
     return p()
       .set(tmp)
-      .expect(200)
+      .expect(500)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
         const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
@@ -206,7 +206,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     tmp.nonce      = new Array(15).fill(null).fill('a').join('');
     return p()
       .set(tmp)
-      .expect(200)
+      .expect(500)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
         const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
@@ -219,7 +219,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     tmp.nonce      = new Array(37).fill(null).fill('a').join('');
     return p()
       .set(tmp)
-      .expect(200)
+      .expect(500)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
         const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');

@@ -108,6 +108,7 @@ import { PostBlocksRequest } from './apis/requests/PostBlocksRequest';
 import { PostSignaturesRequest } from './apis/requests/PostSignaturesRequest';
 import { PostTransactionsRequest } from './apis/requests/PostTransactionsRequest';
 import { requestSymbols } from './apis/requests/requestSymbols';
+import { V2APIErrorHandler } from './apis/utils/v2ErrorHandler';
 
 // import {makeLoggerMiddleware} from 'inversify-logger-middleware';
 // const theLogger = makeLoggerMiddleware();
@@ -216,7 +217,7 @@ export class AppManager {
       {
         controllers        : allControllers,
         defaultErrorHandler: false,
-        middlewares        : [APIErrorHandler],
+        middlewares        : [V2APIErrorHandler, APIErrorHandler],
       }
     );
 
@@ -268,6 +269,7 @@ export class AppManager {
       this.container.bind(symbol).to(controller).inSingletonScope();
     }
     this.container.bind(Symbols.api.utils.errorHandler).to(APIErrorHandler).inSingletonScope();
+    this.container.bind(Symbols.api.utils.v2ErrorHandler).to(V2APIErrorHandler).inSingletonScope();
     this.container.bind(Symbols.api.utils.successInterceptor).to(SuccessInterceptor).inSingletonScope();
     this.container.bind(Symbols.api.utils.forgingApisWatchGuard).to(ForgingApisWatchGuard).inSingletonScope();
     this.container.bind(Symbols.api.utils.validatePeerHeadersMiddleware).to(ValidatePeerHeaders).inSingletonScope();

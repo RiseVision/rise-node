@@ -16,6 +16,7 @@ export const Symbols = {
       errorHandler                    : Symbol('errorHandler'),
       forgingApisWatchGuard           : Symbol('forgingApisWatchGuard'),
       successInterceptor              : Symbol('successInterceptor'),
+      v2ErrorHandler                  : Symbol('v2errorHandler'),
       validatePeerHeadersMiddleware   : Symbol('validatePeerHeadersMiddleware'),
     },
   },

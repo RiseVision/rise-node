@@ -7,31 +7,28 @@ import { Symbols } from '../../ioc/symbols';
 import { APIError } from '../errors';
 
 @Middleware({ type: 'after' })
-@IoCSymbol(Symbols.api.utils.errorHandler)
+@IoCSymbol(Symbols.api.utils.v2ErrorHandler)
 @injectable()
-export class APIErrorHandler implements ExpressErrorMiddlewareInterface {
+export class V2APIErrorHandler implements ExpressErrorMiddlewareInterface {
 
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  @inject(Symbols.helpers.protoBuf)
+  private protoBuf: ProtoBufHelper;
 
   public error(error: any, req: express.Request, res: express.Response, next: (err: any) => any) {
-    if (req.url.startsWith('/v2')) {
+    if (!req.url.startsWith('/v2')) {
       return next(error);
     }
-    if (error instanceof APIError) {
-      res.status(error.statusCode);
-    } else {
-      res.status(200);
-    }
+    res.status(error.statusCode || 500);
     if (error instanceof Error) {
       error = error.message;
     }
-    if (req.url.startsWith('/peer') || req.url.startsWith('/v2/peer')) {
-      this.logger.warn(`Transport error [${req.ip}]: ${req.url}`, error);
-    } else {
-      this.logger.error('API error ' + req.url, error);
+    if (typeof(error.message) === 'string') {
+      error = error.message;
     }
-    res.send({ success: false, error });
+    res.contentType('application/octet-stream')
+      .end(this.protoBuf.encode({success: false, error: error.toString()}, 'APIError'));
   }
 
 }
