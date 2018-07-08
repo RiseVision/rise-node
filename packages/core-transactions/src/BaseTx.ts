@@ -7,8 +7,10 @@ import {
   TransactionType
 } from '@risevision/core-types';
 
-import { injectable, unmanaged } from 'inversify';
+import { inject, injectable, unmanaged } from 'inversify';
 import { Model } from 'sequelize-typescript';
+import { WordPressHookSystem } from 'mangiafuoco';
+import { Symbols } from '@risevision/core-helpers';
 
 const emptyBuffer = new Buffer(0);
 
@@ -17,6 +19,9 @@ const emptyBuffer = new Buffer(0);
  */
 @injectable()
 export abstract class BaseTx<T, M extends Model<any>> implements IBaseTransactionType<T, M> {
+
+  @inject(Symbols.generic.hookSystem)
+  protected hookSystem: WordPressHookSystem;
 
   constructor(@unmanaged() private txType: TransactionType) {
   }
@@ -62,15 +67,16 @@ export abstract class BaseTx<T, M extends Model<any>> implements IBaseTransactio
     return Promise.resolve();
   }
 
-  public ready(tx: IBaseTransaction<T>, sender: IAccountsModel): boolean {
-    if (Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
-      if (!Array.isArray(tx.signatures)) {
-        return false;
-      }
-      return tx.signatures.length >= sender.multimin;
-    } else {
-      return true;
-    }
+  public async ready(tx: IBaseTransaction<T>, sender: IAccountsModel): Promise<boolean> {
+    return this.hookSystem.apply_filters('core-transactions/tx/ready', true, tx, sender);
+    // if (Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
+    //   if (!Array.isArray(tx.signatures)) {
+    //     return false;
+    //   }
+    //   return tx.signatures.length >= sender.multimin;
+    // } else {
+    //   return true;
+    // }
   }
 
   /**

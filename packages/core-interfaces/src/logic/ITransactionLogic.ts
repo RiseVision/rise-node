@@ -62,7 +62,7 @@ export interface ITransactionLogic {
   getBytes(tx: IBaseTransaction<any>,
            skipSignature?: boolean, skipSecondSignature?: boolean): Buffer;
 
-  ready(tx: IBaseTransaction<any>, sender: IAccountsModel): boolean;
+  ready(tx: IBaseTransaction<any>, sender: IAccountsModel): Promise<boolean>;
 
   assertKnownTransactionType(type: number): void;
 

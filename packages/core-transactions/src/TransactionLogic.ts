@@ -190,7 +190,7 @@ export class TransactionLogic implements ITransactionLogic {
     return bb.toBuffer() as any;
   }
 
-  public ready(tx: IBaseTransaction<any>, sender: IAccountsModel): boolean {
+  public async ready(tx: IBaseTransaction<any>, sender: IAccountsModel): Promise<boolean> {
     this.assertKnownTransactionType(tx.type);
 
     if (!sender) {
@@ -414,7 +414,7 @@ export class TransactionLogic implements ITransactionLogic {
   @RunThroughExceptions(ExceptionsList.tx_apply)
   public async apply(tx: IConfirmedTransaction<any>,
                      block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
-    if (!this.ready(tx, sender)) {
+    if (! await this.ready(tx, sender)) {
       throw new Error('Transaction is not ready');
     }
 

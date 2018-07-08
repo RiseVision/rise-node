@@ -294,7 +294,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         continue;
       }
 
-      if (!this.transactionLogic.ready(tx, sender)) {
+      if (!await this.transactionLogic.ready(tx, sender)) {
         // Skip tx if it's not ready.
         continue;
       }

@@ -35,7 +35,7 @@ export interface IBaseTransactionType<T, M extends Model<any>> {
 
   afterSave(tx: IBaseTransaction<T>): Promise<void>;
 
-  ready(tx: IBaseTransaction<T>, sender: IAccountsModel): boolean;
+  ready(tx: IBaseTransaction<T>, sender: IAccountsModel): Promise<boolean>;
 
   attachAssets(txs: Array<IConfirmedTransaction<T>>): Promise<void>;
 

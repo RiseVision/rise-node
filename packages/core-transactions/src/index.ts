@@ -1,5 +1,5 @@
 export * from './BaseTx';
-export * from './hooks/decorators';
+export * from './hooks/filters';
 export * from './coremodule';
 export * from './httpApi';
 export * from './TransactionPool';
