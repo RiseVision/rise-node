@@ -17,31 +17,32 @@ const buildArrayArgAttribute = function (table: string): any {
   return [sequelize.literal(`(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2${table} WHERE "accountId" = "AccountsModel"."address")`), table];
 };
 
-@Scopes({
-  full         : {
-    attributes: [
-      ...allFields,
-      buildArrayArgAttribute('delegates'),
-      buildArrayArgAttribute('multisignatures'),
-      buildArrayArgAttribute('u_delegates'),
-      buildArrayArgAttribute('u_multisignatures'),
-    ],
-  },
-  fullConfirmed: {
-    attributes: [
-      ...fields,
-      buildArrayArgAttribute('delegates'),
-      buildArrayArgAttribute('multisignatures'),
-    ],
-  },
-})
+// @Scopes({
+//   full         : {
+//     attributes: [
+//       ...allFields,
+//       buildArrayArgAttribute('delegates'),
+//       buildArrayArgAttribute('multisignatures'),
+//       buildArrayArgAttribute('u_delegates'),
+//       buildArrayArgAttribute('u_multisignatures'),
+//     ],
+//   },
+//   fullConfirmed: {
+//     attributes: [
+//       ...fields,
+//       buildArrayArgAttribute('delegates'),
+//       buildArrayArgAttribute('multisignatures'),
+//     ],
+//   },
+// })
 @Table({ tableName: 'mem_accounts' })
 export class AccountsModel extends Model<AccountsModel> implements IAccountsModel {
   public static container: Container;
   public static options: any;
 
-  @Column
-  public username: string;
+  // @Column
+  // public username: string;
+
   @Column
   public isDelegate: 0 | 1;
 
@@ -55,8 +56,8 @@ export class AccountsModel extends Model<AccountsModel> implements IAccountsMode
   @Column(DataType.BLOB)
   public publicKey: Buffer;
 
-  @Column(DataType.BLOB)
-  public secondPublicKey: Buffer;
+  // @Column(DataType.BLOB)
+  // public secondPublicKey: Buffer;
 
   @Column
   public balance: number;
@@ -91,27 +92,27 @@ export class AccountsModel extends Model<AccountsModel> implements IAccountsMode
 
   // Unconfirmed stuff
 
-  @Column
-  public u_isDelegate: 0 | 1;
-  @Column
-  public u_secondSignature: 0 | 1;
-  @Column
-  public u_username: string;
+  // @Column
+  // public u_isDelegate: 0 | 1;
+  // @Column
+  // public u_secondSignature: 0 | 1;
+  // @Column
+  // public u_username: string;
   @Column
   public u_balance: number;
-  @Column
-  public u_multilifetime: number;
-  @Column
-  public u_multimin: number;
+  // @Column
+  // public u_multilifetime: number;
+  // @Column
+  // public u_multimin: number;
 
-  @Column(DataType.TEXT)
-  public multisignatures?: publicKey[];
-  @Column(DataType.TEXT)
-  public u_multisignatures?: publicKey[];
-  @Column(DataType.TEXT)
-  public delegates?: publicKey[];
-  @Column(DataType.TEXT)
-  public u_delegates?: publicKey[];
+  // @Column(DataType.TEXT)
+  // public multisignatures?: publicKey[];
+  // @Column(DataType.TEXT)
+  // public u_multisignatures?: publicKey[];
+  // @Column(DataType.TEXT)
+  // public delegates?: publicKey[];
+  // @Column(DataType.TEXT)
+  // public u_delegates?: publicKey[];
 
 
   public isMultisignature(): boolean {
