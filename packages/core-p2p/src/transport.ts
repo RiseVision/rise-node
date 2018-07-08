@@ -120,7 +120,7 @@ export class TransportModule implements ITransportModule {
     const thePeer = this.peersLogic.create(peer);
     const req     = {
       body   : null,
-      headers: await this.hookSystem.apply_filters('core-p2p/headers', this.systemModule.headers as any),
+      headers: await this.hookSystem.apply_filters<any, any>('core-p2p/headers', this.systemModule.headers as any),
       method : options.method,
       timeout: this.appConfig.peers.options.timeout,
       url    : `http://${peer.ip}:${peer.port}${url}`,
