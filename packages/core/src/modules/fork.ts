@@ -25,7 +25,7 @@ export class ForkModule implements IForkModule {
     this.logger.info('Fork', {
       block   : { id: block.id, timestamp: block.timestamp, height: block.height, previousBlock: block.previousBlock },
       cause,
-      delegate: block.generatorPublicKey,
+      generator: block.generatorPublicKey.toString('hex'),
     });
 
     const fork = {
@@ -33,7 +33,7 @@ export class ForkModule implements IForkModule {
       blockId          : block.id,
       blockTimestamp   : block.timestamp,
       cause,
-      delegatePublicKey: block.generatorPublicKey,
+      generatorPublicKey: block.generatorPublicKey,
       previousBlock    : block.previousBlock,
     };
 

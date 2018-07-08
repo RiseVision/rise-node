@@ -11,16 +11,17 @@ import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import * as fs from 'fs';
 import { inject, injectable } from 'inversify';
-import { WordPressHookSystem } from 'mangiafuoco';
+import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
+import { RecreateAccountsTables } from '../hooks/actions';
 import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
 
 @injectable()
-export class AccountLogic implements IAccountLogic {
+export class AccountLogic extends WPHooksSubscriber(Object) implements IAccountLogic {
   private table = 'mem_accounts';
 
   /**
@@ -55,9 +56,10 @@ export class AccountLogic implements IAccountLogic {
   private schema: z_schema;
 
   @inject(Symbols.generic.hookSystem)
-  private hookSystem: WordPressHookSystem;
+  public hookSystem: WordPressHookSystem;
 
   constructor() {
+    super();
     this.model = accountsModelCreator(this.table);
 
     this.fields = this.model.map((field) => {
@@ -89,41 +91,13 @@ export class AccountLogic implements IAccountLogic {
 
   }
 
-  /**
-   * Creates memory tables related to accounts!
-   */
-  public createTables(): Promise<void> {
-    return Promise.resolve(
-      this.AccountsModel.sequelize.query(
-        fs.readFileSync(path.join(process.cwd(), 'sql', 'memoryTables.sql'), { encoding: 'utf8' })
-      )
-    );
-  }
-
-  /**
-   * Deletes the content of memory tables
-   * - mem_round
-   * - mem_accounts2delegates
-   * - mem_accounts2u_delegates
-   * - mem_accounts2multisignatures
-   * - mem_accounts2u_multisignatures
-   * @returns {Promise<void>}
-   */
-  public async removeTables(): Promise<void> {
-    const models = await this.hookSystem.apply_filters('account_models', [
-      this.AccountsModel,
-      // this.RoundsModel,
-      // this.Accounts2DelegatesModel,
-      // this.Accounts2MultisignaturesModel,
-      // this.Accounts2U_DelegatesModel,
-      // this.Accounts2U_MultisignaturesModel
-    ]);
-    // TODO: Fix ^^
-    for (const model of models) {
-      await model.drop({ cascade: true })
+  @RecreateAccountsTables()
+  public async recreateTables(): Promise<void> {
+    await this.AccountsModel.drop({cascade: true})
         .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
-    }
-    await this.hookSystem.do_action('account_removedTables');
+    await this.AccountsModel.sequelize.query(
+      fs.readFileSync(path.join(process.cwd(), 'sql', 'memoryTables.sql'), { encoding: 'utf8' })
+    );
   }
 
   /**

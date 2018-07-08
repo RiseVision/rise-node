@@ -1,6 +1,6 @@
-import { ConstantsType } from '@risevision/core-types';
-import { IBlockReward } from '@risevision/core-interfaces';
 import { Symbols } from '@risevision/core-helpers';
+import { IBlockReward } from '@risevision/core-interfaces';
+import { ConstantsType } from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 
 @injectable()

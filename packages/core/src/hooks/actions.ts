@@ -53,3 +53,6 @@ export const PreApplyBlock = createAction<(block: IBlocksModel, tx?: Transaction
  * You can interrupt the process by throwing or rejecting
  */
 export const OnDestroyBlock = createAction<(block: IBlocksModel, tx?: Transaction) => Promise<void>>('core/blocks/chain/onDestroyBlock');
+
+
+// ## Account Logic Hooks

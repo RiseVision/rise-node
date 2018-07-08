@@ -2,7 +2,7 @@ import { ForkType } from '@risevision/core-types';
 import { IBaseModel } from './IBaseModel';
 
 export class IForkStatsModel extends IBaseModel<IForkStatsModel> {
-  public delegatePublicKey: Buffer;
+  public generatorPublicKey: Buffer;
 
   public blockTimestamp: number;
 

@@ -6,7 +6,7 @@ import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript
 export class ForksStatsModel extends Model<ForksStatsModel> implements IForkStatsModel {
   @PrimaryKey
   @Column(DataType.BLOB)
-  public delegatePublicKey: Buffer;
+  public generatorPublicKey: Buffer;
 
   @PrimaryKey
   @Column

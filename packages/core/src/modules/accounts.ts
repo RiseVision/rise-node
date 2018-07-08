@@ -1,8 +1,13 @@
 import { DBHelper, Symbols } from '@risevision/core-helpers';
-import { AccountDiffType, IAccountLogic, IAccountsModel, IAccountsModule, } from '@risevision/core-interfaces';
+import {
+  AccountDiffType,
+  AccountFilterData,
+  IAccountLogic,
+  IAccountsModel,
+  IAccountsModule,
+} from '@risevision/core-interfaces';
 import { DBOp, FieldsInModel, IBaseTransaction } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
-import { AccountFilterData } from '../logic/';
 
 @injectable()
 export class AccountsModule implements IAccountsModule {

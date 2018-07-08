@@ -40,6 +40,7 @@ import * as Throttle from 'promise-parallel-throttle';
 import * as promiseRetry from 'promise-retry';
 import SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
+import { WordPressHookSystem } from 'mangiafuoco';
 
 const peersSchema     = require('../schema/peers.json');
 const transportSchema = require('../schema/transport.json');
@@ -54,6 +55,9 @@ export class TransportModule implements ITransportModule {
   // tslint:disable-next-line member-ordering
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
+  // tslint:disable-next-line member-ordering
+  @inject(Symbols.generic.hookSystem)
+  private hookSystem: WordPressHookSystem;
 
   // Helpers
   // tslint:disable-next-line member-ordering
@@ -116,7 +120,7 @@ export class TransportModule implements ITransportModule {
     const thePeer = this.peersLogic.create(peer);
     const req     = {
       body   : null,
-      headers: this.systemModule.headers as any,
+      headers: await this.hookSystem.apply_filters('core-p2p/headers', this.systemModule.headers as any),
       method : options.method,
       timeout: this.appConfig.peers.options.timeout,
       url    : `http://${peer.ip}:${peer.port}${url}`,
