@@ -127,11 +127,11 @@ export class TransactionsAPI {
     return { transaction: tx };
   }
 
-  @Get('/multisignatures')
+  @Get('/pending')
   @ValidateSchema()
   public async getMultiSigs(@SchemaValid(schema.getPooledTransactions)
                             @QueryParams() params: { senderPublicKey?: string, address?: string }) {
-    const txs = this.transactionsModule.getMultisignatureTransactionList(true);
+    const txs = this.transactionsModule.getPendingTransactionList(true);
     return {
       count       : txs.length,
       transactions: txs
@@ -143,11 +143,11 @@ export class TransactionsAPI {
     };
   }
 
-  @Get('/multisignatures/get')
+  @Get('/pending/get')
   @ValidateSchema()
-  public async getMultiSig(@SchemaValid(schema.getPooledTransaction.properties.id)
+  public async getPending(@SchemaValid(schema.getPooledTransaction.properties.id)
                            @QueryParam('id') id: string) {
-    const transaction = this.transactionsModule.getMultisignatureTransaction(id);
+    const transaction = this.transactionsModule.getPendingTransaction(id);
     if (!transaction) {
       throw new APIError('Transaction not found', 200);
     }

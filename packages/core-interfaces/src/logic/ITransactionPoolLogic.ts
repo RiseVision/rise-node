@@ -29,12 +29,7 @@ export interface ITransactionPoolLogic {
   readonly unconfirmed: IInnerTXQueue;
   readonly bundled: IInnerTXQueue;
   readonly queued: IInnerTXQueue;
-  readonly multisignature: IInnerTXQueue<{ receivedAt: Date, ready: boolean }>;
-
-  /**
-   * Queue a transaction or throws an error if it couldnt
-   */
-  queueTransaction(tx: IBaseTransaction<any>, bundled: boolean): void;
+  readonly pending: IInnerTXQueue<{ receivedAt: Date, ready: boolean }>;
 
   fillPool(): Promise<Array<IBaseTransaction<any>>>;
 

@@ -252,29 +252,34 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Missing sender');
     }
 
-    if (tx.requesterPublicKey && (!sender.isMultisignature() || requester == null)) {
-      throw new Error('Account or requester account is not multisignature');
-    }
+    await this.hookSystem.do_action(
+      'core-transactions/txlogic/verify/static-checks',
+      tx, sender, requester, height
+    );
 
-    if (tx.requesterPublicKey && sender.secondSignature && !tx.signSignature &&
-      (tx as IConfirmedTransaction<any>).blockId !== this.genesisBlock.id) {
-      throw new Error('Missing sender second signature');
-    }
-
-    // If second signature provided, check if sender has one enabled
-    if (!tx.requesterPublicKey && !sender.secondSignature && (tx.signSignature && tx.signSignature.length > 0)) {
-      throw new Error('Sender does not have a second signature');
-    }
-
-    // Check for missing requester second signature
-    if (tx.requesterPublicKey && requester.secondSignature && !tx.signSignature) {
-      throw new Error('Missing requester second signature');
-    }
-
-    // If second signature provided, check if requester has one enabled
-    if (tx.requesterPublicKey && !requester.secondSignature && (tx.signSignature && tx.signSignature.length > 0)) {
-      throw new Error('Requester does not have a second signature');
-    }
+    // if (tx.requesterPublicKey && (!sender.isMultisignature() || requester == null)) {
+    //   throw new Error('Account or requester account is not multisignature');
+    // }
+    //
+    // if (tx.requesterPublicKey && sender.secondSignature && !tx.signSignature &&
+    //   (tx as IConfirmedTransaction<any>).blockId !== this.genesisBlock.id) {
+    //   throw new Error('Missing sender second signature');
+    // }
+    //
+    // // If second signature provided, check if sender has one enabled
+    // if (!tx.requesterPublicKey && !sender.secondSignature && (tx.signSignature && tx.signSignature.length > 0)) {
+    //   throw new Error('Sender does not have a second signature');
+    // }
+    //
+    // // Check for missing requester second signature
+    // if (tx.requesterPublicKey && requester.secondSignature && !tx.signSignature) {
+    //   throw new Error('Missing requester second signature');
+    // }
+    //
+    // // If second signature provided, check if requester has one enabled
+    // if (tx.requesterPublicKey && !requester.secondSignature && (tx.signSignature && tx.signSignature.length > 0)) {
+    //   throw new Error('Requester does not have a second signature');
+    // }
 
     // Check sender public key
     if (sender.publicKey && !sender.publicKey.equals(tx.senderPublicKey)) {
@@ -292,20 +297,20 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Invalid sender address');
     }
 
-    const multisignatures = (sender.multisignatures || sender.u_multisignatures || []).slice();
-
-    if (tx.asset && tx.asset.multisignature && tx.asset.multisignature.keysgroup) {
-      for (const key of tx.asset.multisignature.keysgroup) {
-        if (!key || typeof key !== 'string') {
-          throw new Error('Invalid member in keysgroup');
-        }
-        multisignatures.push(key.slice(1));
-      }
-    } else if (tx.requesterPublicKey) {
-      if (sender.multisignatures.indexOf(tx.requesterPublicKey.toString('hex')) < 0) {
-        throw new Error('Account does not belong to multisignature group');
-      }
-    }
+    // const multisignatures = (sender.multisignatures || sender.u_multisignatures || []).slice();
+    //
+    // if (tx.asset && tx.asset.multisignature && tx.asset.multisignature.keysgroup) {
+    //   for (const key of tx.asset.multisignature.keysgroup) {
+    //     if (!key || typeof key !== 'string') {
+    //       throw new Error('Invalid member in keysgroup');
+    //     }
+    //     multisignatures.push(key.slice(1));
+    //   }
+    // } else if (tx.requesterPublicKey) {
+    //   if (sender.multisignatures.indexOf(tx.requesterPublicKey.toString('hex')) < 0) {
+    //     throw new Error('Account does not belong to multisignature group');
+    //   }
+    // }
 
     if (!this.verifySignature(
       tx,
@@ -316,37 +321,37 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Failed to verify signature');
     }
 
-    if (sender.secondSignature) {
-      if (!this.verifySignature(tx, sender.secondPublicKey, tx.signSignature, VerificationType.SECOND_SIGNATURE)) {
-        throw new Error('Failed to verify second signature');
-      }
-    }
+    // if (sender.secondSignature) {
+    //   if (!this.verifySignature(tx, sender.secondPublicKey, tx.signSignature, VerificationType.SECOND_SIGNATURE)) {
+    //     throw new Error('Failed to verify second signature');
+    //   }
+    // }
 
     // In multisig accounts
-    if (Array.isArray(tx.signatures) && tx.signatures.length > 0) {
-      // check that signatures are unique.
-      const duplicatedSignatures = tx.signatures.filter((sig, idx, arr) => arr.indexOf(sig) !== idx);
-      if (duplicatedSignatures.length > 0) {
-        throw new Error('Encountered duplicate signature in transaction');
-      }
-
-      // Verify multisignatures are valid and belong to some of prev. calculated multisignature publicKey
-      for (const sig of tx.signatures) {
-        let valid = false;
-        for (let s = 0; s < multisignatures.length && !valid; s++) {
-          valid = this.verifySignature(
-            tx,
-            Buffer.from(multisignatures[s], 'hex'),
-            Buffer.from(sig, 'hex'),
-            VerificationType.ALL
-          );
-        }
-
-        if (!valid) {
-          throw new Error('Failed to verify multisignature');
-        }
-      }
-    }
+    // if (Array.isArray(tx.signatures) && tx.signatures.length > 0) {
+    //   // check that signatures are unique.
+    //   const duplicatedSignatures = tx.signatures.filter((sig, idx, arr) => arr.indexOf(sig) !== idx);
+    //   if (duplicatedSignatures.length > 0) {
+    //     throw new Error('Encountered duplicate signature in transaction');
+    //   }
+    //
+    //   // Verify multisignatures are valid and belong to some of prev. calculated multisignature publicKey
+    //   for (const sig of tx.signatures) {
+    //     let valid = false;
+    //     for (let s = 0; s < multisignatures.length && !valid; s++) {
+    //       valid = this.verifySignature(
+    //         tx,
+    //         Buffer.from(multisignatures[s], 'hex'),
+    //         Buffer.from(sig, 'hex'),
+    //         VerificationType.ALL
+    //       );
+    //     }
+    //
+    //     if (!valid) {
+    //       throw new Error('Failed to verify multisignature');
+    //     }
+    //   }
+    // }
 
     // Check fee
     const fee = this.types[tx.type].calculateFee(tx, sender, height);
@@ -370,7 +375,7 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error(senderBalance.error);
     }
 
-    await this.hookSystem.do_action('verify-tx', tx);
+    await this.hookSystem.do_action('core-transactions/txlogic/verify/tx', tx, sender, requester, height);
     // // Check timestamp
     // if (this.slots.getSlotNumber(tx.timestamp) > this.slots.getSlotNumber()) {
     //   throw new Error('Invalid transaction timestamp. Timestamp is in the future');

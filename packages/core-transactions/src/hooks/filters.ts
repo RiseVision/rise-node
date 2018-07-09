@@ -21,13 +21,13 @@ export const SendTxApplyFilter = createFilterDecorator<(
   ops: Array<DBOp<any>>,
   tx?: IConfirmedTransaction<any>,
   block?: SignedBlockType,
-  sender?: IAccountsModel) => Promise<Array<DBOp<any>>>>('apply_send_tx_ops');
+  sender?: IAccountsModel) => Promise<Array<DBOp<any>>>>('core-transactions/send-tx/apply/ops');
 
 export const SendTxUndoFilter = createFilterDecorator<(
   ops: Array<DBOp<any>>,
   tx?: IConfirmedTransaction<any>,
   block?: SignedBlockType,
-  sender?: IAccountsModel) => Promise<Array<DBOp<any>>>>('undo_send_tx_ops');
+  sender?: IAccountsModel) => Promise<Array<DBOp<any>>>>('core-transactions/send-tx/undo/ops');
 
 /**
  * Called to allow hooks modify the readyness of a transaction

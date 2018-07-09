@@ -14,7 +14,6 @@ import {
 } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import { BaseTx } from './BaseTx';
-import { WordPressHookSystem } from 'mangiafuoco';
 
 @injectable()
 export class SendTransaction extends BaseTx<void, null> {
@@ -23,9 +22,6 @@ export class SendTransaction extends BaseTx<void, null> {
   private accountsModule: IAccountsModule;
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
-
-  @inject(Symbols.generic.hookSystem)
-  private hookSystem: WordPressHookSystem;
 
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
@@ -53,7 +49,7 @@ export class SendTransaction extends BaseTx<void, null> {
 
   public async apply(tx: IConfirmedTransaction<void>,
                      block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
-    return await this.hookSystem.apply_filters('apply_send_tx_ops', [
+    return await this.hookSystem.apply_filters('core-transactions/send-tx/apply/ops', [
       ... this.accountLogic.merge(tx.recipientId, {
         balance  : tx.amount,
         blockId  : block.id,
@@ -64,7 +60,7 @@ export class SendTransaction extends BaseTx<void, null> {
   }
 
   public async undo(tx: IConfirmedTransaction<void>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
-    return await this.hookSystem.apply_filters('undo_send_tx_ops', [
+    return await this.hookSystem.apply_filters('core-transactions/send-tx/undo/ops', [
       ... this.accountLogic.merge(tx.recipientId, {
         balance  : -tx.amount,
         blockId  : block.id,

@@ -72,10 +72,10 @@ export class TransactionsModule implements ITransactionsModule {
   }
 
   /**
-   * Get multisignature tx from pool by id
+   * Get pending tx from pool by id
    */
-  public getMultisignatureTransaction<T = any>(id: string): IBaseTransaction<T> {
-    return this.transactionPool.multisignature.get(id);
+  public getPendingTransaction<T = any>(id: string): IBaseTransaction<T> {
+    return this.transactionPool.pending.get(id);
   }
 
   /**
@@ -93,10 +93,10 @@ export class TransactionsModule implements ITransactionsModule {
   }
 
   /**
-   * Gets multisignature transactions based on limit and reverse option.
+   * Gets pending transactions based on limit and reverse option.
    */
-  public getMultisignatureTransactionList(reverse: boolean, limit?: number): Array<IBaseTransaction<any>> {
-    return this.transactionPool.multisignature.list(reverse, limit);
+  public getPendingTransactionList(reverse: boolean, limit?: number): Array<IBaseTransaction<any>> {
+    return this.transactionPool.pending.list(reverse, limit);
   }
 
   /**
@@ -113,7 +113,7 @@ export class TransactionsModule implements ITransactionsModule {
   public removeUnconfirmedTransaction(id: string) {
     const wasUnconfirmed = this.transactionPool.unconfirmed.remove(id);
     this.transactionPool.queued.remove(id);
-    this.transactionPool.multisignature.remove(id);
+    this.transactionPool.pending.remove(id);
     this.transactionPool.bundled.remove(id);
     return wasUnconfirmed;
   }
@@ -165,7 +165,7 @@ export class TransactionsModule implements ITransactionsModule {
   public async count(): Promise<{ confirmed: number, multisignature: number, queued: number, unconfirmed: number }> {
     return {
       confirmed     : await this.TXModel.count(),
-      multisignature: this.transactionPool.multisignature.count,
+      multisignature: this.transactionPool.pending.count,
       queued        : this.transactionPool.queued.count,
       unconfirmed   : this.transactionPool.unconfirmed.count,
     };

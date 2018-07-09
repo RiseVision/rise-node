@@ -12,21 +12,24 @@ import { ConstantsType, IBaseTransaction, TransactionType } from '@risevision/co
 import { inject, injectable, postConstruct, tagged } from 'inversify';
 import { TXAppConfig } from './helpers/appconfig';
 import { InnerTXQueue } from './poolTXsQueue';
+import { WordPressHookSystem } from 'mangiafuoco';
 
 // tslint:disable-next-line
 @injectable()
 export class TransactionPool implements ITransactionPoolLogic {
 
-  public unconfirmed    = new InnerTXQueue();
-  public bundled        = new InnerTXQueue();
-  public queued         = new InnerTXQueue();
-  public multisignature = new InnerTXQueue<{ receivedAt: Date, ready: boolean }>();
+  public unconfirmed = new InnerTXQueue();
+  public bundled     = new InnerTXQueue();
+  public queued      = new InnerTXQueue();
+  public pending     = new InnerTXQueue<{ receivedAt: Date, ready: boolean }>();
 
   // generic
   @inject(Symbols.generic.appConfig)
   private config: TXAppConfig;
   @inject(Symbols.helpers.constants)
   private constants: ConstantsType;
+  @inject(Symbols.generic.hookSystem)
+  private hookSystem: WordPressHookSystem;
 
   // Helpers
   @inject(Symbols.helpers.bus)
@@ -73,18 +76,23 @@ export class TransactionPool implements ITransactionPoolLogic {
   /**
    * Queue a transaction or throws an error if it couldnt
    */
-  public queueTransaction(tx: IBaseTransaction<any>, bundled: boolean): void {
+  private async queueTransaction(tx: IBaseTransaction<any>, bundled: boolean): Promise<void> {
     const payload: { receivedAt: Date, ready?: boolean } = { receivedAt: new Date() };
 
     let queue: InnerTXQueue;
     if (bundled) {
       queue = this.bundled;
-    } else if (tx.type === TransactionType.MULTI || Array.isArray(tx.signatures)) {
-      queue         = this.multisignature;
-      payload.ready = false;
     } else {
-      queue = this.queued;
+      queue = await this.hookSystem.apply_filters('core-transactions/pool/queue-tx', this.queued, tx);
+      payload.ready = await this.hookSystem.apply_filters('core-transactions/pool/tx-ready', false, tx);
     }
+    // TODO:
+    // if (tx.type === TransactionType.MULTI || Array.isArray(tx.signatures)) {
+    //   queue         = this.multisignature;
+    //   payload.ready = false;
+    // } else {
+    //   queue = this.queued;
+    // }
 
     if (queue.count >= this.config.transactions.maxTxsPerQueue) {
       throw new Error('Transaction pool is full');
@@ -106,18 +114,18 @@ export class TransactionPool implements ITransactionPoolLogic {
       return Promise.resolve([]);
     }
 
-    const multignatures = this.multisignature.listWithPayload(
+    const pending = this.pending.listWithPayload(
       true,
       5,
       // tslint:disable-next-line
       (tx, payload) => payload.ready);
 
-    const inQueue = this.queued.listWithPayload(true, Math.max(0, spare - multignatures.length));
+    const inQueue = this.queued.listWithPayload(true, Math.max(0, spare - pending.length));
 
-    const txsAndPayloads = multignatures.concat(inQueue as any);
+    const txsAndPayloads = pending.concat(inQueue as any);
     txsAndPayloads.forEach(({ tx, payload }) => {
-      // Remove the tx from either multisig or queued
-      this.multisignature.remove(tx.id);
+      // Remove the tx from either pending or queued
+      this.pending.remove(tx.id);
       this.queued.remove(tx.id);
 
       // Add to unconfirmed.
@@ -147,7 +155,7 @@ export class TransactionPool implements ITransactionPoolLogic {
     const unconfirmed = this.unconfirmed.list(false, this.constants.maxTxsPerBlock);
     limit -= unconfirmed.length;
 
-    const multisignatures = this.multisignature.list(false, this.constants.maxTxsPerBlock, ((t) => (t as any).ready));
+    const multisignatures = this.pending.list(false, this.constants.maxTxsPerBlock, ((t) => (t as any).ready));
     limit -= multisignatures.length;
 
     const queued = this.queued.list(false, limit);
@@ -158,9 +166,9 @@ export class TransactionPool implements ITransactionPoolLogic {
   public expireTransactions(): string[] {
     const unconfirmed = this.unconfirmed.listWithPayload(true);
     const queued      = this.queued.listWithPayload(true);
-    const multi       = this.multisignature.listWithPayload(true);
+    const pending       = this.pending.listWithPayload(true);
 
-    const all = unconfirmed.concat(queued).concat(multi);
+    const all = unconfirmed.concat(queued).concat(pending);
 
     const ids: string[] = [];
     for (const txP of all) {
@@ -192,16 +200,13 @@ export class TransactionPool implements ITransactionPoolLogic {
       }
 
       try {
-        const sender = await this.processVerifyTransaction(
+        await this.processVerifyTransaction(
           tx,
           true
         );
         this.bundled.remove(tx.id);
-        if (sender.isMultisignature()) {
-          tx.signatures = tx.signatures || []; // make sure that queueTransaction knows where to enqueue the tx.
-        }
         try {
-          this.queueTransaction(tx, false /* After processing the tx becomes unbundled */);
+          await this.queueTransaction(tx, false /* After processing the tx becomes unbundled */);
         } catch (e) {
           this.logger.warn(`Failed to queue bundled transaction: ${tx.id}`, e);
         }
@@ -274,13 +279,13 @@ export class TransactionPool implements ITransactionPoolLogic {
   }
 
   private get allQueues(): InnerTXQueue[] {
-    return [this.unconfirmed, this.bundled, this.queued, this.multisignature];
+    return [this.unconfirmed, this.bundled, this.queued, this.pending];
   }
 
   private removeUnconfirmedTransaction(txID: string) {
     this.unconfirmed.remove(txID);
     this.queued.remove(txID);
-    this.multisignature.remove(txID);
+    this.pending.remove(txID);
   }
 
   /**
@@ -293,12 +298,13 @@ export class TransactionPool implements ITransactionPoolLogic {
     }
 
     const sender            = await this.accountsModule.setAccountAndGet({ publicKey: transaction.senderPublicKey });
-    const isMultisigAccount = sender && sender.isMultisignature();
-    if (isMultisigAccount) {
-      transaction.signatures = transaction.signatures || [];
-    }
+    // TODO: Verify this is needed.
+    // const isMultisigAccount = sender && sender.isMultisignature();
+    // if (isMultisigAccount) {
+    //   transaction.signatures = transaction.signatures || [];
+    // }
     let requester = null;
-    if (sender && transaction.requesterPublicKey && isMultisigAccount) {
+    if (sender && transaction.requesterPublicKey /* && isMultisigAccount */) {
       // Fetch the requester
       requester = await this.accountsModule.getAccount({ publicKey: transaction.requesterPublicKey });
     }

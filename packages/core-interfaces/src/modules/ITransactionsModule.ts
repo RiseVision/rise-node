@@ -31,9 +31,9 @@ export interface ITransactionsModule extends IModule {
   getQueuedTransaction<T = any>(id: string): IBaseTransaction<T>;
 
   /**
-   * Get multisignature tx from pool by id
+   * Get pending tx from pool by id
    */
-  getMultisignatureTransaction<T = any>(id: string): IBaseTransaction<T>;
+  getPendingTransaction<T = any>(id: string): IBaseTransaction<T>;
 
   /**
    * Gets unconfirmed transactions based on limit and reverse option.
@@ -46,9 +46,9 @@ export interface ITransactionsModule extends IModule {
   getQueuedTransactionList(reverse: boolean, limit?: number): Array<IBaseTransaction<any>>;
 
   /**
-   * Gets multisignature transactions based on limit and reverse option.
+   * Gets pending transactions based on limit and reverse option.
    */
-  getMultisignatureTransactionList(reverse: boolean, limit?: number): Array<IBaseTransaction<any>>;
+  getPendingTransactionList(reverse: boolean, limit?: number): Array<IBaseTransaction<any>>;
 
   /**
    * Gets unconfirmed, multisignature and queued transactions based on limit and reverse option.
