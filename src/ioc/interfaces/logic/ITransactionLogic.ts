@@ -11,6 +11,7 @@ import {
 } from '../../../logic/transactions';
 import { AccountsModel } from '../../../models/';
 import { DBOp } from '../../../types/genericTypes';
+import {TransactionLogic} from "../../../logic/transaction";
 
 /**
  * VerificationType When checking against signature.
@@ -29,8 +30,15 @@ export enum VerificationType {
    */
   SECOND_SIGNATURE,
 }
+
+/**
+ * Methods signature for TransactionLogic
+ */
 export interface ITransactionLogic {
 
+  /**
+   * Add a TransactionType to types collection
+   */
   attachAssetType<K, M extends Model<any>>(instance: BaseTransactionType<K, M>): BaseTransactionType<K, M>;
 
   /**
@@ -63,8 +71,14 @@ export interface ITransactionLogic {
   getBytes(tx: IBaseTransaction<any>,
            skipSignature?: boolean, skipSecondSignature?: boolean): Buffer;
 
+  /**
+   * Return true if the transaction is ready, or false otherwise
+   */
   ready(tx: IBaseTransaction<any>, sender: AccountsModel): boolean;
 
+  /**
+   * Throws an exception if the type is unknown.
+   */
   assertKnownTransactionType(type: number): void;
 
   /**
@@ -81,6 +95,9 @@ export interface ITransactionLogic {
   // tslint:disable max-line-length
   process<T = any>(tx: IBaseTransaction<T>, sender: AccountsModel, requester: AccountsModel): Promise<IBaseTransaction<T>>;
 
+  /**
+   * Verifies the given transaction
+   */
   verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel,
          requester: AccountsModel, height: number): Promise<void>;
 
@@ -94,6 +111,9 @@ export interface ITransactionLogic {
    */
   verifySignature(tx: IBaseTransaction<any>, publicKey: Buffer, signature: Buffer, verificationType: VerificationType): boolean;
 
+  /**
+   * Prepares the query for a given transaction
+   */
   apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>>;
 
   /**
@@ -102,6 +122,9 @@ export interface ITransactionLogic {
    */
   undo(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>>;
 
+  /**
+   * Prepares the queries for an unconfirmed transaction
+   */
   applyUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel, requester?: AccountsModel): Promise<Array<DBOp<any>>>;
 
   /**
@@ -110,8 +133,14 @@ export interface ITransactionLogic {
    */
   undoUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel): Promise<Array<DBOp<any>>>;
 
+  /**
+   * Prepares the insert queries for the given transactions
+   */
   dbSave(txs: Array<IBaseTransaction<any> & {senderId: string}>, blockId: string, height: number): Array<DBOp<any>>;
 
+  /**
+   * Call to afterSave method of the given transaction
+   */
   afterSave(tx: IBaseTransaction<any>): Promise<void>;
 
   /**
@@ -121,6 +150,9 @@ export interface ITransactionLogic {
   objectNormalize(tx: IConfirmedTransaction<any>): IConfirmedTransaction<any>;
   objectNormalize(tx: ITransportTransaction<any> | IBaseTransaction<any>): IBaseTransaction<any>;
 
+  /**
+   * Returns asset of given raw transaction
+   */
   dbRead(raw: any): IConfirmedTransaction<any>;
 
   /**
