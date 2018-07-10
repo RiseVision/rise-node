@@ -124,14 +124,16 @@ export class TransactionLogic implements ITransactionLogic {
     bb.writeByte(tx.type);
     bb.writeInt(tx.timestamp);
 
-    const senderPublicKeyBuffer = tx.senderPublicKey;
+    const senderPublicKeyBuffer = Buffer.isBuffer(tx.senderPublicKey) ?
+      tx.senderPublicKey : Buffer.from(tx.senderPublicKey, 'hex');
     // tslint:disable-next-line
     for (let i = 0; i < senderPublicKeyBuffer.length; i++) {
       bb.writeByte(senderPublicKeyBuffer[i]);
     }
 
     if (tx.requesterPublicKey) {
-      const requesterPublicKey = tx.requesterPublicKey;
+      const requesterPublicKey = Buffer.isBuffer(tx.requesterPublicKey) ?
+        tx.requesterPublicKey : Buffer.from(tx.requesterPublicKey, 'hex');
       // tslint:disable-next-line
       for (let i = 0; i < requesterPublicKey.length; i++) {
         bb.writeByte(requesterPublicKey[i]);
@@ -162,7 +164,8 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     if (!skipSignature && tx.signature) {
-      const signatureBuffer = tx.signature;
+      const signatureBuffer = Buffer.isBuffer(tx.signature) ?
+        tx.signature : Buffer.from(tx.signature, 'hex');
       // tslint:disable-next-line
       for (let i = 0; i < signatureBuffer.length; i++) {
         bb.writeByte(signatureBuffer[i]);
@@ -170,7 +173,8 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     if (!skipSecondSignature && tx.signSignature) {
-      const signSignatureBuffer = tx.signSignature;
+      const signSignatureBuffer = Buffer.isBuffer(tx.signSignature) ?
+        tx.signSignature : Buffer.from(tx.signSignature, 'hex');
       // tslint:disable-next-line
       for (let i = 0; i < signSignatureBuffer.length; i++) {
         bb.writeByte(signSignatureBuffer[i]);

@@ -1,8 +1,7 @@
-import { Container, inject, injectable } from 'inversify';
-import * as popsicle from 'popsicle';
+import { inject, injectable } from 'inversify';
 import * as querystring from 'querystring';
 import * as semver from 'semver';
-import { ProtoBufHelper } from '../../helpers';
+import { MyConvOptions, ProtoBufHelper } from '../../helpers';
 import { IPeerLogic } from '../../ioc/interfaces/logic';
 import { Symbols } from '../../ioc/symbols';
 import { PeerRequestOptions } from '../../modules';
@@ -12,7 +11,7 @@ export interface IAPIRequest<Out, In> {
   getResponseData(res: {body: Buffer | Out, peer: IPeerLogic}): Out;
   setPeer(peer: IPeerLogic);
   getOrigOptions(): { data: In, query?: any};
-  mergeIntoThis(...objs: this[]): void
+  mergeIntoThis(...objs: this[]): void;
 }
 
 @injectable()
@@ -79,10 +78,25 @@ export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
     return qs.length === 0 ? '' : `?${qs}`;
   }
 
-  protected decodeProtoBufResponse(res: {body: Buffer, peer: IPeerLogic}, pbNamespace: string, pbMessageType?: string): Out {
-    return this.protoBufHelper
-      .decode(res.body, pbNamespace, pbMessageType);
-    //TODO: add .toJSON() here making sure that conversions are done properly.
+  /**
+   * Specifies how to convert message to plain object
+   * @returns {MyConvOptions<Out>}
+   */
+  protected getConversionOptions(): MyConvOptions<Out> {
+    const retSelf = (a) => a;
+    return {
+      arrays: true,   // populates empty arrays (repeated fields) even if defaults=false
+      bytes: retSelf, // bytes as Buffers
+      defaults: false, // includes default values
+      enums: String,  // enums as string names
+      longs: retSelf, // longs as long.js
+      objects: true,  // populates empty objects (map fields) even if defaults=false
+      oneofs: true,   // includes virtual oneof fields set to the present field's name
+    };
   }
 
+  protected decodeProtoBufResponse(res: {body: Buffer, peer: IPeerLogic}, pbNamespace: string, pbMessageType?: string): Out {
+    return this.protoBufHelper
+      .decodeToObj(res.body, pbNamespace, pbMessageType, this.getConversionOptions());
+  }
 }

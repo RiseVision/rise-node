@@ -3,4 +3,5 @@ import "./bytesTransaction.proto";
 
 message transportTransactions {
     repeated bytesTransaction transactions = 1;
+    bytesTransaction transaction = 2;
 }

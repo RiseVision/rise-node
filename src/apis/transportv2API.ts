@@ -17,10 +17,13 @@ import {
 import { Symbols } from '../ioc/symbols';
 import { IBytesBlock, SignedAndChainedBlockType } from '../logic';
 import { IBaseTransaction, IBytesTransaction } from '../logic/transactions';
-import { BlocksModel } from '../models';
+import { BlocksModel, TransactionsModel } from '../models';
 import transportSchema from '../schema/transport';
 import { AttachPeerHeaders } from './utils/attachPeerHeaders';
 import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
+import { TransactionsModule } from '../modules';
+import { APIError } from './errors';
+import { Op } from 'sequelize';
 
 @Controller('/v2/peer')
 @injectable()
@@ -114,10 +117,14 @@ export class TransportV2API {
 
   @Post('/transactions')
   public async postTransactions(@Req() req: Request, @Res() res: Response) {
-    let transactions;
+    let transactions = [];
     try {
       const requestData = this.parseRequest(req, 'transportTransactions');
-      transactions = requestData.transactions ? requestData.transactions : [];
+      if (typeof requestData.transaction !== 'undefined' && requestData.transaction !== null) {
+        transactions = [requestData.transaction];
+      } else {
+        transactions = requestData.transactions ? requestData.transactions : [];
+      }
     } catch (err) {
       return this.error(res, err.message);
     }
@@ -125,12 +132,42 @@ export class TransportV2API {
       ip  : req.ip,
       port: parseInt(req.headers.port as string, 10),
     });
+
     if (transactions.length > 0) {
       await this.transportModule.receiveTransactions(transactions.map(
-        (tx: IBytesTransaction) => this.transactionLogic.fromBytes(tx)
+        (tx: IBytesTransaction) =>
+          TransactionsModel.toTransportTransaction(this.transactionLogic.fromBytes(tx), this.blocksModule)
       ), thePeer, true);
     }
+
     return this.sendResponse(res, {success: true}, 'APISuccess');
+  }
+
+  @Get('/blocks/common')
+  @ValidateSchema()
+  public async getBlocksCommon(@SchemaValid(transportSchema.commonBlock.properties.ids)
+                               @QueryParam('ids') ids: string,
+                               @Req() req: Request, @Res() res: Response) {
+    const excapedIds = ids
+    // Remove quotes
+      .replace(/['"]+/g, '')
+      // Separate by comma into an array
+      .split(',')
+      // Reject any non-numeric values
+      .filter((id) => /^[0-9]+$/.test(id));
+    if (excapedIds.length === 0 || excapedIds.length > 10) {
+      this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
+      throw new APIError('Invalid block id sequence', 200);
+    }
+
+    const common = await this.BlocksModel.findOne({
+      raw       : true,
+      attributes: ['height', 'id', 'previousBlock', 'timestamp'],
+      where     : { id: { [Op.in]: excapedIds } },
+      order     : [['height', 'DESC']],
+      limit     : 1,
+    });
+    return this.sendResponse(res, { common: this.generateBytesBlock(common) }, 'APISuccess');
   }
 
   @Post('/blocks')

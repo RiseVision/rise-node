@@ -7,7 +7,10 @@ import { TransactionsModel } from '../../models';
 import { IBlocksModule } from '../../ioc/interfaces/modules';
 import { PeerRequestOptions } from '../../modules';
 
-export type PostTransactionsRequestDataType = {transactions: Array<IBaseTransaction<any>> };
+export type PostTransactionsRequestDataType = {
+  transactions?: Array<IBaseTransaction<any>>,
+  transaction?: IBaseTransaction<any>,
+};
 
 // TODO: Use toTransportTransaction when calling a non-protobuf peer
 @injectable()
@@ -26,13 +29,21 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
 
   public getRequestOptions(): PeerRequestOptions<PostTransactionsRequestDataType> {
     const reqOptions = super.getRequestOptions();
+    let newData;
     if (this.isProtoBuf()) {
-      const newData = {
-        ...reqOptions.data,
-        transactions: reqOptions.data.transactions.map(
-          (tx) => this.generateBytesTransaction(tx as IBaseTransaction<any>)
-        ),
-      };
+      if (typeof reqOptions.data.transactions !== 'undefined') {
+        newData = {
+          ...reqOptions.data,
+          transactions: reqOptions.data.transactions.map(
+            (tx) => this.generateBytesTransaction(tx as IBaseTransaction<any>)
+          ),
+        };
+      } else if (typeof reqOptions.data.transaction !== 'undefined') {
+        newData = {
+          ...reqOptions.data,
+          transaction: this.generateBytesTransaction(reqOptions.data.transaction as IBaseTransaction<any>),
+        };
+      }
       if (this.protoBufHelper.validate(newData, 'transportTransactions')) {
         // TODO: no "as any"
         reqOptions.data = this.protoBufHelper.encode(newData, 'transportTransactions') as any;
@@ -40,12 +51,20 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
         throw new Error('Failed to encode ProtoBuf');
       }
     } else {
-      const newData = {
-        ...reqOptions.data,
-        transactions: reqOptions.data.transactions.map(
-          (tx) => this.txModel.toTransportTransaction<any>(tx as IBaseTransaction<any>, this.blocksModule)
-        ),
-      };
+      if (typeof reqOptions.data.transactions !== 'undefined') {
+        newData = {
+          ...reqOptions.data,
+          transactions: reqOptions.data.transactions.map(
+            (tx) => this.txModel.toTransportTransaction<any>(tx as IBaseTransaction<any>, this.blocksModule)
+          ),
+        };
+      } else if (typeof reqOptions.data.transaction !== 'undefined') {
+        newData = {
+          ...reqOptions.data,
+          transaction: this.txModel.toTransportTransaction<any>(reqOptions.data.transaction as IBaseTransaction<any>,
+            this.blocksModule),
+        };
+      }
       // TODO: no "as any"
       reqOptions.data = newData as any;
     }

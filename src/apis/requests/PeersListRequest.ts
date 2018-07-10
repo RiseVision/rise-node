@@ -2,6 +2,8 @@ import { BaseRequest } from './BaseRequest';
 import { PeerType } from '../../logic';
 import { injectable } from 'inversify';
 import { IPeerLogic } from '../../ioc/interfaces/logic';
+import { allBuffersToHex, MyConvOptions } from '../../helpers';
+import { GetSignaturesRequestDataType } from './GetSignaturesRequest';
 
 export type PeersListRequestDataType = {peers: PeerType[]};
 
@@ -18,11 +20,10 @@ export class PeersListRequest extends BaseRequest<any, PeersListRequestDataType>
     return this.isProtoBuf() ? '/v2/peer/list' : '/peer/list';
   }
 
-  protected decodeProtoBufResponse(res: {body: Buffer, peer: IPeerLogic}, pbNamespace: string, pbMessageType?: string) {
-    const result = super.decodeProtoBufResponse(res, pbNamespace, pbMessageType);
-    result.peers = result.peers.map((p) => {
-      return {...p, updated: p.updated.toNumber()};
-    });
-    return result;
+  protected getConversionOptions(): MyConvOptions<PeersListRequestDataType> {
+    return {
+      ...super.getConversionOptions(),
+      longs: Number,
+    };
   }
 }

@@ -2,9 +2,21 @@ import * as fs from 'fs';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as path from 'path';
 import * as protobuf from 'protobufjs';
-import { Root, Type } from 'protobufjs';
+import * as traverse from 'traverse';
+import { IConversionOptions, Root, Type } from 'protobufjs';
 import { Symbols } from '../ioc/symbols';
 import { ILogger } from './logger';
+
+export type MyConvOptions<T> = IConversionOptions & { postProcess?: (obj: T) => T };
+
+export function allBuffersToHex(obj) {
+  traverse(obj).forEach(function(x) {
+    if (Buffer.isBuffer(x)) {
+      this.update(x.toString('hex'));
+    }
+  });
+  return obj;
+}
 
 @injectable()
 export class ProtoBufHelper {
@@ -54,7 +66,7 @@ export class ProtoBufHelper {
   }
 
   /**
-   * Decodes Protocol Buffer Data to Object
+   * Decodes Protocol Buffer Data to message object
    * @param {Buffer} data ProtoBuf encoded data
    * @param {string} namespace The proto file to load messages from
    * @param {string} messageType (optional) specific message type to lookup in the proto
@@ -76,6 +88,32 @@ export class ProtoBufHelper {
       }
     }
     return null;
+  }
+
+  /**
+   * Decodes Protocol Buffer Data to message object then converts it to plain javascript object using the provided
+   * conversion options
+   * @param {Buffer} data
+   * @param {IConversionOptions} converters
+   * @param {string} namespace
+   * @param {string} messType
+   * @returns {T}
+   */
+  public decodeToObj<T = any>(data: Buffer, namespace: string, messType?: string, converters?: MyConvOptions<T>): T {
+    let message: T;
+    let inst;
+    let postProcess: (obj: T) => T = (a) => a;
+    if (typeof converters.postProcess !== 'undefined') {
+      postProcess = converters.postProcess;
+      delete converters.postProcess;
+    }
+    try {
+      inst = this.getMessageInstance(namespace, messType);
+      message = this.decode(data, namespace, messType);
+    } catch (e) {
+      throw new Error(`decodeToObject error: ${e.message}`);
+    }
+    return postProcess(inst.toObject(message, converters));
   }
 
   private getMessageInstance(namespace: string, messageType?: any): Type {

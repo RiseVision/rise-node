@@ -44,6 +44,8 @@ import { RequestFactoryType } from '../../../src/apis/requests/requestFactoryTyp
 import { CommonBlockRequest } from '../../../src/apis/requests/CommonBlockRequest';
 import { IBaseTransaction } from '../../../src/logic/transactions';
 import { GetSignaturesRequest } from '../../../src/apis/requests/GetSignaturesRequest';
+import { GetTransactionsRequest } from '../../../src/apis/requests/GetTransactionsRequest';
+import { IAPIRequest } from '../../../src/apis/requests/BaseRequest';
 
 // tslint:disable no-unused-expression max-line-length
 const headers = {
@@ -121,6 +123,10 @@ const transportTXSchema = {
   required  : ['type', 'timestamp', 'senderId', 'senderPublicKey', 'signature', 'fee', 'amount'],
 };
 let protoBufHelper: ProtoBufHelper;
+
+const safePeerMakeRequest = (req: IAPIRequest<any, any>) => {
+
+}
 
 function checkHeadersValidation(p: () => supertest.Test) {
   it('should fail if version is not provided', () => {
@@ -240,6 +246,8 @@ describe('v2/peer/transport', function() {
   let ptFactory: RequestFactoryType<{transactions: Array<IBaseTransaction<any>>}, PostTransactionsRequest>;
   let psFactory: RequestFactoryType<PostSignaturesRequestDataType, PostSignaturesRequest>;
   let gsFactory: RequestFactoryType<void, GetSignaturesRequest>;
+  let gtFactory: RequestFactoryType<void, GetTransactionsRequest>;
+  let cbFactory: RequestFactoryType<void, CommonBlockRequest>;
 
   beforeEach(() => {
     const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
@@ -250,6 +258,9 @@ describe('v2/peer/transport', function() {
     ptFactory = initializer.appManager.container.get<any>(requestSymbols.postTransactions);
     psFactory = initializer.appManager.container.get<any>(requestSymbols.postSignatures);
     gsFactory = initializer.appManager.container.get<any>(requestSymbols.getSignatures);
+    gtFactory = initializer.appManager.container.get<any>(requestSymbols.getTransactions);
+    cbFactory = initializer.appManager.container.get<any>(requestSymbols.commonBlock);
+
     peer = peerFactory({ip: '127.0.0.1', port: appConfig.port});
     systemModule.headers.version = '1.2.0';
     peer.version = '1.2.0';
@@ -271,6 +282,7 @@ describe('v2/peer/transport', function() {
     after(() => {
       peers.map((p) => peersLogic.remove(p));
     });
+
     checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
       .get('/v2/peer/list'));
     it('should return known peers ', async () => {
@@ -306,9 +318,11 @@ describe('v2/peer/transport', function() {
       multisigAccount = wallet;
       multisigKeys = keys;
     });
+
     checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
       .get('/v2/peer/signatures'));
     checkReturnObjKeyVal('signatures', [], '/v2/peer/signatures', headers, {namespace: 'transportSignatures'});
+
     it('should return multisig signatures missing some sigs', async () => {
       const tx = await createSendTransaction(0, 1, multisigAccount, '1R');
       const sendTxResult = await peer.makeRequest(ptFactory({
@@ -361,136 +375,143 @@ describe('v2/peer/transport', function() {
           {signatures: sigs.map((s) => s.toString('hex')), transaction: tx.id}
         ],
       };
-      console.log(JSON.stringify(currentSigs));
-      console.log(JSON.stringify(expectedSigs));
       expect(currentSigs).to.be.deep.eq(expectedSigs);
 
       await initializer.rawMineBlocks(1);
       const finalSigs = await peer.makeRequest(gsFactory({data: null}));
-      expect(finalSigs).to.be.deep.eq({
-        signatures: [],
-      });
+      expect(finalSigs).to.be.deep.eq({signatures : []});
       expect(blocksModule.lastBlock.transactions.length).eq(1);
     });
   });
-  //
-  // describe('/transactions', () => {
-  //   checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
-  //     .get('/v2/peer/transactions'));
-  //   it('should return all transactions in queue', async function () {
-  //     this.timeout(10000);
-  //     const txModule         = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
-  //     const txPool           = initializer.appManager.container.get<ITransactionPoolLogic>(Symbols.logic.transactionPool);
-  //     const { wallet } = await createRandomAccountWithFunds(Math.pow(10, 8));
-  //     const account          = wallet;
-  //     const tx1  = await createSendTransaction(0, 1, account, createRandomWallet().address);
-  //     const tx2  = await createSendTransaction(0, 2, account, createRandomWallet().address);
-  //     await supertest(initializer.appManager.expressApp)
-  //       .post('/v2/peer/transactions')
-  //       .set(headers)
-  //       .send({ transactions: [tx1, tx2] })
-  //       .expect(200);
-  //     await txPool.processBundled();
-  //     // await txModule.fillPool();
-  //
-  //     const {body} = await supertest(initializer.appManager.expressApp)
-  //       .get('/v2/peer/transactions')
-  //       .set(headers)
-  //       .expect(200);
-  //     expect(body.transactions.length).eq(2);
-  //
-  //     const zschema = initializer.appManager.container.get<z_schema>(Symbols.generic.zschema);
-  //     for(const t of body.transactions) {
-  //       const res = zschema.validate(t, transportTXSchema);
-  //       expect(res).is.eq(true);
-  //     }
-  //   });
-  // });
-  //
-  // describe('/transactions [POST]', function () {
-  //   this.timeout(10000);
-  //   let account: LiskWallet;
-  //   let blocksModule: IBlocksModule;
-  //   let txModule: ITransactionsModule;
-  //   let txPool: ITransactionPoolLogic;
-  //   beforeEach(async () => {
-  //     blocksModule     = initializer.appManager.container.get(Symbols.modules.blocks);
-  //     txModule         = initializer.appManager.container.get(Symbols.modules.transactions);
-  //     txPool           = initializer.appManager.container.get(Symbols.logic.transactionPool);
-  //     const { wallet } = await createRandomAccountWithFunds(Math.pow(10, 8));
-  //     account          = wallet;
-  //   });
-  //   afterEach(async () => {
-  //     await initializer.rawDeleteBlocks(blocksModule.lastBlock.height - 1);
-  //   });
-  //   checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
-  //     .post('/v2/peer/transactions'));
-  //   it('should enqueue transaction', async () => {
-  //     const tx  = await createSendTransaction(0, 1, account, createRandomWallet().address);
-  //     const res = await supertest(initializer.appManager.expressApp)
-  //       .post('/v2/peer/transactions')
-  //       .set(headers)
-  //       .send({ transaction: tx })
-  //       .expect(200);
-  //     // console.log(await txModule.getByID(tx.id));
-  //     expect(txPool.transactionInPool(tx.id)).is.true;
-  //   });
-  //   it('should enqueue bundled transactions', async () => {
-  //     const tx  = await createSendTransaction(0, 1, account, createRandomWallet().address);
-  //     const res = await supertest(initializer.appManager.expressApp)
-  //       .post('/v2/peer/transactions')
-  //       .set(headers)
-  //       .send({ transactions: [tx, tx] })
-  //       .expect(200);
-  //     // console.log(await txModule.getByID(tx.id));
-  //     expect(txPool.transactionInPool(tx.id)).is.true;
-  //   });
-  //   it('should validate transactions');
-  //   it('should validate transaction');
-  // });
-  //
-  // describe('/blocks/common', () => {
-  //   initializer.createBlocks(10, 'single');
-  //   checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
-  //     .get('/v2/peer/blocks/common'));
-  //   it('should throw if given ids is not csv', async () => {
-  //     const res = await supertest(initializer.appManager.expressApp)
-  //       .get('/v2/peer/blocks/common?ids=ohh%20yeah')
-  //       .set(headers)
-  //       .expect(200);
-  //     expect(res.body.success).is.false;
-  //     expect(res.body.error).is.eq('Invalid block id sequence');
-  //   });
-  //   it('should throw if more than 10 ids are given', async () => {
-  //     const res = await supertest(initializer.appManager.expressApp)
-  //       .get('/v2/peer/blocks/common?ids=1,2,3,4,5,6,7,8,9,0,1')
-  //       .set(headers)
-  //       .expect(200);
-  //     expect(res.body.success).is.false;
-  //     expect(res.body.error).is.eq('Invalid block id sequence');
-  //   });
-  //   it('should throw and remove querying peer if one or many ids are not numeric');
-  //   it('should return the most heigh commonblock if any', async () => {
-  //     const lastBlock = initializer.appManager.container.get<IBlocksModule>(Symbols.modules.blocks).lastBlock;
-  //     const genesis   = initializer.appManager.container.get<any>(Symbols.generic.genesisBlock);
-  //     const res       = await supertest(initializer.appManager.expressApp)
-  //       .get(`/peer/blocks/common?ids=${genesis.id},2,33433441728981446756,${lastBlock.previousBlock}`)
-  //       .set(headers)
-  //       .expect(200);
-  //     expect(res.body.success).is.true;
-  //     expect(res.body.common).is.not.null;
-  //     expect(res.body.common.height).is.eq(lastBlock.height - 1);
-  //   });
-  //   it('should return null if no common blocks', async () => {
-  //     const res = await supertest(initializer.appManager.expressApp)
-  //       .get('/v2/peer/blocks/common?ids=1,2,3,')
-  //       .set(headers)
-  //       .expect(200);
-  //     expect(res.body.success).is.true;
-  //     expect(res.body.common).is.null;
-  //   });
-  // });
-  //
+
+  describe('/transactions [GET]', () => {
+    checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
+      .get('/v2/peer/transactions'));
+
+    it('should return all transactions in queue', async function() {
+      this.timeout(10000);
+      const txModule         = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
+      const txPool           = initializer.appManager.container.get<ITransactionPoolLogic>(Symbols.logic.transactionPool);
+      const txLogic          = initializer.appManager.container.get<ITransactionLogic>(Symbols.logic.transaction);
+      const { wallet } = await createRandomAccountWithFunds(Math.pow(10, 8));
+      const account          = wallet;
+      const tx1  = await createSendTransaction(0, 1, account, createRandomWallet().address);
+      const tx2  = await createSendTransaction(0, 2, account, createRandomWallet().address);
+      const r = await peer.makeRequest(ptFactory({
+        data: { transactions: [tx1, tx2] } as any,
+      }));
+      expect(r.success).to.be.true;
+      await txPool.processBundled();
+      const getTxs = await peer.makeRequest(gtFactory({data: null}));
+      expect(getTxs.transactions.length).eq(2);
+      const zschema = initializer.appManager.container.get<z_schema>(Symbols.generic.zschema);
+      for (const t of getTxs.transactions) {
+        const res = zschema.validate(t, transportTXSchema);
+        expect(res).is.eq(true);
+      }
+      expect([tx1, tx2].map((t) => txLogic.objectNormalize(t)).sort((a, b) => a.id.localeCompare(b.id)))
+        .to.be.deep.equal(getTxs.transactions.map((t) => txLogic.objectNormalize(t)).sort((a, b) => a.id.localeCompare(b.id)));
+    });
+  });
+
+  describe('/transactions [POST]', function() {
+    this.timeout(10000);
+    let account: LiskWallet;
+    let blocksModule: IBlocksModule;
+    let txModule: ITransactionsModule;
+    let txPool: ITransactionPoolLogic;
+
+    beforeEach(async () => {
+      blocksModule     = initializer.appManager.container.get(Symbols.modules.blocks);
+      txModule         = initializer.appManager.container.get(Symbols.modules.transactions);
+      txPool           = initializer.appManager.container.get(Symbols.logic.transactionPool);
+      const { wallet } = await createRandomAccountWithFunds(Math.pow(10, 8));
+      account          = wallet;
+    });
+
+    afterEach(async () => {
+      await initializer.rawDeleteBlocks(blocksModule.lastBlock.height - 1);
+    });
+
+    checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
+      .post('/v2/peer/transactions'));
+
+    it('should enqueue transaction', async () => {
+      const tx  = await createSendTransaction(0, 1, account, createRandomWallet().address);
+      const res = await peer.makeRequest(ptFactory({
+        data: {
+          transaction: tx,
+        } as any,
+      }));
+      expect(res.success).to.be.true;
+      expect(txPool.transactionInPool(tx.id)).is.true;
+    });
+
+    it('should enqueue bundled transactions', async () => {
+      const tx  = await createSendTransaction(0, 1, account, createRandomWallet().address);
+      const tx2  = await createSendTransaction(0, 1, account, createRandomWallet().address);
+      const res = await peer.makeRequest(ptFactory({
+        data: {
+          transactions: [tx, tx2],
+        } as any,
+      }));
+      expect(res.success).to.be.true;
+      expect(txPool.transactionInPool(tx.id)).is.true;
+    });
+  });
+
+  describe('/blocks/common', () => {
+    initializer.createBlocks(10, 'single');
+    checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
+      .get('/v2/peer/blocks/common'));
+
+    // it('should throw if given ids is not csv', async () => {
+    //   const result = await peer.makeRequest(cbFactory({
+    //     data: null,
+    //     query: {ids: 'ohh%20yeah'},
+    //   })) as any;
+    //   expect(result.success).is.false;
+    //   expect(result.error).is.eq('Invalid block id sequence');
+    // });
+    // it('should throw if more than 10 ids are given', async () => {
+    //   const res = await peer.makeRequest(cbFactory({
+    //     data : null,
+    //     query: { ids: '1,2,3,4,5,6,7,8,9,0,1' },
+    //   })) as any;
+    //   expect(res.success).is.false;
+    //   expect(res.error).is.eq('Invalid block id sequence');
+    // });
+    // it('should throw if given ids is not csv', async () => {
+    //   const res = await peer.makeRequest(cbFactory({
+    //     data : null,
+    //     query: { ids: '1,2,3,4,5,6,7,8,9,0,1' },
+    //   })) as any;
+    //   expect(res.success).is.false;
+    //   expect(res.error).is.eq('Invalid block id sequence');
+    // });
+
+    // it('should return the most heigh commonblock if any', async () => {
+    //   const lastBlock = initializer.appManager.container.get<IBlocksModule>(Symbols.modules.blocks).lastBlock;
+    //   const genesis   = initializer.appManager.container.get<any>(Symbols.generic.genesisBlock);
+    //   const res = await peer.makeRequest(cbFactory({
+    //     data : null,
+    //     query: { ids: `${genesis.id},2,33433441728981446756,${lastBlock.previousBlock}` },
+    //   })) as any;
+    //   expect(res.success).is.true;
+    //   expect(res.common).is.not.null;
+    //   expect(res.common.height).is.eq(lastBlock.height - 1);
+    // });
+
+    // it('should return null if no common blocks', async () => {
+    //   const res = await peer.makeRequest(cbFactory({
+    //     data : null,
+    //     query: { ids: '1,2,3,' },
+    //   })) as any;
+    //   expect(res.success).is.true;
+    //   expect(res.common).is.null;
+    // });
+  });
+
   // describe('/blocks', () => {
   //   checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
   //     .get('/v2/peer/blocks/'));
