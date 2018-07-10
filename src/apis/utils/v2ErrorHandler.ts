@@ -20,7 +20,12 @@ export class V2APIErrorHandler implements ExpressErrorMiddlewareInterface {
     if (!req.url.startsWith('/v2')) {
       return next(error);
     }
-    res.status(error.statusCode || 500);
+    if (req.url.startsWith('/v2/peer')) {
+      res.status(error.statusCode || 200);
+    } else {
+      res.status(error.statusCode || 500);
+    }
+
     if (error instanceof Error) {
       error = error.message;
     }

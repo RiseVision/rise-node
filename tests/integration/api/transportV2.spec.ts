@@ -134,7 +134,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     delete tmp.version;
     return p()
       .set(tmp)
-      .expect(500)
+      .expect(200)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
         const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
@@ -147,7 +147,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     delete tmp.nethash;
     return p()
       .set(tmp)
-      .expect(500)
+      .expect(200)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
         const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
@@ -160,7 +160,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     delete tmp.port;
     return p()
       .set(tmp)
-      .expect(500)
+      .expect(200)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
         const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
@@ -174,7 +174,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     tmp.nethash = new Array(64).fill(null).map(() => 'a').join('');
     return p()
       .set(tmp)
-      .expect(500)
+      .expect(200)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
         const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
@@ -187,7 +187,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     tmp.broadhash  = 'hh'
     return p()
       .set(tmp)
-      .expect(500)
+      .expect(200)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
         const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
@@ -200,7 +200,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     tmp.height     = 'hh';
     return p()
       .set(tmp)
-      .expect(500)
+      .expect(200)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
         const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
@@ -213,7 +213,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     tmp.nonce      = new Array(15).fill(null).fill('a').join('');
     return p()
       .set(tmp)
-      .expect(500)
+      .expect(200)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
         const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
@@ -226,7 +226,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
     tmp.nonce      = new Array(37).fill(null).fill('a').join('');
     return p()
       .set(tmp)
-      .expect(500)
+      .expect(200)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
         const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
@@ -449,13 +449,14 @@ describe('v2/peer/transport', function() {
 
     it('should enqueue bundled transactions', async () => {
       const tx  = await createSendTransaction(0, 1, account, createRandomWallet().address);
-      const tx2  = await createSendTransaction(0, 1, account, createRandomWallet().address);
+      // const tx2  = await createSendTransaction(0, 1, account, createRandomWallet().address);
       const res = await peer.makeRequest(ptFactory({
         data: {
-          transactions: [tx, tx2],
+          transactions: [tx, tx],
         } as any,
       }));
-      expect(res.success).to.be.true;
+      expect(res.success).to.be.false;
+      expect(res.message).to.contain('Transaction is already processed');
       expect(txPool.transactionInPool(tx.id)).is.true;
     });
   });
