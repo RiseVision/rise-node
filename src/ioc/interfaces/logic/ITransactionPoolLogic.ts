@@ -2,6 +2,9 @@ import { InnerTXQueue } from '../../../logic';
 import { IBaseTransaction } from '../../../logic/transactions';
 import { ITransactionsModule } from '../modules';
 
+/**
+ * Methods signature for TransactionPool
+ */
 export interface ITransactionPoolLogic {
   readonly unconfirmed: InnerTXQueue;
   readonly bundled: InnerTXQueue;
@@ -13,8 +16,14 @@ export interface ITransactionPoolLogic {
    */
   queueTransaction(tx: IBaseTransaction<any>, bundled: boolean): void;
 
+  /**
+   * Fills the pools
+   */
   fillPool(): Promise<Array<IBaseTransaction<any>>>;
 
+  /**
+   * Checks if txID is in pool
+   */
   transactionInPool(txID: string): boolean;
 
   /**
@@ -22,6 +31,9 @@ export interface ITransactionPoolLogic {
    */
   getMergedTransactionList(limit: number): Array<IBaseTransaction<any>>;
 
+  /**
+   * Returns a list of expired transactions
+   */
   expireTransactions(): string[];
 
   /**
