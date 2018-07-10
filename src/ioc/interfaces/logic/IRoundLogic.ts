@@ -7,6 +7,9 @@ export interface IRoundLogicNewable {
   new (scope: RoundLogicScope, slots: Slots): IRoundLogic;
 }
 
+/**
+ * Methods signature for RoundLogic
+ */
 export interface IRoundLogic {
 
   /**
@@ -37,7 +40,7 @@ export interface IRoundLogic {
   flushRound(): DBOp<any>;
 
   /**
-   * REmove blocks higher than this block height
+   * Remove blocks higher than this block height
    */
   truncateBlocks(): DBOp<any>;
 
