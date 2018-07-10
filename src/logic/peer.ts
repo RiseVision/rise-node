@@ -177,10 +177,7 @@ export class PeerLogic implements PeerType, IPeerLogic {
   }
 
   public makeRequest<T>(requestHandler: IAPIRequest<any, any>): Promise<T> {
-    requestHandler.setPeer(this);
-    const requestOptions = requestHandler.getRequestOptions();
-    return this.transportModule.getFromPeer<T>(this, requestOptions)
-      .then((res) => requestHandler.getResponseData(res));
+    return requestHandler.makeRequest(this);
   }
 
   public pingAndUpdate(): Promise<void> {

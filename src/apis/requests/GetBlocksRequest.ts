@@ -7,11 +7,11 @@ export class GetBlocksRequest extends BaseRequest<void, void> {
   protected readonly supportsProtoBuf = true;
 
   public getResponseData(res) {
-    return this.isProtoBuf() ? this.decodeProtoBufResponse(res, 'transportBlocks') : res.body;
+    return this.peerSupportsProtoBuf(res.peer) ? this.decodeProtoBufResponse(res, 'transportBlocks') : res.body;
   }
 
-  protected getBaseUrl() {
+  protected getBaseUrl(isProtoBuf) {
     const queryString = this.getQueryString();
-    return this.isProtoBuf() ? `/v2/peer/blocks${queryString}` : `/peer/blocks${queryString}`;
+    return isProtoBuf ? `/v2/peer/blocks${queryString}` : `/peer/blocks${queryString}`;
   }
 }

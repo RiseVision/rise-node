@@ -27,9 +27,9 @@ export class PostBlocksRequest extends BaseRequest<any, PostBlocksRequestDataTyp
   @inject(Symbols.models.transactions)
   private transactionsModel: typeof TransactionsModel;
 
-  public getRequestOptions() {
-    const reqOptions = super.getRequestOptions();
-    if (this.isProtoBuf()) {
+  public getRequestOptions(peerSupportsProto) {
+    const reqOptions = super.getRequestOptions(peerSupportsProto);
+    if (peerSupportsProto) {
       if (this.protoBufHelper.validate(reqOptions.data, 'transportBlocks', 'transportBlock')) {
         const newData = {
           ...reqOptions.data,
@@ -50,8 +50,8 @@ export class PostBlocksRequest extends BaseRequest<any, PostBlocksRequestDataTyp
     return reqOptions;
   }
 
-  protected getBaseUrl() {
-    return this.isProtoBuf() ? '/v2/peer/blocks' : '/peer/blocks';
+  protected getBaseUrl(isProto) {
+    return isProto ? '/v2/peer/blocks' : '/peer/blocks';
   }
 
   private generateBytesTransaction(tx: IBaseTransaction<any>): IBytesTransaction {

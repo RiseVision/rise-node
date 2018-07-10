@@ -210,9 +210,10 @@ export class TransportV2API {
   }
 
   private error(res: Response, message: string, code = 500) {
-    res.contentType('application/octet-stream');
-    const payload = { message };
-    return res.status(code).end(this.protoBuf.encode(payload, 'APIError'), 'binary');
+    throw new Error(message);
+    // res.contentType('application/octet-stream');
+    // const payload = { message };
+    // return res.status(code).end(this.protoBuf.encode(payload, 'APIError'), 'binary');
   }
 
   private generateBytesTransaction(tx: IBaseTransaction<any>): IBytesTransaction {

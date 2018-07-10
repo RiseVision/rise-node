@@ -1,17 +1,16 @@
+import { IAPIRequest } from '../../../apis/requests/BaseRequest';
 import { BasePeerType, PeerState, SignedBlockType } from '../../../logic';
-import { IBaseTransaction } from '../../../logic/transactions';
+import { IBaseTransaction, ITransportTransaction } from '../../../logic/transactions';
 import { PeerRequestOptions } from '../../../modules';
 import { IPeerLogic } from '../logic';
 import { IModule } from './IModule';
-import { ITransportTransaction } from '../../../logic/transactions/baseTransactionType';
-import { IAPIRequest } from '../../../apis/requests/BaseRequest';
 
 export interface ITransportModule extends IModule {
 
   getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: IPeerLogic }>;
 
   getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] },
-                       requestHandler: IAPIRequest): Promise<{ body: any; peer: IPeerLogic }>;
+                       requestHandler: IAPIRequest<any, any>): Promise<{ body: any; peer: IPeerLogic }>;
 
   /**
    * Calls enqueue signatures and emits a signature change socket message

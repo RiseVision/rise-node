@@ -14,9 +14,9 @@ export type PostSignaturesRequestDataType = {
 export class PostSignaturesRequest extends BaseRequest<any, PostSignaturesRequestDataType> {
   protected readonly method = 'POST';
   protected readonly supportsProtoBuf = true;
-  public getRequestOptions() {
-    const reqOptions = super.getRequestOptions();
-    if (this.isProtoBuf()) {
+  public getRequestOptions(peerSupportsProto) {
+    const reqOptions = super.getRequestOptions(peerSupportsProto);
+    if (peerSupportsProto) {
       reqOptions.data.signatures = reqOptions.data.signatures.map((sig) => {
         sig.transaction = Long.fromString(sig.transaction, true) as any;
         return sig;
@@ -40,9 +40,8 @@ export class PostSignaturesRequest extends BaseRequest<any, PostSignaturesReques
     return reqOptions;
   }
 
-  protected getBaseUrl() {
-    return this.isProtoBuf() ? '/v2/peer/signatures' : '/peer/signatures';
+  protected getBaseUrl(isProto) {
+    return isProto ? '/v2/peer/signatures' : '/peer/signatures';
   }
-
 
 }

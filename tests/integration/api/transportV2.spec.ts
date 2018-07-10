@@ -17,6 +17,8 @@ import {
   ITransactionsModule
 } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
+import * as chaiAsPromised from 'chai-as-promised';
+import * as chai from 'chai';
 
 import initializer from '../common/init';
 import {
@@ -47,6 +49,8 @@ import { GetSignaturesRequest } from '../../../src/apis/requests/GetSignaturesRe
 import { GetTransactionsRequest } from '../../../src/apis/requests/GetTransactionsRequest';
 import { IAPIRequest } from '../../../src/apis/requests/BaseRequest';
 
+
+chai.use(chaiAsPromised);
 // tslint:disable no-unused-expression max-line-length
 const headers = {
   nethash: 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
@@ -450,14 +454,11 @@ describe('v2/peer/transport', function() {
     it('should enqueue bundled transactions', async () => {
       const tx  = await createSendTransaction(0, 1, account, createRandomWallet().address);
       // const tx2  = await createSendTransaction(0, 1, account, createRandomWallet().address);
-      const res = await peer.makeRequest(ptFactory({
+      await expect(peer.makeRequest(ptFactory({
         data: {
           transactions: [tx, tx],
         } as any,
-      }));
-      expect(res.success).to.be.false;
-      expect(res.message).to.contain('Transaction is already processed');
-      expect(txPool.transactionInPool(tx.id)).is.true;
+      }))).rejectedWith('Transaction is already processed');
     });
   });
 
@@ -466,14 +467,12 @@ describe('v2/peer/transport', function() {
     checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
       .get('/v2/peer/blocks/common'));
 
-    // it('should throw if given ids is not csv', async () => {
-    //   const result = await peer.makeRequest(cbFactory({
-    //     data: null,
-    //     query: {ids: 'ohh%20yeah'},
-    //   })) as any;
-    //   expect(result.success).is.false;
-    //   expect(result.error).is.eq('Invalid block id sequence');
-    // });
+    it('should throw if given ids is not csv', async () => {
+      await expect(peer.makeRequest(cbFactory({
+        data: null,
+        query: {ids: 'ohh%20yeah'},
+      }))).rejectedWith('Invalid block id sequence');
+    });
     // it('should throw if more than 10 ids are given', async () => {
     //   const res = await peer.makeRequest(cbFactory({
     //     data : null,

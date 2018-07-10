@@ -5,13 +5,17 @@ import { MyConvOptions, ProtoBufHelper } from '../../helpers';
 import { IPeerLogic } from '../../ioc/interfaces/logic';
 import { Symbols } from '../../ioc/symbols';
 import { PeerRequestOptions } from '../../modules';
+import { ITransportModule } from '../../ioc/interfaces/modules';
+
+// tslint:disable-next-line
+export type ErrorOut = { success: false, error: string };
 
 export interface IAPIRequest<Out, In> {
-  getRequestOptions(): PeerRequestOptions;
+  getRequestOptions(peerSupportsProto: boolean): PeerRequestOptions;
   getResponseData(res: {body: Buffer | Out, peer: IPeerLogic}): Out;
-  setPeer(peer: IPeerLogic);
   getOrigOptions(): { data: In, query?: any};
   mergeIntoThis(...objs: this[]): void;
+  makeRequest(peer: IPeerLogic): Promise<Out>;
 }
 
 @injectable()
@@ -21,16 +25,20 @@ export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
   protected readonly method: 'GET' | 'POST';
   protected readonly baseUrl: string;
   protected readonly supportsProtoBuf: boolean = false;
-  protected peer: IPeerLogic;
+  // protected peer: IPeerLogic;
 
   @inject(Symbols.helpers.protoBuf)
   protected protoBufHelper: ProtoBufHelper;
 
-  public getRequestOptions(): PeerRequestOptions<In> {
+  @inject(Symbols.modules.transport)
+  protected transportModule: ITransportModule;
+
+  public getRequestOptions(peerSupportsProto: boolean): PeerRequestOptions<In> {
+    const isProtoBuf = this.supportsProtoBuf && peerSupportsProto;
     const reqOptions: PeerRequestOptions = {
-      isProtoBuf: this.isProtoBuf(),
+      isProtoBuf,
       method: this.getMethod(),
-      url: this.getBaseUrl(),
+      url: this.getBaseUrl(isProtoBuf),
     };
     if (this.options.data) {
       reqOptions.data = this.options.data;
@@ -39,19 +47,15 @@ export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
   }
 
   public getResponseData(res: { body: Buffer | Out, peer: IPeerLogic }): Out {
-    return this.isProtoBuf() ?
-      this.decodeProtoBufResponse(res as any, 'APISuccess') :
-      res.body as Out
-      ;
+    return this.supportsProtoBuf && this.peerSupportsProtoBuf(res.peer) ?
+        this.decodeProtoBufResponse(res as any, 'APISuccess') :
+        res.body as Out;
   }
 
-  public isProtoBuf() {
-    // TODO Set correct version number
-    return this.supportsProtoBuf && semver.gte(this.peer.version, '1.1.1');
-  }
-
-  public setPeer(peer: IPeerLogic) {
-    this.peer = peer;
+  public makeRequest(peer: IPeerLogic): Promise<Out> {
+    const requestOptions = this.getRequestOptions(this.peerSupportsProtoBuf(peer));
+    return this.transportModule.getFromPeer<Buffer | Out>(peer, requestOptions)
+      .then((res) => this.getResponseData(res));
   }
 
   public mergeIntoThis(...objs: this[]) {
@@ -62,12 +66,16 @@ export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
     return this.options;
   }
 
-  protected getBaseUrl(): string {
+  protected getBaseUrl(isProtoBuf: boolean): string {
     return this.baseUrl;
   }
 
   protected getMethod(): 'GET' | 'POST' {
     return this.method;
+  }
+
+  protected peerSupportsProtoBuf(peer: IPeerLogic) {
+    return semver.gte(peer.version, '1.1.1');
   }
 
   protected getQueryString(): string {
@@ -96,7 +104,17 @@ export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
   }
 
   protected decodeProtoBufResponse(res: {body: Buffer, peer: IPeerLogic}, pbNamespace: string, pbMessageType?: string): Out {
-    return this.protoBufHelper
-      .decodeToObj(res.body, pbNamespace, pbMessageType, this.getConversionOptions());
+    let error: { success: false, error: string };
+    try {
+      error = this.protoBufHelper.decode(res.body, 'APIError');
+    } catch (e) {
+      // NOOP;
+    }
+    if (error && !error.success && error.error) {
+      throw new Error(error.error);
+    } else {
+      return this.protoBufHelper
+        .decodeToObj(res.body, pbNamespace, pbMessageType, this.getConversionOptions());
+    }
   }
 }

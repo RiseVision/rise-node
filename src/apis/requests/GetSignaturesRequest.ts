@@ -16,7 +16,7 @@ export class GetSignaturesRequest extends BaseRequest<GetSignaturesRequestDataTy
   protected readonly supportsProtoBuf = true;
 
   public getResponseData(res) {
-    if (this.isProtoBuf()) {
+    if (this.peerSupportsProtoBuf(res.peer)) {
       const rawRes = this.decodeProtoBufResponse(res, 'transportSignatures');
       return rawRes;
     } else {
@@ -33,7 +33,7 @@ export class GetSignaturesRequest extends BaseRequest<GetSignaturesRequestDataTy
     };
   }
 
-  protected getBaseUrl() {
-    return this.isProtoBuf() ? '/v2/peer/signatures' : '/peer/signatures';
+  protected getBaseUrl(isProtoBuf) {
+    return isProtoBuf ? '/v2/peer/signatures' : '/peer/signatures';
   }
 }

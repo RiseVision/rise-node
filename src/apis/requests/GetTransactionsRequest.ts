@@ -22,7 +22,7 @@ export class GetTransactionsRequest extends BaseRequest<GetTransactionsRequestDa
   private blocksModule: IBlocksModule;
 
   public getResponseData(res) {
-    if (this.isProtoBuf()) {
+    if (this.peerSupportsProtoBuf(res.peer)) {
       const rawRes = this.decodeProtoBufResponse(res, 'transportTransactions');
       if (typeof rawRes.transactions !== 'undefined') {
         rawRes.transactions = rawRes.transactions.map(
@@ -37,7 +37,7 @@ export class GetTransactionsRequest extends BaseRequest<GetTransactionsRequestDa
     }
   }
 
-  protected getBaseUrl() {
-    return this.isProtoBuf() ? '/v2/peer/transactions' : '/peer/transactions';
+  protected getBaseUrl(isProtoBuf) {
+    return isProtoBuf ? '/v2/peer/transactions' : '/peer/transactions';
   }
 }

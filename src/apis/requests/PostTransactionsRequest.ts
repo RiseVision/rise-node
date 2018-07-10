@@ -27,10 +27,10 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
 
-  public getRequestOptions(): PeerRequestOptions<PostTransactionsRequestDataType> {
-    const reqOptions = super.getRequestOptions();
+  public getRequestOptions(peerSupportsProto): PeerRequestOptions<PostTransactionsRequestDataType> {
+    const reqOptions = super.getRequestOptions(peerSupportsProto);
     let newData;
-    if (this.isProtoBuf()) {
+    if (peerSupportsProto) {
       if (typeof reqOptions.data.transactions !== 'undefined') {
         newData = {
           ...reqOptions.data,
@@ -71,8 +71,8 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
     return reqOptions;
   }
 
-  protected getBaseUrl() {
-    return this.isProtoBuf() ? '/v2/peer/transactions' : '/peer/transactions';
+  protected getBaseUrl(isProto) {
+    return isProto ? '/v2/peer/transactions' : '/peer/transactions';
   }
 
   private generateBytesTransaction(tx: IBaseTransaction<any>): IBytesTransaction {
