@@ -10,6 +10,7 @@ import {
 import { IBaseTransaction, TransactionType } from '@risevision/core-types';
 import { inject, injectable, tagged } from 'inversify';
 import SocketIO from 'socket.io';
+import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
 import { MultisigAsset, MultiSignatureTransaction } from './transaction';
 
 @injectable()
@@ -18,7 +19,7 @@ export class MultisignaturesModule implements IMultisignaturesModule {
   private transactionPool: ITransactionPoolLogic;
 
   @inject(Symbols.modules.accounts)
-  private accountsModule: IAccountsModule;
+  private accountsModule: IAccountsModule<AccountsModelWithMultisig>;
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
   public balancesSequence: Sequence;
@@ -42,7 +43,7 @@ export class MultisignaturesModule implements IMultisignaturesModule {
    */
   @WrapInBalanceSequence
   public async processSignature(tx: { signature: string, transaction: string }) {
-    const transaction = this.transactionsModule.getMultisignatureTransaction(tx.transaction);
+    const transaction = this.transactionsModule.getPendingTransaction(tx.transaction);
     if (!transaction) {
       throw new Error('Transaction not found');
     }
@@ -70,17 +71,17 @@ export class MultisignaturesModule implements IMultisignaturesModule {
     transaction.signatures.push(tx.signature);
 
     // update readyness so that it can be inserted into pool
-    const payload = this.transactionPool.multisignature.getPayload(transaction);
+    const payload = this.transactionPool.pending.getPayload(transaction);
     if (!payload) {
       throw new Error('Cannot find payload for such multisig tx');
     }
-    payload.ready = this.multiTx.ready(transaction, sender);
+    payload.ready = await this.multiTx.ready(transaction, sender);
 
     await this.bus.message('signature', {transaction: tx.transaction, signature: tx.signature}, true);
     return null;
   }
 
-  private async processNormalTxSignature(tx: IBaseTransaction<any>, signature: string, sender: IAccountsModel) {
+  private async processNormalTxSignature(tx: IBaseTransaction<any>, signature: string, sender: AccountsModelWithMultisig) {
     const multisignatures = sender.multisignatures;
 
     if (tx.requesterPublicKey) {
@@ -109,7 +110,7 @@ export class MultisignaturesModule implements IMultisignaturesModule {
 
   }
 
-  private async processMultiSigSignature(tx: IBaseTransaction<MultisigAsset>, signature: string, sender: IAccountsModel) {
+  private async processMultiSigSignature(tx: IBaseTransaction<MultisigAsset>, signature: string, sender: AccountsModelWithMultisig) {
     // tslint:disable-next-line
     if (tx.asset.multisignature['signatures'] || tx.signatures.indexOf(signature) !== -1) {
       throw new Error('Permission to sign transaction denied');

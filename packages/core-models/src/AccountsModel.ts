@@ -46,8 +46,8 @@ export class AccountsModel extends Model<AccountsModel> implements IAccountsMode
   @Column
   public isDelegate: 0 | 1;
 
-  @Column
-  public secondSignature: 0 | 1;
+  // @Column
+  // public secondSignature: 0 | 1;
 
   @PrimaryKey
   @Column
@@ -67,12 +67,6 @@ export class AccountsModel extends Model<AccountsModel> implements IAccountsMode
 
   @Column
   public rate: number;
-
-  @Column
-  public multimin: number;
-
-  @Column
-  public multilifetime: number;
 
   @Column
   public blockId: string;
@@ -115,9 +109,9 @@ export class AccountsModel extends Model<AccountsModel> implements IAccountsMode
   // public u_delegates?: publicKey[];
 
 
-  public isMultisignature(): boolean {
-    return this.multilifetime > 0;
-  }
+  // public isMultisignature(): boolean {
+  //   return this.multilifetime > 0;
+  // }
 
   private _hexPublicKey: publicKey;
   public get hexPublicKey(): publicKey {

@@ -1,7 +1,6 @@
 import { Symbols } from '@risevision/core-helpers';
 import {
   IAccountLogic,
-  IAccountsModel,
   ISystemModule,
   ITransactionLogic,
   ITransactionsModel,
@@ -27,6 +26,7 @@ import * as z_schema from 'z-schema';
 
 import { MultisigConstantsType, multisigSymbols } from './helpers';
 import { Accounts2MultisignaturesModel, Accounts2U_MultisignaturesModel, MultiSignaturesModel } from './models/';
+import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
 
 // tslint:disable-next-line interface-over-type-literal
 export type MultisigAsset = {
@@ -36,7 +36,6 @@ export type MultisigAsset = {
     keysgroup: string[];
   }
 };
-
 @injectable()
 export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignaturesModel> {
 
@@ -68,7 +67,7 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
   @inject(Symbols.models.accounts2U_Multisignatures)
   private Accounts2UMultisignaturesModel: typeof Accounts2U_MultisignaturesModel;
   @inject(Symbols.models.accounts)
-  private AccountsModel: typeof IAccountsModel;
+  private AccountsModel: typeof AccountsModelWithMultisig;
   @inject(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
@@ -122,7 +121,7 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     return bb.toBuffer() as any;
   }
 
-  public async verify(tx: IBaseTransaction<MultisigAsset>, sender: IAccountsModel): Promise<void> {
+  public async verify(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModelWithMultisig): Promise<void> {
     if (!tx.asset || !tx.asset.multisignature) {
       throw new Error('Invalid transaction asset');
     }
@@ -216,14 +215,14 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
 
   public async apply(tx: IConfirmedTransaction<MultisigAsset>,
                      block: SignedBlockType,
-                     sender: IAccountsModel): Promise<Array<DBOp<any>>> {
+                     sender: AccountsModelWithMultisig): Promise<Array<DBOp<any>>> {
     delete this.unconfirmedSignatures[sender.address];
     return this.calcOps('confirmed', tx.asset, block.id, sender);
   }
 
   public async undo(tx: IConfirmedTransaction<MultisigAsset>,
                     block: SignedBlockType,
-                    sender: IAccountsModel): Promise<Array<DBOp<any>>> {
+                    sender: AccountsModelWithMultisig): Promise<Array<DBOp<any>>> {
     // to restore to the previous state we try to fetch the previous multisig transaction
     // if there is any then we apply that tx after rollbacking. otherwise we reset to 0 all the fields.
     // seek for prev txs for such account.
@@ -250,7 +249,7 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     return this.calcOps('confirmed', asset, '0', sender);
   }
 
-  public async applyUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: any): Promise<Array<DBOp<any>>> {
+  public async applyUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModelWithMultisig): Promise<Array<DBOp<any>>> {
     if (this.unconfirmedSignatures[sender.address]) {
       throw new Error('Signature on this account is pending confirmation');
     }
@@ -258,7 +257,7 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     return this.calcOps('unconfirmed', tx.asset, null, sender);
   }
 
-  public async undoUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
+  public async undoUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModelWithMultisig): Promise<Array<DBOp<any>>> {
     delete this.unconfirmedSignatures[sender.address];
     sender.u_multisignatures = (sender.multisignatures || []).slice();
     sender.u_multimin        = sender.multimin;
@@ -349,7 +348,7 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
    * @param sender
    * @returns {boolean}
    */
-  public ready(tx: IBaseTransaction<any>, sender: IAccountsModel): boolean {
+  public async ready(tx: IBaseTransaction<any>, sender: AccountsModelWithMultisig): Promise<boolean> {
     if (!Array.isArray(tx.signatures)) {
       return false;
     }
@@ -389,7 +388,7 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     });
   }
 
-  private calcOps(type: 'confirmed' | 'unconfirmed', asset: MultisigAsset, blockId: string, sender: IAccountsModel): Array<DBOp<any>> {
+  private calcOps(type: 'confirmed' | 'unconfirmed', asset: MultisigAsset, blockId: string, sender: AccountsModelWithMultisig): Array<DBOp<any>> {
     if (type === 'confirmed') {
       sender.multisignatures = [];
       sender.applyDiffArray('multisignatures', asset.multisignature.keysgroup);

@@ -3,19 +3,19 @@ import { AccountDiffType, AccountFilterData } from '../logic';
 import { IAccountsModel } from '../models';
 import { IModule } from './IModule';
 
-export interface IAccountsModule extends IModule {
+export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> extends IModule {
 
-  resolveAccountsForTransactions(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: IAccountsModel }>;
+  resolveAccountsForTransactions(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: T }>;
 
-  getAccount(filter: AccountFilterData, fields?: FieldsInModel<IAccountsModel>): Promise<IAccountsModel>;
+  getAccount(filter: AccountFilterData, fields?: FieldsInModel<T>): Promise<T>;
 
-  getAccounts(filter: AccountFilterData, fields: FieldsInModel<IAccountsModel>): Promise<IAccountsModel[]>;
+  getAccounts(filter: AccountFilterData, fields: FieldsInModel<T>): Promise<T[]>;
 
   /**
    * Sets some data to specific account
    */
   // tslint:disable-next-line max-line-length
-  setAccountAndGet(data: Partial<IAccountsModel>  & ({ publicKey: Buffer } | { address: string })): Promise<IAccountsModel>;
+  setAccountAndGet(data: Partial<T>  & ({ publicKey: Buffer } | { address: string })): Promise<T>;
 
   mergeAccountAndGetOPs(diff: AccountDiffType): Array<DBOp<any>>;
 
