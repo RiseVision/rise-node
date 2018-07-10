@@ -1,3 +1,6 @@
+/**
+ * Methods signature for RoundsLogic
+ */
 export interface IRoundsLogic {
   /**
    * Return round calculated given the blockheight
