@@ -13,8 +13,7 @@ export type AccountFilterData = {
 };
 
 export type AccountDiffType = {[k in keyof IAccountsModel]?: IAccountsModel[k]} & {round?: number};
-export interface IAccountLogic {
-
+export interface IAccountLogic<T extends IAccountsModel = IAccountsModel> {
 
   /**
    * Verifies the validity of a publickey.
@@ -26,13 +25,13 @@ export interface IAccountLogic {
   /**
    * Get account information for specific fields and filtering criteria
    */
-  get(filter: AccountFilterData, fields?: FieldsInModel<IAccountsModel>): Promise<IAccountsModel>;
+  get(filter: AccountFilterData, fields?: FieldsInModel<T>): Promise<T>;
 
   /**
    * Get accountS information for specific fields and filtering criteria.
    */
   getAll(filter: AccountFilterData,
-         fields?: FieldsInModel<IAccountsModel>): Promise<IAccountsModel[]>;
+         fields?: FieldsInModel<T>): Promise<T[]>;
 
   /**
    * Sets fields for specific address in mem_accounts table

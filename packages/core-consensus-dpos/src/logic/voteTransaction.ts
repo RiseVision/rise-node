@@ -17,7 +17,13 @@ import {
 import { inject, injectable } from 'inversify';
 import { Model } from 'sequelize-typescript';
 import * as z_schema from 'z-schema';
-import { Accounts2DelegatesModel, Accounts2U_DelegatesModel, RoundsModel, VotesModel } from '../models/';
+import {
+  Accounts2DelegatesModel,
+  Accounts2U_DelegatesModel,
+  AccountsModelForDPOS,
+  RoundsModel,
+  VotesModel
+} from '../models/';
 import { DposConstantsType, dPoSSymbols } from '../helpers/';
 import { DelegatesModule } from '../modules/';
 import { RoundsLogic } from './rounds';
@@ -70,7 +76,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     return this.systemModule.getFees(height).fees.vote;
   }
 
-  public async verify(tx: IBaseTransaction<VoteAsset> & { senderId: string }, sender: IAccountsModel): Promise<void> {
+  public async verify(tx: IBaseTransaction<VoteAsset> & { senderId: string }, sender: AccountsModelForDPOS): Promise<void> {
     if (tx.recipientId !== tx.senderId) {
       throw new Error('Missing recipient');
     }
@@ -109,7 +115,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   }
 
   // tslint:disable-next-line max-line-length
-  public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
+  public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModelForDPOS): Promise<Array<DBOp<any>>> {
     await this.checkConfirmedDelegates(tx, sender);
     sender.applyDiffArray('delegates', tx.asset.votes);
     const ops = this.calculateOPs(this.Accounts2DelegatesModel, block.id, tx.asset.votes, sender.address);
@@ -132,7 +138,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   }
 
   // tslint:disable-next-line max-line-length
-  public async undo(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
+  public async undo(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModelForDPOS): Promise<Array<DBOp<any>>> {
     this.objectNormalize(tx);
     const invertedVotes = Diff.reverse(tx.asset.votes);
     sender.applyDiffArray('delegates', invertedVotes);
@@ -156,13 +162,13 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     return ops;
   }
 
-  public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
+  public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModelForDPOS): Promise<Array<DBOp<any>>> {
     await this.checkUnconfirmedDelegates(tx, sender);
     sender.applyDiffArray('u_delegates', tx.asset.votes);
     return this.calculateOPs(this.Accounts2U_DelegatesModel, null, tx.asset.votes, sender.address);
   }
 
-  public async undoUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
+  public async undoUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModelForDPOS): Promise<Array<DBOp<any>>> {
     this.objectNormalize(tx);
     const reversedVotes = Diff.reverse(tx.asset.votes);
     sender.applyDiffArray('u_delegates', reversedVotes);
@@ -172,14 +178,14 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   /**
    * Checks vote integrity of tx sender
    */
-  public checkUnconfirmedDelegates(tx: IBaseTransaction<VoteAsset>, sender: IAccountsModel): Promise<any> {
+  public checkUnconfirmedDelegates(tx: IBaseTransaction<VoteAsset>, sender: AccountsModelForDPOS): Promise<any> {
     return this.delegatesModule.checkUnconfirmedDelegates(sender, tx.asset.votes);
   }
 
   /**
    * Checks vote integrity of sender
    */
-  public checkConfirmedDelegates(tx: IBaseTransaction<VoteAsset>, sender: IAccountsModel): Promise<any> {
+  public checkConfirmedDelegates(tx: IBaseTransaction<VoteAsset>, sender: AccountsModelForDPOS): Promise<any> {
     return this.delegatesModule.checkConfirmedDelegates(sender, tx.asset.votes);
   }
 

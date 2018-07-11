@@ -8,7 +8,7 @@ import SocketIO from 'socket.io';
 import { DposConstantsType, dPoSSymbols, Slots } from '../helpers';
 import { IRoundLogicNewable, RoundLogicScope } from '../logic/round';
 import { RoundsLogic } from '../logic/rounds';
-import { RoundsModel } from '../models/';
+import { AccountsModelForDPOS, RoundsModel } from '../models/';
 import { DelegatesModule } from './delegates';
 
 const performRoundSnapshotSQL = fs.readFileSync(
@@ -43,7 +43,7 @@ export class RoundsModule {
 
   // modules
   @inject(Symbols.modules.accounts)
-  private accountsModule: IAccountsModule;
+  private accountsModule: IAccountsModule<AccountsModelForDPOS>;
   @inject(dPoSSymbols.modules.delegates)
   private delegatesModule: DelegatesModule;
 

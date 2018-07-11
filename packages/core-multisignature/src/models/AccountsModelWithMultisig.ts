@@ -1,52 +1,47 @@
 import 'reflect-metadata';
 // import { IAccountsModel } from '@risevision/core-interfaces';
-import { AccountsModel } from '@risevision/core-models';
-import { Column, Model, Sequelize, Table } from 'sequelize-typescript';
+import { AccountsModel, utils as modelsUtils } from '@risevision/core-models';
+import { Column, DataType, DefaultScope, Model, Sequelize } from 'sequelize-typescript';
+import * as sequelize from 'sequelize';
+import { publicKey } from '@risevision/core-types';
+import { IAccountsModel } from '@risevision/core-interfaces';
 // import * as extend from 'extend';
 
+const buildArrayArgAttribute = function (table: string): any {
+  return [sequelize.literal(`(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2${table} WHERE "accountId" = "AccountsModel"."address")`), table];
+};
+
 // tslint:disable-next-line
-@Table({tableName: 'mem_accounts'})
-export class AccountsModelWithMultisig extends Model<AccountsModel> {
-  // public multimin: number;
+
+@DefaultScope({
+  attributes: [
+    'multimin',
+    'multilifetime',
+    'u_multimin',
+    'u_multilifetime',
+    buildArrayArgAttribute('multisignatures'),
+    buildArrayArgAttribute('u_multisignatures'),
+  ],
+})
+export class AccountsModelWithMultisig extends IAccountsModel {
+  @Column
+  public multimin: number;
+  @Column
+  public multilifetime: number;
+  @Column(DataType.TEXT)
+  public multisignatures?: publicKey[];
+
+  @Column
+  public u_multilifetime: number;
   @Column
   public u_multimin: number;
-  // public multilifetime: number;
-  // public u_multilifetime: number;
-  // public u_multisignatures: string[];
-  // public multisignatures: string[];
+  @Column(DataType.TEXT)
+  public u_multisignatures?: publicKey[];
 
   public isMultisignature(): boolean {
-    throw new Error('erorr');
-  };
-}
-//
-// // tslint:disable
-// function mergeModels(what: typeof Model, into: typeof Model) {
-//   const fakeSequelize = new Sequelize({
-//     database: 'test',
-//     //dialect: 'sqlite',
-//     dialect : 'postgres',
-//     username: 'root',
-//     password: 'test',
-//     //storage: ':memory',
-//     logging : !('SEQ_SILENT' in process.env),
-//   });
-//
-//   fakeSequelize.addModels([what]);
-//
-//
-// }
-// console.log(AccountsModel.options);
-// const s2 = new Sequelize({
-//   database: 'test',
-//   //dialect: 'sqlite',
-//   dialect : 'postgres',
-//   username: 'root',
-//   password: 'test',
-//   //storage: ':memory',
-//   logging : !('SEQ_SILENT' in process.env),
-// })
-//
-// s2.addModels([AccountsModelWithMultisig]);
-// console.log(AccountsModel);
+    return this.multilifetime > 0;
+  }
 
+}
+
+modelsUtils.mergeModels(AccountsModelWithMultisig, AccountsModel);

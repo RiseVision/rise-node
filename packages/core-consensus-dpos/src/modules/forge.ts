@@ -14,6 +14,7 @@ import { ConstantsType, IKeypair, publicKey } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import { inject, injectable, tagged } from 'inversify';
 import { DposAppConfig, dPoSSymbols, Slots } from '../helpers/';
+import { AccountsModelForDPOS } from '../models';
 import { DelegatesModule } from './delegates';
 
 @injectable()
@@ -49,7 +50,7 @@ export class ForgeModule implements IModule {
 
   // modules
   @inject(Symbols.modules.accounts)
-  private accountsModule: IAccountsModule;
+  private accountsModule: IAccountsModule<AccountsModelForDPOS>;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
   @inject(Symbols.modules.blocksSubModules.process)

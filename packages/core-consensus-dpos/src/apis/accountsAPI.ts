@@ -6,6 +6,7 @@ import { Get, JsonController, Post, Put, QueryParams } from 'routing-controllers
 import * as z_schema from 'z-schema';
 import { dPoSSymbols } from '../helpers/';
 import { DelegatesModule } from '../modules';
+import { AccountsModelForDPOS } from '../models';
 
 const schema = require('../../schema/accountsAPI.json');
 
@@ -16,7 +17,7 @@ export class DelegatesAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
   @inject(Symbols.modules.accounts)
-  private accounts: IAccountsModule;
+  private accounts: IAccountsModule<AccountsModelForDPOS>;
   @inject(Symbols.modules.blocks)
   @inject(dPoSSymbols.modules.delegates)
   private delegatesModule: DelegatesModule;

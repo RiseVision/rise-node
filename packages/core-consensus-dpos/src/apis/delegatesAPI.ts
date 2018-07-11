@@ -10,16 +10,19 @@ import {
   ISystemModule,
   ITransactionsModel,
 } from '@risevision/core-interfaces';
-import { ConstantsType, publicKey } from '@risevision/core-types';
+import { publicKey } from '@risevision/core-types';
 import BigNumber from 'bignumber.js';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
+import * as pgp from 'pg-promise';
 import { Body, Get, JsonController, Post, Put, QueryParam, QueryParams, UseBefore } from 'routing-controllers';
 import * as sequelize from 'sequelize';
 import * as z_schema from 'z-schema';
-import { dPoSSymbols, Slots } from '../helpers/';
+import { DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
+import { AccountsModelForDPOS } from '../models';
 import { DelegatesModule, ForgeModule } from '../modules';
+
 const schema = require('../../schema/delegates.json');
 
 @JsonController('/api/delegates')
@@ -28,10 +31,10 @@ const schema = require('../../schema/delegates.json');
 export class DelegatesAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
-  @inject(Symbols.helpers.constants)
-  public constants: ConstantsType;
+  @inject(dPoSSymbols.dposConstants)
+  public constants: DposConstantsType;
   @inject(Symbols.modules.accounts)
-  private accounts: IAccountsModule;
+  private accounts: IAccountsModule<AccountsModelForDPOS>;
   @inject(Symbols.modules.blocks)
   private blocks: IBlocksModule;
   @inject(Symbols.modules.blocksSubModules.utils)
@@ -198,9 +201,9 @@ export class DelegatesAPI {
     if (orderBy.length === 1) {
       orderBy.push('ASC');
     }
-    const delQuery  = this.AccountsModel.searchDelegate(
+    const delQuery  = DelegatesAPI.searchDelegate(
       params.q,
-      params.limit || 101, //TODO: this.constants.activeDelegates,
+      params.limit || this.constants.activeDelegates,
       orderBy[0],
       orderBy[1] as any
     );
@@ -322,6 +325,43 @@ export class DelegatesAPI {
     }
 
     this.forgeModule.disableForge(pk);
+  }
+
+  private static searchDelegate(q: string, limit: number, orderBy: string, orderHow: 'ASC' | 'DESC' = 'ASC') {
+    if (['ASC', 'DESC'].indexOf(orderHow.toLocaleUpperCase()) === -1) {
+      throw new Error('Invalid ordering mechanism');
+    }
+
+    return pgp.as.format(`
+    WITH
+      supply AS (SELECT calcSupply((SELECT height FROM blocks ORDER BY height DESC LIMIT 1))::numeric),
+      delegates AS (SELECT row_number() OVER (ORDER BY vote DESC, m."publicKey" ASC)::int AS rank,
+        m.username,
+        m.address,
+        ENCODE(m."publicKey", 'hex') AS "publicKey",
+        m.vote,
+        m.producedblocks,
+        m.missedblocks,
+        ROUND(vote / (SELECT * FROM supply) * 100, 2)::float AS approval,
+        (CASE WHEN producedblocks + missedblocks = 0 THEN 0.00 ELSE
+        ROUND(100 - (missedblocks::numeric / (producedblocks + missedblocks) * 100), 2)
+        END)::float AS productivity,
+        COALESCE(v.voters_cnt, 0) AS voters_cnt,
+        t.timestamp AS register_timestamp
+        FROM delegates d
+        LEFT JOIN mem_accounts m ON d.username = m.username
+        LEFT JOIN trs t ON d."transactionId" = t.id
+        LEFT JOIN (SELECT "dependentId", COUNT(1)::int AS voters_cnt from mem_accounts2delegates GROUP BY "dependentId") v ON v."dependentId" = ENCODE(m."publicKey", 'hex')
+        WHERE m."isDelegate" = 1
+        ORDER BY \${orderBy:name} \${orderHow:raw})
+      SELECT * FROM delegates WHERE username LIKE \${q} LIMIT \${limit}
+    `, {
+      q: `%${q}%`,
+      limit,
+      orderBy,
+      orderHow,
+    });
+
   }
 
 }

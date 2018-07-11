@@ -11,9 +11,11 @@
   "license": "ISC",
   "dependencies": {
     "@risevision/core-interfaces": "^1.0.0",
-    "@risevision/core-types": "^1.0.0"
+    "@risevision/core-types": "^1.0.0",
+    "lodash": "=4.17.10"
   },
   "devDependencies": {
+    "@types/lodash": "=4.14.109",
     "shx": "=0.2.2",
     "typescript": "=2.9.2"
   }

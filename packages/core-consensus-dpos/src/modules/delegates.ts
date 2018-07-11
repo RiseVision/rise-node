@@ -21,6 +21,7 @@ import * as z_schema from 'z-schema';
 import { Slots } from '../helpers/';
 import { DposConstantsType, dPoSSymbols } from '../helpers/';
 import { RoundsLogic } from '../logic/rounds';
+import { AccountsModelForDPOS } from '../models';
 
 @injectable()
 export class DelegatesModule implements IModule {
@@ -51,17 +52,17 @@ export class DelegatesModule implements IModule {
 
   // Modules
   @inject(Symbols.modules.accounts)
-  private accountsModule: IAccountsModule;
+  private accountsModule: IAccountsModule<AccountsModelForDPOS>;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
-  public async checkConfirmedDelegates(account: IAccountsModel, votes: string[]) {
+  public async checkConfirmedDelegates(account: AccountsModelForDPOS, votes: string[]) {
     return this.checkDelegates(account, votes, 'confirmed');
   }
 
-  public async checkUnconfirmedDelegates(account: IAccountsModel, votes: string[]) {
+  public async checkUnconfirmedDelegates(account: AccountsModelForDPOS, votes: string[]) {
     return this.checkDelegates(account, votes, 'unconfirmed');
   }
 
@@ -94,7 +95,7 @@ export class DelegatesModule implements IModule {
    */
   public async getDelegates(query: { limit?: number, offset?: number, orderBy: string }): Promise<{
     delegates: Array<{
-      delegate: IAccountsModel,
+      delegate: AccountsModelForDPOS,
       info: { rank: number, approval: number, productivity: number }
     }>,
     count: number,
@@ -124,7 +125,7 @@ export class DelegatesModule implements IModule {
     const totalSupply = this.blockReward.calcSupply(lastBlock.height);
 
     // tslint:disable-next-line
-    const crunchedDelegates: Array<{ delegate: IAccountsModel, info: { rank: number, approval: number, productivity: number } }> = [];
+    const crunchedDelegates: Array<{ delegate: AccountsModelForDPOS, info: { rank: number, approval: number, productivity: number } }> = [];
     for (let i = 0; i < delegates.length; i++) {
 
       const rank     = i + 1;
@@ -205,7 +206,7 @@ export class DelegatesModule implements IModule {
    * @param state
    * @return {Promise<void>}
    */
-  private async checkDelegates(account: IAccountsModel, votes: string[], state: 'confirmed' | 'unconfirmed') {
+  private async checkDelegates(account: AccountsModelForDPOS, votes: string[], state: 'confirmed' | 'unconfirmed') {
     if (!account) {
       throw new Error('Account not found');
     }

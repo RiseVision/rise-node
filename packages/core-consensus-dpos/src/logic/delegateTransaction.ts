@@ -12,7 +12,7 @@ import {
 import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
 import { dPoSSymbols } from '../helpers/';
-import { DelegatesModel } from '../models/';
+import { AccountsModelForDPOS, DelegatesModel } from '../models/';
 const delegateAssetSchema = require('../../schema/asset.json');
 
 // tslint:disable-next-line interface-over-type-literal
@@ -31,7 +31,7 @@ export class RegisterDelegateTransaction extends BaseTx<DelegateAsset, Delegates
 
   // Modules
   @inject(Symbols.modules.accounts)
-  private accountsModule: IAccountsModule;
+  private accountsModule: IAccountsModule<AccountsModelForDPOS>;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
@@ -44,7 +44,7 @@ export class RegisterDelegateTransaction extends BaseTx<DelegateAsset, Delegates
     super(TransactionType.DELEGATE);
   }
 
-  public calculateFee(tx: IBaseTransaction<DelegateAsset>, sender: IAccountsModel, height: number): number {
+  public calculateFee(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModelForDPOS, height: number): number {
     return this.systemModule.getFees(height).fees.delegate;
   }
 
@@ -55,7 +55,7 @@ export class RegisterDelegateTransaction extends BaseTx<DelegateAsset, Delegates
     return Buffer.from(tx.asset.delegate.username, 'utf8');
   }
 
-  public async verify(tx: IBaseTransaction<DelegateAsset>, sender: IAccountsModel): Promise<void> {
+  public async verify(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModelForDPOS): Promise<void> {
     if (tx.recipientId) {
       throw new Error('Invalid recipient');
     }
@@ -105,7 +105,7 @@ export class RegisterDelegateTransaction extends BaseTx<DelegateAsset, Delegates
   }
 
   // tslint:disable-next-line max-line-length
-  public async apply(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
+  public async apply(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: AccountsModelForDPOS): Promise<Array<DBOp<any>>> {
     const data = {
       isDelegate  : 1 as any,
       u_isDelegate: 1 as any,
@@ -129,7 +129,7 @@ export class RegisterDelegateTransaction extends BaseTx<DelegateAsset, Delegates
   }
 
   // tslint:disable-next-line max-line-length
-  public async undo(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
+  public async undo(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: AccountsModelForDPOS): Promise<Array<DBOp<any>>> {
     const data = {
       isDelegate  : 0 as 0 | 1,
       u_isDelegate: 1 as 0 | 1,
@@ -151,7 +151,7 @@ export class RegisterDelegateTransaction extends BaseTx<DelegateAsset, Delegates
   /**
    * Stores in accounts that sender is now an unconfirmed delegate
    */
-  public async applyUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
+  public async applyUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModelForDPOS): Promise<Array<DBOp<any>>> {
     const data = {
       isDelegate  : 0 as 0 | 1,
       u_isDelegate: 1 as 0 | 1,
@@ -172,7 +172,7 @@ export class RegisterDelegateTransaction extends BaseTx<DelegateAsset, Delegates
     }];
   }
 
-  public async undoUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
+  public async undoUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModelForDPOS): Promise<Array<DBOp<any>>> {
     const data = {
       isDelegate  : 0 as 0 | 1,
       u_isDelegate: 0 as 0 | 1,

@@ -7,3 +7,5 @@ export * from './ForksStatsModel';
 export * from './InfoModel';
 export * from './MigrationsModel';
 export * from './TransactionsModel';
+import * as utils from './utils';
+export {utils};

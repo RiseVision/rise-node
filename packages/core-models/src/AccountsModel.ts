@@ -4,50 +4,18 @@ import { IAccountsModel } from '@risevision/core-interfaces';
 import * as pgp from 'pg-promise';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
-import { Column, DataType, Model, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
+import { Column, DataType, DefaultScope, Model, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
 import { BaseModel } from './BaseModel';
 import { Container } from 'inversify';
 
-const fields            = ['username', 'isDelegate', 'secondSignature', 'address', 'publicKey', 'secondPublicKey', 'balance', 'vote', 'rate', 'multimin', 'multilifetime', 'blockId', 'producedblocks', 'missedblocks', 'fees', 'rewards', 'virgin'];
-const unconfirmedFields = ['u_isDelegate', 'u_secondSignature', 'u_username', 'u_balance', 'u_multimin', 'u_multilifetime'];
-
-const allFields = fields.concat(unconfirmedFields);
-
-const buildArrayArgAttribute = function (table: string): any {
-  return [sequelize.literal(`(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2${table} WHERE "accountId" = "AccountsModel"."address")`), table];
-};
-
-// @Scopes({
-//   full         : {
-//     attributes: [
-//       ...allFields,
-//       buildArrayArgAttribute('delegates'),
-//       buildArrayArgAttribute('multisignatures'),
-//       buildArrayArgAttribute('u_delegates'),
-//       buildArrayArgAttribute('u_multisignatures'),
-//     ],
-//   },
-//   fullConfirmed: {
-//     attributes: [
-//       ...fields,
-//       buildArrayArgAttribute('delegates'),
-//       buildArrayArgAttribute('multisignatures'),
-//     ],
-//   },
-// })
+@DefaultScope({
+  attributes: ['address', 'publicKey', 'balance', 'blockId', 'producedblocks', 'missedblocks', 'fees', 'rewards', 'virgin', 'u_balance'].sort()
+})
 @Table({ tableName: 'mem_accounts' })
 export class AccountsModel extends Model<AccountsModel> implements IAccountsModel {
   public static container: Container;
   public static options: any;
 
-  // @Column
-  // public username: string;
-
-  @Column
-  public isDelegate: 0 | 1;
-
-  // @Column
-  // public secondSignature: 0 | 1;
 
   @PrimaryKey
   @Column
@@ -56,17 +24,8 @@ export class AccountsModel extends Model<AccountsModel> implements IAccountsMode
   @Column(DataType.BLOB)
   public publicKey: Buffer;
 
-  // @Column(DataType.BLOB)
-  // public secondPublicKey: Buffer;
-
   @Column
   public balance: number;
-
-  @Column
-  public vote: number;
-
-  @Column
-  public rate: number;
 
   @Column
   public blockId: string;
@@ -84,34 +43,8 @@ export class AccountsModel extends Model<AccountsModel> implements IAccountsMode
   @Column
   public virgin: 0 | 1;
 
-  // Unconfirmed stuff
-
-  // @Column
-  // public u_isDelegate: 0 | 1;
-  // @Column
-  // public u_secondSignature: 0 | 1;
-  // @Column
-  // public u_username: string;
   @Column
   public u_balance: number;
-  // @Column
-  // public u_multilifetime: number;
-  // @Column
-  // public u_multimin: number;
-
-  // @Column(DataType.TEXT)
-  // public multisignatures?: publicKey[];
-  // @Column(DataType.TEXT)
-  // public u_multisignatures?: publicKey[];
-  // @Column(DataType.TEXT)
-  // public delegates?: publicKey[];
-  // @Column(DataType.TEXT)
-  // public u_delegates?: publicKey[];
-
-
-  // public isMultisignature(): boolean {
-  //   return this.multilifetime > 0;
-  // }
 
   private _hexPublicKey: publicKey;
   public get hexPublicKey(): publicKey {
@@ -128,8 +61,10 @@ export class AccountsModel extends Model<AccountsModel> implements IAccountsMode
 
   public toPOJO() {
     const toRet = this.toJSON();
-    ['publicKey', 'secondPublicKey'].forEach((pk) => {
-      toRet[pk] = toRet[pk] !== null && typeof(toRet[pk]) !== 'undefined' ? toRet[pk].toString('hex') : null;
+    Object.keys(toRet).forEach((k) => {
+      if (Buffer.isBuffer(toRet[k])) {
+        toRet[k] = toRet[k].toString('hex');
+      }
     });
     return toRet;
   }
