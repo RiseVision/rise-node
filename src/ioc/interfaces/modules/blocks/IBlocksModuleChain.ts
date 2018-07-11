@@ -3,6 +3,9 @@ import { SignedAndChainedBlockType, SignedBlockType } from '../../../../logic';
 import { IModule } from '../IModule';
 import { AccountsModel } from '../../../../models';
 
+/**
+ * Methods signature for BlocksModuleChain
+ */
 export interface IBlocksModuleChain extends IModule {
 
   /**
@@ -36,6 +39,9 @@ export interface IBlocksModuleChain extends IModule {
    */
   applyGenesisBlock(block: SignedAndChainedBlockType): Promise<void>;
 
+  /**
+   * Apply block to blockchain
+   */
   applyBlock(block: SignedAndChainedBlockType, broadcast: boolean, saveBlock: boolean, accountsMap: {[address: string]: AccountsModel}): Promise<void>;
 
   /**
