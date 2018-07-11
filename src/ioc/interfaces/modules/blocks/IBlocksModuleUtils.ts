@@ -4,7 +4,14 @@ import { BlocksModel } from '../../../../models';
 import { RawFullBlockListType } from '../../../../types/rawDBTypes';
 import { publicKey } from '../../../../types/sanityTypes';
 
+/**
+ * Methods signature for BlocksModuleUtils
+ */
 export interface IBlocksModuleUtils {
+
+  /**
+   * Returns normalized blocks from raw blocks
+   */
   readDbRows(rows: RawFullBlockListType[]): SignedAndChainedBlockType[];
 
   /**
@@ -25,6 +32,9 @@ export interface IBlocksModuleUtils {
    */
   getIdSequence(height: number): Promise<{ firstHeight: number, ids: string[] }>;
 
+  /**
+   * Gets blocks from database from the given filters
+   */
   loadBlocksData(filter: { limit?: number, id?: string, lastId?: string }): Promise<BlocksModel[]>;
 
   getBlockProgressLogger(txCount: number, logsFrequency: number, msg: string): BlockProgressLogger;
