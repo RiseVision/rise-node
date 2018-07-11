@@ -4,6 +4,9 @@ import { IPeerLogic } from '../../logic';
 import { IModule } from '../IModule';
 import { BlocksModel } from '../../../../models';
 
+/**
+ * Methods signature for BlocksModuleProcess
+ */
 export interface IBlocksModuleProcess extends IModule {
   /**
    * Performs chain comparison with remote peer
@@ -39,6 +42,9 @@ export interface IBlocksModuleProcess extends IModule {
    */
   generateBlock(keypair: IKeypair, timestamp: number): Promise<any>;
 
+  /**
+   * Call to onReceiveBlock event
+   */
   onReceiveBlock(block: SignedBlockType): Promise<any>;
 
 }
