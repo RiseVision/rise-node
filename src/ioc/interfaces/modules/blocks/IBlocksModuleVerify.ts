@@ -1,6 +1,9 @@
 import { SignedBlockType } from '../../../../logic';
 import { IModule } from '../IModule';
 
+/**
+ * Methods signature for BlocksModuleVerify
+ */
 export interface IBlocksModuleVerify extends IModule {
   /**
    * Verifies block before fork detection and return all possible errors related to block
@@ -12,6 +15,9 @@ export interface IBlocksModuleVerify extends IModule {
    */
   verifyBlock(block: SignedBlockType): Promise<{ errors: string[], verified: boolean }>;
 
+  /**
+   * Check, verify and apply a block to blockchain
+   */
   processBlock(block: SignedBlockType, broadcast: boolean, saveBlock: boolean): Promise<any>;
 
 }
