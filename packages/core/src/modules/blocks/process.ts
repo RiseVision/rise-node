@@ -396,7 +396,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       try {
         const tmpBlockN = this.blockLogic.objectNormalize(tmpBlock);
         await this.delegatesModule.assertValidBlockSlot(block);
-        const check = this.blocksVerifyModule.verifyReceipt(tmpBlockN);
+        const check = await this.blocksVerifyModule.verifyReceipt(tmpBlockN);
         if (!check.verified) {
           this.logger.error(`Block ${tmpBlockN.id} verification failed`, check.errors.join(', '));
           throw new Error(check.errors[0]);
@@ -434,7 +434,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         const tmpBlockN = this.blockLogic.objectNormalize(tmpBlock);
 
         // verify receipt of block
-        const check = this.blocksVerifyModule.verifyReceipt(tmpBlockN);
+        const check = await this.blocksVerifyModule.verifyReceipt(tmpBlockN);
         if (!check.verified) {
           this.logger.error(`Block ${tmpBlockN.id} verification failed`, check.errors.join(', '));
           throw new Error(check.errors[0]);

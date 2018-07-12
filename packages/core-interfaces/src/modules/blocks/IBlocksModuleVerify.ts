@@ -5,7 +5,7 @@ export interface IBlocksModuleVerify extends IModule {
   /**
    * Verifies block before fork detection and return all possible errors related to block
    */
-  verifyReceipt(block: SignedBlockType): { errors: string[], verified: boolean };
+  verifyReceipt(block: SignedBlockType): Promise<{ errors: string[], verified: boolean }>;
 
   /**
    * Verify block before processing and return all possible errors related to block

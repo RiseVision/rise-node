@@ -22,9 +22,12 @@ import { Slots } from '../helpers/';
 import { DposConstantsType, dPoSSymbols } from '../helpers/';
 import { RoundsLogic } from '../logic/rounds';
 import { AccountsModelForDPOS } from '../models';
+import { WPHooksSubscriber } from 'mangiafuoco';
+import { VerifyBlockFilter } from '../../../core/src/hooks/filters';
+import { VerifyBlockReceipt } from '../../../core/src/hooks';
 
 @injectable()
-export class DelegatesModule implements IModule {
+export class DelegatesModule extends WPHooksSubscriber(Object) implements IModule {
   private loaded: boolean = false;
 
   // Generic
@@ -185,6 +188,64 @@ export class DelegatesModule implements IModule {
 
   public isLoaded() {
     return this.loaded;
+  }
+
+  /**
+   * Verifies through a filter that the given block is not in the past compared to last block
+   * and not in the future compared to now.
+   */
+  @VerifyBlockFilter(9)
+  private async verifyBlockSlot(payload: {errors: string[], verified: boolean}, block: SignedBlockType, lastBlock: SignedBlockType) {
+    if (!payload.verified) {
+      return payload;
+    }
+    const slotNumber = this.slots.getSlotNumber(block.timestamp);
+    const lastSlot   = this.slots.getSlotNumber(lastBlock.timestamp);
+
+    if (slotNumber > this.slots.getSlotNumber(this.slots.getTime()) || slotNumber <= lastSlot) {
+      // if in future or in the past => error
+      payload.errors.push('Invalid block timestamp');
+      payload.verified = false;
+    }
+    return payload;
+  }
+
+  /**
+   * Verifies that the block has been forged by the correct delegate.
+   */
+  @VerifyBlockFilter()
+  private async verifyBlock(payload: {errors: string[], verified: boolean}, block: SignedBlockType) {
+    if (!payload.verified) {
+      return payload;
+    }
+    try {
+      await this.assertValidBlockSlot(block);
+      return payload;
+    } catch (e) {
+      payload.errors.push(e.message);
+      payload.verified = false;
+      return payload;
+    }
+  }
+
+  /**
+   * Verify block slot is not too in the past or in the future.
+   */
+  @VerifyBlockReceipt()
+  private verifyBlockSlotWindow(payload: {errors: string[], verified: boolean}, block: SignedBlockType) {
+    if (!payload.verified) {
+      return payload;
+    }
+    const curSlot   = this.slots.getSlotNumber();
+    const blockSlot = this.slots.getSlotNumber(block.timestamp);
+    const errors    = [];
+    if (curSlot - blockSlot > this.constants.blockSlotWindow) {
+      errors.push('Block slot is too old');
+    }
+    if (curSlot < blockSlot) {
+      errors.push('Block slot is in the future');
+    }
+    return errors;
   }
 
   /**

@@ -36,6 +36,7 @@ export class SystemModule implements ISystemModule {
   public postConstruct() {
     this.headers = {
       broadhash : this.appConfig.nethash,
+      firewalled: this.appConfig.firewalled ? 'true' : 'false',
       height    : 1,
       nethash   : this.appConfig.nethash,
       nonce     : this.nonce,

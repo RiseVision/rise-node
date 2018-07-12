@@ -22,6 +22,7 @@ export interface AppConfig {
   version: string;
   minVersion: string;
   fileLogLevel: string;
+  firewalled?: boolean;
   consoleLogLevel: string;
   logFileName: string;
   trustProxy: boolean;

@@ -8,16 +8,21 @@ import {
   IBlocksModule,
   IBlocksModuleChain,
   IBlocksModuleVerify,
-  IDelegatesModule,
   IForkModule,
   ILogger,
-  ISlots,
   ITransactionLogic,
   ITransactionsModule
 } from '@risevision/core-interfaces';
-import { ConstantsType, ForkType, IConfirmedTransaction, SignedAndChainedBlockType, SignedBlockType } from '@risevision/core-types';
+import {
+  ConstantsType,
+  ForkType,
+  IConfirmedTransaction,
+  SignedAndChainedBlockType,
+  SignedBlockType
+} from '@risevision/core-types';
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
+import { WordPressHookSystem } from 'mangiafuoco';
 
 @injectable()
 export class BlocksModuleVerify implements IBlocksModuleVerify {
@@ -27,8 +32,8 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   private constants: ConstantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
-  @inject(Symbols.helpers.slots)
-  private slots: ISlots;
+  @inject(Symbols.generic.hookSystem)
+  private hookSystem: WordPressHookSystem;
 
   // Logic
   @inject(Symbols.logic.block)
@@ -45,8 +50,6 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   private blocksChainModule: IBlocksModuleChain;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.delegates)
-  private delegatesModule: IDelegatesModule;
   @inject(Symbols.modules.fork)
   private forkModule: IForkModule;
   @inject(Symbols.modules.transactions)
@@ -71,14 +74,13 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   /**
    * Verifies block before fork detection and return all possible errors related to block
    */
-  public verifyReceipt(block: SignedBlockType): { errors: string[], verified: boolean } {
+  public async verifyReceipt(block: SignedBlockType): Promise<{ errors: string[], verified: boolean }> {
     const lastBlock: SignedBlockType = this.blocksModule.lastBlock;
 
     block.height           = lastBlock.height + 1;
     const errors: string[] = [
       this.verifySignature(block),
       this.verifyPreviousBlock(block),
-      this.verifyBlockSlotWindow(block),
       this.verifyBlockAgainstLastIds(block),
       this.verifyVersion(block),
       this.verifyReward(block),
@@ -88,10 +90,14 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       .reduce((a, b) => a.concat(b))
       .reverse();
 
-    return {
-      errors,
-      verified: errors.length === 0,
-    };
+    return  this.hookSystem.apply_filters(
+      'core/blocks/verify/verifyReceipt',
+      {
+        errors,
+        verified: errors.length === 0,
+      },
+      block
+    );
   }
 
   /**
@@ -108,13 +114,17 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       this.verifyId(block),
       this.verifyPayload(block),
       await this.verifyForkOne(block, lastBlock),
-      await this.verifyBlockSlot(block, lastBlock),
     ].reduce((a, b) => a.concat(b));
 
-    return {
-      errors,
-      verified: errors.length === 0,
-    };
+    return this.hookSystem.apply_filters(
+      'core/blocks/verify/verifyBlock',
+      {
+        errors,
+        verified: errors.length === 0,
+      },
+      block,
+      lastBlock
+    );
   }
 
   public async processBlock(block: SignedBlockType, broadcast: boolean, saveBlock: boolean): Promise<any> {
@@ -142,13 +152,6 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     if (dbBlock !== null) {
       throw new Error(`Block ${block.id} already exists`);
     }
-
-    // Check block slot.
-    await this.delegatesModule.assertValidBlockSlot(block)
-      .catch(async (err) => {
-        await this.forkModule.fork(block, ForkType.WRONG_FORGE_SLOT);
-        return Promise.reject(err);
-      });
 
     // check transactions
     const accountsMap = await this.accountsModule.resolveAccountsForTransactions(block.transactions);
@@ -182,22 +185,6 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     if (this.lastNBlockIds.length > this.constants.blockSlotWindow) {
       this.lastNBlockIds.shift();
     }
-  }
-
-  /**
-   * Verify block slot is not too in the past or in the future.
-   */
-  private verifyBlockSlotWindow(block: SignedBlockType): string[] {
-    const curSlot   = this.slots.getSlotNumber();
-    const blockSlot = this.slots.getSlotNumber(block.timestamp);
-    const errors    = [];
-    if (curSlot - blockSlot > this.constants.blockSlotWindow) {
-      errors.push('Block slot is too old');
-    }
-    if (curSlot < blockSlot) {
-      errors.push('Block slot is in the future');
-    }
-    return errors;
   }
 
   /**
@@ -339,17 +326,6 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     return [];
   }
 
-  private async verifyBlockSlot(block: SignedBlockType, lastBlock: SignedBlockType): Promise<string[]> {
-    const slotNumber = this.slots.getSlotNumber(block.timestamp);
-    const lastSlot   = this.slots.getSlotNumber(lastBlock.timestamp);
-
-    if (slotNumber > this.slots.getSlotNumber(this.slots.getTime()) || slotNumber <= lastSlot) {
-      // if in future or in the past => error
-      return ['Invalid block timestamp'];
-    }
-    return [];
-  }
-
   private async checkBlockTransactions(block: SignedBlockType, accountsMap: { [address: string]: IAccountsModel }) {
     const allIds = [];
     for (const tx of block.transactions) {
@@ -401,7 +377,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       requester = accountsMap[this.accountsModule.generateAddressByPublicKey(tx.requesterPublicKey)];
     }
     // Verify will throw if any error occurs during validation.
-    if (! await this.transactionLogic.ready(tx, acc)) {
+    if (!await this.transactionLogic.ready(tx, acc)) {
       throw new Error(`Transaction ${tx.id} is not ready`);
     }
     await this.transactionLogic.verify(tx, acc, requester, block.height);
