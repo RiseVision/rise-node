@@ -184,6 +184,7 @@ export class DelegatesModule extends WPHooksSubscriber(Object) implements IModul
 
   public async cleanup() {
     this.loaded = false;
+    return this.unHook();
   }
 
   public isLoaded() {

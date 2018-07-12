@@ -17,3 +17,8 @@ export const AccountApisGetAccount = createFilter<(accData: any, model?: IAccoun
  */
 export const VerifyBlockFilter = createFilter<(p: { errors: string[], verified: boolean }, block: SignedBlockType, lastBlock?: SignedBlockType) => Promise<{ errors: string[], verified: boolean }>>('core/blocks/verify/verifyBlock');
 export const VerifyBlockReceipt = createFilter<(p: { errors: string[], verified: boolean }, block: SignedBlockType, lastBlock?: SignedBlockType) => Promise<{ errors: string[], verified: boolean }>>('core/blocks/verify/verifyReceipt');
+
+/**
+ * Called when there is a need to calculate the idSequence for block comparison against another peer
+ */
+export const UtilsCommonHeightList = createFilter<(heights: number[], height: number) => Promise<number[]>>('core/blocks/utils/commonHeightList');

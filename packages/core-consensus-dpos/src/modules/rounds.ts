@@ -10,6 +10,8 @@ import { IRoundLogicNewable, RoundLogicScope } from '../logic/round';
 import { RoundsLogic } from '../logic/rounds';
 import { AccountsModelForDPOS, RoundsModel } from '../models/';
 import { DelegatesModule } from './delegates';
+import { WPHooksSubscriber } from 'mangiafuoco';
+import { UtilsCommonHeightList } from '../../../core/src/hooks';
 
 const performRoundSnapshotSQL = fs.readFileSync(
   `${__dirname}/../../sql/performRoundSnapshot.sql`,
@@ -17,7 +19,7 @@ const performRoundSnapshotSQL = fs.readFileSync(
 );
 
 @injectable()
-export class RoundsModule {
+export class RoundsModule extends WPHooksSubscriber(Object) {
 
   // Helpers and generics
   @inject(Symbols.helpers.bus)
@@ -65,7 +67,7 @@ export class RoundsModule {
 
   public cleanup() {
     this.appStateLogic.set('rounds.isLoaded', false);
-    return Promise.resolve();
+    return this.unHook();
   }
 
   /**
@@ -129,9 +131,20 @@ export class RoundsModule {
           this.logger.trace('Round snapshot done');
         }
       });
-
   }
 
+  @UtilsCommonHeightList()
+  private commonHeightList(heights: number[], height: number): Promise<number[]> {
+    // Get IDs of first blocks of (n) last rounds, descending order
+    // EXAMPLE: For height 2000000 (round 19802) we will get IDs of blocks at height: 1999902, 1999801, 1999700,
+    // 1999599, 1999498
+    const firstInRound             = this.rounds.firstInRound(this.rounds.calcRound(height));
+    const heightsToQuery: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      heightsToQuery.push(firstInRound - this.constants.activeDelegates * i);
+    }
+    return heightsToQuery;
+  }
   /**
    * gets the snapshot rounds
    */

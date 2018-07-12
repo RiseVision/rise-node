@@ -27,9 +27,5 @@ export interface IBlocksModuleUtils {
   // TODO: BlocksModuleProcess missing interface?
   getBlockProgressLogger(txCount: number, logsFrequency: number, msg: string): any;
 
-  /**
-   * Gets block rewards for a delegate for time period
-   */
-  // tslint:disable-next-line max-line-length
-  aggregateBlockReward(filter: { generatorPublicKey: publicKey, start?: number, end?: number }): Promise<{ fees: number, rewards: number, count: number }>;
+
 }

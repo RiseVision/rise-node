@@ -22,6 +22,7 @@ import * as z_schema from 'z-schema';
 import { DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
 import { AccountsModelForDPOS } from '../models';
 import { DelegatesModule, ForgeModule } from '../modules';
+import { Op } from 'sequelize';
 
 const schema = require('../../schema/delegates.json');
 
@@ -37,8 +38,6 @@ export class DelegatesAPI {
   private accounts: IAccountsModule<AccountsModelForDPOS>;
   @inject(Symbols.modules.blocks)
   private blocks: IBlocksModule;
-  @inject(Symbols.modules.blocksSubModules.utils)
-  private blocksUtils: IBlocksModuleUtils;
   @inject(dPoSSymbols.modules.delegates)
   private delegatesModule: DelegatesModule;
   @inject(Symbols.helpers.crypto)
@@ -120,7 +119,7 @@ export class DelegatesAPI {
                                   // tslint:disable-next-line max-line-length
                                   @QueryParams() params: { generatorPublicKey: publicKey, start?: number, end?: number }) {
     if (typeof(params.start) !== 'undefined' || typeof(params.end) !== 'undefined') {
-      const reward = await this.blocksUtils.aggregateBlockReward({
+      const reward = await this.aggregateBlockReward({
         end               : params.end,
         generatorPublicKey: params.generatorPublicKey,
         start             : params.start,
@@ -362,6 +361,65 @@ export class DelegatesAPI {
       orderHow,
     });
 
+  }
+
+  /**
+   * Gets block rewards for a delegate for time period
+   */
+  // tslint:disable-next-line max-line-length
+  public async aggregateBlockReward(filter: { generatorPublicKey: publicKey, start?: number, end?: number }): Promise<{ fees: number, rewards: number, count: number }> {
+    const params: any                            = {};
+    params.generatorPublicKey                    = filter.generatorPublicKey;
+    params.delegates                             = this.constants.activeDelegates;
+    const timestampClausole: { timestamp?: any } = { timestamp: {} };
+
+    if (typeof(filter.start) !== 'undefined') {
+      timestampClausole.timestamp[Op.gte] = filter.start - this.constants.epochTime.getTime() / 1000;
+    }
+
+    if (typeof(filter.end) !== 'undefined') {
+      timestampClausole.timestamp[Op.lte] = filter.end - this.constants.epochTime.getTime() / 1000;
+    }
+
+    if (typeof(timestampClausole.timestamp[Op.gte]) === 'undefined'
+      && typeof(timestampClausole.timestamp[Op.lte]) === 'undefined') {
+      delete timestampClausole.timestamp;
+    }
+
+    const bufPublicKey = Buffer.from(params.generatorPublicKey, 'hex');
+    const acc          = await this.AccountsModel
+      .findOne({ where: { isDelegate: 1, publicKey: bufPublicKey } });
+    if (acc === null) {
+      throw new Error('Account not found or is not a delegate');
+    }
+
+    const res: { count: string, rewards: string } = await this.BlocksModel.findOne({
+      attributes: [
+        sequelize.literal('COUNT(1)'),
+        sequelize.literal('SUM("reward") as rewards'),
+      ],
+      raw       : true,
+      where     : {
+        ...timestampClausole,
+        generatorPublicKey: bufPublicKey,
+      },
+    }) as any;
+
+    const data = {
+      count  : parseInt(res.count, 10),
+      fees   : (await this.RoundsFeesModel.aggregate('fees', 'sum', {
+        where: {
+          ...timestampClausole,
+          publicKey: bufPublicKey,
+        },
+      })) as number,
+      rewards: res.rewards === null ? 0 : parseInt(res.rewards, 10),
+    };
+    if (isNaN(data.fees)) {
+      // see https://github.com/sequelize/sequelize/issues/6299
+      data.fees = 0;
+    }
+    return data;
   }
 
 }

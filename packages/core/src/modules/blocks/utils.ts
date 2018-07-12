@@ -6,13 +6,12 @@ import {
   IBlocksModule,
   IBlocksModuleUtils,
   ILogger,
-  IRoundsFeesModel,
   ITransactionLogic,
   ITransactionsModel
 } from '@risevision/core-interfaces';
-import { ConstantsType, publicKey, RawFullBlockListType, SignedAndChainedBlockType } from '@risevision/core-types';
+import { ConstantsType, RawFullBlockListType, SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable, tagged } from 'inversify';
-import * as sequelize from 'sequelize';
+import { WordPressHookSystem } from 'mangiafuoco';
 import { Op } from 'sequelize';
 
 @injectable()
@@ -21,6 +20,8 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   // Generic
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
+  @inject(Symbols.generic.hookSystem)
+  private hookSystem: WordPressHookSystem;
 
   // Helpers
   @inject(Symbols.helpers.constants)
@@ -34,8 +35,6 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   // Logic
   @inject(Symbols.logic.block)
   private blockLogic: IBlockLogic;
-  @inject(Symbols.logic.rounds)
-  private rounds: IRoundsLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
 
@@ -46,8 +45,6 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   private BlocksModel: typeof IBlocksModel;
   @inject(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
-  @inject(Symbols.models.roundsFees)
-  private RoundsFeesModel: typeof IRoundsFeesModel;
 
   // Modules
   @inject(Symbols.modules.blocks)
@@ -133,11 +130,13 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     // Get IDs of first blocks of (n) last rounds, descending order
     // EXAMPLE: For height 2000000 (round 19802) we will get IDs of blocks at height: 1999902, 1999801, 1999700,
     // 1999599, 1999498
-    const firstInRound             = this.rounds.firstInRound(this.rounds.calcRound(height));
-    const heightsToQuery: number[] = [];
-    for (let i = 0; i < 5; i++) {
-      heightsToQuery.push(firstInRound - this.constants.activeDelegates * i);
-    }
+    // const firstInRound             = this.rounds.firstInRound(this.rounds.calcRound(height));
+    // const heightsToQuery: number[] = [];
+    // for (let i = 0; i < 5; i++) {
+    //   heightsToQuery.push(firstInRound - this.constants.activeDelegates * i);
+    // }
+    const heightsToQuery: number[] = await this.hookSystem
+      .apply_filters('core/blocks/utils/commonHeightList', [], height);
 
     const blocks: Array<{ id: string, height: number }> = await this.BlocksModel
       .findAll({
@@ -216,63 +215,5 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     return new BlockProgressLogger(txCount, logsFrequency, msg, this.logger);
   }
 
-  /**
-   * Gets block rewards for a delegate for time period
-   */
-  // tslint:disable-next-line max-line-length
-  public async aggregateBlockReward(filter: { generatorPublicKey: publicKey, start?: number, end?: number }): Promise<{ fees: number, rewards: number, count: number }> {
-    const params: any                            = {};
-    params.generatorPublicKey                    = filter.generatorPublicKey;
-    params.delegates                             = this.constants.activeDelegates;
-    const timestampClausole: { timestamp?: any } = { timestamp: {} };
-
-    if (typeof(filter.start) !== 'undefined') {
-      timestampClausole.timestamp[Op.gte] = filter.start - this.constants.epochTime.getTime() / 1000;
-    }
-
-    if (typeof(filter.end) !== 'undefined') {
-      timestampClausole.timestamp[Op.lte] = filter.end - this.constants.epochTime.getTime() / 1000;
-    }
-
-    if (typeof(timestampClausole.timestamp[Op.gte]) === 'undefined'
-      && typeof(timestampClausole.timestamp[Op.lte]) === 'undefined') {
-      delete timestampClausole.timestamp;
-    }
-
-    const bufPublicKey = Buffer.from(params.generatorPublicKey, 'hex');
-    const acc          = await this.AccountsModel
-      .findOne({ where: { isDelegate: 1, publicKey: bufPublicKey } });
-    if (acc === null) {
-      throw new Error('Account not found or is not a delegate');
-    }
-
-    const res: { count: string, rewards: string } = await this.BlocksModel.findOne({
-      attributes: [
-        sequelize.literal('COUNT(1)'),
-        sequelize.literal('SUM("reward") as rewards'),
-      ],
-      raw       : true,
-      where     : {
-        ...timestampClausole,
-        generatorPublicKey: bufPublicKey,
-      },
-    }) as any;
-
-    const data = {
-      count  : parseInt(res.count, 10),
-      fees   : (await this.RoundsFeesModel.aggregate('fees', 'sum', {
-        where: {
-          ...timestampClausole,
-          publicKey: bufPublicKey,
-        },
-      })) as number,
-      rewards: res.rewards === null ? 0 : parseInt(res.rewards, 10),
-    };
-    if (isNaN(data.fees)) {
-      // see https://github.com/sequelize/sequelize/issues/6299
-      data.fees = 0;
-    }
-    return data;
-  }
 
 }
