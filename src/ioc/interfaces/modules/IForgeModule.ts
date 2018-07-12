@@ -1,6 +1,9 @@
 import { IKeypair } from '../../../helpers';
 import { publicKey } from '../../../types/sanityTypes';
 
+/**
+ * Methods signature for ForgeModule
+ */
 export interface IForgeModule {
   /**
    * Returns the enabled publicKeys
