@@ -1,33 +1,32 @@
+import { OnCheckIntegrity, VerifyBlockFilter, VerifyBlockReceipt } from '@risevision/core';
+import { ExceptionsList, ExceptionsManager, OrderBy, RunThroughExceptions, Symbols } from '@risevision/core-helpers';
 import {
-  ExceptionsList,
-  ExceptionsManager,
-  OrderBy,
-  RunThroughExceptions,
-  Symbols
-} from '@risevision/core-helpers';
-import {
-  IAccountsModel,
   IAccountsModule,
   IAppState,
   IBlockReward,
   IBlocksModule,
-  ILogger, IModule,
+  ILogger,
+  IModule,
   ITransactionsModule
 } from '@risevision/core-interfaces';
-import { ConstantsType, publicKey, SignedBlockType } from '@risevision/core-types';
+import { publicKey, SignedBlockType } from '@risevision/core-types';
 import * as crypto from 'crypto';
+import * as fs from 'fs';
 import { inject, injectable } from 'inversify';
-import * as z_schema from 'z-schema';
-import { Slots } from '../helpers/';
-import { DposConstantsType, dPoSSymbols } from '../helpers/';
-import { RoundsLogic } from '../logic/rounds';
-import { AccountsModelForDPOS } from '../models';
 import { WPHooksSubscriber } from 'mangiafuoco';
-import { VerifyBlockFilter } from '../../../core/src/hooks/filters';
-import { VerifyBlockReceipt } from '../../../core/src/hooks';
+import * as sequelize from 'sequelize';
+import * as z_schema from 'z-schema';
+import { DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
+import { RoundsLogic } from '../logic/rounds';
+import { AccountsModelForDPOS, DelegatesModel } from '../models';
+
+const countDuplicatedDelegatesSQL = fs.readFileSync(
+  `${__dirname}/../../sql/countDuplicatedDelegates.sql`,
+  { encoding: 'utf8' }
+);
 
 @injectable()
-export class DelegatesModule extends WPHooksSubscriber(Object) implements IModule {
+class DelegatesModule extends WPHooksSubscriber(Object) implements IModule {
   private loaded: boolean = false;
 
   // Generic
@@ -60,6 +59,12 @@ export class DelegatesModule extends WPHooksSubscriber(Object) implements IModul
   private blocksModule: IBlocksModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
+
+  @inject(dPoSSymbols.models.delegates)
+  private delegatesModel: typeof DelegatesModel;
+  @inject(dPoSSymbols.models.delegates)
+  private accountsModel: typeof AccountsModelForDPOS;
+
 
   public async checkConfirmedDelegates(account: AccountsModelForDPOS, votes: string[]) {
     return this.checkDelegates(account, votes, 'confirmed');
@@ -191,12 +196,26 @@ export class DelegatesModule extends WPHooksSubscriber(Object) implements IModul
     return this.loaded;
   }
 
+  @OnCheckIntegrity()
+  private async checkLoadingIntegrity() {
+    const delegatesCount = await this.accountsModel.count({ where: { isDelegate: 1 } });
+    if (delegatesCount === 0) {
+      throw new Error('No delegates found');
+    }
+    const [duplicatedDelegates] = await this.delegatesModel.sequelize.query(
+      countDuplicatedDelegatesSQL,
+      { type: sequelize.QueryTypes.SELECT });
+    if (duplicatedDelegates.count > 0) {
+      throw new Error('Delegates table corrupted with duplicated entries');
+    }
+  }
+
   /**
    * Verifies through a filter that the given block is not in the past compared to last block
    * and not in the future compared to now.
    */
   @VerifyBlockFilter(9)
-  private async verifyBlockSlot(payload: {errors: string[], verified: boolean}, block: SignedBlockType, lastBlock: SignedBlockType) {
+  private async verifyBlockSlot(payload: { errors: string[], verified: boolean }, block: SignedBlockType, lastBlock: SignedBlockType) {
     if (!payload.verified) {
       return payload;
     }
@@ -216,7 +235,7 @@ export class DelegatesModule extends WPHooksSubscriber(Object) implements IModul
    */
   @VerifyBlockFilter(100)
   @VerifyBlockReceipt(100)
-  private async verifyBlock(payload: {errors: string[], verified: boolean}, block: SignedBlockType) {
+  private async verifyBlock(payload: { errors: string[], verified: boolean }, block: SignedBlockType) {
     if (!payload.verified) {
       return payload;
     }
@@ -234,7 +253,7 @@ export class DelegatesModule extends WPHooksSubscriber(Object) implements IModul
    * Verify block slot is not too in the past or in the future.
    */
   @VerifyBlockReceipt()
-  private verifyBlockSlotWindow(payload: {errors: string[], verified: boolean}, block: SignedBlockType) {
+  private verifyBlockSlotWindow(payload: { errors: string[], verified: boolean }, block: SignedBlockType) {
     if (!payload.verified) {
       return payload;
     }

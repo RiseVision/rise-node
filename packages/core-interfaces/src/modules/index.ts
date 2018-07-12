@@ -8,7 +8,6 @@ export * from './blocks/IBlocksModuleVerify';
 export * from './IForkModule';
 export * from './ILoaderModule';
 export * from './IModule';
-export * from './IMultisignaturesModule';
 export * from './IPeersModule';
 export * from './ISystemModule';
 export * from './ITransactionsModule';

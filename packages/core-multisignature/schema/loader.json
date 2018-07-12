@@ -1,16 +1,16 @@
 {
-  "loadTransactions": {
-    "id": "loader.loadTransactions",
+  "loadSignatures": {
+    "id": "loader.loadSignatures",
     "type": "object",
     "properties": {
-      "transactions": {
+      "signatures": {
         "type": "array",
         "uniqueItems": true,
         "maxItems": 100
       }
     },
     "required": [
-      "transactions"
+      "signatures"
     ]
   }
 }

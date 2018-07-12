@@ -1,6 +1,7 @@
+import { OnCheckIntegrity, SnapshotBlocksCountFilter, UtilsCommonHeightList } from '@risevision/core';
 import { Bus, DBHelper, Symbols } from '@risevision/core-helpers';
 import { IAccountsModel, IAccountsModule, IAppState, IBlocksModel, ILogger } from '@risevision/core-interfaces';
-import { address, DBOp, SignedBlockType } from '@risevision/core-types';
+import { address, AppConfig, DBOp, SignedBlockType } from '@risevision/core-types';
 import * as fs from 'fs';
 import { inject, injectable } from 'inversify';
 import { Transaction } from 'sequelize';
@@ -10,8 +11,8 @@ import { IRoundLogicNewable, RoundLogicScope } from '../logic/round';
 import { RoundsLogic } from '../logic/rounds';
 import { AccountsModelForDPOS, RoundsModel } from '../models/';
 import { DelegatesModule } from './delegates';
-import { WPHooksSubscriber } from 'mangiafuoco';
-import { UtilsCommonHeightList } from '../../../core/src/hooks';
+import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
+
 
 const performRoundSnapshotSQL = fs.readFileSync(
   `${__dirname}/../../sql/performRoundSnapshot.sql`,
@@ -19,8 +20,12 @@ const performRoundSnapshotSQL = fs.readFileSync(
 );
 
 @injectable()
-export class RoundsModule extends WPHooksSubscriber(Object) {
+class RoundsModule extends WPHooksSubscriber(Object) {
+  @inject(Symbols.generic.hookSystem)
+  public hookSystem: WordPressHookSystem;
 
+  @inject(Symbols.generic.appConfig)
+  private appConfig: AppConfig;
   // Helpers and generics
   @inject(Symbols.helpers.bus)
   private bus: Bus;
@@ -133,18 +138,47 @@ export class RoundsModule extends WPHooksSubscriber(Object) {
       });
   }
 
+  @OnCheckIntegrity()
+  private async checkLoadingIntegrity(totalBlocks: number) {
+    const round     = this.roundsLogic.calcRound(totalBlocks);
+    const rounds    = await this.RoundsModel.findAll({ attributes: ['round'], group: 'round' });
+    const unapplied = rounds.filter((r) => r.round !== round);
+    if (unapplied.length > 0) {
+      // round is not applied.
+      throw new Error('Detected unapplied rounds in mem_round');
+    }
+  }
+
   @UtilsCommonHeightList()
-  private commonHeightList(heights: number[], height: number): Promise<number[]> {
+  private async commonHeightList(heights: number[], height: number): Promise<number[]> {
     // Get IDs of first blocks of (n) last rounds, descending order
     // EXAMPLE: For height 2000000 (round 19802) we will get IDs of blocks at height: 1999902, 1999801, 1999700,
     // 1999599, 1999498
-    const firstInRound             = this.rounds.firstInRound(this.rounds.calcRound(height));
+    const firstInRound             = this.roundsLogic.firstInRound(this.roundsLogic.calcRound(height));
     const heightsToQuery: number[] = [];
     for (let i = 0; i < 5; i++) {
       heightsToQuery.push(firstInRound - this.constants.activeDelegates * i);
     }
     return heightsToQuery;
   }
+
+  @SnapshotBlocksCountFilter()
+  private async snapshotBlockCount(blocksCount: number) {
+    const round = this.roundsLogic.calcRound(blocksCount) - 1;
+    if (typeof(this.appConfig.loading.snapshot) === 'boolean') {
+      // threat "true" as "highest round possible"
+      this.appConfig.loading.snapshot = round;
+    }
+    if (this.appConfig.loading.snapshot >= round) {
+      this.appConfig.loading.snapshot = round;
+      if (blocksCount % this.constants.activeDelegates > 0) {
+        // Normalize to previous round if we
+        this.appConfig.loading.snapshot = (round > 1) ? (round - 1) : 1;
+      }
+    }
+    return this.roundsLogic.lastInRound(round - 1);
+  }
+
   /**
    * gets the snapshot rounds
    */

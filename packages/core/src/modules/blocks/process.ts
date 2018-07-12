@@ -32,7 +32,7 @@ import { inject, injectable, tagged } from 'inversify';
 import * as _ from 'lodash';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-import schema from '../../../schema/blocks.json';
+const schema = require('../../../schema/blocks.json');
 
 @injectable()
 export class BlocksModuleProcess implements IBlocksModuleProcess {

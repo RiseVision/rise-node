@@ -16,7 +16,7 @@ export interface ITransportModule extends IModule {
   getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: IPeerLogic }>;
 
   getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] },
-                       options: PeerRequestOptions): Promise<{ body: any; peer: IPeerLogic }>;
+                       options: PeerRequestOptions): Promise<{ body: T; peer: IPeerLogic }>;
 
   /**
    * Calls enqueue signatures and emits a signature change socket message

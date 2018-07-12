@@ -9,6 +9,7 @@ import { Transaction } from 'sequelize';
 export const OnBlockchainReady = createAction('core/loader/onBlockchainReady');
 export const OnSyncStarted     = createAction('core/loader/onSync.started');
 export const OnSyncFinished    = createAction('core/loader/onSync.finished');
+export const OnCheckIntegrity    = createAction<(totalBlocks: number) => Promise<void>>('core/loader/loadBlockchain/checkIntegrity');
 
 /**
  * Modules that store values that are unconfirmed will need to reset their unconfirmed entries with the confirmed values

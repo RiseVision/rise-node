@@ -1,9 +1,9 @@
 import { BaseCoreModule } from '@risevision/core-launchpad';
-import { constants } from './helpers';
+import { constants, DposAppConfig } from './helpers';
 import { CommanderStatic } from 'commander';
 const configSchema = require('../schema/config.json');
 
-export class CoreModule extends BaseCoreModule {
+export class CoreModule extends BaseCoreModule<DposAppConfig> {
   public constants = constants;
   public configSchema = configSchema;
 

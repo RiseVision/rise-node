@@ -1,10 +1,4 @@
-import { inject, injectable, postConstruct, tagged } from 'inversify';
-import * as promiseRetry from 'promise-retry';
-import * as sequelize from 'sequelize';
-import { Op } from 'sequelize';
-import SocketIO from 'socket.io';
-import z_schema from 'z-schema';
-import { Bus, Sequence, Symbols, wait, WrapInDefaultSequence } from '@risevision/core-helpers';
+import { Sequence, Symbols, wait, WrapInDefaultSequence } from '@risevision/core-helpers';
 import {
   IAccountLogic,
   IAccountsModel,
@@ -19,11 +13,9 @@ import {
   IJobsQueue,
   ILoaderModule,
   ILogger,
-  IMultisignaturesModule,
   IPeerLogic,
   IPeersLogic,
   IPeersModule,
-  IRoundsModel,
   ISystemModule,
   ITransactionLogic,
   ITransactionsModule,
@@ -37,11 +29,19 @@ import {
   SignedAndChainedBlockType,
   SignedBlockType
 } from '@risevision/core-types';
+import { inject, injectable, postConstruct, tagged } from 'inversify';
+import * as promiseRetry from 'promise-retry';
+import * as sequelize from 'sequelize';
+import { Op } from 'sequelize';
+import SocketIO from 'socket.io';
+import z_schema from 'z-schema';
 
-import loaderSchema from '../../schema/loader.json';
+
+import { WordPressHookSystem } from 'mangiafuoco';
 import sql from '../sql/loader';
 import Timer = NodeJS.Timer;
-import { WordPressHookSystem } from 'mangiafuoco';
+
+const loaderSchema = require('../../schema/loader.json');
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
@@ -52,7 +52,6 @@ export class LoaderModule implements ILoaderModule {
   private lastblock: IBlocksModel = null;
   private network: { height: number, peers: IPeerLogic[] };
   private retries: number         = 5;
-  private syncInterval            = 1000;
   private syncIntervalId: Timer   = null;
 
   // Generic
@@ -104,8 +103,6 @@ export class LoaderModule implements ILoaderModule {
   private blocksUtilsModule: IBlocksModuleUtils;
   @inject(Symbols.modules.blocksSubModules.verify)
   private blocksVerifyModule: IBlocksModuleVerify;
-  @inject(Symbols.modules.multisignatures)
-  private multisigModule: IMultisignaturesModule;
   @inject(Symbols.modules.peers)
   private peersModule: IPeersModule;
   @inject(Symbols.modules.system)
@@ -127,9 +124,6 @@ export class LoaderModule implements ILoaderModule {
       height: 0,
       peers : [],
     };
-    if (this.config.forging.transactionsPolling) {
-      this.syncInterval = this.config.forging.pollingInterval;
-    }
   }
 
   public async getNetwork() {
@@ -161,11 +155,8 @@ export class LoaderModule implements ILoaderModule {
   public async onPeersReady() {
     await this.syncTimer();
     // If transactions polling is not enabled, sync txs only on boot.
-    if (this.loaded && !this.config.forging.transactionsPolling) {
-      await this.syncTransactions()
-        .catch((e) => this.logger.info('Failed to sync transactions on startup', e));
-      await this.syncSignatures()
-        .catch((e) => this.logger.info('Failed to sync signatures on startup', e));
+    if (this.loaded) {
+      await this.doSync();
     }
   }
 
@@ -234,31 +225,14 @@ export class LoaderModule implements ILoaderModule {
       .count({
         where: {
           blockId: { [Op.in]: sequelize.literal('(SELECT "id" from blocks ORDER BY "height" DESC LIMIT 1)') },
-        }
+        },
       });
 
     if (updatedAccountsInLastBlock === 0) {
       return this.load(blocksCount, limit, 'Detected missed blocks in mem_accounts', true);
     }
 
-    // const rounds    = await this.RoundsModel.findAll({ attributes: ['round'], group: 'round' });
-    // const unapplied = rounds.filter((r) => r.round !== round);
-    // if (unapplied.length > 0) {
-    //   // round is not applied.
-    //   return this.load(blocksCount, limit, 'Detected unapplied rounds in mem_round', true);
-    // }
-    //
-    // const [duplicatedDelegates] = await this.DelegatesModel.sequelize.query(
-    //   sql.countDuplicatedDelegates,
-    //   { type: sequelize.QueryTypes.SELECT });
-    // if (duplicatedDelegates.count > 0) {
-    //   this.logger.error('Delegates table corrupted with duplicated entries');
-    //   process.exit(1);
-    //   return;
-    // }
-
     await this.hookSystem.do_action('core/loader/accounts/restoreUnconfirmedEntries');
-    // await this.AccountsModel.restoreUnconfirmedEntries();
 
     const orphanedMemAccounts = await this.AccountsModel.sequelize.query(
       sql.getOrphanedMemAccounts,
@@ -268,15 +242,16 @@ export class LoaderModule implements ILoaderModule {
       return this.load(blocksCount, limit, 'Detected orphaned blocks in mem_accounts', true);
     }
 
-    const delegatesCount = await this.AccountsModel.count({ where: { isDelegate: 1 } });
-    if (delegatesCount === 0) {
-      return this.load(blocksCount, limit, 'No delegates found', true);
-    }
-
     try {
       this.lastblock = await this.blocksUtilsModule.loadLastBlock();
     } catch (err) {
       return this.load(blocksCount, limit, err.message || 'Failed to load last block');
+    }
+
+    try {
+      await this.hookSystem.do_action('core/loader/loadBlockchain/checkIntegrity', blocksCount);
+    } catch (e) {
+      return this.load(blocksCount, limit, e.message);
     }
 
     this.logger.info('Blockchain ready');
@@ -287,17 +262,7 @@ export class LoaderModule implements ILoaderModule {
     this.logger.info('Snapshot mode enabled');
 
     blocksCount = await this.hookSystem.apply_filters('core/loader/snapshot/blocksCount', blocksCount);
-    // if (typeof(this.config.loading.snapshot) === 'boolean') {
-    //   // threat "true" as "highest round possible"
-    //   this.config.loading.snapshot = round;
-    // }
-    // if (this.config.loading.snapshot >= round) {
-    //   this.config.loading.snapshot = round;
-    //   if (blocksCount % this.constants.activeDelegates > 0) {
-    //     // Normalize to previous round if we
-    //     this.config.loading.snapshot = (round > 1) ? (round - 1) : 1;
-    //   }
-    // }
+
     this.config.loading.snapshot = blocksCount;
     this.appState.set('rounds.snapshot', blocksCount);
 
@@ -510,7 +475,7 @@ export class LoaderModule implements ILoaderModule {
   @WrapInDefaultSequence
   private async sync() {
     this.logger.info('Starting sync');
-    await this.hookSystem.do_action('core/loader/onSync[started]');
+    await this.hookSystem.do_action('core/loader/onSyncBlocks.started');
 
     this.isActive = true;
     this.syncTrigger(true);
@@ -535,40 +500,52 @@ export class LoaderModule implements ILoaderModule {
     this.blocksToSync = 0;
 
     this.logger.info('Finished sync');
-    await this.hookSystem.do_action('core/loader/onSync[finished]');
+    await this.hookSystem.do_action('core/loader/onSyncBlocks.finished');
 
+  }
+
+  private async doSync() {
+    const shouldSyncBlocks     = this.loaded && !this.isSyncing && (this.blocksModule.lastReceipt.isStale());
+    const whatToSync: string[] = await this.hookSystem
+      .apply_filters('core/loader/whatToSync', shouldSyncBlocks ? ['blocks'] : []);
+
+    for (const what of whatToSync) {
+      switch (what) {
+        case 'blocks':
+          await promiseRetry(async (retries) => {
+            try {
+              await this.sync();
+            } catch (err) {
+              this.logger.warn('Error syncing... Retrying... ', err);
+              retries(err);
+            }
+          }, { retries: this.retries });
+          break;
+        case 'transactions':
+          this.logger.info('Syncing transactions');
+          await this.syncTransactions();
+          break;
+        default:
+          this.logger.info(`Syncing ${what}`);
+          await this.hookSystem.do_action('core/loader/onSyncRequested', what);
+          break;
+      }
+    }
   }
 
   private async syncTimer() {
     this.logger.trace('Setting sync timer');
 
     this.jobsQueue.register('loaderSyncTimer', async () => {
-      this.logger.trace('Sync timer trigger', {
-        last_receipt: this.blocksModule.lastReceipt.get(),
-        loaded      : this.loaded,
-        syncing     : this.isSyncing,
-      });
-
-      const canSync = this.loaded && !this.isSyncing;
-      if (canSync && (this.blocksModule.lastReceipt.isStale() || this.config.forging.transactionsPolling)) {
-        await promiseRetry(async (retries) => {
-          try {
-            await this.sync();
-          } catch (err) {
-            this.logger.warn('Error syncing... Retrying... ', err);
-            retries(err);
-          }
-        }, { retries: this.retries });
-
-        // IF polling is enabled then poolling sync both txs and signatures.
-        if (this.config.forging.transactionsPolling) {
-          this.logger.info('Polling transactions and signatures');
-          await this.syncTransactions();
-          await this.syncSignatures();
-          this.logger.info('Finished polling');
-        }
-      }
-    }, this.syncInterval);
+        this.logger.trace('Sync timer trigger', {
+          last_receipt: this.blocksModule.lastReceipt.get(),
+          loaded      : this.loaded,
+          syncing     : this.isSyncing,
+        });
+        await this.doSync();
+      },
+      Math.max(1000, this.constants.blockTime * (1000 / 50))
+    );
   }
 
   /**
@@ -587,63 +564,6 @@ export class LoaderModule implements ILoaderModule {
     } catch (e) {
       this.logger.log('Unconfirmed transactions loader error', e);
     }
-  }
-
-  /**
-   * Tries loading multisig transactions from peers for this.retries times or logs errors
-   */
-  private async syncSignatures() {
-    // load multisignature transactions
-    try {
-      await promiseRetry(async (retry) => {
-        try {
-          await this.loadSignatures();
-        } catch (e) {
-          this.logger.warn('Error loading transactions... Retrying... ', e);
-          retry(e);
-        }
-      }, { retries: this.retries });
-    } catch (e) {
-      this.logger.log('Multisig pending transactions loader error', e);
-    }
-  }
-
-  /**
-   * Loads pending multisignature transactions
-   */
-  private async loadSignatures() {
-    const randomPeer = await this.getRandomPeer();
-    this.logger.log(`Loading signatures from: ${randomPeer.string}`);
-    const res = await this.transportModule.getFromPeer<any>(
-      randomPeer,
-      {
-        api   : '/signatures',
-        method: 'GET',
-      });
-
-    if (!this.schema.validate(res.body, loaderSchema.loadSignatures)) {
-      throw new Error('Failed to validate /signatures schema');
-    }
-
-    // FIXME: signatures array
-    const { signatures }: { signatures: any[] } = res.body;
-
-    // Process multisignature transactions and validate signatures in sequence
-    await this.defaultSequence.addAndPromise(async () => {
-      for (const multiSigTX of signatures) {
-        for (const signature of  multiSigTX.signatures) {
-          try {
-            await this.multisigModule.processSignature({
-              signature,
-              transaction: multiSigTX.transaction,
-            });
-          } catch (err) {
-            this.logger.warn(`Cannot process multisig signature for ${multiSigTX.transaction} `, err);
-          }
-        }
-      }
-      return void 0;
-    });
   }
 
   /**
