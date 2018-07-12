@@ -245,7 +245,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     const peer = this.peersLogic.create(rawPeer);
 
     this.logger.info(`Loading blocks from ${peer.string}`);
-    const blocksFromPeer = await peer.makeRequest<{ blocks: RawFullBlockListType[] | SignedAndChainedBlockType[] }>(
+    const blocksFromPeer = await peer.makeRequest<{ blocks: SignedAndChainedBlockType[] }>(
       this.gbFactory({data: null, query: {lastBlockId: lastValidBlock.id}})
     );
 
@@ -254,21 +254,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       throw new Error('Received invalid blocks data');
     }
 
-    // TODO: is this is a good idea??
-    let blocks: SignedAndChainedBlockType[];
-    if (Array.isArray(blocksFromPeer.blocks)
-        && blocksFromPeer.blocks.length > 0
-        && typeof (blocksFromPeer.blocks[0] as RawFullBlockListType).b_id !== 'undefined'
-    ) {
-      // This is an array of raw blocks, so we need to process them using readDbRows
-      blocks = this.blocksUtilsModule.readDbRows(blocksFromPeer.blocks as RawFullBlockListType[]);
-    } else if (Array.isArray(blocksFromPeer.blocks) && blocksFromPeer.blocks.length > 0) {
-      // This is already a well formed SignedAndChainedBlockType
-      blocks = blocksFromPeer.blocks as SignedAndChainedBlockType[];
-    } else {
-      blocks = [];
-    }
-
+    const blocks = blocksFromPeer.blocks;
     for (const block of blocks) {
       if (this.isCleaning) {
         return lastValidBlock;

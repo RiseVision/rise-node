@@ -50,6 +50,14 @@ export class PostBlocksRequest extends BaseRequest<any, PostBlocksRequestDataTyp
     return reqOptions;
   }
 
+  public getResponseData(res) {
+    if (this.peerSupportsProtoBuf(res.peer)) {
+      return this.decodeProtoBufResponse(res, 'transportBlocks', 'transportBlockResponse');
+    } else {
+      return res.body;
+    }
+  }
+
   protected getBaseUrl(isProto) {
     return isProto ? '/v2/peer/blocks' : '/peer/blocks';
   }

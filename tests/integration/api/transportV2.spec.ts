@@ -1,7 +1,22 @@
+import * as chai from 'chai';
 import { expect } from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
+import * as sinon from 'sinon';
 import * as supertest from 'supertest';
 import * as z_schema from 'z-schema';
+import { CommonBlockRequest } from '../../../src/apis/requests/CommonBlockRequest';
+import { GetBlocksRequest } from '../../../src/apis/requests/GetBlocksRequest';
+import { GetSignaturesRequest } from '../../../src/apis/requests/GetSignaturesRequest';
+import { GetTransactionsRequest } from '../../../src/apis/requests/GetTransactionsRequest';
+import { PeersListRequest } from '../../../src/apis/requests/PeersListRequest';
+import { PostBlocksRequest, PostBlocksRequestDataType } from '../../../src/apis/requests/PostBlocksRequest';
+import { PostSignaturesRequest, PostSignaturesRequestDataType } from '../../../src/apis/requests/PostSignaturesRequest';
+import { PostTransactionsRequest } from '../../../src/apis/requests/PostTransactionsRequest';
+import { RequestFactoryType } from '../../../src/apis/requests/requestFactoryType';
+import { requestSymbols } from '../../../src/apis/requests/requestSymbols';
+import { Ed, ForkType, ProtoBufHelper } from '../../../src/helpers';
+import constants from '../../../src/helpers/constants';
 import {
   IBlockLogic,
   IPeerLogic,
@@ -17,9 +32,11 @@ import {
   ITransactionsModule
 } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
-import * as chaiAsPromised from 'chai-as-promised';
-import * as chai from 'chai';
-
+import { BasePeerType, PeerType, SignedBlockType } from '../../../src/logic';
+import { IBaseTransaction } from '../../../src/logic/transactions';
+import { BlocksModel, TransactionsModel } from '../../../src/models';
+import { createFakePeers } from '../../utils/fakePeersFactory';
+import { toBufferedTransaction } from '../../utils/txCrafter';
 import initializer from '../common/init';
 import {
   createMultiSignAccount,
@@ -29,35 +46,14 @@ import {
   getRandomDelegateWallet
 } from '../common/utils';
 import { checkReturnObjKeyVal } from './utils';
-import { createFakePeers } from '../../utils/fakePeersFactory';
-import { BasePeerType, PeerLogic, PeerType, SignedBlockType } from '../../../src/logic';
-import { BlocksModel, TransactionsModel } from '../../../src/models';
-import { ISlots } from '../../../src/ioc/interfaces/helpers';
-import * as sinon from 'sinon';
-import { Ed, ForkType, ProtoBufHelper } from '../../../src/helpers';
-import constants from '../../../src/helpers/constants';
-import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
-import { PeersListRequest } from '../../../src/apis/requests/PeersListRequest';
-import { PostSignaturesRequest, PostSignaturesRequestDataType } from '../../../src/apis/requests/PostSignaturesRequest';
-import { PostTransactionsRequest } from '../../../src/apis/requests/PostTransactionsRequest';
-import { inject } from 'inversify';
-import { requestSymbols } from '../../../src/apis/requests/requestSymbols';
-import { RequestFactoryType } from '../../../src/apis/requests/requestFactoryType';
-import { CommonBlockRequest } from '../../../src/apis/requests/CommonBlockRequest';
-import { IBaseTransaction } from '../../../src/logic/transactions';
-import { GetSignaturesRequest } from '../../../src/apis/requests/GetSignaturesRequest';
-import { GetTransactionsRequest } from '../../../src/apis/requests/GetTransactionsRequest';
-import { IAPIRequest } from '../../../src/apis/requests/BaseRequest';
-import { GetBlocksRequest } from '../../../src/apis/requests/GetBlocksRequest';
-import { PostBlocksRequest } from '../../../src/apis/requests/PostBlocksRequest';
-
 
 chai.use(chaiAsPromised);
-// tslint:disable no-unused-expression max-line-length
+
+// tslint:disable no-unused-expression max-line-length object-literal-sort-keys
 const headers = {
   nethash: 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
+  port   : 1,
   version: '1.1.10',
-  port   : 1
 };
 
 const transportTXSchema = {
@@ -108,11 +104,11 @@ const transportTXSchema = {
     },
     amount            : {
       type   : 'integer',
-      minimum: 0
+      minimum: 0,
     },
     fee               : {
       type   : 'integer',
-      minimum: 0
+      minimum: 0,
     },
     signature         : {
       type: 'string',
@@ -130,10 +126,6 @@ const transportTXSchema = {
 };
 let protoBufHelper: ProtoBufHelper;
 
-const safePeerMakeRequest = (req: IAPIRequest<any, any>) => {
-
-}
-
 function checkHeadersValidation(p: () => supertest.Test) {
   it('should fail if version is not provided', () => {
     const tmp = { ...{}, ...headers };
@@ -148,6 +140,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
         expect(err.error).to.contain('Missing required property: version');
       });
   });
+
   it('should fail if nethash is not provided', () => {
     const tmp = { ...{}, ...headers };
     delete tmp.nethash;
@@ -161,6 +154,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
         expect(err.error).to.contain('Missing required property: nethash');
       });
   });
+
   it('should fail if port is not provided', () => {
     const tmp = { ...{}, ...headers };
     delete tmp.port;
@@ -188,9 +182,10 @@ function checkHeadersValidation(p: () => supertest.Test) {
         expect(err.error).to.contain('Request is made on the wrong network');
       });
   });
+
   it('should fail if broadhash is not hex', () => {
     const tmp: any = { ...{}, ...headers };
-    tmp.broadhash  = 'hh'
+    tmp.broadhash  = 'hh';
     return p()
       .set(tmp)
       .expect(200)
@@ -201,6 +196,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
         expect(err.error).to.contain('broadhash - Object didn\'t pass validation for format');
       });
   });
+
   it('should fail if height is string', () => {
     const tmp: any = { ...{}, ...headers };
     tmp.height     = 'hh';
@@ -214,6 +210,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
         expect(err.error).to.contain('height - Expected type integer');
       });
   });
+
   it('should fail if nonce is less than 16 chars', () => {
     const tmp: any = { ...{}, ...headers };
     tmp.nonce      = new Array(15).fill(null).fill('a').join('');
@@ -227,6 +224,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
         expect(err.error).to.contain('nonce - String is too short (15 chars)');
       });
   });
+
   it('should fail if nonce is longer than 36 chars', () => {
     const tmp: any = { ...{}, ...headers };
     tmp.nonce      = new Array(37).fill(null).fill('a').join('');
@@ -243,6 +241,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
 
 }
 
+// tslint:disable-next-line
 describe('v2/peer/transport', function() {
   this.timeout(10000);
   initializer.setup();
@@ -255,7 +254,7 @@ describe('v2/peer/transport', function() {
   let gtFactory: RequestFactoryType<void, GetTransactionsRequest>;
   let cbFactory: RequestFactoryType<void, CommonBlockRequest>;
   let gbFactory: RequestFactoryType<void, GetBlocksRequest>;
-  let pbFactory: RequestFactoryType<void, PostBlocksRequest>;
+  let pbFactory: RequestFactoryType<PostBlocksRequestDataType, PostBlocksRequest>;
 
   beforeEach(() => {
     const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
@@ -280,13 +279,11 @@ describe('v2/peer/transport', function() {
     let peers: PeerType[];
     let peersLogic: IPeersLogic;
     let peersModule: IPeersModule;
-    let constants: any;
 
     before(() => {
       peers      = createFakePeers(10);
       peersLogic = initializer.appManager.container.get<IPeersLogic>(Symbols.logic.peers);
       peersModule = initializer.appManager.container.get<IPeersModule>(Symbols.modules.peers);
-      constants = initializer.appManager.container.get(Symbols.helpers.constants);
       peers.forEach((p) => peersLogic.upsert(p, true));
     });
     after(() => {
@@ -382,7 +379,7 @@ describe('v2/peer/transport', function() {
       const currentSigs = await peer.makeRequest(gsFactory({data: null}));
       const expectedSigs = {
         signatures: [
-          {signatures: sigs.map((s) => s.toString('hex')), transaction: tx.id}
+          {signatures: sigs.map((s) => s.toString('hex')), transaction: tx.id},
         ],
       };
       expect(currentSigs).to.be.deep.eq(expectedSigs);
@@ -523,170 +520,103 @@ describe('v2/peer/transport', function() {
         .map((tx) => toBufferedTransaction(tx));
       const b = await initializer.rawMineBlockWithTxs([]);
       const r = await peer.makeRequest(gbFactory({data: null, query: {lastBlockId: b.previousBlock}}));
-      expect(r.blocks[0].id).to.be.equal(b.id);
+      expect(r.blocks[0]).to.be.deep.equal(b);
     });
   });
 
-  // describe('/blocks [post]', () => {
-  //   let blockLogic: IBlockLogic;
-  //   let blocksModule: IBlocksModule;
-  //   let block: SignedBlockType<string>;
-  //   let blockBuf: SignedBlockType<Buffer>;
-  //   let senderAccount: LiskWallet;
-  //   let blocksModel: typeof BlocksModel;
-  //   let transactionsModel: typeof TransactionsModel;
-  //   beforeEach(async () => {
-  //     senderAccount     = getRandomDelegateWallet();
-  //     blockLogic        = initializer.appManager.container.get<IBlockLogic>(Symbols.logic.block);
-  //     blocksModule      = initializer.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
-  //     blocksModel       = initializer.appManager.container.get<typeof BlocksModel>(Symbols.models.blocks);
-  //     transactionsModel = initializer.appManager.container.get<typeof TransactionsModel>(Symbols.models.transactions);
-  //     blockBuf          = await initializer.generateBlock([(await createSendTransaction(0, 1, senderAccount, senderAccount.address))]);
-  //     blockBuf.id       = blockLogic.getId(blockBuf);
-  //     block             = blocksModel.toStringBlockType(blockBuf, transactionsModel, blocksModule);
-  //   });
-  //   checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
-  //     .post('/v2/peer/blocks/'));
-  //   it('should accept valid block and save it in blockchain', async () => {
-  //     const response = await supertest(initializer.appManager.expressApp)
-  //       .post('/v2/peer/blocks')
-  //       .set(headers)
-  //       .send({ block })
-  //       .expect(200);
-  //     expect(response.body.success).is.true;
-  //     expect(response.body.blockId).is.eq(block.id);
-  //
-  //     expect(blocksModule.lastBlock.id).is.eq(block.id);
-  //   });
-  //   it('should discard block if height is off', async () => {
-  //     blockBuf.height = 10330;
-  //     blockBuf.id     = blockLogic.getId(blockBuf);
-  //     block           = blocksModel.toStringBlockType(blockBuf, transactionsModel, blocksModule);
-  //     return supertest(initializer.appManager.expressApp)
-  //       .post('/v2/peer/blocks')
-  //       .set(headers)
-  //       .send({ block })
-  //       .expect(200)
-  //       .then((response) => {
-  //         expect(response.body.success).is.false;
-  //         expect(response.body.error).to.be.eq('Block discarded - not in current chain');
-  //       });
-  //   });
-  //   describe('payload issues', async () => {
-  //     it('should reject block if payload is mismatching', async () => {
-  //       block.payloadHash = Buffer.alloc(32).fill('aa').toString('hex');
-  //       return supertest(initializer.appManager.expressApp)
-  //         .post('/v2/peer/blocks')
-  //         .set(headers)
-  //         .send({ block })
-  //         .expect(200)
-  //         .then((response) => {
-  //           expect(response.body.success).is.false;
-  //         });
-  //     });
-  //     it('should reject block if tx in payload is wrong', async () => {
-  //       block.transactions[0].fee = 1;
-  //       return supertest(initializer.appManager.expressApp)
-  //         .post('/v2/peer/blocks')
-  //         .set(headers)
-  //         .send({ block })
-  //         .expect(200)
-  //         .then((response) => {
-  //           expect(response.body.success).is.false;
-  //         });
-  //     });
-  //     it('should reject block if payloadHash is not ok', async () => {
-  //       block.transactions[0] = await createSendTransaction(0, 1, senderAccount, senderAccount.address, { timestamp: 10 }) as any;
-  //       return supertest(initializer.appManager.expressApp)
-  //         .post('/v2/peer/blocks')
-  //         .set(headers)
-  //         .send({ block })
-  //         .expect(200)
-  //         .then((response) => {
-  //           expect(response.body.success).is.false;
-  //           expect(response.body.error).is.eq('Invalid payload hash');
-  //         });
-  //     });
-  //   });
-  //
-  //   it('should remove just inserted peer if block is not valid');
-  //   it('should process and add block to blockchain if valid');
-  //   it('should delete last block if fork 5', async () => {
-  //     await initializer.rawMineBlocks(1);
-  //     const nextBlock = await initializer.generateBlock();
-  //     blockBuf.id     = nextBlock.id = blockLogic.getId(nextBlock);
-  //     // Generate a block with an id less than nextBlock
-  //     for (let i = 0; blockBuf.id >= nextBlock.id; i++) {
-  //       blockBuf    = await initializer.generateBlock([
-  //         (await createSendTransaction(0, 1, senderAccount, senderAccount.address, { timestamp: i + 1 })),
-  //       ]);
-  //       blockBuf.id = blockLogic.getId(blockBuf);
-  //     }
-  //     block = blocksModel.toStringBlockType(blockBuf, transactionsModel, blocksModule);
-  //     await initializer.rawMineBlocks(1);
-  //     expect(blocksModule.lastBlock.id).to.be.eq(nextBlock.id);
-  //     // fake slots otherwise we won't be able to
-  //
-  //     const verifyModule = initializer.appManager.container.get<IBlocksModuleVerify>(Symbols.modules.blocksSubModules.verify);
-  //     const forksModule  = initializer.appManager.container.get<IForkModule>(Symbols.modules.fork);
-  //     const stub         = sinon.stub(verifyModule as any, 'verifyBlockSlotWindow').returns([]);
-  //     const spyFork      = sinon.spy(forksModule, 'fork');
-  //
-  //     const response = await  supertest(initializer.appManager.expressApp)
-  //       .post('/v2/peer/blocks')
-  //       .set(headers)
-  //       .send({ block })
-  //       .expect(200);
-  //
-  //     expect(response.body.success).is.true;
-  //     expect(blocksModule.lastBlock.id).to.be.eq(block.id);
-  //     stub.restore();
-  //
-  //     expect(spyFork.calledOnce).is.true;
-  //     expect(spyFork.firstCall.args[1]).is.deep.eq(ForkType.TYPE_5);
-  //     spyFork.restore();
-  //   });
-  //
-  //   // it('should delete last 2 blocks if fork 1', async () => {
-  //   //   // Fork 1 happens when node has
-  //   //   // A -> B(height = A.height+1, previousBlock = A)
-  //   //   // but receives
-  //   //   // C(height = B.height+ 1 , previousBlock != B)
-  //   //
-  //   //   const slots  = initializer.appManager.container.get<ISlots>(Symbols.helpers.slots);
-  //   //   const consts = initializer.appManager.container.get<typeof constants>(Symbols.helpers.constants);
-  //   //   const orig   = slots.getTime;
-  //   //   sinon.stub(slots, 'getTime').callsFake((time: number) => {
-  //   //     if (time) {
-  //   //       return orig.call(slots, time);
-  //   //     }
-  //   //     return slots.getSlotTime(slots.getSlotNumber(blocksModule.lastBlock.timestamp) + 1);
-  //   //   });
-  //   //
-  //   //   await initializer.rawMineBlocks(2);
-  //   //   console.log('afterMining', blocksModule.lastBlock.height);
-  //   //   const blockB = blocksModule.lastBlock;
-  //   //   const blockC = await initializer.generateBlock();
-  //   //   blockC.id = blockLogic.getId(blockBuf);
-  //   //   await initializer.rawDeleteBlocks(1); // remove B
-  //   //   console.log('remining b', blocksModule.lastBlock.height);
-  //   //   // mine a different B
-  //   //   await initializer.rawMineBlockWithTxs([toBufferedTransaction(
-  //   //     await createSendTransaction(0, 1, senderAccount, senderAccount.address, {timestamp: 1}))
-  //   //   ]);
-  //   //   // expect(blocksModule.lastBlock.id).to.not.be.eq(blockB);
-  //   //
-  //   //   // now send C
-  //   //   await supertest(initializer.appManager.expressApp)
-  //   //     .post('/v2/peer/blocks')
-  //   //     .set(headers)
-  //   //     .send({ block: blocksModel.toStringBlockType(blockC, transactionsModel, blocksModule) })
-  //   //     .expect(200);
-  //   //
-  //   //   expect(blocksModule.lastBlock.height).to.be.eq(1);
-  //   //
-  //   //
-  //   // });
-  // });
+  describe('/blocks [post]', () => {
+    let blockLogic: IBlockLogic;
+    let blocksModule: IBlocksModule;
+    let block: SignedBlockType<string>;
+    let blockBuf: SignedBlockType<Buffer>;
+    let senderAccount: LiskWallet;
+    let blocksModel: typeof BlocksModel;
+    let transactionsModel: typeof TransactionsModel;
+    beforeEach(async () => {
+      senderAccount     = getRandomDelegateWallet();
+      blockLogic        = initializer.appManager.container.get<IBlockLogic>(Symbols.logic.block);
+      blocksModule      = initializer.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
+      blocksModel       = initializer.appManager.container.get<typeof BlocksModel>(Symbols.models.blocks);
+      transactionsModel = initializer.appManager.container.get<typeof TransactionsModel>(Symbols.models.transactions);
+      blockBuf          = await initializer.generateBlock([(await createSendTransaction(0, 1, senderAccount, senderAccount.address))]);
+      blockBuf.id       = blockLogic.getId(blockBuf);
+      block             = blocksModel.toStringBlockType(blockBuf, transactionsModel, blocksModule);
+    });
+    checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
+      .post('/v2/peer/blocks/'));
+    it('should accept valid block and save it in blockchain', async () => {
+      const response = await peer.makeRequest(pbFactory({
+        data: { block: blockBuf },
+      }));
+      expect(response.success).is.true;
+      expect(response.blockId).is.eq(blockBuf.id);
+      expect(blocksModule.lastBlock.id).is.eq(blockBuf.id);
+    });
 
+    it('should discard block if height is off', async () => {
+      blockBuf.height = 10330;
+      blockBuf.id     = blockLogic.getId(blockBuf);
+      await expect(peer.makeRequest(pbFactory({
+        data: { block: blockBuf },
+      }))).rejectedWith('Block discarded - not in current chain');
+    });
+
+    describe('payload issues', async () => {
+      it('should reject block if payload is mismatching', async () => {
+        blockBuf.payloadHash = Buffer.alloc(32).fill('aa');
+        await expect(peer.makeRequest(pbFactory({
+          data: { block: blockBuf },
+        }))).rejectedWith('Failed to verify block signature');
+      });
+
+      it('should reject block if tx in payload is wrong', async () => {
+        blockBuf.transactions[0].fee = 1;
+        await expect(peer.makeRequest(pbFactory({
+          data: { block: blockBuf },
+        }))).rejectedWith('Invalid total fee');
+      });
+
+      it('should reject block if payloadHash is not ok', async () => {
+        blockBuf.transactions[0] = await createSendTransaction(0, 1, senderAccount, senderAccount.address, { timestamp: 10 }) as any;
+        await expect(peer.makeRequest(pbFactory({
+          data: { block: blockBuf },
+        }))).rejectedWith('Invalid payload hash');
+      });
+    });
+
+    it('should delete last block if fork 5', async () => {
+      await initializer.rawMineBlocks(1);
+      const nextBlock = await initializer.generateBlock();
+      blockBuf.id     = nextBlock.id = blockLogic.getId(nextBlock);
+      // Generate a block with an id less than nextBlock
+      for (let i = 0; blockBuf.id >= nextBlock.id; i++) {
+        blockBuf    = await initializer.generateBlock([
+          (await createSendTransaction(0, 1, senderAccount, senderAccount.address, { timestamp: i + 1 })),
+        ]);
+        blockBuf.id = blockLogic.getId(blockBuf);
+      }
+
+      await initializer.rawMineBlocks(1);
+      expect(blocksModule.lastBlock.id).to.be.eq(nextBlock.id);
+      // fake slots otherwise we won't be able to
+
+      const verifyModule = initializer.appManager.container.get<IBlocksModuleVerify>(Symbols.modules.blocksSubModules.verify);
+      const forksModule  = initializer.appManager.container.get<IForkModule>(Symbols.modules.fork);
+      const stub         = sinon.stub(verifyModule as any, 'verifyBlockSlotWindow').returns([]);
+      const spyFork      = sinon.spy(forksModule, 'fork');
+
+      const response = await peer.makeRequest(pbFactory({
+        data: { block: blockBuf },
+      }));
+
+      expect(response.success).is.true;
+      expect(blocksModule.lastBlock.id).to.be.eq(blockBuf.id);
+      stub.restore();
+
+      expect(spyFork.calledOnce).is.true;
+      expect(spyFork.firstCall.args[1]).is.deep.eq(ForkType.TYPE_5);
+      spyFork.restore();
+    });
+
+  });
 });

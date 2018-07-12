@@ -2,15 +2,17 @@ import { inject, injectable } from 'inversify';
 import { IBlockLogic } from '../../ioc/interfaces/logic';
 import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType } from '../../logic';
-import { RawFullBlockListType } from '../../types/rawDBTypes';
 import { BaseRequest } from './BaseRequest';
 
-export type GetBlocksRequestDataType = { blocks: SignedAndChainedBlockType[] | RawFullBlockListType[] };
+export type GetBlocksRequestDataType = { blocks: SignedAndChainedBlockType[]};
 
 @injectable()
 export class GetBlocksRequest extends BaseRequest<GetBlocksRequestDataType, void> {
   protected readonly method = 'GET';
   protected readonly supportsProtoBuf = true;
+
+  @inject(Symbols.modules.blocksSubModules.utils)
+  private blocksUtilsModule;
 
   @inject(Symbols.logic.block)
   private blockLogic: IBlockLogic;
@@ -25,7 +27,8 @@ export class GetBlocksRequest extends BaseRequest<GetBlocksRequestDataType, void
       }
       return rawRes;
     } else {
-      return res.body;
+      const blocks = this.blocksUtilsModule.readDbRows(res.body.blocks);
+      return { blocks };
     }
   }
 
