@@ -2,12 +2,14 @@
   "name": "@risevision/core",
   "version": "1.0.0",
   "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "start": "node app.js",
     "test-integration": "NODE_ENV=test mocha  --bail --exit --require ts-node/register './tests/integration/**/*.spec.ts'",
     "test-unit": "mocha  --bail --exit --require ts-node/register './tests/unit/**/*.spec.ts'",
     "test-all": "NODE_ENV=test mocha  --bail --exit --require ts-node/register './tests/unit/**/*.spec.ts' './tests/integration/**/*.spec.ts'",
-    "transpile": "echo hey; # shx rm -rf dist; tsc",
+    "transpile": "shx rm -rf dist; tsc",
     "test-cover-unit": "nyc -e '.ts' -x 'tests/**' -r lcov npm run test-unit && cat ./coverage/lcov.info | coveralls",
     "test-cover-all": "nyc -e '.ts' -x 'tests/**' -r lcov npm run test-all && cat ./coverage/lcov.info | coveralls",
     "static-analysis": "tslint --force --project ./tsconfig.json 'src/**/*.ts'"
@@ -15,11 +17,16 @@
   "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
   "license": "GPL-3.0",
   "dependencies": {
+    "@risevision/core": "^1.0.0",
     "@risevision/core-helpers": "^1.0.0",
     "@risevision/core-interfaces": "^1.0.0",
-    "@risevision/core-models": "^1.0.0",
-    "@risevision/core-apis": "^1.0.0",
     "@risevision/core-types": "^1.0.0"
 
+  },
+  "devDependencies": {
+    "shx": "=0.2.2",
+    "@types/node": "^9.6.0",
+    "ts-node": "=6.0.5",
+    "typescript": "=2.9.2"
   }
 }

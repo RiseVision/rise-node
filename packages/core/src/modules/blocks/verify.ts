@@ -15,10 +15,9 @@ import {
   ITransactionLogic,
   ITransactionsModule
 } from '@risevision/core-interfaces';
-import { ConstantsType, ForkType, SignedAndChainedBlockType, SignedBlockType } from '@risevision/core-types';
+import { ConstantsType, ForkType, IConfirmedTransaction, SignedAndChainedBlockType, SignedBlockType } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
-import { IConfirmedTransaction } from '../../../../core-types/src/transactions';
 
 @injectable()
 export class BlocksModuleVerify implements IBlocksModuleVerify {

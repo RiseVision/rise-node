@@ -7,15 +7,16 @@
     "allowJs"                     : true,
     "moduleResolution"            : "node",
     "outDir"                      : "dist",
+    "baseUrl"                     : ".",
     "allowSyntheticDefaultImports": true,
     "inlineSourceMap"             : true,
-    "resolveJsonModule":            true,
     "inlineSources"               : true,
     "lib"                         : [
       "dom",
       "es7"
     ],
     "paths": {
+      "@risevision/core": ["../core/*"],
       "@risevision/core-models": ["../core-models/*"],
       "@risevision/core-interfaces": ["../core-interfaces/*"],
       "@risevision/core-types": ["../core-types/*"],

@@ -5,9 +5,11 @@ import { AppConfig, FieldsInModel, publicKey } from '@risevision/core-types';
 import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
 import * as isEmpty from 'is-empty';
+import { WordPressHookSystem } from 'mangiafuoco';
 import { Body, Get, JsonController, Post, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import accountSchema from '../../schema/accounts.json';
+
+const accountSchema = require('../../schema/accounts.json');
 
 @JsonController('/api/accounts')
 @injectable()
@@ -20,6 +22,8 @@ export class AccountsAPI {
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
+  @inject(Symbols.generic.hookSystem)
+  private hookSystem: WordPressHookSystem;
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
 
@@ -47,17 +51,21 @@ export class AccountsAPI {
       throw new APIError('Account not found', 200);
     }
     return {
-      account: {
-        address             : accData.address,
-        balance             : `${accData.balance}`,
-        multisignatures     : accData.multisignatures || [],
-        publicKey           : accData.hexPublicKey,
-        secondPublicKey     : accData.secondPublicKey === null ? null : accData.secondPublicKey.toString('hex'),
-        secondSignature     : accData.secondSignature,
-        u_multisignatures   : accData.u_multisignatures || [],
-        unconfirmedBalance  : `${accData.u_balance}`,
-        unconfirmedSignature: accData.u_secondSignature,
-      },
+      account: await this.hookSystem.apply_filters(
+        'core/apis/accounts/account',
+        {
+          address           : accData.address,
+          balance           : `${accData.balance}`,
+          // multisignatures     : accData.multisignatures || [],
+          publicKey         : accData.hexPublicKey,
+          // secondPublicKey     : accData.secondPublicKey === null ? null : accData.secondPublicKey.toString('hex'),
+          // secondSignature     : accData.secondSignature,
+          // u_multisignatures   : accData.u_multisignatures || [],
+          unconfirmedBalance: `${accData.u_balance}`,
+          // unconfirmedSignature: accData.u_secondSignature,
+        },
+        accData
+      ),
     };
   }
 

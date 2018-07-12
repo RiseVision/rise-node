@@ -31,6 +31,7 @@ import {
 } from '@risevision/core-interfaces';
 import {
   AppConfig,
+  ConstantsType,
   ITransportTransaction,
   PeerType,
   SignedAndChainedBlockType,
@@ -40,7 +41,6 @@ import {
 import loaderSchema from '../../schema/loader.json';
 import sql from '../sql/loader';
 import Timer = NodeJS.Timer;
-import { ConstantsType } from '../../../core-types/src';
 import { WordPressHookSystem } from 'mangiafuoco';
 
 @injectable()

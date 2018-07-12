@@ -21,7 +21,8 @@ import { ConstantsType } from '@risevision/core-types';
 import { inject, injectable, tagged } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import blocksSchema from '../../schema/blocks.json';
+
+const blocksSchema = require('../../schema/blocks.json');
 
 @JsonController('/api/blocks')
 @IoCSymbol(Symbols.api.blocks)
