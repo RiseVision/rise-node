@@ -12,92 +12,20 @@ import { useContainer as useContainerForHTTP, useExpressServer } from 'routing-c
 import { Sequelize } from 'sequelize-typescript';
 import * as socketIO from 'socket.io';
 import * as uuid from 'uuid';
-import { allControllers, APIErrorHandler } from './apis';
-import { AttachPeerHeaders } from './apis/utils/attachPeerHeaders';
-import { ForgingApisWatchGuard } from './apis/utils/forgingApisWatchGuard';
-import { SuccessInterceptor } from './apis/utils/successInterceptor';
-import { ValidatePeerHeaders } from './apis/utils/validatePeerHeaders';
-import {
-  applyExpressLimits,
-  Bus,
-  cache,
-  catchToLoggerAndRemapError,
-  cbToPromise,
-  constants as constantsType,
-  DBHelper,
-  Ed,
-  ExceptionsManager,
-  ILogger,
-  JobsQueue,
-  middleware,
-  Migrator,
-  Sequence,
-  Slots,
-  z_schema,
-} from './helpers/';
-import { IBlockLogic, IPeerLogic, ITransactionLogic } from './ioc/interfaces/logic';
-import { IBlocksModuleChain } from './ioc/interfaces/modules';
-import { Symbols } from './ioc/symbols';
+import { allControllers } from './apis';
 import {
   AccountLogic,
   AppState,
-  BasePeerType,
   BlockLogic,
-  BlockRewardLogic,
-  BroadcasterLogic,
-  PeerLogic,
-  PeersLogic,
-  RoundLogic,
-  RoundsLogic,
-  SignedAndChainedBlockType,
-  TransactionLogic,
-  TransactionPool
+  BlockRewardLogic
 } from './logic/';
-import {
-  BaseTransactionType,
-  MultiSignatureTransaction,
-  RegisterDelegateTransaction,
-  SecondSignatureTransaction,
-  SendTransaction,
-  VoteTransaction
-} from './logic/transactions';
-import {
-  Accounts2DelegatesModel,
-  Accounts2MultisignaturesModel,
-  Accounts2U_DelegatesModel,
-  Accounts2U_MultisignaturesModel,
-  AccountsModel,
-  BaseModel,
-  BlocksModel,
-  DelegatesModel, ExceptionModel,
-  ForksStatsModel, InfoModel, MigrationsModel,
-  MultiSignaturesModel,
-  PeersModel,
-  RoundsFeesModel,
-  RoundsModel,
-  SignaturesModel,
-  TransactionsModel,
-  VotesModel
-} from './models';
-import {
-  AccountsModule,
-  BlocksModule,
-  Cache,
-  DelegatesModule,
-  DummyCache,
-  ForgeModule,
-  LoaderModule,
-  MultisignaturesModule,
-  PeersModule,
-  RoundsModule,
-  SystemModule,
-  TransactionsModule,
-  TransportModule
-} from './modules/';
 
 import { BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify } from './modules/blocks/';
 import { ForkModule } from './modules/fork';
-import { AppConfig } from './types/genericTypes';
+import { ILogger, IBlockLogic, IBlocksModuleChain, ITransactionLogic } from '@risevision/core-interfaces';
+import { SignedAndChainedBlockType, AppConfig, ConstantsType } from '@risevision/core-types';
+import { ExceptionsManager, Symbols, Bus } from '@risevision/core-helpers';
+import { IBaseModel } from '@risevision/core-interfaces/src/models/IBaseModel';
 
 export class AppManager {
   public container: Container = new Container();
@@ -112,7 +40,7 @@ export class AppManager {
               private logger: ILogger,
               private versionBuild: string,
               private genesisBlock: SignedAndChainedBlockType,
-              private constants: typeof constantsType,
+              private constants: ConstantsType,
               private excCreators: Array<(ex: ExceptionsManager) => Promise<void>>) {
     this.appConfig.nethash = genesisBlock.payloadHash.toString('hex');
     // this.container.applyMiddleware(theLogger);
@@ -237,12 +165,6 @@ export class AppManager {
       port    : this.appConfig.db.port,
       username: this.appConfig.db.user,
     });
-    const theCache  = await cache.connect(
-      this.appConfig.cacheEnabled,
-      this.appConfig.redis,
-      this.logger
-    );
-    const ed        = new Ed();
     const bus       = new Bus();
 
     // HTTP APIs
@@ -253,17 +175,17 @@ export class AppManager {
       );
       this.container.bind(symbol).to(controller).inSingletonScope();
     }
-    this.container.bind(Symbols.api.utils.errorHandler).to(APIErrorHandler).inSingletonScope();
-    this.container.bind(Symbols.api.utils.successInterceptor).to(SuccessInterceptor).inSingletonScope();
-    this.container.bind(Symbols.api.utils.forgingApisWatchGuard).to(ForgingApisWatchGuard).inSingletonScope();
-    this.container.bind(Symbols.api.utils.validatePeerHeadersMiddleware).to(ValidatePeerHeaders).inSingletonScope();
-    this.container.bind(Symbols.api.utils.attachPeerHeaderToResponseObject).to(AttachPeerHeaders).inSingletonScope();
+    // this.container.bind(Symbols.api.utils.errorHandler).to(APIErrorHandler).inSingletonScope();
+    // this.container.bind(Symbols.api.utils.successInterceptor).to(SuccessInterceptor).inSingletonScope();
+    // this.container.bind(Symbols.api.utils.forgingApisWatchGuard).to(ForgingApisWatchGuard).inSingletonScope();
+    // this.container.bind(Symbols.api.utils.validatePeerHeadersMiddleware).to(ValidatePeerHeaders).inSingletonScope();
+    // this.container.bind(Symbols.api.utils.attachPeerHeaderToResponseObject).to(AttachPeerHeaders).inSingletonScope();
 
     // Generics
-    this.genericsElements(theCache, sequelize, namespace, io);
+    this.genericsElements(sequelize, namespace, io);
 
     // Helpers
-    this.helperElements(bus, ed);
+    this.helperElements(bus);
 
     // Logic
     this.logicElements();
@@ -278,7 +200,7 @@ export class AppManager {
     await this.hookSystem.do_action('core/init/container', this.container);
 
     // allow plugins to just modify models
-    const models = this.getElementsFromContainer<typeof BaseModel>(Symbols.models);
+    const models = this.getElementsFromContainer<typeof IBaseModel>(Symbols.models);
     await Promise.all(models.map((model) => this.hookSystem.do_action('core/init/model', model)));
 
     // Start migrations/runtime queries.
@@ -289,7 +211,7 @@ export class AppManager {
   }
 
   public async finishBoot() {
-    const infoModel = this.container.get<typeof InfoModel>(Symbols.models.info);
+    const infoModel = this.container.get<typeof IInfoModel>(Symbols.models.info);
     // Create or restore nonce!
     const [val] = await infoModel
       .findOrCreate({where: {key: 'nonce'}, defaults: {value: uuid.v4()}});
@@ -299,7 +221,7 @@ export class AppManager {
 
     // Register transaction types.
     const txLogic = this.container.get<ITransactionLogic>(Symbols.logic.transaction);
-    const txs     = this.getElementsFromContainer<BaseTransactionType<any, any>>(Symbols.logic.transactions);
+    const txs     = this.getElementsFromContainer<BaseTx<any, any>>(Symbols.logic.transactions);
     txs.forEach((tx) => txLogic.attachAssetType(tx));
 
     await infoModel
@@ -431,14 +353,13 @@ export class AppManager {
     this.container.bind(Symbols.helpers.slots).to(Slots).inSingletonScope();
   }
 
-  private genericsElements(theCache, sequelize, namespace, io) {
+  private genericsElements(sequelize, namespace, io) {
     this.container.bind(Symbols.generic.hookSystem).toConstantValue(this.hookSystem);
     this.container.bind(Symbols.generic.appConfig).toConstantValue(this.appConfig);
     this.container.bind(Symbols.generic.expressApp).toConstantValue(this.expressApp);
     this.container.bind(Symbols.generic.genesisBlock).toConstantValue(this.genesisBlock);
     // Nonce is restore in finishBoot.
     // this.container.bind(Symbols.generic.nonce).toConstantValue(this.nonce);
-    this.container.bind(Symbols.generic.redisClient).toConstantValue(theCache.client);
     this.container.bind(Symbols.generic.sequelize).toConstantValue(sequelize);
     this.container.bind(Symbols.generic.sequelizeNamespace).toConstantValue(namespace);
     this.container.bind(Symbols.generic.socketIO).toConstantValue(io);
