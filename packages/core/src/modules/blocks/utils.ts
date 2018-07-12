@@ -7,7 +7,6 @@ import {
   IBlocksModuleUtils,
   ILogger,
   IRoundsFeesModel,
-  IRoundsLogic,
   ITransactionLogic,
   ITransactionsModel
 } from '@risevision/core-interfaces';
