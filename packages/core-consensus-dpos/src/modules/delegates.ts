@@ -214,7 +214,8 @@ export class DelegatesModule extends WPHooksSubscriber(Object) implements IModul
   /**
    * Verifies that the block has been forged by the correct delegate.
    */
-  @VerifyBlockFilter()
+  @VerifyBlockFilter(100)
+  @VerifyBlockReceipt(100)
   private async verifyBlock(payload: {errors: string[], verified: boolean}, block: SignedBlockType) {
     if (!payload.verified) {
       return payload;

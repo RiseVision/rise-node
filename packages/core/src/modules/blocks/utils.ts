@@ -127,14 +127,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
    */
   public async getIdSequence(height: number): Promise<{ firstHeight: number, ids: string[] }> {
     const lastBlock = this.blocksModule.lastBlock;
-    // Get IDs of first blocks of (n) last rounds, descending order
-    // EXAMPLE: For height 2000000 (round 19802) we will get IDs of blocks at height: 1999902, 1999801, 1999700,
-    // 1999599, 1999498
-    // const firstInRound             = this.rounds.firstInRound(this.rounds.calcRound(height));
-    // const heightsToQuery: number[] = [];
-    // for (let i = 0; i < 5; i++) {
-    //   heightsToQuery.push(firstInRound - this.constants.activeDelegates * i);
-    // }
+
     const heightsToQuery: number[] = await this.hookSystem
       .apply_filters('core/blocks/utils/commonHeightList', [], height);
 

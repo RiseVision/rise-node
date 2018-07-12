@@ -9,13 +9,10 @@ import {
   IBlocksModuleProcess,
   IBlocksModuleUtils,
   IBlocksModuleVerify,
-  IDelegatesModule,
   IForkModule,
   ILogger,
   IPeerLogic,
   IPeersLogic,
-  IRoundsLogic,
-  ISlots,
   ITransactionLogic,
   ITransactionsModel,
   ITransactionsModule,
@@ -59,8 +56,6 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence)
   public defaultSequence: Sequence;
-  @inject(Symbols.helpers.slots)
-  private slots: ISlots;
 
   // Logic
   @inject(Symbols.logic.appState)
@@ -69,8 +64,6 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   private blockLogic: IBlockLogic;
   @inject(Symbols.logic.peers)
   private peersLogic: IPeersLogic;
-  @inject(Symbols.logic.rounds)
-  private roundsLogic: IRoundsLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
 
@@ -85,8 +78,6 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   private blocksUtilsModule: IBlocksModuleUtils;
   @inject(Symbols.modules.blocksSubModules.verify)
   private blocksVerifyModule: IBlocksModuleVerify;
-  @inject(Symbols.modules.delegates)
-  private delegatesModule: IDelegatesModule;
   @inject(Symbols.modules.fork)
   private forkModule: IForkModule;
   @inject(Symbols.modules.transactions)
@@ -349,8 +340,6 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         this.logger.warn([
           'Discarded block that does not match with current chain:', block.id,
           'height:', block.height,
-          'round:', this.roundsLogic.calcRound(block.height),
-          'slot:', this.slots.getSlotNumber(block.timestamp),
           'generator:', block.generatorPublicKey,
         ].join(' '));
         throw new Error('Block discarded - not in current chain');
@@ -368,8 +357,6 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     this.logger.info([
       'Received new block id:', block.id,
       'height:', block.height,
-      'round:', this.roundsLogic.calcRound(block.height),
-      'slot:', this.slots.getSlotNumber(block.timestamp),
       'reward:', block.reward,
     ].join(' '));
 
@@ -395,8 +382,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       this.logger.info('Last block and parent loses');
       try {
         const tmpBlockN = this.blockLogic.objectNormalize(tmpBlock);
-        await this.delegatesModule.assertValidBlockSlot(block);
-        const check = await this.blocksVerifyModule.verifyReceipt(tmpBlockN);
+        const check     = await this.blocksVerifyModule.verifyReceipt(tmpBlockN);
         if (!check.verified) {
           this.logger.error(`Block ${tmpBlockN.id} verification failed`, check.errors.join(', '));
           throw new Error(check.errors[0]);
