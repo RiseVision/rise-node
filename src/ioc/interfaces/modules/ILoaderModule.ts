@@ -1,13 +1,25 @@
 import { IPeerLogic } from '../logic';
 
+/**
+ * Methods signature for LoaderModule
+ */
 export interface ILoaderModule {
   readonly isSyncing: boolean;
   readonly loaded: boolean;
 
+  /**
+   * Returns info about the network state
+   */
   getNetwork(): Promise<{ height: number; peers: IPeerLogic[] }>;
 
+  /**
+   * Pick a random peer
+   */
   getRandomPeer(): Promise<IPeerLogic>;
 
+  /**
+   * Set loaded to false
+   */
   cleanup(): Promise<void>;
 
   /**
