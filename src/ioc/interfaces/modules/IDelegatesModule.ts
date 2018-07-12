@@ -2,6 +2,9 @@ import { SignedBlockType } from '../../../logic';
 import { AccountsModel } from '../../../models';
 import { IModule } from './IModule';
 
+/**
+ * Methods signature for DelegatesModule
+ */
 export interface IDelegatesModule extends IModule {
 
   /**
@@ -41,5 +44,8 @@ export interface IDelegatesModule extends IModule {
    */
   assertValidBlockSlot(block: SignedBlockType): Promise<void>;
 
+  /**
+   * Returns true if it was loaded, otherwise false
+   */
   isLoaded(): boolean;
 }
