@@ -48,6 +48,8 @@ import { IBaseTransaction } from '../../../src/logic/transactions';
 import { GetSignaturesRequest } from '../../../src/apis/requests/GetSignaturesRequest';
 import { GetTransactionsRequest } from '../../../src/apis/requests/GetTransactionsRequest';
 import { IAPIRequest } from '../../../src/apis/requests/BaseRequest';
+import { GetBlocksRequest } from '../../../src/apis/requests/GetBlocksRequest';
+import { PostBlocksRequest } from '../../../src/apis/requests/PostBlocksRequest';
 
 
 chai.use(chaiAsPromised);
@@ -252,6 +254,8 @@ describe('v2/peer/transport', function() {
   let gsFactory: RequestFactoryType<void, GetSignaturesRequest>;
   let gtFactory: RequestFactoryType<void, GetTransactionsRequest>;
   let cbFactory: RequestFactoryType<void, CommonBlockRequest>;
+  let gbFactory: RequestFactoryType<void, GetBlocksRequest>;
+  let pbFactory: RequestFactoryType<void, PostBlocksRequest>;
 
   beforeEach(() => {
     const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
@@ -264,6 +268,8 @@ describe('v2/peer/transport', function() {
     gsFactory = initializer.appManager.container.get<any>(requestSymbols.getSignatures);
     gtFactory = initializer.appManager.container.get<any>(requestSymbols.getTransactions);
     cbFactory = initializer.appManager.container.get<any>(requestSymbols.commonBlock);
+    gbFactory = initializer.appManager.container.get<any>(requestSymbols.getBlocks);
+    pbFactory = initializer.appManager.container.get<any>(requestSymbols.postBlocks);
 
     peer = peerFactory({ip: '127.0.0.1', port: appConfig.port});
     systemModule.headers.version = '1.2.0';
@@ -473,65 +479,54 @@ describe('v2/peer/transport', function() {
         query: {ids: 'ohh%20yeah'},
       }))).rejectedWith('Invalid block id sequence');
     });
-    // it('should throw if more than 10 ids are given', async () => {
-    //   const res = await peer.makeRequest(cbFactory({
-    //     data : null,
-    //     query: { ids: '1,2,3,4,5,6,7,8,9,0,1' },
-    //   })) as any;
-    //   expect(res.success).is.false;
-    //   expect(res.error).is.eq('Invalid block id sequence');
-    // });
-    // it('should throw if given ids is not csv', async () => {
-    //   const res = await peer.makeRequest(cbFactory({
-    //     data : null,
-    //     query: { ids: '1,2,3,4,5,6,7,8,9,0,1' },
-    //   })) as any;
-    //   expect(res.success).is.false;
-    //   expect(res.error).is.eq('Invalid block id sequence');
-    // });
+    it('should throw if more than 10 ids are given', async () => {
+      await expect(peer.makeRequest(cbFactory({
+        data : null,
+        query: { ids: '1,2,3,4,5,6,7,8,9,0,1' },
+      }))).rejectedWith('Invalid block id sequence') as any;
+    });
+    it('should throw if given ids is not csv', async () => {
+      await expect(peer.makeRequest(cbFactory({
+        data : null,
+        query: { ids: '1,2,3,4,5,6,7,8,9,0,1' },
+      }))).rejectedWith('Invalid block id sequence');
+    });
 
-    // it('should return the most heigh commonblock if any', async () => {
-    //   const lastBlock = initializer.appManager.container.get<IBlocksModule>(Symbols.modules.blocks).lastBlock;
-    //   const genesis   = initializer.appManager.container.get<any>(Symbols.generic.genesisBlock);
-    //   const res = await peer.makeRequest(cbFactory({
-    //     data : null,
-    //     query: { ids: `${genesis.id},2,33433441728981446756,${lastBlock.previousBlock}` },
-    //   })) as any;
-    //   expect(res.success).is.true;
-    //   expect(res.common).is.not.null;
-    //   expect(res.common.height).is.eq(lastBlock.height - 1);
-    // });
+    it('should return the most heigh commonblock if any', async () => {
+      const lastBlock = initializer.appManager.container.get<IBlocksModule>(Symbols.modules.blocks).lastBlock;
+      const genesis   = initializer.appManager.container.get<any>(Symbols.generic.genesisBlock);
+      const res = await peer.makeRequest(cbFactory({
+        data : null,
+        query: { ids: `${genesis.id},2,33433441728981446756,${lastBlock.previousBlock}` },
+      })) as any;
+      expect(res.common).is.not.null;
+      expect(res.common.height).is.eq(lastBlock.height - 1);
+    });
 
-    // it('should return null if no common blocks', async () => {
-    //   const res = await peer.makeRequest(cbFactory({
-    //     data : null,
-    //     query: { ids: '1,2,3,' },
-    //   })) as any;
-    //   expect(res.success).is.true;
-    //   expect(res.common).is.null;
-    // });
+    it('should return null if no common blocks', async () => {
+      const res = await peer.makeRequest(cbFactory({
+        data : null,
+        query: { ids: '1,2,3,' },
+      })) as any;
+      expect(res.common).is.null;
+    });
   });
 
-  // describe('/blocks', () => {
-  //   checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
-  //     .get('/v2/peer/blocks/'));
-  //   it('should throw if lastBlockId is not a valid number');
-  //   it('should query last 34 blocks from given lastId', async () => {
-  //     const { wallet } = await createRandomAccountWithFunds(Math.pow(10, 10));
-  //     const txs = (await Promise.all(new Array(25).fill(null)
-  //       .map((_, idx) => createSendTransaction(0, idx+1, wallet, '1R'))))
-  //       .map((tx) => toBufferedTransaction(tx));
-  //     const b = await initializer.rawMineBlockWithTxs([]);
-  //
-  //     const r = await supertest(initializer.appManager.expressApp)
-  //       .get('/v2/peer/blocks?lastBlockId='+b.previousBlock)
-  //       .set(headers)
-  //       .expect(200);
-  //     console.log(JSON.stringify(r.body).length);
-  //     console.log(r.body.blocks.length);
-  //   });
-  // });
-  //
+  describe('/blocks', () => {
+    checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
+      .get('/v2/peer/blocks/'));
+
+    it('should query last 34 blocks from given lastId', async () => {
+      const { wallet } = await createRandomAccountWithFunds(Math.pow(10, 10));
+      const txs = (await Promise.all(new Array(25).fill(null)
+        .map((_, idx) => createSendTransaction(0, idx + 1, wallet, '1R'))))
+        .map((tx) => toBufferedTransaction(tx));
+      const b = await initializer.rawMineBlockWithTxs([]);
+      const r = await peer.makeRequest(gbFactory({data: null, query: {lastBlockId: b.previousBlock}}));
+      expect(r.blocks[0].id).to.be.equal(b.id);
+    });
+  });
+
   // describe('/blocks [post]', () => {
   //   let blockLogic: IBlockLogic;
   //   let blocksModule: IBlocksModule;

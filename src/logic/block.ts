@@ -362,6 +362,9 @@ export class BlockLogic implements IBlockLogic {
    * Restores a block from its bytes
    */
   public fromBytes(blk: IBytesBlock): SignedAndChainedBlockType {
+    if (blk === null || typeof blk === 'undefined') {
+      return null;
+    }
     const bb = ByteBuffer.wrap(blk.bytes, 'binary', true);
     const version = bb.readInt(0);
     const timestamp = bb.readInt(4);

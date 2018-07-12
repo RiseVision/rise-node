@@ -5,6 +5,8 @@ import * as z_schema from 'z-schema';
 import { CommonBlockRequest } from '../../apis/requests/CommonBlockRequest';
 import { GetBlocksRequest } from '../../apis/requests/GetBlocksRequest';
 import { constants, ForkType, IKeypair, ILogger, Sequence } from '../../helpers/';
+import { requestSymbols } from '../../apis/requests/requestSymbols';
+import { RequestFactoryType } from '../../apis/requests/requestFactoryType';
 import { WrapInDBSequence, WrapInDefaultSequence } from '../../helpers/decorators/wrapInSequence';
 import { ISlots } from '../../ioc/interfaces/helpers';
 import {
@@ -37,9 +39,6 @@ import { IBaseTransaction } from '../../logic/transactions/';
 import { BlocksModel, TransactionsModel } from '../../models';
 import schema from '../../schema/blocks';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
-import { requestSymbols } from '../../apis/requests/requestSymbols';
-import { RequestFactoryType } from '../../apis/requests/requestFactoryType';
-import { GetTransactionsRequest } from '../../apis/requests/GetTransactionsRequest';
 
 @injectable()
 export class BlocksModuleProcess implements IBlocksModuleProcess {
@@ -246,7 +245,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     const peer = this.peersLogic.create(rawPeer);
 
     this.logger.info(`Loading blocks from ${peer.string}`);
-    const blocksFromPeer = await peer.makeRequest<{ blocks: RawFullBlockListType[] }>(
+    const blocksFromPeer = await peer.makeRequest<{ blocks: RawFullBlockListType[] | SignedAndChainedBlockType[] }>(
       this.gbFactory({data: null, query: {lastBlockId: lastValidBlock.id}})
     );
 
@@ -255,7 +254,21 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       throw new Error('Received invalid blocks data');
     }
 
-    const blocks = this.blocksUtilsModule.readDbRows(blocksFromPeer.blocks);
+    // TODO: is this is a good idea??
+    let blocks: SignedAndChainedBlockType[];
+    if (Array.isArray(blocksFromPeer.blocks)
+        && blocksFromPeer.blocks.length > 0
+        && typeof (blocksFromPeer.blocks[0] as RawFullBlockListType).b_id !== 'undefined'
+    ) {
+      // This is an array of raw blocks, so we need to process them using readDbRows
+      blocks = this.blocksUtilsModule.readDbRows(blocksFromPeer.blocks as RawFullBlockListType[]);
+    } else if (Array.isArray(blocksFromPeer.blocks) && blocksFromPeer.blocks.length > 0) {
+      // This is already a well formed SignedAndChainedBlockType
+      blocks = blocksFromPeer.blocks as SignedAndChainedBlockType[];
+    } else {
+      blocks = [];
+    }
+
     for (const block of blocks) {
       if (this.isCleaning) {
         return lastValidBlock;

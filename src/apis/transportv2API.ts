@@ -162,12 +162,12 @@ export class TransportV2API {
 
     const common = await this.BlocksModel.findOne({
       raw       : true,
-      attributes: ['height', 'id', 'previousBlock', 'timestamp'],
       where     : { id: { [Op.in]: excapedIds } },
       order     : [['height', 'DESC']],
       limit     : 1,
     });
-    return this.sendResponse(res, { common: this.generateBytesBlock(common) }, 'APISuccess');
+    const bytesBlock = common !== null ? this.generateBytesBlock(common) : null;
+    return this.sendResponse(res, { common: bytesBlock }, 'transportBlocks', 'commonBlock');
   }
 
   @Post('/blocks')
@@ -226,11 +226,15 @@ export class TransportV2API {
   }
 
   private generateBytesBlock(block: BlocksModel): IBytesBlock {
-    return {
+    const bb = {
       bytes       : this.blockLogic.getBytes(block),
       height      : block.height,
-      transactions: block.transactions.map((tx) => this.generateBytesTransaction(tx)),
+      transactions: [],
     };
+    if (block.transactions) {
+      bb.transactions = block.transactions.map((tx) => this.generateBytesTransaction(tx));
+    }
+    return bb;
   }
 
   private parseRequest(req: Request, pbNamespace: string, pbMessageType?: string): any {

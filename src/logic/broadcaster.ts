@@ -128,7 +128,6 @@ export class BroadcasterLogic implements IBroadcasterLogic {
       peers
         .map((p) => this.peersLogic.create(p))
         .map((peer) => () => {
-            options.requestHandler.setPeer(peer);
             return peer.makeRequest(options.requestHandler)
               .catch((err) => {
                 this.logger.debug(`Failed to broadcast to peer: ${peer.string}`, err);
