@@ -82,23 +82,25 @@ export class TransportV2API {
         });
       }
     }
-    return this.getResponse({ signatures }, 'transportSignatures');
+    return this.getResponse({ signatures }, 'transportSignatures', 'getSignaturesResponse');
   }
 
   @Post('/signatures')
   public async postSignatures(@Body() body: Buffer) {
-    const signatures = this.parseRequest<{ signatures: Array<{ transaction: Long, signature?: Buffer, signatures?: Buffer[] }> }>
-    (body, 'transportSignatures')
-      .signatures;
+    // tslint:disable-next-line
+    type Signature = { transaction: Long, signature?: Buffer };
+    const obj = this.parseRequest<{ signatures?: Signature[], signature?: Signature }>
+    (body, 'transportSignatures', 'postSignatures');
 
-    signatures.forEach((sig) => {
-      if (!Array.isArray(sig.signatures)) {
-        sig.signatures = [];
-      }
-      if (typeof(sig.signature) !== 'undefined') {
-        sig.signatures.push(sig.signature);
-      }
-    });
+    const signatures: Signature[] = [];
+
+    if (Array.isArray(obj.signatures)) {
+      signatures.push(...obj.signatures);
+    }
+
+    if (typeof(obj.signature) !== 'undefined' && obj.signature !== null) {
+      signatures.push(obj.signature);
+    }
 
     assertValidSchema(this.schema, signatures, {
       obj : transportSchema.signatures.properties.signatures,
@@ -107,15 +109,14 @@ export class TransportV2API {
 
     const finalSigs: Array<{signature: string, transaction: string}> = [];
     for (const sigEl of signatures) {
-      for (const singleSig of sigEl.signatures) {
-        finalSigs.push({
-          signature: singleSig.toString('hex'),
-          transaction: sigEl.transaction.toString(),
-        });
-      }
+      finalSigs.push({
+        signature: sigEl.signature.toString('hex'),
+        transaction: sigEl.transaction.toString(),
+      });
     }
 
     await this.transportModule.receiveSignatures(finalSigs);
+
     return this.getResponse({ success: true }, 'APISuccess');
   }
 

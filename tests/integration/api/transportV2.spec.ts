@@ -332,12 +332,139 @@ describe('v2/peer/transport', function() {
 
       multisigAccount = wallet;
       multisigKeys = keys;
+      txPool.multisignature.list(false).forEach((w) => txPool.multisignature.remove(w.id));
     });
 
     checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
       .get('/v2/peer/signatures'));
-    checkReturnObjKeyVal('signatures', [], '/v2/peer/signatures', headers, {namespace: 'transportSignatures'});
 
+    it('should merge requests correctly', async () => {
+      const tx = await createSendTransaction(0, 1, multisigAccount, '1R');
+      const sendTxResult = await peer.makeRequest(ptFactory({
+        data: {
+          transactions: [toBufferedTransaction(tx)],
+        },
+      }));
+      expect(sendTxResult.success).to.be.true;
+      await txPool.processBundled();
+      await txModule.fillPool();
+      const a = psFactory({
+        data: {
+          signature: {
+            signature: Buffer.from(multisigKeys[0].getSignatureOfTransaction(tx), 'hex'),
+            transaction: tx.id,
+          },
+        },
+      });
+      a.mergeIntoThis(psFactory({
+        data: {
+          signature: {
+            signature: Buffer.from(multisigKeys[0].getSignatureOfTransaction(tx), 'hex'),
+            transaction: tx.id,
+          },
+        },
+      }));
+
+      a.mergeIntoThis(psFactory({
+        data: {
+          signature: {
+            signature: Buffer.from(multisigKeys[0].getSignatureOfTransaction(tx), 'hex'),
+            transaction: tx.id,
+          },
+          signatures: [
+            {
+              signature: Buffer.from(multisigKeys[1].getSignatureOfTransaction(tx), 'hex'),
+              transaction: tx.id,
+            },
+            {
+              signature: Buffer.from(multisigKeys[0].getSignatureOfTransaction(tx), 'hex'),
+              transaction: tx.id,
+            },
+            {
+              signature: Buffer.from(multisigKeys[2].getSignatureOfTransaction(tx), 'hex'),
+              transaction: tx.id,
+            },
+          ],
+        },
+      }));
+      await peer.makeRequest(a);
+
+      expect(txPool.multisignature.get(tx.id).signatures)
+        .deep.eq(
+        new Array(3)
+          .fill(null)
+          .map((item, idx) => multisigKeys[idx].getSignatureOfTransaction(tx)
+          )
+      );
+    });
+    it('POST: should allow signatures', async () => {
+      const tx = await createSendTransaction(0, 1, multisigAccount, '1R');
+      const sendTxResult = await peer.makeRequest(ptFactory({
+        data: {
+          transactions: [toBufferedTransaction(tx)],
+        },
+      }));
+      expect(sendTxResult.success).to.be.true;
+      await txPool.processBundled();
+      await txModule.fillPool();
+      let req = psFactory({
+        data: {
+          signatures: [{
+            signature: Buffer.from(multisigKeys[0].getSignatureOfTransaction(tx), 'hex'),
+            transaction: tx.id,
+          }],
+        },
+      });
+      await peer.makeRequest(req);
+      req = psFactory({
+        data: {
+          signatures: [
+            {transaction: tx.id} as any,
+            {
+            signature: Buffer.from(multisigKeys[1].getSignatureOfTransaction(tx), 'hex'),
+            transaction: tx.id,
+          }, {transaction: tx.id} as any],
+        },
+      });
+      await peer.makeRequest(req);
+      expect(txPool.multisignature.get(tx.id).signatures).contain(
+        multisigKeys[1].getSignatureOfTransaction(tx),
+        multisigKeys[0].getSignatureOfTransaction(tx)
+      );
+    });
+    it('POST: should allow signature', async () => {
+      const tx = await createSendTransaction(0, 1, multisigAccount, '1R');
+      const sendTxResult = await peer.makeRequest(ptFactory({
+        data: {
+          transactions: [toBufferedTransaction(tx)],
+        },
+      }));
+      expect(sendTxResult.success).to.be.true;
+      await txPool.processBundled();
+      await txModule.fillPool();
+      let req = psFactory({
+        data: {
+          signature: {
+            signature: Buffer.from(multisigKeys[0].getSignatureOfTransaction(tx), 'hex'),
+            transaction: tx.id,
+          },
+        },
+      });
+      await peer.makeRequest(req);
+      req = psFactory({
+        data: {
+          signature: {
+            signature: Buffer.from(multisigKeys[1].getSignatureOfTransaction(tx), 'hex'),
+            transaction: tx.id,
+          }
+        },
+      });
+      await peer.makeRequest(req);
+      expect(txPool.multisignature.get(tx.id).signatures).contain(
+        multisigKeys[1].getSignatureOfTransaction(tx),
+        multisigKeys[0].getSignatureOfTransaction(tx)
+      );
+    });
     it('should return multisig signatures missing some sigs', async () => {
       const tx = await createSendTransaction(0, 1, multisigAccount, '1R');
       const sendTxResult = await peer.makeRequest(ptFactory({
@@ -375,10 +502,12 @@ describe('v2/peer/transport', function() {
         sigs.push(signature);
         const r2 = await peer.makeRequest(psFactory({
           data: {
-            signatures: [{
-              signatures: sigs,
-              transaction: tx.id,
-            }],
+            signatures: sigs.map((sig) => {
+              return {
+                signature: sig,
+                transaction: tx.id,
+              };
+            }),
           },
         }));
         expect(r2.success).to.be.true;
@@ -397,6 +526,7 @@ describe('v2/peer/transport', function() {
       expect(finalSigs).to.be.deep.eq({signatures : []});
       expect(blocksModule.lastBlock.transactions.length).eq(1);
     });
+
   });
 
   describe('/transactions [GET]', () => {

@@ -3,9 +3,19 @@ syntax = "proto3";
 message transportSignaturesItem {
     uint64 transaction = 1;
     bytes signature = 2;
-    repeated bytes signatures = 3;
 }
 
-message transportSignatures {
+message postSignatures {
     repeated transportSignaturesItem signatures = 1;
+    transportSignaturesItem signature = 2;
+}
+
+
+message transportGetSignaturesItem {
+    uint64 transaction = 1;
+    repeated bytes signatures = 2;
+}
+
+message getSignaturesResponse {
+    repeated transportGetSignaturesItem signatures = 1;
 }

@@ -5,7 +5,6 @@ import { BaseRequest } from './BaseRequest';
 export type GetSignaturesRequestDataType = {
   signatures: Array<{
     transaction: string,
-    signature?: Buffer,
     signatures?: Buffer[],
   }>
 };
@@ -17,7 +16,7 @@ export class GetSignaturesRequest extends BaseRequest<GetSignaturesRequestDataTy
 
   public getResponseData(res) {
     if (this.peerSupportsProtoBuf(res.peer)) {
-      const rawRes = this.decodeProtoBufResponse(res, 'transportSignatures');
+      const rawRes = this.decodeProtoBufResponse(res, 'transportSignatures', 'getSignaturesResponse');
       return rawRes;
     } else {
       return res.body;

@@ -304,17 +304,12 @@ export class TransportModule implements ITransportModule {
 
   // tslint:disable-next-line
   public async receiveSignatures(signatures: Array<{ transaction: string, signature: string }>): Promise<void> {
-    let error: Error = null;
     for (const signature of signatures) {
       try {
         await this.receiveSignature(signature);
       } catch (err) {
         this.logger.debug(err, signature);
-        error = err;
       }
-    }
-    if (error) {
-      throw error;
     }
   }
 
