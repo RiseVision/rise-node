@@ -3,6 +3,9 @@ import { PeerFilter } from '../../../modules';
 import { IPeerLogic } from '../logic';
 import { IModule } from './IModule';
 
+/**
+ * Methods signature for PeersModule
+ */
 export interface IPeersModule extends IModule {
 
   /**
