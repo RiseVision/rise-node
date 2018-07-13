@@ -70,7 +70,6 @@ describe('apis/transportV2API', () => {
   let transactionsModel: typeof TransactionsModel;
   let res: any;
   let req: any;
-  let sendResponseStub: SinonStub;
   let generateBytesTransactionStub: SinonStub;
   let fakePeers: any[];
   let protoBufStub: ProtoBufHelperStub;
@@ -128,8 +127,6 @@ describe('apis/transportV2API', () => {
     res = {};
     req = { headers: {port: 5555}, ip: '80.3.10.20', method: 'aaa', protoBuf: Buffer.from('aabbcc', 'hex'),
       url: 'bbb', };
-    // TODO: Remove me
-    sendResponseStub = sandbox.stub();
     validatorStubs.assertValidSchema = sandbox.stub().returns(true);
     validatorStubs.SchemaValid = sandbox.stub().returns(true);
     validatorStubs.ValidateSchema = sandbox.stub().returns(true);
@@ -274,7 +271,7 @@ describe('apis/transportV2API', () => {
       expect(protoBufStub.stubs.encode.firstCall.args).deep.eq([
         { transactions: txs.map(() => Buffer.from('0123', 'hex')), },
         'transportTransactions',
-        undefined
+        undefined,
       ]);
     });
   });
@@ -441,9 +438,9 @@ describe('apis/transportV2API', () => {
         const pbFactory = container.get<RequestFactoryType<any, PostBlocksRequest>>(requestSymbols.postBlocks);
         const data = pbFactory({data: {block: fakeBlock}}).getRequestOptions(true);
         expect(Buffer.isBuffer(data.data)).true;
-        req.body= data.data;
+        req.body = data.data;
         instance = container.get(Symbols.api.transportV2);
-        const tres = await instance.postBlock(req);
+        await instance.postBlock(req);
       });
     });
   });

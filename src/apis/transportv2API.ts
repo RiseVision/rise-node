@@ -87,19 +87,35 @@ export class TransportV2API {
 
   @Post('/signatures')
   public async postSignatures(@Body() body: Buffer) {
-    const signatures = this.parseRequest<{ signatures: Array<{ transaction: string, signature?: Buffer }> }>
+    const signatures = this.parseRequest<{ signatures: Array<{ transaction: Long, signature?: Buffer, signatures?: Buffer[] }> }>
     (body, 'transportSignatures')
       .signatures;
+
+    signatures.forEach((sig) => {
+      if (!Array.isArray(sig.signatures)) {
+        sig.signatures = [];
+      }
+      if (typeof(sig.signature) !== 'undefined') {
+        sig.signatures.push(sig.signature);
+      }
+    });
 
     assertValidSchema(this.schema, signatures, {
       obj : transportSchema.signatures.properties.signatures,
       opts: { errorString: 'Error validating schema.' },
     });
 
-    await this.transportModule.receiveSignatures(signatures.map((sig) => ({
-      signature  : sig.signature.toString('hex'),
-      transaction: sig.transaction,
-    })));
+    const finalSigs: Array<{signature: string, transaction: string}> = [];
+    for (const sigEl of signatures) {
+      for (const singleSig of sigEl.signatures) {
+        finalSigs.push({
+          signature: singleSig.toString('hex'),
+          transaction: sigEl.transaction.toString(),
+        });
+      }
+    }
+
+    await this.transportModule.receiveSignatures(finalSigs);
     return this.getResponse({ success: true }, 'APISuccess');
   }
 
@@ -152,10 +168,10 @@ export class TransportV2API {
     }
 
     const common     = await this.BlocksModel.findOne({
+      limit: 1,
+      order: [['height', 'DESC']],
       raw  : true,
       where: { id: { [Op.in]: excapedIds } },
-      order: [['height', 'DESC']],
-      limit: 1,
     });
     const bytesBlock = common !== null ? this.generateBytesBlock(common) : null;
     return this.getResponse({ common: bytesBlock }, 'transportBlocks', 'commonBlock');

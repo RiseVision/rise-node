@@ -308,7 +308,7 @@ describe('v2/peer/transport', function() {
     });
   });
 
-  describe('/signatures [GET]', () => {
+  describe('/signatures [GET] [POST]', () => {
     let blocksModule: IBlocksModule;
     let txModule: ITransactionsModule;
     let txLogic: ITransactionLogic;
@@ -397,10 +397,6 @@ describe('v2/peer/transport', function() {
       expect(finalSigs).to.be.deep.eq({signatures : []});
       expect(blocksModule.lastBlock.transactions.length).eq(1);
     });
-  });
-
-  describe('/signatures [POST]', () => {
-    it('todo');
   });
 
   describe('/transactions [GET]', () => {
