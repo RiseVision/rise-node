@@ -38,5 +38,8 @@ export interface ILoaderModule {
    */
   loadBlockChain(): Promise<void>;
 
+  /**
+   * Load blocks from database
+   */
   load(count: number, limitPerIteration: number, message?: string): Promise<void>;
 }
