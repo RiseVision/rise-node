@@ -291,6 +291,8 @@ describe('peer/transport', () => {
 
       multisigAccount = wallet;
       multisigKeys = keys;
+      txPool.multisignature.list(false).forEach((w) => txPool.multisignature.remove(w.id));
+
     });
     checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
       .get('/peer/signatures'));
@@ -355,7 +357,9 @@ describe('peer/transport', () => {
             transaction: tx.id,
           }, 'antani'],
         })
-        .expect(200, {success: false, error: 'Invalid signature body'});
+        .expect(200, {success: true}); // Even if it is not valid.
+
+
     });
     it('should return multisig signatures missing some sigs', async () => {
       const tx = await createSendTransaction(0, 1, multisigAccount, '1R');
