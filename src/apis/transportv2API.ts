@@ -87,22 +87,19 @@ export class TransportV2API {
 
   @Post('/signatures')
   public async postSignatures(@Body() body: Buffer) {
-    let signatures = this.parseRequest(body, 'transportSignatures').signatures;
-    signatures = signatures.map((sig) => {
-      if (typeof sig.signature !== 'undefined') {
-        sig.signature = sig.signature.toString('hex');
-      }
-      if (typeof sig.signatures !== 'undefined') {
-        sig.signatures = sig.signatures.map((s) => s.toString('hex'));
-      }
-      sig.transaction = sig.transaction.toString();
-      return sig;
-    });
+    const signatures = this.parseRequest<{ signatures: Array<{ transaction: string, signature?: Buffer }> }>
+    (body, 'transportSignatures')
+      .signatures;
+
     assertValidSchema(this.schema, signatures, {
       obj : transportSchema.signatures.properties.signatures,
-      opts: { errorString: 'Error validating schema.' }
+      opts: { errorString: 'Error validating schema.' },
     });
-    await this.transportModule.receiveSignatures(signatures);
+
+    await this.transportModule.receiveSignatures(signatures.map((sig) => ({
+      signature  : sig.signature.toString('hex'),
+      transaction: sig.transaction,
+    })));
     return this.getResponse({ success: true }, 'APISuccess');
   }
 
@@ -116,7 +113,7 @@ export class TransportV2API {
   @Post('/transactions')
   public async postTransactions(@Req() req: Request) {
     let transactions = [];
-    const requestData = this.parseRequest(req.body, 'transportTransactions');
+    const requestData = this.parseRequest<any>(req.body, 'transportTransactions');
     if (typeof requestData.transaction !== 'undefined' && requestData.transaction !== null) {
       transactions = [requestData.transaction];
     } else {
@@ -168,7 +165,7 @@ export class TransportV2API {
   public async postBlock(@Req() req: Request) {
     let normalizedBlock: SignedAndChainedBlockType;
     try {
-      const requestData = this.parseRequest(req.body, 'transportBlocks', 'transportBlock');
+      const requestData = this.parseRequest<any>(req.body, 'transportBlocks', 'transportBlock');
       normalizedBlock   = this.blockLogic.objectNormalize(this.blockLogic.fromBytes(requestData.block));
     } catch (e) {
       this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
@@ -222,13 +219,13 @@ export class TransportV2API {
     return bb;
   }
 
-  private parseRequest(body: Buffer, pbNamespace: string, pbMessageType?: string): any {
+  private parseRequest<T>(body: Buffer, pbNamespace: string, pbMessageType?: string): T {
     if (!Buffer.isBuffer(body)) {
       throw new Error('No binary data in request body');
     }
-    let retVal: any;
+    let retVal: T;
     try {
-      retVal = this.protoBuf.decode(body, pbNamespace, pbMessageType);
+      retVal = this.protoBuf.decode<T>(body, pbNamespace, pbMessageType);
     } catch (e) {
       throw new Error(`Invalid binary data for message ${pbNamespace} ${pbMessageType}`);
     }

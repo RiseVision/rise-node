@@ -22,7 +22,7 @@ export default class TransportModuleStub extends BaseStubClass implements ITrans
 
   @stubMethod()
   public getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] },
-                              requestHandler: IAPIRequest): Promise<{ body: any; peer: IPeerLogic }> {
+                              requestHandler: IAPIRequest<void, void>): Promise<{ body: any; peer: IPeerLogic }> {
     return null;
   }
 

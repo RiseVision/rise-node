@@ -18,7 +18,7 @@ chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression max-line-length
 
-describe('apis/blocksAPI', () => {
+describe('apis/loaderAPI', () => {
 
   let sandbox: SinonSandbox;
   let container: Container;

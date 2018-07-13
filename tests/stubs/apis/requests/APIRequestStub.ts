@@ -6,7 +6,7 @@ import { BaseStubClass } from '../../BaseStubClass';
 import { spyMethod, stubMethod } from '../../stubDecorator';
 
 @injectable()
-export class APIRequestStub extends BaseStubClass implements IAPIRequest{
+export class APIRequestStub extends BaseStubClass implements IAPIRequest<any, any> {
   @stubMethod()
   public getRequestOptions(): PeerRequestOptions {
     return undefined;
@@ -23,7 +23,16 @@ export class APIRequestStub extends BaseStubClass implements IAPIRequest{
   }
 
   @stubMethod()
-  public getOrigOptions(): PeerRequestOptions {
+  public getOrigOptions() {
     return undefined;
+  }
+
+  @stubMethod()
+  public makeRequest(peer: IPeerLogic) {
+    return undefined;
+  }
+
+  @stubMethod()
+  public mergeIntoThis(...objs: this[]) {
   }
 }
