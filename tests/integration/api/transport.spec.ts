@@ -295,6 +295,68 @@ describe('peer/transport', () => {
     checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
       .get('/peer/signatures'));
     checkReturnObjKeyVal('signatures', [], '/peer/signatures', headers);
+    it('POST: should allow signature', async () => {
+      const tx = await createSendTransaction(0, 1, multisigAccount, '1R');
+      await supertest(initializer.appManager.expressApp)
+        .post('/peer/transactions')
+        .set(headers)
+        .send({transaction: tx})
+        .expect(200, {success: true});
+      await txPool.processBundled();
+      await txModule.fillPool();
+      await supertest(initializer.appManager.expressApp)
+        .post('/peer/signatures')
+        .set(headers)
+        .send({
+          signature: {
+            signature: multisigKeys[0].getSignatureOfTransaction(tx),
+            transaction: tx.id,
+          },
+        })
+        .expect(200, {success: true});
+
+      await supertest(initializer.appManager.expressApp)
+        .post('/peer/signatures')
+        .set(headers)
+        .send({
+          signature: {
+            antani: multisigKeys[1].getSignatureOfTransaction(tx),
+            transaction: tx.id,
+          },
+        })
+        .expect(200, {success: false, error: '#/ - Missing required property: signature'});
+    });
+    it('POST: should allow signatures', async () => {
+      const tx = await createSendTransaction(0, 1, multisigAccount, '1R');
+      await supertest(initializer.appManager.expressApp)
+        .post('/peer/transactions')
+        .set(headers)
+        .send({transaction: tx})
+        .expect(200, {success: true});
+      await txPool.processBundled();
+      await txModule.fillPool();
+      await supertest(initializer.appManager.expressApp)
+        .post('/peer/signatures')
+        .set(headers)
+        .send({
+          signatures: [{
+            signature: multisigKeys[0].getSignatureOfTransaction(tx),
+            transaction: tx.id,
+          }],
+        })
+        .expect(200, {success: true});
+
+      await supertest(initializer.appManager.expressApp)
+        .post('/peer/signatures')
+        .set(headers)
+        .send({
+          signatures: [{
+            antani: multisigKeys[1].getSignatureOfTransaction(tx),
+            transaction: tx.id,
+          }, 'antani'],
+        })
+        .expect(200, {success: false, error: 'Invalid signature body'});
+    });
     it('should return multisig signatures missing some sigs', async () => {
       const tx = await createSendTransaction(0, 1, multisigAccount, '1R');
       await supertest(initializer.appManager.expressApp)
@@ -321,10 +383,14 @@ describe('peer/transport', () => {
           .post('/peer/signatures')
           .set(headers)
           .send({
-            signatures: [{
-              signature  : signature.toString('hex'),
-              transaction: tx.id,
-            }],
+            // signatures: [{
+            //   signature  : signature.toString('hex'),
+            //   transaction: tx.id,
+            // }],
+            signature: {
+              signature: signature.toString('hex'),
+              transaction: tx.id
+            }
           })
           .expect(200, {success: true});
 

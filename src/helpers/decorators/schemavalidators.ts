@@ -41,9 +41,9 @@ export function ValidateSchema() {
 
 export function assertValidSchema(schema: z_schema,
                                   objToValidate: any,
-                                  schemaToValidate: { obj: any, opts: { errorString?: string } }) {
+                                  schemaToValidate: { obj: any, opts?: { errorString?: string } }) {
   if (!schema.validate(objToValidate, schemaToValidate.obj)) {
-    const errorMessage = schemaToValidate.opts.errorString ||
+    const errorMessage = (schemaToValidate.opts || {}).errorString ||
       `${schema.getLastError().details[0].path} - ${schema.getLastErrors()[0].message}`;
     throw new Error(errorMessage);
   }

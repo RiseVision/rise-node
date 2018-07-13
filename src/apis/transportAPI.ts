@@ -5,7 +5,7 @@ import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { Bus, constants as constantsType, TransactionType } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
-import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { assertValidSchema, SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { IBlockLogic, IPeersLogic } from '../ioc/interfaces/logic';
 import {
   IBlocksModule,
@@ -143,11 +143,20 @@ export class TransportAPI {
   }
 
   @Post('/signatures')
-  @ValidateSchema()
   public async postSignatures(
-    @SchemaValid(transportSchema.signatures.properties.signatures, 'Invalid signatures body')
-    @BodyParam('signatures') signatures: Array<{ transaction: string, signature: string }>) {
+    @BodyParam('signatures') signatures: Array<{ transaction: string, signature: string }>,
+    @BodyParam('signature') signature: { transaction: string, signature: string }
+  ) {
 
+    if (!Array.isArray(signatures)) {
+      signatures = [];
+    } else {
+      assertValidSchema(this.schema, signatures, { obj: transportSchema.signatures.properties.signatures })
+    }
+    if (typeof(signature) !== 'undefined') {
+      assertValidSchema(this.schema, signature, { obj: transportSchema.signature });
+      signatures.push(signature);
+    }
     return this.transportModule.receiveSignatures(signatures);
   }
 
@@ -169,7 +178,7 @@ export class TransportAPI {
       ip  : req.ip,
       port: parseInt(req.headers.port as string, 10),
     });
-    txs = txs || (tx ? [tx] : [] );
+    txs           = txs || (tx ? [tx] : []);
     if (txs.length > 0) {
       await this.transportModule.receiveTransactions(txs, thePeer, true);
     }
