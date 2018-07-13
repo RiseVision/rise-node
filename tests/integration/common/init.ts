@@ -138,7 +138,6 @@ export class IntegrationTestInitializer {
       Symbols.helpers.sequence,
       Symbols.helpers.sequence,
       Symbols.tags.helpers.defaultSequence);
-    console.log('sonqua')
     await defaultSequence.addAndPromise(() => blocksVerifyModule.processBlock(block, false, true));
   }
 

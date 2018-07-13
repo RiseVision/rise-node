@@ -87,8 +87,13 @@ const transportTXSchema = {
       format  : 'publicKey',
     },
     requesterPublicKey: {
-      type: 'string',
-      format  : 'publicKey',
+      anyOf: [
+        {
+          type  : 'string',
+          format: 'publicKey',
+        },
+        { type: 'null' },
+      ],
     },
     senderId          : {
       type     : 'string',
@@ -119,7 +124,10 @@ const transportTXSchema = {
       format: 'signature',
     },
     asset             : {
-      type: 'object',
+      anyOf: [
+        { type  : 'object' },
+        { type: 'null' },
+      ],
     },
   },
   required  : ['type', 'timestamp', 'senderId', 'senderPublicKey', 'signature', 'fee', 'amount'],

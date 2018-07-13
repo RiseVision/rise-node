@@ -90,13 +90,7 @@ export class TransactionsModel<Asset = any> extends Model<TransactionsModel<Asse
         if (typeof(obj[k]) !== 'undefined' && obj[k] !== null) {
           obj[k] = obj[k].toString('hex');
         }
-        if (obj[k] === null) {
-          delete obj[k];
-        }
       });
-    if (obj.asset === null) {
-      delete obj.asset;
-    }
     if (obj.height) {
       obj.confirmations = 1 + blocksModule.lastBlock.height - obj.height;
     }
