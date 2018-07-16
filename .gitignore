@@ -25,5 +25,3 @@ backup.tar
 blockchain.db.gz
 dist/
 .nyc_output/
-
-package-lock\.json
