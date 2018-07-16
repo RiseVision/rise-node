@@ -8,7 +8,7 @@ import { PeerType } from '../../../../src/logic';
 import { ProtoBufHelperStub } from '../../../stubs/helpers/ProtoBufHelperStub';
 import { createContainer } from '../../../utils/containerCreator';
 
-class TestRequest extends BaseRequest implements IAPIRequest {
+class TestRequest extends BaseRequest<any, any> implements IAPIRequest<any, any> {
   protected readonly method = 'POST';
   protected readonly baseUrl = '/test/';
   protected readonly supportsProtoBuf = true;
@@ -39,7 +39,6 @@ describe('apis/requests/BaseRequest', () => {
       nonce: '1231234'
     };
     instance = new TestRequest();
-    instance.setPeer(peer as any);
   });
 
   afterEach(() => {
@@ -57,35 +56,30 @@ describe('apis/requests/BaseRequest', () => {
       getBaseUrlStub = sandbox.stub(instance as any, 'getBaseUrl').returns('/testurl');
     });
 
-    it('should call isProtoBuf', () => {
-      instance.getRequestOptions();
-      expect(isProtoBufStub.calledOnce).to.be.true;
-    });
-
     it('should call getMethod', () => {
-      instance.getRequestOptions();
+      instance.getRequestOptions(true);
       expect(getMethodStub.calledOnce).to.be.true;
     });
 
     it('should call getBaseUrl', () => {
-      instance.getRequestOptions();
+      instance.getRequestOptions(true);
       expect(getBaseUrlStub.calledOnce).to.be.true;
     });
 
     it('should add data if available in original options', () => {
       const origOptions = {data: {tx: {a: 1}}};
-      const inst2 = new TestRequest(origOptions);
-      inst2.setPeer(peer as any);
-      const reqOptions = inst2.getRequestOptions();
+      const inst2 = new TestRequest();
+      inst2.options = origOptions;
+      const reqOptions = inst2.getRequestOptions(true);
       expect(reqOptions.data).to.not.be.undefined;
       expect(reqOptions.data).to.be.deep.equal(origOptions.data);
     });
 
     it('should return the expected object', () => {
       const origOptions = {data: {tx: {a: 1}}};
-      const inst2 = new TestRequest(origOptions);
-      inst2.setPeer(peer as any);
-      const reqOptions = inst2.getRequestOptions();
+      const inst2 = new TestRequest();
+      inst2.options = origOptions;
+      const reqOptions = inst2.getRequestOptions(true);
       expect(reqOptions).to.be.deep.equal({
         data: origOptions.data,
         isProtoBuf: true,
@@ -96,24 +90,20 @@ describe('apis/requests/BaseRequest', () => {
   });
 
   describe('getResponseData', () => {
-    let isProtoBufStub: SinonStub;
     let decodeProtoBufResponseStub: SinonStub;
     let res;
 
     beforeEach(() => {
-      isProtoBufStub = sandbox.stub(instance as any, 'isProtoBuf');
       decodeProtoBufResponseStub = sandbox.stub(instance as any, 'decodeProtoBufResponse');
       res =  {body: {success: 1}};
     });
 
     it('should call isProtoBuf', () => {
       instance.getResponseData(res);
-      expect(isProtoBufStub.calledOnce).to.be.true;
     });
 
     it('should call decodeProtoBufResponse if isProtoBuf returns true', () => {
       const val = {success: true};
-      isProtoBufStub.returns(true);
       decodeProtoBufResponseStub.returns(val);
       const ret = instance.getResponseData(res);
       expect(decodeProtoBufResponseStub.calledOnce).to.be.true;
@@ -124,48 +114,22 @@ describe('apis/requests/BaseRequest', () => {
     });
 
     it('should not call decodeProtoBufResponse if isProtoBuf returns false', () => {
-      isProtoBufStub.returns(false);
+      (instance as any).supportsProtoBuf = false;
       instance.getResponseData(res);
       expect(decodeProtoBufResponseStub.notCalled).to.be.true;
     });
 
     it('should return response body if not protoBuf', () => {
-      isProtoBufStub.returns(false);
+      (instance as any).supportsProtoBuf = false;
       const ret = instance.getResponseData(res);
       expect(ret).to.be.deep.equal(res.body);
     });
   });
-
-  describe('isProtoBuf', () => {
-    it('should return false if supportsProtoBuf is false', () => {
-      (instance as any).supportsProtoBuf = false;
-      expect(instance.isProtoBuf()).to.be.false;
-    });
-
-    it('should return false if peer version is less than minimum', () => {
-      peer.version = '0.9.0';
-      expect(instance.isProtoBuf()).to.be.false;
-    });
-
-    it('should return true if supportsProtobuf and peer version is OK', () => {
-      peer.version = '2.0.0';
-      (instance as any).supportsProtoBuf = true;
-      expect(instance.isProtoBuf()).to.be.true;
-    });
-  });
-
-  describe('setPeer', () => {
-    it('should set the passed peer to instance.peer', () => {
-      const p = {test: 'test'};
-      instance.setPeer(p as any);
-      expect((instance as any).peer).to.be.deep.equal(p);
-    });
-  });
-
   describe('getOrigOptions', () => {
     it('should return the original options', () => {
       const opt = {data: 'data'};
-      const instance2 = new TestRequest(opt);
+      const instance2 = new TestRequest();
+      instance2.options = opt;
       expect(instance2.getOrigOptions()).to.be.deep.equal(opt);
     });
   });
@@ -173,13 +137,15 @@ describe('apis/requests/BaseRequest', () => {
   describe('getQueryString', () => {
     it('should return empty string if options.query is undefined', () => {
       const opt = {data: 'data'};
-      const instance2 = new TestRequest(opt);
+      const instance2 = new TestRequest();
+      instance2.options = opt;
       expect((instance2 as any).getQueryString()).to.be.equal('');
     });
 
     it('should return query string with question mark if options.query is passed', () => {
       const opt = {data: 'data', query: {a: 'a', b: 'b'}};
-      const instance2 = new TestRequest(opt);
+      const instance2 = new TestRequest();
+      instance2.options = opt;
       expect((instance2 as any).getQueryString()).to.be.equal('?a=a&b=b');
     });
   });

@@ -486,7 +486,7 @@ describe('logic/peer', () => {
       let p;
       p = instance.pingAndUpdate();
       expect(makeRequestStub.calledOnce).to.be.true;
-      expect(makeRequestStub.firstCall.args[0]).to.be.deep.equal(new HeightRequest({data: null}));
+      expect(makeRequestStub.firstCall.args[0]).to.be.deep.equal(new HeightRequest());
       expect(p).to.be.fulfilled;
     });
 

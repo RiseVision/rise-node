@@ -640,9 +640,7 @@ describe('src/modules/transport.ts', () => {
       expect(broadcasterLogic.stubs.enqueue.firstCall.args.length).to.be.equal(2);
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[0]).to.be.deep.equal({});
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[1].requestHandler).to.be.instanceOf(PostSignaturesRequest);
-      expect(broadcasterLogic.stubs.enqueue.firstCall.args[1]).to.be.deep.equal({
-        requestHandler: new PostSignaturesRequest({data: { signature } }),
-      });
+      expect(broadcasterLogic.stubs.enqueue.firstCall.args[1].requestHandler.options).to.be.deep.equal({data: { signature }});
     });
 
     it('should call io.sockets.emit', async () => {
@@ -698,9 +696,7 @@ describe('src/modules/transport.ts', () => {
       expect(broadcasterLogic.stubs.enqueue.calledOnce).to.be.true;
       expect(broadcasterLogic.stubs.enqueue.firstCall.args.length).to.be.equal(2);
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[0]).to.be.deep.equal({});
-      expect(broadcasterLogic.stubs.enqueue.firstCall.args[1]).to.be.deep.equal({
-        requestHandler: new PostTransactionsRequest({data: {transaction}}),
-      });
+      expect(broadcasterLogic.stubs.enqueue.firstCall.args[1].requestHandler.options).to.be.deep.equal({data: {transaction}});
     });
 
     it('should call io.sockets.emit', async () => {
@@ -773,9 +769,7 @@ describe('src/modules/transport.ts', () => {
         broadhash: 'broadhash',
         limit    : constants.maxPeers,
       });
-      expect(broadcasterLogic.stubs.broadcast.firstCall.args[1]).to.be.deep.equal({
-        immediate: true,
-        requestHandler: new PostBlocksRequest({
+      expect(broadcasterLogic.stubs.broadcast.firstCall.args[1].requestHandler.options).to.be.deep.equal({
           data     : {
             block: {
               blockSignature    : 'aa',
@@ -784,7 +778,6 @@ describe('src/modules/transport.ts', () => {
               transactions      : [],
             },
           },
-        }),
       });
     });
 
@@ -1045,7 +1038,7 @@ describe('src/modules/transport.ts', () => {
       expect(getFromRandomPeerStub.calledOnce).to.be.true;
       expect(getFromRandomPeerStub.firstCall.args.length).to.be.equal(2);
       expect(getFromRandomPeerStub.firstCall.args[0]).to.be.deep.equal({});
-      expect(getFromRandomPeerStub.firstCall.args[1]).to.be.deep.equal(new PeersListRequest({data: null}));
+      expect(getFromRandomPeerStub.firstCall.args[1]).to.be.deep.equal(new PeersListRequest());
     });
 
     it('should call schemaStub.validate resolves', async () => {

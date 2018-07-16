@@ -5,7 +5,8 @@ describe('apis/requests/CommonBlockRequest', () => {
   let instance: CommonBlockRequest;
 
   beforeEach(() => {
-    instance = new CommonBlockRequest({data: null, query: { ids: '1,2,3'}});
+    instance = new CommonBlockRequest();
+    instance.options = {data: null, query: { ids: '1,2,3'}};
   });
 
   describe('getBaseUrl', () => {

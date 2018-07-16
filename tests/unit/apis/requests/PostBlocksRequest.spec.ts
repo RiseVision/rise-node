@@ -9,7 +9,6 @@ import { createContainer } from '../../../utils/containerCreator';
 describe('apis/requests/PostBlocksRequest', () => {
   let options;
   let instance: PostBlocksRequest;
-  let isPBStub: SinonStub;
   let pbHelperStub: ProtoBufHelperStub;
   let sandbox: SinonSandbox;
 
@@ -17,9 +16,9 @@ describe('apis/requests/PostBlocksRequest', () => {
     createContainer(); // ensures protoBufHelper is injected into BaseRequest...
     options = {data: {blocks: ['b1', 'b2']}};
     sandbox = sinon.createSandbox();
-    instance = new PostBlocksRequest(options);
-    isPBStub = sandbox.stub(instance, 'isProtoBuf');
-    pbHelperStub = BaseRequest.protoBufHelper as any;
+    instance = new PostBlocksRequest();
+    instance.options = options;
+    pbHelperStub = (instance as any).protoBufHelper as any;
     pbHelperStub.enqueueResponse('validate', true);
     pbHelperStub.enqueueResponse('encode', 'encodedValue');
   });
@@ -31,8 +30,7 @@ describe('apis/requests/PostBlocksRequest', () => {
   describe('getRequestOptions', () => {
     describe('protoBuf = false', () => {
       it('should return request options as json', () => {
-        isPBStub.returns(false);
-        const reqOpts = JSON.stringify(instance.getRequestOptions());
+        const reqOpts = JSON.stringify(instance.getRequestOptions(false));
         expect(reqOpts).to.be.equal(JSON.stringify({
           isProtoBuf: false,
           method: 'POST',
@@ -43,8 +41,7 @@ describe('apis/requests/PostBlocksRequest', () => {
     });
     describe('protoBuf = true', () => {
       it('should call protoBufHelper.validate', () => {
-        isPBStub.returns(true);
-        instance.getRequestOptions();
+        instance.getRequestOptions(true);
         expect(pbHelperStub.stubs.validate.calledOnce)
           .to.be.true;
         expect(pbHelperStub.stubs.validate.firstCall.args)
@@ -52,8 +49,7 @@ describe('apis/requests/PostBlocksRequest', () => {
       });
 
       it('should call protoBufHelper.encode if validate is true', () => {
-        isPBStub.returns(true);
-        instance.getRequestOptions();
+        instance.getRequestOptions(true);
         expect(pbHelperStub.stubs.encode.calledOnce)
           .to.be.true;
         expect(pbHelperStub.stubs.encode.firstCall.args)
@@ -61,15 +57,13 @@ describe('apis/requests/PostBlocksRequest', () => {
       });
 
       it('should return from protoBufHelper.encode into .data if validate is true', () => {
-        isPBStub.returns(true);
-        const val = instance.getRequestOptions();
+        const val = instance.getRequestOptions(true);
         expect(val.data).to.be.equal('encodedValue');
       });
 
       it('should throw if validate is false', () => {
-        isPBStub.returns(true);
         pbHelperStub.stubs.validate.returns(false);
-        expect(() => { instance.getRequestOptions(); }).to.throw('Failed to encode ProtoBuf');
+        expect(() => { instance.getRequestOptions(true); }).to.throw('Failed to encode ProtoBuf');
       });
     });
   });
@@ -77,15 +71,13 @@ describe('apis/requests/PostBlocksRequest', () => {
   describe('getBaseUrl', () => {
     describe('protoBuf = false', () => {
       it('should return the right URL', () => {
-        isPBStub.returns(false);
-        const url = (instance as any).getBaseUrl();
+        const url = (instance as any).getBaseUrl(false);
         expect(url).to.be.equal('/peer/blocks');
       });
     });
     describe('protoBuf = true', () => {
       it('should return the right URL', () => {
-        isPBStub.returns(true);
-        const url = (instance as any).getBaseUrl();
+        const url = (instance as any).getBaseUrl(true);
         expect(url).to.be.equal('/v2/peer/blocks');
       });
     });

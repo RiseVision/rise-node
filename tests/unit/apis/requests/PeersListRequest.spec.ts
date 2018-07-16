@@ -9,15 +9,14 @@ describe('apis/requests/PeersListRequest', () => {
   let decodeStub: SinonStub;
 
   beforeEach(() => {
-    instance = new PeersListRequest({data: null});
-    isPBStub = sinon.stub(instance, 'isProtoBuf');
+    instance = new PeersListRequest();
+    instance.options = {data: null};
     decodeStub = sinon.stub(instance as any, 'decodeProtoBufResponse');
   });
 
   describe('getResponseData', () => {
     describe('protoBuf = false', () => {
       it('should return response body', () => {
-        isPBStub.returns(false);
         const body = instance.getResponseData({body: 'theBody'});
         expect(body).to.be.equal('theBody');
       });
@@ -25,14 +24,12 @@ describe('apis/requests/PeersListRequest', () => {
     describe('protoBuf = true', () => {
       it('should call decodeProtoBufResponse', () => {
         const res = {body: 'theBody'}
-        isPBStub.returns(true);
         instance.getResponseData(res);
         expect(decodeStub.calledOnce).to.be.true;
         expect(decodeStub.firstCall.args).to.be.deep.equal([res, 'transportPeers']);
       });
 
       it('should return the decoded value', () => {
-        isPBStub.returns(true);
         decodeStub.returns('decodedValue');
         const decoded = instance.getResponseData({body: 'theBody'});
         expect(decoded).to.be.equal('decodedValue');
@@ -43,14 +40,12 @@ describe('apis/requests/PeersListRequest', () => {
   describe('getBaseUrl', () => {
     describe('protoBuf = false', () => {
       it('should return the right URL', () => {
-        isPBStub.returns(false);
         const url = (instance as any).getBaseUrl();
         expect(url).to.be.equal('/peer/list');
       });
     });
     describe('protoBuf = true', () => {
       it('should return the right URL', () => {
-        isPBStub.returns(true);
         const url = (instance as any).getBaseUrl();
         expect(url).to.be.equal('/v2/peer/list');
       });

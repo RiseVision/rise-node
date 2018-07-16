@@ -6,6 +6,7 @@ import { ITransactionLogic } from '../../ioc/interfaces/logic';
 import { TransactionsModel } from '../../models';
 import { IBlocksModule } from '../../ioc/interfaces/modules';
 import { PeerRequestOptions } from '../../modules';
+import * as _ from 'lodash';
 
 export type PostTransactionsRequestDataType = {
   transactions?: Array<IBaseTransaction<any>>,
@@ -69,6 +70,30 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
       reqOptions.data = newData as any;
     }
     return reqOptions;
+  }
+
+  public mergeIntoThis(...objs: this[]): void {
+    const allTransactions = [this, ...objs]
+      .map((item) => {
+        const toRet: Array<IBaseTransaction<any>> = [];
+        if (Array.isArray(item.options.data.transactions)) {
+          toRet.push(...item.options.data.transactions);
+        }
+        if (item.options.data.transaction) {
+          toRet.push(item.options.data.transaction);
+        }
+        return toRet;
+      })
+      .reduce((a, b) => a.concat(b));
+
+    const uniqTransactions = _.uniqBy(
+      allTransactions,
+      (item) => `${item.id}${item.signature.toString('hex')}`
+    );
+
+    this.options.data.transactions = uniqTransactions;
+    this.options.data.transaction = null;
+
   }
 
   protected getBaseUrl(isProto) {

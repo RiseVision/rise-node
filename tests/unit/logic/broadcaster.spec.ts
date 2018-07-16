@@ -478,9 +478,12 @@ describe('logic/broadcaster', () => {
         object    : 'object2',
         requestHandler: PostSignaturesRequest,
       }];
-      const rh1 = new PostTransactionsRequest({data: { object1: 'object1' }});
-      const rh2 = new PostSignaturesRequest({data: { object2: 'object2' }});
-      const rh3 = new PostTransactionsRequest({data: { object1: 'object1_2' }});
+      const rh1 = new PostTransactionsRequest();
+      rh1.options = {data: { object1: 'object1' }} as any;
+      const rh2 = new PostSignaturesRequest();
+      rh2.options = {data: { object2: 'object2' }} as any;
+      const rh3 = new PostTransactionsRequest();
+      rh3.options = {data: { object1: 'object1_2' }} as any;
       broadcasts = [{
         options: { api: 'type1', requestHandler: rh1 },
       }, {
@@ -488,8 +491,6 @@ describe('logic/broadcaster', () => {
       }, {
         options: { api: 'type1', requestHandler: rh3 },
       }];
-
-      instance.routes = routes;
     });
 
     it('should return the expected result', () => {

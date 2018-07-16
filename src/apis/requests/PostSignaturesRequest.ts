@@ -47,10 +47,6 @@ export class PostSignaturesRequest extends BaseRequest<any, PostSignaturesReques
     return reqOptions;
   }
 
-  protected getBaseUrl(isProto) {
-    return isProto ? '/v2/peer/signatures' : '/peer/signatures';
-  }
-
   public mergeIntoThis(...objs: this[]): void {
     const allSignatures = [this, ...objs]
       .map((item) => {
@@ -73,5 +69,9 @@ export class PostSignaturesRequest extends BaseRequest<any, PostSignaturesReques
     this.options.data.signatures = uniqSignatures;
     this.options.data.signature = null;
 
+  }
+
+  protected getBaseUrl(isProto) {
+    return isProto ? '/v2/peer/signatures' : '/peer/signatures';
   }
 }

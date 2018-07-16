@@ -243,7 +243,7 @@ export class TransportModule implements ITransportModule {
       const requestHandler = this.psrFactory({
         data: {
           signatures: [{
-            signatures : [Buffer.from(signature.signature, 'hex')],
+            signature: Buffer.from(signature.signature, 'hex'),
             transaction: signature.transaction,
           }],
         },
