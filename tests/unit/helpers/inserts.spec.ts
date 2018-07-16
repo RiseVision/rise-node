@@ -2,7 +2,7 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { Inserts } from '../../../src/helpers/inserts';
+import { Inserts } from '../../../src/helpers';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -17,7 +17,7 @@ describe('helpers/inserts', () => {
   let result: any;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
   });
 
   afterEach(() => {
@@ -74,7 +74,7 @@ describe('helpers/inserts', () => {
   });
 
   describe('namedTemplate()', () => {
-    it('success', () => {
+    it('should return a string with the formatted fields', () => {
       instance = new Inserts(
         {
           fields: ['f1', 'f2', 'f3'],
@@ -88,7 +88,7 @@ describe('helpers/inserts', () => {
       expect(result).to.equal('${f1},${f2},${f3}');
     });
 
-    it('If empty fields', () => {
+    it('If fields are empty should return an empty string', () => {
       instance = new Inserts(
         { table: 'abc', values: ['v1', 'v2', 'v3'], fields: [] },
         456,
@@ -100,7 +100,7 @@ describe('helpers/inserts', () => {
   });
 
   describe('_template()', () => {
-    it('success', () => {
+    it('should return a string with the formatted fields', () => {
       instance = new Inserts(
         {
           fields: ['f1', 'f2', 'f3'],
@@ -116,7 +116,7 @@ describe('helpers/inserts', () => {
   });
 
   describe('template()', () => {
-    it('if concat is TRUE', () => {
+    it('if concat is TRUE should return a query string with one value', () => {
       instance = new Inserts(
         {
           fields: ['f1', 'f2', 'f3'],
@@ -130,7 +130,7 @@ describe('helpers/inserts', () => {
       expect(result).to.equal('INSERT INTO "abc" ("f1","f2","f3") VALUES $1^');
     });
 
-    it('if concat is FALSE', () => {
+    it('if concat is FALSE should return a query string with many values', () => {
       instance = new Inserts(
         {
           fields: ['f1', 'f2', 'f3'],
@@ -148,7 +148,7 @@ describe('helpers/inserts', () => {
   });
 
   describe('toPostgres()', () => {
-    it('success', () => {
+    it('should return a string with the fields formatted three times, one time for every value.', () => {
       instance = new Inserts(
         {
           fields: ['f1', 'f2', 'f3'],

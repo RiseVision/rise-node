@@ -1,4 +1,5 @@
 // tslint:disable
+import 'reflect-metadata';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
@@ -23,10 +24,16 @@ import {
   createSecondSignTransaction,
   createSendTransaction,
   createVoteTransaction,
-  getRandomDelegateWallet
+  easyCreateMultiSignAccount,
+  enqueueAndProcessBundledTransaction,
+  enqueueAndProcessTransactions,
+  getRandomDelegateWallet,
 } from './common/utils';
-import { Ed, JobsQueue, wait } from '../../src/helpers';
+import { Ed, wait } from '../../src/helpers';
 import BigNumber from 'bignumber.js';
+import { toBufferedTransaction } from '../utils/txCrafter';
+import { BlocksModel, TransactionsModel } from '../../src/models';
+import { Sequelize } from 'sequelize-typescript';
 
 // tslint:disable no-unused-expression
 chai.use(chaiAsPromised);
@@ -43,6 +50,9 @@ describe('highlevel checks', function () {
   let txLogic: ITransactionLogic;
   let systemModule: ISystemModule;
   let ed: Ed;
+
+  let txModel: typeof TransactionsModel;
+  let blocksModel: typeof BlocksModel;
   beforeEach(async () => {
     const {wallet: randomAccount} = await createRandomAccountWithFunds(funds);
     senderAccount                 = randomAccount;
@@ -54,9 +64,11 @@ describe('highlevel checks', function () {
     txPool                        = initializer.appManager.container.get(Symbols.logic.transactionPool);
     txLogic                       = initializer.appManager.container.get(Symbols.logic.transaction);
     systemModule                  = initializer.appManager.container.get(Symbols.modules.system);
+    txModel                       = initializer.appManager.container.get(Symbols.models.transactions);
+    blocksModel                   = initializer.appManager.container.get(Symbols.models.blocks);
   });
   afterEach(async function () {
-    this.timeout(100000);
+    this.timeout(500 * blocksModule.lastBlock.height);
     await initializer.rawDeleteBlocks(blocksModule.lastBlock.height - 1);
   });
 
@@ -73,37 +85,45 @@ describe('highlevel checks', function () {
         expect(txPool.transactionInPool(tx.id)).is.false;
       });
       it('should allow spending all money without fee', async () => {
-
         const tx = await createSendTransaction(1, funds - systemModule.getFees().fees.send, senderAccount, '1R');
         expect(blocksModule.lastBlock.height).is.eq(3);
 
-        // txmodule should be in db with correct confimed height
+        // txmodule should be in db with correct blockId
         const dbTX = await txModule.getByID(tx.id);
         expect(dbTX.id).to.be.deep.eq(tx.id);
-        expect(dbTX.height).to.be.eq(3);
+        expect(dbTX.blockId).to.be.eq(blocksModule.lastBlock.id);
 
         // Tx pool should not have it in pool
         expect(txPool.transactionInPool(tx.id)).is.false;
       });
 
-      it('should not include one of the tx exceeding account balance', async () => {
+      it('should not allow block with tx exceeding account balance', async () => {
+        const preHeight = blocksModule.lastBlock.height;
+        const acc = await accModule.getAccount({address: senderAccount.address});
         const txs = await Promise.all(
           new Array(3).fill(null)
             .map(() => createSendTransaction(
               0,
-              Math.ceil(funds / 3), senderAccount,
+              Math.ceil(funds / 3),
+              senderAccount,
               createRandomWallet().address
               )
             )
         );
-        await txModule.receiveTransactions(txs, false, false);
-        await initializer.rawMineBlocks(1);
+        //const s = initializer.appManager.container.get<Sequelize>(Symbols.generic.sequelize);
+        // s.options.logging = true;
+        //console.log('TXS:', txs.map(tx => tx.id), senderAccount.address);
 
-        expect(blocksModule.lastBlock.transactions.length).to.be.eq(2);
-        // All of the transactions should not in pool anymore.
-        for (const stx of txs) {
-          expect(await txPool.transactionInPool(stx.id)).to.be.false;
-        }
+        await expect(initializer
+          .rawMineBlockWithTxs(txs.map((t) => toBufferedTransaction(t))))
+          .to
+          .rejectedWith(/Account does not have enough currency/);
+        // s.options.logging = false;
+
+        const postAcc = await accModule.getAccount({address: senderAccount.address });
+        expect(postAcc.balance).eq(acc.balance);
+        expect(postAcc.u_balance).eq(acc.u_balance);
+        expect(blocksModule.lastBlock.height).to.be.eq(preHeight);
       });
     });
 
@@ -115,7 +135,7 @@ describe('highlevel checks', function () {
           await createVoteTransaction(0, senderAccount, delegate1.publicKey, true),
           await createVoteTransaction(0, senderAccount, delegate2.publicKey, true),
         ];
-        await txModule.receiveTransactions(txs, false, false);
+        await enqueueAndProcessTransactions(txs);
         await initializer.rawMineBlocks(1);
         expect(blocksModule.lastBlock.transactions.length).to.be.eq(1);
         expect(blocksModule.lastBlock.height).to.be.eq(3);
@@ -126,7 +146,7 @@ describe('highlevel checks', function () {
           await createVoteTransaction(0, senderAccount, delegate.publicKey, true, {timestamp: 1}),
           await createVoteTransaction(0, senderAccount, delegate.publicKey, true),
         ];
-        await txModule.receiveTransactions(txs, false, false);
+        await enqueueAndProcessTransactions(txs);
         await initializer.rawMineBlocks(1);
         expect(blocksModule.lastBlock.transactions.length).to.be.eq(1);
         expect(blocksModule.lastBlock.height).to.be.eq(3);
@@ -137,11 +157,7 @@ describe('highlevel checks', function () {
           await createVoteTransaction(0, senderAccount, delegate.publicKey, true),
           await createVoteTransaction(0, senderAccount, delegate.publicKey, false),
         ];
-        try {
-          await txModule.receiveTransactions(txs, false, false);
-        } catch (e) {
-          void 0;
-        }
+        await enqueueAndProcessTransactions(txs);
         await initializer.rawMineBlocks(1);
         expect(blocksModule.lastBlock.transactions.length).to.be.eq(1);
         expect(blocksModule.lastBlock.transactions[0].id).to.be.eq(txs[0].id);
@@ -257,7 +273,6 @@ describe('highlevel checks', function () {
       it('should not allow same account 2 delegate registrations', async () => {
         await createRegDelegateTransaction(1, senderAccount, 'vekexasia');
         await createRegDelegateTransaction(1, senderAccount, 'meow');
-
         const acc = await accModule.getAccount({address: senderAccount.address});
         expect(acc.username).is.eq('vekexasia');
 
@@ -269,14 +284,17 @@ describe('highlevel checks', function () {
           await createRegDelegateTransaction(0, senderAccount, 'vekexasia'),
           await createRegDelegateTransaction(0, senderAccount, 'meow'),
         ];
-
-        await txModule.receiveTransactions(txs, false, false);
+        await enqueueAndProcessTransactions(txs);
         await initializer.rawMineBlocks(1);
         const acc = await accModule.getAccount({address: senderAccount.address});
-        expect(acc.username).is.eq('meow');
+        expect(acc.username).is.eq('vekexasia');
 
-        expect(await accModule.getAccount({username: 'vekexasia'})).is.undefined;
+        expect(await accModule.getAccount({username: 'meow'})).is.undefined;
         expect(blocksModule.lastBlock.transactions.length).is.eq(1);
+
+        // Both transactions should not be in pool
+        expect(txModule.transactionInPool(txs[1].id)).is.false;
+        expect(txModule.transactionInPool(txs[0].id)).is.false;
       });
     });
 
@@ -285,7 +303,7 @@ describe('highlevel checks', function () {
         const pk  = createRandomWallet().publicKey;
         const tx  = await createSecondSignTransaction(1, senderAccount, pk);
         const acc = await accModule.getAccount({address: senderAccount.address});
-        expect(acc.secondPublicKey).to.be.eq(pk);
+        expect(acc.secondPublicKey.toString('hex')).to.be.eq(pk);
         expect(acc.secondSignature).to.be.eq(1);
       });
       it('should not allow 2 second signature in 2 diff blocks', async () => {
@@ -294,7 +312,7 @@ describe('highlevel checks', function () {
         const tx  = await createSecondSignTransaction(1, senderAccount, pk);
         const tx2 = await createSecondSignTransaction(1, senderAccount, pk2);
         const acc = await accModule.getAccount({address: senderAccount.address});
-        expect(acc.secondPublicKey).to.be.eq(pk);
+        expect(acc.secondPublicKey.toString('hex')).to.be.eq(pk);
         expect(acc.secondSignature).to.be.eq(1);
         expect(blocksModule.lastBlock.transactions).is.empty;
       });
@@ -305,9 +323,9 @@ describe('highlevel checks', function () {
           await createSecondSignTransaction(0, senderAccount, pk),
           await createSecondSignTransaction(0, senderAccount, pk2),
         ];
-        await confirmTransactions(txs, 1);
+        await confirmTransactions(txs, true);
         const acc = await accModule.getAccount({address: senderAccount.address});
-        expect(acc.secondPublicKey).to.be.eq(pk2);
+        expect(acc.secondPublicKey.toString('hex')).to.be.eq(pk);
         expect(acc.secondSignature).to.be.eq(1);
         expect(blocksModule.lastBlock.transactions.length).is.eq(1);
       });
@@ -315,30 +333,9 @@ describe('highlevel checks', function () {
 
     describe('multiSignature', () => {
       it('should create multisignature account', async () => {
-        const keys     = new Array(3).fill(null).map(() => createRandomWallet());
-        const signedTx = createMultiSignTransaction(senderAccount, 3, keys.map((k) => `+${k.publicKey}`));
-        await txModule.receiveTransactions([signedTx], false, false);
-        await initializer.rawMineBlocks(1);
-        // In pool => valid and not included in block.
-        expect(txPool.multisignature.has(signedTx.id)).is.true;
-        // let it sign by all.
+        const {keys, wallet, tx} = await easyCreateMultiSignAccount(3, 3);
 
-        const signatures = keys.map((k) => ed.sign(
-          txLogic.getHash(signedTx, true, false),
-          {
-            privateKey: Buffer.from(k.privKey, 'hex'),
-            publicKey : Buffer.from(k.publicKey, 'hex'),
-          }
-        ).toString('hex'));
-
-        await transportModule.receiveSignatures(signatures.map((sig) => ({
-          signature  : sig,
-          transaction: signedTx.id,
-        })));
-
-        await initializer.rawMineBlocks(1);
-
-        const acc = await accModule.getAccount({address: senderAccount.address});
+        const acc = await accModule.getAccount({address: wallet.address});
         expect(acc.multisignatures).to.be.an('array');
 
         for (const k of keys) {
@@ -350,20 +347,29 @@ describe('highlevel checks', function () {
       it('should not allow min > than keys', async () => {
         const keys     = new Array(3).fill(null).map(() => createRandomWallet());
         const signedTx = createMultiSignTransaction(senderAccount, 4, keys.map((k) => `+${k.publicKey}`));
-        return expect(txModule.receiveTransactions([signedTx], false, false)).to.be
-          .rejectedWith('Invalid multisignature min. Must be less than or equal to keysgroup size');
+        await confirmTransactions([signedTx], true);
+
+        expect(blocksModule.lastBlock.transactions.length).eq(0);
+        const acc = await accModule.getAccount({address: senderAccount.address});
+        expect(acc.isMultisignature()).is.false;
+        //return expect(txModule.processUnconfirmedTransaction(signedTx, false, false)).to.be
+        //  .rejectedWith('Invalid multisignature min. Must be less than or equal to keysgroup size');
       });
       it('should keep tx in multisignature tx pool until all signature arrives, even if min is 2', async () => {
         const keys     = new Array(3).fill(null).map(() => createRandomWallet());
-        const signedTx = createMultiSignTransaction(senderAccount, 2, keys.map((k) => `+${k.publicKey}`));
-        await txModule.receiveTransactions([signedTx], false, false);
+        const signedTx = toBufferedTransaction(
+          createMultiSignTransaction(senderAccount, 2, keys.map((k) => `+${k.publicKey}`))
+        );
+        await txModule.processUnconfirmedTransaction(signedTx, false);
+        await txPool.processBundled();
+        await txModule.fillPool();
         await initializer.rawMineBlocks(1);
         // In pool => valid and not included in block.
         expect(txPool.multisignature.has(signedTx.id)).is.true;
 
         // let it sign by all.
         const signatures = keys.map((k) => ed.sign(
-          txLogic.getHash(signedTx, true, false),
+          txLogic.getHash(signedTx, false, false),
           {
             privateKey: Buffer.from(k.privKey, 'hex'),
             publicKey : Buffer.from(k.publicKey, 'hex'),
@@ -375,14 +381,39 @@ describe('highlevel checks', function () {
             signature  : signatures[i],
             transaction: signedTx.id,
           }]);
+          await txModule.fillPool();
           await initializer.rawMineBlocks(1);
           const acc = await accModule.getAccount({address: senderAccount.address});
           expect(acc.multisignatures).to.be.null;
           expect(txPool.multisignature.has(signedTx.id)).is.true;
         }
+
+        //Lets confirm account
+        await transportModule.receiveSignatures([{
+          signature  : signatures[signatures.length-1],
+          transaction: signedTx.id,
+        }]);
+        await txModule.fillPool();
+        await initializer.rawMineBlocks(1);
+        const acc = await accModule.getAccount({address: senderAccount.address});
+        expect(acc.multisignatures).to.not.be.null;
+        expect(acc.isMultisignature()).is.true;
+        expect(txPool.multisignature.has(signedTx.id)).is.false;
+
       });
     });
 
+    describe('edge-cases', () => {
+      it('should react correctly when tx seems to belong to multisignature account while account is not multisign', async () => {
+        const tx = await createSendTransaction(1, funds, senderAccount, '1R', {requesterPublicKey: senderAccount.publicKey});
+        // Blocks should be forged anyway
+        expect(blocksModule.lastBlock.height).is.eq(3);
+        // txmodule should not find it in db
+        await expect(txModule.getByID(tx.id)).to.be.rejectedWith('Transaction not found');
+        // Tx pool should not have it in pool
+        expect(txPool.transactionInPool(tx.id)).is.false;
+      });
+    })
   });
 
   describe('other tests', () => {
@@ -409,38 +440,38 @@ describe('highlevel checks', function () {
           .map((what, idx) => createSendTransaction(0, fundPerTx, senderAccount, '1R', {timestamp: idx}))
       );
 
-      // send to transport the txs that will be in bundled
-      await supertest(initializer.appManager.expressApp)
-        .post('/peer/transactions')
-        .set(fieldheader)
-        .send({transactions: txs.slice(0, 2)})
-        .expect(200);
-
       await txPool.processBundled();
       await txModule.fillPool();
-      for (let i = 0; i < 25; i++) {
-        const block = await initializer.generateBlock(txs.slice(25 + i, 25 + i + 1));
-        //console.log (`####`);
-        //console.log (`LOOP ${i} Adding ${txs.slice(25 + i)[0].id}`);
-        //console.log (`####`);
+      const total = 900;
+      for (let i = 0; i < total; i++) {
+        if (i % (total / 10 | 0) === 0) {
+          console.log('Done', i);
+        }
+        const curTx = txs.slice(25 + i, 25 + i + 1)[0];
+        const nextTx = txs.slice(25 + i + 1, 25 + i + 2)[0];
+        const block = await initializer.generateBlock([curTx]);
 
-        // Send the NEXT transaction (next block) (non bundled)
-        wait(Math.random() * 100)
-          .then(() => supertest(initializer.appManager.expressApp)
-          .post('/peer/transactions')
-          .set(fieldheader)
-          .send({transaction: txs.slice(25 + i + 1, 25 + i + 2)[0]})
-          .expect(200))
-          .catch((err) => void 0 /*SILENT*/);
+        await Promise.all([
+          wait(Math.random() * 10)
+            .then(() => enqueueAndProcessBundledTransaction(nextTx)),
+          // Broadcast block with current transaction
+          wait(Math.random() * 10)
+            .then(() => supertest(initializer.appManager.expressApp)
+              .post('/peer/blocks')
+              .set(fieldheader)
+              .send({ block: blocksModel.toStringBlockType(block, txModel, blocksModule) })
+              .expect(200)
+            )
+        ]);
 
-        // Broadcast block with current transaction
-        await supertest(initializer.appManager.expressApp)
-          .post('/peer/blocks')
-          .set(fieldheader)
-          .send({block})
-          .expect(200);
 
-        expect(blocksModule.lastBlock.blockSignature).to.be.eq(block.blockSignature);
+        expect(blocksModule.lastBlock.blockSignature).to.be.deep.eq(block.blockSignature);
+
+        // Next TX should be in pool we ensure it gets processed by refilling pool
+        expect(txModule.transactionInPool(nextTx.id)).true;
+        await txPool.processBundled();
+        await txModule.fillPool();
+        expect(txModule.transactionUnconfirmed(nextTx.id)).true;
 
         // Check balances are correct so that no other applyUnconfirmed happened.
         // NOTE: this could fail as <<<--HERE-->>> an applyUnconfirmed (of NEXT tx) could
@@ -453,8 +484,8 @@ describe('highlevel checks', function () {
           .toNumber(), 'confirmed balance');
 
         expect(new BigNumber(u_balance).toNumber()).to.be.eq(Math.max(0, new BigNumber(funds)
-          .minus(fundPerTx * (i + 1 + 2))
-          .minus(systemModule.getFees().fees.send * (i + 1 + 2))
+          .minus(fundPerTx * (i + 1 + 1))
+          .minus(systemModule.getFees().fees.send * (i + 1 + 1))
           .toNumber()), 'unconfirmed balance');
 
         expect(blocksModule.lastBlock.height).to.be.eq( startHeight + i + 1);
@@ -472,7 +503,6 @@ describe('highlevel checks', function () {
        * instead of sending the "next block" tx we send the current block tx
        * in the hope that a dual applyUnconfirmed gets done causing inconsistency.
        */
-      const jobsQueue = initializer.appManager.container.get<JobsQueue>(Symbols.helpers.jobsQueue);
 
       const fieldheader = {
         nethash: 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
@@ -481,7 +511,7 @@ describe('highlevel checks', function () {
       };
 
       const startHeight = blocksModule.lastBlock.height;
-      const fundPerTx = 1;
+      const fundPerTx   = 1;
 
       // Create some 1 satoshi transactions
       const txs = await Promise.all(
@@ -489,50 +519,48 @@ describe('highlevel checks', function () {
           .map((what, idx) => createSendTransaction(0, fundPerTx, senderAccount, '1R', {timestamp: idx}))
       );
 
-
-      for (let i = 0; i < 250; i++) {
+      const total = 900;
+      for (let i = 0; i < total; i++) {
         const block = await initializer.generateBlock(txs.slice(i, i + 1));
-        console.log (`####`);
-        console.log(block.transactions[0].id);
-        console.log (`####`);
-
-        // Send the current (same) transaction
-        await supertest(initializer.appManager.expressApp)
-            .post('/peer/transactions')
-            .set(fieldheader)
-            .send({transaction: txs.slice(i, i+1)[0]})
-            .expect(200);
+        if (i % (total / 10 | 0) === 0) {
+          console.log('Done', i);
+        }
 
 
         await Promise.all([
           // simulate fillPool (forgeModule calling it)
           // wait(Math.random() * 100).then(() => jobsQueue.bau['delegatesNextForge']()),
           // Broadcast block with current transaction
-          supertest(initializer.appManager.expressApp)
+          wait(Math.random() * 10).then(() => supertest(initializer.appManager.expressApp)
             .post('/peer/blocks')
             .set(fieldheader)
-            .send({block})
-            .expect(200)
+            .send({block: blocksModel.toStringBlockType(block, txModel, blocksModule)})
+            .expect(200)),
+          // Send the current (same) transaction
+          wait(Math.random() * 10).then(() => enqueueAndProcessTransactions(txs.slice(i, i+1)))
+
         ]);
 
-        expect(blocksModule.lastBlock.blockSignature).to.be.eq(block.blockSignature);
+        expect(blocksModule.lastBlock.blockSignature).to.be.deep.eq(block.blockSignature);
 
+
+        if (txModule.getMergedTransactionList().length > 0) {
+          console.log(txModule.getMergedTransactionList().length, i);
+        }
+        // expect(txModule.getMergedTransactionList().length).is.eq(0);
         // Check balances are correct so that no other applyUnconfirmed happened.
         // NOTE: this could fail as <<<--HERE-->>> an applyUnconfirmed (of NEXT tx) could
         // have happened
-        const { u_balance, balance } = await accModule.getAccount({address: senderAccount.address});
+        const {u_balance, balance} = await accModule.getAccount({address: senderAccount.address});
         // console.log('End loop - test begins');
         expect(new BigNumber(balance).toNumber()).to.be.eq(new BigNumber(funds)
           .minus(fundPerTx * (i + 1))
           .minus(systemModule.getFees().fees.send * (i + 1))
           .toNumber(), 'confirmed balance');
 
-        expect(new BigNumber(u_balance).toNumber()).to.be.eq(Math.max(0, new BigNumber(funds)
-          .minus(fundPerTx * (i + 1))
-          .minus(systemModule.getFees().fees.send * (i + 1))
-          .toNumber()), 'unconfirmed balance');
+        expect(new BigNumber(u_balance).toNumber()).to.be.eq(new BigNumber(balance).toNumber(), 'unconfirmed balance');
 
-        expect(blocksModule.lastBlock.height).to.be.eq( startHeight + i + 1);
+        expect(blocksModule.lastBlock.height).to.be.eq(startHeight + i + 1);
         // console.log('Current Balance is : ', balance, u_balance);
       }
 
@@ -541,4 +569,5 @@ describe('highlevel checks', function () {
       expect(u_balance).to.be.eq(balance, 'unconfirmed balance');
     });
   });
+
 });

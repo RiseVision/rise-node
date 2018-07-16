@@ -1,37 +1,38 @@
 import { inject, injectable } from 'inversify';
-import { IDatabase } from 'pg-promise';
 import * as z_schema from 'z-schema';
-import { constants, Diff, emptyCB, TransactionType } from '../../helpers/';
+import { constants, Diff, TransactionType } from '../../helpers/';
 import { IAccountLogic, IRoundsLogic } from '../../ioc/interfaces/logic';
 import { IDelegatesModule, ISystemModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
+import {
+  Accounts2DelegatesModel,
+  Accounts2U_DelegatesModel,
+  AccountsModel,
+  RoundsModel,
+  VotesModel
+} from '../../models/';
 import voteSchema from '../../schema/logic/transactions/vote';
-import txSQL from '../../sql/logic/transactions';
-import { MemAccountsData } from '../account';
+import { DBCustomOp, DBOp } from '../../types/genericTypes';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
+import { Model } from 'sequelize-typescript';
 
 // tslint:disable-next-line interface-over-type-literal
 export type VoteAsset = {
   votes: string[];
 };
-@injectable()
-export class VoteTransaction extends BaseTransactionType<VoteAsset> {
-  private dbTable  = 'votes';
-  private dbFields = [
-    'votes',
-    'transactionId',
-  ];
 
+@injectable()
+export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> {
   // Generic
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
 
   // Logic
-  @inject(Symbols.logic.account)
-  private accountLogic: IAccountLogic;
   @inject(Symbols.logic.rounds)
   private roundsLogic: IRoundsLogic;
+  @inject(Symbols.logic.account)
+  private accountLogic: IAccountLogic;
 
   // Module
   @inject(Symbols.modules.delegates)
@@ -39,15 +40,27 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
+  // models
+  @inject(Symbols.models.votes)
+  private VotesModel: typeof VotesModel;
+  @inject(Symbols.models.accounts2U_Delegates)
+  private Accounts2U_DelegatesModel: typeof Accounts2U_DelegatesModel;
+  @inject(Symbols.models.accounts2Delegates)
+  private Accounts2DelegatesModel: typeof Accounts2DelegatesModel;
+  @inject(Symbols.models.accounts)
+  private AccountsModel: typeof AccountsModel;
+  @inject(Symbols.models.rounds)
+  private RoundsModel: typeof RoundsModel;
+
   constructor() {
     super(TransactionType.VOTE);
   }
 
-  public calculateFee(tx: IBaseTransaction<VoteAsset>, sender: any, height: number): number {
+  public calculateFee(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel, height: number): number {
     return this.systemModule.getFees(height).fees.vote;
   }
 
-  public async verify(tx: IBaseTransaction<VoteAsset> & { senderId: string }, sender: any): Promise<void> {
+  public async verify(tx: IBaseTransaction<VoteAsset> & { senderId: string }, sender: AccountsModel): Promise<void> {
     if (tx.recipientId !== tx.senderId) {
       throw new Error('Missing recipient');
     }
@@ -78,7 +91,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
       throw new Error('Multiple votes for same delegate are not allowed');
     }
 
-    return this.checkConfirmedDelegates(tx);
+    return this.checkConfirmedDelegates(tx, sender);
   }
 
   public getBytes(tx: IBaseTransaction<VoteAsset>, skipSignature: boolean, skipSecondSignature: boolean): Buffer {
@@ -86,49 +99,78 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
   }
 
   // tslint:disable-next-line max-line-length
-  public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: MemAccountsData): Promise<void> {
-    await this.checkConfirmedDelegates(tx);
-    return this.accountLogic.merge(sender.address, {
-      blockId  : block.id,
-      delegates: tx.asset.votes,
-      round    : this.roundsLogic.calcRound(block.height),
-    }, emptyCB);
+  public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+    await this.checkConfirmedDelegates(tx, sender);
+    sender.applyDiffArray('delegates', tx.asset.votes);
+    const ops = this.calculateOPs(this.Accounts2DelegatesModel, block.id, tx.asset.votes, sender.address);
+    ops.push(... tx.asset.votes.map<DBCustomOp<RoundsModel>>((vote) => {
+      const add      = vote[0] === '+';
+      const delegate = vote.substr(1);
+      return {
+        model: this.RoundsModel,
+        query: this.RoundsModel.insertMemRoundDelegatesSQL({
+          add,
+          address: sender.address,
+          blockId: block.id,
+          delegate,
+          round  : this.roundsLogic.calcRound(block.height),
+        }),
+        type : 'custom',
+      };
+    }));
+    return ops;
   }
 
   // tslint:disable-next-line max-line-length
-  public async undo(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: MemAccountsData): Promise<void> {
+  public async undo(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     this.objectNormalize(tx);
     const invertedVotes = Diff.reverse(tx.asset.votes);
-    return this.accountLogic.merge(sender.address, {
-      blockId  : block.id,
-      delegates: invertedVotes,
-      round    : this.roundsLogic.calcRound(block.height),
-    }, emptyCB);
+    sender.applyDiffArray('delegates', invertedVotes);
+    const ops = this.calculateOPs(this.Accounts2DelegatesModel, block.id, invertedVotes, sender.address);
+    // tslint:disable-next-line
+    ops.push(... invertedVotes.map<DBCustomOp<RoundsModel>>((vote) => {
+      const add      = vote[0] === '+';
+      const delegate = vote.substr(1);
+      return {
+        model: this.RoundsModel,
+        query: this.RoundsModel.insertMemRoundDelegatesSQL({
+          add,
+          address: sender.address,
+          blockId: block.id,
+          delegate,
+          round  : this.roundsLogic.calcRound(block.height),
+        }),
+        type : 'custom',
+      };
+    }));
+    return ops;
+  }
+
+  public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+    await this.checkUnconfirmedDelegates(tx, sender);
+    sender.applyDiffArray('u_delegates', tx.asset.votes);
+    return this.calculateOPs(this.Accounts2U_DelegatesModel, null, tx.asset.votes, sender.address);
+  }
+
+  public async undoUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
+    this.objectNormalize(tx);
+    const reversedVotes = Diff.reverse(tx.asset.votes);
+    sender.applyDiffArray('u_delegates', reversedVotes);
+    return this.calculateOPs(this.Accounts2U_DelegatesModel, null, reversedVotes, sender.address);
   }
 
   /**
    * Checks vote integrity of tx sender
    */
-  public checkUnconfirmedDelegates(tx: IBaseTransaction<VoteAsset>): Promise<any> {
-    return this.delegatesModule.checkUnconfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
+  public checkUnconfirmedDelegates(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<any> {
+    return this.delegatesModule.checkUnconfirmedDelegates(sender, tx.asset.votes);
   }
 
   /**
    * Checks vote integrity of sender
    */
-  public checkConfirmedDelegates(tx: IBaseTransaction<VoteAsset>): Promise<any> {
-    return this.delegatesModule.checkConfirmedDelegates(tx.senderPublicKey, tx.asset.votes);
-  }
-
-  public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: any): Promise<void> {
-    await this.checkUnconfirmedDelegates(tx);
-    return this.accountLogic.merge(sender.address, { u_delegates: tx.asset.votes }, emptyCB);
-  }
-
-  public async undoUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: any): Promise<void> {
-    this.objectNormalize(tx);
-    const invertedVotes = Diff.reverse(tx.asset.votes);
-    return this.accountLogic.merge(sender.address, { u_delegates: invertedVotes }, emptyCB);
+  public checkConfirmedDelegates(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<any> {
+    return this.delegatesModule.checkConfirmedDelegates(sender, tx.asset.votes);
   }
 
   public objectNormalize(tx: IBaseTransaction<VoteAsset>): IBaseTransaction<VoteAsset> {
@@ -149,21 +191,15 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(tx: IConfirmedTransaction<VoteAsset> & { senderId: string }): { table: string; fields: string[]; values: any } {
+  public dbSave(tx: IConfirmedTransaction<VoteAsset> & { senderId: string }): DBOp<any> {
     return {
-      fields: this.dbFields,
-      table : this.dbTable,
+      model : this.VotesModel,
+      type  : 'create',
       values: {
         transactionId: tx.id,
         votes        : Array.isArray(tx.asset.votes) ? tx.asset.votes.join(',') : null,
       },
     };
-  }
-
-  public async restoreAsset(tx: IBaseTransaction<any>, db: IDatabase<any>): Promise<IBaseTransaction<VoteAsset>> {
-    const {votes} = await db.one(txSQL.getVotesById, {id: tx.id});
-    const asset = this.dbRead({v_votes: votes});
-    return { ...tx, ...{ asset } };
   }
 
   private assertValidVote(vote: string) {
@@ -179,5 +215,67 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset> {
     if (!this.schema.validate(pkey, { format: 'publicKey' })) {
       throw new Error('Invalid vote publicKey');
     }
+  }
+
+  private calculateOPs(model: typeof Model & (new () => any), blockId: string, votesArray: string[], senderAddress: string) {
+    const ops: Array<DBOp<any>> = [];
+
+    const removedPks = votesArray.filter((v) => v.startsWith('-'))
+      .map((v) => v.substr(1));
+    const addedPks   = votesArray.filter((v) => v.startsWith('+'))
+      .map((v) => v.substr(1));
+
+    // Remove unvoted publickeys.
+    if (removedPks.length > 0) {
+      ops.push({
+        model,
+        options: {
+          limit: removedPks.length,
+          where: {
+            accountId  : senderAddress,
+            dependentId: removedPks,
+          },
+        },
+        type   : 'remove',
+      });
+    }
+    // create new elements for each added pk.
+    if (addedPks.length > 0) {
+      ops.push({
+        model,
+        type  : 'bulkCreate',
+        values: addedPks.map((pk) => ({ dependentId: pk, accountId: senderAddress })),
+      });
+    }
+
+    if (blockId) {
+      ops.push({
+        model  : this.AccountsModel,
+        options: { where: { address: senderAddress } },
+        type   : 'update',
+        values : { blockId },
+      });
+    }
+    return ops;
+  }
+
+  public async attachAssets(txs: Array<IConfirmedTransaction<VoteAsset>>) {
+    const res = await this.VotesModel
+      .findAll({
+        where: { transactionId: txs.map((tx) => tx.id) },
+      });
+
+    const indexes = {};
+    res.forEach((tx, idx) => indexes[tx.transactionId] = idx);
+
+    txs.forEach((tx) => {
+      if (typeof(indexes[tx.id]) === 'undefined') {
+        throw new Error(`Couldn't restore asset for Vote tx: ${tx.id}`);
+      }
+      const info = res[indexes[tx.id]];
+      tx.asset   = {
+        votes: info.votes.split(','),
+      };
+    });
   }
 }

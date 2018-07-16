@@ -1,8 +1,7 @@
 {
     "port": 5566,
     "address": "0.0.0.0",
-    "version": "1.0.1",
-    "minVersion": ">=0.1.0",
+    "version": "1.1.0",
     "fileLogLevel": "info",
     "logFileName": "logs/rise-testnet.log",
     "consoleLogLevel": "info",
@@ -96,20 +95,6 @@
     "loading": {
         "verifyOnLoading": false,
         "loadPerIteration": 5000
-    },
-    "ssl": {
-        "enabled": false,
-        "options": {
-            "port": 5556,
-            "address": "0.0.0.0",
-            "key": "./ssl/rise.key",
-            "cert": "./ssl/rise.crt"
-        }
-    },
-    "dapp": {
-        "masterrequired": true,
-        "masterpassword": "",
-        "autoexec": []
     },
     "nethash": "e90d39ac200c495b97deb6d9700745177c7fc4aa80a404108ec820cbeced054c"
 }

@@ -39,12 +39,20 @@ import { PeersModuleStub } from './modules/PeersModuleStub';
 import { SystemModuleStub } from './modules/SystemModuleStub';
 import TransportModuleStub from './modules/TransportModuleStub';
 import MultisignaturesModuleStub from './modules/MultisignaturesModuleStub';
+
+// Models
+import {AccountsModelStub} from './models/AccountsModelStub';
+import {BlocksModelStub} from './models/BlocksModelStub';
+
 // Utils
 import ByteBufferStub from './utils/ByteBufferStub';
 import RedisClientStub from './utils/RedisClientStub';
 import SocketIOStub from './utils/SocketIOStub';
 
 export {
+  AccountsModelStub,
+  BlocksModelStub,
+
   AccountLogicStub,
   AccountsModuleStub,
   AppStateStub,

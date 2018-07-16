@@ -1,5 +1,6 @@
 import { BlockProgressLogger } from '../../../../helpers';
 import { SignedAndChainedBlockType } from '../../../../logic';
+import { BlocksModel } from '../../../../models';
 import { RawFullBlockListType } from '../../../../types/rawDBTypes';
 import { publicKey } from '../../../../types/sanityTypes';
 
@@ -10,13 +11,13 @@ export interface IBlocksModuleUtils {
    * Loads full blocks from database and normalize them
    *
    */
-  loadBlocksPart(filter: { limit?: number, id?: string, lastId?: string }): Promise<SignedAndChainedBlockType[]>;
+  loadBlocksPart(filter: { limit?: number, id?: string, lastId?: string }): Promise<BlocksModel[]>;
 
   /**
    * Loads the last block from db and normalizes it.
    * @return {Promise<SignedBlockType>}
    */
-  loadLastBlock(): Promise<SignedAndChainedBlockType>;
+  loadLastBlock(): Promise<BlocksModel>;
 
   /**
    * Gets block IDs sequence - last block id, ids of first blocks of last 5 rounds and genesis block id.
@@ -24,7 +25,7 @@ export interface IBlocksModuleUtils {
    */
   getIdSequence(height: number): Promise<{ firstHeight: number, ids: string[] }>;
 
-  loadBlocksData(filter: { limit?: number, id?: string, lastId?: string }): Promise<RawFullBlockListType[]>;
+  loadBlocksData(filter: { limit?: number, id?: string, lastId?: string }): Promise<BlocksModel[]>;
 
   getBlockProgressLogger(txCount: number, logsFrequency: number, msg: string): BlockProgressLogger;
 

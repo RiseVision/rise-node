@@ -1,20 +1,23 @@
-import * as mute from 'mute';
 import { expect } from 'chai';
-import * as monitor from 'pg-monitor';
-import { Bus, constants, loggerCreator, Slots } from '../../../src/helpers';
+import 'reflect-metadata';
+import { Bus, constants, loggerCreator, Sequence, Slots } from '../../../src/helpers';
 import { AppManager } from '../../../src/AppManager';
 import { Symbols } from '../../../src/ioc/symbols';
-import { IDatabase } from 'pg-promise';
 import {
-  IBlocksModule, IBlocksModuleChain,
-  IBlocksModuleProcess,
+  IBlocksModule,
+  IBlocksModuleChain,
+  IBlocksModuleProcess, IBlocksModuleVerify,
   IDelegatesModule,
   ITransactionsModule
 } from '../../../src/ioc/interfaces/modules';
 import { getKeypairByPkey } from './utils';
-import { SignedBlockType } from '../../../src/logic';
+import { SignedAndChainedBlockType, SignedBlockType } from '../../../src/logic';
 import { IBlockLogic } from '../../../src/ioc/interfaces/logic';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
+import { toBufferedTransaction } from '../../utils/txCrafter';
+import { MigrationsModel } from '../../../src/models';
+import { IBaseTransaction } from '../../../src/logic/transactions';
+import { SequenceStub } from '../../stubs';
 
 export class IntegrationTestInitializer {
   public appManager: AppManager;
@@ -25,7 +28,10 @@ export class IntegrationTestInitializer {
       this.timeout(10000);
       return s.runBefore();
     });
-    afterEach(() => this.runAfter());
+    afterEach(function()  {
+      this.timeout(10000);
+      return s.runAfter();
+    });
   }
 
   /**
@@ -33,15 +39,19 @@ export class IntegrationTestInitializer {
    */
   public autoRestoreEach() {
     let height: number;
+    const self = this;
     beforeEach(() => {
       const blockModule = this.appManager.container
         .get<IBlocksModule>(Symbols.modules.blocks);
       height            = blockModule.lastBlock.height;
     });
-    afterEach(async () => {
-      const blockModule = this.appManager.container
+    afterEach(async function () {
+
+      const blockModule = self.appManager.container
         .get<IBlocksModule>(Symbols.modules.blocks);
-      await this.rawDeleteBlocks(blockModule.lastBlock.height - height);
+      const howMany      = blockModule.lastBlock.height - height;
+      this.timeout(howMany * 5000 + 150);
+      await self.rawDeleteBlocks(howMany);
       expect(blockModule.lastBlock.height).to.be.eq(height);
     });
   }
@@ -49,12 +59,15 @@ export class IntegrationTestInitializer {
   public createBlocks(howMany: number, when: 'each' | 'single') {
     const before = when === 'single' ? 'before' : 'beforeEach';
     const after  = when === 'single' ? 'after' : 'afterEach';
-    global[before](async () => {
-      await this.rawMineBlocks(howMany);
+    const self = this;
+    global[before](async function () {
+      this.timeout(howMany * 300 + 150);
+      await self.rawMineBlocks(howMany);
     });
 
-    global[after](async () => {
-      await this.rawDeleteBlocks(howMany);
+    global[after](async function () {
+      this.timeout(howMany * 300 + 150);
+      await self.rawDeleteBlocks(howMany);
     });
 
   }
@@ -71,23 +84,61 @@ export class IntegrationTestInitializer {
     expect(blockModule.lastBlock.height).to.be.eq(height - howMany);
   }
 
-  public async generateBlock(transactions: Array<ITransaction<any>> = []): Promise<SignedBlockType> {
-    const blockLogic     = this.appManager.container.get<IBlockLogic>(Symbols.logic.block);
+  public async generateBlock(transactions: Array<ITransaction<any>> = []): Promise<SignedBlockType & {height: number}> {
+    const blockLogic      = this.appManager.container.get<IBlockLogic>(Symbols.logic.block);
     const blockModule     = this.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
     const height          = blockModule.lastBlock.height;
     const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
     const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
-    const delegates  = await delegatesModule.generateDelegateList(height + 1);
-    const theSlot    = height + 1;
-    const delegateId = delegates[theSlot % slots.delegates];
-    const kp         = getKeypairByPkey(delegateId);
+    const delegates       = await delegatesModule.generateDelegateList(height + 1);
+    const theSlot         = height;
+    const delegateId      = delegates[theSlot % slots.delegates];
+    const kp              = getKeypairByPkey(delegateId.toString('hex'));
 
     return blockLogic.create({
-      keypair: kp,
-      transactions,
-      timestamp: slots.getSlotTime(theSlot),
-      previousBlock: blockModule.lastBlock
+      keypair      : kp,
+      previousBlock: blockModule.lastBlock,
+      timestamp    : slots.getSlotTime(theSlot),
+      transactions : transactions.map((t) => toBufferedTransaction(t)),
     });
+  }
+
+  /**
+   * Tries to mine a block with a specific set of transactions.
+   * Useful when testing edge cases such as over-spending etc.
+   * @param {Array<IBaseTransaction<any>>} transactions
+   * @returns {Promise<SignedBlockType>}
+   */
+  public async rawMineBlockWithTxs(transactions: Array<IBaseTransaction<any>>) {
+    const blockLogic = this.appManager.container.get<IBlockLogic>(Symbols.logic.block);
+    const blockModule     = this.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
+    const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
+    const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
+    const height = blockModule.lastBlock.height;
+
+    const delegates  = await delegatesModule.generateDelegateList(height + 1);
+    const theSlot    = height;
+    const delegateId = delegates[theSlot % slots.delegates];
+    const kp         = getKeypairByPkey(delegateId.toString('hex'));
+
+    const newBlock = blockLogic.create({
+      keypair      : kp,
+      previousBlock: blockModule.lastBlock,
+      timestamp    : slots.getSlotTime(theSlot),
+      transactions,
+    });
+    // mimic process.onReceiveBlock which is wrapped within a BalanceSequence.
+    await this.postBlock(newBlock);
+    return newBlock;
+  }
+
+  public async postBlock(block: SignedAndChainedBlockType) {
+    const blocksVerifyModule     = this.appManager.container.get<IBlocksModuleVerify>(Symbols.modules.blocksSubModules.verify);
+    const defaultSequence = this.appManager.container.getTagged<Sequence>(
+      Symbols.helpers.sequence,
+      Symbols.helpers.sequence,
+      Symbols.tags.helpers.defaultSequence);
+    await defaultSequence.addAndPromise(() => blocksVerifyModule.processBlock(block, false, true));
   }
 
   public async rawMineBlocks(howMany: number): Promise<number> {
@@ -101,9 +152,9 @@ export class IntegrationTestInitializer {
     // console.log(`Mining ${howMany} blocks from height: ${height}`);
     for (let i = 0; i < howMany; i++) {
       const delegates  = await delegatesModule.generateDelegateList(height + i + 1);
-      const theSlot    = height + i + 1;
+      const theSlot    = height + i ;
       const delegateId = delegates[theSlot % slots.delegates];
-      const kp         = getKeypairByPkey(delegateId);
+      const kp         = getKeypairByPkey(delegateId.toString('hex'));
       await txModule.fillPool();
       // console.log(await db.query(sql.list({
       //  where     : ['"b_height" = ${height}'],
@@ -124,18 +175,21 @@ export class IntegrationTestInitializer {
       return s.runBefore();
     });
 
-    after(() => this.runAfter());
+    after(function () {
+      this.timeout(100000);
+      return s.runAfter();
+    });
   }
 
   private createAppManager() {
     this.appManager = new AppManager(
-      require('../config.json'),
+      JSON.parse(JSON.stringify(require('../config.json'))),
       loggerCreator({
-        echo    : 'error',
+        echo    : 'none',
         filename: '/dev/null',
       }),
       'integration-version',
-      require('../genesisBlock.json'),
+      JSON.parse(JSON.stringify(require('../genesisBlock.json'))),
       constants,
       []
     );
@@ -147,23 +201,22 @@ export class IntegrationTestInitializer {
     await this.appManager.initAppElements();
     await this.appManager.initExpress();
     await this.appManager.finishBoot();
+
     const bus = this.appManager.container.get<Bus>(Symbols.helpers.bus);
     await bus.message('syncFinished');
   }
 
   private async runAfter() {
-    const db: IDatabase<any> = this.appManager.container.get(Symbols.generic.db);
+    const migrations: typeof MigrationsModel = this.appManager.container.get(Symbols.models.migrations);
     await this.appManager.tearDown();
-    monitor.detach();
-    const tables = ['blocks', 'dapps', 'delegates', 'forks_stat', 'intransfer', 'mem_accounts',
+    const tables = ['blocks', 'delegates', 'forks_stat', 'mem_accounts',
+      'info',
       'mem_accounts2delegates',
       'mem_accounts2multisignatures', 'mem_accounts2u_delegates', 'mem_accounts2u_multisignatures', 'mem_round',
       // 'migrations',
-      'multisignatures', 'outtransfer', 'peers', 'peers_dapp', 'rounds_fees', 'signatures', 'trs', 'votes'];
+      'multisignatures', 'peers', 'rounds_fees', 'signatures', 'trs', 'votes'];
 
-    for (const table of tables) {
-      await db.query('TRUNCATE $1:name CASCADE', table);
-    }
+    await migrations.sequelize.query(`TRUNCATE ${tables.join(', ')} CASCADE`);
   }
 
 }

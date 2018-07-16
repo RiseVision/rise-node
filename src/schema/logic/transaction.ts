@@ -25,14 +25,15 @@ export default {
     },
     timestamp         : {
       type: 'integer',
+      minimum: 0,
     },
     senderPublicKey   : {
-      type  : 'string',
-      format: 'publicKey',
+      type  : 'object',
+      format: 'publicKeyBuf',
     },
     requesterPublicKey: {
-      type  : 'string',
-      format: 'publicKey',
+      type  : 'object',
+      format: 'publicKeyBuf',
     },
     senderId          : {
       type     : 'string',
@@ -57,16 +58,16 @@ export default {
       maximum: constants.totalAmount,
     },
     signature         : {
-      type  : 'string',
-      format: 'signature',
+      type  : 'object',
+      format: 'signatureBuf',
     },
     signSignature     : {
-      type  : 'string',
-      format: 'signature',
+      type  : 'object',
+      format: 'signatureBuf',
     },
     asset             : {
       type: 'object',
     },
   },
-  required  : ['type', 'timestamp', 'senderPublicKey', 'signature'],
+  required  : ['type', 'timestamp', 'senderId', 'senderPublicKey', 'signature', 'fee', 'amount'],
 };

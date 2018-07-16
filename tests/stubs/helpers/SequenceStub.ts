@@ -6,7 +6,7 @@ import { spyMethod, stubMethod } from '../stubDecorator';
 
 @injectable()
 export class SequenceStub extends BaseStubClass {
-  private realImplementation: Sequence = new Sequence({});
+  public realImplementation: Sequence = new Sequence(Symbol.for(`${Math.random()}`), {});
 
   @spyMethod
   public addAndPromise(w) {
@@ -20,5 +20,6 @@ export class SequenceStub extends BaseStubClass {
 
   @stubMethod()
   public ____noiop() {
+    return;
   }
 }

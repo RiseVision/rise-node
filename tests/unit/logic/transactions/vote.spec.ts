@@ -1,11 +1,22 @@
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { TransactionType } from '../../../../src/helpers';
+import { Symbols } from '../../../../src/ioc/symbols';
 import { VoteTransaction } from '../../../../src/logic/transactions';
 import voteSchema from '../../../../src/schema/logic/transactions/vote';
 import { AccountLogicStub, DelegatesModuleStub, RoundsLogicStub, SystemModuleStub } from '../../../stubs';
+import { createContainer } from '../../../utils/containerCreator';
+import {
+  Accounts2DelegatesModel,
+  Accounts2U_DelegatesModel,
+  AccountsModel,
+  RoundsModel,
+  VotesModel
+} from '../../../../src/models';
+import { DBBulkCreateOp, DBCreateOp, DBCustomOp, DBRemoveOp, DBUpdateOp } from '../../../../src/types/genericTypes';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -22,46 +33,57 @@ describe('logic/transactions/vote', () => {
   let roundsLogicStub: RoundsLogicStub;
   let delegatesModuleStub: DelegatesModuleStub;
   let systemModuleStub: SystemModuleStub;
-
+  let container: Container;
   let instance: VoteTransaction;
   let tx: any;
   let sender: any;
   let block: any;
 
+  let accountsModel: typeof AccountsModel;
+  let votesModel: typeof VotesModel;
+
+
   beforeEach(() => {
-    sandbox             = sinon.sandbox.create();
+    sandbox             = sinon.createSandbox();
+    container          = createContainer();
     zSchemaStub         = {
-      validate     : sandbox.stub(),
       getLastErrors: () => [],
+      validate     : sandbox.stub(),
     };
-    accountLogicStub    = new AccountLogicStub();
-    roundsLogicStub     = new RoundsLogicStub();
-    delegatesModuleStub = new DelegatesModuleStub();
-    systemModuleStub    = new SystemModuleStub();
+    accountLogicStub    = container.get(Symbols.logic.account);
+    roundsLogicStub     = container.get(Symbols.logic.rounds);
+    delegatesModuleStub = container.get(Symbols.modules.delegates);
+    systemModuleStub    = container.get(Symbols.modules.system);
+
+    accountsModel = container.get(Symbols.models.accounts);
+    votesModel = container.get(Symbols.models.votes);
 
     tx = {
+      amount         : 0,
       asset          : {
         votes: [
           '-7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381',
           '+05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a',
         ],
       },
-      type           : TransactionType.VOTE,
-      amount         : 0,
       fee            : 10,
-      timestamp      : 0,
-      senderId       : '1233456789012345R',
-      senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
-      signature      : '0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
-      'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2',
       id             : '8139741256612355994',
       recipientId    : '1233456789012345R',
+      senderId       : '1233456789012345R',
+      senderPublicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+      signature      : Buffer.from('0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
+      'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2', 'hex'),
+      timestamp      : 0,
+      type           : TransactionType.VOTE,
     };
 
     sender = {
-      balance  : 10000000,
       address  : '1233456789012345R',
-      publicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
+      balance  : 10000000,
+      publicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+      applyDiffArray() {
+        throw new Error('please stub applyDiffArray');
+      },
     };
 
     block = {
@@ -69,13 +91,10 @@ describe('logic/transactions/vote', () => {
       id    : '13191140260435645922',
     };
 
-    instance = new VoteTransaction();
+    container.rebind(Symbols.logic.transactions.vote).to(VoteTransaction).inSingletonScope();
+    instance = container.get(Symbols.logic.transactions.vote);
 
     (instance as any).schema          = zSchemaStub;
-    (instance as any).accountLogic    = accountLogicStub;
-    (instance as any).roundsLogic     = roundsLogicStub;
-    (instance as any).delegatesModule = delegatesModuleStub;
-    (instance as any).systemModule    = systemModuleStub;
 
     systemModuleStub.stubs.getFees.returns({ fees: { vote: 1 } });
     delegatesModuleStub.stubs.checkConfirmedDelegates.resolves();
@@ -178,10 +197,19 @@ describe('logic/transactions/vote', () => {
 
   describe('apply', () => {
     let checkConfirmedDelegatesStub: SinonStub;
+    let applyDiffArrayStub: SinonStub;
     beforeEach(() => {
       checkConfirmedDelegatesStub = sandbox.stub(instance, 'checkConfirmedDelegates').resolves();
       roundsLogicStub.stubs.calcRound.returns(111);
       accountLogicStub.stubs.merge.resolves();
+      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
+    });
+
+    it('should call applyDiffArray with proper values', async () => {
+      await instance.apply(tx, block, sender);
+      expect(applyDiffArrayStub.called).is.true;
+      expect(applyDiffArrayStub.firstCall.args[0]).deep.eq('delegates');
+      expect(applyDiffArrayStub.firstCall.args[1]).deep.eq(tx.asset.votes);
     });
 
     it('should call checkConfirmedDelegates', async () => {
@@ -190,18 +218,56 @@ describe('logic/transactions/vote', () => {
       expect(checkConfirmedDelegatesStub.firstCall.args[0]).to.be.deep.equal(tx);
     });
 
-    it('should call accountLogic.merge and roundsLogic.calcRound if checkConfirmedDelegates resolves', async () => {
+    it('should return proper ops', async () => {
       checkConfirmedDelegatesStub.resolves();
-      await instance.apply(tx, block, sender);
-      expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;
-      expect(roundsLogicStub.stubs.calcRound.firstCall.args[0]).to.be.equal(block.height);
-      expect(accountLogicStub.stubs.merge.calledOnce).to.be.true;
-      expect(accountLogicStub.stubs.merge.firstCall.args[0]).to.be.deep.equal(sender.address);
-      expect(accountLogicStub.stubs.merge.firstCall.args[1]).to.be.deep.equal({
-        blockId  : block.id,
-        delegates: tx.asset.votes,
-        round    : 111,
+      const ops = await instance.apply(tx, block, sender);
+      expect(ops.length).eq(3 + 2);
+      const first: DBRemoveOp<any> = ops[0] as any;
+      const second: DBBulkCreateOp<any> = ops[1] as any;
+      const third: DBUpdateOp<any> = ops[2] as any;
+      const fourth: DBCustomOp<any> = ops[3] as any;
+      const fifth: DBCustomOp<any> = ops[4] as any;
+
+      expect({ ... first, model: first.model.getTableName()}).deep.eq({
+        type: 'remove',
+        model: Accounts2DelegatesModel.getTableName(),
+        options: {
+          limit: 1,
+          where: {
+            accountId: tx.senderId,
+            dependentId: [
+              tx.asset.votes.filter((v) => v[0] === '-')[0].substr(1)
+            ],
+          },
+        },
       });
+
+      expect({ ... second, model: second.model.getTableName()}).deep.eq({
+        type: 'bulkCreate',
+        model: Accounts2DelegatesModel.getTableName(),
+        values: [
+          { dependentId: tx.asset.votes[1].substr(1), accountId: tx.senderId}
+        ],
+      });
+
+      expect({ ... third, model: third.model.getTableName()}).deep.eq({
+        type: 'update',
+        model: AccountsModel.getTableName(),
+        options: { where: { address: tx.senderId }},
+        values: { blockId: block.id },
+      });
+
+      expect({ ... fourth, model: fourth.model.getTableName()}).deep.eq({
+        type: 'custom',
+        model: RoundsModel.getTableName(),
+        query: "INSERT INTO mem_round (\"address\", \"amount\", \"delegate\", \"blockId\", \"round\") SELECT '1233456789012345R', (-balance)::bigint, '7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381', '13191140260435645922', 111 FROM mem_accounts WHERE address = '1233456789012345R'",
+      });
+      expect({ ... fifth, model: fifth.model.getTableName()}).deep.eq({
+        type: 'custom',
+        model: RoundsModel.getTableName(),
+        query: "INSERT INTO mem_round (\"address\", \"amount\", \"delegate\", \"blockId\", \"round\") SELECT '1233456789012345R', (balance)::bigint, '05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a', '13191140260435645922', 111 FROM mem_accounts WHERE address = '1233456789012345R'",
+      });
+
     });
 
     it('should NOT call accountLogic.merge and roundsLogic.calcRound if checkConfirmedDelegates resolves', async () => {
@@ -214,10 +280,21 @@ describe('logic/transactions/vote', () => {
 
   describe('undo', () => {
     let objectNormalizeStub: SinonStub;
+    let applyDiffArrayStub: SinonStub;
     beforeEach(() => {
       objectNormalizeStub = sandbox.stub(instance, 'objectNormalize').resolves();
       roundsLogicStub.stubs.calcRound.returns(111);
       accountLogicStub.stubs.merge.resolves();
+      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
+    });
+    it('should call applyDiffArray with proper values', async () => {
+      await instance.undo(tx, block, sender);
+      expect(applyDiffArrayStub.called).is.true;
+      expect(applyDiffArrayStub.firstCall.args[0]).deep.eq('delegates');
+      expect(applyDiffArrayStub.firstCall.args[1]).deep.eq([
+        '+7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381',
+        '-05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a',
+      ]);
     });
 
     it('should call objectNormalize', async () => {
@@ -226,37 +303,71 @@ describe('logic/transactions/vote', () => {
       expect(objectNormalizeStub.firstCall.args[0]).to.be.deep.equal(tx);
     });
 
-    it('should call accountLogic.merge and roundsLogic.calcRound if objectNormalize resolves', async () => {
+    it('should return proper ops', async () => {
       objectNormalizeStub.resolves();
-      await instance.undo(tx, block, sender);
-      expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;
-      expect(roundsLogicStub.stubs.calcRound.firstCall.args[0]).to.be.equal(block.height);
-      expect(accountLogicStub.stubs.merge.calledOnce).to.be.true;
-      expect(accountLogicStub.stubs.merge.firstCall.args[0]).to.be.deep.equal(sender.address);
-      expect(accountLogicStub.stubs.merge.firstCall.args[1]).to.be.deep.equal({
-        blockId  : block.id,
-        delegates: [
-          '+7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381',
-          '-05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a',
-        ],
-        round    : 111,
+      const ops = await instance.undo(tx, block, sender);
+      expect(ops.length).eq(3 + 2);
+      const first: DBRemoveOp<any> = ops[0] as any;
+      const second: DBBulkCreateOp<any> = ops[1] as any;
+      const third: DBUpdateOp<any> = ops[2] as any;
+      const fourth: DBCustomOp<any> = ops[3] as any;
+      const fifth: DBCustomOp<any> = ops[4] as any;
+
+      expect({ ... first, model: first.model.getTableName()}).deep.eq({
+        type: 'remove',
+        model: Accounts2DelegatesModel.getTableName(),
+        options: {
+          limit: 1,
+          where: {
+            accountId: tx.senderId,
+            dependentId: [
+              '05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a'
+            ],
+          },
+        },
       });
+
+      expect({ ... second, model: second.model.getTableName()}).deep.eq({
+        type: 'bulkCreate',
+        model: Accounts2DelegatesModel.getTableName(),
+        values: [
+          {
+            dependentId: '7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381',
+            accountId: tx.senderId,
+          },
+        ],
+      });
+
+      expect({ ... third, model: third.model.getTableName()}).deep.eq({
+        type: 'update',
+        model: AccountsModel.getTableName(),
+        options: { where: { address: tx.senderId }},
+        values: { blockId: block.id },
+      });
+
+      expect({ ... fourth, model: fourth.model.getTableName()}).deep.eq({
+        type: 'custom',
+        model: RoundsModel.getTableName(),
+        query: "INSERT INTO mem_round (\"address\", \"amount\", \"delegate\", \"blockId\", \"round\") SELECT '1233456789012345R', (balance)::bigint, '7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381', '13191140260435645922', 111 FROM mem_accounts WHERE address = '1233456789012345R'",
+      });
+      expect({ ... fifth, model: fifth.model.getTableName()}).deep.eq({
+        type: 'custom',
+        model: RoundsModel.getTableName(),
+        query: "INSERT INTO mem_round (\"address\", \"amount\", \"delegate\", \"blockId\", \"round\") SELECT '1233456789012345R', (-balance)::bigint, '05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a', '13191140260435645922', 111 FROM mem_accounts WHERE address = '1233456789012345R'",
+      });
+
     });
 
-    it('should NOT call accountLogic.merge and roundsLogic.calcRound if objectNormalize rejects', async () => {
-      objectNormalizeStub.throws('test');
-      await  expect(instance.undo(tx, block, sender)).to.be.rejected;
-      expect(roundsLogicStub.stubs.calcRound.notCalled).to.be.true;
-      expect(accountLogicStub.stubs.merge.notCalled).to.be.true;
-    });
+
   });
 
   describe('checkConfirmedDelegates', () => {
     it('should call delegatesModule.checkConfirmedDelegates and return its result', () => {
       delegatesModuleStub.stubs.checkConfirmedDelegates.returns('test');
-      const retVal = instance.checkConfirmedDelegates(tx);
+      const accountsModel1 = new AccountsModel();
+      const retVal = instance.checkConfirmedDelegates(tx, accountsModel1);
       expect(delegatesModuleStub.stubs.checkConfirmedDelegates.calledOnce).to.be.true;
-      expect(delegatesModuleStub.stubs.checkConfirmedDelegates.firstCall.args[0]).to.be.equal(tx.senderPublicKey);
+      expect(delegatesModuleStub.stubs.checkConfirmedDelegates.firstCall.args[0]).to.be.deep.equal(accountsModel1);
       expect(delegatesModuleStub.stubs.checkConfirmedDelegates.firstCall.args[1]).to.be.equalTo(tx.asset.votes);
       expect(retVal).to.be.equal('test');
     });
@@ -265,9 +376,10 @@ describe('logic/transactions/vote', () => {
   describe('checkUnconfirmedDelegates', () => {
     it('should call delegatesModule.checkUnconfirmedDelegates and return its result', () => {
       delegatesModuleStub.stubs.checkUnconfirmedDelegates.returns('test');
-      const retVal = instance.checkUnconfirmedDelegates(tx);
+      const accountsModel1 = new AccountsModel();
+      const retVal = instance.checkUnconfirmedDelegates(tx, accountsModel1);
       expect(delegatesModuleStub.stubs.checkUnconfirmedDelegates.calledOnce).to.be.true;
-      expect(delegatesModuleStub.stubs.checkUnconfirmedDelegates.firstCall.args[0]).to.be.equal(tx.senderPublicKey);
+      expect(delegatesModuleStub.stubs.checkUnconfirmedDelegates.firstCall.args[0]).to.be.deep.equal(accountsModel1);
       expect(delegatesModuleStub.stubs.checkUnconfirmedDelegates.firstCall.args[1]).to.be.equalTo(tx.asset.votes);
       expect(retVal).to.be.equal('test');
     });
@@ -275,10 +387,19 @@ describe('logic/transactions/vote', () => {
 
   describe('applyUnconfirmed', () => {
     let checkUnconfirmedDelegatesStub: SinonStub;
+    let applyDiffArrayStub: SinonStub;
     beforeEach(() => {
       checkUnconfirmedDelegatesStub = sandbox.stub(instance, 'checkUnconfirmedDelegates').resolves('yesItIs');
       roundsLogicStub.stubs.calcRound.returns(111);
       accountLogicStub.stubs.merge.resolves();
+      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
+    });
+
+    it('should call applyDiffArray with proper values', async () => {
+      await instance.applyUnconfirmed(tx, sender);
+      expect(applyDiffArrayStub.called).is.true;
+      expect(applyDiffArrayStub.firstCall.args[0]).deep.eq('u_delegates');
+      expect(applyDiffArrayStub.firstCall.args[1]).deep.eq(tx.asset.votes);
     });
 
     it('should call checkUnconfirmedDelegates', async () => {
@@ -287,12 +408,37 @@ describe('logic/transactions/vote', () => {
       expect(checkUnconfirmedDelegatesStub.firstCall.args[0]).to.be.deep.equal(tx);
     });
 
-    it('should call accountLogic.merge if checkUnconfirmedDelegates resolves', async () => {
+    it('should return proper ops', async () => {
       checkUnconfirmedDelegatesStub.resolves();
-      await instance.applyUnconfirmed(tx, sender);
-      expect(accountLogicStub.stubs.merge.calledOnce).to.be.true;
-      expect(accountLogicStub.stubs.merge.firstCall.args[0]).to.be.deep.equal(sender.address);
-      expect(accountLogicStub.stubs.merge.firstCall.args[1]).to.be.deep.equal({ u_delegates: tx.asset.votes });
+      const ops = await instance.applyUnconfirmed(tx, sender);
+      expect(ops.length).eq(2);
+      const first: DBRemoveOp<any> = ops[0] as any;
+      const second: DBBulkCreateOp<any> = ops[1] as any;
+
+      expect({ ... first, model: first.model.getTableName()}).deep.eq({
+        type: 'remove',
+        model: Accounts2U_DelegatesModel.getTableName(),
+        options: {
+          limit: 1,
+          where: {
+            accountId: tx.senderId,
+            dependentId: [
+              '7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381'
+            ],
+          },
+        },
+      });
+
+      expect({ ... second, model: second.model.getTableName()}).deep.eq({
+        type: 'bulkCreate',
+        model: Accounts2U_DelegatesModel.getTableName(),
+        values: [
+          {
+            dependentId: '05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a',
+            accountId: tx.senderId,
+          },
+        ],
+      });
     });
 
     it('should NOT call accountLogic.merge if checkUnconfirmedDelegates resolves', async () => {
@@ -304,10 +450,22 @@ describe('logic/transactions/vote', () => {
 
   describe('undoUnconfirmed', () => {
     let objectNormalizeStub: SinonStub;
+    let applyDiffArrayStub: SinonStub;
+
     beforeEach(() => {
       objectNormalizeStub = sandbox.stub(instance, 'objectNormalize').resolves();
       roundsLogicStub.stubs.calcRound.returns(111);
       accountLogicStub.stubs.merge.resolves();
+      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
+    });
+    it('should call applyDiffArray with proper values', async () => {
+      await instance.undoUnconfirmed(tx, sender);
+      expect(applyDiffArrayStub.called).is.true;
+      expect(applyDiffArrayStub.firstCall.args[0]).deep.eq('u_delegates');
+      expect(applyDiffArrayStub.firstCall.args[1]).deep.eq([
+        '+7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381',
+        '-05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a',
+      ]);
     });
 
     it('should call objectNormalize', async () => {
@@ -316,24 +474,40 @@ describe('logic/transactions/vote', () => {
       expect(objectNormalizeStub.firstCall.args[0]).to.be.deep.equal(tx);
     });
 
+
     it('should call accountLogic.merge if objectNormalize resolves', async () => {
       objectNormalizeStub.resolves();
-      await instance.undoUnconfirmed(tx, sender);
-      expect(accountLogicStub.stubs.merge.calledOnce).to.be.true;
-      expect(accountLogicStub.stubs.merge.firstCall.args[0]).to.be.deep.equal(sender.address);
-      expect(accountLogicStub.stubs.merge.firstCall.args[1]).to.be.deep.equal({
-        u_delegates: [
-          '+7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381',
-          '-05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a',
+      const ops = await instance.undoUnconfirmed(tx, sender);
+      expect(ops.length).eq(2);
+      const first: DBRemoveOp<any> = ops[0] as any;
+      const second: DBBulkCreateOp<any> = ops[1] as any;
+
+      expect({ ... first, model: first.model.getTableName()}).deep.eq({
+        type: 'remove',
+        model: Accounts2U_DelegatesModel.getTableName(),
+        options: {
+          limit: 1,
+          where: {
+            accountId: tx.senderId,
+            dependentId: [
+              '05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a'
+            ],
+          },
+        },
+      });
+
+      expect({ ... second, model: second.model.getTableName()}).deep.eq({
+        type: 'bulkCreate',
+        model: Accounts2U_DelegatesModel.getTableName(),
+        values: [
+          {
+            dependentId: '7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381',
+            accountId: tx.senderId,
+          },
         ],
       });
     });
 
-    it('should NOT call accountLogic.merge and roundsLogic.calcRound if objectNormalize rejects', async () => {
-      objectNormalizeStub.throws('test');
-      await  expect(instance.undoUnconfirmed(tx, sender)).to.be.rejected;
-      expect(accountLogicStub.stubs.merge.notCalled).to.be.true;
-    });
   });
 
   describe('objectNormalize', () => {
@@ -386,19 +560,14 @@ describe('logic/transactions/vote', () => {
   });
 
   describe('dbSave', () => {
-    it('should return the expected object', () => {
-      expect(instance.dbSave(tx)).to.be.deep.equal({
-          fields: [
-            'votes',
-            'transactionId',
-          ],
-          table : 'votes',
-          values: {
-            transactionId: tx.id,
-            votes        : tx.asset.votes.join(','),
-          },
-        }
-      );
+    it('should return the expecteddb object', () => {
+      const op: DBCreateOp<any> = instance.dbSave(tx) as any;
+      expect(op.type).eq('create');
+      expect(op.model).deep.eq(votesModel);
+      expect(op.values).deep.eq({
+        transactionId: tx.id,
+        votes        : tx.asset.votes.join(','),
+      });
     });
   });
 
@@ -428,6 +597,48 @@ describe('logic/transactions/vote', () => {
       expect(() => {
         (instance as any).assertValidVote(tx.asset.votes[1]);
       }).to.throw('Invalid vote publicKey');
+    });
+  });
+
+  describe('attachAssets', () => {
+    let modelFindAllStub: SinonStub;
+    beforeEach(() => {
+      modelFindAllStub = sandbox.stub(votesModel, 'findAll');
+    });
+    it('should do do nothing if result is empty', async () => {
+      modelFindAllStub.resolves([]);
+      await instance.attachAssets([]);
+    });
+    it('should throw if a tx was provided but not returned by model.findAll', async () => {
+      modelFindAllStub.resolves([]);
+      await expect(instance.attachAssets([{id: 'ciao'}] as any))
+        .rejectedWith('Couldn\'t restore asset for Vote tx: ciao');
+    });
+    it('should use model result and modify original arr', async () => {
+      modelFindAllStub.resolves([
+        { transactionId: 2, votes: '+cc,-dd'},
+        { transactionId: 1, votes: '+aa,-bb'},
+      ]);
+      const txs: any = [{id: 1}, {id: 2}];
+
+      await instance.attachAssets(txs);
+
+      expect(txs[0]).deep.eq({
+        id: 1, asset: {
+          votes: [
+            '+aa',
+            '-bb',
+          ],
+        },
+      });
+      expect(txs[1]).deep.eq({
+        id: 2, asset: {
+          votes: [
+            '+cc',
+            '-dd',
+          ],
+        },
+      });
     });
   });
 });

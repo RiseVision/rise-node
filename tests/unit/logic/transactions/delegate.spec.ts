@@ -1,63 +1,74 @@
 'use strict';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as rewire from 'rewire';
+import {Container} from 'inversify';
 import * as sinon from 'sinon';
-import { SinonSandbox } from 'sinon';
-import { removeEmptyObjKeys, TransactionType } from '../../../../src/helpers';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as helpers from '../../../../src/helpers';
+import { TransactionType } from '../../../../src/helpers';
+import {Symbols} from '../../../../src/ioc/symbols';
 import { RegisterDelegateTransaction } from '../../../../src/logic/transactions';
 import delegateSchema from '../../../../src/schema/logic/transactions/delegate';
-import { AccountsModuleStub, SystemModuleStub } from '../../../stubs';
+import { AccountsModuleStub, SystemModuleStub, ZSchemaStub } from '../../../stubs';
+import { createContainer } from '../../../utils/containerCreator';
+import { DBUpdateOp } from '../../../../src/types/genericTypes';
+import { AccountsModel, DelegatesModel } from '../../../../src/models/';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
 
-const rewiredRegisterDelegateTransaction = rewire('../../../../src/logic/transactions/delegate');
-
 // tslint:disable no-unused-expression
 describe('logic/transactions/delegate', () => {
   let sandbox: SinonSandbox;
-  let zSchemaStub: any;
+  let zSchemaStub: ZSchemaStub;
   let accountsModuleStub: AccountsModuleStub;
   let systemModuleStub: SystemModuleStub;
-
+  let container: Container;
   let instance: RegisterDelegateTransaction;
+  let accountsModel: typeof AccountsModel;
+  let delegatesModel: typeof DelegatesModel;
   let tx: any;
   let sender: any;
   let block: any;
 
   beforeEach(() => {
-    sandbox            = sinon.sandbox.create();
-    zSchemaStub        = {
-      validate     : sandbox.stub(),
-      getLastErrors: () => [],
-    };
-    accountsModuleStub = new AccountsModuleStub();
-    systemModuleStub   = new SystemModuleStub();
-
+    sandbox            = sinon.createSandbox();
+    container          = createContainer();
+    accountsModel      = container.get(Symbols.models.accounts);
+    delegatesModel      = container.get(Symbols.models.delegates);
+    zSchemaStub        = container.get(Symbols.generic.zschema);
+    accountsModuleStub = container.get(Symbols.modules.accounts);
+    systemModuleStub   = container.get(Symbols.modules.system);
+    zSchemaStub.enqueueResponse('getLastErrors', []);
     tx = {
+      amount         : 0,
       asset          : {
         delegate: {
-          username : 'topdelegate',
-          publicKey: 'a2bac0a1525e9605a37e6c6588716f9c941530c74eabdf0b27b10b3817e58fe3',
           address  : '74128139741256612355994R',
+          publicKey: Buffer.from('a2bac0a1525e9605a37e6c6588716f9c941530c74eabdf0b27b10b3817e58fe3', 'hex'),
+          username : 'topdelegate',
         },
       },
-      type           : TransactionType.DELEGATE,
-      amount         : 0,
       fee            : 10,
-      timestamp      : 0,
-      senderId       : '1233456789012345R',
-      senderPublicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
-      signature      : '0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
-      'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2',
       id             : '8139741256612355994',
+      senderId       : '1233456789012345R',
+      senderPublicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+      signature      : Buffer.from('0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
+      'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2', 'hex'),
+      timestamp      : 0,
+      type           : TransactionType.DELEGATE,
     };
 
     sender = {
-      balance  : 10000000,
       address  : '1233456789012345R',
-      publicKey: '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
+      balance  : 10000000,
+      publicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+      isMultisignature() {
+        return false;
+      },
+      applyValues() {
+        throw new Error('please stub me :)')
+      }
     };
 
     block = {
@@ -65,11 +76,8 @@ describe('logic/transactions/delegate', () => {
       id    : '13191140260435645922',
     };
 
-    instance = new rewiredRegisterDelegateTransaction.RegisterDelegateTransaction();
-
-    (instance as any).schema         = zSchemaStub;
-    (instance as any).accountsModule = accountsModuleStub;
-    (instance as any).systemModule   = systemModuleStub;
+    container.rebind(Symbols.logic.transactions.delegate).to(RegisterDelegateTransaction).inSingletonScope();
+    instance = container.get(Symbols.logic.transactions.delegate);
 
     systemModuleStub.stubs.getFees.returns({ fees: { delegate: 2500 } });
   });
@@ -109,8 +117,8 @@ describe('logic/transactions/delegate', () => {
 
   describe('verify', () => {
     beforeEach(() => {
-      zSchemaStub.validate.onFirstCall().returns(false);
-      zSchemaStub.validate.onSecondCall().returns(true);
+      zSchemaStub.stubs.validate.onFirstCall().returns(false);
+      zSchemaStub.stubs.validate.onSecondCall().returns(true);
       accountsModuleStub.stubs.getAccount.resolves(null);
     });
 
@@ -166,22 +174,22 @@ describe('logic/transactions/delegate', () => {
       await expect(instance.verify(tx, sender)).to.be.rejectedWith('Username is too long. Maximum is 20 characters');
     });
 
-    it('should throw when username is a possible address', async () => {
-      zSchemaStub.validate.onFirstCall().returns(true);
+    it('should throw when username is a possible address - given param should be uppercased', async () => {
+      zSchemaStub.stubs.validate.onFirstCall().returns(true);
       await expect(instance.verify(tx, sender)).to.be.rejectedWith('Username can not be a potential address');
-      expect(zSchemaStub.validate.calledOnce).to.be.true;
-      expect(zSchemaStub.validate.firstCall.args[0]).to.be.equal(tx.asset.delegate.username);
-      expect(zSchemaStub.validate.firstCall.args[1].format).to.be.equal('address');
+      expect(zSchemaStub.stubs.validate.calledOnce).to.be.true;
+      expect(zSchemaStub.stubs.validate.firstCall.args[0]).to.be.equal(tx.asset.delegate.username.toUpperCase());
+      expect(zSchemaStub.stubs.validate.firstCall.args[1].format).to.be.equal('address');
     });
 
     it('should throw if zschema does not validate the username', async () => {
       // First call needs false to avoid throwing, second is false to force throwing
-      zSchemaStub.validate.onFirstCall().returns(false);
-      zSchemaStub.validate.onSecondCall().returns(false);
+      zSchemaStub.stubs.validate.onFirstCall().returns(false);
+      zSchemaStub.stubs.validate.onSecondCall().returns(false);
       await expect(instance.verify(tx, sender)).to.be.
         rejectedWith('Username can only contain alphanumeric characters with the exception of !@$&_.');
-      expect(zSchemaStub.validate.secondCall.args[0]).to.be.equal(tx.asset.delegate.username);
-      expect(zSchemaStub.validate.secondCall.args[1].format).to.be.equal('username');
+      expect(zSchemaStub.stubs.validate.secondCall.args[0]).to.be.equal(tx.asset.delegate.username);
+      expect(zSchemaStub.stubs.validate.secondCall.args[1].format).to.be.equal('username');
     });
 
     it('should call accountsModule.getAccount and throw if account is found', async () => {
@@ -193,105 +201,177 @@ describe('logic/transactions/delegate', () => {
   });
 
   describe('apply', () => {
+    let applyValuesStub: SinonStub;
     beforeEach(() => {
       accountsModuleStub.stubs.setAccountAndGet.resolves();
+      applyValuesStub = sandbox.stub(sender, 'applyValues');
     });
 
-    it('should call accountsModule.setAccountAndGet and return a promise', async () => {
-      const retVal = instance.apply(tx, block, sender);
-      expect(retVal).to.be.instanceOf(Promise);
-      await retVal;
-      expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.be.deep.equal({
-        address     : sender.address,
-        isDelegate  : 1,
-        u_isDelegate: 0,
-        vote        : 0,
-        u_username  : null,
-        username    : tx.asset.delegate.username,
+    it('should call sender.applyValues with proper data', async () => {
+      await instance.apply(tx, block, sender);
+      expect(applyValuesStub.called).is.true;
+      expect(applyValuesStub.firstCall.args[0]).deep.eq({
+        u_isDelegate: 1,
+        isDelegate: 1,
+        username: 'topdelegate',
+        u_username: 'topdelegate',
+        vote: 0
       });
     });
 
-    it('should throw an error', () => {
+    it('should return a DBUpdateOp', async () => {
+      const retVal = await instance.apply(tx, block, sender);
+      expect(retVal.length).is.eq(1);
+      const op: DBUpdateOp<any> = retVal[0] as any;
+      expect(op.type).is.eq('update');
+      expect(op.model).is.deep.eq(accountsModel);
+      expect(op.values).is.deep.eq({
+        isDelegate  : 1,
+        u_isDelegate: 1,
+        vote        : 0,
+        username    : tx.asset.delegate.username,
+        u_username  : tx.asset.delegate.username,
+      });
+      expect(op.options).to.be.deep.eq({
+        where: {
+          address: sender.address
+        }
+      });
+    });
+
+    it('should throw an error', async () => {
       sender.isDelegate = 1;
-      expect(() => instance.apply(tx, block, sender)).to.throw('Account is already a delegate');
+      expect(instance.apply(tx, block, sender)).to.be.rejectedWith('Account is already a delegate');
     });
   });
 
   describe('undo', () => {
+    let applyValuesStub: SinonStub;
     beforeEach(() => {
       accountsModuleStub.stubs.setAccountAndGet.resolves();
+      applyValuesStub = sandbox.stub(sender, 'applyValues');
     });
-
-    it('should call accountsModule.setAccountAndGet and return a promise', async () => {
-      const retVal = instance.undo(tx, block, sender);
-      expect(retVal).to.be.instanceOf(Promise);
-      await retVal;
-      expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.be.deep.equal({
-        address     : sender.address,
+    it('should call sender.applyValues with proper data', async () => {
+      await instance.undo(tx, block, sender);
+      expect(applyValuesStub.called).is.true;
+      expect(applyValuesStub.firstCall.args[0]).deep.eq({
+        u_isDelegate: 1,
+        isDelegate: 0,
+        username: null,
+        u_username: 'topdelegate',
+        vote: 0
+      });
+    });
+    it('should return a DBUpdateOp', async () => {
+      const retVal = await instance.undo(tx, block, sender);
+      expect(retVal.length).is.eq(1);
+      const op: DBUpdateOp<any> = retVal[0] as any;
+      expect(op.type).is.eq('update');
+      expect(op.model).is.deep.eq(accountsModel);
+      expect(op.values).is.deep.eq({
         isDelegate  : 0,
         u_isDelegate: 1,
         vote        : 0,
-        u_username  : tx.asset.delegate.username,
         username    : null,
+        u_username  : tx.asset.delegate.username,
+      });
+
+      expect(op.options).to.be.deep.eq({
+        where: {
+          address: sender.address
+        }
       });
     });
   });
 
   describe('applyUnconfirmed', () => {
+    let applyValuesStub: SinonStub;
     beforeEach(() => {
       accountsModuleStub.stubs.setAccountAndGet.resolves();
+      applyValuesStub = sandbox.stub(sender, 'applyValues');
     });
-
-    it('should call accountsModule.setAccountAndGet and return a promise', async () => {
-      const retVal = instance.applyUnconfirmed(tx, sender);
-      expect(retVal).to.be.instanceOf(Promise);
-      await retVal;
-      expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.be.deep.equal({
-        address     : sender.address,
-        isDelegate  : 0,
+    it('should call sender.applyValues with proper data', async () => {
+      await instance.applyUnconfirmed(tx, sender);
+      expect(applyValuesStub.called).is.true;
+      expect(applyValuesStub.firstCall.args[0]).deep.eq({
+        isDelegate: 0,
         u_isDelegate: 1,
-        username    : null,
-        u_username  : tx.asset.delegate.username,
+        u_username: 'topdelegate',
+        username: null
       });
     });
 
-    it('should throw an error', () => {
+    it('should return a DBUpdateOp', async () => {
+      const retVal = await instance.applyUnconfirmed(tx, sender);
+      expect(retVal.length).is.eq(1);
+      const op: DBUpdateOp<any> = retVal[0] as any;
+      expect(op.type).is.eq('update');
+      expect(op.model).is.deep.eq(accountsModel);
+      expect(op.values).is.deep.eq({
+        isDelegate  : 0,
+        u_isDelegate: 1,
+        u_username    : tx.asset.delegate.username,
+        username  : null,
+      });
+
+      expect(op.options).to.be.deep.eq({
+        where: {
+          address: sender.address
+        }
+      });
+    });
+
+    it('should throw an error', async () => {
       sender.u_isDelegate = 1;
-      expect(() => instance.applyUnconfirmed(tx, sender)).to.throw('Account is already trying to be a delegate');
+      await expect(instance.applyUnconfirmed(tx, sender)).to.rejectedWith('Account is already trying to be a delegate');
 
     });
   });
 
   describe('undoUnconfirmed', () => {
+    let applyValuesStub: SinonStub;
     beforeEach(() => {
       accountsModuleStub.stubs.setAccountAndGet.resolves();
+      applyValuesStub = sandbox.stub(sender, 'applyValues');
+    });
+    it('should call sender.applyValues with proper data', async () => {
+      await instance.undoUnconfirmed(tx, sender);
+      expect(applyValuesStub.called).is.true;
+      expect(applyValuesStub.firstCall.args[0]).deep.eq({
+        isDelegate: 0,
+        u_isDelegate: 0,
+        u_username: null,
+        username: null
+      });
     });
 
-    it('should call accountsModule.setAccountAndGet and return a promise', async () => {
-      const retVal = instance.undoUnconfirmed(tx, sender);
-      expect(retVal).to.be.instanceOf(Promise);
-      await retVal;
-      expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.be.deep.equal({
-        address     : sender.address,
+    it('should return a DBUpdateOp', async () => {
+      const retVal = await instance.undoUnconfirmed(tx, sender);
+      expect(retVal.length).is.eq(1);
+      const op: DBUpdateOp<any> = retVal[0] as any;
+      expect(op.type).is.eq('update');
+      expect(op.model).is.deep.eq(accountsModel);
+      expect(op.values).is.deep.eq({
         isDelegate  : 0,
         u_isDelegate: 0,
-        username    : null,
         u_username  : null,
+        username    : null,
+      });
+
+      expect(op.options).to.be.deep.eq({
+        where: {
+          address: sender.address,
+        },
       });
     });
   });
 
   describe('objectNormalize', () => {
     beforeEach(() => {
-      zSchemaStub.validate.returns(true);
+      zSchemaStub.stubs.validate.returns(true);
     });
 
     it('should call removeEmptyObjKeys', () => {
-      const helpers               = rewiredRegisterDelegateTransaction.__get__('_1');
       const removeEmptyObjKeysSpy = sandbox.spy(helpers, 'removeEmptyObjKeys');
       instance.objectNormalize(tx);
       expect(removeEmptyObjKeysSpy.calledOnce).to.be.true;
@@ -301,13 +381,13 @@ describe('logic/transactions/delegate', () => {
 
     it('should call schema.validate', () => {
       instance.objectNormalize(tx);
-      expect(zSchemaStub.validate.calledOnce).to.be.true;
-      expect(zSchemaStub.validate.firstCall.args[0]).to.be.deep.equal(tx.asset.delegate);
-      expect(zSchemaStub.validate.firstCall.args[1]).to.be.deep.equal(delegateSchema);
+      expect(zSchemaStub.stubs.validate.calledOnce).to.be.true;
+      expect(zSchemaStub.stubs.validate.firstCall.args[0]).to.be.deep.equal(tx.asset.delegate);
+      expect(zSchemaStub.stubs.validate.firstCall.args[1]).to.be.deep.equal(delegateSchema);
     });
 
     it('should throw if validation fails', () => {
-      zSchemaStub.validate.returns(false);
+      zSchemaStub.stubs.validate.returns(false);
       expect(() => {
         instance.objectNormalize(tx);
       }).to.throw(/Failed to validate delegate schema/);
@@ -315,7 +395,7 @@ describe('logic/transactions/delegate', () => {
 
     it('should throw with errors message if validation fails', () => {
       (instance as any).schema.getLastErrors = () => [{message: '1'}, {message: '2'}];
-      zSchemaStub.validate.returns(false);
+      zSchemaStub.stubs.validate.returns(false);
       expect(() => {
         instance.objectNormalize(tx);
       }).to.throw('Failed to validate delegate schema: 1, 2');
@@ -336,30 +416,64 @@ describe('logic/transactions/delegate', () => {
     it('should return the delegate object', () => {
       const retVal = instance.dbRead({
         d_username       : 'thebestdelegate',
-        t_senderPublicKey: 'pubKey',
-        t_senderId       : 'address',
       });
       expect(retVal).to.be.deep.equal({
         delegate: {
           username : 'thebestdelegate',
-          publicKey: 'pubKey',
-          address  : 'address',
         },
       });
     });
   });
 
   describe('dbSave', () => {
-    it('should return the expected object', () => {
-      expect(instance.dbSave(tx)).to.be.deep.equal({
-          table : 'delegates',
-          fields: ['username', 'transactionId'],
-          values: {
-            username     : tx.asset.delegate.username,
-            transactionId: tx.id,
+    it('should return the Createop object', async () => {
+      const createOp = await instance.dbSave(tx);
+      expect(createOp.type).is.eq('create');
+      expect(createOp.model).is.deep.eq(delegatesModel);
+      expect(createOp.values).is.deep.eq({
+        transactionId: tx.id,
+        username: tx.asset.delegate.username,
+      });
+    });
+  });
+
+  describe('attachAssets', () => {
+    let modelFindAllStub: SinonStub;
+    beforeEach(() => {
+      modelFindAllStub = sandbox.stub(delegatesModel, 'findAll');
+    });
+    it('should do do nothing if result is empty', async () => {
+      modelFindAllStub.resolves([]);
+      await instance.attachAssets([]);
+    });
+    it('should throw if a tx was provided but not returned by model.findAll', async () => {
+      modelFindAllStub.resolves([]);
+      await expect(instance.attachAssets([{id: 'ciao'}] as any))
+        .rejectedWith('Couldn\'t restore asset for Delegate tx: ciao');
+    });
+    it('should use model result and modify original arr', async () => {
+      modelFindAllStub.resolves([
+        { transactionId: 2, username: 'second'},
+        { transactionId: 1, username: 'first'},
+      ]);
+      const txs: any = [{id: 1}, {id: 2}];
+
+      await instance.attachAssets(txs);
+
+      expect(txs[0]).deep.eq({
+        id: 1, asset: {
+          delegate: {
+            username: 'first'
           },
-        }
-      );
+        },
+      });
+      expect(txs[1]).deep.eq({
+        id: 2, asset: {
+          delegate: {
+            username: 'second'
+          },
+        },
+      });
     });
   });
 });

@@ -3,21 +3,23 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
-import { SinonStub } from 'sinon';
-import { BlockProgressLogger, TransactionType } from '../../../../src/helpers';
+import {Op} from 'sequelize';
+import { SinonSandbox, SinonStub } from 'sinon';
+import { BlockProgressLogger } from '../../../../src/helpers';
 import { IBlocksModuleUtils } from '../../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../../src/ioc/symbols';
-import { SignedAndChainedBlockType } from '../../../../src/logic';
+import { RoundsLogic, SignedAndChainedBlockType } from '../../../../src/logic';
 import { BlocksModuleUtils } from '../../../../src/modules/blocks/';
-import DbStub from '../../../stubs/helpers/DbStub';
-import { SequenceStub } from '../../../stubs/helpers/SequenceStub';
+import { SequenceStub } from '../../../stubs';
 import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
 import TransactionLogicStub from '../../../stubs/logic/TransactionLogicStub';
 import BlocksModuleStub from '../../../stubs/modules/BlocksModuleStub';
 import { createContainer } from '../../../utils/containerCreator';
+import { AccountsModel, BlocksModel, RoundsFeesModel } from '../../../../src/models';
 
 // tslint:disable no-unused-expression max-line-length
 chai.use(chaiAsPromised);
+
 describe('modules/utils', () => {
   let inst: IBlocksModuleUtils;
   let container: Container;
@@ -30,20 +32,21 @@ describe('modules/utils', () => {
 
   let blocksModule: BlocksModuleStub;
 
-  let dbStub: DbStub;
   let genesisBlock: SignedAndChainedBlockType;
 
   let dbSequence: SequenceStub;
 
   let blockLogic: BlockLogicStub;
   let txLogic: TransactionLogicStub;
+
+  let blocksModel: typeof BlocksModel;
+  let accountsModel: typeof AccountsModel;
+  let roundsFeesModel: typeof RoundsFeesModel;
+  let sandbox: SinonSandbox;
   beforeEach(() => {
     blocksModule = container.get(Symbols.modules.blocks);
-
-    dbStub       = container.get(Symbols.generic.db);
     genesisBlock = container.get(Symbols.generic.genesisBlock);
-
-    dbSequence = container.getTagged(
+    dbSequence   = container.getTagged(
       Symbols.helpers.sequence,
       Symbols.helpers.sequence,
       Symbols.tags.helpers.dbSequence
@@ -51,13 +54,19 @@ describe('modules/utils', () => {
 
     blockLogic = container.get(Symbols.logic.block);
     txLogic    = container.get(Symbols.logic.transaction);
+
+    accountsModel   = container.get(Symbols.models.accounts);
+    blocksModel     = container.get(Symbols.models.blocks);
+    roundsFeesModel = container.get(Symbols.models.roundsFees);
+    sandbox         = sinon.createSandbox();
   });
+  afterEach(() => sandbox.restore());
   describe('readDbRows', () => {
     beforeEach(() => {
-      blockLogic.stubs.dbRead.callsFake((d) => ({id: d.b_id}));
+      blockLogic.stubs.dbRead.callsFake((d) => ({ id: d.b_id }));
       txLogic.stubs.dbRead.callsFake((d) => {
         if (d.t_id) {
-          return {id: d.t_id};
+          return { id: d.t_id };
         }
         return null;
       });
@@ -67,9 +76,9 @@ describe('modules/utils', () => {
     });
     it('should dbRead each row', () => {
       const rows = [
-        {b_id: '1'},
-        {b_id: '1'},
-        {b_id: '1'},
+        { b_id: '1' },
+        { b_id: '1' },
+        { b_id: '1' },
       ];
       inst.readDbRows(rows as any);
       expect(blockLogic.stubs.dbRead.callCount).is.eq(3);
@@ -77,9 +86,9 @@ describe('modules/utils', () => {
     it('should skip txLogicdbRead null blocks', () => {
       blockLogic.stubs.dbRead.onCall(1).returns(null);
       const rows = [
-        {b_id: '1'},
-        {b_id: '1'},
-        {b_id: '1'},
+        { b_id: '1' },
+        { b_id: '1' },
+        { b_id: '1' },
       ];
       inst.readDbRows(rows as any);
       expect(txLogic.stubs.dbRead.callCount).is.eq(2);
@@ -87,9 +96,9 @@ describe('modules/utils', () => {
     it('should correctly assign transactions to block not duplicating it', () => {
       blockLogic.stubs.dbRead.onCall(1).returns(null);
       const rows = [
-        {b_id: '1', t_id: '2'},
-        {b_id: '1'},
-        {b_id: '1', t_id: '3'},
+        { b_id: '1', t_id: '2' },
+        { b_id: '1' },
+        { b_id: '1', t_id: '3' },
       ];
       const res  = inst.readDbRows(rows as any);
       expect(res.length).is.eq(1);
@@ -97,25 +106,25 @@ describe('modules/utils', () => {
     });
     it('should return 2 diff blocks with correct not dups txs', () => {
       const rows = [
-        {b_id: '1', t_id: '2'},
-        {b_id: '1', t_id: '2'},
-        {b_id: '1'},
-        {b_id: '2', t_id: '3'},
+        { b_id: '1', t_id: '2' },
+        { b_id: '1', t_id: '2' },
+        { b_id: '1' },
+        { b_id: '2', t_id: '3' },
       ];
       const res  = inst.readDbRows(rows as any);
       expect(res.length).is.eq(2);
-      expect(res[0]).to.be.deep.eq({id: '1', transactions: [{id: '2'}]});
-      expect(res[1]).to.be.deep.eq({id: '2', transactions: [{id: '3'}]});
+      expect(res[0]).to.be.deep.eq({ id: '1', transactions: [{ id: '2' }] });
+      expect(res[1]).to.be.deep.eq({ id: '2', transactions: [{ id: '3' }] });
     });
-    it('should create generationSignature for block if it id is equal genesisBLock.id', async () =>{
+    it('should create generationSignature for block if it id is equal genesisBLock.id', async () => {
       const genBlockId = (inst as any).genesisBlock.id;
-      const rows = [
-        {b_id: '1', t_id: '2'},
-        {b_id: '1', t_id: '2'},
-        {b_id: genBlockId},
-        {b_id: '2', t_id: '3'},
+      const rows       = [
+        { b_id: '1', t_id: '2' },
+        { b_id: '1', t_id: '2' },
+        { b_id: genBlockId },
+        { b_id: '2', t_id: '3' },
       ];
-      const res  = inst.readDbRows(rows as any);
+      const res        = inst.readDbRows(rows as any);
       expect(res.length).is.eq(3);
       expect((res[1] as any).generationSignature).to.be.deep.eq('0000000000000000000000000000000000000000000000000000000000000000');
     });
@@ -123,169 +132,144 @@ describe('modules/utils', () => {
 
   describe('loadBlocksPart', () => {
     it('should call loadBlocksData with given filter and pass result to readDbRows', async () => {
-      const loadBlocksStub = sinon.stub(inst, 'loadBlocksData').resolves(['1', '2', '3']);
-      const readDbRowsStub = sinon.stub(inst, 'readDbRows').resolves(['a', 'b', 'c']);
+      const loadBlocksStub = sandbox.stub(inst, 'loadBlocksData').resolves(['1', '2', '3']);
 
-      const res = await inst.loadBlocksPart({limit: 1, id: 'id'});
+      const res = await inst.loadBlocksPart({ limit: 1, id: 'id' });
       expect(loadBlocksStub.calledOnce).is.true;
-      expect(readDbRowsStub.calledOnce).is.true;
 
-      expect(loadBlocksStub.firstCall.args[0]).to.be.deep.eq({limit: 1, id: 'id'});
-      expect(readDbRowsStub.firstCall.args[0]).to.be.deep.eq(['1', '2', '3']);
-      expect(res).to.be.deep.eq(['a', 'b', 'c']);
+      expect(res).to.be.deep.eq(['1', '2', '3']);
     });
   });
 
   describe('loadLastBlock', () => {
-    let readDbRowsStub: SinonStub;
+    let findOneStub: SinonStub;
     beforeEach(() => {
-      dbStub.stubs.query.resolves([]);
-      readDbRowsStub = sinon.stub(inst, 'readDbRows').returns([{id: '1', transactions: []}]);
+      findOneStub               = sandbox.stub(blocksModel, 'findOne').resolves({});
+      inst['TransactionsModel'] = 'txModel'; // useful for chai deep equality.
     });
     it('should query db', async () => {
       await inst.loadLastBlock();
-      expect(dbStub.stubs.query.called).is.true;
+      expect(findOneStub.called).is.true;
+      expect(findOneStub.firstCall.args[0]).deep.eq({
+        include: ['txModel'],
+        order  : [['height', 'DESC']],
+        limit  : 1
+      });
     });
-    it('should call readDbRows with sql result', async () => {
-      dbStub.stubs.query.resolves(['1', '2', '3']);
+    it('should call txLogic.attachAssets over block txs', async () => {
+      findOneStub.resolves({transactions: ['a','b']});
       await inst.loadLastBlock();
-      expect(readDbRowsStub.called).is.true;
-      expect(readDbRowsStub.firstCall.args[0]).is.deep.eq(['1', '2', '3']);
+      expect(txLogic.stubs.attachAssets.calledOnce).is.true;
+      expect(txLogic.stubs.attachAssets.firstCall.args[0]).deep.eq(['a', 'b']);
     });
-
     it('should set blocksModule.lastBlock to lastloadedBlock', async () => {
+      findOneStub.resolves({ id: '1', transactions: [] });
       await inst.loadLastBlock();
-      expect(blocksModule.lastBlock).to.be.deep.eq({id: '1', transactions: []});
-    });
-
-    it('should remap error if something happend', async () => {
-      dbStub.stubs.query.rejects(new Error('meow'));
-      await expect(inst.loadLastBlock()).to.be.rejectedWith('Blocks#loadLastBlock error');
-    });
-
-    it('Sorting transactions (VOTE)', async () => {
-      const transactions = [
-        {id: 1, type: TransactionType.VOTE},
-        {id: 2, type: TransactionType.DELEGATE}];
-
-      readDbRowsStub.returns([{id: '16985986483000875063', transactions }]);
-      const block = await inst.loadLastBlock();
-      expect(block.transactions).to.deep.equal(transactions);
-      expect(block.transactions).to.have.lengthOf(2);
-      expect(block.transactions[0]).to.deep.equal({id: 2, type: TransactionType.DELEGATE});
-      expect(block.transactions[1]).to.deep.equal({id: 1, type: TransactionType.VOTE});
-    });
-
-    it('Sorting transactions (SIGNATURE)', async () => {
-      const transactions = [
-        {id: 1, type: TransactionType.SIGNATURE},
-        {id: 2, type: TransactionType.DELEGATE}];
-
-      readDbRowsStub.returns([{id: '16985986483000875063', transactions }]);
-      const block = await inst.loadLastBlock();
-      expect(block.transactions).to.deep.equal(transactions);
-      expect(block.transactions).to.have.lengthOf(2);
-      expect(block.transactions[0]).to.deep.equal({id: 2, type: TransactionType.DELEGATE});
-      expect(block.transactions[1]).to.deep.equal({id: 1, type: TransactionType.SIGNATURE});
-    });
-
-    it('Sorting transactions (Rest of cases)', async () => {
-      const transactions = [
-        {id: 1, type: TransactionType.DELEGATE},
-        {id: 2, type: TransactionType.MULTI}];
-
-      readDbRowsStub.returns([{id: '16985986483000875063', transactions }]);
-      const block = await inst.loadLastBlock();
-      expect(block.transactions).to.deep.equal(transactions);
-      expect(block.transactions).to.have.lengthOf(2);
-      expect(block.transactions[0]).to.deep.equal({id: 1, type: TransactionType.DELEGATE});
-      expect(block.transactions[1]).to.deep.equal({id: 2, type: TransactionType.MULTI});
+      expect(blocksModule.lastBlock).to.be.deep.eq({ id: '1', transactions: [] });
     });
   });
 
   describe('getIdSequence', () => {
     let dbReturn: any;
+    let findAllStub: SinonStub;
     beforeEach(() => {
-      dbReturn = [{id: '2', height: 3}];
-      dbStub.stubs.query.callsFake(() => Promise.resolve(dbReturn));
+      dbReturn = [{ id: '2', height: 3 }];
+      container.bind('bit').to(RoundsLogic).inSingletonScope();
+      const realRoundsLogic = container.get('bit');
+      inst['rounds']        = realRoundsLogic;
+      findAllStub           = sandbox.stub(blocksModel, 'findAll').resolves(dbReturn);
     });
     it('should query db using correct params', async () => {
-      const constants = container.get<any>(Symbols.helpers.constants);
-      await inst.getIdSequence(10);
-      expect(dbStub.stubs.query.called).is.true;
-      expect(dbStub.stubs.query.firstCall.args[1]).is.deep.eq({
-        delegates: constants.activeDelegates,
-        height   : 10,
-        limit    : 5,
+      await inst.getIdSequence(2000000);
+      expect(findAllStub.called).is.true;
+      expect(findAllStub.firstCall.args[0]).deep.eq({
+        attributes: ['id', 'height'],
+        order     : [['height', 'DESC']],
+        raw       : true,
+        where     : {
+          height: [
+            1999902,
+            1999801,
+            1999700,
+            1999599,
+            1999498,
+          ],
+        },
       });
     });
     it('should throw error if theres no result for such height', async () => {
-      dbStub.stubs.query.resolves([]);
+      findAllStub.resolves([]);
       await expect(inst.getIdSequence(10)).to.be.rejectedWith('Failed to get id sequence for height 10');
     });
     it('should prepend lastblockid', async () => {
-      blocksModule.lastBlock = {id: '123', height: 50} as any;
+      blocksModule.lastBlock = { id: '123', height: 50 } as any;
       const res              = await inst.getIdSequence(10);
       expect(res.ids[0]).to.be.eq('123');
     });
     it('should append genesisblock', async () => {
       const genesis: SignedAndChainedBlockType = container.get(Symbols.generic.genesisBlock);
-      blocksModule.lastBlock                   = {id: '123', height: 50} as any;
+      blocksModule.lastBlock                   = { id: '123', height: 50 } as any;
       const res                                = await inst.getIdSequence(10);
       expect(res.ids[2]).to.be.eq(genesis.id);
     });
 
     it('should not prepend twice lastblockid if already from sql', async () => {
       const genesis: SignedAndChainedBlockType = container.get(Symbols.generic.genesisBlock);
-      blocksModule.lastBlock                   = {id: '123', height: 50} as any;
+      blocksModule.lastBlock                   = { id: '123', height: 50 } as any;
       dbReturn.push(blocksModule.lastBlock);
       const res = await inst.getIdSequence(10);
       expect(res.ids).to.be.deep.eq(['2', '123', genesis.id]);
     });
     it('should not append genesis if already from sql', async () => {
       const genesis: SignedAndChainedBlockType = container.get(Symbols.generic.genesisBlock);
-      blocksModule.lastBlock                   = {id: '123', height: 50} as any;
+      blocksModule.lastBlock                   = { id: '123', height: 50 } as any;
       dbReturn.push(genesisBlock);
       const res = await inst.getIdSequence(10);
       expect(res.ids).to.be.deep.eq(['123', '2', genesis.id]);
     });
   });
   describe('loadBlocksData', () => {
+    let findOneStub: SinonStub;
+    let findAllStub: SinonStub;
     beforeEach(() => {
-      dbStub.stubs.oneOrNone.resolves({height: 10});
-      dbStub.stubs.query.resolves([{raw: 'fullblocklist'}]);
+      findOneStub = sandbox.stub(blocksModel, 'findOne').resolves({height: 10});
+      findAllStub = sandbox.stub(blocksModel, 'findAll').resolves([{height: 11}, {height: 12}]);
+      inst['TransactionsModel'] = 'txModel';
     });
     it('should disallow passing both id and lastId', async () => {
-      await expect(inst.loadBlocksData({id: '1', lastId: '2'}))
+      await expect(inst.loadBlocksData({ id: '1', lastId: '2' }))
         .to.be.rejectedWith('Invalid filter');
     });
     it('should wrap queries within dbSequence', async () => {
-      await inst.loadBlocksData({id: '1'});
+      await inst.loadBlocksData({ id: '1' });
       expect(dbSequence.spies.addAndPromise.called).is.true;
       expect(dbSequence.spies.addAndPromise.calledBefore(
-        dbStub.stubs.oneOrNone
+        findOneStub
       )).is.true;
       expect(dbSequence.spies.addAndPromise.calledBefore(
-        dbStub.stubs.query
+        findAllStub
       )).is.true;
     });
     it('should query height by id.', async () => {
-      await inst.loadBlocksData({id: '1'});
-      expect(dbStub.stubs.oneOrNone.firstCall.args[1]).to.be.deep.eq({
-        id: '1',
+      await inst.loadBlocksData({ id: '1' });
+      expect(findOneStub.firstCall.args[0]).to.be.deep.eq({
+        include: [ 'txModel' ],
+        where: { id: '1' },
       });
     });
     it('should query db correctly based on input and height output', async () => {
-      await inst.loadBlocksData({lastId: '1', limit: 2});
-      expect(dbStub.stubs.query.firstCall.args[1]).to.be.deep.eq({
-        height: 10,
-        lastId: '1',
-        limit : 10 + 2,
+      await inst.loadBlocksData({ lastId: '1', limit: 2 });
+      expect(findAllStub.firstCall.args[0]).to.be.deep.eq({
+        include: [ 'txModel' ],
+        order: ['height', 'rowId'],
+        where: { height: {[Op.gt]: 10, [Op.lt]: 10 + 2 } },
       });
+      expect(findAllStub.firstCall.args[0].where.height[Op.gt]).eq(10);
+      expect(findAllStub.firstCall.args[0].where.height[Op.lt]).eq(10 + 2);
     });
     it('should remap error to Blocks#loadBlockData error', async () => {
-      dbStub.stubs.query.rejects(new Error('meow'));
-      await expect(inst.loadBlocksData({lastId: '1'})).to.be.rejectedWith('Blocks#loadBlockData error');
+      findAllStub.rejects(new Error('meow'));
+      await expect(inst.loadBlocksData({ lastId: '1' })).to.be.rejectedWith('Blocks#loadBlockData error');
     });
   });
 
@@ -300,38 +284,47 @@ describe('modules/utils', () => {
   });
 
   describe('aggregateBlockReward', () => {
+    let findOneStub: SinonStub;
+    let aggregateFeesStub: SinonStub;
+    let findAccountStub: SinonStub;
     beforeEach(() => {
-      dbStub.enqueueResponse('oneOrNone', Promise.resolve({
-        delegate: 1,
-        fees    : 2,
-        rewards : 3,
-      }));
+      findOneStub = sandbox.stub(blocksModel, 'findOne').resolves({count: 1, rewards: 3});
+      aggregateFeesStub = sandbox.stub(roundsFeesModel, 'aggregate').resolves(2);
+      findAccountStub = sandbox.stub(accountsModel, 'findOne').resolves({acc: 'acc'})
     });
     it('should allow specify start time in unix timestamp', async () => {
       const constants = container.get<any>(Symbols.helpers.constants);
       await inst.aggregateBlockReward({
-        generatorPublicKey: 'abc',
-        start             : Math.floor(constants.epochTime.getTime() / 1000 + 1000)
+        generatorPublicKey: 'aabb',
+        start             : Math.floor(constants.epochTime.getTime() / 1000 + 1000),
       });
-      expect(dbStub.stubs.oneOrNone.called).is.true;
-      expect(await dbStub.stubs.oneOrNone.firstCall.args[1]).is.deep.eq({
-        delegates         : constants.activeDelegates,
-        generatorPublicKey: 'abc',
-        start             : 1000,
+      expect(findOneStub.called).is.true;
+      expect(findOneStub.firstCall.args[0]).to.be.deep.eq({
+        attributes: [ {val: 'COUNT(1)'}, {val: 'SUM("reward") as rewards' }],
+        raw: true,
+        where: {
+          generatorPublicKey: Buffer.from('aabb', 'hex'),
+          timestamp: { [Op.gte]: 1000},
+        },
       });
+      expect(findOneStub.firstCall.args[0].where.timestamp[Op.gte]).eq(1000);
     });
     it('should allow specify end time in unix timestamp', async () => {
       const constants = container.get<any>(Symbols.helpers.constants);
       await inst.aggregateBlockReward({
         end               : Math.floor(constants.epochTime.getTime() / 1000 + 1000),
-        generatorPublicKey: 'abc',
+        generatorPublicKey: 'aabb',
       });
-      expect(dbStub.stubs.oneOrNone.called).is.true;
-      expect(await dbStub.stubs.oneOrNone.firstCall.args[1]).is.deep.eq({
-        delegates         : constants.activeDelegates,
-        end               : 1000,
-        generatorPublicKey: 'abc',
+      expect(findOneStub.called).is.true;
+      expect(findOneStub.firstCall.args[0]).to.be.deep.eq({
+        attributes: [ {val: 'COUNT(1)'}, {val: 'SUM("reward") as rewards' }],
+        raw: true,
+        where: {
+          generatorPublicKey: Buffer.from('aabb', 'hex'),
+          timestamp: { [Op.lte]: 1000},
+        },
       });
+      expect(findOneStub.firstCall.args[0].where.timestamp[Op.lte]).eq(1000);
     });
     it('should issue db query and use that as result', async () => {
       const res = await inst.aggregateBlockReward({
@@ -339,15 +332,14 @@ describe('modules/utils', () => {
       });
 
       expect(res).to.be.deep.eq({
-        count  : 0, // defaulted to zero
+        count  : 1, // defaulted to zero
         fees   : 2,
         rewards: 3,
       });
     });
     it('should throw error if returned data shows delegate does not exist', async () => {
-      dbStub.reset();
-      dbStub.enqueueResponse('oneOrNone', Promise.resolve({delegate: null}));
-      await expect(inst.aggregateBlockReward({generatorPublicKey: 'abc'}))
+      findAccountStub.resolves(null);
+      await expect(inst.aggregateBlockReward({ generatorPublicKey: 'abc' }))
         .to.be.rejectedWith('Account not found or is not a delegate');
     });
   });

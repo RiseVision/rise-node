@@ -1,21 +1,20 @@
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
-import * as rewire from 'rewire';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
+import { APIError } from '../../../../src/apis/errors';
 import { ForgingApisWatchGuard } from '../../../../src/apis/utils/forgingApisWatchGuard';
+import * as helpers from '../../../../src/helpers';
 import { Symbols } from '../../../../src/ioc/symbols';
 import { AppConfig } from '../../../../src/types/genericTypes';
 import { createContainer } from '../../../utils/containerCreator';
-import { APIError } from '../../../../src/apis/errors';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
 const expect = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
-const forgingApis = rewire('../../../../src/apis/utils/forgingApisWatchGuard');
 
 // tslint:disable no-unused-expression max-line-length
 describe('apis/utils/forgingApisWatchGuard', () => {
@@ -30,7 +29,7 @@ describe('apis/utils/forgingApisWatchGuard', () => {
 
   beforeEach(() => {
     container = createContainer();
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
 
     container
       .bind(Symbols.api.utils.forgingApisWatchGuard)
@@ -40,7 +39,6 @@ describe('apis/utils/forgingApisWatchGuard', () => {
     config = container.get(Symbols.generic.appConfig);
 
     next = sandbox.spy();
-    const helpers = forgingApis.__get__('helpers_1');
     checkIpInListStub = sandbox.stub(helpers, 'checkIpInList');
     instance = container.get(Symbols.api.utils.forgingApisWatchGuard);
   });
@@ -51,7 +49,7 @@ describe('apis/utils/forgingApisWatchGuard', () => {
   });
 
   describe('use()', () => {
-    it('success', () => {
+    it('should call to next() without parameters if everything is ok', () => {
       checkIpInListStub.returns(true);
       instance.use(request as any, response, next);
       expect(next.calledOnce).to.be.true;
@@ -63,7 +61,7 @@ describe('apis/utils/forgingApisWatchGuard', () => {
       expect(checkIpInListStub.args[0][1]).to.equal(request.ip);
     });
 
-    it('error', () => {
+    it('should call to next() with an APIError() if checkIpInList() returns false', () => {
       checkIpInListStub.returns(false);
       instance.use(request as any, response, next);
       expect(next.calledOnce).to.be.true;

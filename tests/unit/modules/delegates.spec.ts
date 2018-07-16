@@ -1,44 +1,46 @@
 import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as rewire from 'rewire';
+import * as crypto from 'crypto';
+import {Container} from 'inversify';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
-import { constants } from '../../../src/helpers';
+import * as helpers from '../../../src/helpers';
+import {Symbols} from '../../../src/ioc/symbols';
 import { SignedBlockType } from '../../../src/logic';
 import { DelegatesModule } from '../../../src/modules';
-
 import {
   AccountsModuleStub,
-  AppStateStub,
   BlockRewardLogicStub,
   BlocksModuleStub,
-  ExceptionsManagerStub,
   LoggerStub,
   RoundsLogicStub,
-  SlotsStub, TransactionsModuleStub,
+  SlotsStub,
   ZSchemaStub
 } from '../../stubs';
 import { CreateHashSpy } from '../../stubs/utils/CreateHashSpy';
 import { generateAccounts } from '../../utils/accountsUtils';
+import { createContainer } from '../../utils/containerCreator';
+import { AccountsModel, BlocksModel } from '../../../src/models';
 
 chai.use(chaiAsPromised);
-const rewiredDelegatesModule = rewire('../../../src/modules/delegates');
 
 // tslint:disable no-unused-expression
 describe('modules/delegates', () => {
   let sandbox: SinonSandbox;
+  let container: Container;
   let instance: DelegatesModule;
-  let excManagerStub: ExceptionsManagerStub;
+
+  let accountsModuleStub: AccountsModuleStub;
+  let blocksModuleStub: BlocksModuleStub;
+  let blockRewardLogicStub: BlockRewardLogicStub;
   let loggerStub: LoggerStub;
+  let roundsLogicStub: RoundsLogicStub;
   let slotsStub: SlotsStub;
   let schemaStub: ZSchemaStub;
-  let appStateStub: AppStateStub;
-  let blockRewardLogicStub: BlockRewardLogicStub;
-  let roundsLogicStub: RoundsLogicStub;
-  let blocksModuleStub: BlocksModuleStub;
-  let accountsModuleStub: AccountsModuleStub;
-  let transactionsModuleStub: TransactionsModuleStub;
+
+  let blocksModel: typeof BlocksModel;
+  let accountsModel: typeof AccountsModel;
 
   let createHashSpy: CreateHashSpy;
 
@@ -59,31 +61,19 @@ describe('modules/delegates', () => {
   let signedBlock: SignedBlockType;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
+    container = createContainer();
 
-    excManagerStub         = new ExceptionsManagerStub();
-    loggerStub             = new LoggerStub();
-    slotsStub              = new SlotsStub();
-    schemaStub             = new ZSchemaStub();
-    appStateStub           = new AppStateStub();
-    blockRewardLogicStub   = new BlockRewardLogicStub();
-    roundsLogicStub        = new RoundsLogicStub();
-    blocksModuleStub       = new BlocksModuleStub();
-    accountsModuleStub     = new AccountsModuleStub();
-    transactionsModuleStub = new TransactionsModuleStub();
+    roundsLogicStub        = container.get(Symbols.logic.rounds);
+    accountsModuleStub     = container.get(Symbols.modules.accounts);
+    blocksModuleStub       = container.get(Symbols.modules.blocks);
+    blockRewardLogicStub   = container.get(Symbols.logic.blockReward);
+    slotsStub              = container.get(Symbols.helpers.slots);
+    loggerStub             = container.get(Symbols.helpers.logger);
+    schemaStub             = container.get(Symbols.generic.zschema);
 
-    instance                             = new rewiredDelegatesModule.DelegatesModule();
-    (instance as any).constants          = constants;
-    (instance as any).excManager         = excManagerStub;
-    (instance as any).logger             = loggerStub;
-    (instance as any).slots              = slotsStub;
-    (instance as any).schema             = schemaStub;
-    (instance as any).appState           = appStateStub;
-    (instance as any).blockReward        = blockRewardLogicStub;
-    (instance as any).roundsLogic        = roundsLogicStub;
-    (instance as any).blocksModule       = blocksModuleStub;
-    (instance as any).accountsModule     = accountsModuleStub;
-    (instance as any).transactionsModule = transactionsModuleStub;
+    container.rebind(Symbols.modules.delegates).to(DelegatesModule).inSingletonScope();
+    instance = container.get(Symbols.modules.delegates);
 
     // Init frequently used test values
     pubKey = 'e22c25bcd696b94a3f4b017fdc681d714e275427a5112c2873e57c9637af3eed';
@@ -91,24 +81,25 @@ describe('modules/delegates', () => {
       '+73e57c9637af3eede22c25bcd696b94a3f4b017fdc681d714e275427a5112c28',
     ];
 
-    const crypto                                      = rewiredDelegatesModule.__get__('crypto');
     createHashSpy                                     = new CreateHashSpy(crypto, sandbox);
     const lastBlock                                   = {
+      blockSignature      : Buffer.from('blockSignature'),
+      generatorPublicKey  : Buffer.from('genPublicKey'),
       height              : 12422,
       id                  : 'blockID',
-      blockSignature      : 'blockSignature',
-      version             : 1,
-      totalAmount         : 0,
-      totalFee            : 0,
-      reward              : 15,
-      payloadHash         : '',
-      timestamp           : Date.now(),
       numberOfTransactions: 0,
+      payloadHash         : Buffer.from('payloadHash'),
       payloadLength       : 0,
       previousBlock       : 'previous',
-      generatorPublicKey  : 'pubKey',
+      reward              : 15,
+      timestamp           : Date.now(),
+      totalAmount         : 0,
+      totalFee            : 0,
+      version             : 1,
     };
-    blocksModuleStub.lastBlock                        = lastBlock;
+    blocksModel = container.get(Symbols.models.blocks);
+    accountsModel = container.get(Symbols.models.accounts);
+    blocksModuleStub.lastBlock                        = blocksModel.classFromPOJO(lastBlock);
     blockRewardLogicStub.stubConfig.calcSupply.return = totalSupply;
     signedBlock                                       = Object.assign({}, lastBlock);
     signedBlock.height++;
@@ -122,9 +113,10 @@ describe('modules/delegates', () => {
     it('should call checkDelegates and return the result', async () => {
       const checkDelegatesStub = sandbox.stub(instance as any, 'checkDelegates');
       checkDelegatesStub.resolves('test');
-      const retVal = await instance.checkConfirmedDelegates(pubKey, votes);
+      const acc = new AccountsModel({ publicKey: Buffer.from(pubKey, 'hex') });
+      const retVal = await instance.checkConfirmedDelegates(acc, votes);
       expect(checkDelegatesStub.calledOnce).to.be.true;
-      expect(checkDelegatesStub.firstCall.args[0]).to.be.equal(pubKey);
+      expect(checkDelegatesStub.firstCall.args[0]).to.be.deep.equal(acc);
       expect(checkDelegatesStub.firstCall.args[1]).to.be.deep.equal(votes);
       expect(checkDelegatesStub.firstCall.args[2]).to.be.equal('confirmed');
       expect(retVal).to.be.equal('test');
@@ -135,9 +127,10 @@ describe('modules/delegates', () => {
     it('should call checkDelegates and return the result', async () => {
       const checkDelegatesStub = sandbox.stub(instance as any, 'checkDelegates');
       checkDelegatesStub.resolves('test');
-      const retVal = await instance.checkUnconfirmedDelegates(pubKey, votes);
+      const acc = new AccountsModel({ publicKey: Buffer.from(pubKey, 'hex') });
+      const retVal = await instance.checkUnconfirmedDelegates(acc, votes);
       expect(checkDelegatesStub.calledOnce).to.be.true;
-      expect(checkDelegatesStub.firstCall.args[0]).to.be.equal(pubKey);
+      expect(checkDelegatesStub.firstCall.args[0]).to.be.deep.equal(acc);
       expect(checkDelegatesStub.firstCall.args[1]).to.be.deep.equal(votes);
       expect(checkDelegatesStub.firstCall.args[2]).to.be.equal('unconfirmed');
       expect(retVal).to.be.equal('test');
@@ -215,9 +208,11 @@ describe('modules/delegates', () => {
       const pk = new Array(101).fill(null).map((a, idx) => (idx).toString(16));
       getKeysSortByVoteStub.resolves(pk);
       expect(await instance.generateDelegateList(10)).to.be.deep.eq(
+        // tslint:disable-next-line: max-line-length
         ['1', '41', '3f', '0', '42', '5a', '11', 'd', 'b', '8', '31', '5c', '4f', '1c', '15', '32', '3d', '25', '2f', '13', '46', '56', '29', '61', '58', '33', '38', '1f', '3a', '47', '17', '9', '43', 'e', '2b', '36', '37', '24', 'a', '30', '14', '4e', '48', '5d', '2', '28', '2d', '39', '64', '26', '3c', '3e', '19', '23', '1e', '44', '34', '57', '2a', '3b', '5', '1a', '27', '2c', 'f', '59', '6', '40', '4b', '45', '4c', '1d', '7', '49', '4a', '53', '2e', '18', '4', '60', '54', '10', '5e', '12', '50', '1b', '21', '16', '5b', '3', '20', '62', '55', '22', '52', '5f', 'c', '35', '4d', '63', '51']
       );
       expect(await instance.generateDelegateList(1000)).to.be.deep.eq(
+        // tslint:disable-next-line: max-line-length
         ['41', '59', '2c', '1', '6', '20', '25', '1c', '5c', 'b', '26', '55', '60', '3a', '56', '3c', '1a', '24', '39', '13', '4c', '21', '4e', '35', '5b', '3e', '34', '9', '2a', '1d', '61', '8', '40', '15', '5d', '1e', '44', '37', '31', '64', '46', '4', '7', '22', '3f', '14', '28', '57', '51', 'a', '5', '27', '33', '36', '17', '4b', '19', '16', '48', '3b', '5a', '38', '30', '2', '32', '3', '11', 'f', '53', '45', '2e', '47', 'd', '49', '4a', '12', '2d', '58', '42', 'c', '50', '3d', '52', '2f', '54', '1f', 'e', '29', '62', '0', '43', '4d', '1b', '2b', '5e', '5f', '4f', '23', '18', '63', '10']
       );
     });
@@ -251,7 +246,6 @@ describe('modules/delegates', () => {
     });
 
     it('should call OrderBy using the passed value', async () => {
-      const helpers    = rewiredDelegatesModule.__get__('_1');
       const orderBySpy = sandbox.spy(helpers, 'OrderBy');
       await instance.getDelegates({ orderBy: 'votes' });
       expect(orderBySpy.calledOnce).to.be.true;
@@ -265,7 +259,6 @@ describe('modules/delegates', () => {
     });
 
     it('should throw on OrderBy error', async () => {
-      const helpers = rewiredDelegatesModule.__get__('_1');
       sandbox.stub(helpers, 'OrderBy').returns({ error: 'OrderBy Err', });
       await expect(instance.getDelegates({ orderBy: 'votes' })).to.be.rejectedWith('OrderBy Err');
     });
@@ -275,12 +268,12 @@ describe('modules/delegates', () => {
       expect(retVal.count).to.be.equal(testAccounts.length);
       expect(Array.isArray(retVal.delegates)).to.be.true;
       retVal.delegates.forEach((delegate, key) => {
-        expect(delegate.rank).to.be.equal(key + 1);
-        expect(delegate.approval).to.be.equal(Math.round((delegate.vote / totalSupply) * 1e4) / 1e2);
+        expect(delegate.info.rank).to.be.equal(key + 1);
+        expect(delegate.info.approval).to.be.equal(Math.round((delegate.delegate.vote / totalSupply) * 1e4) / 1e2);
         const percent = Math.abs(
-          100 - (delegate.missedblocks / ((delegate.producedblocks + delegate.missedblocks) / 100))
+          100 - (delegate.delegate.missedblocks / ((delegate.delegate.producedblocks + delegate.delegate.missedblocks) / 100))
         ) || 0;
-        expect(delegate.productivity).to.be.equal(
+        expect(delegate.info.productivity).to.be.equal(
           (key + 1 > 101) ? 0 : Math.round(percent * 1e2) / 1e2
         );
       });
@@ -318,9 +311,10 @@ describe('modules/delegates', () => {
       getKeysSortByVoteStub = sandbox.stub(instance as any, 'getKeysSortByVote');
       getKeysSortByVoteStub.resolves(keys);
       roundsLogicStub.stubs.calcRound.returns(123);
-      generateDelegateListStub = sandbox.stub(instance, 'generateDelegateList').resolves(keys);
+      generateDelegateListStub = sandbox.stub(instance, 'generateDelegateList').resolves(keys
+        .map((k) => Buffer.from(k, 'hex')));
       slotsStub.stubs.getSlotNumber.returns(curSlot);
-      signedBlock.generatorPublicKey = keys[curSlot % 101];
+      signedBlock.generatorPublicKey = Buffer.from(keys[curSlot % 101], 'hex');
     });
 
     it('should call generateDelegateList', async () => {
@@ -335,21 +329,13 @@ describe('modules/delegates', () => {
       expect(slotsStub.stubs.getSlotNumber.firstCall.args[0]).to.be.equal(signedBlock.timestamp);
     });
 
-    it('should call logger.error and throw if delegate is not found', async () => {
-      const brokenKeys          = keys.slice();
-      brokenKeys[curSlot % 101] = undefined;
-      generateDelegateListStub.resolves(brokenKeys);
+    it('should call logger.error and throw if delegate is not the generator of the block', async () => {
+      signedBlock.generatorPublicKey = Buffer.from('aabb', 'hex');
       await expect(instance.assertValidBlockSlot(signedBlock)).to.be.rejectedWith('Failed to verify slot ' + curSlot);
       expect(loggerStub.stubs.error.calledOnce).to.be.true;
       expect(loggerStub.stubs.error.firstCall.args[0]).to.match(/^Expected generator .+ Received generator: .+/);
     });
 
-    it('should call logger.error and throw if delegate is not the generator of the block', async () => {
-      signedBlock.generatorPublicKey = 'anotherKey';
-      await expect(instance.assertValidBlockSlot(signedBlock)).to.be.rejectedWith('Failed to verify slot ' + curSlot);
-      expect(loggerStub.stubs.error.calledOnce).to.be.true;
-      expect(loggerStub.stubs.error.firstCall.args[0]).to.match(/^Expected generator .+ Received generator: .+/);
-    });
   });
 
   describe('onBlockchainReady', () => {
@@ -400,33 +386,27 @@ describe('modules/delegates', () => {
   describe('checkDelegates', () => {
     let theAccount: any;
     beforeEach(() => {
-      theAccount             = Object.assign({}, testAccounts[0]);
+      theAccount             = new AccountsModel({address: testAccounts[0].address });
+      theAccount.publicKey = Buffer.from(testAccounts[0].publicKey, 'hex');
+      theAccount.privKey = Buffer.from(testAccounts[0].privKey, 'hex');
       theAccount.delegates   = [];
       theAccount.u_delegates = [];
-      accountsModuleStub.stubs.getAccount.resolves(theAccount);
+      accountsModuleStub.stubs.getAccount.onFirstCall().resolves({});
     });
 
-    it('should call accountsModule.getAccount', async () => {
-      await (instance as any).checkDelegates(theAccount.publicKey, [], 'confirmed');
-      expect(accountsModuleStub.stubs.getAccount.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.getAccount.firstCall.args[0]).to.be.deep.
-        equal({ publicKey: theAccount.publicKey });
-    });
-
-    it('should throw if account not found', async () => {
-      accountsModuleStub.stubs.getAccount.resolves(null);
-      await expect((instance as any).checkDelegates(theAccount.publicKey, [], 'confirmed')).to.be.
+    it('should throw if account not provided', async () => {
+      await expect((instance as any).checkDelegates(null, [], 'confirmed')).to.be.
         rejectedWith('Account not found');
     });
 
     it('should throw if invalid math operator found in votes', async () => {
-      await expect((instance as any).checkDelegates(theAccount.publicKey, ['*123'], 'confirmed')).to.be.
+      await expect((instance as any).checkDelegates(theAccount, ['*123'], 'confirmed')).to.be.
         rejectedWith('Invalid math operator');
     });
 
     it('should call schema.validate for each pk', async () => {
       schemaStub.stubs.validate.returns(true);
-      await (instance as any).checkDelegates(theAccount.publicKey, votes, 'confirmed');
+      await (instance as any).checkDelegates(theAccount, votes, 'confirmed');
       expect(schemaStub.stubs.validate.callCount).to.be.equal(votes.length);
       votes.forEach((pk, i) => {
         expect(schemaStub.stubs.validate.getCall(i).args[0]).to.be.equal(pk.substr(1));
@@ -436,40 +416,40 @@ describe('modules/delegates', () => {
 
     it('should throw if invalid public key in votes', async () => {
       schemaStub.stubs.validate.returns(false);
-      await expect((instance as any).checkDelegates(theAccount.publicKey, votes, 'confirmed')).to.be.
+      await expect((instance as any).checkDelegates(theAccount, votes, 'confirmed')).to.be.
         rejectedWith('Invalid public key');
     });
 
     it('should throw if trying to vote again for the same delegate', async () => {
       theAccount.delegates.push(votes[0].substr(1));
-      await expect((instance as any).checkDelegates(theAccount.publicKey, votes, 'confirmed')).to.be.
+      await expect((instance as any).checkDelegates(theAccount, votes, 'confirmed')).to.be.
         rejectedWith('Failed to add vote, account has already voted for this delegate');
     });
 
     it('should throw if trying to remove vote for a non-voted delegate', async () => {
       const unvotes = votes.slice();
       unvotes[0]    = unvotes[0].replace('+', '-');
-      await expect((instance as any).checkDelegates(theAccount.publicKey, unvotes, 'confirmed')).to.be.
+      await expect((instance as any).checkDelegates(theAccount, unvotes, 'confirmed')).to.be.
         rejectedWith('Failed to remove vote, account has not voted for this delegate');
     });
 
-    it('should call accountsModule.getAccount', async () => {
-      await (instance as any).checkDelegates(theAccount.publicKey, votes, 'confirmed');
-      expect(accountsModuleStub.stubs.getAccount.callCount).to.be.equal(2);
-      expect(accountsModuleStub.stubs.getAccount.secondCall.args[0]).to.be.deep.equal({
-        publicKey : votes[0].substr(1),
+    it('should call accountsModule.getAccount on vote publicKey', async () => {
+      await (instance as any).checkDelegates(theAccount, votes, 'confirmed');
+      expect(accountsModuleStub.stubs.getAccount.callCount).to.be.equal(1);
+      expect(accountsModuleStub.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({
         isDelegate: 1,
+        publicKey : Buffer.from(votes[0].substr(1), 'hex'),
       });
     });
 
-    it('should throw if account not found', async () => {
-      accountsModuleStub.stubs.getAccount.onFirstCall().resolves(theAccount);
-      accountsModuleStub.stubs.getAccount.onSecondCall().resolves(null);
-      await expect((instance as any).checkDelegates(theAccount.publicKey, votes, 'confirmed')).to.be.
+    it('should throw if delegate not found', async () => {
+      accountsModuleStub.stubs.getAccount.onFirstCall().resolves(null);
+      await expect((instance as any).checkDelegates(theAccount, votes, 'confirmed')).to.be.
         rejectedWith('Delegate not found');
     });
 
     it('should throw if trying to vote or unvote too many delegates', async () => {
+      accountsModuleStub.stubs.getAccount.onSecondCall().resolves({});
       const wrongVotes = ['+deleg1', '+deleg2'];
       await expect((instance as any).checkDelegates(theAccount.publicKey, wrongVotes, 'confirmed')).to.be.
         rejectedWith('Maximum number of 1 votes exceeded (1 too many)');

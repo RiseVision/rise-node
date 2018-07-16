@@ -13,7 +13,8 @@ import {
   IAccountsModule, IBlocksModule, IDelegatesModule, ITransactionsModule,
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { BlockRewardLogic, MemAccountsData, SignedBlockType } from '../logic/';
+import { BlockRewardLogic, SignedBlockType } from '../logic/';
+import { AccountsModel } from '../models';
 import { publicKey } from '../types/sanityTypes';
 
 @injectable()
@@ -51,12 +52,12 @@ export class DelegatesModule implements IDelegatesModule {
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
-  public async checkConfirmedDelegates(pk: publicKey, votes: string[]) {
-    return this.checkDelegates(pk, votes, 'confirmed');
+  public async checkConfirmedDelegates(account: AccountsModel, votes: string[]) {
+    return this.checkDelegates(account, votes, 'confirmed');
   }
 
-  public async checkUnconfirmedDelegates(pk: publicKey, votes: string[]) {
-    return this.checkDelegates(pk, votes, 'unconfirmed');
+  public async checkUnconfirmedDelegates(account: AccountsModel, votes: string[]) {
+    return this.checkDelegates(account, votes, 'unconfirmed');
   }
 
   /**
@@ -64,7 +65,7 @@ export class DelegatesModule implements IDelegatesModule {
    * @param {number} height blockheight.
    * @return {Promise<publicKey[]>}
    */
-  public async generateDelegateList(height: number): Promise<publicKey[]> {
+  public async generateDelegateList(height: number): Promise<Buffer[]> {
     const pkeys      = await this.getKeysSortByVote();
     const seedSource = this.roundsLogic.calcRound(height).toString();
     let currentSeed  = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
@@ -88,15 +89,9 @@ export class DelegatesModule implements IDelegatesModule {
    */
   public async getDelegates(query: { limit?: number, offset?: number, orderBy: string }): Promise<{
     delegates: Array<{
-      username: string,
-      address: string,
-      publicKey: string,
-      vote: string,
-      producedblocks: number,
-      missedblocks: number,
-      rank: number,
-      approval: number,
-      productivity: number }>,
+      delegate: AccountsModel,
+      info: { rank: number, approval: number, productivity: number }
+    }>,
     count: number,
     offset: number,
     limit: number,
@@ -123,7 +118,8 @@ export class DelegatesModule implements IDelegatesModule {
     const lastBlock   = this.blocksModule.lastBlock;
     const totalSupply = this.blockReward.calcSupply(lastBlock.height);
 
-    const crunchedDelegates: Array<MemAccountsData & { rank: number, approval: number, productivity: number }> = [];
+    // tslint:disable-next-line
+    const crunchedDelegates: Array<{delegate: AccountsModel, info: { rank: number, approval: number, productivity: number }}> = [];
     for (let i = 0; i < delegates.length; i++) {
 
       const rank     = i + 1;
@@ -137,8 +133,8 @@ export class DelegatesModule implements IDelegatesModule {
       const productivity = (!outsider) ? Math.round(percent * 1e2) / 1e2 : 0;
 
       crunchedDelegates.push({
-        ... delegates[i],
-        ... {rank, approval, productivity},
+        delegate: delegates[i],
+        info: {rank, approval, productivity},
       });
     }
 
@@ -167,8 +163,8 @@ export class DelegatesModule implements IDelegatesModule {
 
     const curSlot = this.slots.getSlotNumber(block.timestamp);
     const delegId = delegates[curSlot % this.slots.delegates];
-    if (!(delegId && block.generatorPublicKey === delegId)) {
-      this.logger.error(`Expected generator ${delegId} Received generator: ${block.generatorPublicKey}`);
+    if (!(delegId && block.generatorPublicKey.equals(delegId))) {
+      this.logger.error(`Expected generator ${delegId.toString('hex')} Received generator: ${block.generatorPublicKey.toString('hex')}`);
       throw new Error(`Failed to verify slot ${curSlot}`);
     }
   }
@@ -188,7 +184,7 @@ export class DelegatesModule implements IDelegatesModule {
   /**
    * Get delegates public keys sorted by descending vote.
    */
-  private async getKeysSortByVote(): Promise<publicKey[]> {
+  private async getKeysSortByVote(): Promise<Buffer[]> {
     const rows = await this.accountsModule.getAccounts({
       isDelegate: 1,
       limit     : this.slots.delegates,
@@ -199,14 +195,12 @@ export class DelegatesModule implements IDelegatesModule {
 
   /**
    * Checks vote integrity for account and controls total votes do not exceed active delegates.
-   * @param {publicKey} pk
+   * @param {AccountsModel} account
    * @param votes
    * @param state
    * @return {Promise<void>}
    */
-  private async checkDelegates(pk: publicKey, votes: string[], state: 'confirmed' | 'unconfirmed') {
-    const account = await this.accountsModule.getAccount({publicKey: pk});
-
+  private async checkDelegates(account: AccountsModel, votes: string[], state: 'confirmed' | 'unconfirmed') {
     if (!account) {
       throw new Error('Account not found');
     }
@@ -242,7 +236,7 @@ export class DelegatesModule implements IDelegatesModule {
 
       // check voted (or unvoted) is actually a delegate.
       // TODO: This can be optimized as it's only effective when "Adding" a vote.
-      const del = await this.accountsModule.getAccount({publicKey: curPK, isDelegate: 1});
+      const del = await this.accountsModule.getAccount({publicKey: new Buffer(curPK, 'hex'), isDelegate: 1});
       if (!del) {
         throw new Error('Delegate not found');
       }

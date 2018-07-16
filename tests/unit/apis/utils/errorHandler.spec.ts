@@ -31,7 +31,7 @@ describe('apis/utils/errorHandler', () => {
   beforeEach(() => {
     container = createContainer();
     container.bind(Symbols.api.utils.errorHandler).to(APIErrorHandler);
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     sendSpy = {send: sandbox.spy()};
     response = {status: () => sendSpy, send: sendSpy.send };
     responseStatusSpy = sandbox.spy(response, 'status');

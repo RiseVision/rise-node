@@ -192,13 +192,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
       if (this.transactionsModule.transactionInPool(tx.id)) {
         return true;
       } else {
-        try {
-          await this.transactionLogic.assertNonConfirmed(tx);
-          return true;
-        } catch (e) {
-          // Tx is confirmed.
-          return false;
-        }
+        return (await this.transactionsModule.filterConfirmedIds([tx.id])).length === 0;
       }
     }
     return false;

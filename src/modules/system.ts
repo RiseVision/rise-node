@@ -1,16 +1,12 @@
 import * as crypto from 'crypto';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as os from 'os';
-import { IDatabase } from 'pg-promise';
 import * as semver from 'semver';
 import { constants as constantType } from '../helpers/';
 import { IBlocksModule, ISystemModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
-import sqlSystem from '../sql/system';
+import { BlocksModel } from '../models';
 import { AppConfig, PeerHeaders } from '../types/genericTypes';
-
-// tslint:disable-next-line
-// tslint:disable-next-line
 
 const rcRegExp = /[a-z]+$/;
 
@@ -26,8 +22,6 @@ export class SystemModule implements ISystemModule {
   private appConfig: AppConfig;
   @inject(Symbols.helpers.constants)
   private constants: typeof constantType;
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
   @inject(Symbols.generic.nonce)
   private nonce: string;
 
@@ -35,16 +29,21 @@ export class SystemModule implements ISystemModule {
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
 
+  // Models
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
+
   @postConstruct()
   public postConstruct() {
     this.headers = {
-      broadhash: this.appConfig.nethash,
-      height   : 1,
-      nethash  : this.appConfig.nethash,
-      nonce    : this.nonce,
-      os       : `${os.platform()}${os.release()}`,
-      port     : this.appConfig.port,
-      version  : this.appConfig.version,
+      broadhash : this.appConfig.nethash,
+      firewalled: this.appConfig.forging.transactionsPolling ? 'true' : 'false',
+      height    : 1,
+      nethash   : this.appConfig.nethash,
+      nonce     : this.nonce,
+      os        : `${os.platform()}${os.release()}`,
+      port      : this.appConfig.port,
+      version   : this.appConfig.version,
     };
   }
 
@@ -164,9 +163,14 @@ export class SystemModule implements ISystemModule {
    * @return {hash|setImmediateCallback} err | private nethash or new hash.
    */
   public async getBroadhash() {
-    const rows: Array<{ id: string }> = await this.db.query(sqlSystem.getBroadhash, { limit: 5 });
+    const rows: Array<{ id: string }> = await this.BlocksModel.findAll({
+      attributes: ['id'],
+      limit     : 5,
+      order     : [['height', 'DESC']],
+      raw       : true,
+    });
     if (rows.length <= 1) {
-      return this.headers.broadhash;
+      return this.appConfig.nethash;
     }
 
     const seed = rows.map((r) => r.id).join('');
@@ -182,7 +186,6 @@ export class SystemModule implements ISystemModule {
       secondsignature: number,
       delegate: number,
       multisignature: number,
-      dapp: number
     }, fromHeight: number, height: number, toHeight: number
   } {
 

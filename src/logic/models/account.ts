@@ -25,8 +25,6 @@ import {IModelField} from './modelField';
  * @property {number} multilifetime - Between 1 and 72.
  * @property {number} u_multilifetime - Between 1 and 72.
  * @property {string} blockId
- * @property {boolean} nameexist
- * @property {boolean} u_nameexist
  * @property {number} producedblocks - Between -1 and 1.
  * @property {number} missedblocks - Between -1 and 1.
  * @property {number} fees
@@ -257,22 +255,6 @@ export const accountsModelCreator = (table:string): IModelField[] =>  [
       maxLength: 20
     },
     conv  : String
-  },
-  {
-    name  : 'nameexist',
-    type  : 'SmallInt',
-    filter: {
-      type: 'boolean'
-    },
-    conv  : Boolean
-  },
-  {
-    name  : 'u_nameexist',
-    type  : 'SmallInt',
-    filter: {
-      type: 'boolean'
-    },
-    conv  : Boolean
   },
   {
     name  : 'producedblocks',

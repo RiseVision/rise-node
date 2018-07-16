@@ -1,19 +1,31 @@
 import * as chai from 'chai';
+import {Container} from 'inversify';
 import * as sinon from 'sinon';
-import { RoundsLogic } from '../../../src/logic/rounds';
+import { SinonSandbox } from 'sinon';
+import {Symbols} from '../../../src/ioc/symbols';
+import { RoundsLogic } from '../../../src/logic';
 import { SlotsStub } from '../../stubs';
+import { createContainer } from '../../utils/containerCreator';
 
 const expect = chai.expect;
 
 // tslint:disable no-unused-expression
 describe('logic/rounds', () => {
+  let sandbox: SinonSandbox;
   let instance: RoundsLogic;
   let slotsStub: SlotsStub;
+  let container: Container;
 
   beforeEach(() => {
-    slotsStub               = new SlotsStub();
+    sandbox             = sinon.createSandbox();
+    container          = createContainer();
+    slotsStub               = container.get(Symbols.helpers.slots);
     instance                = new RoundsLogic();
     (instance as any).slots = slotsStub;
+  });
+
+  afterEach(() => {
+    sandbox.restore();
   });
 
   describe('calcRound', () => {
@@ -34,8 +46,8 @@ describe('logic/rounds', () => {
     const round = 123;
 
     it('should call firstInRound and lastInRound', () => {
-      const firstInRoundSpy = sinon.spy(instance, 'firstInRound');
-      const lastInRoundSpy  = sinon.spy(instance, 'lastInRound');
+      const firstInRoundSpy = sandbox.spy(instance, 'firstInRound');
+      const lastInRoundSpy  = sandbox.spy(instance, 'lastInRound');
       instance.heightFromRound(round);
       expect(firstInRoundSpy.calledOnce).to.be.true;
       expect(lastInRoundSpy.calledOnce).to.be.true;

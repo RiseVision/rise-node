@@ -33,7 +33,6 @@ export interface PeerType extends BasePeerType {
   state: PeerState;
   os: string;
   version: string;
-  // dappid: string | string[];
   broadhash: string;
   height: number;
   clock: number;
@@ -44,7 +43,6 @@ export interface PeerType extends BasePeerType {
 const nullable = [
   'os',
   'version',
-  'dappid',
   'broadhash',
   'height',
   'clock',
@@ -54,7 +52,6 @@ const nullable = [
 const headers = [
   'os',
   'version',
-  'dappid',
   'broadhash',
   'height',
   'nonce',
@@ -72,7 +69,6 @@ const properties = [
   'state',
   'os',
   'version',
-  'dappid',
   'broadhash',
   'height',
   'clock',
@@ -86,7 +82,6 @@ export class PeerLogic implements PeerType, IPeerLogic {
   public state: PeerState;
   public os: string;
   public version: string;
-  public dappid: string | string[];
   public broadhash: string;
   public height: number;
   public clock: number;
@@ -121,11 +116,7 @@ export class PeerLogic implements PeerType, IPeerLogic {
   }
 
   // tslint:disable-next-line max-line-length
-  public normalize<T extends { dappid?: string | string[], height?: number, port?: number, state?: PeerState }>(peer: T): T {
-    if (peer.dappid && !Array.isArray(peer.dappid)) {
-      peer.dappid = [peer.dappid];
-    }
-
+  public normalize<T extends { height?: number, port?: number, state?: PeerState }>(peer: T): T {
     if (peer.height) {
       peer.height = this.parseInt(peer.height, 1);
     }

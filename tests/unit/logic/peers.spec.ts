@@ -1,9 +1,12 @@
 import * as chai from 'chai';
+import {Container} from 'inversify';
 import * as sinon from 'sinon';
-import { SinonStub } from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
+import {Symbols} from '../../../src/ioc/symbols';
+import { PeerLogic } from '../../../src/logic';
 import { PeersLogic } from '../../../src/logic';
 import { LoggerStub, PeerLogicStub, SystemModuleStub } from '../../stubs';
-import { PeerLogic } from '../../../src/logic/peer';
+import { createContainer } from '../../utils/containerCreator';
 
 const expect = chai.expect;
 
@@ -14,16 +17,24 @@ describe('logic/peers', () => {
   let peerLogicStub: PeerLogicStub;
   let systemModuleStub: SystemModuleStub;
   let peersFactoryStub: SinonStub;
+  let container: Container;
+  let sandbox: SinonSandbox;
 
   beforeEach(() => {
-    loggerStub = new LoggerStub();
-    instance = new PeersLogic();
+    sandbox = sinon.createSandbox();
+    container = createContainer();
+    loggerStub = container.get(Symbols.helpers.logger);
     peerLogicStub = new PeerLogicStub();
-    systemModuleStub = new SystemModuleStub();
-    peersFactoryStub = sinon.stub().returns(peerLogicStub);
+    systemModuleStub = container.get(Symbols.modules.system);
+    peersFactoryStub = sandbox.stub().returns(peerLogicStub);
+    instance = new PeersLogic();
     (instance as any).logger = loggerStub;
     (instance as any).peersFactory = peersFactoryStub;
     (instance as any).systemModule = systemModuleStub;
+  });
+
+  afterEach(() => {
+    sandbox.restore();
   });
 
   describe('create', () => {
@@ -134,6 +145,34 @@ describe('logic/peers', () => {
       expect(loggerStub.stubs.trace.firstCall.args[1]).to.be.deep.equal(peerLogicStub.string);
     });
 
+    it('should call wasRecentlyRemoved', () => {
+      existsStub.returns(false);
+      const wasRecentlyRemovedSpy = sinon.spy(instance as any, 'wasRecentlyRemoved');
+      instance.upsert(peerLogicStub, false);
+      expect(wasRecentlyRemovedSpy.calledOnce).to.be.true;
+      expect(wasRecentlyRemovedSpy.firstCall.args.length).to.be.equal(1);
+      expect(wasRecentlyRemovedSpy.firstCall.args[0]).to.be.deep.equal(peerLogicStub);
+      wasRecentlyRemovedSpy.restore();
+    });
+
+    it('should not insert the peer if it was recently removed and return false', () => {
+      existsStub.returns(false);
+      acceptableStub.returns([peerLogicStub]);
+      instance.upsert(peerLogicStub, true);
+      // Make sure it was inserted
+      expect((instance as any).peers[peerLogicStub.string]).to.be.deep.equal(peerLogicStub);
+      existsStub.returns(true);
+      instance.remove(peerLogicStub);
+      // Make sure it was removed
+      expect((instance as any).peers).to.be.deep.equal({});
+      existsStub.returns(false);
+      acceptableStub.returns([peerLogicStub]);
+      instance.upsert(peerLogicStub, true);
+      expect(instance.upsert(peerLogicStub, true)).to.be.equal(false);
+      // Make sure it was not added
+      expect((instance as any).peers).to.be.deep.equal({});
+    });
+
     it('should not insert the peer and call logger.debug if this.acceptable([thePeer]) returns empty array', () => {
       existsStub.returns(false);
       acceptableStub.returns([]);
@@ -212,6 +251,15 @@ describe('logic/peers', () => {
       expect(retVal).to.be.false;
     });
 
+    it('should add the time of removal to the lastRemoved list', () => {
+      existsStub.returns(true);
+      (instance as any).peers[peerLogicStub.defaults.string] = peerLogicStub;
+      instance.remove(peerLogicStub);
+      expect((instance as any).lastRemoved[peerLogicStub.string]).to.exist;
+      expect((instance as any).lastRemoved[peerLogicStub.string]).to.be.lte(Date.now());
+      expect((instance as any).lastRemoved[peerLogicStub.string]).to.be.gt(Date.now() - 1000);
+    });
+
     it('should remove the peer from the list if exists', () => {
       existsStub.returns(true);
       (instance as any).peers[peerLogicStub.defaults.string] = peerLogicStub;
@@ -242,6 +290,9 @@ describe('logic/peers', () => {
   });
 
   describe('acceptable', () => {
+    beforeEach(() => {
+      systemModuleStub.stubs.versionCompatible.returns(true);
+    });
     it('should call systemModule.getNonce if ip is not private', () => {
       // non-private ip
       peerLogicStub.ip = '8.8.8.8';
@@ -266,7 +317,17 @@ describe('logic/peers', () => {
       const retVal = instance.acceptable([peer1, peer2]);
       expect(retVal).to.be.deep.equal([peer1]);
     });
+    it('should filter out peers with incompatible version', () => {
+      systemModuleStub.enqueueResponse('getNonce', 'otherValue');
+      const peer1 = new PeerLogicStub();
+      const peer2 = new PeerLogicStub();
+      peer1.ip = '8.8.8.8';
+      peer2.ip = '8.8.8.7';
+      systemModuleStub.stubs.versionCompatible.onSecondCall().returns(false);
+      const retVal = instance.acceptable([peer1, peer2]);
+      expect(retVal).to.be.deep.eq([peer1]);
 
+    });
     it('should filter out peers with my same nonce', () => {
       systemModuleStub.enqueueResponse('getNonce', 'systemNonce');
 
@@ -274,6 +335,25 @@ describe('logic/peers', () => {
       peerLogicStub.nonce = 'systemNonce';
       const retVal = instance.acceptable([peerLogicStub]);
       expect(retVal).to.be.deep.equal([]);
+    });
+  });
+
+  describe('wasRecentlyRemoved', () => {
+    it('should return false if peer is not in lastRemoved ', () => {
+      (instance as any).lastRemoved = {};
+      expect((instance as any).wasRecentlyRemoved(peerLogicStub)).to.be.false;
+    });
+
+    it('should return true if removal was less than 15 minutes ago', () => {
+      (instance as any).lastRemoved = {};
+      (instance as any).lastRemoved[peerLogicStub.string] = Date.now() - 5 * 60 * 1000;
+      expect((instance as any).wasRecentlyRemoved(peerLogicStub)).to.be.true;
+    });
+
+    it('should return false if removal was more than 15 minutes ago', () => {
+      (instance as any).lastRemoved = {};
+      (instance as any).lastRemoved[peerLogicStub.string] = Date.now() - 20 * 60 * 1000;
+      expect((instance as any).wasRecentlyRemoved(peerLogicStub)).to.be.false;
     });
   });
 });

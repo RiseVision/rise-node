@@ -1,13 +1,13 @@
 import { expect } from 'chai';
 import * as chai from 'chai';
-// import 'chai-as-promised';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
+import { SinonSandbox } from 'sinon';
 import { IBlocksModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { BlocksModule } from '../../../src/modules';
-import { LoggerStub } from '../../stubs';
+import { createContainer } from '../../utils/containerCreator';
 
 chai.use(chaiAsPromised);
 
@@ -16,16 +16,19 @@ describe('modules/blocks', () => {
   let inst: IBlocksModule;
   let instB: BlocksModule;
   let container: Container;
-  before(() => {
-    container = new Container();
-    container.bind(Symbols.helpers.logger).to(LoggerStub);
-    container.bind(Symbols.modules.blocks).to(BlocksModule);
-    container.bind(Symbols.helpers.constants).toConstantValue({ blockReceiptTimeOut: 10 });
-  });
+  let sandbox: SinonSandbox;
 
   beforeEach(() => {
+    sandbox   = sinon.createSandbox();
+    container = createContainer();
+    container.rebind(Symbols.modules.blocks).to(BlocksModule);
     inst = instB = container.get<any>(Symbols.modules.blocks);
   });
+
+  afterEach(() => {
+    sandbox.restore();
+  });
+
   describe('instance fields', () => {
     it('should have lastReceipt', () => {
       expect(inst.lastReceipt).to.exist;

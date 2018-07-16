@@ -3,7 +3,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { SignaturesAPI } from '../../../src/apis/signatureAPI';
+import { SignaturesAPI } from '../../../src/apis';
 import { Symbols } from '../../../src/ioc/symbols';
 import { SystemModuleStub } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
@@ -24,7 +24,7 @@ describe('apis/signatureAPI', () => {
 
   beforeEach(() => {
     container = createContainer();
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     container
       .bind(Symbols.api.signatures)
       .to(SignaturesAPI)
@@ -45,7 +45,7 @@ describe('apis/signatureAPI', () => {
   });
 
   describe('fees()', () => {
-    it('success', async () => {
+    it('should return an object with the properties: fee, fromHeight, height and toHeight', async () => {
       result = await instance.fees({ height: 123 });
       expect(result).to.deep.equal({
         fee: 10,
@@ -59,7 +59,7 @@ describe('apis/signatureAPI', () => {
   });
 
   describe('addSignature()', () => {
-    it('Throws deprecated', async () => {
+    it('should throw deprecated', async () => {
       await expect(instance.addSignature()).to.be.rejectedWith(
         'Method is deprecated'
       );

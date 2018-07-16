@@ -1,15 +1,15 @@
+import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
-import { IDatabase } from 'pg-promise';
 import { Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import { catchToLoggerAndRemapError, ILogger} from '../helpers';
+import { ILogger } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
-import { ITransactionLogic } from '../ioc/interfaces/logic';
-import { IAccountsModule, ITransactionsModule } from '../ioc/interfaces/modules';
+import { ITransactionLogic, VerificationType } from '../ioc/interfaces/logic';
+import { IAccountsModule, IBlocksModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
+import { Accounts2MultisignaturesModel, BlocksModel, TransactionsModel } from '../models';
 import multisigSchema from '../schema/multisignatures';
-import sql from '../sql/multisignatures';
 import { publicKey as pkType } from '../types/sanityTypes';
 import { APIError, DeprecatedAPIError } from './errors';
 
@@ -20,8 +20,6 @@ export class MultisignatureAPI {
   // Generics
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
 
   // Helpers
   @inject(Symbols.helpers.logger)
@@ -34,20 +32,30 @@ export class MultisignatureAPI {
   // Modules
   @inject(Symbols.modules.accounts)
   private accounts: IAccountsModule;
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
   @inject(Symbols.modules.transactions)
   private transactions: ITransactionsModule;
+
+  // models
+  @inject(Symbols.models.accounts2Multisignatures)
+  private Accounts2MultisignaturesModel: typeof Accounts2MultisignaturesModel;
+  @inject(Symbols.models.transactions)
+  private TransactionsModel: typeof TransactionsModel;
 
   @Get('/accounts')
   @ValidateSchema()
   public async getAccounts(@SchemaValid(multisigSchema.getAccounts)
                            @QueryParams() params: { publicKey: pkType }) {
-    const { publicKey } = params;
-    const row = await this.db.one(sql.getAccountIds, { publicKey })
-      .catch(catchToLoggerAndRemapError('Multisignature#getAccountIds error', this.logger));
+    const rows = await this.Accounts2MultisignaturesModel.findAll({
+      // attributes: ['accountId'],
+      where: { dependentId: params.publicKey },
+    });
 
-    const accountIds = Array.isArray(row.accountIds) ? row.accountIds : [];
+    const accountIds = rows.map((r) => r.accountId);
+
     // Get all multisignature accounts associated to that have that publicKey as a signer.
-    const accounts   = await this.accounts.getAccounts(
+    const accounts = await this.accounts.getAccounts(
       { address: { $in: accountIds }, sort: 'balance' },
       ['address', 'balance', 'multisignatures', 'multilifetime', 'multimin']);
 
@@ -61,7 +69,16 @@ export class MultisignatureAPI {
         },
         ['address', 'publicKey', 'balance']
       );
-      items.push({ ...account, ...{ multisigaccounts } });
+      items.push({
+        ...filterObject(
+          account.toPOJO(),
+          ['address', 'balance', 'multisignatures', 'multilifetime', 'multimin']
+        ),
+        ...{
+          multisigaccounts: multisigaccounts
+            .map((m) => filterObject(m.toPOJO(), ['address', 'publicKey', 'balance']))
+        },
+      });
     }
 
     return { accounts: items };
@@ -72,8 +89,9 @@ export class MultisignatureAPI {
   public async getPending(@SchemaValid(multisigSchema.pending)
                           @QueryParams() params: { publicKey: pkType }) {
     const { publicKey } = params;
-    const txs = this.transactions.getMultisignatureTransactionList(false)
-      .filter((tx) => tx.senderPublicKey === publicKey);
+    const bufPubKey     = Buffer.from(publicKey, 'hex');
+    const txs           = this.transactions.getMultisignatureTransactionList(false)
+      .filter((tx) => tx.senderPublicKey.equals(bufPubKey));
 
     const toRet = [];
 
@@ -83,12 +101,12 @@ export class MultisignatureAPI {
         let verified = false;
         for (let i = 0; i < tx.signatures.length && !verified; i++) {
           const signature = tx.signatures[i];
-          verified        = this.txLogic.verifySignature(tx, publicKey, signature);
+          verified        = this.txLogic.verifySignature(tx, bufPubKey, Buffer.from(signature, 'hex'), VerificationType.ALL);
         }
         signed = verified;
       }
 
-      if (!signed && tx.senderPublicKey === publicKey) {
+      if (!signed && tx.senderPublicKey.equals(bufPubKey)) {
         // It's signed if the sender is the publickey( signature of tx)
         signed = true;
       }
@@ -107,7 +125,7 @@ export class MultisignatureAPI {
         max        : signatures.length,
         min,
         signed,
-        transaction: tx,
+        transaction: this.TransactionsModel.toTransportTransaction(tx, this.blocksModule),
       });
     }
 

@@ -3,34 +3,38 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
+import { Op } from 'sequelize';
+import { ForkType } from '../../../../src/helpers';
 import { IBlocksModuleProcess } from '../../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../../src/ioc/symbols';
+import { SignedAndChainedBlockType } from '../../../../src/logic';
+import { IBaseTransaction } from '../../../../src/logic/transactions';
 import { BlocksModuleProcess } from '../../../../src/modules/blocks/';
 import {
+  AccountsModuleStub,
+  AppStateStub,
+  BlocksModuleStub,
   BlocksSubmoduleChainStub,
   BlocksSubmoduleUtilsStub,
   BlocksSubmoduleVerifyStub,
+  DbStub,
   DelegatesModuleStub,
-  PeersLogicStub, TransactionsModuleStub
+  LoggerStub,
+  PeersLogicStub,
+  RoundsLogicStub,
+  SequenceStub,
+  TransactionLogicStub,
+  TransactionsModuleStub,
+  TransportModuleStub,
+  ZSchemaStub
 } from '../../../stubs';
-import { createContainer } from '../../../utils/containerCreator';
-import TransportModuleStub from '../../../stubs/modules/TransportModuleStub';
-import { AppStateStub } from '../../../stubs/logic/AppStateStub';
-import ZSchemaStub from '../../../stubs/helpers/ZSchemaStub';
-import DbStub from '../../../stubs/helpers/DbStub';
-import { SequenceStub } from '../../../stubs/helpers/SequenceStub';
-import BlocksModuleStub from '../../../stubs/modules/BlocksModuleStub';
-import { SignedAndChainedBlockType } from '../../../../src/logic';
-import { createFakePeer } from '../../../utils/fakePeersFactory';
-import RoundsLogicStub from '../../../stubs/logic/RoundsLogicStub';
-import { ForkModuleStub } from '../../../stubs/modules/ForkModuleStub';
 import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
-import { ForkType } from '../../../../src/helpers';
-import AccountsModuleStub from '../../../stubs/modules/AccountsModuleStub';
-import { IBaseTransaction } from '../../../../src/logic/transactions';
-import { createRandomTransactions } from '../../../utils/txCrafter';
-import TransactionLogicStub from '../../../stubs/logic/TransactionLogicStub';
-import LoggerStub from '../../../stubs/helpers/LoggerStub';
+import { ForkModuleStub } from '../../../stubs/modules/ForkModuleStub';
+import { createContainer } from '../../../utils/containerCreator';
+import { createFakePeer } from '../../../utils/fakePeersFactory';
+import { createRandomTransactions, toBufferedTransaction } from '../../../utils/txCrafter';
+import { BlocksModel } from '../../../../src/models';
+import { SinonStub } from 'sinon';
 
 chai.use(chaiAsPromised);
 
@@ -39,7 +43,7 @@ describe('modules/blocks/process', () => {
   let inst: IBlocksModuleProcess;
   let instR: BlocksModuleProcess;
   let container: Container;
-  const sandbox = sinon.sandbox.create();
+  const sandbox = sinon.createSandbox();
   beforeEach(() => {
     container = createContainer();
     container.rebind(Symbols.modules.blocksSubModules.process).to(BlocksModuleProcess);
@@ -62,13 +66,14 @@ describe('modules/blocks/process', () => {
   let fork: ForkModuleStub;
   let txModule: TransactionsModuleStub;
   let dbSequence: SequenceStub;
-  let dbStub: DbStub;
   let schemaStub: ZSchemaStub;
   let transportModule: TransportModuleStub;
   let peersLogic: PeersLogicStub;
   let roundsStub: RoundsLogicStub;
   let txLogic: TransactionLogicStub;
   let loggerStub: LoggerStub;
+
+  let blocksModel: typeof BlocksModel;
   // let blockLogic: BlockLogicStub;
   // let roundsModule: RoundsModuleStub;
   // let busStub: BusStub;
@@ -89,7 +94,6 @@ describe('modules/blocks/process', () => {
     // blockLogic     = container.get(Symbols.logic.block);
     roundsStub      = container.get(Symbols.logic.rounds);
     transportModule = container.get(Symbols.modules.transport);
-    dbStub          = container.get(Symbols.generic.db);
     dbSequence      = container.getTagged(
       Symbols.helpers.sequence,
       Symbols.helpers.sequence,
@@ -101,16 +105,21 @@ describe('modules/blocks/process', () => {
     txModule        = container.get(Symbols.modules.transactions);
     txLogic         = container.get(Symbols.logic.transaction);
     loggerStub      = container.get(Symbols.helpers.logger);
+
+    blocksModel     = container.get(Symbols.models.blocks);
   });
 
   describe('getCommonBlock', () => {
+    let blocksModelCountStub: SinonStub;
     beforeEach(() => {
       blocksUtils.enqueueResponse('getIdSequence', {ids: ['1', '2', '3', '4', '5']});
+      blocksModelCountStub = sandbox.stub(blocksModel, 'count').resolves(1);
     });
     it('should get idSequence first', async () => {
       try {
         await inst.getCommonBlock(null, 10);
       } catch (e) {
+        return false;
       }
       expect(blocksUtils.stubs.getIdSequence.called).is.true;
       expect(blocksUtils.stubs.getIdSequence.firstCall.args[0]).is.eq(10);
@@ -120,6 +129,7 @@ describe('modules/blocks/process', () => {
       try {
         await inst.getCommonBlock({peer: 'peer'} as any, 10);
       } catch (e) {
+        return false;
       }
       expect(transportModule.stubs.getFromPeer.called).is.true;
       expect(transportModule.stubs.getFromPeer.firstCall.args[0]).to.be.deep.eq({peer: 'peer'});
@@ -169,26 +179,28 @@ describe('modules/blocks/process', () => {
             id           : 'id',
             previousBlock: 'pb',
           },
-        }
+        },
       }));
-      dbStub.enqueueResponse('query', Promise.resolve([{count: 1}]));
+
       await inst.getCommonBlock({p: 'p'} as any, 10);
-      expect(dbStub.stubs.query.calledOnce).is.true;
-      expect(dbStub.stubs.query.firstCall.args[0]).is
-        .eq('SELECT COUNT("id")::int FROM blocks WHERE "id" = ${id} AND "previousBlock" = ${previousBlock} AND "height" = ${height}');
-      expect(dbStub.stubs.query.firstCall.args[1]).is.deep.eq({
-        height       : 1,
-        id           : 'id',
-        previousBlock: 'pb',
+      expect(blocksModelCountStub.calledOnce).is.true;
+      expect(blocksModelCountStub.firstCall.args[0]).deep.eq({
+        where: {
+          height       : 1,
+          id           : 'id',
+          previousBlock: 'pb',
+        }
       });
     });
+
+    // tslint:disable-next-line: max-line-length
     it('should trigger recoverChain if returned commonblock does not return anything from db and poor consensus', async () => {
       transportModule.enqueueResponse('getFromPeer', Promise.resolve({
         body: {
           common: {},
         },
       }));
-      dbStub.enqueueResponse('query', Promise.resolve([]));
+      blocksModelCountStub.resolves(0);
       appState.enqueueResponse('getComputed', true); // poor consensus
       blocksChain.enqueueResponse('recoverChain', Promise.resolve());
 
@@ -198,13 +210,15 @@ describe('modules/blocks/process', () => {
       expect(appState.stubs.getComputed.firstCall.args[0]).is.eq('node.poorConsensus');
 
     });
-    it('should throw error if returned commonblock does not return anything from db and NOT poor consensus', async () => {
+
+    // tslint:disable-next-line: max-line-length
+    it('should throw error if returned common block does not return anything from db and NOT poor consensus', async () => {
       transportModule.enqueueResponse('getFromPeer', Promise.resolve({
         body: {
           common: {},
         },
       }));
-      dbStub.enqueueResponse('query', Promise.resolve([]));
+      blocksModelCountStub.resolves(0);
       appState.enqueueResponse('getComputed', false); // poor consensus
 
       await expect(inst.getCommonBlock({p: 'p'} as any, 10)).to.be.rejectedWith('Chain comparison failed with peer');
@@ -212,54 +226,77 @@ describe('modules/blocks/process', () => {
   });
 
   describe('loadBlocksOffset', () => {
+    let blocksModelFindAllStub: SinonStub;
+    beforeEach(() => {
+      blocksModelFindAllStub = sandbox.stub(blocksModel, 'findAll');
+      inst['TransactionsModel'] = 'txModel'; // avoid recursion on deep equality checks
+    });
     describe('db query', () => {
       it('should be done accounting offset>0', async () => {
-        dbStub.enqueueResponse('query', Promise.resolve([]));
+        blocksModelFindAllStub.resolves([]);
         blocksUtils.enqueueResponse('readDbRows', []);
-        await inst.loadBlocksOffset(10, 5, true);
 
-        expect(dbStub.stubs.query.firstCall.args[1]).to.be.deep.eq({
-          limit : 10 /* limit */ + 5,
-          offset: 5,
+        await inst.loadBlocksOffset(10, 5, true);
+        expect(blocksModelFindAllStub.firstCall.args[0]).is.deep.eq({
+          include: [ 'txModel' ],
+          order: [ 'height', 'rowId'],
+          where: {
+            height: {
+              // [Op.gte]: 5,
+              // [Op.lt]: 15,
+            },
+          },
         });
+
+        expect(blocksModelFindAllStub.firstCall.args[0].where.height[Op.gte]).eq(5);
+        expect(blocksModelFindAllStub.firstCall.args[0].where.height[Op.lt]).eq(15);
       });
       it('should be done accounting offset=0', async () => {
-        dbStub.enqueueResponse('query', Promise.resolve([]));
+        blocksModelFindAllStub.resolves([]);
         blocksUtils.enqueueResponse('readDbRows', []);
-        await inst.loadBlocksOffset(10, 0, true);
 
-        expect(dbStub.stubs.query.firstCall.args[1]).to.be.deep.eq({
-          limit : 10 /* limit */ + 0,
-          offset: 0,
+        await inst.loadBlocksOffset(10, 0, true);
+        expect(blocksModelFindAllStub.firstCall.args[0]).is.deep.eq({
+          include: [ 'txModel' ],
+          order: [ 'height', 'rowId'],
+          where: {
+            height: {
+              // [Op.gte]: 0,
+              // [Op.lt]: 10,
+            },
+          },
         });
+
+        expect(blocksModelFindAllStub.firstCall.args[0].where.height[Op.gte]).eq(0);
+        expect(blocksModelFindAllStub.firstCall.args[0].where.height[Op.lt]).eq(10);
       });
       it('should be done accounting offset=undefined', async () => {
-        dbStub.enqueueResponse('query', Promise.resolve([]));
+        blocksModelFindAllStub.resolves([]);
         blocksUtils.enqueueResponse('readDbRows', []);
+
         await inst.loadBlocksOffset(10, undefined, true);
-
-        expect(dbStub.stubs.query.firstCall.args[1]).to.be.deep.eq({
-          limit : 10 /* limit */ + 0,
-          offset: 0,
+        expect(blocksModelFindAllStub.firstCall.args[0]).is.deep.eq({
+          include: [ 'txModel' ],
+          order: [ 'height', 'rowId'],
+          where: {
+            height: {
+              // [Op.gte]: 0,
+              // [Op.lt]: 10,
+            },
+          },
         });
+
+        expect(blocksModelFindAllStub.firstCall.args[0].where.height[Op.gte]).eq(0);
+        expect(blocksModelFindAllStub.firstCall.args[0].where.height[Op.lt]).eq(10);
       });
-    });
-
-    it('should parse db rows using blocksUtilsModule', async () => {
-      dbStub.enqueueResponse('query', Promise.resolve(['a' /*dummy*/]));
-      blocksUtils.enqueueResponse('readDbRows', []);
-      await inst.loadBlocksOffset(10, 0, true);
-
-      expect(blocksUtils.stubs.readDbRows.calledOnce).is.true;
-      expect(blocksUtils.stubs.readDbRows.firstCall.args[0]).is.deep.eq(['a']);
     });
 
     describe('with blocks', () => {
       beforeEach(() => {
-        dbStub.enqueueResponse('query', Promise.resolve([]));
-        blocksUtils.enqueueResponse('readDbRows', [{id: '1'}, {id: '2'}]);
+        blocksModelFindAllStub.resolves([{id: '1'}, {id: '2'}]);
         blocksChain.enqueueResponse('applyBlock', Promise.resolve());
         blocksChain.enqueueResponse('applyBlock', Promise.resolve());
+        accountsModule.stubs.resolveAccountsForTransactions.resolves({});
       });
       it('if verify=true it should call blockVerifyModule on each block', async () => {
         // 2 blocks
@@ -276,7 +313,7 @@ describe('modules/blocks/process', () => {
       it('should call applyGenesisBlock if blockid is same as genesis', async () => {
         const genesis: SignedAndChainedBlockType = container.get(Symbols.generic.genesisBlock);
         blocksUtils.reset();
-        blocksUtils.enqueueResponse('readDbRows', [genesis]);
+        blocksModelFindAllStub.resolves([genesis]);
         blocksChain.enqueueResponse('applyGenesisBlock', Promise.resolve());
         await inst.loadBlocksOffset(10, 0, false);
         expect(blocksChain.stubs.applyGenesisBlock.calledOnce).is.true;
@@ -297,11 +334,11 @@ describe('modules/blocks/process', () => {
         try {
           await inst.loadBlocksOffset(10, 0, false);
         } catch (e) {
-
+          return false;
         }
         expect(blocksModule.lastBlock).to.be.deep.eq({id: '1'});
       });
-      it('should return undefined if cleanup', async() => {
+      it('should return undefined if cleanup', async () => {
         await inst.cleanup();
         expect(await inst.loadBlocksOffset(10, 0, false)).to.be.undefined;
       });
@@ -400,9 +437,11 @@ describe('modules/blocks/process', () => {
     let txs: Array<IBaseTransaction<any>>;
     beforeEach(() => {
       blocksModule.lastBlock = {id: '1', height: 10} as any;
-      txs                    = createRandomTransactions({send: 3, vote: 2});
+      txs                    = createRandomTransactions({send: 3, vote: 2})
+        .map((t) => toBufferedTransaction(t));
       accountsModule.stubs.getAccount.resolves({account: 'account'});
       txModule.stubs.getUnconfirmedTransactionList.callsFake(() => txs);
+      txModule.stubs.filterConfirmedIds.resolves([]);
       blockLogic.enqueueResponse('create', {block: 'block'});
       txLogic.stubs.ready.returns(true);
       txLogic.stubs.verify.resolves();
@@ -424,7 +463,7 @@ describe('modules/blocks/process', () => {
     });
     it('should not verify every tx that is ready', async () => {
       txLogic.stubs.ready.onSecondCall().returns(false);
-      await inst.generateBlock(null, 1)
+      await inst.generateBlock(null, 1);
       expect(txLogic.stubs.ready.callCount).to.be.eq(txs.length);
       expect(txLogic.stubs.verify.callCount).to.be.eq(txs.length - 1);
       txs.splice(1, 1); // remove unverified call;
@@ -456,32 +495,43 @@ describe('modules/blocks/process', () => {
         true,
       ]);
     });
-    it('should call logger.error if transactionLogic.verify throw', async() => {
+    it('should call logger.error if transactionLogic.verify throw', async () => {
       const error = new Error('hihihi');
       txLogic.stubs.verify.onCall(1).rejects(error);
       await inst.generateBlock({key: 'pair'} as any, 1);
       expect(loggerStub.stubs.error.calledOnce).is.true;
       expect(loggerStub.stubs.error.firstCall.args[0]).is.equal(error.stack);
     });
+    it('should skip tx if it was already confirmed (removing and unconfirming it in the process)', async () => {
+      txModule.stubs.filterConfirmedIds.resolves([txs[1].id]);
+      txModule.stubs.undoUnconfirmed.resolves();
+      txModule.stubs.removeUnconfirmedTransaction.returns(true);
+      await inst.generateBlock({key: 'pair'} as any, 1);
+      expect(blockLogic.stubs.create.firstCall.args[0]).is.deep.eq({
+        keypair      : {key: 'pair'},
+        previousBlock: blocksModule.lastBlock,
+        timestamp    : 1,
+        transactions : txs.filter((tx, idx) => idx !== 1),
+      });
+
+      expect(txModule.stubs.undoUnconfirmed.calledOnce).is.true;
+      expect(txModule.stubs.removeUnconfirmedTransaction.calledOnce).is.true;
+      expect(txModule.stubs.undoUnconfirmed.firstCall.args[0]).is.deep.eq(txs[1]);
+      expect(txModule.stubs.removeUnconfirmedTransaction.firstCall.args[0]).is.eq(txs[1].id);
+    });
   });
 
   describe('onReceiveBlock', () => {
     it('should return and do nothing if loader.isSyncing', async () => {
       appState.stubs.get.callsFake((what) => {
-        if (what === 'loader.isSyncing') {
-          return true;
-        }
-        return false;
+        return (what === 'loader.isSyncing');
       });
       await inst.onReceiveBlock({id: '1'} as any);
       expect(appState.stubs.get.calledWith('loader.isSyncing')).is.true;
     });
     it('should return and do nothing if loader.isTicking', async () => {
       appState.stubs.get.callsFake((what) => {
-        if (what === 'rounds.isTicking') {
-          return true;
-        }
-        return false;
+        return (what === 'rounds.isTicking');
       });
       await inst.onReceiveBlock({id: '1'} as any);
       expect(appState.stubs.get.calledWith('rounds.isTicking')).is.true;
@@ -615,6 +665,7 @@ describe('modules/blocks/process', () => {
         await inst.onReceiveBlock(block);
         expect(blocksModule.spies.lastReceipt.update.called).is.true;
       });
+      // tslint:disable-next-line: max-line-length
       it('should call verifyModule.processBlock with new block and broadcast=true, saveBlock=true if all good', async () => {
         block.timestamp                  = 0;
         blocksModule.lastBlock.timestamp = 1;
@@ -635,12 +686,13 @@ describe('modules/blocks/process', () => {
       expect(loggerStub.stubs.debug.firstCall.args[1]).to.be.equal('1');
     });
     it('should call logger.warn if discarded block that does not match with current chain', async () => {
-      const roundsLogic = container.get(Symbols.logic.rounds);
+      const roundsLogic: RoundsLogicStub = container.get(Symbols.logic.rounds);
       roundsLogic.enqueueResponse('calcRound', 'round');
       blocksModule.lastBlock = {id: '12', height: 10, timestamp: 1} as any;
       appState.stubs.get.returns(false);
-      await inst.onReceiveBlock({id: '1'} as any);
+      await expect(inst.onReceiveBlock({id: '1'} as any)).be.rejectedWith('Block discarded - not in current chain');
       expect(loggerStub.stubs.warn.calledOnce).to.be.true;
+      // tslint:disable-next-line: max-line-length
       expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Discarded block that does not match with current chain: 1 height:  round: round slot: 1 generator: ');
     });
   });
