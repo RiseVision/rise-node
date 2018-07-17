@@ -3,6 +3,7 @@ import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { BaseRequest, IAPIRequest } from '../../../../src/apis/requests/BaseRequest';
+import { RequestFactoryType } from '../../../../src/apis/requests/requestFactoryType';
 import { Symbols } from '../../../../src/ioc/symbols';
 import { PeerType } from '../../../../src/logic';
 import { ProtoBufHelperStub } from '../../../stubs/helpers/ProtoBufHelperStub';
@@ -14,6 +15,12 @@ class TestRequest extends BaseRequest<any, any> implements IAPIRequest<any, any>
   protected readonly supportsProtoBuf = true;
 }
 
+const factory = (what: (new () => any)) => (ctx) => (options) => {
+  const toRet = ctx.container.resolve(what);
+  toRet.options = options;
+  return toRet;
+};
+
 // tslint:disable no-unused-expression max-line-length
 describe('apis/requests/BaseRequest', () => {
   let sandbox: SinonSandbox;
@@ -21,10 +28,12 @@ describe('apis/requests/BaseRequest', () => {
   let container: Container;
   let protoBufStub: ProtoBufHelperStub;
   let peer: PeerType;
+  const testSymbol = Symbol('testRequest');
 
   beforeEach(() => {
     sandbox   = sinon.createSandbox();
     container = createContainer();
+    container.bind(testSymbol).toFactory(factory(TestRequest));
     protoBufStub = container.get(Symbols.helpers.protoBuf);
     peer = {
       ip: '127.0.0.1',
@@ -38,7 +47,8 @@ describe('apis/requests/BaseRequest', () => {
       updated: 123,
       nonce: '1231234'
     };
-    instance = new TestRequest();
+    const instanceFactory = container.get<RequestFactoryType<any, TestRequest>>(testSymbol);
+    instance = instanceFactory({data: null});
   });
 
   afterEach(() => {
@@ -46,12 +56,10 @@ describe('apis/requests/BaseRequest', () => {
   });
 
   describe('getRequestOptions', () => {
-    let isProtoBufStub: SinonStub;
     let getMethodStub: SinonStub;
     let getBaseUrlStub: SinonStub;
 
     beforeEach(() => {
-      isProtoBufStub = sandbox.stub(instance as any, 'isProtoBuf').returns(false);
       getMethodStub = sandbox.stub(instance as any, 'getMethod').returns('GET');
       getBaseUrlStub = sandbox.stub(instance as any, 'getBaseUrl').returns('/testurl');
     });
@@ -95,7 +103,7 @@ describe('apis/requests/BaseRequest', () => {
 
     beforeEach(() => {
       decodeProtoBufResponseStub = sandbox.stub(instance as any, 'decodeProtoBufResponse');
-      res =  {body: {success: 1}};
+      res =  {body: {success: 1}, peer: {version: '1.1.1'}};
     });
 
     it('should call isProtoBuf', () => {
@@ -154,29 +162,27 @@ describe('apis/requests/BaseRequest', () => {
 
     describe('when response status is 200', () => {
       const res = {status: 200, body: Buffer.from('', 'hex')};
-      it('should call protoBufHelper.decode and return if it message is validated', () => {
-        protoBufStub.enqueueResponse('decode', 'decodedResult');
+      it('should call protoBufHelper.decodeToObj and return if it message is validated', () => {
+        protoBufStub.enqueueResponse('decodeToObj', 'decodedResult');
         const resp = (instance as any).decodeProtoBufResponse(res, 'namespace', 'messageType');
-        expect(protoBufStub.stubs.decode.calledOnce).to.be.true;
-        expect(protoBufStub.stubs.decode.firstCall.args).to.be.deep.equal([res.body, 'namespace', 'messageType']);
+        expect(protoBufStub.stubs.decodeToObj.calledOnce).to.be.true;
+        expect(protoBufStub.stubs.decodeToObj.firstCall.args[0]).to.be.deep.equal(res.body);
+        expect(protoBufStub.stubs.decodeToObj.firstCall.args[1]).to.be.deep.equal('namespace');
+        expect(protoBufStub.stubs.decodeToObj.firstCall.args[2]).to.be.deep.equal('messageType');
         expect(resp).to.be.equal('decodedResult');
       });
     });
 
-    describe('when response status is NOT 200', () => {
-      const res = {status: 500, body: Buffer.from('', 'hex')};
-      it('should call protoBufHelper.decode and return if it message is validated', () => {
-        protoBufStub.enqueueResponse('decode', 'decodedErr');
-        const resp = (instance as any).decodeProtoBufResponse(res, 'namespace', 'messageType');
-        expect(protoBufStub.stubs.decode.calledOnce).to.be.true;
-        expect(protoBufStub.stubs.decode.firstCall.args).to.be.deep.equal([res.body, 'APIError']);
-        expect(resp).to.be.equal('decodedErr');
-      });
-
-      it('should throw if validation fails', () => {
-        protoBufStub.stubs.decode.throws(new Error('err'));
-        expect(() => {(instance as any).decodeProtoBufResponse(res, 'namespace', 'messageType'); })
-          .to.throw('Cannot decode error response');
+    describe('when response is an error', () => {
+      const res = {status: 200, body: Buffer.from('', 'hex')};
+      it('should try first to parse the request as an API error', () => {
+        const err = {success: false, error: 'thisIsAnErr'};
+        protoBufStub.stubs.decode.returns(err);
+        protoBufStub.stubs.decodeToObj.throws(new Error('decodeToObjError'));
+        let resp;
+        expect(() => {
+          resp = (instance as any).decodeProtoBufResponse(res, 'namespace', 'messageType');
+        }).to.throw('thisIsAnErr');
       });
     });
   });

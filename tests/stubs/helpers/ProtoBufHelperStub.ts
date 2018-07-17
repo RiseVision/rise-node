@@ -1,6 +1,7 @@
 import { injectable } from 'inversify';
 import { BaseStubClass } from '../BaseStubClass';
 import { stubMethod } from '../stubDecorator';
+import { MyConvOptions } from '../../../src/helpers/protobuf';
 
 @injectable()
 export class ProtoBufHelperStub extends BaseStubClass {
@@ -19,4 +20,8 @@ export class ProtoBufHelperStub extends BaseStubClass {
     return undefined;
   }
 
+  @stubMethod()
+  public decodeToObj<T = any>(data: Buffer, namespace: string, messType?: string, converters?: MyConvOptions<T>): T {
+    return undefined;
+  }
 }
