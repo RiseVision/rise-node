@@ -5,10 +5,19 @@ import { IPeerLogic } from '../logic';
 import { IModule } from './IModule';
 import { ITransportTransaction } from '../../../logic/transactions/baseTransactionType';
 
+/**
+ * Methods signature for TransportModule
+ */
 export interface ITransportModule extends IModule {
 
+  /**
+   * Makes a request to a given peer
+   */
   getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: IPeerLogic }>;
 
+  /**
+   * Makes a request to a random peer
+   */
   getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] },
                        options: PeerRequestOptions): Promise<{ body: any; peer: IPeerLogic }>;
 
@@ -30,6 +39,9 @@ export interface ITransportModule extends IModule {
    */
   onNewBlock(block: SignedBlockType & { relays?: number }, broadcast: boolean): Promise<void>;
 
+  /**
+   * Validates and process signatures
+   */
   receiveSignatures(signatures: Array<{ transaction: string, signature: string }> ): Promise<void>;
 
   /**
@@ -46,7 +58,5 @@ export interface ITransportModule extends IModule {
   receiveTransactions(transactions: Array<ITransportTransaction<any>>,
                       peer: IPeerLogic | null,
                       broadcast: boolean): Promise<void>;
-
-
 
 }
