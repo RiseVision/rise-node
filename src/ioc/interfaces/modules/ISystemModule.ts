@@ -2,13 +2,22 @@ import * as crypto from 'crypto';
 import { PeerHeaders } from '../../../types/genericTypes';
 import { IModule } from './IModule';
 
+/**
+ * Methods signature for SystemModule
+ */
 export interface ISystemModule extends IModule {
   minVersion: string;
   headers: PeerHeaders;
   readonly broadhash: string;
 
+  /**
+   * Returns OS
+   */
   getOS(): string;
 
+  /**
+   * Returns version
+   */
   getVersion(): string;
 
   /**
@@ -62,6 +71,9 @@ export interface ISystemModule extends IModule {
    */
   getBroadhash(): Promise<string>;
 
+  /**
+   * Returns fees
+   */
   getFees(height?: number): {
     fees: {
       send: number,
