@@ -6,6 +6,9 @@ import { BlocksModel } from '../../../models/BlocksModel';
 import { AccountsModel } from '../../../models/AccountsModel';
 import { address } from '../../../types/sanityTypes';
 
+/**
+ * Methods signature for TransactionsModule
+ */
 export interface ITransactionsModule extends IModule {
   /**
    * Checks if txid is in pool
@@ -80,6 +83,9 @@ export interface ITransactionsModule extends IModule {
    */
   undoUnconfirmed(transaction: IBaseTransaction<any>): Promise<void>;
 
+  /**
+   * Returns counters
+   */
   count(): Promise<{ confirmed: number, multisignature: number, queued: number, unconfirmed: number }>;
 
   /**
