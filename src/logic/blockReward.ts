@@ -15,6 +15,9 @@ export class BlockRewardLogic implements IBlockReward {
     this.rewards = constants.rewards;
   }
 
+  /**
+   * Calculates milestone from height
+   */
   public calcMilestone(height: number) {
     height = this.parseHeight(height);
     for (let i = this.rewards.length - 1; i >= 0; i--) {
@@ -25,10 +28,16 @@ export class BlockRewardLogic implements IBlockReward {
     return 0;
   }
 
+  /**
+   * Calculates reward from height
+   */
   public calcReward(height: number): number {
     return this.rewards[this.calcMilestone(height)].reward;
   }
 
+  /**
+   * Calculates supply from height
+   */
   public calcSupply(height: number): number {
     height = this.parseHeight(height);
 
@@ -54,6 +63,9 @@ export class BlockRewardLogic implements IBlockReward {
     return supply;
   }
 
+  /**
+   * Returns the absolute value of a height
+   */
   private parseHeight(height: number) {
     if (isNaN(height)) {
       throw new Error('Invalid block height');
