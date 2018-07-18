@@ -85,6 +85,9 @@ export class BlockLogic implements IBlockLogic {
     return logicBlockSchema;
   }
 
+  /**
+   * Creates a new block
+   */
   public create(data: {
     keypair: IKeypair, timestamp: number,
     transactions: Array<IBaseTransaction<any>>,
@@ -235,6 +238,9 @@ export class BlockLogic implements IBlockLogic {
     return block as any;
   }
 
+  /**
+   * Converts a raw block to a block object
+   */
   public dbRead(rawBlock: RawFullBlockListType): SignedBlockType & { totalForged: string, readonly generatorId: string} {
     if (!rawBlock.b_id) {
       return null;
@@ -278,12 +284,18 @@ export class BlockLogic implements IBlockLogic {
     return BigNum.fromBuffer(temp).toString();
   }
 
+  /**
+   * Calculates hash from a given block
+   */
   public getHash(block: BlockType, includeSignature: boolean = true) {
     return crypto.createHash('sha256')
       .update(this.getBytes(block, includeSignature))
       .digest();
   }
 
+  /**
+   * Calculates bytes from a given block
+   */
   public getBytes(block: BlockType | SignedBlockType, includeSignature: boolean = true): Buffer {
     const size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64;
     const bb   = new ByteBuffer(size, true /* little endian */);
@@ -338,6 +350,9 @@ export class BlockLogic implements IBlockLogic {
     return bb.toBuffer() as any;
   }
 
+  /**
+   * Gets an address from a public key
+   */
   private getAddressByPublicKey(publicKey: Buffer | string) {
     if (typeof(publicKey) === 'string') {
       publicKey = new Buffer(publicKey, 'hex');
