@@ -85,6 +85,9 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     );
   }
 
+  /**
+   * Get peers
+   */
   public async getPeers(params: { limit?: number, broadhash?: string }): Promise<PeerType[]> {
     params.limit     = params.limit || this.constants.maxPeers;
     params.broadhash = params.broadhash || null;
@@ -104,11 +107,17 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     return peers;
   }
 
+  /**
+   * Enqueue a BroadcastTask
+   */
   public enqueue(params: any, options: BroadcastTaskOptions): number {
     options.immediate = false;
     return this.queue.push({ params, options });
   }
 
+  /**
+   * Broadcast to peers
+   */
   public async broadcast(params: {
                            limit?: number, broadhash?: string,
                            peers?: PeerType[]
