@@ -413,6 +413,9 @@ export class AccountLogic implements IAccountLogic {
     return await this.AccountsModel.destroy({ where: { address: address.toUpperCase() } });
   }
 
+  /**
+   * Generate address from a publicKey
+   */
   public generateAddressByPublicKey(publicKey: string): string {
     this.assertPublicKey(publicKey, false);
 
