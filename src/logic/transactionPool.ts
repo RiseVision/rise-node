@@ -170,6 +170,9 @@ export class TransactionPool implements ITransactionPoolLogic {
     }
   }
 
+  /**
+   * Fills the pools
+   */
   public async fillPool(): Promise<Array<IBaseTransaction<any>>> {
     if (this.appState.get('loader.isSyncing')) {
       return Promise.resolve([]);
@@ -204,6 +207,9 @@ export class TransactionPool implements ITransactionPoolLogic {
     return txsAndPayloads.map(({tx}) => tx);
   }
 
+  /**
+   * Checks if txID is in pool
+   */
   public transactionInPool(txID: string): boolean {
     return this.allQueues
       .map((queue) => queue.has(txID))
@@ -232,6 +238,9 @@ export class TransactionPool implements ITransactionPoolLogic {
     return unconfirmed.concat(multisignatures).concat(queued);
   }
 
+  /**
+   * Returns a list of expired transactions
+   */
   public expireTransactions(): string[] {
     const unconfirmed    = this.unconfirmed.listWithPayload(true);
     const queued         = this.queued.listWithPayload(true);
@@ -350,10 +359,16 @@ export class TransactionPool implements ITransactionPoolLogic {
       .forEach((queue) => queue.reindex());
   }
 
+  /**
+   * Returns all queues
+   */
   private get allQueues(): InnerTXQueue[] {
     return [this.unconfirmed, this.bundled, this.queued, this.multisignature];
   }
 
+  /**
+   * Removes a given txID from unconfirmed, queued and multisignature queues
+   */
   private removeUnconfirmedTransaction(txID: string) {
     this.unconfirmed.remove(txID);
     this.queued.remove(txID);
