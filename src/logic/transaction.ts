@@ -57,6 +57,9 @@ export class TransactionLogic implements ITransactionLogic {
 
   private types: { [k: number]: BaseTransactionType<any, any> } = {};
 
+  /**
+   * Add a TransactionType to types collection
+   */
   public attachAssetType<K, M extends Model<any>>(instance: BaseTransactionType<K, M>): BaseTransactionType<K, M> {
     if (!(instance instanceof BaseTransactionType)) {
       throw new Error('Invalid instance interface');
@@ -181,6 +184,9 @@ export class TransactionLogic implements ITransactionLogic {
     return bb.toBuffer() as any;
   }
 
+  /**
+   * Return true if the transaction is ready, or false otherwise
+   */
   public ready(tx: IBaseTransaction<any>, sender: AccountsModel): boolean {
     this.assertKnownTransactionType(tx.type);
 
@@ -191,6 +197,9 @@ export class TransactionLogic implements ITransactionLogic {
     return this.types[tx.type].ready(tx, sender);
   }
 
+  /**
+   * Throws an exception if the type is unknown.
+   */
   public assertKnownTransactionType(type: number) {
     if (!(type in this.types)) {
       throw new Error(`Unknown transaction type ${type}`);
@@ -235,6 +244,9 @@ export class TransactionLogic implements ITransactionLogic {
     return tx;
   }
 
+  /**
+   * Verifies the given transaction
+   */
   public async verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel,
                       requester: AccountsModel, height: number) {
     this.assertKnownTransactionType(tx.type);
@@ -400,6 +412,9 @@ export class TransactionLogic implements ITransactionLogic {
     );
   }
 
+  /**
+   * Prepares the query for a given transaction
+   */
   @RunThroughExceptions(ExceptionsList.tx_apply)
   public async apply(tx: IConfirmedTransaction<any>,
                      block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
@@ -460,6 +475,9 @@ export class TransactionLogic implements ITransactionLogic {
     return ops;
   }
 
+  /**
+   * Prepares the queries for an unconfirmed transaction
+   */
   @RunThroughExceptions(ExceptionsList.tx_applyUnconfirmed)
   // tslint:disable-next-line max-line-length
   public async applyUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel, requester?: AccountsModel): Promise<Array<DBOp<any>>> {
@@ -500,6 +518,9 @@ export class TransactionLogic implements ITransactionLogic {
     return ops;
   }
 
+  /**
+   * Prepares the insert queries for the given transactions
+   */
   public dbSave(txs: Array<IBaseTransaction<any> & { senderId: string }>, blockId: string, height: number): Array<DBOp<any>> {
     if (txs.length === 0) {
       return [];
@@ -541,6 +562,9 @@ export class TransactionLogic implements ITransactionLogic {
     return [bulkCreate, ...subOps];
   }
 
+  /**
+   * Call to afterSave method of the given transaction
+   */
   public async afterSave(tx: IBaseTransaction<any>): Promise<void> {
     this.assertKnownTransactionType(tx.type);
     return this.types[tx.type].afterSave(tx);
@@ -576,6 +600,9 @@ export class TransactionLogic implements ITransactionLogic {
     return this.types[tx.type].objectNormalize(tx as IBaseTransaction<any>);
   }
 
+  /**
+   * Returns asset of given raw transaction
+   */
   public dbRead(raw: any): IConfirmedTransaction<any> {
     if (!raw.t_id) {
       return null;
@@ -610,6 +637,11 @@ export class TransactionLogic implements ITransactionLogic {
     return tx;
   }
 
+  /**
+   * Attach Asset object to each transaction passed
+   * @param {Array<IConfirmedTransaction<any>>} txs
+   * @return {Promise<void>}
+   */
   public async attachAssets(txs: Array<IConfirmedTransaction<any>>): Promise<void> {
     if (txs === null) {
       return;
