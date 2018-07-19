@@ -23,6 +23,9 @@ export class PeersLogic implements IPeersLogic {
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
+  /**
+   * Creates a returns a PeerLogic instance
+   */
   public create(peer: BasePeerType): IPeerLogic {
     if (!(peer instanceof PeerLogic)) {
       return this.peersFactory(peer);
@@ -38,6 +41,9 @@ export class PeersLogic implements IPeersLogic {
     return typeof(this.peers[thePeer.string]) !== 'undefined';
   }
 
+  /**
+   * Returns a PeerLogic instance from a PeerType or alias
+   */
   public get(peer: PeerType | string): IPeerLogic {
     if (typeof(peer) === 'string') {
       return this.peers[peer];
@@ -45,6 +51,9 @@ export class PeersLogic implements IPeersLogic {
     return this.peers[this.create(peer).string];
   }
 
+  /**
+   * Add or replace a peer into peers list
+   */
   public upsert(peer: PeerType, insertOnly: boolean) {
 
     const thePeer = this.create(peer);
@@ -112,6 +121,9 @@ export class PeersLogic implements IPeersLogic {
 
   }
 
+  /**
+   * Remove a peer from peers list
+   */
   public remove(peer: BasePeerType): boolean {
     if (this.exists(peer)) {
       const thePeer = this.create(peer);
@@ -126,6 +138,10 @@ export class PeersLogic implements IPeersLogic {
     return false;
   }
 
+  /**
+   * Returns peers list. If normalized is true you will get a list of PeerType peers,
+   * otherwise you will get a list of PeerLogic peers.
+   */
   public list(normalize: true): PeerType[];
   public list(normalize: false): IPeerLogic[];
   public list(normalize: boolean) {
