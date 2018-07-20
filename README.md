@@ -80,7 +80,7 @@ And change this section to include your passphrase:
 
 And finally restart your node to apply the changes:
 ```
-./manager.sh restart node
+./manager.sh reload node
 ```
 
 ### Quick start Rise installation (Testnet) 
