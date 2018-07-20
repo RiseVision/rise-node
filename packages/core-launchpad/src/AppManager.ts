@@ -109,26 +109,6 @@ export class AppManager {
 
     this.modules.forEach((m) => m.initAppElements(this.container, this.appConfig));
 
-    this.expressApp = express();
-
-    this.server = http.createServer(this.expressApp);
-    const io    = socketIO(this.server);
-
-    const bus       = new Bus();
-
-    // HTTP APIs
-    for (const controller of allControllers) {
-      const symbol = Reflect.getMetadata(
-        Symbols.__others.metadata.classSymbol,
-        controller
-      );
-      this.container.bind(symbol).to(controller).inSingletonScope();
-    }
-    // this.container.bind(Symbols.api.utils.errorHandler).to(APIErrorHandler).inSingletonScope();
-    // this.container.bind(Symbols.api.utils.successInterceptor).to(SuccessInterceptor).inSingletonScope();
-    // this.container.bind(Symbols.api.utils.forgingApisWatchGuard).to(ForgingApisWatchGuard).inSingletonScope();
-    // this.container.bind(Symbols.api.utils.validatePeerHeadersMiddleware).to(ValidatePeerHeaders).inSingletonScope();
-    // this.container.bind(Symbols.api.utils.attachPeerHeaderToResponseObject).to(AttachPeerHeaders).inSingletonScope();
 
     // Generics
     this.genericsElements(sequelize, namespace, io);

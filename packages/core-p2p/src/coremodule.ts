@@ -9,7 +9,7 @@ import * as bodyParser from 'body-parser';
 import * as compression from 'compression';
 import * as cors from 'cors';
 import { Application } from 'express';
-import { Symbols } from '@risevision/core-helpers';
+import { cbToPromise, Symbols } from '@risevision/core-helpers';
 import { useContainer as useContainerForHTTP, useExpressServer } from 'routing-controllers';
 
 const configSchema = require('../schema/config.json');
@@ -17,6 +17,7 @@ const configSchema = require('../schema/config.json');
 export class CoreModule extends BaseCoreModule<P2pConfig> {
   public constants    = constants;
   public configSchema = configSchema;
+  private srv: http.Server;
 
   public extendCommander(program: CommanderStatic): void {
     program.option('-x, --peers [peers...]', 'peers list');
@@ -85,8 +86,17 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
 
   public addElementsToContainer(container: Container): void {
     const app = express();
-    const srv = http.createServer(app);
+    this.srv = http.createServer(app);
     container.bind(p2pSymbols.express).toConstantValue(app);
-    container.bind(p2pSymbols.server).toConstantValue(srv);
+    container.bind(p2pSymbols.server).toConstantValue(this.srv);
+  }
+
+  public teardown(): Promise<void> {
+    return cbToPromise((cb) => this.srv.close(cb));
+  }
+
+  public boot(): Promise<void> {
+    const appConfig = this.container.get<P2pConfig>(Symbols.generic.appConfig);
+    return cbToPromise((cb) => this.srv.listen(appConfig.port, appConfig.address, cb));
   }
 }

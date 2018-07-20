@@ -8,10 +8,13 @@ export interface ICoreModule<ConfigType> {
   version: string;
   name: string;
   directory: string;
+  container?: Container;
 
   extendCommander(program: CommanderStatic): void;
 
   setup(hookSystem: WordPressHookSystem): Promise<void>;
+
+  boot(): Promise<void>;
 
   teardown(): Promise<void>;
 
@@ -30,6 +33,7 @@ export abstract class BaseCoreModule<ConfigType = any> implements ICoreModule<Co
   public version = null;
   public name = null;
   public directory = null;
+  public container?: Container;
 
   public extendCommander(program: CommanderStatic): void {
     return void 0;
@@ -40,6 +44,10 @@ export abstract class BaseCoreModule<ConfigType = any> implements ICoreModule<Co
   }
 
   public setup(hookSystem: WordPressHookSystem): Promise<void> {
+    return Promise.resolve();
+  }
+
+  public start(): Promise<void> {
     return Promise.resolve();
   }
 
