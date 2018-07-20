@@ -1,24 +1,29 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { BaseRequest } from '../../../../src/apis/requests/BaseRequest';
 import { PostBlocksRequest } from '../../../../src/apis/requests/PostBlocksRequest';
 import { ProtoBufHelperStub } from '../../../stubs/helpers/ProtoBufHelperStub';
 import { createContainer } from '../../../utils/containerCreator';
+import { Symbols } from '../../../../src/ioc/symbols';
 
 describe('apis/requests/PostBlocksRequest', () => {
   let options;
   let instance: PostBlocksRequest;
   let pbHelperStub: ProtoBufHelperStub;
+  let blocksModelStub: any;
   let sandbox: SinonSandbox;
 
   beforeEach(() => {
-    createContainer(); // ensures protoBufHelper is injected into BaseRequest...
-    options = {data: {blocks: ['b1', 'b2']}};
+    const container = createContainer();
+    options = {data: {block: 'b1'}};
     sandbox = sinon.createSandbox();
     instance = new PostBlocksRequest();
     instance.options = options;
-    pbHelperStub = (instance as any).protoBufHelper as any;
+    pbHelperStub = container.get(Symbols.helpers.protoBuf);
+    (instance as any).protoBufHelper = pbHelperStub;
+    blocksModelStub = {toStringBlockType: sandbox.stub().callsFake((a) => a) };
+    (instance as any).blocksModel = blocksModelStub;
+    (instance as any).generateBytesBlock = sandbox.stub().callsFake((a) => a);
     pbHelperStub.enqueueResponse('validate', true);
     pbHelperStub.enqueueResponse('encode', 'encodedValue');
   });
@@ -30,13 +35,13 @@ describe('apis/requests/PostBlocksRequest', () => {
   describe('getRequestOptions', () => {
     describe('protoBuf = false', () => {
       it('should return request options as json', () => {
-        const reqOpts = JSON.stringify(instance.getRequestOptions(false));
-        expect(reqOpts).to.be.equal(JSON.stringify({
+        const reqOpts = instance.getRequestOptions(false);
+        expect(reqOpts).to.be.deep.equal({
+          data: { block: 'b1' },
           isProtoBuf: false,
           method: 'POST',
           url: '/peer/blocks',
-          data: { blocks: [ 'b1', 'b2' ] } })
-        );
+        });
       });
     });
     describe('protoBuf = true', () => {

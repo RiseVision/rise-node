@@ -13,7 +13,6 @@ export type PostTransactionsRequestDataType = {
   transaction?: IBaseTransaction<any>,
 };
 
-// TODO: Use toTransportTransaction when calling a non-protobuf peer
 @injectable()
 export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRequestDataType> {
   protected readonly method = 'POST';

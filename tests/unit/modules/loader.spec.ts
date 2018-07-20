@@ -1454,12 +1454,8 @@ describe('modules/loader', () => {
         randomPeer.makeRequest.firstCall.args[0]
       ).to.be.instanceOf(GetSignaturesRequest);
       expect(
-        randomPeer.makeRequest.firstCall.args[0]
-      ).to.be.deep.equal({
-        method: 'GET',
-        options: { data: null, },
-        supportsProtoBuf: true,
-      });
+        randomPeer.makeRequest.firstCall.args[0].options
+      ).to.be.deep.equal({ data: null, });
     });
 
     it('should call schema.validate', async () => {
@@ -1624,12 +1620,8 @@ describe('modules/loader', () => {
         peer.makeRequest.firstCall.args[0]
       ).to.be.instanceOf(GetTransactionsRequest);
       expect(
-        peer.makeRequest.firstCall.args[0]
-      ).to.be.deep.equal({
-        method: 'GET',
-        options: { data: null, },
-        supportsProtoBuf: true,
-      });
+        peer.makeRequest.firstCall.args[0].options
+      ).to.be.deep.equal({ data: null, });
     });
 
     it('should call schema.validate', async () => {

@@ -6,32 +6,47 @@ import { GetTransactionsRequest } from '../../../../src/apis/requests/GetTransac
 describe('apis/requests/GetTransactionsRequest', () => {
   let instance: GetTransactionsRequest;
   let decodeStub: SinonStub;
+  let peer: any;
 
   beforeEach(() => {
     instance = new GetTransactionsRequest();
     instance.options = {data: null};
     decodeStub = sinon.stub(instance as any, 'decodeProtoBufResponse');
+    peer = {
+      ip: '127.0.0.1',
+      port: 5555,
+      state: 2,
+      os: 'unix',
+      version: '1.1.1',
+      broadhash: '123123123',
+      height: 123,
+      clock: 9999999,
+      updated: 123,
+      nonce: '1231234',
+    };
   });
 
   describe('getResponseData', () => {
     describe('protoBuf = false', () => {
       it('should return response body', () => {
-        const body = instance.getResponseData({body: 'theBody'});
+        peer.version = '1.0.0';
+        const body = instance.getResponseData({body: 'theBody', peer});
         expect(body).to.be.equal('theBody');
       });
     });
     describe('protoBuf = true', () => {
       it('should call decodeProtoBufResponse', () => {
-        const res = {body: 'theBody'}
+        decodeStub.returns({transactions: []});
+        const res = {body: 'theBody', peer}
         instance.getResponseData(res);
         expect(decodeStub.calledOnce).to.be.true;
         expect(decodeStub.firstCall.args).to.be.deep.equal([res, 'transportTransactions']);
       });
 
       it('should return the decoded value', () => {
-        decodeStub.returns('decodedValue');
-        const decoded = instance.getResponseData({body: 'theBody'});
-        expect(decoded).to.be.equal('decodedValue');
+        decodeStub.returns({transactions: []});
+        const decoded = instance.getResponseData({body: 'theBody', peer});
+        expect(decoded).to.deep.equal({transactions: []});
       });
     });
   });
@@ -39,13 +54,13 @@ describe('apis/requests/GetTransactionsRequest', () => {
   describe('getBaseUrl', () => {
     describe('protoBuf = false', () => {
       it('should return the right URL', () => {
-        const url = (instance as any).getBaseUrl();
+        const url = (instance as any).getBaseUrl(false);
         expect(url).to.be.equal('/peer/transactions');
       });
     });
     describe('protoBuf = true', () => {
       it('should return the right URL', () => {
-        const url = (instance as any).getBaseUrl();
+        const url = (instance as any).getBaseUrl(true);
         expect(url).to.be.equal('/v2/peer/transactions');
       });
     });

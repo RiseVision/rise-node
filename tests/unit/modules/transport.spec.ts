@@ -619,15 +619,20 @@ describe('src/modules/transport.ts', () => {
     let signature;
 
     beforeEach(() => {
-      signature = { transaction: 'trans', signature: 'sign' };
+      signature = { transaction: '1111111', signature: 'aaaabbbb' };
       broadcast = true;
       broadcasterLogic.enqueueResponse('maxRelays', false);
       broadcasterLogic.enqueueResponse('enqueue', false);
+      (inst as any).appState = {get: () => 1000};
+      const p = new PostSignaturesRequest();
+      (inst as any).psrFactory = (a) => {
+        p.options = a;
+        return p;
+      };
     });
 
     it('should call broadcasterLogic.maxRelays', () => {
       inst.onSignature(signature, broadcast);
-
       expect(broadcasterLogic.stubs.maxRelays.calledOnce).to.be.true;
       expect(broadcasterLogic.stubs.maxRelays.firstCall.args.length).to.be.equal(1);
       expect(broadcasterLogic.stubs.maxRelays.firstCall.args[0]).to.be.deep.equal(signature);
@@ -640,7 +645,10 @@ describe('src/modules/transport.ts', () => {
       expect(broadcasterLogic.stubs.enqueue.firstCall.args.length).to.be.equal(2);
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[0]).to.be.deep.equal({});
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[1].requestHandler).to.be.instanceOf(PostSignaturesRequest);
-      expect(broadcasterLogic.stubs.enqueue.firstCall.args[1].requestHandler.options).to.be.deep.equal({data: { signature }});
+      expect(broadcasterLogic.stubs.enqueue.firstCall.args[1].requestHandler.options).to.be.deep.equal({data: { signatures: [{
+        signature: Buffer.from(signature.signature, 'hex'),
+        transaction: signature.transaction,
+      }] }});
     });
 
     it('should call io.sockets.emit', async () => {
@@ -680,6 +688,11 @@ describe('src/modules/transport.ts', () => {
       broadcast   = true;
       broadcasterLogic.enqueueResponse('maxRelays', false);
       broadcasterLogic.enqueueResponse('enqueue', false);
+      const p = new PostTransactionsRequest();
+      (inst as any).ptrFactory = (a) => {
+        p.options = a;
+        return p;
+      };
     });
 
     it('should call broadcasterLogic.maxRelays', () => {
@@ -696,7 +709,7 @@ describe('src/modules/transport.ts', () => {
       expect(broadcasterLogic.stubs.enqueue.calledOnce).to.be.true;
       expect(broadcasterLogic.stubs.enqueue.firstCall.args.length).to.be.equal(2);
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[0]).to.be.deep.equal({});
-      expect(broadcasterLogic.stubs.enqueue.firstCall.args[1].requestHandler.options).to.be.deep.equal({data: {transaction}});
+      expect(broadcasterLogic.stubs.enqueue.firstCall.args[1].requestHandler.options).to.be.deep.equal({data: {transactions:[transaction]}});
     });
 
     it('should call io.sockets.emit', async () => {
@@ -743,6 +756,11 @@ describe('src/modules/transport.ts', () => {
       systemModule.enqueueResponse('update', Promise.resolve());
       broadcasterLogic.enqueueResponse('maxRelays', false);
       broadcasterLogic.enqueueResponse('broadcast', Promise.resolve());
+      const p = new PostBlocksRequest();
+      (inst as any).pblocksFactory = (a) => {
+        p.options = a;
+        return p;
+      };
     });
 
     it('should call systemModule.update', async () => {
@@ -772,9 +790,9 @@ describe('src/modules/transport.ts', () => {
       expect(broadcasterLogic.stubs.broadcast.firstCall.args[1].requestHandler.options).to.be.deep.equal({
           data     : {
             block: {
-              blockSignature    : 'aa',
-              generatorPublicKey: 'bb',
-              payloadHash       : 'cc',
+              blockSignature    : Buffer.from('aa', 'hex'),
+              generatorPublicKey: Buffer.from('bb', 'hex'),
+              payloadHash       : Buffer.from('cc', 'hex'),
               transactions      : [],
             },
           },
@@ -1022,6 +1040,11 @@ describe('src/modules/transport.ts', () => {
       peersLogic.enqueueResponse('create', peer);
       peersLogic.enqueueResponse('upsert', true);
       getFromRandomPeerStub = sandbox.stub(inst as any, 'getFromRandomPeer').resolves(response);
+      const p = new PeersListRequest();
+      (inst as any).plFactory = (a) => {
+        p.options = a;
+        return p;
+      };
     });
 
     it('should call logger.trace', async () => {

@@ -172,9 +172,7 @@ describe('apis/transportV2API', () => {
             },
           ],
         },
-        'transportSignatures',
-        undefined,
-      ]);
+        'transportSignatures', 'getSignaturesResponse']);
     });
   });
 
@@ -188,7 +186,7 @@ describe('apis/transportV2API', () => {
       parseRequestStub.returns({signatures: []});
       result = await instance.postSignatures('meow' as any);
       expect(parseRequestStub.calledOnce).to.be.true;
-      expect(parseRequestStub.firstCall.args).to.be.deep.equal(['meow', 'transportSignatures']);
+      expect(parseRequestStub.firstCall.args).to.be.deep.equal(['meow', 'transportSignatures', 'postSignatures']);
     });
 
     it('should validate the data via schema', async () => {

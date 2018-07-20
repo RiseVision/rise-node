@@ -22,6 +22,7 @@ import { createContainer } from '../utils/containerCreator';
 
 import { Sequelize } from 'sequelize-typescript';
 import { BlockLogicStub } from '../stubs/logic/BlockLogicStub';
+import { V2APIErrorHandler } from '../../src/apis/utils/v2ErrorHandler';
 
 const { expect } = chai;
 
@@ -387,7 +388,7 @@ describe('AppManager', () => {
       expect(useExpressServerStub.firstCall.args[1]).to.be.deep.equal({
         controllers        : allControllers,
         defaultErrorHandler: false,
-        middlewares        : [APIErrorHandler],
+        middlewares        : [V2APIErrorHandler, APIErrorHandler],
       });
     });
   });
@@ -462,9 +463,9 @@ describe('AppManager', () => {
     });
 
     // Test added to make sure this file is updated every time a new element is bound in container
-    it('should call bind exactly 89 times', async () => {
+    it('should call bind exactly 100 times', async () => {
       await instance.initAppElements();
-      expect(containerStub.bindCount).to.be.equal(89);
+      expect(containerStub.bindCount).to.be.equal(100);
     });
 
     it('should bind each API controller to its symbol', async () => {

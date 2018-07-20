@@ -1,8 +1,8 @@
 import { expect } from 'chai';
-import {Container} from 'inversify';
+import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import {Symbols} from '../../../src/ioc/symbols';
+import { Symbols } from '../../../src/ioc/symbols';
 import { BroadcasterLogic, BroadcastTaskOptions } from '../../../src/logic';
 import {
   APIRequestStub, JobsQueueStub, LoggerStub, PeersLogicStub, PeersModuleStub,
@@ -31,7 +31,7 @@ describe('logic/broadcaster', () => {
     sandbox                = sinon.createSandbox({
       useFakeTimers: true,
     });
-    container          = createContainer();
+    container              = createContainer();
     fakeConfig             = {
       broadcasts: {
         broadcastInterval: 1,
@@ -99,7 +99,7 @@ describe('logic/broadcaster', () => {
       jobsQueueStub.stubs.register.callsFake((name: string, job: () => Promise<any>) => {
         return job();
       });
-      const releaseQueueStub = sandbox.stub().resolves(true);
+      const releaseQueueStub   = sandbox.stub().resolves(true);
       // tslint:disable-next-line no-string-literal
       instance['releaseQueue'] = releaseQueueStub;
       await instance.afterConstruct();
@@ -111,7 +111,7 @@ describe('logic/broadcaster', () => {
       jobsQueueStub.stubs.register.callsFake((name: string, job: () => Promise<any>) => {
         return job();
       });
-      const releaseQueueStub = sandbox.stub().rejects(new Error('Booo!'));
+      const releaseQueueStub   = sandbox.stub().rejects(new Error('Booo!'));
       // tslint:disable-next-line no-string-literal
       instance['releaseQueue'] = releaseQueueStub;
       await instance.afterConstruct();
@@ -269,8 +269,7 @@ describe('logic/broadcaster', () => {
 
       createdPeers.forEach((peer, index) => {
         expect(loggerStub.stubs.debug.getCall(index + 1).args.length).to.be.equal(2);
-        expect(loggerStub.stubs.debug.getCall(index + 1).args[0]).to.be.
-         equal(`Failed to broadcast to peer: ${peer.string}`);
+        expect(loggerStub.stubs.debug.getCall(index + 1).args[0]).to.be.equal(`Failed to broadcast to peer: ${peer.string}`);
         expect(loggerStub.stubs.debug.getCall(index + 1).args[1]).to.be.equal(error);
       });
 
@@ -364,11 +363,11 @@ describe('logic/broadcaster', () => {
     beforeEach(() => {
       task = {
         options: {
-          immediate: true,
+          immediate     : true,
           requestHandler: new APIRequestStub(),
         },
       };
-      task.options.requestHandler.stubs.getOrigOptions.returns({data: { transaction: 'transaction'}});
+      task.options.requestHandler.stubs.getOrigOptions.returns({ data: { transaction: 'transaction' } });
 
       instance.queue.push(task);
       length = instance.queue.length;
@@ -383,8 +382,7 @@ describe('logic/broadcaster', () => {
       expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal(`Broadcast before filtering: ${length}`);
       expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.
-      equal(`Broadcasts after filtering: ${instance.queue.length}`);
+      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal(`Broadcasts after filtering: ${instance.queue.length}`);
     });
 
     it('should behave correctly when options.immediate=true', async () => {
@@ -465,60 +463,134 @@ describe('logic/broadcaster', () => {
   });
 
   describe('squashQueue', () => {
-    let routes;
     let broadcasts;
-
     beforeEach(() => {
-      routes     = [{
-        collection: 'collection1',
-        object    : 'object1',
-        requestHandler: PostTransactionsRequest,
+      const ps1 = new PostSignaturesRequest();
+      ps1.options = {
+        data:
+          {
+            signature:
+              {
+                signature: Buffer.from('aaaa', 'hex'),
+                transaction: '111111',
+              },
+          },
+      } as any;
+      const ps2 = new PostSignaturesRequest();
+      ps2.options = {
+        data: {
+          signatures: [
+            {
+              signature  : Buffer.from('bbbb', 'hex'),
+              transaction: '222222',
+            },
+            {
+              signature  : Buffer.from('cccc', 'hex'),
+              transaction: '333333',
+            },
+          ],
+        },
+      } as any;
+
+      const pt1   = new PostTransactionsRequest();
+      pt1.options = {
+        data:
+          {
+            transaction:
+              {
+                id: '444444',
+                signature: Buffer.from('dddd', 'hex'),
+              },
+          },
+      } as any;
+
+      const pt2   = new PostTransactionsRequest();
+      pt2.options = {
+        data:
+          {
+            transactions: [
+              {
+                id: '555555',
+                signature: Buffer.from('eeee', 'hex'),
+              },
+              {
+                id: '666666',
+                signature: Buffer.from('ffff', 'hex'),
+              },
+            ],
+          },
+      } as any;
+
+      broadcasts  = [{
+        options: { api: 'type1', requestHandler: ps1 },
       }, {
-        collection: 'collection2',
-        object    : 'object2',
-        requestHandler: PostSignaturesRequest,
-      }];
-      const rh1 = new PostTransactionsRequest();
-      rh1.options = {data: { object1: 'object1' }} as any;
-      const rh2 = new PostSignaturesRequest();
-      rh2.options = {data: { object2: 'object2' }} as any;
-      const rh3 = new PostTransactionsRequest();
-      rh3.options = {data: { object1: 'object1_2' }} as any;
-      broadcasts = [{
-        options: { api: 'type1', requestHandler: rh1 },
+        options: { api: 'type2', requestHandler: pt1 },
       }, {
-        options: { api: 'type2', requestHandler: rh2 },
+        options: { api: 'type1', requestHandler: ps2 },
       }, {
-        options: { api: 'type1', requestHandler: rh3 },
+        options: { api: 'type2', requestHandler: pt2 },
       }];
     });
 
     it('should return the expected result', () => {
       const result = (instance as any).squashQueue(broadcasts);
       expect(result).to.be.deep.equal([{
-        options: {
-          immediate: false,
-          requestHandler: new routes[0].requestHandler({
-            data     : {
-              [routes[0].collection]: [
-                broadcasts[0].options.requestHandler.getOrigOptions().data.object1,
-                broadcasts[2].options.requestHandler.getOrigOptions().data.object1,
-              ],
+          options: {
+            immediate: false,
+            requestHandler: {
+              method: 'POST',
+              options: {
+                data: {
+                  signature: null,
+                  signatures: [
+                    {
+                      signature: Buffer.from('aaaa', 'hex'),
+                      transaction: '111111',
+                    },
+                    {
+                      signature  : Buffer.from('bbbb', 'hex'),
+                      transaction: '222222',
+                    },
+                    {
+                      signature  : Buffer.from('cccc', 'hex'),
+                      transaction: '333333',
+                    },
+                  ],
+                },
+              },
+              supportsProtoBuf: true,
             },
-          }),
+          },
         },
-      }, {
-        options: {
-          immediate: false,
-          requestHandler: new routes[1].requestHandler({
-            data     : {
-              [routes[1].collection]: [
-                broadcasts[1].options.requestHandler.getOrigOptions().data.object2,
-              ],
+        {
+          options: {
+            immediate: false,
+            requestHandler: {
+              method: 'POST',
+              options: {
+                data: {
+                  transaction: null,
+                  transactions: [
+                    {
+                      id: '444444',
+                      signature: Buffer.from('dddd', 'hex'),
+                    },
+                    {
+                      id: '555555',
+                      signature: Buffer.from('eeee', 'hex'),
+                    },
+                    {
+                      id: '666666',
+                      signature: Buffer.from('ffff', 'hex'),
+                    },
+                  ],
+                },
+              },
+              supportsProtoBuf: true,
             },
-          }),
-        },
-      }]);
+          },
+        }]
+      );
     });
   });
 

@@ -35,8 +35,8 @@ describe('apis/utils/errorHandler', () => {
     sendSpy = {send: sandbox.spy()};
     response = {status: () => sendSpy, send: sendSpy.send };
     responseStatusSpy = sandbox.spy(response, 'status');
-    request = {url: {startsWith: () => true}};
-    requestStub = sandbox.stub(request.url, 'startsWith');
+    request = {url: {startsWith: sandbox.stub().callsFake((start) => !(start === '/v2') ) }};
+    requestStub = request.url.startsWith;
     next = sandbox.spy();
     loggerStub = container.get(Symbols.helpers.logger);
     instance = container.get(Symbols.api.utils.errorHandler);
@@ -48,7 +48,7 @@ describe('apis/utils/errorHandler', () => {
 
   describe('error()', () => {
     it('If url starts with /peer', () => {
-      requestStub.returns(true);
+      requestStub.callsFake((start) => !(start === '/v2') );
       instance.error(new Error('Fake error'), request, response, next);
       expect(loggerStub.stubs.error.called).to.be.false;
       expect(loggerStub.stubs.warn.calledOnce).to.be.true;
@@ -80,13 +80,11 @@ describe('apis/utils/errorHandler', () => {
 
   describe('APIError', () => {
     it('should honorate statusCode of APIError', () => {
-      requestStub.returns(false);
       instance.error(new APIError('Another fake error', 500), request, response, next);
       expect(responseStatusSpy.args[0][0]).to.equal(500);
       expect(sendSpy.send.args[0][0]).to.deep.equal({success: false, error: 'Another fake error'});
     });
     it('should honorate Deprecated API Error (which is child of APIError)', () => {
-      requestStub.returns(false);
       instance.error(new DeprecatedAPIError(), request, response, next);
       expect(responseStatusSpy.args[0][0]).to.equal(500);
       expect(sendSpy.send.args[0][0]).to.deep.equal({success: false, error: 'Method is deprecated'});

@@ -1,10 +1,10 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { BaseRequest } from '../../../../src/apis/requests/BaseRequest';
 import { PostSignaturesRequest } from '../../../../src/apis/requests/PostSignaturesRequest';
 import { ProtoBufHelperStub } from '../../../stubs/helpers/ProtoBufHelperStub';
 import { createContainer } from '../../../utils/containerCreator';
+import { Symbols } from '../../../../src/ioc/symbols';
 
 describe('apis/requests/PostSignaturesRequest', () => {
   let options;
@@ -13,12 +13,16 @@ describe('apis/requests/PostSignaturesRequest', () => {
   let sandbox: SinonSandbox;
 
   beforeEach(() => {
-    createContainer(); // ensures protoBufHelper is injected into BaseRequest...
-    options = {data: {signatures: [ 'signature1', 'signature2' ]}};
+    const container = createContainer();
+    options = {data: {signatures: [{
+      signature: 'aabbccddeeeff',
+      transaction: '12345678901234567890',
+    }]}};
     sandbox = sinon.createSandbox();
     instance = new PostSignaturesRequest();
     instance.options = options;
-    pbHelperStub = (instance as any).protoBufHelper as any;
+    pbHelperStub = container.get(Symbols.helpers.protoBuf);
+    (instance as any).protoBufHelper = pbHelperStub;
     pbHelperStub.enqueueResponse('validate', true);
     pbHelperStub.enqueueResponse('encode', 'encodedValue');
   });
@@ -30,22 +34,28 @@ describe('apis/requests/PostSignaturesRequest', () => {
   describe('getRequestOptions', () => {
     describe('protoBuf = false', () => {
       it('should return request options as json', () => {
-        const reqOpts = JSON.stringify(instance.getRequestOptions(false));
-        expect(reqOpts).to.be.equal(JSON.stringify({
+        const reqOpts = instance.getRequestOptions(false);
+        expect(reqOpts).to.deep.equal({
           isProtoBuf: false,
-          method: 'POST',
-          url: '/peer/signatures',
-          data: { signatures: [ 'signature1', 'signature2' ] } })
-        );
+          method    : 'POST',
+          url       : '/peer/signatures',
+          data      : {
+            signatures: [{
+              signature  : 'aabbccddeeeff',
+              transaction: '12345678901234567890',
+            }],
+          },
+        });
       });
     });
+
     describe('protoBuf = true', () => {
       it('should call protoBufHelper.validate', () => {
         instance.getRequestOptions(true);
         expect(pbHelperStub.stubs.validate.calledOnce)
           .to.be.true;
         expect(pbHelperStub.stubs.validate.firstCall.args)
-          .to.be.deep.equal([options.data, 'transportSignatures']);
+          .to.be.deep.equal([options.data, 'transportSignatures', 'postSignatures']);
       });
 
       it('should call protoBufHelper.encode if validate is true', () => {
@@ -53,7 +63,7 @@ describe('apis/requests/PostSignaturesRequest', () => {
         expect(pbHelperStub.stubs.encode.calledOnce)
           .to.be.true;
         expect(pbHelperStub.stubs.encode.firstCall.args)
-          .to.be.deep.equal([options.data, 'transportSignatures']);
+          .to.be.deep.equal([options.data, 'transportSignatures', 'postSignatures']);
       });
 
       it('should return from protoBufHelper.encode into .data if validate is true', () => {

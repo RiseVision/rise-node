@@ -1,10 +1,10 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
-import { BaseRequest } from '../../../../src/apis/requests/BaseRequest';
+import { SinonSandbox } from 'sinon';
 import { PostTransactionsRequest } from '../../../../src/apis/requests/PostTransactionsRequest';
 import { ProtoBufHelperStub } from '../../../stubs/helpers/ProtoBufHelperStub';
 import { createContainer } from '../../../utils/containerCreator';
+import { Symbols } from '../../../../src/ioc/symbols';
 
 describe('apis/requests/PostTransactionsRequest', () => {
   let options;
@@ -13,13 +13,15 @@ describe('apis/requests/PostTransactionsRequest', () => {
   let sandbox: SinonSandbox;
 
   beforeEach(() => {
-    createContainer(); // ensures protoBufHelper is injected into BaseRequest...
+    const container = createContainer();
     options = {data: {transactions: [ 'transaction1', 'transaction2' ]}};
     sandbox = sinon.createSandbox();
     instance = new PostTransactionsRequest();
     instance.options = options;
-    pbHelperStub = (instance as any).protoBufHelper as any;
-    pbHelperStub.enqueueResponse('validate', true);
+    pbHelperStub = container.get(Symbols.helpers.protoBuf);
+    (instance as any).protoBufHelper = pbHelperStub;
+    (instance as any).txModel = {toTransportTransaction: sandbox.stub().callsFake((a) => a)};
+    (instance as any).generateBytesTransaction = sandbox.stub().callsFake((a) => a);
     pbHelperStub.enqueueResponse('encode', 'encodedValue');
   });
 
@@ -41,6 +43,7 @@ describe('apis/requests/PostTransactionsRequest', () => {
     });
     describe('protoBuf = true', () => {
       it('should call protoBufHelper.validate', () => {
+        pbHelperStub.stubs.validate.returns(true);
         instance.getRequestOptions(true);
         expect(pbHelperStub.stubs.validate.calledOnce)
           .to.be.true;
@@ -49,6 +52,7 @@ describe('apis/requests/PostTransactionsRequest', () => {
       });
 
       it('should call protoBufHelper.encode if validate is true', () => {
+        pbHelperStub.stubs.validate.returns(true);
         instance.getRequestOptions(true);
         expect(pbHelperStub.stubs.encode.calledOnce)
           .to.be.true;
@@ -57,6 +61,7 @@ describe('apis/requests/PostTransactionsRequest', () => {
       });
 
       it('should return from protoBufHelper.encode into .data if validate is true', () => {
+        pbHelperStub.stubs.validate.returns(true);
         const val = instance.getRequestOptions(true);
         expect(val.data).to.be.equal('encodedValue');
       });

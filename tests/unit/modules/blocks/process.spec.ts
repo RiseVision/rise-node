@@ -142,15 +142,11 @@ describe('modules/blocks/process', () => {
       }
       expect(peerStub.stubs.makeRequest.called).is.true;
       expect(peerStub.stubs.makeRequest.firstCall.args[0]).to.be.instanceOf(CommonBlockRequest);
-      expect(peerStub.stubs.makeRequest.firstCall.args[0]).to.be.deep.eq({
-        method: 'GET',
-        options: {
+      expect(peerStub.stubs.makeRequest.firstCall.args[0].options).to.be.deep.eq({
           data: null,
           query: {
             ids: '1,2,3,4,5',
-            },
           },
-        supportsProtoBuf: false,
       });
     });
     it('should fail if peer response is not valid', async () => {
@@ -360,21 +356,17 @@ describe('modules/blocks/process', () => {
       peersLogic.enqueueResponse('create', fakePeer);
     });
     it('should call peer.makeRequest', async () => {
-      fakePeer.makeRequest.resolves({body: {}});
+      fakePeer.makeRequest.resolves({blocks: []});
       blocksUtils.enqueueResponse('readDbRows', []);
       blocksModule.lastBlock = {id: '1'} as any;
       await inst.loadBlocksFromPeer(null);
       expect(fakePeer.makeRequest.firstCall.args[0]).is.instanceOf(GetBlocksRequest);
-      expect(fakePeer.makeRequest.firstCall.args[0]).is.deep.eq({
-        method: 'GET',
-        options: {
+      expect(fakePeer.makeRequest.firstCall.args[0].options).is.deep.eq({
           data: null,
           query: {
             lastBlockId: '1',
           },
-        },
-        supportsProtoBuf: true,
-      });
+     });
     });
     it('should validate response against schema', async () => {
       fakePeer.makeRequest.resolves({blocks: ['1', '2', '3']});
@@ -388,20 +380,8 @@ describe('modules/blocks/process', () => {
       expect(schemaStub.stubs.validate.calledOnce).is.true;
       expect(schemaStub.stubs.validate.firstCall.args[0]).is.deep.eq(['1', '2', '3']);
     });
-    it('should read returned data through utilsModule', async () => {
-      fakePeer.makeRequest.resolves({blocks: ['1', '2', '3']});
-      blocksUtils.enqueueResponse('readDbRows', []);
-      blockVerify.stubs.processBlock.resolves();
-      blocksModule.lastBlock = {id: '1'} as any;
-
-      await inst.loadBlocksFromPeer(null);
-
-      expect(blocksUtils.stubs.readDbRows.calledOnce).is.true;
-      expect(blocksUtils.stubs.readDbRows.firstCall.args[0]).is.deep.eq(['1', '2', '3']);
-    });
     it('should call processBlock on each block', async () => {
-      fakePeer.makeRequest.resolves({blocks: []});
-      blocksUtils.enqueueResponse('readDbRows', ['1', '2', '3']);
+      fakePeer.makeRequest.resolves({blocks: ['1', '2', '3']});
       blockVerify.stubs.processBlock.resolves();
       blocksModule.lastBlock = {id: '1'} as any;
 
@@ -414,8 +394,7 @@ describe('modules/blocks/process', () => {
       expect(blockVerify.stubs.processBlock.getCall(0).args[2]).to.be.deep.eq(true);
     });
     it('should throw if one processBlock fails', async () => {
-      fakePeer.makeRequest.resolves({blocks: []});
-      blocksUtils.enqueueResponse('readDbRows', ['1', '2', '3']);
+      fakePeer.makeRequest.resolves({blocks: ['1', '2', '3']});
       blockVerify.stubs.processBlock.resolves();
       blockVerify.stubs.processBlock.onCall(2).rejects();
       blocksModule.lastBlock = {id: '1'} as any;
@@ -425,16 +404,14 @@ describe('modules/blocks/process', () => {
 
     });
     it('should return the last validBlock', async () => {
-      fakePeer.makeRequest.resolves({blocks: []});
-      blocksUtils.enqueueResponse('readDbRows', ['1', '2', '3']);
+      fakePeer.makeRequest.resolves({blocks: ['1', '2', '3']});
       blockVerify.stubs.processBlock.resolves();
       blocksModule.lastBlock = {id: '1'} as any;
 
       expect(await inst.loadBlocksFromPeer(null)).to.be.eq('3');
     });
     it('should not process anything if is cleaning', async () => {
-      fakePeer.makeRequest.resolves({blocks: []});
-      blocksUtils.enqueueResponse('readDbRows', ['1', '2', '3']);
+      fakePeer.makeRequest.resolves({blocks: ['1', '2', '3']});
       blockVerify.stubs.processBlock.resolves();
       blocksModule.lastBlock  = {id: '1'} as any;
       await inst.cleanup();

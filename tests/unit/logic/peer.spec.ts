@@ -10,6 +10,7 @@ import { APIRequestStub, TransportModuleStub } from '../../stubs';
 
 const expect          = chai.expect;
 const ProxyPeerLogic = proxyquire('../../../src/logic/peer.ts', {ip});
+let hr: any;
 
 chai.use(chaiAsPromised);
 
@@ -21,6 +22,9 @@ describe('logic/peer', () => {
     transportModuleStub               = new TransportModuleStub();
     instance                          = new ProxyPeerLogic.PeerLogic();
     (instance as any).transportModule = transportModuleStub;
+    hr = new HeightRequest();
+    (hr as any).transportModule = {getFromPeer: (a) => Promise.resolve(a)};
+    (instance as any).hrFactory = () => hr;
   });
 
   describe('properties', () => {
@@ -449,6 +453,7 @@ describe('logic/peer', () => {
     beforeEach(() => {
       transportModuleStub.enqueueResponse('getFromPeer', Promise.resolve(response));
       requestHandlerStub = new APIRequestStub();
+      requestHandlerStub.enqueueResponse('makeRequest', Promise.resolve(response.body));
       reqData = {data: { transactions: [] }, isProtoBuf: false, method: 'GET', url: '/peer/height'};
       requestHandlerStub.enqueueResponse('getRequestOptions', reqData);
       requestHandlerStub.enqueueResponse('getResponseData', response.body);
@@ -458,35 +463,25 @@ describe('logic/peer', () => {
       expect(retVal).to.be.instanceOf(Promise);
     });
 
-    it('should call reqHandler.setPeer', () => {
-      instance.makeRequest(requestHandlerStub);
-      expect(requestHandlerStub.spies.setPeer.calledOnce).to.be.true;
-      expect(requestHandlerStub.spies.setPeer.firstCall.args[0]).to.be.deep.eq(instance);
-    });
-
-    it('should call transportmodule.getFromPeer', async () => {
-      instance.makeRequest(requestHandlerStub);
-      expect(transportModuleStub.stubs.getFromPeer.calledOnce).to.be.true;
-      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[0]).to.be.deep.equal(instance);
-      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[1]).to.be.deep.equal(reqData);
-    });
-
-    it('should call reqHandler.getResponseData', async () => {
+    it('should call reqHandler.makeRequest', async () => {
       const result = await instance.makeRequest(requestHandlerStub);
-      expect(requestHandlerStub.stubs.getResponseData.calledOnce).to.be.true;
-      expect(requestHandlerStub.stubs.getResponseData.firstCall.args[0]).to.be.deep.eq(response);
+      expect(requestHandlerStub.stubs.makeRequest.calledOnce).to.be.true;
+      expect(requestHandlerStub.stubs.makeRequest.firstCall.args[0]).to.be.deep.eq(instance);
       expect(result).to.be.eq(response.body);
     });
   });
 
   describe('pingAndUpdate', () => {
+    beforeEach(() => {
+      instance.version = '1.0.0';
+    });
     it('should call makeRequest', () => {
       const makeRequestStub = sinon.stub(instance, 'makeRequest');
       makeRequestStub.resolves('1');
       let p;
       p = instance.pingAndUpdate();
       expect(makeRequestStub.calledOnce).to.be.true;
-      expect(makeRequestStub.firstCall.args[0]).to.be.deep.equal(new HeightRequest());
+      expect(makeRequestStub.firstCall.args[0]).to.be.deep.equal(hr);
       expect(p).to.be.fulfilled;
     });
 

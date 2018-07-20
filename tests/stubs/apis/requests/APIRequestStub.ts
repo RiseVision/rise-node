@@ -17,11 +17,6 @@ export class APIRequestStub extends BaseStubClass implements IAPIRequest<any, an
     return undefined;
   }
 
-  @spyMethod
-  public setPeer(peer: IPeerLogic) {
-    return undefined;
-  }
-
   @stubMethod()
   public getOrigOptions() {
     return undefined;
