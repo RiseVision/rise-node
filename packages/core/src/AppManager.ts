@@ -1,3 +1,21 @@
+import {
+  Bus,
+  catchToLoggerAndRemapError,
+  cbToPromise,
+  ExceptionsManager,
+  Migrator,
+  Symbols,
+  z_schema
+} from '@risevision/core-helpers';
+import {
+  IBaseModel,
+  IBlockLogic,
+  IBlocksModuleChain,
+  IInfoModel,
+  ILogger,
+  ITransactionLogic
+} from '@risevision/core-interfaces';
+import { AppConfig, ConstantsType, SignedAndChainedBlockType } from '@risevision/core-types';
 import * as bodyParser from 'body-parser';
 import * as cls from 'cls-hooked';
 import * as compression from 'compression';
@@ -19,13 +37,19 @@ import {
   BlockLogic,
   BlockRewardLogic
 } from './logic/';
-
 import { BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify } from './modules/blocks/';
 import { ForkModule } from './modules/fork';
-import { ILogger, IBlockLogic, IBlocksModuleChain, ITransactionLogic } from '@risevision/core-interfaces';
-import { SignedAndChainedBlockType, AppConfig, ConstantsType } from '@risevision/core-types';
-import { ExceptionsManager, Symbols, Bus } from '@risevision/core-helpers';
-import { IBaseModel } from '@risevision/core-interfaces/src/models/IBaseModel';
+import { LoaderModule } from '@risevision/core';
+import {
+  AccountsModel,
+  BaseModel,
+  BlocksModel,
+  ExceptionModel,
+  ForksStatsModel,
+  InfoModel, MigrationsModel
+} from '@risevision/core-models';
+import { PeersModel } from '../../core-p2p/dist/PeersModel';
+import { TransactionsModel } from '../../core-transactions/dist/TransactionsModel';
 
 export class AppManager {
   public container: Container = new Container();
@@ -140,6 +164,7 @@ export class AppManager {
    * Initialize all app dependencies into the IoC container.
    */
   public async initAppElements() {
+    await this.hookSystem.do_action('core/init/initAppElements.pre', this.container);
     this.expressApp = express();
 
     this.server = http.createServer(this.expressApp);
@@ -221,7 +246,7 @@ export class AppManager {
 
     // Register transaction types.
     const txLogic = this.container.get<ITransactionLogic>(Symbols.logic.transaction);
-    const txs     = this.getElementsFromContainer<BaseTx<any, any>>(Symbols.logic.transactions);
+    const txs     = this.getElementsFromContainer<any>(Symbols.logic.transactions);
     txs.forEach((tx) => txLogic.attachAssetType(tx));
 
     await infoModel
@@ -251,25 +276,26 @@ export class AppManager {
     // console.log(bit);
   }
 
-  private modelsElements(sequelize) {
-    this.container.bind(Symbols.models.accounts).toConstructor(AccountsModel);
-    this.container.bind(Symbols.models.accounts2Delegates).toConstructor(Accounts2DelegatesModel);
-    this.container.bind(Symbols.models.accounts2Multisignatures).toConstructor(Accounts2MultisignaturesModel);
-    this.container.bind(Symbols.models.accounts2U_Delegates).toConstructor(Accounts2U_DelegatesModel);
-    this.container.bind(Symbols.models.accounts2U_Multisignatures).toConstructor(Accounts2U_MultisignaturesModel);
-    this.container.bind(Symbols.models.blocks).toConstructor(BlocksModel);
-    this.container.bind(Symbols.models.delegates).toConstructor(DelegatesModel);
-    this.container.bind(Symbols.models.exceptions).toConstructor(ExceptionModel);
-    this.container.bind(Symbols.models.forkStats).toConstructor(ForksStatsModel);
-    this.container.bind(Symbols.models.info).toConstructor(InfoModel);
-    this.container.bind(Symbols.models.migrations).toConstructor(MigrationsModel);
-    this.container.bind(Symbols.models.multisignatures).toConstructor(MultiSignaturesModel);
-    this.container.bind(Symbols.models.peers).toConstructor(PeersModel);
-    this.container.bind(Symbols.models.roundsFees).toConstructor(RoundsFeesModel);
-    this.container.bind(Symbols.models.rounds).toConstructor(RoundsModel);
-    this.container.bind(Symbols.models.signatures).toConstructor(SignaturesModel);
-    this.container.bind(Symbols.models.transactions).toConstructor(TransactionsModel);
-    this.container.bind(Symbols.models.votes).toConstructor(VotesModel);
+  private async modelsElements(sequelize) {
+    this.container.bind(Symbols.model).toConstructor(AccountsModel)
+      .whenTargetNamed(Symbols.models.accounts);
+    this.container.bind(Symbols.model).toConstructor(BlocksModel)
+      .whenTargetNamed(Symbols.models.blocks);
+
+    this.container.bind(Symbols.model).toConstructor(ExceptionModel)
+      .whenTargetNamed(Symbols.models.exceptions);
+    this.container.bind(Symbols.model).toConstructor(ForksStatsModel)
+      .whenTargetNamed(Symbols.models.forkStats);
+    this.container.bind(Symbols.model).toConstructor(InfoModel)
+      .whenTargetNamed(Symbols.models.info);
+    this.container.bind(Symbols.model).toConstructor(MigrationsModel)
+      .whenTargetNamed(Symbols.models.migrations);
+    this.container.bind(Symbols.model).toConstructor(PeersModel)
+      .whenTargetNamed(Symbols.models.peers);
+    this.container.bind(Symbols.model).toConstructor(TransactionsModel)
+      .whenTargetNamed(Symbols.models.transactions);
+
+    await this.hookSystem.do_action('core/')
     // Register models
     const models = this.getElementsFromContainer<typeof BaseModel>(Symbols.models);
     sequelize.addModels(models);
@@ -368,6 +394,7 @@ export class AppManager {
   }
 
   private getElementsFromContainer<T = any>(symbols: { [k: string]: symbol | { [k: string]: symbol } }): T[] {
+    this.container.getAllTagged()
     return Object
       .keys(symbols)
       .filter((k) => typeof(symbols[k]) === 'symbol')

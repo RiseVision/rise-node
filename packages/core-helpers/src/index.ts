@@ -7,7 +7,6 @@ import applyExpressLimits from './request-limiter';
 export * from './blocksProgressLogger';
 export * from './bus';
 export * from './checkIpInList';
-export * from './db';
 export * from './crypto';
 export * from './constants';
 export * from './httpApi';

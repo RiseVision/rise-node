@@ -1,25 +1,25 @@
-import { DBBulkCreateOp, DBCreateOp, DBOp, DBRemoveOp, DBUpdateOp, DBUpsertOp } from '@risevision/core-types';
+import { wait } from '@risevision/core-helpers';
 import { inject, injectable } from 'inversify';
 import * as sequelize from 'sequelize';
 import { Op, Sequelize, Transaction } from 'sequelize';
 import { Model } from 'sequelize-typescript';
 import * as squel from 'squel';
-import { wait } from './promiseUtils';
-import { Symbols } from './symbols';
+import { DBBulkCreateOp, DBCreateOp, DBOp, DBRemoveOp, DBUpdateOp, DBUpsertOp } from '../types/';
+import { ModelSymbols } from './modelSymbols';
 
 const squelPostgres = squel.useFlavour('postgres');
 squelPostgres.registerValueHandler(Buffer, (buffer) => {
- return {
-   formatted: true,
-   value: "E'\\\\x" + buffer.toString('hex') + "'",
-   rawNesting: true,
- } as any;
+  return {
+    formatted : true,
+    rawNesting: true,
+    value     : "E'\\\\x" + buffer.toString('hex') + "'",
+  } as any;
 });
 
 @injectable()
 export class DBHelper {
 
-  @inject(Symbols.generic.sequelize)
+  @inject(ModelSymbols.sequelize)
   private sequelize: Sequelize;
 
   public handleUpdate(updateOp: DBUpdateOp<any>) {
@@ -28,7 +28,7 @@ export class DBHelper {
       updateOp.values,
       updateOp.options.where,
       updateOp.options
-      );
+    );
   }
 
   public handleInsert(insertOp: DBCreateOp<any>) {
@@ -41,10 +41,15 @@ export class DBHelper {
   }
 
   public handleBulkInsert(insertOp: DBBulkCreateOp<any>) {
-   return squelPostgres.insert({ nameQuoteCharacter: '"', autoQuoteTableNames: true, autoQuoteFieldNames:true })
-     .into(insertOp.model.getTableName() as string)
-     .setFieldsRows(insertOp.values)
-     .toString();
+    return squelPostgres.insert({
+      autoQuoteFieldNames: true,
+      autoQuoteTableNames: true,
+      nameQuoteCharacter : '"',
+      stringFormatter    : (s) => `"${s}"`,
+    })
+      .into(insertOp.model.getTableName() as string)
+      .setFieldsRows(insertOp.values)
+      .toString();
   }
 
   public handleUpsert(upsertOp: DBUpsertOp<any>) {
@@ -81,10 +86,10 @@ export class DBHelper {
     }
 
     const opsToDoIterator = this.splitOps(what, 1010);
-    let chunk = opsToDoIterator.next();
+    let chunk             = opsToDoIterator.next();
     while (!chunk.done) {
       chunk = await (async () => {
-        const p = this.sequelize.query(chunk.value, baseOptions);
+        const p         = this.sequelize.query(chunk.value, baseOptions);
         const nextChunk = await wait(1).then(() => opsToDoIterator.next());
         return p.then(() => nextChunk);
       })();

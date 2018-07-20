@@ -8,9 +8,11 @@ import * as jp from 'jsonpath';
 import 'source-map-support/register';
 // import { AppManager } from './AppManager';
 // import { allExceptionCreator } from './exceptions';
-import { AppConfig } from '@risevision/core-types';
+import { AppConfig, ConstantsType } from '@risevision/core-types';
 import { fetchCoreModuleImplementations } from './modulesLoader';
 import { configCreator } from './loadConfigs';
+import { AppManager } from './AppManager';
+import { loggerCreator } from '@risevision/core-helpers';
 // import {
 //   config as configCreator, constants as constantsType, ExceptionType, loggerCreator,
 //   promiseToCB,
@@ -71,6 +73,14 @@ modules.forEach((m) => m.extendCommander(program));
 
 program.parse(process.argv);
 
+const genesis = `${process.env.PWD}/etc/${program.net}/genesisBlock.json`;
+if (!fs.existsSync(genesis)) {
+  console.error(`Error: Cannot find genesisBlock.json in ${genesis}`);
+  process.exit(1);
+}
+
+const genesisBlock = require(genesis);
+
 // tslint:disable-next-line
 // const genesisBlock = require(`../etc/${program.net}/genesisBlock.json`);
 
@@ -126,42 +136,42 @@ for (const m of modules) {
  }
 }
 
-//
-// const logger = loggerCreator({
-//   echo      : appConfig.consoleLogLevel,
-//   errorLevel: appConfig.fileLogLevel,
-//   filename  : appConfig.logFileName,
-// });
+const logger = loggerCreator({
+  echo      : appConfig.consoleLogLevel,
+  errorLevel: appConfig.fileLogLevel,
+  filename  : appConfig.logFileName,
+});
 
 /**
  * Takes care of bootstrapping the application
  * Returns cleanup function
  */
-// async function boot(constants: typeof constantsType): Promise<AppManager> {
-//   const manager = new AppManager(
-//     appConfig,
-//     logger,
-//     versionBuild,
-//     genesisBlock,
-//     constants,
-//     allExceptionCreator
-//   );
-//   await manager.boot();
-//   return manager;
-// }
-//
-// exitHook.forceExitTimeout(15000);
-// exitHook.unhandledRejectionHandler((err) => {
-//   logger.fatal('Unhandled Promise rejection', err);
-// });
-//
-// boot(constantsType)
-//   .catch((err) => {
-//     logger.fatal('Error when instantiating');
-//     logger.fatal(err);
-//     process.exit(1);
-//     return Promise.reject(err);
-//   })
-//   .then((manager) => {
-//     exitHook((cb) => promiseToCB(manager.tearDown(), cb));
-//   });
+async function boot(constants: ConstantsType): Promise<AppManager> {
+  const manager = new AppManager(
+    appConfig,
+    logger,
+    callingPackageJSON.version,
+    genesisBlock,
+    constants,
+    [], // TODO: ExceptionsCreator or refactor entirely.
+    modules
+  );
+  await manager.boot();
+  return manager;
+}
+
+exitHook.forceExitTimeout(15000);
+exitHook.unhandledRejectionHandler((err) => {
+  logger.fatal('Unhandled Promise rejection', err);
+});
+
+boot(constantsType)
+  .catch((err) => {
+    logger.fatal('Error when instantiating');
+    logger.fatal(err);
+    process.exit(1);
+    return Promise.reject(err);
+  })
+  .then((manager) => {
+    exitHook((cb) => promiseToCB(manager.tearDown(), cb));
+  });

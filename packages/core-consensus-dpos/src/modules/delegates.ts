@@ -26,7 +26,7 @@ const countDuplicatedDelegatesSQL = fs.readFileSync(
 );
 
 @injectable()
-class DelegatesModule extends WPHooksSubscriber(Object) implements IModule {
+export class DelegatesModule extends WPHooksSubscriber(Object) implements IModule {
   private loaded: boolean = false;
 
   // Generic

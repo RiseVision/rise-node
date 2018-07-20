@@ -18,7 +18,8 @@
     ],
     "paths": {
       "@risevision/core-types": ["../core-types/*"],
-      "@risevision/core-helpers": ["../core-helpers/*"]
+      "@risevision/core-helpers": ["../core-helpers/*"],
+      "@risevision/core-launchpad": ["../core-launchpad/*"]
     }
   },
   "include"        : [

@@ -1,5 +1,6 @@
 import { CommanderStatic } from 'commander';
 import { WordPressHookSystem } from 'mangiafuoco';
+import { Container } from 'inversify';
 
 export interface ICoreModule<ConfigType> {
   configSchema: any;
@@ -17,6 +18,8 @@ export interface ICoreModule<ConfigType> {
   afterConfigValidation?<T extends ConfigType>(config: T): T;
 
   patchConfigWithCLIParams?<T extends ConfigType>(progrma: CommanderStatic, config: T): T;
+
+  addElementsToContainer(container: Container): void
 }
 
 export abstract class BaseCoreModule<ConfigType = any> implements ICoreModule<ConfigType> {
@@ -44,5 +47,9 @@ export abstract class BaseCoreModule<ConfigType = any> implements ICoreModule<Co
 
   public afterConfigValidation<T extends ConfigType>(config: T): T {
     return config;
+  }
+
+  public addElementsToContainer(container: Container): void {
+    return void 0;
   }
 }

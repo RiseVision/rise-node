@@ -40,20 +40,26 @@ export const Symbols = {
     logger           : Symbol('logger'),
     migrator         : Symbol('migrator'),
     sequence         : Symbol('sequence'),
+    sequences: {
+      balancesSequence: Symbol('balanceSequence'),
+      dbSequence      : Symbol('dbSequence'),
+      defaultSequence : Symbol('defaultSequence'),
+    },
     timeToEpoch      : Symbol('timeToEpoch'),
   },
   logic  : {
-    account        : Symbol('accountLogic'),
-    appState       : Symbol('appState'),
-    block          : Symbol('blockLogic'),
-    blockReward    : Symbol('blockRewardL'),
-    broadcaster    : Symbol('broadcasterL'),
-    peer           : Symbol('peerL'),
-    peerFactory    : Symbol('Factory<peerL>'),
-    peers          : Symbol('peersL'),
-    transaction    : Symbol('transactionL'),
-    transactionPool: Symbol('transactionPoolL'),
-    transactions   : {
+    account          : Symbol('accountLogic'),
+    appState         : Symbol('appState'),
+    block            : Symbol('blockLogic'),
+    blockReward      : Symbol('blockRewardL'),
+    broadcaster      : Symbol('broadcasterL'),
+    peer             : Symbol('peerL'),
+    peerFactory      : Symbol('Factory<peerL>'),
+    peers            : Symbol('peersL'),
+    singleTransaction: Symbol('singleTransaction'),
+    transaction      : Symbol('transactionL'),
+    transactionPool  : Symbol('transactionPoolL'),
+    transactions     : {
       createmultisig : Symbol('createMultisigTxL'),
       delegate       : Symbol('delegateTxL'),
       secondSignature: Symbol('secondSignatureTxL'),
@@ -61,20 +67,18 @@ export const Symbols = {
       vote           : Symbol('voteTxL'),
     },
   },
+  model: Symbol('model'),
   models : {
     accounts                  : Symbol('accountsModel'),
-    accounts2Multisignatures  : Symbol('accounts2multisignatures'),
-    accounts2U_Multisignatures: Symbol('accounts2U_multisignatures'),
     blocks                    : Symbol('blocksModel'),
     exceptions                : Symbol('exceptionsModel'),
     forkStats                 : Symbol('forkStatsModel'),
     info                      : Symbol('infoModel'),
     migrations                : Symbol('migrationsModel'),
-    multisignatures           : Symbol('multisignaturesModel'),
     peers                     : Symbol('peersModel'),
-    signatures                : Symbol('signaturesModel'),
     transactions              : Symbol('transactionsModel'),
   },
+  module: Symbol('module'),
   modules: {
     accounts        : Symbol('accountsM'),
     blocks          : Symbol('blocksM'),
@@ -87,22 +91,11 @@ export const Symbols = {
     cache           : Symbol('cacheM'),
     fork            : Symbol('forkM'),
     loader          : Symbol('loaderM'),
-    multisignatures : Symbol('multisignaturesM'),
     peers           : Symbol('peersM'),
-    rounds          : Symbol('roundsM'),
     system          : Symbol('systemM'),
     transactions    : Symbol('transactionsM'),
     transport       : Symbol('transportM'),
   },
-
-  tags: {
-    helpers: {
-      balancesSequence: Symbol('balanceSequence'),
-      dbSequence      : Symbol('dbSequence'),
-      defaultSequence : Symbol('defaultSequence'),
-    },
-  },
-
   __others: {
     metadata: {
       // USed to decorate the class with the symbol attached to it.
