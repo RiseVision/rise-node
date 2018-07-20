@@ -8,7 +8,6 @@ export * from './bus';
 export * from './checkIpInList';
 export * from './crypto';
 export * from './constants';
-export * from './httpApi';
 export * from './exceptionManager';
 export * from './genericUtils';
 export * from './jobsQueue';

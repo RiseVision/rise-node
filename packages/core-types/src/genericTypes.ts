@@ -14,7 +14,6 @@ export interface AppConfig {
   firewalled?: boolean;
   consoleLogLevel: string;
   logFileName: string;
-  trustProxy: boolean;
   cacheEnabled: boolean;
   topAccounts: boolean;
 

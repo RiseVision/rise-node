@@ -30,7 +30,6 @@ import { useContainer as useContainerForHTTP, useExpressServer } from 'routing-c
 import { Sequelize } from 'sequelize-typescript';
 import * as socketIO from 'socket.io';
 import * as uuid from 'uuid';
-import { allControllers } from './apis';
 import {
   AccountLogic,
   AppState,
@@ -48,8 +47,6 @@ import {
   ForksStatsModel,
   InfoModel, MigrationsModel
 } from '@risevision/core-models';
-import { PeersModel } from '../../core-p2p/dist/PeersModel';
-import { TransactionsModel } from '../../core-transactions/dist/TransactionsModel';
 import { ICoreModule } from './module';
 
 export class AppManager {
@@ -104,66 +101,13 @@ export class AppManager {
   }
 
   /**
-   * Initialize http endpoints.
-   */
-  public async initExpress() {
-    const app = this.container.get<express.Application>(Symbols.generic.expressApp);
-    applyExpressLimits(app, this.appConfig);
-
-    app.use(compression({ level: 9 }));
-    app.use(cors());
-    app.options('*', cors());
-
-    app.use(bodyParser.raw({ limit: '2mb' }));
-    app.use(bodyParser.urlencoded({ extended: true, limit: '2mb', parameterLimit: 5000 }));
-    app.use(bodyParser.json({ limit: '2mb' }));
-
-    app.use(middleware.logClientConnections(this.logger));
-    // Disallow inclusion in iframe.
-    app.use(middleware.attachResponseHeader('X-Frame-Options', 'DENY'));
-
-    /* Set Content-Security-Policy headers.
-     *
-     * frame-ancestors - Defines valid sources for <frame>, <iframe>, <object>, <embed> or <applet>.
-     *
-     * W3C Candidate Recommendation -> https://www.w3.org/TR/CSP/
-     */
-    app.use(middleware.attachResponseHeader('Content-Security-Policy', 'frame-ancestors \'none\''));
-
-    app.use(middleware.applyAPIAccessRules(this.appConfig));
-
-    // Init HTTP Apis
-    const container = this.container;
-    useContainerForHTTP({
-        get(clz: any) {
-          const symbol = Reflect.getMetadata(Symbols.__others.metadata.classSymbol, clz);
-          if (symbol == null) {
-            throw new Error(`ERROR instantiating for HTTP ${symbol}`);
-          }
-          return container
-            .get(symbol);
-        },
-      }
-    );
-    useExpressServer(
-      this.expressApp,
-      {
-        controllers        : allControllers,
-        defaultErrorHandler: false,
-        middlewares        : [APIErrorHandler],
-      }
-    );
-
-  }
-
-  /**
    * Initialize all app dependencies into the IoC container.
    */
   public async initAppElements() {
 
-    this.modules.forEach((m) => m.addElementsToContainer(this.container));
+    this.modules.forEach((m) => m.addElementsToContainer(this.container, this.appConfig));
 
-    this.modules.forEach((m) => m.initAppElements(this.container));
+    this.modules.forEach((m) => m.initAppElements(this.container, this.appConfig));
 
     this.expressApp = express();
 
