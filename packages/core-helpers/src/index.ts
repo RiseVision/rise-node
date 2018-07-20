@@ -2,7 +2,6 @@ import 'reflect-metadata';
 import BigNum from './bignum';
 export * from './diff';
 import loggerCreator from './logger';
-import applyExpressLimits from './request-limiter';
 
 export * from './blocksProgressLogger';
 export * from './bus';
@@ -22,9 +21,8 @@ export * from './symbols';
 export * from './z_schema';
 
 export * from './decorators';
-
+export * from './coremodule';
 export {
-  applyExpressLimits,
   BigNum,
   loggerCreator
 };

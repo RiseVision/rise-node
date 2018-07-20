@@ -1,6 +1,6 @@
 import { ConstantsType } from '@risevision/core-types';
 // tslint:disable object-literal-sort-keys
-
+// TODO: How to split this in submodules?
 export const constants: ConstantsType = {
   blockSlotWindow              : 5, // window of which a slot could be accepted.
   blockTime                    : 30,

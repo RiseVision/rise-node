@@ -9,13 +9,6 @@ export const Symbols = {
     successInterceptor: Symbol('successInterceptor'),
     transactions      : Symbol('transactionsAPI'),
     transport         : Symbol('transportAPI'),
-    utils             : {
-      attachPeerHeaderToResponseObject: Symbol('attachPeerHeaderToResponseObject'),
-      errorHandler                    : Symbol('errorHandler'),
-      forgingApisWatchGuard           : Symbol('forgingApisWatchGuard'),
-      successInterceptor              : Symbol('successInterceptor'),
-      validatePeerHeadersMiddleware   : Symbol('validatePeerHeadersMiddleware'),
-    },
   },
   generic: {
     appConfig         : Symbol('appConfig'),
@@ -24,8 +17,6 @@ export const Symbols = {
     hookSystem        : Symbol('hookSystem'),
     nonce             : Symbol('nonce'),
     redisClient       : Symbol('redisClient'),
-    sequelize         : Symbol('sequelize'),
-    sequelizeNamespace: Symbol('sequelizeNamespace'),
     socketIO          : Symbol('socketIO'),
     versionBuild      : Symbol('versionBuild'),
     zschema           : Symbol('z_schema'),

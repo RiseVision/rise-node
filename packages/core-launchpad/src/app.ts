@@ -44,7 +44,6 @@ program
   .option('-p, --port <port>', 'listening port number')
   .option('-a, --address <ip>', 'listening host name or ip')
   .option('--net <net>', 'Network to run on', 'mainnet')
-  .option('-l, --log <level>', 'log level')
   .option('-s, --snapshot [round]', 'verify snapshot')
   .option('-c, --config <path>', 'custom config path')
   .option('-e, --extra-config <path>', 'partial override config path')
@@ -117,9 +116,6 @@ if (program.overrideConfig) {
   }
 }
 
-if (program.log) {
-  appConfig.consoleLogLevel = program.log;
-}
 
 if (program.snapshot) {
   if (typeof(program.snapshot) === 'string') {

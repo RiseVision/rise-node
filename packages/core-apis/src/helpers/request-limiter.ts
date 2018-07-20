@@ -1,5 +1,4 @@
-import { AppConfig } from '@risevision/core-types';
-import { Application } from 'express';
+import {RequestHandler} from 'express';
 import * as RateLimit from 'express-rate-limit';
 
 export interface IRateLimiterOpts {
@@ -22,7 +21,7 @@ const defaults: IRateLimiterOpts = {
  * @param {Object} [limits]
  * @returns {Object} max, delayMs, delayAfter, windowMs
  */
-export function applyLimits(limits: IRateLimiterOpts): IRateLimiterOpts {
+function applyLimits(limits: IRateLimiterOpts): IRateLimiterOpts {
   if (typeof limits === 'object') {
     return {
       delayAfter: Math.floor(limits.delayAfter) || defaults.delayAfter,
@@ -35,16 +34,6 @@ export function applyLimits(limits: IRateLimiterOpts): IRateLimiterOpts {
   }
 }
 
-/**
- * Applies limits config to app
- */
-export default function applyLimitsToApp(app: Application, config: AppConfig) {
-  if (config.trustProxy) {
-    app.enable('trust proxy');
-  }
-
-  // TODO: re-add me
-  // app.use('/api/', new RateLimit(applyLimits(config.api.options.limits)));
-  // app.use('/peer/', new RateLimit(applyLimits(config.peers.options.limits)));
-
+export function limitsMiddleware(limits: IRateLimiterOpts): RequestHandler {
+  return new RateLimit(applyLimits(limits));
 }

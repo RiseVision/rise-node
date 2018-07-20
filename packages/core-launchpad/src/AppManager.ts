@@ -65,7 +65,6 @@ export class AppManager {
               private logger: ILogger,
               private versionBuild: string,
               private genesisBlock: SignedAndChainedBlockType,
-              private constants: ConstantsType,
               private excCreators: Array<(ex: ExceptionsManager) => Promise<void>>,
               private modules: Array<ICoreModule<any>>) {
     this.appConfig.nethash = genesisBlock.payloadHash.toString('hex');
@@ -164,33 +163,13 @@ export class AppManager {
 
     this.modules.forEach((m) => m.addElementsToContainer(this.container));
 
-    this.modules.forEach((m) => m.initAppElements(this.container))
+    this.modules.forEach((m) => m.initAppElements(this.container));
 
     this.expressApp = express();
 
     this.server = http.createServer(this.expressApp);
     const io    = socketIO(this.server);
 
-    const namespace = cls.createNamespace('sequelize-namespace');
-
-    (Sequelize as any).__proto__.useCLS(namespace);
-
-    const sequelize = new Sequelize({
-      // logging(msg) {
-      //   (require('fs')).appendFileSync(`${__dirname}/../sequelize.log`, msg+"\n");
-      // },
-      database: this.appConfig.db.database,
-      dialect : 'postgres',
-      host    : this.appConfig.db.host,
-      logging : false,
-      password: this.appConfig.db.password,
-      pool    : {
-        idle: this.appConfig.db.poolIdleTimeout,
-        max : this.appConfig.db.poolSize,
-      },
-      port    : this.appConfig.db.port,
-      username: this.appConfig.db.user,
-    });
     const bus       = new Bus();
 
     // HTTP APIs
@@ -342,7 +321,6 @@ export class AppManager {
   private helperElements(bus, ed) {
     this.container.bind(Symbols.helpers.bus).toConstantValue(bus);
     this.container.bind(Symbols.helpers.constants).toConstantValue(this.constants);
-    this.container.bind(Symbols.helpers.db).to(DBHelper).inSingletonScope();
     this.container.bind(Symbols.helpers.crypto).toConstantValue(ed);
     this.container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManager).inSingletonScope();
     this.container.bind(Symbols.helpers.jobsQueue).to(JobsQueue).inSingletonScope();
@@ -370,8 +348,6 @@ export class AppManager {
     this.container.bind(Symbols.generic.genesisBlock).toConstantValue(this.genesisBlock);
     // Nonce is restore in finishBoot.
     // this.container.bind(Symbols.generic.nonce).toConstantValue(this.nonce);
-    this.container.bind(Symbols.generic.sequelize).toConstantValue(sequelize);
-    this.container.bind(Symbols.generic.sequelizeNamespace).toConstantValue(namespace);
     this.container.bind(Symbols.generic.socketIO).toConstantValue(io);
     this.container.bind(Symbols.generic.versionBuild).toConstantValue(this.versionBuild);
     this.container.bind(Symbols.generic.zschema).toConstantValue(this.schema);
