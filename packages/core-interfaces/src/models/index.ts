@@ -1,4 +1,5 @@
 export * from './IAccountsModel';
+export * from './IBaseModel';
 export * from './IBlocksModel';
 export * from './IExceptionModel';
 export * from './IForkStatsModel';
