@@ -2,6 +2,7 @@ import { injectable } from 'inversify';
 import {allBuffersToHex, MyConvOptions } from '../../helpers';
 import { BaseRequest } from './BaseRequest';
 
+// tslint:disable-next-line
 export type GetSignaturesRequestDataType = {
   signatures: Array<{
     transaction: string,
@@ -16,8 +17,7 @@ export class GetSignaturesRequest extends BaseRequest<GetSignaturesRequestDataTy
 
   public getResponseData(res) {
     if (this.peerSupportsProtoBuf(res.peer)) {
-      const rawRes = this.decodeProtoBufResponse(res, 'transportSignatures', 'getSignaturesResponse');
-      return rawRes;
+      return this.decodeProtoBufResponse(res, 'transportSignatures', 'getSignaturesResponse');
     } else {
       return res.body;
     }

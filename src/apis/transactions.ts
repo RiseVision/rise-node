@@ -6,14 +6,14 @@ import * as z_schema from 'z-schema';
 import { castFieldsToNumberUsingSchema, removeEmptyObjKeys, TransactionType } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { assertValidSchema, SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { ISlots } from '../ioc/interfaces/helpers';
 import { ITransactionLogic } from '../ioc/interfaces/logic';
 import { IBlocksModule, ITransactionsModule, ITransportModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
+import { ITransportTransaction } from '../logic/transactions';
 import { TransactionsModel } from '../models';
 import schema from '../schema/transactions';
 import { APIError } from './errors';
-import { ISlots } from '../ioc/interfaces/helpers';
-import { ITransportTransaction } from '../logic/transactions';
 
 @JsonController('/api/transactions')
 @injectable()

@@ -1,13 +1,14 @@
-import { BaseRequest } from './BaseRequest';
-import { IBaseTransaction, IBytesTransaction, ITransportTransaction } from '../../logic/transactions';
 import { inject, injectable } from 'inversify';
-import { Symbols } from '../../ioc/symbols';
-import { ITransactionLogic } from '../../ioc/interfaces/logic';
-import { TransactionsModel } from '../../models';
-import { IBlocksModule } from '../../ioc/interfaces/modules';
-import { PeerRequestOptions } from '../../modules';
 import * as _ from 'lodash';
+import { ITransactionLogic } from '../../ioc/interfaces/logic';
+import { IBlocksModule } from '../../ioc/interfaces/modules';
+import { Symbols } from '../../ioc/symbols';
+import { IBaseTransaction, IBytesTransaction } from '../../logic/transactions';
+import { TransactionsModel } from '../../models';
+import { PeerRequestOptions } from '../../modules';
+import { BaseRequest } from './BaseRequest';
 
+// tslint:disable-next-line
 export type PostTransactionsRequestDataType = {
   transactions?: Array<IBaseTransaction<any>>,
   transaction?: IBaseTransaction<any>,
@@ -45,7 +46,6 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
         };
       }
       if (this.protoBufHelper.validate(newData, 'transportTransactions')) {
-        // TODO: no "as any"
         reqOptions.data = this.protoBufHelper.encode(newData, 'transportTransactions') as any;
       } else {
         throw new Error('Failed to encode ProtoBuf');
@@ -65,8 +65,7 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
             this.blocksModule),
         };
       }
-      // TODO: no "as any"
-      reqOptions.data = newData as any;
+      reqOptions.data = newData;
     }
     return reqOptions;
   }
@@ -85,14 +84,11 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
       })
       .reduce((a, b) => a.concat(b));
 
-    const uniqTransactions = _.uniqBy(
+    this.options.data.transactions = _.uniqBy(
       allTransactions,
       (item) => `${item.id}${item.signature.toString('hex')}`
     );
-
-    this.options.data.transactions = uniqTransactions;
     this.options.data.transaction = null;
-
   }
 
   protected getBaseUrl(isProto) {

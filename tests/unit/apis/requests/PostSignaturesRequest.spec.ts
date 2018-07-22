@@ -1,11 +1,12 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
+import { SinonSandbox } from 'sinon';
 import { PostSignaturesRequest } from '../../../../src/apis/requests/PostSignaturesRequest';
+import { Symbols } from '../../../../src/ioc/symbols';
 import { ProtoBufHelperStub } from '../../../stubs/helpers/ProtoBufHelperStub';
 import { createContainer } from '../../../utils/containerCreator';
-import { Symbols } from '../../../../src/ioc/symbols';
 
+// tslint:disable no-unused-expression
 describe('apis/requests/PostSignaturesRequest', () => {
   let options;
   let instance: PostSignaturesRequest;
@@ -36,15 +37,15 @@ describe('apis/requests/PostSignaturesRequest', () => {
       it('should return request options as json', () => {
         const reqOpts = instance.getRequestOptions(false);
         expect(reqOpts).to.deep.equal({
-          isProtoBuf: false,
-          method    : 'POST',
-          url       : '/peer/signatures',
           data      : {
             signatures: [{
               signature  : 'aabbccddeeeff',
               transaction: '12345678901234567890',
             }],
           },
+          isProtoBuf: false,
+          method    : 'POST',
+          url       : '/peer/signatures',
         });
       });
     });

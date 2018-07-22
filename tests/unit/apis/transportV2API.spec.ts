@@ -1,36 +1,35 @@
-import BigNumber from 'bignumber.js';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
+import * as Long from 'long';
 import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { TransportV2API } from '../../../src/apis';
+import { PostBlocksRequest } from '../../../src/apis/requests/PostBlocksRequest';
+import { RequestFactoryType } from '../../../src/apis/requests/requestFactoryType';
+import { requestSymbols } from '../../../src/apis/requests/requestSymbols';
 import { constants, ProtoBufHelper } from '../../../src/helpers';
 import { SchemaValid, ValidateSchema } from '../../../src/helpers/decorators/schemavalidators';
 import { Symbols } from '../../../src/ioc/symbols';
+import { AccountLogic, BlockLogic, TransactionLogic } from '../../../src/logic';
 import { BlocksModel, TransactionsModel } from '../../../src/models';
 import transportSchema from '../../../src/schema/transport';
 import {
-  BlocksModuleStub,
-  BlocksSubmoduleUtilsStub,
-  BusStub,
-  PeersLogicStub,
-  PeersModuleStub,
-  TransactionLogicStub,
-  TransactionsModuleStub,
-  TransportModuleStub,
+BlocksModuleStub,
+BlocksSubmoduleUtilsStub,
+BusStub,
+PeersLogicStub,
+PeersModuleStub,
+TransactionLogicStub,
+TransactionsModuleStub,
+TransportModuleStub,
 } from '../../stubs';
 import { ProtoBufHelperStub } from '../../stubs/helpers/ProtoBufHelperStub';
 import { BlockLogicStub } from '../../stubs/logic/BlockLogicStub';
 import { createFakeBlock } from '../../utils/blockCrafter';
 import { createContainer } from '../../utils/containerCreator';
 import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
-import { PostBlocksRequest } from '../../../src/apis/requests/PostBlocksRequest';
-import { requestSymbols } from '../../../src/apis/requests/requestSymbols';
-import { RequestFactoryType } from '../../../src/apis/requests/requestFactoryType';
-import { AccountLogic, BlockLogic, TransactionLogic } from '../../../src/logic';
-import * as Long from 'long';
 
 const validatorStubs: any = {
   SchemaValid,
@@ -342,7 +341,7 @@ describe('apis/transportV2API', () => {
 
     it('should parse the request', async () => {
       parseRequestStub.returns({block: 'block'});
-      req.body = {cat: 'meows'}
+      req.body = {cat: 'meows'};
       result = await instance.postBlock(req);
       expect(parseRequestStub.calledOnce).to.be.true;
       expect(parseRequestStub.firstCall.args).to.be.deep.equal([{cat: 'meows'}, 'transportBlocks', 'transportBlock']);
@@ -429,7 +428,7 @@ describe('apis/transportV2API', () => {
         container.rebind(Symbols.logic.transaction).to(TransactionLogic).inSingletonScope();
         container.rebind(Symbols.logic.account).to(AccountLogic).inSingletonScope();
         container.rebind(Symbols.helpers.protoBuf).to(ProtoBufHelper).inSingletonScope();
-        const txLogic: TransactionLogic = container.get(Symbols.logic.transaction)
+        const txLogic: TransactionLogic = container.get(Symbols.logic.transaction);
         txLogic.attachAssetType(container.get(Symbols.logic.transactions.send));
 
         // container.rebind(Symbols.logic.pro).to(BlockLogic).inSingletonScope();

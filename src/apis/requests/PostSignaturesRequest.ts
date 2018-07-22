@@ -1,7 +1,7 @@
-import { BaseRequest } from './BaseRequest';
 import { injectable } from 'inversify';
-import * as Long from 'long';
 import * as _ from 'lodash';
+import * as Long from 'long';
+import { BaseRequest } from './BaseRequest';
 
 // tslint:disable-next-line
 export type Signature = { transaction: string, signature: Buffer };
@@ -61,12 +61,10 @@ export class PostSignaturesRequest extends BaseRequest<any, PostSignaturesReques
       })
       .reduce((a, b) => a.concat(b));
 
-    const uniqSignatures = _.uniqBy(
+    this.options.data.signatures = _.uniqBy(
       allSignatures,
       (item) => `${item.transaction}${item.signature.toString('hex')}`
     );
-
-    this.options.data.signatures = uniqSignatures;
     this.options.data.signature = null;
 
   }

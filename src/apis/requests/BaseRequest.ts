@@ -3,12 +3,9 @@ import * as querystring from 'querystring';
 import * as semver from 'semver';
 import { MyConvOptions, ProtoBufHelper } from '../../helpers';
 import { IPeerLogic } from '../../ioc/interfaces/logic';
+import { ITransportModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import { PeerRequestOptions } from '../../modules';
-import { ITransportModule } from '../../ioc/interfaces/modules';
-
-// tslint:disable-next-line
-export type ErrorOut = { success: false, error: string };
 
 export interface IAPIRequest<Out, In> {
   getRequestOptions(peerSupportsProto: boolean): PeerRequestOptions;

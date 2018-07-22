@@ -4,9 +4,9 @@ import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { CommonBlockRequest } from '../../apis/requests/CommonBlockRequest';
 import { GetBlocksRequest } from '../../apis/requests/GetBlocksRequest';
-import { constants, ForkType, IKeypair, ILogger, Sequence } from '../../helpers/';
-import { requestSymbols } from '../../apis/requests/requestSymbols';
 import { RequestFactoryType } from '../../apis/requests/requestFactoryType';
+import { requestSymbols } from '../../apis/requests/requestSymbols';
+import { constants, ForkType, IKeypair, ILogger, Sequence } from '../../helpers/';
 import { WrapInDBSequence, WrapInDefaultSequence } from '../../helpers/decorators/wrapInSequence';
 import { ISlots } from '../../ioc/interfaces/helpers';
 import {
@@ -38,7 +38,6 @@ import {
 import { IBaseTransaction } from '../../logic/transactions/';
 import { BlocksModel, TransactionsModel } from '../../models';
 import schema from '../../schema/blocks';
-import { RawFullBlockListType } from '../../types/rawDBTypes';
 
 @injectable()
 export class BlocksModuleProcess implements IBlocksModuleProcess {

@@ -3,6 +3,7 @@ import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
 import { GetTransactionsRequest } from '../../../../src/apis/requests/GetTransactionsRequest';
 
+// tslint:disable no-unused-expression
 describe('apis/requests/GetTransactionsRequest', () => {
   let instance: GetTransactionsRequest;
   let decodeStub: SinonStub;
@@ -13,16 +14,16 @@ describe('apis/requests/GetTransactionsRequest', () => {
     instance.options = {data: null};
     decodeStub = sinon.stub(instance as any, 'decodeProtoBufResponse');
     peer = {
+      broadhash: '123123123',
+      clock: 9999999,
+      height: 123,
       ip: '127.0.0.1',
+      nonce: '1231234',
+      os: 'unix',
       port: 5555,
       state: 2,
-      os: 'unix',
-      version: '1.1.1',
-      broadhash: '123123123',
-      height: 123,
-      clock: 9999999,
       updated: 123,
-      nonce: '1231234',
+      version: '1.1.1',
     };
   });
 
@@ -37,7 +38,7 @@ describe('apis/requests/GetTransactionsRequest', () => {
     describe('protoBuf = true', () => {
       it('should call decodeProtoBufResponse', () => {
         decodeStub.returns({transactions: []});
-        const res = {body: 'theBody', peer}
+        const res = {body: 'theBody', peer};
         instance.getResponseData(res);
         expect(decodeStub.calledOnce).to.be.true;
         expect(decodeStub.firstCall.args).to.be.deep.equal([res, 'transportTransactions']);

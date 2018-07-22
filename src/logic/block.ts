@@ -277,7 +277,8 @@ export class BlockLogic implements IBlockLogic {
    */
   public getId(block: BlockType, fromBytes?: Buffer): string {
     const bytes = fromBytes ? fromBytes : this.getBytes(block);
-    const hash = crypto.createHash('sha256').update(bytes).digest();    const temp = Buffer.alloc(8);
+    const hash = crypto.createHash('sha256').update(bytes).digest();
+    const temp = Buffer.alloc(8);
     for (let i = 0; i < 8; i++) {
       temp[i] = hash[7 - i];
     }
@@ -396,7 +397,7 @@ export class BlockLogic implements IBlockLogic {
         ...baseTx,
         blockId: id,
         height: blk.height,
-        senderId: this.getAddressByPublicKey(baseTx.senderPublicKey)
+        senderId: this.getAddressByPublicKey(baseTx.senderPublicKey),
       };
     });
 

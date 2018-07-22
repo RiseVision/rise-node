@@ -115,8 +115,8 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   public async loadLastBlock(): Promise<BlocksModel> {
     const b                     = await this.BlocksModel.findOne({
       include: [this.TransactionsModel],
-      order  : [['height', 'DESC']],
       limit  : 1,
+      order  : [['height', 'DESC']],
     });
     // attach transaction assets
     await this.transactionLogic.attachAssets(b.transactions);

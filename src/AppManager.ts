@@ -12,9 +12,21 @@ import { Model, Sequelize } from 'sequelize-typescript';
 import * as socketIO from 'socket.io';
 import * as uuid from 'uuid';
 import { allControllers, APIErrorHandler } from './apis';
+import { CommonBlockRequest } from './apis/requests/CommonBlockRequest';
+import { GetBlocksRequest } from './apis/requests/GetBlocksRequest';
+import { GetSignaturesRequest } from './apis/requests/GetSignaturesRequest';
+import { GetTransactionsRequest } from './apis/requests/GetTransactionsRequest';
+import { HeightRequest } from './apis/requests/HeightRequest';
+import { PeersListRequest } from './apis/requests/PeersListRequest';
+import { PingRequest } from './apis/requests/PingRequest';
+import { PostBlocksRequest } from './apis/requests/PostBlocksRequest';
+import { PostSignaturesRequest } from './apis/requests/PostSignaturesRequest';
+import { PostTransactionsRequest } from './apis/requests/PostTransactionsRequest';
+import { requestSymbols } from './apis/requests/requestSymbols';
 import { AttachPeerHeaders } from './apis/utils/attachPeerHeaders';
 import { ForgingApisWatchGuard } from './apis/utils/forgingApisWatchGuard';
 import { SuccessInterceptor } from './apis/utils/successInterceptor';
+import { V2APIErrorHandler } from './apis/utils/v2ErrorHandler';
 import { ValidatePeerHeaders } from './apis/utils/validatePeerHeaders';
 import {
   applyExpressLimits,
@@ -25,7 +37,7 @@ import {
   constants as constantsType,
   DBHelper,
   Ed,
-  ExceptionsManager, ExceptionType,
+  ExceptionsManager,
   ILogger,
   JobsQueue,
   middleware,
@@ -96,19 +108,6 @@ import {
 import { BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify } from './modules/blocks/';
 import { ForkModule } from './modules/fork';
 import { AppConfig } from './types/genericTypes';
-import { BaseRequest } from './apis/requests/BaseRequest';
-import { CommonBlockRequest } from './apis/requests/CommonBlockRequest';
-import { GetBlocksRequest } from './apis/requests/GetBlocksRequest';
-import { GetSignaturesRequest } from './apis/requests/GetSignaturesRequest';
-import { GetTransactionsRequest } from './apis/requests/GetTransactionsRequest';
-import { HeightRequest } from './apis/requests/HeightRequest';
-import { PeersListRequest } from './apis/requests/PeersListRequest';
-import { PingRequest } from './apis/requests/PingRequest';
-import { PostBlocksRequest } from './apis/requests/PostBlocksRequest';
-import { PostSignaturesRequest } from './apis/requests/PostSignaturesRequest';
-import { PostTransactionsRequest } from './apis/requests/PostTransactionsRequest';
-import { requestSymbols } from './apis/requests/requestSymbols';
-import { V2APIErrorHandler } from './apis/utils/v2ErrorHandler';
 
 // import {makeLoggerMiddleware} from 'inversify-logger-middleware';
 // const theLogger = makeLoggerMiddleware();

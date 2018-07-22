@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import { constants as constantsType, ILogger, wait } from '../helpers/';
+import { constants as constantsType, ILogger } from '../helpers/';
 import { IBlocksModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { BlocksModel } from '../models';

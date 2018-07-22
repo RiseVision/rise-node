@@ -1,13 +1,12 @@
 import { BigNumber } from 'bignumber.js';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
-import * as _ from 'lodash';
 import { inject, injectable } from 'inversify';
+import * as _ from 'lodash';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
 import {
   BigNum,
-  catchToLoggerAndRemapError,
   constants,
   Ed,
   ExceptionsList,
@@ -239,11 +238,11 @@ export class TransactionLogic implements ITransactionLogic {
       id: this.getIdFromBytes(tx.bytes),
       recipientId,
       requesterPublicKey,
+      senderId: this.accountLogic.generateAddressByPublicKey(senderPublicKey),
       senderPublicKey,
       signature,
       timestamp,
       type,
-      senderId: this.accountLogic.generateAddressByPublicKey(senderPublicKey)
     };
     if (tx.hasRequesterPublicKey) {
       transaction.requesterPublicKey = requesterPublicKey;

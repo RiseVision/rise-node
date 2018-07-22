@@ -1,11 +1,12 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
+import { SinonSandbox } from 'sinon';
 import { PostBlocksRequest } from '../../../../src/apis/requests/PostBlocksRequest';
+import { Symbols } from '../../../../src/ioc/symbols';
 import { ProtoBufHelperStub } from '../../../stubs/helpers/ProtoBufHelperStub';
 import { createContainer } from '../../../utils/containerCreator';
-import { Symbols } from '../../../../src/ioc/symbols';
 
+// tslint:disable no-unused-expression
 describe('apis/requests/PostBlocksRequest', () => {
   let options;
   let instance: PostBlocksRequest;

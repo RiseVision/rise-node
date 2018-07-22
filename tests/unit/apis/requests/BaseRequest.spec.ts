@@ -36,16 +36,16 @@ describe('apis/requests/BaseRequest', () => {
     container.bind(testSymbol).toFactory(factory(TestRequest));
     protoBufStub = container.get(Symbols.helpers.protoBuf);
     peer = {
+      broadhash: '123123123',
+      clock: 9999999,
+      height: 123,
       ip: '127.0.0.1',
+      nonce: '1231234',
+      os: 'unix',
       port: 5555,
       state: 2,
-      os: 'unix',
-      version: '1.1.1',
-      broadhash: '123123123',
-      height: 123,
-      clock: 9999999,
       updated: 123,
-      nonce: '1231234'
+      version: '1.1.1',
     };
     const instanceFactory = container.get<RequestFactoryType<any, TestRequest>>(testSymbol);
     instance = instanceFactory({data: null});

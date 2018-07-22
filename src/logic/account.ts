@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
-import * as fs from 'fs';
 import * as filterObject from 'filter-object';
+import * as fs from 'fs';
 import { inject, injectable } from 'inversify';
 import * as path from 'path';
 import * as sequelize from 'sequelize';

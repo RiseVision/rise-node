@@ -1,10 +1,9 @@
-import { BaseRequest } from './BaseRequest';
-import { PeerType } from '../../logic';
 import { injectable } from 'inversify';
-import { IPeerLogic } from '../../ioc/interfaces/logic';
-import { allBuffersToHex, MyConvOptions } from '../../helpers';
-import { GetSignaturesRequestDataType } from './GetSignaturesRequest';
+import { MyConvOptions } from '../../helpers';
+import { PeerType } from '../../logic';
+import { BaseRequest } from './BaseRequest';
 
+// tslint:disable-next-line
 export type PeersListRequestDataType = {peers: PeerType[]};
 
 @injectable()

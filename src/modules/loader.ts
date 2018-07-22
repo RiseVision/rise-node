@@ -4,17 +4,21 @@ import * as sequelize from 'sequelize';
 import {Op} from 'sequelize';
 import SocketIO from 'socket.io';
 import z_schema from 'z-schema';
+import { GetSignaturesRequest } from '../apis/requests/GetSignaturesRequest';
+import {GetTransactionsRequest} from '../apis/requests/GetTransactionsRequest';
+import { RequestFactoryType } from '../apis/requests/requestFactoryType';
+import { requestSymbols } from '../apis/requests/requestSymbols';
 import { Bus, constants as constantsType, ILogger, Sequence, wait } from '../helpers/';
 import { WrapInDefaultSequence } from '../helpers/decorators/wrapInSequence';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import {
-  IAccountLogic, IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, IRoundsLogic,
-  ITransactionLogic
+IAccountLogic, IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, IRoundsLogic,
+ITransactionLogic
 } from '../ioc/interfaces/logic';
 
 import {
-  IBlocksModule, IBlocksModuleChain, IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify,
-  ILoaderModule, IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule, ITransportModule
+IBlocksModule, IBlocksModuleChain, IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify,
+ILoaderModule, IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule, ITransportModule
 } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { PeerType, SignedAndChainedBlockType, SignedBlockType, } from '../logic/';
@@ -24,10 +28,6 @@ import loaderSchema from '../schema/loader';
 import sql from '../sql/loader';
 import { AppConfig } from '../types/genericTypes';
 import Timer = NodeJS.Timer;
-import {GetTransactionsRequest} from '../apis/requests/GetTransactionsRequest';
-import { GetSignaturesRequest } from '../apis/requests/GetSignaturesRequest';
-import { requestSymbols } from '../apis/requests/requestSymbols';
-import { RequestFactoryType } from '../apis/requests/requestFactoryType';
 
 @injectable()
 export class LoaderModule implements ILoaderModule {

@@ -2,11 +2,11 @@ import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
 import { IAPIRequest } from '../apis/requests/BaseRequest';
 import { HeightRequest } from '../apis/requests/HeightRequest';
+import { RequestFactoryType } from '../apis/requests/requestFactoryType';
+import { requestSymbols } from '../apis/requests/requestSymbols';
 import { IPeerLogic } from '../ioc/interfaces/logic/';
 import { ITransportModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { requestSymbols } from '../apis/requests/requestSymbols';
-import { RequestFactoryType } from '../apis/requests/requestFactoryType';
 
 export enum PeerState {
   BANNED       = 0,

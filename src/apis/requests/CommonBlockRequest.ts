@@ -2,8 +2,11 @@ import { inject, injectable } from 'inversify';
 import { Symbols } from '../../ioc/symbols';
 import { BaseRequest } from './BaseRequest';
 
+// tslint:disable-next-line
+export type CommonBlockRequestDataType = { common: { id: string, previousBlock: string, height: number } };
+
 @injectable()
-export class CommonBlockRequest extends BaseRequest<{ common: { id: string, previousBlock: string, height: number } }, void> {
+export class CommonBlockRequest extends BaseRequest<CommonBlockRequestDataType, void> {
   protected readonly method                    = 'GET';
   protected readonly supportsProtoBuf: boolean = true;
 

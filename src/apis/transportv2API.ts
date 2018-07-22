@@ -1,7 +1,8 @@
-import * as Long from 'long';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import { inject, injectable } from 'inversify';
-import { Body, ContentType, Controller, Get, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
+import * as Long from 'long';
+import { Body, ContentType, Controller, Get, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
+import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { Bus, constants as constantsType, ProtoBufHelper, } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
@@ -19,11 +20,9 @@ import { IBytesBlock, SignedAndChainedBlockType } from '../logic';
 import { IBaseTransaction, IBytesTransaction } from '../logic/transactions';
 import { BlocksModel, TransactionsModel } from '../models';
 import transportSchema from '../schema/transport';
+import { APIError } from './errors';
 import { AttachPeerHeaders } from './utils/attachPeerHeaders';
 import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
-import { TransactionsModule } from '../modules';
-import { APIError } from './errors';
-import { Op } from 'sequelize';
 
 @Controller('/v2/peer')
 @injectable()
@@ -107,10 +106,10 @@ export class TransportV2API {
       opts: { errorString: 'Error validating schema.' },
     });
 
-    const finalSigs: Array<{signature: string, transaction: string}> = [];
+    const finalSigs: Array<{ signature: string, transaction: string }> = [];
     for (const sigEl of signatures) {
       finalSigs.push({
-        signature: sigEl.signature.toString('hex'),
+        signature  : sigEl.signature.toString('hex'),
         transaction: sigEl.transaction.toString(),
       });
     }
@@ -129,7 +128,7 @@ export class TransportV2API {
 
   @Post('/transactions')
   public async postTransactions(@Req() req: Request) {
-    let transactions = [];
+    let transactions  = [];
     const requestData = this.parseRequest<any>(req.body, 'transportTransactions');
     if (typeof requestData.transaction !== 'undefined' && requestData.transaction !== null) {
       transactions = [requestData.transaction];

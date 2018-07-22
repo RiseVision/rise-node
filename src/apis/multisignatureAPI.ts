@@ -8,7 +8,7 @@ import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidat
 import { ITransactionLogic, VerificationType } from '../ioc/interfaces/logic';
 import { IAccountsModule, IBlocksModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { Accounts2MultisignaturesModel, BlocksModel, TransactionsModel } from '../models';
+import { Accounts2MultisignaturesModel, TransactionsModel } from '../models';
 import multisigSchema from '../schema/multisignatures';
 import { publicKey as pkType } from '../types/sanityTypes';
 import { APIError, DeprecatedAPIError } from './errors';
@@ -76,7 +76,7 @@ export class MultisignatureAPI {
         ),
         ...{
           multisigaccounts: multisigaccounts
-            .map((m) => filterObject(m.toPOJO(), ['address', 'publicKey', 'balance']))
+            .map((m) => filterObject(m.toPOJO(), ['address', 'publicKey', 'balance'])),
         },
       });
     }
@@ -101,7 +101,9 @@ export class MultisignatureAPI {
         let verified = false;
         for (let i = 0; i < tx.signatures.length && !verified; i++) {
           const signature = tx.signatures[i];
-          verified        = this.txLogic.verifySignature(tx, bufPubKey, Buffer.from(signature, 'hex'), VerificationType.ALL);
+          verified        = this.txLogic.verifySignature(
+            tx, bufPubKey, Buffer.from(signature, 'hex'), VerificationType.ALL
+          );
         }
         signed = verified;
       }

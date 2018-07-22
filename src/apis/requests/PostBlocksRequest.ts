@@ -1,16 +1,15 @@
-import { BaseRequest } from './BaseRequest';
 import { inject, injectable } from 'inversify';
-import { IBytesBlock, SignedBlockType } from '../../logic';
-import { BlocksModel, TransactionsModel } from '../../models';
 import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
-import { Symbols } from '../../ioc/symbols';
-import { IBaseTransaction, IBytesTransaction } from '../../logic/transactions';
-import { BlocksModule } from '../../modules';
 import { IBlocksModule } from '../../ioc/interfaces/modules';
+import { Symbols } from '../../ioc/symbols';
+import { IBytesBlock, SignedBlockType } from '../../logic';
+import { IBaseTransaction, IBytesTransaction } from '../../logic/transactions';
+import { BlocksModel, TransactionsModel } from '../../models';
+import { BaseRequest } from './BaseRequest';
 
+// tslint:disable-next-line
 export type PostBlocksRequestDataType = { block: SignedBlockType<Buffer> };
 
-// TODO: Convert to SignedBlockType<string> in case of nonprotobuf call
 @injectable()
 export class PostBlocksRequest extends BaseRequest<any, PostBlocksRequestDataType> {
   protected readonly method = 'POST';

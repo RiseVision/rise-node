@@ -34,7 +34,7 @@ describe('apis/peersAPI', () => {
       .to(PeersAPI)
       .inSingletonScope();
     peersModuleStub = container.get(Symbols.modules.peers);
-    peersModuleStub.enqueueResponse('getByFilter', [{object: () => {return { hello: 'world' }}}]);
+    peersModuleStub.enqueueResponse('getByFilter', [{object: () => ({ hello: 'world' })}]);
     systemModuleStub = container.get(Symbols.modules.system);
     systemModuleStub.enqueueResponse('getMinVersion', '1.0');
     instance = container.get(Symbols.api.peers);

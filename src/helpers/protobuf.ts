@@ -2,8 +2,8 @@ import * as fs from 'fs';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as path from 'path';
 import * as protobuf from 'protobufjs';
-import * as traverse from 'traverse';
 import { IConversionOptions, Root, Type } from 'protobufjs';
+import * as traverse from 'traverse';
 import { Symbols } from '../ioc/symbols';
 import { ILogger } from './logger';
 

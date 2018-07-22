@@ -1,5 +1,5 @@
-import { BaseRequest } from './BaseRequest';
 import { injectable } from 'inversify';
+import { BaseRequest } from './BaseRequest';
 
 @injectable()
 export class PingRequest extends BaseRequest<void, void> {

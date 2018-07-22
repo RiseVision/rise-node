@@ -4,6 +4,7 @@ import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType } from '../../logic';
 import { BaseRequest } from './BaseRequest';
 
+// tslint:disable-next-line
 export type GetBlocksRequestDataType = { blocks: SignedAndChainedBlockType[]};
 
 @injectable()

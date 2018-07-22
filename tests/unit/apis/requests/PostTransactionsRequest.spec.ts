@@ -2,10 +2,11 @@ import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
 import { PostTransactionsRequest } from '../../../../src/apis/requests/PostTransactionsRequest';
+import { Symbols } from '../../../../src/ioc/symbols';
 import { ProtoBufHelperStub } from '../../../stubs/helpers/ProtoBufHelperStub';
 import { createContainer } from '../../../utils/containerCreator';
-import { Symbols } from '../../../../src/ioc/symbols';
 
+// tslint:disable no-unused-expression
 describe('apis/requests/PostTransactionsRequest', () => {
   let options;
   let instance: PostTransactionsRequest;
@@ -32,13 +33,13 @@ describe('apis/requests/PostTransactionsRequest', () => {
   describe('getRequestOptions', () => {
     describe('protoBuf = false', () => {
       it('should return request options as json', () => {
-        const reqOpts = JSON.stringify(instance.getRequestOptions(false));
-        expect(reqOpts).to.be.equal(JSON.stringify({
+        const reqOpts = instance.getRequestOptions(false);
+        expect(reqOpts).to.deep.equal({
+          data: { transactions: [ 'transaction1', 'transaction2' ] },
           isProtoBuf: false,
           method: 'POST',
           url: '/peer/transactions',
-          data: { transactions: [ 'transaction1', 'transaction2' ] } })
-        );
+        });
       });
     });
     describe('protoBuf = true', () => {

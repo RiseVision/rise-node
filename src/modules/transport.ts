@@ -1,25 +1,29 @@
 import { inject, injectable, postConstruct, tagged } from 'inversify';
 import * as popsicle from 'popsicle';
+import { Request, Response } from 'popsicle';
 import * as Throttle from 'promise-parallel-throttle';
 import * as promiseRetry from 'promise-retry';
 import SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
 import { IAPIRequest } from '../apis/requests/BaseRequest';
 import { PeersListRequest, PeersListRequestDataType } from '../apis/requests/PeersListRequest';
+import { PostBlocksRequest, PostBlocksRequestDataType } from '../apis/requests/PostBlocksRequest';
 import { PostSignaturesRequest, PostSignaturesRequestDataType } from '../apis/requests/PostSignaturesRequest';
 import { PostTransactionsRequest, PostTransactionsRequestDataType } from '../apis/requests/PostTransactionsRequest';
+import { RequestFactoryType } from '../apis/requests/requestFactoryType';
+import { requestSymbols } from '../apis/requests/requestSymbols';
 import { cbToPromise, constants as constantsType, ILogger, Sequence } from '../helpers/';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
-  IBlocksModule,
-  IMultisignaturesModule,
-  IPeersModule,
-  ISystemModule,
-  ITransactionsModule,
-  ITransportModule
+IBlocksModule,
+IMultisignaturesModule,
+IPeersModule,
+ISystemModule,
+ITransactionsModule,
+ITransportModule
 } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { BasePeerType, PeerHeaders, PeerState, SignedBlockType } from '../logic/';
@@ -28,11 +32,6 @@ import { BlocksModel, TransactionsModel } from '../models';
 import peersSchema from '../schema/peers';
 import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
-import { PostBlocksRequest, PostBlocksRequestDataType } from '../apis/requests/PostBlocksRequest';
-import { Request } from 'popsicle/dist/request';
-import { Response } from 'popsicle/dist/response';
-import { requestSymbols } from '../apis/requests/requestSymbols';
-import { RequestFactoryType } from '../apis/requests/requestFactoryType';
 
 // tslint:disable-next-line
 export type PeerRequestOptions<T = any> = { api?: string, url?: string, method: 'GET' | 'POST', data?: T, isProtoBuf?: boolean, query?: any };

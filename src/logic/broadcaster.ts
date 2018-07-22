@@ -2,6 +2,8 @@ import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
 import { IAPIRequest } from '../apis/requests/BaseRequest';
+import { RequestFactoryType } from '../apis/requests/requestFactoryType';
+import { requestSymbols } from '../apis/requests/requestSymbols';
 import { PostSignaturesRequest, PostSignaturesRequestDataType } from '../apis/requests/PostSignaturesRequest';
 import { PostTransactionsRequest, PostTransactionsRequestDataType } from '../apis/requests/PostTransactionsRequest';
 import { constants, ILogger } from '../helpers/';
@@ -12,8 +14,6 @@ import { Symbols } from '../ioc/symbols';
 import { AppConfig } from '../types/genericTypes';
 import { PeerType } from './peer';
 import { IBaseTransaction } from './transactions/';
-import { requestSymbols } from '../apis/requests/requestSymbols';
-import { RequestFactoryType } from '../apis/requests/requestFactoryType';
 
 // tslint:disable interface-over-type-literal
 

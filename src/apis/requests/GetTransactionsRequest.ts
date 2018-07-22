@@ -1,11 +1,12 @@
 import { inject, injectable } from 'inversify';
-import { BaseRequest } from './BaseRequest';
-import { Symbols } from '../../ioc/symbols';
 import { ITransactionLogic } from '../../ioc/interfaces/logic';
-import { IBlocksModule, ITransactionsModule } from '../../ioc/interfaces/modules';
+import { IBlocksModule } from '../../ioc/interfaces/modules';
+import { Symbols } from '../../ioc/symbols';
 import { IBytesTransaction, ITransportTransaction } from '../../logic/transactions';
 import { TransactionsModel } from '../../models';
+import { BaseRequest } from './BaseRequest';
 
+// tslint:disable-next-line
 export type GetTransactionsRequestDataType = {
   transactions: Array<ITransportTransaction<any>>
 };

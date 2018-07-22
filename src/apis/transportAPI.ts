@@ -151,7 +151,7 @@ export class TransportAPI {
     if (!Array.isArray(signatures)) {
       signatures = [];
     } else {
-      assertValidSchema(this.schema, signatures, { obj: transportSchema.signatures.properties.signatures })
+      assertValidSchema(this.schema, signatures, { obj: transportSchema.signatures.properties.signatures });
     }
     if (typeof(signature) !== 'undefined') {
       assertValidSchema(this.schema, signature, { obj: transportSchema.signature });

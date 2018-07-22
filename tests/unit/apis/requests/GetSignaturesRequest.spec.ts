@@ -2,8 +2,8 @@ import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
 import { GetSignaturesRequest } from '../../../../src/apis/requests/GetSignaturesRequest';
-import { IPeerLogic } from '../../../../src/ioc/interfaces/logic';
 
+// tslint:disable no-unused-expression
 describe('apis/requests/GetSignaturesRequest', () => {
   let instance: GetSignaturesRequest;
   let decodeStub: SinonStub;
@@ -14,16 +14,16 @@ describe('apis/requests/GetSignaturesRequest', () => {
     instance.options = {data: null};
     decodeStub = sinon.stub(instance as any, 'decodeProtoBufResponse');
     peer = {
+      broadhash: '123123123',
+      clock: 9999999,
+      height: 123,
       ip: '127.0.0.1',
+      nonce: '1231234',
+      os: 'unix',
       port: 5555,
       state: 2,
-      os: 'unix',
-      version: '1.1.1',
-      broadhash: '123123123',
-      height: 123,
-      clock: 9999999,
       updated: 123,
-      nonce: '1231234',
+      version: '1.1.1',
     };
   });
 
@@ -37,7 +37,7 @@ describe('apis/requests/GetSignaturesRequest', () => {
     });
     describe('protoBuf = true', () => {
       it('should call decodeProtoBufResponse', () => {
-        const res = {body: 'theBody', peer}
+        const res = {body: 'theBody', peer};
         instance.getResponseData(res);
         expect(decodeStub.calledOnce).to.be.true;
         expect(decodeStub.firstCall.args).to.be.deep.equal([res, 'transportSignatures', 'getSignaturesResponse']);
