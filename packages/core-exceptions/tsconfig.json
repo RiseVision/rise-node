@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target"                      : "es2017",
+    "module"                      : "commonjs",
+    "emitDecoratorMetadata"       : true,
+    "experimentalDecorators"      : true,
+    "moduleResolution"            : "node",
+    "outDir"                      : "dist",
+    "baseUrl"                     : ".",
+    "declaration"                 : true,
+    "allowSyntheticDefaultImports": true,
+    "inlineSourceMap"             : true,
+    "inlineSources"               : true,
+    "lib"                         : [
+      "dom",
+      "es7"
+    ],
+    "paths": {
+      "@risevision/core-models": ["../core-models/*"],
+      "@risevision/core-launchpad": ["../core-launchpad/*"]
+    }
+  },
+  "include": [
+    "./src/**/*.ts"
+  ],
+  "exclude"        : [
+    "tests",
+    "node_modules",
+    "public",
+    "dist",
+    "coverage"
+  ]
+}

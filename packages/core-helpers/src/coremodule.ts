@@ -1,11 +1,10 @@
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { AppConfig } from '@risevision/core-types';
-import { loggerCreator } from '@risevision/core-utils';
+import { loggerCreator, Symbols as UtilsSymbols } from '@risevision/core-utils';
 import { CommanderStatic } from 'commander';
 import { Container } from 'inversify';
 import { Bus } from './bus';
 import { constants } from './constants';
-import { ExceptionsManager } from './exceptionManager';
 import { JobsQueue } from './jobsQueue';
 import { Migrator } from './migrator';
 import { Symbols } from './symbols';
@@ -18,9 +17,8 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     container.bind(Symbols.helpers.bus).toConstantValue(new Bus());
     container.bind(Symbols.helpers.constants).toConstantValue(constants);
     container.bind(Symbols.helpers.crypto).toConstantValue(new Crypto());
-    container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManager).inSingletonScope();
     container.bind(Symbols.helpers.jobsQueue).to(JobsQueue).inSingletonScope();
-    container.bind(Symbols.helpers.logger).toConstantValue(loggerCreator({
+    container.bind(UtilsSymbols.logger).toConstantValue(loggerCreator({
       echo      : appConfig.consoleLogLevel,
       errorLevel: appConfig.fileLogLevel,
       filename  : appConfig.logFileName,

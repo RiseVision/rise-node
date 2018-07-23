@@ -1,0 +1,23 @@
+{
+  "name": "@risevision/core-exceptions",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "start": "node app.js",
+    "transpile": "shx rm -rf dist; tsc"
+  },
+  "author": "Rise Team",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "@risevision/core-models": "^1.0.0",
+    "@risevision/core-launchpad": "^1.0.0"
+  },
+  "devDependencies": {
+    "shx": "0.2.2",
+    "@types/node": "^9.6.0",
+    "ts-node": "6.0.5",
+    "typescript": "=2.9.2"
+  }
+}

@@ -1,13 +1,7 @@
-import { IExceptionModel } from '@risevision/core-interfaces';
-import { inject, injectable } from 'inversify';
-import { Symbols } from './symbols';
-
-export const ExceptionsList = {
-  assertValidSlot    : Symbol('assertValidSlot'),
-  checkBalance       : Symbol('checkBalance'),
-  tx_apply           : Symbol('tx_apply'),
-  tx_applyUnconfirmed: Symbol('tx_applyUnconfirmed'),
-};
+import { inject, injectable, named } from 'inversify';
+import { ExceptionSymbols } from './symbols';
+import { ExceptionModel } from './ExceptionModel';
+import { ModelSymbols } from '@risevision/core-models';
 
 export interface IExceptionHandler<K> {
   canHandle(obj: K, ...args: any[]): boolean;
@@ -26,8 +20,9 @@ export type ExceptionType = {
 export class ExceptionsManager {
   private handlers: { [k in symbol]: { [h: string]: IExceptionHandler<any> } } = {};
 
-  @inject(Symbols.models.exceptions)
-  private exceptionModel: typeof IExceptionModel;
+  @inject(ModelSymbols.model)
+  @named(ExceptionSymbols.model)
+  private exceptionModel: typeof ExceptionModel;
 
   public registerExceptionHandler<T= any>(what: symbol, handlerKey: string, handler: IExceptionHandler<T>) {
     this.handlers[what]             = this.handlers[what] || {};

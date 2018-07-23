@@ -32,7 +32,7 @@ describe('apis/utils/forgingApisWatchGuard', () => {
     sandbox = sinon.createSandbox();
 
     container
-      .bind(Symbols.api.utils.forgingApisWatchGuard)
+      .bind(Symbols.api.utils.privateApiGuard)
       .to(ForgingApisWatchGuard)
       .inSingletonScope();
 
@@ -40,7 +40,7 @@ describe('apis/utils/forgingApisWatchGuard', () => {
 
     next = sandbox.spy();
     checkIpInListStub = sandbox.stub(helpers, 'checkIpInList');
-    instance = container.get(Symbols.api.utils.forgingApisWatchGuard);
+    instance = container.get(Symbols.api.utils.privateApiGuard);
   });
 
   afterEach(() => {

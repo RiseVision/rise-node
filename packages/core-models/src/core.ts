@@ -6,7 +6,6 @@ import { DbAppConfig, DBHelper, ModelSymbols } from './helpers/';
 import {
   AccountsModel,
   BlocksModel,
-  ExceptionModel,
   ForksStatsModel,
   InfoModel,
   MigrationsModel,
@@ -47,8 +46,6 @@ export class CoreModule extends BaseCoreModule<DbAppConfig> {
     container.bind(ModelSymbols.model).toConstructor(BlocksModel)
       .whenTargetNamed(ModelSymbols.names.blocks);
 
-    container.bind(ModelSymbols.model).toConstructor(ExceptionModel)
-      .whenTargetNamed(ModelSymbols.names.exceptions);
     container.bind(ModelSymbols.model).toConstructor(ForksStatsModel)
       .whenTargetNamed(ModelSymbols.names.forkStats);
     container.bind(ModelSymbols.model).toConstructor(InfoModel)

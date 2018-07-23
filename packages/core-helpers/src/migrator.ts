@@ -1,14 +1,15 @@
 import { BigNumber } from 'bignumber.js';
 import * as fs from 'fs';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
 import { IMigrationsModel } from '@risevision/core-interfaces';
-import { Symbols } from './symbols';
+import { ModelSymbols } from '@risevision/core-models';
 
 @injectable()
 export class Migrator {
-  @inject(Symbols.models.migrations)
+  @inject(ModelSymbols.model)
+  @named(ModelSymbols.names.migrations)
   private MigrationsModel: typeof IMigrationsModel;
 
   public async init(): Promise<void> {

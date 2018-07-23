@@ -13,7 +13,11 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
   public addElementsToContainer(container: Container, config: any) {
     container.bind(APISymbols.errorHandler).to(APIErrorHandler).inSingletonScope();
     container.bind(APISymbols.successInterceptor).to(SuccessInterceptor).inSingletonScope();
-    container.bind(APISymbols.forgingApisWatchGuard).to(PrivateApisGuard).inSingletonScope();
+    container.bind(APISymbols.privateApiGuard).to(PrivateApisGuard).inSingletonScope();
     container.bind(APISymbols.applyLimitsMiddleware).toConstantValue(limitsMiddleware);
+  }
+
+  public initAppElements() {
+    return void 0;
   }
 }
