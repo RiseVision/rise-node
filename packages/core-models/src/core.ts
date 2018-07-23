@@ -66,7 +66,7 @@ export class CoreModule extends BaseCoreModule<DbAppConfig> {
     this.sequelize.addModels(models);
   }
 
-  public afterConfigValidation(config: DbAppConfig): DbAppConfig {
+  public afterConfigValidation<T extends DbAppConfig>(config: T): T {
     this.appConfig = config;
     return config;
   }

@@ -1,22 +1,31 @@
-import { inject, injectable, tagged } from 'inversify';
-import { Op, Transaction } from 'sequelize';
-import * as _ from 'lodash';
-import { Bus, catchToLoggerAndRemapError, DBHelper, ILogger, Sequence, TransactionType, wait } from '../../helpers/';
-import { WrapInBalanceSequence } from '../../helpers/decorators/wrapInSequence';
-import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
+import bs = require('binary-search');
 import {
+  Bus,
+  catchToLoggerAndRemapError,
+  Sequence,
+  Symbols,
+  wait,
+  WrapInBalanceSequence
+} from '@risevision/core-helpers';
+import {
+  IAccountsModel,
   IAccountsModule,
+  IBlockLogic,
+  IBlocksModel,
   IBlocksModule,
   IBlocksModuleChain,
   IBlocksModuleUtils,
-  IRoundsModule,
+  ILogger,
+  ITransactionLogic,
+  ITransactionsModel,
   ITransactionsModule
-} from '../../ioc/interfaces/modules';
-import { Symbols } from '../../ioc/symbols';
-import { SignedAndChainedBlockType, SignedBlockType } from '../../logic/';
-import { IConfirmedTransaction } from '../../logic/transactions/';
-import { AccountsModel, BlocksModel, TransactionsModel } from '../../models/';
-import { DBOp } from '../../types/genericTypes';
+} from '@risevision/core-interfaces';
+import { DBOp, SignedAndChainedBlockType, SignedBlockType, TransactionType } from '@risevision/core-types';
+import { inject, injectable, tagged } from 'inversify';
+import * as _ from 'lodash';
+import { WordPressHookSystem } from 'mangiafuoco';
+import { Op, Transaction } from 'sequelize';
+import { DBHelper } from '@risevision/core-models';
 
 @injectable()
 export class BlocksModuleChain implements IBlocksModuleChain {
@@ -24,6 +33,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   // Generic
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
+  @inject(Symbols.generic.hookSystem)
+  private hookSystem: WordPressHookSystem;
 
   // Helpers
   @inject(Symbols.helpers.bus)
@@ -54,11 +65,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   private transactionsModule: ITransactionsModule;
 
   @inject(Symbols.models.accounts)
-  private AccountsModel: typeof AccountsModel;
+  private AccountsModel: typeof IAccountsModel;
   @inject(Symbols.models.blocks)
-  private BlocksModel: typeof BlocksModel;
+  private BlocksModel: typeof IBlocksModel;
   @inject(Symbols.models.transactions)
-  private TransactionsModel: typeof TransactionsModel;
+  private TransactionsModel: typeof ITransactionsModel;
   /**
    * Lock for processing.
    * @type {boolean}
@@ -79,7 +90,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * Deletes last block and returns the "new" lastBlock (previous basically)
    * @returns {Promise<SignedBlockType>}
    */
-  public async deleteLastBlock(): Promise<BlocksModel> {
+  public async deleteLastBlock(): Promise<IBlocksModel> {
     const lastBlock = this.blocksModule.lastBlock;
     this.logger.warn('Deleting last block', { id: lastBlock.id, height: lastBlock.height });
 
@@ -170,14 +181,17 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       process.exit(0);
     }
     this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
-    await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
+    await this.BlocksModel.sequelize
+      .transaction((tx) => this.hookSystem.do_action('core/blocks/chain/applyBlock.post', this.blocksModule.lastBlock, tx));
+    // TODO: add this on dpos-consensus via hook ^^.
+    // await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
   }
 
   @WrapInBalanceSequence
   public async applyBlock(block: SignedAndChainedBlockType,
                           broadcast: boolean,
                           saveBlock: boolean,
-                          accountsMap: { [address: string]: AccountsModel }) {
+                          accountsMap: { [address: string]: IAccountsModel }) {
     if (this.isCleaning) {
       return; // Avoid processing a new block if it is cleaning.
     }
@@ -256,8 +270,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       }
 
       await this.bus.message('newBlock', block, broadcast);
-
-      await this.roundsModule.tick(block, dbTX);
+      await this.hookSystem.do_action('core/blocks/chain/applyBlock.post', this.blocksModule.lastBlock, dbTX);
+      // TODO: add this on consensus dpos using hook ^^
+      // await this.roundsModule.tick(block, dbTX);
 
       this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
     }).catch((err) => {
@@ -319,7 +334,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * @returns {Promise<SignedBlockType>}
    */
   @WrapInBalanceSequence
-  private async popLastBlock(lb: BlocksModel): Promise<BlocksModel> {
+  private async popLastBlock(lb: IBlocksModel): Promise<IBlocksModel> {
     const previousBlock = await this.BlocksModel.findById(lb.previousBlock, { include: [this.TransactionsModel] });
 
     if (previousBlock === null) {
@@ -337,8 +352,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         ops.push(... await this.transactionLogic.undoUnconfirmed(tx, accountsMap[tx.senderId]));
       }
       await this.dbHelper.performOps(ops, dbTX);
-      await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
+      // await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
       await lb.destroy({ transaction: dbTX });
+      await this.hookSystem.do_action('core/blocks/chain/onDestroyBlock', this.blocksModule.lastBlock, dbTX);
     });
 
     return previousBlock;
