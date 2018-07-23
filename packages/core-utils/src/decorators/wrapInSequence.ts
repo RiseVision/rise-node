@@ -1,4 +1,6 @@
-import { Sequence } from '../sequence';
+interface Sequence {
+  addAndPromise(what: () => Promise<any>): Promise<any>
+}
 
 export function WrapInSequence<T>(which: 'balancesSequence' | 'dbSequence' | 'defaultSequence') {
   return (target: T,

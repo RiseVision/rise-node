@@ -1,5 +1,4 @@
 import { AppConfig } from '@risevision/core-types';
-import { z_schema as ZSchema } from '@risevision/core-helpers';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ICoreModule } from './module';

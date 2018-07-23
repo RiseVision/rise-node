@@ -3,7 +3,7 @@ import { Symbols } from '../symbols';
 export function IoCSymbol(symbol: symbol): ClassDecorator {
   // tslint:disable-next-line ban-types
   return function iocDecorator<T extends Function>(t: T) {
-    Reflect.defineMetadata(Symbols.__others.metadata.classSymbol, symbol, t);
+    Reflect.defineMetadata(Symbols.classSymbol, symbol, t);
     return t;
   };
 }

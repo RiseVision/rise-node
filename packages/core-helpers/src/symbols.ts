@@ -86,11 +86,5 @@ export const Symbols = {
     system          : Symbol('systemM'),
     transactions    : Symbol('transactionsM'),
     transport       : Symbol('transportM'),
-  },
-  __others: {
-    metadata: {
-      // USed to decorate the class with the symbol attached to it.
-      classSymbol: Symbol('classSymbol'),
-    },
-  },
+  }
 };

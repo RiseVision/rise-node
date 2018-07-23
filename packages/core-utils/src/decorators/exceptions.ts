@@ -1,5 +1,6 @@
-import { ExceptionsManager } from '../exceptionManager';
-
+interface ExceptionsManager {
+  handlersForKey(what: string): { canHandle: () => boolean, handle: () => any}
+}
 export function RunThroughExceptions(which: symbol) {
   return (target: { excManager: ExceptionsManager },
           method: string,

@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import * as z_schema from 'z-schema';
-import { castFieldsToNumberUsingSchema } from '../';
+import { castFieldsToNumberUsingSchema } from '../castFieldsUsingSchema';
 
 /**
  * Method validator. It will validate arguments tagged with SchemaValid decorator.
