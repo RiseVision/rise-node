@@ -57,47 +57,86 @@ export abstract class BaseTransactionType<T, M extends Model<any>> {
   constructor(@unmanaged() private txType: TransactionType) {
   }
 
+  /**
+   * Returns the transaction type
+   */
   public get type(): TransactionType {
     return this.txType;
   }
 
+  /**
+   * Returns fees from a given height
+   */
   public abstract calculateFee(tx: IBaseTransaction<T>, sender: AccountsModel, height: number): number;
 
+  /**
+   * Verify a transaction
+   */
   public verify(tx: IBaseTransaction<T>, sender: AccountsModel): Promise<void> {
     return Promise.resolve();
   }
 
+  /**
+   * Calculates bytes of assets
+   */
   public getBytes(tx: IBaseTransaction<T>, skipSignature: boolean, skipSecondSignature: boolean): Buffer {
     return emptyBuffer;
   }
 
+  /**
+   * Prepares an update on AccountsModel from transaction data
+   */
   public apply(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     return Promise.resolve([]);
   }
 
+  /**
+   * Prepares an update of unconfirmed fields on AccountsModel from transaction data
+   */
   public applyUnconfirmed(tx: IBaseTransaction<T>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     return Promise.resolve([]);
   }
 
+  /**
+   * Undo the update on AccountsModel
+   */
   public undo(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     return Promise.resolve([]);
   }
 
+  /**
+   * Undo the update of unconfirmed fields on AccountsModel
+   */
   public undoUnconfirmed(tx: IBaseTransaction<T>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     return Promise.resolve([]);
   }
 
+  /**
+   * Validate assets using their schemas
+   */
   public abstract objectNormalize(tx: IBaseTransaction<T>): IBaseTransaction<T>;
 
+  /**
+   * Returns data from a raw object
+   */
   public abstract dbRead(raw: any): T;
 
+  /**
+   * create a new record on database
+   */
   // tslint:disable-next-line max-line-length
   public abstract dbSave(tx: IBaseTransaction<T> & { senderId: string }, blockId?: string, height?: number): DBOp<M>;
 
+  /**
+   * After save actions
+   */
   public afterSave(tx: IBaseTransaction<T>): Promise<void> {
     return Promise.resolve();
   }
 
+  /**
+   * Returns true if the transaction is ready
+   */
   public ready(tx: IBaseTransaction<T>, sender: AccountsModel): boolean {
     if (Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
       if (!Array.isArray(tx.signatures)) {
