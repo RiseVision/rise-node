@@ -1,12 +1,12 @@
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { AppConfig } from '@risevision/core-types';
+import { loggerCreator } from '@risevision/core-utils';
 import { CommanderStatic } from 'commander';
 import { Container } from 'inversify';
 import { Bus } from './bus';
 import { constants } from './constants';
 import { ExceptionsManager } from './exceptionManager';
 import { JobsQueue } from './jobsQueue';
-import loggerCreator from './logger';
 import { Migrator } from './migrator';
 import { Symbols } from './symbols';
 

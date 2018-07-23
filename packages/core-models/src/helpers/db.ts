@@ -1,4 +1,4 @@
-import { wait } from '@risevision/core-helpers';
+import { wait } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import * as sequelize from 'sequelize';
 import { Op, Sequelize, Transaction } from 'sequelize';

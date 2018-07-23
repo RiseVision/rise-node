@@ -12,7 +12,7 @@
   "dependencies": {
     "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
-    "@risevision/core-helpers": "^1.0.0",
+    "@risevision/core-utils": "^1.0.0",
     "@risevision/core-launchpad": "^1.0.0",
     "lodash": "4.17.10"
   },
