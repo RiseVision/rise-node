@@ -1,9 +1,9 @@
 import { BigNumber } from 'bignumber.js';
 import * as ByteBuffer from 'bytebuffer';
-import * as crypto from 'crypto';
 import * as _ from 'lodash';
 import { inject, injectable } from 'inversify';
 import { Model } from 'sequelize-typescript';
+import * as supersha from 'supersha';
 import z_schema from 'z-schema';
 import {
   BigNum,
@@ -101,7 +101,7 @@ export class TransactionLogic implements ITransactionLogic {
    * Hash for the transaction
    */
   public getHash(tx: IBaseTransaction<any>, skipSign: boolean = false, skipSecondSign: boolean = false): Buffer {
-    return crypto.createHash('sha256').update(this.getBytes(tx, skipSign, skipSecondSign)).digest();
+    return supersha.sha256(this.getBytes(tx, skipSign, skipSecondSign));
   }
 
   /**
