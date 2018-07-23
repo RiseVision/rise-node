@@ -3,7 +3,6 @@ import * as fs from 'fs';
 import { inject, injectable } from 'inversify';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
-import MyBigNumb from './bignum';
 import { IMigrationsModel } from '@risevision/core-interfaces';
 import { Symbols } from './symbols';
 
@@ -40,9 +39,9 @@ export class Migrator {
       order: [['id', 'DESC']],
     });
     if (row) {
-      return new MyBigNumb(row.id);
+      return new BigNumber(row.id);
     }
-    return new MyBigNumb(0);
+    return new BigNumber(0);
   }
 
   /**
@@ -61,7 +60,7 @@ export class Migrator {
     function matchMigrationId(file) {
       const id = file.match(/^[0-9]+/);
 
-      return Array.isArray(id) ? new MyBigNumb(id[0]) : null;
+      return Array.isArray(id) ? new BigNumber(id[0]) : null;
     }
 
     return fs.readdirSync(migrationsPath)

@@ -7,13 +7,15 @@
     "rise-launchpad": "./dist/binary.js"
   },
   "scripts": {
-    "transpile": "shx rm -rf dist; tsc; chmod +x dist/binary.js"
+    "transpile": "shx rm -rf dist; tsc;"
   },
   "types": "dist/index.d.ts",
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
+    "@risevision/core-utils": "^1.0.0",
     "app-module-path": "2.2.0",
     "inversify": "4.13.0",
     "sequelize": "=4.38.0",

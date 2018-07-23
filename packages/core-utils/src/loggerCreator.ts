@@ -9,7 +9,7 @@ import * as util from 'util';
 const strftime = tstrftime.timezone('+0000');
 
 const startTime = Date.now();
-export default (config: any = {}): ILogger => {
+export function loggerCreator(config: any = {}): ILogger {
   config                 = config || {};
   const exports: ILogger = {} as any;
 

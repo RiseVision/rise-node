@@ -28,6 +28,10 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     container.bind(Symbols.helpers.migrator).to(Migrator).inSingletonScope();
   }
 
+  public initAppElements(container: Container, config: AppConfig): void {
+    return void 0;
+  }
+
   public extendCommander(program: CommanderStatic): void {
     program.option('-l, --log <level>', 'log level');
 

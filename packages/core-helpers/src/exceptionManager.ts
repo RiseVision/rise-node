@@ -1,6 +1,5 @@
 import { IExceptionModel } from '@risevision/core-interfaces';
 import { inject, injectable } from 'inversify';
-import 'reflect-metadata';
 import { Symbols } from './symbols';
 
 export const ExceptionsList = {

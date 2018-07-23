@@ -1,4 +1,5 @@
 import { AppConfig } from '@risevision/core-types';
+import { z_schema } from '@risevision/core-utils';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ICoreModule } from './module';
@@ -17,7 +18,7 @@ export function configCreator(configPath: string, modules: Array<ICoreModule<any
     configData = JSON.parse(configData);
   }
 
-  const validator = new ZSchema({});
+  const validator = new z_schema({});
   const schemas   = [{ module: 'main', schema: configSchema.config }]
     .concat(modules.filter((m) => typeof(m.configSchema) !== 'undefined')
       .map((m) => ({ module: m.name, schema: m.configSchema })));

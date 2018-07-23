@@ -12,7 +12,7 @@ import { AppConfig, ConstantsType } from '@risevision/core-types';
 import { fetchCoreModuleImplementations } from './modulesLoader';
 import { configCreator } from './loadConfigs';
 import { AppManager } from './AppManager';
-import { loggerCreator } from '@risevision/core-helpers';
+import { loggerCreator, promiseToCB } from '@risevision/core-utils';
 // import {
 //   config as configCreator, constants as constantsType, ExceptionType, loggerCreator,
 //   promiseToCB,
@@ -116,7 +116,6 @@ if (program.overrideConfig) {
   }
 }
 
-
 if (program.snapshot) {
   if (typeof(program.snapshot) === 'string') {
     appConfig.loading.snapshot = Math.abs(Math.floor(parseInt(program.snapshot, 10)));
@@ -142,14 +141,12 @@ const logger = loggerCreator({
  * Takes care of bootstrapping the application
  * Returns cleanup function
  */
-async function boot(constants: ConstantsType): Promise<AppManager> {
+async function boot(): Promise<AppManager> {
   const manager = new AppManager(
     appConfig,
     logger,
     callingPackageJSON.version,
     genesisBlock,
-    constants,
-    [], // TODO: ExceptionsCreator or refactor entirely.
     modules
   );
   await manager.boot();
@@ -161,7 +158,7 @@ exitHook.unhandledRejectionHandler((err) => {
   logger.fatal('Unhandled Promise rejection', err);
 });
 
-boot(constantsType)
+boot()
   .catch((err) => {
     logger.fatal('Error when instantiating');
     logger.fatal(err);

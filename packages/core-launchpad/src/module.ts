@@ -47,7 +47,7 @@ export abstract class BaseCoreModule<ConfigType = any> implements ICoreModule<Co
     return Promise.resolve();
   }
 
-  public start(): Promise<void> {
+  public boot(): Promise<void> {
     return Promise.resolve();
   }
 
@@ -59,7 +59,7 @@ export abstract class BaseCoreModule<ConfigType = any> implements ICoreModule<Co
     return config;
   }
 
-  public abstract addElementsToContainer(container: Container): void;
+  public abstract addElementsToContainer(container: Container, config: ConfigType): void;
 
-  public abstract initAppElements(container: Container): void;
+  public abstract initAppElements(container: Container, config: ConfigType): void;
 }
