@@ -17,6 +17,7 @@
   "author": "Rise Team",
   "license": "GPL-3.0",
   "dependencies": {
+    "@risevision/core-apis": "^1.0.0",
     "@risevision/core-helpers": "^1.0.0",
     "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-types": "^1.0.0"
