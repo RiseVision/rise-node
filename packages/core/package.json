@@ -21,12 +21,11 @@
     "@risevision/core-helpers": "^1.0.0",
     "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-types": "^1.0.0"
-
   },
   "devDependencies": {
-    "shx": "=0.2.2",
+    "shx": "0.2.2",
     "@types/node": "^9.6.0",
-    "ts-node": "=6.0.5",
+    "ts-node": "6.0.5",
     "typescript": "=2.9.2"
   }
 }

@@ -14,15 +14,15 @@
   "license": "ISC",
   "dependencies": {
     "@risevision/core-types": "^1.0.0",
-    "app-module-path": "=2.2.0",
-    "inversify": "=4.13.0",
+    "app-module-path": "2.2.0",
+    "inversify": "4.13.0",
     "sequelize": "=4.38.0",
-    "pkginfo": "=0.4.1",
-    "find-pkg": "=2.0.0",
+    "pkginfo": "0.4.1",
+    "find-pkg": "2.0.0",
     "sequelize-typescript": "=0.6.6-beta.1"
   },
   "devDependencies": {
-    "shx": "=0.2.2",
+    "shx": "0.2.2",
     "typescript": "=2.9.2"
   }
 }

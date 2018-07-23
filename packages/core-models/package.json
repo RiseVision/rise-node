@@ -14,11 +14,11 @@
     "@risevision/core-types": "^1.0.0",
     "@risevision/core-helpers": "^1.0.0",
     "@risevision/core-launchpad": "^1.0.0",
-    "lodash": "=4.17.10"
+    "lodash": "4.17.10"
   },
   "devDependencies": {
-    "@types/lodash": "=4.14.109",
-    "shx": "=0.2.2",
+    "@types/lodash": "4.14.109",
+    "shx": "0.2.2",
     "typescript": "=2.9.2"
   }
 }
