@@ -38,10 +38,16 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     super(TransactionType.DELEGATE);
   }
 
+  /**
+   * Returns fees from a given height
+   */
   public calculateFee(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModel, height: number): number {
     return this.systemModule.getFees(height).fees.delegate;
   }
 
+  /**
+   * Calculates bytes from delegate asset
+   */
   public getBytes(tx: IBaseTransaction<DelegateAsset>, skipSignature: boolean, skipSecondSignature: boolean): Buffer {
     if (!tx.asset.delegate.username) {
       return null;
@@ -49,6 +55,9 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     return Buffer.from(tx.asset.delegate.username, 'utf8');
   }
 
+  /**
+   * Verify a transaction
+   */
   public async verify(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModel): Promise<void> {
     if (tx.recipientId) {
       throw new Error('Invalid recipient');
@@ -98,6 +107,9 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     }
   }
 
+  /**
+   * Stores delegate into account
+   */
   // tslint:disable-next-line max-line-length
   public async apply(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     const data = {
@@ -122,6 +134,9 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     }];
   }
 
+  /**
+   * Restore delegate asset to a previous state
+   */
   // tslint:disable-next-line max-line-length
   public async undo(tx: IConfirmedTransaction<DelegateAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     const data = {
@@ -166,6 +181,9 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     }];
   }
 
+  /**
+   * Restores unconfirmed asset asset to a previous state
+   */
   public async undoUnconfirmed(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     const data = {
       isDelegate  : 0 as 0 | 1,
@@ -184,6 +202,9 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     }];
   }
 
+  /**
+   * Validates delegate asset using a schema
+   */
   public objectNormalize(tx: IBaseTransaction<DelegateAsset>): IBaseTransaction<DelegateAsset> {
     removeEmptyObjKeys(tx.asset.delegate);
 
@@ -196,6 +217,9 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     return tx;
   }
 
+  /**
+   * Returns delegate from a raw object
+   */
   public dbRead(raw: any): DelegateAsset {
     if (!raw.d_username) {
       return null;
@@ -210,6 +234,9 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     }
   }
 
+  /**
+   * create a new delegate into database
+   */
   // tslint:disable-next-line max-line-length
   public dbSave(tx: IConfirmedTransaction<DelegateAsset> & { senderId: string }): DBCreateOp<DelegatesModel> {
     return {
@@ -222,6 +249,9 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     };
   }
 
+  /**
+   * Fetchs Assets From Datastore and returns the same txs with the asset field properly populated.
+   */
   public async attachAssets(txs: Array<IConfirmedTransaction<DelegateAsset>>) {
     const res = await this.DelegatesModel
       .findAll({
