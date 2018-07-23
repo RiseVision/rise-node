@@ -69,10 +69,16 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     this.unconfirmedSignatures = {};
   }
 
+  /**
+   * Returns fees from a given height
+   */
   public calculateFee(tx: IBaseTransaction<MultisigAsset>, sender: any, height: number): number {
     return this.systemModule.getFees(height).fees.multisignature;
   }
 
+  /**
+   * Calculates bytes from multisignatures
+   */
   public getBytes(tx: IBaseTransaction<MultisigAsset>, skipSignature: boolean, skipSecondSignature: boolean): Buffer {
     const keysBuff = Buffer.from(tx.asset.multisignature.keysgroup.join(''), 'utf8');
     const bb       = new ByteBuffer(1 + 1 + keysBuff.length, true);
@@ -88,6 +94,9 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     return bb.toBuffer() as any;
   }
 
+  /**
+   * Verify a transaction
+   */
   public async verify(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModel): Promise<void> {
     if (!tx.asset || !tx.asset.multisignature) {
       throw new Error('Invalid transaction asset');
@@ -180,6 +189,9 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     }
   }
 
+  /**
+   * Stores multisignature into account
+   */
   public async apply(tx: IConfirmedTransaction<MultisigAsset>,
                      block: SignedBlockType,
                      sender: AccountsModel): Promise<Array<DBOp<any>>> {
@@ -187,6 +199,9 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     return this.calcOps('confirmed', tx.asset, block.id, sender);
   }
 
+  /**
+   * Restore to the previous state from a previous multisig transaction
+   */
   public async undo(tx: IConfirmedTransaction<MultisigAsset>,
                     block: SignedBlockType,
                     sender: AccountsModel): Promise<Array<DBOp<any>>> {
@@ -216,6 +231,9 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     return this.calcOps('confirmed', asset, '0', sender);
   }
 
+  /**
+   * Stores multisignature asset in an unconfirmed state into account
+   */
   public async applyUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: any): Promise<Array<DBOp<any>>> {
     if (this.unconfirmedSignatures[sender.address]) {
       throw new Error('Signature on this account is pending confirmation');
@@ -224,6 +242,9 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     return this.calcOps('unconfirmed', tx.asset, null, sender);
   }
 
+  /**
+   * Restores unconfirmed multisignature asset to a previous state
+   */
   public async undoUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     delete this.unconfirmedSignatures[sender.address];
     sender.u_multisignatures = (sender.multisignatures || []).slice();
@@ -260,6 +281,9 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     ];
   }
 
+  /**
+   * Validates multisignature using a schema
+   */
   public objectNormalize(tx: IBaseTransaction<MultisigAsset>): IBaseTransaction<MultisigAsset> {
     const report = this.schema.validate(tx.asset.multisignature, multiSigSchema);
     if (!report) {
@@ -270,6 +294,9 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     return tx;
   }
 
+  /**
+   * Returns multisignature from a raw transaction object
+   */
   public dbRead(raw: any): MultisigAsset {
     if (!raw.m_keysgroup) {
       return null;
@@ -288,6 +315,9 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     }
   }
 
+  /**
+   * create a new record on database
+   */
   // tslint:disable-next-line max-line-length
   public dbSave(tx: IConfirmedTransaction<MultisigAsset> & { senderId: string }): DBCreateOp<MultiSignaturesModel> {
     return {
@@ -302,6 +332,9 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     };
   }
 
+  /**
+   * After save actions
+   */
   public afterSave(tx: IBaseTransaction<MultisigAsset>): Promise<void> {
     this.io.sockets.emit('multisignatures/change', tx);
     return Promise.resolve();
@@ -331,6 +364,9 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     }
   }
 
+  /**
+   * Fetchs Assets From Datastore and returns the same txs with the asset field properly populated.
+   */
   public async attachAssets(txs: Array<IConfirmedTransaction<MultisigAsset>>) {
     const res = await this.MultiSignaturesModel
       .findAll({
@@ -355,6 +391,9 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
     });
   }
 
+  /**
+   * Prepares and returns DPOps
+   */
   private calcOps(type: 'confirmed' | 'unconfirmed', asset: MultisigAsset, blockId: string, sender: AccountsModel): Array<DBOp<any>> {
     if (type === 'confirmed') {
       sender.multisignatures = [];
