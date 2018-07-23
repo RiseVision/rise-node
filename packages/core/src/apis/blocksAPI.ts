@@ -78,15 +78,21 @@ export class BlocksAPI {
     const orderBy = [filters.orderBy ? filters.orderBy.split(':') : ['height', 'desc']];
 
     const { rows: blocks, count } = await this.BlocksModel.findAndCountAll({
-      include: [this.TransactionsModel],
       limit  : filters.limit || 100,
       offset : filters.offset || 0,
       order  : orderBy,
       where  : whereClause,
     });
-    // attach assets to blocks.transactions
-    await Promise.all(blocks.map((b) => this.transactionLogic.attachAssets(b.transactions)
-      .then(() => b)));
+    // attach transactions and assets with it.
+    await Promise.all(blocks
+      .map((b) => this.TransactionsModel.findAll({ where: { blockId: b.id }, order: [['rowId', 'asc']] })
+        .then((txs) => {
+          b.transactions = txs;
+          return this.transactionLogic.attachAssets(b.transactions);
+        })
+        .then(() => b)
+      )
+    );
     // console.log(blocks);
     return {
       blocks: blocks.map((b) => this.BlocksModel.toStringBlockType(

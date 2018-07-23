@@ -1,30 +1,22 @@
+import { inject, injectable, tagged } from 'inversify';
+import { Op, Transaction } from 'sequelize';
+import * as _ from 'lodash';
+import { Bus, catchToLoggerAndRemapError, DBHelper, ILogger, Sequence, TransactionType, wait } from '../../helpers/';
+import { WrapInBalanceSequence } from '../../helpers/decorators/wrapInSequence';
+import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
-  Bus,
-  catchToLoggerAndRemapError,
-  DBHelper,
-  Sequence,
-  Symbols,
-  wait,
-  WrapInBalanceSequence
-} from '@risevision/core-helpers';
-import {
-  IAccountsModel,
   IAccountsModule,
-  IBlockLogic,
-  IBlocksModel,
   IBlocksModule,
   IBlocksModuleChain,
   IBlocksModuleUtils,
-  ILogger,
-  ITransactionLogic,
-  ITransactionsModel,
+  IRoundsModule,
   ITransactionsModule
-} from '@risevision/core-interfaces';
-import { DBOp, SignedAndChainedBlockType, SignedBlockType, TransactionType } from '@risevision/core-types';
-import { inject, injectable, tagged } from 'inversify';
-import * as _ from 'lodash';
-import { WordPressHookSystem } from 'mangiafuoco';
-import { Op, Transaction } from 'sequelize';
+} from '../../ioc/interfaces/modules';
+import { Symbols } from '../../ioc/symbols';
+import { SignedAndChainedBlockType, SignedBlockType } from '../../logic/';
+import { IConfirmedTransaction } from '../../logic/transactions/';
+import { AccountsModel, BlocksModel, TransactionsModel } from '../../models/';
+import { DBOp } from '../../types/genericTypes';
 
 @injectable()
 export class BlocksModuleChain implements IBlocksModuleChain {
@@ -32,8 +24,6 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   // Generic
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
-  @inject(Symbols.generic.hookSystem)
-  private hookSystem: WordPressHookSystem;
 
   // Helpers
   @inject(Symbols.helpers.bus)
@@ -64,11 +54,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   private transactionsModule: ITransactionsModule;
 
   @inject(Symbols.models.accounts)
-  private AccountsModel: typeof IAccountsModel;
+  private AccountsModel: typeof AccountsModel;
   @inject(Symbols.models.blocks)
-  private BlocksModel: typeof IBlocksModel;
+  private BlocksModel: typeof BlocksModel;
   @inject(Symbols.models.transactions)
-  private TransactionsModel: typeof ITransactionsModel;
+  private TransactionsModel: typeof TransactionsModel;
   /**
    * Lock for processing.
    * @type {boolean}
@@ -89,7 +79,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * Deletes last block and returns the "new" lastBlock (previous basically)
    * @returns {Promise<SignedBlockType>}
    */
-  public async deleteLastBlock(): Promise<IBlocksModel> {
+  public async deleteLastBlock(): Promise<BlocksModel> {
     const lastBlock = this.blocksModule.lastBlock;
     this.logger.warn('Deleting last block', { id: lastBlock.id, height: lastBlock.height });
 
@@ -158,17 +148,17 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     try {
       for (const tx of block.transactions) {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
-        const sender                = await this.accountsModule
+        const sender = await this.accountsModule
           .setAccountAndGet({ publicKey: tx.senderPublicKey });
         // Apply tx.
         const ops: Array<DBOp<any>> = [
           {
             model: this.AccountsModel,
             query: this.AccountsModel.createBulkAccountsSQL([tx.recipientId]),
-            type : 'custom',
+            type: 'custom',
           },
-          ... await this.transactionLogic.applyUnconfirmed({ ...tx, blockId: block.id } as any, sender),
-          ... await this.transactionLogic.apply({ ...tx, blockId: block.id } as any, block, sender),
+          ... await this.transactionLogic.applyUnconfirmed({... tx, blockId: block.id} as any, sender),
+          ... await this.transactionLogic.apply({... tx, blockId: block.id} as any, block, sender),
         ];
         await this.dbHelper.performOps(ops);
 
@@ -180,23 +170,31 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       process.exit(0);
     }
     this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
-    await this.BlocksModel.sequelize
-      .transaction((tx) => this.hookSystem.do_action('core/blocks/chain/applyBlock.post', this.blocksModule.lastBlock, tx));
-    // TODO: add this on dpos-consensus via hook ^^.
-    // await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
+    await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
   }
 
   @WrapInBalanceSequence
   public async applyBlock(block: SignedAndChainedBlockType,
                           broadcast: boolean,
                           saveBlock: boolean,
-                          accountsMap: { [address: string]: IAccountsModel }) {
+                          accountsMap: { [address: string]: AccountsModel }) {
     if (this.isCleaning) {
       return; // Avoid processing a new block if it is cleaning.
     }
     // Prevent shutdown during database writes.
     this.isProcessing = true;
 
+    // Find all transactions that are in unconfirmedstate && that are overlapping
+    // Overlapping txs are txs that have same sender of at least one of the tx
+    // in the block but are NOT in the block.
+    // Overlapping txs needs to be undoUnconfirmed since they could eventually exclude a tx
+    // bundled within a block
+    const allUnconfirmedTxs = this.transactionsModule.getUnconfirmedTransactionList(false);
+    const allBlockTXIds = block.transactions.map((tx) => tx.id).sort();
+    const overlappingTXs = allUnconfirmedTxs.filter((tx) => {
+      const exists = bs(allBlockTXIds, tx.id, (a, b) => a.localeCompare(b)) >= 0;
+      return !exists && typeof(accountsMap[tx.senderId]) !== 'undefined';
+    });
     // Start atomic block saving.
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
       // Apply transaction to unconfirmed mem_accounts field
@@ -211,10 +209,15 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         .sort()
       );
 
+      // undo all overlapping txs.
+      for (const overTX of overlappingTXs) {
+        ops.push(... await this.transactionLogic.undoUnconfirmed(overTX, accountsMap[overTX.senderId]));
+      }
+
       ops.push({
-        model: this.AccountsModel,
+        type: 'custom',
         query: await this.AccountsModel.createBulkAccountsSQL(recipients),
-        type : 'custom',
+        model: this.AccountsModel,
       });
 
       for (const tx of block.transactions) {
@@ -253,9 +256,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       }
 
       await this.bus.message('newBlock', block, broadcast);
-      await this.hookSystem.do_action('core/blocks/chain/applyBlock.post', this.blocksModule.lastBlock, dbTX);
-      // TODO: add this on consensus dpos using hook ^^
-      // await this.roundsModule.tick(block, dbTX);
+
+      await this.roundsModule.tick(block, dbTX);
 
       this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
     }).catch((err) => {
@@ -263,6 +265,14 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       this.isProcessing = false;
       throw err;
     });
+
+    // remove overlapping txs from unconfirmed and move it to queued to allow re-process
+    // If some of the overlapping txs are now "invalid" they will be discared within the next
+    // txPool.processBundled loop.
+    for (const overTX of overlappingTXs) {
+      this.transactionsModule.removeUnconfirmedTransaction(overTX.id);
+      await this.transactionsModule.processUnconfirmedTransaction(overTX, false);
+    }
 
     block = null;
 
@@ -277,7 +287,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    */
   public async saveBlock(b: SignedBlockType, dbTX: Transaction) {
     const saveOp = this.blockLogic.dbSave(b);
-    const txOps  = this.transactionLogic.dbSave(b.transactions, b.id, b.height);
+    const txOps = this.transactionLogic.dbSave(b.transactions, b.id, b.height);
 
     await this.dbHelper.performOps([saveOp, ...txOps], dbTX);
 
@@ -309,7 +319,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * @returns {Promise<SignedBlockType>}
    */
   @WrapInBalanceSequence
-  private async popLastBlock(lb: IBlocksModel): Promise<IBlocksModel> {
+  private async popLastBlock(lb: BlocksModel): Promise<BlocksModel> {
     const previousBlock = await this.BlocksModel.findById(lb.previousBlock, { include: [this.TransactionsModel] });
 
     if (previousBlock === null) {
@@ -320,16 +330,15 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     const txs = lb.transactions.slice().reverse();
 
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
-      const accountsMap           = await this.accountsModule.resolveAccountsForTransactions(txs);
+      const accountsMap = await this.accountsModule.resolveAccountsForTransactions(txs);
       const ops: Array<DBOp<any>> = [];
       for (const tx of txs) {
         ops.push(... await this.transactionLogic.undo(tx, lb, accountsMap[tx.senderId]));
         ops.push(... await this.transactionLogic.undoUnconfirmed(tx, accountsMap[tx.senderId]));
       }
       await this.dbHelper.performOps(ops, dbTX);
-      // await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
+      await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
       await lb.destroy({ transaction: dbTX });
-      await this.hookSystem.do_action('core/blocks/chain/onDestroyBlock', this.blocksModule.lastBlock, dbTX);
     });
 
     return previousBlock;
