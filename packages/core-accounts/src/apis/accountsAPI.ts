@@ -1,15 +1,17 @@
+import { CoreSymbols } from '@risevision/core';
 import { APIError, DeprecatedAPIError } from '@risevision/core-apis';
-import { IoCSymbol, SchemaValid, Symbols, ValidateSchema } from '@risevision/core-utils';
 import { IAccountsModel, IAccountsModule, ISystemModule } from '@risevision/core-interfaces';
-import { AppConfig, FieldsInModel, publicKey } from '@risevision/core-types';
+import { IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
+import { AppConfig, ConstantsType, FieldsInModel, publicKey } from '@risevision/core-types';
 import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
 import * as isEmpty from 'is-empty';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Body, Get, JsonController, Post, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import { CoreSymbols } from '@risevision/core';
+
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
+import { AccountsSymbols } from '../symbols';
 
 const accountSchema = require('../../schema/accounts.json');
 
@@ -19,7 +21,7 @@ const accountSchema = require('../../schema/accounts.json');
 export class AccountsAPI {
   @inject(LaunchpadSymbols.zschema)
   public schema: z_schema;
-  @inject(CoreSymbols.modules.accounts)
+  @inject(AccountsSymbols.module)
   private accountsModule: IAccountsModule;
   @inject(CoreSymbols.modules.system)
   private systemModule: ISystemModule;
@@ -28,6 +30,8 @@ export class AccountsAPI {
   private hookSystem: WordPressHookSystem;
   @inject(CoreSymbols.appConfig)
   private appConfig: AppConfig;
+  @inject(CoreSymbols.constants)
+  private constants: ConstantsType;
 
   @Get('/')
   @ValidateSchema()

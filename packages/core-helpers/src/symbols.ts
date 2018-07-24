@@ -24,7 +24,6 @@ export const Symbols = {
   // },
   helpers: {
     bus              : Symbol('bus'),
-    constants        : Symbol('constants'),
     crypto           : Symbol('crypto'),
     exceptionsManager: Symbol('exceptionsManager'),
     jobsQueue        : Symbol('jobsQueue'),

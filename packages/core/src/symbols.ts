@@ -1,5 +1,6 @@
 export const CoreSymbols = {
   appConfig: Symbol.for('appConfig'),
+  constants: Symbol.for('constants'),
   api: {
     accounts: Symbol.for('accountsAPI'),
     blocks: Symbol.for('blocksAPI'),

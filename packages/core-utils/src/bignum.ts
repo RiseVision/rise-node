@@ -11,7 +11,7 @@ export interface IToFromBufferOpts {
   endian?: 'big' | 'little';
 }
 
-export default class MyBigNumb extends BigNumber {
+export class MyBigNumb extends BigNumber {
   /**
    * Calculates BigNumber from buffer representation
    * @param {Buffer} buf

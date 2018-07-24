@@ -5,7 +5,6 @@ import * as pgp from 'pg-promise';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import { Column, DataType, DefaultScope, Model, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
-import { BaseModel } from './BaseModel';
 import { Container } from 'inversify';
 
 @DefaultScope({
@@ -15,7 +14,6 @@ import { Container } from 'inversify';
 export class AccountsModel extends Model<AccountsModel> implements IAccountsModel {
   public static container: Container;
   public static options: any;
-
 
   @PrimaryKey
   @Column

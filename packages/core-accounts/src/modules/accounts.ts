@@ -1,4 +1,3 @@
-import { DBHelper, Symbols } from '@risevision/core-helpers';
 import {
   AccountDiffType,
   AccountFilterData,
@@ -7,17 +6,20 @@ import {
   IAccountsModule,
 } from '@risevision/core-interfaces';
 import { DBOp, FieldsInModel, IBaseTransaction } from '@risevision/core-types';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
+import { AccountsSymbols } from '../symbols';
+import { DBHelper, ModelSymbols } from '@risevision/core-models';
 
 @injectable()
 export class AccountsModule implements IAccountsModule {
 
-  @inject(Symbols.logic.account)
+  @inject(AccountsSymbols.logic)
   private accountLogic: IAccountLogic;
-  @inject(Symbols.helpers.db)
+  @inject(ModelSymbols.helpers.db)
   private dbHelper: DBHelper;
 
-  @inject(Symbols.models.accounts)
+  @inject(ModelSymbols.model)
+  @named(AccountsSymbols.model)
   private AccountsModel: typeof IAccountsModel;
 
   public cleanup() {

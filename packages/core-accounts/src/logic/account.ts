@@ -1,4 +1,4 @@
-import { BigNum, catchToLoggerAndRemapError, Symbols } from '@risevision/core-helpers';
+import { RecreateAccountsTables } from '@risevision/core';
 import {
   AccountDiffType,
   AccountFilterData,
@@ -6,17 +6,20 @@ import {
   IAccountsModel,
   ILogger
 } from '@risevision/core-interfaces';
-import { DBOp, FieldsInModel, ModelAttributes } from '@risevision/core-types';
+import { LaunchpadSymbols } from '@risevision/core-launchpad';
+import { ModelSymbols } from '@risevision/core-models';
+import { catchToLoggerAndRemapError, MyBigNumb, Symbols as UtilsSymbols } from '@risevision/core-utils';
+import { ConstantsType, DBOp, FieldsInModel, ModelAttributes } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import * as fs from 'fs';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-import { RecreateAccountsTables } from '../hooks/actions';
+import { AccountsSymbols } from '../symbols';
 import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
 
@@ -46,21 +49,25 @@ export class AccountLogic extends WPHooksSubscriber(Object) implements IAccountL
    */
   private editable: string[];
 
-  @inject(Symbols.helpers.logger)
+
+  private constants: ConstantsType;
+
+  @inject(UtilsSymbols.logger)
   private logger: ILogger;
 
-  @inject(Symbols.models.accounts)
+  @inject(ModelSymbols.model)
+  @named(AccountsSymbols.model)
   private AccountsModel: typeof IAccountsModel;
 
-  @inject(Symbols.generic.zschema)
+  @inject(LaunchpadSymbols.zschema)
   private schema: z_schema;
 
-  @inject(Symbols.generic.hookSystem)
+  @inject(LaunchpadSymbols.hookSystem)
   public hookSystem: WordPressHookSystem;
 
   constructor() {
     super();
-    this.model = accountsModelCreator(this.table);
+    this.model = accountsModelCreator(this.table, this.constants);
 
     this.fields = this.model.map((field) => {
       const tmp: any = {};
@@ -93,8 +100,8 @@ export class AccountLogic extends WPHooksSubscriber(Object) implements IAccountL
 
   @RecreateAccountsTables()
   public async recreateTables(): Promise<void> {
-    await this.AccountsModel.drop({cascade: true})
-        .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
+    await this.AccountsModel.drop({ cascade: true })
+      .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
     await this.AccountsModel.sequelize.query(
       fs.readFileSync(path.join(process.cwd(), 'sql', 'memoryTables.sql'), { encoding: 'utf8' })
     );
@@ -272,6 +279,6 @@ export class AccountLogic extends WPHooksSubscriber(Object) implements IAccountL
     for (let i = 0; i < 8; i++) {
       tmp[i] = hash[7 - i];
     }
-    return `${BigNum.fromBuffer(tmp).toString()}R`;
+    return `${MyBigNumb.fromBuffer(tmp).toString()}R`;
   }
 }

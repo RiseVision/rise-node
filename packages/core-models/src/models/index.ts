@@ -1,5 +1,4 @@
 import 'reflect-metadata';
-export * from './AccountsModel';
 export * from './BaseModel';
 export * from './BlocksModel';
 export * from './ForksStatsModel';

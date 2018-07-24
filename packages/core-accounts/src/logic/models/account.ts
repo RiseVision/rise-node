@@ -1,6 +1,5 @@
-// FIXME: this is used directly. it should not. either remove this model or do something about it.
-import { constants } from '@risevision/core-helpers';
 import { IModelField } from './modelField';
+import { ConstantsType } from '@risevision/core-types';
 // tslint:disable
 /**
  * @typedef {Object} account
@@ -32,7 +31,7 @@ import { IModelField } from './modelField';
  * @property {number} rewards
  * @property {boolean} virgin
  */
-export const accountsModelCreator = (table: string): IModelField[] => [
+export const accountsModelCreator = (table: string, constants: ConstantsType): IModelField[] => [
   {
     name     : 'username',
     type     : 'String',
