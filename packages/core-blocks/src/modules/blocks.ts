@@ -1,4 +1,5 @@
 import { Symbols } from '@risevision/core-helpers';
+import { Symbols as UtilsSymbols } from '@risevision/core-utils';
 import { IBlocksModel, IBlocksModule, ILogger } from '@risevision/core-interfaces';
 import { ConstantsType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
@@ -11,7 +12,7 @@ export class BlocksModule implements IBlocksModule {
   @inject(Symbols.helpers.constants)
   private constants: ConstantsType;
   private internalLastReceipt: number;
-  @inject(Symbols.helpers.logger)
+  @inject(UtilsSymbols.logger)
   private logger: ILogger;
 
   constructor() {

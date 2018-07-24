@@ -17,13 +17,10 @@
       "es7"
     ],
     "paths": {
-      "@risevision/core-apis": ["../core-apis/*"],
       "@risevision/core-models": ["../core-models/*"],
       "@risevision/core-interfaces": ["../core-interfaces/*"],
-      "@risevision/core-launchpad": ["../core-launchpad/*"],
       "@risevision/core-types": ["../core-types/*"],
-      "@risevision/core-helpers": ["../core-helpers/*"],
-      "@risevision/core-utils": ["../core-utils/*"]
+      "@risevision/core-test-utils": ["../core-test-utils/*"]
     }
   },
   "include": ["./src/**/*.ts"],

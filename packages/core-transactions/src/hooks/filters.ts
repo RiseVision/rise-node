@@ -1,4 +1,4 @@
-import { createFilterDecorator } from '@risevision/core-helpers';
+import { createFilterDecorator } from '@risevision/core-utils';
 import { IAccountsModel } from '@risevision/core-interfaces';
 import { DBOp, IBaseTransaction, IConfirmedTransaction, SignedBlockType } from '@risevision/core-types';
 

@@ -27,12 +27,14 @@ import {
 import { BigNumber } from 'bignumber.js';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
 import { BaseTx } from './BaseTx';
+import { TXSymbols } from './txSymbols';
+import { ModelSymbols } from '@risevision/core-models';
 const txSchema = require('../schema/transaction.json');
 
 @injectable()
@@ -59,7 +61,8 @@ export class TransactionLogic implements ITransactionLogic {
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
 
-  @inject(Symbols.models.transactions)
+  @inject(ModelSymbols.model)
+  @named(TXSymbols.model)
   private TransactionsModel: typeof ITransactionsModel;
   @inject(Symbols.generic.hookSystem)
   private hookSystem: WordPressHookSystem;
@@ -567,7 +570,8 @@ export class TransactionLogic implements ITransactionLogic {
    */
   public objectNormalize(tx: IConfirmedTransaction<any>): IConfirmedTransaction<any>;
   // tslint:disable-next-line max-line-length
-  public objectNormalize(tx: IBaseTransaction<any> | ITransportTransaction<any> | IConfirmedTransaction<any>): IBaseTransaction<any> | IConfirmedTransaction<any> {
+  public objectNormalize(tx2: IBaseTransaction<any> | ITransportTransaction<any> | IConfirmedTransaction<any>): IBaseTransaction<any> | IConfirmedTransaction<any> {
+    const tx = _.extend(true, {}, tx2);
     this.assertKnownTransactionType(tx.type);
     for (const key in tx) {
       if (tx[key] === null || typeof(tx[key]) === 'undefined') {

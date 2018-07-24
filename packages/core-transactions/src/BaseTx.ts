@@ -1,4 +1,5 @@
 import { IAccountsModel, IBaseTransactionType } from '@risevision/core-interfaces';
+import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import {
   DBOp,
   IBaseTransaction,
@@ -6,11 +7,9 @@ import {
   SignedBlockType,
   TransactionType
 } from '@risevision/core-types';
-
 import { inject, injectable, unmanaged } from 'inversify';
-import { Model } from 'sequelize-typescript';
 import { WordPressHookSystem } from 'mangiafuoco';
-import { Symbols } from '@risevision/core-helpers';
+import { Model } from 'sequelize-typescript';
 
 const emptyBuffer = new Buffer(0);
 
@@ -20,7 +19,7 @@ const emptyBuffer = new Buffer(0);
 @injectable()
 export abstract class BaseTx<T, M extends Model<any>> implements IBaseTransactionType<T, M> {
 
-  @inject(Symbols.generic.hookSystem)
+  @inject(LaunchpadSymbols.hookSystem)
   protected hookSystem: WordPressHookSystem;
 
   constructor(@unmanaged() private txType: TransactionType) {

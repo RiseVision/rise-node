@@ -1,4 +1,4 @@
-import { createActionDecorator as createAction } from '@risevision/core-helpers';
+import { createActionDecorator as createAction } from '@risevision/core-utils';
 import { IAccountsModel } from '@risevision/core-interfaces';
 import { DBOp, IBaseTransaction, IConfirmedTransaction, SignedBlockType } from '@risevision/core-types';
 

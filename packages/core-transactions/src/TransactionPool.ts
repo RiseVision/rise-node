@@ -1,4 +1,4 @@
-import { Bus, Sequence, Symbols, WrapInBalanceSequence } from '@risevision/core-helpers';
+import { Bus, Sequence, Symbols } from '@risevision/core-helpers';
 import {
   IAccountsModule,
   IAppState,
@@ -13,6 +13,8 @@ import { inject, injectable, postConstruct, tagged } from 'inversify';
 import { TXAppConfig } from './helpers/appconfig';
 import { InnerTXQueue } from './poolTXsQueue';
 import { WordPressHookSystem } from 'mangiafuoco';
+import { LaunchpadSymbols } from '@risevision/core-launchpad';
+import { Symbols as UtilsSymbols } from '@risevision/core-utils';
 
 // tslint:disable-next-line
 @injectable()
@@ -28,7 +30,7 @@ export class TransactionPool implements ITransactionPoolLogic {
   private config: TXAppConfig;
   @inject(Symbols.helpers.constants)
   private constants: ConstantsType;
-  @inject(Symbols.generic.hookSystem)
+  @inject(LaunchpadSymbols.hookSystem)
   private hookSystem: WordPressHookSystem;
 
   // Helpers
@@ -36,7 +38,7 @@ export class TransactionPool implements ITransactionPoolLogic {
   private bus: Bus;
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
-  @inject(Symbols.helpers.logger)
+  @inject(UtilsSymbols.logger)
   private logger: ILogger;
   // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)

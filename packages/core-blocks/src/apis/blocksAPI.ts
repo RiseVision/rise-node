@@ -1,13 +1,5 @@
 import { APIError } from '@risevision/core-apis';
-import {
-  IoCSymbol,
-  removeEmptyObjKeys,
-  SchemaValid,
-  Sequence,
-  Symbols,
-  ValidateSchema,
-  WrapInDBSequence
-} from '@risevision/core-helpers';
+import { Sequence, Symbols } from '@risevision/core-helpers';
 import {
   IBlockLogic,
   IBlockReward,
@@ -17,20 +9,26 @@ import {
   ITransactionLogic,
   ITransactionsModel,
 } from '@risevision/core-interfaces';
+import { LaunchpadSymbols } from '@risevision/core-launchpad';
+import { ModelSymbols } from '@risevision/core-models';
+import { TXSymbols } from '@risevision/core-transactions';
 import { ConstantsType } from '@risevision/core-types';
-import { inject, injectable, tagged } from 'inversify';
+import { IoCSymbol, removeEmptyObjKeys, SchemaValid, ValidateSchema, WrapInDBSequence } from '@risevision/core-utils';
+import { inject, injectable, named, tagged } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
+import { CoreSymbols } from '../symbols';
+
 
 const blocksSchema = require('../../schema/blocks.json');
 
 @JsonController('/api/blocks')
-@IoCSymbol(Symbols.api.blocks)
+@IoCSymbol(CoreSymbols.api.blocks)
 @injectable()
 export class BlocksAPI {
 
   // Generic
-  @inject(Symbols.generic.zschema)
+  @inject(LaunchpadSymbols.zschema)
   public schema: z_schema;
 
   // Helpers
@@ -42,11 +40,11 @@ export class BlocksAPI {
   public dbSequence: Sequence;
 
   // Logic
-  @inject(Symbols.logic.blockReward)
+  @inject(CoreSymbols.logic.blockReward)
   private blockRewardLogic: IBlockReward;
-  @inject(Symbols.logic.block)
+  @inject(CoreSymbols.logic.block)
   private blockLogic: IBlockLogic;
-  @inject(Symbols.logic.transaction)
+  @inject(TXSymbols.logic)
   private transactionLogic: ITransactionLogic;
 
   // Modules
@@ -55,9 +53,11 @@ export class BlocksAPI {
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
-  @inject(Symbols.models.blocks)
+  @inject(ModelSymbols.model)
+  @named(ModelSymbols.names.blocks)
   private BlocksModel: typeof IBlocksModel;
-  @inject(Symbols.models.transactions)
+  @inject(ModelSymbols.model)
+  @named(ModelSymbols.names.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
   @Get('/')
@@ -78,10 +78,10 @@ export class BlocksAPI {
     const orderBy = [filters.orderBy ? filters.orderBy.split(':') : ['height', 'desc']];
 
     const { rows: blocks, count } = await this.BlocksModel.findAndCountAll({
-      limit  : filters.limit || 100,
-      offset : filters.offset || 0,
-      order  : orderBy,
-      where  : whereClause,
+      limit : filters.limit || 100,
+      offset: filters.offset || 0,
+      order : orderBy,
+      where : whereClause,
     });
     // attach transactions and assets with it.
     await Promise.all(blocks

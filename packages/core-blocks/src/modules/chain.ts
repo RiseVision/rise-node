@@ -1,11 +1,8 @@
 import bs = require('binary-search');
 import {
   Bus,
-  catchToLoggerAndRemapError,
   Sequence,
   Symbols,
-  wait,
-  WrapInBalanceSequence
 } from '@risevision/core-helpers';
 import {
   IAccountsModel,
@@ -20,28 +17,30 @@ import {
   ITransactionsModel,
   ITransactionsModule
 } from '@risevision/core-interfaces';
-import { DBOp, SignedAndChainedBlockType, SignedBlockType, TransactionType } from '@risevision/core-types';
+import { DBOp, SignedAndCainedBlockType, SignedBlockType, TransactionType } from '@risevision/core-types';
+import { Symbols as UtilsSymbols} from '@risevision/core-utils';
 import { inject, injectable, tagged } from 'inversify';
 import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Op, Transaction } from 'sequelize';
-import { DBHelper } from '@risevision/core-models';
+import { DBHelper, ModelSymbols } from '@risevision/core-models';
+import { LaunchpadSymbols } from '@risevision/core-launchpad';
 
 @injectable()
 export class BlocksModuleChain implements IBlocksModuleChain {
 
   // Generic
-  @inject(Symbols.generic.genesisBlock)
+  @inject(LaunchpadSymbols.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
-  @inject(Symbols.generic.hookSystem)
+  @inject(LaunchpadSymbols.hookSystem)
   private hookSystem: WordPressHookSystem;
 
   // Helpers
   @inject(Symbols.helpers.bus)
   private bus: Bus;
-  @inject(Symbols.helpers.db)
+  @inject(ModelSymbols.helpers.db)
   private dbHelper: DBHelper;
-  @inject(Symbols.helpers.logger)
+  @inject(UtilsSymbols.logger)
   private logger: ILogger;
   // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)

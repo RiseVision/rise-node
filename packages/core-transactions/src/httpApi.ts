@@ -1,12 +1,6 @@
 import { APIError } from '@risevision/core-apis';
 import {
-  assertValidSchema,
-  castFieldsToNumberUsingSchema,
-  IoCSymbol,
-  removeEmptyObjKeys, SchemaValid,
-  Symbols, ValidateSchema
-} from '@risevision/core-helpers';
-import {
+  IAccountsModel,
   IBlocksModule,
   ITimeToEpoch, ITransactionLogic,
   ITransactionsModel,
@@ -14,16 +8,24 @@ import {
   ITransportModule
 } from '@risevision/core-interfaces';
 import { ITransportTransaction, TransactionType } from '@risevision/core-types';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { BodyParam, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
+import {
+  assertValidSchema,
+  castFieldsToNumberUsingSchema,
+  IoCSymbol,
+  removeEmptyObjKeys, SchemaValid, ValidateSchema
+} from '@risevision/core-utils';
+import { TXSymbols } from './txSymbols';
+import { ModelSymbols } from '@risevision/core-models';
 const schema = require('../schema/api.json');
 
 @JsonController('/api/transactions')
 @injectable()
-@IoCSymbol(Symbols.api.transactions)
+@IoCSymbol(TXSymbols.api)
 export class TransactionsAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
@@ -33,15 +35,19 @@ export class TransactionsAPI {
 
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.transactions)
+  @inject(TXSymbols.module)
   private transactionsModule: ITransactionsModule;
   @inject(Symbols.modules.transport)
   private transportModule: ITransportModule;
 
-  @inject(Symbols.models.transactions)
+  @inject(ModelSymbols.model)
+  @named(TXSymbols.model)
   private TXModel: typeof ITransactionsModel;
+  @inject(ModelSymbols.model)
+  @named(ModelSymbols.names.accounts)
+  private AccountsModel: typeof IAccountsModel;
 
-  @inject(Symbols.logic.transaction)
+  @inject(TXSymbols.logic)
   private txLogic: ITransactionLogic;
 
   @Get()
@@ -225,6 +231,22 @@ export class TransactionsAPI {
     if (!transaction) {
       throw new APIError('Transaction not provided', 500);
     }
+    // Schema validation and object normalization
+    const bufferTX = this.txLogic.objectNormalize(transaction);
+
+    const acc = await this.AccountsModel.findOne({where: {address: transaction.senderId}});
+    if (!acc) {
+      throw new APIError('Account not found', 500);
+    }
+    let requester = null;
+    if (transaction.requesterPublicKey) {
+      requester = await this.AccountsModel.findOne({ where: { publicKey: bufferTX.requesterPublicKey}} );
+      if (!requester) {
+        throw new APIError('Requester not found', 500);
+      }
+    }
+
+    await this.txLogic.verify(bufferTX, acc, requester, this.blocksModule.lastBlock.height);
     // Schema validation is done in transportModule
     await this.transportModule.receiveTransactions(
       [transaction],

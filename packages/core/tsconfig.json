@@ -16,9 +16,10 @@
       "es7"
     ],
     "paths": {
-      "@risevision/core": ["../core/*"],
+
       "@risevision/core-models": ["../core-models/*"],
       "@risevision/core-interfaces": ["../core-interfaces/*"],
+      "@risevision/core-launchpad": ["../core-launchpad/*"],
       "@risevision/core-types": ["../core-types/*"],
       "@risevision/core-helpers": ["../core-helpers/*"]
     }
