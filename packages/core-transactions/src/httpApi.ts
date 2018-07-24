@@ -21,17 +21,18 @@ import {
 } from '@risevision/core-utils';
 import { TXSymbols } from './txSymbols';
 import { ModelSymbols } from '@risevision/core-models';
+import { LaunchpadSymbols } from '@risevision/core-launchpad';
 const schema = require('../schema/api.json');
 
 @JsonController('/api/transactions')
 @injectable()
 @IoCSymbol(TXSymbols.api)
 export class TransactionsAPI {
-  @inject(Symbols.generic.zschema)
+  @inject(LaunchpadSymbols.zschema)
   public schema: z_schema;
 
-  @inject(Symbols.helpers.timeToEpoch)
-  public timeToEpoch: ITimeToEpoch;
+  // @inject(Symbols.helpers.timeToEpoch)
+  // public timeToEpoch: ITimeToEpoch;
 
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;

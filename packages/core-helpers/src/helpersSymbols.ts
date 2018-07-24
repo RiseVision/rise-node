@@ -1,8 +1,11 @@
 export const HelpersSymbols = {
-  bus: Symbol.for('bus'),
   crypto: Symbol.for('crypto'),
-  exceptionsManager: Symbol.for('exceptionsManager'),
   jobsQueue: Symbol.for('jobsQueue'),
   migrator: Symbol.for('migrator'),
+  names: {
+    balancesSequence: Symbol.for('balancesSequence'),
+    dbSequence: Symbol.for('dbSequence'),
+    defaultSequence: Symbol.for('defaultSequence'),
+  },
   sequence: Symbol.for('sequence')
 };

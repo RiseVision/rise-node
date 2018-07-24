@@ -1,10 +1,12 @@
-import { Symbols } from '@risevision/core-helpers';
+import { CoreSymbols } from '@risevision/core';
+import { AccountsSymbols } from '@risevision/core-accounts';
 import {
   IAccountLogic,
   IAccountsModel,
   IAccountsModule,
   ISystemModule
 } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 import {
   DBOp,
   IBaseTransaction,
@@ -12,21 +14,23 @@ import {
   SignedBlockType,
   TransactionType
 } from '@risevision/core-types';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import { BaseTx } from './BaseTx';
+
 
 @injectable()
 export class SendTransaction extends BaseTx<void, null> {
 
-  @inject(Symbols.modules.accounts)
+  @inject(AccountsSymbols.module)
   private accountsModule: IAccountsModule;
-  @inject(Symbols.logic.account)
+  @inject(AccountsSymbols.logic)
   private accountLogic: IAccountLogic;
 
-  @inject(Symbols.modules.system)
+  @inject(CoreSymbols.modules.system)
   private systemModule: ISystemModule;
 
-  @inject(Symbols.models.accounts)
+  @inject(ModelSymbols.model)
+  @named(AccountsSymbols.model)
   private AccountsModel: typeof IAccountsModel;
 
   constructor() {

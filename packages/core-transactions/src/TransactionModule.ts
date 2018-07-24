@@ -1,4 +1,3 @@
-import { DBHelper, Symbols } from '@risevision/core-helpers';
 import {
   IAccountsModel,
   IAccountsModule,
@@ -10,10 +9,11 @@ import {
 } from '@risevision/core-interfaces';
 import { ConstantsType, IBaseTransaction, SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
+import { AccountsSymbols } from '@risevision/core-accounts';
 
 @injectable()
 export class TransactionsModule implements ITransactionsModule {
-  @inject(Symbols.modules.accounts)
+  @inject(AccountsSymbols.module)
   private accountsModule: IAccountsModule;
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;

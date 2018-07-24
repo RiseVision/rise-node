@@ -1,9 +1,5 @@
 import bs = require('binary-search');
-import {
-  Bus,
-  Sequence,
-  Symbols,
-} from '@risevision/core-helpers';
+import { HelpersSymbols, Sequence } from '@risevision/core-helpers';
 import {
   IAccountsModel,
   IAccountsModule,
@@ -17,14 +13,23 @@ import {
   ITransactionsModel,
   ITransactionsModule
 } from '@risevision/core-interfaces';
-import { DBOp, SignedAndCainedBlockType, SignedBlockType, TransactionType } from '@risevision/core-types';
-import { Symbols as UtilsSymbols} from '@risevision/core-utils';
-import { inject, injectable, tagged } from 'inversify';
+import { LaunchpadSymbols } from '@risevision/core-launchpad';
+
+import { DBHelper, ModelSymbols } from '@risevision/core-models';
+import {
+  DBOp,
+  SignedAndChainedBlockType,
+  SignedBlockType,
+  TransactionType
+} from '@risevision/core-types';
+import { Symbols as UtilsSymbols } from '@risevision/core-utils';
+import { TXSymbols } from '@risevision/core-transactions';
+import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Op, Transaction } from 'sequelize';
-import { DBHelper, ModelSymbols } from '@risevision/core-models';
-import { LaunchpadSymbols } from '@risevision/core-launchpad';
+import { BlocksSymbols } from '../blocksSymbols';
+
 
 @injectable()
 export class BlocksModuleChain implements IBlocksModuleChain {
@@ -35,22 +40,20 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   @inject(LaunchpadSymbols.hookSystem)
   private hookSystem: WordPressHookSystem;
 
-  // Helpers
-  @inject(Symbols.helpers.bus)
-  private bus: Bus;
+
   @inject(ModelSymbols.helpers.db)
   private dbHelper: DBHelper;
   @inject(UtilsSymbols.logger)
   private logger: ILogger;
   // tslint:disable-next-line member-ordering
-  @inject(Symbols.helpers.sequence)
-  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
+  @inject(HelpersSymbols.sequence)
+  @named(HelpersSymbols.names.balancesSequence)
   public balancesSequence: Sequence;
 
   // LOGIC
-  @inject(Symbols.logic.block)
+  @inject(BlocksSymbols.logic.block)
   private blockLogic: IBlockLogic;
-  @inject(Symbols.logic.transaction)
+  @inject(TXSymbols.logic)
   private transactionLogic: ITransactionLogic;
 
   // Modules
@@ -73,7 +76,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * Lock for processing.
    * @type {boolean}
    */
-  private isCleaning: boolean = false;
+          private isCleaning: boolean = false;
 
   private isProcessing: boolean = false;
 
@@ -158,17 +161,17 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     try {
       for (const tx of block.transactions) {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
-        const sender = await this.accountsModule
+        const sender                = await this.accountsModule
           .setAccountAndGet({ publicKey: tx.senderPublicKey });
         // Apply tx.
         const ops: Array<DBOp<any>> = [
           {
             model: this.AccountsModel,
             query: this.AccountsModel.createBulkAccountsSQL([tx.recipientId]),
-            type: 'custom',
+            type : 'custom',
           },
-          ... await this.transactionLogic.applyUnconfirmed({... tx, blockId: block.id} as any, sender),
-          ... await this.transactionLogic.apply({... tx, blockId: block.id} as any, block, sender),
+          ... await this.transactionLogic.applyUnconfirmed({ ...tx, blockId: block.id } as any, sender),
+          ... await this.transactionLogic.apply({ ...tx, blockId: block.id } as any, block, sender),
         ];
         await this.dbHelper.performOps(ops);
 
@@ -203,8 +206,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     // Overlapping txs needs to be undoUnconfirmed since they could eventually exclude a tx
     // bundled within a block
     const allUnconfirmedTxs = this.transactionsModule.getUnconfirmedTransactionList(false);
-    const allBlockTXIds = block.transactions.map((tx) => tx.id).sort();
-    const overlappingTXs = allUnconfirmedTxs.filter((tx) => {
+    const allBlockTXIds     = block.transactions.map((tx) => tx.id).sort();
+    const overlappingTXs    = allUnconfirmedTxs.filter((tx) => {
       const exists = bs(allBlockTXIds, tx.id, (a, b) => a.localeCompare(b)) >= 0;
       return !exists && typeof(accountsMap[tx.senderId]) !== 'undefined';
     });
@@ -228,7 +231,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       }
 
       ops.push({
-        type: 'custom',
+        type : 'custom',
         query: await this.AccountsModel.createBulkAccountsSQL(recipients),
         model: this.AccountsModel,
       });
@@ -301,7 +304,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    */
   public async saveBlock(b: SignedBlockType, dbTX: Transaction) {
     const saveOp = this.blockLogic.dbSave(b);
-    const txOps = this.transactionLogic.dbSave(b.transactions, b.id, b.height);
+    const txOps  = this.transactionLogic.dbSave(b.transactions, b.id, b.height);
 
     await this.dbHelper.performOps([saveOp, ...txOps], dbTX);
 
@@ -344,7 +347,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     const txs = lb.transactions.slice().reverse();
 
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
-      const accountsMap = await this.accountsModule.resolveAccountsForTransactions(txs);
+      const accountsMap           = await this.accountsModule.resolveAccountsForTransactions(txs);
       const ops: Array<DBOp<any>> = [];
       for (const tx of txs) {
         ops.push(... await this.transactionLogic.undo(tx, lb, accountsMap[tx.senderId]));
