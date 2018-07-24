@@ -56,10 +56,16 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     super(TransactionType.VOTE);
   }
 
+  /**
+   * Returns vote fees from a given height
+   */
   public calculateFee(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel, height: number): number {
     return this.systemModule.getFees(height).fees.vote;
   }
 
+  /**
+   * Verify a transaction
+   */
   public async verify(tx: IBaseTransaction<VoteAsset> & { senderId: string }, sender: AccountsModel): Promise<void> {
     if (tx.recipientId !== tx.senderId) {
       throw new Error('Missing recipient');
@@ -94,10 +100,16 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     return this.checkConfirmedDelegates(tx, sender);
   }
 
+  /**
+   * Calculates bytes from votes asset
+   */
   public getBytes(tx: IBaseTransaction<VoteAsset>, skipSignature: boolean, skipSecondSignature: boolean): Buffer {
     return tx.asset.votes ? Buffer.from(tx.asset.votes.join(''), 'utf8') : null;
   }
 
+  /**
+   * Stores delegate's vote into rounds
+   */
   // tslint:disable-next-line max-line-length
   public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     await this.checkConfirmedDelegates(tx, sender);
@@ -121,6 +133,9 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     return ops;
   }
 
+  /**
+   * Restore delegate's vote to a previous state
+   */
   // tslint:disable-next-line max-line-length
   public async undo(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     this.objectNormalize(tx);
@@ -146,12 +161,18 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     return ops;
   }
 
+  /**
+   * Store votes in an unconfirmed state into database
+   */
   public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     await this.checkUnconfirmedDelegates(tx, sender);
     sender.applyDiffArray('u_delegates', tx.asset.votes);
     return this.calculateOPs(this.Accounts2U_DelegatesModel, null, tx.asset.votes, sender.address);
   }
 
+  /**
+   * Restores unconfirmed votes to a previous state
+   */
   public async undoUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     this.objectNormalize(tx);
     const reversedVotes = Diff.reverse(tx.asset.votes);
@@ -173,6 +194,9 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     return this.delegatesModule.checkConfirmedDelegates(sender, tx.asset.votes);
   }
 
+  /**
+   * Validates vote using a schema
+   */
   public objectNormalize(tx: IBaseTransaction<VoteAsset>): IBaseTransaction<VoteAsset> {
     const report = this.schema.validate(tx.asset, voteSchema);
     if (!report) {
@@ -183,6 +207,9 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     return tx;
   }
 
+  /**
+   * Returns votes from a raw object
+   */
   public dbRead(raw: any): VoteAsset {
     if (!raw.v_votes) {
       return null;
@@ -190,6 +217,9 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     return { votes: raw.v_votes.split(',') };
   }
 
+  /**
+   * create a new vote into database
+   */
   // tslint:disable-next-line max-line-length
   public dbSave(tx: IConfirmedTransaction<VoteAsset> & { senderId: string }): DBOp<any> {
     return {
@@ -202,6 +232,9 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     };
   }
 
+  /**
+   * Validates vote
+   */
   private assertValidVote(vote: string) {
     if (typeof(vote) !== 'string') {
       throw new Error('Invalid vote type');
@@ -217,6 +250,9 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     }
   }
 
+  /**
+   * Restore votes to a previous state
+   */
   private calculateOPs(model: typeof Model & (new () => any), blockId: string, votesArray: string[], senderAddress: string) {
     const ops: Array<DBOp<any>> = [];
 
@@ -259,6 +295,9 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     return ops;
   }
 
+  /**
+   * Fetchs Assets From Datastore and returns the same txs with the asset field properly populated.
+   */
   public async attachAssets(txs: Array<IConfirmedTransaction<VoteAsset>>) {
     const res = await this.VotesModel
       .findAll({
