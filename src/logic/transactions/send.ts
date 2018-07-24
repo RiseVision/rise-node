@@ -29,10 +29,16 @@ export class SendTransaction extends BaseTransactionType<void, null> {
     super(TransactionType.SEND);
   }
 
+  /**
+   * Returns send fees from a given height
+   */
   public calculateFee(tx: IBaseTransaction<void>, sender: any, height: number): number {
     return this.systemModule.getFees(height).fees.send;
   }
 
+  /**
+   * Verify a transaction
+   */
   public async verify(tx: IBaseTransaction<void>, sender: any): Promise<void> {
     if (!tx.recipientId) {
       throw new Error('Missing recipient');
@@ -43,6 +49,9 @@ export class SendTransaction extends BaseTransactionType<void, null> {
     }
   }
 
+  /**
+   * Stores send transaction into account
+   */
   public async apply(tx: IConfirmedTransaction<void>,
                      block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     return [
@@ -55,6 +64,9 @@ export class SendTransaction extends BaseTransactionType<void, null> {
     ];
   }
 
+  /**
+   * Restore send transaction to a previous state
+   */
   public async undo(tx: IConfirmedTransaction<void>, block: SignedBlockType, sender: any): Promise<Array<DBOp<any>>> {
     return [
       ... this.accountLogic.merge(tx.recipientId, {
@@ -66,14 +78,23 @@ export class SendTransaction extends BaseTransactionType<void, null> {
     ];
   }
 
+  /**
+   * Returns the same transaction
+   */
   public objectNormalize(tx: IBaseTransaction<void>): IBaseTransaction<void> {
     return tx;
   }
 
+  /**
+   * Returns null
+   */
   public dbRead(raw: any): void {
     return null;
   }
 
+  /**
+   * Returns null
+   */
   // tslint:disable-next-line max-line-length
   public dbSave(tx: IConfirmedTransaction<void> & { senderId: string }) {
     return null;
