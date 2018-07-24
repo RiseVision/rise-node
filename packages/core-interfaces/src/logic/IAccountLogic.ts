@@ -16,24 +16,6 @@ export type AccountDiffType = {[k in keyof IAccountsModel]?: IAccountsModel[k]} 
 export interface IAccountLogic<T extends IAccountsModel = IAccountsModel> {
 
   /**
-   * Verifies the validity of a publickey.
-   * @param {publicKey} pk
-   * @param {boolean} allowUndefined if true undefined does not throw error.
-   */
-  assertPublicKey(pk: publicKey, allowUndefined?: boolean);
-
-  /**
-   * Get account information for specific fields and filtering criteria
-   */
-  get(filter: AccountFilterData, fields?: FieldsInModel<T>): Promise<T>;
-
-  /**
-   * Get accountS information for specific fields and filtering criteria.
-   */
-  getAll(filter: AccountFilterData,
-         fields?: FieldsInModel<T>): Promise<T[]>;
-
-  /**
    * Sets fields for specific address in mem_accounts table
    * @param {string} address
    * @param fields

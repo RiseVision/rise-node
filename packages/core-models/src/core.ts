@@ -4,12 +4,9 @@ import { Container } from 'inversify';
 import { Model, Sequelize } from 'sequelize-typescript';
 import { DbAppConfig, DBHelper, ModelSymbols } from './helpers/';
 import {
-  AccountsModel,
-  BlocksModel,
   ForksStatsModel,
   InfoModel,
   MigrationsModel,
-  TransactionsModel
 } from './models';
 
 export class CoreModule extends BaseCoreModule<DbAppConfig> {
@@ -41,10 +38,6 @@ export class CoreModule extends BaseCoreModule<DbAppConfig> {
     container.bind(ModelSymbols.sequelizeNamespace).toConstantValue(namespace);
     container.bind(ModelSymbols.helpers.db).to(DBHelper).inSingletonScope();
 
-    container.bind(ModelSymbols.model).toConstructor(AccountsModel)
-      .whenTargetNamed(ModelSymbols.names.accounts);
-    container.bind(ModelSymbols.model).toConstructor(BlocksModel)
-      .whenTargetNamed(ModelSymbols.names.blocks);
 
     container.bind(ModelSymbols.model).toConstructor(ForksStatsModel)
       .whenTargetNamed(ModelSymbols.names.forkStats);
@@ -54,8 +47,8 @@ export class CoreModule extends BaseCoreModule<DbAppConfig> {
       .whenTargetNamed(ModelSymbols.names.migrations);
     // container.bind(ModelSymbols.model).toConstructor(PeersModel)
     //   .whenTargetNamed(ModelSymbols.names.peers); TODO:
-    container.bind(ModelSymbols.model).toConstructor(TransactionsModel)
-      .whenTargetNamed(ModelSymbols.names.transactions);
+    // container.bind(ModelSymbols.model).toConstructor(TransactionsModel)
+    //   .whenTargetNamed(ModelSymbols.names.transactions);
   }
 
   public initAppElements(container: Container) {
