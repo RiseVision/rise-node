@@ -38,15 +38,24 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     super(TransactionType.SIGNATURE);
   }
 
+  /**
+   * Returns secondsignature fees from a given height
+   */
   public calculateFee(tx: IBaseTransaction<SecondSignatureAsset>, sender: AccountsModel, height: number): number {
     return this.systemModule.getFees(height).fees.secondsignature;
   }
 
+  /**
+   * Calculates bytes from publicKey
+   */
   public getBytes(tx: IBaseTransaction<SecondSignatureAsset>, skipSignature: boolean,
                   skipSecondSignature: boolean): Buffer {
     return Buffer.from(tx.asset.signature.publicKey, 'hex');
   }
 
+  /**
+   * Verify a transaction
+   */
   public async verify(tx: IBaseTransaction<SecondSignatureAsset>, sender: AccountsModel): Promise<void> {
     if (!tx.asset || !tx.asset.signature) {
       throw new Error('Invalid transaction asset');
@@ -66,6 +75,9 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     }
   }
 
+  /**
+   * Stores signature into account
+   */
   public async apply(tx: IConfirmedTransaction<SecondSignatureAsset>, block: SignedBlockType,
                      sender: AccountsModel): Promise<Array<DBOp<any>>> {
     const secondPublicKey = Buffer.from(tx.asset.signature.publicKey, 'hex');
@@ -88,6 +100,9 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     }];
   }
 
+  /**
+   * Restore signature to a previous state
+   */
   public async undo(tx: IConfirmedTransaction<SecondSignatureAsset>,
                     block: SignedBlockType,
                     sender: AccountsModel): Promise<Array<DBOp<any>>> {
@@ -111,6 +126,9 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     }];
   }
 
+  /**
+   * Stores signature asset in an unconfirmed state into account
+   */
   public async applyUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>,
                                 sender: AccountsModel): Promise<Array<DBOp<any>>> {
     if (sender.u_secondSignature || sender.secondSignature) {
@@ -131,6 +149,9 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     }];
   }
 
+  /**
+   * Restores unconfirmed signature asset to a previous state
+   */
   public async undoUnconfirmed(tx: IBaseTransaction<SecondSignatureAsset>,
                                sender: AccountsModel): Promise<Array<DBOp<any>>> {
 
@@ -149,6 +170,9 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     }];
   }
 
+  /**
+   * Validates signature using a schema
+   */
   public objectNormalize(tx: IBaseTransaction<SecondSignatureAsset>): IBaseTransaction<SecondSignatureAsset> {
     const report = this.schema.validate(tx.asset.signature, secondSignatureSchema);
     if (!report) {
@@ -159,6 +183,9 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     return tx;
   }
 
+  /**
+   * Returns signature from a raw transaction object
+   */
   public dbRead(raw: any): SecondSignatureAsset {
     if (!raw.s_publicKey) {
       return null;
@@ -169,6 +196,9 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     }
   }
 
+  /**
+   * create a new signature into database
+   */
   // tslint:disable-next-line max-line-length
   public dbSave(tx: IConfirmedTransaction<SecondSignatureAsset> & { senderId: string }): DBOp<any> {
     return {
@@ -181,6 +211,9 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     };
   }
 
+  /**
+   * Fetchs Assets From Datastore and returns the same txs with the asset field properly populated.
+   */
   public async attachAssets(txs: Array<IConfirmedTransaction<SecondSignatureAsset>>) {
     const res = await this.SignaturesModel
       .findAll({
