@@ -6,6 +6,9 @@ import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 import { IBlocksModule } from '../ioc/interfaces/modules';
 
 @Table({ tableName: 'blocks' })
+/**
+ * Blocks model
+ */
 export class BlocksModel extends Model<BlocksModel> {
 
   constructor(values?: FilteredModelAttributes<BlocksModel>, options?: IBuildOptions) {
@@ -66,6 +69,9 @@ export class BlocksModel extends Model<BlocksModel> {
   @HasMany(() => TransactionsModel, { as: "TransactionsModel" })
   private TransactionsModel: TransactionsModel[];
 
+  /**
+   * Creates a new instance from JSON
+   */
   // tslint:disable member-ordering
   public static classFromPOJO(pojo: SignedBlockType): BlocksModel {
     const toRet = new this();
@@ -73,6 +79,9 @@ export class BlocksModel extends Model<BlocksModel> {
     return toRet;
   }
 
+  /**
+   * Exports block to a plain object
+   */
   public static toStringBlockType(b: SignedBlockType, TxModel: typeof TransactionsModel, blocksModule: IBlocksModule): SignedBlockType<string> {
     const txs = (b.transactions || [])
       .map((t) => TxModel.toTransportTransaction(t, blocksModule));
