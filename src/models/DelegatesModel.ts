@@ -3,6 +3,9 @@ import { TransactionsModel } from './TransactionsModel';
 import { DelegatesModule } from '../modules';
 
 @Table({tableName: 'delegates'})
+/**
+ * Delegates model
+ */
 export class DelegatesModel extends Model<DelegatesModel> {
   @PrimaryKey
   @Column
