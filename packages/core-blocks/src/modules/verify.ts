@@ -10,7 +10,7 @@ import {
   IForkModule,
   ILogger,
   ITransactionLogic,
-  ITransactionsModule
+  ITransactionsModule, Symbols
 } from '@risevision/core-interfaces';
 import {
   ConstantsType,
@@ -22,12 +22,13 @@ import {
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
+import { BlocksSymbols } from '../blocksSymbols';
 
 @injectable()
 export class BlocksModuleVerify implements IBlocksModuleVerify {
 
   // Helpers
-  @inject(Symbols.helpers.constants)
+  @inject(Symbols.generic.constants)
   private constants: ConstantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
@@ -45,7 +46,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   // Modules
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
-  @inject(Symbols.modules.blocksSubModules.chain)
+  @inject(BlocksSymbols.modules.chain)
   private blocksChainModule: IBlocksModuleChain;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;

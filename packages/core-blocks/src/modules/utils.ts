@@ -1,16 +1,16 @@
-import { BlockProgressLogger, catchToLoggerAndRemapError, Sequence, Symbols } from '@risevision/core-helpers';
 import {
   IAccountsModel,
   IBlockLogic,
   IBlocksModel,
   IBlocksModule,
   IBlocksModuleUtils,
-  ILogger,
+  ILogger, ISequence,
   ITransactionLogic,
-  ITransactionsModel
+  ITransactionsModel, Symbols
 } from '@risevision/core-interfaces';
 import { ConstantsType, RawFullBlockListType, SignedAndChainedBlockType } from '@risevision/core-types';
-import { inject, injectable, tagged } from 'inversify';
+import { BlockProgressLogger, catchToLoggerAndRemapError } from '@risevision/core-utils';
+import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Op } from 'sequelize';
 
@@ -24,11 +24,11 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   private hookSystem: WordPressHookSystem;
 
   // Helpers
-  @inject(Symbols.helpers.constants)
+  @inject(Symbols.generic.constants)
   private constants: ConstantsType;
   @inject(Symbols.helpers.sequence)
-  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence)
-  private dbSequence: Sequence;
+  @named(Symbols.names.helpers.dbSequence)
+  private dbSequence: ISequence;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
@@ -207,6 +207,5 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   public getBlockProgressLogger(txCount: number, logsFrequency: number, msg: string) {
     return new BlockProgressLogger(txCount, logsFrequency, msg, this.logger);
   }
-
 
 }

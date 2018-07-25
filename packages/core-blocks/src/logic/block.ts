@@ -1,5 +1,11 @@
-import { IBlockLogic, IBlocksModel, ITransactionLogic } from '@risevision/core-interfaces';
-import { BigNum, Crypto, Symbols } from '@risevision/core-helpers';
+import {
+  IAccountLogic,
+  IBlockLogic,
+  IBlocksModel,
+  ICrypto,
+  ITransactionLogic,
+  Symbols
+} from '@risevision/core-interfaces';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
@@ -17,6 +23,7 @@ import {
   SignedAndChainedTransportBlockType,
   SignedBlockType
 } from '@risevision/core-types';
+import { MyBigNumb } from '../../../core-utils/src/bignum';
 
 const blockSchema = require('../../schema/block.json');
 
@@ -44,14 +51,16 @@ export class BlockLogic implements IBlockLogic {
   @inject(Symbols.generic.zschema)
   public zschema: z_schema;
 
-  @inject(Symbols.helpers.constants)
+  @inject(Symbols.generic.constants)
   private constants: ConstantsType;
   @inject(Symbols.logic.blockReward)
   private blockReward: BlockRewardLogic;
-  @inject(Symbols.helpers.crypto)
-  private crypto: Crypto;
+  @inject(Symbols.generic.crypto)
+  private crypto: ICrypto;
   @inject(Symbols.logic.transaction)
   private transaction: ITransactionLogic;
+  @inject(Symbols.logic.account)
+  private accountLogic: IAccountLogic;
 
   @inject(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
@@ -214,7 +223,7 @@ export class BlockLogic implements IBlockLogic {
       const block       = {
         blockSignature      : Buffer.from(rawBlock.b_blockSignature, 'hex'),
         get generatorId() {
-          return self.getAddressByPublicKey(rawBlock.b_generatorPublicKey);
+          return self.accountLogic.generateAddressByPublicKey(rawBlock.b_generatorPublicKey);
         },
         generatorPublicKey  : Buffer.from(rawBlock.b_generatorPublicKey, 'hex'),
         height              : parseInt(`${rawBlock.b_height}`, 10),
@@ -230,7 +239,7 @@ export class BlockLogic implements IBlockLogic {
         totalForged         : '',
         version             : parseInt(`${rawBlock.b_version}`, 10),
       };
-      block.totalForged = new BigNum(block.totalFee).plus(new BigNum(block.reward)).toString();
+      block.totalForged = new MyBigNumb(block.totalFee).plus(new MyBigNumb(block.reward)).toString();
       return block;
     }
   }
@@ -246,7 +255,7 @@ export class BlockLogic implements IBlockLogic {
     for (let i = 0; i < 8; i++) {
       temp[i] = hash[7 - i];
     }
-    return BigNum.fromBuffer(temp).toString();
+    return MyBigNumb.fromBuffer(temp).toString();
   }
 
   public getHash(block: BlockType, includeSignature: boolean = true) {
@@ -262,7 +271,7 @@ export class BlockLogic implements IBlockLogic {
     bb.writeInt(block.timestamp);
 
     if (block.previousBlock) {
-      const pb = new BigNum(block.previousBlock)
+      const pb = new MyBigNumb(block.previousBlock)
         .toBuffer({ size: 8 });
 
       for (let i = 0; i < 8; i++) {
@@ -307,20 +316,6 @@ export class BlockLogic implements IBlockLogic {
     bb.flip();
 
     return bb.toBuffer() as any;
-  }
-
-  private getAddressByPublicKey(publicKey: Buffer | string) {
-    if (typeof(publicKey) === 'string') {
-      publicKey = new Buffer(publicKey, 'hex');
-    }
-    const publicKeyHash = crypto.createHash('sha256')
-      .update(publicKey).digest();
-    const temp          = Buffer.alloc(8);
-
-    for (let i = 0; i < 8; i++) {
-      temp[i] = publicKeyHash[7 - i];
-    }
-    return `${BigNum.fromBuffer(temp).toString()}R`;
   }
 
 }

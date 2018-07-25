@@ -1,11 +1,11 @@
-import { IBlocksModel, IBlocksModule } from '@risevision/core-interfaces';
+import { IBlocksModel, IBlocksModule, ITransactionsModel, Symbols } from '@risevision/core-interfaces';
+import { BaseModel } from '@risevision/core-models';
 import { SignedBlockType } from '@risevision/core-types';
-import { Column, DataType, HasMany, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import { Column, DataType, HasMany, PrimaryKey, Table } from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { BaseModel } from './BaseModel';
-import { TransactionsModel } from './TransactionsModel';
 
+// tslint:disable member-ordering
 @Table({ tableName: 'blocks' })
 export class BlocksModel extends BaseModel<BlocksModel> implements IBlocksModel {
 
@@ -61,11 +61,11 @@ export class BlocksModel extends BaseModel<BlocksModel> implements IBlocksModel 
   @Column(DataType.BLOB)
   public blockSignature: Buffer;
 
-  public transactions: TransactionsModel[];
+  public transactions: ITransactionsModel[];
 
   // tslint:disable-next-line
-  @HasMany(() => TransactionsModel, { as: "TransactionsModel" })
-  private TransactionsModel: TransactionsModel[];
+  @HasMany(() => this.constructor.container.get(Symbols.models.transactions), { as: "TransactionsModel" })
+  private TransactionsModel: ITransactionsModel[];
 
   // tslint:disable member-ordering
   public static classFromPOJO(pojo: SignedBlockType): BlocksModel {
@@ -74,20 +74,24 @@ export class BlocksModel extends BaseModel<BlocksModel> implements IBlocksModel 
     return toRet;
   }
 
-  public static toStringBlockType(b: SignedBlockType,
-                                  TxModel: typeof TransactionsModel,
-                                  blocksModule: IBlocksModule): SignedBlockType<string> {
+  public static toStringBlockType(b: SignedBlockType): SignedBlockType<string> {
+    const TxModel      = this.container.get<typeof ITransactionsModel>(Symbols.models.transactions);
+    const BlocksModule = this.container.get<IBlocksModule>(Symbols.modules.blocks);
+
     const txs = (b.transactions || [])
-      .map((t) => TxModel.toTransportTransaction(t, blocksModule));
-    if (!Buffer.isBuffer(b.blockSignature) || !Buffer.isBuffer(b.generatorPublicKey) || !Buffer.isBuffer(b.payloadHash)) {
+      .map((t) => TxModel.toTransportTransaction(t, BlocksModule));
+    if (
+      !Buffer.isBuffer(b.blockSignature) || !Buffer.isBuffer(b.generatorPublicKey) ||
+      !Buffer.isBuffer(b.payloadHash)
+    ) {
       throw new Error('toStringBlockType used with non Buffer block type');
     }
     const toRet = {
       ...(b instanceof BlocksModel ? b.toJSON() : b),
       blockSignature    : b.blockSignature.toString('hex'),
-      transactions      : txs as any,
       generatorPublicKey: b.generatorPublicKey.toString('hex'),
       payloadHash       : b.payloadHash.toString('hex'),
+      transactions      : txs as any,
     };
     delete toRet.TransactionsModel;
     return toRet;

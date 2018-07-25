@@ -1,5 +1,4 @@
 import bs = require('binary-search');
-import { HelpersSymbols, Sequence } from '@risevision/core-helpers';
 import {
   IAccountsModel,
   IAccountsModule,
@@ -8,28 +7,22 @@ import {
   IBlocksModule,
   IBlocksModuleChain,
   IBlocksModuleUtils,
-  ILogger,
+  IDBHelper,
+  ILogger, ISequence,
   ITransactionLogic,
   ITransactionsModel,
-  ITransactionsModule
+  ITransactionsModule,
+  Symbols
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 
-import { DBHelper, ModelSymbols } from '@risevision/core-models';
-import {
-  DBOp,
-  SignedAndChainedBlockType,
-  SignedBlockType,
-  TransactionType
-} from '@risevision/core-types';
-import { Symbols as UtilsSymbols } from '@risevision/core-utils';
-import { TXSymbols } from '@risevision/core-transactions';
+import { DBOp, SignedAndChainedBlockType, SignedBlockType, TransactionType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Op, Transaction } from 'sequelize';
 import { BlocksSymbols } from '../blocksSymbols';
-
+import { catchToLoggerAndRemapError, wait, WrapInBalanceSequence } from '@risevision/core-utils';
 
 @injectable()
 export class BlocksModuleChain implements IBlocksModuleChain {
@@ -40,20 +33,19 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   @inject(LaunchpadSymbols.hookSystem)
   private hookSystem: WordPressHookSystem;
 
-
-  @inject(ModelSymbols.helpers.db)
-  private dbHelper: DBHelper;
-  @inject(UtilsSymbols.logger)
+  @inject(Symbols.helpers.db)
+  private dbHelper: IDBHelper;
+  @inject(Symbols.helpers.logger)
   private logger: ILogger;
   // tslint:disable-next-line member-ordering
-  @inject(HelpersSymbols.sequence)
-  @named(HelpersSymbols.names.balancesSequence)
-  public balancesSequence: Sequence;
+  @inject(Symbols.helpers.sequence)
+  @named(Symbols.names.helpers.balancesSequence)
+  public balancesSequence: ISequence;
 
   // LOGIC
   @inject(BlocksSymbols.logic.block)
   private blockLogic: IBlockLogic;
-  @inject(TXSymbols.logic)
+  @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
 
   // Modules
@@ -61,7 +53,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   private accountsModule: IAccountsModule;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.blocksSubModules.utils)
+  @inject(BlocksSymbols.modules.utils)
   private blocksModuleUtils: IBlocksModuleUtils;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
@@ -72,11 +64,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   private BlocksModel: typeof IBlocksModel;
   @inject(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
-  /**
-   * Lock for processing.
-   * @type {boolean}
-   */
-          private isCleaning: boolean = false;
+
+  private isCleaning: boolean = false;
 
   private isProcessing: boolean = false;
 
@@ -271,7 +260,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         this.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');
       }
 
-      await this.bus.message('newBlock', block, broadcast);
+      // await this.bus.message('newBlock', block, broadcast);
       await this.hookSystem.do_action('core/blocks/chain/applyBlock.post', this.blocksModule.lastBlock, dbTX);
       // TODO: add this on consensus dpos using hook ^^
       // await this.roundsModule.tick(block, dbTX);
@@ -323,7 +312,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * @returns {Promise<void>}
    */
   private async afterSave(block: SignedBlockType) {
-    await this.bus.message('transactionsSaved', block.transactions);
+    // await this.bus.message('transactionsSaved', block.transactions);
+    // TODO:
+    await this.hookSystem.do_action('core-blocks/onTransactionsSaved', block.transactions, block);
     // Execute afterSave callbacks for each transaction, depends on tx type
     for (const tx of  block.transactions) {
       await this.transactionLogic.afterSave(tx);

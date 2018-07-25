@@ -1,3 +1,4 @@
+export * from './blocks';
 export * from './chain';
 export * from './process';
 export * from './utils';

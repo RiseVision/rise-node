@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@risevision/core-apis": "^1.0.0",
     "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-helpers": "^1.0.0",
     "@risevision/core-utils": "^1.0.0",

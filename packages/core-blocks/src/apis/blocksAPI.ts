@@ -1,5 +1,5 @@
 import { APIError } from '@risevision/core-apis';
-import { Sequence, Symbols } from '@risevision/core-helpers';
+import { Sequence } from '@risevision/core-helpers';
 import {
   IBlockLogic,
   IBlockReward,
@@ -7,23 +7,21 @@ import {
   IBlocksModule,
   ISystemModule,
   ITransactionLogic,
-  ITransactionsModel,
+  ITransactionsModel, Symbols,
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
-import { TXSymbols } from '@risevision/core-transactions';
 import { ConstantsType } from '@risevision/core-types';
 import { IoCSymbol, removeEmptyObjKeys, SchemaValid, ValidateSchema, WrapInDBSequence } from '@risevision/core-utils';
-import { inject, injectable, named, tagged } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import { CoreSymbols } from '../symbols';
-
+import { BlocksSymbols } from '../blocksSymbols';
 
 const blocksSchema = require('../../schema/blocks.json');
 
 @JsonController('/api/blocks')
-@IoCSymbol(CoreSymbols.api.blocks)
+@IoCSymbol(BlocksSymbols.api)
 @injectable()
 export class BlocksAPI {
 
@@ -32,19 +30,19 @@ export class BlocksAPI {
   public schema: z_schema;
 
   // Helpers
-  @inject(Symbols.helpers.constants)
+  @inject(Symbols.generic.constants)
   private constants: ConstantsType;
   // tslint:disable-next-line
   @inject(Symbols.helpers.sequence)
-  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence)
+  @named(Symbols.names.helpers.dbSequence)
   public dbSequence: Sequence;
 
   // Logic
-  @inject(CoreSymbols.logic.blockReward)
+  @inject(Symbols.logic.blockReward)
   private blockRewardLogic: IBlockReward;
-  @inject(CoreSymbols.logic.block)
+  @inject(Symbols.logic.block)
   private blockLogic: IBlockLogic;
-  @inject(TXSymbols.logic)
+  @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
 
   // Modules
@@ -95,12 +93,7 @@ export class BlocksAPI {
     );
     // console.log(blocks);
     return {
-      blocks: blocks.map((b) => this.BlocksModel.toStringBlockType(
-        b,
-        this.TransactionsModel,
-        this.blocksModule
-        )
-      ),
+      blocks: blocks.map((b) => this.BlocksModel.toStringBlockType(b)),
       count,
     };
   }
@@ -115,7 +108,7 @@ export class BlocksAPI {
         throw new APIError('Block not found', 200);
       }
       await this.transactionLogic.attachAssets(b.transactions);
-      return this.BlocksModel.toStringBlockType(b, this.TransactionsModel, this.blocksModule);
+      return this.BlocksModel.toStringBlockType(b);
     });
     return { block };
   }

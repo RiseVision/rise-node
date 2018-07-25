@@ -18,9 +18,10 @@
     ],
     "paths": {
       "@risevision/core-models": ["../core-models/*"],
+      "@risevision/core-apis": ["../core-apis/*"],
       "@risevision/core-interfaces": ["../core-interfaces/*"],
       "@risevision/core-types": ["../core-types/*"],
-      "@risevision/core-test-utils": ["../core-test-utils/*"]
+      "@risevision/core-utils": ["../core-utils/*"]
     }
   },
   "include": ["./src/**/*.ts"],

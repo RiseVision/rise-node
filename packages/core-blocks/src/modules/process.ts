@@ -1,4 +1,3 @@
-import { Sequence, Symbols, WrapInDBSequence, WrapInDefaultSequence } from '@risevision/core-helpers';
 import {
   IAccountsModule,
   IAppState,
@@ -13,10 +12,12 @@ import {
   ILogger,
   IPeerLogic,
   IPeersLogic,
+  ISequence,
   ITransactionLogic,
   ITransactionsModel,
   ITransactionsModule,
-  ITransportModule
+  ITransportModule,
+  Symbols
 } from '@risevision/core-interfaces';
 import {
   BasePeerType,
@@ -28,10 +29,13 @@ import {
   SignedAndChainedBlockType,
   SignedBlockType
 } from '@risevision/core-types';
-import { inject, injectable, tagged } from 'inversify';
+import { WrapInDBSequence, WrapInDefaultSequence } from '@risevision/core-utils';
+import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
+import { BlocksSymbols } from '../blocksSymbols';
+
 const schema = require('../../../schema/blocks.json');
 
 @injectable()
@@ -42,20 +46,20 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
-  @inject(Symbols.helpers.constants)
+  @inject(Symbols.generic.constants)
   private constants: ConstantsType;
 
   // Helpers
   // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)
-  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence)
-  public dbSequence: Sequence;
+  @named(Symbols.names.helpers.dbSequence)
+  public dbSequence: ISequence;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)
-  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence)
-  public defaultSequence: Sequence;
+  @named(Symbols.names.helpers.defaultSequence)
+  public defaultSequence: ISequence;
 
   // Logic
   @inject(Symbols.logic.appState)
@@ -70,13 +74,13 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   // Modules
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
-  @inject(Symbols.modules.blocksSubModules.chain)
+  @inject(BlocksSymbols.modules.chain)
   private blocksChainModule: IBlocksModuleChain;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.blocksSubModules.utils)
+  @inject(BlocksSymbols.modules.utils)
   private blocksUtilsModule: IBlocksModuleUtils;
-  @inject(Symbols.modules.blocksSubModules.verify)
+  @inject(BlocksSymbols.modules.verify)
   private blocksVerifyModule: IBlocksModuleVerify;
   @inject(Symbols.modules.fork)
   private forkModule: IForkModule;

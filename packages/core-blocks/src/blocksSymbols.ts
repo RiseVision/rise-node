@@ -1,11 +1,14 @@
+import { Symbols } from '@risevision/core-interfaces';
+
 export const BlocksSymbols = {
   api    : Symbol.for('api'),
   logic: {
-    block: Symbol.for('blockLogic'),
-    blockReward: Symbol.for('blockReward'),
+    block: Symbols.logic.block,
+    blockReward: Symbols.logic.blockReward,
   },
+  model: Symbols.models.blocks,
   modules: {
-    blocks : Symbol.for('blocksModule'),
+    blocks : Symbols.modules.blocks,
     chain  : Symbol.for('chainModule'),
     process: Symbol.for('processModule'),
     utils  : Symbol.for('utilsModule'),
