@@ -5,6 +5,9 @@ import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 import { publicKey } from '../types/sanityTypes';
 
 @Table({tableName: 'votes'})
+/**
+ * Votes model
+ */
 export class VotesModel extends Model<VotesModel> {
   @PrimaryKey
   @Column
