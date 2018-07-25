@@ -15,6 +15,6 @@ export interface IBroadcasterLogic {
   /**
    * Count relays, eventually increment by one and return true if broadcast is exhausted
    */
-  maxRelays(object: { relays?: number }): boolean;
+  maxRelays(): number;
 
 }

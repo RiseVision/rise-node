@@ -16,13 +16,6 @@ export type AccountDiffType = {[k in keyof IAccountsModel]?: IAccountsModel[k]} 
 export interface IAccountLogic<T extends IAccountsModel = IAccountsModel> {
 
   /**
-   * Sets fields for specific address in mem_accounts table
-   * @param {string} address
-   * @param fields
-   */
-  set(address: string, fields: { [k: string]: any });
-
-  /**
    * Updates account from mem_account with diff data belongings to an editable field
    * Inserts into mem_round "address", "amount", "delegate", "blockId", "round"
    * based on field balance or delegates.
@@ -31,14 +24,6 @@ export interface IAccountLogic<T extends IAccountsModel = IAccountsModel> {
    * @returns {Promise<any>}
    */
   merge(address: string, diff: AccountDiffType): Array<DBOp<any>>;
-
-  /**
-   * Removes an account from mem_account table based on address.
-   * @param {string} address
-   * @param {cback<string>} cb
-   * @returns {Promise<number>} returns number of removed elements 0 if nothing was removed.
-   */
-  remove(address: string): Promise<number>;
 
   generateAddressByPublicKey(pk: publicKey | Buffer): string;
 }

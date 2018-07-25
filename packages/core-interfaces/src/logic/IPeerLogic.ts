@@ -1,6 +1,5 @@
 import { BasePeerType, PeerHeaders, PeerRequestOptions, PeerState, PeerType } from '@risevision/core-types';
 
-
 export interface IPeerLogic {
   ip: string;
   port: number;
@@ -21,11 +20,6 @@ export interface IPeerLogic {
   accept(peer: BasePeerType): this;
 
   normalize<T extends { height?: number, port?: number, state?: PeerState }>(peer: T): T;
-
-  /**
-   * Checks number or assigns default value from parameter.
-   */
-  parseInt(integer: number, fallback: number): number;
 
   applyHeaders(h: PeerHeaders): PeerHeaders;
 
