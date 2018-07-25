@@ -1,5 +1,4 @@
-import { Symbols, } from '@risevision/core-helpers';
-import { IForkModule, IForkStatsModel, ILogger } from '@risevision/core-interfaces';
+import { IForkModule, IForkStatsModel, ILogger, Symbols } from '@risevision/core-interfaces';
 import { ForkType, SignedBlockType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import SocketIO from 'socket.io';

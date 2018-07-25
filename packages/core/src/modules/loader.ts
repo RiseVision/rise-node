@@ -1,4 +1,3 @@
-import { Sequence, Symbols, wait, WrapInDefaultSequence } from '@risevision/core-helpers';
 import {
   IAccountLogic,
   IAccountsModel,
@@ -15,11 +14,11 @@ import {
   ILogger,
   IPeerLogic,
   IPeersLogic,
-  IPeersModule,
+  IPeersModule, ISequence,
   ISystemModule,
   ITransactionLogic,
   ITransactionsModule,
-  ITransportModule
+  ITransportModule, Symbols
 } from '@risevision/core-interfaces';
 import {
   AppConfig,
@@ -29,17 +28,16 @@ import {
   SignedAndChainedBlockType,
   SignedBlockType
 } from '@risevision/core-types';
-import { inject, injectable, postConstruct, tagged } from 'inversify';
+import { inject, injectable, named, postConstruct, tagged } from 'inversify';
 import * as promiseRetry from 'promise-retry';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import SocketIO from 'socket.io';
 import z_schema from 'z-schema';
-
-
 import { WordPressHookSystem } from 'mangiafuoco';
 import sql from '../sql/loader';
 import Timer = NodeJS.Timer;
+import { wait, WrapInDefaultSequence } from '@risevision/core-utils';
 
 const loaderSchema = require('../../schema/loader.json');
 
@@ -67,7 +65,7 @@ export class LoaderModule implements ILoaderModule {
   // Helpers
   // @inject(Symbols.helpers.bus)
   // private bus: Bus;
-  @inject(Symbols.helpers.constants)
+  @inject(Symbols.generic.constants)
   private constants: ConstantsType;
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
@@ -77,8 +75,8 @@ export class LoaderModule implements ILoaderModule {
   private schema: z_schema;
   // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)
-  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence)
-  public defaultSequence: Sequence;
+  @named(Symbols.names.helpers.defaultSequence)
+  public defaultSequence: ISequence;
 
   // Logic
   @inject(Symbols.logic.account)
@@ -93,15 +91,15 @@ export class LoaderModule implements ILoaderModule {
   private transactionLogic: ITransactionLogic;
 
   // Modules
-  @inject(Symbols.modules.blocksSubModules.chain)
+  @inject(Symbols.modules.blocksSubmodules.chain)
   private blocksChainModule: IBlocksModuleChain;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.blocksSubModules.process)
+  @inject(Symbols.modules.blocksSubmodules.process)
   private blocksProcessModule: IBlocksModuleProcess;
-  @inject(Symbols.modules.blocksSubModules.utils)
+  @inject(Symbols.modules.blocksSubmodules.utils)
   private blocksUtilsModule: IBlocksModuleUtils;
-  @inject(Symbols.modules.blocksSubModules.verify)
+  @inject(Symbols.modules.blocksSubmodules.verify)
   private blocksVerifyModule: IBlocksModuleVerify;
   @inject(Symbols.modules.peers)
   private peersModule: IPeersModule;

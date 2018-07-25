@@ -7,6 +7,7 @@ export const Symbols = {
     hookSystem: Symbol.for('hookSystem'),
     socketIO: Symbol.for('socketIO'),
     zschema: Symbol.for('zschema'),
+    nonce: Symbol.for('nonce'),
   },
   helpers: {
     db: Symbol.for('dbHelper'),
@@ -38,7 +39,14 @@ export const Symbols = {
   modules: {
     accounts: Symbol.for('accountsModule'),
     blocks: Symbol.for('blocksModule'),
+    blocksSubmodules: {
+      chain: Symbol.for('chainSub'),
+      process: Symbol.for('processSub'),
+      utils: Symbol.for('utilsSub'),
+      verify: Symbol.for('verifySub'),
+    },
     fork: Symbol.for('forkModule'),
+    peers: Symbol.for('peers'),
     system: Symbol.for('systemModule'),
     transactions: Symbol.for('transactionsModule'),
     transport: Symbol.for('transportModule'),

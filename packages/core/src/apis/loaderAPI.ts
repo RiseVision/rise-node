@@ -1,21 +1,22 @@
-import { IoCSymbol, Symbols } from '@risevision/core-helpers';
-import { IAppState, IBlocksModule, ILoaderModule, ISystemModule } from '@risevision/core-interfaces';
+import { IAppState, IBlocksModule, ILoaderModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { ConstantsType } from '@risevision/core-types';
+import { IoCSymbol } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController } from 'routing-controllers';
+import { CoreSymbols } from '../symbols';
 
 @JsonController('/api/loader/status')
-@IoCSymbol(Symbols.api.loader)
+@IoCSymbol(CoreSymbols.api.loader)
 @injectable()
 export class LoaderAPI {
 
   @inject(Symbols.logic.appState)
   private appState: IAppState;
-  @inject(Symbols.helpers.constants)
+  @inject(Symbols.generic.constants)
   private constants: ConstantsType;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.loader)
+  @inject(CoreSymbols.modules.loader)
   private loaderModule: ILoaderModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;

@@ -1,9 +1,8 @@
-import { Symbols } from '@risevision/core-helpers';
-import { IBlocksModel, IBlocksModule, ISystemModule } from '@risevision/core-interfaces';
+import { IBlocksModel, IBlocksModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 import { AppConfig, ConstantsType, PeerHeaders } from '@risevision/core-types';
-
 import * as crypto from 'crypto';
-import { inject, injectable, postConstruct } from 'inversify';
+import { inject, injectable, named, postConstruct } from 'inversify';
 import * as os from 'os';
 import * as semver from 'semver';
 
@@ -19,7 +18,7 @@ export class SystemModule implements ISystemModule {
   // Generic and helpers
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
-  @inject(Symbols.helpers.constants)
+  @inject(Symbols.generic.constants)
   private constants: ConstantsType;
   @inject(Symbols.generic.nonce)
   private nonce: string;
@@ -29,7 +28,8 @@ export class SystemModule implements ISystemModule {
   private blocksModule: IBlocksModule;
 
   // Models
-  @inject(Symbols.models.blocks)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
 
   @postConstruct()

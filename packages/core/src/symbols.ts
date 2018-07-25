@@ -1,10 +1,11 @@
+import { Symbols } from '@risevision/core-interfaces';
+
 export const CoreSymbols = {
-  appConfig: Symbol.for('appConfig'),
-  constants: Symbol.for('constants'),
   api: {
     loader: Symbol.for('loaderAPI'),
   },
   modules: {
-    system: Symbol.for('systemModule'),
+    loader: Symbol.for('loaderModule'),
+    system: Symbols.modules.system,
   },
 };
