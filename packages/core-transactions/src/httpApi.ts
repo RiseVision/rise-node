@@ -5,34 +5,35 @@ import {
   ITimeToEpoch, ITransactionLogic,
   ITransactionsModel,
   ITransactionsModule,
-  ITransportModule
+  ITransportModule, Symbols
 } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 import { ITransportTransaction, TransactionType } from '@risevision/core-types';
-import { inject, injectable, named } from 'inversify';
-import * as _ from 'lodash';
-import { BodyParam, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
-import { Op } from 'sequelize';
-import * as z_schema from 'z-schema';
 import {
   assertValidSchema,
   castFieldsToNumberUsingSchema,
   IoCSymbol,
   removeEmptyObjKeys, SchemaValid, ValidateSchema
 } from '@risevision/core-utils';
+import { inject, injectable, named } from 'inversify';
+import * as _ from 'lodash';
+import { BodyParam, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
+import { Op } from 'sequelize';
+import * as z_schema from 'z-schema';
 import { TXSymbols } from './txSymbols';
-import { ModelSymbols } from '@risevision/core-models';
-import { LaunchpadSymbols } from '@risevision/core-launchpad';
+
+// tslint:disable-next-line
 const schema = require('../schema/api.json');
 
 @JsonController('/api/transactions')
 @injectable()
 @IoCSymbol(TXSymbols.api)
 export class TransactionsAPI {
-  @inject(LaunchpadSymbols.zschema)
+  @inject(Symbols.generic.zschema)
   public schema: z_schema;
 
-  // @inject(Symbols.helpers.timeToEpoch)
-  // public timeToEpoch: ITimeToEpoch;
+  @inject(Symbols.helpers.timeToEpoch)
+  public timeToEpoch: ITimeToEpoch;
 
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
@@ -256,6 +257,7 @@ export class TransactionsAPI {
     );
   }
 
+  // tslint:disable-next-line cognitive-complexity
   private createWhereClause(body: any) {
     const whereClause          = {
       amount         : {},

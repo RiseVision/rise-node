@@ -12,22 +12,22 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
   public constants    = {};
 
-  public addElementsToContainer(container: Container, appConfig: AppConfig): void {
-    container.bind(HelpersSymbols.crypto).toConstantValue(new Crypto());
-    container.bind(HelpersSymbols.jobsQueue).to(JobsQueue).inSingletonScope();
+  public addElementsToContainer(): void {
+    this.container.bind(HelpersSymbols.crypto).toConstantValue(new Crypto());
+    this.container.bind(HelpersSymbols.jobsQueue).to(JobsQueue).inSingletonScope();
     const logger = loggerCreator({
-      echo      : appConfig.consoleLogLevel,
-      errorLevel: appConfig.fileLogLevel,
-      filename  : appConfig.logFileName,
+      echo      : this.config.consoleLogLevel,
+      errorLevel: this.config.fileLogLevel,
+      filename  : this.config.logFileName,
     });
-    container.bind(UtilsSymbols.logger).toConstantValue(logger);
-    container.bind(HelpersSymbols.migrator).to(Migrator).inSingletonScope();
+    this.container.bind(UtilsSymbols.logger).toConstantValue(logger);
+    this.container.bind(HelpersSymbols.migrator).to(Migrator).inSingletonScope();
     [
       HelpersSymbols.names.balancesSequence,
       HelpersSymbols.names.dbSequence,
       HelpersSymbols.names.defaultSequence,
     ].forEach((s) => {
-      container.bind(HelpersSymbols.sequence)
+      this.container.bind(HelpersSymbols.sequence)
         .toConstantValue(new Sequence(s, {
           onWarning: (current) => {
             logger.warn(`${s.toString()} queue`, current);
@@ -35,10 +35,6 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
         }))
         .whenTargetNamed(s);
     });
-  }
-
-  public initAppElements(container: Container, config: AppConfig): void {
-    return void 0;
   }
 
   public extendCommander(program: CommanderStatic): void {

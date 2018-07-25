@@ -33,18 +33,6 @@ export interface ITransactionLogic {
   attachAssetType<K, M extends Model<any>>(instance: IBaseTransactionType<K, M>): IBaseTransactionType<K, M>;
 
   /**
-   * Creates and returns signature
-   * @returns {string} signature
-   */
-  sign(keypair: IKeypair, tx: IBaseTransaction<any>): void;
-
-  /**
-   * Creates a signature based on multisignatures
-   * @returns {string} signature
-   */
-  multiSign(keypair: IKeypair, tx: IBaseTransaction<any>): void;
-
-  /**
    * Calculate tx id
    * @returns {string} the id.
    */

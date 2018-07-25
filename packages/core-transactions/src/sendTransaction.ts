@@ -1,10 +1,8 @@
-import { CoreSymbols } from '@risevision/core';
-import { AccountsSymbols } from '@risevision/core-accounts';
 import {
   IAccountLogic,
   IAccountsModel,
   IAccountsModule,
-  ISystemModule
+  ISystemModule, Symbols
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
@@ -17,20 +15,19 @@ import {
 import { inject, injectable, named } from 'inversify';
 import { BaseTx } from './BaseTx';
 
-
 @injectable()
 export class SendTransaction extends BaseTx<void, null> {
 
-  @inject(AccountsSymbols.module)
+  @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
-  @inject(AccountsSymbols.logic)
+  @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
 
-  @inject(CoreSymbols.modules.system)
+  @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
   @inject(ModelSymbols.model)
-  @named(AccountsSymbols.model)
+  @named(Symbols.models.accounts)
   private AccountsModel: typeof IAccountsModel;
 
   constructor() {
@@ -63,6 +60,7 @@ export class SendTransaction extends BaseTx<void, null> {
     ], tx, block, sender);
   }
 
+  // tslint:disable-next-line max-line-length
   public async undo(tx: IConfirmedTransaction<void>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     return await this.hookSystem.apply_filters('core-transactions/send-tx/undo/ops', [
       ... this.accountLogic.merge(tx.recipientId, {

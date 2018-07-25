@@ -1,29 +1,26 @@
-import {
-  BigNum,
-  Crypto,
-  ExceptionsList,
-  ExceptionsManager,
-  RunThroughExceptions,
-  Symbols
-} from '@risevision/core-helpers';
+import { ExceptionsManager, ExceptionSymbols } from '@risevision/core-exceptions';
 import {
   IAccountLogic,
-  IAccountsModel, ILogger,
+  IAccountsModel,
+  ICrypto,
+  ILogger,
   ITransactionLogic,
   ITransactionsModel,
+  Symbols,
   VerificationType
 } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 import {
   ConstantsType,
   DBBulkCreateOp,
   DBOp,
   IBaseTransaction,
   IConfirmedTransaction,
-  IKeypair,
   ITransportTransaction,
   SignedAndChainedBlockType,
   SignedBlockType
 } from '@risevision/core-types';
+import { MyBigNumb, RunThroughExceptions } from '@risevision/core-utils';
 import { BigNumber } from 'bignumber.js';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
@@ -33,24 +30,26 @@ import { WordPressHookSystem } from 'mangiafuoco';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
 import { BaseTx } from './BaseTx';
+import { TXExceptions } from './exceptionLists';
 import { TXSymbols } from './txSymbols';
-import { ModelSymbols } from '@risevision/core-models';
+
+// tslint:disable-next-line no-var-requires
 const txSchema = require('../schema/transaction.json');
 
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
 
-  @inject(Symbols.helpers.constants)
+  @inject(Symbols.generic.constants)
   private constants: ConstantsType;
 
-  @inject(Symbols.helpers.exceptionsManager)
+  @inject(ExceptionSymbols.manager)
   public excManager: ExceptionsManager;
 
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
 
-  @inject(Symbols.helpers.crypto)
-  private crypto: Crypto;
+  @inject(Symbols.generic.crypto)
+  private crypto: ICrypto;
 
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
@@ -78,24 +77,6 @@ export class TransactionLogic implements ITransactionLogic {
   }
 
   /**
-   * Creates and returns signature
-   * @returns {string} signature
-   */
-  public sign(keypair: IKeypair, tx: IBaseTransaction<any>) {
-    const hash = this.getHash(tx);
-    return this.crypto.sign(hash, keypair).toString('hex');
-  }
-
-  /**
-   * Creates a signature based on multisignatures
-   * @returns {string} signature
-   */
-  public multiSign(keypair: IKeypair, tx: IBaseTransaction<any>) {
-    const hash = this.getHash(tx, true, true);
-    return this.crypto.sign(hash, keypair).toString('hex');
-  }
-
-  /**
    * Calculate tx id
    * @returns {string} the id.
    */
@@ -106,7 +87,7 @@ export class TransactionLogic implements ITransactionLogic {
       temp[i] = hash[7 - i];
     }
 
-    return BigNum.fromBuffer(temp).toString();
+    return MyBigNumb.fromBuffer(temp).toString();
   }
 
   /**
@@ -151,7 +132,7 @@ export class TransactionLogic implements ITransactionLogic {
 
     if (tx.recipientId) {
       const recipient = tx.recipientId.slice(0, -1);
-      const recBuf    = new BigNum(recipient).toBuffer({ size: 8 });
+      const recBuf    = new MyBigNumb(recipient).toBuffer({ size: 8 });
 
       for (let i = 0; i < 8; i++) {
         bb.writeByte(recBuf[i] || 0);
@@ -212,16 +193,16 @@ export class TransactionLogic implements ITransactionLogic {
   /**
    * Checks if balanceKey is less than amount for sender
    */
-  @RunThroughExceptions(ExceptionsList.checkBalance)
+  @RunThroughExceptions(TXExceptions.checkBalance)
   public checkBalance(amount: number | BigNumber, balanceKey: 'balance' | 'u_balance',
                       tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: IAccountsModel) {
     const accountBalance  = sender[balanceKey].toString();
-    const exceededBalance = new BigNum(accountBalance).isLessThan(amount);
+    const exceededBalance = new MyBigNumb(accountBalance).isLessThan(amount);
     // tslint:disable-next-line
     const exceeded        = (tx['blockId'] !== this.genesisBlock.id && exceededBalance);
     return {
       error: exceeded ? `Account does not have enough currency: ${sender.address} balance: ${
-        new BigNum(accountBalance || 0).div(Math.pow(10, 8))} - ${new BigNum(amount).div(Math.pow(10, 8))}` : null,
+        new MyBigNumb(accountBalance || 0).div(Math.pow(10, 8))} - ${new MyBigNumb(amount).div(Math.pow(10, 8))}` : null,
       exceeded,
     };
   }
@@ -372,7 +353,7 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     // Check confirmed sender balance
-    const amount        = new BigNum(tx.amount.toString()).plus(tx.fee.toString());
+    const amount        = new MyBigNumb(tx.amount.toString()).plus(tx.fee.toString());
     const senderBalance = this.checkBalance(amount, 'balance', tx, sender);
     if (senderBalance.exceeded) {
       throw new Error(senderBalance.error);
@@ -419,14 +400,14 @@ export class TransactionLogic implements ITransactionLogic {
     );
   }
 
-  @RunThroughExceptions(ExceptionsList.tx_apply)
+  @RunThroughExceptions(TXExceptions.tx_apply)
   public async apply(tx: IConfirmedTransaction<any>,
                      block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
-    if (! await this.ready(tx, sender)) {
+    if (!await this.ready(tx, sender)) {
       throw new Error('Transaction is not ready');
     }
 
-    const amount        = new BigNum(tx.amount.toString()).plus(tx.fee.toString());
+    const amount        = new MyBigNumb(tx.amount.toString()).plus(tx.fee.toString());
     const senderBalance = this.checkBalance(amount, 'balance', tx, sender);
     if (senderBalance.exceeded) {
       throw new Error(senderBalance.error);
@@ -456,7 +437,7 @@ export class TransactionLogic implements ITransactionLogic {
    */
   public async undo(tx: IConfirmedTransaction<any>,
                     block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
-    const amount: number = new BigNum(tx.amount.toString())
+    const amount: number = new MyBigNumb(tx.amount.toString())
       .plus(tx.fee.toString())
       .toNumber();
 
@@ -479,10 +460,10 @@ export class TransactionLogic implements ITransactionLogic {
     return await this.hookSystem.apply_filters('tx-undo', ops, tx, block, sender);
   }
 
-  @RunThroughExceptions(ExceptionsList.tx_applyUnconfirmed)
+  @RunThroughExceptions(TXExceptions.tx_applyUnconfirmed)
   // tslint:disable-next-line max-line-length
   public async applyUnconfirmed(tx: IBaseTransaction<any>, sender: IAccountsModel, requester?: IAccountsModel): Promise<Array<DBOp<any>>> {
-    const amount        = new BigNum(tx.amount.toString()).plus(tx.fee.toString());
+    const amount        = new MyBigNumb(tx.amount.toString()).plus(tx.fee.toString());
     const senderBalance = this.checkBalance(amount, 'u_balance', tx, sender);
     if (senderBalance.exceeded) {
       throw new Error(senderBalance.error);
@@ -504,7 +485,7 @@ export class TransactionLogic implements ITransactionLogic {
    * Then calls undoUnconfirmed to the txType.
    */
   public async undoUnconfirmed(tx: IBaseTransaction<any>, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
-    const amount: number = new BigNum(tx.amount.toString())
+    const amount: number = new MyBigNumb(tx.amount.toString())
       .plus(tx.fee.toString())
       .toNumber();
 
@@ -634,6 +615,7 @@ export class TransactionLogic implements ITransactionLogic {
       return;
     }
     const txsByGroup = _.groupBy(txs, (i) => i.type);
+    // tslint:disable-next-line forin
     for (const type in txsByGroup) {
       const loopTXs = txsByGroup[type];
       this.assertKnownTransactionType(loopTXs[0].type);

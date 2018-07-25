@@ -1,9 +1,8 @@
-import { Symbols } from '@risevision/core-helpers';
 import {
   IAccountLogic,
   ISystemModule,
   ITransactionLogic,
-  ITransactionsModel,
+  ITransactionsModel, Symbols,
   VerificationType
 } from '@risevision/core-interfaces';
 import { BaseTx } from '@risevision/core-transactions';
@@ -380,9 +379,9 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
       const info = res[indexes[tx.id]];
       tx.asset   = {
         multisignature: {
-          min      : info.min,
-          lifetime : info.lifetime,
           keysgroup: info.keysgroup.split(','),
+          lifetime : info.lifetime,
+          min      : info.min,
         },
       };
     });

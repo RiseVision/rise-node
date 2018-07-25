@@ -1,6 +1,7 @@
 export * from './block';
 export * from './constantsType';
 export * from './crypto';
+export * from './dbops';
 export * from './genericTypes';
 export * from './forkTypes';
 export * from './rawDBTypes';

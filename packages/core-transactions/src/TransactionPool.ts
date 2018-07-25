@@ -1,20 +1,20 @@
-import { Bus, Sequence, Symbols } from '@risevision/core-helpers';
 import {
   IAccountsModule,
   IAppState,
   IJobsQueue,
   ILogger,
+  ISequence,
   ITransactionLogic,
   ITransactionPoolLogic,
-  ITransactionsModule
+  ITransactionsModule,
+  Symbols
 } from '@risevision/core-interfaces';
 import { ConstantsType, IBaseTransaction, TransactionType } from '@risevision/core-types';
-import { inject, injectable, postConstruct, tagged } from 'inversify';
+import { WrapInBalanceSequence } from '@risevision/core-utils';
+import { inject, injectable, named, postConstruct } from 'inversify';
+import { WordPressHookSystem } from 'mangiafuoco';
 import { TXAppConfig } from './helpers/appconfig';
 import { InnerTXQueue } from './poolTXsQueue';
-import { WordPressHookSystem } from 'mangiafuoco';
-import { LaunchpadSymbols } from '@risevision/core-launchpad';
-import { Symbols as UtilsSymbols } from '@risevision/core-utils';
 
 // tslint:disable-next-line
 @injectable()
@@ -28,22 +28,20 @@ export class TransactionPool implements ITransactionPoolLogic {
   // generic
   @inject(Symbols.generic.appConfig)
   private config: TXAppConfig;
-  @inject(Symbols.helpers.constants)
+  @inject(Symbols.generic.constants)
   private constants: ConstantsType;
-  @inject(LaunchpadSymbols.hookSystem)
+  @inject(Symbols.generic.hookSystem)
   private hookSystem: WordPressHookSystem;
 
   // Helpers
-  @inject(Symbols.helpers.bus)
-  private bus: Bus;
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
-  @inject(UtilsSymbols.logger)
+  @inject(Symbols.helpers.logger)
   private logger: ILogger;
   // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)
-  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
-  public balancesSequence: Sequence;
+  @named(Symbols.names.helpers.balancesSequence)
+  public balancesSequence: ISequence;
 
   // Logic
   @inject(Symbols.logic.appState)
@@ -62,7 +60,7 @@ export class TransactionPool implements ITransactionPoolLogic {
   public afterConstruction() {
     this.bundledInterval = this.config.transactions.bundledInterval;
     this.bundleLimit     = this.config.transactions.bundleLimit;
-    this.expiryInterval     = this.config.transactions.expiryInterval;
+    this.expiryInterval  = this.config.transactions.expiryInterval;
     this.jobsQueue.register(
       'transactionPoolNextBundle',
       () => this.processBundled(),
@@ -73,34 +71,6 @@ export class TransactionPool implements ITransactionPoolLogic {
       () => Promise.resolve(this.expireTransactions()),
       this.expiryInterval
     );
-  }
-
-  /**
-   * Queue a transaction or throws an error if it couldnt
-   */
-  private async queueTransaction(tx: IBaseTransaction<any>, bundled: boolean): Promise<void> {
-    const payload: { receivedAt: Date, ready?: boolean } = { receivedAt: new Date() };
-
-    let queue: InnerTXQueue;
-    if (bundled) {
-      queue = this.bundled;
-    } else {
-      queue = await this.hookSystem.apply_filters('core-transactions/pool/queue-tx', this.queued, tx);
-      payload.ready = await this.hookSystem.apply_filters('core-transactions/pool/tx-ready', false, tx);
-    }
-    // TODO:
-    // if (tx.type === TransactionType.MULTI || Array.isArray(tx.signatures)) {
-    //   queue         = this.multisignature;
-    //   payload.ready = false;
-    // } else {
-    //   queue = this.queued;
-    // }
-
-    if (queue.count >= this.config.transactions.maxTxsPerQueue) {
-      throw new Error('Transaction pool is full');
-    } else {
-      queue.add(tx, payload);
-    }
   }
 
   public async fillPool(): Promise<Array<IBaseTransaction<any>>> {
@@ -168,7 +138,7 @@ export class TransactionPool implements ITransactionPoolLogic {
   public expireTransactions(): string[] {
     const unconfirmed = this.unconfirmed.listWithPayload(true);
     const queued      = this.queued.listWithPayload(true);
-    const pending       = this.pending.listWithPayload(true);
+    const pending     = this.pending.listWithPayload(true);
 
     const all = unconfirmed.concat(queued).concat(pending);
 
@@ -223,7 +193,7 @@ export class TransactionPool implements ITransactionPoolLogic {
   /**
    * process a new incoming transaction. It may reject in case  the tx is not valid.
    */
-  public async processNewTransaction(tx: IBaseTransaction<any>, broadcast: boolean): Promise<void> {
+  public async processNewTransaction(tx: IBaseTransaction<any>): Promise<void> {
     if (this.transactionInPool(tx.id)) {
       return Promise.reject(`Transaction is already processed: ${tx.id}`);
     }
@@ -273,6 +243,34 @@ export class TransactionPool implements ITransactionPoolLogic {
   }
 
   /**
+   * Queue a transaction or throws an error if it couldnt
+   */
+  private async queueTransaction(tx: IBaseTransaction<any>, bundled: boolean): Promise<void> {
+    const payload: { receivedAt: Date, ready?: boolean } = { receivedAt: new Date() };
+
+    let queue: InnerTXQueue;
+    if (bundled) {
+      queue = this.bundled;
+    } else {
+      queue         = await this.hookSystem.apply_filters('core-transactions/pool/queue-tx', this.queued, tx);
+      payload.ready = await this.hookSystem.apply_filters('core-transactions/pool/tx-ready', false, tx);
+    }
+    // TODO:
+    // if (tx.type === TransactionType.MULTI || Array.isArray(tx.signatures)) {
+    //   queue         = this.multisignature;
+    //   payload.ready = false;
+    // } else {
+    //   queue = this.queued;
+    // }
+
+    if (queue.count >= this.config.transactions.maxTxsPerQueue) {
+      throw new Error('Transaction pool is full');
+    } else {
+      queue.add(tx, payload);
+    }
+  }
+
+  /**
    * Calls reindex to each queue to clean memory
    */
   private reindexAllQueues() {
@@ -299,7 +297,7 @@ export class TransactionPool implements ITransactionPoolLogic {
       throw new Error('Missing transaction');
     }
 
-    const sender            = await this.accountsModule.setAccountAndGet({ publicKey: transaction.senderPublicKey });
+    const sender = await this.accountsModule.setAccountAndGet({ publicKey: transaction.senderPublicKey });
     // TODO: Verify this is needed.
     // const isMultisigAccount = sender && sender.isMultisignature();
     // if (isMultisigAccount) {
@@ -320,7 +318,9 @@ export class TransactionPool implements ITransactionPoolLogic {
     // Verify the transaction
     await this.transactionLogic.verify(normalizedTx, sender, requester, null);
 
-    await this.bus.message('unconfirmedTransaction', normalizedTx, broadcast);
+    // TODO ->
+    await this.hookSystem.do_action('core-transactions/pool/onUnconfirmedTx', normalizedTx, broadcast);
+    // await this.bus.message('unconfirmedTransaction', normalizedTx, broadcast);
     return sender;
   }
 

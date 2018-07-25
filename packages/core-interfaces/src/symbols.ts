@@ -1,7 +1,18 @@
 export const Symbols = {
+  generic: {
+    appConfig: Symbol.for('appConfig'),
+    constants: Symbol.for('constants'),
+    crypto: Symbol.for('crypto'),
+    genesisBlock: Symbol.for('genesisBlock'),
+    hookSystem: Symbol.for('hookSystem'),
+    socketIO: Symbol.for('socketIO'),
+    zschema: Symbol.for('zschema'),
+  },
   helpers: {
+    db: Symbol.for('dbHelper'),
     jobsQueue: Symbol.for('jobsQueue'),
     logger: Symbol.for('logger'),
+    sequence: Symbol.for('sequence'),
     timeToEpoch: Symbol.for('timeToEpoch'),
   },
   logic: {
@@ -28,5 +39,13 @@ export const Symbols = {
     accounts: Symbol.for('accountsModule'),
     blocks: Symbol.for('blocksModule'),
     fork: Symbol.for('forkModule'),
-  }
+    system: Symbol.for('systemModule'),
+    transactions: Symbol.for('transactionsModule'),
+    transport: Symbol.for('transportModule'),
+  },
+  names: {
+    helpers: {
+      balancesSequence: Symbol.for('balancesSequence'),
+    },
+  },
 };

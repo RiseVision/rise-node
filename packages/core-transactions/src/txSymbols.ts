@@ -1,11 +1,10 @@
+import {Symbols} from '@risevision/core-interfaces';
+
 export const TXSymbols = {
-  logic      : Symbol.for('logic'),
-  model      : Symbol.for('model' +
-    ''),
-  module     : Symbol.for('module'),
+  api        : Symbol.for('transactionsAPI'),
+  logic      : Symbols.logic.transaction,
+  model      : Symbols.models.transactions,
+  module     : Symbols.modules.transactions,
   pool       : Symbol.for('pool'),
   sendTX     : Symbol.for('sendTX'),
-  transaction: Symbol.for('transaction'),
-  api        : Symbol.for('transactionsAPI'),
-
 };

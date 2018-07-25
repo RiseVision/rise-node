@@ -54,10 +54,14 @@ export class AppManager {
    * Initialize all app dependencies into the IoC container.
    */
   public async initAppElements() {
+    this.modules.forEach((m) => {
+      m.config = this.appConfig;
+      m.container = this.container;
+    });
 
-    this.modules.forEach((m) => m.addElementsToContainer(this.container, this.appConfig));
+    this.modules.forEach((m) => m.addElementsToContainer());
 
-    this.modules.forEach((m) => m.initAppElements(this.container, this.appConfig));
+    this.modules.forEach((m) => m.initAppElements());
 
     // hooks
     await this.hookSystem.do_action('core/init/container', this.container);

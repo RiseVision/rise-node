@@ -5,31 +5,33 @@ import {
   ITransactionLogic,
   ITransactionPoolLogic,
   ITransactionsModel,
-  ITransactionsModule
+  ITransactionsModule,
+  Symbols
 } from '@risevision/core-interfaces';
+import { DBHelper, ModelSymbols } from '@risevision/core-models';
 import { ConstantsType, IBaseTransaction, SignedAndChainedBlockType } from '@risevision/core-types';
-import { inject, injectable } from 'inversify';
-import { AccountsSymbols } from '@risevision/core-accounts';
+import { inject, injectable, named } from 'inversify';
 
 @injectable()
 export class TransactionsModule implements ITransactionsModule {
-  @inject(AccountsSymbols.module)
+  @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
-  @inject(Symbols.helpers.constants)
+  @inject(Symbols.generic.constants)
   private constants: ConstantsType;
 
   @inject(Symbols.helpers.db)
   private dbHelper: DBHelper;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
-  @inject(Symbols.logic.transactionPool)
+  @inject(Symbols.logic.txpool)
   private transactionPool: ITransactionPoolLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
 
-  @inject(Symbols.models.transactions)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.transactions)
   private TXModel: typeof ITransactionsModel;
 
   public cleanup() {
@@ -125,7 +127,7 @@ export class TransactionsModule implements ITransactionsModule {
    */
   public processUnconfirmedTransaction(transaction: IBaseTransaction<any>,
                                        broadcast: boolean): Promise<void> {
-    return this.transactionPool.processNewTransaction(transaction, broadcast);
+    return this.transactionPool.processNewTransaction(transaction);
   }
 
   /**

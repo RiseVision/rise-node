@@ -14,7 +14,7 @@ export class Crypto {
   /**
    * Creates a signature based on a hash and a keypair.
    */
-  public sign(hash: string | Buffer, keypair: IKeypair): Buffer {
+  public sign(hash: Buffer, keypair: IKeypair): Buffer {
     return sodium.crypto_sign_detached(hash, keypair.privateKey);
   }
 

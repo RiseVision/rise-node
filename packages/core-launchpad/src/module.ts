@@ -9,6 +9,7 @@ export interface ICoreModule<ConfigType> {
   name: string;
   directory: string;
   container?: Container;
+  config?: ConfigType;
 
   extendCommander(program: CommanderStatic): void;
 
@@ -22,9 +23,9 @@ export interface ICoreModule<ConfigType> {
 
   patchConfigWithCLIParams?<T extends ConfigType>(progrma: CommanderStatic, config: T): T;
 
-  addElementsToContainer(container: Container, config: ConfigType): void;
+  addElementsToContainer(): void;
 
-  initAppElements(container: Container, config: ConfigType): void;
+  initAppElements(): void;
 }
 
 export abstract class BaseCoreModule<ConfigType = any> implements ICoreModule<ConfigType> {
@@ -34,6 +35,7 @@ export abstract class BaseCoreModule<ConfigType = any> implements ICoreModule<Co
   public name = null;
   public directory = null;
   public container?: Container;
+  public config?: ConfigType;
 
   public extendCommander(program: CommanderStatic): void {
     return void 0;
@@ -59,7 +61,9 @@ export abstract class BaseCoreModule<ConfigType = any> implements ICoreModule<Co
     return config;
   }
 
-  public abstract addElementsToContainer(container: Container, config: ConfigType): void;
+  public addElementsToContainer() {
+  }
 
-  public abstract initAppElements(container: Container, config: ConfigType): void;
+  public initAppElements() {
+  }
 }
