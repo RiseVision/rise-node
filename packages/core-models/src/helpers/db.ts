@@ -1,10 +1,10 @@
+import { DBBulkCreateOp, DBCreateOp, DBOp, DBRemoveOp, DBUpdateOp, DBUpsertOp } from '@risevision/core-types';
 import { wait } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import * as sequelize from 'sequelize';
 import { Op, Sequelize, Transaction } from 'sequelize';
 import { Model } from 'sequelize-typescript';
 import * as squel from 'squel';
-import { DBBulkCreateOp, DBCreateOp, DBOp, DBRemoveOp, DBUpdateOp, DBUpsertOp } from '../types/';
 import { ModelSymbols } from './modelSymbols';
 
 const squelPostgres = squel.useFlavour('postgres');
