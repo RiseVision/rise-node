@@ -6,6 +6,9 @@ import {
 } from 'sequelize-typescript';
 
 @Table({tableName: 'rounds_fees'})
+/**
+ * RoundsFees model
+ */
 export class RoundsFeesModel extends Model<RoundsFeesModel> {
   @Column
   public height: number;
