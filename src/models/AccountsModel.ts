@@ -33,6 +33,9 @@ const buildArrayArgAttribute = function (table: string): any {
   },
 })
 @Table({ tableName: 'mem_accounts' })
+/**
+ * Accounts model
+ */
 export class AccountsModel extends Model<AccountsModel> {
   @Column
   public username: string;
@@ -108,12 +111,18 @@ export class AccountsModel extends Model<AccountsModel> {
   @Column(DataType.TEXT)
   public u_delegates?: publicKey[];
 
-
+  /**
+   * Returns true if multilifetime is greater than zero
+   */
   public isMultisignature(): boolean {
     return this.multilifetime > 0;
   }
 
   private _hexPublicKey: publicKey;
+
+  /**
+   * Returns public key in hexadecimal
+   */
   public get hexPublicKey(): publicKey {
     if (typeof(this._hexPublicKey) === 'undefined') {
       if (this.publicKey === null) {
@@ -126,6 +135,9 @@ export class AccountsModel extends Model<AccountsModel> {
 
   }
 
+  /**
+   * Exports instance to JSON
+   */
   public toPOJO() {
     const toRet = this.toJSON();
     ['publicKey', 'secondPublicKey'].forEach((pk) => {
@@ -134,6 +146,10 @@ export class AccountsModel extends Model<AccountsModel> {
     return toRet;
   }
 
+  /**
+   * Compares diff against delegates, or u_delegates or multisignatures or u_multisigantures properties
+   * and remove or add items.
+   */
   public applyDiffArray(toWhat: 'delegates' | 'u_delegates' | 'multisignatures' | 'u_multisignatures', diff: any) {
     this[toWhat] = this[toWhat] || [];
     diff.filter((v) => v.startsWith('-'))
@@ -142,11 +158,16 @@ export class AccountsModel extends Model<AccountsModel> {
       .forEach((v) => this[toWhat].push(v.substr(1)));
   }
 
+  /**
+   * Populates instance properties with received items
+   */
   public applyValues(items: Partial<this>) {
     Object.keys(items).forEach((k) => this[k] = items[k]);
   }
 
-
+  /**
+   * Prepares a query string for to search a delegate
+   */
   public static searchDelegate(q: string, limit: number, orderBy: string, orderHow: 'ASC' | 'DESC' = 'ASC') {
     if (['ASC', 'DESC'].indexOf(orderHow.toLocaleUpperCase()) === -1) {
       throw new Error('Invalid ordering mechanism')
@@ -184,6 +205,9 @@ export class AccountsModel extends Model<AccountsModel> {
 
   }
 
+  /**
+   * Restores unconfirmed entries
+   */
   public static restoreUnconfirmedEntries() {
     return this.update({
       u_isDelegate     : sequelize.col('isDelegate'),
@@ -202,7 +226,9 @@ export class AccountsModel extends Model<AccountsModel> {
     })
   }
 
-
+  /**
+   * Creates new accounts from given addresses
+   */
   public static createBulkAccountsSQL(addresses: string[]) {
     if (!addresses) {
       return '';
