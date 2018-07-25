@@ -114,4 +114,6 @@ export interface ITransactionLogic {
    * @return {Promise<void>}
    */
   attachAssets(txs: Array<IConfirmedTransaction<any>>): Promise<void>;
+  dbRead(raw: any): IConfirmedTransaction<any>;
+
 }

@@ -3,6 +3,7 @@ import {
   DBOp,
   IBaseTransaction,
   IKeypair,
+  RawFullBlockListType,
   SignedAndChainedBlockType,
   SignedAndChainedTransportBlockType,
   SignedBlockType
@@ -52,5 +53,9 @@ export interface IBlockLogic {
    * @returns {BlockType}
    */
   objectNormalize(block: SignedAndChainedTransportBlockType): SignedAndChainedBlockType;
+
   objectNormalize<T extends BlockType<Buffer | string>>(block: T): T;
+
+  dbRead(rawBlock: RawFullBlockListType): SignedBlockType & { totalForged: string, readonly generatorId: string };
+
 }

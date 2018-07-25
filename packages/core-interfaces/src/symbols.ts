@@ -46,6 +46,8 @@ export const Symbols = {
   names: {
     helpers: {
       balancesSequence: Symbol.for('balancesSequence'),
+      dbSequence: Symbol.for('dbSequence'),
+      defaultSequence: Symbol.for('defaultSequence'),
     },
   },
 };

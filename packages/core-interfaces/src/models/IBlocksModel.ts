@@ -8,9 +8,7 @@ export class IBlocksModel extends IBaseModel<IBlocksModel> {
     throw new Error('Not implemented. Please implement in subclass');
   }
 
-  public static toStringBlockType(b: SignedBlockType,
-                                  TxModel: typeof ITransactionsModel,
-                                  blocksModule: IBlocksModule): SignedBlockType<string> {
+  public static toStringBlockType(b: SignedBlockType): SignedBlockType<string> {
     throw new Error('Not implemented. Please implement in subclass');
   }
 
