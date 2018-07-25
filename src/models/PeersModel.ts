@@ -8,6 +8,9 @@ import {
 import { PeerState } from '../logic';
 
 @Table({tableName: 'peers'})
+/**
+ * Peers model
+ */
 export class PeersModel extends Model<PeersModel> {
   @Column
   public ip: string;
