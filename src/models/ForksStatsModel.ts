@@ -5,6 +5,9 @@ import { ForkType } from '../helpers';
 
 
 @Table({ tableName: 'forks_stat' })
+/**
+ * ForksStats model
+ */
 export class ForksStatsModel extends Model<ForksStatsModel> {
   @PrimaryKey
   @Column(DataType.BLOB)
