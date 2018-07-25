@@ -16,6 +16,9 @@ import { publicKey } from '../types/sanityTypes';
 import { DelegatesModel } from './DelegatesModel';
 
 @Table({tableName: 'multisignatures'})
+/**
+ * MultiSignatures model
+ */
 export class MultiSignaturesModel extends Model<MultiSignaturesModel> {
   @Column
   public min: number;
