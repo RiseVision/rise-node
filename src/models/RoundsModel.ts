@@ -5,6 +5,9 @@ import * as sequelizeUtils from 'sequelize/lib/utils';
 import { publicKey } from '../types/sanityTypes';
 
 @Table({ tableName: 'mem_round' })
+/**
+ * Rounds model
+ */
 export class RoundsModel extends Model<RoundsModel> {
   @Column
   public address: string;
@@ -21,6 +24,9 @@ export class RoundsModel extends Model<RoundsModel> {
   @Column
   public round: number;
 
+  /**
+   * Returns total sum of fees for a given round
+   */
   // tslint:disable member-ordering
   public static async sumRound(activeDelegates: number, round: number, tx: Transaction):
     Promise<{ fees: null | string, rewards: null | string[], delegates: null | Buffer[] }> {
@@ -63,6 +69,9 @@ export class RoundsModel extends Model<RoundsModel> {
     );
   }
 
+  /**
+   * Populates mem_round from mem_accounts2delegates
+   */
   public static insertMemRoundBalanceSQL(params: { address: string, amount: number, blockId: string, round: number }) {
     return sequelizeUtils.formatNamedParameters(
       // tslint:disable-next-line
@@ -72,6 +81,9 @@ export class RoundsModel extends Model<RoundsModel> {
     );
   }
 
+  /**
+   * Populates mem_round from mem_accounts
+   */
   public static insertMemRoundDelegatesSQL(params: { add: boolean, address: string, delegate: string, blockId: string, round: number }) {
     return sequelizeUtils.formatNamedParameters(
       // tslint:disable-next-line
