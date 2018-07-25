@@ -7,6 +7,9 @@ import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
 @Table({ tableName: 'trs' })
+/**
+ * Transactions model
+ */
 export class TransactionsModel<Asset = any> extends Model<TransactionsModel<Asset>> {
 
   @PrimaryKey
@@ -60,6 +63,9 @@ export class TransactionsModel<Asset = any> extends Model<TransactionsModel<Asse
     }
   }
 
+  /**
+   * Returns signatures
+   */
   @Column(DataType.STRING)
   public get signatures(): string[] {
     if (this.getDataValue('signatures')) {
@@ -68,16 +74,25 @@ export class TransactionsModel<Asset = any> extends Model<TransactionsModel<Asse
     return [];
   }
 
+  /**
+   * Set signatures
+   */
   public set signatures(value: string[]) {
     this.setDataValue('signatures', Array.isArray(value) ? value.join(',') : value);
   }
 
   public asset: Asset = null;
 
+  /**
+   * Returns a TransportTransaction from a TransactionsModel
+   */
   public toTransport(blocksModule: IBlocksModule): ITransportTransaction<Asset> {
     return TransactionsModel.toTransportTransaction(this, blocksModule);
   }
 
+  /**
+   * Returns a TransportTransaction from a TransactionsModel
+   */
   public static toTransportTransaction<Asset>(t: IBaseTransaction<Asset>, blocksModule: IBlocksModule): ITransportTransaction<Asset> & { confirmations?: number } {
     let obj;
     if (t instanceof TransactionsModel) {
