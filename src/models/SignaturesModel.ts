@@ -5,6 +5,9 @@ import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 import { publicKey } from '../types/sanityTypes';
 
 @Table({tableName: 'signatures'})
+/**
+ * Signatures model
+ */
 export class SignaturesModel extends Model<SignaturesModel> {
   @Column(DataType.BLOB)
   public publicKey: Buffer;
