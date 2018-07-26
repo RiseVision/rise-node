@@ -1,28 +1,26 @@
 import { APIError, DeprecatedAPIError, PrivateApisGuard } from '@risevision/core-apis';
-import { Crypto, IoCSymbol, SchemaValid, Symbols, ValidateSchema } from '@risevision/core-helpers';
 import {
-  IAccounts2DelegatesModel,
-  IAccountsModel,
   IAccountsModule,
   IBlocksModel,
-  IBlocksModule,
-  IBlocksModuleUtils,
+  IBlocksModule, ICrypto,
   ISystemModule,
-  ITransactionsModel,
+  ITransactionsModel, Symbols,
 } from '@risevision/core-interfaces';
-import { publicKey } from '@risevision/core-types';
+import { ModelSymbols } from '@risevision/core-models';
+import { ConstantsType, publicKey } from '@risevision/core-types';
+import { IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import BigNumber from 'bignumber.js';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import * as pgp from 'pg-promise';
 import { Body, Get, JsonController, Post, Put, QueryParam, QueryParams, UseBefore } from 'routing-controllers';
 import * as sequelize from 'sequelize';
+import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
-import { AccountsModelForDPOS } from '../models';
+import { Accounts2DelegatesModel, AccountsModelForDPOS, RoundsFeesModel } from '../models';
 import { DelegatesModule, ForgeModule } from '../modules';
-import { Op } from 'sequelize';
 
 const schema = require('../../schema/delegates.json');
 
@@ -33,15 +31,15 @@ export class DelegatesAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
   @inject(dPoSSymbols.dposConstants)
-  public constants: DposConstantsType;
+  public constants: DposConstantsType & ConstantsType;
   @inject(Symbols.modules.accounts)
   private accounts: IAccountsModule<AccountsModelForDPOS>;
   @inject(Symbols.modules.blocks)
   private blocks: IBlocksModule;
   @inject(dPoSSymbols.modules.delegates)
   private delegatesModule: DelegatesModule;
-  @inject(Symbols.helpers.crypto)
-  private crypto: Crypto;
+  @inject(Symbols.generic.crypto)
+  private crypto: ICrypto;
   @inject(dPoSSymbols.modules.forge)
   private forgeModule: ForgeModule;
   @inject(dPoSSymbols.helpers.slots)
@@ -50,14 +48,21 @@ export class DelegatesAPI {
   private system: ISystemModule;
 
   // models
-  @inject(dPoSSymbols.models.accounts2Delegates)
-  private Accounts2DelegatesModel: typeof IAccounts2DelegatesModel;
-  @inject(Symbols.models.accounts)
-  private AccountsModel: typeof IAccountsModel;
-  @inject(Symbols.models.blocks)
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.accounts2Delegates)
+  private Accounts2DelegatesModel: typeof Accounts2DelegatesModel;
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.accounts)
+  private AccountsModel: typeof AccountsModelForDPOS;
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
-  @inject(Symbols.models.transactions)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.roundsFees)
+  private RoundsFeesModel: typeof RoundsFeesModel;
 
   @Get('/')
   @ValidateSchema()
@@ -235,7 +240,7 @@ export class DelegatesAPI {
     }
 
     return {
-      currentBlock: this.BlocksModel.toStringBlockType(curBlock, this.TransactionsModel, this.blocks),
+      currentBlock: this.BlocksModel.toStringBlockType(curBlock),
       currentBlockSlot,
       currentSlot,
       delegates   : nextForgers,
@@ -273,7 +278,7 @@ export class DelegatesAPI {
   @UseBefore(PrivateApisGuard)
   public async forgingEnable(@SchemaValid(schema.disableForging)
                              @Body() params: { secret: string, publicKey: string }) {
-    const kp = this.crypto.makeKeypair(crypto
+    const kp = this.crypto.makeKeyPair(crypto
       .createHash('sha256').update(params.secret, 'utf8')
       .digest());
 
@@ -302,7 +307,7 @@ export class DelegatesAPI {
   @UseBefore(PrivateApisGuard)
   public async forgingDisable(@SchemaValid(schema.disableForging)
                               @Body() params: { secret: string, publicKey: string }) {
-    const kp = this.crypto.makeKeypair(crypto
+    const kp = this.crypto.makeKeyPair(crypto
       .createHash('sha256').update(params.secret, 'utf8')
       .digest());
 

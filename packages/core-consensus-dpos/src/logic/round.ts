@@ -2,7 +2,6 @@ import {
   IAccountsModel, IAccountsModule,
   IBlocksModel,
   ILogger,
-  IRoundsModel,
 } from '@risevision/core-interfaces';
 import { address, DBCustomOp, DBOp, SignedBlockType } from '@risevision/core-types';
 import * as fs from 'fs';
@@ -163,7 +162,7 @@ export class RoundLogic {
    * Performed when rollbacking last block of a round.
    * It restores the round snapshot from sql
    */
-  public restoreRoundSnapshot(): DBOp<IRoundsModel> {
+  public restoreRoundSnapshot(): DBOp<RoundsModel> {
     return {
       model: this.scope.models.RoundsModel,
       query: restoreRoundSnasphotSQL,

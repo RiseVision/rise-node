@@ -1,5 +1,5 @@
 import { OnCheckIntegrity, VerifyBlockFilter, VerifyBlockReceipt } from '@risevision/core';
-import { ExceptionsList, ExceptionsManager, OrderBy, RunThroughExceptions, Symbols } from '@risevision/core-helpers';
+import { ExceptionsManager, ExceptionSymbols } from '@risevision/core-exceptions';
 import {
   IAccountsModule,
   IAppState,
@@ -7,9 +7,10 @@ import {
   IBlocksModule,
   ILogger,
   IModule,
-  ITransactionsModule
+  ITransactionsModule, Symbols
 } from '@risevision/core-interfaces';
-import { publicKey, SignedBlockType } from '@risevision/core-types';
+import { ConstantsType, publicKey, SignedBlockType } from '@risevision/core-types';
+import { OrderBy, RunThroughExceptions } from '@risevision/core-utils';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import { inject, injectable } from 'inversify';
@@ -19,6 +20,7 @@ import * as z_schema from 'z-schema';
 import { DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
 import { RoundsLogic } from '../logic/rounds';
 import { AccountsModelForDPOS, DelegatesModel } from '../models';
+import { DposExceptionsList } from '../dposExceptionsList';
 
 const countDuplicatedDelegatesSQL = fs.readFileSync(
   `${__dirname}/../../sql/countDuplicatedDelegates.sql`,
@@ -34,10 +36,12 @@ export class DelegatesModule extends WPHooksSubscriber(Object) implements IModul
   private schema: z_schema;
 
   // Helpers
-  @inject(Symbols.helpers.constants)
+  @inject(Symbols.generic.constants)
   private dposConstants: DposConstantsType;
+  @inject(Symbols.generic.constants)
+  private constants: ConstantsType;
   // tslint:disable-next-line member-ordering
-  @inject(Symbols.helpers.exceptionsManager)
+  @inject(ExceptionSymbols.manager)
   public excManager: ExceptionsManager;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
@@ -64,7 +68,6 @@ export class DelegatesModule extends WPHooksSubscriber(Object) implements IModul
   private delegatesModel: typeof DelegatesModel;
   @inject(dPoSSymbols.models.delegates)
   private accountsModel: typeof AccountsModelForDPOS;
-
 
   public async checkConfirmedDelegates(account: AccountsModelForDPOS, votes: string[]) {
     return this.checkDelegates(account, votes, 'confirmed');
@@ -171,7 +174,7 @@ export class DelegatesModule extends WPHooksSubscriber(Object) implements IModul
   /**
    * Assets that the block was signed by the correct delegate.
    */
-  @RunThroughExceptions(ExceptionsList.assertValidSlot)
+  @RunThroughExceptions(DposExceptionsList.assertValidSlot)
   public async assertValidBlockSlot(block: SignedBlockType) {
     const delegates = await this.generateDelegateList(block.height);
 

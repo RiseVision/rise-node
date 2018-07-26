@@ -1,12 +1,10 @@
-import { Diff, Symbols } from '@risevision/core-helpers';
 import {
   IAccountLogic,
   IAccountsModel,
-  ISystemModule
+  ISystemModule, Symbols
 } from '@risevision/core-interfaces';
 import { BaseTx } from '@risevision/core-transactions';
 import {
-  ConstantsType,
   DBCustomOp,
   DBOp,
   IBaseTransaction,
@@ -14,9 +12,11 @@ import {
   SignedBlockType,
   TransactionType
 } from '@risevision/core-types';
+import { Diff } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { Model } from 'sequelize-typescript';
 import * as z_schema from 'z-schema';
+import { DposConstantsType, dPoSSymbols } from '../helpers/';
 import {
   Accounts2DelegatesModel,
   Accounts2U_DelegatesModel,
@@ -24,7 +24,6 @@ import {
   RoundsModel,
   VotesModel
 } from '../models/';
-import { DposConstantsType, dPoSSymbols } from '../helpers/';
 import { DelegatesModule } from '../modules/';
 import { RoundsLogic } from './rounds';
 const voteSchema = require('../../schema/vote.json');

@@ -1,12 +1,12 @@
 import { APIError, DeprecatedAPIError } from '@risevision/core-apis';
-import { Crypto, IoCSymbol, SchemaValid, Symbols, ValidateSchema } from '@risevision/core-helpers';
-import { IAccountsModule, ISystemModule, } from '@risevision/core-interfaces';
+import { IAccountsModule, ISystemModule, Symbols, } from '@risevision/core-interfaces';
+import { IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { dPoSSymbols } from '../helpers/';
-import { DelegatesModule } from '../modules';
 import { AccountsModelForDPOS } from '../models';
+import { DelegatesModule } from '../modules';
 
 const schema = require('../../schema/accountsAPI.json');
 
@@ -21,7 +21,7 @@ export class DelegatesAPI {
   @inject(Symbols.modules.blocks)
   @inject(dPoSSymbols.modules.delegates)
   private delegatesModule: DelegatesModule;
-  @inject(Symbols.helpers.crypto)
+  @inject(Symbols.generic.crypto)
   private crypto: Crypto;
   @inject(Symbols.modules.system)
   private system: ISystemModule;

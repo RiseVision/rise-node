@@ -17,12 +17,15 @@
       "es7"
     ],
     "paths": {
+      "@risevision/core": ["../core/*"],
       "@risevision/core-models": ["../core-models/*"],
       "@risevision/core-interfaces": ["../core-interfaces/*"],
+      "@risevision/core-exceptions": ["../core-exceptions/*"],
       "@risevision/core-types": ["../core-types/*"],
       "@risevision/core-helpers": ["../core-helpers/*"],
       "@risevision/core-launchpad": ["../core-launchpad/*"],
-      "@risevision/core-transactions": ["../core-transactions/*"]
+      "@risevision/core-transactions": ["../core-transactions/*"],
+      "@risevision/core-utils": ["../core-utils/*"]
     }
   },
   "include": [

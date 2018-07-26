@@ -1,5 +1,4 @@
-import { removeEmptyObjKeys, Symbols } from '@risevision/core-helpers';
-import { IAccountsModel, IAccountsModule, ISystemModule } from '@risevision/core-interfaces';
+import { IAccountsModel, IAccountsModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { BaseTx } from '@risevision/core-transactions';
 import {
   DBCreateOp,
@@ -9,10 +8,12 @@ import {
   SignedBlockType,
   TransactionType
 } from '@risevision/core-types';
+import { removeEmptyObjKeys } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import * as z_schema from 'z-schema';
 import { dPoSSymbols } from '../helpers/';
 import { AccountsModelForDPOS, DelegatesModel } from '../models/';
+
 const delegateAssetSchema = require('../../schema/asset.json');
 
 // tslint:disable-next-line interface-over-type-literal

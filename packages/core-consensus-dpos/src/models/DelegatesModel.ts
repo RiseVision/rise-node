@@ -1,4 +1,5 @@
-import { BaseModel, TransactionsModel } from '@risevision/core-models';
+import { ITransactionsModel, Symbols } from '@risevision/core-interfaces';
+import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import { BelongsTo, Column, ForeignKey, PrimaryKey, Table } from 'sequelize-typescript';
 
 @Table({tableName: 'delegates'})
@@ -8,11 +9,11 @@ export class DelegatesModel extends BaseModel<DelegatesModel> {
   public username: string;
 
   @PrimaryKey
-  @ForeignKey(() => TransactionsModel)
+  @ForeignKey(() => DelegatesModel.container.getNamed(ModelSymbols.model, Symbols.models.transactions))
   @Column
   public transactionId: string;
 
-  @BelongsTo(() => TransactionsModel)
-  public transaction: TransactionsModel = null;
+  @BelongsTo(() =>  DelegatesModel.container.getNamed(ModelSymbols.model, Symbols.models.transactions))
+  public transaction: ITransactionsModel = null;
 
 }

@@ -1,21 +1,22 @@
-import { catchToLoggerAndRemapError, Crypto, Sequence, Symbols, WrapInDefaultSequence } from '@risevision/core-helpers';
 import {
   IAccountsModule,
   IAppState,
   IBlocksModule,
   IBlocksModuleProcess,
-  IBroadcasterLogic,
+  IBroadcasterLogic, ICrypto,
   IJobsQueue,
   ILogger,
-  IModule,
-  ITransactionsModule
+  IModule, ISequence,
+  ITransactionsModule, Symbols
 } from '@risevision/core-interfaces';
 import { ConstantsType, IKeypair, publicKey } from '@risevision/core-types';
+import { catchToLoggerAndRemapError, WrapInDefaultSequence } from '@risevision/core-utils';
 import * as crypto from 'crypto';
-import { inject, injectable, tagged } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import { DposAppConfig, dPoSSymbols, Slots } from '../helpers/';
 import { AccountsModelForDPOS } from '../models';
 import { DelegatesModule } from './delegates';
+
 
 @injectable()
 export class ForgeModule implements IModule {
@@ -26,19 +27,19 @@ export class ForgeModule implements IModule {
   @inject(Symbols.generic.appConfig)
   private config: DposAppConfig;
 
-  // helpers
-  @inject(Symbols.helpers.constants)
+  @inject(Symbols.generic.constants)
   private constants: ConstantsType;
-  @inject(Symbols.helpers.crypto)
-  private crypto: Crypto;
+  // helpers
+  @inject(Symbols.generic.crypto)
+  private crypto: ICrypto;
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)
-  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence)
-  public defaultSequence: Sequence;
+  @named(Symbols.names.helpers.defaultSequence)
+  public defaultSequence: ISequence;
   @inject(dPoSSymbols.helpers.slots)
   private slots: Slots;
 
@@ -53,7 +54,7 @@ export class ForgeModule implements IModule {
   private accountsModule: IAccountsModule<AccountsModelForDPOS>;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.blocksSubModules.process)
+  @inject(Symbols.modules.blocksSubmodules.process)
   private blocksProcessModule: IBlocksModuleProcess;
   @inject(dPoSSymbols.modules.delegates)
   private delegatesModule: DelegatesModule;
@@ -193,7 +194,7 @@ export class ForgeModule implements IModule {
     this.logger.info(`Loading ${secrets.length} delegates from config`);
 
     for (const secret of secrets) {
-      const keypair = this.crypto.makeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
+      const keypair = this.crypto.makeKeyPair(crypto.createHash('sha256').update(secret, 'utf8').digest());
       const account = await this.accountsModule.getAccount({ publicKey: keypair.publicKey });
       if (!account) {
         throw new Error(`Account with publicKey: ${keypair.publicKey.toString('hex')} not found`);

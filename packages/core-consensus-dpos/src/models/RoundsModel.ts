@@ -1,4 +1,3 @@
-import { IRoundsModel } from '@risevision/core-interfaces';
 import { BaseModel } from '@risevision/core-models';
 import { publicKey } from '@risevision/core-types';
 import * as sequelize from 'sequelize';
@@ -8,7 +7,7 @@ import * as sequelizeUtils from 'sequelize/lib/utils';
 import { DelegatesModel } from './DelegatesModel';
 
 @Table({ tableName: 'mem_round' })
-export class RoundsModel extends BaseModel<DelegatesModel> implements IRoundsModel {
+export class RoundsModel extends BaseModel<DelegatesModel> {
   @Column
   public address: string;
 

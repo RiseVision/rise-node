@@ -1,5 +1,5 @@
-import { ITransactionsModel } from '@risevision/core-interfaces';
-import { BaseModel, TransactionsModel } from '@risevision/core-models';
+import { ITransactionsModel, Symbols } from '@risevision/core-interfaces';
+import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import { publicKey } from '@risevision/core-types';
 import { BelongsTo, Column, ForeignKey, IBuildOptions, PrimaryKey, Table } from 'sequelize-typescript';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
@@ -12,11 +12,11 @@ export class VotesModel extends BaseModel<RoundsModel>  {
   public votes: string;
 
   @PrimaryKey
-  @ForeignKey(() => TransactionsModel)
+  @ForeignKey(() => VotesModel.container.getNamed(ModelSymbols.model, Symbols.models.transactions))
   @Column
   public transactionId: string;
 
-  @BelongsTo(() => TransactionsModel)
+  @BelongsTo(() => VotesModel.container.getNamed(ModelSymbols.model, Symbols.models.transactions))
   public transaction: ITransactionsModel;
 
   public added: publicKey[]   = [];

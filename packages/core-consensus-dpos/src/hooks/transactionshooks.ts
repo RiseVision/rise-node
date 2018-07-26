@@ -1,6 +1,7 @@
-import { BigNum, Symbols } from '@risevision/core-helpers';
+import { Symbols } from '@risevision/core-interfaces';
 import { SendTxApplyFilter, SendTxUndoFilter, TxApplyFilter, TxUndoFilter } from '@risevision/core-transactions';
 import { address, DBCustomOp, DBOp, IConfirmedTransaction, SignedBlockType } from '@risevision/core-types';
+import { MyBigNumb } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { dPoSSymbols, Slots } from '../helpers';
@@ -8,7 +9,7 @@ import { RoundsLogic } from '../logic/rounds';
 import { RoundsModel } from '../models';
 
 @injectable()
-export class Transactionshooks extends WPHooksSubscriber(Object) {
+class Transactionshooks extends WPHooksSubscriber(Object) {
   @inject(Symbols.generic.hookSystem)
   public hookSystem: WordPressHookSystem;
   @inject(dPoSSymbols.models.rounds)
@@ -22,7 +23,7 @@ export class Transactionshooks extends WPHooksSubscriber(Object) {
 
   @TxApplyFilter()
   public async onTxApply(ops: Array<DBOp<any>>, tx: IConfirmedTransaction<any>, block: SignedBlockType) {
-    const totalAmount = new BigNum(tx.amount.toString()).plus(tx.fee).toNumber();
+    const totalAmount = new MyBigNumb(tx.amount.toString()).plus(tx.fee).toNumber();
     return [
       ...ops,
       this.calcOp(tx.senderId, -totalAmount, block),
@@ -31,7 +32,7 @@ export class Transactionshooks extends WPHooksSubscriber(Object) {
 
   @TxUndoFilter()
   public async onTxUndo(ops: Array<DBOp<any>>, tx: IConfirmedTransaction<any>, block: SignedBlockType) {
-    const totalAmount = new BigNum(tx.amount.toString()).plus(tx.fee).toNumber();
+    const totalAmount = new MyBigNumb(tx.amount.toString()).plus(tx.fee).toNumber();
     return [
       ...ops,
       this.calcOp(tx.senderId, totalAmount, block),
@@ -40,7 +41,7 @@ export class Transactionshooks extends WPHooksSubscriber(Object) {
 
   @SendTxApplyFilter()
   public async onSendTxApply(ops: Array<DBOp<any>>, tx: IConfirmedTransaction<void>, block: SignedBlockType) {
-    const totalAmount = new BigNum(tx.amount.toString()).plus(tx.fee).toNumber();
+    const totalAmount = new MyBigNumb(tx.amount.toString()).plus(tx.fee).toNumber();
     return [
       ...ops,
       this.calcOp(tx.recipientId, totalAmount, block),
@@ -49,7 +50,7 @@ export class Transactionshooks extends WPHooksSubscriber(Object) {
 
   @SendTxUndoFilter()
   public async onSendTxUndo(ops: Array<DBOp<any>>, tx: IConfirmedTransaction<void>, block: SignedBlockType) {
-    const totalAmount = new BigNum(tx.amount.toString()).plus(tx.fee).toNumber();
+    const totalAmount = new MyBigNumb(tx.amount.toString()).plus(tx.fee).toNumber();
     return [
       ...ops,
       this.calcOp(tx.recipientId, -totalAmount, block),

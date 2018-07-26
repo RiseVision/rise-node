@@ -1,8 +1,7 @@
-import { IRoundsFeesModel } from '@risevision/core-interfaces';
 import { Column, DataType, Model, Table } from 'sequelize-typescript';
 
 @Table({ tableName: 'rounds_fees' })
-export class RoundsFeesModel extends Model<RoundsFeesModel> implements IRoundsFeesModel {
+export class RoundsFeesModel extends Model<RoundsFeesModel> {
   @Column
   public height: number;
 

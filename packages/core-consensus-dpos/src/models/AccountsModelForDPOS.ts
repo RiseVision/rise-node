@@ -1,5 +1,5 @@
 import { IAccountsModel } from '@risevision/core-interfaces';
-import { AccountsModel, utils } from '@risevision/core-models';
+import { utils } from '@risevision/core-models';
 import { Column, DataType, DefaultScope, Sequelize } from 'sequelize-typescript';
 import * as sequelize from 'sequelize';
 import { publicKey } from '@risevision/core-types';
@@ -36,4 +36,3 @@ export class AccountsModelForDPOS extends IAccountsModel {
   public u_delegates?: publicKey[];
 }
 
-utils.mergeModels(AccountsModelForDPOS, AccountsModel);

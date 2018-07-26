@@ -1,9 +1,16 @@
 import { OnCheckIntegrity, SnapshotBlocksCountFilter, UtilsCommonHeightList } from '@risevision/core';
-import { Bus, DBHelper, Symbols } from '@risevision/core-helpers';
-import { IAccountsModel, IAccountsModule, IAppState, IBlocksModel, ILogger } from '@risevision/core-interfaces';
+import {
+  IAccountsModel,
+  IAccountsModule,
+  IAppState,
+  IBlocksModel, IDBHelper,
+  ILogger,
+  Symbols
+} from '@risevision/core-interfaces';
 import { address, AppConfig, DBOp, SignedBlockType } from '@risevision/core-types';
 import * as fs from 'fs';
 import { inject, injectable } from 'inversify';
+import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { Transaction } from 'sequelize';
 import SocketIO from 'socket.io';
 import { DposConstantsType, dPoSSymbols, Slots } from '../helpers';
@@ -11,8 +18,6 @@ import { IRoundLogicNewable, RoundLogicScope } from '../logic/round';
 import { RoundsLogic } from '../logic/rounds';
 import { AccountsModelForDPOS, RoundsModel } from '../models/';
 import { DelegatesModule } from './delegates';
-import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
-
 
 const performRoundSnapshotSQL = fs.readFileSync(
   `${__dirname}/../../sql/performRoundSnapshot.sql`,
@@ -26,13 +31,12 @@ class RoundsModule extends WPHooksSubscriber(Object) {
 
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
+
   // Helpers and generics
-  @inject(Symbols.helpers.bus)
-  private bus: Bus;
   @inject(dPoSSymbols.dposConstants)
   private constants: DposConstantsType;
   @inject(Symbols.helpers.db)
-  private dbHelper: DBHelper;
+  private dbHelper: IDBHelper;
   @inject(Symbols.generic.socketIO)
   private io: SocketIO.Server;
   @inject(Symbols.helpers.logger)
@@ -117,7 +121,8 @@ class RoundsModule extends WPHooksSubscriber(Object) {
         ops.push(roundLogic.markBlockId());
         await this.dbHelper.performOps(ops, transaction);
         if (roundLogicScope.finishRound) {
-          await this.bus.message('finishRound', roundLogicScope.round);
+          // TODO:
+          // await this.bus.message('finishRound', roundLogicScope.round);
         }
       },
       async () => {
