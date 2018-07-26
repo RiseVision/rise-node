@@ -25,7 +25,8 @@
       "@risevision/core-helpers": ["../core-helpers/*"],
       "@risevision/core-launchpad": ["../core-launchpad/*"],
       "@risevision/core-test-utils": ["../core-test-utils/*"],
-      "@risevision/core-transactions": ["../core-transactions/*"]
+      "@risevision/core-transactions": ["../core-transactions/*"],
+      "@risevision/core-utils": ["../core-utils/*"]
     }
   },
   "exclude":         [

@@ -1,13 +1,14 @@
 import { DeprecatedAPIError } from '@risevision/core-apis';
-import { ISystemModule } from '@risevision/core-interfaces';
-import { IoCSymbol, SchemaValid, Symbols, ValidateSchema } from '@risevision/core-helpers';
+import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
+import { IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
+import { SigSymbols } from './symbols';
 
 @JsonController('/api/signatures')
 @injectable()
-@IoCSymbol(Symbols.api.signatures)
+@IoCSymbol(SigSymbols.api)
 export class SignaturesAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
