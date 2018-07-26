@@ -1,10 +1,10 @@
-import { Symbols } from '@risevision/core-helpers';
-import { ILogger, IPeerLogic, IPeersLogic, ISystemModule } from '@risevision/core-interfaces';
+import { ILogger, IPeerLogic, IPeersLogic, ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { BasePeerType, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
 import { PeerLogic } from './peer';
+import { p2pSymbols } from './helpers';
 
 @injectable()
 export class PeersLogic implements IPeersLogic {
@@ -16,7 +16,7 @@ export class PeersLogic implements IPeersLogic {
 
   private lastRemoved: { [peerIdentifier: string]: number } = {};
 
-  @inject(Symbols.logic.peerFactory)
+  @inject(p2pSymbols.logic.peerFactory)
   private peersFactory: (bp: BasePeerType) => IPeerLogic;
 
   @inject(Symbols.modules.system)

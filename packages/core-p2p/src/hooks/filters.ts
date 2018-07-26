@@ -1,4 +1,4 @@
-import {createFilterDecorator as createFilter} from '@risevision/core-helpers';
+import {createFilterDecorator as createFilter} from '@risevision/core-utils';
 
 /**
  * Filter headers to be sent.

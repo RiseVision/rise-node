@@ -1,13 +1,15 @@
 export const Symbols = {
+  class: Symbol.for('classSymbol'),
   generic: {
     appConfig: Symbol.for('appConfig'),
     constants: Symbol.for('constants'),
     crypto: Symbol.for('crypto'),
     genesisBlock: Symbol.for('genesisBlock'),
     hookSystem: Symbol.for('hookSystem'),
-    socketIO: Symbol.for('socketIO'),
-    zschema: Symbol.for('zschema'),
     nonce: Symbol.for('nonce'),
+    socketIO: Symbol.for('socketIO'),
+    versionBuild: Symbol.for('versionBuild'),
+    zschema: Symbol.for('zschema'),
   },
   helpers: {
     db: Symbol.for('dbHelper'),

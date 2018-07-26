@@ -1,12 +1,13 @@
-import { IoCSymbol, Symbols } from '@risevision/core-helpers';
-import { ISystemModule } from '@risevision/core-interfaces';
+import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import * as express from 'express';
 import { inject, injectable } from 'inversify';
 import { ExpressMiddlewareInterface, Middleware } from 'routing-controllers';
+import { IoCSymbol } from '@risevision/core-utils';
+import { p2pSymbols } from '../helpers';
 
 @Middleware({ type: 'before' })
 @injectable()
-@IoCSymbol(Symbols.api.utils.attachPeerHeaderToResponseObject)
+@IoCSymbol(p2pSymbols.api.attachPeerHeaders)
 export class AttachPeerHeaders implements ExpressMiddlewareInterface {
 
   @inject(Symbols.modules.system)

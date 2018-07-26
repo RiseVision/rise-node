@@ -22,7 +22,7 @@
       "@risevision/core-launchpad": ["../core-launchpad/*"],
       "@risevision/core-types": ["../core-types/*"],
       "@risevision/core-helpers": ["../core-helpers/*"],
-      "@risevision/core-test-utils": ["../core-test-utils/*"]
+      "@risevision/core-p2p": ["../core-p2p/*"]
     }
   },
   "exclude":         [

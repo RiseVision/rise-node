@@ -19,6 +19,7 @@
     "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
     "@risevision/core-launchpad": "^1.0.0",
+    "@risevision/core-p2p": "^1.0.0",
     "bignumber.js": "7.2.1",
     "circular-json": "0.5.4",
     "colors": "1.3.0",

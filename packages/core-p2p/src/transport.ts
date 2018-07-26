@@ -1,27 +1,18 @@
 import {
-  cbToPromise,
-  SchemaValid,
-  Sequence,
-  Symbols,
-  ValidateSchema,
-  WrapInBalanceSequence
-} from '@risevision/core-helpers';
-import {
   IAppState,
   IBlocksModel,
   IBlocksModule,
   IBroadcasterLogic,
   IJobsQueue,
   ILogger,
-  IMultisignaturesModule,
   IPeerLogic,
   IPeersLogic,
-  IPeersModule,
+  IPeersModule, ISequence,
   ISystemModule,
   ITransactionLogic,
   ITransactionsModel,
   ITransactionsModule,
-  ITransportModule
+  ITransportModule, Symbols
 } from '@risevision/core-interfaces';
 import {
   AppConfig,
@@ -34,13 +25,14 @@ import {
   PeerState,
   SignedBlockType
 } from '@risevision/core-types';
-import { inject, injectable, postConstruct, tagged } from 'inversify';
+import { cbToPromise, SchemaValid, ValidateSchema, WrapInBalanceSequence } from '@risevision/core-utils';
+import { inject, injectable, named, postConstruct } from 'inversify';
+import { WordPressHookSystem } from 'mangiafuoco';
 import * as popsicle from 'popsicle';
 import * as Throttle from 'promise-parallel-throttle';
 import * as promiseRetry from 'promise-retry';
 import SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
-import { WordPressHookSystem } from 'mangiafuoco';
 
 const peersSchema     = require('../schema/peers.json');
 const transportSchema = require('../schema/transport.json');
@@ -62,9 +54,9 @@ export class TransportModule implements ITransportModule {
   // Helpers
   // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)
-  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
-  public balancesSequence: Sequence;
-  @inject(Symbols.helpers.constants)
+  @named(Symbols.names.helpers.balancesSequence)
+  public balancesSequence: ISequence;
+  @inject(Symbols.generic.constants)
   private constants: ConstantsType;
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
@@ -82,8 +74,6 @@ export class TransportModule implements ITransportModule {
   private transactionLogic: ITransactionLogic;
 
   // Modules
-  @inject(Symbols.modules.multisignatures)
-  private multisigModule: IMultisignaturesModule;
   @inject(Symbols.modules.peers)
   private peersModule: IPeersModule;
   @inject(Symbols.modules.system)
@@ -224,7 +214,9 @@ export class TransportModule implements ITransportModule {
    * TODO: Eventually fixme
    */
   public onSignature(signature: { transaction: string, signature: string, relays?: number }, broadcast: boolean) {
-    if (broadcast && !this.broadcasterLogic.maxRelays(signature)) {
+    signature.relays = signature.relays || 0;
+    if (broadcast && signature.relays < this.broadcasterLogic.maxRelays()) {
+      signature.relays ++;
       this.broadcasterLogic.enqueue({}, { api: '/signatures', data: { signature }, method: 'POST' });
       this.io.sockets.emit('signature/change', signature);
     }
@@ -236,8 +228,9 @@ export class TransportModule implements ITransportModule {
    * TODO: Eventually fixme
    */
   public onUnconfirmedTransaction(transaction: IBaseTransaction<any> & { relays?: number }, broadcast: boolean) {
-    if (broadcast && !this.broadcasterLogic.maxRelays(transaction)) {
-
+    transaction.relays = transaction.relays || 0;
+    if (broadcast && transaction.relays < this.broadcasterLogic.maxRelays()) {
+      transaction.relays++;
       this.broadcasterLogic.enqueue({}, {
         api   : '/transactions',
         data  : {
@@ -259,8 +252,10 @@ export class TransportModule implements ITransportModule {
     if (broadcast) {
       const broadhash = this.systemModule.broadhash;
 
+      block.relays = block.relays || 0;
       await this.systemModule.update();
-      if (!this.broadcasterLogic.maxRelays(block)) {
+      if (block.relays < this.broadcasterLogic.maxRelays()) {
+        block.relays++;
         // We avoid awaiting the broadcast result as it could result in unnecessary peer removals.
         // Ex: Peer A, B, C
         // A broadcasts block to B which wants to rebroadcast to A (which is waiting for B to respond) =>
@@ -270,7 +265,7 @@ export class TransportModule implements ITransportModule {
         this.broadcasterLogic.broadcast({ limit: this.constants.maxPeers, broadhash },
           {
             api      : '/blocks',
-            data     : { block: this.BlocksModel.toStringBlockType(block, this.TransactionsModel, this.blocksModule) },
+            data     : { block: this.BlocksModel.toStringBlockType(block) },
             immediate: true,
             method   : 'POST',
           })
@@ -280,29 +275,31 @@ export class TransportModule implements ITransportModule {
     }
   }
 
+  // TODO:
   // tslint:disable-next-line
-  public async receiveSignatures(signatures: Array<{ transaction: string, signature: string }>): Promise<void> {
-    for (const signature of signatures) {
-      try {
-        await this.receiveSignature(signature);
-      } catch (err) {
-        this.logger.debug(err, signature);
-      }
-    }
-  }
+  // public async receiveSignatures(signatures: Array<{ transaction: string, signature: string }>): Promise<void> {
+  //   for (const signature of signatures) {
+  //     try {
+  //       await this.receiveSignature(signature);
+  //     } catch (err) {
+  //       this.logger.debug(err, signature);
+  //     }
+  //   }
+  // }
 
-  /**
-   * Validate signature with schema and calls processSignature from module multisignautre
-   */
-  @ValidateSchema()
-  public async receiveSignature(@SchemaValid(transportSchema.signature, 'Invalid signature body')
-                                  signature: { transaction: string, signature: string }) {
-    try {
-      await this.multisigModule.processSignature(signature);
-    } catch (e) {
-      throw new Error(`Error processing signature: ${e.message || e}`);
-    }
-  }
+  // TODO
+  // /**
+  //  * Validate signature with schema and calls processSignature from module multisignautre
+  //  */
+  // @ValidateSchema()
+  // public async receiveSignature(@SchemaValid(transportSchema.signature, 'Invalid signature body')
+  //                                 signature: { transaction: string, signature: string }) {
+  //   try {
+  //     await this.multisigModule.processSignature(signature);
+  //   } catch (e) {
+  //     throw new Error(`Error processing signature: ${e.message || e}`);
+  //   }
+  // }
 
   @ValidateSchema()
   // tslint:disable-next-line

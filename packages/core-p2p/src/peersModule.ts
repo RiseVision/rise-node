@@ -1,11 +1,12 @@
-import { Bus, Symbols } from '@risevision/core-helpers';
-import { ILogger, IPeerLogic, IPeersModel, IPeersModule } from '@risevision/core-interfaces';
+import { ILogger, IPeerLogic, IPeersModel, IPeersModule, Symbols } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 import { AppConfig, ConstantsType, PeerFilter, PeerType, PeerState } from '@risevision/core-types';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
 import * as shuffle from 'shuffle-array';
 import { PeersLogic } from './peersLogic';
+import { p2pSymbols } from './helpers';
 
 @injectable()
 export class PeersModule implements IPeersModule {
@@ -15,9 +16,7 @@ export class PeersModule implements IPeersModule {
   private appConfig: AppConfig;
 
   // Helpers
-  @inject(Symbols.helpers.bus)
-  private bus: Bus;
-  @inject(Symbols.helpers.constants)
+  @inject(Symbols.generic.constants)
   private constants: ConstantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
@@ -30,7 +29,8 @@ export class PeersModule implements IPeersModule {
   @inject(Symbols.modules.system)
   private systemModule;
 
-  @inject(Symbols.models.peers)
+  @inject(ModelSymbols.model)
+  @named(p2pSymbols.model)
   private PeersModel: typeof IPeersModel;
 
   public cleanup() {
@@ -149,7 +149,8 @@ export class PeersModule implements IPeersModule {
     if (process.env.NODE_ENV !== 'test') {
       await this.insertSeeds();
       await this.dbLoad();
-      await this.bus.message('peersReady');
+      // TODO: Fixme.
+      // await this.bus.message('peersReady');
     }
   }
 

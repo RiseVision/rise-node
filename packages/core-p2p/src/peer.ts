@@ -1,5 +1,4 @@
-import { Symbols } from '@risevision/core-helpers';
-import { IPeerLogic } from '@risevision/core-interfaces';
+import { IPeerLogic, Symbols } from '@risevision/core-interfaces';
 import { BasePeerType, PeerHeaders, PeerRequestOptions, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';

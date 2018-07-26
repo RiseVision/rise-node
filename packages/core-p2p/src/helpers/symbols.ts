@@ -5,4 +5,14 @@ export const p2pSymbols = {
   // Tag your HTTP controller with this.
   controller: Symbol.for('controller'),
   middleware: Symbol.for('middleware'),
+  api  : {
+    attachPeerHeaders            : Symbol.for('attachPeerHeaders'),
+    peersAPI                     : Symbol.for('peersAPI'),
+    transport                    : Symbol.for('transport'),
+    validatePeerHeadersMiddleware: Symbol.for('validatePeerHeadersMiddleware'),
+  },
+  logic: {
+    peerFactory: Symbol.for('peerFactory'),
+  },
+  model: Symbol('peersmodel'),
 };

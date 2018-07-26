@@ -1,15 +1,17 @@
 import { APIError } from '@risevision/core-apis';
-import { IoCSymbol, SchemaValid, Symbols, ValidateSchema } from '@risevision/core-helpers';
-import { IPeersModule, ISystemModule } from '@risevision/core-interfaces';
+import { IPeersModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { AppConfig, PeerState } from '@risevision/core-types';
+import { IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
+import { p2pSymbols } from '../helpers';
+
 const peersSchema = require('../../schema/peers.json');
 
 @JsonController('/api/peers')
 @injectable()
-@IoCSymbol(Symbols.api.peers)
+@IoCSymbol(p2pSymbols.api.peersAPI)
 export class PeersAPI {
   // Generics
   @inject(Symbols.generic.appConfig)

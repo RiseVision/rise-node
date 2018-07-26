@@ -22,7 +22,8 @@
       "@risevision/core-interfaces": ["../core-interfaces/*"],
       "@risevision/core-types": ["../core-types/*"],
       "@risevision/core-helpers": ["../core-helpers/*"],
-      "@risevision/core-transactions": ["../core-transactions/*"]
+      "@risevision/core-transactions": ["../core-transactions/*"],
+      "@risevision/core-utils": ["../core-utils/*"]
     }
   },
   "include": [

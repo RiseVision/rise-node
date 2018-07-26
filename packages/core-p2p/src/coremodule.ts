@@ -1,7 +1,6 @@
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { constants, middleware, P2pConfig, p2pSymbols } from './helpers';
 import { CommanderStatic } from 'commander';
-import { Container } from 'inversify';
 import * as express from 'express';
 import * as http from 'http';
 import * as bodyParser from 'body-parser';
@@ -9,8 +8,11 @@ import * as bodyParser from 'body-parser';
 import * as compression from 'compression';
 import * as cors from 'cors';
 import { Application } from 'express';
-import { cbToPromise, Symbols } from '@risevision/core-helpers';
 import { useContainer as useContainerForHTTP, useExpressServer } from 'routing-controllers';
+import { Symbols } from '@risevision/core-interfaces';
+import { cbToPromise } from '@risevision/core-utils';
+import { ModelSymbols } from '@risevision/core-models';
+import { PeersModel } from './PeersModel';
 
 const configSchema = require('../schema/config.json');
 
@@ -38,9 +40,9 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     return appConfig;
   }
 
-  public initAppElements(container: Container, config: P2pConfig) {
-    const app = container.get<Application>(p2pSymbols.express);
-    if (config.peers.trustProxy) {
+  public initAppElements() {
+    const app = this.container.get<Application>(p2pSymbols.express);
+    if (this.config.peers.trustProxy) {
       app.enable('trust proxy');
     }
     app.use(compression({ level: 9 }));
@@ -50,7 +52,7 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     app.use(bodyParser.raw({ limit: '2mb' }));
     app.use(bodyParser.urlencoded({ extended: true, limit: '2mb', parameterLimit: 5000 }));
     app.use(bodyParser.json({ limit: '2mb' }));
-    app.use(middleware.logClientConnections(container.get(Symbols.helpers.logger)));
+    app.use(middleware.logClientConnections(this.container.get(Symbols.helpers.logger)));
     // Disallow inclusion in iframe.
     app.use(middleware.attachResponseHeader('X-Frame-Options', 'DENY'));
 
@@ -63,32 +65,35 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     app.use(middleware.attachResponseHeader('Content-Security-Policy', 'frame-ancestors \'none\''));
 
     useContainerForHTTP({
-        get(clz: any) {
-          const symbol = Reflect.getMetadata(Symbols.__others.metadata.classSymbol, clz);
+        get: (clz: any) => {
+          const symbol = Reflect.getMetadata(Symbols.class, clz);
           if (symbol == null) {
             throw new Error(`ERROR instantiating for HTTP ${symbol}`);
           }
-          return container
-            .get(symbol);
+          return this.container
+            .getNamed(Symbols.class, clz);
         },
       }
     );
     useExpressServer(
       app,
       {
-        controllers        : container.getAll<any>(p2pSymbols.controller),
+        controllers        : this.container.getAll<any>(p2pSymbols.controller),
         defaultErrorHandler: false,
-        middlewares        : container.getAll<any>(p2pSymbols.middleware),
+        middlewares        : this.container.getAll<any>(p2pSymbols.middleware),
       }
     );
 
   }
 
-  public addElementsToContainer(container: Container): void {
+  public addElementsToContainer(): void {
     const app = express();
     this.srv = http.createServer(app);
-    container.bind(p2pSymbols.express).toConstantValue(app);
-    container.bind(p2pSymbols.server).toConstantValue(this.srv);
+    this.container.bind(p2pSymbols.express).toConstantValue(app);
+    this.container.bind(p2pSymbols.server).toConstantValue(this.srv);
+    this.container.bind(ModelSymbols.model)
+      .toConstructor(PeersModel)
+      .whenTargetNamed(p2pSymbols.model)
   }
 
   public teardown(): Promise<void> {

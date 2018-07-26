@@ -1,4 +1,3 @@
-import { Symbols } from '@risevision/core-helpers';
 import {
   IAppState,
   IBroadcasterLogic,
@@ -7,7 +6,8 @@ import {
   IPeersLogic,
   IPeersModule,
   ITransactionLogic,
-  ITransactionsModule
+  ITransactionsModule,
+  Symbols
 } from '@risevision/core-interfaces';
 import { BroadcastTask, BroadcastTaskOptions, ConstantsType, IBaseTransaction, PeerType } from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
@@ -40,7 +40,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   @inject(p2pSymbols.constants)
   private p2pConstants: P2PConstantsType;
 
-  @inject(Symbols.helpers.constants)
+  @inject(Symbols.generic.constants)
   private constants: ConstantsType;
 
   @inject(Symbols.helpers.jobsQueue)
@@ -134,18 +134,8 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   /**
    * Count relays, eventually increment by one and return true if broadcast is exhausted
    */
-  public maxRelays(object: { relays?: number }): boolean {
-    if (!Number.isInteger(object.relays)) {
-      object.relays = 0;
-    }
-
-    if (Math.abs(object.relays) >= this.p2pConstants.relayLimit) {
-      this.logger.debug('Broadcast relays exhausted', object);
-      return true;
-    } else {
-      object.relays++;
-      return false;
-    }
+  public maxRelays(): number {
+    return this.p2pConstants.relayLimit;
   }
 
   /**

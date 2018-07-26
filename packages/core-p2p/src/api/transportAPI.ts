@@ -1,12 +1,11 @@
 import { APIError } from '@risevision/core-apis';
-import { Bus, IoCSymbol, SchemaValid, Symbols, ValidateSchema } from '@risevision/core-helpers';
 import {
   IBlockLogic,
   IBlocksModel,
   IBlocksModule,
   IBlocksModuleUtils,
   IPeersLogic,
-  IPeersModule, ITransactionsModel, ITransactionsModule, ITransportModule
+  IPeersModule, ITransactionsModel, ITransactionsModule, ITransportModule, Symbols
 } from '@risevision/core-interfaces';
 import {
   ConstantsType, IBaseTransaction, ITransportTransaction,
@@ -14,11 +13,13 @@ import {
   SignedAndChainedTransportBlockType,
   TransactionType
 } from '@risevision/core-types';
+import { IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { Request } from 'express';
 import { inject, injectable } from 'inversify';
 import { BodyParam, Get, JsonController, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
+import { p2pSymbols } from '../helpers';
 import { AttachPeerHeaders } from './attachPeerHeaders';
 import { ValidatePeerHeaders } from './validatePeerHeaders';
 
@@ -77,7 +78,7 @@ function genTransportBlock(block: IBlocksModel, extra: Partial<RawFullBlockListT
 
 @JsonController('/peer')
 @injectable()
-@IoCSymbol(Symbols.api.transport)
+@IoCSymbol(p2pSymbols.api.transport)
 @UseBefore(ValidatePeerHeaders)
 @UseBefore(AttachPeerHeaders)
 export class TransportAPI {
@@ -87,11 +88,11 @@ export class TransportAPI {
   private blockLogic: IBlockLogic;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.blocksSubModules.utils)
+  @inject(Symbols.modules.blocksSubmodules.utils)
   private blocksModuleUtils: IBlocksModuleUtils;
-  @inject(Symbols.helpers.bus)
-  private bus: Bus;
-  @inject(Symbols.helpers.constants)
+  // @inject(Symbols.helpers.bus)
+  // private bus: Bus;
+  @inject(Symbols.generic.constants)
   private constants: ConstantsType;
   @inject(Symbols.logic.peers)
   private peersLogic: IPeersLogic;
@@ -124,31 +125,34 @@ export class TransportAPI {
     return { peers };
   }
 
-  @Get('/signatures')
-  public signatures() {
-    const txs: Array<IBaseTransaction<any>> =
-            this.transactionsModule.getMultisignatureTransactionList(true, this.constants.maxSharedTxs);
+  // TODO:
+  // @Get('/signatures')
+  // public signatures() {
+  //   const txs: Array<IBaseTransaction<any>> =
+  //           this.transactionsModule.getMultisignatureTransactionList(true, this.constants.maxSharedTxs);
+  //
+  //   const signatures = [];
+  //   for (const tx of txs) {
+  //     if (tx.signatures && tx.signatures.length > 0) {
+  //       signatures.push({
+  //         signatures : tx.signatures,
+  //         transaction: tx.id,
+  //       });
+  //     }
+  //   }
+  //   return { signatures };
+  // }
 
-    const signatures = [];
-    for (const tx of txs) {
-      if (tx.signatures && tx.signatures.length > 0) {
-        signatures.push({
-          signatures : tx.signatures,
-          transaction: tx.id,
-        });
-      }
-    }
-    return { signatures };
-  }
-
-  @Post('/signatures')
-  @ValidateSchema()
-  public async postSignatures(
-    @SchemaValid(transportSchema.signatures.properties.signatures, 'Invalid signatures body')
-    @BodyParam('signatures') signatures: Array<{ transaction: string, signature: string }>) {
-
-    return this.transportModule.receiveSignatures(signatures);
-  }
+  // TODO:
+  //
+  // @Post('/signatures')
+  // @ValidateSchema()
+  // public async postSignatures(
+  //   @SchemaValid(transportSchema.signatures.properties.signatures, 'Invalid signatures body')
+  //   @BodyParam('signatures') signatures: Array<{ transaction: string, signature: string }>) {
+  //
+  //   return this.transportModule.receiveSignatures(signatures);
+  // }
 
   @Get('/transactions')
   public transactions() {
@@ -211,7 +215,8 @@ export class TransportAPI {
       this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
       throw e;
     }
-    await this.bus.message('receiveBlock', normalizedBlock);
+    // TODO:
+    // await this.bus.message('receiveBlock', normalizedBlock);
     return { blockId: normalizedBlock.id };
   }
 
