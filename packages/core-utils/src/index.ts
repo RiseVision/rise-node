@@ -5,6 +5,7 @@ export * from './castFieldsUsingSchema';
 export * from './checkIpInList';
 export * from './diff';
 export * from './genericUtils';
+export * from './httpError';
 export * from './loggerCreator';
 export * from './orderBy';
 export * from './promiseUtils';

@@ -1,4 +1,3 @@
-import { APIError } from '@risevision/core-apis';
 import { Sequence } from '@risevision/core-helpers';
 import {
   IBlockLogic,
@@ -12,7 +11,14 @@ import {
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { ConstantsType } from '@risevision/core-types';
-import { IoCSymbol, removeEmptyObjKeys, SchemaValid, ValidateSchema, WrapInDBSequence } from '@risevision/core-utils';
+import {
+  HTTPError,
+  IoCSymbol,
+  removeEmptyObjKeys,
+  SchemaValid,
+  ValidateSchema,
+  WrapInDBSequence
+} from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
@@ -105,7 +111,7 @@ export class BlocksAPI {
     const block = await this.dbSequence.addAndPromise(async () => {
       const b = await this.BlocksModel.findById(filters.id, { include: [this.TransactionsModel] });
       if (b === null) {
-        throw new APIError('Block not found', 200);
+        throw new HTTPError('Block not found', 200);
       }
       await this.transactionLogic.attachAssets(b.transactions);
       return this.BlocksModel.toStringBlockType(b);

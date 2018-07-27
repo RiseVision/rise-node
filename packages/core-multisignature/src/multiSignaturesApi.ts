@@ -1,5 +1,4 @@
-import { APIError, DeprecatedAPIError } from '@risevision/core-apis';
-import { IoCSymbol, SchemaValid, Symbols, ValidateSchema } from '@risevision/core-helpers';
+import { DeprecatedAPIError } from '@risevision/core-apis';
 import {
   IAccountsModule,
   IBlocksModule,
@@ -16,6 +15,8 @@ import { Get, JsonController, Post, Put, QueryParams } from 'routing-controllers
 import * as z_schema from 'z-schema';
 import { Accounts2MultisignaturesModel } from './models';
 import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
+import { HTTPError } from '../../core-utils/src/httpError';
+import { IoCSymbol } from '../../core-utils/src/decorators/iocSymbol';
 
 const apiSchema = require('../schema/apischema.json');
 
@@ -121,7 +122,7 @@ export class MultiSignaturesApi {
 
       const sender = await this.accounts.getAccount({ publicKey: tx.senderPublicKey });
       if (!sender) {
-        throw new APIError('Sender not found', 200);
+        throw new HTTPError('Sender not found', 200);
       }
 
       const min        = sender.u_multimin || sender.multimin;

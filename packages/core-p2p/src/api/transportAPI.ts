@@ -1,4 +1,3 @@
-import { APIError } from '@risevision/core-apis';
 import {
   IBlockLogic,
   IBlocksModel,
@@ -8,12 +7,12 @@ import {
   IPeersModule, ITransactionsModel, ITransactionsModule, ITransportModule, Symbols
 } from '@risevision/core-interfaces';
 import {
-  ConstantsType, IBaseTransaction, ITransportTransaction,
+  ConstantsType, ITransportTransaction,
   RawFullBlockListType, SignedAndChainedBlockType,
   SignedAndChainedTransportBlockType,
   TransactionType
 } from '@risevision/core-types';
-import { IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
+import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { Request } from 'express';
 import { inject, injectable } from 'inversify';
 import { BodyParam, Get, JsonController, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
@@ -193,7 +192,7 @@ export class TransportAPI {
       .filter((id) => /^[0-9]+$/.test(id));
     if (excapedIds.length === 0 || excapedIds.length > 10) {
       this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
-      throw new APIError('Invalid block id sequence', 200);
+      throw new HTTPError('Invalid block id sequence', 200);
     }
 
     const common = await this.BlocksModel.findOne({

@@ -1,4 +1,3 @@
-import { APIError } from '@risevision/core-apis';
 import {
   IAccountsModel,
   IBlocksModule,
@@ -11,7 +10,7 @@ import { ModelSymbols } from '@risevision/core-models';
 import { ITransportTransaction, TransactionType } from '@risevision/core-types';
 import {
   assertValidSchema,
-  castFieldsToNumberUsingSchema,
+  castFieldsToNumberUsingSchema, HTTPError,
   IoCSymbol,
   removeEmptyObjKeys, SchemaValid, ValidateSchema
 } from '@risevision/core-utils';
@@ -157,7 +156,7 @@ export class TransactionsAPI {
                            @QueryParam('id') id: string) {
     const transaction = this.transactionsModule.getPendingTransaction(id);
     if (!transaction) {
-      throw new APIError('Transaction not found', 200);
+      throw new HTTPError('Transaction not found', 200);
     }
     return { transaction: this.TXModel.toTransportTransaction(transaction, this.blocksModule) };
   }
@@ -185,7 +184,7 @@ export class TransactionsAPI {
                            @QueryParam('id') id: string) {
     const transaction = this.transactionsModule.getQueuedTransaction(id);
     if (!transaction) {
-      throw new APIError('Transaction not found', 200);
+      throw new HTTPError('Transaction not found', 200);
     }
     return { transaction: this.TXModel.toTransportTransaction(transaction, this.blocksModule) };
   }
@@ -223,7 +222,7 @@ export class TransactionsAPI {
                                 @QueryParam('id') id: string) {
     const transaction = this.transactionsModule.getUnconfirmedTransaction(id);
     if (!transaction) {
-      throw new APIError('Transaction not found', 200);
+      throw new HTTPError('Transaction not found', 200);
     }
     return { transaction: this.TXModel.toTransportTransaction(transaction, this.blocksModule) };
   }
@@ -231,20 +230,20 @@ export class TransactionsAPI {
   @Put()
   public async put(@BodyParam('transaction') transaction: ITransportTransaction<any>) {
     if (!transaction) {
-      throw new APIError('Transaction not provided', 500);
+      throw new HTTPError('Transaction not provided', 500);
     }
     // Schema validation and object normalization
     const bufferTX = this.txLogic.objectNormalize(transaction);
 
     const acc = await this.AccountsModel.findOne({where: {address: transaction.senderId}});
     if (!acc) {
-      throw new APIError('Account not found', 500);
+      throw new HTTPError('Account not found', 500);
     }
     let requester = null;
     if (transaction.requesterPublicKey) {
       requester = await this.AccountsModel.findOne({ where: { publicKey: bufferTX.requesterPublicKey}} );
       if (!requester) {
-        throw new APIError('Requester not found', 500);
+        throw new HTTPError('Requester not found', 500);
       }
     }
 

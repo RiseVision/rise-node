@@ -1,7 +1,6 @@
-import { APIError } from '@risevision/core-apis';
 import { IPeersModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { AppConfig, PeerState } from '@risevision/core-types';
-import { IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
+import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
@@ -36,7 +35,7 @@ export class PeersAPI {
       const peers = await this.peersModule.getByFilter(params);
       return { peers };
     } catch (err) {
-      throw new APIError('Failed to get peers', 200);
+      throw new HTTPError('Failed to get peers', 200);
     }
   }
 
@@ -49,10 +48,10 @@ export class PeersAPI {
       if (peers.length > 0) {
         return { peer: peers[0] };
       } else {
-        return Promise.reject(new APIError('Peer not found', 200));
+        return Promise.reject(new HTTPError('Peer not found', 200));
       }
     } catch (err) {
-      throw new APIError('Failed to get peers', 200);
+      throw new HTTPError('Failed to get peers', 200);
     }
   }
 
@@ -65,7 +64,7 @@ export class PeersAPI {
 
       return { connected, disconnected, banned };
     } catch (e) {
-      throw new APIError('Failed to get peer count', 200);
+      throw new HTTPError('Failed to get peer count', 200);
     }
   }
 

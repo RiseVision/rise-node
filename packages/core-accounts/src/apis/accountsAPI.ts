@@ -1,7 +1,7 @@
 import { CoreSymbols } from '@risevision/core';
-import { APIError, DeprecatedAPIError } from '@risevision/core-apis';
+import { DeprecatedAPIError } from '@risevision/core-apis';
 import { IAccountsModel, IAccountsModule, ISystemModule } from '@risevision/core-interfaces';
-import { IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
+import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { AppConfig, ConstantsType, FieldsInModel, publicKey } from '@risevision/core-types';
 import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
@@ -38,7 +38,7 @@ export class AccountsAPI {
   public async getAccount(@SchemaValid(accountSchema.getAccount)
                           @QueryParams() query: { address?: string, publicKey?: publicKey }) {
     if (isEmpty(query.address) && isEmpty(query.publicKey)) {
-      throw new APIError('Missing required property: address or publicKey', 200);
+      throw new HTTPError('Missing required property: address or publicKey', 200);
     }
 
     const address = !isEmpty(query.publicKey)
@@ -46,7 +46,7 @@ export class AccountsAPI {
       : query.address;
 
     if (!isEmpty(query.address) && !isEmpty(query.publicKey) && address !== query.address) {
-      throw new APIError('Account publicKey does not match address', 200);
+      throw new HTTPError('Account publicKey does not match address', 200);
     }
     const theQuery: { address: string, publicKey?: Buffer } = { address };
     if (!isEmpty(query.publicKey)) {
@@ -54,7 +54,7 @@ export class AccountsAPI {
     }
     const accData = await this.accountsModule.getAccount(theQuery);
     if (!accData) {
-      throw new APIError('Account not found', 200);
+      throw new HTTPError('Account not found', 200);
     }
     return {
       account: await this.hookSystem.apply_filters(
@@ -93,7 +93,7 @@ export class AccountsAPI {
     const account = await this.accountsModule
       .getAccount({ address: params.address });
     if (!account) {
-      throw new APIError('Account not found', 200);
+      throw new HTTPError('Account not found', 200);
     }
     return { publicKey: account.hexPublicKey };
   }
@@ -103,7 +103,7 @@ export class AccountsAPI {
   public async topAccounts(@SchemaValid(accountSchema.top, { castNumbers: true })
                            @QueryParams() params: { limit?: number, offset?: number }) {
     if (!this.appConfig.topAccounts) {
-      throw new APIError('Top Accounts is not enabled', 403);
+      throw new HTTPError('Top Accounts is not enabled', 403);
     }
     let { limit, offset }                             = params;
     limit                                             = limit || 100;
@@ -130,7 +130,7 @@ export class AccountsAPI {
   @ValidateSchema()
   public async open(@SchemaValid(accountSchema.open)
                     @Body() body: { secret: string }): Promise<any> {
-    throw new DeprecatedAPIError();
+    throw new DeprecatedHTTPError();
   }
 
 }

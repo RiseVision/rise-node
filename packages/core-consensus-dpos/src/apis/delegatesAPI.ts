@@ -1,4 +1,4 @@
-import { APIError, DeprecatedAPIError, PrivateApisGuard } from '@risevision/core-apis';
+import { DeprecatedAPIError, PrivateApisGuard } from '@risevision/core-apis';
 import {
   IAccountsModule,
   IBlocksModel,
@@ -8,7 +8,7 @@ import {
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { ConstantsType, publicKey } from '@risevision/core-types';
-import { IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
+import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import BigNumber from 'bignumber.js';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
@@ -141,7 +141,7 @@ export class DelegatesAPI {
         .getAccount({ publicKey: Buffer.from(params.generatorPublicKey, 'hex') }, ['fees', 'rewards']);
 
       if (!account) {
-        throw new APIError('Account not found', 200);
+        throw new HTTPError('Account not found', 200);
       }
 
       return {
@@ -171,7 +171,7 @@ export class DelegatesAPI {
         ),
       };
     }
-    throw new APIError('Delegate not found', 200);
+    throw new HTTPError('Delegate not found', 200);
   }
 
   @Get('/voters')
@@ -284,19 +284,19 @@ export class DelegatesAPI {
 
     const pk = kp.publicKey.toString('hex');
     if (params.publicKey && pk !== params.publicKey) {
-      throw new APIError('Invalid passphrase', 200);
+      throw new HTTPError('Invalid passphrase', 200);
     }
 
     if (this.forgeModule.isForgeEnabledOn(pk)) {
-      throw new APIError('Forging is already enabled', 200);
+      throw new HTTPError('Forging is already enabled', 200);
     }
 
     const account = await this.accounts.getAccount({ publicKey: kp.publicKey });
     if (!account) {
-      throw new APIError('Account not found', 200);
+      throw new HTTPError('Account not found', 200);
     }
     if (!account.isDelegate) {
-      throw new APIError('Delegate not found', 200);
+      throw new HTTPError('Delegate not found', 200);
     }
 
     this.forgeModule.enableForge(kp);
@@ -313,19 +313,19 @@ export class DelegatesAPI {
 
     const pk = kp.publicKey.toString('hex');
     if (params.publicKey && pk !== params.publicKey) {
-      throw new APIError('Invalid passphrase', 200);
+      throw new HTTPError('Invalid passphrase', 200);
     }
 
     if (!this.forgeModule.isForgeEnabledOn(pk)) {
-      throw new APIError('Forging is already disabled', 200);
+      throw new HTTPError('Forging is already disabled', 200);
     }
 
     const account = await this.accounts.getAccount({ publicKey: kp.publicKey });
     if (!account) {
-      throw new APIError('Account not found', 200);
+      throw new HTTPError('Account not found', 200);
     }
     if (!account.isDelegate) {
-      throw new APIError('Delegate not found', 200);
+      throw new HTTPError('Delegate not found', 200);
     }
 
     this.forgeModule.disableForge(pk);

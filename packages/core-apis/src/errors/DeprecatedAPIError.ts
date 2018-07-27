@@ -1,6 +1,6 @@
-import { APIError } from './ApiError';
+import { HTTPError } from '@risevision/core-utils';
 
-export class DeprecatedAPIError extends APIError {
+export class DeprecatedAPIError extends HTTPError {
 
   constructor() {
     super('Method is deprecated', 500);

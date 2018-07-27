@@ -1,6 +1,6 @@
-import { APIError, DeprecatedAPIError } from '@risevision/core-apis';
+import { DeprecatedAPIError } from '@risevision/core-apis';
 import { IAccountsModule, ISystemModule, Symbols, } from '@risevision/core-interfaces';
-import { IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
+import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
@@ -33,7 +33,7 @@ export class DelegatesAPI {
     const account = await this.accounts
       .getAccount({ address: params.address });
     if (!account) {
-      throw new APIError('Account not found', 200);
+      throw new HTTPError('Account not found', 200);
     }
     if (account.delegates) {
       const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'rank:desc' });

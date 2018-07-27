@@ -1,9 +1,8 @@
 import { ILogger } from '@risevision/core-interfaces';
-import { IoCSymbol, Symbols } from '@risevision/core-utils';
+import { HTTPError, IoCSymbol, Symbols } from '@risevision/core-utils';
 import express from 'express';
 import { inject, injectable } from 'inversify';
 import { ExpressErrorMiddlewareInterface, Middleware } from 'routing-controllers';
-import { APIError } from '../errors';
 import { APISymbols } from '../helpers';
 
 @Middleware({ type: 'after' })
@@ -15,7 +14,7 @@ export class APIErrorHandler implements ExpressErrorMiddlewareInterface {
   private logger: ILogger;
 
   public error(error: any, req: express.Request, res: express.Response, next: (err: any) => any) {
-    if (error instanceof APIError) {
+    if (error instanceof HTTPError) {
       res.status(error.statusCode);
     } else {
       res.status(200);
