@@ -99,6 +99,9 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
   private isCleaning: boolean = false;
 
+  /**
+   * Clean up tasks
+   */
   public cleanup() {
     this.isCleaning = true;
     return Promise.resolve();
