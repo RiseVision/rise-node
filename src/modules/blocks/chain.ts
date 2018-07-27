@@ -69,6 +69,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
   private isProcessing: boolean = false;
 
+  /**
+   * Wait until block processing finish
+   */
   public async cleanup() {
     this.isCleaning = true;
     while (this.isProcessing) {
@@ -94,6 +97,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     return newLastBlock;
   }
 
+  /**
+   * Deletes blocks after a certain block height (included).
+   */
   public async deleteAfterBlock(height: number): Promise<void> {
     await this.BlocksModel.destroy({ where: { [Op.gte]: height } });
   }
@@ -175,6 +181,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
   }
 
+  /**
+   * Apply block to blockchain
+   */
   @WrapInBalanceSequence
   public async applyBlock(block: SignedAndChainedBlockType,
                           broadcast: boolean,
