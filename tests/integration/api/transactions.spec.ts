@@ -452,6 +452,9 @@ describe('api/transactions', () => {
         .send({ transaction: unvoteTX })
         .expect(200, {success: true, accepted: [unvoteTX.id], invalid: []});
 
+    });
+    it('should accept unvote tx from multiple txs', async () => {
+      const unvoteTX = await createVoteTransaction(0, senderAccount, delegate1.publicKey, false); /*unvote */
       await supertest(initializer.appManager.expressApp)
         .put('/api/transactions/')
         .send({ transactions: [unvoteTX] })

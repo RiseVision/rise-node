@@ -244,9 +244,11 @@ export class TransactionsAPI {
     }
 
     const validTxs: Array<IBaseTransaction<any>> = [];
+    const transportTxs: {[k: string]: ITransportTransaction<any>} = {};
     for (const tx of allTxs) {
       try {
         validTxs.push(this.txLogic.objectNormalize(tx));
+        transportTxs[tx.id] = tx;
       } catch (e) {
         // Tx is not valid.
         invalidTxsWithReasons.push({id: tx.id, reason: e.message});
@@ -265,18 +267,16 @@ export class TransactionsAPI {
       .checkTransaction(tx, accountsMap, this.blocksModule.lastBlock.height)
       .then(() => validTxsIDs.push(tx.id))
       .catch((err) => {
-        console.log(err.message);
         // Remove from valid
         validTxs.splice(validTxs.findIndex((t) => t.id === tx.id), 1);
         // Add to invalid
         invalidTxsWithReasons.push({id: tx.id, reason: err.message});
       }))
     );
-
     if (validTxs.length > 0 ) {
       // Schema validation is done in transportModule
       await this.transportModule.receiveTransactions(
-        [transaction],
+        validTxs.map((tx) => transportTxs[tx.id]),
         null,
         true
       );
