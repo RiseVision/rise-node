@@ -552,7 +552,8 @@ export class TransactionLogic implements ITransactionLogic {
    */
   public objectNormalize(tx: IConfirmedTransaction<any>): IConfirmedTransaction<any>;
   // tslint:disable-next-line max-line-length
-  public objectNormalize(tx: IBaseTransaction<any> | ITransportTransaction<any> | IConfirmedTransaction<any>): IBaseTransaction<any> | IConfirmedTransaction<any> {
+  public objectNormalize(tx2: IBaseTransaction<any> | ITransportTransaction<any> | IConfirmedTransaction<any>): IBaseTransaction<any> | IConfirmedTransaction<any> {
+    const tx = {... tx2};
     this.assertKnownTransactionType(tx.type);
     for (const key in tx) {
       if (tx[key] === null || typeof(tx[key]) === 'undefined') {
