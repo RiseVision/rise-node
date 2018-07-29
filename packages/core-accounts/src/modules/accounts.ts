@@ -9,12 +9,13 @@ import { DBOp, FieldsInModel, IBaseTransaction } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { AccountsSymbols } from '../symbols';
 import { DBHelper, ModelSymbols } from '@risevision/core-models';
+import { AccountLogic } from '../logic';
 
 @injectable()
 export class AccountsModule implements IAccountsModule {
 
   @inject(AccountsSymbols.logic)
-  private accountLogic: IAccountLogic;
+  private accountLogic: AccountLogic;
   @inject(ModelSymbols.helpers.db)
   private dbHelper: DBHelper;
 
@@ -97,10 +98,7 @@ export class AccountsModule implements IAccountsModule {
     return this.accountLogic.merge(address, diff);
   }
 
-  /**
-   * @deprecated
-   */
-  public generateAddressByPublicKey(pk: string | Buffer) {
+  public generateAddressByPublicKey(pk: Buffer) {
     return this.accountLogic.generateAddressByPublicKey(pk);
   }
 

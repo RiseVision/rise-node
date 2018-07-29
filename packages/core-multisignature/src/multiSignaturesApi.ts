@@ -71,7 +71,7 @@ export class MultiSignaturesApi {
     const items = [];
     for (const account of accounts) {
       const addresses        = account.multisignatures.map((pk) => this.accounts
-        .generateAddressByPublicKey(pk));
+        .generateAddressByPublicKey(Buffer.from(pk, 'hex')));
       const multisigaccounts = await this.accounts.getAccounts(
         {
           address: { $in: addresses },

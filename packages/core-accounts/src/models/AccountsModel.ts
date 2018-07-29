@@ -4,14 +4,15 @@ import { IAccountsModel } from '@risevision/core-interfaces';
 import * as pgp from 'pg-promise';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
-import { Column, DataType, DefaultScope, Model, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
+import { Column, DataType, DefaultScope, PrimaryKey, Table } from 'sequelize-typescript';
 import { Container } from 'inversify';
+import { BaseModel } from '@risevision/core-models';
 
 @DefaultScope({
   attributes: ['address', 'publicKey', 'balance', 'blockId', 'producedblocks', 'missedblocks', 'fees', 'rewards', 'virgin', 'u_balance'].sort()
 })
 @Table({ tableName: 'mem_accounts' })
-export class AccountsModel extends Model<AccountsModel> implements IAccountsModel {
+export class AccountsModel extends BaseModel<AccountsModel> implements IAccountsModel {
   public static container: Container;
   public static options: any;
 

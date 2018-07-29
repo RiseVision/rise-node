@@ -13,18 +13,18 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
   public constants    = {};
 
-  public addElementsToContainer(container: Container, appConfig: AppConfig): void {
-    container.bind(AccountsSymbols.logic).to(AccountLogic).inSingletonScope();
-    container.bind(ModelSymbols.model).toConstructor(AccountsModel)
+  public addElementsToContainer(): void {
+    this.container.bind(AccountsSymbols.logic).to(AccountLogic).inSingletonScope();
+    this.container.bind(ModelSymbols.model).toConstructor(AccountsModel)
       .whenTargetNamed(AccountsSymbols.model);
-    container.bind(AccountsSymbols.module).to(AccountsModule).inSingletonScope();
-    container.bind(APISymbols.api).to(AccountsAPI)
+    this.container.bind(AccountsSymbols.module).to(AccountsModule).inSingletonScope();
+    this.container.bind(APISymbols.api).to(AccountsAPI)
       .inSingletonScope()
       .whenTargetNamed(AccountsSymbols.api);
 
   }
 
-  public initAppElements(container: Container, config: AppConfig): void {
+  public initAppElements(): void {
     return void 0;
   }
 

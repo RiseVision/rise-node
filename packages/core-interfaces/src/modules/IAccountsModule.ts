@@ -22,5 +22,5 @@ export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> exte
   /**
    * @deprecated
    */
-  generateAddressByPublicKey(pk: publicKey|Buffer): string;
+  generateAddressByPublicKey(pk: Buffer): string;
 }

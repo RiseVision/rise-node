@@ -268,11 +268,11 @@ export class AccountLogic extends WPHooksSubscriber(Object) implements IAccountL
     return await this.AccountsModel.destroy({ where: { address: address.toUpperCase() } });
   }
 
-  public generateAddressByPublicKey(publicKey: string): string {
+  public generateAddressByPublicKey(publicKey: Buffer): string {
     this.assertPublicKey(publicKey, false);
 
     const hash = crypto.createHash('sha256')
-      .update(new Buffer(publicKey, 'hex'))
+      .update(publicKey)
       .digest();
 
     const tmp = Buffer.alloc(8);

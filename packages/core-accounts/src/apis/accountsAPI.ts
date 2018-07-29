@@ -1,5 +1,4 @@
 import { CoreSymbols } from '@risevision/core';
-import { DeprecatedAPIError } from '@risevision/core-apis';
 import { IAccountsModel, IAccountsModule, ISystemModule } from '@risevision/core-interfaces';
 import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { AppConfig, ConstantsType, FieldsInModel, publicKey } from '@risevision/core-types';
@@ -12,6 +11,7 @@ import * as z_schema from 'z-schema';
 
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { AccountsSymbols } from '../symbols';
+import { DeprecatedAPIError } from '@risevision/core-apis';
 
 const accountSchema = require('../../schema/accounts.json');
 
@@ -42,7 +42,7 @@ export class AccountsAPI {
     }
 
     const address = !isEmpty(query.publicKey)
-      ? this.accountsModule.generateAddressByPublicKey(query.publicKey)
+      ? this.accountsModule.generateAddressByPublicKey(Buffer.from(query.publicKey, 'hex'))
       : query.address;
 
     if (!isEmpty(query.address) && !isEmpty(query.publicKey) && address !== query.address) {
@@ -130,7 +130,7 @@ export class AccountsAPI {
   @ValidateSchema()
   public async open(@SchemaValid(accountSchema.open)
                     @Body() body: { secret: string }): Promise<any> {
-    throw new DeprecatedHTTPError();
+    throw new DeprecatedAPIError();
   }
 
 }
