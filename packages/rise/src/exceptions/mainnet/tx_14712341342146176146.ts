@@ -1,5 +1,6 @@
-import { ExceptionsList, ExceptionsManager, IExceptionHandler } from '@risevision/core-helpers';
+import { ExceptionsManager, IExceptionHandler } from '@risevision/core-exceptions';
 import { ITransactionLogic } from '@risevision/core-interfaces';
+import { TXExceptions } from '@risevision/core-transactions';
 import { IBaseTransaction } from '@risevision/core-types';
 /**
  * This transaction was broadcasted with 14572759844663166621 in the same
@@ -24,12 +25,12 @@ export default function exceptionTx14712341342146176146(excManager: ExceptionsMa
     },
   };
   excManager.registerExceptionHandler(
-    ExceptionsList.tx_apply,
+    TXExceptions.tx_apply,
     'tx_14712341342146176146',
     handler
   );
   excManager.registerExceptionHandler(
-    ExceptionsList.tx_applyUnconfirmed,
+    TXExceptions.tx_applyUnconfirmed,
     'tx_14712341342146176146',
     handler
   );

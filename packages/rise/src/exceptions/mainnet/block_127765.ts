@@ -1,10 +1,11 @@
-import { ExceptionsList, ExceptionsManager } from '@risevision/core-helpers';
+import { DposExceptionsList } from '@risevision/core-consensus-dpos';
 import { SignedBlockType } from '@risevision/core-types';
+import { ExceptionsManager } from '@risevision/core-exceptions';
 
 // assertValidBlockSlot(block: SignedBlockType): Promise<void>;
 export default function block_127765(excManager: ExceptionsManager) {
   excManager.registerExceptionHandler(
-    ExceptionsList.assertValidSlot,
+    DposExceptionsList.assertValidSlot,
     'block_127765',
     {
       canHandle(obj: any /*DelegatesModule*/, signedBlock: SignedBlockType) {

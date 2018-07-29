@@ -1,5 +1,6 @@
-import { ExceptionsList, ExceptionsManager, IExceptionHandler } from '@risevision/core-helpers';
+import { ExceptionsManager, IExceptionHandler } from '@risevision/core-exceptions';
 import { ITransactionLogic } from '@risevision/core-interfaces';
+import { TXExceptions } from '@risevision/core-transactions';
 import { IBaseTransaction } from '@risevision/core-types';
 // tslint:disable max-line-length
 /**
@@ -22,7 +23,7 @@ export default function exceptionTx14712341342146176146(excManager: ExceptionsMa
     },
   };
   excManager.registerExceptionHandler(
-    ExceptionsList.checkBalance,
+    TXExceptions.checkBalance,
     'tx_10425551571020716913',
     handler
   );

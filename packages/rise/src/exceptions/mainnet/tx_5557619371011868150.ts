@@ -1,5 +1,6 @@
-import { ExceptionsList, ExceptionsManager, IExceptionHandler } from '@risevision/core-helpers';
+import { ExceptionsManager, IExceptionHandler } from '@risevision/core-exceptions';
 import { ITransactionLogic } from '@risevision/core-interfaces';
+import { TXExceptions } from '@risevision/core-transactions';
 import { IBaseTransaction } from '@risevision/core-types';
 
 /**
@@ -21,7 +22,7 @@ export default function exceptionTx5557619371011868150(excManager: ExceptionsMan
     },
   };
   excManager.registerExceptionHandler(
-    ExceptionsList.checkBalance,
+    TXExceptions.checkBalance,
     'tx_5557619371011868150',
     handler
   );

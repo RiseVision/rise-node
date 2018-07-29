@@ -1,5 +1,6 @@
-import { ExceptionsList, ExceptionsManager, IExceptionHandler } from '@risevision/core-helpers';
+import { ExceptionsManager, IExceptionHandler } from '@risevision/core-exceptions';
 import { ITransactionLogic } from '@risevision/core-interfaces';
+import { TXExceptions } from '@risevision/core-transactions';
 import { IBaseTransaction } from '@risevision/core-types';
 /**
  * Failed to apply transaction 1563714189640390961 - Account does not have enough currency: 15844723232461775384R
@@ -21,7 +22,7 @@ export default function exceptionTx1563714189640390961(excManager: ExceptionsMan
     },
   };
   excManager.registerExceptionHandler(
-    ExceptionsList.checkBalance,
+    TXExceptions.checkBalance,
     'tx_1563714189640390961',
     handler
   );
