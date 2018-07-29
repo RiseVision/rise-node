@@ -447,52 +447,15 @@ describe('logic/transaction', () => {
     });
   });
 
-  describe('process', () => {
-    let instGetIdStub;
 
-    beforeEach(() => {
-      instGetIdStub     = sandbox.stub(instance, 'getId').returns(tx.id);
-    });
-
-    it('should call assertKnownTransactionType', async () => {
-      const akttStub = sandbox.stub(instance, 'assertKnownTransactionType').throws('stop');
-      try {
-        await instance.process(tx, sender, {} as any);
-      } catch (e) {
-        expect(akttStub.calledOnce).to.be.true;
-        expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx.type);
-      }
-    });
-
-    it('should throw if Missing sender', async () => {
-      await expect(instance.process(tx, undefined, {} as any)).to.be.rejectedWith('Missing sender');
-    });
-
-    it('should throw if Invalid transaction id', async () => {
-      instGetIdStub.returns('unlikelyId');
-      await expect(instance.process(tx, sender, {} as any)).to.be.rejectedWith('Invalid transaction id');
-    });
-
-    it('should call getId', async () => {
-      await instance.process(tx, sender, {} as any);
-      expect(instGetIdStub.calledOnce).to.be.true;
-      expect(instGetIdStub.firstCall.args[0]).to.be.deep.eq(tx);
-    });
-
-    it('should return the tx with senderId added', async () => {
-      const retVal            = await instance.process(tx, sender, {} as any);
-      const expectedRetVal    = Object.assign({}, tx);
-      expectedRetVal.senderId = sender.address;
-      expect(retVal).to.be.deep.equal(expectedRetVal);
-    });
-
-  });
 
   describe('verify', () => {
     let verifySignatureStub: SinonStub;
     let checkBalanceStub: SinonStub;
     let calculateFeeStub: SinonStub;
     let txTypeVerifyStub: SinonStub;
+    let instGetIdStub;
+
 
     beforeEach(() => {
       (tx as any).blockId    = '12345ab';
@@ -503,7 +466,13 @@ describe('logic/transaction', () => {
       calculateFeeStub       = sandbox.stub(sendTransaction, 'calculateFee').returns(tx.fee);
       txTypeVerifyStub       = sandbox.stub(sendTransaction, 'verify').resolves();
       sender.isMultisignature = () => false;
+      instGetIdStub     = sandbox.stub(instance, 'getId').returns(tx.id);
+    });
 
+    it('should throw if the tx.id is wrong', async () => {
+      instGetIdStub.returns('10');
+      await expect(instance.verify(tx, sender, {} as any, null))
+        .to.be.rejectedWith('Invalid transaction id');
     });
 
     it('should call assertKnownTransactionType', async () => {

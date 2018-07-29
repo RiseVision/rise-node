@@ -445,6 +445,52 @@ describe('api/transactions', () => {
           }],
         });
     });
+    it('should reject malformed Transaction', async () => {
+      const orig = await createSendTransaction(0, 1, senderAccount, senderAccount.address);
+
+      await supertest(initializer.appManager.expressApp)
+        .put('/api/transactions/')
+        .send({ transactions: [{ ...orig, senderId: null }] })
+        .expect(200, {
+          success: true, accepted: [],
+          invalid: [
+            {
+              id    : orig.id,
+              reason: 'Failed to validate transaction schema: Missing required property: senderId'
+            },
+          ],
+        });
+
+      await supertest(initializer.appManager.expressApp)
+        .put('/api/transactions/')
+        .send({ transactions: [ {...orig, id: '10'} ] })
+        .expect(200, {
+          success: true, accepted: [],
+          invalid: [
+            {
+              id    : '10',
+              reason: 'Invalid transaction id'
+            },
+          ],
+        });
+
+      // Asset validation
+      const unvoteTX = await createVoteTransaction(0, senderAccount, delegate1.publicKey, false); /*unvote */
+      (unvoteTX.asset as any).votes.push('meow');
+      await supertest(initializer.appManager.expressApp)
+        .put('/api/transactions/')
+        .send({ transaction: unvoteTX })
+        .expect(200, {
+          success: true, accepted: [],
+          invalid: [
+            {
+              id    : unvoteTX.id,
+              reason: 'Failed to validate vote schema: String does not match pattern ^[-+]{1}[0-9a-z]{64}$: meow'
+            },
+          ],
+        });
+
+    });
     it('should accept unvote transaction', async () => {
       const unvoteTX = await createVoteTransaction(0, senderAccount, delegate1.publicKey, false); /*unvote */
       await supertest(initializer.appManager.expressApp)

@@ -582,9 +582,19 @@ describe('apis/transactionsAPI', () => {
     });
   });
   describe('put', () => {
-    it('should throw if no transaction is provided', async () => {
-      await expect(instance.put({}))
-        .to.be.rejectedWith('Transaction not provided');
+    let accModule: AccountsModuleStub;
+    beforeEach(() => {
+      accModule = container.get(Symbols.modules.accounts);
+      accModule.stubs.resolveAccountsForTransactions.resolves({});
+    });
+
+    it('should respond correctly even if no transaction is provided', async () => {
+      const res = await instance.put({});
+
+      expect(res).deep.eq({
+        accepted: [],
+        invalid: []
+      });
     });
     it('should validate transactions', async () => {
       container.rebind(Symbols.generic.zschema).toConstantValue(new z_schema({}));
@@ -596,14 +606,21 @@ describe('apis/transactionsAPI', () => {
         .to.be.rejectedWith('Array is too long (11)');
     });
 
-    it('should throw if any of the tx is valid', async () => {
-      await expect(instance.put({transaction: 'a', transactions: ['a']}  as any))
-        .to.be.rejectedWith('Invalid transaction(s)');
+    it('should return invalid if any of the tx is valid', async () => {
+      txLogicStub.stubs.objectNormalize.throws(new Error('cant normalize'));
+      const ret = await instance.put({transaction: 'a', transactions: ['a']}  as any);
+
+      expect(ret).deep.eq({
+        accepted: [],
+        invalid: [
+          { id: undefined, reason: 'cant normalize'},
+          { id: undefined, reason: 'cant normalize'}
+        ],
+      });
     });
 
     it('should filter out only valid transactions', async () => {
       blocksModuleStub.lastBlock = { height: 100 }  as any;
-      const accModule: AccountsModuleStub = container.get(Symbols.modules.accounts);
       txLogicStub.stubs.objectNormalize.callsFake((t) => t);
       txLogicStub.stubs.objectNormalize.onFirstCall().throws(new Error('objectNormalize'));
       // Create some txs.

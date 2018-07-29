@@ -1,6 +1,6 @@
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
-import { Body, BodyParam, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
+import { Body, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { castFieldsToNumberUsingSchema, removeEmptyObjKeys, TransactionType } from '../helpers';
@@ -225,17 +225,15 @@ export class TransactionsAPI {
       transactions?: Array<ITransportTransaction<any>>
     }
   ) {
-    const {transaction, transactions} = body;
-    if (!transaction && !transactions) {
-      throw new APIError('Transaction not provided', 500);
-    }
+    const { transaction } = body;
+    let { transactions }  = body;
     if (transactions && !Array.isArray(transactions)) {
-      throw new APIError('Transactions provided but not array', 500);
+      transactions = [];
     }
 
-    const invalidTxsWithReasons: Array<{id: string, reason: string}> = [];
-    const validTxsIDs = [];
-    const allTxs = [];
+    const invalidTxsWithReasons: Array<{ id: string, reason: string }> = [];
+    const validTxsIDs                                                  = [];
+    const allTxs                                                       = [];
     if (transaction) {
       allTxs.push(transaction);
     }
@@ -243,20 +241,16 @@ export class TransactionsAPI {
       allTxs.push(...transactions);
     }
 
-    const validTxs: Array<IBaseTransaction<any>> = [];
-    const transportTxs: {[k: string]: ITransportTransaction<any>} = {};
+    const validTxs: Array<IBaseTransaction<any>>                    = [];
+    const transportTxs: { [k: string]: ITransportTransaction<any> } = {};
     for (const tx of allTxs) {
       try {
         validTxs.push(this.txLogic.objectNormalize(tx));
         transportTxs[tx.id] = tx;
       } catch (e) {
         // Tx is not valid.
-        invalidTxsWithReasons.push({id: tx.id, reason: e.message});
+        invalidTxsWithReasons.push({ id: tx.id, reason: e.message });
       }
-    }
-
-    if (validTxs.length === 0) {
-      throw new APIError('Invalid transaction(s)', 500);
     }
 
     // Validate transactions against db. this is a mechanism to avoid pollution of queues of invalid transactions.
@@ -270,10 +264,10 @@ export class TransactionsAPI {
         // Remove from valid
         validTxs.splice(validTxs.findIndex((t) => t.id === tx.id), 1);
         // Add to invalid
-        invalidTxsWithReasons.push({id: tx.id, reason: err.message});
+        invalidTxsWithReasons.push({ id: tx.id, reason: err.message });
       }))
     );
-    if (validTxs.length > 0 ) {
+    if (validTxs.length > 0) {
       // Schema validation is done in transportModule
       await this.transportModule.receiveTransactions(
         validTxs.map((tx) => transportTxs[tx.id]),
