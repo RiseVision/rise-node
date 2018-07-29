@@ -7,4 +7,5 @@ export const TXSymbols = {
   module     : Symbols.modules.transactions,
   pool       : Symbol.for('pool'),
   sendTX     : Symbol.for('sendTX'),
+  transaction: Symbol.for('transaction'),
 };

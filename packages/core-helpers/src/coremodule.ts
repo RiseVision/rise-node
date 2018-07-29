@@ -1,12 +1,12 @@
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { AppConfig } from '@risevision/core-types';
-import { loggerCreator, Symbols as UtilsSymbols } from '@risevision/core-utils';
+import { loggerCreator } from '@risevision/core-utils';
 import { CommanderStatic } from 'commander';
-import { Container } from 'inversify';
 import { HelpersSymbols } from './helpersSymbols';
 import { JobsQueue } from './jobsQueue';
 import { Migrator } from './migrator';
 import { Sequence } from './sequence';
+import { Symbols } from '@risevision/core-interfaces';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
@@ -20,7 +20,7 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       errorLevel: this.config.fileLogLevel,
       filename  : this.config.logFileName,
     });
-    this.container.bind(UtilsSymbols.logger).toConstantValue(logger);
+    this.container.bind(Symbols.helpers.logger).toConstantValue(logger);
     this.container.bind(HelpersSymbols.migrator).to(Migrator).inSingletonScope();
     [
       HelpersSymbols.names.balancesSequence,

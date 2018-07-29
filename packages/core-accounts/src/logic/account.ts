@@ -4,11 +4,12 @@ import {
   AccountFilterData,
   IAccountLogic,
   IAccountsModel,
-  ILogger
+  ILogger,
+  Symbols
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
-import { catchToLoggerAndRemapError, MyBigNumb, Symbols as UtilsSymbols } from '@risevision/core-utils';
+import { catchToLoggerAndRemapError, MyBigNumb } from '@risevision/core-utils';
 import { ConstantsType, DBOp, FieldsInModel, ModelAttributes } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
@@ -49,10 +50,9 @@ export class AccountLogic extends WPHooksSubscriber(Object) implements IAccountL
    */
   private editable: string[];
 
-
   private constants: ConstantsType;
 
-  @inject(UtilsSymbols.logger)
+  @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
   @inject(ModelSymbols.model)

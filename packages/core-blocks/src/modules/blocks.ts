@@ -1,7 +1,6 @@
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
-import { IBlocksModel, IBlocksModule, ILogger } from '@risevision/core-interfaces';
+import { IBlocksModel, IBlocksModule, ILogger, Symbols } from '@risevision/core-interfaces';
 import { ConstantsType } from '@risevision/core-types';
-import { Symbols as UtilsSymbols } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 
 // TODO Eventually remove this module and use appState instead.
@@ -12,7 +11,7 @@ export class BlocksModule implements IBlocksModule {
   @inject(LaunchpadSymbols.constants)
   private constants: ConstantsType;
   private internalLastReceipt: number;
-  @inject(UtilsSymbols.logger)
+  @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
   constructor() {

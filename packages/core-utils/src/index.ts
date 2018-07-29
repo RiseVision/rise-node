@@ -9,5 +9,5 @@ export * from './httpError';
 export * from './loggerCreator';
 export * from './orderBy';
 export * from './promiseUtils';
-export * from './symbols';
+export * from './utilsSymbols';
 export * from './z_schema';
