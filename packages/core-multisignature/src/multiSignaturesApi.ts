@@ -5,24 +5,26 @@ import {
   ILogger,
   ITransactionLogic,
   ITransactionsModel,
-  ITransactionsModule,
+  ITransactionsModule, Symbols,
   VerificationType
 } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
+
 import { publicKey } from '@risevision/core-types';
+import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import * as filterObject from 'filter-object';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import { Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
+import { multisigSymbols } from './helpers';
 import { Accounts2MultisignaturesModel } from './models';
 import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
-import { HTTPError } from '../../core-utils/src/httpError';
-import { IoCSymbol } from '../../core-utils/src/decorators/iocSymbol';
 
 const apiSchema = require('../schema/apischema.json');
 
 @JsonController('/api/multisignatures')
 @injectable()
-@IoCSymbol(Symbols.api.multisignatures)
+@IoCSymbol(multisigSymbols.api)
 export class MultiSignaturesApi {
   // Generics
   @inject(Symbols.generic.zschema)
@@ -45,9 +47,11 @@ export class MultiSignaturesApi {
   private transactions: ITransactionsModule;
 
   // models
-  @inject(Symbols.models.accounts2Multisignatures)
+  @inject(ModelSymbols.model)
+  @named(multisigSymbols.models.accounts2Multi)
   private Accounts2MultisignaturesModel: typeof Accounts2MultisignaturesModel;
-  @inject(Symbols.models.transactions)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
   @Get('/accounts')

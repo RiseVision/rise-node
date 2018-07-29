@@ -1,9 +1,8 @@
-import { Sequence, Symbols } from '@risevision/core-helpers';
-import { ILogger, ITransportModule } from '@risevision/core-interfaces';
-import { inject, injectable, tagged } from 'inversify';
+import { ILogger, ISequence, ITransportModule, Symbols } from '@risevision/core-interfaces';
+import { inject, injectable, named } from 'inversify';
 import z_schema from 'z-schema';
-import { MultisignaturesModule } from './multisignatures';
 import { multisigSymbols } from './helpers';
+import { MultisignaturesModule } from './multisignatures';
 
 const loaderSchema = require('../schema/loader.json');
 
@@ -19,8 +18,8 @@ export class MultisigLoader {
   private transportModule: ITransportModule;
 
   @inject(Symbols.helpers.sequence)
-  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
-  private defaultSequence: Sequence;
+  @named(Symbols.names.helpers.balancesSequence)
+  private defaultSequence: ISequence;
 
   @inject(multisigSymbols.module)
   private multisigModule: MultisignaturesModule;

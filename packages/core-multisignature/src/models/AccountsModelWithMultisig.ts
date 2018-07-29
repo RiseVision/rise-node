@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 // import { IAccountsModel } from '@risevision/core-interfaces';
-import { AccountsModel, utils as modelsUtils } from '@risevision/core-models';
+import { utils as modelsUtils } from '@risevision/core-models';
 import { Column, DataType, DefaultScope, Model, Sequelize } from 'sequelize-typescript';
 import * as sequelize from 'sequelize';
 import { publicKey } from '@risevision/core-types';
@@ -43,5 +43,3 @@ export class AccountsModelWithMultisig extends IAccountsModel {
   }
 
 }
-
-modelsUtils.mergeModels(AccountsModelWithMultisig, AccountsModel);

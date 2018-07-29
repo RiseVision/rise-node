@@ -1,30 +1,31 @@
-import { Bus, Sequence, Symbols, WrapInBalanceSequence } from '@risevision/core-helpers';
 import {
-  IAccountsModel,
   IAccountsModule,
   ILogger,
-  IMultisignaturesModule,
+  ISequence,
   ITransactionLogic,
-  ITransactionPoolLogic, ITransactionsModule, VerificationType
+  ITransactionPoolLogic,
+  ITransactionsModule,
+  Symbols,
+  VerificationType
 } from '@risevision/core-interfaces';
 import { IBaseTransaction, TransactionType } from '@risevision/core-types';
-import { inject, injectable, tagged } from 'inversify';
+import { WrapInBalanceSequence } from '@risevision/core-utils';
+import { inject, injectable, named } from 'inversify';
 import SocketIO from 'socket.io';
+import { multisigSymbols } from './helpers';
 import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
 import { MultisigAsset, MultiSignatureTransaction } from './transaction';
 
 @injectable()
-export class MultisignaturesModule implements IMultisignaturesModule {
-  @inject(Symbols.logic.transactionPool)
+export class MultisignaturesModule {
+  @inject(Symbols.logic.txpool)
   private transactionPool: ITransactionPoolLogic;
 
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule<AccountsModelWithMultisig>;
   @inject(Symbols.helpers.sequence)
-  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
-  public balancesSequence: Sequence;
-  @inject(Symbols.helpers.bus)
-  private bus: Bus;
+  @named(Symbols.names.helpers.balancesSequence)
+  public balancesSequence: ISequence;
   @inject(Symbols.generic.socketIO)
   private io: SocketIO.Server;
   @inject(Symbols.helpers.logger)
@@ -34,7 +35,8 @@ export class MultisignaturesModule implements IMultisignaturesModule {
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
-  @inject(Symbols.logic.transactions.createmultisig)
+  @inject(Symbols.logic.transaction)
+  @named(multisigSymbols.tx)
   private multiTx: MultiSignatureTransaction;
 
   /**
@@ -48,7 +50,7 @@ export class MultisignaturesModule implements IMultisignaturesModule {
       throw new Error('Transaction not found');
     }
 
-    const sender = await this.accountsModule.getAccount({address: transaction.senderId});
+    const sender = await this.accountsModule.getAccount({ address: transaction.senderId });
     if (!sender) {
       throw new Error('Sender not found');
     }
@@ -77,7 +79,8 @@ export class MultisignaturesModule implements IMultisignaturesModule {
     }
     payload.ready = await this.multiTx.ready(transaction, sender);
 
-    await this.bus.message('signature', {transaction: tx.transaction, signature: tx.signature}, true);
+    // TODO:
+    // await this.bus.message('signature', {transaction: tx.transaction, signature: tx.signature}, true);
     return null;
   }
 
@@ -117,7 +120,7 @@ export class MultisignaturesModule implements IMultisignaturesModule {
     }
     let verify    = false;
     const allKeys = tx.asset.multisignature.keysgroup
-      // add wannabe multisig member keys
+    // add wannabe multisig member keys
       .map((k) => k.substring(1))
       // add current multisignature member keys
       .concat(sender.isMultisignature() ? sender.multisignatures : []);

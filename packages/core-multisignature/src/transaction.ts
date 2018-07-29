@@ -5,6 +5,7 @@ import {
   ITransactionsModel, Symbols,
   VerificationType
 } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 import { BaseTx } from '@risevision/core-transactions';
 import {
   DBCreateOp,
@@ -16,7 +17,7 @@ import {
   TransactionType
 } from '@risevision/core-types';
 import * as ByteBuffer from 'bytebuffer';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
@@ -59,11 +60,14 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
-  @inject(Symbols.models.multisignatures)
+  @inject(ModelSymbols.model)
+  @named(multisigSymbols.models.model)
   private MultiSignaturesModel: typeof MultiSignaturesModel;
-  @inject(Symbols.models.accounts2Multisignatures)
+  @inject(ModelSymbols.model)
+  @named(multisigSymbols.models.accounts2Multi)
   private Accounts2MultisignaturesModel: typeof Accounts2MultisignaturesModel;
-  @inject(Symbols.models.accounts2U_Multisignatures)
+  @inject(ModelSymbols.model)
+  @named(multisigSymbols.models.accounts2U_Multi)
   private Accounts2UMultisignaturesModel: typeof Accounts2U_MultisignaturesModel;
   @inject(Symbols.models.accounts)
   private AccountsModel: typeof AccountsModelWithMultisig;
