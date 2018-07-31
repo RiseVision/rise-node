@@ -205,7 +205,7 @@ export class TransactionsModule implements ITransactionsModule {
    * If it does not throw the tx should be valid.
    * NOTE: this must be called with an unconfirmed transaction
    */
-  public async checkTransaction(tx: IBaseTransaction<any>, accountsMap: {[address: string]: AccountsModel}, height: number): Promise<void> {
+  public async checkTransaction(tx: IBaseTransaction<any>, accountsMap: {[address: string]: IAccountsModel}, height: number): Promise<void> {
     const acc = accountsMap[tx.senderId];
     if (!acc) {
       throw new Error('Cannot find account from accounts');

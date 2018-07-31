@@ -93,5 +93,5 @@ export interface ITransactionsModule extends IModule {
    * If it does not throw the tx should be valid.
    * NOTE: this must be called with an unconfirmed transaction
    */
-  checkTransaction(tx: IBaseTransaction<any>, accountsMap: {[address: string]: AccountsModel}, height: number): Promise<void>;
+  checkTransaction(tx: IBaseTransaction<any>, accountsMap: {[address: string]: IAccountsModel}, height: number): Promise<void>;
 }
