@@ -60,6 +60,9 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
 
   private isCleaning: boolean = false;
 
+  /**
+   * Clean up tasks
+   */
   public cleanup(): Promise<void> {
     this.isCleaning = true;
     return Promise.resolve();
@@ -114,6 +117,9 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     };
   }
 
+  /**
+   * Check, verify and apply a block to blockchain
+   */
   public async processBlock(block: SignedBlockType, broadcast: boolean, saveBlock: boolean): Promise<any> {
     if (this.isCleaning) {
       // We're shutting down so stop processing any further
@@ -164,6 +170,9 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     );
   }
 
+  /**
+   * Blockchain ready event
+   */
   public async onBlockchainReady() {
     const blocks       = await this.BlocksModel.findAll({
       attributes: ['id'],
@@ -174,6 +183,9 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     this.lastNBlockIds = blocks.map((b) => b.id);
   }
 
+  /**
+   * New block event
+   */
   public async onNewBlock(block: SignedBlockType) {
     this.lastNBlockIds.push(block.id);
     if (this.lastNBlockIds.length > this.constants.blockSlotWindow) {
@@ -246,6 +258,9 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     return [];
   }
 
+  /**
+   * Verify reward
+   */
   private verifyReward(block: SignedBlockType): string[] {
     const expected = this.blockRewardLogic.calcReward(block.height);
 
@@ -335,6 +350,9 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     return [];
   }
 
+  /**
+   * Verify block slot
+   */
   private async verifyBlockSlot(block: SignedBlockType, lastBlock: SignedBlockType): Promise<string[]> {
     const slotNumber = this.slots.getSlotNumber(block.timestamp);
     const lastSlot   = this.slots.getSlotNumber(lastBlock.timestamp);
@@ -346,6 +364,9 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     return [];
   }
 
+  /**
+   * Check block transactions
+   */
   private async checkBlockTransactions(block: SignedBlockType, accountsMap: {[address: string]: AccountsModel}) {
     const allIds = [];
     for (const tx of block.transactions) {
@@ -382,6 +403,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       .map((tx) => this.checkTransaction(block, tx as IConfirmedTransaction<any>, accountsMap))
     );
   }
+
   /**
    * Check transaction - perform transaction validation when processing block
    * FIXME: Some checks are probably redundant, see: logic.transactionPool
