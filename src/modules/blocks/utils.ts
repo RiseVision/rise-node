@@ -54,6 +54,9 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
 
+  /**
+   * Returns normalized blocks from raw blocks
+   */
   public readDbRows(rows: RawFullBlockListType[]): SignedAndChainedBlockType[] {
     const blocks = {};
     const order  = [];
@@ -175,6 +178,9 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     return {firstHeight: blocks[0].height, ids};
   }
 
+  /**
+   * Loads full blocks from database and normalize them
+   */
   // tslint:disable-next-line max-line-length
   public async loadBlocksData(filter: { limit?: number, id?: string, lastId?: string }): Promise<BlocksModel[]> {
     const params: any = {limit: filter.limit || 1};
@@ -213,6 +219,9 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
       .catch(catchToLoggerAndRemapError<BlocksModel[]>('Blocks#loadBlockData error', this.logger));
   }
 
+  /**
+   * Return an instance of BlockProgressLogger
+   */
   public getBlockProgressLogger(txCount: number, logsFrequency: number, msg: string) {
     return new BlockProgressLogger(txCount, logsFrequency, msg, this.logger);
   }
