@@ -67,6 +67,7 @@
     }
   },
   "required": [
+    "id",
     "type",
     "timestamp",
     "senderId",

@@ -24,7 +24,7 @@
     "@risevision/core-launchpad": "^1.0.0"
   },
   "devDependencies": {
-    "shx": "0.2.2",
-    "typescript": "=2.9.2"
+    "shx": "0.3.2",
+    "typescript": "2.9.2"
   }
 }
