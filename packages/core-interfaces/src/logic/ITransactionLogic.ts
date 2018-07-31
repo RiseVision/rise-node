@@ -30,7 +30,6 @@ export enum VerificationType {
 }
 export interface ITransactionLogic {
 
-  attachAssetType<K, M extends Model<any>>(instance: IBaseTransactionType<K, M>): IBaseTransactionType<K, M>;
 
   /**
    * Calculate tx id
@@ -108,12 +107,12 @@ export interface ITransactionLogic {
   objectNormalize(tx: IConfirmedTransaction<any>): IConfirmedTransaction<any>;
   objectNormalize(tx: ITransportTransaction<any> | IBaseTransaction<any>): IBaseTransaction<any>;
 
+  dbRead(raw: any): IConfirmedTransaction<any>;
+
   /**
    * Attach Asset object to each transaction passed
    * @param {Array<IConfirmedTransaction<any>>} txs
    * @return {Promise<void>}
    */
   attachAssets(txs: Array<IConfirmedTransaction<any>>): Promise<void>;
-  dbRead(raw: any): IConfirmedTransaction<any>;
-
 }

@@ -196,7 +196,6 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     }
     return [];
   }
-
   /**
    * Verifies block signature and returns an array populated with errors.
    * @param {SignedBlockType} block

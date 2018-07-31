@@ -88,4 +88,10 @@ export interface ITransactionsModule extends IModule {
    */
   getByID<T = any>(id: string): Promise<ITransactionsModel>;
 
+  /**
+   * Check transaction - perform transaction validation when processing block
+   * If it does not throw the tx should be valid.
+   * NOTE: this must be called with an unconfirmed transaction
+   */
+  checkTransaction(tx: IBaseTransaction<any>, accountsMap: {[address: string]: AccountsModel}, height: number): Promise<void>;
 }
