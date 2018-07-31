@@ -1,11 +1,10 @@
-
+import { ILogger } from '@risevision/core-interfaces';
 import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
 import { Container } from 'inversify';
 import { InMemoryFilterModel, WordPressHookSystem } from 'mangiafuoco';
 import * as pg from 'pg';
 import 'reflect-metadata';
 import { ICoreModule } from './module';
-import { IBaseModel, ILogger } from '@risevision/core-interfaces';
 
 export class AppManager {
   public container: Container = new Container();
