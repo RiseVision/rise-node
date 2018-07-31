@@ -1,12 +1,12 @@
-import { createContainer, LoggerStub } from '@risevision/core-test-utils';
 import { AppConfig } from '@risevision/core-types';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { PrivateApisGuard } from '../src/';
-
+import { APISymbols, PrivateApisGuard } from '../src/';
+import { CoreModule } from '../src'
+import { Symbols } from '../../core-interfaces/src';
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
 const expect = chai.expect;
@@ -15,36 +15,18 @@ chai.use(assertArrays);
 
 // tslint:disable no-unused-expression max-line-length
 describe('apis/utils/privateApisWatchGuard', () => {
-  let sandbox: SinonSandbox;
-  let container: Container;
   let instance: PrivateApisGuard;
-  let checkIpInListStub: any;
   let next: any;
   const request = { ip: '1.1.1.1' };
   const response = {};
-  let config: AppConfig;
 
   beforeEach(() => {
-    container = createContainer();
-    sandbox = sinon.createSandbox();
+    const module = new CoreModule();
+    module.container = new Container();
+    module.initAppElements();
 
-    container
-      .bind(Symbols.api.utils.privateApiGuard)
-      .to(ForgingApisWatchGuard)
-      .inSingletonScope();
-
-    config = container.get(Symbols.generic.appConfig);
-
-    next = sandbox.spy();
-    checkIpInListStub = sandbox.stub(helpers, 'checkIpInList');
-    instance = container.get(Symbols.api.utils.privateApiGuard);
+    instance = module.container.getNamed(Symbols.class, APISymbols.privateApiGuard);
   });
-
-  afterEach(() => {
-    sandbox.restore();
-    sandbox.resetHistory();
-  });
-
   describe('use()', () => {
     it('should call to next() without parameters if everything is ok', () => {
       checkIpInListStub.returns(true);

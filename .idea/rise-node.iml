@@ -4,6 +4,10 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/packages/core/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/core-apis/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/core-apis/tests" type="java-test-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/core-launchpad/tests" type="java-test-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/core-launchpad/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.nyc_output" />
       <excludeFolder url="file://$MODULE_DIR$/coverage" />
       <excludeFolder url="file://$MODULE_DIR$/dapps" />
