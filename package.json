@@ -46,15 +46,15 @@
     "redis": "^2.8.0",
     "routing-controllers": "=0.7.7",
     "semver": "=5.5.0",
-    "sequelize": "=4.37.10",
+    "sequelize": "=4.38.0",
     "sequelize-typescript": "=0.6.5",
     "shuffle-array": "^1.0.1",
     "socket.io": "=2.1.1",
     "sodium": "=2.0.3",
     "source-map-support": "=0.5.6",
-    "squel": "^5.12.1",
+    "squel": "=5.12.2",
     "strftime": "=0.10.0",
-    "uuid": "^3.1.0",
+    "uuid": "=3.3.2",
     "z-schema": "=3.22.0"
   },
   "devDependencies": {
@@ -68,7 +68,7 @@
     "@types/ip": "=0.0.31",
     "@types/jsonpath": "^0.2.0",
     "@types/lodash": "=4.14.115",
-    "@types/mocha": "=5.2.0",
+    "@types/mocha": "=5.2.5",
     "@types/node": "^9.6.0",
     "@types/redis": "=2.8.6",
     "@types/semver": "^5.4.0",
@@ -97,9 +97,9 @@
     "shx": "=0.3.2",
     "sinon": "=6.1.4",
     "supertest": "=3.1.0",
-    "ts-node": "=6.0.5",
-    "tslint": "=5.10.0",
-    "tslint-sonarts": "^1.6.0",
+    "ts-node": "=7.0.0",
+    "tslint": "=5.11.0",
+    "tslint-sonarts": "=1.7.0",
     "typescript": "=2.8.3"
   }
 }
