@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/packages/core/tests" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/.nyc_output" />
+      <excludeFolder url="file://$MODULE_DIR$/coverage" />
+      <excludeFolder url="file://$MODULE_DIR$/dapps" />
+      <excludeFolder url="file://$MODULE_DIR$/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core-accounts/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core-apis/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core-blocks/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core-consensus-dpos/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core-exceptions/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core-helpers/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core-interfaces/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core-launchpad/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core-models/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core-multisignature/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core-p2p/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core-secondsignature/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core-transactions/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core-types/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core-utils/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/rise/dist" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>
