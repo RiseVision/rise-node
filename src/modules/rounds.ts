@@ -50,14 +50,23 @@ export class RoundsModule implements IRoundsModule {
   @inject(Symbols.models.rounds)
   private RoundsModel: typeof RoundsModel;
 
+  /**
+   * Finish round event
+   */
   public onFinishRound(round: number) {
     this.io.sockets.emit('rounds/change', { number: round });
   }
 
+  /**
+   * Blockchain ready event
+   */
   public onBlockchainReady() {
     this.appStateLogic.set('rounds.isLoaded', true);
   }
 
+  /**
+   * Clean up tasks
+   */
   public cleanup() {
     this.appStateLogic.set('rounds.isLoaded', false);
     return Promise.resolve();
@@ -84,6 +93,9 @@ export class RoundsModule implements IRoundsModule {
     });
   }
 
+  /**
+   * Performs a forward tick on the round
+   */
   public async tick(block: SignedBlockType, transaction: Transaction) {
     return this.innerTick(
       block,
@@ -135,6 +147,9 @@ export class RoundsModule implements IRoundsModule {
     return this.appStateLogic.get('rounds.snapshot') || 0;
   }
 
+  /**
+   * Performs a tick
+   */
   private async innerTick(block: SignedBlockType,
                           dbTransaction: Transaction,
                           backwards: boolean,
