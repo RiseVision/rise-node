@@ -16,10 +16,16 @@ export class Cache implements ICacheModule {
   @inject(Symbols.generic.redisClient)
   private redisClient: RedisClient;
 
+  /**
+   * Returns true if Redis client is connected
+   */
   get isConnected() {
     return this.redisClient && this.redisClient.connected;
   }
 
+  /**
+   * Resolves if is connected, otherwise rejects
+   */
   public assertConnected(): Promise<void> {
     if (!this.isConnected) {
       return Promise.reject('Cache unavailable');
@@ -27,6 +33,9 @@ export class Cache implements ICacheModule {
     return Promise.resolve();
   }
 
+  /**
+   * Resolves if cache is ready and connected, otherwise rejects
+   */
   public async assertConnectedAndReady(): Promise<void> {
     if (!this.cacheReady) {
       return Promise.reject('Cache not ready');
@@ -34,22 +43,34 @@ export class Cache implements ICacheModule {
     return this.assertConnected();
   }
 
+  /**
+   * Gets a value from a given key
+   */
   public async getObjFromKey<T>(k: string): Promise<T> {
     await this.assertConnected();
     return cbToPromise<string>((cb) => this.redisClient.get(k, cb))
       .then((str) => JSON.parse(str));
   }
 
+  /**
+   * Stores a key/value pair
+   */
   public async setObjFromKey<T>(k: string, value: any): Promise<void> {
     await this.assertConnected();
     return cbToVoidPromise((cb) => this.redisClient.set(k, JSON.stringify(value), cb));
   }
 
+  /**
+   * Removes values from given keys
+   */
   public async deleteJsonForKey(k: string | string[]): Promise<void> {
     await this.assertConnected();
     return cbToVoidPromise((cb) => this.redisClient.del(k, cb));
   }
 
+  /**
+   * Removes values using a regular expression
+   */
   public async removeByPattern(pattern: string) {
     await this.assertConnected();
     let keys;
@@ -64,17 +85,26 @@ export class Cache implements ICacheModule {
     } while (cursor > 0);
   }
 
+  /**
+   * Delete all the keys
+   */
   public async flushDb() {
     await this.assertConnected();
     return cbToVoidPromise((cb) => this.redisClient.flushdb(cb));
   }
 
+  /**
+   * Clean up tasks
+   */
   public async cleanup() {
     if (this.isConnected) {
       return this.quit();
     }
   }
 
+  /**
+   * Close connection
+   */
   public async quit() {
     await this.assertConnected();
     return cbToVoidPromise((cb) => this.redisClient.quit(cb));
