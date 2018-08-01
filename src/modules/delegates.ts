@@ -52,10 +52,16 @@ export class DelegatesModule implements IDelegatesModule {
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
+  /**
+   * Checks that the account on pk has vote integrity for the unconfirmed state
+   */
   public async checkConfirmedDelegates(account: AccountsModel, votes: string[]) {
     return this.checkDelegates(account, votes, 'confirmed');
   }
 
+  /**
+   * Checks that the account on pk has vote integrity for the confirmed state
+   */
   public async checkUnconfirmedDelegates(account: AccountsModel, votes: string[]) {
     return this.checkDelegates(account, votes, 'unconfirmed');
   }
@@ -169,14 +175,23 @@ export class DelegatesModule implements IDelegatesModule {
     }
   }
 
+  /**
+   * Blockchain ready event
+   */
   public async onBlockchainReady() {
     this.loaded = true;
   }
 
+  /**
+   * Clean up tasks
+   */
   public async cleanup() {
     this.loaded = false;
   }
 
+  /**
+   * Returns true if it was loaded, otherwise false
+   */
   public isLoaded() {
     return this.loaded;
   }
