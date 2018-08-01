@@ -32,6 +32,9 @@ export class BlocksModule implements IBlocksModule {
     };
   }
 
+  /**
+   * Clean up tasks
+   */
   public cleanup() {
     return Promise.resolve();
   }
