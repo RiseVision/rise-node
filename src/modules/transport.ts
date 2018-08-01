@@ -91,7 +91,9 @@ export class TransportModule implements ITransportModule {
     });
   }
 
-  // tslint:disable-next-line max-line-length
+  /**
+   * Makes a request to a given peer
+   */
   public async getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: IPeerLogic }> {
     let url = options.url;
     if (options.api) {
@@ -155,6 +157,9 @@ export class TransportModule implements ITransportModule {
     };
   }
 
+  /**
+   * Makes a request to a random peer
+   */
   // tslint:disable-next-line max-line-length
   public async getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }, options: PeerRequestOptions) {
     config.limit         = 1;
@@ -163,15 +168,24 @@ export class TransportModule implements ITransportModule {
     return this.getFromPeer<T>(peers[0], options);
   }
 
+  /**
+   * Clean up tasks
+   */
   public cleanup() {
     this.loaded = false;
     return Promise.resolve();
   }
 
+  /**
+   * Blockchain ready event
+   */
   public onBlockchainReady() {
     this.loaded = true;
   }
 
+  /**
+   * Peers ready event
+   */
   public async onPeersReady() {
     this.logger.trace('Peers ready');
     // await this.discoverPeers();
@@ -260,6 +274,9 @@ export class TransportModule implements ITransportModule {
     }
   }
 
+  /**
+   * Validates and process signatures
+   */
   // tslint:disable-next-line
   public async receiveSignatures(signatures: Array<{ transaction: string, signature: string }>): Promise<void> {
     for (const signature of signatures) {
@@ -285,8 +302,13 @@ export class TransportModule implements ITransportModule {
   }
 
   @ValidateSchema()
-  // tslint:disable-next-line
   @WrapInBalanceSequence
+  /**
+   * Loops over the received transactions, Checks tx is ok by normalizing it and eventually
+   * remove peer if tx is not valid. Also checks tx is not already confirmed.
+   * calls processUnconfirmedTransaction over it.
+   */
+  // tslint:disable-next-line
   public async receiveTransactions(@SchemaValid(schema.transactions.properties.transactions, 'Invalid transactions body')
                                      transactions: Array<ITransportTransaction<any>>,
                                    peer: IPeerLogic | null,
