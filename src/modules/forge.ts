@@ -67,11 +67,17 @@ export class ForgeModule implements IForgeModule {
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
+  /**
+   * Returns the enabled publicKeys
+   */
   public getEnabledKeys(): publicKey[] {
     return Object.keys(this.enabledKeys)
       .filter((pk) => this.enabledKeys[pk] === true);
   }
 
+  /**
+   * Checks if publicKey is enabled to forge
+   */
   public isForgeEnabledOn(pk?: publicKey | IKeypair): boolean {
     let thePK: publicKey;
     if (typeof(pk) === 'object') {
@@ -106,6 +112,9 @@ export class ForgeModule implements IForgeModule {
       .forEach((p) => delete this.enabledKeys[p]);
   }
 
+  /**
+   * Blockchain ready event
+   */
   public async onBlockchainReady() {
     setTimeout( () => {
       this.jobsQueue.register(
@@ -115,6 +124,10 @@ export class ForgeModule implements IForgeModule {
     }, 10000); // Register forging routine after 10seconds that blockchain is ready.
   }
 
+  /**
+   * Starts a new forge
+   * @returns {Promise<void>}
+   */
   @WrapInDefaultSequence
   private async delegatesNextForge() {
     try {
