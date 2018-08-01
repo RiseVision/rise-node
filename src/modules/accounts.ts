@@ -20,10 +20,16 @@ export class AccountsModule implements IAccountsModule {
   @inject(Symbols.models.accounts)
   private AccountsModel: typeof AccountsModel;
 
+  /**
+   * Clean up tasks
+   */
   public cleanup() {
     return Promise.resolve();
   }
 
+  /**
+   * Find an account from the given filters
+   */
   public getAccount(filter: AccountFilterData, fields?: FieldsInModel<AccountsModel>): Promise<AccountsModel> {
     if (filter.publicKey) {
       filter.address = this.accountLogic.generateAddressByPublicKey(filter.publicKey);
@@ -32,10 +38,16 @@ export class AccountsModule implements IAccountsModule {
     return this.accountLogic.get(filter, fields);
   }
 
+  /**
+   * Find accounts from the given filters
+   */
   public getAccounts(filter: AccountFilterData, fields: FieldsInModel<AccountsModel>): Promise<AccountsModel[]> {
     return this.accountLogic.getAll(filter, fields);
   }
 
+  /**
+   * Returns senders from the given transactions
+   */
   public async resolveAccountsForTransactions(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: AccountsModel }> {
     const allSenders: Array<{ publicKey: Buffer, address: string }> = [];
     txs.forEach((tx) => {
@@ -93,6 +105,9 @@ export class AccountsModule implements IAccountsModule {
     return this.accountLogic.get({ address });
   }
 
+  /**
+   * Update an account with the values received from the given diff
+   */
   public mergeAccountAndGetOPs(diff: AccountDiffType): Array<DBOp<any>> {
     diff              = this.fixAndCheckInputParams(diff);
     const { address } = diff;
@@ -107,6 +122,9 @@ export class AccountsModule implements IAccountsModule {
     return this.accountLogic.generateAddressByPublicKey(pk);
   }
 
+  /**
+   * Check input parameters and calculate address in the case it was not provided
+   */
   private fixAndCheckInputParams<T extends { address?: string, publicKey?: Buffer } = any>(what: T): T & {address: string} {
     if (!what.address && !what.publicKey) {
       throw new Error('Missing address and public key');
