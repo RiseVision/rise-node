@@ -47,14 +47,23 @@ export class SystemModule implements ISystemModule {
     };
   }
 
+  /**
+   * Clean up tasks
+   */
   public cleanup() {
     return Promise.resolve();
   }
 
+  /**
+   * Returns OS
+   */
   public getOS() {
     return this.headers.os;
   }
 
+  /**
+   * Returns version
+   */
   public getVersion() {
     return this.headers.version;
   }
@@ -152,6 +161,9 @@ export class SystemModule implements ISystemModule {
     return semver.satisfies(version, this.minVersion);
   }
 
+  /**
+   * Returns broadhash header
+   */
   public get broadhash() {
     return this.headers.broadhash;
   }
@@ -179,6 +191,9 @@ export class SystemModule implements ISystemModule {
     return hash.toString('hex');
   }
 
+  /**
+   * Returns fees
+   */
   public getFees(height: number = this.blocksModule.lastBlock.height + 1): {
     fees: {
       send: number,
