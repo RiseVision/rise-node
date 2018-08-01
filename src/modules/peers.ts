@@ -39,6 +39,9 @@ export class PeersModule implements IPeersModule {
   @inject(Symbols.models.peers)
   private PeersModel: typeof PeersModel;
 
+  /**
+   * Clean up tasks
+   */
   public cleanup() {
     // save on cleanup.
     return this.dbSave();
@@ -151,6 +154,9 @@ export class PeersModule implements IPeersModule {
     return {consensus, peers: peersList};
   }
 
+  /**
+   * Blockchain ready event
+   */
   public async onBlockchainReady() {
     if (process.env.NODE_ENV !== 'test') {
       await this.insertSeeds();
@@ -159,6 +165,9 @@ export class PeersModule implements IPeersModule {
     }
   }
 
+  /**
+   * Save peers into database
+   */
   private async dbSave() {
     const peers = this.peersLogic.list(true);
     if (peers.length === 0) {
@@ -212,6 +221,9 @@ export class PeersModule implements IPeersModule {
     }
   }
 
+  /**
+   * Add seed peers
+   */
   private async insertSeeds() {
     this.logger.trace('Peers->insertSeeds');
     let updated = 0;
