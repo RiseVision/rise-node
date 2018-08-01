@@ -76,6 +76,9 @@ export class MultisignaturesModule implements IMultisignaturesModule {
     return null;
   }
 
+  /**
+   * Sign a normal transaction
+   */
   private async processNormalTxSignature(tx: IBaseTransaction<any>, signature: string, sender: AccountsModel) {
     const multisignatures = sender.multisignatures;
 
@@ -105,6 +108,9 @@ export class MultisignaturesModule implements IMultisignaturesModule {
 
   }
 
+  /**
+   * Sign a transaction of type MULTI
+   */
   private async processMultiSigSignature(tx: IBaseTransaction<MultisigAsset>, signature: string, sender: AccountsModel) {
     // tslint:disable-next-line
     if (tx.asset.multisignature['signatures'] || tx.signatures.indexOf(signature) !== -1) {
