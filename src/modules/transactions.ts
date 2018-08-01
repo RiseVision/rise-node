@@ -29,6 +29,9 @@ export class TransactionsModule implements ITransactionsModule {
   @inject(Symbols.models.transactions)
   private TXModel: typeof TransactionsModel;
 
+  /**
+   * Clean up tasks
+   */
   public cleanup() {
     return Promise.resolve();
   }
@@ -40,6 +43,9 @@ export class TransactionsModule implements ITransactionsModule {
     return this.transactionPool.transactionInPool(id);
   }
 
+  /**
+   * Checks if tx is in unconfirmed state.
+   */
   public transactionUnconfirmed(id: string): boolean {
     return this.transactionPool.unconfirmed.has(id);
   }
@@ -159,6 +165,9 @@ export class TransactionsModule implements ITransactionsModule {
     await this.dbHelper.performOps(await this.transactionLogic.undoUnconfirmed(transaction, sender));
   }
 
+  /**
+   * Returns counters
+   */
   public async count(): Promise<{ confirmed: number, multisignature: number, queued: number, unconfirmed: number }> {
     return {
       confirmed     : await this.TXModel.count(),
