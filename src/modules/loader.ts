@@ -118,6 +118,9 @@ export class LoaderModule implements ILoaderModule {
     }
   }
 
+  /**
+   * Returns info about the network state
+   */
   public async getNetwork() {
     if (!(
         this.network.height > 0 &&
@@ -129,6 +132,9 @@ export class LoaderModule implements ILoaderModule {
     return this.network;
   }
 
+  /**
+   * Pick a random peer
+   */
   public async getRandomPeer(): Promise<IPeerLogic> {
     const { peers } = await this.getNetwork();
     if (peers.length === 0) {
@@ -144,6 +150,9 @@ export class LoaderModule implements ILoaderModule {
     return this.appState.get('loader.isSyncing') || false;
   }
 
+  /**
+   * Peers ready event
+   */
   public async onPeersReady() {
     await this.syncTimer();
     // If transactions polling is not enabled, sync txs only on boot.
@@ -155,10 +164,17 @@ export class LoaderModule implements ILoaderModule {
     }
   }
 
+  /**
+   * Blockchain ready event
+   */
   public onBlockchainReady() {
     this.loaded = true;
   }
 
+  /**
+   * Clean up tasks
+   * @returns {Promise<void>}
+   */
   public cleanup() {
     this.loaded = false;
     return Promise.resolve();
@@ -262,6 +278,9 @@ export class LoaderModule implements ILoaderModule {
     await this.bus.message('blockchainReady');
   }
 
+  /**
+   * Verify snapshot
+   */
   private async verifySnapshot(round: number, blocksCount: number, limit: number) {
     this.logger.info('Snapshot mode enabled');
     if (typeof(this.config.loading.snapshot) === 'boolean') {
@@ -294,6 +313,9 @@ export class LoaderModule implements ILoaderModule {
     }
   }
 
+  /**
+   * Load blocks from database
+   */
   public async load(count: number, limitPerIteration: number, message?: string, emitBlockchainReady = false) {
     let offset          = 0;
     if (message) {
@@ -418,6 +440,9 @@ export class LoaderModule implements ILoaderModule {
     }
   }
 
+  /**
+   * Load blocks from the network
+   */
   private async innerLoad() {
     let loaded = false;
 
@@ -514,6 +539,9 @@ export class LoaderModule implements ILoaderModule {
 
   }
 
+  /**
+   * Sync timer
+   */
   private async syncTimer() {
     this.logger.trace('Setting sync timer');
 
