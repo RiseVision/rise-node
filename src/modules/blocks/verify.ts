@@ -400,28 +400,10 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     }
 
     await Promise.all(block.transactions
-      .map((tx) => this.checkTransaction(block, tx as IConfirmedTransaction<any>, accountsMap))
+      .map((tx) => this.transactionsModule
+        .checkTransaction(tx, accountsMap, block.height)
+      )
     );
   }
 
-  /**
-   * Check transaction - perform transaction validation when processing block
-   * FIXME: Some checks are probably redundant, see: logic.transactionPool
-   * If it does not throw the tx should be valid.
-   * NOTE: this must be called with an unconfirmed transaction
-   */
-  private async checkTransaction(block: SignedBlockType, tx: IConfirmedTransaction<any>, accountsMap: {[address: string]: AccountsModel}): Promise<void> {
-    const acc = accountsMap[tx.senderId];
-
-    let requester = null;
-    if (tx.requesterPublicKey) {
-      requester = accountsMap[this.accountsModule.generateAddressByPublicKey(tx.requesterPublicKey)];
-    }
-    // Verify will throw if any error occurs during validation.
-    if (!this.transactionLogic.ready(tx, acc)) {
-      throw new Error(`Transaction ${tx.id} is not ready`);
-    }
-    await this.transactionLogic.verify(tx, acc, requester, block.height);
-
-  }
 }

@@ -11,7 +11,6 @@ import {
 } from '../../../logic/transactions';
 import { AccountsModel } from '../../../models/';
 import { DBOp } from '../../../types/genericTypes';
-import {TransactionLogic} from "../../../logic/transaction";
 
 /**
  * VerificationType When checking against signature.
@@ -87,13 +86,6 @@ export interface ITransactionLogic {
   checkBalance(amount: number | BigNumber, balanceKey: 'balance' | 'u_balance',
                tx: IConfirmedTransaction<any> | IBaseTransaction<any>,
                sender: any): { error: string; exceeded: boolean };
-
-  /**
-   * Performs some validation on the transaction and calls process
-   * to the respective tx type.
-   */
-  // tslint:disable max-line-length
-  process<T = any>(tx: IBaseTransaction<T>, sender: AccountsModel, requester: AccountsModel): Promise<IBaseTransaction<T>>;
 
   /**
    * Verifies the given transaction

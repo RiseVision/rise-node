@@ -65,11 +65,6 @@ export default class TransactionLogicStub extends BaseStubClass implements ITran
   }
 
   @stubMethod()
-  public process<T = any>(tx: IBaseTransaction<T>, sender: AccountsModel, requester: AccountsModel): Promise<IBaseTransaction<T>> {
-    return null;
-  }
-
-  @stubMethod()
   public verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel, requester: AccountsModel, height: number): Promise<void> {
     return null;
   }

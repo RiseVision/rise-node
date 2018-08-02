@@ -395,9 +395,6 @@ export class TransactionPool implements ITransactionPoolLogic {
       requester = await this.accountsModule.getAccount({ publicKey: transaction.requesterPublicKey });
     }
 
-    // Process the transaction!
-    await this.transactionLogic.process(transaction, sender, requester);
-
     // Normalize tx.
     const normalizedTx = this.transactionLogic.objectNormalize(transaction);
 
