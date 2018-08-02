@@ -6,7 +6,7 @@ import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { TransactionsAPI } from '../../../src/apis';
 import * as helpers from '../../../src/helpers';
-import { Slots, TransactionType } from '../../../src/helpers';
+import { Slots, TransactionType, z_schema } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { TransactionsModuleStub, ZSchemaStub } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
@@ -14,6 +14,8 @@ import { TransactionsModel } from '../../../src/models';
 import BlocksModuleStub from '../../stubs/modules/BlocksModuleStub';
 import TransportModuleStub from '../../stubs/modules/TransportModuleStub';
 import TransactionLogicStub from '../../stubs/logic/TransactionLogicStub';
+import { createRandomTransactions } from '../../utils/txCrafter';
+import AccountsModuleStub from '../../stubs/modules/AccountsModuleStub';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -580,23 +582,70 @@ describe('apis/transactionsAPI', () => {
     });
   });
   describe('put', () => {
-    it('should throw if no transaction is provided', async () => {
-      await expect(instance.put(null))
-        .to.be.rejectedWith('Transaction not provided');
+    let accModule: AccountsModuleStub;
+    beforeEach(() => {
+      accModule = container.get(Symbols.modules.accounts);
+      accModule.stubs.resolveAccountsForTransactions.resolves({});
     });
-    it('should call transportModule.receiveTransactions with proper params', async () => {
+
+    it('should respond correctly even if no transaction is provided', async () => {
+      const res = await instance.put({});
+
+      expect(res).deep.eq({
+        accepted: [],
+        invalid: []
+      });
+    });
+    it('should validate transactions', async () => {
+      container.rebind(Symbols.generic.zschema).toConstantValue(new z_schema({}));
+      container.rebind(Symbols.api.transactions).to(TransactionsAPI);
+      instance = container.get(Symbols.api.transactions);
+      await expect(instance.put({transactions: 'asd'} as any))
+        .to.be.rejectedWith('Expected type array');
+      await expect(instance.put({transactions: new Array(11).fill('miao')} as any))
+        .to.be.rejectedWith('Array is too long (11)');
+    });
+
+    it('should return invalid if any of the tx is valid', async () => {
+      txLogicStub.stubs.objectNormalize.throws(new Error('cant normalize'));
+      const ret = await instance.put({transaction: 'a', transactions: ['a']}  as any);
+
+      expect(ret).deep.eq({
+        accepted: [],
+        invalid: [
+          { id: undefined, reason: 'cant normalize'},
+          { id: undefined, reason: 'cant normalize'}
+        ],
+      });
+    });
+
+    it('should filter out only valid transactions', async () => {
+      blocksModuleStub.lastBlock = { height: 100 }  as any;
+      txLogicStub.stubs.objectNormalize.callsFake((t) => t);
+      txLogicStub.stubs.objectNormalize.onFirstCall().throws(new Error('objectNormalize'));
+      // Create some txs.
+      const txs = createRandomTransactions({send: 5, vote: 2, signature: 1});
+      const sendTX = createRandomTransactions({ send: 1 })[0];
+      accModule.stubs.resolveAccountsForTransactions.resolves({ resolve: 'accounts' });
+      let count       = 0;
+      const filteredTxs = []; // sendtx is filtered through objectNormalize
+      const validTXs = [];
+      transactionsModuleStub.stubs.checkTransaction.callsFake((tx) => {
+        if (count++ % 2 === 0) {
+          filteredTxs.push(tx);
+          return Promise.reject(new Error('meow'));
+        }
+        validTXs.push(tx);
+        return Promise.resolve();
+      });
       transportModuleStub.stubs.receiveTransactions.resolves();
-      await instance.put({the: 'tx'} as any);
-      expect(transportModuleStub.stubs.receiveTransactions.calledOnce).is.true;
-      expect(transportModuleStub.stubs.receiveTransactions.firstCall.args).deep.eq([
-        [{the: 'tx'}],
-        null, // peer,
-        true, // Broadcast
-      ]);
-    });
-    it('should reject if receiveTransactions rejects', async () => {
-      transportModuleStub.stubs.receiveTransactions.rejects(new Error('meow'));
-      await expect(instance.put({} as any)).to.be.rejectedWith('meow');
+
+      const res = await instance.put({ transaction: sendTX, transactions: txs});
+      expect(res).deep.eq({
+        accepted: validTXs.map((t) => t.id),
+        invalid: [{id: sendTX.id, reason: 'objectNormalize'}].concat(... filteredTxs.map((t) => ({id: t.id, reason: 'meow'}))),
+      });
+      // check calling parameters.
     });
   });
 });

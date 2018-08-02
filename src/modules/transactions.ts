@@ -195,4 +195,29 @@ export class TransactionsModule implements ITransactionsModule {
     return tx;
   }
 
+  /**
+   * Check transaction - perform transaction validation when processing block
+   * If it does not throw the tx should be valid.
+   * NOTE: this must be called with an unconfirmed transaction
+   */
+  public async checkTransaction(tx: IBaseTransaction<any>, accountsMap: {[address: string]: AccountsModel}, height: number): Promise<void> {
+    const acc = accountsMap[tx.senderId];
+    if (!acc) {
+      throw new Error('Cannot find account from accounts');
+    }
+    let requester = null;
+    if (tx.requesterPublicKey) {
+      requester = accountsMap[this.accountsModule.generateAddressByPublicKey(tx.requesterPublicKey)];
+      if (!requester) {
+        throw new Error('Cannot find requester from accounts');
+      }
+    }
+    // Verify will throw if any error occurs during validation.
+    if (!this.transactionLogic.ready(tx, acc)) {
+      throw new Error(`Transaction ${tx.id} is not ready`);
+    }
+    await this.transactionLogic.verify(tx, acc, requester, height);
+
+  }
+
 }

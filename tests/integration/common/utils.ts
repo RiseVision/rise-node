@@ -261,7 +261,7 @@ export const createRandomAccountWithFunds = async (howMany: number = 1000, recip
   t.set('fee', systemModule.getFees().fees.send);
   t.set('timestamp', 0);
   t.set('recipientId', recipientWallet.address);
-  const tx = t.sign(senderWallet);
+  const tx = senderWallet.signTransaction(t);
   await confirmTransactions([tx], true);
   return {
     delegate: senderWallet,
@@ -283,8 +283,7 @@ export const createRandomAccountsWithFunds = async (howManyAccounts: number, amo
     t.set('fee', systemModule.getFees().fees.send);
     t.set('timestamp', 0);
     t.set('recipientId', randomRecipient.address);
-    const signedTx       = t.sign(senderWallet);
-    signedTx['senderId'] = senderWallet.address;
+    const signedTx       = senderWallet.signTransaction(t);
     txs.push(signedTx);
     accounts.push(randomRecipient);
   }

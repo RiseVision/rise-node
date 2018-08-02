@@ -1,4 +1,4 @@
-## Rise-node version 1.0.0
+## Rise-node version 1.1.0
 
 # RISE
 [![Build Status](https://travis-ci.org/RiseVision/rise-node.svg?branch=development)](https://travis-ci.org/RiseVision/rise-node) [![Coverage Status](https://coveralls.io/repos/github/RiseVision/rise-node/badge.svg?branch=development)](https://coveralls.io/github/RiseVision/rise-node?branch=development) 
@@ -80,7 +80,7 @@ And change this section to include your passphrase:
 
 And finally restart your node to apply the changes:
 ```
-./manager.sh restart node
+./manager.sh reload node
 ```
 
 ### Quick start Rise installation (Testnet) 

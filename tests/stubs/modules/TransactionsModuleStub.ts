@@ -4,7 +4,7 @@ import { SignedBlockType } from '../../../src/logic';
 import { IBaseTransaction, IConfirmedTransaction } from '../../../src/logic/transactions';
 import { BaseStubClass } from '../BaseStubClass';
 import { stubMethod } from '../stubDecorator';
-import { TransactionsModel } from '../../../src/models/';
+import { AccountsModel, TransactionsModel } from '../../../src/models/';
 
 @injectable()
 export class TransactionsModuleStub extends BaseStubClass implements ITransactionsModule {
@@ -113,4 +113,11 @@ export class TransactionsModuleStub extends BaseStubClass implements ITransactio
   public getByID<T = any>(id: string): Promise<TransactionsModel> {
     return undefined;
   }
+
+  @stubMethod()
+  public checkTransaction(tx: IBaseTransaction<any>, accountsMap: { [p: string]: AccountsModel }, height: number): Promise<void> {
+    return undefined;
+  }
+
+
 }
