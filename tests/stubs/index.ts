@@ -11,6 +11,8 @@ import AccountsModuleStub from './modules/AccountsModuleStub';
 import { TransactionsModuleStub } from './modules/TransactionsModuleStub';
 import { SequenceStub } from './helpers/SequenceStub';
 import { SlotsStub } from './helpers/SlotsStub';
+import { ProtoBufHelperStub } from './helpers/ProtoBufHelperStub';
+
 // Logic
 import AccountLogicStub from './logic/AccountLogicStub';
 import { AppStateStub } from './logic/AppStateStub';
@@ -53,7 +55,6 @@ import { APIRequestStub } from './apis/requests/APIRequestStub';
 export {
   AccountsModelStub,
   BlocksModelStub,
-
   AccountLogicStub,
   AccountsModuleStub,
   AppStateStub,
@@ -77,6 +78,7 @@ export {
   PeerLogicStub,
   PeersLogicStub,
   PeersModuleStub,
+  ProtoBufHelperStub,
   RoundLogicStub,
   RoundsLogicStub,
   SlotsStub,
