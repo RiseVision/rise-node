@@ -286,12 +286,8 @@ export class TransactionLogic implements ITransactionLogic {
     };
   }
 
-  /**
-   * Performs some validation on the transaction and calls process
-   * to the respective tx type.
-   */
-  // tslint:disable-next-line max-line-length
-  public async process<T = any>(tx: IBaseTransaction<T>, sender: AccountsModel, requester: AccountsModel): Promise<IBaseTransaction<T>> {
+  public async verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel,
+                      requester: AccountsModel, height: number) {
     this.assertKnownTransactionType(tx.type);
     if (!sender) {
       throw new Error('Missing sender');
@@ -300,19 +296,6 @@ export class TransactionLogic implements ITransactionLogic {
     const txID = this.getId(tx);
     if (txID !== tx.id) {
       throw new Error('Invalid transaction id');
-    }
-
-    tx.senderId = sender.address;
-
-    // await this.types[tx.type].process(tx, sender);
-    return tx;
-  }
-
-  public async verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel,
-                      requester: AccountsModel, height: number) {
-    this.assertKnownTransactionType(tx.type);
-    if (!sender) {
-      throw new Error('Missing sender');
     }
 
     if (tx.requesterPublicKey && (!sender.isMultisignature() || requester == null)) {
@@ -351,7 +334,7 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Invalid sender. Can not send from genesis account');
     }
 
-    if (String((tx as any).senderId).toUpperCase() !== String(sender.address).toUpperCase()) {
+    if (String(tx.senderId).toUpperCase() !== String(sender.address).toUpperCase()) {
       throw new Error('Invalid sender address');
     }
 
@@ -625,7 +608,8 @@ export class TransactionLogic implements ITransactionLogic {
    */
   public objectNormalize(tx: IConfirmedTransaction<any>): IConfirmedTransaction<any>;
   // tslint:disable-next-line max-line-length
-  public objectNormalize(tx: IBaseTransaction<any> | ITransportTransaction<any> | IConfirmedTransaction<any>): IBaseTransaction<any> | IConfirmedTransaction<any> {
+  public objectNormalize(tx2: IBaseTransaction<any> | ITransportTransaction<any> | IConfirmedTransaction<any>): IBaseTransaction<any> | IConfirmedTransaction<any> {
+    const tx = {... tx2};
     this.assertKnownTransactionType(tx.type);
     for (const key in tx) {
       if (tx[key] === null || typeof(tx[key]) === 'undefined') {

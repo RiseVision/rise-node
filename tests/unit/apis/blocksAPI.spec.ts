@@ -86,8 +86,10 @@ describe('apis/blocksAPI', () => {
   describe('getBlocks', () => {
     let defaultFindAndCountAllParams;
     let findAllStub: SinonStub;
+    let txfindAllStub: SinonStub;
+    let TxModel: typeof TransactionsModel;
     beforeEach(() => {
-      const TxModel                = container.get<typeof TransactionsModel>(Symbols.models.transactions);
+      TxModel                = container.get<typeof TransactionsModel>(Symbols.models.transactions);
       defaultFindAndCountAllParams = {
         // include: [TxModel],
         limit  : 100,
@@ -95,6 +97,7 @@ describe('apis/blocksAPI', () => {
         order  : [['height', 'desc']],
       };
       findAllStub                  = sandbox.stub(blocksModel, 'findAndCountAll').resolves({ rows: [], count: 0 });
+      txfindAllStub                = sandbox.stub(TxModel, 'findAll').resolves([{a: 'a'},{b: 'b'}]);
     });
     it('should filter by generatorPublicKey', async () => {
       await instance.getBlocks({ generatorPublicKey: 'aaaa' });
@@ -192,7 +195,8 @@ describe('apis/blocksAPI', () => {
 
     it('should remap object to string block type', async () => {
       findAllStub.resolves({rows: [fakeBlock, fakeBlock], count: 3});
-      const stringFakeBlock = blocksModel.toStringBlockType(fakeBlock, null, null);
+      fakeBlock.transactions = [{a: 'a'},{b: 'b'}] as any;
+      const stringFakeBlock = blocksModel.toStringBlockType(fakeBlock, TxModel, null);
       const result = await instance.getBlocks({ offset: 10 });
       expect(result).to.be.deep.eq({
         blocks: [stringFakeBlock, stringFakeBlock],

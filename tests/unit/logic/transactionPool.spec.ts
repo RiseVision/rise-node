@@ -932,7 +932,6 @@ describe('logic/transactionPool - TransactionPool', () => {
       sender.multisignatures = [];
       sender.isMultisignature = () => false;
       requester.isMultisignature = () => false;
-      transactionLogicStub.enqueueResponse('process', Promise.resolve());
       transactionLogicStub.enqueueResponse('objectNormalize', null);
       transactionLogicStub.enqueueResponse('verify', null);
     });
@@ -991,20 +990,6 @@ describe('logic/transactionPool - TransactionPool', () => {
 
       await (instance as any).processVerifyTransaction(tx, false);
       expect(accountsModuleStub.stubs.getAccount.notCalled).to.be.true;
-    });
-
-    it('should call transactionLogic.process', async () => {
-      accountsModuleStub.stubs.setAccountAndGet.resolves(sender);
-      accountsModuleStub.stubs.getAccount.resolves(requester);
-      sender.multisignatures = ['a', 'b'];
-      sender.isMultisignature = () => true;
-      tx.requesterPublicKey = Buffer.from('requesterPublicKey');
-      // Will have a valid requester
-      await (instance as any).processVerifyTransaction(tx, false);
-      expect(transactionLogicStub.stubs.process.calledOnce).to.be.true;
-      expect(transactionLogicStub.stubs.process.firstCall.args[0]).to.be.deep.equal(tx);
-      expect(transactionLogicStub.stubs.process.firstCall.args[1]).to.be.deep.equal(sender);
-      expect(transactionLogicStub.stubs.process.firstCall.args[2]).to.be.deep.equal(requester);
     });
 
     it('should call transactionLogic.objectNormalize', async () => {

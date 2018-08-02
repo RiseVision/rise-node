@@ -75,13 +75,6 @@ export interface ITransactionLogic {
                tx: IConfirmedTransaction<any> | IBaseTransaction<any>,
                sender: any): { error: string; exceeded: boolean };
 
-  /**
-   * Performs some validation on the transaction and calls process
-   * to the respective tx type.
-   */
-  // tslint:disable max-line-length
-  process<T = any>(tx: IBaseTransaction<T>, sender: AccountsModel, requester: AccountsModel): Promise<IBaseTransaction<T>>;
-
   verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel,
          requester: AccountsModel, height: number): Promise<void>;
 
