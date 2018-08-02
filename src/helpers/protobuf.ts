@@ -99,7 +99,7 @@ export class ProtoBufHelper {
    * @param {string} messType
    * @returns {T}
    */
-  public decodeToObj<T = any>(data: Buffer, namespace: string, messType?: string, converters?: MyConvOptions<T>): T {
+  public decodeToObj<T = any>(data: Buffer, namespace: string, messType?: string, converters: MyConvOptions<T> = {}): T {
     let message: T;
     let inst;
     let postProcess: (obj: T) => T = (a) => a;
