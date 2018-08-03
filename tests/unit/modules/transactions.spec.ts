@@ -3,23 +3,17 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
-import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
-import * as helpers from '../../../src/helpers';
-import { OrderBy } from '../../../src/helpers';
+import { SinonSandbox, SinonStub } from 'sinon';
 import { Symbols } from '../../../src/ioc/symbols';
 import { SignedAndChainedBlockType } from '../../../src/logic';
 import { TransactionsModule } from '../../../src/modules';
-import {
-  AccountsModuleStub,
-  LoggerStub,
-  TransactionLogicStub,
-  TransactionPoolStub,
-} from '../../stubs';
+import { AccountsModuleStub, LoggerStub, TransactionLogicStub, TransactionPoolStub, } from '../../stubs';
 
 import { createContainer } from '../../utils/containerCreator';
 import DbStub from '../../stubs/helpers/DbStub';
-import { TransactionsModel } from '../../../src/models';
+import { AccountsModel, TransactionsModel } from '../../../src/models';
 import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
+import { IBaseTransaction } from '../../../src/logic/transactions';
 
 chai.use(chaiAsPromised);
 
@@ -413,6 +407,46 @@ describe('modules/transactions', () => {
     it('should return tx obj', async () => {
       const retVal = await instance.getByID('12345');
       expect(retVal).to.be.deep.equal('tx');
+    });
+  });
+  describe('checkTransaction', () => {
+    let tx: IBaseTransaction<any>;
+    beforeEach(() => {
+      tx = toBufferedTransaction(createRandomTransactions({send: 1})[0]);
+    });
+    it ('should throw if account is not found in map', async () => {
+      await expect(instance.checkTransaction(tx, {}, 1))
+        .to.rejectedWith('Cannot find account from accounts');
+    });
+    it('should throw if tx has requesterPublicKey but notin accountsMap', async () => {
+      tx.requesterPublicKey = Buffer.from('abababab', 'hex');
+      accountsModuleStub.stubs.generateAddressByPublicKey.returns('1111R');
+      await expect(instance.checkTransaction(tx, {[tx.senderId]: new AccountsModel()}, 1))
+        .to.rejectedWith('Cannot find requester from accounts');
+    });
+    it('should query readyness and throw if not ready', async () => {
+      transactionLogicStub.stubs.ready.returns(false);
+      await expect(instance.checkTransaction(tx, {[tx.senderId]: new AccountsModel()}, 1))
+        .to.rejectedWith(`Transaction ${tx.id} is not ready`);
+    });
+    it('should query txLogic.verify with proper data', async () => {
+      tx.requesterPublicKey = Buffer.from('abababab', 'hex');
+      accountsModuleStub.stubs.generateAddressByPublicKey.returns('1111R');
+      transactionLogicStub.stubs.ready.returns(true);
+      transactionLogicStub.stubs.verify.resolves();
+
+      const account       = new AccountsModel({ address: tx.senderId });
+      const requester = new AccountsModel({address: '1111R'});
+      await instance.checkTransaction(tx, {
+        [tx.senderId]: account,
+        '1111R'      : requester,
+      }, 1);
+
+      expect(transactionLogicStub.stubs.verify.calledOnce).true;
+      expect(transactionLogicStub.stubs.verify.firstCall.args[0]).deep.eq(tx);
+      expect(transactionLogicStub.stubs.verify.firstCall.args[1]).deep.eq(account);
+      expect(transactionLogicStub.stubs.verify.firstCall.args[2]).deep.eq(requester);
+      expect(transactionLogicStub.stubs.verify.firstCall.args[3]).deep.eq(1);
     });
   });
 });
