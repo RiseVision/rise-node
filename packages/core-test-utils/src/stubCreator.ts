@@ -34,8 +34,6 @@ export interface IStubbedInstance<X> {
   stubs: { [T in keyof X]: SinonStub };
 }
 
-
-
 export function StubbedInstance<T extends { new(...args: any[]): any }>(Base: T) {
   return class __StubbedInstance__ extends Base implements IStubbedInstance<InstanceType<T>> {
     public stubs: { [Y in keyof InstanceType<T>]: SinonStub } = {} as any;

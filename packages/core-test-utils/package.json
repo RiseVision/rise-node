@@ -11,8 +11,7 @@
   },
   "author": "",
   "license": "ISC",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "shx": "0.3.2",
     "@types/node": "^9.6.0",

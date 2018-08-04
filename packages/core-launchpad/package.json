@@ -7,7 +7,10 @@
     "rise-launchpad": "./dist/binary.js"
   },
   "scripts": {
-    "transpile": "shx rm -rf dist; tsc;"
+    "transpile": "shx rm -rf dist; tsc;",
+    "test": "mocha  --bail --exit --require ts-node/register './tests/**/*.spec.ts'",
+    "tsnodev": "ts-node -v",
+    "mochjav": "mocha -V"
   },
   "types": "dist/index.d.ts",
   "author": "",
@@ -25,6 +28,8 @@
   },
   "devDependencies": {
     "shx": "0.3.2",
+    "mocha": "5.2.0",
+    "ts-node": "7.0.0",
     "typescript": "2.9.2"
   }
 }
