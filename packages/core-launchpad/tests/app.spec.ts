@@ -1,4 +1,6 @@
-import * as proxyquire from 'proxyquire';
+import * as pq from 'proxyquire';
+import * as program from 'commander';
+
 import * as sinon from 'sinon';
 import { StubbedInstance } from '../../core-test-utils/src/stubCreator';
 import { AppManager } from '../src/AppManager';
@@ -6,6 +8,7 @@ import { expect } from 'chai';
 import { wait } from '../../core-utils/src';
 import { SinonStub } from 'sinon';
 
+const proxyquire = pq.noPreserveCache();
 describe('app', () => {
   let oldPWD: string;
   before(() => {
@@ -14,6 +17,20 @@ describe('app', () => {
   });
   after(() => {
     process.env.PWD = oldPWD;
+  });
+  const oldArgs        = [...process.argv];
+  const oldProcessExit = process.exit;
+  let exitStub: SinonStub;
+  beforeEach(() => process.argv = [...oldArgs]);
+  beforeEach(() => {
+    exitStub     = sinon.stub();
+    process.exit = (...args) => {
+      exitStub(...args);
+      console.log('Exited', ...args);
+      return void 0 as never;
+    };
+
+    ['port', 'address', 'net', 'snapshot', 'config', 'extraConfig', 'overrideConfig'].forEach((k) => delete program[k]);
   });
 
   class StubbedAppManager extends StubbedInstance(AppManager) {
@@ -25,7 +42,7 @@ describe('app', () => {
 
   afterEach(() => {
     StubbedAppManager.instances.splice(0, StubbedAppManager.instances.length);
-    StubbedAppManager.constructorCalls.splice(0, StubbedAppManager.instances.length);
+    StubbedAppManager.constructorCalls.splice(0, StubbedAppManager.constructorCalls.length);
   });
   it('constructor', () => {
     proxyquire('../src/app', { './AppManager': { AppManager: StubbedAppManager } });
@@ -50,18 +67,7 @@ describe('app', () => {
   });
 
   describe('cli arguments', () => {
-    const oldArgs        = [...process.argv];
-    const oldProcessExit = process.exit;
-    let exitStub: SinonStub;
-    beforeEach(() => process.argv = [...oldArgs]);
-    beforeEach(() => {
-      exitStub     = sinon.stub();
-      process.exit = (...args) => {
-        exitStub(...args);
-        console.log('Exited', ...args);
-        return void 0 as never;
-      };
-    });
+
     afterEach(() => process.exit = oldProcessExit);
 
     it('should honorate --net param', () => {
@@ -85,7 +91,6 @@ describe('app', () => {
       });
 
       const [constructorArgs] = StubbedAppManager.constructorCalls;
-
       expect(constructorArgs[0].a).eq('b');
       expect(constructorArgs[0].address).eq('meow');
       expect(constructorArgs[0].db).deep.eq({
@@ -113,7 +118,6 @@ describe('app', () => {
       const [[config]] = StubbedAppManager.constructorCalls;
       expect(config.port).deep.eq(10);
       expect(config.address).deep.eq('localhome');
-
       // invalid port
       process.argv = [...oldArgs];
       process.argv.push('-p', 'hahaa');
@@ -135,10 +139,11 @@ describe('app', () => {
       expect(configStub.calledOnce).is.true;
       expect(configStub.firstCall.args[0]).deep.eq('/dev/null');
     });
+
     it('should require and merge extraConfig', () => {
       process.argv.push('-e', `${__dirname}/assets/app/extraConfig.json`);
       proxyquire('../src/app', {
-        './AppManager' : { AppManager: StubbedAppManager },
+        './AppManager': { AppManager: StubbedAppManager },
       });
 
       const [[config]] = StubbedAppManager.constructorCalls;
@@ -158,5 +163,7 @@ describe('app', () => {
         user              : 'test',
       });
     });
+
+
   });
 });
