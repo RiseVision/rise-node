@@ -1,6 +1,9 @@
 {
   "name": "@risevision/core-accounts",
   "version": "1.0.0",
+  "rise_vision": {
+    "module": true
+  },
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

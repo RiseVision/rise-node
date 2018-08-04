@@ -31,7 +31,7 @@ if (typeof(gc) !== 'undefined') {
 
 const callingPackageJSON = require(packageJSONFile);
 
-const modules = fetchCoreModuleImplementations(Object.keys(callingPackageJSON.dependencies));
+const modules = fetchCoreModuleImplementations(process.env.PWD);
 
 program
   .version(callingPackageJSON.version)

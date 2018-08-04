@@ -7,7 +7,7 @@
     "rise-launchpad": "./dist/binary.js"
   },
   "scripts": {
-    "transpile": "shx rm -rf dist; tsc;",
+    "transpile": "shx rm -rf dist; tsc; chmod +x ./dist/binary.js",
     "test": "mocha  --bail --exit --require ts-node/register './tests/**/*.spec.ts'",
     "tsnodev": "ts-node -v",
     "mochjav": "mocha -V"
@@ -23,6 +23,7 @@
     "inversify": "4.13.0",
     "sequelize": "4.38.0",
     "pkginfo": "0.4.1",
+    "dag-map": "=2.0.2",
     "find-pkg": "2.0.0",
     "sequelize-typescript": ">=0.6.6-beta.1 <=0.6.6-beta.1"
   },

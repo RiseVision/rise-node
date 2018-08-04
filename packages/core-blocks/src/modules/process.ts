@@ -36,7 +36,7 @@ import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { BlocksSymbols } from '../blocksSymbols';
 
-const schema = require('../../../schema/blocks.json');
+const schema = require('../../schema/blocks.json');
 
 @injectable()
 export class BlocksModuleProcess implements IBlocksModuleProcess {

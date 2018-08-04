@@ -1,5 +1,5 @@
 import { CoreSymbols } from '@risevision/core';
-import { IAccountsModel, IAccountsModule, ISystemModule } from '@risevision/core-interfaces';
+import { IAccountsModel, IAccountsModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { AppConfig, ConstantsType, FieldsInModel, publicKey } from '@risevision/core-types';
 import * as filterObject from 'filter-object';
@@ -14,7 +14,6 @@ import { AccountsSymbols } from '../symbols';
 import { DeprecatedAPIError } from '@risevision/core-apis';
 
 const accountSchema = require('../../schema/accounts.json');
-
 @JsonController('/api/accounts')
 @injectable()
 @IoCSymbol(CoreSymbols.api.accounts)
@@ -28,9 +27,9 @@ export class AccountsAPI {
 
   @inject(LaunchpadSymbols.hookSystem)
   private hookSystem: WordPressHookSystem;
-  @inject(CoreSymbols.appConfig)
+  @inject(LaunchpadSymbols.appConfig)
   private appConfig: AppConfig;
-  @inject(CoreSymbols.constants)
+  @inject(LaunchpadSymbols.constants)
   private constants: ConstantsType;
 
   @Get('/')

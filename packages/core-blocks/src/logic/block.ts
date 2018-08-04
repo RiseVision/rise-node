@@ -23,7 +23,7 @@ import {
   SignedAndChainedTransportBlockType,
   SignedBlockType
 } from '@risevision/core-types';
-import { MyBigNumb } from '../../../core-utils/src/bignum';
+import { MyBigNumb } from '@risevision/core-utils';
 
 const blockSchema = require('../../schema/block.json');
 
