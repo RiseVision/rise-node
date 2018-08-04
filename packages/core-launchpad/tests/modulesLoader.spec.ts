@@ -1,12 +1,9 @@
 import { fetchCoreModuleImplementations } from '../src/modulesLoader';
-import * as appModulePath from 'app-module-path';
-import { SinonStub } from 'sinon';
-import {expect} from 'chai';
-import * as sinon from 'sinon';
+import { expect } from 'chai';
 
 describe('modulesLoader', () => {
   it('should return modules sorted by dependencies', () => {
-    const modules = fetchCoreModuleImplementations( `${__dirname}/../../rise`);
+    const modules = fetchCoreModuleImplementations(`${__dirname}/../../rise`);
     expect(modules.map((m) => m.name)).deep.eq([
       '@risevision/core-models',
       '@risevision/core-p2p',
@@ -19,6 +16,5 @@ describe('modulesLoader', () => {
       '@risevision/core-accounts',
       '@risevision/core-multisignature',
       '@risevision/core-secondsignature']);
-
   });
 });
