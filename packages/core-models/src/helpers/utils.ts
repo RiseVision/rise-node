@@ -44,7 +44,12 @@ export function mergeModels(what: typeof Model, into: typeof Model) {
   const intoScopeOptions: IScopeOptions = getScopeOptions(into.prototype) || {};
 
   Object.keys(fromScopeOptions).forEach((scope) => {
-    intoScopeOptions[scope] = mergeScopeOptions(fromScopeOptions[scope] as any, intoScopeOptions[scope] as any);
+    if (fromScopeOptions[scope] && intoScopeOptions[scope]) {
+      intoScopeOptions[scope] = mergeScopeOptions(fromScopeOptions[scope] as any, intoScopeOptions[scope] as any);
+    } else if (fromScopeOptions[scope]) {
+      intoScopeOptions[scope] = fromScopeOptions[scope];
+    }
+
   });
   addScopeOptions(into.prototype, intoScopeOptions);
 
@@ -55,6 +60,5 @@ export function mergeModels(what: typeof Model, into: typeof Model) {
       into.prototype[method] = what.prototype[method];
     });
 
-  console.log(into.prototype);
   Object.keys(newAttrs).forEach((k) => addAttribute(into.prototype, k, newAttrs[k]));
 }
