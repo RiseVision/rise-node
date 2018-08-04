@@ -1,22 +1,16 @@
-
+// tslint:disable no-console no-var-requires
+import { AppConfig } from '@risevision/core-types';
+import { loggerCreator, promiseToCB } from '@risevision/core-utils';
+import * as appModulePath from 'app-module-path';
 import * as exitHook from 'async-exit-hook';
 import * as program from 'commander';
 import * as extend from 'extend';
-import * as appModulePath from 'app-module-path';
 import * as fs from 'fs';
 import * as jp from 'jsonpath';
 import 'source-map-support/register';
-// import { AppManager } from './AppManager';
-// import { allExceptionCreator } from './exceptions';
-import { AppConfig, ConstantsType } from '@risevision/core-types';
-import { fetchCoreModuleImplementations } from './modulesLoader';
-import { configCreator } from './loadConfigs';
 import { AppManager } from './AppManager';
-import { loggerCreator, promiseToCB } from '@risevision/core-utils';
-// import {
-//   config as configCreator, constants as constantsType, ExceptionType, loggerCreator,
-//   promiseToCB,
-// } from './helpers/';
+import { configCreator } from './loadConfigs';
+import { fetchCoreModuleImplementations } from './modulesLoader';
 
 const packageJSONFile = `${process.env.PWD}/package.json`;
 if (!fs.existsSync(packageJSONFile)) {
@@ -96,7 +90,11 @@ let appConfig: AppConfig = extend(
 );
 
 if (program.port) {
-  appConfig.port = program.port;
+  appConfig.port = parseInt(program.port, 10);
+  if (isNaN(appConfig.port)) {
+    console.error('Invalid port');
+    process.exit(1);
+  }
 }
 if (program.address) {
   appConfig.address = program.address;
@@ -162,7 +160,6 @@ boot()
   .catch((err) => {
     logger.fatal('Error when instantiating');
     logger.fatal(err);
-    process.exit(1);
     return Promise.reject(err);
   })
   .then((manager) => {

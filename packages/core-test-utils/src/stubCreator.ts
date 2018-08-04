@@ -35,11 +35,15 @@ export interface IStubbedInstance<X> {
 }
 
 export function StubbedInstance<T extends { new(...args: any[]): any }>(Base: T) {
-  return class __StubbedInstance__ extends Base implements IStubbedInstance<InstanceType<T>> {
+  const thaClass = class __StubbedInstance__ extends Base implements IStubbedInstance<InstanceType<T>> {
+    public static instances: Array<IStubbedInstance<InstanceType<T>>> = [];
+    public static constructorCalls: any[][] = [];
     public stubs: { [Y in keyof InstanceType<T>]: SinonStub } = {} as any;
     public sandbox = sinon.createSandbox();
     constructor(...args) {
       super(...args);
+      thaClass.instances.push(this);
+      thaClass.constructorCalls.push(args);
       let ended = false;
       let proto = Object.getPrototypeOf(this);
       while (!ended) {
@@ -58,4 +62,5 @@ export function StubbedInstance<T extends { new(...args: any[]): any }>(Base: T)
     }
 
   };
+  return thaClass;
 }
