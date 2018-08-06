@@ -1,5 +1,5 @@
 export const APISymbols = {
-  api: Symbol.for('api'),
+  api: Symbol('api'),
   applyLimitsMiddleware: Symbol('applyLimitsMiddleware'),
   errorHandler         : Symbol('errorHandler'),
   privateApiGuard      : Symbol('forgingApisWatchGuard'),

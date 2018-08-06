@@ -9,7 +9,7 @@ import {
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import z_schema from 'z-schema';
 import { BlockRewardLogic } from './blockReward';
 import {
@@ -24,6 +24,8 @@ import {
   SignedBlockType
 } from '@risevision/core-types';
 import { MyBigNumb } from '@risevision/core-utils';
+import { ModelSymbols } from '@risevision/core-models';
+import { BlocksSymbols } from '../blocksSymbols';
 
 const blockSchema = require('../../schema/block.json');
 
@@ -62,7 +64,8 @@ export class BlockLogic implements IBlockLogic {
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
 
-  @inject(Symbols.models.blocks)
+  @inject(ModelSymbols.model)
+  @named(BlocksSymbols.model)
   private BlocksModel: typeof IBlocksModel;
 
   public create(data: {

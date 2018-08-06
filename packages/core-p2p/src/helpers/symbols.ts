@@ -1,18 +1,28 @@
+import { Symbols } from '@risevision/core-interfaces';
+
 export const p2pSymbols = {
-  constants: Symbol.for('p2pSymbol'),
-  express: Symbol.for('express'),
-  server: Symbol.for('server'),
+  constants : Symbol('p2pConstants'),
+  express   : Symbol('express'),
+  server    : Symbol('server'),
+  socketIO  : Symbols.generic.socketIO,
   // Tag your HTTP controller with this.
-  controller: Symbol.for('controller'),
-  middleware: Symbol.for('middleware'),
-  api  : {
-    attachPeerHeaders            : Symbol.for('attachPeerHeaders'),
-    peersAPI                     : Symbol.for('peersAPI'),
-    transport                    : Symbol.for('transport'),
-    validatePeerHeadersMiddleware: Symbol.for('validatePeerHeadersMiddleware'),
+  controller: Symbol('controller'),
+  middleware: Symbol('middleware'),
+  modules   : {
+    peers    : Symbols.modules.peers,
+    transport: Symbols.modules.transport,
   },
-  logic: {
-    peerFactory: Symbol.for('peerFactory'),
+  api       : {
+    attachPeerHeaders            : Symbol('attachPeerHeaders'),
+    peersAPI                     : Symbol('peersAPI'),
+    transport                    : Symbol('transport'),
+    validatePeerHeadersMiddleware: Symbol('validatePeerHeadersMiddleware'),
   },
-  model: Symbol('peersmodel'),
+  logic     : {
+    broadcaster: Symbols.logic.broadcaster,
+    peerFactory: Symbol('peerFactory'),
+    peerLogic  : Symbols.logic.peer,
+    peersLogic : Symbols.logic.peers,
+  },
+  model     : Symbol('peersmodel'),
 };

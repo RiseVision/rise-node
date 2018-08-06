@@ -1,5 +1,5 @@
 import { IBlocksModel, IBlocksModule, ITransactionsModel, Symbols } from '@risevision/core-interfaces';
-import { BaseModel } from '@risevision/core-models';
+import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import { SignedBlockType } from '@risevision/core-types';
 import { Column, DataType, HasMany, PrimaryKey, Table } from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
@@ -64,7 +64,7 @@ export class BlocksModel extends BaseModel<BlocksModel> implements IBlocksModel 
   public transactions: ITransactionsModel[];
 
   // tslint:disable-next-line
-  @HasMany(() => this.constructor.container.get(Symbols.models.transactions), { as: "TransactionsModel" })
+  @HasMany(() => this.BlocksModel.container.getNamed(ModelSymbols.model, Symbols.models.transactions), { as: "TransactionsModel" })
   private TransactionsModel: ITransactionsModel[];
 
   // tslint:disable member-ordering

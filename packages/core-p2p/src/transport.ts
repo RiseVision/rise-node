@@ -33,6 +33,7 @@ import * as Throttle from 'promise-parallel-throttle';
 import * as promiseRetry from 'promise-retry';
 import SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
+import { ModelSymbols } from '@risevision/core-models';
 
 const peersSchema     = require('../schema/peers.json');
 const transportSchema = require('../schema/transport.json');
@@ -84,9 +85,11 @@ export class TransportModule implements ITransportModule {
   private blocksModule: IBlocksModule;
 
   // models
-  @inject(Symbols.models.blocks)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
-  @inject(Symbols.models.transactions)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
   private loaded: boolean = false;
@@ -216,7 +219,7 @@ export class TransportModule implements ITransportModule {
   public onSignature(signature: { transaction: string, signature: string, relays?: number }, broadcast: boolean) {
     signature.relays = signature.relays || 0;
     if (broadcast && signature.relays < this.broadcasterLogic.maxRelays()) {
-      signature.relays ++;
+      signature.relays++;
       this.broadcasterLogic.enqueue({}, { api: '/signatures', data: { signature }, method: 'POST' });
       this.io.sockets.emit('signature/change', signature);
     }

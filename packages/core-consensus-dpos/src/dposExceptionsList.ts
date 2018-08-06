@@ -1,4 +1,4 @@
 export const DposExceptionsList = {
-  assertValidSlot: Symbol.for('assertValidSlot'),
+  assertValidSlot: Symbol('assertValidSlot'),
 
 };

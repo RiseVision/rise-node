@@ -14,13 +14,14 @@ import {
 } from '@risevision/core-types';
 import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { Request } from 'express';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import { BodyParam, Get, JsonController, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { p2pSymbols } from '../helpers';
 import { AttachPeerHeaders } from './attachPeerHeaders';
 import { ValidatePeerHeaders } from './validatePeerHeaders';
+import { ModelSymbols } from '@risevision/core-models';
 
 const transportSchema = require('../../schema/transport.json');
 
@@ -87,10 +88,8 @@ export class TransportAPI {
   private blockLogic: IBlockLogic;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.blocksSubmodules.utils)
-  private blocksModuleUtils: IBlocksModuleUtils;
-  // @inject(Symbols.helpers.bus)
-  // private bus: Bus;
+  // @inject(Symbols.modules.blocksSubmodules.utils)
+  // private blocksModuleUtils: IBlocksModuleUtils;
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
   @inject(Symbols.logic.peers)
@@ -103,9 +102,11 @@ export class TransportAPI {
   private transportModule: ITransportModule;
 
   // models
-  @inject(Symbols.models.blocks)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
-  @inject(Symbols.models.transactions)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
   @Get('/height')
@@ -219,81 +220,81 @@ export class TransportAPI {
     return { blockId: normalizedBlock.id };
   }
 
-  @Get('/blocks')
-  @ValidateSchema()
-  public async getBlocks(@SchemaValid(transportSchema.blocks.properties.lastBlockId)
-                         @QueryParam('lastBlockId') lastBlockId: string) {
-    // Get 34 blocks with all data (joins) from provided block id
-    // According to maxium payload of 58150 bytes per block with every transaction being a vote
-    // Discounting maxium compression setting used in middleware
-    // Maximum transport payload = 2000000 bytes
-    const dbBlocks = await this.blocksModuleUtils.loadBlocksData({
-      lastId: lastBlockId,
-      limit : 34,
-    });
-    const blocks   = (await Promise.all(dbBlocks.map(async (block) => {
-      const transactions = block.transactions;
-
-      const rawBlocks: RawFullBlockListType[] = [];
-      for (const t of transactions) {
-        const tmpBlock = genTransportBlock(block, {
-          t_id             : t.id,
-          t_rowId          : t.rowId,
-          t_type           : t.type,
-          t_timestamp      : t.timestamp,
-          t_senderPublicKey: t.senderPublicKey.toString('hex'),
-          t_senderId       : t.senderId,
-          t_recipientId    : t.recipientId,
-          t_amount         : t.amount,
-          t_fee            : t.fee,
-          t_signature      : t.signature.toString('hex'),
-          t_signSignature  : t.signSignature ? t.signSignature.toString('hex') : null,
-          t_signatures     : t.signatures.join(','),
-        });
-        switch (t.type) {
-          case TransactionType.VOTE:
-            rawBlocks.push({
-              ...tmpBlock,
-              ... {
-                v_votes: t.asset.votes.join(','),
-              },
-            });
-            break;
-          case TransactionType.MULTI:
-            rawBlocks.push({
-              ...tmpBlock, ... {
-                m_min      : t.asset.multisignature.min,
-                m_lifetime : t.asset.multisignature.lifetime,
-                m_keysgroup: t.asset.multisignature.keysgroup,
-              },
-            });
-            break;
-          case TransactionType.DELEGATE:
-            rawBlocks.push({
-              ...tmpBlock, ... {
-                d_username: t.asset.delegate.username,
-              },
-            });
-            break;
-          case TransactionType.SIGNATURE:
-            rawBlocks.push({
-              ...tmpBlock, ... {
-                s_publicKey: t.asset.signature.publicKey,
-              },
-            });
-            break;
-          case TransactionType.SEND:
-            rawBlocks.push(tmpBlock);
-            break;
-        }
-      }
-      if (rawBlocks.length === 0) {
-        // no txs add one block with empty tx data.
-        rawBlocks.push(genTransportBlock(block, {}));
-      }
-      return rawBlocks;
-    }))).reduce((a, b) => a.concat(b), []);
-    return { blocks };
-  }
+  // @Get('/blocks')
+  // @ValidateSchema()
+  // public async getBlocks(@SchemaValid(transportSchema.blocks.properties.lastBlockId)
+  //                        @QueryParam('lastBlockId') lastBlockId: string) {
+  //   // Get 34 blocks with all data (joins) from provided block id
+  //   // According to maxium payload of 58150 bytes per block with every transaction being a vote
+  //   // Discounting maxium compression setting used in middleware
+  //   // Maximum transport payload = 2000000 bytes
+  //   const dbBlocks = await this.blocksModuleUtils.loadBlocksData({
+  //     lastId: lastBlockId,
+  //     limit : 34,
+  //   });
+  //   const blocks   = (await Promise.all(dbBlocks.map(async (block) => {
+  //     const transactions = block.transactions;
+  //
+  //     const rawBlocks: RawFullBlockListType[] = [];
+  //     for (const t of transactions) {
+  //       const tmpBlock = genTransportBlock(block, {
+  //         t_id             : t.id,
+  //         t_rowId          : t.rowId,
+  //         t_type           : t.type,
+  //         t_timestamp      : t.timestamp,
+  //         t_senderPublicKey: t.senderPublicKey.toString('hex'),
+  //         t_senderId       : t.senderId,
+  //         t_recipientId    : t.recipientId,
+  //         t_amount         : t.amount,
+  //         t_fee            : t.fee,
+  //         t_signature      : t.signature.toString('hex'),
+  //         t_signSignature  : t.signSignature ? t.signSignature.toString('hex') : null,
+  //         t_signatures     : t.signatures.join(','),
+  //       });
+  //       switch (t.type) {
+  //         case TransactionType.VOTE:
+  //           rawBlocks.push({
+  //             ...tmpBlock,
+  //             ... {
+  //               v_votes: t.asset.votes.join(','),
+  //             },
+  //           });
+  //           break;
+  //         case TransactionType.MULTI:
+  //           rawBlocks.push({
+  //             ...tmpBlock, ... {
+  //               m_min      : t.asset.multisignature.min,
+  //               m_lifetime : t.asset.multisignature.lifetime,
+  //               m_keysgroup: t.asset.multisignature.keysgroup,
+  //             },
+  //           });
+  //           break;
+  //         case TransactionType.DELEGATE:
+  //           rawBlocks.push({
+  //             ...tmpBlock, ... {
+  //               d_username: t.asset.delegate.username,
+  //             },
+  //           });
+  //           break;
+  //         case TransactionType.SIGNATURE:
+  //           rawBlocks.push({
+  //             ...tmpBlock, ... {
+  //               s_publicKey: t.asset.signature.publicKey,
+  //             },
+  //           });
+  //           break;
+  //         case TransactionType.SEND:
+  //           rawBlocks.push(tmpBlock);
+  //           break;
+  //       }
+  //     }
+  //     if (rawBlocks.length === 0) {
+  //       // no txs add one block with empty tx data.
+  //       rawBlocks.push(genTransportBlock(block, {}));
+  //     }
+  //     return rawBlocks;
+  //   }))).reduce((a, b) => a.concat(b), []);
+  //   return { blocks };
+  // }
 
 }

@@ -1,11 +1,14 @@
+import { Symbols } from '@risevision/core-interfaces';
+
 export const HelpersSymbols = {
-  crypto: Symbol.for('crypto'),
-  jobsQueue: Symbol.for('jobsQueue'),
-  migrator: Symbol.for('migrator'),
+  appState: Symbols.logic.appState,
+  crypto: Symbols.generic.crypto,
+  jobsQueue: Symbols.helpers.jobsQueue,
+  migrator: Symbol('migrator'),
   names: {
-    balancesSequence: Symbol.for('balancesSequence'),
-    dbSequence: Symbol.for('dbSequence'),
-    defaultSequence: Symbol.for('defaultSequence'),
+    balancesSequence: Symbols.names.helpers.balancesSequence,
+    dbSequence: Symbols.names.helpers.dbSequence,
+    defaultSequence: Symbols.names.helpers.defaultSequence,
   },
-  sequence: Symbol.for('sequence')
+  sequence: Symbols.helpers.sequence,
 };

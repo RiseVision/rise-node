@@ -4,6 +4,7 @@ import { Container } from 'inversify';
 import { Model, Sequelize } from 'sequelize-typescript';
 import { DbAppConfig, DBHelper, ModelSymbols } from './helpers/';
 import {
+  BaseModel,
   ForksStatsModel,
   InfoModel,
   MigrationsModel,
@@ -50,8 +51,12 @@ export class CoreModule extends BaseCoreModule<DbAppConfig> {
   }
 
   public initAppElements() {
-    const models = this.container.getAll<typeof Model>(ModelSymbols.model);
+    const models = this.container.getAll<typeof BaseModel>(ModelSymbols.model);
+    models.forEach((m) => m.container = this.container);
     this.sequelize.addModels(models);
+    models.forEach((m) => {
+      console.log(m.getTableName());
+    });
   }
 
   public afterConfigValidation<T extends DbAppConfig>(config: T): T {

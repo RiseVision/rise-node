@@ -9,10 +9,19 @@ import * as compression from 'compression';
 import * as cors from 'cors';
 import { Application } from 'express';
 import { useContainer as useContainerForHTTP, useExpressServer } from 'routing-controllers';
+import * as socketIO from 'socket.io';
 import { Symbols } from '@risevision/core-interfaces';
 import { cbToPromise } from '@risevision/core-utils';
 import { ModelSymbols } from '@risevision/core-models';
 import { PeersModel } from './PeersModel';
+import { TransportAPI } from './api/transportAPI';
+import { PeersAPI } from './api/peersAPI';
+import { PeersLogic } from './peersLogic';
+import { PeersModule } from './peersModule';
+import { PeerLogic } from './peer';
+import { BasePeerType } from '@risevision/core-types';
+import { TransportModule } from './transport';
+import { BroadcasterLogic } from './broadcaster';
 
 const configSchema = require('../schema/config.json');
 
@@ -89,11 +98,28 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
   public addElementsToContainer(): void {
     const app = express();
     this.srv = http.createServer(app);
+    this.container.bind(p2pSymbols.constants).toConstantValue(this.constants);
+    this.container.bind(p2pSymbols.controller).to(TransportAPI).inSingletonScope().whenTargetNamed(p2pSymbols.api.transport);
+    this.container.bind(p2pSymbols.controller).to(PeersAPI).inSingletonScope().whenTargetNamed(p2pSymbols.api.peersAPI);
     this.container.bind(p2pSymbols.express).toConstantValue(app);
     this.container.bind(p2pSymbols.server).toConstantValue(this.srv);
     this.container.bind(ModelSymbols.model)
       .toConstructor(PeersModel)
-      .whenTargetNamed(p2pSymbols.model)
+      .whenTargetNamed(p2pSymbols.model);
+
+    this.container.bind(p2pSymbols.logic.broadcaster).to(BroadcasterLogic).inSingletonScope();
+    this.container.bind(p2pSymbols.logic.peerLogic).to(PeerLogic).inSingletonScope();
+    this.container.bind(p2pSymbols.logic.peersLogic).to(PeersLogic).inSingletonScope();
+    this.container.bind(p2pSymbols.logic.peerFactory).toFactory((ctx) => {
+      return (peer: BasePeerType) => {
+        const p = ctx.container.get<PeerLogic>(Symbols.logic.peer);
+        p.accept({ ... {}, ...peer });
+        return p;
+      };
+    });
+    this.container.bind(p2pSymbols.modules.peers).to(PeersModule).inSingletonScope();
+    this.container.bind(p2pSymbols.modules.transport).to(TransportModule).inSingletonScope();
+    this.container.bind(p2pSymbols.socketIO).toConstantValue(socketIO(this.srv));
   }
 
   public teardown(): Promise<void> {

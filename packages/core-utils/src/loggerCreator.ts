@@ -37,7 +37,7 @@ export function loggerCreator(config: any = {}): ILogger {
   config.filename = config.filename || __dirname + '/logs.log';
 
   config.errorLevel = config.errorLevel || 'log';
-
+console.log(config.filename);
   const logFile = fs.createWriteStream(config.filename, { flags: 'a' });
 
   exports.setLevel = (errorLevel) => {

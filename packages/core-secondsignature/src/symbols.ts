@@ -1,4 +1,5 @@
-export const  SigSymbols = {
-  api: Symbol.for('sigAPI'),
-  model: Symbol.for('signaturesModel'),
+export const SigSymbols = {
+  api        : Symbol('sigAPI'),
+  model      : Symbol('signaturesModel'),
+  transaction: Symbol('2ndSigTX'),
 };

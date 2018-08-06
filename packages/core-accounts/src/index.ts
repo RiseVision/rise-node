@@ -4,3 +4,4 @@ export * from './models';
 export * from './modules';
 export * from './symbols';
 export * from './coremodule';
+export * from './hooks';

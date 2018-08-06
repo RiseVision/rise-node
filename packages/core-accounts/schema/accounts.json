@@ -71,7 +71,8 @@
         "type": "string",
         "format": "publicKey"
       }
-    }
+    },
+    "additionalProperties": false
   },
   "top": {
     "id": "accounts.top",

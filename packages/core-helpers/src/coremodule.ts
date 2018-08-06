@@ -1,12 +1,16 @@
+import { Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { AppConfig } from '@risevision/core-types';
 import { loggerCreator } from '@risevision/core-utils';
 import { CommanderStatic } from 'commander';
+import { Crypto } from './crypto';
 import { HelpersSymbols } from './helpersSymbols';
 import { JobsQueue } from './jobsQueue';
 import { Migrator } from './migrator';
 import { Sequence } from './sequence';
-import { Symbols } from '@risevision/core-interfaces';
+import { AppState } from './appState';
+
+
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
@@ -14,6 +18,7 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
 
   public addElementsToContainer(): void {
     this.container.bind(HelpersSymbols.crypto).toConstantValue(new Crypto());
+    this.container.bind(HelpersSymbols.appState).to(AppState).inSingletonScope();
     this.container.bind(HelpersSymbols.jobsQueue).to(JobsQueue).inSingletonScope();
     const logger = loggerCreator({
       echo      : this.config.consoleLogLevel,

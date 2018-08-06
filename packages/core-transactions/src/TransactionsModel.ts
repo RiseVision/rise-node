@@ -1,9 +1,10 @@
-import { IBlocksModule, ITransactionsModel } from '@risevision/core-interfaces';
+import { IBlocksModule, ITransactionsModel, Symbols } from '@risevision/core-interfaces';
 import { IBaseTransaction, ITransportTransaction, TransactionType } from '@risevision/core-types';
-import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import { Column, DataType, ForeignKey, Model, PrimaryKey, Table } from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-// import { BlocksModel } from './BlocksModel';
+import { ModelSymbols } from '@risevision/core-models';
+
 
 @Table({ tableName: 'trs' })
 // tslint:disable-next-line max-line-length
@@ -19,8 +20,7 @@ export class TransactionsModel<Asset = any> extends Model<TransactionsModel<Asse
   @Column
   public height: number;
 
-  // TODO: how to fix me? circular dep between core-transactions and core-blocks.
-  // @ForeignKey(() => BlocksModel)
+  @ForeignKey(() => this.TransactionsModel.container.getNamed(ModelSymbols.model, Symbols.models.blocks))
   @Column
   public blockId: string;
 

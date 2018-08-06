@@ -9,6 +9,7 @@ export class CoreModule extends BaseCoreModule<void> {
   public constants    = constants;
 
   public addElementsToContainer(): void {
+    this.container.bind(CoreSymbols.constants).toConstantValue(this.constants);
     this.container.bind(CoreSymbols.modules.system).to(SystemModule).inSingletonScope();
     this.container.bind(CoreSymbols.modules.loader).to(LoaderModule).inSingletonScope();
     this.container.bind(APISymbols.api).to(LoaderModule)

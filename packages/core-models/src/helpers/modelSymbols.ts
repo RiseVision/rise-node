@@ -1,18 +1,20 @@
 // tslint:disable object-literal-sort-keys
+import { Symbols } from '../../../core-interfaces/dist';
+
 export const ModelSymbols = {
-  model             : Symbol('model'),
-  sequelize         : Symbol('sequelize'),
-  sequelizeNamespace: Symbol('sequelizeNamespace'),
+  model             : Symbol.for('models.model'),
+  sequelize         : Symbol.for('models.sequelize'),
+  sequelizeNamespace: Symbol.for('models.sequelizeNamespace'),
   helpers           : {
-    db: Symbol('dbHelper'),
+    db: Symbols.helpers.db,
   },
   names             : {
-    accounts    : Symbol('accountsModel'),
-    blocks      : Symbol('blocksModel'),
-    exceptions  : Symbol('exceptionsModel'),
-    forkStats   : Symbol('forkStatsModel'),
-    info        : Symbol('infoModel'),
-    migrations  : Symbol('migrationsModel'),
-    transactions: Symbol('transactionsModel'),
+    accounts    : Symbol.for('models.accountsModel'),
+    blocks      : Symbol.for('models.blocksModel'),
+    exceptions  : Symbol.for('models.exceptionsModel'),
+    forkStats   : Symbol.for('models.forkStatsModel'),
+    info        : Symbol.for('models.infoModel'),
+    migrations  : Symbol.for('models.migrationsModel'),
+    transactions: Symbol.for('models.transactionsModel'),
   },
 };

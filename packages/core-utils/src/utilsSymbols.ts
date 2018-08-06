@@ -1,3 +1,3 @@
 export const UtilsSymbols = {
-  classSymbol: Symbol.for('classSymbol'),
+  classSymbol: Symbol('classSymbol'),
 };

@@ -1,4 +1,4 @@
-import { RecreateAccountsTables } from '@risevision/core';
+import { CoreSymbols, RecreateAccountsTables } from '@risevision/core';
 import {
   AccountDiffType,
   AccountFilterData,
@@ -14,7 +14,7 @@ import { ConstantsType, DBOp, FieldsInModel, ModelAttributes } from '@risevision
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import * as fs from 'fs';
-import { inject, injectable, named } from 'inversify';
+import { decorate, inject, injectable, named, postConstruct } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
@@ -24,8 +24,11 @@ import { AccountsSymbols } from '../symbols';
 import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
 
+const DecoratedSubscriber = WPHooksSubscriber(Object);
+decorate(injectable(), DecoratedSubscriber);
+
 @injectable()
-export class AccountLogic extends WPHooksSubscriber(Object) implements IAccountLogic {
+export class AccountLogic extends DecoratedSubscriber implements IAccountLogic {
   private table = 'mem_accounts';
 
   /**
@@ -50,6 +53,7 @@ export class AccountLogic extends WPHooksSubscriber(Object) implements IAccountL
    */
   private editable: string[];
 
+  @inject(CoreSymbols.constants)
   private constants: ConstantsType;
 
   @inject(Symbols.helpers.logger)
@@ -65,8 +69,8 @@ export class AccountLogic extends WPHooksSubscriber(Object) implements IAccountL
   @inject(LaunchpadSymbols.hookSystem)
   public hookSystem: WordPressHookSystem;
 
-  constructor() {
-    super();
+  @postConstruct()
+  public postConstruct() {
     this.model = accountsModelCreator(this.table, this.constants);
 
     this.fields = this.model.map((field) => {

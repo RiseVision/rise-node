@@ -21,7 +21,6 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     this.container.bind(APISymbols.api).to(AccountsAPI)
       .inSingletonScope()
       .whenTargetNamed(AccountsSymbols.api);
-
   }
 
   public initAppElements(): void {

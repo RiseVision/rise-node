@@ -60,15 +60,12 @@ export function resolveModule(modulePath: string, allDependencies: any): ModuleI
 
 }
 
-export function fetchCoreModuleImplementations(appPath: string): Array<ICoreModule<any>> {
+export function loadCoreSortedModules(allModules: { [k: string]: ModuleInfo},
+                                      pathGetter: (module: ModuleInfo) => string = (module) => module.modulePath): Array<ICoreModule<any>> {
   const dag                                     = new DAG<ICoreModule<any>>();
-  const allModules: { [k: string]: ModuleInfo } = {};
-  resolveModule(appPath, allModules);
-
   for (const moduleName in allModules) {
     const moduleInfo                   = allModules[moduleName];
-    console.log(moduleInfo.name, moduleInfo.modulePath)
-    const CoreModule                   = require(moduleInfo.modulePath).CoreModule;
+    const CoreModule                   = require(pathGetter(moduleInfo)).CoreModule;
     const moduleImpl: ICoreModule<any> = new CoreModule();
 
     if (!moduleImpl.version) {
@@ -85,4 +82,11 @@ export function fetchCoreModuleImplementations(appPath: string): Array<ICoreModu
   dag.each((k, item) => sortedModules.push(item));
 
   return sortedModules;
+}
+
+
+export function fetchCoreModuleImplementations(appPath: string): Array<ICoreModule<any>> {
+  const allModules: { [k: string]: ModuleInfo } = {};
+  resolveModule(appPath, allModules);
+  return loadCoreSortedModules(allModules);
 }

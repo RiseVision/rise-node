@@ -1,17 +1,17 @@
+import 'reflect-metadata';
 import { CoreSymbols } from '@risevision/core';
+import { DeprecatedAPIError } from '@risevision/core-apis';
 import { IAccountsModel, IAccountsModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
-import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
+import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { AppConfig, ConstantsType, FieldsInModel, publicKey } from '@risevision/core-types';
+import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
 import * as isEmpty from 'is-empty';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Body, Get, JsonController, Post, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-
-import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { AccountsSymbols } from '../symbols';
-import { DeprecatedAPIError } from '@risevision/core-apis';
 
 const accountSchema = require('../../schema/accounts.json');
 @JsonController('/api/accounts')

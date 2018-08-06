@@ -1,4 +1,4 @@
 export const ExceptionSymbols = {
-  model: Symbol.for('exceptionsModel'),
-  manager: Symbol.for('exceptionsManager'),
+  model: Symbol('exceptionsModel'),
+  manager: Symbol('exceptionsManager2'),
 }
