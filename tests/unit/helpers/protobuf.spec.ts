@@ -1,10 +1,12 @@
 import { expect } from 'chai';
 import * as Long from 'long';
+import { util } from 'protobufjs';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy } from 'sinon';
 import { allBuffersToHex, ProtoBufHelper } from '../../../src/helpers/';
+import ProtocolError = util.ProtocolError;
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function object-literal-sort-keys
 describe('helpers/protobuf', () => {
   let instance: ProtoBufHelper;
   let instance2: ProtoBufHelper;
@@ -333,11 +335,58 @@ describe('helpers/protobuf', () => {
   });
 
   describe('decode', () => {
-    it('should call getMessageInstance');
-    it('should return null if getMessageInstance returns null');
-    it('should call message.decode and return if decode does not throw');
-    it('should throw if a ProtocolError is caught');
-    it('should throw if wire format is invalid');
+    let buf: Buffer;
+    let getMsgInstSpy: SinonSpy;
+
+    beforeEach(() => {
+      buf = Buffer.from('0801120753756363657373', 'hex');
+    });
+
+    it('should call getMessageInstance', () => {
+      getMsgInstSpy = sandbox.spy(instance as any, 'getMessageInstance');
+      instance.decode(buf, 'APISuccess');
+      expect(getMsgInstSpy.calledOnce).to.be.true;
+      expect(getMsgInstSpy.firstCall.args).to.be.deep.equal(['APISuccess', undefined]);
+    });
+
+    it('should return null if getMessageInstance returns null', () => {
+      sandbox.stub(instance as any, 'getMessageInstance').returns(null);
+      const ret = instance.decode(buf, 'APISuccess');
+      expect(ret).to.be.null;
+    });
+
+    it('should call message.decode and return if decode does not throw', () => {
+      let msg: any;
+      let decodeSpy: SinonSpy;
+
+      (instance as any).getMessageInstance = (namespace, messageType) => {
+        msg             = (instance2 as any).getMessageInstance(namespace, messageType);
+        decodeSpy       = sandbox.stub(msg, 'decode').returns('decoded');
+        return msg;
+      };
+      const ret = instance.decode(buf, 'APISuccess');
+      expect(decodeSpy.calledOnce).to.be.true;
+      expect(ret).to.be.equal('decoded');
+    });
+
+    it('should throw if a ProtocolError is caught', () => {
+      let msg: any;
+      let decodeSpy: SinonSpy;
+
+      (instance as any).getMessageInstance = (namespace, messageType) => {
+        msg             = (instance2 as any).getMessageInstance(namespace, messageType);
+        decodeSpy       = sandbox.stub(msg, 'decode').throws(new ProtocolError('protoerr'));
+        return msg;
+      };
+      expect(() => { instance.decode(buf, 'APISuccess'); }).to.throw('ProtoBuf Protocol Error protoerr');
+    });
+
+    it('should throw if wire format is invalid', () => {
+      expect(() => {
+        instance.decode(Buffer.from('aaabbbcccddd', 'hex'), 'APISuccess');
+      }).to.throw(/ProtoBuf Wire format invalid/);
+    });
+
     describe('input/output tests', () => {
       it('should decode APIError as expected', () => {
         const obj = { success: false, error: 'Error' };
@@ -492,11 +541,46 @@ describe('helpers/protobuf', () => {
       });
     });
   });
+
   describe('decodeToObj', () => {
-    it('should call getMessageInstance');
-    it('should call message.decode');
-    it('should throw if decode throws');
-    it('should call messageInsance.toObject');
-    it('should call postProcess if passed into converters and return the result');
+    let buf: Buffer;
+    let getMsgInstSpy: SinonSpy;
+
+    beforeEach(() => {
+      buf = Buffer.from('0801120753756363657373', 'hex');
+    });
+
+    it('should call getMessageInstance twice', () => {
+      getMsgInstSpy = sandbox.spy(instance as any, 'getMessageInstance');
+      instance.decodeToObj(buf, 'APISuccess');
+      expect(getMsgInstSpy.calledTwice).to.be.true;
+      expect(getMsgInstSpy.firstCall.args).to.be.deep.equal(['APISuccess', undefined]);
+    });
+
+    it('should call inst.decode', () => {
+      let decodeSpy: SinonSpy;
+      decodeSpy = sandbox.spy(instance, 'decode');
+      instance.decodeToObj(buf, 'APISuccess');
+      expect(decodeSpy.calledOnce).to.be.true;
+      expect(decodeSpy.firstCall.args).to.be.deep.equal([buf, 'APISuccess', undefined]);
+    });
+    it('should throw if decode throws', () => {
+      sandbox.stub(instance, 'decode').throws(new Error('erroor'));
+      expect(() => {
+        instance.decodeToObj(buf, 'APISuccess');
+      }).to.throw('decodeToObject error: erroor');
+    });
+
+    it('should call postProcess if passed into converters and return the result', () => {
+      const postProcess = sandbox.stub().callsFake((a) => a);
+      instance.decodeToObj(buf, 'APISuccess', undefined, {postProcess});
+      expect(postProcess.calledOnce).to.be.true;
+      expect(postProcess.firstCall.args).to.be.deep.equal([{ success: true, message: 'Success' }]);
+    });
+
+    it('should return a serializable object', () => {
+      const retVal = instance.decodeToObj(buf, 'APISuccess');
+      expect(retVal).to.be.deep.equal(JSON.parse(JSON.stringify(retVal)));
+    });
   });
 });
