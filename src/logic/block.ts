@@ -3,7 +3,7 @@ import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
 import z_schema from 'z-schema';
-import { BigNum, constants, Ed, IKeypair } from '../helpers/';
+import {BigNum, constants, Ed, IKeypair, Longnum} from '../helpers/';
 import { IBlockLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
 import { Symbols } from '../ioc/symbols';
 import { BlocksModel } from '../models';
@@ -275,7 +275,7 @@ export class BlockLogic implements IBlockLogic {
     for (let i = 0; i < 8; i++) {
       temp[i] = hash[7 - i];
     }
-    return BigNum.fromBuffer(temp).toString();
+    return Longnum.fromBuffer(temp).toString();
   }
 
   public getHash(block: BlockType, includeSignature: boolean = true) {
@@ -349,7 +349,7 @@ export class BlockLogic implements IBlockLogic {
     for (let i = 0; i < 8; i++) {
       temp[i] = publicKeyHash[7 - i];
     }
-    return `${BigNum.fromBuffer(temp).toString()}R`;
+    return `${Longnum.fromBuffer(temp).toString()}R`;
   }
 
 }

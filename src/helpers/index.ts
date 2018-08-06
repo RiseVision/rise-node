@@ -19,6 +19,7 @@ export * from './genericUtils';
 export * from './inserts';
 export * from './jobsQueue';
 export * from './logger';
+export * from './longnum';
 export * from './migrator';
 export * from './orderBy';
 export * from './promiseUtils';

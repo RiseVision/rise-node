@@ -14,6 +14,7 @@ import {
   ExceptionsManager,
   IKeypair,
   ILogger,
+  Longnum,
   Slots
 } from '../helpers/';
 import { RunThroughExceptions } from '../helpers/decorators/exceptions';
@@ -94,7 +95,7 @@ export class TransactionLogic implements ITransactionLogic {
       temp[i] = hash[7 - i];
     }
 
-    return BigNum.fromBuffer(temp).toString();
+    return Longnum.fromBuffer(temp).toString();
   }
 
   /**

@@ -6,7 +6,7 @@ import * as path from 'path';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-import { BigNum, catchToLoggerAndRemapError, ILogger } from '../helpers/';
+import { BigNum, catchToLoggerAndRemapError, ILogger, Longnum } from '../helpers/';
 import { IAccountLogic } from '../ioc/interfaces/';
 import { Symbols } from '../ioc/symbols';
 import {
@@ -424,6 +424,6 @@ export class AccountLogic implements IAccountLogic {
     for (let i = 0; i < 8; i++) {
       tmp[i] = hash[7 - i];
     }
-    return `${BigNum.fromBuffer(tmp).toString()}R`;
+    return `${Longnum.fromBuffer(tmp).toString()}R`;
   }
 }

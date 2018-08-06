@@ -5,7 +5,7 @@ import * as crypto from 'crypto';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { BigNum, IKeypair, TransactionType } from '../../../src/helpers';
+import { BigNum, IKeypair, Longnum, TransactionType } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { SignedAndChainedBlockType, TransactionLogic } from '../../../src/logic';
 import { IConfirmedTransaction, SendTransaction, VoteTransaction } from '../../../src/logic/transactions';
@@ -205,7 +205,7 @@ describe('logic/transaction', () => {
     });
 
     it('should call BigNum.fromBuffer', () => {
-      const fromBufferSpy = sandbox.spy(BigNum, 'fromBuffer');
+      const fromBufferSpy = sandbox.spy(Longnum, 'fromBuffer');
       instance.getId(tx);
       expect(fromBufferSpy.calledOnce).to.be.true;
     });
