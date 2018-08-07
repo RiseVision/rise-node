@@ -3,7 +3,7 @@ node_js:
   - '8'
 sudo: required
 addons:
-  postgresql: "10.4"
+  postgresql: "9.6"
 services:
   - postgresql
   - redis-server
