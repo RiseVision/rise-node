@@ -1,7 +1,7 @@
 {
     "port": 5566,
     "address": "0.0.0.0",
-    "version": "0.1.12",
+    "version": "1.1.1",
     "fileLogLevel": "info",
     "logFileName": "logs/rise-testnet.log",
     "consoleLogLevel": "info",
