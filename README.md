@@ -1,4 +1,4 @@
-## Rise-node version 1.0.0
+## Rise-node version 1.1.1
 
 # RISE
 [![Build Status](https://travis-ci.org/RiseVision/rise-node.svg?branch=development)](https://travis-ci.org/RiseVision/rise-node) [![Coverage Status](https://coveralls.io/repos/github/RiseVision/rise-node/badge.svg?branch=development)](https://coveralls.io/github/RiseVision/rise-node?branch=development) 

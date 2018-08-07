@@ -10,7 +10,9 @@ import { IBlocksModule, ITransactionsModule } from '../../../src/ioc/interfaces/
 import { Symbols } from '../../../src/ioc/symbols';
 
 import {
-  createRandomAccountWithFunds, createRandomWallet, createSecondSignTransaction,
+  createRandomAccountWithFunds,
+  createRandomWallet,
+  createSecondSignTransaction,
   createSendTransaction,
   createVoteTransaction,
   getRandomDelegateWallet
@@ -25,7 +27,6 @@ import {
 } from './utils';
 
 import { toBufferedTransaction } from '../../utils/txCrafter';
-import { Sequelize } from 'sequelize-typescript';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/transactions', () => {
@@ -411,7 +412,99 @@ describe('api/transactions', () => {
   });
 
   describe('/put', () => {
-    it('should reject if transaction is empty');
-    it('should reject if transaction is not valid');
+    let tx: ITransaction;
+    let delegate1: LiskWallet;
+    let senderAccount: LiskWallet;
+    beforeEach(async () => {
+      const {wallet: randomAccount} = await createRandomAccountWithFunds(Math.pow(10, 9));
+      senderAccount                 = randomAccount;
+      delegate1 = getRandomDelegateWallet();
+      tx = await createVoteTransaction(1, senderAccount, delegate1.publicKey, true);
+    });
+    it('should reject voting tx', async () => {
+      const voteTX = await createVoteTransaction(0, senderAccount, delegate1.publicKey, true, { timestamp: 2});
+      expect(voteTX.id).not.eq(tx.id);
+      await supertest(initializer.appManager.expressApp)
+        .put('/api/transactions/')
+        .send({ transaction: voteTX })
+        .expect(200, {
+          success: true, accepted: [], invalid: [{
+            id   : voteTX.id,
+            reason: 'Failed to add vote, account has already voted for this delegate'
+          }],
+        });
+
+      // Same thing if tx came from array
+      await supertest(initializer.appManager.expressApp)
+        .put('/api/transactions/')
+        .send({ transactions: [ voteTX ] })
+        .expect(200, {
+          success: true, accepted: [], invalid: [{
+            id   : voteTX.id,
+            reason: 'Failed to add vote, account has already voted for this delegate'
+          }],
+        });
+    });
+    it('should reject malformed Transaction', async () => {
+      const orig = await createSendTransaction(0, 1, senderAccount, senderAccount.address);
+
+      await supertest(initializer.appManager.expressApp)
+        .put('/api/transactions/')
+        .send({ transactions: [{ ...orig, senderId: null }] })
+        .expect(200, {
+          success: true, accepted: [],
+          invalid: [
+            {
+              id    : orig.id,
+              reason: 'Failed to validate transaction schema: Missing required property: senderId'
+            },
+          ],
+        });
+
+      await supertest(initializer.appManager.expressApp)
+        .put('/api/transactions/')
+        .send({ transactions: [ {...orig, id: '10'} ] })
+        .expect(200, {
+          success: true, accepted: [],
+          invalid: [
+            {
+              id    : '10',
+              reason: 'Invalid transaction id'
+            },
+          ],
+        });
+
+      // Asset validation
+      const unvoteTX = await createVoteTransaction(0, senderAccount, delegate1.publicKey, false); /*unvote */
+      (unvoteTX.asset as any).votes.push('meow');
+      await supertest(initializer.appManager.expressApp)
+        .put('/api/transactions/')
+        .send({ transaction: unvoteTX })
+        .expect(200, {
+          success: true, accepted: [],
+          invalid: [
+            {
+              id    : unvoteTX.id,
+              reason: 'Failed to validate vote schema: String does not match pattern ^[-+]{1}[0-9a-z]{64}$: meow'
+            },
+          ],
+        });
+
+    });
+    it('should accept unvote transaction', async () => {
+      const unvoteTX = await createVoteTransaction(0, senderAccount, delegate1.publicKey, false); /*unvote */
+      await supertest(initializer.appManager.expressApp)
+        .put('/api/transactions/')
+        .send({ transaction: unvoteTX })
+        .expect(200, {success: true, accepted: [unvoteTX.id], invalid: []});
+
+    });
+    it('should accept unvote tx from multiple txs', async () => {
+      const unvoteTX = await createVoteTransaction(0, senderAccount, delegate1.publicKey, false); /*unvote */
+      await supertest(initializer.appManager.expressApp)
+        .put('/api/transactions/')
+        .send({ transactions: [unvoteTX] })
+        .expect(200, {success: true, accepted: [unvoteTX.id], invalid: []});
+    });
   });
 });
