@@ -9,4 +9,9 @@ export class Longnum {
     }
     return Long.fromBytes(intList, true);
   }
+
+  public static toBuffer(long: Long): Buffer {
+    const bytesList = long.toBytes();
+    return Buffer.from(bytesList);
+  }
 }

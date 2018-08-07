@@ -1,6 +1,7 @@
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
+import * as Long from 'long';
 import { inject, injectable } from 'inversify';
 import z_schema from 'z-schema';
 import {BigNum, constants, Ed, IKeypair, Longnum} from '../helpers/';
@@ -291,8 +292,8 @@ export class BlockLogic implements IBlockLogic {
     bb.writeInt(block.timestamp);
 
     if (block.previousBlock) {
-      const pb = new BigNum(block.previousBlock)
-        .toBuffer({ size: 8 });
+      const long = Long.fromString(block.previousBlock);
+      const pb = Longnum.toBuffer(long);
 
       for (let i = 0; i < 8; i++) {
         bb.writeByte(pb[i]);
