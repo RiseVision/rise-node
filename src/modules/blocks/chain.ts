@@ -253,11 +253,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         this.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');
       }
 
-      await this.bus.message('newBlock', block, broadcast);
-
       await this.roundsModule.tick(block, dbTX);
 
       this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
+
+      await this.bus.message('newBlock', block, broadcast);
     }).catch((err) => {
       // Allow cleanup as processing finished even if rollback.
       this.isProcessing = false;
