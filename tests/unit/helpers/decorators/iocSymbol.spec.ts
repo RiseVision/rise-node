@@ -19,7 +19,7 @@ describe('helpers/decorators/iocSymbol', () => {
   let target;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     defineMetadataSpy = sandbox.spy(Reflect, 'defineMetadata');
     target = () => 123;
   });
@@ -29,7 +29,7 @@ describe('helpers/decorators/iocSymbol', () => {
   });
 
   describe('IoCSymbol()', () => {
-    it('success', () => {
+    it('should be return a decorator and call to defineMetadata() successfully', () => {
       const decorator = IoCSymbol(Symbols.api.peers);
       expect(decorator).to.be.an.instanceof(Function);
       expect(defineMetadataSpy.called).to.be.false;

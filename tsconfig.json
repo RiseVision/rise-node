@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target"                      : "es5",
+    "target"                      : "es2017",
     "module"                      : "commonjs",
     "emitDecoratorMetadata"       : true,
     "experimentalDecorators"      : true,
@@ -12,17 +12,14 @@
     "inlineSources"               : true,
     "lib"                         : [
       "dom",
-      "es5",
-      "es6",
-      "es2015.core",
-      "es2015.promise"
+      "es7"
     ]
   },
   "exclude"        : [
+    "tests",
     "node_modules",
     "public",
     "dist",
-    "coverage",
-    "tests"
+    "coverage"
   ]
 }

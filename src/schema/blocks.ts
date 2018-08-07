@@ -30,6 +30,9 @@ export default {
       },
       orderBy           : {
         type: 'string',
+        enum: [
+          'height:asc', 'height:desc',
+        ],
       },
       offset            : {
         type   : 'integer',
@@ -106,10 +109,16 @@ export default {
         maxLength: 20,
       },
       previousBlock: {
-        type     : 'string',
-        format   : 'id',
-        minLength: 1,
-        maxLength: 20,
+        anyOf: [
+          {
+            type     : 'string',
+            format   : 'id',
+            minLength: 1,
+            maxLength: 20,
+          },
+          // genesis block has null as previousBlock.
+          {type: 'null'},
+        ],
       },
       height       : {
         type   : 'integer',

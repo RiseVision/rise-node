@@ -1,24 +1,23 @@
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
-import { IDatabase } from 'pg-promise';
 import { constants as constantsType, ForkType, ILogger, Slots } from '../../helpers/';
 import { IBlockLogic, IBlockReward, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
   IAccountsModule,
-  IBlocksModule, IBlocksModuleChain, IBlocksModuleVerify, IDelegatesModule, IForkModule,
+  IBlocksModule,
+  IBlocksModuleChain,
+  IBlocksModuleVerify,
+  IDelegatesModule,
+  IForkModule,
   ITransactionsModule
 } from '../../ioc/interfaces/modules/';
 import { Symbols } from '../../ioc/symbols';
 import { SignedAndChainedBlockType, SignedBlockType, } from '../../logic/';
 import { IConfirmedTransaction } from '../../logic/transactions/';
-import sql from '../../sql/blocks';
+import { AccountsModel, BlocksModel } from '../../models';
 
 @injectable()
 export class BlocksModuleVerify implements IBlocksModuleVerify {
-
-  // Generics
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
 
   // Helpers
   @inject(Symbols.helpers.constants)
@@ -49,6 +48,10 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   private forkModule: IForkModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
+
+  // Models
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
 
   /**
    * Contains the last N block Ids used to perform validations
@@ -132,8 +135,8 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     }
 
     // check if blocks exists.
-    const rows = await this.db.query(sql.getBlockId, {id: block.id});
-    if (rows.length > 0) {
+    const dbBlock = await this.BlocksModel.findById(block.id);
+    if (dbBlock !== null) {
       throw new Error(`Block ${block.id} already exists`);
     }
 
@@ -145,22 +148,30 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       });
 
     // check transactions
-    for (const tx of block.transactions) {
-      // It will throw if tx is not valid somehow.
-      await this.checkTransaction(block, tx);
-    }
+    const accountsMap = await this.accountsModule.resolveAccountsForTransactions(block.transactions);
+    await this.checkBlockTransactions(block, accountsMap);
 
     // if nothing has thrown till here then block is valid and can be applied.
     // The block and the transactions are OK i.e:
     // * Block and transactions have valid values (signatures, block slots, etc...)
     // * The check against database state passed (for instance sender has enough LSK, votes are under 101, etc...)
     // We thus update the database with the transactions values, save the block and tick it
-    return this.blocksChainModule.applyBlock(block as SignedAndChainedBlockType, broadcast, saveBlock);
+    return this.blocksChainModule.applyBlock(
+      block as SignedAndChainedBlockType,
+      broadcast,
+      saveBlock,
+      accountsMap
+    );
   }
 
   public async onBlockchainReady() {
-    const blockIds = await this.db.query(sql.loadLastNBlockIds, { limit: this.constants.blockSlotWindow });
-    this.lastNBlockIds = blockIds.map((b) => b.id);
+    const blocks       = await this.BlocksModel.findAll({
+      attributes: ['id'],
+      limit     : this.constants.blockSlotWindow,
+      order     : [['height', 'desc']],
+      raw       : true,
+    });
+    this.lastNBlockIds = blocks.map((b) => b.id);
   }
 
   public async onNewBlock(block: SignedBlockType) {
@@ -174,9 +185,9 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
    * Verify block slot is not too in the past or in the future.
    */
   private verifyBlockSlotWindow(block: SignedBlockType): string[] {
-    const curSlot = this.slots.getSlotNumber();
+    const curSlot   = this.slots.getSlotNumber();
     const blockSlot = this.slots.getSlotNumber(block.timestamp);
-    const errors = [];
+    const errors    = [];
     if (curSlot - blockSlot > this.constants.blockSlotWindow) {
       errors.push('Block slot is too old');
     }
@@ -185,6 +196,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     }
     return errors;
   }
+
   /**
    * Verify that given block is not already within last known block ids.
    */
@@ -298,7 +310,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       totalFee += tx.fee;
     }
 
-    if (payloadHash.digest().toString('hex') !== block.payloadHash) {
+    if (!payloadHash.digest().equals(block.payloadHash)) {
       errors.push('Invalid payload hash');
     }
 
@@ -334,35 +346,43 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     return [];
   }
 
-  /**
-   * Check transaction - perform transaction validation when processing block
-   * FIXME: Some checks are probably redundant, see: logic.transactionPool
-   * If it does not throw the tx should be valid.
-   */
-  private async checkTransaction(block: SignedBlockType, tx: IConfirmedTransaction<any>): Promise<void> {
-    tx.id      = this.transactionLogic.getId(tx);
-    // Apply block id to the tx
-    tx.blockId = block.id;
-
-    // Check if tx is in db already if so -> fork type 2.
-    await this.transactionLogic.assertNonConfirmed(tx)
-      .catch(async (err) => {
-        await this.forkModule.fork(block, ForkType.TX_ALREADY_CONFIRMED);
-        // undo the offending tx
-        await this.transactionsModule.undoUnconfirmed(tx);
-        this.transactionsModule.removeUnconfirmedTransaction(tx.id);
-        return Promise.reject(err);
-      });
-
-    // get account from db if exists
-    const acc = await this.accountsModule.getAccount({publicKey: tx.senderPublicKey});
-
-    let requester = null;
-    if (tx.requesterPublicKey) {
-      requester = await this.accountsModule.getAccount({publicKey: tx.requesterPublicKey});
+  private async checkBlockTransactions(block: SignedBlockType, accountsMap: {[address: string]: AccountsModel}) {
+    const allIds = [];
+    for (const tx of block.transactions) {
+      tx.id      = this.transactionLogic.getId(tx);
+      // Apply block id to the tx
+      tx['blockId'] = block.id;
+      allIds.push(tx.id);
     }
-    // Verify will throw if any error occurs during validation.
-    await this.transactionLogic.verify(tx, acc, requester, block.height);
 
+    // Check for duplicated transactions now that ids are set.
+    allIds.sort();
+    let prevId = allIds[0];
+    for (let i = 1; i < allIds.length; i++) {
+      if (prevId === allIds[i]) {
+        throw new Error(`Duplicated transaction found in block with id ${prevId}`);
+      }
+      prevId = allIds[i];
+    }
+
+    // check that none of the transaction exists in db.
+    const confirmedIDs = await this.transactionsModule.filterConfirmedIds(allIds);
+    if (confirmedIDs.length > 0) {
+      // Error, some of the included transactions are included
+      await this.forkModule.fork(block, ForkType.TX_ALREADY_CONFIRMED);
+      for (const confirmedID of confirmedIDs) {
+        if (this.transactionsModule.removeUnconfirmedTransaction(confirmedID)) {
+          await this.transactionsModule.undoUnconfirmed(block.transactions.filter((t) => t.id === confirmedID)[0]);
+        }
+      }
+      throw new Error(`Transactions already confirmed: ${confirmedIDs.join(', ')}`);
+    }
+
+    await Promise.all(block.transactions
+      .map((tx) => this.transactionsModule
+        .checkTransaction(tx, accountsMap, block.height)
+      )
+    );
   }
+
 }

@@ -30,19 +30,9 @@ export interface ITransactionPoolLogic {
   processBundled(): Promise<void>;
 
   /**
-   * Cycles through the transactions and calls processNewTransaction.
-   * It will fail at the first not valid tx
-   * @param {Array<IBaseTransaction<any>>} txs
-   * @param {boolean} broadcast
-   * @param {boolean} bundled
-   */
-  receiveTransactions(txs: Array<IBaseTransaction<any>>,
-                      broadcast: boolean, bundled: boolean): Promise<void>;
-
-  /**
    * process a new incoming transaction. It may reject in case  the tx is not valid.
    */
-  processNewTransaction(tx: IBaseTransaction<any>, broadcast: boolean, bundled: boolean): Promise<void>;
+  processNewTransaction(tx: IBaseTransaction<any>, broadcast: boolean): Promise<void>;
 
   /**
    * Calls processVerifyTransaction for each transaction and applies
@@ -50,7 +40,5 @@ export interface ITransactionPoolLogic {
    */
   // tslint:disable-next-line
   applyUnconfirmedList(txs: Array<IBaseTransaction<any> | string>, txModule: ITransactionsModule): Promise<void>;
-
-  undoUnconfirmedList(txModule: ITransactionsModule): Promise<string[]>;
 
 }

@@ -37,6 +37,13 @@ CREATE TABLE IF NOT EXISTS "mem_accounts"(
 );
 
 CREATE INDEX IF NOT EXISTS "mem_accounts_balance" ON "mem_accounts"("balance");
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_accounts_address" on "mem_accounts"("address");
+
+CREATE TRIGGER trg_memaccounts_update
+  BEFORE UPDATE OF balance,u_balance
+  on mem_accounts
+  FOR EACH ROW EXECUTE PROCEDURE proc_balance_check();
+
 
 CREATE TABLE IF NOT EXISTS "mem_round"(
   "address" VARCHAR(22),

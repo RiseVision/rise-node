@@ -1,13 +1,15 @@
 import { inject, injectable } from 'inversify';
-import { IDatabase, ITask } from 'pg-promise';
+import { Transaction } from 'sequelize';
 import SocketIO from 'socket.io';
-import { Bus, constants as constantsType, ILogger, Slots } from '../helpers/';
+import { Bus, constants as constantsType, DBHelper, ILogger, Slots } from '../helpers/';
 import { IAppState, IRoundLogicNewable, IRoundsLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule, IDelegatesModule, IRoundsModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { RoundLogicScope, SignedBlockType } from '../logic/';
+import { AccountsModel, BlocksModel, RoundsModel } from '../models';
 import roundsSQL from '../sql/logic/rounds';
-import { address, publicKey } from '../types/sanityTypes';
+import { DBOp } from '../types/genericTypes';
+import { address } from '../types/sanityTypes';
 
 @injectable()
 export class RoundsModule implements IRoundsModule {
@@ -17,8 +19,8 @@ export class RoundsModule implements IRoundsModule {
   private bus: Bus;
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
+  @inject(Symbols.helpers.db)
+  private dbHelper: DBHelper;
   @inject(Symbols.generic.socketIO)
   private io: SocketIO.Server;
   @inject(Symbols.helpers.logger)
@@ -40,6 +42,14 @@ export class RoundsModule implements IRoundsModule {
   @inject(Symbols.modules.delegates)
   private delegatesModule: IDelegatesModule;
 
+  // models
+  @inject(Symbols.models.accounts)
+  private AccountsModel: typeof AccountsModel;
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
+  @inject(Symbols.models.rounds)
+  private RoundsModel: typeof RoundsModel;
+
   public onFinishRound(round: number) {
     this.io.sockets.emit('rounds/change', { number: round });
   }
@@ -54,60 +64,49 @@ export class RoundsModule implements IRoundsModule {
   }
 
   /**
-   * Deletes specific round from mem_rounds table
-   */
-  public flush(round: number): Promise<void> {
-    return this.db.none(roundsSQL.flush, { round })
-      .catch((err) => {
-        this.logger.error(err.stack);
-        return Promise.reject(new Error('Rounds#flush error'));
-      });
-  }
-
-  /**
    * Performs a backward tick on the round
    * @param {SignedBlockType} block
    * @param {SignedBlockType} previousBlock
+   * @param {Transaction} transaction
    */
-  public backwardTick(block: SignedBlockType, previousBlock: SignedBlockType) {
-    return this.innerTick(block, true, (roundLogicScope) => (task) => {
+  public backwardTick(block: BlocksModel, previousBlock: SignedBlockType, transaction: Transaction) {
+    return this.innerTick(block,  transaction, true, async (roundLogicScope) => {
       this.logger.debug('Performing backward tick');
 
-      const roundLogic = new this.RoundLogic(roundLogicScope, task, this.slots);
-
-      return roundLogic.mergeBlockGenerator()
-      // call backwardLand only if this was the last block in round.
-        .then(() => roundLogicScope.finishRound ? roundLogic.backwardLand() : null)
-        .then(() => roundLogic.markBlockId());
+      const roundLogic            = new this.RoundLogic(roundLogicScope, this.slots);
+      const ops: Array<DBOp<any>> = [...roundLogic.mergeBlockGenerator()];
+      if (roundLogicScope.finishRound) {
+        // call backwardLand only if this was the last block in round.
+        ops.push(... roundLogic.backwardLand());
+      }
+      ops.push(roundLogic.markBlockId());
+      return this.dbHelper.performOps(ops, transaction);
     });
   }
 
-  public async tick(block: SignedBlockType) {
+  public async tick(block: SignedBlockType, transaction: Transaction) {
     return this.innerTick(
       block,
+      transaction,
       false,
-      (roundLogicScope) => (task) => {
-
+      async (roundLogicScope) => {
         this.logger.debug('Performing forward tick');
-        const roundLogic    = new this.RoundLogic(roundLogicScope, task, this.slots);
-        const snapshotRound = (
+        const roundLogic            = new this.RoundLogic(roundLogicScope, this.slots);
+        const snapshotRound         = (
           this.getSnapshotRounds() > 0 && this.getSnapshotRounds() === roundLogicScope.round
         );
-
-        return roundLogic.mergeBlockGenerator()
-        // call land only if this was the last block in round.
-          .then(() => roundLogicScope.finishRound
-            ? roundLogic.land()
-              .then(() => this.bus.message('finishRound', roundLogicScope.round))
-
-              // If this was the round of the snapshot lets truncate the blocks
-              .then(() => snapshotRound
-                ? roundLogic.truncateBlocks()
-                : null
-              )
-            : null
-          )
-          .then(() => roundLogic.markBlockId());
+        const ops: Array<DBOp<any>> = [...roundLogic.mergeBlockGenerator()];
+        if (roundLogicScope.finishRound) {
+          ops.push(... roundLogic.land());
+          if (snapshotRound) {
+            ops.push(roundLogic.truncateBlocks());
+          }
+        }
+        ops.push(roundLogic.markBlockId());
+        await this.dbHelper.performOps(ops, transaction);
+        if (roundLogicScope.finishRound) {
+          await this.bus.message('finishRound', roundLogicScope.round);
+        }
       },
       async () => {
         // Check if we are one block before last block of round, if yes - perform round snapshot
@@ -115,20 +114,18 @@ export class RoundsModule implements IRoundsModule {
         if ((block.height + 1) % this.slots.delegates === 0) {
           this.logger.debug('Performing round snapshot...');
 
-          await this.db.tx((t) => t.batch([
-              t.none(roundsSQL.clearRoundSnapshot),
-              t.none(roundsSQL.performRoundSnapshot),
-              t.none(roundsSQL.clearVotesSnapshot),
-              t.none(roundsSQL.performVotesSnapshot),
-            ])
-          ).catch((err) => {
-            this.logger.error('Round snapshot failed', err);
-            return Promise.reject(err);
-          });
+          await this.dbHelper.performOps([
+              roundsSQL.clearRoundSnapshot,
+              roundsSQL.performRoundSnapshot,
+              roundsSQL.clearVotesSnapshot,
+              roundsSQL.performVotesSnapshot,
+            ].map<DBOp<any>>((query) => ({ model: this.RoundsModel, query, type: 'custom' })),
+            transaction);
 
           this.logger.trace('Round snapshot done');
         }
       });
+
   }
 
   /**
@@ -139,8 +136,9 @@ export class RoundsModule implements IRoundsModule {
   }
 
   private async innerTick(block: SignedBlockType,
+                          dbTransaction: Transaction,
                           backwards: boolean,
-                          txGenerator: (ls: RoundLogicScope) => (t: ITask<any>) => Promise<any>,
+                          txGenerator: (ls: RoundLogicScope) => Promise<any>,
                           afterTxPromise: () => Promise<any> = () => Promise.resolve(null)) {
     const round     = this.roundsLogic.calcRound(block.height);
     const nextRound = this.roundsLogic.calcRound(block.height + 1);
@@ -148,13 +146,10 @@ export class RoundsModule implements IRoundsModule {
     const finishRound = (
       (nextRound !== round) || (block.height === 1)
     );
-    // if (finishRound) {
-    //   console.log('finishround', block.height);
-    // }
     try {
       // Set ticking flag to true
       this.appStateLogic.set('rounds.isTicking', true);
-      let roundSums      = finishRound ? await this.sumRound(round) : null;
+      let roundSums = finishRound ? await this.sumRound(round, dbTransaction) : null;
       if (block.height === 1 && roundSums.roundDelegates.length !== 1) {
         // in round 1 (and height=1) and when verifying snapshot delegates are there (and created in 2nd round #1)
         // so roundDelegates are 101 not 1 (genesis generator) causing genesis to have an extra block accounted.
@@ -166,10 +161,15 @@ export class RoundsModule implements IRoundsModule {
 
       const roundLogicScope: RoundLogicScope = {
         backwards,
-        block  : block as any, // TODO: ID and height are optional in SignedBlockType
+        block,
         finishRound,
         library: {
           logger: this.logger,
+        },
+        models: {
+          AccountsModel: this.AccountsModel,
+          BlocksModel: this.BlocksModel,
+          RoundsModel: this.RoundsModel,
         },
         modules: {
           accounts: this.accountsModule,
@@ -178,7 +178,7 @@ export class RoundsModule implements IRoundsModule {
         roundOutsiders,
         ...roundSums,
       };
-      await this.db.tx(txGenerator(roundLogicScope));
+      await txGenerator(roundLogicScope);
       await afterTxPromise();
       this.appStateLogic.set('rounds.isTicking', false);
     } catch (e) {
@@ -192,35 +192,25 @@ export class RoundsModule implements IRoundsModule {
    * Generates outsider array from a given round and roundDelegates (the ones who actually forged something)
    * @return {Promise<address[]>} a list of addresses that missed the blocks
    */
-  private async getOutsiders(round: number, roundDelegates: publicKey[]): Promise<address[]> {
+  private async getOutsiders(round: number, roundDelegates: Buffer[]): Promise<address[]> {
+    const strPKDelegates = roundDelegates.map((r) => r.toString('hex'));
 
-    const height  = this.roundsLogic.lastInRound(round);
+    const height            = this.roundsLogic.lastInRound(round);
     const originalDelegates = await this.delegatesModule.generateDelegateList(height);
 
     return originalDelegates
-      .filter((pk) => roundDelegates.indexOf(pk) === -1)
+      .filter((pk) => strPKDelegates.indexOf(pk.toString('hex')) === -1)
       .map((pk) => this.accountsModule.generateAddressByPublicKey(pk));
   }
 
   // tslint:disable-next-line
-  private async sumRound(round: number): Promise<{ roundFees: number, roundRewards: number[], roundDelegates: publicKey[] }> {
+  private async sumRound(round: number, tx: Transaction): Promise<{ roundFees: number, roundRewards: number[], roundDelegates: Buffer[] }> {
     this.logger.debug('Summing round', round);
-    const rows = await this.db.query(
-      roundsSQL.summedRound,
-      {
-        activeDelegates: this.constants.activeDelegates,
-        round,
-      }
-    )
-      .catch((err) => {
-        this.logger.error('Failed to sum round', round);
-        this.logger.error(err.stack);
-        return Promise.reject(err);
-      });
+    const res = await this.RoundsModel.sumRound(this.constants.activeDelegates, round, tx);
 
-    const roundRewards   = rows[0].rewards.map((reward) => Math.floor(reward));
-    const roundFees      = Math.floor(rows[0].fees);
-    const roundDelegates = rows[0].delegates;
+    const roundRewards   = res.rewards.map((reward) => Math.floor(parseFloat(reward)));
+    const roundFees      = Math.floor(parseFloat(res.fees));
+    const roundDelegates = res.delegates;
 
     return { roundRewards, roundFees, roundDelegates };
   }

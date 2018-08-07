@@ -7,7 +7,10 @@ import { constants as constantsType } from '../../../src/helpers/';
 import { ISystemModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { SystemModule } from '../../../src/modules';
-import { DbStub, IBlocksStub, LoggerStub } from '../../stubs';
+import { DbStub, IBlocksStub } from '../../stubs';
+import { createContainer } from '../../utils/containerCreator';
+import { BlocksModel } from '../../../src/models';
+import { SinonSandbox, SinonStub } from 'sinon';
 
 // tslint:disable no-unused-expression
 describe('modules/system', () => {
@@ -18,11 +21,14 @@ describe('modules/system', () => {
     nethash: 'nethash',
     port   : 1234,
     version: '1.0.0',
+    forging: {
+      pollingInterval: 1000
+    }
   };
   let constants: typeof constantsType;
+  let sandbox: SinonSandbox;
   before(() => {
-    container = new Container();
-    container.bind(Symbols.helpers.logger).to(LoggerStub);
+    container = createContainer();
     constants = {
       fees      : [
         { height: 1, fees: { send: 1 } },
@@ -37,25 +43,26 @@ describe('modules/system', () => {
         { height: 11, ver: '0.1.4b' },
       ],
     } as any;
-    container.bind(Symbols.helpers.constants).toConstantValue(constants);
-
-    container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
+    container.rebind(Symbols.helpers.constants).toConstantValue(constants);
+    container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
     container.bind(Symbols.generic.nonce).toConstantValue('nonce');
-    container.bind(Symbols.generic.db).to(DbStub).inSingletonScope();
-    container.bind(Symbols.modules.blocks).to(IBlocksStub).inSingletonScope();
-    container.bind(Symbols.modules.system).to(SystemModule);
+    container.rebind(Symbols.modules.system).to(SystemModule);
   });
 
   beforeEach(() => {
+    sandbox                   = sinon.createSandbox();
     inst = instB = container.get(Symbols.modules.system);
     container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = {
       height: 10,
     } as any;
   });
+  afterEach(() => {
+    sandbox.restore();
+  });
 
   describe('.getMinVersion', () => {
     it('should return string', () => {
-      expect(inst.getMinVersion()).to.be.string;
+      expect(inst.getMinVersion()).to.be.a('string');
     });
     it('should return ^0.1.0 for height 1', () => {
       expect(inst.getMinVersion(1)).to.be.eq('^0.1.0');
@@ -138,17 +145,18 @@ describe('modules/system', () => {
   });
 
   describe('.getBroadHash', () => {
-    let dbStub: DbStub;
+    let blocksModel: typeof BlocksModel;
+    let findAllStub: SinonStub;
     beforeEach(() => {
-      dbStub = container.get<DbStub>(Symbols.generic.db);
+      blocksModel = container.get(Symbols.models.blocks);
+      findAllStub = sandbox.stub(blocksModel, 'findAll').resolves([]);
     });
-    it('should return broadhash from headers if db.query returns empty array', async () => {
-      dbStub.enqueueResponse('query', Promise.resolve([]));
-      instB.headers.broadhash = 'hahaha';
+    it('should return broadhash from appConfig  if db.query returns empty array', async () => {
+      (instB as any).appConfig.nethash = 'hahaha'
       expect(await inst.getBroadhash()).to.be.eq('hahaha');
     });
     it('should compute broadhash from returned db data', async () => {
-      dbStub.enqueueResponse('query', Promise.resolve([1, 2, 3, 4].map((id) => ({ id }))));
+      findAllStub.resolves([1, 2, 3, 4].map((id) => ({ id })));
       expect(await inst.getBroadhash())
         .to.be.eq('03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4');
 
@@ -194,19 +202,15 @@ describe('modules/system', () => {
   });
 
   describe('.update', () => {
-    let dbStub: DbStub;
-    beforeEach(() => {
-      dbStub = container.get<DbStub>(Symbols.generic.db);
-    });
     it('should update height and broadhash value', async () => {
+      sandbox.stub(inst, 'getBroadhash').resolves('meow');
       inst.headers.height    = 0;
       inst.headers.broadhash = 'haha';
-      dbStub.enqueueResponse('query', Promise.resolve([1, 2, 3, 4, 5].map((id) => ({ id }))));
       container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = {
         height: 2,
       } as any; // ^0.1.2
       await inst.update();
-      expect(inst.headers.broadhash).to.not.be.eq('haha');
+      expect(inst.headers.broadhash).to.be.eq('meow');
       expect(inst.headers.height).to.be.eq(2);
     });
   });
@@ -266,4 +270,5 @@ describe('modules/system', () => {
       expect(inst.broadhash).to.be.deep.eq(inst.headers.broadhash);
     });
   });
+
 });

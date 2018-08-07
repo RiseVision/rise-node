@@ -1,8 +1,9 @@
 import { expect } from 'chai';
+import * as jsonpath from 'jsonpath';
+import * as proxyquire from 'proxyquire';
 import 'reflect-metadata';
-import * as rewire from 'rewire';
 import * as sinon from 'sinon';
-import { SinonSpy, SinonStub } from 'sinon';
+import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import { AppState } from '../../../src/logic';
 
 // tslint:disable no-unused-expression
@@ -10,14 +11,17 @@ describe('appState', () => {
   let instance: AppState;
   let valueSpy: SinonSpy;
   let computedStub: SinonStub;
+  let sandbox: SinonSandbox;
 
-  const RewireAppState = rewire('../../../src/logic/appState.ts');
-  const jsonpath = RewireAppState.__get__('jsonpath');
+  const ProxyAppState = proxyquire('../../../src/logic/appState.ts', {
+    jsonpath,
+  });
 
   beforeEach(() => {
-    valueSpy = sinon.spy(jsonpath, 'value');
-    instance = new RewireAppState.AppState();
-    computedStub = sinon.stub().returns('returnVal');
+    sandbox = sinon.createSandbox();
+    valueSpy = sandbox.spy(jsonpath, 'value');
+    instance = new ProxyAppState.AppState();
+    computedStub = sandbox.stub().returns('returnVal');
     instance.states = {
       rounds: {
         isLoaded: false,
@@ -29,7 +33,7 @@ describe('appState', () => {
   });
 
   afterEach(() => {
-    valueSpy.restore();
+    sandbox.restore();
   });
 
   describe('set', () => {

@@ -1,4 +1,5 @@
 import * as chai from 'chai';
+import { SinonSandbox } from 'sinon';
 import * as sinon from 'sinon';
 import { constants } from '../../../src/helpers';
 import { BlockRewardLogic } from '../../../src/logic';
@@ -8,12 +9,18 @@ const expect = chai.expect;
 // tslint:disable no-unused-expression
 describe('logic/blockReward', () => {
   let instance: BlockRewardLogic;
+  let sandbox: SinonSandbox;
 
   beforeEach(() => {
+    sandbox = sinon.createSandbox();
     instance = new BlockRewardLogic();
     (instance as any).constants = constants;
     // Usually autocalled by inversify on construct
     instance.initRewards();
+  });
+
+  afterEach(() => {
+    sandbox.restore();
   });
 
   describe('constructor', () => {
@@ -34,15 +41,13 @@ describe('logic/blockReward', () => {
 
   describe('calcMilestone', () => {
     it('should call parseHeight', () => {
-      const parseHeightStub = sinon.stub((instance as any), 'parseHeight').returns(1);
+      const parseHeightStub = sandbox.stub((instance as any), 'parseHeight').returns(1);
 
       instance.calcMilestone(10);
 
       expect(parseHeightStub.calledOnce).to.be.true;
       expect(parseHeightStub.getCall(0).args.length).to.equal(1);
       expect(parseHeightStub.getCall(0).args[0]).to.equal(10);
-
-      parseHeightStub.restore();
     });
 
     it('should return correct block height', () => {
@@ -55,21 +60,20 @@ describe('logic/blockReward', () => {
 
   describe('calcReward', () => {
     it('should call calcMilestone', () => {
-      const calcMilestoneStub = sinon.stub(instance, 'calcMilestone').returns(0);
+      const calcMilestoneStub = sandbox.stub(instance, 'calcMilestone').returns(0);
 
       instance.calcReward(10);
 
       expect(calcMilestoneStub.calledOnce).to.be.true;
       expect(calcMilestoneStub.getCall(0).args.length).to.equal(1);
       expect(calcMilestoneStub.getCall(0).args[0]).to.equal(10);
-      calcMilestoneStub.restore();
     });
   });
 
   describe('calcSupply', () => {
 
     it('should call parseHeight', () => {
-      const parseHeightStub = sinon.stub((instance as any), 'parseHeight').returns(10);
+      const parseHeightStub = sandbox.stub((instance as any), 'parseHeight').returns(10);
       instance.calcSupply(10);
 
       expect(parseHeightStub.getCall(0).args.length).to.equal(1);
@@ -77,7 +81,7 @@ describe('logic/blockReward', () => {
     });
 
     it('should call calcMilestone', () => {
-      const calcMilestoneStub = sinon.stub(instance, 'calcMilestone').returns(1);
+      const calcMilestoneStub = sandbox.stub(instance, 'calcMilestone').returns(1);
       instance.calcSupply(1);
 
       expect(calcMilestoneStub.getCall(0).args.length).to.equal(1);

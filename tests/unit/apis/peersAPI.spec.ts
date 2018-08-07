@@ -3,7 +3,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { PeersAPI } from '../../../src/apis/peersAPI';
+import { PeersAPI } from '../../../src/apis';
 import { Symbols } from '../../../src/ioc/symbols';
 import { PeerState } from '../../../src/logic/';
 import { PeersModuleStub, SystemModuleStub } from '../../stubs';
@@ -27,7 +27,7 @@ describe('apis/peersAPI', () => {
 
   beforeEach(() => {
     container = createContainer();
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     container.bind(Symbols.generic.versionBuild).toConstantValue(versionBuild);
     container
       .bind(Symbols.api.peers)
@@ -58,7 +58,7 @@ describe('apis/peersAPI', () => {
       });
     });
 
-    it('success', async () => {
+    it('should return an object with a peers property', async () => {
       result = await instance.getPeers({ a: 1, b: 2 });
       expect(result).to.deep.equal({ peers: { hello: 'world' } });
       expect(peersModuleStub.stubs.getByFilter.calledOnce).to.be.true;
@@ -94,7 +94,7 @@ describe('apis/peersAPI', () => {
       });
     });
 
-    it('success', async () => {
+    it('should return an object with a peer property', async () => {
       peersModuleStub.stubs.getByFilter.returns([{ a: 1 }, { b: 2 }]);
       result = await instance.getPeer({ ip: '8.8.8.8', port: 1234 });
       expect(result).to.deep.equal({ peer: { a: 1 } });
@@ -114,7 +114,7 @@ describe('apis/peersAPI', () => {
       );
     });
 
-    it('success', async () => {
+    it('should return an object with the properties: banned, connected and disconnected', async () => {
       peersModuleStub.stubs.getByFilter.onCall(0).returns([{ a: 1 }]);
       peersModuleStub.stubs.getByFilter.onCall(1).returns([{ a: 1 }, { b: 2 }]);
       peersModuleStub.stubs.getByFilter
@@ -139,7 +139,7 @@ describe('apis/peersAPI', () => {
   });
 
   describe('version()', () => {
-    it('success', async () => {
+    it('should return an object with the properties: build, minVersion and version', async () => {
       result = await instance.version();
       expect(result).to.deep.equal({
         build: '1.2.3',

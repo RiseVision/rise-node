@@ -7,7 +7,7 @@ import 'source-map-support/register';
 import { AppManager } from './AppManager';
 import { allExceptionCreator } from './exceptions';
 import {
-  config as configCreator, constants as constantsType, loggerCreator,
+  config as configCreator, constants as constantsType, ExceptionType, loggerCreator,
   promiseToCB,
 } from './helpers/';
 import { SignedAndChainedBlockType } from './logic/';
@@ -108,8 +108,8 @@ if (program.log) {
 }
 
 if (program.snapshot) {
-  if (typeof(program.snapshot) === 'number') {
-    appConfig.loading.snapshot = Math.abs(Math.floor(program.snapshot));
+  if (typeof(program.snapshot) === 'string') {
+    appConfig.loading.snapshot = Math.abs(Math.floor(parseInt(program.snapshot, 10)));
   } else {
     appConfig.loading.snapshot = true;
   }
@@ -140,7 +140,7 @@ async function boot(constants: typeof constantsType): Promise<AppManager> {
 
 exitHook.forceExitTimeout(15000);
 exitHook.unhandledRejectionHandler((err) => {
-  logger.fatal('Unhandled Promise rejection', { message: err.message, stack: err.stack });
+  logger.fatal('Unhandled Promise rejection', err);
 });
 
 boot(constantsType)

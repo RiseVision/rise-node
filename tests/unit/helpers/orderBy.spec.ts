@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { OrderBy } from '../../../src/helpers';
 
+// tslint:disable no-unused-expression
 describe('helpers/orderBy', () => {
   it('should treat options as an empty object if another type is passed', () => {
     const retVal = OrderBy('blockId:ASC', ('desc' as any));

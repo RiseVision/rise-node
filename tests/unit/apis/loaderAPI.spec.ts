@@ -4,7 +4,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import { SinonSandbox } from 'sinon';
 import * as sinon from 'sinon';
-import { LoaderAPI } from '../../../src/apis/loaderAPI';
+import { LoaderAPI } from '../../../src/apis';
 import { Symbols } from '../../../src/ioc/symbols';
 import {
   AppStateStub,
@@ -30,7 +30,7 @@ describe('apis/blocksAPI', () => {
   let constants;
 
   beforeEach(() => {
-    sandbox   = sinon.sandbox.create();
+    sandbox   = sinon.createSandbox();
     container = createContainer();
     container.bind(Symbols.api.loader).to(LoaderAPI);
 
@@ -41,7 +41,7 @@ describe('apis/blocksAPI', () => {
     loaderModule = container.get(Symbols.modules.loader);
 
     loaderModule.loaded    = true;
-    blocksModule.lastBlock = { height: 1 };
+    blocksModule.lastBlock = { height: 1 } as any;
 
     instance = container.get(Symbols.api.loader);
   });
@@ -52,7 +52,7 @@ describe('apis/blocksAPI', () => {
 
   describe('getStatus', () => {
 
-    it('success', () => {
+    it('should return an object with the property \'loaded\' equal to true', () => {
       const ret = instance.getStatus();
 
       expect(ret).to.be.deep.equal({ loaded: true });
@@ -62,7 +62,7 @@ describe('apis/blocksAPI', () => {
 
   describe('getStatusSync', () => {
 
-    it('success', () => {
+    it('should return an object with the properties: broadhash, consensus, height and syncing', () => {
       appState.enqueueResponse('get', 'consensus');
 
       const ret = instance.getStatusSync();

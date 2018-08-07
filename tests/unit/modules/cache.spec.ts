@@ -2,15 +2,15 @@ import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
-import * as rewire from 'rewire';
 import { SinonSandbox } from 'sinon';
 import * as sinon from 'sinon';
+import * as helpers from '../../../src/helpers';
 import { cbToPromise, TransactionType } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
 import { Cache, DummyCache } from '../../../src/modules';
-import { LoggerStub, RedisClientStub } from '../../stubs';
-
-const RewireCache = rewire('../../../src/modules/cache');
+import { RedisClientStub } from '../../stubs';
+import { createContainer } from '../../utils/containerCreator';
+import { toBufferedTransaction } from '../../utils/txCrafter';
 
 chai.use(chaiAsPromised);
 
@@ -22,25 +22,12 @@ describe('modules/cache', () => {
   let sandbox: SinonSandbox;
   let spyHelper;
   let redisClientStub: RedisClientStub;
-  const appConfig = {
-    cacheEnabled: true,
-  };
-  let rewireCacheHelpersImports;
-  let JSONrewireOrigin;
-
-  before(() => {
-    JSONrewireOrigin          = RewireCache.__get__('JSON');
-    rewireCacheHelpersImports = RewireCache.__get__('_1');
-    container                 = new Container();
-    container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
-    container.bind(Symbols.generic.redisClient).to(RedisClientStub).inSingletonScope();
-    container.bind(Symbols.helpers.logger).to(LoggerStub);
-    container.bind(Symbols.modules.cache).to(RewireCache.Cache);
-  });
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
-
+    sandbox         = sinon.createSandbox();
+    container       = createContainer();
+    container.bind(Symbols.generic.redisClient).to(RedisClientStub).inSingletonScope();
+    container.bind(Symbols.modules.cache).to(Cache);
     cache           = container.get(Symbols.modules.cache);
     redisClientStub = container.get(Symbols.generic.redisClient);
     cache.onSyncFinished();
@@ -54,9 +41,9 @@ describe('modules/cache', () => {
       },
       callback    : sandbox.spy(),
       promiseUtils: {
-        cbToPromise    : sandbox.spy(rewireCacheHelpersImports, 'cbToPromise'),
-        cbToVoidPromise: sandbox.spy(rewireCacheHelpersImports, 'cbToVoidPromise'),
-        emptyCB        : sandbox.spy(rewireCacheHelpersImports, 'emptyCB'),
+        cbToPromise    : sandbox.spy(helpers, 'cbToPromise'),
+        cbToVoidPromise: sandbox.spy(helpers, 'cbToVoidPromise'),
+        emptyCB        : sandbox.spy(helpers, 'emptyCB'),
       },
     };
   });
@@ -140,7 +127,7 @@ describe('modules/cache', () => {
         keyString = '{"data":10}';
         keyObject = JSON.parse(keyString);
 
-        parseStub = sandbox.spy(JSONrewireOrigin, 'parse');
+        parseStub = sandbox.spy(JSON, 'parse');
         redisClientStub.stubs.get.callsArgWith(1, null, keyString);
       });
 
@@ -190,7 +177,7 @@ describe('modules/cache', () => {
         valueString = JSON.stringify(valueObject);
         redisResult = 'ok';
 
-        stringifyStub = sandbox.spy(JSONrewireOrigin, 'stringify');
+        stringifyStub = sandbox.spy(JSON, 'stringify');
         redisClientStub.stubs.set.callsArgWith(2, null, redisResult);
       });
 
@@ -472,7 +459,8 @@ describe('modules/cache', () => {
         removeByPatternStub = sandbox.stub(cache, 'removeByPattern');
       });
 
-      it('success', async () => {
+      // tslint:disable-next-line: max-line-length
+      it('Should call to removeByPattern() with parameter /api/delegates* for to remove all cache entries', async () => {
         await cache.onFinishRound();
 
         expect(spyHelper.cache.assertConnectedAndReady.calledOnce).to.be.true;
@@ -506,9 +494,9 @@ describe('modules/cache', () => {
           senderPublicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f',
           signature      : 'd8103d0ea2004c3dea8076a6a22c6db8bae95bc0db819240c77fc5335f32920e91b9f41f58b01fc86dfda11019c9fd1c6c3dcbab0a4e478e3c9186ff6090dc05',
           timestamp      : 0,
-          type           : TransactionType.DAPP,
+          type           : TransactionType.MULTI,
         },
-      ];
+      ].map((t) => toBufferedTransaction(t as any));
       // tslint:enable max-line-length
 
       let removeByPatternStub;

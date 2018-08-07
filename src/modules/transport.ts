@@ -1,19 +1,26 @@
 import { inject, injectable, postConstruct, tagged } from 'inversify';
 import * as popsicle from 'popsicle';
 import * as Throttle from 'promise-parallel-throttle';
+import * as promiseRetry from 'promise-retry';
 import SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
 import { cbToPromise, constants as constantsType, ILogger, Sequence } from '../helpers/';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
-  IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule,
+  IBlocksModule,
+  IMultisignaturesModule,
+  IPeersModule,
+  ISystemModule,
+  ITransactionsModule,
   ITransportModule
 } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { BasePeerType, PeerHeaders, PeerState, SignedBlockType } from '../logic/';
-import { IBaseTransaction } from '../logic/transactions/';
+import { IBaseTransaction, ITransportTransaction } from '../logic/transactions/';
+import { BlocksModel, TransactionsModel } from '../models';
 import peersSchema from '../schema/peers';
 import schema from '../schema/transport';
 import { AppConfig } from '../types/genericTypes';
@@ -33,9 +40,10 @@ export class TransportModule implements ITransportModule {
   public schema: z_schema;
 
   // Helpers
+  // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)
   @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.balancesSequence)
-  private balancesSequence: Sequence;
+  public balancesSequence: Sequence;
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
   @inject(Symbols.helpers.jobsQueue)
@@ -62,6 +70,14 @@ export class TransportModule implements ITransportModule {
   private systemModule: ISystemModule;
   @inject(Symbols.modules.transactions)
   private transactionModule: ITransactionsModule;
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
+
+  // models
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
+  @inject(Symbols.models.transactions)
+  private TransactionsModel: typeof TransactionsModel;
 
   private loaded: boolean = false;
 
@@ -84,7 +100,7 @@ export class TransportModule implements ITransportModule {
     const thePeer = this.peersLogic.create(peer);
     const req     = {
       body   : null,
-      headers: this.systemModule.headers,
+      headers: this.systemModule.headers as any,
       method : options.method,
       timeout: this.appConfig.peers.options.timeout,
       url    : `http://${peer.ip}:${peer.port}${url}`,
@@ -94,21 +110,28 @@ export class TransportModule implements ITransportModule {
       req.body = options.data;
     }
 
-    let res;
+    let res: popsicle.Response;
     try {
-      res = await popsicle.request(req)
-        .use(popsicle.plugins.parse(['json'], false));
+      res = await promiseRetry(
+        (retry) => popsicle.request(req)
+          .use(popsicle.plugins.parse(['json'], false))
+          .catch(retry),
+        {
+          minTimeout: 2000, /* this is the timeout for the retry. Lets wait at least 2seconds before retrying. */
+          retries: 1,
+        }
+      );
     } catch (err) {
-      this.removePeer({peer: thePeer, code: 'HTTPERROR'}, err.message);
+      this.removePeer({ peer: thePeer, code: 'HTTPERROR' }, err.message);
       return Promise.reject(err);
     }
 
     if (res.status !== 200) {
       this.removePeer({ peer: thePeer, code: `ERESPONSE ${res.status}` }, `${req.method} ${req.url}`);
-      return Promise.reject(new Error(`Received bad response code ${res.status} ${res.method} ${res.url}`));
+      return Promise.reject(new Error(`Received bad response code ${res.status} ${req.method} ${res.url}`));
     }
 
-    const headers: PeerHeaders = thePeer.applyHeaders(res.headers);
+    const headers: PeerHeaders = thePeer.applyHeaders(res.headers as any);
     if (!this.schema.validate(headers, schema.headers)) {
       this.removePeer({ peer: thePeer, code: 'EHEADERS' }, `${req.method} ${req.url}`);
       return Promise.reject(new Error(`Invalid response headers ${JSON.stringify(headers)} ${req.method} ${req.url}`));
@@ -194,7 +217,14 @@ export class TransportModule implements ITransportModule {
    */
   public onUnconfirmedTransaction(transaction: IBaseTransaction<any> & { relays?: number }, broadcast: boolean) {
     if (broadcast && !this.broadcasterLogic.maxRelays(transaction)) {
-      this.broadcasterLogic.enqueue({}, { api: '/transactions', data: { transaction }, method: 'POST' });
+
+      this.broadcasterLogic.enqueue({}, {
+        api   : '/transactions',
+        data  : {
+          transaction: this.TransactionsModel.toTransportTransaction(transaction, this.blocksModule),
+        },
+        method: 'POST',
+      });
       this.io.sockets.emit('transactions/change', transaction);
     }
   }
@@ -211,15 +241,27 @@ export class TransportModule implements ITransportModule {
 
       await this.systemModule.update();
       if (!this.broadcasterLogic.maxRelays(block)) {
-        await this.broadcasterLogic.broadcast({ limit: this.constants.maxPeers, broadhash },
-          { api: '/blocks', data: { block }, method: 'POST', immediate: true });
+        // We avoid awaiting the broadcast result as it could result in unnecessary peer removals.
+        // Ex: Peer A, B, C
+        // A broadcasts block to B which wants to rebroadcast to A (which is waiting for B to respond) =>
+        // | - A will remove B as it will timeout and the same will happen to B
+
+        /* await */
+        this.broadcasterLogic.broadcast({ limit: this.constants.maxPeers, broadhash },
+          {
+            api      : '/blocks',
+            data     : { block: this.BlocksModel.toStringBlockType(block, this.TransactionsModel, this.blocksModule) },
+            immediate: true,
+            method   : 'POST',
+          })
+          .catch((err) => this.logger.warn('Error broadcasting block', err));
       }
       this.io.sockets.emit('blocks/change', block);
     }
   }
 
   // tslint:disable-next-line
-  public async receiveSignatures(signatures: Array<{ transaction: string, signature: string }> ): Promise<void> {
+  public async receiveSignatures(signatures: Array<{ transaction: string, signature: string }>): Promise<void> {
     for (const signature of signatures) {
       try {
         await this.receiveSignature(signature);
@@ -244,52 +286,42 @@ export class TransportModule implements ITransportModule {
 
   @ValidateSchema()
   // tslint:disable-next-line
+  @WrapInBalanceSequence
   public async receiveTransactions(@SchemaValid(schema.transactions.properties.transactions, 'Invalid transactions body')
-                                     transactions: Array<IBaseTransaction<any>>,
-                                   peer: IPeerLogic,
-                                   extraLogMessage: string) {
+                                     transactions: Array<ITransportTransaction<any>>,
+                                   peer: IPeerLogic | null,
+                                   broadcast: boolean) {
+    // normalize transactions
+    const txs: Array<IBaseTransaction<any>> = [];
     for (const tx of transactions) {
       try {
-        await this.receiveTransaction(tx, peer, true, extraLogMessage);
-      } catch (err) {
-        this.logger.debug(err, tx);
+        txs.push(this.transactionLogic.objectNormalize(tx));
+      } catch (e) {
+        this.logger.debug('Transaction normalization failed', {
+          err   : e.toString(),
+          id    : tx.id,
+          module: 'transport',
+          tx,
+        });
+        if (peer) {
+          this.removePeer({ peer, code: 'ETRANSACTION' }, 'ReceiveTransactions Error');
+        }
+        throw new Error(`Invalid transaction body ${e.message}`);
       }
     }
-  }
 
-  /**
-   * Checks tx is ok by normalizing it and eventually remove peer if tx is not valid
-   * calls processUnconfirmedTransaction over it.
-   * @returns {Promise<void>}
-   */
-  // tslint:disable-next-line max-line-length
-  public async receiveTransaction(transaction: IBaseTransaction<any>, peer: IPeerLogic, bundled: boolean, extraLogMessage: string): Promise<string> {
-    try {
-      transaction = this.transactionLogic.objectNormalize(transaction);
-    } catch (e) {
-      this.logger.debug('Transaction normalization failed', {
-        err   : e.toString(),
-        id    : transaction.id,
-        module: 'transport',
-        tx    : transaction,
-      });
-      this.removePeer({ peer, code: 'ETRANSACTION' }, extraLogMessage);
-      throw new Error(`Invalid transaction body ${e.message}`);
-    }
+    // filter out already confirmed transactions
+    const confirmedIDs = await this.transactionModule.filterConfirmedIds(txs.map((tx) => tx.id));
 
-    try {
-      await this.balancesSequence.addAndPromise(async () => {
-        this.logger.debug(`Received transaction ${transaction.id} from peer: ${peer.string}`);
-        await this.transactionModule.processUnconfirmedTransaction(
-          transaction,
-          true,
-          bundled
-        );
-      });
-      return transaction.id;
-    } catch (err) {
-      this.logger.debug(`Transaction ${transaction.id} error ${err}`, transaction);
-      throw new Error(err);
+    for (const tx of txs) {
+      if (confirmedIDs.indexOf(tx.id) !== -1) {
+        continue; // Transaction already confirmed.
+      }
+      this.logger.debug(`Received transaction ${tx.id} ${peer ? `from peer ${peer.string}` : ' '}`);
+      await this.transactionModule.processUnconfirmedTransaction(
+        tx,
+        broadcast
+      );
     }
   }
 

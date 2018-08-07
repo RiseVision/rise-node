@@ -68,14 +68,6 @@ export default {
           format: 'publicKey',
         },
       },
-      recipientPublicKeys   : {
-        type    : 'array',
-        minItems: 1,
-        items   : {
-          type  : 'string',
-          format: 'publicKey',
-        },
-      },
       senderIds             : {
         type    : 'array',
         minItems: 1,
@@ -170,6 +162,11 @@ export default {
       },
       orderBy               : {
         type: 'string',
+        enum: [
+          'height:desc', 'height:asc',
+          'timestamp:desc', 'timestamp:asc',
+          'amount:desc', 'amount:asc',
+        ],
       },
       limit                 : {
         type   : 'integer',

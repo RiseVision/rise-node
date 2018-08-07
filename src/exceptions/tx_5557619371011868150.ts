@@ -12,9 +12,9 @@ export default function exceptionTx5557619371011868150(excManager: ExceptionsMan
   const handler: IExceptionHandler<ITransactionLogic> = {
     canHandle(obj: ITransactionLogic, amount: number, balanceKey: 'balance'|'u_balance', tx: IBaseTransaction<void>) {
       return tx.id === '5557619371011868150' &&
-        tx.senderPublicKey === '0275d0ee6f100cd429bbdc8556e3d1f49cca610f093c2e51e02cf038e8813282' &&
+        tx.senderPublicKey.toString('hex') === '0275d0ee6f100cd429bbdc8556e3d1f49cca610f093c2e51e02cf038e8813282' &&
         // tslint:disable-next-line
-        tx.signature === '74a014e909a532fc07f98ec4afe5f353ef274ac0bcda71308f06acbf434d60b0ff197eb9bb01b4360d34cbbb2e292842c6a6f7792089f58c2f5ea8578a10eb0c';
+        tx.signature.toString('hex') === '74a014e909a532fc07f98ec4afe5f353ef274ac0bcda71308f06acbf434d60b0ff197eb9bb01b4360d34cbbb2e292842c6a6f7792089f58c2f5ea8578a10eb0c';
     },
     handle() {
       return { error: false, exceeded: false };
@@ -25,4 +25,5 @@ export default function exceptionTx5557619371011868150(excManager: ExceptionsMan
     'tx_5557619371011868150',
     handler
   );
+  return Promise.resolve();
 }

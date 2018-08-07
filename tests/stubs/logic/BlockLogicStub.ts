@@ -17,12 +17,12 @@ export class BlockLogicStub extends BaseStubClass implements IBlockLogic {
   }
 
   @stubMethod()
-  public create(data: { keypair: IKeypair; timestamp: number; transactions: Array<IBaseTransaction<any>>; previousBlock?: SignedAndChainedBlockType }): SignedBlockType {
+  public create(data: { keypair: IKeypair; timestamp: number; transactions: Array<IBaseTransaction<any>>; previousBlock?: SignedAndChainedBlockType }) {
     return undefined;
   }
 
   @stubMethod()
-  public sign(block: BlockType, key: IKeypair): string {
+  public sign(block: BlockType, key: IKeypair): Buffer {
     return undefined;
   }
 
@@ -42,7 +42,17 @@ export class BlockLogicStub extends BaseStubClass implements IBlockLogic {
   }
 
   @stubMethod()
-  public dbRead(rawBlock: any): SignedBlockType {
+  public dbRead(rawBlock: any): SignedBlockType & { totalForged: string, readonly generatorId: string } {
+    return undefined;
+  }
+
+  @stubMethod()
+  public getBytes(block: BlockType | SignedBlockType, includeSignature: boolean) {
+    return undefined;
+  }
+
+  @stubMethod()
+  public getHash(block: BlockType, includeSignature: boolean) {
     return undefined;
   }
 

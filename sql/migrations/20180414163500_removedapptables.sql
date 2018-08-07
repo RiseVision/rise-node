@@ -1,0 +1,50 @@
+BEGIN;
+
+DROP VIEW IF EXISTS full_blocks_list;
+CREATE VIEW full_blocks_list AS
+  SELECT b."id" AS "b_id",
+         b."version" AS "b_version",
+         b."timestamp" AS "b_timestamp",
+         b."height" AS "b_height",
+         b."previousBlock" AS "b_previousBlock",
+         b."numberOfTransactions" AS "b_numberOfTransactions",
+         (b."totalAmount")::bigint AS "b_totalAmount",
+         (b."totalFee")::bigint AS "b_totalFee",
+         (b."reward")::bigint AS "b_reward",
+         b."payloadLength" AS "b_payloadLength",
+         ENCODE(b."payloadHash", 'hex') AS "b_payloadHash",
+         ENCODE(b."generatorPublicKey", 'hex') AS "b_generatorPublicKey",
+         ENCODE(b."blockSignature", 'hex') AS "b_blockSignature",
+         t."id" AS "t_id",
+         t."rowId" AS "t_rowId",
+         t."type" AS "t_type",
+         t."timestamp" AS "t_timestamp",
+         ENCODE(t."senderPublicKey", 'hex') AS "t_senderPublicKey",
+         t."senderId" AS "t_senderId",
+         t."recipientId" AS "t_recipientId",
+         (t."amount")::bigint AS "t_amount",
+         (t."fee")::bigint AS "t_fee",
+         ENCODE(t."signature", 'hex') AS "t_signature",
+         ENCODE(t."signSignature", 'hex') AS "t_signSignature",
+         ENCODE(s."publicKey", 'hex') AS "s_publicKey",
+         d."username" AS "d_username",
+         v."votes" AS "v_votes",
+         m."min" AS "m_min",
+         m."lifetime" AS "m_lifetime",
+         m."keysgroup" AS "m_keysgroup",
+         ENCODE(t."requesterPublicKey", 'hex') AS "t_requesterPublicKey",
+         t."signatures" AS "t_signatures"
+    FROM blocks b
+    LEFT OUTER JOIN trs AS t ON t."blockId" = b."id"
+    LEFT OUTER JOIN delegates AS d ON d."transactionId" = t."id"
+    LEFT OUTER JOIN votes AS v ON v."transactionId" = t."id"
+    LEFT OUTER JOIN signatures AS s ON s."transactionId" = t."id"
+    LEFT OUTER JOIN multisignatures AS m ON m."transactionId" = t."id";
+
+DROP TABLE IF EXISTS "dapps";
+DROP TABLE IF EXISTS "intransfer";
+DROP TABLE IF EXISTS "outtransfer";
+DROP TABLE IF EXISTS "peers_dapp";
+
+
+COMMIT;

@@ -3,6 +3,7 @@ import { IBaseTransaction } from '../../../logic/transactions';
 import { PeerRequestOptions } from '../../../modules';
 import { IPeerLogic } from '../logic';
 import { IModule } from './IModule';
+import { ITransportTransaction } from '../../../logic/transactions/baseTransactionType';
 
 export interface ITransportModule extends IModule {
 
@@ -36,16 +37,16 @@ export interface ITransportModule extends IModule {
    */
   receiveSignature(signature: { transaction: string, signature: string }): Promise<void>;
 
-  receiveTransactions(transactions: Array<IBaseTransaction<any>>,
-                      peer: IPeerLogic,
-                      extraLogMessage: string): Promise<void>;
-
   /**
-   * Checks tx is ok by normalizing it and eventually remove peer if tx is not valid
+   * Loops over the received transactions, Checks tx is ok by normalizing it and eventually remove peer if tx is not valid
+   * Also checks tx is not already confirmed.
    * calls processUnconfirmedTransaction over it.
    * @returns {Promise<void>}
    */
-  // tslint:disable-next-line max-line-length
-  receiveTransaction(transaction: IBaseTransaction<any>, peer: IPeerLogic, bundled: boolean, extraLogMessage: string): Promise<string>;
+  receiveTransactions(transactions: Array<ITransportTransaction<any>>,
+                      peer: IPeerLogic | null,
+                      broadcast: boolean): Promise<void>;
+
+
 
 }

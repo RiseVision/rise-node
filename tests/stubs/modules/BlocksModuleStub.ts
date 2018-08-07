@@ -4,11 +4,12 @@ import { SinonSandbox, SinonSpy } from 'sinon';
 import { IBlocksModule } from '../../../src/ioc/interfaces/modules';
 import { SignedAndChainedBlockType } from '../../../src/logic';
 import { BlocksModule } from '../../../src/modules';
+import { BlocksModel } from '../../../src/models';
 
 @injectable()
 export default class BlocksModuleStub implements IBlocksModule {
   public lastReceipt: { get: () => number; isStale: () => boolean; update: (time?: number) => void };
-  public lastBlock: SignedAndChainedBlockType;
+  public lastBlock: BlocksModel;
   public isActive: boolean;
   public isCleaning: boolean;
 
@@ -24,7 +25,7 @@ export default class BlocksModuleStub implements IBlocksModule {
   constructor() {
     const orig       = new BlocksModule();
     this.lastReceipt = orig.lastReceipt;
-    this.sandbox     = sinon.sandbox.create();
+    this.sandbox     = sinon.createSandbox();
 
     this.spies = {
       lastReceipt: {

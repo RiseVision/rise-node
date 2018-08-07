@@ -35,6 +35,12 @@ export default function config(configPath: string): AppConfig {
         configData.forging.force = false;
       }
     }
+    if (typeof configData.forging.transactionsPolling === 'undefined') {
+      configData.forging.transactionsPolling = false;
+    }
+    if (configData.forging.transactionsPolling && typeof configData.forging.pollingInterval === 'undefined') {
+      configData.forging.pollingInterval = Math.round(constants.blockTime / 2 ) * 1000;
+    }
     return configData;
   }
 }

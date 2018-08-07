@@ -2,23 +2,25 @@ import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
-import * as rewire from 'rewire';
-import { SinonSandbox, SinonStub } from 'sinon';
+import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
-import { AccountsAPI } from '../../../src/apis/accountsAPI';
+import { SinonSandbox, SinonStub } from 'sinon';
+import { AccountsAPI } from '../../../src/apis';
 import { Symbols } from '../../../src/ioc/symbols';
-import {
-  AccountsModuleStub, DelegatesModuleStub, SystemModuleStub,
-} from '../../stubs';
+import { AccountsModuleStub, DelegatesModuleStub, SystemModuleStub, } from '../../stubs';
 import ZSchemaStub from '../../stubs/helpers/ZSchemaStub';
 import { createContainer } from '../../utils/containerCreator';
+import { AccountsModel } from '../../../src/models';
+import { AppConfig } from '../../../src/types/genericTypes';
 
 chai.use(chaiAsPromised);
 
+let isEmptyStub: SinonStub;
+const ProxyAccountsAPI = proxyquire('../../../src/apis/accountsAPI', {
+  'is-empty': (...args) => isEmptyStub.apply(this, args),
+});
+
 // tslint:disable no-unused-expression max-line-length
-
-const AccountsAPIRewire = rewire('../../../src/apis/accountsAPI');
-
 describe('apis/accountsAPI', () => {
 
   let sandbox: SinonSandbox;
@@ -30,9 +32,9 @@ describe('apis/accountsAPI', () => {
   let systemModule: SystemModuleStub;
 
   beforeEach(() => {
-    sandbox   = sinon.sandbox.create();
+    sandbox   = sinon.createSandbox();
     container = createContainer();
-    container.bind(Symbols.api.accounts).to(AccountsAPIRewire.AccountsAPI);
+    container.bind(Symbols.api.accounts).to(ProxyAccountsAPI.AccountsAPI);
 
     schema          = container.get(Symbols.generic.zschema);
     accountsModule  = container.get(Symbols.modules.accounts);
@@ -46,9 +48,6 @@ describe('apis/accountsAPI', () => {
   });
 
   describe('getAccount', () => {
-
-    let isEmptyStub: SinonStub;
-
     let accData;
     let query;
     let generatedAddress;
@@ -60,27 +59,26 @@ describe('apis/accountsAPI', () => {
         publicKey: 'publicKey',
       };
       accData          = {
-        address          : 'address',
-        balance          : 'balance',
-        multisignatures  : [],
-        publicKey        : 'publicKey',
-        secondPublicKey  : 'secondPublicKey',
-        secondSignature  : 'secondSignature',
-        u_multisignatures: [],
-        u_balance        : 10000,
-        u_secondSignature: 'u_secondSignature',
+        _timestampAttributes: {},
+        address             : 'address',
+        balance             : 'balance',
+        multisignatures     : [],
+        publicKey           : Buffer.from('0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff', 'hex'),
+        secondPublicKey     : Buffer.from('1111aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff', 'hex'),
+        secondSignature     : 1,
+        u_balance           : '10000',
+        u_multisignatures   : [],
+        u_secondSignature   : 1,
       };
 
       accountsModule.enqueueResponse('generateAddressByPublicKey', generatedAddress);
-      accountsModule.enqueueResponse('getAccount', Promise.resolve(accData));
+      accountsModule.enqueueResponse('getAccount', Promise.resolve(new AccountsModel(accData)));
 
       isEmptyStub = sandbox.stub();
       isEmptyStub.onCall(0).returns(false)
         .onCall(1).returns(false)
         .onCall(2).returns(true)
         .onCall(3).returns(true);
-
-      AccountsAPIRewire.__set__('isEmpty', isEmptyStub);
     });
 
     it('should call isEmpty', async () => {
@@ -153,12 +151,12 @@ describe('apis/accountsAPI', () => {
       });
     });
 
-    it('should call accountsModule.getAccount', async () => {
-      await instance.getAccount(query);
+    it('should call accountsModule.getAccount with derived address from publicKey', async () => {
+      await instance.getAccount({ publicKey: 'publicKey' });
 
       expect(accountsModule.stubs.getAccount.calledOnce).to.be.true;
       expect(accountsModule.stubs.getAccount.firstCall.args.length).to.be.equal(1);
-      expect(accountsModule.stubs.getAccount.firstCall.args[0]).to.be.deep.equal(query);
+      expect(accountsModule.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({ address: 'generatedAddress' });
     });
 
     it('should throw error if accountsModule.getAccount returns falsy ', async () => {
@@ -169,20 +167,22 @@ describe('apis/accountsAPI', () => {
       await expect(instance.getAccount(query)).to.be.rejectedWith('Account not found');
     });
 
-    it('success', async () => {
+    it('should return an account', async () => {
       const res = await instance.getAccount(query);
 
-      expect(res).to.be.deep.equal({account: {
+      expect(res).to.be.deep.equal({
+        account: {
           address             : accData.address,
           balance             : accData.balance,
           multisignatures     : accData.multisignatures,
-          publicKey           : accData.publicKey,
-          secondPublicKey     : accData.secondPublicKey,
+          publicKey           : accData.publicKey.toString('hex'),
+          secondPublicKey     : accData.secondPublicKey.toString('hex'),
           secondSignature     : accData.secondSignature,
           u_multisignatures   : accData.u_multisignatures,
           unconfirmedBalance  : accData.u_balance,
           unconfirmedSignature: accData.u_secondSignature,
-        }});
+        }
+      });
     });
 
   });
@@ -209,7 +209,7 @@ describe('apis/accountsAPI', () => {
       expect(accountsModule.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({ address: 'address' });
     });
 
-    it('success', async () => {
+    it('should return a balance from an address', async () => {
       const ret = await instance.getBalance(params);
 
       expect(ret).to.be.deep.equal({
@@ -242,7 +242,7 @@ describe('apis/accountsAPI', () => {
       account = {
         publicKey: '1',
       };
-      accountsModule.enqueueResponse('getAccount', Promise.resolve(account));
+      accountsModule.enqueueResponse('getAccount', Promise.resolve(new AccountsModel(account)));
     });
 
     it('should call accountsModule.getAccount', async () => {
@@ -253,7 +253,7 @@ describe('apis/accountsAPI', () => {
       expect(accountsModule.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({ address: 'address' });
     });
 
-    it('success', async () => {
+    it('should return a public key from an address', async () => {
       const ret = await instance.getPublickey(params);
 
       expect(ret).to.be.deep.equal({
@@ -307,9 +307,16 @@ describe('apis/accountsAPI', () => {
         del1               = { publicKey: '1' };
         del2               = { publicKey: '3' };
         account.delegates  = ['1', '2'];
-        delegatesFromQuery = [del1, del2];
+        delegatesFromQuery = [del1, del2].map((d, idx) => ({
+          delegate: new AccountsModel(d), info: {
+            rate        : idx,
+            rank        : idx,
+            approval    : 100,
+            productivity: 100,
+          },
+        }));
         accountsModule.reset();
-        accountsModule.enqueueResponse('getAccount', Promise.resolve(account));
+        accountsModule.enqueueResponse('getAccount', Promise.resolve(new AccountsModel(account)));
         delegatesModule.enqueueResponse('getDelegates', Promise.resolve({ delegates: delegatesFromQuery }));
       });
 
@@ -327,6 +334,15 @@ describe('apis/accountsAPI', () => {
         expect(ret).to.be.deep.equal({
           delegates: [
             {
+              address: null,
+              approval: 100,
+              missedblocks: undefined,
+              producedblocks: undefined,
+              productivity: 100,
+              rank: 0,
+              rate: 0,
+              username: undefined,
+              vote: undefined,
               publicKey: '1',
             },
           ],
@@ -366,7 +382,7 @@ describe('apis/accountsAPI', () => {
       expect(systemModule.stubs.getFees.firstCall.args[0]).to.be.equal(params.height);
     });
 
-    it('success', async () => {
+    it('should return delegates fee from height', async () => {
       const ret = await instance.getDelegatesFee(params);
 
       expect(ret).to.be.deep.equal({ fee: fee.fees.delegate });
@@ -396,4 +412,61 @@ describe('apis/accountsAPI', () => {
 
   });
 
+  describe('topAccounts', () => {
+    let appConfig: AppConfig;
+    beforeEach(() => {
+      appConfig = container.get(Symbols.generic.appConfig);
+      appConfig.topAccounts = true; // Enable it.
+    });
+
+    it('should reject with appConfig.topAccounts not defined', async () => {
+      delete appConfig.topAccounts;
+      await expect(instance.topAccounts({})).to.be.rejectedWith('Top Accounts is not enabled');
+      expect(accountsModule.stubs.getAccounts.called).is.false;
+    });
+    it('should reject with appConfig.topAccounts set to false', async () => {
+      appConfig.topAccounts = false;
+      await expect(instance.topAccounts({})).to.be.rejectedWith('Top Accounts is not enabled');
+      expect(accountsModule.stubs.getAccounts.called).is.false;
+    });
+    it('should propagate request correctly with default params when not provided', async () => {
+      appConfig.topAccounts = true;
+      accountsModule.stubs.getAccounts.resolves([]);
+
+      await instance.topAccounts({});
+      expect(accountsModule.stubs.getAccounts.calledOnce).is.true;
+      expect(accountsModule.stubs.getAccounts.firstCall.args[0]).deep.eq({
+        sort: { balance: -1 },
+        limit: 100,
+        offset: 0
+      });
+    });
+    it('should query accountsModule.getAccounts with proper params', async () => {
+      accountsModule.stubs.getAccounts.resolves([]);
+      const res = await instance.topAccounts({limit: 1, offset: 10});
+      expect(accountsModule.stubs.getAccounts.calledOnce).is.true;
+      expect(accountsModule.stubs.getAccounts.firstCall.args[0]).deep.eq({
+        sort: { balance: -1 },
+        limit: 1,
+        offset: 10
+      });
+      expect(accountsModule.stubs.getAccounts.firstCall.args[1]).deep.eq(
+        ['address', 'balance', 'publicKey']
+      );
+      expect(res).to.be.deep.eq({accounts: []});
+    });
+    it('should remap getAccountsResult properly', async () => {
+      accountsModule.stubs.getAccounts.resolves([
+        new AccountsModel({ address: '1', balance: 10, u_balance: 11} as any),
+        new AccountsModel({ address: '2', balance: 12, publicKey: Buffer.alloc(32).fill('a')}),
+      ]);
+      const res = await instance.topAccounts({});
+      expect(res).to.be.deep.eq({
+        accounts: [
+          {address: '1', balance: 10, publicKey: null},
+          {address: '2', balance: 12, publicKey: '6161616161616161616161616161616161616161616161616161616161616161'}
+        ],
+      });
+    });
+  });
 });

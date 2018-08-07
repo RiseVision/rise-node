@@ -9,7 +9,7 @@ const waitingPromise = (msToWait: number): Promise<void> => {
 
 describe('helpers/jobsQueue', () => {
   let jobsQueue: IJobsQueue;
-  beforeEach(() => jobsQueue = new JobsQueue());
+  beforeEach(() => { jobsQueue = new JobsQueue(); });
 
   describe('register', () => {
 
@@ -44,7 +44,7 @@ describe('helpers/jobsQueue', () => {
       let jobIsRunning = false;
       let runCount = 0;
       const job = () => {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           runCount++;
           if (jobIsRunning) {
             spy();

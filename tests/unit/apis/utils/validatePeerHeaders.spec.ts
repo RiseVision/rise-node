@@ -36,7 +36,7 @@ describe('apis/utils/validatePeerHeaders', () => {
   let peersModuleStub: PeersModuleStub;
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     request = {
       headers: { port: 5555, version: '1.0', nethash: 'zxy' },
       ip: '80.1.2.3',
@@ -49,7 +49,6 @@ describe('apis/utils/validatePeerHeaders', () => {
     container
       .bind(Symbols.api.utils.validatePeerHeadersMiddleware)
       .to(ValidatePeerHeaders);
-
 
     // Instance
     instance = container.get(Symbols.api.utils.validatePeerHeadersMiddleware);
@@ -113,7 +112,7 @@ describe('apis/utils/validatePeerHeaders', () => {
       });
     });
 
-    it('success', () => {
+    it('should call to next() without parameters if everything is ok', () => {
       instance.use(request, false, next);
       expect(next.calledOnce).to.be.true;
       expect(next.args[0][0]).to.equal(undefined);

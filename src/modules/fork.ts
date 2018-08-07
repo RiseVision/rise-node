@@ -1,21 +1,21 @@
 import { inject, injectable } from 'inversify';
-import { IDatabase } from 'pg-promise';
 import SocketIO from 'socket.io';
 import { ForkType, ILogger } from '../helpers';
 import { IForkModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { SignedBlockType } from '../logic';
-import sql from '../sql/delegates';
+import { ForksStatsModel } from '../models';
 
 @injectable()
 export class ForkModule implements IForkModule {
-  @inject(Symbols.generic.db)
-  private db: IDatabase<any>;
+
   @inject(Symbols.generic.socketIO)
   private io: SocketIO.Server;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
+  @inject(Symbols.models.forkStats)
+  private ForksStatsModel: typeof ForksStatsModel;
   /**
    * Inserts a fork into fork_stats table and emits a socket signal with the fork data
    * @param {SignedBlockType} block
@@ -38,7 +38,8 @@ export class ForkModule implements IForkModule {
       previousBlock    : block.previousBlock,
     };
 
-    await this.db.none(sql.insertFork, fork);
+    await this.ForksStatsModel.create(fork);
+
     this.io.sockets.emit('delegates/fork', fork);
   }
 }

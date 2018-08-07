@@ -1,5 +1,5 @@
-import { MemAccountsData, SignedBlockType } from '../../../logic';
-import { publicKey } from '../../../types/sanityTypes';
+import { SignedBlockType } from '../../../logic';
+import { AccountsModel } from '../../../models';
 import { IModule } from './IModule';
 
 export interface IDelegatesModule extends IModule {
@@ -7,34 +7,28 @@ export interface IDelegatesModule extends IModule {
   /**
    * Checks that the account on pk has vote integrity for the unconfirmed state
    */
-  checkConfirmedDelegates(pk: publicKey, votes: string[]): Promise<void>;
+  checkConfirmedDelegates(account: AccountsModel, votes: string[]): Promise<void>;
 
   /**
    * Checks that the account on pk has vote integrity for the confirmed state
    */
-  checkUnconfirmedDelegates(pk: publicKey, votes: string[]): Promise<void>;
+  checkUnconfirmedDelegates(account: AccountsModel, votes: string[]): Promise<void>;
 
   /**
    * Generate a randomized list for the round of which the given height is into.
    * @param {number} height blockheight.
-   * @return {Promise<publicKey[]>}
+   * @return {Promise<Buffer[]>}
    */
-  generateDelegateList(height: number): Promise<publicKey[]>;
+  generateDelegateList(height: number): Promise<Buffer[]>;
 
   /**
    * Gets delegates and for each calculate rank approval and productivity.
    */
   getDelegates(query: { limit?: number, offset?: number, orderBy: string }): Promise<{
     delegates: Array<{
-      username: string,
-      address: string,
-      publicKey: string,
-      vote: string,
-      producedblocks: number,
-      missedblocks: number,
-      rank: number,
-      approval: number,
-      productivity: number }>,
+      delegate: AccountsModel,
+      info: { rank: number, approval: number, productivity: number }
+    }>
     count: number,
     offset: number,
     limit: number,

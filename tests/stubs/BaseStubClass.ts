@@ -8,9 +8,15 @@ export const spyMetadataSymbol  = Symbol('spies');
 
 @injectable()
 export class BaseStubClass {
-  public stubs: { [method: string]: SinonStub };
-  public spies: { [method: string]: SinonSpy };
-  public sandbox: SinonSandbox = sinon.sandbox.create();
+  public static stubs: { [method: string]: SinonStub } = {};
+  public static stubConfigs: Array<{ method: string, withDefaultAllowed: boolean }>;
+  private static nextResponses: { [method: string]: any[] } = {};
+  private static sandbox: SinonSandbox = sinon.createSandbox();
+  private static oldImplementations: { [k: string]: () => {} } = {};
+
+  public stubs: { [T in keyof this]: SinonStub };
+  public spies: { [T in keyof this]: SinonSpy };
+  public sandbox: SinonSandbox = sinon.createSandbox();
 
   private nextResponses: { [method: string]: any[] } = {};
   private stubConfigs: Array<{ method: string, withDefaultAllowed: boolean }>;
@@ -43,12 +49,42 @@ export class BaseStubClass {
     return this.nextResponses[method].push(what);
   }
 
+  public static enqueueResponse(method: string, what: any): number {
+    if (!Array.isArray(this.nextResponses[method])) {
+      this.nextResponses[method] = [];
+    }
+    return this.nextResponses[method].push(what);
+  }
+
+  public static reset() {
+    this.nextResponses = {};
+    this.sandbox.restore();
+    this.stubs = this.stubs || {};
+    this.sandbox = sinon.createSandbox();
+    for (const c of this.stubConfigs) {
+      this.oldImplementations[c.method] = this[c.method];
+      this.stubs[c.method] = this.sandbox.stub(this, c.method as any);
+    }
+    for (const c of this.stubConfigs) {
+      this.stubs[c.method].callsFake((...args) => {
+        if (!Array.isArray(this.nextResponses[c.method]) || this.nextResponses[c.method].length === 0) {
+          if (c.withDefaultAllowed) {
+            return this.oldImplementations[c.method].apply(this, args);
+          }
+          throw new Error(`Please enqueue a response for ${this.name}.[static]:${c.method}`);
+        }
+        return this.nextResponses[c.method].shift();
+      });
+    }
+  }
+
   public reset() {
     this.nextResponses = {};
     this.sandbox.restore();
-    this.stubs   = this.stubs || {};
-    this.spies   = this.spies || {};
-    this.sandbox = sinon.sandbox.create();
+    this.stubs   = this.stubs || {} as any;
+    this.spies   = this.spies || {} as any;
+    this.sandbox = sinon.createSandbox();
+
     for (const c of this.stubConfigs) {
       this.oldImplementations[c.method] = this[c.method];
       this.stubs[c.method] = this.sandbox.stub(this, c.method as any);

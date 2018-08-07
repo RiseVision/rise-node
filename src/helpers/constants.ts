@@ -16,7 +16,6 @@
  * @property {number} fees.secondsignature
  * @property {number} fees.delegate
  * @property {number} fees.multisignature
- * @property {number} fees.dapp
  * @property {number} feeStart
  * @property {number} feeStartVolume
  * @property {number} fixedPoint
@@ -66,7 +65,6 @@ export default {
         secondsignature: 500000000,
         delegate       : 2500000000,
         multisignature : 500000000,
-        dapp           : 2500000000,
       },
     },
   ],

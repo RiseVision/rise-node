@@ -1,11 +1,11 @@
 import { expect } from 'chai';
 import * as mute from 'mute';
-import * as rewire from 'rewire';
+import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
-import { config } from '../../../src/helpers';
-
-const RewireConfig = rewire('../../../src/helpers/config');
-const z_schema = RewireConfig.__get__('z_schema_1').z_schema;
+import {z_schema as RealZSchema} from '../../../src/helpers/z_schema';
+const config = proxyquire('../../../src/helpers/config', {
+  './z_schema': RealZSchema,
+}).default;
 
 // config() sometimes does console.log, this function disables console.log before the call and re-enables it after.
 const muteConfig = (path) => {
@@ -21,7 +21,7 @@ describe('helpers/config', () => {
   let exitStub;
 
   beforeEach(() => {
-    sandbox   = sinon.sandbox.create();
+    sandbox   = sinon.createSandbox();
     exitStub  = sandbox.stub(process, 'exit');
   });
 
@@ -43,12 +43,12 @@ describe('helpers/config', () => {
   });
 
   it('should call z_schema.validate()', () => {
-    const oldImplementation = z_schema.prototype.validate;
-    const stub = sinon.stub(z_schema.prototype, 'validate').returns(true);
+    const oldImplementation = RealZSchema.prototype.validate;
+    const stub = sinon.stub(RealZSchema.prototype, 'validate').returns(true);
     const path = __dirname + '/data/validConfig.json';
     muteConfig(path);
     expect(stub.called).to.be.true;
-    z_schema.prototype.validate = oldImplementation;
+    RealZSchema.prototype.validate = oldImplementation;
   });
 
   it('should exit process if validator returns false', () => {

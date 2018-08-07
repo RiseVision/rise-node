@@ -1,17 +1,28 @@
 'use strict';
+import 'reflect-metadata';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import * as sinon from 'sinon';
+import { SinonSandbox } from 'sinon';
+import { Symbols } from '../../../../src/ioc/symbols';
 import { SendTransaction } from '../../../../src/logic/transactions';
-import { AccountsModuleStub, RoundsLogicStub, SystemModuleStub } from '../../../stubs';
+import { AccountLogicStub, BlocksModelStub, RoundsLogicStub, SystemModuleStub } from '../../../stubs';
+import { createContainer } from '../../../utils/containerCreator';
+import { AccountsModel } from '../../../../src/models';
+import { DBUpsertOp } from '../../../../src/types/genericTypes';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression
 describe('logic/transactions/send', () => {
+  let sandbox: SinonSandbox;
   let roundsLogicStub: RoundsLogicStub;
-  let accountsModuleStub: AccountsModuleStub;
+  let accountLogicStub: AccountLogicStub;
   let systemModuleStub: SystemModuleStub;
+  let container: Container;
+  let accountsModel: typeof AccountsModel;
 
   let instance: SendTransaction;
   let tx: any;
@@ -19,33 +30,39 @@ describe('logic/transactions/send', () => {
   let block: any;
 
   beforeEach(() => {
-    accountsModuleStub = new AccountsModuleStub();
-    accountsModuleStub.stubs.setAccountAndGet.resolves();
-    accountsModuleStub.stubs.mergeAccountAndGet.resolves();
-
-    systemModuleStub = new SystemModuleStub();
+    sandbox   = sinon.createSandbox();
+    container = createContainer();
+    accountLogicStub = container.get(Symbols.logic.account);
+    accountsModel = container.get(Symbols.models.accounts);
+    accountLogicStub.enqueueResponse('merge', [{foo: 'bar'}]);
+    systemModuleStub = container.get(Symbols.modules.system);
     systemModuleStub.stubs.getFees.returns({
       fees: {
         send: 1,
       },
     });
-    roundsLogicStub = new RoundsLogicStub();
+    roundsLogicStub = container.get(Symbols.logic.rounds);
     roundsLogicStub.stubs.calcRound.returns(10);
 
     tx       = {
-      recipientId: '1234567890R',
       amount     : 10,
+      recipientId: '1234567890R',
     };
     sender   = { publicKey: '123' };
     block    = {
-      id    : 'blockId',
       height: 123456,
+      id    : 'blockId',
     };
-    instance = new SendTransaction();
+
+    container.rebind(Symbols.logic.transactions.send).to(SendTransaction).inSingletonScope();
+    instance = container.get(Symbols.logic.transactions.send);
 
     (instance as any).roundsLogic    = roundsLogicStub;
-    (instance as any).accountsModule = accountsModuleStub;
     (instance as any).systemModule   = systemModuleStub;
+  });
+
+  afterEach(() => {
+    sandbox.restore();
   });
 
   describe('calculateFee', () => {
@@ -73,75 +90,48 @@ describe('logic/transactions/send', () => {
   });
 
   describe('apply', () => {
-    it('should call setAccountAndGet, that throws error', () => {
-      accountsModuleStub.stubs.setAccountAndGet.rejects('error');
-      expect(instance.apply(tx, block, sender)).to.be.rejected;
-    });
-
-    it('should call setAccountAndGet is called and execute successfully when it does not throw', async () => {
-      await expect(instance.apply(tx, block, sender)).to.be.fulfilled;
-      expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args.length).to.equal(1);
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.deep.equal({ address: tx.recipientId });
-    });
-
-    it('should call mergeAccountAndGet, which rejects the promise', async () => {
-      accountsModuleStub.stubs.mergeAccountAndGet.rejects(new Error('Error'));
-      await expect(instance.apply(tx, block, sender)).to.be.rejectedWith('Error');
-    });
-
-    it('should call mergeAccountAndGet and calcRound', async () => {
-      await expect(instance.apply(tx, block, sender)).to.be.fulfilled;
-      expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;
-      expect(roundsLogicStub.stubs.calcRound.firstCall.args.length).to.equal(1);
-      expect(roundsLogicStub.stubs.calcRound.firstCall.args[0]).to.equal(block.height);
-
-      expect(accountsModuleStub.stubs.mergeAccountAndGet.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.mergeAccountAndGet.firstCall.args.length).to.equal(1);
-      expect(accountsModuleStub.stubs.mergeAccountAndGet.firstCall.args[0]).to.deep.equal({
-        address  : tx.recipientId,
+    it('should return an array of objects', async () => {
+      const result = await instance.apply(tx, block, sender);
+      expect(result).to.be.an('array');
+      expect(result[0]).to.deep.equal({foo: 'bar'});
+      expect(accountLogicStub.stubs.merge.calledOnce).to.be.true;
+      expect(accountLogicStub.stubs.merge.args[0][0]).to.equal(tx.recipientId);
+      expect(accountLogicStub.stubs.merge.args[0][1]).to.deep.equal({
         balance  : tx.amount,
         blockId  : block.id,
         round    : 10,
         u_balance: tx.amount,
       });
+      expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;
+    });
+
+    it('should to be rejected if accountLogic.merge() throws an error', async () => {
+      const error = new Error('Fake Error!');
+      accountLogicStub.stubs.merge.throws(error);
+      await expect(instance.apply(tx, block, sender)).to.be.rejectedWith(error);
     });
   });
 
   describe('undo', () => {
-    it('should call setAccountAndGet, that throws error', async () => {
-      accountsModuleStub.stubs.setAccountAndGet.rejects('error');
-      await expect(instance.undo(tx, block, sender)).to.be.rejected;
+    it('should return an array of objects', async () => {
+      const result: DBUpsertOp<any> = await instance.undo(tx, block, sender) as any;
+      expect(result).to.be.an('array');
+      expect(result[0]).to.deep.equal({foo: 'bar'});
+      expect(accountLogicStub.stubs.merge.calledOnce).to.be.true;
+      expect(accountLogicStub.stubs.merge.args[0][0]).to.equal(tx.recipientId);
+      expect(accountLogicStub.stubs.merge.args[0][1]).to.deep.equal({
+        balance  : -tx.amount,
+        blockId  : block.id,
+        round    : 10,
+        u_balance: -tx.amount,
+      });
+      expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;
     });
 
-    it('should call setAccountAndGet and execute successfully', () => {
-      expect(instance.undo(tx, block, sender)).to.be.fulfilled;
-      expect(accountsModuleStub.stubs.setAccountAndGet.calledOnce).to.be.true;
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args.length).to.equal(1);
-      expect(accountsModuleStub.stubs.setAccountAndGet.firstCall.args[0]).to.deep.equal({ address: tx.recipientId });
-    });
-
-    it('should call mergeAccountAndGet, that rejects the promise', async () => {
-      accountsModuleStub.stubs.mergeAccountAndGet.rejects('error');
-      await expect(instance.undo(tx, block, sender)).to.be.rejected;
-    });
-
-    it('should call mergeAccountAndGet, that resolves the promise', () => {
-      return expect(instance.undo(tx, block, sender)).to.be.fulfilled
-        .then(() => {
-          expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;
-          expect(roundsLogicStub.stubs.calcRound.firstCall.args.length).to.equal(1);
-          expect(roundsLogicStub.stubs.calcRound.firstCall.args[0]).to.equal(block.height);
-          expect(accountsModuleStub.stubs.mergeAccountAndGet.calledOnce).to.be.true;
-          expect(accountsModuleStub.stubs.mergeAccountAndGet.firstCall.args.length).to.equal(1);
-          expect(accountsModuleStub.stubs.mergeAccountAndGet.firstCall.args[0]).to.deep.equal({
-            address  : tx.recipientId,
-            balance  : -tx.amount,
-            blockId  : block.id,
-            round    : 10,
-            u_balance: -tx.amount,
-          });
-        });
+    it('should to be rejected if accountLogic.merge() throws an error', async () => {
+      const error = new Error('Fake Error!');
+      accountLogicStub.stubs.merge.throws(error);
+      await expect(instance.undo(tx, block, sender)).to.be.rejectedWith(error);
     });
   });
 

@@ -2,12 +2,25 @@ import { expect } from 'chai';
 import * as supertest from 'supertest';
 import initializer from '../common/init';
 import { checkIntParam, checkPubKey, checkRequiredParam, checkReturnObjKeyVal } from './utils';
+import { IBlocksModule } from '../../../src/ioc/interfaces/modules';
+import { Symbols } from '../../../src/ioc/symbols';
+import { create2ndSigTX, createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
+import {
+  createRandomAccountsWithFunds,
+  createRandomAccountWithFunds, createRandomWallet, createRegDelegateTransaction, createSecondSignTransaction,
+  createSendTransaction,
+  createVoteTransaction, getRandomDelegateWallet
+} from '../common/utils';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/blocks', () => {
 
   initializer.setup();
-
+  initializer.autoRestoreEach();
+  let blocksModule: IBlocksModule;
+  beforeEach(() => {
+    blocksModule = initializer.appManager.container.get(Symbols.modules.blocks);
+  });
   describe('/', () => {
     describe('validation', () => {
       describe('integers', () => {
@@ -18,6 +31,7 @@ describe('api/blocks', () => {
         checkIntParam('offset', '/api/blocks/', { min: 0 });
       });
       checkPubKey('generatorPublicKey', '/api/blocks');
+      initializer.autoRestoreEach();
       it('should return an array of blocks', async () => {
         return supertest(initializer.appManager.expressApp)
           .get('/api/blocks')
@@ -27,8 +41,60 @@ describe('api/blocks', () => {
             expect(response.body).to.haveOwnProperty('blocks');
             expect(response.body.blocks).to.be.an('array');
             expect(response.body.blocks.length).to.be.eq(1);
-
+            expect(response.body.blocks[0].transactions.length).to.be.eq(303);
           });
+      });
+      it('should account offset & orderBy parameter', async () => {
+        const initialHeight = blocksModule.lastBlock.height;
+        await initializer.rawMineBlocks(3);
+        return supertest(initializer.appManager.expressApp)
+          .get(`/api/blocks?offset=${initialHeight}&orderBy=height:asc`)
+          .expect(200)
+          .then((response) => {
+            expect(response.body.success).is.true;
+            expect(response.body.blocks).to.be.an('array');
+            expect(response.body.blocks.length).to.be.eq(3);
+            expect(response.body.blocks[0].height).to.be.eq(initialHeight + 1);
+            expect(response.body.blocks[1].height).to.be.eq(initialHeight + 2);
+            expect(response.body.blocks[2].height).to.be.eq(initialHeight + 3);
+          });
+      });
+      it('should account limit parameter', async () => {
+        const initialHeight = blocksModule.lastBlock.height;
+        await initializer.rawMineBlocks(3);
+        return supertest(initializer.appManager.expressApp)
+          .get(`/api/blocks?offset=${initialHeight}&orderBy=height:asc&limit=1`)
+          .expect(200)
+          .then((response) => {
+            expect(response.body.success).is.true;
+            expect(response.body.blocks).to.be.an('array');
+            expect(response.body.blocks.length).to.be.eq(1);
+            expect(response.body.blocks[0].height).to.be.eq(initialHeight + 1);
+          });
+      });
+      it('should filter block by height');
+      it('should filter block by previousBlock');
+      it('should filter block by reward');
+      it('should filter block by totalAmount');
+      it('should filter block by totalFee');
+      it('should filter block by generatorPublicKey');
+
+      it('should return block\'s transactions with assets per each tx', async () => {
+        const data = await createRandomAccountsWithFunds(4, 1e10);
+        const txs = [
+          await createSendTransaction(0, 1, data[0].account, '1R'),
+          await createSecondSignTransaction(0, data[3].account, createRandomWallet().publicKey),
+          await createRegDelegateTransaction(0, data[2].account, 'meoaaw'),
+          await createVoteTransaction(0, data[1].account, getRandomDelegateWallet().publicKey, true),
+        ];
+        await initializer.rawMineBlockWithTxs(txs.map((t) => toBufferedTransaction(t)));
+        const { body } = await supertest(initializer.appManager.expressApp)
+          .get('/api/blocks/?limit=1&orderBy=height:desc')
+          .expect(200);
+        expect(body.blocks[0].transactions[0].asset).deep.eq(txs[0].asset);
+        expect(body.blocks[0].transactions[1].asset).deep.eq(txs[1].asset);
+        expect(body.blocks[0].transactions[2].asset).deep.eq(txs[2].asset);
+        expect(body.blocks[0].transactions[3].asset).deep.eq(txs[3].asset);
       });
     });
   });
@@ -55,6 +121,24 @@ describe('api/blocks', () => {
         });
     });
 
+    it('should return block\'s transactions with assets per each tx', async () => {
+      const data = await createRandomAccountsWithFunds(4, 1e10);
+      const txs = [
+        await createSendTransaction(0, 1, data[0].account, '1R'),
+        await createSecondSignTransaction(0, data[3].account, createRandomWallet().publicKey),
+        await createRegDelegateTransaction(0, data[2].account, 'meoaaw'),
+        await createVoteTransaction(0, data[1].account, getRandomDelegateWallet().publicKey, true),
+      ];
+      const b = await initializer.rawMineBlockWithTxs(txs.map((t) => toBufferedTransaction(t)));
+      const { body } = await supertest(initializer.appManager.expressApp)
+        .get(`/api/blocks/get?id=${b.id}`)
+        .expect(200);
+      expect(body.block.transactions[0].asset).deep.eq(txs[0].asset);
+      expect(body.block.transactions[1].asset).deep.eq(txs[1].asset);
+      expect(body.block.transactions[2].asset).deep.eq(txs[2].asset);
+      expect(body.block.transactions[3].asset).deep.eq(txs[3].asset);
+    });
+
   });
 
   describe('/getHeight', () => {
@@ -63,6 +147,15 @@ describe('api/blocks', () => {
       1,
       '/api/blocks/getHeight'
     );
+    it('should return corret height', async () => {
+      await initializer.rawMineBlocks(10);
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/blocks/getHeight')
+        .expect(200)
+        .then((response) => {
+          expect(response.body.height).to.be.eq(11);
+        });
+    });
   });
 
   describe('/getBroadhash', () => {
@@ -71,6 +164,16 @@ describe('api/blocks', () => {
       'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
       '/api/blocks/getBroadhash'
     );
+    it('should change broadhash and return new one if based on known blocks', async () => {
+      await initializer.rawMineBlocks(5);
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/blocks/getBroadhash')
+        .expect(200)
+        .then((response) => {
+          expect(response.body.broadhash)
+            .to.be.eq('f68c3359a8cc863e5f4bf8aee984022e1e5faf74dc4f3c12c5ae922ce7b078a9');
+        });
+    });
   });
 
   describe('/getEpoch', () => {
@@ -130,9 +233,9 @@ describe('api/blocks', () => {
           expect(response.body.fees).to.haveOwnProperty('secondsignature');
           expect(response.body.fees).to.haveOwnProperty('delegate');
           expect(response.body.fees).to.haveOwnProperty('multisignature');
-          expect(response.body.fees).to.haveOwnProperty('dapp');
         });
     });
+
     it('should use provided height', async () => {
       return supertest(initializer.appManager.expressApp)
         .get('/api/blocks/getFees?height=10000&asd=asd')
@@ -167,13 +270,30 @@ describe('api/blocks', () => {
       '/api/blocks/getReward'
     );
   });
+
   describe('/getSupply', () => {
     checkReturnObjKeyVal(
       'supply',
       10999999991000000, // height 1 - 10 has reward 0
       '/api/blocks/getSupply'
     );
+    it('should calc supply correctly for height 100', async function (){
+      this.timeout(20000);
+      await initializer.rawMineBlocks(99); // 1 is already mined
+      return supertest(initializer.appManager.expressApp)
+        .get('/api/blocks/getSupply')
+        .expect(200)
+        .then((response) => {
+          expect(response.body.supply).to.be.eq(10999999991000000
+            + (100 - 13  + 1) * 1500000000 // blocks 13- 100
+            + 20000000 // block 12
+            + 30000000 // block 11
+            + 1500000000 // block 10
+          );
+        });
+    });
   });
+
   describe('/getStatus', () => {
     checkReturnObjKeyVal('nethash', 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6', '/api/blocks/getStatus');
     checkReturnObjKeyVal('broadhash', 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6', '/api/blocks/getStatus');
@@ -183,5 +303,4 @@ describe('api/blocks', () => {
     checkReturnObjKeyVal('reward', 0, '/api/blocks/getStatus');
     checkReturnObjKeyVal('supply', 10999999991000000, '/api/blocks/getStatus');
   });
-
 });

@@ -24,7 +24,7 @@ describe('apis/utils/attachPeerHeaders', () => {
   });
 
   describe('intercept()', () => {
-    it('success', () => {
+    it('should return an object parameter result with {success: true} object', () => {
       result = instance.intercept({foo: 'bar'} as any, {myresult: true});
       expect(result).to.deep.equal({ success: true, myresult: true });
     });
