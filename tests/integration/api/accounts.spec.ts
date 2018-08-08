@@ -193,7 +193,8 @@ describe('api/accounts', () => {
 
   describe('/top', () => {
     initializer.autoRestoreEach();
-    beforeEach(async () => {
+    beforeEach(async function () {
+      this.timeout(5000);
       const txs = [];
       const accModule = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts);
       const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
