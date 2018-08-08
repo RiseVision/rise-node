@@ -3,6 +3,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as Long from 'long';
 import * as proxyquire from 'proxyquire';
+import { Op } from 'sequelize';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { TransportV2API } from '../../../src/apis';
@@ -211,6 +212,19 @@ describe('apis/transportV2API', () => {
       await expect(instance.postSignatures(null)).rejectedWith(err);
     });
 
+    it('should accept a single signature', async () => {
+      parseRequestStub.returns({signature: {
+        signature: Buffer.from('1122334455aa', 'hex'),
+        transaction: Long.fromString('12323423523623626'),
+      }});
+      validatorStubs.assertValidSchema.returns(true);
+      instance.postSignatures(null);
+      expect(transportModuleStub.stubs.receiveSignatures.firstCall.args[0]).to.be.deep.equal([{
+        signature: '1122334455aa',
+        transaction: '12323423523623626',
+      }]);
+    });
+
     it('should call receiveSignatures', async () => {
       parseRequestStub.returns({
         signatures: [
@@ -303,6 +317,17 @@ describe('apis/transportV2API', () => {
       }]);
     });
 
+    it('should handle a single transaction', async () => {
+      parseRequestStub.returns({transaction: 'singleTx'});
+      transactionLogicStub.stubs.fromBytes.callsFake((what) => ({id: what}));
+      result = await instance.postTransactions(req);
+      expect(transportModuleStub.stubs.receiveTransactions.firstCall.args).to.be.deep.equal([
+        [{id: 'singleTx'}],
+        peersLogicStub.stubs.create.firstCall.returnValue,
+        true,
+      ]);
+    });
+
     it('should call receiveTransactions after calling fromBytes for each tx', async () => {
       const thetxs = ['tx1', 'tx2', 'tx3'];
       parseRequestStub.returns({transactions: thetxs});
@@ -328,6 +353,99 @@ describe('apis/transportV2API', () => {
         'APISuccess',
         undefined,
       ]);
+    });
+  });
+
+  describe('getBlocksCommon()', () => {
+    let findOneStub: SinonStub;
+    let genBBStub: SinonStub;
+    let getResStub: SinonStub;
+    beforeEach(() => {
+      findOneStub = sandbox.stub(blocksModel, 'findOne');
+      genBBStub = sandbox.stub(instance as any, 'generateBytesBlock').returns(Buffer.from('aaa123', 'hex'));
+      getResStub = sandbox.stub(instance as any, 'getResponse').returns({success: true});
+    });
+
+    it('should accept and remove quotes in ids', async () => {
+      findOneStub.returns(null);
+      await instance.getBlocksCommon('"123",\'456\'', req);
+      expect(findOneStub.calledOnce).to.be.true;
+      expect(findOneStub.firstCall.args[0].where.id[Op.in]).to.be.deep.equal(['123', '456']);
+    });
+
+    it('should remove non numeric ids', async () => {
+      findOneStub.returns(null);
+      await instance.getBlocksCommon('123,nonNumericID,456', req);
+      expect(findOneStub.calledOnce).to.be.true;
+      expect(findOneStub.firstCall.args[0].where.id[Op.in]).to.be.deep.equal(['123', '456']);
+    });
+
+    it('should call peersModule.remove and throw if no valid id is found', async () => {
+      findOneStub.returns(null);
+      await expect(instance.getBlocksCommon('invalidID', req)).to.be.rejectedWith('Invalid block id sequence');
+      expect(peersModuleStub.stubs.remove.calledOnce).to.be.true;
+      expect(peersModuleStub.stubs.remove.firstCall.args).to.be.deep
+        .equal([req.ip, parseInt(req.headers.port as string, 10)]);
+    });
+
+    it('should call peersModule.remove if more than 10 ids were passed', async () => {
+      findOneStub.returns(null);
+      await expect(instance.getBlocksCommon('1,2,3,4,5,6,7,8,9,10,11', req))
+        .to.be.rejectedWith('Invalid block id sequence');
+      expect(peersModuleStub.stubs.remove.calledOnce).to.be.true;
+      expect(peersModuleStub.stubs.remove.firstCall.args).to.be.deep
+        .equal([req.ip, parseInt(req.headers.port as string, 10)]);
+    });
+
+    it('should call BlocksModel.findOne', async () => {
+      findOneStub.returns(null);
+      await instance.getBlocksCommon('123,456', req);
+      expect(findOneStub.calledOnce).to.be.true;
+      expect(findOneStub.firstCall.args).to.be.deep
+        .equal([{
+          limit: 1,
+          order: [['height', 'DESC']],
+          raw: true,
+          where: {
+            id: {
+              [Op.in]: ['123', '456'],
+            },
+          },
+        }]);
+    });
+
+    it('should call generateBytesBlock if findOne returns a valid block', async () => {
+      findOneStub.returns({blockId: '123456'});
+      await instance.getBlocksCommon('1,2,3', req);
+      expect(genBBStub.calledOnce).to.be.true;
+      expect(genBBStub.firstCall.args).to.be.deep.equal([{blockId: '123456'}]);
+    });
+
+    it('should set the block to null if findOne returns null', async () => {
+      findOneStub.returns(null);
+      genBBStub.callsFake((a) => a);
+      await instance.getBlocksCommon('1,2,3', req);
+      expect(genBBStub.notCalled).to.be.true;
+      expect(getResStub.calledOnce).to.be.true;
+      expect(getResStub.firstCall.args).to.be.deep.equal([{common: null}, 'transportBlocks', 'commonBlock']);
+    });
+
+    it('should call getResponse and return', async () => {
+      getResStub.returns('success');
+      findOneStub.returns({blockId: '123456'});
+      genBBStub.callsFake((a) => a);
+      const ret = await instance.getBlocksCommon('1,2,3', req);
+      expect(getResStub.calledOnce).to.be.true;
+      expect(getResStub.firstCall.args).to.be.deep
+        .equal([{common: {blockId: '123456'}}, 'transportBlocks', 'commonBlock']);
+      expect(ret).to.be.equal('success');
+    });
+
+    it('getResponse should throw if invalid data is passed', async () => {
+      getResStub.restore();
+      genBBStub.returns('InvalidDataForProtoBuf');
+      protoBufStub.stubs.validate.returns(false);
+      await expect(instance.getBlocksCommon('1,2,3', req)).to.be.rejectedWith(/Failed to encode response - /);
     });
   });
 
@@ -414,7 +532,7 @@ describe('apis/transportV2API', () => {
       expect(protoBufStub.stubs.encode.firstCall.args[2]).eq('transportBlockResponse');
     });
 
-    describe('bit', () => {
+    describe('unstubbed tests', () => {
       beforeEach(() => parseRequestStub.restore());
       it('should throw if request body is not in binary', async () => {
         await expect(instance.postBlock(req)).rejectedWith('No binary data in request body');
