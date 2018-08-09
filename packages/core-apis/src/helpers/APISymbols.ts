@@ -1,7 +1,7 @@
 export const APISymbols = {
-  api: Symbol('api'),
-  applyLimitsMiddleware: Symbol('applyLimitsMiddleware'),
-  errorHandler         : Symbol('errorHandler'),
-  privateApiGuard      : Symbol('forgingApisWatchGuard'),
-  successInterceptor   : Symbol('successInterceptor'),
+  api                  : Symbol.for('rise.api.api'),
+  applyLimitsMiddleware: Symbol.for('rise.api.applyLimitsMiddleware'),
+  errorHandler         : Symbol.for('rise.api.errorHandler'),
+  privateApiGuard      : Symbol.for('rise.api.forgingApisWatchGuard'),
+  successInterceptor   : Symbol.for('rise.api.successInterceptor'),
 };

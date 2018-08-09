@@ -1,4 +1,4 @@
-import { checkIpInList, IoCSymbol, HTTPError } from '@risevision/core-utils';
+import { checkIpInList, HTTPError, IoCSymbol } from '@risevision/core-utils';
 import * as express from 'express';
 import { inject, injectable } from 'inversify';
 import { ExpressMiddlewareInterface, Middleware } from 'routing-controllers';

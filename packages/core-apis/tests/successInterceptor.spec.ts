@@ -1,9 +1,9 @@
-import { createContainer, LoggerStub } from '@risevision/core-test-utils';
-import { Symbols } from '@risevision/core-helpers';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import { SuccessInterceptor } from '../src';
+import { APISymbols } from '../src/helpers';
+import { createContainer } from '../../core-launchpad/tests/utils/createContainer';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -17,10 +17,10 @@ describe('apis/utils/attachPeerHeaders', () => {
   let container: Container;
   let result: any;
 
-  beforeEach(() => {
-    container = createContainer();
-    container.bind(Symbols.api.utils.successInterceptor).to(SuccessInterceptor);
-    instance = container.get(Symbols.api.utils.successInterceptor);
+  beforeEach(async () => {
+    container = await createContainer(['core-apis', 'core', 'core-helpers', 'core-accounts']);
+    container.bind(APISymbols.successInterceptor).to(SuccessInterceptor);
+    instance = container.get(APISymbols.successInterceptor);
   });
 
   describe('intercept()', () => {

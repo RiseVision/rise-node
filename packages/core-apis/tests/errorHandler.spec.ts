@@ -1,12 +1,16 @@
-import { createContainer, LoggerStub } from '@risevision/core-test-utils';
-import { Symbols } from '@risevision/core-helpers';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { APIError, DeprecatedAPIError } from '../src/errors';
+import { DeprecatedAPIError } from '../src/errors';
 import { APIErrorHandler } from '../src/utils';
+import { LoggerStub } from '../../core-utils/test/stubs';
+import { createContainer } from '../../core-launchpad/tests/utils/createContainer';
+import { APISymbols } from '../src/helpers';
+import { p2pSymbols } from '../../core-p2p/src/helpers';
+import { Symbols } from '../../core-interfaces/src';
+import { HTTPError } from '@risevision/core-utils';
 
 
 // tslint:disable-next-line no-var-requires
@@ -28,9 +32,10 @@ describe('apis/utils/errorHandler', () => {
   let loggerStub: LoggerStub;
   let sendSpy: any;
 
-  beforeEach(() => {
-    container = createContainer();
-    container.bind(Symbols.api.utils.errorHandler).to(APIErrorHandler);
+  beforeEach(async () => {
+    container = await createContainer(['core-apis', 'core', 'core-accounts', 'core-helpers']);
+    instance = container.getNamed(p2pSymbols.middleware, APISymbols.errorHandler);
+
     sandbox           = sinon.createSandbox();
     sendSpy           = { send: sandbox.spy() };
     response          = { status: () => sendSpy, send: sendSpy.send };
@@ -39,7 +44,6 @@ describe('apis/utils/errorHandler', () => {
     requestStub       = sandbox.stub(request.url, 'startsWith');
     next              = sandbox.spy();
     loggerStub        = container.get(Symbols.helpers.logger);
-    instance          = container.get(Symbols.api.utils.errorHandler);
   });
 
   afterEach(() => {
@@ -81,7 +85,7 @@ describe('apis/utils/errorHandler', () => {
   describe('APIError', () => {
     it('should honorate statusCode of APIError', () => {
       requestStub.returns(false);
-      instance.error(new APIError('Another fake error', 500), request, response, next);
+      instance.error(new HTTPError('Another fake error', 500), request, response, next);
       expect(responseStatusSpy.args[0][0]).to.equal(500);
       expect(sendSpy.send.args[0][0]).to.deep.equal({ success: false, error: 'Another fake error' });
     });
