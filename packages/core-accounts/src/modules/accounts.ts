@@ -1,15 +1,14 @@
 import {
   AccountDiffType,
   AccountFilterData,
-  IAccountLogic,
   IAccountsModel,
   IAccountsModule,
 } from '@risevision/core-interfaces';
+import { DBHelper, ModelSymbols } from '@risevision/core-models';
 import { DBOp, FieldsInModel, IBaseTransaction } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
-import { AccountsSymbols } from '../symbols';
-import { DBHelper, ModelSymbols } from '@risevision/core-models';
 import { AccountLogic } from '../logic';
+import { AccountsSymbols } from '../symbols';
 
 @injectable()
 export class AccountsModule implements IAccountsModule {
@@ -27,16 +26,16 @@ export class AccountsModule implements IAccountsModule {
     return Promise.resolve();
   }
 
-  public getAccount(filter: AccountFilterData, fields?: FieldsInModel<IAccountsModel>): Promise<IAccountsModel> {
+  public getAccount(filter: AccountFilterData): Promise<IAccountsModel> {
     if (filter.publicKey) {
       filter.address = this.accountLogic.generateAddressByPublicKey(filter.publicKey);
       delete filter.publicKey;
     }
-    return this.accountLogic.get(filter, fields);
+    return this.accountLogic.get(filter);
   }
 
-  public getAccounts(filter: AccountFilterData, fields: FieldsInModel<IAccountsModel>): Promise<IAccountsModel[]> {
-    return this.accountLogic.getAll(filter, fields);
+  public getAccounts(filter: AccountFilterData): Promise<IAccountsModel[]> {
+    return this.accountLogic.getAll(filter);
   }
 
   public async resolveAccountsForTransactions(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: IAccountsModel }> {

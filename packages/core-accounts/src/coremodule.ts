@@ -2,12 +2,11 @@ import { APISymbols } from '@risevision/core-apis';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { AppConfig } from '@risevision/core-types';
-import { Container } from 'inversify';
-import { AccountsSymbols } from './symbols';
 import { AccountsAPI } from './apis';
 import { AccountLogic } from './logic';
 import { AccountsModel } from './models';
 import { AccountsModule } from './modules';
+import { AccountsSymbols } from './symbols';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
@@ -23,8 +22,13 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       .whenTargetNamed(AccountsSymbols.api);
   }
 
-  public initAppElements(): void {
-    return void 0;
+  public initAppElements() {
+    const accLogic = this.container.get<AccountLogic>(AccountsSymbols.logic);
+    return accLogic.hookMethods();
   }
 
+  public teardown() {
+    const accLogic = this.container.get<AccountLogic>(AccountsSymbols.logic);
+    return accLogic.hookMethods();
+  }
 }

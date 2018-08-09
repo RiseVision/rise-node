@@ -113,8 +113,7 @@ export class AccountsAPI {
           limit,
           offset,
           sort: { balance: -1 },
-        },
-        returnFields
+        }
       );
 
     return {

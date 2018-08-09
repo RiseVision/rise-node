@@ -25,7 +25,7 @@ export interface ICoreModule<ConfigType> {
 
   addElementsToContainer(): void;
 
-  initAppElements(): void;
+  initAppElements(): void | Promise<void>;
 }
 
 export abstract class BaseCoreModule<ConfigType = any> implements ICoreModule<ConfigType> {
@@ -64,6 +64,7 @@ export abstract class BaseCoreModule<ConfigType = any> implements ICoreModule<Co
   public addElementsToContainer() {
   }
 
-  public initAppElements() {
+  public initAppElements(): Promise<void> | void {
+    return null;
   }
 }

@@ -7,9 +7,9 @@ export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> exte
 
   resolveAccountsForTransactions(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: T }>;
 
-  getAccount(filter: AccountFilterData, fields?: FieldsInModel<T>): Promise<T>;
+  getAccount(filter: AccountFilterData): Promise<T>;
 
-  getAccounts(filter: AccountFilterData, fields: FieldsInModel<T>): Promise<T[]>;
+  getAccounts(filter: AccountFilterData): Promise<T[]>;
 
   /**
    * Sets some data to specific account

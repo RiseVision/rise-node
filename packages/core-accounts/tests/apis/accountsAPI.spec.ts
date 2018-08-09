@@ -17,22 +17,12 @@ import { IAccountsModel } from '../../../core-interfaces/src/models';
 
 chai.use(chaiAsPromised);
 
-let isEmptyStub: SinonStub;
-// const ProxyAccountsAPI = proxyquire('../../../src/apis/accountsAPI', {
-//   'is-empty': (...args) => isEmptyStub.apply(this, args),
-// });
-
 // tslint:disable no-unused-expression max-line-length
 describe('apis/accountsAPI', () => {
 
   let sandbox: SinonSandbox;
   let instance: AccountsAPI;
   let container: Container;
-  // let schema: ZSchemaStub;
-  // let accountsModule: AccountsModuleStub;
-  // let delegatesModule: DelegatesModuleStub;
-  // let systemModule: SystemModuleStub;
-
   beforeEach(() => {
     sandbox   = sinon.createSandbox();
     container = createContainer([

@@ -10,7 +10,7 @@ import {
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { catchToLoggerAndRemapError, MyBigNumb } from '@risevision/core-utils';
-import { ConstantsType, DBOp, FieldsInModel, ModelAttributes } from '@risevision/core-types';
+import { ConstantsType, DBOp, ModelAttributes } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import * as fs from 'fs';
@@ -107,7 +107,7 @@ export class AccountLogic extends DecoratedSubscriber implements IAccountLogic {
     await this.AccountsModel.drop({ cascade: true })
       .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
     await this.AccountsModel.sequelize.query(
-      fs.readFileSync(path.join(process.cwd(), 'sql', 'memoryTables.sql'), { encoding: 'utf8' })
+      fs.readFileSync(path.join(__dirname, '..', '..', 'sql', 'memoryTables.sql'), { encoding: 'utf8' })
     );
   }
 
@@ -143,24 +143,15 @@ export class AccountLogic extends DecoratedSubscriber implements IAccountLogic {
    * Get account information for specific fields and filtering criteria
    */
   // tslint:disable-next-line max-line-length
-  public get(filter: AccountFilterData, fields?: FieldsInModel<IAccountsModel>): Promise<IAccountsModel> {
-    return this.getAll(filter, fields)
+  public get(filter: AccountFilterData): Promise<IAccountsModel> {
+    return this.getAll(filter)
       .then((res) => res[0]);
   }
 
   /**
    * Get accountS information for specific fields and filtering criteria.
    */
-  public getAll(filter: AccountFilterData, fields?: FieldsInModel<IAccountsModel>): Promise<IAccountsModel[]> {
-    if (!Array.isArray(fields)) {
-      fields = this.fields.map((field) => field.alias || field.field) as any;
-    }
-
-    const theFields = fields;
-
-    const realFields = this.fields
-      .filter((field) => theFields.indexOf(field.alias || field.field as any) !== -1)
-      .map((f) => f.alias || f.field);
+  public getAll(filter: AccountFilterData): Promise<IAccountsModel[]> {
 
     const sort: any = filter.sort ? filter.sort : {};
 
@@ -177,16 +168,8 @@ export class AccountLogic extends DecoratedSubscriber implements IAccountLogic {
       }
     });
 
-    let scope = null;
-    if (realFields.indexOf('u_delegates') !== -1 || realFields.indexOf('u_multisignatures') !== -1) {
-      scope = 'full';
-    } else if (realFields.indexOf('delegates') !== -1 || realFields.indexOf('multisignatures') !== -1) {
-      scope = 'fullConfirmed';
-    }
-
     return Promise.resolve(
-      this.AccountsModel.scope(scope).findAll({
-        // attributes: realFields, // NOTE: do not re-SET!
+      this.AccountsModel.findAll({
         limit : filter.limit > 0 ? filter.limit : undefined,
         offset: filter.offset > 0 ? filter.offset : undefined,
         order : typeof(sort) === 'string' ?
