@@ -19,8 +19,5 @@ export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> exte
 
   mergeAccountAndGetOPs(diff: AccountDiffType): Array<DBOp<any>>;
 
-  /**
-   * @deprecated
-   */
   generateAddressByPublicKey(pk: Buffer): string;
 }
