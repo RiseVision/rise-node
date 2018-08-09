@@ -13,8 +13,6 @@ import { BaseModel } from '@risevision/core-models';
 })
 @Table({ tableName: 'mem_accounts' })
 export class AccountsModel extends BaseModel<AccountsModel> implements IAccountsModel {
-  public static container: Container;
-  public static options: any;
 
   @PrimaryKey
   @Column

@@ -12,10 +12,19 @@ export class JobsQueue implements IJobsQueue {
 
     const nextJob = async () => {
       await job();
-      this.jobs[name] = setTimeout(nextJob, time);
+      // If it was not cancelled. Lets reschedule it.
+      if (typeof(this.jobs[name]) !== 'undefined') {
+        this.jobs[name] = setTimeout(nextJob, time);
+      }
     };
 
     this.jobs[name] = setImmediate(nextJob);
     return this.jobs[name];
   }
+
+  public unregister(name: string) {
+    clearTimeout(this.jobs[name]);
+    delete this.jobs[name];
+  }
+
 }

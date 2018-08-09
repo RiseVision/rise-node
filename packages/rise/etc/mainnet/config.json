@@ -86,7 +86,8 @@
   "transactions"   : {
     "maxTxsPerQueue" : 1000,
     "bundledInterval": 1000,
-    "expiryInterval" : 60000
+    "expiryInterval" : 60000,
+    "bundleLimit": 100
   },
   "forging"        : {
     "force" : false,

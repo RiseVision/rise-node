@@ -122,8 +122,7 @@ export class DelegatesModule extends WPHooksSubscriber(Object) implements IModul
     const delegates = await this.accountsModule.getAccounts({
         isDelegate: 1,
         sort      : { vote: -1, publicKey: 1 },
-      },
-      ['username', 'address', 'publicKey', 'vote', 'missedblocks', 'producedblocks']
+      }
     );
 
     const limit  = Math.min(this.dposConstants.activeDelegates, query.limit || this.dposConstants.activeDelegates);
@@ -280,7 +279,7 @@ export class DelegatesModule extends WPHooksSubscriber(Object) implements IModul
       isDelegate: 1,
       limit     : this.slots.delegates,
       sort      : { vote: -1, publicKey: 1 },
-    }, ['publicKey']);
+    });
     return rows.map((r) => r.publicKey);
   }
 

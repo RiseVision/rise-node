@@ -138,7 +138,7 @@ export class DelegatesAPI {
       };
     } else {
       const account = await this.accounts
-        .getAccount({ publicKey: Buffer.from(params.generatorPublicKey, 'hex') }, ['fees', 'rewards']);
+        .getAccount({ publicKey: Buffer.from(params.generatorPublicKey, 'hex') });
 
       if (!account) {
         throw new HTTPError('Account not found', 200);
@@ -184,9 +184,7 @@ export class DelegatesAPI {
     });
     const addresses = rows.map((r) => r.accountId);
 
-    const accounts = await this.accounts.getAccounts(
-      { address: { $in: addresses }, sort: 'balance' },
-      ['address', 'balance', 'username', 'publicKey']);
+    const accounts = await this.accounts.getAccounts({ address: { $in: addresses }, sort: 'balance' });
 
     return {
       accounts: accounts.map((a) => filterObject(

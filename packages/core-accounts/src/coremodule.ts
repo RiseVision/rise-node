@@ -29,6 +29,6 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
 
   public teardown() {
     const accLogic = this.container.get<AccountLogic>(AccountsSymbols.logic);
-    return accLogic.hookMethods();
+    return accLogic.unHook();
   }
 }

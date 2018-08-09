@@ -22,9 +22,9 @@ describe('modules/accounts', () => {
   let accountModule: IAccountsModule;
   let container: Container;
   let accountLogic: AccountLogic;
-  beforeEach(() => {
+  beforeEach(async () => {
     sandbox       = sinon.createSandbox();
-    container     = createContainer(['core-accounts', 'core-helpers']);
+    container     = await createContainer(['core-accounts', 'core-helpers']);
     accountModule = container.get<any>(AccountsSymbols.module);
     accountLogic  = container.get<any>(AccountsSymbols.logic);
   });

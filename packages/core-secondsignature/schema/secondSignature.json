@@ -4,8 +4,8 @@
   "properties": {
     "publicKey": {
       "format": "publicKey",
-      "type"  : "string",
-    },
+      "type"  : "string"
+    }
   },
-  "required"  : ["publicKey"],
+  "required"  : ["publicKey"]
 }

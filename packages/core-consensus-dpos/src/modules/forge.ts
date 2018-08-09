@@ -62,6 +62,7 @@ export class ForgeModule implements IModule {
   private transactionsModule: ITransactionsModule;
 
   public cleanup(): Promise<void> {
+    this.jobsQueue.unregister('delegatesNextForge');
     return Promise.resolve();
   }
 

@@ -23,9 +23,9 @@ describe('apis/accountsAPI', () => {
   let sandbox: SinonSandbox;
   let instance: AccountsAPI;
   let container: Container;
-  beforeEach(() => {
+  beforeEach(async () => {
     sandbox   = sinon.createSandbox();
-    container = createContainer([
+    container = await createContainer([
       'core-accounts',
       'core',
       'core-helpers',
@@ -333,9 +333,6 @@ describe('apis/accountsAPI', () => {
         limit: 1,
         offset: 10
       });
-      expect(getAccountsStub.firstCall.args[1]).deep.eq(
-        ['address', 'balance', 'publicKey']
-      );
       expect(res).to.be.deep.eq({accounts: []});
     });
     it('should remap getAccountsResult properly', async () => {

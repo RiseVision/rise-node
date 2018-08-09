@@ -75,6 +75,10 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     );
   }
 
+  public cleanup() {
+    this.jobsQueue.unregister('broadcasterNextRelease');
+  }
+
   public async getPeers(params: { limit?: number, broadhash?: string }): Promise<PeerType[]> {
     params.limit     = params.limit || this.constants.maxPeers;
     params.broadhash = params.broadhash || null;

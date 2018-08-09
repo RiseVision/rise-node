@@ -123,7 +123,9 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
   }
 
   public teardown(): Promise<void> {
-    return cbToPromise((cb) => this.srv.close(cb));
+    this.container.get<BroadcasterLogic>(p2pSymbols.logic.broadcaster).cleanup();
+    return cbToPromise((cb) => this.srv.close(cb))
+      .catch((e) => void 0);
   }
 
   public boot(): Promise<void> {

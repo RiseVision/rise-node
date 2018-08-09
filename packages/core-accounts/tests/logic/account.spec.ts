@@ -32,9 +32,9 @@ describe('logic/account', () => {
   let instance: AccountLogic;
   let container: Container;
   let accModel: typeof IAccountsModel;
-  beforeEach(() => {
+  beforeEach(async () => {
     sandbox   = sinon.createSandbox();
-    container = createContainer([
+    container = await createContainer([
       'core-accounts',
       'core',
       'core-helpers',

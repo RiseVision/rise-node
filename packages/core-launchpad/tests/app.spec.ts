@@ -26,7 +26,6 @@ describe('app', () => {
     exitStub     = sinon.stub();
     process.exit = (...args) => {
       exitStub(...args);
-      console.log('Exited', ...args);
       return void 0 as never;
     };
 

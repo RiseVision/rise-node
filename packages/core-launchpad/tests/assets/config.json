@@ -1,78 +1,85 @@
 {
-    "testasset": true,
-    "port": 9999,
-    "address": "0.0.0.0",
-    "version": "0.1.0",
-    "fileLogLevel": "info",
-    "logFileName": "logs/test.log",
+    "testasset"      : true,
+    "port"           : 9999,
+    "address"        : "0.0.0.0",
+    "version"        : "0.1.0",
+    "fileLogLevel"   : "info",
+    "logFileName"    : "/dev/null",
     "consoleLogLevel": "debug",
-    "trustProxy": false,
-    "cacheEnabled": false,
-    "db": {
-        "host": "localhost",
-        "port": 5432,
-        "database": "test",
-        "user": "test",
-        "password": "password",
-        "poolSize": 95,
-        "poolIdleTimeout": 30000,
+    "trustProxy"     : false,
+    "cacheEnabled"   : false,
+    "db"             : {
+        "host"              : "localhost",
+        "port"              : 5432,
+        "database"          : "test",
+        "user"              : "test",
+        "password"          : "password",
+        "poolSize"          : 95,
+        "poolIdleTimeout"   : 30000,
         "reapIntervalMillis": 1000,
-        "logEvents": [
+        "logEvents"         : [
             "error"
         ]
     },
-    "redis": {
-        "host": "127.0.0.1",
-        "port": 6379,
-        "db": 0,
+    "redis"          : {
+        "host"    : "127.0.0.1",
+        "port"    : 6379,
+        "db"      : 0,
         "password": null
     },
-    "api": {
+    "api"            : {
         "enabled": true,
-        "access": {
-            "public": true,
-            "whiteList": ["127.0.0.1"]
+        "access" : {
+            "public"   : true,
+            "whiteList": [
+                "127.0.0.1"
+            ]
         },
         "options": {
             "limits": {
-                "max": 0,
-                "delayMs": 0,
+                "max"       : 0,
+                "delayMs"   : 0,
                 "delayAfter": 0,
-                "windowMs": 60000
+                "windowMs"  : 60000
             }
         }
     },
-    "peers": {
+    "peers"          : {
         "enabled": true,
-        "list": [{
-            "ip": "127.0.0.1",
-            "port": 9999
-        }],
-        "access": {
+        "list"   : [
+            {
+                "ip"  : "127.0.0.1",
+                "port": 9999
+            }
+        ],
+        "access" : {
             "blackList": []
         },
         "options": {
-            "limits": {
-                "max": 0,
-                "delayMs": 0,
+            "limits" : {
+                "max"       : 0,
+                "delayMs"   : 0,
                 "delayAfter": 0,
-                "windowMs": 60000
+                "windowMs"  : 60000
             },
             "timeout": 5000
         }
     },
-    "broadcasts": {
+    "broadcasts"     : {
         "broadcastInterval": 5000,
-        "broadcastLimit": 20,
-        "parallelLimit": 20,
-        "releaseLimit": 25,
-        "relayLimit": 2
+        "broadcastLimit"   : 20,
+        "parallelLimit"    : 20,
+        "releaseLimit"     : 25,
+        "relayLimit"       : 2
     },
-    "transactions": {
-        "maxTxsPerQueue": 1000
+    "transactions"   : {
+        "maxTxsPerQueue": 1000,
+        "bundledInterval": 1000,
+        "expiryInterval": 30000,
+        "bundleLimit": 100
     },
-    "forging": {
-        "force": false,
+    "forging"        : {
+        "force"  : false,
         "_secret": [
             "fluid slim diary sniff device cotton fun wonder jar submit gentle during",
             "buddy clay absurd crunch charge hood gaze embark awesome diesel sniff tribe",
@@ -176,16 +183,16 @@
             "taste diagram hammer vehicle cinnamon hurt hospital quote duck uphold expire bright",
             "circle process arm rapid industry weasel window pipe tool seed nut attack"
         ],
-        "access": {
+        "access" : {
             "whiteList": [
                 "127.0.0.1",
                 "::ffff:127.0.0.1"
             ]
         }
     },
-    "loading": {
-        "verifyOnLoading": false,
+    "loading"        : {
+        "verifyOnLoading" : false,
         "loadPerIteration": 5000
     },
-    "nethash": "198f2b61a8eb95fbeed58b8216780b68f697f26b849acf00c8c93bb9b24f783d"
+    "nethash"        : "198f2b61a8eb95fbeed58b8216780b68f697f26b849acf00c8c93bb9b24f783d"
 }

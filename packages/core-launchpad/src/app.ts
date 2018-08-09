@@ -128,7 +128,6 @@ for (const m of modules) {
    appConfig = m.patchConfigWithCLIParams(program, appConfig);
  }
 }
-
 const logger = loggerCreator({
   echo      : appConfig.consoleLogLevel,
   errorLevel: appConfig.fileLogLevel,

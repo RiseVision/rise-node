@@ -15,11 +15,19 @@ export class CoreModule extends BaseCoreModule<DposAppConfig> {
     program.option('--forceForging', 'Forces forging. Despite consensus');
   }
 
+  public addElementsToContainer() {
+
+  }
+
   public initAppElements() {
     utils.mergeModels(
       AccountsModelForDPOS,
       this.container
         .getNamed(ModelSymbols.model, Symbols.models.accounts)
     );
+  }
+
+  public async teardown() {
+    // TODO: Call modules.clean
   }
 }

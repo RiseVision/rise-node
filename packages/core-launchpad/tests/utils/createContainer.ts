@@ -6,26 +6,25 @@ import { WordPressHookSystem, InMemoryFilterModel } from 'mangiafuoco';
 import { LoggerStub } from '../../../core-utils/test/stubs';
 import { SignedAndChainedBlockType } from '../../../core-types/dist';
 import { CoreSymbols } from '../../../core/dist';
-import { ModelSymbols } from '../../../core-models/dist';
-import { Model } from 'sequelize-typescript';
 import * as path from 'path';
+import { ICoreModule } from '../../src';
 
-export function createContainer(modules: string[],
-                                config: any = require('../assets/config.json'),
-                                block: SignedAndChainedBlockType = require('../assets/genesisBlock.json')): Container {
+let curContainer: Container;
+
+export async function createContainer(modules: string[],
+                                      config: any                      = require('../assets/config.json'),
+                                      block: SignedAndChainedBlockType = require('../assets/genesisBlock.json')): Promise<Container> {
+  if (curContainer) {
+    await tearDownContainer(curContainer);
+  }
   const container = new Container();
-  const allDeps = {};
+  const allDeps   = {};
   for (const m of modules) {
     allDeps[`@risevision/${m}`] = resolveModule(path.resolve(`${__dirname}/../../../${m}`), allDeps);
   }
   const sortedModules = loadCoreSortedModules(allDeps);
-  // , (m) => {
-  //   const toRet = `${path.join(m.rootDirectory, 'src', 'index.ts')}`;
-  //   console.log('requesting ',m.name, m.modulePath, toRet);
-  //   return toRet;
-  // });
   for (const sortedModule of sortedModules) {
-    sortedModule.config = config;
+    sortedModule.config    = config;
     sortedModule.container = container;
     sortedModule.addElementsToContainer();
   }
@@ -36,11 +35,24 @@ export function createContainer(modules: string[],
   container.bind(Symbols.generic.versionBuild).toConstantValue('test');
   container.bind(Symbols.generic.zschema).toConstantValue(new z_schema({}));
   container.bind(Symbols.generic.hookSystem).toConstantValue(new WordPressHookSystem(new InMemoryFilterModel()));
-  // container.bind(Symbols.helpers.logger).toConstantValue(new LoggerStub());
+  container.rebind(Symbols.helpers.logger).toConstantValue(new LoggerStub());
 
   for (const sortedModule of sortedModules) {
     sortedModule.initAppElements();
   }
 
+  container.bind('__test__modules').toConstantValue(sortedModules);
+  curContainer = container;
   return container;
+}
+
+export async function tearDownContainer(container: Container) {
+  const modules = container.get<Array<ICoreModule<any>>>('__test__modules');
+  for (const m of modules) {
+    try {
+      await m.teardown();
+    } catch (e) {
+      console.log(e);
+    }
+  }
 }

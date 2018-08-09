@@ -61,6 +61,7 @@ export class TransactionPool implements ITransactionPoolLogic {
     this.bundledInterval = this.config.transactions.bundledInterval;
     this.bundleLimit     = this.config.transactions.bundleLimit;
     this.expiryInterval  = this.config.transactions.expiryInterval;
+
     this.jobsQueue.register(
       'transactionPoolNextBundle',
       () => this.processBundled(),
@@ -71,6 +72,11 @@ export class TransactionPool implements ITransactionPoolLogic {
       () => Promise.resolve(this.expireTransactions()),
       this.expiryInterval
     );
+  }
+
+  public cleanup() {
+    this.jobsQueue.unregister('transactionPoolNextExpiry');
+    this.jobsQueue.unregister('transactionPoolNextBundle');
   }
 
   public async fillPool(): Promise<Array<IBaseTransaction<any>>> {
