@@ -2,7 +2,6 @@ import { BigNumber } from 'bignumber.js';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import * as _ from 'lodash';
-import * as Long from 'long';
 import { inject, injectable } from 'inversify';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
@@ -141,7 +140,7 @@ export class TransactionLogic implements ITransactionLogic {
 
     if (tx.recipientId) {
       const recipient = tx.recipientId.slice(0, -1);
-      const long = Long.fromString(recipient);
+      const long = Longnum.fromString(recipient);
       const recBuf    = Longnum.toBuffer(long);
 
       for (let i = 0; i < 8; i++) {

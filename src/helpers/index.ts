@@ -5,6 +5,7 @@ import config from './config';
 import constants from './constants';
 import * as Diff from './diff';
 import loggerCreator from './logger';
+import Longnum from './longnum';
 import applyExpressLimits from './request-limiter';
 
 export * from './blocksProgressLogger';
@@ -19,7 +20,6 @@ export * from './genericUtils';
 export * from './inserts';
 export * from './jobsQueue';
 export * from './logger';
-export * from './longnum';
 export * from './migrator';
 export * from './orderBy';
 export * from './promiseUtils';
@@ -36,5 +36,6 @@ export {
   config,
   constants,
   Diff,
-  loggerCreator
+  loggerCreator,
+  Longnum
 };

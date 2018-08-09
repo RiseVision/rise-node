@@ -1,7 +1,6 @@
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
-import * as Long from 'long';
 import { inject, injectable } from 'inversify';
 import z_schema from 'z-schema';
 import {BigNum, constants, Ed, IKeypair, Longnum} from '../helpers/';
@@ -276,7 +275,7 @@ export class BlockLogic implements IBlockLogic {
     for (let i = 0; i < 8; i++) {
       temp[i] = hash[7 - i];
     }
-    return Longnum.fromBuffer(temp).toString();
+    return Longnum.fromBuffer(temp).toString(10);
   }
 
   public getHash(block: BlockType, includeSignature: boolean = true) {
@@ -292,9 +291,8 @@ export class BlockLogic implements IBlockLogic {
     bb.writeInt(block.timestamp);
 
     if (block.previousBlock) {
-      const long = Long.fromString(block.previousBlock);
-      const pb = Longnum.toBuffer(long);
-
+      const long = Longnum.fromString(block.previousBlock, true, 10);
+      const pb = Longnum.toBuffer(long, {size: 8});
       for (let i = 0; i < 8; i++) {
         bb.writeByte(pb[i]);
       }
