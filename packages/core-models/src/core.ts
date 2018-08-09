@@ -54,9 +54,6 @@ export class CoreModule extends BaseCoreModule<DbAppConfig> {
     const models = this.container.getAll<typeof BaseModel>(ModelSymbols.model);
     models.forEach((m) => m.container = this.container);
     this.sequelize.addModels(models);
-    models.forEach((m) => {
-      console.log(m.getTableName());
-    });
   }
 
   public afterConfigValidation<T extends DbAppConfig>(config: T): T {

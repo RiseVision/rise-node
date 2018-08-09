@@ -11,6 +11,9 @@ import { APISymbols } from '../../../core-apis/dist/helpers';
 import { createContainer } from '@risevision/core-launchpad/tests/utils/createContainer';
 import 'reflect-metadata';
 import { Symbols } from '../../../core-interfaces/src';
+import { ModelSymbols } from '../../../core-models/src/helpers';
+import { AppConfig } from '../../../core-types/src';
+import { IAccountsModel } from '../../../core-interfaces/src/models';
 
 chai.use(chaiAsPromised);
 
@@ -107,230 +110,53 @@ describe('apis/accountsAPI', () => {
       await filterInstance.unHook();
     });
   });
-  //
-  // describe('getAccount', () => {
-  //   let accData;
-  //   let query;
-  //   let generatedAddress;
-  //
-  //   beforeEach(() => {
-  //     generatedAddress = 'generatedAddress';
-  //     query            = {
-  //       address  : 'address',
-  //       publicKey: 'publicKey',
-  //     };
-  //     accData          = {
-  //       _timestampAttributes: {},
-  //       address             : 'address',
-  //       balance             : 'balance',
-  //       multisignatures     : [],
-  //       publicKey           : Buffer.from('0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff', 'hex'),
-  //       secondPublicKey     : Buffer.from('1111aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff', 'hex'),
-  //       secondSignature     : 1,
-  //       u_balance           : '10000',
-  //       u_multisignatures   : [],
-  //       u_secondSignature   : 1,
-  //     };
-  //
-  //     accountsModule.enqueueResponse('generateAddressByPublicKey', generatedAddress);
-  //     accountsModule.enqueueResponse('getAccount', Promise.resolve(new AccountsModel(accData)));
-  //
-  //     isEmptyStub = sandbox.stub();
-  //     isEmptyStub.onCall(0).returns(false)
-  //       .onCall(1).returns(false)
-  //       .onCall(2).returns(true)
-  //       .onCall(3).returns(true);
-  //   });
-  //
-  //   it('should call isEmpty', async () => {
-  //     await instance.getAccount(query);
-  //
-  //     expect(isEmptyStub.called).to.be.true;
-  //   });
-  //
-  //   describe('Error: Missing required property: address or publicKey', () => {
-  //
-  //     it('should throw error if query.address and query.publicKey are empty', async () => {
-  //       isEmptyStub.reset();
-  //       isEmptyStub.returns(true);
-  //
-  //       await expect(instance.getAccount(query)).to.be.rejectedWith('Missing required property: address or publicKey');
-  //     });
-  //
-  //     it('should not throw error if only query.address is empty', async () => {
-  //       isEmptyStub.onCall(0).returns(true)
-  //         .onCall(1).returns(false);
-  //
-  //       await expect(instance.getAccount(query)).to.be.not.rejectedWith('Missing required property: address or publicKey');
-  //     });
-  //
-  //     it('should not throw error if only query.publicKey is empty', async () => {
-  //       isEmptyStub.onCall(0).returns(false)
-  //         .onCall(1).returns(true);
-  //
-  //       await expect(instance.getAccount(query)).to.be.not.rejectedWith('Missing required property: address or publicKey');
-  //     });
-  //   });
-  //
-  //   it('should call this.accountsModule.generateAddressByPublicKey if query.publicKey isn"t empty', async () => {
-  //     await instance.getAccount(query);
-  //
-  //     expect(accountsModule.stubs.generateAddressByPublicKey.calledOnce).to.be.true;
-  //     expect(accountsModule.stubs.generateAddressByPublicKey.firstCall.args.length).to.be.equal(1);
-  //     expect(accountsModule.stubs.generateAddressByPublicKey.firstCall.args[0]).to.be.equal(query.publicKey);
-  //   });
-  //
-  //   describe('Error: Account publicKey does not match address', () => {
-  //
-  //     it('should throw error if query.address and query.publicKey are empty and address !== query.address', async () => {
-  //       isEmptyStub.onCall(2).returns(false);
-  //       isEmptyStub.onCall(3).returns(false);
-  //
-  //       await expect(instance.getAccount(query)).to.be.rejectedWith('Account publicKey does not match address');
-  //     });
-  //
-  //     it('should not throw error if only query.address is empty', async () => {
-  //       isEmptyStub.onCall(3).returns(false);
-  //
-  //       await expect(instance.getAccount(query)).to.be.not.rejectedWith('Account publicKey does not match address');
-  //
-  //     });
-  //
-  //     it('should not throw error if only query.publicKey is empty', async () => {
-  //       isEmptyStub.onCall(2).returns(false);
-  //
-  //       await expect(instance.getAccount(query)).to.be.not.rejectedWith('Account publicKey does not match address');
-  //
-  //     });
-  //
-  //     it('should not throw error if only address === query.address and check of setting address in query.address if query.publicKey is empty', async () => {
-  //       isEmptyStub.onCall(1).returns(true);
-  //       isEmptyStub.onCall(2).returns(false);
-  //       isEmptyStub.onCall(3).returns(false);
-  //
-  //       await expect(instance.getAccount(query)).to.be.not.rejectedWith('Account publicKey does not match address');
-  //     });
-  //   });
-  //
-  //   it('should call accountsModule.getAccount with derived address from publicKey', async () => {
-  //     await instance.getAccount({ publicKey: 'publicKey' });
-  //
-  //     expect(accountsModule.stubs.getAccount.calledOnce).to.be.true;
-  //     expect(accountsModule.stubs.getAccount.firstCall.args.length).to.be.equal(1);
-  //     expect(accountsModule.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({ address: 'generatedAddress' });
-  //   });
-  //
-  //   it('should throw error if accountsModule.getAccount returns falsy ', async () => {
-  //     accountsModule.reset();
-  //     accountsModule.enqueueResponse('generateAddressByPublicKey', generatedAddress);
-  //     accountsModule.enqueueResponse('getAccount', null);
-  //
-  //     await expect(instance.getAccount(query)).to.be.rejectedWith('Account not found');
-  //   });
-  //
-  //   it('should return an account', async () => {
-  //     const res = await instance.getAccount(query);
-  //
-  //     expect(res).to.be.deep.equal({
-  //       account: {
-  //         address             : accData.address,
-  //         balance             : accData.balance,
-  //         multisignatures     : accData.multisignatures,
-  //         publicKey           : accData.publicKey.toString('hex'),
-  //         secondPublicKey     : accData.secondPublicKey.toString('hex'),
-  //         secondSignature     : accData.secondSignature,
-  //         u_multisignatures   : accData.u_multisignatures,
-  //         unconfirmedBalance  : accData.u_balance,
-  //         unconfirmedSignature: accData.u_secondSignature,
-  //       }
-  //     });
-  //   });
-  //
-  // });
-  //
-  // describe('getBalance', () => {
-  //
-  //   let params;
-  //   let account;
-  //
-  //   beforeEach(() => {
-  //     params  = { address: 'address' };
-  //     account = {
-  //       balance  : '1',
-  //       u_balance: '1',
-  //     };
-  //     accountsModule.enqueueResponse('getAccount', Promise.resolve(account));
-  //   });
-  //
-  //   it('should call accountsModule.getAccount', async () => {
-  //     await instance.getBalance(params);
-  //
-  //     expect(accountsModule.stubs.getAccount.calledOnce).to.be.true;
-  //     expect(accountsModule.stubs.getAccount.firstCall.args.length).to.be.equal(1);
-  //     expect(accountsModule.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({ address: 'address' });
-  //   });
-  //
-  //   it('should return a balance from an address', async () => {
-  //     const ret = await instance.getBalance(params);
-  //
-  //     expect(ret).to.be.deep.equal({
-  //       balance           : '1',
-  //       unconfirmedBalance: '1',
-  //     });
-  //   });
-  //
-  //   it('should throw error if account not found', async () => {
-  //     accountsModule.reset();
-  //     accountsModule.enqueueResponse('getAccount', Promise.resolve());
-  //
-  //     const ret = await instance.getBalance(params);
-  //
-  //     expect(ret).to.be.deep.equal({
-  //       balance           : '0',
-  //       unconfirmedBalance: '0',
-  //     });
-  //   });
-  //
-  // });
-  //
-  // describe('getPublickey', () => {
-  //
-  //   let params;
-  //   let account;
-  //
-  //   beforeEach(() => {
-  //     params  = { address: 'address' };
-  //     account = {
-  //       publicKey: '1',
-  //     };
-  //     accountsModule.enqueueResponse('getAccount', Promise.resolve(new AccountsModel(account)));
-  //   });
-  //
-  //   it('should call accountsModule.getAccount', async () => {
-  //     await instance.getPublickey(params);
-  //
-  //     expect(accountsModule.stubs.getAccount.calledOnce).to.be.true;
-  //     expect(accountsModule.stubs.getAccount.firstCall.args.length).to.be.equal(1);
-  //     expect(accountsModule.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({ address: 'address' });
-  //   });
-  //
-  //   it('should return a public key from an address', async () => {
-  //     const ret = await instance.getPublickey(params);
-  //
-  //     expect(ret).to.be.deep.equal({
-  //       publicKey: '1',
-  //     });
-  //   });
-  //
-  //   it('should throw error if account not found', async () => {
-  //     accountsModule.reset();
-  //     accountsModule.enqueueResponse('getAccount', Promise.resolve());
-  //
-  //     await expect(instance.getPublickey(params)).to.be.rejectedWith('Account not found');
-  //   });
-  //
-  // });
-  //
+  describe('getBalance', () => {
+    it('should reject if input does not pass validation schema', async () => {
+      instance        = container.getNamed(APISymbols.api, AccountsSymbols.api);
+      await expect (instance.getBalance({address: 'meow'})).to.rejectedWith('address - Object didn\'t pass validation');
+
+    });
+    it('should query accountsModule and return balance and unconfirmedBalance', async () => {
+      const accModule = container.get<AccountsModule>(AccountsSymbols.module);
+      instance        = container.getNamed(APISymbols.api, AccountsSymbols.api);
+      const stub = sandbox.stub(accModule, 'getAccount').resolves({ address: '1R', balance: 10, hexPublicKey: 'hey', u_balance: 11 });
+
+      expect(await instance.getBalance({address: '1R'})).deep.eq({balance: '10', unconfirmedBalance: '11'});
+      expect(stub.calledWith({address: '1R'})).true;
+    });
+    it('should throw if accountsModule throws', async () => {
+      const accModule = container.get<AccountsModule>(AccountsSymbols.module);
+      instance        = container.getNamed(APISymbols.api, AccountsSymbols.api);
+      sandbox.stub(accModule, 'getAccount').rejects(new Error('hey'));
+      await expect (instance.getBalance({address: '1R'})).to.rejectedWith('hey');
+    });
+  });
+  describe('getPublicKey', () => {
+    it('should reject if input does not pass validation schema', async () => {
+      instance        = container.getNamed(APISymbols.api, AccountsSymbols.api);
+      await expect (instance.getPublickey({address: 'meow'})).to.rejectedWith('address - Object didn\'t pass validation');
+
+    });
+    it('should query accountsModule and return hexPublicKey', async () => {
+      const accModule = container.get<AccountsModule>(AccountsSymbols.module);
+      instance        = container.getNamed(APISymbols.api, AccountsSymbols.api);
+      const AccountsModel = container.getNamed<any>(ModelSymbols.model, AccountsSymbols.model);
+      const stub = sandbox.stub(accModule, 'getAccount').resolves(new AccountsModel({
+        publicKey: Buffer.alloc(32).fill(0xaa),
+      }));
+
+      expect(await instance.getPublickey({address: '1R'})).deep.eq({publicKey: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'});
+      expect(stub.calledWith({address: '1R'})).true;
+    });
+    it('should throw if accountsModule throws', async () => {
+      const accModule = container.get<AccountsModule>(AccountsSymbols.module);
+      instance        = container.getNamed(APISymbols.api, AccountsSymbols.api);
+      sandbox.stub(accModule, 'getAccount').rejects(new Error('hey'));
+      await expect (instance.getPublickey({address: '1R'})).to.rejectedWith('hey');
+    });
+  });
+
+  // TODO: in consensus-dpos
   // describe('getDelegates', () => {
   //
   //   let params;
@@ -473,61 +299,67 @@ describe('apis/accountsAPI', () => {
   //
   // });
   //
-  // describe('topAccounts', () => {
-  //   let appConfig: AppConfig;
-  //   beforeEach(() => {
-  //     appConfig = container.get(Symbols.generic.appConfig);
-  //     appConfig.topAccounts = true; // Enable it.
-  //   });
-  //
-  //   it('should reject with appConfig.topAccounts not defined', async () => {
-  //     delete appConfig.topAccounts;
-  //     await expect(instance.topAccounts({})).to.be.rejectedWith('Top Accounts is not enabled');
-  //     expect(accountsModule.stubs.getAccounts.called).is.false;
-  //   });
-  //   it('should reject with appConfig.topAccounts set to false', async () => {
-  //     appConfig.topAccounts = false;
-  //     await expect(instance.topAccounts({})).to.be.rejectedWith('Top Accounts is not enabled');
-  //     expect(accountsModule.stubs.getAccounts.called).is.false;
-  //   });
-  //   it('should propagate request correctly with default params when not provided', async () => {
-  //     appConfig.topAccounts = true;
-  //     accountsModule.stubs.getAccounts.resolves([]);
-  //
-  //     await instance.topAccounts({});
-  //     expect(accountsModule.stubs.getAccounts.calledOnce).is.true;
-  //     expect(accountsModule.stubs.getAccounts.firstCall.args[0]).deep.eq({
-  //       sort: { balance: -1 },
-  //       limit: 100,
-  //       offset: 0
-  //     });
-  //   });
-  //   it('should query accountsModule.getAccounts with proper params', async () => {
-  //     accountsModule.stubs.getAccounts.resolves([]);
-  //     const res = await instance.topAccounts({limit: 1, offset: 10});
-  //     expect(accountsModule.stubs.getAccounts.calledOnce).is.true;
-  //     expect(accountsModule.stubs.getAccounts.firstCall.args[0]).deep.eq({
-  //       sort: { balance: -1 },
-  //       limit: 1,
-  //       offset: 10
-  //     });
-  //     expect(accountsModule.stubs.getAccounts.firstCall.args[1]).deep.eq(
-  //       ['address', 'balance', 'publicKey']
-  //     );
-  //     expect(res).to.be.deep.eq({accounts: []});
-  //   });
-  //   it('should remap getAccountsResult properly', async () => {
-  //     accountsModule.stubs.getAccounts.resolves([
-  //       new AccountsModel({ address: '1', balance: 10, u_balance: 11} as any),
-  //       new AccountsModel({ address: '2', balance: 12, publicKey: Buffer.alloc(32).fill('a')}),
-  //     ]);
-  //     const res = await instance.topAccounts({});
-  //     expect(res).to.be.deep.eq({
-  //       accounts: [
-  //         {address: '1', balance: 10, publicKey: null},
-  //         {address: '2', balance: 12, publicKey: '6161616161616161616161616161616161616161616161616161616161616161'}
-  //       ],
-  //     });
-  //   });
-  // });
+  describe('topAccounts', () => {
+    let appConfig: AppConfig;
+    let getAccountsStub: SinonStub;
+    let AccountsModel: typeof IAccountsModel;
+    beforeEach(() => {
+      appConfig = container.get(Symbols.generic.appConfig);
+      appConfig.topAccounts = true; // Enable it.
+      const accountsModule = container.get<AccountsModule>(AccountsSymbols.module);
+      getAccountsStub = sinon.stub(accountsModule, 'getAccounts');
+      AccountsModel = container.getNamed<any>(ModelSymbols.model, AccountsSymbols.model);;
+      instance        = container.getNamed(APISymbols.api, AccountsSymbols.api);
+    });
+
+    it('should reject with appConfig.topAccounts not defined', async () => {
+      delete appConfig.topAccounts;
+      await expect(instance.topAccounts({})).to.be.rejectedWith('Top Accounts is not enabled');
+      expect(getAccountsStub.called).is.false;
+    });
+    it('should reject with appConfig.topAccounts set to false', async () => {
+      appConfig.topAccounts = false;
+      await expect(instance.topAccounts({})).to.be.rejectedWith('Top Accounts is not enabled');
+      expect(getAccountsStub.called).is.false;
+    });
+    it('should propagate request correctly with default params when not provided', async () => {
+      appConfig.topAccounts = true;
+      getAccountsStub.resolves([]);
+
+      await instance.topAccounts({});
+      expect(getAccountsStub.calledOnce).is.true;
+      expect(getAccountsStub.firstCall.args[0]).deep.eq({
+        sort: { balance: -1 },
+        limit: 100,
+        offset: 0
+      });
+    });
+    it('should query accountsModule.getAccounts with proper params', async () => {
+      getAccountsStub.resolves([]);
+      const res = await instance.topAccounts({limit: 1, offset: 10});
+      expect(getAccountsStub.calledOnce).is.true;
+      expect(getAccountsStub.firstCall.args[0]).deep.eq({
+        sort: { balance: -1 },
+        limit: 1,
+        offset: 10
+      });
+      expect(getAccountsStub.firstCall.args[1]).deep.eq(
+        ['address', 'balance', 'publicKey']
+      );
+      expect(res).to.be.deep.eq({accounts: []});
+    });
+    it('should remap getAccountsResult properly', async () => {
+      getAccountsStub.resolves([
+        new AccountsModel({ address: '1', balance: 10, u_balance: 11} as any),
+        new AccountsModel({ address: '2', balance: 12, publicKey: Buffer.alloc(32).fill(0xab)}),
+      ]);
+      const res = await instance.topAccounts({});
+      expect(res).to.be.deep.eq({
+        accounts: [
+          {address: '1', balance: 10},
+          {address: '2', balance: 12, publicKey: 'abababababababababababababababababababababababababababababababab'},
+        ],
+      });
+    });
+  });
 });
