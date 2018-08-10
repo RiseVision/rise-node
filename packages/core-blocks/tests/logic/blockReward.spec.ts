@@ -1,8 +1,11 @@
 import * as chai from 'chai';
 import { SinonSandbox } from 'sinon';
 import * as sinon from 'sinon';
-import { constants } from '../../../src/helpers';
-import { BlockRewardLogic } from '../../../src/logic';
+import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
+import { Container } from 'inversify';
+import { BlockRewardLogic } from '../../src/logic';
+import { BlocksSymbols } from '../../src/blocksSymbols';
+import { Symbols } from '../../../core-interfaces/src';
 
 const expect = chai.expect;
 
@@ -10,13 +13,13 @@ const expect = chai.expect;
 describe('logic/blockReward', () => {
   let instance: BlockRewardLogic;
   let sandbox: SinonSandbox;
-
-  beforeEach(() => {
-    sandbox = sinon.createSandbox();
-    instance = new BlockRewardLogic();
-    (instance as any).constants = constants;
-    // Usually autocalled by inversify on construct
-    instance.initRewards();
+  let container: Container;
+  let constants: any;
+  beforeEach(async () => {
+    sandbox   = sinon.createSandbox();
+    container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
+    instance  = container.get(BlocksSymbols.logic.blockReward);
+    constants = container.get(Symbols.generic.constants);
   });
 
   afterEach(() => {
