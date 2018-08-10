@@ -16,7 +16,7 @@ import {
   ITransportModule
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { IBytesBlock, SignedAndChainedBlockType } from '../logic';
+import { BlockLogic, IBytesBlock, SignedAndChainedBlockType } from '../logic';
 import { IBaseTransaction, IBytesTransaction } from '../logic/transactions';
 import { BlocksModel, TransactionsModel } from '../models';
 import transportSchema from '../schema/transport';
@@ -196,11 +196,14 @@ export class TransportV2API {
   @ValidateSchema()
   public async getBlocks(@SchemaValid(transportSchema.blocks.properties.lastBlockId)
                          @QueryParam('lastBlockId') lastBlockId: string) {
-    // TODO define number of blocks to get per response dynamically, based on max payload size and lastBlockId
+    const maxBlockSize = BlockLogic.getMaxBytesSize();
+    const blocksToLoad = Math.ceil(2000000 / maxBlockSize);
     const dbBlocks = await this.blocksModuleUtils.loadBlocksData({
       lastId: lastBlockId,
-      limit : 2000,
+      limit : blocksToLoad,
     });
+
+    // TODO get at least twice the blocks and eventually remove a few from the response if > 2MB
     const blocks   = await Promise.all(dbBlocks
       .map(async (block): Promise<IBytesBlock> => this.generateBytesBlock(block)));
     return this.getResponse({ blocks }, 'transportBlocks');

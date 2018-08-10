@@ -8,8 +8,7 @@ import secondSignatureSchema from '../../schema/logic/transactions/secondSignatu
 import { DBOp } from '../../types/genericTypes';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
-import { DelegatesModel } from '../../models';
-import { VoteAsset } from './vote';
+
 // tslint:disable-next-line interface-over-type-literal
 export type SecondSignatureAsset = {
   signature: {
@@ -19,6 +18,12 @@ export type SecondSignatureAsset = {
 
 @injectable()
 export class SecondSignatureTransaction extends BaseTransactionType<SecondSignatureAsset, SignaturesModel> {
+
+  public static getMaxBytesSize(): number {
+    let size = BaseTransactionType.getMaxBytesSize();
+    size += 32; // publicKey
+    return size;
+  }
 
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
@@ -55,7 +60,6 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
     if (bytes === null) {
       return null;
     }
-    // Splits the votes into 33 bytes chunks (1 for the sign, 32 for the publicKey)
     return {
       signature: {
         publicKey: bytes.toString('hex'),

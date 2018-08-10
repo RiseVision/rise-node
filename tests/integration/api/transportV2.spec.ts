@@ -651,7 +651,7 @@ describe('v2/peer/transport', function() {
     checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
       .get('/v2/peer/blocks/'));
 
-    it('should query last 34 blocks from given lastId', async () => {
+    it('should query last blocks from given lastId', async () => {
       const { wallet } = await createRandomAccountWithFunds(Math.pow(10, 10));
       const txs = (await Promise.all(new Array(25).fill(null)
         .map((_, idx) => createSendTransaction(0, idx + 1, wallet, '1R'))))

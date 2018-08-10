@@ -20,7 +20,6 @@ import multiSigSchema from '../../schema/logic/transactions/multisignature';
 import { DBCreateOp, DBOp, DBUpsertOp } from '../../types/genericTypes';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
-import { VoteAsset } from './vote';
 
 // tslint:disable-next-line interface-over-type-literal
 export type MultisigAsset = {
@@ -33,6 +32,13 @@ export type MultisigAsset = {
 
 @injectable()
 export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset, MultiSignaturesModel> {
+
+  public static getMaxBytesSize(): number {
+    let size = BaseTransactionType.getMaxBytesSize();
+    size += 8; // min, lifetime
+    size += 32 * constants.multisigConstraints.keysgroup.maxItems; // keysgroup
+    return size;
+  }
 
   private unconfirmedSignatures: { [name: string]: true };
 

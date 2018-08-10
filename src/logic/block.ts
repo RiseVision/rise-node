@@ -12,6 +12,7 @@ import { DBOp } from '../types/genericTypes';
 import { RawFullBlockListType } from '../types/rawDBTypes';
 import { BlockRewardLogic } from './blockReward';
 import { IBaseTransaction, IBytesTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
+import { TransactionLogic } from './transaction';
 
 // import * as OldImplementation from './_block.js';
 
@@ -54,6 +55,13 @@ export interface IBytesBlock {
 
 @injectable()
 export class BlockLogic implements IBlockLogic {
+  public static getMaxBytesSize(): number {
+    let size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64; // Block's bytes
+    size += 4; // height
+    const maxTxSize = TransactionLogic.getMaxBytesSize();
+    size += constants.maxTxsPerBlock * maxTxSize; // transactions
+    return size;
+  }
 
   public table    = 'blocks';
   public dbFields = [

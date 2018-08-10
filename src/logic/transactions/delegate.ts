@@ -8,7 +8,6 @@ import delegateSchema from '../../schema/logic/transactions/delegate';
 import { DBCreateOp, DBOp } from '../../types/genericTypes';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
-import { VoteAsset } from './vote';
 
 // tslint:disable-next-line interface-over-type-literal
 export type DelegateAsset = {
@@ -19,6 +18,14 @@ export type DelegateAsset = {
 
 @injectable()
 export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAsset, DelegatesModel> {
+
+  public static getMaxBytesSize(): number {
+    let size = BaseTransactionType.getMaxBytesSize();
+    size += 20; // username
+    size += 32; // publicKey
+    size += 8; // address
+    return size;
+  }
 
   // Generic
   @inject(Symbols.generic.zschema)

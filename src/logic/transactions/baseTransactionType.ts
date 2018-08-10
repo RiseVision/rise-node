@@ -61,6 +61,13 @@ const emptyBuffer = new Buffer(0);
 @injectable()
 export abstract class BaseTransactionType<T, M extends Model<any>> {
 
+  public static getMaxBytesSize(): number {
+    let size = 0;
+    size += 1 + 4 + 32 + 32 + 8 + 8 + 64 + 64; // TransactionLogic.getBytes Buffer base size
+    size += 6; // hasRequesterPublicKey, has signSignature, fee;
+    return size;
+  }
+
   constructor(@unmanaged() private txType: TransactionType) {
   }
 

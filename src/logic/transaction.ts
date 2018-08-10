@@ -23,10 +23,23 @@ import txSchema from '../schema/logic/transaction';
 import { DBBulkCreateOp, DBOp } from '../types/genericTypes';
 import { SignedAndChainedBlockType, SignedBlockType } from './block';
 import { BaseTransactionType, IBaseTransaction,
-         IBytesTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
+         IBytesTransaction, IConfirmedTransaction, ITransportTransaction,
+         MultiSignatureTransaction, RegisterDelegateTransaction, SecondSignatureTransaction,
+         SendTransaction, VoteTransaction } from './transactions/';
 
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
+
+  public static getMaxBytesSize(): number {
+    let max = 0;
+    const txTypes = [BaseTransactionType, MultiSignatureTransaction, RegisterDelegateTransaction,
+                     SecondSignatureTransaction, SendTransaction, VoteTransaction];
+    for (const txType of txTypes) {
+      const size = txType.getMaxBytesSize();
+      max = Math.max(max, size);
+    }
+    return max;
+  }
 
   @inject(Symbols.helpers.exceptionsManager)
   public excManager: ExceptionsManager;
