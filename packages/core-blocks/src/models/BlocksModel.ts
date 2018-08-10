@@ -75,7 +75,10 @@ export class BlocksModel extends BaseModel<BlocksModel> implements IBlocksModel 
   }
 
   public static toStringBlockType(b: SignedBlockType): SignedBlockType<string> {
-    const TxModel      = this.container.get<typeof ITransactionsModel>(Symbols.models.transactions);
+    const TxModel      = this.container.getNamed<typeof ITransactionsModel>(
+      ModelSymbols.model,
+      Symbols.models.transactions
+    );
     const BlocksModule = this.container.get<IBlocksModule>(Symbols.modules.blocks);
 
     const txs = (b.transactions || [])

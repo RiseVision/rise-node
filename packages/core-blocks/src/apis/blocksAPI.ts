@@ -108,15 +108,12 @@ export class BlocksAPI {
   @ValidateSchema()
   public async getBlock(@SchemaValid(blocksSchema.getBlock, { castNumbers: true })
                         @QueryParams() filters: { id: string }) {
-    const block = await this.dbSequence.addAndPromise(async () => {
-      const b = await this.BlocksModel.findById(filters.id, { include: [this.TransactionsModel] });
-      if (b === null) {
-        throw new HTTPError('Block not found', 200);
-      }
-      await this.transactionLogic.attachAssets(b.transactions);
-      return this.BlocksModel.toStringBlockType(b);
-    });
-    return { block };
+    const block = await this.BlocksModel.findById(filters.id, { include: [this.TransactionsModel] });
+    if (block === null) {
+      throw new HTTPError('Block not found', 200);
+    }
+    await this.transactionLogic.attachAssets(block.transactions);
+    return { block: this.BlocksModel.toStringBlockType(block) };
   }
 
   @Get('/getHeight')

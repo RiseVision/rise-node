@@ -10,11 +10,11 @@ export const ModelSymbols = {
   },
   names             : {
     accounts    : Symbol.for('models.accountsModel'),
-    blocks      : Symbol.for('models.blocksModel'),
+    blocks      : Symbols.models.blocks,
     exceptions  : Symbol.for('models.exceptionsModel'),
     forkStats   : Symbol.for('models.forkStatsModel'),
     info        : Symbol.for('models.infoModel'),
     migrations  : Symbol.for('models.migrationsModel'),
-    transactions: Symbol.for('models.transactionsModel'),
+    transactions: Symbols.models.transactions,
   },
 };

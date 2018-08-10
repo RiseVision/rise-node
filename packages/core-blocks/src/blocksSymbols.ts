@@ -1,7 +1,7 @@
 import { Symbols } from '@risevision/core-interfaces';
 
 export const BlocksSymbols = {
-  api    : Symbol('api'),
+  api    : Symbol.for('rise.blocks.api'),
   logic: {
     block: Symbols.logic.block,
     blockReward: Symbols.logic.blockReward,
@@ -9,9 +9,9 @@ export const BlocksSymbols = {
   model: Symbols.models.blocks,
   modules: {
     blocks : Symbols.modules.blocks,
-    chain  : Symbol('chainModule'),
-    process: Symbol('processModule'),
-    utils  : Symbol('utilsModule'),
-    verify : Symbol('verifyModule'),
+    chain  : Symbol.for('rise.blocks.chainModule'),
+    process: Symbol.for('rise.blocks.processModule'),
+    utils  : Symbol.for('rise.blocks.utilsModule'),
+    verify : Symbol.for('rise.blocks.verifyModule'),
   },
 };

@@ -1,6 +1,6 @@
 import { IBlocksModel, IBlocksModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { AppConfig, ConstantsType, PeerHeaders } from '@risevision/core-types';
+import { AppConfig, ConstantsType, PeerHeaders, SignedAndChainedBlockType } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import * as os from 'os';
@@ -23,6 +23,8 @@ export class SystemModule implements ISystemModule {
   @inject(Symbols.generic.nonce)
   private nonce: string;
 
+  @inject(Symbols.generic.genesisBlock)
+  private genesisBlock: SignedAndChainedBlockType;
   // Modules
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
@@ -35,10 +37,10 @@ export class SystemModule implements ISystemModule {
   @postConstruct()
   public postConstruct() {
     this.headers = {
-      broadhash : this.appConfig.nethash,
+      broadhash : this.genesisBlock.payloadHash.toString('hex'),
       firewalled: this.appConfig.firewalled ? 'true' : 'false',
       height    : 1,
-      nethash   : this.appConfig.nethash,
+      nethash   : this.genesisBlock.payloadHash.toString('hex'),
       nonce     : this.nonce,
       os        : `${os.platform()}${os.release()}`,
       port      : this.appConfig.port,
