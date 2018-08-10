@@ -4,9 +4,6 @@ import { ITransactionsModel } from './ITransactionsModel';
 import { IBlocksModule } from '../modules';
 
 export class IBlocksModel extends IBaseModel<IBlocksModel> {
-  public static classFromPOJO(pojo: SignedBlockType): IBlocksModel {
-    throw new Error('Not implemented. Please implement in subclass');
-  }
 
   public static toStringBlockType(b: SignedBlockType): SignedBlockType<string> {
     throw new Error('Not implemented. Please implement in subclass');

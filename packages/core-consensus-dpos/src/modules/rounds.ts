@@ -9,7 +9,7 @@ import {
 } from '@risevision/core-interfaces';
 import { address, AppConfig, DBOp, SignedBlockType } from '@risevision/core-types';
 import * as fs from 'fs';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { Transaction } from 'sequelize';
 import SocketIO from 'socket.io';
@@ -18,6 +18,7 @@ import { IRoundLogicNewable, RoundLogicScope } from '../logic/round';
 import { RoundsLogic } from '../logic/rounds';
 import { AccountsModelForDPOS, RoundsModel } from '../models/';
 import { DelegatesModule } from './delegates';
+import { ModelSymbols } from '@risevision/core-models';
 
 const performRoundSnapshotSQL = fs.readFileSync(
   `${__dirname}/../../sql/performRoundSnapshot.sql`,
@@ -59,11 +60,14 @@ class RoundsModule extends WPHooksSubscriber(Object) {
   private delegatesModule: DelegatesModule;
 
   // models
-  @inject(Symbols.models.accounts)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.accounts)
   private AccountsModel: typeof IAccountsModel;
-  @inject(Symbols.models.blocks)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
-  @inject(dPoSSymbols.models.rounds)
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.rounds)
   private RoundsModel: typeof RoundsModel;
 
   public onFinishRound(round: number) {

@@ -20,9 +20,10 @@ import {
   SignedBlockType
 } from '@risevision/core-types';
 import * as crypto from 'crypto';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { BlocksSymbols } from '../blocksSymbols';
+import { ModelSymbols } from '@risevision/core-models';
 
 @injectable()
 export class BlocksModuleVerify implements IBlocksModuleVerify {
@@ -56,7 +57,8 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   private transactionsModule: ITransactionsModule;
 
   // Models
-  @inject(Symbols.models.blocks)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
 
   /**

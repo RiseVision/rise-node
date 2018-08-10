@@ -35,11 +35,11 @@ export class ITransactionsModel<Asset = any> extends IBaseModel<ITransactionsMod
 
   public signatures: publicKey[];
 
-  public toTransport(bm: IBlocksModule): ITransportTransaction<Asset> {
+  public toTransport(): ITransportTransaction<Asset> {
     return null;
   }
 
-  public static toTransportTransaction<Asset>(t: IBaseTransaction<Asset>, blocksModule: IBlocksModule): ITransportTransaction<Asset> & { confirmations?: number } {
+  public static toTransportTransaction<Asset>(t: IBaseTransaction<Asset>): ITransportTransaction<Asset> & { confirmations?: number } {
     return null;
   }
 }

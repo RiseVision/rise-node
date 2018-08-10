@@ -3,12 +3,12 @@ import { IBaseTransaction, ITransportTransaction, TransactionType } from '@risev
 import { Column, DataType, ForeignKey, Model, PrimaryKey, Table } from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { ModelSymbols } from '@risevision/core-models';
+import { BaseModel, ModelSymbols } from '@risevision/core-models';
 
 
 @Table({ tableName: 'trs' })
 // tslint:disable-next-line max-line-length
-export class TransactionsModel<Asset = any> extends Model<TransactionsModel<Asset>> implements ITransactionsModel<Asset> {
+export class TransactionsModel<Asset = any> extends BaseModel<TransactionsModel<Asset>> implements ITransactionsModel<Asset> {
 
   @PrimaryKey
   @Column
@@ -75,11 +75,12 @@ export class TransactionsModel<Asset = any> extends Model<TransactionsModel<Asse
     this.setDataValue('signatures', Array.isArray(value) ? value.join(',') : value);
   }
 
-  public toTransport(blocksModule: IBlocksModule): ITransportTransaction<Asset> {
-    return TransactionsModel.toTransportTransaction(this, blocksModule);
+  public toTransport(): ITransportTransaction<Asset> {
+    return TransactionsModel.toTransportTransaction(this);
   }
 
-  public static toTransportTransaction<Asset>(t: IBaseTransaction<Asset>, blocksModule: IBlocksModule): ITransportTransaction<Asset> & { confirmations?: number } {
+  public static toTransportTransaction<Asset>(t: IBaseTransaction<Asset>): ITransportTransaction<Asset> & { confirmations?: number } {
+    const blocksModule: IBlocksModule = this.container.get(Symbols.modules.blocks);
     let obj;
     if (t instanceof TransactionsModel) {
       obj = { ... t.toJSON(), asset: t.asset };

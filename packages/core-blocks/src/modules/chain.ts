@@ -15,6 +15,7 @@ import {
   Symbols
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
+import { ModelSymbols } from '@risevision/core-models';
 
 import { DBOp, SignedAndChainedBlockType, SignedBlockType, TransactionType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
@@ -58,11 +59,14 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
-  @inject(Symbols.models.accounts)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.accounts)
   private AccountsModel: typeof IAccountsModel;
-  @inject(Symbols.models.blocks)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
-  @inject(Symbols.models.transactions)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
   private isCleaning: boolean = false;
@@ -171,7 +175,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       this.logger.error(err);
       process.exit(0);
     }
-    this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
+    this.blocksModule.lastBlock = new this.BlocksModel(block);
     await this.BlocksModel.sequelize
       .transaction((tx) => this.hookSystem.do_action('core/blocks/chain/applyBlock.post', this.blocksModule.lastBlock, tx));
     // TODO: add this on dpos-consensus via hook ^^.
@@ -265,7 +269,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       // TODO: add this on consensus dpos using hook ^^
       // await this.roundsModule.tick(block, dbTX);
 
-      this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
+      this.blocksModule.lastBlock = new this.BlocksModel(block);
     }).catch((err) => {
       // Allow cleanup as processing finished even if rollback.
       this.isProcessing = false;

@@ -13,6 +13,7 @@ import { BlockProgressLogger, catchToLoggerAndRemapError } from '@risevision/cor
 import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Op } from 'sequelize';
+import { ModelSymbols } from '@risevision/core-models';
 
 @injectable()
 export class BlocksModuleUtils implements IBlocksModuleUtils {
@@ -39,11 +40,14 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   private transactionLogic: ITransactionLogic;
 
   // models
-  @inject(Symbols.models.accounts)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.accounts)
   private AccountsModel: typeof IAccountsModel;
-  @inject(Symbols.models.blocks)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
-  @inject(Symbols.models.transactions)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
   // Modules

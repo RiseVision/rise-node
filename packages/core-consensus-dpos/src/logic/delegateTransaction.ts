@@ -9,10 +9,11 @@ import {
   TransactionType
 } from '@risevision/core-types';
 import { removeEmptyObjKeys } from '@risevision/core-utils';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import * as z_schema from 'z-schema';
 import { dPoSSymbols } from '../helpers/';
 import { AccountsModelForDPOS, DelegatesModel } from '../models/';
+import { ModelSymbols } from '@risevision/core-models';
 
 const delegateAssetSchema = require('../../schema/asset.json');
 
@@ -36,9 +37,11 @@ export class RegisterDelegateTransaction extends BaseTx<DelegateAsset, Delegates
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
-  @inject(Symbols.models.accounts)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.accounts)
   private AccountsModel: typeof IAccountsModel;
-  @inject(dPoSSymbols.models.delegates)
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.delegates)
   private DelegatesModel: typeof DelegatesModel;
 
   constructor() {

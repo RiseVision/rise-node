@@ -69,9 +69,11 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
   @inject(ModelSymbols.model)
   @named(multisigSymbols.models.accounts2U_Multi)
   private Accounts2UMultisignaturesModel: typeof Accounts2U_MultisignaturesModel;
-  @inject(Symbols.models.accounts)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.accounts)
   private AccountsModel: typeof AccountsModelWithMultisig;
-  @inject(Symbols.models.transactions)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
   // tslint:disable object-literal-sort-keys

@@ -100,7 +100,7 @@ export class TransactionsAPI {
     return {
       count,
       transactions: transactions
-        .map((t) => t.toTransport(this.blocksModule)),
+        .map((t) => t.toTransport()),
     };
   }
 
@@ -119,7 +119,7 @@ export class TransactionsAPI {
     const txOBJ     = (await this.transactionsModule.getByID(id));
     await this.txLogic.attachAssets([txOBJ]);
 
-    const tx = txOBJ.toTransport(this.blocksModule);
+    const tx = txOBJ.toTransport();
     if (tx.type === TransactionType.VOTE) {
       // tslint:disable-next-line
       tx['votes'] = {
@@ -146,7 +146,7 @@ export class TransactionsAPI {
           Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
           true)
         .filter((tx) => params.address ? params.address === tx.recipientId : true)
-        .map((tx) => this.TXModel.toTransportTransaction(tx, this.blocksModule)),
+        .map((tx) => this.TXModel.toTransportTransaction(tx)),
     };
   }
 
@@ -158,7 +158,7 @@ export class TransactionsAPI {
     if (!transaction) {
       throw new HTTPError('Transaction not found', 200);
     }
-    return { transaction: this.TXModel.toTransportTransaction(transaction, this.blocksModule) };
+    return { transaction: this.TXModel.toTransportTransaction(transaction) };
   }
 
   @Get('/queued')
@@ -174,7 +174,7 @@ export class TransactionsAPI {
           Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
           true)
         .filter((tx) => params.address ? params.address === tx.recipientId : true)
-        .map((tx) => this.TXModel.toTransportTransaction(tx, this.blocksModule)),
+        .map((tx) => this.TXModel.toTransportTransaction(tx)),
     };
   }
 
@@ -186,7 +186,7 @@ export class TransactionsAPI {
     if (!transaction) {
       throw new HTTPError('Transaction not found', 200);
     }
-    return { transaction: this.TXModel.toTransportTransaction(transaction, this.blocksModule) };
+    return { transaction: this.TXModel.toTransportTransaction(transaction) };
   }
 
   @Get('/unconfirmed')
@@ -212,7 +212,7 @@ export class TransactionsAPI {
                 false
             );
         })
-        .map((tx) => this.TXModel.toTransportTransaction(tx, this.blocksModule)),
+        .map((tx) => this.TXModel.toTransportTransaction(tx)),
     };
   }
 
@@ -224,7 +224,7 @@ export class TransactionsAPI {
     if (!transaction) {
       throw new HTTPError('Transaction not found', 200);
     }
-    return { transaction: this.TXModel.toTransportTransaction(transaction, this.blocksModule) };
+    return { transaction: this.TXModel.toTransportTransaction(transaction) };
   }
 
   @Put()

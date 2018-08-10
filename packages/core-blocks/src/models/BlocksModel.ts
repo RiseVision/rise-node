@@ -67,22 +67,13 @@ export class BlocksModel extends BaseModel<BlocksModel> implements IBlocksModel 
   @HasMany(() => this.BlocksModel.container.getNamed(ModelSymbols.model, Symbols.models.transactions), { as: "TransactionsModel" })
   private TransactionsModel: ITransactionsModel[];
 
-  // tslint:disable member-ordering
-  public static classFromPOJO(pojo: SignedBlockType): BlocksModel {
-    const toRet = new this();
-    Object.keys(pojo).forEach((k) => toRet[k] = pojo[k]);
-    return toRet;
-  }
-
   public static toStringBlockType(b: SignedBlockType): SignedBlockType<string> {
     const TxModel      = this.container.getNamed<typeof ITransactionsModel>(
       ModelSymbols.model,
       Symbols.models.transactions
     );
-    const BlocksModule = this.container.get<IBlocksModule>(Symbols.modules.blocks);
-
     const txs = (b.transactions || [])
-      .map((t) => TxModel.toTransportTransaction(t, BlocksModule));
+      .map((t) => TxModel.toTransportTransaction(t));
     if (
       !Buffer.isBuffer(b.blockSignature) || !Buffer.isBuffer(b.generatorPublicKey) ||
       !Buffer.isBuffer(b.payloadHash)

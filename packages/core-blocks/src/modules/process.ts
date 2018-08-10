@@ -35,6 +35,7 @@ import * as _ from 'lodash';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { BlocksSymbols } from '../blocksSymbols';
+import { ModelSymbols } from '@risevision/core-models';
 
 const schema = require('../../schema/blocks.json');
 
@@ -90,9 +91,11 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   private transportModule: ITransportModule;
 
   // models
-  @inject(Symbols.models.blocks)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
-  @inject(Symbols.models.transactions)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
   private isCleaning: boolean = false;

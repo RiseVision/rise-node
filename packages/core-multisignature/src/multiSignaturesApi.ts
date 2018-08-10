@@ -42,8 +42,6 @@ export class MultiSignaturesApi {
   // Modules
   @inject(Symbols.modules.accounts)
   private accounts: IAccountsModule<AccountsModelWithMultisig>;
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
   @inject(Symbols.modules.transactions)
   private transactions: ITransactionsModule;
 
@@ -137,7 +135,7 @@ export class MultiSignaturesApi {
         max        : signatures.length,
         min,
         signed,
-        transaction: this.TransactionsModel.toTransportTransaction(tx, this.blocksModule),
+        transaction: this.TransactionsModel.toTransportTransaction(tx),
       });
     }
 

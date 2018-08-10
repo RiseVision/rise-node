@@ -38,6 +38,7 @@ import { WordPressHookSystem } from 'mangiafuoco';
 import sql from '../sql/loader';
 import Timer = NodeJS.Timer;
 import { wait, WrapInDefaultSequence } from '@risevision/core-utils';
+import { ModelSymbols } from '@risevision/core-models';
 
 const loaderSchema = require('../../schema/loader.json');
 
@@ -111,9 +112,11 @@ export class LoaderModule implements ILoaderModule {
   private transportModule: ITransportModule;
 
   // Models
-  @inject(Symbols.models.accounts)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.accounts)
   private AccountsModel: typeof IAccountsModel;
-  @inject(Symbols.models.blocks)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
 
   @postConstruct()

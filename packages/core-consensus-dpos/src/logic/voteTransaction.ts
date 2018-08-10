@@ -13,7 +13,7 @@ import {
   TransactionType
 } from '@risevision/core-types';
 import { Diff } from '@risevision/core-utils';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import { Model } from 'sequelize-typescript';
 import * as z_schema from 'z-schema';
 import { DposConstantsType, dPoSSymbols } from '../helpers/';
@@ -26,6 +26,7 @@ import {
 } from '../models/';
 import { DelegatesModule } from '../modules/';
 import { RoundsLogic } from './rounds';
+import { ModelSymbols } from '@risevision/core-models';
 const voteSchema = require('../../schema/vote.json');
 
 // tslint:disable-next-line interface-over-type-literal
@@ -55,15 +56,20 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   private systemModule: ISystemModule;
 
   // models
-  @inject(dPoSSymbols.models.votes)
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.votes)
   private VotesModel: typeof VotesModel;
-  @inject(dPoSSymbols.models.accounts2UDelegates)
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.accounts2UDelegates)
   private Accounts2U_DelegatesModel: typeof Accounts2U_DelegatesModel;
-  @inject(dPoSSymbols.models.accounts2Delegates)
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.accounts2Delegates)
   private Accounts2DelegatesModel: typeof Accounts2DelegatesModel;
-  @inject(Symbols.models.accounts)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.accounts)
   private AccountsModel: typeof IAccountsModel;
-  @inject(dPoSSymbols.models.rounds)
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.rounds)
   private RoundsModel: typeof RoundsModel;
 
   constructor() {

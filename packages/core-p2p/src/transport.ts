@@ -81,8 +81,6 @@ export class TransportModule implements ITransportModule {
   private systemModule: ISystemModule;
   @inject(Symbols.modules.transactions)
   private transactionModule: ITransactionsModule;
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
 
   // models
   @inject(ModelSymbols.model)
@@ -237,7 +235,7 @@ export class TransportModule implements ITransportModule {
       this.broadcasterLogic.enqueue({}, {
         api   : '/transactions',
         data  : {
-          transaction: this.TransactionsModel.toTransportTransaction(transaction, this.blocksModule),
+          transaction: this.TransactionsModel.toTransportTransaction(transaction),
         },
         method: 'POST',
       });
