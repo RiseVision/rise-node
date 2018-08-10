@@ -1,4 +1,3 @@
-import { IKeypair } from '@risevision/core-types';
 import {
   DBOp,
   IBaseTransaction,
@@ -30,7 +29,7 @@ export enum VerificationType {
 }
 export interface ITransactionLogic {
 
-
+  attachAssetType<K, M extends Model<any>>(instance: IBaseTransactionType<K, M>): IBaseTransactionType<K, M>;
   /**
    * Calculate tx id
    * @returns {string} the id.
@@ -46,6 +45,7 @@ export interface ITransactionLogic {
    * Return the transaction bytes.
    * @returns {Buffer}
    */
+
   getBytes(tx: IBaseTransaction<any>,
            skipSignature?: boolean, skipSecondSignature?: boolean): Buffer;
 

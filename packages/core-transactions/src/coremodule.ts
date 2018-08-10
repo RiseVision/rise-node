@@ -1,14 +1,14 @@
-import { BaseCoreModule } from '@risevision/core-launchpad';
 import { APISymbols } from '@risevision/core-apis';
+import { IBaseTransactionType, ITransactionLogic, Symbols } from '@risevision/core-interfaces';
+import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
-import { TXSymbols } from './txSymbols';
-import { Symbols } from '@risevision/core-interfaces';
-import { SendTx } from 'dpos-offline';
 import { TransactionsAPI } from './httpApi';
-import { TransactionsModel } from './TransactionsModel';
-import { TransactionsModule } from './TransactionModule';
+import { SendTransaction } from './sendTransaction';
 import { TransactionLogic } from './TransactionLogic';
+import { TransactionsModule } from './TransactionModule';
 import { TransactionPool } from './TransactionPool';
+import { TransactionsModel } from './TransactionsModel';
+import { TXSymbols } from './txSymbols';
 
 const schema = require('../schema/config.json');
 
@@ -17,7 +17,7 @@ export class CoreModule extends BaseCoreModule {
   public constants    = {};
 
   public addElementsToContainer(): void {
-    this.container.bind(TXSymbols.transaction).to(SendTx)
+    this.container.bind(TXSymbols.transaction).to(SendTransaction)
       .inSingletonScope()
       .whenTargetNamed(TXSymbols.sendTX);
 
@@ -36,6 +36,15 @@ export class CoreModule extends BaseCoreModule {
     this.container.bind(Symbols.logic.txpool)
       .to(TransactionPool).inSingletonScope();
 
+  }
+
+  public initAppElements() {
+    const TXTypes = this.container.getAll<IBaseTransactionType<any, any>>(TXSymbols.transaction);
+    const txLogic = this.container.get<ITransactionLogic>(Symbols.logic.transaction);
+
+    for (const txType of TXTypes) {
+      txLogic.attachAssetType(txType);
+    }
   }
 
   public async teardown() {
