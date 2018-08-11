@@ -55,9 +55,14 @@ export interface IBytesBlock {
 
 @injectable()
 export class BlockLogic implements IBlockLogic {
-  public static getMaxBytesSize(): number {
+  public static getMinBytesSize(): number {
     let size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64; // Block's bytes
     size += 4; // height
+    return size;
+  }
+
+  public static getMaxBytesSize(): number {
+    let size = BlockLogic.getMinBytesSize();
     const maxTxSize = TransactionLogic.getMaxBytesSize();
     size += constants.maxTxsPerBlock * maxTxSize; // transactions
     return size;

@@ -4,7 +4,7 @@ import * as Long from 'long';
 import { Body, ContentType, Controller, Get, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-import { Bus, constants as constantsType, ProtoBufHelper, } from '../helpers';
+import { Bus, constants as constantsType, ProtoBufHelper, TransactionType, } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { assertValidSchema, SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { IBlockLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
@@ -17,7 +17,10 @@ import {
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { BlockLogic, IBytesBlock, SignedAndChainedBlockType } from '../logic';
-import { IBaseTransaction, IBytesTransaction } from '../logic/transactions';
+import {
+  IBaseTransaction, IBytesTransaction, MultiSignatureTransaction, RegisterDelegateTransaction,
+  SecondSignatureTransaction, SendTransaction, VoteTransaction
+} from '../logic/transactions';
 import { BlocksModel, TransactionsModel } from '../models';
 import transportSchema from '../schema/transport';
 import { APIError } from './errors';
@@ -59,6 +62,8 @@ export class TransportV2API {
   // models
   @inject(Symbols.models.blocks)
   private BlocksModel: typeof BlocksModel;
+  @inject(Symbols.models.transactions)
+  private TransactionsModel: typeof TransactionsModel;
 
   @Get('/list')
   public async list() {
@@ -196,17 +201,101 @@ export class TransportV2API {
   @ValidateSchema()
   public async getBlocks(@SchemaValid(transportSchema.blocks.properties.lastBlockId)
                          @QueryParam('lastBlockId') lastBlockId: string) {
-    const maxBlockSize = BlockLogic.getMaxBytesSize();
-    const blocksToLoad = Math.ceil(2000000 / maxBlockSize);
-    const dbBlocks = await this.blocksModuleUtils.loadBlocksData({
-      lastId: lastBlockId,
-      limit : blocksToLoad,
+    // Get the block by ID
+    const lastBlock = await this.BlocksModel.findOne({
+      raw  : true,
+      where: { id: lastBlockId },
+    });
+    if (lastBlock != null) {
+      const blocksToLoad = await this.calcNumBlocksToLoad(lastBlock);
+      const dbBlocks = await this.blocksModuleUtils.loadBlocksData({
+        lastId: lastBlockId,
+        limit : blocksToLoad,
+      });
+      const blocks   = await Promise.all(dbBlocks
+        .map(async (block): Promise<IBytesBlock> => this.generateBytesBlock(block)));
+      return this.getResponse({ blocks }, 'transportBlocks');
+    } else {
+      throw new Error(`Block ${lastBlockId} not found!`);
+    }
+  }
+
+  private async calcNumBlocksToLoad(lastBlock: BlocksModel): number {
+    // TODO Move me to a constant maybe?
+    const maxPayloadSize = 2000000;
+    // We take 95% of the theoretical value to allow for some overhead
+    const maxBytes = maxPayloadSize * 0.95;
+    // Best case scenario: we find 2MB of empty blocks.
+    const maxHeightDelta = Math.ceil(maxBytes / BlockLogic.getMinBytesSize());
+
+    // Get only height and type for all the txs in this height range
+    const txsInRange = await this.TransactionsModel.findAll({
+      attributes: ['type', 'height'],
+      order: [
+        ['height', 'ASC'],
+      ],
+      where: {
+        height: {
+          [Op.and]: {
+            [Op.gt]: lastBlock.height,
+            [Op.lte]: lastBlock.height + maxHeightDelta,
+          },
+        },
+      },
     });
 
-    // TODO get at least twice the blocks and eventually remove a few from the response if > 2MB
-    const blocks   = await Promise.all(dbBlocks
-      .map(async (block): Promise<IBytesBlock> => this.generateBytesBlock(block)));
-    return this.getResponse({ blocks }, 'transportBlocks');
+    // Calculate the number of blocks to load
+    let blocksToLoad: number;
+    if (txsInRange.length > 0) {
+      blocksToLoad = 0;
+      let previousHeight = lastBlock.height;
+      let blocksSize = 0;
+      let txsSize = 0;
+      for (const tx of txsInRange) {
+        // If the size for all txs in previous blocks have been added to total.
+        if (previousHeight !== tx.height && blocksSize > 0) {
+          if (blocksSize + txsSize <= maxBytes) {
+            blocksToLoad++;
+          } else {
+            // This block doesn't fit, break the cycle
+            break;
+          }
+        }
+        const heightDelta = tx.height - previousHeight;
+        previousHeight = tx.height;
+        // Add blocks size one by one
+        for (let i = 0; i < heightDelta; i++) {
+          // First add the empty block's size
+          blocksSize += BlockLogic.getMinBytesSize();
+          // If it doesn't fit already, don't increase the number of blocks to load.
+          if (blocksSize + txsSize > maxBytes) {
+            break;
+          } else if (i !== heightDelta) {
+            // If this is not the block where this transaction is, it is empty, so we can increase the number now
+            blocksToLoad++;
+          }
+        }
+        txsSize += this.getSizeByTxType(tx.type);
+      }
+    } else {
+      blocksToLoad = maxHeightDelta;
+    }
+    return blocksToLoad;
+  }
+
+  private getSizeByTxType(txType): number {
+    switch (txType) {
+      case TransactionType.SEND:
+        return SendTransaction.getMaxBytesSize();
+      case TransactionType.DELEGATE:
+        return RegisterDelegateTransaction.getMaxBytesSize();
+      case TransactionType.SIGNATURE:
+        return SecondSignatureTransaction.getMaxBytesSize();
+      case TransactionType.MULTI:
+        return MultiSignatureTransaction.getMaxBytesSize();
+      case TransactionType.VOTE:
+        return VoteTransaction.getMaxBytesSize();
+    }
   }
 
   private getResponse(payload: any, pbNamespace: string, pbMessageType?: string) {
