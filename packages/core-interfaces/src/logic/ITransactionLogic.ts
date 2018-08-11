@@ -60,13 +60,6 @@ export interface ITransactionLogic {
                tx: IConfirmedTransaction<any> | IBaseTransaction<any>,
                sender: any): { error: string; exceeded: boolean };
 
-  /**
-   * Performs some validation on the transaction and calls process
-   * to the respective tx type.
-   */
-  // tslint:disable max-line-length
-  process<T = any>(tx: IBaseTransaction<T>, sender: IAccountsModel, requester: IAccountsModel): Promise<IBaseTransaction<T>>;
-
   verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: IAccountsModel,
          requester: IAccountsModel, height: number): Promise<void>;
 
@@ -106,8 +99,6 @@ export interface ITransactionLogic {
    */
   objectNormalize(tx: IConfirmedTransaction<any>): IConfirmedTransaction<any>;
   objectNormalize(tx: ITransportTransaction<any> | IBaseTransaction<any>): IBaseTransaction<any>;
-
-  dbRead(raw: any): IConfirmedTransaction<any>;
 
   /**
    * Attach Asset object to each transaction passed

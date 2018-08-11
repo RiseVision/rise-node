@@ -50,6 +50,7 @@ describe('modules/blocks/chain', () => {
     processExitStub = sinon.stub(process, 'exit');
   });
   afterEach(() => {
+    sandbox.restore();
     processExitStub.restore();
   });
 
@@ -85,10 +86,10 @@ describe('modules/blocks/chain', () => {
       findStub = sandbox.stub(blocksModel, 'findById');
       findStub.resolves({ id: 'previousBlock' });
 
-      const accountsModel = container.get<any>(Symbols.models.accounts);
+      const accountsModel = container.getNamed<any>(ModelSymbols.model, Symbols.models.accounts);
       accountsFindStub    = sandbox.stub().returns('senderAccount');
       accountsScopeStub   = sandbox.stub(accountsModel, 'scope').returns({
-        find: accountsFindStub
+        find: accountsFindStub,
       });
     });
     it('should throw error if lastblock is height=1 (genesis)', async () => {

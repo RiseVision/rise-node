@@ -57,8 +57,6 @@ export abstract class BaseTx<T, M extends Model<any>> implements IBaseTransactio
 
   public abstract objectNormalize(tx: IBaseTransaction<T>): IBaseTransaction<T>;
 
-  public abstract dbRead(raw: any): T;
-
   // tslint:disable-next-line max-line-length
   public abstract dbSave(tx: IBaseTransaction<T> & { senderId: string }, blockId?: string, height?: number): DBOp<M>;
 

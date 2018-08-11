@@ -29,6 +29,10 @@ export class ExceptionsManager {
     this.handlers[what][handlerKey] = handler;
   }
 
+  public unregisterExceptionHandler(what: symbol, handlerKey: string) {
+    delete this.handlers[what][handlerKey];
+  }
+
   public handlersForKey<T = any>(what: symbol): Array<IExceptionHandler<T>> {
     if (typeof(this.handlers[what]) === 'undefined') {
       return [];

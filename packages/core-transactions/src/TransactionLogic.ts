@@ -32,6 +32,8 @@ import z_schema from 'z-schema';
 import { BaseTx } from './BaseTx';
 import { TXExceptions } from './exceptionLists';
 import { TXSymbols } from './txSymbols';
+import { TxApplyFilter, TxApplyUnconfirmedFilter, TxUndoFilter, TxUndoUnconfirmedFilter } from './hooks/filters';
+import { TxLogicVerify } from './hooks/actions';
 
 // tslint:disable-next-line no-var-requires
 const txSchema = require('../schema/transaction.json');
@@ -207,28 +209,6 @@ export class TransactionLogic implements ITransactionLogic {
     };
   }
 
-  /**
-   * Performs some validation on the transaction and calls process
-   * to the respective tx type.
-   */
-  // tslint:disable-next-line max-line-length
-  public async process<T = any>(tx: IBaseTransaction<T>, sender: IAccountsModel, requester: IAccountsModel): Promise<IBaseTransaction<T>> {
-    this.assertKnownTransactionType(tx.type);
-    if (!sender) {
-      throw new Error('Missing sender');
-    }
-
-    const txID = this.getId(tx);
-    if (txID !== tx.id) {
-      throw new Error('Invalid transaction id');
-    }
-
-    tx.senderId = sender.address;
-
-    // await this.types[tx.type].process(tx, sender);
-    return tx;
-  }
-
   public async verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: IAccountsModel,
                       requester: IAccountsModel, height: number) {
     this.assertKnownTransactionType(tx.type);
@@ -240,6 +220,11 @@ export class TransactionLogic implements ITransactionLogic {
       'core-transactions/txlogic/verify/static-checks',
       tx, sender, requester, height
     );
+
+    const txID = this.getId(tx);
+    if (txID !== tx.id) {
+      throw new Error('Invalid transaction id');
+    }
 
     // if (tx.requesterPublicKey && (!sender.isMultisignature() || requester == null)) {
     //   throw new Error('Account or requester account is not multisignature');
@@ -264,7 +249,6 @@ export class TransactionLogic implements ITransactionLogic {
     // if (tx.requesterPublicKey && !requester.secondSignature && (tx.signSignature && tx.signSignature.length > 0)) {
     //   throw new Error('Requester does not have a second signature');
     // }
-
     // Check sender public key
     if (sender.publicKey && !sender.publicKey.equals(tx.senderPublicKey)) {
       // tslint:disable-next-line
@@ -359,7 +343,7 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error(senderBalance.error);
     }
 
-    await this.hookSystem.do_action('core-transactions/txlogic/verify/tx', tx, sender, requester, height);
+    await this.hookSystem.do_action(TxLogicVerify.name, tx, sender, requester, height);
     // // Check timestamp
     // if (this.slots.getSlotNumber(tx.timestamp) > this.slots.getSlotNumber()) {
     //   throw new Error('Invalid transaction timestamp. Timestamp is in the future');
@@ -428,7 +412,7 @@ export class TransactionLogic implements ITransactionLogic {
       // round  : this.roundsLogic.calcRound(block.height),
     });
     ops.push(... await this.types[tx.type].apply(tx, block, sender));
-    return await this.hookSystem.apply_filters('tx-apply', ops, tx, block, sender);
+    return await this.hookSystem.apply_filters(TxApplyFilter.name, ops, tx, block, sender);
   }
 
   /**
@@ -457,7 +441,7 @@ export class TransactionLogic implements ITransactionLogic {
       }
     );
     ops.push(... await this.types[tx.type].undo(tx, block, sender));
-    return await this.hookSystem.apply_filters('tx-undo', ops, tx, block, sender);
+    return await this.hookSystem.apply_filters(TxUndoFilter.name, ops, tx, block, sender);
   }
 
   @RunThroughExceptions(TXExceptions.tx_applyUnconfirmed)
@@ -477,7 +461,7 @@ export class TransactionLogic implements ITransactionLogic {
       { u_balance: -amountNumber }
     );
     ops.push(... await this.types[tx.type].applyUnconfirmed(tx, sender));
-    return ops;
+    return await this.hookSystem.apply_filters(TxApplyUnconfirmedFilter.name, ops, tx, sender);
   }
 
   /**
@@ -496,7 +480,7 @@ export class TransactionLogic implements ITransactionLogic {
       { u_balance: amount }
     );
     ops.push(... await this.types[tx.type].undoUnconfirmed(tx, sender));
-    return ops;
+    return await this.hookSystem.apply_filters(TxUndoUnconfirmedFilter.name, ops, tx, sender);
   }
 
   public dbSave(txs: Array<IBaseTransaction<any> & { senderId: string }>, blockId: string, height: number): Array<DBOp<any>> {
@@ -550,9 +534,10 @@ export class TransactionLogic implements ITransactionLogic {
    * Pass it through schema validation and then calls subtype objectNormalize.
    */
   public objectNormalize(tx: IConfirmedTransaction<any>): IConfirmedTransaction<any>;
+  public objectNormalize(tx: ITransportTransaction<any> | IBaseTransaction<any>): IBaseTransaction<any>;
   // tslint:disable-next-line max-line-length
   public objectNormalize(tx2: IBaseTransaction<any> | ITransportTransaction<any> | IConfirmedTransaction<any>): IBaseTransaction<any> | IConfirmedTransaction<any> {
-    const tx = _.extend(true, {}, tx2);
+    const tx = _.merge({}, tx2);
     this.assertKnownTransactionType(tx.type);
     for (const key in tx) {
       if (tx[key] === null || typeof(tx[key]) === 'undefined') {
@@ -574,40 +559,6 @@ export class TransactionLogic implements ITransactionLogic {
     }
     // After processing the tx object becomes a IBaseTransaction<any>
     return this.types[tx.type].objectNormalize(tx as IBaseTransaction<any>);
-  }
-
-  public dbRead(raw: any): IConfirmedTransaction<any> {
-    if (!raw.t_id) {
-      return null;
-    }
-    // tslint:disable object-literal-sort-keys
-    const tx: IConfirmedTransaction<any> = {
-      id                : raw.t_id,
-      height            : raw.b_height,
-      blockId           : raw.b_id || raw.t_blockId,
-      type              : parseInt(raw.t_type, 10),
-      timestamp         : parseInt(raw.t_timestamp, 10),
-      senderPublicKey   : raw.t_senderPublicKey,
-      requesterPublicKey: raw.t_requesterPublicKey,
-      senderId          : raw.t_senderId,
-      recipientId       : raw.t_recipientId,
-      recipientPublicKey: raw.m_recipientPublicKey || null,
-      amount            : parseInt(raw.t_amount, 10),
-      fee               : parseInt(raw.t_fee, 10),
-      signature         : raw.t_signature,
-      signSignature     : raw.t_signSignature,
-      signatures        : raw.t_signatures ? raw.t_signatures.split(',') : [],
-      confirmations     : parseInt(raw.confirmations, 10),
-      asset             : {},
-    };
-
-    this.assertKnownTransactionType(tx.type);
-
-    const asset = this.types[tx.type].dbRead(raw);
-    if (asset) {
-      tx.asset = asset;
-    }
-    return tx;
   }
 
   public async attachAssets(txs: Array<IConfirmedTransaction<any>>): Promise<void> {

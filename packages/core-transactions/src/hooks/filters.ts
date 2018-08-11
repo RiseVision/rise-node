@@ -9,13 +9,25 @@ export const TxApplyFilter = createFilterDecorator<(
   ops: Array<DBOp<any>>,
   tx?: IConfirmedTransaction<any>,
   block?: SignedBlockType,
-  sender?: IAccountsModel) => Promise<Array<DBOp<any>>>>('tx-apply');
+  sender?: IAccountsModel) => Promise<Array<DBOp<any>>>>('core-transactions/txlogic/apply/ops');
+
+export const TxApplyUnconfirmedFilter = createFilterDecorator<(
+  ops: Array<DBOp<any>>,
+  tx?: IConfirmedTransaction<any>,
+  block?: SignedBlockType,
+  sender?: IAccountsModel) => Promise<Array<DBOp<any>>>>('core-transactions/txlogic/applyUnconfirmed/ops');
 
 export const TxUndoFilter = createFilterDecorator<(
   ops: Array<DBOp<any>>,
   tx?: IConfirmedTransaction<any>,
   block?: SignedBlockType,
-  sender?: IAccountsModel) => Promise<Array<DBOp<any>>>>('tx-undo');
+  sender?: IAccountsModel) => Promise<Array<DBOp<any>>>>('core-transactions/txlogic/undo/ops');
+
+export const TxUndoUnconfirmedFilter = createFilterDecorator<(
+  ops: Array<DBOp<any>>,
+  tx?: IConfirmedTransaction<any>,
+  block?: SignedBlockType,
+  sender?: IAccountsModel) => Promise<Array<DBOp<any>>>>('core-transactions/txlogic/uncoUnconfirmed/ops');
 
 export const SendTxApplyFilter = createFilterDecorator<(
   ops: Array<DBOp<any>>,

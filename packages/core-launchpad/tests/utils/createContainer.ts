@@ -8,6 +8,7 @@ import { SignedAndChainedBlockType } from '../../../core-types/dist';
 import { CoreSymbols } from '../../../core/dist';
 import * as path from 'path';
 import { ICoreModule } from '../../src';
+import { IBlockLogic } from '../../../core-interfaces/src/logic';
 
 let curContainer: Container;
 
@@ -40,6 +41,11 @@ export async function createContainer(modules: string[],
   for (const sortedModule of sortedModules) {
     sortedModule.initAppElements();
   }
+
+  block.previousBlock = '1'; // exception for genesisblock
+  block.transactions = [];
+  container.get<IBlockLogic>(Symbols.logic.block).objectNormalize(block);
+  block.previousBlock = null;
 
   container.bind('__test__modules').toConstantValue(sortedModules);
   curContainer = container;

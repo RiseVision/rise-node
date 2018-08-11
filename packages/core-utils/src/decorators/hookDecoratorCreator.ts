@@ -14,13 +14,17 @@ export interface ActionFilterDecoratorType<K = () => Promise<any>> {
 }
 
 export const createFilterDecorator = <K = () => Promise<any>>(filter: string): ActionFilterDecoratorType<K> => {
-  return <T extends IWPHookSubscriber>(hookGetter: any, priority?: number) => {
+  const toRet = <T extends IWPHookSubscriber>(hookGetter: any, priority?: number) => {
     return OnWPFilter<T, K>(hookGetter, filter, priority);
   };
+  Object.defineProperty(toRet, 'name', {value: filter, writable: false});
+  return toRet;
 };
 
 export const createActionDecorator = <K = () => Promise<any>>(action: string): ActionFilterDecoratorType<K> => {
-  return <T extends IWPHookSubscriber>(hookGetter: any, priority?: number) => {
+  const toRet = <T extends IWPHookSubscriber>(hookGetter: any, priority?: number) => {
     return OnWPAction<T, K>(hookGetter, action, priority);
   };
+  Object.defineProperty(toRet, 'name', {value: action, writable: false});
+  return toRet;
 };
