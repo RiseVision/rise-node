@@ -76,7 +76,7 @@ export interface ITransactionsModule extends IModule {
    */
   undoUnconfirmed(transaction: IBaseTransaction<any>): Promise<void>;
 
-  count(): Promise<{ confirmed: number, multisignature: number, queued: number, unconfirmed: number }>;
+  count(): Promise<{ confirmed: number, pending: number, queued: number, unconfirmed: number }>;
 
   /**
    * Fills the pool.

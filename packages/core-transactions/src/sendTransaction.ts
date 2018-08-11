@@ -14,6 +14,7 @@ import {
 } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { BaseTx } from './BaseTx';
+import { SendTxApplyFilter, SendTxUndoFilter } from './hooks/filters';
 
 @injectable()
 export class SendTransaction extends BaseTx<void, null> {
@@ -50,7 +51,7 @@ export class SendTransaction extends BaseTx<void, null> {
 
   public async apply(tx: IConfirmedTransaction<void>,
                      block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
-    return await this.hookSystem.apply_filters('core-transactions/send-tx/apply/ops', [
+    return await this.hookSystem.apply_filters(SendTxApplyFilter.name, [
       ... this.accountLogic.merge(tx.recipientId, {
         balance  : tx.amount,
         blockId  : block.id,
@@ -62,7 +63,7 @@ export class SendTransaction extends BaseTx<void, null> {
 
   // tslint:disable-next-line max-line-length
   public async undo(tx: IConfirmedTransaction<void>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
-    return await this.hookSystem.apply_filters('core-transactions/send-tx/undo/ops', [
+    return await this.hookSystem.apply_filters(SendTxUndoFilter.name, [
       ... this.accountLogic.merge(tx.recipientId, {
         balance  : -tx.amount,
         blockId  : block.id,

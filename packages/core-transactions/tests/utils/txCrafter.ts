@@ -2,9 +2,10 @@ import { IBaseTransaction } from '@risevision/core-types';
 import { dposOffline } from 'dpos-offline';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
+import * as uuid from 'uuid';
 // import { generateAccount } from './accountsUtils';
 
-export const toBufferedTransaction    = <T>(t: ITransaction<any>): IBaseTransaction<T> => {
+export const toBufferedTransaction = <T>(t: ITransaction<any>): IBaseTransaction<T> => {
   return {
     ...t, ... {
       requesterPublicKey: t.requesterPublicKey === null || typeof(t.requesterPublicKey) === 'undefined' ?
@@ -40,15 +41,23 @@ export const toBufferedTransaction    = <T>(t: ITransaction<any>): IBaseTransact
 //   }
 //   return toRet;
 // };
+export const createRandomTransaction = (): ITransaction => {
+  return createSendTransaction(
+    new LiskWallet(uuid.v4(), 'R'),
+    new LiskWallet(uuid.v4(), 'R').address,
+    10,
+    { amount: Date.now() % 100000 }
+  );
+}
 
-export const createSendTransaction = (from: LiskWallet, recipient: string, fee: number, obj: any = {}): ITransaction => {
+export const createSendTransaction   = (from: LiskWallet, recipient: string, fee: number, obj: any = {}): ITransaction => {
   const t = new dposOffline.transactions.SendTx()
     .withTimestamp(0);
   Object.keys(obj).forEach((k) => t.set(k as any, obj[k]));
   return from.signTransaction(
     t
-    .withFees(fee)
-    .withRecipientId(recipient)
+      .withFees(fee)
+      .withRecipientId(recipient)
   );
 };
 //

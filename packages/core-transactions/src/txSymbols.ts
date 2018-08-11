@@ -5,7 +5,7 @@ export const TXSymbols = {
   logic      : Symbols.logic.transaction,
   model      : Symbols.models.transactions,
   module     : Symbols.modules.transactions,
-  pool       : Symbol.for('rise.txs.pool'),
+  pool       : Symbols.logic.txpool,
   sendTX     : Symbol.for('rise.txs.sendTX'),
   transaction: Symbol.for('rise.txs.transaction'),
 };
