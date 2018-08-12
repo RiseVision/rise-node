@@ -9,7 +9,7 @@ export const ModelSymbols = {
     db: Symbols.helpers.db,
   },
   names             : {
-    accounts    : Symbol.for('models.accountsModel'),
+    accounts    : Symbols.models.accounts,
     blocks      : Symbols.models.blocks,
     exceptions  : Symbol.for('models.exceptionsModel'),
     forkStats   : Symbol.for('models.forkStatsModel'),

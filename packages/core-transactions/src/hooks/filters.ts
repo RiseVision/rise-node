@@ -1,6 +1,12 @@
 import { createFilterDecorator } from '@risevision/core-utils';
 import { IAccountsModel } from '@risevision/core-interfaces';
-import { DBOp, IBaseTransaction, IConfirmedTransaction, SignedBlockType } from '@risevision/core-types';
+import {
+  DBOp,
+  IBaseTransaction,
+  IConfirmedTransaction,
+  ITransportTransaction,
+  SignedBlockType
+} from '@risevision/core-types';
 
 /**
  * Decorator for tx-apply filter. Called when calculating every tx operations.
@@ -45,3 +51,8 @@ export const SendTxUndoFilter = createFilterDecorator<(
  * Called to allow hooks modify the readyness of a transaction
  */
 export const TxReadyFilter = createFilterDecorator<(ready: boolean, tx?: IBaseTransaction<any>, sender?: IAccountsModel) => Promise<boolean>>('core-transactions/tx/ready');
+
+/**
+ * Called to allow extra modification of API response for a single transaction
+ */
+export const TXApiGetTxFilter = createFilterDecorator<(tx: ITransportTransaction<any>) => Promise<ITransportTransaction<any>>>('core-transactions/api/get-tx');

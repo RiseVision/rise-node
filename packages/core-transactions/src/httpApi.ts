@@ -15,11 +15,13 @@ import {
   removeEmptyObjKeys, SchemaValid, ValidateSchema
 } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
+import { WordPressHookSystem } from 'mangiafuoco';
 import * as _ from 'lodash';
 import { BodyParam, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { TXSymbols } from './txSymbols';
+import { TXApiGetTxFilter } from './hooks/filters';
 
 // tslint:disable-next-line
 const schema = require('../schema/api.json');
@@ -33,6 +35,9 @@ export class TransactionsAPI {
 
   @inject(Symbols.helpers.timeToEpoch)
   public timeToEpoch: ITimeToEpoch;
+
+  @inject(Symbols.generic.hookSystem)
+  private hookSystem: WordPressHookSystem;
 
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
@@ -105,7 +110,7 @@ export class TransactionsAPI {
   }
 
   @Get('/count')
-  public getCount(): Promise<{ confirmed: number, multisignature: number, queued: number, unconfirmed: number }> {
+  public getCount(): Promise<{ confirmed: number, pending: number, queued: number, unconfirmed: number }> {
     return this.transactionsModule.count();
   }
 
@@ -119,24 +124,25 @@ export class TransactionsAPI {
     const txOBJ     = (await this.transactionsModule.getByID(id));
     await this.txLogic.attachAssets([txOBJ]);
 
-    const tx = txOBJ.toTransport();
-    if (tx.type === TransactionType.VOTE) {
-      // tslint:disable-next-line
-      tx['votes'] = {
-        added  : tx.asset.votes
-          .filter((v) => v.startsWith('+'))
-          .map((v) => v.substr(1)),
-        deleted: tx.asset.votes
-          .filter((v) => v.startsWith('-'))
-          .map((v) => v.substr(1)),
-      };
-    }
+    const tx = await this.hookSystem.apply_filters(TXApiGetTxFilter.name, txOBJ.toTransport());
+    // TODO
+    // if (tx.type === TransactionType.VOTE) {
+    //   // tslint:disable-next-line
+    //   tx['votes'] = {
+    //     added  : tx.asset.votes
+    //       .filter((v) => v.startsWith('+'))
+    //       .map((v) => v.substr(1)),
+    //     deleted: tx.asset.votes
+    //       .filter((v) => v.startsWith('-'))
+    //       .map((v) => v.substr(1)),
+    //   };
+    // }
     return { transaction: tx };
   }
 
   @Get('/pending')
   @ValidateSchema()
-  public async getMultiSigs(@SchemaValid(schema.getPooledTransactions)
+  public async getPendings(@SchemaValid(schema.getPooledTransactions)
                             @QueryParams() params: { senderPublicKey?: string, address?: string }) {
     const txs = this.transactionsModule.getPendingTransactionList(true);
     return {
@@ -337,5 +343,4 @@ export class TransactionsAPI {
     }
     return whereClause;
   }
-
 }

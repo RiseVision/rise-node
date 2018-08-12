@@ -49,6 +49,9 @@ export const createRandomTransaction = (): ITransaction => {
     { amount: Date.now() % 100000 }
   );
 }
+export const createRandomTransactions = (howMany: number): ITransaction[] => {
+  return new Array(howMany).fill(null).map(() => createRandomTransaction());
+}
 
 export const createSendTransaction   = (from: LiskWallet, recipient: string, fee: number, obj: any = {}): ITransaction => {
   const t = new dposOffline.transactions.SendTx()
