@@ -140,7 +140,7 @@ export class TransactionLogic implements ITransactionLogic {
 
     if (tx.recipientId) {
       const recipient = tx.recipientId.slice(0, -1);
-      const long = Longnum.fromString(recipient);
+      const long = Longnum.fromString(recipient, true, 10);
       const recBuf    = Longnum.toBuffer(long, {size: 8});
 
       for (let i = 0; i < 8; i++) {
