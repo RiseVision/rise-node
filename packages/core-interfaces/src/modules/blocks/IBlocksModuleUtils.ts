@@ -1,8 +1,6 @@
-import { publicKey, RawFullBlockListType, SignedAndChainedBlockType } from '@risevision/core-types';
 import { IBlocksModel } from '../../models';
 
 export interface IBlocksModuleUtils {
-  readDbRows(rows: RawFullBlockListType[]): SignedAndChainedBlockType[];
 
   /**
    * Loads full blocks from database and normalize them
@@ -26,6 +24,5 @@ export interface IBlocksModuleUtils {
 
   // TODO: BlocksModuleProcess missing interface?
   getBlockProgressLogger(txCount: number, logsFrequency: number, msg: string): any;
-
 
 }

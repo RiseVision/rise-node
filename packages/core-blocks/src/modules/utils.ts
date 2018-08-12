@@ -8,12 +8,13 @@ import {
   ITransactionLogic,
   ITransactionsModel, Symbols
 } from '@risevision/core-interfaces';
-import { ConstantsType, RawFullBlockListType, SignedAndChainedBlockType } from '@risevision/core-types';
+import { ConstantsType, SignedAndChainedBlockType } from '@risevision/core-types';
 import { BlockProgressLogger, catchToLoggerAndRemapError } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Op } from 'sequelize';
 import { ModelSymbols } from '@risevision/core-models';
+import { CommonHeightsToQuery } from '../hooks';
 
 @injectable()
 export class BlocksModuleUtils implements IBlocksModuleUtils {
@@ -54,52 +55,6 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
 
-  public readDbRows(rows: RawFullBlockListType[]): SignedAndChainedBlockType[] {
-    const blocks = {};
-    const order  = [];
-    // a block is defined in multiple_rows
-    // due to the view full_block_list which performs a left outer join
-    // over transactions list.
-    for (let i = 0, length = rows.length; i < length; i++) {
-      // Normalize block
-      const block = this.blockLogic.dbRead(rows[i]);
-
-      if (block) {
-        // If block is not already in the list...
-        if (!blocks[block.id]) {
-          if (block.id === this.genesisBlock.id) {
-            // Generate fake signature for genesis block
-            // tslint:disable-next-line
-            block['generationSignature'] = (new Array(65)).join('0');
-          }
-
-          // Add block ID to order list
-          order.push(block.id);
-          // Add block to list
-          blocks[block.id] = block;
-        }
-
-        // Normalize transaction
-        const transaction             = this.transactionLogic.dbRead(rows[i]);
-        // Set empty object if there are no transactions in block
-        blocks[block.id].transactions = blocks[block.id].transactions || {};
-
-        if (transaction) {
-          // Add transaction to block if not there already
-          if (!blocks[block.id].transactions[transaction.id]) {
-            blocks[block.id].transactions[transaction.id] = transaction;
-          }
-        }
-      }
-    }
-
-    // Reorganize list
-    return order.map((v) => {
-      blocks[v].transactions = Object.keys(blocks[v].transactions).map((t) => blocks[v].transactions[t]);
-      return blocks[v];
-    });
-  }
-
   /**
    * Loads blocks from database and normalize them
    *
@@ -133,7 +88,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     const lastBlock = this.blocksModule.lastBlock;
 
     const heightsToQuery: number[] = await this.hookSystem
-      .apply_filters('core/blocks/utils/commonHeightList', [], height);
+      .apply_filters(CommonHeightsToQuery.name, [], height);
 
     const blocks: Array<{ id: string, height: number }> = await this.BlocksModel
       .findAll({

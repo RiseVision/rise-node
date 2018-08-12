@@ -1,5 +1,5 @@
 // tslint:disable object-literal-sort-keys
-import { Symbols } from '../../../core-interfaces/dist';
+import { Symbols } from '@risevision/core-interfaces';
 
 export const ModelSymbols = {
   model             : Symbol.for('models.model'),
@@ -12,7 +12,7 @@ export const ModelSymbols = {
     accounts    : Symbols.models.accounts,
     blocks      : Symbols.models.blocks,
     exceptions  : Symbol.for('models.exceptionsModel'),
-    forkStats   : Symbol.for('models.forkStatsModel'),
+    forkStats   : Symbols.models.forkStats,
     info        : Symbol.for('models.infoModel'),
     migrations  : Symbol.for('models.migrationsModel'),
     transactions: Symbols.models.transactions,

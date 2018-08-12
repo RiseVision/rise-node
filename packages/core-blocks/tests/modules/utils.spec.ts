@@ -3,19 +3,20 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
-import {Op} from 'sequelize';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { BlockProgressLogger } from '../../../../src/helpers';
-import { IBlocksModuleUtils } from '../../../../src/ioc/interfaces/modules';
-import { Symbols } from '../../../../src/ioc/symbols';
-import { RoundsLogic, SignedAndChainedBlockType } from '../../../../src/logic';
-import { BlocksModuleUtils } from '../../../../src/modules/blocks/';
-import { SequenceStub } from '../../../stubs';
-import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
-import TransactionLogicStub from '../../../stubs/logic/TransactionLogicStub';
-import BlocksModuleStub from '../../../stubs/modules/BlocksModuleStub';
-import { createContainer } from '../../../utils/containerCreator';
-import { AccountsModel, BlocksModel, RoundsFeesModel } from '../../../../src/models';
+import { IBlocksModuleUtils } from '../../../core-interfaces/src/modules';
+import { Symbols } from '../../../core-interfaces/src';
+import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
+import { BlocksSymbols } from '../../src/blocksSymbols';
+import { BlocksModule } from '../../src/modules';
+import { SignedAndChainedBlockType } from '../../../core-types/src';
+import { ISequence } from '../../../core-interfaces/src/helpers';
+import { IBlockLogic, ITransactionLogic } from '../../../core-interfaces/src/logic';
+import { IAccountsModel, IBlocksModel } from '../../../core-interfaces/src/models';
+import { ModelSymbols } from '../../../core-models/src/helpers';
+import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
+import { CommonHeightsToQuery } from '../../src/hooks';
+import { Op } from 'sequelize';
 
 // tslint:disable no-unused-expression max-line-length
 chai.use(chaiAsPromised);
@@ -23,112 +24,40 @@ chai.use(chaiAsPromised);
 describe('modules/utils', () => {
   let inst: IBlocksModuleUtils;
   let container: Container;
-  beforeEach(() => {
-    container = createContainer();
-    container.rebind(Symbols.modules.blocksSubModules.utils).to(BlocksModuleUtils);
+  beforeEach(async () => {
+    container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
 
-    inst = container.get(Symbols.modules.blocksSubModules.utils);
+    inst = container.get(BlocksSymbols.modules.utils);
   });
 
-  let blocksModule: BlocksModuleStub;
+  let blocksModule: BlocksModule;
 
   let genesisBlock: SignedAndChainedBlockType;
 
-  let dbSequence: SequenceStub;
+  let dbSequence: ISequence;
 
-  let blockLogic: BlockLogicStub;
-  let txLogic: TransactionLogicStub;
+  let blockLogic: IBlockLogic;
+  let txLogic: ITransactionLogic;
 
-  let blocksModel: typeof BlocksModel;
-  let accountsModel: typeof AccountsModel;
-  let roundsFeesModel: typeof RoundsFeesModel;
+  let blocksModel: typeof IBlocksModel;
+  let accountsModel: typeof IAccountsModel;
   let sandbox: SinonSandbox;
   beforeEach(() => {
     blocksModule = container.get(Symbols.modules.blocks);
     genesisBlock = container.get(Symbols.generic.genesisBlock);
-    dbSequence   = container.getTagged(
+    dbSequence   = container.getNamed(
       Symbols.helpers.sequence,
-      Symbols.helpers.sequence,
-      Symbols.tags.helpers.dbSequence
+      Symbols.names.helpers.dbSequence
     );
 
     blockLogic = container.get(Symbols.logic.block);
     txLogic    = container.get(Symbols.logic.transaction);
 
-    accountsModel   = container.get(Symbols.models.accounts);
-    blocksModel     = container.get(Symbols.models.blocks);
-    roundsFeesModel = container.get(Symbols.models.roundsFees);
-    sandbox         = sinon.createSandbox();
+    accountsModel = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
+    blocksModel   = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
+    sandbox       = sinon.createSandbox();
   });
   afterEach(() => sandbox.restore());
-  describe('readDbRows', () => {
-    beforeEach(() => {
-      blockLogic.stubs.dbRead.callsFake((d) => ({ id: d.b_id }));
-      txLogic.stubs.dbRead.callsFake((d) => {
-        if (d.t_id) {
-          return { id: d.t_id };
-        }
-        return null;
-      });
-    });
-    it('should return array', () => {
-      expect(inst.readDbRows([])).to.be.an('array');
-    });
-    it('should dbRead each row', () => {
-      const rows = [
-        { b_id: '1' },
-        { b_id: '1' },
-        { b_id: '1' },
-      ];
-      inst.readDbRows(rows as any);
-      expect(blockLogic.stubs.dbRead.callCount).is.eq(3);
-    });
-    it('should skip txLogicdbRead null blocks', () => {
-      blockLogic.stubs.dbRead.onCall(1).returns(null);
-      const rows = [
-        { b_id: '1' },
-        { b_id: '1' },
-        { b_id: '1' },
-      ];
-      inst.readDbRows(rows as any);
-      expect(txLogic.stubs.dbRead.callCount).is.eq(2);
-    });
-    it('should correctly assign transactions to block not duplicating it', () => {
-      blockLogic.stubs.dbRead.onCall(1).returns(null);
-      const rows = [
-        { b_id: '1', t_id: '2' },
-        { b_id: '1' },
-        { b_id: '1', t_id: '3' },
-      ];
-      const res  = inst.readDbRows(rows as any);
-      expect(res.length).is.eq(1);
-      expect(res[0].transactions.length).is.eq(2);
-    });
-    it('should return 2 diff blocks with correct not dups txs', () => {
-      const rows = [
-        { b_id: '1', t_id: '2' },
-        { b_id: '1', t_id: '2' },
-        { b_id: '1' },
-        { b_id: '2', t_id: '3' },
-      ];
-      const res  = inst.readDbRows(rows as any);
-      expect(res.length).is.eq(2);
-      expect(res[0]).to.be.deep.eq({ id: '1', transactions: [{ id: '2' }] });
-      expect(res[1]).to.be.deep.eq({ id: '2', transactions: [{ id: '3' }] });
-    });
-    it('should create generationSignature for block if it id is equal genesisBLock.id', async () => {
-      const genBlockId = (inst as any).genesisBlock.id;
-      const rows       = [
-        { b_id: '1', t_id: '2' },
-        { b_id: '1', t_id: '2' },
-        { b_id: genBlockId },
-        { b_id: '2', t_id: '3' },
-      ];
-      const res        = inst.readDbRows(rows as any);
-      expect(res.length).is.eq(3);
-      expect((res[1] as any).generationSignature).to.be.deep.eq('0000000000000000000000000000000000000000000000000000000000000000');
-    });
-  });
 
   describe('loadBlocksPart', () => {
     it('should call loadBlocksData with given filter and pass result to readDbRows', async () => {
@@ -157,10 +86,11 @@ describe('modules/utils', () => {
       });
     });
     it('should call txLogic.attachAssets over block txs', async () => {
-      findOneStub.resolves({transactions: ['a','b']});
+      const attachAssetsStub = sandbox.stub(txLogic, 'attachAssets');
+      findOneStub.resolves({ transactions: ['a', 'b'] });
       await inst.loadLastBlock();
-      expect(txLogic.stubs.attachAssets.calledOnce).is.true;
-      expect(txLogic.stubs.attachAssets.firstCall.args[0]).deep.eq(['a', 'b']);
+      expect(attachAssetsStub.calledOnce).is.true;
+      expect(attachAssetsStub.firstCall.args[0]).deep.eq(['a', 'b']);
     });
     it('should set blocksModule.lastBlock to lastloadedBlock', async () => {
       findOneStub.resolves({ id: '1', transactions: [] });
@@ -172,14 +102,31 @@ describe('modules/utils', () => {
   describe('getIdSequence', () => {
     let dbReturn: any;
     let findAllStub: SinonStub;
-    beforeEach(() => {
-      dbReturn = [{ id: '2', height: 3 }];
-      container.bind('bit').to(RoundsLogic).inSingletonScope();
-      const realRoundsLogic = container.get('bit');
-      inst['rounds']        = realRoundsLogic;
-      findAllStub           = sandbox.stub(blocksModel, 'findAll').resolves(dbReturn);
+    let heightsToQueryStub: SinonStub;
+
+    class HookedClass extends WPHooksSubscriber(Object) {
+      public hookSystem = container.get<WordPressHookSystem>(Symbols.generic.hookSystem);
+
+      @CommonHeightsToQuery()
+      public commonHeights(heights: number[], height: number) {
+        return heightsToQueryStub(heights, height);
+      }
+    }
+
+    let hC: HookedClass;
+    beforeEach(async () => {
+      dbReturn    = [{ id: '2', height: 3 }];
+      findAllStub = sandbox.stub(blocksModel, 'findAll').resolves(dbReturn);
+      hC          = new HookedClass();
+      heightsToQueryStub = sandbox.stub();
+      await hC.hookMethods();
     });
-    it('should query db using correct params', async () => {
+    afterEach(async () => {
+      return hC.unHook();
+    });
+
+    it('should query db using correct params also derived from filter.', async () => {
+      heightsToQueryStub.resolves([1, 2, 3, 4, 5]);
       await inst.getIdSequence(2000000);
       expect(findAllStub.called).is.true;
       expect(findAllStub.firstCall.args[0]).deep.eq({
@@ -187,13 +134,7 @@ describe('modules/utils', () => {
         order     : [['height', 'DESC']],
         raw       : true,
         where     : {
-          height: [
-            1999902,
-            1999801,
-            1999700,
-            1999599,
-            1999498,
-          ],
+          height: [ 1, 2, 3, 4, 5 ],
         },
       });
     });
@@ -231,9 +172,11 @@ describe('modules/utils', () => {
   describe('loadBlocksData', () => {
     let findOneStub: SinonStub;
     let findAllStub: SinonStub;
+    let dbSequenceStub: SinonStub;
     beforeEach(() => {
       findOneStub = sandbox.stub(blocksModel, 'findOne').resolves({height: 10});
       findAllStub = sandbox.stub(blocksModel, 'findAll').resolves([{height: 11}, {height: 12}]);
+      dbSequenceStub = sandbox.stub(dbSequence, 'addAndPromise').callsFake((b) => b());
       inst['TransactionsModel'] = 'txModel';
     });
     it('should disallow passing both id and lastId', async () => {
@@ -242,11 +185,11 @@ describe('modules/utils', () => {
     });
     it('should wrap queries within dbSequence', async () => {
       await inst.loadBlocksData({ id: '1' });
-      expect(dbSequence.spies.addAndPromise.called).is.true;
-      expect(dbSequence.spies.addAndPromise.calledBefore(
+      expect(dbSequenceStub.called).is.true;
+      expect(dbSequenceStub.calledBefore(
         findOneStub
       )).is.true;
-      expect(dbSequence.spies.addAndPromise.calledBefore(
+      expect(dbSequenceStub.calledBefore(
         findAllStub
       )).is.true;
     });
@@ -276,72 +219,71 @@ describe('modules/utils', () => {
   describe('getBlockProgressLogger', () => {
     it('should return BlockProgresslogger with given arguments', async () => {
       const res = inst.getBlockProgressLogger(10, 5, 'msg');
-      expect(res).to.be.instanceOf(BlockProgressLogger);
       // tslint:disable no-string-literal
       expect(res['target']).is.eq(10);
       expect(res['step']).is.eq(2);
     });
   });
-
-  describe('aggregateBlockReward', () => {
-    let findOneStub: SinonStub;
-    let aggregateFeesStub: SinonStub;
-    let findAccountStub: SinonStub;
-    beforeEach(() => {
-      findOneStub = sandbox.stub(blocksModel, 'findOne').resolves({count: 1, rewards: 3});
-      aggregateFeesStub = sandbox.stub(roundsFeesModel, 'aggregate').resolves(2);
-      findAccountStub = sandbox.stub(accountsModel, 'findOne').resolves({acc: 'acc'})
-    });
-    it('should allow specify start time in unix timestamp', async () => {
-      const constants = container.get<any>(Symbols.helpers.constants);
-      await inst.aggregateBlockReward({
-        generatorPublicKey: 'aabb',
-        start             : Math.floor(constants.epochTime.getTime() / 1000 + 1000),
-      });
-      expect(findOneStub.called).is.true;
-      expect(findOneStub.firstCall.args[0]).to.be.deep.eq({
-        attributes: [ {val: 'COUNT(1)'}, {val: 'SUM("reward") as rewards' }],
-        raw: true,
-        where: {
-          generatorPublicKey: Buffer.from('aabb', 'hex'),
-          timestamp: { [Op.gte]: 1000},
-        },
-      });
-      expect(findOneStub.firstCall.args[0].where.timestamp[Op.gte]).eq(1000);
-    });
-    it('should allow specify end time in unix timestamp', async () => {
-      const constants = container.get<any>(Symbols.helpers.constants);
-      await inst.aggregateBlockReward({
-        end               : Math.floor(constants.epochTime.getTime() / 1000 + 1000),
-        generatorPublicKey: 'aabb',
-      });
-      expect(findOneStub.called).is.true;
-      expect(findOneStub.firstCall.args[0]).to.be.deep.eq({
-        attributes: [ {val: 'COUNT(1)'}, {val: 'SUM("reward") as rewards' }],
-        raw: true,
-        where: {
-          generatorPublicKey: Buffer.from('aabb', 'hex'),
-          timestamp: { [Op.lte]: 1000},
-        },
-      });
-      expect(findOneStub.firstCall.args[0].where.timestamp[Op.lte]).eq(1000);
-    });
-    it('should issue db query and use that as result', async () => {
-      const res = await inst.aggregateBlockReward({
-        generatorPublicKey: 'abc',
-      });
-
-      expect(res).to.be.deep.eq({
-        count  : 1, // defaulted to zero
-        fees   : 2,
-        rewards: 3,
-      });
-    });
-    it('should throw error if returned data shows delegate does not exist', async () => {
-      findAccountStub.resolves(null);
-      await expect(inst.aggregateBlockReward({ generatorPublicKey: 'abc' }))
-        .to.be.rejectedWith('Account not found or is not a delegate');
-    });
-  });
+  //
+  // describe('aggregateBlockReward', () => {
+  //   let findOneStub: SinonStub;
+  //   let aggregateFeesStub: SinonStub;
+  //   let findAccountStub: SinonStub;
+  //   beforeEach(() => {
+  //     findOneStub = sandbox.stub(blocksModel, 'findOne').resolves({count: 1, rewards: 3});
+  //     aggregateFeesStub = sandbox.stub(roundsFeesModel, 'aggregate').resolves(2);
+  //     findAccountStub = sandbox.stub(accountsModel, 'findOne').resolves({acc: 'acc'})
+  //   });
+  //   it('should allow specify start time in unix timestamp', async () => {
+  //     const constants = container.get<any>(Symbols.helpers.constants);
+  //     await inst.aggregateBlockReward({
+  //       generatorPublicKey: 'aabb',
+  //       start             : Math.floor(constants.epochTime.getTime() / 1000 + 1000),
+  //     });
+  //     expect(findOneStub.called).is.true;
+  //     expect(findOneStub.firstCall.args[0]).to.be.deep.eq({
+  //       attributes: [ {val: 'COUNT(1)'}, {val: 'SUM("reward") as rewards' }],
+  //       raw: true,
+  //       where: {
+  //         generatorPublicKey: Buffer.from('aabb', 'hex'),
+  //         timestamp: { [Op.gte]: 1000},
+  //       },
+  //     });
+  //     expect(findOneStub.firstCall.args[0].where.timestamp[Op.gte]).eq(1000);
+  //   });
+  //   it('should allow specify end time in unix timestamp', async () => {
+  //     const constants = container.get<any>(Symbols.helpers.constants);
+  //     await inst.aggregateBlockReward({
+  //       end               : Math.floor(constants.epochTime.getTime() / 1000 + 1000),
+  //       generatorPublicKey: 'aabb',
+  //     });
+  //     expect(findOneStub.called).is.true;
+  //     expect(findOneStub.firstCall.args[0]).to.be.deep.eq({
+  //       attributes: [ {val: 'COUNT(1)'}, {val: 'SUM("reward") as rewards' }],
+  //       raw: true,
+  //       where: {
+  //         generatorPublicKey: Buffer.from('aabb', 'hex'),
+  //         timestamp: { [Op.lte]: 1000},
+  //       },
+  //     });
+  //     expect(findOneStub.firstCall.args[0].where.timestamp[Op.lte]).eq(1000);
+  //   });
+  //   it('should issue db query and use that as result', async () => {
+  //     const res = await inst.aggregateBlockReward({
+  //       generatorPublicKey: 'abc',
+  //     });
+  //
+  //     expect(res).to.be.deep.eq({
+  //       count  : 1, // defaulted to zero
+  //       fees   : 2,
+  //       rewards: 3,
+  //     });
+  //   });
+  //   it('should throw error if returned data shows delegate does not exist', async () => {
+  //     findAccountStub.resolves(null);
+  //     await expect(inst.aggregateBlockReward({ generatorPublicKey: 'abc' }))
+  //       .to.be.rejectedWith('Account not found or is not a delegate');
+  //   });
+  // });
 
 });

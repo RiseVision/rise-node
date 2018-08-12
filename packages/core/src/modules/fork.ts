@@ -1,7 +1,8 @@
 import { IForkModule, IForkStatsModel, ILogger, Symbols } from '@risevision/core-interfaces';
 import { ForkType, SignedBlockType } from '@risevision/core-types';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import SocketIO from 'socket.io';
+import { ModelSymbols } from '@risevision/core-models';
 
 @injectable()
 export class ForkModule implements IForkModule {
@@ -11,7 +12,8 @@ export class ForkModule implements IForkModule {
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
-  @inject(Symbols.models.forkStats)
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.forkStats)
   private ForksStatsModel: typeof IForkStatsModel;
 
   /**
