@@ -10,6 +10,7 @@ import {
 import { inject, injectable, unmanaged } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Model } from 'sequelize-typescript';
+import { TxReadyFilter } from './hooks/filters';
 
 const emptyBuffer = new Buffer(0);
 
@@ -65,7 +66,7 @@ export abstract class BaseTx<T, M extends Model<any>> implements IBaseTransactio
   }
 
   public async ready(tx: IBaseTransaction<T>, sender: IAccountsModel): Promise<boolean> {
-    return this.hookSystem.apply_filters('core-transactions/tx/ready', true, tx, sender);
+    return this.hookSystem.apply_filters(TxReadyFilter.name, true, tx, sender);
     // if (Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
     //   if (!Array.isArray(tx.signatures)) {
     //     return false;

@@ -131,7 +131,7 @@ describe('logic/transactions/send', () => {
 
   describe('undo', () => {
     it('should return an array of objects', async () => {
-      const accountMergeStub = sandbox.stub(accountLogic, 'merge').returns([]);
+      const accountMergeStub = sandbox.stub(accountLogic, 'merge').returns([{foo: 'bar'}]);
 
       const result: DBUpsertOp<any> = await instance.undo(tx as any, block, sender) as any;
       expect(result).to.be.an('array');
@@ -141,7 +141,6 @@ describe('logic/transactions/send', () => {
       expect(accountMergeStub.args[0][1]).to.deep.equal({
         balance  : -tx.amount,
         blockId  : block.id,
-        round    : 10,
         u_balance: -tx.amount,
       });
       // expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;

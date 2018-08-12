@@ -1,5 +1,5 @@
 import {
-  IAccountsModel,
+  IAccountsModel, IAccountsModule,
   IBlocksModule,
   ITimeToEpoch, ITransactionLogic,
   ITransactionsModel,
@@ -7,7 +7,7 @@ import {
   ITransportModule, Symbols
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { ITransportTransaction, TransactionType } from '@risevision/core-types';
+import { IBaseTransaction, ITransportTransaction } from '@risevision/core-types';
 import {
   assertValidSchema,
   castFieldsToNumberUsingSchema, HTTPError,
@@ -17,7 +17,7 @@ import {
 import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import * as _ from 'lodash';
-import { BodyParam, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
+import { Body, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { TXSymbols } from './txSymbols';
@@ -39,6 +39,8 @@ export class TransactionsAPI {
   @inject(Symbols.generic.hookSystem)
   private hookSystem: WordPressHookSystem;
 
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
   @inject(TXSymbols.module)
@@ -234,32 +236,66 @@ export class TransactionsAPI {
   }
 
   @Put()
-  public async put(@BodyParam('transaction') transaction: ITransportTransaction<any>) {
-    if (!transaction) {
-      throw new HTTPError('Transaction not provided', 500);
+  @ValidateSchema()
+  public async put(
+    @SchemaValid({type: 'object', properties: { transaction: {type: 'object'}, transactions: {type: 'array', maxItems: 10}}})
+    @Body() body: {
+      transaction?: ITransportTransaction<any>,
+      transactions?: Array<ITransportTransaction<any>>
     }
-    // Schema validation and object normalization
-    const bufferTX = this.txLogic.objectNormalize(transaction);
+  ) {
+    const { transaction } = body;
+    let { transactions }  = body;
+    if (transactions && !Array.isArray(transactions)) {
+      transactions = [];
+    }
 
-    const acc = await this.AccountsModel.findOne({where: {address: transaction.senderId}});
-    if (!acc) {
-      throw new HTTPError('Account not found', 500);
+    const invalidTxsWithReasons: Array<{ id: string, reason: string }> = [];
+    const validTxsIDs                                                  = [];
+    const allTxs                                                       = [];
+    if (transaction) {
+      allTxs.push(transaction);
     }
-    let requester = null;
-    if (transaction.requesterPublicKey) {
-      requester = await this.AccountsModel.findOne({ where: { publicKey: bufferTX.requesterPublicKey}} );
-      if (!requester) {
-        throw new HTTPError('Requester not found', 500);
+    if (transactions) {
+      allTxs.push(...transactions);
+    }
+
+    const validTxs: Array<IBaseTransaction<any>>                    = [];
+    const transportTxs: { [k: string]: ITransportTransaction<any> } = {};
+    for (const tx of allTxs) {
+      try {
+        validTxs.push(this.txLogic.objectNormalize(tx));
+        transportTxs[tx.id] = tx;
+      } catch (e) {
+        // Tx is not valid.
+        invalidTxsWithReasons.push({ id: tx.id, reason: e.message });
       }
     }
 
-    await this.txLogic.verify(bufferTX, acc, requester, this.blocksModule.lastBlock.height);
-    // Schema validation is done in transportModule
-    await this.transportModule.receiveTransactions(
-      [transaction],
-      null,
-      true
+    // Validate transactions against db. this is a mechanism to avoid pollution of queues of invalid transactions.
+    // We filter them here even before we queue them
+    // NOTE: These checks are performed here and then in transactionlogic.
+    const accountsMap = await this.accountsModule.resolveAccountsForTransactions(validTxs);
+    await Promise.all(validTxs.slice().map((tx) => this.transactionsModule
+      .checkTransaction(tx, accountsMap, this.blocksModule.lastBlock.height)
+      .then(() => validTxsIDs.push(tx.id))
+      .catch((err) => {
+        // Remove from valid
+        validTxs.splice(validTxs.findIndex((t) => t.id === tx.id), 1);
+        // Add to invalid
+        invalidTxsWithReasons.push({ id: tx.id, reason: err.message });
+      }))
     );
+    if (validTxs.length > 0) {
+      // Schema validation is done in transportModule
+      await this.transportModule.receiveTransactions(
+        validTxs.map((tx) => transportTxs[tx.id]),
+        null,
+        true
+      );
+    }
+
+    return { accepted: validTxsIDs, invalid: invalidTxsWithReasons };
   }
 
   // tslint:disable-next-line cognitive-complexity

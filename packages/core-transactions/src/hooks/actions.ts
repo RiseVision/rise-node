@@ -1,9 +1,9 @@
-import { createActionDecorator as createAction } from '@risevision/core-utils';
 import { IAccountsModel } from '@risevision/core-interfaces';
-import { DBOp, IBaseTransaction, IConfirmedTransaction, SignedBlockType } from '@risevision/core-types';
+import { IBaseTransaction } from '@risevision/core-types';
+import { createActionDecorator as createAction } from '@risevision/core-utils';
 
 export const TxLogicStaticCheck = createAction<(tx: IBaseTransaction<any>, sender?: IAccountsModel, requester?: IAccountsModel, height?: number) => Promise<void>>
-  ('core-transactions/txlogic/verify/static-checks');
+('core-transactions/txlogic/verify/static-checks');
 
 export const TxLogicVerify = createAction<(tx: IBaseTransaction<any>, sender?: IAccountsModel, requester?: IAccountsModel, height?: number) => Promise<void>>
-  ('core-transactions/txlogic/verify/tx');
+('core-transactions/txlogic/verify/tx');

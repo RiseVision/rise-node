@@ -20,7 +20,7 @@ import { APISymbols } from '../../../core-apis/src/helpers';
 import { ModelSymbols } from '../../../core-models/src/helpers';
 import { LiskWallet } from 'dpos-offline';
 import * as uuid from 'uuid';
-import { createRandomTransaction, toBufferedTransaction, createRandomTransactions } from '../utils/txCrafter';
+import { createRandomTransaction, createRandomTransactions, toBufferedTransaction } from '../utils/txCrafter';
 import { IBaseTransaction, ITransportTransaction } from '../../../core-types/src';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 
@@ -40,61 +40,15 @@ describe('apis/transactionsAPI', () => {
   let txLogic: ITransactionLogic;
   let transportModule: ITransportModule;
   let hookSystem: WordPressHookSystem;
-  let dummyTxs: any;
-
   let TransactionsModel: typeof ITransactionsModel;
   let blocksModule: IBlocksModule;
 
   beforeEach(async () => {
     container = await createContainer(['core-transactions', 'core-helpers', 'core-blocks', 'core', 'core-accounts']);
     sandbox   = sinon.createSandbox();
-    dummyTxs  = [
-      { id: 100, senderPublicKey: Buffer.from('aa', 'hex'), recipientId: 'bb' },
-      { id: 200, senderPublicKey: Buffer.from('aa', 'hex'), recipientId: 'bb' },
-      { id: 300, senderPublicKey: Buffer.from('cc', 'hex'), recipientId: 'bb' },
-      { id: 400, senderPublicKey: Buffer.from('aa', 'hex'), recipientId: 'dd' },
-      { id: 500, senderPublicKey: Buffer.from('cc', 'hex'), recipientId: 'dd' },
-    ];
     txModule  = container.get(TXSymbols.module);
 
-    // txModule.enqueueResponse(
-    //   'list',
-    //   Promise.resolve({ transactions: [], count: 0 })
-    // );
-    // txModule.enqueueResponse(
-    //   'count',
-    //   Promise.resolve({
-    //     confirmed     : 1,
-    //     multisignature: 2,
-    //     queued        : 3,
-    //     unconfirmed   : 4,
-    //   })
-    // );
-    // transactionsModuleStub.enqueueResponse(
-    //   'getByID',
-    //   Promise.resolve(new TransactionsModel({
-    //     id  : 456,
-    //     type: TransactionType.VOTE,
-    //   } as any))
-    // );
-    // transactionsModuleStub.enqueueResponse(
-    //   'getMultisignatureTransactionList',
-    //   dummyTxs
-    // );
-    // transactionsModuleStub.enqueueResponse('getMultisignatureTransaction', {
-    //   id: '123',
-    // });
-    // transactionsModuleStub.enqueueResponse(
-    //   'getQueuedTransactionList',
-    //   dummyTxs
-    // );
-    // transactionsModuleStub.enqueueResponse(
-    //   'getUnconfirmedTransactionList',
-    //   dummyTxs
-    // );
-    // transactionsModuleStub.enqueueResponse('getUnconfirmedTransaction', {
-    //   id: '123',
-    // });
+
     instance          = container.getNamed(APISymbols.api, TXSymbols.api);
     TransactionsModel = container.getNamed(ModelSymbols.model, Symbols.models.transactions);
     transportModule   = container.get(Symbols.modules.transport);
@@ -218,7 +172,6 @@ describe('apis/transactionsAPI', () => {
 
       const h = new Hey();
       await h.hookMethods();
-
 
       result = await instance.getTX({ id: '123' });
       expect(result).to.deep.equal({
@@ -348,7 +301,7 @@ describe('apis/transactionsAPI', () => {
       const txPool: ITransactionPoolLogic = container.get(TXSymbols.pool);
 
       transportTxs = new Array(5).fill(null).map(() => createRandomTransaction());
-      txs = transportTxs.map((t) => toBufferedTransaction(t));
+      txs          = transportTxs.map((t) => toBufferedTransaction(t));
 
       txs.forEach((tx) => txPool.queued.add(tx));
     })
@@ -360,7 +313,7 @@ describe('apis/transactionsAPI', () => {
       expect(result).to.deep.equal({
         count       : 5,
         transactions: [
-          {...transportTxs[0], signSignature: null },
+          { ...transportTxs[0], signSignature: null },
         ],
       });
     });
@@ -370,7 +323,7 @@ describe('apis/transactionsAPI', () => {
       expect(result).to.deep.equal({
         count       : 5,
         transactions: [
-          {...transportTxs[1], signSignature: null },
+          { ...transportTxs[1], signSignature: null },
         ],
       });
     });
@@ -380,7 +333,7 @@ describe('apis/transactionsAPI', () => {
       expect(result).to.deep.equal({
         count       : 5,
         transactions: [
-          {...transportTxs[2], signSignature: null },
+          { ...transportTxs[2], signSignature: null },
         ],
       });
     });
@@ -389,90 +342,62 @@ describe('apis/transactionsAPI', () => {
       result = await instance.getQueuedTxs({});
       expect(result).to.deep.equal({
         count       : 5,
-        transactions: transportTxs.reverse().map((tx) => ({...tx, signSignature: null})),
+        transactions: transportTxs.reverse().map((tx) => ({ ...tx, signSignature: null })),
       });
     });
 
   });
-  //
-  // describe('getUnconfirmedTxs()', () => {
-  //   it('filtering by senderPublicKey &  address', async () => {
-  //     result = await instance.getUnconfirmedTxs({
-  //       address        : 'bb',
-  //       senderPublicKey: 'aa',
-  //     });
-  //     expect(result).to.deep.equal({
-  //       count       : 5,
-  //       transactions: [
-  //         { id: 100, senderPublicKey: 'aa', recipientId: 'bb' },
-  //         { id: 200, senderPublicKey: 'aa', recipientId: 'bb' },
-  //         { id: 300, senderPublicKey: 'cc', recipientId: 'bb' },
-  //         { id: 400, senderPublicKey: 'aa', recipientId: 'dd' },
-  //       ],
-  //     });
-  //   });
-  //
-  //   it('filtering by senderPublicKey', async () => {
-  //     result = await instance.getUnconfirmedTxs({ senderPublicKey: 'aaa' });
-  //     expect(result).to.deep.equal({
-  //       count       : 5,
-  //       transactions: [
-  //         { id: 100, senderPublicKey: 'aa', recipientId: 'bb' },
-  //         { id: 200, senderPublicKey: 'aa', recipientId: 'bb' },
-  //         { id: 400, senderPublicKey: 'aa', recipientId: 'dd' },
-  //       ],
-  //     });
-  //     expect(result.transactions).to.be.ofSize(3);
-  //   });
-  //
-  //   it('filtering by address', async () => {
-  //     result = await instance.getUnconfirmedTxs({ address: 'dd' });
-  //     expect(result).to.deep.equal({
-  //       count       : 5,
-  //       transactions: [
-  //         { id: 400, senderPublicKey: 'aa', recipientId: 'dd' },
-  //         { id: 500, senderPublicKey: 'cc', recipientId: 'dd' },
-  //       ],
-  //     });
-  //     expect(result.transactions).to.be.ofSize(2);
-  //   });
-  //
-  //   it('No filters', async () => {
-  //     result = await instance.getUnconfirmedTxs({});
-  //     expect(result).to.deep.equal({
-  //       count       : 5,
-  //       transactions: [
-  //         { id: 100, senderPublicKey: 'aa', recipientId: 'bb' },
-  //         { id: 200, senderPublicKey: 'aa', recipientId: 'bb' },
-  //         { id: 300, senderPublicKey: 'cc', recipientId: 'bb' },
-  //         { id: 400, senderPublicKey: 'aa', recipientId: 'dd' },
-  //         { id: 500, senderPublicKey: 'cc', recipientId: 'dd' },
-  //       ],
-  //     });
-  //     expect(result.transactions).to.be.ofSize(5);
-  //   });
-  // });
-  //
-  // describe('getUnconfirmedTx()', () => {
-  //   it('should return an object with a transaction', async () => {
-  //     result = await instance.getUnconfirmedTx('123');
-  //     expect(result).to.deep.equal({ transaction: { id: '123' } });
-  //   });
-  //
-  //   it('should to be reject with a message \'Transaction not found\'', async () => {
-  //     transactionsModuleStub.stubs.getUnconfirmedTransaction.returns(undefined);
-  //     await expect(instance.getUnconfirmedTx('123')).to.be.rejectedWith(
-  //       'Transaction not found'
-  //     );
-  //   });
-  // });
+
+  describe('getUnconfirmedTxs()', () => {
+    let transportTXS: ITransaction[];
+    beforeEach(() => {
+      const txPool: ITransactionPoolLogic = container.get(TXSymbols.pool);
+      transportTXS = createRandomTransactions(5);
+      transportTXS.forEach((t) => txPool.unconfirmed.add(toBufferedTransaction(t)));
+    });
+    it('filtering by senderPublicKey &  address', async () => {
+      result = await instance.getUnconfirmedTxs({
+        address        : transportTXS[0].recipientId,
+        senderPublicKey: transportTXS[1].senderPublicKey,
+      });
+      expect(result).to.deep.equal({
+        count       : 5,
+        transactions: [
+          {...transportTXS[1], signSignature: null},
+          {...transportTXS[0], signSignature: null},
+        ],
+      });
+    });
+
+    it('No filters', async () => {
+      result = await instance.getUnconfirmedTxs({});
+      expect(result).to.deep.equal({
+        count       : 5,
+        transactions: transportTXS.reverse().map((tx) => ({ ...tx, signSignature: null })),
+      });
+    });
+  });
+
+  describe('getUnconfirmedTx()', () => {
+    it('should throw tx not found if not in queue', async () => {
+      await expect(instance.getUnconfirmedTx('123')).to.be.rejectedWith(
+          'Transaction not found'
+        );
+    });
+
+    it('should to be reject with a message \'Transaction not found\'', async () => {
+      const t = createRandomTransaction();
+      const txPool: ITransactionPoolLogic = container.get(TXSymbols.pool);
+      txPool.unconfirmed.add(toBufferedTransaction(t));
+      const r = await instance.getUnconfirmedTx(t.id);
+      expect(r).deep.eq({transaction: {...t, signSignature: null, requesterPublicKey: null}});
+    });
+  });
   describe('put', () => {
     let accModule: IAccountsModule;
     let resolveAccTransactionStub: SinonStub;
-    let transportModule: ITransportModule;
     beforeEach(() => {
-      accModule = container.get(Symbols.modules.accounts);
-      transportModule = container.get(Symbols.modules.transport);
+      accModule                 = container.get(Symbols.modules.accounts);
       resolveAccTransactionStub = sandbox.stub(accModule, 'resolveAccountsForTransactions').resolves({});
     });
 
@@ -492,14 +417,16 @@ describe('apis/transactionsAPI', () => {
     });
 
     it('should return invalid if any of the tx is valid', async () => {
+      const txs    = createRandomTransactions(3);
       const objNormalizeStub = sandbox.stub(txLogic, 'objectNormalize').throws(new Error('cant normalize'));
-      const ret = await instance.put({ transaction: 'a', transactions: ['a'] }  as any);
+      const ret              = await instance.put({ transaction: txs[0], transactions: txs.slice(1) });
 
       expect(ret).deep.eq({
         accepted: [],
         invalid : [
-          { id: undefined, reason: 'cant normalize' },
-          { id: undefined, reason: 'cant normalize' }
+          { id: txs[0].id, reason: 'cant normalize' },
+          { id: txs[1].id, reason: 'cant normalize' },
+          { id: txs[2].id, reason: 'cant normalize' }
         ],
       });
     });
@@ -516,7 +443,7 @@ describe('apis/transactionsAPI', () => {
       const filteredTxs = []; // sendtx is filtered through objectNormalize
       const validTXs    = [];
 
-      sandbox.stub(txModule,'checkTransaction').callsFake((tx) => {
+      sandbox.stub(txModule, 'checkTransaction').callsFake((tx) => {
         if (count++ % 2 === 0) {
           filteredTxs.push(tx);
           return Promise.reject(new Error('meow'));
@@ -526,7 +453,7 @@ describe('apis/transactionsAPI', () => {
       });
       sandbox.stub(transportModule, 'receiveTransactions').resolves();
 
-      const res = await instance.put({ transaction: sendTX as any, transactions: txs });
+      const res = await instance.put({ transaction: sendTX, transactions: txs });
       expect(res).deep.eq({
         accepted: validTXs.map((t) => t.id),
         invalid : [{ id: sendTX.id, reason: 'objectNormalize' }].concat(... filteredTxs.map((t) => ({
