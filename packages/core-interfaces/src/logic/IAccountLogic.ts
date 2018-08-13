@@ -25,5 +25,5 @@ export interface IAccountLogic<T extends IAccountsModel = IAccountsModel> {
    */
   merge(address: string, diff: AccountDiffType): Array<DBOp<any>>;
 
-  generateAddressByPublicKey(pk: publicKey | Buffer): string;
+  generateAddressByPublicKey(pk: Buffer): string;
 }

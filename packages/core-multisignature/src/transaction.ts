@@ -439,7 +439,7 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     // Generate accounts
     for (const key of asset.multisignature.keysgroup) {
       // index 0 has "+" or "-"
-      const realKey = key.substr(1);
+      const realKey = Buffer.from(key.substr(1), 'hex');
       const address = this.accountLogic.generateAddressByPublicKey(realKey);
       ops.push(
         {
@@ -447,7 +447,7 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
           type  : 'upsert',
           values: {
             address,
-            publicKey: Buffer.from(realKey, 'hex'),
+            publicKey: realKey,
           },
         },
         {
@@ -455,7 +455,7 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
           type  : 'create',
           values: {
             accountId  : sender.address,
-            dependentId: realKey,
+            dependentId: realKey.toString('hex'),
           },
         });
 

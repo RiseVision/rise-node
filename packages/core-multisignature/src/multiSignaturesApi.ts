@@ -95,6 +95,8 @@ export class MultiSignaturesApi {
   public async getPending(@SchemaValid(apiSchema.pending)
                           @QueryParams() params: { publicKey: publicKey }) {
     const bufPubKey = Buffer.from(params.publicKey, 'hex');
+    // TODO: this filter is wrong. we should filter by all transactions that requires more signatures
+    // Aka type 4 || sender.isMultisignature() && tx.!ready()
     const txs       = this.transactions.getPendingTransactionList(false)
       .filter((tx) => tx.type === 4)
       .filter((tx) => tx.senderPublicKey.equals(bufPubKey));
@@ -141,15 +143,5 @@ export class MultiSignaturesApi {
 
     return { transactions: toRet };
 
-  }
-
-  @Post('/sign')
-  public async sign() {
-    throw new DeprecatedAPIError();
-  }
-
-  @Put('/')
-  public async addMultisignature() {
-    throw new DeprecatedAPIError();
   }
 }
