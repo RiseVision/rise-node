@@ -17,7 +17,7 @@ import * as filterObject from 'filter-object';
 import { inject, injectable, named } from 'inversify';
 import { Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import { multisigSymbols } from './helpers';
+import { MultisigSymbols } from './helpers';
 import { Accounts2MultisignaturesModel } from './models';
 import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
 
@@ -25,7 +25,7 @@ const apiSchema = require('../schema/apischema.json');
 
 @JsonController('/api/multisignatures')
 @injectable()
-@IoCSymbol(multisigSymbols.api)
+@IoCSymbol(MultisigSymbols.api)
 export class MultiSignaturesApi {
   // Generics
   @inject(Symbols.generic.zschema)
@@ -47,7 +47,7 @@ export class MultiSignaturesApi {
 
   // models
   @inject(ModelSymbols.model)
-  @named(multisigSymbols.models.accounts2Multi)
+  @named(MultisigSymbols.models.accounts2Multi)
   private Accounts2MultisignaturesModel: typeof Accounts2MultisignaturesModel;
   @inject(ModelSymbols.model)
   @named(Symbols.models.transactions)

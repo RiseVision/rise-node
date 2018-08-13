@@ -56,6 +56,7 @@ export class AppManager {
     this.modules.forEach((m) => {
       m.config = this.appConfig;
       m.container = this.container;
+      m.sortedModules = this.modules;
     });
 
     this.modules.forEach((m) => m.addElementsToContainer());

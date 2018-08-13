@@ -1,7 +1,7 @@
 import { ILogger, ISequence, ITransportModule, Symbols } from '@risevision/core-interfaces';
 import { inject, injectable, named } from 'inversify';
 import z_schema from 'z-schema';
-import { multisigSymbols } from './helpers';
+import { MultisigSymbols } from './helpers';
 import { MultisignaturesModule } from './multisignatures';
 
 const loaderSchema = require('../schema/loader.json');
@@ -21,7 +21,7 @@ export class MultisigLoader {
   @named(Symbols.names.helpers.balancesSequence)
   private defaultSequence: ISequence;
 
-  @inject(multisigSymbols.module)
+  @inject(MultisigSymbols.module)
   private multisigModule: MultisignaturesModule;
   /**
    * Loads pending multisignature transactions

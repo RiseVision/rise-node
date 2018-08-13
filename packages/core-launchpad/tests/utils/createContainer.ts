@@ -27,6 +27,7 @@ export async function createContainer(modules: string[],
   for (const sortedModule of sortedModules) {
     sortedModule.config    = config;
     sortedModule.container = container;
+    sortedModule.sortedModules = sortedModules;
     sortedModule.addElementsToContainer();
   }
 

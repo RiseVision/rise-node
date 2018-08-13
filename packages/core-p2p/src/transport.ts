@@ -210,18 +210,7 @@ export class TransportModule implements ITransportModule {
     }, 5000);
   }
 
-  /**
-   * Calls enqueue signatures and emits a signature change socket message
-   * TODO: Eventually fixme
-   */
-  public onSignature(signature: { transaction: string, signature: string, relays?: number }, broadcast: boolean) {
-    signature.relays = signature.relays || 0;
-    if (broadcast && signature.relays < this.broadcasterLogic.maxRelays()) {
-      signature.relays++;
-      this.broadcasterLogic.enqueue({}, { api: '/signatures', data: { signature }, method: 'POST' });
-      this.io.sockets.emit('signature/change', signature);
-    }
-  }
+
 
   /**
    * Calls enqueue if broadcast is true and did not exhaust relays

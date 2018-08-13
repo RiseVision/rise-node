@@ -12,9 +12,10 @@ import { IBaseTransaction, TransactionType } from '@risevision/core-types';
 import { WrapInBalanceSequence } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import SocketIO from 'socket.io';
-import { multisigSymbols } from './helpers';
+import { MultisigSymbols } from './helpers';
 import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
 import { MultisigAsset, MultiSignatureTransaction } from './transaction';
+import { MultisigTransportModule } from './transport';
 
 @injectable()
 export class MultisignaturesModule {
@@ -34,9 +35,11 @@ export class MultisignaturesModule {
   private transactionLogic: ITransactionLogic;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
+  @inject(MultisigSymbols.multiSigTransport)
+  private multisigTransport: MultisigTransportModule;
 
   @inject(Symbols.logic.transaction)
-  @named(multisigSymbols.tx)
+  @named(MultisigSymbols.tx)
   private multiTx: MultiSignatureTransaction;
 
   /**
@@ -79,8 +82,7 @@ export class MultisignaturesModule {
     }
     payload.ready = await this.multiTx.ready(transaction, sender);
 
-    // TODO:
-    // await this.bus.message('signature', {transaction: tx.transaction, signature: tx.signature}, true);
+    this.multisigTransport.onSignature({ transaction: tx.transaction, signature: tx.signature}, true);
     return null;
   }
 
@@ -110,7 +112,6 @@ export class MultisignaturesModule {
     }
 
     this.io.sockets.emit('multisignatures/signature/change', tx);
-
   }
 
   private async processMultiSigSignature(tx: IBaseTransaction<MultisigAsset>, signature: string, sender: AccountsModelWithMultisig) {

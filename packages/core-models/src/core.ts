@@ -1,7 +1,6 @@
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import * as cls from 'cls-hooked';
-import { Container } from 'inversify';
-import { Model, Sequelize } from 'sequelize-typescript';
+import { Sequelize } from 'sequelize-typescript';
 import { DbAppConfig, DBHelper, ModelSymbols } from './helpers/';
 import {
   BaseModel,
@@ -51,6 +50,11 @@ export class CoreModule extends BaseCoreModule<DbAppConfig> {
   }
 
   public initAppElements() {
+    for (const m of this.sortedModules) {
+      if (typeof(m['onPreInitModels']) === 'function') {
+        m['onPreInitModels']();
+      }
+    }
     const models = this.container.getAll<typeof BaseModel>(ModelSymbols.model);
     models.forEach((m) => m.container = this.container);
     this.sequelize.addModels(models);

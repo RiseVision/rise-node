@@ -17,14 +17,14 @@ import {
   TransactionType
 } from '@risevision/core-types';
 import * as ByteBuffer from 'bytebuffer';
-import { inject, injectable, named } from 'inversify';
+import { inject, injectable, named, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import * as SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
 
-import { MultisigConstantsType, multisigSymbols } from './helpers';
+import { MultisigConstantsType, MultisigSymbols } from './helpers';
 import { Accounts2MultisignaturesModel, Accounts2U_MultisignaturesModel, MultiSignaturesModel } from './models/';
 import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
 
@@ -47,7 +47,7 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
 
-  @inject(multisigSymbols.multisigConstants)
+  @inject(MultisigSymbols.multisigConstants)
   private constants: MultisigConstantsType;
 
   // Logic
@@ -61,13 +61,13 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
   private systemModule: ISystemModule;
 
   @inject(ModelSymbols.model)
-  @named(multisigSymbols.models.model)
+  @named(MultisigSymbols.models.model)
   private MultiSignaturesModel: typeof MultiSignaturesModel;
   @inject(ModelSymbols.model)
-  @named(multisigSymbols.models.accounts2Multi)
+  @named(MultisigSymbols.models.accounts2Multi)
   private Accounts2MultisignaturesModel: typeof Accounts2MultisignaturesModel;
   @inject(ModelSymbols.model)
-  @named(multisigSymbols.models.accounts2U_Multi)
+  @named(MultisigSymbols.models.accounts2U_Multi)
   private Accounts2UMultisignaturesModel: typeof Accounts2U_MultisignaturesModel;
   @inject(ModelSymbols.model)
   @named(Symbols.models.accounts)
@@ -77,34 +77,39 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
   private TransactionsModel: typeof ITransactionsModel;
 
   // tslint:disable object-literal-sort-keys
-  private multisigSchema: any = {
-    id        : 'Multisignature',
-    type      : 'object',
-    properties: {
-      min      : {
-        type   : 'integer',
-        minimum: this.constants.multisigConstraints.min.minimum,
-        maximum: this.constants.multisigConstraints.min.maximum,
-      },
-      keysgroup: {
-        type    : 'array',
-        minItems: this.constants.multisigConstraints.keysgroup.minItems,
-        maxItems: this.constants.multisigConstraints.keysgroup.maxItems,
-      },
-      lifetime : {
-        type   : 'integer',
-        minimum: this.constants.multisigConstraints.lifetime.minimum,
-        maximum: this.constants.multisigConstraints.lifetime.maximum,
-      },
-    },
-    required  : ['min', 'keysgroup', 'lifetime'],
-  };
+  private multisigSchema: any;
 
   // tslint:enable object-literal-sort-keys
 
   constructor() {
     super(TransactionType.MULTI);
     this.unconfirmedSignatures = {};
+  }
+
+  @postConstruct()
+  private postConstruct() {
+    this.multisigSchema = {
+      id        : 'Multisignature',
+      type      : 'object',
+      properties: {
+        min      : {
+          type   : 'integer',
+          minimum: this.constants.multisigConstraints.min.minimum,
+          maximum: this.constants.multisigConstraints.min.maximum,
+        },
+        keysgroup: {
+          type    : 'array',
+          minItems: this.constants.multisigConstraints.keysgroup.minItems,
+          maxItems: this.constants.multisigConstraints.keysgroup.maxItems,
+        },
+        lifetime : {
+          type   : 'integer',
+          minimum: this.constants.multisigConstraints.lifetime.minimum,
+          maximum: this.constants.multisigConstraints.lifetime.maximum,
+        },
+      },
+      required  : ['min', 'keysgroup', 'lifetime'],
+    };
   }
 
   public calculateFee(tx: IBaseTransaction<MultisigAsset>, sender: any, height: number): number {

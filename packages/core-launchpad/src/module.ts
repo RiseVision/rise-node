@@ -10,6 +10,7 @@ export interface ICoreModule<ConfigType> {
   directory: string;
   container?: Container;
   config?: ConfigType;
+  sortedModules?: Array<ICoreModule<any>>
 
   extendCommander(program: CommanderStatic): void;
 
@@ -36,6 +37,7 @@ export abstract class BaseCoreModule<ConfigType = any> implements ICoreModule<Co
   public directory = null;
   public container?: Container;
   public config?: ConfigType;
+  public sortedModules?: Array<ICoreModule<ConfigType>>;
 
   public extendCommander(program: CommanderStatic): void {
     return void 0;

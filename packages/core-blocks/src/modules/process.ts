@@ -246,22 +246,23 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       throw new Error('Received invalid blocks data');
     }
 
-    const blocks = this.blocksUtilsModule.readDbRows(blocksFromPeer.blocks);
-    for (const block of blocks) {
-      if (this.isCleaning) {
-        return lastValidBlock;
-      }
-      try {
-        await this.blocksVerifyModule.processBlock(block, false, true);
-        lastValidBlock = block;
-        this.logger.info(`Block ${block.id} loaded from ${peer.string}`, `height: ${block.height}`);
-      } catch (err) {
-        this.logger.debug('Block processing failed',
-          { id: block.id, err: err.message || err.toString(), module: 'blocks', block }
-        );
-        throw err;
-      }
-    }
+    // TODO: Restore this but probably wait for matteo's implementation
+    // const blocks = this.blocksUtilsModule.readDbRows(blocksFromPeer.blocks);
+    // for (const block of blocks) {
+    //   if (this.isCleaning) {
+    //     return lastValidBlock;
+    //   }
+    //   try {
+    //     await this.blocksVerifyModule.processBlock(block, false, true);
+    //     lastValidBlock = block;
+    //     this.logger.info(`Block ${block.id} loaded from ${peer.string}`, `height: ${block.height}`);
+    //   } catch (err) {
+    //     this.logger.debug('Block processing failed',
+    //       { id: block.id, err: err.message || err.toString(), module: 'blocks', block }
+    //     );
+    //     throw err;
+    //   }
+    // }
 
     return lastValidBlock;
   }
