@@ -222,13 +222,14 @@ export class BlockLogic implements IBlockLogic {
     if (!rawBlock.b_id) {
       return null;
     } else {
-      const self        = this;
-      const block       = {
+      const self               = this;
+      const generatorPublicKey = Buffer.from(rawBlock.b_generatorPublicKey, 'hex');
+      const block = {
         blockSignature      : Buffer.from(rawBlock.b_blockSignature, 'hex'),
         get generatorId() {
-          return self.accountLogic.generateAddressByPublicKey(rawBlock.b_generatorPublicKey);
+          return self.accountLogic.generateAddressByPublicKey(generatorPublicKey);
         },
-        generatorPublicKey  : Buffer.from(rawBlock.b_generatorPublicKey, 'hex'),
+        generatorPublicKey,
         height              : parseInt(`${rawBlock.b_height}`, 10),
         id                  : rawBlock.b_id,
         numberOfTransactions: parseInt(`${rawBlock.b_numberOfTransactions}`, 10),

@@ -1,5 +1,6 @@
 export const MultisigSymbols = {
   api              : Symbol.for('rise.multisig.API'),
+  hooksListener    : Symbol.for('rise.multisig.Hookslistener'),
   module           : Symbol.for('rise.multisig.Module'),
   multisigConstants: Symbol.for('rise.multisig.Constants'),
   tx               : Symbol.for('rise.multisig.tx'),
@@ -9,4 +10,5 @@ export const MultisigSymbols = {
     model           : Symbol.for('rise.multisig.multisigModel'),
   },
   multiSigTransport: Symbol.for('rise.multisig.transport'),
+  utils            : Symbol.for('rise.multisig.utils'),
 };

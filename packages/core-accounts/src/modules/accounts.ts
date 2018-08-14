@@ -52,7 +52,7 @@ export class AccountsModule implements IAccountsModule {
       }
     });
 
-    const senderAccounts = await this.AccountsModel.scope('full')
+    const senderAccounts = await this.AccountsModel
       .findAll({ where: { address: allSenders.map((s) => s.address) } });
 
     const sendersMap: { [address: string]: IAccountsModel } = {};

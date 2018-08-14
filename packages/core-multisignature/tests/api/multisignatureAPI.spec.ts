@@ -4,16 +4,16 @@ import * as filterObject from 'filter-object';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStatic, SinonStub } from 'sinon';
-import { IAccountsModule, ITransactionLogic, ITransactionsModule } from '@risevision/core-interfaces';
+import { IAccountsModule, ITransactionLogic, ITransactionsModule, IAccountsModel } from '@risevision/core-interfaces';
 import { Accounts2MultisignaturesModel } from '../../src/models';
-import { createContainer } from '@risevision/core-launchpad/tests/utils/createContainer';
+import { createContainer, tearDownContainer } from '@risevision/core-launchpad/tests/utils/createContainer';
 import { Symbols } from '@risevision/core-interfaces';
 import { MultisigSymbols } from '../../src/helpers';
-import { AccountsModel } from '@risevision/core-accounts';
 import { ModelSymbols } from '@risevision/core-models';
 import { MultiSignaturesApi } from '../../src/multiSignaturesApi';
 import { APISymbols } from '@risevision/core-apis';
 import { LiskWallet } from 'dpos-offline';
+import { AccountsModelWithMultisig } from '../../src/models/AccountsModelWithMultisig';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -28,12 +28,13 @@ describe('apis/multisignatureAPI', () => {
   let instance: MultiSignaturesApi;
   let result: any;
   let accountsModule: IAccountsModule;
-  let account1: any;
-  let account2: any;
-  let account3: any;
-  let account4: any;
-  let account5: any;
-  let account6: any;
+  let account1: AccountsModelWithMultisig;
+  let account2: AccountsModelWithMultisig;
+  let account3: AccountsModelWithMultisig;
+  let account4: AccountsModelWithMultisig;
+  let account5: AccountsModelWithMultisig;
+  let account6: AccountsModelWithMultisig;
+  let AccountsModel: typeof AccountsModelWithMultisig;
   let tx1: any;
   let tx2: any;
   let tx3: any;
@@ -41,11 +42,12 @@ describe('apis/multisignatureAPI', () => {
   let accounts2multisignaturesModel: typeof Accounts2MultisignaturesModel;
   let transactionsModule: ITransactionsModule;
   let transactionLogic: ITransactionLogic;
-
+  let accounts: LiskWallet[];
   let getAccountsStub: SinonStub;
   let genAddressStub: SinonStub;
   let verifySignatureStub: SinonStub;
   let getAccountStub: SinonStub;
+  let findAllStub: SinonStub;
   beforeEach(async () => {
     container = await createContainer(['core-multisignature', 'core', 'core-helpers']);
 
@@ -53,35 +55,59 @@ describe('apis/multisignatureAPI', () => {
     instance                      = container.getNamed(APISymbols.api, MultisigSymbols.api);
     accounts2multisignaturesModel = container.getNamed(ModelSymbols.model, MultisigSymbols.models.accounts2Multi);
     accountsModule                = container.get(Symbols.modules.accounts);
-    account1                      = new AccountsModel({
-      address        : 'aaa',
+    AccountsModel                 = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
+
+    accounts        = new Array(6).fill(null)
+      .map((_, idx) => new LiskWallet(`account${idx + 1}`, 'R'));
+    account1        = new AccountsModel({
+      address        : accounts[0].address,
       balance        : 100,
+      publicKey      : Buffer.from(accounts[0].publicKey, 'hex'),
       id             : 1,
       multilifetime  : 101,
-      multimin       : 102,
-      multisignatures: [new LiskWallet('10').publicKey, new LiskWallet('20').publicKey, new LiskWallet('30').publicKey,],
+      multimin       : 2,
+      multisignatures: [accounts[1].publicKey, accounts[2].publicKey, accounts[5].publicKey],
     } as any);
-    account2                      = new AccountsModel({
-      address        : 'bbb',
+    account2        = new AccountsModel({
+      address        : accounts[1].address,
       balance        : 200,
+      publicKey      : Buffer.from(accounts[1].publicKey, 'hex'),
       id             : 2,
       multilifetime  : 201,
       multimin       : 202,
-      multisignatures: [new LiskWallet('40').publicKey, new LiskWallet('50').publicKey, new LiskWallet('60').publicKey,],
+      multisignatures: [accounts[4].publicKey, accounts[5].publicKey, accounts[0].publicKey],
     } as any);
-    account3                      = new AccountsModel({ id: 3, address: 'ccc', publicKey: 'c3c3c3', balance: 300 } as any);
-    account4                      = new AccountsModel({ id: 4, address: 'ddd', publicKey: 'c4c4c4', balance: 400 } as any);
-    account5                      = new AccountsModel({
+    account3        = new AccountsModel({
+      id             : 3,
+      address        : accounts[2].address,
+      publicKey      : Buffer.from(accounts[2].publicKey, 'hex'),
+      balance        : 300,
+      multilifetime  : 301,
+      multimin       : 302,
+      multisignatures: [accounts[1].publicKey, accounts[5].publicKey, accounts[0].publicKey],
+    } as any);
+    account4        = new AccountsModel({
+      id       : 4,
+      address  : accounts[3].address,
+      publicKey: Buffer.from(accounts[3].publicKey, 'hex'), balance: 400
+    } as any);
+    account5        = new AccountsModel({
+      address          : accounts[4].address,
+      publicKey        : Buffer.from(accounts[4].publicKey, 'hex'),
       u_multilifetime  : 20,
       u_multimin       : 10,
-      u_multisignatures: [new LiskWallet('a').publicKey, new LiskWallet('b').publicKey, new LiskWallet('c').publicKey,],
+      u_multisignatures: [accounts[1].publicKey, accounts[2].publicKey, accounts[3].publicKey],
     } as any);
-    account6                      = new AccountsModel({
+    account6        = new AccountsModel({
+      address          : accounts[5].address,
+      publicKey        : Buffer.from(accounts[5].publicKey, 'hex'),
       multilifetime    : 200,
       multimin         : 100,
       u_multisignatures: undefined,
     } as any);
-
+    findAllStub     = sandbox.stub(AccountsModel, 'findAll').resolves([
+      account1, account2, account3, account4, account5, account6
+    ]);
     getAccountsStub = sandbox.stub(accountsModule, 'getAccounts');
     genAddressStub  = sandbox.stub(accountsModule, 'generateAddressByPublicKey').returns(1000);
     getAccountsStub.onFirstCall().resolves([account1, account2]);
@@ -93,10 +119,11 @@ describe('apis/multisignatureAPI', () => {
     getAccountStub.onSecondCall().resolves(account6);
 
     transactionsModule = container.get(Symbols.modules.transactions);
-    tx1                    = { id: 1, type: 4, senderPublicKey: Buffer.from(new LiskWallet('meow').publicKey, 'hex') , signatures: ['aaa'] };
-    tx2                    = { id: 2, type: 4, senderPublicKey: Buffer.from('ab', 'hex') };
-    tx3                    = { id: 3, type: 4, senderPublicKey: Buffer.from(new LiskWallet('meow').publicKey, 'hex')  };
-    tx4                    = { id: 3, type: 123, senderPublicKey: Buffer.from(new LiskWallet('meow').publicKey, 'hex')  };
+
+    tx1 = { id: 1, senderId: account1.address, type: 4, fee: 1, amount: 0, timestamp: 10, senderPublicKey: account1.publicKey, signatures: ['aaa'], asset: { multisignature: { keysgroup: [] } } };
+    tx2 = { id: 2, senderId: account2.address, type: 4, fee: 2, amount: 0, timestamp: 10, senderPublicKey: account2.publicKey, asset: { multisignature: { keysgroup: [] } } };
+    tx3 = { id: 3, senderId: account1.address, type: 4, fee: 3, amount: 0, timestamp: 10, senderPublicKey: account1.publicKey, asset: { multisignature: { keysgroup: [] } } };
+    tx4 = { id: 4, senderId: account3.address, type: 0, fee: 4, amount: 0, timestamp: 10, senderPublicKey: account3.publicKey };
     sandbox.stub(transactionsModule, 'getPendingTransactionList').returns([
       tx1,
       tx2,
@@ -104,11 +131,14 @@ describe('apis/multisignatureAPI', () => {
       tx4,
     ]);
 
-    transactionLogic = container.get(Symbols.logic.transaction);
+    transactionLogic    = container.get(Symbols.logic.transaction);
     verifySignatureStub = sandbox.stub(transactionLogic, 'verifySignature').returns(true);
 
   });
-  afterEach(() => sandbox.reset());
+  afterEach(async () => {
+    sandbox.restore();
+    await tearDownContainer(container);
+  });
 
   describe('getAccounts()', () => {
     it('should return an array of accounts', async () => {
@@ -116,8 +146,18 @@ describe('apis/multisignatureAPI', () => {
       result = await instance.getAccounts({ publicKey: new LiskWallet('meow').publicKey });
 
       const accounts = [];
-      accounts.push(filterObject({ ...account1.toPOJO(), ...{ multisigaccounts: [filterObject(account3.toPOJO(), '!secondPublicKey')] } }, ['!publicKey', '!secondPublicKey']));
-      accounts.push(filterObject({ ...account2.toPOJO(), ...{ multisigaccounts: [filterObject(account4.toPOJO(), '!secondPublicKey')] } }, ['!publicKey', '!secondPublicKey']));
+      accounts.push(filterObject({
+        ...account1.toPOJO(),
+        multisigaccounts: [
+          filterObject(account3.toPOJO(), '{address,balance,publicKey}')
+        ],
+      }, '!publicKey'));
+      accounts.push(filterObject({
+        ...account2.toPOJO(),
+        multisigaccounts: [
+          filterObject(account4.toPOJO(), '{address,balance,publicKey}')
+        ],
+      }, '!publicKey'));
       expect(result).to.deep.equal({ accounts });
 
       expect(getAccountsStub.callCount).to.equal(3);
@@ -136,20 +176,52 @@ describe('apis/multisignatureAPI', () => {
 
   describe('getPending()', () => {
     it('should return an object with pending transactions', async () => {
-      result = await instance.getPending({ publicKey: new LiskWallet('meow').publicKey });
+      result = await instance.getPending({ publicKey: account3.hexPublicKey });
       expect(result).to.deep.equal({
         transactions: [
-          { lifetime: 20, max: 3, min: 10, signed: true, transaction: { ...tx1, senderPublicKey: tx1.senderPublicKey.toString('hex') } },
-          { lifetime: 200, max: 0, min: 100, signed: true, transaction: { ...tx3, senderPublicKey: tx3.senderPublicKey.toString('hex') } },
+          { lifetime: 101, max: 0, min: 2, signed: true /* stub */, transaction: { ...tx1, senderPublicKey: tx1.senderPublicKey.toString('hex') } },
+          { lifetime: 101, max: 0, min: 2, signed: false /* nosignatures*/, transaction: { ...tx3, senderPublicKey: tx3.senderPublicKey.toString('hex') } },
+          { lifetime: 301, max: 0, min: 302, signed: true, transaction: { ...tx4, senderPublicKey: tx4.senderPublicKey.toString('hex') } },
+        ],
+      });
+    });
+
+    it('should match also for multisig accounts pubkey', async () => {
+      tx2.type       = 0;
+      tx2.signatures = [
+        accounts[4].getSignatureOfTransaction(tx4),
+      ];
+      result         = await instance.getPending({ publicKey: accounts[4].publicKey });
+      expect(result).to.be.deep.eq({
+        transactions: [
+          {
+            lifetime   : account2.multilifetime,
+            max        : 0,
+            min        : account2.multimin,
+            signed     : true,
+            transaction: { ...tx2, senderPublicKey: account2.hexPublicKey },
+          },
+        ],
+      });
+      tx2.signatures = [];
+      result         = await instance.getPending({ publicKey: accounts[4].publicKey });
+      expect(result).to.be.deep.eq({
+        transactions: [
+          {
+            lifetime   : account2.multilifetime,
+            max        : 0,
+            min        : account2.multimin,
+            signed     : false,
+            transaction: { ...tx2, senderPublicKey: account2.hexPublicKey },
+          },
         ],
       });
     });
 
     it('Sender not found', async () => {
-      getAccountStub.resetBehavior();
-      getAccountStub.resolves()
-      await expect(instance.getPending({ publicKey: new LiskWallet('meow').publicKey })).to.be.rejectedWith(
-        'Sender not found'
+      findAllStub.resolves([account1, account2]);
+      await expect(instance.getPending({ publicKey: account3.hexPublicKey })).to.be.rejectedWith(
+        `Account ${account3.address} not found in db`
       );
     });
   });

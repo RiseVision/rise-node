@@ -1,25 +1,22 @@
-import { DeprecatedAPIError } from '@risevision/core-apis';
 import {
   IAccountsModule,
-  IBlocksModule,
   ILogger,
   ITransactionLogic,
   ITransactionsModel,
   ITransactionsModule,
   Symbols,
-  VerificationType
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-
 import { publicKey } from '@risevision/core-types';
-import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
+import { IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import * as filterObject from 'filter-object';
 import { inject, injectable, named } from 'inversify';
-import { Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
+import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { MultisigSymbols } from './helpers';
 import { Accounts2MultisignaturesModel } from './models';
 import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
+import { MultiSigUtils } from './utils';
 
 const apiSchema = require('../schema/apischema.json');
 
@@ -34,6 +31,9 @@ export class MultiSignaturesApi {
   // Helpers
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+
+  @inject(MultisigSymbols.utils)
+  private multiUtils: MultiSigUtils;
 
   // Logic
   @inject(Symbols.logic.transaction)
@@ -95,52 +95,47 @@ export class MultiSignaturesApi {
   public async getPending(@SchemaValid(apiSchema.pending)
                           @QueryParams() params: { publicKey: publicKey }) {
     const bufPubKey = Buffer.from(params.publicKey, 'hex');
-    // TODO: this filter is wrong. we should filter by all transactions that requires more signatures
-    // Aka type 4 || sender.isMultisignature() && tx.!ready()
-    const txs       = this.transactions.getPendingTransactionList(false)
-      .filter((tx) => tx.type === 4)
-      .filter((tx) => tx.senderPublicKey.equals(bufPubKey));
+    const txs       = this.transactions.getPendingTransactionList(false);
 
-    const toRet = [];
+    const accounts = await this.accounts.resolveAccountsForTransactions(txs);
 
-    for (const tx of txs) {
-      let signed = false;
-      if (tx.signatures && tx.signatures.length > 0) {
-        let verified = false;
-        for (let i = 0; i < tx.signatures.length && !verified; i++) {
-          const signature = tx.signatures[i];
-          verified        = this.txLogic.verifySignature(
-            tx,
-            bufPubKey,
-            Buffer.from(signature, 'hex'), VerificationType.ALL
-          );
+    const toRet = txs
+      .map((tx) => {
+        const sender         = accounts[tx.senderId];
+        const senderMultiSig = sender.isMultisignature();
+        if (this.multiUtils.txMultiSigReady(tx, sender)) {
+          // Tx is ready for multisig. There must be some other module keeping the tx to go through.
+          // OR waiting for txpool
+          return;
         }
-        signed = verified;
-      }
+        if (senderMultiSig || tx.type === 4) {
+          const matchingPubKey = [
+            sender.publicKey,
+            ... senderMultiSig ? sender.multisignatures.map((pk) => Buffer.from(pk, 'hex')) : [],
+            ... tx.type === 4 ? tx.asset.multisignature.keysgroup.map((pk) => Buffer.from(pk.substr(1), 'hex')) : [],
+          ]
+            .filter((pk) => pk.equals(bufPubKey))[0];
+          if (!matchingPubKey) {
+            return; // Tx does not match the pubKey filter wanted by the user.
+          }
+        } else {
+          // Account is not multisig and is not multisigregistration tx.
+          return;
+        }
 
-      if (!signed && tx.senderPublicKey.equals(bufPubKey)) {
-        // It's signed if the sender is the publickey( signature of tx)
-        signed = true;
-      }
-
-      const sender = await this.accounts.getAccount({ publicKey: tx.senderPublicKey });
-      if (!sender) {
-        throw new HTTPError('Sender not found', 200);
-      }
-
-      const min        = sender.u_multimin || sender.multimin;
-      const lifetime   = sender.u_multilifetime || sender.multilifetime;
-      const signatures = sender.u_multisignatures || [];
-
-      toRet.push({
-        lifetime,
-        max        : signatures.length,
-        min,
-        signed,
-        transaction: this.TransactionsModel.toTransportTransaction(tx),
-      });
-    }
-
+        const signed     = tx.senderPublicKey.equals(bufPubKey) || this.multiUtils.isTxSignedByPubKey(tx, bufPubKey);
+        const min        = sender.u_multimin || sender.multimin;
+        const lifetime   = sender.u_multilifetime || sender.multilifetime;
+        const signatures = sender.u_multisignatures || [];
+        return {
+          lifetime,
+          max        : signatures.length,
+          min,
+          signed,
+          transaction: this.TransactionsModel.toTransportTransaction(tx),
+        };
+      })
+      .filter((res) => !!res);
     return { transactions: toRet };
 
   }

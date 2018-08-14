@@ -10,6 +10,8 @@ import { MultisignaturesModule } from './multisignatures';
 import { MultiSignaturesApi } from './multiSignaturesApi';
 import { MultiSignatureTransaction } from './transaction';
 import { MultisigTransportModule } from './transport';
+import { MultisigHooksListener } from './hooks/hooksListener';
+import { MultiSigUtils } from './utils';
 
 export class CoreModule extends BaseCoreModule implements ICoreModuleWithModels {
   public configSchema = {};
@@ -46,6 +48,14 @@ export class CoreModule extends BaseCoreModule implements ICoreModuleWithModels 
     this.container.bind(MultisigSymbols.module)
       .to(MultisignaturesModule)
       .inSingletonScope();
+
+    this.container.bind(MultisigSymbols.hooksListener)
+      .to(MultisigHooksListener)
+      .inSingletonScope();
+
+    this.container.bind(MultisigSymbols.utils)
+      .to(MultiSigUtils)
+      .inSingletonScope();
   }
 
   public onPreInitModels() {
@@ -55,4 +65,11 @@ export class CoreModule extends BaseCoreModule implements ICoreModuleWithModels 
     );
   }
 
+  public async initAppElements() {
+    await this.container.get<MultisigHooksListener>(MultisigSymbols.hooksListener).hookMethods();
+  }
+
+  public async teardown() {
+    await this.container.get<MultisigHooksListener>(MultisigSymbols.hooksListener).unHook();
+  }
 }

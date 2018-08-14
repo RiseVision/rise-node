@@ -27,6 +27,7 @@ import * as z_schema from 'z-schema';
 import { MultisigConstantsType, MultisigSymbols } from './helpers';
 import { Accounts2MultisignaturesModel, Accounts2U_MultisignaturesModel, MultiSignaturesModel } from './models/';
 import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
+import { MultiSigUtils } from './utils';
 
 // tslint:disable-next-line interface-over-type-literal
 export type MultisigAsset = {
@@ -36,6 +37,7 @@ export type MultisigAsset = {
     keysgroup: string[];
   }
 };
+
 @injectable()
 export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignaturesModel> {
 
@@ -49,6 +51,8 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
 
   @inject(MultisigSymbols.multisigConstants)
   private constants: MultisigConstantsType;
+  @inject(MultisigSymbols.utils)
+  private multisigUtils: MultiSigUtils;
 
   // Logic
   @inject(Symbols.logic.account)
@@ -362,16 +366,7 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     if (!Array.isArray(tx.signatures)) {
       return false;
     }
-    const txKeys           = tx.type === TransactionType.MULTI ? tx.asset.multisignature.keysgroup.map((k) => k.substr(1)) : [];
-    const accountKeys      = sender.isMultisignature() ? sender.multisignatures : [];
-    const intersectionKeys = _.intersection(accountKeys, txKeys);
-
-    // If account is multisig, to change keysgroup the tx needs to be signed by
-    if (sender.isMultisignature()) {
-      return tx.signatures.length >= txKeys.length + sender.multimin - intersectionKeys.length;
-    } else {
-      return tx.signatures.length === txKeys.length;
-    }
+    return this.multisigUtils.txMultiSigReady(tx, sender);
   }
 
   public async attachAssets(txs: Array<IConfirmedTransaction<MultisigAsset>>) {
