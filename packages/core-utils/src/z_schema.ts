@@ -50,10 +50,6 @@ z_schema.registerFormat('username', (str: string) => {
 z_schema.registerFormat('hex', (str: string) => /^[a-f0-9]*$/i.test(str));
 
 z_schema.registerFormat('publicKey', (str: string) => {
-  if (str.length === 0) {
-    return true;
-  }
-
   return /^[a-f0-9]{64}$/i.test(str);
 });
 

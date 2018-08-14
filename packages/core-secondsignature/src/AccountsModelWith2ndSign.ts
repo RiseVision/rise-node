@@ -1,5 +1,6 @@
 import { IAccountsModel } from '@risevision/core-interfaces';
-import { Column, DataType, DefaultScope } from 'sequelize-typescript';
+import { Column, DataType, DefaultScope, IBuildOptions } from 'sequelize-typescript';
+import { FilteredModelAttributes } from '../../../node_modules/sequelize-typescript/lib/models/Model';
 
 @DefaultScope({
   attributes: [
@@ -15,4 +16,9 @@ export class AccountsModelWith2ndSign extends IAccountsModel {
   public secondPublicKey: Buffer;
   @Column
   public u_secondSignature: 0 | 1;
+
+  constructor(values?: FilteredModelAttributes<AccountsModelWith2ndSign>, options?: IBuildOptions) {
+    super(values, options);
+  }
+
 }

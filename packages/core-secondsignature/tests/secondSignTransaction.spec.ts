@@ -4,14 +4,15 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { TransactionType } from '../../../../src/helpers';
-import { Symbols } from '../../../../src/ioc/symbols';
-import { SecondSignatureTransaction } from '../../../../src/logic/transactions';
-import secondSignatureSchema from '../../../../src/schema/logic/transactions/secondSignature';
-import { AccountsModuleStub, SystemModuleStub } from '../../../stubs';
-import { createContainer } from '../../../utils/containerCreator';
-import { DBUpdateOp } from '../../../../src/types/genericTypes';
-import { AccountsModel, SignaturesModel } from '../../../../src/models';
+import { IAccountsModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { AccountsModelWith2ndSign } from '../src/AccountsModelWith2ndSign';
+import { SignaturesModel } from '../src/SignaturesModel';
+import { SecondSignatureTransaction } from '../src/secondSignature';
+import { createContainer } from '@risevision/core-launchpad/tests/utils/createContainer';
+import { DBUpdateOp, TransactionType } from '@risevision/core-types';
+import { ModelSymbols } from '@risevision/core-models';
+import { SigSymbols } from '../src/symbols';
+import { TXSymbols } from '@risevision/core-transactions';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -20,19 +21,19 @@ chai.use(chaiAsPromised);
 describe('logic/transactions/secondSignature', () => {
   let sandbox: SinonSandbox;
   let zSchemaStub: any;
-  let accountsModuleStub: AccountsModuleStub;
-  let systemModuleStub: SystemModuleStub;
+  let accountsModuleStub: IAccountsModule;
+  let systemModuleStub: ISystemModule;
   let container: Container;
   let instance: SecondSignatureTransaction;
-  let accountsModel: typeof AccountsModel;
+  let accountsModel: typeof AccountsModelWith2ndSign;
   let signaturesModel: typeof SignaturesModel;
   let tx: any;
   let sender: any;
   let block: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     sandbox            = sinon.createSandbox();
-    container          = createContainer();
+    container          = await createContainer(['core-secondsignature', 'core', 'core-helpers']);
     zSchemaStub        = {
       getLastErrors: () => [],
       validate     : sandbox.stub(),
@@ -40,8 +41,8 @@ describe('logic/transactions/secondSignature', () => {
     accountsModuleStub = container.get(Symbols.modules.accounts);
     systemModuleStub   = container.get(Symbols.modules.system);
 
-    accountsModel = container.get(Symbols.models.accounts);
-    signaturesModel = container.get(Symbols.models.signatures);
+    accountsModel = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
+    signaturesModel = container.getNamed(ModelSymbols.model, SigSymbols.model);
     tx = {
       amount         : 0,
       asset          : {
@@ -75,13 +76,8 @@ describe('logic/transactions/secondSignature', () => {
       height: 8797,
       id    : '13191140260435645922',
     };
-    container.rebind(Symbols.logic.transactions.secondSignature)
-      .to(SecondSignatureTransaction).inSingletonScope();
-
-    instance = container.get(Symbols.logic.transactions.secondSignature);
-    (instance as any).schema = zSchemaStub;
-
-    systemModuleStub.stubs.getFees.returns({fees: {secondsignature: 1000}});
+    instance = container.getNamed(TXSymbols.transaction, SigSymbols.transaction);
+    sandbox.stub(systemModuleStub, 'getFees').returns({fees: {secondsignature: 1000}});
   });
 
   afterEach(() => {
@@ -91,8 +87,6 @@ describe('logic/transactions/secondSignature', () => {
   describe('calculateFee', () => {
     it('should call systemModule.getFees', () => {
       const retVal = instance.calculateFee(tx, sender, block.height);
-      expect(systemModuleStub.stubs.getFees.calledOnce).to.be.true;
-      expect(systemModuleStub.stubs.getFees.firstCall.args[0]).to.be.equal(block.height);
       expect(retVal).to.be.equal(1000);
     });
   });
@@ -141,11 +135,8 @@ describe('logic/transactions/secondSignature', () => {
     });
 
     it('should call zschema.validate and throw if it does not validate', async () => {
-      zSchemaStub.validate.returns(false);
+      tx.asset.signature.publicKey = 'invalid pubkey';
       await expect(instance.verify(tx, sender)).to.be.rejectedWith('Invalid public key');
-      expect(zSchemaStub.validate.calledOnce).to.be.true;
-      expect(zSchemaStub.validate.firstCall.args[0]).to.be.equal(tx.asset.signature.publicKey);
-      expect(zSchemaStub.validate.firstCall.args[1]).to.be.deep.equal({format: 'publicKey'});
     });
   });
 
@@ -276,26 +267,29 @@ describe('logic/transactions/secondSignature', () => {
       zSchemaStub.validate.returns(true);
     });
 
-    it('should call schema.validate', () => {
-      instance.objectNormalize(tx);
-      expect(zSchemaStub.validate.calledOnce).to.be.true;
-      expect(zSchemaStub.validate.firstCall.args[0]).to.be.deep.equal(tx.asset.signature);
-      expect(zSchemaStub.validate.firstCall.args[1]).to.be.deep.equal(secondSignatureSchema);
-    });
-
     it('should throw if validation fails', () => {
-      zSchemaStub.validate.returns(false);
+      tx.asset.signature.publicKey = 'not a valid publickey';
       expect(() => {
         instance.objectNormalize(tx);
-      }).to.throw(/Failed to validate signature schema/);
-    });
+      }).to.throw(/pass validation for format publicKey/);
 
-    it('should throw with errors message if validation fails', () => {
-      (instance as any).schema.getLastErrors = () => [{message: '1'}, {message: '2'}];
-      zSchemaStub.validate.returns(false);
+      // missing pubkey
+      delete tx.asset.signature.publicKey;
       expect(() => {
         instance.objectNormalize(tx);
-      }).to.throw('Failed to validate signature schema: 1, 2');
+      }).to.throw(/Missing required property: publicKey/);
+
+      // null pubkey
+      tx.asset.signature.publicKey = null;
+      expect(() => {
+        instance.objectNormalize(tx);
+      }).to.throw(/Expected type string but found type null/);
+
+      // empty pubkey
+      tx.asset.signature.publicKey = '';
+      expect(() => {
+        instance.objectNormalize(tx);
+      }).to.throw(/Object didn't pass validation for format publicKey/);
     });
 
     it('should return the tx', () => {
