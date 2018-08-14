@@ -2,6 +2,7 @@ import { createContainer } from '@risevision/core-launchpad/tests/utils/createCo
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { expect } from 'chai';
+import * as chai from 'chai';
 import { MultisigSymbols } from '../src/helpers';
 import { MultisigHooksListener } from '../src/hooks/hooksListener';
 import { MultiSigUtils } from '../src/utils';
@@ -15,6 +16,9 @@ import { ITransaction } from '../../../node_modules/dpos-offline/dist/es5/trxTyp
 import { AccountsModelWithMultisig } from '../src/models/AccountsModelWithMultisig';
 import { ModelSymbols } from '@risevision/core-models';
 import { LiskWallet } from 'dpos-offline';
+import { ITransactionLogic } from '@risevision/core-interfaces';
+import * as chaiAsPromised from 'chai-as-promised';
+chai.use(chaiAsPromised);
 
 describe('HooksListener', () => {
   let container: Container;
@@ -27,6 +31,7 @@ describe('HooksListener', () => {
   let bufTX: IBaseTransaction<any>;
   let AccountsModel: typeof AccountsModelWithMultisig;
   let sender: AccountsModelWithMultisig;
+  let wallet: LiskWallet;
   beforeEach(async () => {
     sandbox       = sinon.createSandbox();
     container     = await createContainer(['core-multisignature', 'core', 'core-helpers']);
@@ -39,7 +44,11 @@ describe('HooksListener', () => {
 
     tx     = createRandomTransaction();
     bufTX  = toBufferedTransaction(tx);
-    sender = new AccountsModel({});
+    wallet = new LiskWallet('theWallet', 'R');
+    sender = new AccountsModel({
+      address: wallet.address,
+      publicKey: Buffer.from(wallet.publicKey, 'hex'),
+    });
 
   });
 
@@ -91,5 +100,49 @@ describe('HooksListener', () => {
       false, bufTX, sender))
       .false;
   });
+
+  describe('txVerify through txLogic.', () => {
+    let txLogic: ITransactionLogic;
+    let requester: AccountsModelWithMultisig;
+    beforeEach(() => {
+      txLogic = container.get(Symbols.logic.transaction);
+      requester = new AccountsModel({
+        publicKey: Buffer.from(new LiskWallet('requester', 'R').publicKey),
+      });
+    });
+    it('should reject tx if it is not ready');
+    it('should reject tx if requesetPublicKey and account is not multisign', async () => {
+      sender.multisignatures  = null;
+      // tx.signatures           = ['a', 'b'];
+      tx.requesterPublicKey   = requester.hexPublicKey;
+      tx.asset.multisignature = {
+        keysgroup: [
+          '+aa',
+          '+ef',
+        ],
+      };
+      delete tx.id;
+      delete tx.senderPublicKey
+      delete tx.signature;
+      const ttx = toBufferedTransaction(wallet.signTransaction(tx));
+      await txLogic.verify(ttx, sender, requester, 1);
+      await expect(txLogic.verify(ttx, sender, requester, 1))
+        .to.rejectedWith('Account or requester account is not multisignature');
+    });
+    it('should reject tx if requesterPublicKey, account is multisign but requester is null', async () => {
+      sender.multisignatures  = ['a'];
+      bufTX.signatures           = ['a', 'b'];
+      bufTX.requesterPublicKey   = Buffer.from('aa', 'hex');
+      bufTX.asset.multisignature = {
+        keysgroup: [
+          '+aa',
+          '+ef',
+        ],
+      };
+
+      await expect(txLogic.verify(bufTX, sender, null /*requester*/, 1))
+        .to.rejectedWith('Account or requester account is not multisignature');
+    });
+  })
 
 });

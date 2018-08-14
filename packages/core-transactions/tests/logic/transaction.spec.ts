@@ -644,36 +644,7 @@ describe('logic/transaction', () => {
       expect(txTypeVerifyStub.firstCall.args[1]).to.be.deep.equal(sender);
     });
 
-    // it('should reject tx if requesetPublicKey and account is not multisign', async () => {
-    //   sender.multisignatures  = null;
-    //   tx.signatures           = ['a', 'b'];
-    //   tx.requesterPublicKey   = Buffer.from('aa', 'hex');
-    //   tx.asset.multisignature = {
-    //     keysgroup: [
-    //       '+aa',
-    //       '+ef',
-    //     ],
-    //   };
-    //   verifySignatureStub.returns(true);
-    //
-    //   await expect(instance.verify(tx, sender, requester, 1))
-    //     .to.rejectedWith('Account or requester account is not multisignature');
-    // });
-    // it('should reject tx if requesterPublicKey, account is multisign but requester is null', async () => {
-    //   sender.multisignatures  = ['a'];
-    //   tx.signatures           = ['a', 'b'];
-    //   tx.requesterPublicKey   = Buffer.from('aa', 'hex');
-    //   tx.asset.multisignature = {
-    //     keysgroup: [
-    //       '+aa',
-    //       '+ef',
-    //     ],
-    //   };
-    //   verifySignatureStub.returns(true);
-    //
-    //   await expect(instance.verify(tx, sender, null /*requester*/, 1))
-    //     .to.rejectedWith('Account or requester account is not multisignature');
-    // });
+
 
     describe('hooks', () => {
       let staticCheck: SinonStub;
