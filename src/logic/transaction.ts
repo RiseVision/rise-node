@@ -41,6 +41,17 @@ export class TransactionLogic implements ITransactionLogic {
     return max;
   }
 
+  public static getMinBytesSize(): number {
+    let min = Number.MAX_SAFE_INTEGER;
+    const txTypes = [BaseTransactionType, MultiSignatureTransaction, RegisterDelegateTransaction,
+      SecondSignatureTransaction, SendTransaction, VoteTransaction];
+    for (const txType of txTypes) {
+      const size = txType.getMaxBytesSize();
+      min = Math.min(min, size);
+    }
+    return min;
+  }
+
   @inject(Symbols.helpers.exceptionsManager)
   public excManager: ExceptionsManager;
 

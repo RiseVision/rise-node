@@ -16,7 +16,7 @@ import {
   ITransportModule
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { BlockLogic, IBytesBlock, SignedAndChainedBlockType } from '../logic';
+import { BlockLogic, IBytesBlock, SignedAndChainedBlockType, TransactionLogic } from '../logic';
 import {
   IBaseTransaction, IBytesTransaction, MultiSignatureTransaction, RegisterDelegateTransaction,
   SecondSignatureTransaction, SendTransaction, VoteTransaction
@@ -220,17 +220,21 @@ export class TransportV2API {
     }
   }
 
-  private async calcNumBlocksToLoad(lastBlock: BlocksModel): number {
+  private async calcNumBlocksToLoad(lastBlock: BlocksModel): Promise<number> {
     // TODO Move me to a constant maybe?
     const maxPayloadSize = 2000000;
-    // We take 95% of the theoretical value to allow for some overhead
-    const maxBytes = maxPayloadSize * 0.95;
+    // We take 98% of the theoretical value to allow for some overhead
+    const maxBytes = maxPayloadSize * 0.98;
     // Best case scenario: we find 2MB of empty blocks.
     const maxHeightDelta = Math.ceil(maxBytes / BlockLogic.getMinBytesSize());
+    // We can also limit the number of transactions, with a very rough estimation of the max number of txs that will fit
+    // in maxPayloadSize. We assume that block metadata is smaller than a single tx. In RISE the value is about 7500 TXs
+    const txLimit = Math.ceil(maxBytes / (( BlockLogic.getMinBytesSize() + TransactionLogic.getMinBytesSize()) / 2));
 
     // Get only height and type for all the txs in this height range
     const txsInRange = await this.TransactionsModel.findAll({
       attributes: ['type', 'height'],
+      limit: txLimit,
       order: [
         ['height', 'ASC'],
       ],

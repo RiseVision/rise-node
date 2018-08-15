@@ -564,6 +564,12 @@ describe('apis/transportV2API', () => {
     let blocks;
     let generateBytesBlockStub: SinonStub;
     beforeEach(() => {
+      (instance as any).BlocksModel = {
+        findOne: sandbox.stub().resolves({
+          height: 123456,
+        }),
+      };
+      (instance as any).calcNumBlocksToLoad = sandbox.stub().resolves(2100);
       blocks = ['blk1', 'blk2', 'blk3'];
       blocksSubmoduleUtilsStub.stubs.loadBlocksData.returns(blocks);
       generateBytesBlockStub = sandbox.stub(instance as any, 'generateBytesBlock').callsFake((b) => b);
@@ -574,7 +580,7 @@ describe('apis/transportV2API', () => {
       expect(blocksSubmoduleUtilsStub.stubs.loadBlocksData.calledOnce).to.be.true;
       expect(blocksSubmoduleUtilsStub.stubs.loadBlocksData.firstCall.args).to.be.deep.equal([{
         lastId: '123',
-        limit : 2000,
+        limit : 2100,
       }]);
     });
 

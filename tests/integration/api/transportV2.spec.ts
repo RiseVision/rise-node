@@ -251,7 +251,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
 
 // tslint:disable-next-line
 describe('v2/peer/transport', function() {
-  this.timeout(10000);
+  this.timeout(100000);
   initializer.setup();
   let peer: IPeerLogic;
 
@@ -652,13 +652,41 @@ describe('v2/peer/transport', function() {
       .get('/v2/peer/blocks/'));
 
     it('should query last blocks from given lastId', async () => {
-      const { wallet } = await createRandomAccountWithFunds(Math.pow(10, 10));
-      const txs = (await Promise.all(new Array(25).fill(null)
-        .map((_, idx) => createSendTransaction(0, idx + 1, wallet, '1R'))))
-        .map((tx) => toBufferedTransaction(tx));
-      const b = await initializer.rawMineBlockWithTxs([]);
-      const r = await peer.makeRequest(gbFactory({data: null, query: {lastBlockId: b.previousBlock}}));
-      expect(r.blocks[0]).to.be.deep.equal(b);
+      const nBlocks = 200;
+      const txsPerBlock = 10;
+      const blocks = [];
+      const wallets = [];
+      for (let i = 0; i < nBlocks; i++) {
+        const { wallet } = await createRandomAccountWithFunds(Math.pow(10, 10));
+        wallets.push(wallet);
+      }
+      for (let i = 0; i < nBlocks; i++) {
+        let txs = [];
+        if (i % (Math.round(nBlocks / 10)) === 0) {
+          console.log(`Forged ${i} blocks`);
+          txs = [];
+        }
+        if (i > nBlocks / 2) {
+          txs = [];
+        } else {
+          txs = (await Promise.all(new Array(txsPerBlock).fill(null)
+            .map((_, idx) => createSendTransaction(0, i * txsPerBlock + idx + 1, wallets[i], '1R'))))
+            .map((tx) => toBufferedTransaction(tx));
+        }
+        const b = await initializer.rawMineBlockWithTxs(txs);
+        blocks.push(b);
+      }
+      const r = await peer.makeRequest(gbFactory({data: null, query: {lastBlockId: blocks[0].previousBlock}}));
+      r.blocks = r.blocks.map((blk, idx) => {
+        blk.transactions = blk.transactions.map((tx) => {
+          delete tx.asset;
+          delete tx.height;
+          delete tx.requesterPublicKey;
+          return tx;
+        });
+        return blk;
+      });
+      expect(r.blocks).to.be.deep.equal(blocks);
     });
   });
 
