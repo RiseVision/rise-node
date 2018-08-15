@@ -62,13 +62,8 @@ export class AccountsAPI {
         {
           address           : accData.address,
           balance           : `${accData.balance}`,
-          // multisignatures     : accData.multisignatures || [],
           publicKey         : accData.hexPublicKey,
-          // secondPublicKey     : accData.secondPublicKey === null ? null : accData.secondPublicKey.toString('hex'),
-          // secondSignature     : accData.secondSignature,
-          // u_multisignatures   : accData.u_multisignatures || [],
           unconfirmedBalance: `${accData.u_balance}`,
-          // unconfirmedSignature: accData.u_secondSignature,
         },
         accData
       ),

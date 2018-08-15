@@ -6,6 +6,7 @@ import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { AccountsModelWithMultisig } from '../models/AccountsModelWithMultisig';
 import { MultiSigUtils } from '../utils';
 import { MultisigSymbols } from '../helpers';
+import { FilterAPIGetAccount } from '../../../core-accounts/src/hooks';
 
 const ExtendableClass = WPHooksSubscriber(Object);
 decorate(injectable(), ExtendableClass);
@@ -80,5 +81,14 @@ export class MultisigHooksListener extends ExtendableClass {
         }
       }
     }
+  }
+
+  @FilterAPIGetAccount()
+  public getAccountFilter(what: any, accData: AccountsModelWithMultisig) {
+    return {
+      ...what,
+      multisignatures: accData.multisignatures,
+      u_multisignatures: accData.u_multisignatures,
+    };
   }
 }
