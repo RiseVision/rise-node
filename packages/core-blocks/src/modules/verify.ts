@@ -24,6 +24,7 @@ import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { BlocksSymbols } from '../blocksSymbols';
 import { ModelSymbols } from '@risevision/core-models';
+import { VerifyBlock, VerifyReceipt } from '../hooks';
 
 @injectable()
 export class BlocksModuleVerify implements IBlocksModuleVerify {
@@ -93,7 +94,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       .reverse();
 
     return  this.hookSystem.apply_filters(
-      'core/blocks/verify/verifyReceipt',
+      VerifyReceipt.name,
       {
         errors,
         verified: errors.length === 0,
@@ -119,7 +120,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     ].reduce((a, b) => a.concat(b));
 
     return this.hookSystem.apply_filters(
-      'core/blocks/verify/verifyBlock',
+      VerifyBlock.name,
       {
         errors,
         verified: errors.length === 0,
