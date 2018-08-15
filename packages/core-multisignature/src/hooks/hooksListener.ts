@@ -39,27 +39,6 @@ export class MultisigHooksListener extends ExtendableClass {
     if (tx.requesterPublicKey && (!sender.isMultisignature() || requester == null)) {
       throw new Error('Account or requester account is not multisignature');
     }
-    // TODO: This looks unnecessary. as there is no real need for requester to give his second signature.
-
-    // if (tx.requesterPublicKey && sender.secondSignature && !tx.signSignature &&
-    //   (tx as IConfirmedTransaction<any>).blockId !== this.genesisBlock.id) {
-    //   throw new Error('Missing sender second signature');
-    // }
-
-    // // If second signature provided, check if sender has one enabled
-    // if (!tx.requesterPublicKey && !sender.secondSignature && (tx.signSignature && tx.signSignature.length > 0)) {
-    //   throw new Error('Sender does not have a second signature');
-    // }
-    //
-    // // Check for missing requester second signature
-    // if (tx.requesterPublicKey && requester.secondSignature && !tx.signSignature) {
-    //   throw new Error('Missing requester second signature');
-    // }
-    //
-    // // If second signature provided, check if requester has one enabled
-    // if (tx.requesterPublicKey && !requester.secondSignature && (tx.signSignature && tx.signSignature.length > 0)) {
-    //   throw new Error('Requester does not have a second signature');
-    // }
 
     const multisignatures = (sender.multisignatures || sender.u_multisignatures || []).slice();
 

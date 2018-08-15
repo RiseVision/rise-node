@@ -12,6 +12,7 @@ import { WordPressHookSystem } from 'mangiafuoco';
 import { Body, Get, JsonController, Post, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { AccountsSymbols } from '../symbols';
+import { FilterAPIGetAccount } from '../hooks';
 
 const accountSchema = require('../../schema/accounts.json');
 @JsonController('/api/accounts')
@@ -57,7 +58,7 @@ export class AccountsAPI {
     }
     return {
       account: await this.hookSystem.apply_filters(
-        'core/apis/accounts/account',
+        FilterAPIGetAccount.name,
         {
           address           : accData.address,
           balance           : `${accData.balance}`,

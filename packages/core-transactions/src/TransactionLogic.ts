@@ -251,12 +251,6 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Failed to verify signature');
     }
 
-    // if (sender.secondSignature) {
-    //   if (!this.verifySignature(tx, sender.secondPublicKey, tx.signSignature, VerificationType.SECOND_SIGNATURE)) {
-    //     throw new Error('Failed to verify second signature');
-    //   }
-    // }
-
     // Check fee
     const fee = this.types[tx.type].calculateFee(tx, sender, height);
     if (fee !== tx.fee) {

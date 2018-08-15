@@ -1,13 +1,14 @@
+import { APISymbols } from '@risevision/core-apis';
+import { Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols, utils } from '@risevision/core-models';
-import { Symbols } from '@risevision/core-interfaces';
+import { TXSymbols } from '@risevision/core-transactions';
 import { AccountsModelWith2ndSign } from './AccountsModelWith2ndSign';
+import { SignHooksListener } from './hooks/hooksListener';
+import { SecondSignatureTransaction } from './secondSignature';
+import { SignaturesAPI } from './signatureAPI';
 import { SignaturesModel } from './SignaturesModel';
 import { SigSymbols } from './symbols';
-import { TXSymbols } from '@risevision/core-transactions';
-import { SecondSignatureTransaction } from './secondSignature';
-import { APISymbols } from '@risevision/core-apis';
-import { SignaturesAPI } from './signatureAPI';
 
 export class CoreModule extends BaseCoreModule {
   public configSchema = {};
@@ -28,13 +29,22 @@ export class CoreModule extends BaseCoreModule {
       .inSingletonScope()
       .whenTargetNamed(SigSymbols.api);
 
+    this.container.bind(SigSymbols.hooksListener)
+      .to(SignHooksListener)
+      .inSingletonScope();
+
   }
 
-  public initAppElements() {
+  public async initAppElements() {
     utils.mergeModels(
       AccountsModelWith2ndSign,
       this.container
         .getNamed(ModelSymbols.model, Symbols.models.accounts)
     );
+    await this.container.get<SignHooksListener>(SigSymbols.hooksListener).hookMethods();
+  }
+
+  public teardown() {
+    return this.container.get<SignHooksListener>(SigSymbols.hooksListener).unHook();
   }
 }
