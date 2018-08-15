@@ -58,7 +58,20 @@ describe('secondSignHooks', () => {
       await expect(txLogic.verify(toBufferedTransaction(tx), sender, null, 1))
         .rejectedWith('Missing second signature');
     });
-    it('should reject tx if signSignature is not valid');
+    it('should reject tx if signSignature is not valid', async () => {
+      tx = senderWallet.signTransaction(tx, secondSignWallet);
+      tx.signSignature = new Array(128).fill('a').join('');
+      tx.id = txLogic.getId(toBufferedTransaction(tx));
+      await expect(txLogic.verify(toBufferedTransaction(tx), sender, null, 1))
+        .rejectedWith('Invalid second signature');
+    });
+    it('should not complain if tx is not from a secondSign enabled sender', async () => {
+      sender.secondPublicKey = null;
+      sender.secondSignature = 0;
+      tx = senderWallet.signTransaction(tx);
+      await expect(txLogic.verify(toBufferedTransaction(tx), sender, null, 1))
+        .not.rejected;
+    });
   });
 
   describe('getAccountAPI', () => {

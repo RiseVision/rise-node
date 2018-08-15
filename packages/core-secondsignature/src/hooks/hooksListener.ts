@@ -20,7 +20,7 @@ export class SignHooksListener extends ExtendableClass {
 
   @TxLogicStaticCheck()
   public async txStaticCheck(tx: IBaseTransaction<any>, sender: AccountsModelWith2ndSign) {
-    if (sender.secondSignature && ! tx.signSignature) {
+    if (sender.secondSignature && !tx.signSignature) {
       throw new Error('Missing second signature');
     }
     if (!sender.secondSignature && tx.signSignature) {
@@ -30,15 +30,25 @@ export class SignHooksListener extends ExtendableClass {
 
   @TxLogicVerify()
   public async txLogicVerify(tx: IBaseTransaction<any>, sender: AccountsModelWith2ndSign) {
-    this.txLogic.verifySignature(tx, sender.publicKey, tx.signSignature, VerificationType.SECOND_SIGNATURE);
+    if (sender.secondSignature) {
+      const verified = this.txLogic.verifySignature(
+        tx,
+        sender.secondPublicKey,
+        tx.signSignature,
+        VerificationType.SECOND_SIGNATURE
+      );
+      if (!verified) {
+        throw new Error('Invalid second signature');
+      }
+    }
   }
 
   @FilterAPIGetAccount()
   public add2ndSignatureToAccount(accData: any, model: AccountsModelWith2ndSign) {
     return {
       ...accData,
-      secondPublicKey: model.secondPublicKey,
-      secondSignature: model.secondSignature,
+      secondPublicKey     : model.secondPublicKey,
+      secondSignature     : model.secondSignature,
       unconfirmedSignature: model.u_secondSignature,
     };
   }
