@@ -80,9 +80,7 @@ describe('modules/accounts', () => {
     let setAccountAndGetStub: SinonStub;
     beforeEach(() => {
       accountsModel = container.getNamed(ModelSymbols.model, AccountsSymbols.model);
-      findAllStub   = sandbox.stub().resolves([]);
-      sandbox.stub(accountsModel, 'scope')
-        .returns({ findAll: findAllStub });
+      findAllStub   = sandbox.stub(accountsModel, 'findAll').resolves([]);
       setAccountAndGetStub = sandbox.stub(accountModule, 'setAccountAndGet')
         .callsFake(
           ({ publicKey }) => Promise
