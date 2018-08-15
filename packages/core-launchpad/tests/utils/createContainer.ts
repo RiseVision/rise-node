@@ -40,7 +40,7 @@ export async function createContainer(modules: string[],
   container.rebind(Symbols.helpers.logger).toConstantValue(new LoggerStub());
 
   for (const sortedModule of sortedModules) {
-    sortedModule.initAppElements();
+    await sortedModule.initAppElements();
   }
 
   block.previousBlock = '1'; // exception for genesisblock

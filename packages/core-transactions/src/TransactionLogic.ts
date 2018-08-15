@@ -226,7 +226,6 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Invalid transaction id');
     }
 
-
     // Check sender public key
     if (sender.publicKey && !sender.publicKey.equals(tx.senderPublicKey)) {
       // tslint:disable-next-line
@@ -243,8 +242,6 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Invalid sender address');
     }
 
-
-
     if (!this.verifySignature(
       tx,
       (tx.requesterPublicKey || tx.senderPublicKey),
@@ -259,7 +256,6 @@ export class TransactionLogic implements ITransactionLogic {
     //     throw new Error('Failed to verify second signature');
     //   }
     // }
-
 
     // Check fee
     const fee = this.types[tx.type].calculateFee(tx, sender, height);

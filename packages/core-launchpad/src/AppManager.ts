@@ -61,7 +61,9 @@ export class AppManager {
 
     this.modules.forEach((m) => m.addElementsToContainer());
 
-    this.modules.forEach((m) => m.initAppElements());
+    for (const m of this.modules) {
+      await m.initAppElements();
+    }
 
     // hooks
     await this.hookSystem.do_action('core/init/container', this.container);

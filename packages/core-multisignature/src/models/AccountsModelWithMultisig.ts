@@ -5,6 +5,8 @@ import { Column, DataType, DefaultScope, Model, Sequelize } from 'sequelize-type
 import * as sequelize from 'sequelize';
 import { publicKey } from '@risevision/core-types';
 import { IAccountsModel } from '@risevision/core-interfaces';
+import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
+import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 // import * as extend from 'extend';
 
 const buildArrayArgAttribute = function (table: string): any {
@@ -37,6 +39,10 @@ export class AccountsModelWithMultisig extends IAccountsModel {
   public u_multimin: number;
   @Column(DataType.TEXT)
   public u_multisignatures?: publicKey[];
+
+  constructor(values?: FilteredModelAttributes<AccountsModelWithMultisig>, options?: IBuildOptions) {
+    super(values, options);
+  }
 
   public isMultisignature(): boolean {
     return this.multilifetime > 0;

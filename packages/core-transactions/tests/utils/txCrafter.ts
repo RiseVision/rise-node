@@ -20,6 +20,23 @@ export const toBufferedTransaction = <T>(t: ITransaction<any>): IBaseTransaction
   };
 }
 
+export const fromBufferedTransaction = <T>(t: IBaseTransaction<T>): ITransaction<any> => {
+  return {
+    ...t,
+    ... {
+      requesterPublicKey: t.requesterPublicKey === null || typeof(t.requesterPublicKey) === 'undefined' ?
+        null :
+        t.requesterPublicKey.toString('hex'),
+      senderPublicKey   : t.senderPublicKey.toString('hex'),
+      signSignature     : t.signSignature === null || typeof(t.signSignature) === 'undefined' ?
+        null :
+        t.signSignature.toString('hex'),
+      signature         : t.signature.toString('hex'),
+      senderId          : t.senderId
+    },
+  } as any;
+};
+
 // export const createRandomTransactions = (config: { send?: number, vote?: number, signature?: number, delegate?: number } = {}): Array<ITransaction> => {
 //   const send      = config.send || 0;
 //   const vote      = config.vote || 0;
@@ -41,11 +58,11 @@ export const toBufferedTransaction = <T>(t: ITransaction<any>): IBaseTransaction
 //   }
 //   return toRet;
 // };
-export const createRandomTransaction = (): ITransaction => {
+export const createRandomTransaction  = (): ITransaction => {
   return createSendTransaction(
     new LiskWallet(uuid.v4(), 'R'),
     new LiskWallet(uuid.v4(), 'R').address,
-    10,
+    10000000,
     { amount: Date.now() % 100000 }
   );
 }
@@ -53,7 +70,7 @@ export const createRandomTransactions = (howMany: number): ITransaction[] => {
   return new Array(howMany).fill(null).map(() => createRandomTransaction());
 }
 
-export const createSendTransaction   = (from: LiskWallet, recipient: string, fee: number, obj: any = {}): ITransaction => {
+export const createSendTransaction = (from: LiskWallet, recipient: string, fee: number, obj: any = {}): ITransaction => {
   const t = new dposOffline.transactions.SendTx()
     .withTimestamp(0);
   Object.keys(obj).forEach((k) => t.set(k as any, obj[k]));
