@@ -1,6 +1,8 @@
+import 'reflect-metadata';
+
 import { IAccountsModel } from '@risevision/core-interfaces';
 import { Column, DataType, DefaultScope, IBuildOptions } from 'sequelize-typescript';
-import { FilteredModelAttributes } from '../../../node_modules/sequelize-typescript/lib/models/Model';
+import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
 @DefaultScope({
   attributes: [

@@ -58,9 +58,9 @@ export const fromBufferedTransaction = <T>(t: IBaseTransaction<T>): ITransaction
 //   }
 //   return toRet;
 // };
-export const createRandomTransaction  = (): ITransaction => {
+export const createRandomTransaction  = (wallet: LiskWallet = new LiskWallet(uuid.v4(), 'R')): ITransaction => {
   return createSendTransaction(
-    new LiskWallet(uuid.v4(), 'R'),
+    wallet,
     new LiskWallet(uuid.v4(), 'R').address,
     10000000,
     { amount: Date.now() % 100000 }

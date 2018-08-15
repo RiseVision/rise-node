@@ -1,7 +1,7 @@
 import { APISymbols } from '@risevision/core-apis';
 import { Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
-import { ModelSymbols, utils } from '@risevision/core-models';
+import { ICoreModuleWithModels, ModelSymbols, utils } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
 import { AccountsModelWith2ndSign } from './AccountsModelWith2ndSign';
 import { SignHooksListener } from './hooks/hooksListener';
@@ -10,7 +10,7 @@ import { SignaturesAPI } from './signatureAPI';
 import { SignaturesModel } from './SignaturesModel';
 import { SigSymbols } from './symbols';
 
-export class CoreModule extends BaseCoreModule {
+export class CoreModule extends BaseCoreModule implements ICoreModuleWithModels {
   public configSchema = {};
   public constants    = {};
 
@@ -35,12 +35,15 @@ export class CoreModule extends BaseCoreModule {
 
   }
 
-  public async initAppElements() {
+  public onPreInitModels() {
     utils.mergeModels(
       AccountsModelWith2ndSign,
       this.container
         .getNamed(ModelSymbols.model, Symbols.models.accounts)
     );
+  }
+
+  public async initAppElements() {
     await this.container.get<SignHooksListener>(SigSymbols.hooksListener).hookMethods();
   }
 
