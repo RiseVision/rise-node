@@ -10,13 +10,14 @@ import { Symbols } from '../../../core-interfaces/src';
 import { BlocksSymbols } from '../../src/blocksSymbols';
 import { IAccountsModule, IForkModule, ITransactionsModule } from '../../../core-interfaces/src/modules';
 import { IBlockLogic, IBlockReward, ITransactionLogic } from '../../../core-interfaces/src/logic';
-import { IBlocksModel } from '../../../core-interfaces/src/models';
+import { IAccountsModel, IBlocksModel } from '../../../core-interfaces/src/models';
 import { ModelSymbols } from '../../../core-models/src/helpers';
 import { createFakeBlock } from '../utils/createFakeBlocks';
 import { ForkType, SignedBlockType } from '../../../core-types/src';
 import { createRandomTransactions, toBufferedTransaction } from '../../../core-transactions/tests/utils/txCrafter';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { VerifyReceipt } from '../../src/hooks';
+import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 
 chai.use(chaiAsPromised);
 
@@ -36,6 +37,7 @@ describe('modules/blocks/verify', () => {
   let txLogic: ITransactionLogic;
 
   let blocksModel: typeof IBlocksModel;
+  let AccountsModel: typeof IAccountsModel;
   let sandbox: SinonSandbox;
 
   beforeEach(async () => {
@@ -53,7 +55,8 @@ describe('modules/blocks/verify', () => {
     blockRewardLogic = container.get(Symbols.logic.blockReward);
     txLogic          = container.get(Symbols.logic.transaction);
 
-    blocksModel = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
+    AccountsModel = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
+    blocksModel   = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
   });
 
   afterEach(() => sandbox.restore());
@@ -160,8 +163,8 @@ describe('modules/blocks/verify', () => {
           });
           it('error if tx.getBytes returns error', async () => {
 
-            const txs = createRandomTransactions(10);
-            block     = createFakeBlock(container, {
+            const txs          = createRandomTransactions(10);
+            block              = createFakeBlock(container, {
               previousBlock: { id: '1', height: 100 } as any,
               timestamp    : block.timestamp,
               transactions : txs.map((t) => toBufferedTransaction(t)),
@@ -174,8 +177,8 @@ describe('modules/blocks/verify', () => {
             expect(res.errors).to.contain('Error: meow');
           });
           it('error if computed payload hex is diff from advertised block.payloadHash', async () => {
-            const txs = createRandomTransactions(10);
-            block     = createFakeBlock(container, {
+            const txs          = createRandomTransactions(10);
+            block              = createFakeBlock(container, {
               previousBlock: { id: '1', height: 100 } as any,
               timestamp    : block.timestamp,
               transactions : txs.map((t) => toBufferedTransaction(t)),
@@ -222,26 +225,29 @@ describe('modules/blocks/verify', () => {
     beforeEach(() => {
       const constants        = container.get<any>(Symbols.generic.constants);
       block                  = createFakeBlock(container, {
-        previousBlock: {id: '1', height: 100} as any,
+        previousBlock: { id: '1', height: 100 } as any,
         timestamp    : 101 * constants.blockTime,
       });
-      blocksModule.lastBlock = {id: '1', height: 100} as any;
+      blocksModule.lastBlock = { id: '1', height: 100 } as any;
     });
     it('should trigger Filter', async () => {
       const hookSystem = container.get<WordPressHookSystem>(Symbols.generic.hookSystem);
-      const stub = sandbox.stub();
+      const stub       = sandbox.stub();
+
       class Test extends WPHooksSubscriber(Object) {
         public hookSystem = hookSystem;
+
         @VerifyReceipt()
         public async verifyReceipt(...args: any[]) {
           return stub(...args);
         }
       }
+
       const t = new Test();
       await t.hookMethods();
       stub.returns('meow');
       expect(await inst.verifyReceipt(block)).eq('meow');
-      expect(stub.firstCall.args[0]).deep.eq({errors: [], verified: true});
+      expect(stub.firstCall.args[0]).deep.eq({ errors: [], verified: true });
       await t.unHook();
     });
     it('error if block is already known between lastBlocks', async () => {
@@ -258,32 +264,35 @@ describe('modules/blocks/verify', () => {
     beforeEach(() => {
       const constants        = container.get<any>(Symbols.generic.constants);
       block                  = createFakeBlock(container, {
-        previousBlock: {id: '2', height: 100} as any,
+        previousBlock: { id: '2', height: 100 } as any,
         timestamp    : 101 * constants.blockTime,
       });
-      blocksModule.lastBlock = {id: '1', height: 100} as any;
+      blocksModule.lastBlock = { id: '1', height: 100 } as any;
 
     });
     it('should trigger Filter', async () => {
       const hookSystem = container.get<WordPressHookSystem>(Symbols.generic.hookSystem);
-      const stub = sandbox.stub();
+      const stub       = sandbox.stub();
+
       class Test extends WPHooksSubscriber(Object) {
         public hookSystem = hookSystem;
+
         @VerifyReceipt()
         public async verifyReceipt(...args: any[]) {
           return stub(...args);
         }
       }
+
       const t = new Test();
       await t.hookMethods();
       stub.returns('meow');
       expect(await inst.verifyReceipt(block)).eq('meow');
-      expect(stub.firstCall.args[0]).deep.eq({errors: [], verified: true});
+      expect(stub.firstCall.args[0]).deep.eq({ errors: [], verified: true });
       await t.unHook();
     });
     it('error if block is in fork 1', async () => {
       const forkStub = sandbox.stub(forkModule, 'fork');
-      const res = await inst.verifyBlock(block);
+      const res      = await inst.verifyBlock(block);
       expect(res.verified).is.false;
       expect(res.errors).to.contain('Invalid previous block: 2 expected 1');
       expect(forkStub.calledOnce).is.true;
@@ -328,142 +337,148 @@ describe('modules/blocks/verify', () => {
     //   expect(res.errors).to.be.not.contain('Invalid block timestamp');
     // });
   });
-  //
-  // describe('processBlock', () => {
-  //   let findByIdStub: SinonStub;
-  //   beforeEach(() => {
-  //     findByIdStub = sandbox.stub(blocksModel, 'findById');
-  //     accountsModule.enqueueResponse('generateAddressByPublicKey', 'address');
-  //     accountsModule.stubs.resolveAccountsForTransactions.callsFake((txs) => {
-  //       const toRet = {};
-  //       txs.forEach((tx) => {
-  //         toRet[tx.senderId] = new AccountsModel({address: tx.senderId});
-  //         if (tx.requesterPublicKey) {
-  //           toRet['address'] = new AccountsModel({address: 'address'});
-  //         }
-  //       });
-  //       return toRet;
-  //     });
-  //     txModule.stubs.filterConfirmedIds.resolves([]);
-  //   });
-  //   it('rejects if is cleaning', async () => {
-  //     await inst.cleanup();
-  //     await expect(inst.processBlock(null, true, true))
-  //       .to.be.rejectedWith('Cleaning up');
-  //   });
-  //   it('should verifyBlock after normalization', async () => {
-  //     const stub = sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({
-  //       errors  : ['ERROR'],
-  //       verified: false,
-  //     }));
-  //     blockLogic.enqueueResponse('objectNormalize', {id: '1', normalized: 'block'});
-  //     await expect(inst.processBlock(null, true, true))
-  //       .to.be.rejectedWith('ERROR');
-  //     expect(stub.called).is.true;
-  //     expect(stub.firstCall.args[0]).to.be.deep.eq({id: '1', normalized: 'block'});
-  //   });
-  //   it('should throw if block already exists in db', async () => {
-  //     sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors  : [], verified: true }));
-  //     blockLogic.enqueueResponse('objectNormalize', {id: '1', normalized: 'block'});
-  //     findByIdStub.resolves({})
-  //     await expect(inst.processBlock(null, true, true))
-  //       .to.be.rejectedWith('Block 1 already exists');
-  //   });
-  //   it('should throw if delegate.blockSlot is wrong', async () => {
-  //     sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors  : [], verified: true }));
-  //     blockLogic.enqueueResponse('objectNormalize', {id: '1', normalized: 'block'});
-  //     findByIdStub.resolves(null);
-  //     delegatesModule.enqueueResponse('assertValidBlockSlot', Promise.reject('error'));
-  //
-  //     await expect(inst.processBlock(null, true, true))
-  //       .to.be.rejectedWith('error');
-  //   });
-  //   it('should fork 3 if delegate.blockSlot is wrong', async () => {
-  //     sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors  : [], verified: true }));
-  //     blockLogic.enqueueResponse('objectNormalize', {id: '1', normalized: 'block'});
-  //     findByIdStub.resolves(null);
-  //     delegatesModule.enqueueResponse('assertValidBlockSlot', Promise.reject('error'));
-  //
-  //     await expect(inst.processBlock(null, true, true))
-  //       .to.be.rejectedWith('error');
-  //
-  //     expect(forkModule.stubs.fork.calledOnce).is.true;
-  //     expect(forkModule.stubs.fork.firstCall.args).is.deep.eq([
-  //       { id: '1', normalized: 'block'},
-  //       ForkType.WRONG_FORGE_SLOT,
-  //     ]);
-  //   });
-  //   describe('tx checks', () => {
-  //     let txs: Array<ITransaction<any>>;
-  //     let normalizedBlock: any;
-  //     beforeEach(() => {
-  //       txs = createRandomTransactions({send: 10, vote: 4});
-  //       sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors  : [], verified: true }));
-  //       normalizedBlock = {id: '1', normalized: 'block', transactions: txs};
-  //       blockLogic.enqueueResponse('objectNormalize', normalizedBlock);
-  //       findByIdStub.resolves(null);
-  //       delegatesModule.enqueueResponse('assertValidBlockSlot', Promise.resolve());
-  //       blocksChain.enqueueResponse('applyBlock', Promise.resolve());
-  //       txModule.stubs.checkTransaction.resolves();
-  //       txLogic.stubs.getId.callsFake((t) => t.id);
-  //       txLogic.stubs.verify.resolves();
-  //       txLogic.stubs.ready.returns(true);
-  //     });
-  //     it('should call txModule.checkTransaction for each tx', async () => {
-  //       txModule.stubs.checkTransaction.onCall(13).rejects(new Error('meow'));
-  //       await expect(inst.processBlock(null, true, true))
-  //         .rejectedWith(`meow`);
-  //
-  //       // check calls!
-  //       expect(txModule.stubs.checkTransaction.callCount).eq(10 + 4);
-  //       for (let i = 0; i < txs.length; i++) {
-  //         expect(txModule.stubs.checkTransaction.getCall(i).args[0]).deep.eq(txs[i]);
-  //       }
-  //     });
-  //     it('should call resolveAccountsForTransactions with all txs in block', async () => {
-  //       await inst.processBlock(null, true, true);
-  //       expect(accountsModule.stubs.resolveAccountsForTransactions.callCount).to.be.eq(1);
-  //       expect(accountsModule.stubs.resolveAccountsForTransactions.firstCall.args[0]).to.be.eq(txs);
-  //     });
-  //     it('should properly handle tx already confirmed', async () => {
-  //       txModule.stubs.undoUnconfirmed.resolves();
-  //       txModule.stubs.removeUnconfirmedTransaction.onFirstCall().returns(true);
-  //       txModule.stubs.removeUnconfirmedTransaction.onSecondCall().returns(false);
-  //       const alreadyConfirmedId1 = normalizedBlock.transactions[1].id;
-  //       const alreadyConfirmedId2 = normalizedBlock.transactions[2].id;
-  //       txModule.stubs.filterConfirmedIds.resolves([alreadyConfirmedId1, alreadyConfirmedId2]);
-  //       await expect(inst.processBlock(normalizedBlock, true, true)).to.be.rejectedWith('Transactions already confirmed: ' + alreadyConfirmedId1);
-  //
-  //       // should send fork
-  //       expect(forkModule.stubs.fork.called).is.true;
-  //       expect(forkModule.stubs.fork.firstCall.args).is.deep.eq([normalizedBlock, ForkType.TX_ALREADY_CONFIRMED]);
-  //
-  //       // shoudl call uncoUnconfirmed and removeUnconfirmed
-  //
-  //       expect(txModule.stubs.removeUnconfirmedTransaction.calledTwice).is.true;
-  //       expect(txModule.stubs.undoUnconfirmed.calledOnce).is.true;
-  //       expect(txModule.stubs.undoUnconfirmed.firstCall.args[0]).is.deep.eq(normalizedBlock.transactions[1]);
-  //
-  //     });
-  //   });
-  //
-  //   it('should call blocksChain.applyBlock propagating broadcast,saveblock and accounts values if all ok', async () => {
-  //     sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors  : [], verified: true }));
-  //     blockLogic.enqueueResponse('objectNormalize', {id: '1', normalized: 'block', transactions: [] });
-  //     findByIdStub.resolves(null);
-  //     delegatesModule.enqueueResponse('assertValidBlockSlot', Promise.resolve());
-  //     blocksChain.enqueueResponse('applyBlock', Promise.resolve());
-  //     accountsModule.stubs.resolveAccountsForTransactions.resolves({'a': 'b'});
-  //     await inst.processBlock(null, true, false);
-  //
-  //     expect(blocksChain.stubs.applyBlock.calledOnce).is.true;
-  //     expect(blocksChain.stubs.applyBlock.firstCall.args).is.deep.eq([
-  //       {id: '1', normalized: 'block', transactions: [] },
-  //       true, // broadcast
-  //       false, // saveblock
-  //       {'a': 'b'}
-  //     ]);
-  //   });
-  // });
+
+  describe('processBlock', () => {
+    let findByIdStub: SinonStub;
+    let resolveAcctsStub: SinonStub;
+    let filterConfirmedIDsStub: SinonStub;
+    beforeEach(() => {
+      findByIdStub     = sandbox.stub(blocksModel, 'findById');
+      resolveAcctsStub = sandbox.stub(accountsModule, 'resolveAccountsForTransactions');
+
+      resolveAcctsStub.callsFake((txs) => {
+        const toRet = {};
+        txs.forEach((tx) => {
+          toRet[tx.senderId] = new AccountsModel({ address: tx.senderId });
+          if (tx.requesterPublicKey) {
+            toRet['address'] = new AccountsModel({ address: 'address' });
+          }
+        });
+        return toRet;
+      });
+      filterConfirmedIDsStub = sandbox.stub(txModule, 'filterConfirmedIds').resolves([]);
+    });
+    it('rejects if is cleaning', async () => {
+      await inst.cleanup();
+      await expect(inst.processBlock(null, true, true))
+        .to.be.rejectedWith('Cleaning up');
+    });
+    it('should verifyBlock after normalization', async () => {
+      const stub = sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({
+        errors  : ['ERROR'],
+        verified: false,
+      }));
+      sandbox.stub(blockLogic, 'objectNormalize').returns({ id: '1', normalized: 'block' });
+      await expect(inst.processBlock(null, true, true))
+        .to.be.rejectedWith('ERROR');
+      expect(stub.called).is.true;
+      expect(stub.firstCall.args[0]).to.be.deep.eq({ id: '1', normalized: 'block' });
+    });
+    it('should throw if block already exists in db', async () => {
+      sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors: [], verified: true }));
+      sandbox.stub(blockLogic, 'objectNormalize').returns({ id: '1', normalized: 'block' });
+      findByIdStub.resolves({})
+      await expect(inst.processBlock(null, true, true))
+        .to.be.rejectedWith('Block 1 already exists');
+    });
+    // it('should throw if delegate.blockSlot is wrong', async () => {
+    //   sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors: [], verified: true }));
+    //   sandbox.stub(blockLogic, 'objectNormalize').returns({ id: '1', normalized: 'block' });
+    //   findByIdStub.resolves(null);
+    //   delegatesModule.enqueueResponse('assertValidBlockSlot', Promise.reject('error'));
+    //
+    //   await expect(inst.processBlock(null, true, true))
+    //     .to.be.rejectedWith('error');
+    // });
+    // it('should fork 3 if delegate.blockSlot is wrong', async () => {
+    //   sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors: [], verified: true }));
+    //   sandbox.stub(blockLogic, 'objectNormalize').returns({ id: '1', normalized: 'block' });
+    //   findByIdStub.resolves(null);
+    //   delegatesModule.enqueueResponse('assertValidBlockSlot', Promise.reject('error'));
+    //
+    //   await expect(inst.processBlock(null, true, true))
+    //     .to.be.rejectedWith('error');
+    //
+    //   expect(forkModule.stubs.fork.calledOnce).is.true;
+    //   expect(forkModule.stubs.fork.firstCall.args).is.deep.eq([
+    //     { id: '1', normalized: 'block' },
+    //     ForkType.WRONG_FORGE_SLOT,
+    //   ]);
+    // });
+    describe('tx checks', () => {
+      let txs: Array<ITransaction<any>>;
+      let normalizedBlock: any;
+      let checkTXStub: SinonStub;
+      beforeEach(() => {
+        txs = createRandomTransactions(10);
+        sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors: [], verified: true }));
+        normalizedBlock = { id: '1', normalized: 'block', transactions: txs };
+        sandbox.stub(blockLogic, 'objectNormalize').returns(normalizedBlock);
+        findByIdStub.resolves(null);
+        // delegatesModule.enqueueResponse('assertValidBlockSlot', Promise.resolve());
+        sandbox.stub(blocksChain, 'applyBlock').resolves();
+        checkTXStub = sandbox.stub(txModule, 'checkTransaction').resolves();
+        sandbox.stub(txLogic, 'getId').callsFake((t) => t.id);
+        sandbox.stub(txLogic, 'verify').resolves();
+        sandbox.stub(txLogic, 'ready').returns(true);
+      });
+      it('should call txModule.checkTransaction for each tx', async () => {
+        checkTXStub.onCall(13).rejects(new Error('meow'));
+        await expect(inst.processBlock(null, true, true))
+          .rejectedWith('meow');
+
+        // check calls!
+        expect(checkTXStub.callCount).eq(10 + 4);
+        for (let i = 0; i < txs.length; i++) {
+          expect(checkTXStub.getCall(i).args[0]).deep.eq(txs[i]);
+        }
+      });
+      it('should call resolveAccountsForTransactions with all txs in block', async () => {
+        await inst.processBlock(null, true, true);
+        expect(resolveAcctsStub.callCount).to.be.eq(1);
+        expect(resolveAcctsStub.firstCall.args[0]).to.be.eq(txs);
+      });
+      it('should properly handle tx already confirmed', async () => {
+        const unconUnconfirmedStub  = sandbox.stub(txModule, 'undoUnconfirmed').resolves();
+        const removeUnconfirmedStub = sandbox.stub(txModule, 'removeUnconfirmedTransaction').onFirstCall().returns(true);
+        removeUnconfirmedStub.onSecondCall().returns(false);
+        const alreadyConfirmedId1 = normalizedBlock.transactions[1].id;
+        const alreadyConfirmedId2 = normalizedBlock.transactions[2].id;
+        filterConfirmedIDsStub.resolves([alreadyConfirmedId1, alreadyConfirmedId2]);
+
+        const forkStub = sandbox.stub(forkModule, 'fork').resolves();
+
+        await expect(inst.processBlock(normalizedBlock, true, true)).to.be.rejectedWith('Transactions already confirmed: ' + alreadyConfirmedId1);
+
+        // should send fork
+        expect(forkStub.called).is.true;
+        expect(forkStub.firstCall.args).is.deep.eq([normalizedBlock, ForkType.TX_ALREADY_CONFIRMED]);
+
+        // shoudl call uncoUnconfirmed and removeUnconfirmed
+
+        expect(removeUnconfirmedStub.calledTwice).is.true;
+        expect(unconUnconfirmedStub.calledOnce).is.true;
+        expect(unconUnconfirmedStub.firstCall.args[0]).is.deep.eq(normalizedBlock.transactions[1]);
+
+      });
+    });
+
+    it('should call blocksChain.applyBlock propagating broadcast,saveblock and accounts values if all ok', async () => {
+      sandbox.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors: [], verified: true }));
+      sandbox.stub(blockLogic, 'objectNormalize').returns({ id: '1', normalized: 'block', transactions: [] });
+      const applyBlockStub = sandbox.stub(blocksChain, 'applyBlock').resolves();
+      findByIdStub.resolves(null);
+      resolveAcctsStub.resolves({ a: 'b' });
+      await inst.processBlock(null, true, false);
+
+      expect(applyBlockStub.calledOnce).is.true;
+      expect(applyBlockStub.firstCall.args).is.deep.eq([
+        { id: '1', normalized: 'block', transactions: [] },
+        true, // broadcast
+        false, // saveblock
+        { a: 'b' }
+      ]);
+    });
+  });
 
 });
