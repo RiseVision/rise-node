@@ -45,6 +45,7 @@ describe('logic/block', () => {
   let transactionLogicStub: TransactionLogicStub;
   let createHashSpy: SinonSpy;
   let blocksModel: typeof BlocksModel;
+  let dummyBlockHex;
 
   const bb = new ByteBuffer(1 + 4 + 32 + 32 + 8 + 8 + 64 + 64, true);
   bb.writeInt(123);
@@ -109,6 +110,9 @@ describe('logic/block', () => {
       transactions: dummyTransactions,
       version: 0,
     };
+
+    // tslint:disable max-line-length
+    dummyBlockHex = '00000000be119ad900000000000000010200000080c1f0951bc60000080000000000000080c3c9010000000008000000b3cf5bb113442c9ba61ed0a485159b767ca181dd447f5a3d93e9dd73564ae762c950f1e6c91485d2e6932fbd689bba636f73970557fe644cd901a438f74883c58c5f2b088eaf0634e1f6e12f94a1f3e871f21194489c76ad2aae5c1b71acd848bc7b158fa3b827e97f3f685c772bfe1a72d59975cbd2ccaa0467026d13bae50a';
 
     callback = sandbox.spy();
     zschemastub = container.get(Symbols.generic.zschema);
@@ -194,14 +198,7 @@ describe('logic/block', () => {
     it('should return a Buffer', () => {
       const buf = instance.getBytes(dummyBlock);
       expect(buf).to.be.an.instanceof(Buffer);
-      expect(buf).to.be.equalTo(Uint8Array.from([ 0, 0, 0, 0, 190, 17, 154, 217, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0,
-        0, 128, 193, 240, 149, 27, 198, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 128, 195, 201, 1, 0, 0, 0, 0, 8, 0, 0, 0, 179,
-        207, 91, 177, 19, 68, 44, 155, 166, 30, 208, 164, 133, 21, 155, 118, 124, 161, 129, 221, 68, 127, 90, 61, 147,
-        233, 221, 115, 86, 74, 231, 98, 201, 80, 241, 230, 201, 20, 133, 210, 230, 147, 47, 189, 104, 155, 186, 99, 111,
-        115, 151, 5, 87, 254, 100, 76, 217, 1, 164, 56, 247, 72, 131, 197, 140, 95, 43, 8, 142, 175, 6, 52, 225, 246,
-        225, 47, 148, 161, 243, 232, 113, 242, 17, 148, 72, 156, 118, 173, 42, 174, 92, 27, 113, 172, 216, 72, 188, 123,
-        21, 143, 163, 184, 39, 233, 127, 63, 104, 92, 119, 43, 254, 26, 114, 213, 153, 117, 203, 210, 204, 170, 4, 103,
-        2, 109, 19, 186, 229, 10 ]) as any);
+      expect(buf.toString('hex')).to.be.equal(dummyBlockHex);
     });
 
     it('should return a Buffer of a given length', () => {
