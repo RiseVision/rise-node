@@ -40,7 +40,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
 
-  @inject(dPoSSymbols.dposConstants)
+  @inject(Symbols.generic.constants)
   private dposConstants: DposConstantsType;
 
   // Logic

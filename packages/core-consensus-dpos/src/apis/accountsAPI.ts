@@ -12,8 +12,8 @@ const schema = require('../../schema/accountsAPI.json');
 
 @JsonController('/api/accounts')
 @injectable()
-@IoCSymbol(dPoSSymbols.delegatesAPI)
-export class DelegatesAPI {
+@IoCSymbol(dPoSSymbols.accountsAPI)
+export class AccountsAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
   @inject(Symbols.modules.accounts)

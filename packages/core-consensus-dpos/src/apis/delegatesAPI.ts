@@ -30,8 +30,8 @@ const schema = require('../../schema/delegates.json');
 export class DelegatesAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
-  @inject(dPoSSymbols.dposConstants)
-  public constants: DposConstantsType & ConstantsType;
+  @inject(Symbols.generic.constants)
+  public constants: DposConstantsType;
   @inject(Symbols.modules.accounts)
   private accounts: IAccountsModule<AccountsModelForDPOS>;
   @inject(Symbols.modules.blocks)

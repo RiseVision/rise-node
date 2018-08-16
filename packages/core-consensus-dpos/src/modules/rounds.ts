@@ -26,7 +26,7 @@ const performRoundSnapshotSQL = fs.readFileSync(
 );
 
 @injectable()
-class RoundsModule extends WPHooksSubscriber(Object) {
+export class RoundsModule extends WPHooksSubscriber(Object) {
   @inject(Symbols.generic.hookSystem)
   public hookSystem: WordPressHookSystem;
 
@@ -34,7 +34,7 @@ class RoundsModule extends WPHooksSubscriber(Object) {
   private appConfig: AppConfig;
 
   // Helpers and generics
-  @inject(dPoSSymbols.dposConstants)
+  @inject(Symbols.generic.constants)
   private constants: DposConstantsType;
   @inject(Symbols.helpers.db)
   private dbHelper: IDBHelper;

@@ -6,7 +6,7 @@ import { dPoSSymbols } from './symbols';
 
 @injectable()
 export class Slots {
-  @inject(dPoSSymbols.dposConstants)
+  @inject(Symbols.generic.constants)
   private dposConstants: DposConstantsType;
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
