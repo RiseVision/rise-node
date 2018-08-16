@@ -291,7 +291,7 @@ export class BlockLogic implements IBlockLogic {
     bb.writeInt(block.timestamp);
 
     if (block.previousBlock) {
-      const long = Longnum.fromString(block.previousBlock, true, 10);
+      const long = Longnum.fromUnsignedDecimalString(block.previousBlock);
       const pb = Longnum.toBuffer(long, {size: 8});
       for (let i = 0; i < 8; i++) {
         bb.writeByte(pb[i]);

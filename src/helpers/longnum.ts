@@ -24,4 +24,8 @@ export default class Longnum extends Long {
     buf.write(hex, 0, hex.length, 'hex');
     return buf;
   }
+
+  public static fromUnsignedDecimalString(str: string) {
+    return Longnum.fromString(str, true, 10);
+  }
 }
