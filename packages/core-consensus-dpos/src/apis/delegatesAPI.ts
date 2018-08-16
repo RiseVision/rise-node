@@ -30,8 +30,10 @@ const schema = require('../../schema/delegates.json');
 export class DelegatesAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
+  @inject(dPoSSymbols.constants)
+  public dposConstants: DposConstantsType;
   @inject(Symbols.generic.constants)
-  public constants: DposConstantsType;
+  public constants: ConstantsType;
   @inject(Symbols.modules.accounts)
   private accounts: IAccountsModule<AccountsModelForDPOS>;
   @inject(Symbols.modules.blocks)
@@ -205,7 +207,7 @@ export class DelegatesAPI {
     }
     const delQuery  = DelegatesAPI.searchDelegate(
       params.q,
-      params.limit || this.constants.activeDelegates,
+      params.limit || this.dposConstants.activeDelegates,
       orderBy[0],
       orderBy[1] as any
     );
@@ -373,7 +375,7 @@ export class DelegatesAPI {
   public async aggregateBlockReward(filter: { generatorPublicKey: publicKey, start?: number, end?: number }): Promise<{ fees: number, rewards: number, count: number }> {
     const params: any                            = {};
     params.generatorPublicKey                    = filter.generatorPublicKey;
-    params.delegates                             = this.constants.activeDelegates;
+    params.delegates                             = this.dposConstants.activeDelegates;
     const timestampClausole: { timestamp?: any } = { timestamp: {} };
 
     if (typeof(filter.start) !== 'undefined') {

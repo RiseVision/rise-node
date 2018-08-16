@@ -1,11 +1,10 @@
 import * as chai from 'chai';
-import {Container} from 'inversify';
+import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import {Symbols} from '../../../src/ioc/symbols';
-import { RoundsLogic } from '../../../src/logic';
-import { SlotsStub } from '../../stubs';
-import { createContainer } from '../../utils/containerCreator';
+import { RoundsLogic } from '../../src/logic/rounds';
+import { dPoSSymbols, Slots } from '../../src/helpers';
+import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
 
 const expect = chai.expect;
 
@@ -13,13 +12,13 @@ const expect = chai.expect;
 describe('logic/rounds', () => {
   let sandbox: SinonSandbox;
   let instance: RoundsLogic;
-  let slotsStub: SlotsStub;
+  let slotsStub: Slots;
   let container: Container;
 
-  beforeEach(() => {
-    sandbox             = sinon.createSandbox();
-    container          = createContainer();
-    slotsStub               = container.get(Symbols.helpers.slots);
+  beforeEach(async () => {
+    sandbox                 = sinon.createSandbox();
+    container               = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
+    slotsStub               = container.get(dPoSSymbols.helpers.slots);
     instance                = new RoundsLogic();
     (instance as any).slots = slotsStub;
   });
@@ -77,4 +76,5 @@ describe('logic/rounds', () => {
       expect(instance.lastInRound(123)).to.be.equal(12423);
     });
   });
+
 });

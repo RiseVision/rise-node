@@ -3,7 +3,8 @@ import {
   IAccountsModel,
   IAccountsModule,
   IAppState,
-  IBlocksModel, IDBHelper,
+  IBlocksModel,
+  IDBHelper,
   ILogger,
   Symbols
 } from '@risevision/core-interfaces';
@@ -13,7 +14,7 @@ import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { Transaction } from 'sequelize';
 import SocketIO from 'socket.io';
-import { DposConstantsType, dPoSSymbols, Slots } from '../helpers';
+import { DposConstantsType, dPoSSymbols, RoundChanges, Slots } from '../helpers';
 import { IRoundLogicNewable, RoundLogicScope } from '../logic/round';
 import { RoundsLogic } from '../logic/rounds';
 import { AccountsModelForDPOS, RoundsModel } from '../models/';
@@ -27,6 +28,9 @@ const performRoundSnapshotSQL = fs.readFileSync(
 
 @injectable()
 export class RoundsModule extends WPHooksSubscriber(Object) {
+  @inject(dPoSSymbols.helpers.roundChanges)
+  private RoundChanges: typeof RoundChanges;
+
   @inject(Symbols.generic.hookSystem)
   public hookSystem: WordPressHookSystem;
 
@@ -224,7 +228,8 @@ export class RoundsModule extends WPHooksSubscriber(Object) {
         block,
         finishRound,
         library: {
-          logger: this.logger,
+          RoundChanges: this.RoundChanges,
+          logger      : this.logger,
         },
         models : {
           AccountsModel: this.AccountsModel,

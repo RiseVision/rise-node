@@ -3,20 +3,31 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { TransactionType } from '../../../../src/helpers';
-import { Symbols } from '../../../../src/ioc/symbols';
-import { VoteTransaction } from '../../../../src/logic/transactions';
-import voteSchema from '../../../../src/schema/logic/transactions/vote';
-import { AccountLogicStub, DelegatesModuleStub, RoundsLogicStub, SystemModuleStub } from '../../../stubs';
-import { createContainer } from '../../../utils/containerCreator';
+import { IAccountLogic } from '../../../../core-interfaces/src/logic';
+import { RoundsLogic } from '../../../src/logic/rounds';
+import { DelegatesModule } from '../../../src/modules';
+import { SystemModule } from '../../../../core/src/modules';
+import { VoteTransaction } from '../../../src/logic/voteTransaction';
 import {
   Accounts2DelegatesModel,
   Accounts2U_DelegatesModel,
-  AccountsModel,
+  AccountsModelForDPOS,
   RoundsModel,
   VotesModel
-} from '../../../../src/models';
-import { DBBulkCreateOp, DBCreateOp, DBCustomOp, DBRemoveOp, DBUpdateOp } from '../../../../src/types/genericTypes';
+} from '../../../src/models';
+import { createContainer } from '../../../../core-launchpad/tests/utils/createContainer';
+import {
+  DBBulkCreateOp,
+  DBCreateOp,
+  DBCustomOp,
+  DBRemoveOp,
+  DBUpdateOp,
+  TransactionType
+} from '../../../../core-types/src';
+import { Symbols } from '../../../../core-interfaces/src';
+import { ModelSymbols } from '../../../../core-models/src/helpers';
+import { dPoSSymbols } from '../../../src/helpers';
+import { TXSymbols } from '../../../../core-transactions/src';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -28,35 +39,41 @@ chai.use(assertArrays);
 // tslint:disable no-unused-expression
 describe('logic/transactions/vote', () => {
   let sandbox: SinonSandbox;
-  let zSchemaStub: any;
-  let accountLogicStub: AccountLogicStub;
-  let roundsLogicStub: RoundsLogicStub;
-  let delegatesModuleStub: DelegatesModuleStub;
-  let systemModuleStub: SystemModuleStub;
+  let accountLogicStub: IAccountLogic;
+  let roundsLogicStub: RoundsLogic;
+  let delegatesModuleStub: DelegatesModule;
+  let systemModuleStub: SystemModule;
   let container: Container;
   let instance: VoteTransaction;
+  let getFeesStub: SinonStub;
+  let checkConfirmedDelegatesStub: SinonStub;
   let tx: any;
   let sender: any;
   let block: any;
 
-  let accountsModel: typeof AccountsModel;
+  let accountsModel: typeof AccountsModelForDPOS;
   let votesModel: typeof VotesModel;
+  let accounts2DelegatesModel: typeof Accounts2DelegatesModel;
+  let accounts2U_DelegatesModel: typeof Accounts2U_DelegatesModel;
+  let roundsModel: typeof RoundsModel;
 
-
-  beforeEach(() => {
-    sandbox             = sinon.createSandbox();
-    container          = createContainer();
-    zSchemaStub         = {
-      getLastErrors: () => [],
-      validate     : sandbox.stub(),
-    };
+  beforeEach(async () => {
+    sandbox   = sinon.createSandbox();
+    container = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
+    // zSchemaStub         = {
+    //   getLastErrors: () => [],
+    //   validate     : sandbox.stub(),
+    // };
     accountLogicStub    = container.get(Symbols.logic.account);
-    roundsLogicStub     = container.get(Symbols.logic.rounds);
-    delegatesModuleStub = container.get(Symbols.modules.delegates);
+    roundsLogicStub     = container.get(dPoSSymbols.logic.rounds);
+    delegatesModuleStub = container.get(dPoSSymbols.modules.delegates);
     systemModuleStub    = container.get(Symbols.modules.system);
 
-    accountsModel = container.get(Symbols.models.accounts);
-    votesModel = container.get(Symbols.models.votes);
+    accountsModel             = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
+    accounts2DelegatesModel   = container.getNamed(ModelSymbols.model, dPoSSymbols.models.accounts2Delegates);
+    accounts2U_DelegatesModel = container.getNamed(ModelSymbols.model, dPoSSymbols.models.accounts2UDelegates);
+    roundsModel               = container.getNamed(ModelSymbols.model, dPoSSymbols.models.rounds);
+    votesModel                = container.getNamed(ModelSymbols.model, dPoSSymbols.models.votes);
 
     tx = {
       amount         : 0,
@@ -72,7 +89,7 @@ describe('logic/transactions/vote', () => {
       senderId       : '1233456789012345R',
       senderPublicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
       signature      : Buffer.from('0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
-      'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2', 'hex'),
+        'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2', 'hex'),
       timestamp      : 0,
       type           : TransactionType.VOTE,
     };
@@ -86,18 +103,13 @@ describe('logic/transactions/vote', () => {
       },
     };
 
-    block = {
+    block                       = {
       height: 8797,
       id    : '13191140260435645922',
     };
-
-    container.rebind(Symbols.logic.transactions.vote).to(VoteTransaction).inSingletonScope();
-    instance = container.get(Symbols.logic.transactions.vote);
-
-    (instance as any).schema          = zSchemaStub;
-
-    systemModuleStub.stubs.getFees.returns({ fees: { vote: 1 } });
-    delegatesModuleStub.stubs.checkConfirmedDelegates.resolves();
+    getFeesStub                 = sandbox.stub(systemModuleStub, 'getFees').returns({ fees: { vote: 1 } });
+    instance                    = container.getNamed(TXSymbols.transaction, dPoSSymbols.logic.voteTransaction);
+    checkConfirmedDelegatesStub = sandbox.stub(instance, 'checkConfirmedDelegates').resolves();
   });
 
   afterEach(() => {
@@ -107,8 +119,8 @@ describe('logic/transactions/vote', () => {
   describe('calculateFee', () => {
     it('should call systemModule.getFees', () => {
       instance.calculateFee(tx, sender, block.height);
-      expect(systemModuleStub.stubs.getFees.calledOnce).to.be.true;
-      expect(systemModuleStub.stubs.getFees.firstCall.args[0]).to.be.equal(block.height);
+      expect(getFeesStub.calledOnce).to.be.true;
+      expect(getFeesStub.firstCall.args[0]).to.be.equal(block.height);
     });
   });
 
@@ -166,8 +178,8 @@ describe('logic/transactions/vote', () => {
     });
 
     it('should call checkConfirmedDelegates and return its result', async () => {
-      const checkConfirmedDelegatesStub = sandbox.stub(instance, 'checkConfirmedDelegates').returns('yesItIs');
-      const retVal                      = await instance.verify(tx, sender);
+      checkConfirmedDelegatesStub.resolves('yesItIs');
+      const retVal = await instance.verify(tx, sender);
       expect(checkConfirmedDelegatesStub.calledOnce).to.be.true;
       expect(checkConfirmedDelegatesStub.firstCall.args[0]).to.be.deep.equal(tx);
       expect(retVal).to.be.equal('yesItIs');
@@ -196,12 +208,12 @@ describe('logic/transactions/vote', () => {
   });
 
   describe('apply', () => {
-    let checkConfirmedDelegatesStub: SinonStub;
     let applyDiffArrayStub: SinonStub;
+    let calcRoundStub: SinonStub;
+    let mergeStub: SinonStub;
     beforeEach(() => {
-      checkConfirmedDelegatesStub = sandbox.stub(instance, 'checkConfirmedDelegates').resolves();
-      roundsLogicStub.stubs.calcRound.returns(111);
-      accountLogicStub.stubs.merge.resolves();
+      calcRoundStub      = sandbox.stub(roundsLogicStub, 'calcRound').returns(111);
+      mergeStub          = sandbox.stub(accountLogicStub, 'merge').resolves();
       applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
     });
 
@@ -222,19 +234,19 @@ describe('logic/transactions/vote', () => {
       checkConfirmedDelegatesStub.resolves();
       const ops = await instance.apply(tx, block, sender);
       expect(ops.length).eq(3 + 2);
-      const first: DBRemoveOp<any> = ops[0] as any;
+      const first: DBRemoveOp<any>      = ops[0] as any;
       const second: DBBulkCreateOp<any> = ops[1] as any;
-      const third: DBUpdateOp<any> = ops[2] as any;
-      const fourth: DBCustomOp<any> = ops[3] as any;
-      const fifth: DBCustomOp<any> = ops[4] as any;
+      const third: DBUpdateOp<any>      = ops[2] as any;
+      const fourth: DBCustomOp<any>     = ops[3] as any;
+      const fifth: DBCustomOp<any>      = ops[4] as any;
 
-      expect({ ... first, model: first.model.getTableName()}).deep.eq({
-        type: 'remove',
-        model: Accounts2DelegatesModel.getTableName(),
+      expect({ ...first, model: first.model.getTableName() }).deep.eq({
+        type   : 'remove',
+        model  : accounts2DelegatesModel.getTableName(),
         options: {
           limit: 1,
           where: {
-            accountId: tx.senderId,
+            accountId  : tx.senderId,
             dependentId: [
               tx.asset.votes.filter((v) => v[0] === '-')[0].substr(1)
             ],
@@ -242,29 +254,29 @@ describe('logic/transactions/vote', () => {
         },
       });
 
-      expect({ ... second, model: second.model.getTableName()}).deep.eq({
-        type: 'bulkCreate',
-        model: Accounts2DelegatesModel.getTableName(),
+      expect({ ...second, model: second.model.getTableName() }).deep.eq({
+        type  : 'bulkCreate',
+        model : accounts2DelegatesModel.getTableName(),
         values: [
-          { dependentId: tx.asset.votes[1].substr(1), accountId: tx.senderId}
+          { dependentId: tx.asset.votes[1].substr(1), accountId: tx.senderId }
         ],
       });
 
-      expect({ ... third, model: third.model.getTableName()}).deep.eq({
-        type: 'update',
-        model: AccountsModel.getTableName(),
-        options: { where: { address: tx.senderId }},
-        values: { blockId: block.id },
+      expect({ ...third, model: third.model.getTableName() }).deep.eq({
+        type   : 'update',
+        model  : accountsModel.getTableName(),
+        options: { where: { address: tx.senderId } },
+        values : { blockId: block.id },
       });
 
-      expect({ ... fourth, model: fourth.model.getTableName()}).deep.eq({
-        type: 'custom',
-        model: RoundsModel.getTableName(),
+      expect({ ...fourth, model: fourth.model.getTableName() }).deep.eq({
+        type : 'custom',
+        model: roundsModel.getTableName(),
         query: "INSERT INTO mem_round (\"address\", \"amount\", \"delegate\", \"blockId\", \"round\") SELECT '1233456789012345R', (-balance)::bigint, '7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381', '13191140260435645922', 111 FROM mem_accounts WHERE address = '1233456789012345R'",
       });
-      expect({ ... fifth, model: fifth.model.getTableName()}).deep.eq({
-        type: 'custom',
-        model: RoundsModel.getTableName(),
+      expect({ ...fifth, model: fifth.model.getTableName() }).deep.eq({
+        type : 'custom',
+        model: roundsModel.getTableName(),
         query: "INSERT INTO mem_round (\"address\", \"amount\", \"delegate\", \"blockId\", \"round\") SELECT '1233456789012345R', (balance)::bigint, '05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a', '13191140260435645922', 111 FROM mem_accounts WHERE address = '1233456789012345R'",
       });
 
@@ -273,19 +285,22 @@ describe('logic/transactions/vote', () => {
     it('should NOT call accountLogic.merge and roundsLogic.calcRound if checkConfirmedDelegates resolves', async () => {
       checkConfirmedDelegatesStub.rejects();
       await expect(instance.apply(tx, block, sender)).to.be.rejected;
-      expect(roundsLogicStub.stubs.calcRound.notCalled).to.be.true;
-      expect(accountLogicStub.stubs.merge.notCalled).to.be.true;
+      expect(calcRoundStub.notCalled).to.be.true;
+      expect(mergeStub.notCalled).to.be.true;
     });
   });
 
   describe('undo', () => {
     let objectNormalizeStub: SinonStub;
     let applyDiffArrayStub: SinonStub;
+
+    let calcRoundStub: SinonStub;
+    let mergeStub: SinonStub;
     beforeEach(() => {
       objectNormalizeStub = sandbox.stub(instance, 'objectNormalize').resolves();
-      roundsLogicStub.stubs.calcRound.returns(111);
-      accountLogicStub.stubs.merge.resolves();
-      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
+      calcRoundStub       = sandbox.stub(roundsLogicStub, 'calcRound').returns(111);
+      mergeStub           = sandbox.stub(accountLogicStub, 'merge').resolves();
+      applyDiffArrayStub  = sandbox.stub(sender, 'applyDiffArray');
     });
     it('should call applyDiffArray with proper values', async () => {
       await instance.undo(tx, block, sender);
@@ -307,19 +322,19 @@ describe('logic/transactions/vote', () => {
       objectNormalizeStub.resolves();
       const ops = await instance.undo(tx, block, sender);
       expect(ops.length).eq(3 + 2);
-      const first: DBRemoveOp<any> = ops[0] as any;
+      const first: DBRemoveOp<any>      = ops[0] as any;
       const second: DBBulkCreateOp<any> = ops[1] as any;
-      const third: DBUpdateOp<any> = ops[2] as any;
-      const fourth: DBCustomOp<any> = ops[3] as any;
-      const fifth: DBCustomOp<any> = ops[4] as any;
+      const third: DBUpdateOp<any>      = ops[2] as any;
+      const fourth: DBCustomOp<any>     = ops[3] as any;
+      const fifth: DBCustomOp<any>      = ops[4] as any;
 
-      expect({ ... first, model: first.model.getTableName()}).deep.eq({
-        type: 'remove',
-        model: Accounts2DelegatesModel.getTableName(),
+      expect({ ...first, model: first.model.getTableName() }).deep.eq({
+        type   : 'remove',
+        model  : accounts2DelegatesModel.getTableName(),
         options: {
           limit: 1,
           where: {
-            accountId: tx.senderId,
+            accountId  : tx.senderId,
             dependentId: [
               '05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a'
             ],
@@ -327,32 +342,32 @@ describe('logic/transactions/vote', () => {
         },
       });
 
-      expect({ ... second, model: second.model.getTableName()}).deep.eq({
-        type: 'bulkCreate',
-        model: Accounts2DelegatesModel.getTableName(),
+      expect({ ...second, model: second.model.getTableName() }).deep.eq({
+        type  : 'bulkCreate',
+        model : accounts2DelegatesModel.getTableName(),
         values: [
           {
             dependentId: '7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381',
-            accountId: tx.senderId,
+            accountId  : tx.senderId,
           },
         ],
       });
 
-      expect({ ... third, model: third.model.getTableName()}).deep.eq({
-        type: 'update',
-        model: AccountsModel.getTableName(),
-        options: { where: { address: tx.senderId }},
-        values: { blockId: block.id },
+      expect({ ...third, model: third.model.getTableName() }).deep.eq({
+        type   : 'update',
+        model  : accountsModel.getTableName(),
+        options: { where: { address: tx.senderId } },
+        values : { blockId: block.id },
       });
 
-      expect({ ... fourth, model: fourth.model.getTableName()}).deep.eq({
-        type: 'custom',
-        model: RoundsModel.getTableName(),
+      expect({ ...fourth, model: fourth.model.getTableName() }).deep.eq({
+        type : 'custom',
+        model: roundsModel.getTableName(),
         query: "INSERT INTO mem_round (\"address\", \"amount\", \"delegate\", \"blockId\", \"round\") SELECT '1233456789012345R', (balance)::bigint, '7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381', '13191140260435645922', 111 FROM mem_accounts WHERE address = '1233456789012345R'",
       });
-      expect({ ... fifth, model: fifth.model.getTableName()}).deep.eq({
-        type: 'custom',
-        model: RoundsModel.getTableName(),
+      expect({ ...fifth, model: fifth.model.getTableName() }).deep.eq({
+        type : 'custom',
+        model: roundsModel.getTableName(),
         query: "INSERT INTO mem_round (\"address\", \"amount\", \"delegate\", \"blockId\", \"round\") SELECT '1233456789012345R', (-balance)::bigint, '05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a', '13191140260435645922', 111 FROM mem_accounts WHERE address = '1233456789012345R'",
       });
 
@@ -363,24 +378,25 @@ describe('logic/transactions/vote', () => {
 
   describe('checkConfirmedDelegates', () => {
     it('should call delegatesModule.checkConfirmedDelegates and return its result', () => {
-      delegatesModuleStub.stubs.checkConfirmedDelegates.returns('test');
-      const accountsModel1 = new AccountsModel();
-      const retVal = instance.checkConfirmedDelegates(tx, accountsModel1);
-      expect(delegatesModuleStub.stubs.checkConfirmedDelegates.calledOnce).to.be.true;
-      expect(delegatesModuleStub.stubs.checkConfirmedDelegates.firstCall.args[0]).to.be.deep.equal(accountsModel1);
-      expect(delegatesModuleStub.stubs.checkConfirmedDelegates.firstCall.args[1]).to.be.equalTo(tx.asset.votes);
+      checkConfirmedDelegatesStub.restore();
+      const stub           = sandbox.stub(delegatesModuleStub, 'checkConfirmedDelegates').returns('test');
+      const accountsModel1 = new accountsModel();
+      const retVal         = instance.checkConfirmedDelegates(tx, accountsModel1);
+      expect(stub.calledOnce).to.be.true;
+      expect(stub.firstCall.args[0]).to.be.deep.equal(accountsModel1);
+      expect(stub.firstCall.args[1]).to.be.equalTo(tx.asset.votes);
       expect(retVal).to.be.equal('test');
     });
   });
 
   describe('checkUnconfirmedDelegates', () => {
     it('should call delegatesModule.checkUnconfirmedDelegates and return its result', () => {
-      delegatesModuleStub.stubs.checkUnconfirmedDelegates.returns('test');
-      const accountsModel1 = new AccountsModel();
-      const retVal = instance.checkUnconfirmedDelegates(tx, accountsModel1);
-      expect(delegatesModuleStub.stubs.checkUnconfirmedDelegates.calledOnce).to.be.true;
-      expect(delegatesModuleStub.stubs.checkUnconfirmedDelegates.firstCall.args[0]).to.be.deep.equal(accountsModel1);
-      expect(delegatesModuleStub.stubs.checkUnconfirmedDelegates.firstCall.args[1]).to.be.equalTo(tx.asset.votes);
+      const stub           = sandbox.stub(delegatesModuleStub, 'checkUnconfirmedDelegates').returns('test');
+      const accountsModel1 = new accountsModel();
+      const retVal         = instance.checkUnconfirmedDelegates(tx, accountsModel1);
+      expect(stub.calledOnce).to.be.true;
+      expect(stub.firstCall.args[0]).to.be.deep.equal(accountsModel1);
+      expect(stub.firstCall.args[1]).to.be.equalTo(tx.asset.votes);
       expect(retVal).to.be.equal('test');
     });
   });
@@ -388,11 +404,13 @@ describe('logic/transactions/vote', () => {
   describe('applyUnconfirmed', () => {
     let checkUnconfirmedDelegatesStub: SinonStub;
     let applyDiffArrayStub: SinonStub;
+    let calcRoundStub: SinonStub;
+    let mergeStub: SinonStub;
     beforeEach(() => {
       checkUnconfirmedDelegatesStub = sandbox.stub(instance, 'checkUnconfirmedDelegates').resolves('yesItIs');
-      roundsLogicStub.stubs.calcRound.returns(111);
-      accountLogicStub.stubs.merge.resolves();
-      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
+      calcRoundStub                 = sandbox.stub(roundsLogicStub, 'calcRound').returns(111);
+      mergeStub                     = sandbox.stub(accountLogicStub, 'merge').resolves();
+      applyDiffArrayStub            = sandbox.stub(sender, 'applyDiffArray');
     });
 
     it('should call applyDiffArray with proper values', async () => {
@@ -412,16 +430,16 @@ describe('logic/transactions/vote', () => {
       checkUnconfirmedDelegatesStub.resolves();
       const ops = await instance.applyUnconfirmed(tx, sender);
       expect(ops.length).eq(2);
-      const first: DBRemoveOp<any> = ops[0] as any;
+      const first: DBRemoveOp<any>      = ops[0] as any;
       const second: DBBulkCreateOp<any> = ops[1] as any;
 
-      expect({ ... first, model: first.model.getTableName()}).deep.eq({
-        type: 'remove',
-        model: Accounts2U_DelegatesModel.getTableName(),
+      expect({ ...first, model: first.model.getTableName() }).deep.eq({
+        type   : 'remove',
+        model  : accounts2U_DelegatesModel.getTableName(),
         options: {
           limit: 1,
           where: {
-            accountId: tx.senderId,
+            accountId  : tx.senderId,
             dependentId: [
               '7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381'
             ],
@@ -429,13 +447,13 @@ describe('logic/transactions/vote', () => {
         },
       });
 
-      expect({ ... second, model: second.model.getTableName()}).deep.eq({
-        type: 'bulkCreate',
-        model: Accounts2U_DelegatesModel.getTableName(),
+      expect({ ...second, model: second.model.getTableName() }).deep.eq({
+        type  : 'bulkCreate',
+        model : accounts2U_DelegatesModel.getTableName(),
         values: [
           {
             dependentId: '05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a',
-            accountId: tx.senderId,
+            accountId  : tx.senderId,
           },
         ],
       });
@@ -444,19 +462,20 @@ describe('logic/transactions/vote', () => {
     it('should NOT call accountLogic.merge if checkUnconfirmedDelegates resolves', async () => {
       checkUnconfirmedDelegatesStub.rejects();
       await expect(instance.applyUnconfirmed(tx, sender)).to.be.rejected;
-      expect(accountLogicStub.stubs.merge.notCalled).to.be.true;
+      expect(mergeStub.notCalled).to.be.true;
     });
   });
 
   describe('undoUnconfirmed', () => {
     let objectNormalizeStub: SinonStub;
     let applyDiffArrayStub: SinonStub;
-
+    let calcRoundStub: SinonStub;
+    let mergeStub: SinonStub;
     beforeEach(() => {
       objectNormalizeStub = sandbox.stub(instance, 'objectNormalize').resolves();
-      roundsLogicStub.stubs.calcRound.returns(111);
-      accountLogicStub.stubs.merge.resolves();
-      applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
+      calcRoundStub       = sandbox.stub(roundsLogicStub, 'calcRound').returns(111);
+      mergeStub           = sandbox.stub(accountLogicStub, 'merge').resolves();
+      applyDiffArrayStub  = sandbox.stub(sender, 'applyDiffArray');
     });
     it('should call applyDiffArray with proper values', async () => {
       await instance.undoUnconfirmed(tx, sender);
@@ -474,21 +493,20 @@ describe('logic/transactions/vote', () => {
       expect(objectNormalizeStub.firstCall.args[0]).to.be.deep.equal(tx);
     });
 
-
     it('should call accountLogic.merge if objectNormalize resolves', async () => {
       objectNormalizeStub.resolves();
       const ops = await instance.undoUnconfirmed(tx, sender);
       expect(ops.length).eq(2);
-      const first: DBRemoveOp<any> = ops[0] as any;
+      const first: DBRemoveOp<any>      = ops[0] as any;
       const second: DBBulkCreateOp<any> = ops[1] as any;
 
-      expect({ ... first, model: first.model.getTableName()}).deep.eq({
-        type: 'remove',
-        model: Accounts2U_DelegatesModel.getTableName(),
+      expect({ ...first, model: first.model.getTableName() }).deep.eq({
+        type   : 'remove',
+        model  : accounts2U_DelegatesModel.getTableName(),
         options: {
           limit: 1,
           where: {
-            accountId: tx.senderId,
+            accountId  : tx.senderId,
             dependentId: [
               '05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a'
             ],
@@ -496,13 +514,13 @@ describe('logic/transactions/vote', () => {
         },
       });
 
-      expect({ ... second, model: second.model.getTableName()}).deep.eq({
-        type: 'bulkCreate',
-        model: Accounts2U_DelegatesModel.getTableName(),
+      expect({ ...second, model: second.model.getTableName() }).deep.eq({
+        type  : 'bulkCreate',
+        model : accounts2U_DelegatesModel.getTableName(),
         values: [
           {
             dependentId: '7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381',
-            accountId: tx.senderId,
+            accountId  : tx.senderId,
           },
         ],
       });
@@ -511,33 +529,24 @@ describe('logic/transactions/vote', () => {
   });
 
   describe('objectNormalize', () => {
-    beforeEach(() => {
-      zSchemaStub.validate.returns(true);
-    });
+    it('should throw if asset is invalid', () => {
+      expect(() => instance.objectNormalize({ ...tx, asset: { votes: ['+MEOW'] } })).to.throw;
+      expect(() => instance.objectNormalize({
+        ...tx,
+        asset: { votes: ['/' + new Array(64).fill('a').join('')] }
+      })).to.throw;
 
-    it('should call schema.validate', () => {
-      instance.objectNormalize(tx);
-      expect(zSchemaStub.validate.calledOnce).to.be.true;
-      expect(zSchemaStub.validate.firstCall.args[0]).to.be.deep.equal(tx.asset);
-      expect(zSchemaStub.validate.firstCall.args[1]).to.be.deep.equal(voteSchema);
+      // unique items
+      expect(() => instance.objectNormalize({
+        ... tx,
+        asset: { votes: tx.asset.votes.contact(tx.asset.votes[0])}
+      })).to.throw;
     });
-
-    it('should throw if validation fails', () => {
-      zSchemaStub.validate.returns(false);
-      expect(() => {
-        instance.objectNormalize(tx);
-      }).to.throw(/Failed to validate vote schema/);
-    });
-
-    it('should throw with errors message if validation fails', () => {
-      (instance as any).schema.getLastErrors = () => [{message: '1'}, {message: '2'}];
-      zSchemaStub.validate.returns(false);
-      expect(() => {
-        instance.objectNormalize(tx);
-      }).to.throw('Failed to validate vote schema: 1, 2');
-    });
-
     it('should return the tx', () => {
+      const retVal = instance.objectNormalize(tx);
+      expect(retVal).to.be.deep.equal(tx);
+    });
+    it('should ok both with add nad remove vote', () => {
       const retVal = instance.objectNormalize(tx);
       expect(retVal).to.be.deep.equal(tx);
     });
@@ -584,20 +593,20 @@ describe('logic/transactions/vote', () => {
       }).to.throw('Invalid vote format');
     });
 
-    it('should call schema.validate', () => {
-      zSchemaStub.validate.returns(true);
-      (instance as any).assertValidVote(tx.asset.votes[0]);
-      expect(zSchemaStub.validate.calledOnce).to.be.true;
-      expect(zSchemaStub.validate.firstCall.args[0]).to.be.equal(tx.asset.votes[0].substring(1));
-      expect(zSchemaStub.validate.firstCall.args[1]).to.be.deep.equal({ format: 'publicKey' });
-    });
-
-    it('should throw if schema.validate fails', () => {
-      zSchemaStub.validate.returns(false);
-      expect(() => {
-        (instance as any).assertValidVote(tx.asset.votes[1]);
-      }).to.throw('Invalid vote publicKey');
-    });
+    // it('should call schema.validate', () => {
+    //   zSchemaStub.validate.returns(true);
+    //   (instance as any).assertValidVote(tx.asset.votes[0]);
+    //   expect(zSchemaStub.validate.calledOnce).to.be.true;
+    //   expect(zSchemaStub.validate.firstCall.args[0]).to.be.equal(tx.asset.votes[0].substring(1));
+    //   expect(zSchemaStub.validate.firstCall.args[1]).to.be.deep.equal({ format: 'publicKey' });
+    // });
+    //
+    // it('should throw if schema.validate fails', () => {
+    //   zSchemaStub.validate.returns(false);
+    //   expect(() => {
+    //     (instance as any).assertValidVote(tx.asset.votes[1]);
+    //   }).to.throw('Invalid vote publicKey');
+    // });
   });
 
   describe('attachAssets', () => {
@@ -611,15 +620,15 @@ describe('logic/transactions/vote', () => {
     });
     it('should throw if a tx was provided but not returned by model.findAll', async () => {
       modelFindAllStub.resolves([]);
-      await expect(instance.attachAssets([{id: 'ciao'}] as any))
+      await expect(instance.attachAssets([{ id: 'ciao' }] as any))
         .rejectedWith('Couldn\'t restore asset for Vote tx: ciao');
     });
     it('should use model result and modify original arr', async () => {
       modelFindAllStub.resolves([
-        { transactionId: 2, votes: '+cc,-dd'},
-        { transactionId: 1, votes: '+aa,-bb'},
+        { transactionId: 2, votes: '+cc,-dd' },
+        { transactionId: 1, votes: '+aa,-bb' },
       ]);
-      const txs: any = [{id: 1}, {id: 2}];
+      const txs: any = [{ id: 1 }, { id: 2 }];
 
       await instance.attachAssets(txs);
 
@@ -641,4 +650,5 @@ describe('logic/transactions/vote', () => {
       });
     });
   });
+
 });

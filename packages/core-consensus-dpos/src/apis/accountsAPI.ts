@@ -1,5 +1,5 @@
 import { DeprecatedAPIError } from '@risevision/core-apis';
-import { IAccountsModule, ISystemModule, Symbols, } from '@risevision/core-interfaces';
+import { IAccountsModule, ICrypto, ISystemModule, Symbols, } from '@risevision/core-interfaces';
 import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
@@ -18,11 +18,11 @@ export class AccountsAPI {
   public schema: z_schema;
   @inject(Symbols.modules.accounts)
   private accounts: IAccountsModule<AccountsModelForDPOS>;
-  @inject(Symbols.modules.blocks)
   @inject(dPoSSymbols.modules.delegates)
   private delegatesModule: DelegatesModule;
+
   @inject(Symbols.generic.crypto)
-  private crypto: Crypto;
+  private crypto: ICrypto;
   @inject(Symbols.modules.system)
   private system: ISystemModule;
 

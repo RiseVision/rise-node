@@ -3,21 +3,18 @@ import * as proxyquire from 'proxyquire';
 import { Op } from 'sequelize';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import * as helpers from '../../../src/helpers/';
-import roundSQL from '../../../src/sql/logic/rounds';
-import { createContainer } from '../../utils/containerCreator';
 import { Container } from 'inversify';
-import { Symbols } from '../../../src/ioc/symbols';
-import { AccountsModel, BlocksModel, RoundsModel } from '../../../src/models';
+import { IAccountsModel, IBlocksModel } from '../../../core-interfaces/src/models';
+import { RoundsModel } from '../../src/models';
+import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
+import { Symbols } from '../../../core-interfaces/src';
+import { dPoSSymbols, RoundChanges } from '../../src/helpers';
+import { RoundLogic } from '../../src/logic/round';
+import { ModelSymbols } from '../../../core-models/src/helpers';
 
 const expect = chai.expect;
 
 const pgpStub    = { as: undefined } as any;
-const ProxyRound = proxyquire('../../../src/logic/round.ts', {
-  '../helpers/'        : helpers,
-  '../sql/logic/rounds': roundSQL,
-  'pg-promise'         : pgpStub,
-});
 
 // tslint:disable no-unused-expression
 describe('logic/round', () => {
@@ -25,15 +22,17 @@ describe('logic/round', () => {
   let instance;
   let scope;
   let container: Container;
-  let accountsModel: typeof AccountsModel;
+  let accountsModel: typeof IAccountsModel;
   let roundsModel: typeof RoundsModel;
-  let blocksModel: typeof BlocksModel;
-  beforeEach(() => {
+  let blocksModel: typeof IBlocksModel;
+  let roundLogic: typeof RoundLogic;
+  beforeEach(async () => {
     sandbox       = sinon.createSandbox();
-    container     = createContainer();
-    accountsModel = container.get(Symbols.models.accounts);
-    roundsModel   = container.get(Symbols.models.rounds);
-    blocksModel   = container.get(Symbols.models.blocks);
+    container     = await createContainer(['core-consensus-dpos', 'core-helpers']);
+    accountsModel = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
+    roundsModel   = container.getNamed(ModelSymbols.model, dPoSSymbols.models.rounds);
+    blocksModel   = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
+    roundLogic    = container.get(dPoSSymbols.logic.round);
 
     scope    = {
       backwards     : false,
@@ -47,6 +46,7 @@ describe('logic/round', () => {
           debug: sandbox.stub(),
           trace: sandbox.stub(),
         },
+        RoundChanges: container.get(dPoSSymbols.helpers.roundChanges),
       },
       modules       : {
         accounts: {
@@ -55,9 +55,9 @@ describe('logic/round', () => {
         },
       },
       models        : {
-        AccountsModel: container.get(Symbols.models.accounts),
-        BlocksModel  : container.get(Symbols.models.blocks),
-        RoundsModel  : container.get(Symbols.models.rounds),
+        AccountsModel: accountsModel,
+        BlocksModel  : blocksModel,
+        RoundsModel  : roundsModel,
       },
       round         : 10,
       roundDelegates: [{}],
@@ -65,7 +65,7 @@ describe('logic/round', () => {
       roundOutsiders: ['1', '2', '3'],
       roundRewards  : {},
     };
-    instance = new ProxyRound.RoundLogic(scope, container.get(Symbols.helpers.slots));
+    instance = new roundLogic(scope, container.get(dPoSSymbols.helpers.slots));
   });
 
   afterEach(() => {
@@ -88,7 +88,7 @@ describe('logic/round', () => {
 
         delete scope[prop];
         const throwError = () => {
-          new ProxyRound.RoundLogic(scope);
+          new roundLogic(scope, container.get(dPoSSymbols.helpers.slots));
         };
         expect(throwError).to.throw();
       });
@@ -114,7 +114,7 @@ describe('logic/round', () => {
 
         delete scope[prop];
         const throwError = () => {
-          new ProxyRound.RoundLogic(scope);
+          new roundLogic(scope, container.get(dPoSSymbols.helpers.slots));
         };
         expect(throwError).to.throw();
       });
@@ -142,13 +142,11 @@ describe('logic/round', () => {
   describe('updateMissedBlocks', () => {
     it('should return null roundOutsiders is empty', async () => {
       scope.roundOutsiders = [];
-      const instanceTest   = new ProxyRound.RoundLogic(scope, container.get(Symbols.helpers.slots));
-      const ar             = await instanceTest.updateMissedBlocks();
+      const ar             = await instance.updateMissedBlocks();
       expect(ar).to.be.null;
     });
 
     it('should return result from updateMissedBlocks', async () => {
-      const updateMissedBlocks = sandbox.stub(roundSQL, 'updateMissedBlocks').returns(true);
       const retVal             = await instance.updateMissedBlocks();
       expect(retVal.model).to.be.deep.eq(accountsModel);
       delete retVal.model; // causes memory issue
@@ -160,10 +158,8 @@ describe('logic/round', () => {
 
       // chai does not support deep eq on obj with symbols
       expect(retVal.options.where.address[Op.in]).to.be.deep.eq(scope.roundOutsiders);
-      updateMissedBlocks.restore();
     });
   });
-
 
   describe('updateVotes', () => {
 
@@ -235,22 +231,11 @@ describe('logic/round', () => {
   });
 
   describe('applyRound', () => {
-    let roundChangesOriginal;
     let at: SinonStub;
-    let RoundChanges;
-
     beforeEach(() => {
-      roundChangesOriginal          = helpers.RoundChanges;
-      at                            = sandbox.stub();
-      RoundChanges                  = function RoundChangesFake() {
-        return { at };
-      };
-      (helpers.RoundChanges as any) = RoundChanges;
-    });
-
-    afterEach(() => {
-      (helpers.RoundChanges as any) = roundChangesOriginal;
-    });
+      const rc = container.get<typeof RoundChanges>(dPoSSymbols.helpers.roundChanges);
+      at = sandbox.stub(rc.prototype, 'at');
+    })
 
     it('should apply round changes to each delegate, with backwards false and fees > 0', async () => {
       at.returns({

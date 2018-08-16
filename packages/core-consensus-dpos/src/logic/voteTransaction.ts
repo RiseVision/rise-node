@@ -13,7 +13,7 @@ import {
   TransactionType
 } from '@risevision/core-types';
 import { Diff } from '@risevision/core-utils';
-import { inject, injectable, named } from 'inversify';
+import { inject, injectable, named, postConstruct } from 'inversify';
 import { Model } from 'sequelize-typescript';
 import * as z_schema from 'z-schema';
 import { DposConstantsType, dPoSSymbols } from '../helpers/';
@@ -40,7 +40,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
 
-  @inject(Symbols.generic.constants)
+  @inject(dPoSSymbols.constants)
   private dposConstants: DposConstantsType;
 
   // Logic
@@ -74,6 +74,10 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
 
   constructor() {
     super(TransactionType.VOTE);
+  }
+
+  @postConstruct()
+  private postConstruct() {
     voteSchema.properties.votes.maxItems = this.dposConstants.maxVotesPerTransaction;
   }
 

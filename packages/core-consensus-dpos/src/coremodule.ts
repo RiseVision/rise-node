@@ -1,5 +1,5 @@
 import { BaseCoreModule } from '@risevision/core-launchpad';
-import { constants, DposAppConfig, dPoSSymbols } from './helpers';
+import { constants, DposAppConfig, dPoSSymbols, RoundChanges, Slots } from './helpers';
 import { CommanderStatic } from 'commander';
 import {
   Accounts2DelegatesModel,
@@ -31,6 +31,18 @@ export class CoreModule extends BaseCoreModule<DposAppConfig> implements ICoreMo
   }
 
   public addElementsToContainer() {
+
+    this.container.bind(dPoSSymbols.constants)
+      .toConstantValue(this.constants);
+
+    // Helpers
+    this.container.bind(dPoSSymbols.helpers.slots)
+      .to(Slots)
+      .inSingletonScope();
+    this.container.bind(dPoSSymbols.helpers.roundChanges)
+      .toConstructor(RoundChanges);
+
+    // APIs
     this.container.bind(APISymbols.api)
       .to(AccountsAPI)
       .whenTargetNamed(dPoSSymbols.accountsAPI);

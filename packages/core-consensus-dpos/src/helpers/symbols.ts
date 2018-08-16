@@ -1,4 +1,5 @@
 export const dPoSSymbols = {
+  constants: Symbol.for('rise.dpos.constants'),
   accountsAPI : Symbol.for('rise.dpos.accountsAPI'),
   delegatesAPI: Symbol.for('rise.dpos.delegatesAPI'),
   helpers     : {

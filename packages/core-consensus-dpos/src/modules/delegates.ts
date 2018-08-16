@@ -1,4 +1,5 @@
-import { OnCheckIntegrity, VerifyBlockFilter, VerifyBlockReceipt } from '@risevision/core';
+import { OnCheckIntegrity } from '@risevision/core';
+import { VerifyBlock, VerifyReceipt } from '@risevision/core-blocks';
 import { ExceptionsManager, ExceptionSymbols } from '@risevision/core-exceptions';
 import {
   IAccountsModule,
@@ -13,30 +14,36 @@ import { ConstantsType, publicKey, SignedBlockType } from '@risevision/core-type
 import { OrderBy, RunThroughExceptions } from '@risevision/core-utils';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
-import { inject, injectable } from 'inversify';
-import { WPHooksSubscriber } from 'mangiafuoco';
+import { decorate, inject, injectable, named } from 'inversify';
+import { WPHooksSubscriber, WordPressHookSystem } from 'mangiafuoco';
 import * as sequelize from 'sequelize';
 import * as z_schema from 'z-schema';
 import { DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
 import { RoundsLogic } from '../logic/rounds';
 import { AccountsModelForDPOS, DelegatesModel } from '../models';
 import { DposExceptionsList } from '../dposExceptionsList';
+import { ModelSymbols } from '@risevision/core-models';
 
 const countDuplicatedDelegatesSQL = fs.readFileSync(
   `${__dirname}/../../sql/countDuplicatedDelegates.sql`,
   { encoding: 'utf8' }
 );
 
+const Extendable = WPHooksSubscriber(Object);
+decorate(injectable(), Extendable);
+
 @injectable()
-export class DelegatesModule extends WPHooksSubscriber(Object) implements IModule {
+export class DelegatesModule extends Extendable implements IModule {
   private loaded: boolean = false;
 
   // Generic
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
+  @inject(Symbols.generic.hookSystem)
+  public hookSystem: WordPressHookSystem;
 
   // Helpers
-  @inject(Symbols.generic.constants)
+  @inject(dPoSSymbols.constants)
   private dposConstants: DposConstantsType;
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
@@ -64,9 +71,11 @@ export class DelegatesModule extends WPHooksSubscriber(Object) implements IModul
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
-  @inject(dPoSSymbols.models.delegates)
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.delegates)
   private delegatesModel: typeof DelegatesModel;
-  @inject(dPoSSymbols.models.delegates)
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.delegates)
   private accountsModel: typeof AccountsModelForDPOS;
 
   public async checkConfirmedDelegates(account: AccountsModelForDPOS, votes: string[]) {
@@ -216,7 +225,7 @@ export class DelegatesModule extends WPHooksSubscriber(Object) implements IModul
    * Verifies through a filter that the given block is not in the past compared to last block
    * and not in the future compared to now.
    */
-  @VerifyBlockFilter(9)
+  @VerifyBlock(9)
   private async verifyBlockSlot(payload: { errors: string[], verified: boolean }, block: SignedBlockType, lastBlock: SignedBlockType) {
     if (!payload.verified) {
       return payload;
@@ -235,8 +244,8 @@ export class DelegatesModule extends WPHooksSubscriber(Object) implements IModul
   /**
    * Verifies that the block has been forged by the correct delegate.
    */
-  @VerifyBlockFilter(100)
-  @VerifyBlockReceipt(100)
+  @VerifyBlock(100)
+  @VerifyReceipt(100)
   private async verifyBlock(payload: { errors: string[], verified: boolean }, block: SignedBlockType) {
     if (!payload.verified) {
       return payload;
@@ -254,8 +263,8 @@ export class DelegatesModule extends WPHooksSubscriber(Object) implements IModul
   /**
    * Verify block slot is not too in the past or in the future.
    */
-  @VerifyBlockReceipt()
-  private verifyBlockSlotWindow(payload: { errors: string[], verified: boolean }, block: SignedBlockType) {
+  @VerifyReceipt()
+  private async verifyBlockSlotWindow(payload: { errors: string[], verified: boolean }, block: SignedBlockType) {
     if (!payload.verified) {
       return payload;
     }
@@ -268,7 +277,9 @@ export class DelegatesModule extends WPHooksSubscriber(Object) implements IModul
     if (curSlot < blockSlot) {
       errors.push('Block slot is in the future');
     }
-    return errors;
+    payload.errors = errors;
+    payload.verified = errors.length === 0;
+    return payload;
   }
 
   /**

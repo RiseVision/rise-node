@@ -29,7 +29,8 @@ export type RoundLogicScope = {
   roundRewards: number[];
   finishRound: boolean;
   library: {
-    logger: ILogger
+    logger: ILogger,
+    RoundChanges: typeof RoundChanges,
   },
   models: {
     AccountsModel: typeof IAccountsModel,
@@ -186,7 +187,7 @@ export class RoundLogic {
    * For each delegate in round calls mergeAccountAndGet with new Balance
    */
   public applyRound(): Array<DBOp<any>> {
-    const roundChanges              = new RoundChanges(this.scope, this.slots);
+    const roundChanges              = new this.scope.library.RoundChanges(this.scope, this.slots);
     const queries: Array<DBOp<any>> = [];
 
     const delegates = this.scope.roundDelegates;
