@@ -2,6 +2,8 @@ import { IAccountsModel } from '@risevision/core-interfaces';
 import { Column, DataType, DefaultScope } from 'sequelize-typescript';
 import * as sequelize from 'sequelize';
 import { publicKey } from '@risevision/core-types';
+import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
+import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
 const buildArrayArgAttribute = function (table: string): any {
   return [sequelize.literal(`(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2${table} WHERE "accountId" = "AccountsModel"."address")`), table];
@@ -33,4 +35,9 @@ export class AccountsModelForDPOS extends IAccountsModel {
   public u_isDelegate: 0 | 1;
   @Column(DataType.TEXT)
   public u_delegates?: publicKey[];
+
+  public constructor(values?: FilteredModelAttributes<AccountsModelForDPOS>, options?: IBuildOptions) {
+    super(values, options);
+  }
+
 }
