@@ -410,7 +410,7 @@ describe('modules/blocks/verify', () => {
       let normalizedBlock: any;
       let checkTXStub: SinonStub;
       beforeEach(() => {
-        txs = createRandomTransactions(10);
+        txs = createRandomTransactions(14);
         sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors: [], verified: true }));
         normalizedBlock = { id: '1', normalized: 'block', transactions: txs };
         sandbox.stub(blockLogic, 'objectNormalize').returns(normalizedBlock);

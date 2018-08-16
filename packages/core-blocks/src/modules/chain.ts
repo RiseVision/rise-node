@@ -1,4 +1,7 @@
 import bs = require('binary-search');
+import { inject, injectable, named } from 'inversify';
+import { Op, Transaction } from 'sequelize';
+import * as _ from 'lodash';
 import {
   IAccountsModel,
   IAccountsModule,
@@ -8,28 +11,25 @@ import {
   IBlocksModuleChain,
   IBlocksModuleUtils,
   IDBHelper,
-  ILogger, ISequence,
+  ILogger,
+  ISequence,
   ITransactionLogic,
   ITransactionsModel,
   ITransactionsModule,
   Symbols
 } from '@risevision/core-interfaces';
-import { LaunchpadSymbols } from '@risevision/core-launchpad';
-import { ModelSymbols } from '@risevision/core-models';
-
 import { DBOp, SignedAndChainedBlockType, SignedBlockType, TransactionType } from '@risevision/core-types';
-import { inject, injectable, named } from 'inversify';
-import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
-import { Op, Transaction } from 'sequelize';
 import { BlocksSymbols } from '../blocksSymbols';
+import { ModelSymbols } from '@risevision/core-models';
 import { catchToLoggerAndRemapError, wait, WrapInBalanceSequence } from '@risevision/core-utils';
+import { LaunchpadSymbols } from '@risevision/core-launchpad';
 
 @injectable()
 export class BlocksModuleChain implements IBlocksModuleChain {
 
   // Generic
-  @inject(LaunchpadSymbols.genesisBlock)
+  @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
   @inject(LaunchpadSymbols.hookSystem)
   private hookSystem: WordPressHookSystem;
@@ -206,10 +206,6 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     });
     // Start atomic block saving.
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
-      // Apply transaction to unconfirmed mem_accounts field
-      // Divide transactions by senderAccounts.
-      // Fetch recipient accounts and create non existing ones.
-      // Apply unconfirmed
       const ops: Array<DBOp<any>> = [];
 
       const recipients = _.sortedUniq(block.transactions
@@ -265,11 +261,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       }
 
       // await this.bus.message('newBlock', block, broadcast);
-      await this.hookSystem.do_action('core/blocks/chain/applyBlock.post', this.blocksModule.lastBlock, dbTX);
       // TODO: add this on consensus dpos using hook ^^
       // await this.roundsModule.tick(block, dbTX);
 
       this.blocksModule.lastBlock = new this.BlocksModel(block);
+      await this.hookSystem.do_action('core/blocks/chain/applyBlock.post', this.blocksModule.lastBlock, dbTX);
     }).catch((err) => {
       // Allow cleanup as processing finished even if rollback.
       this.isProcessing = false;
