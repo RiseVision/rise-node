@@ -1,7 +1,3 @@
-import bs = require('binary-search');
-import { inject, injectable, named } from 'inversify';
-import { Op, Transaction } from 'sequelize';
-import * as _ from 'lodash';
 import {
   IAccountsModel,
   IAccountsModule,
@@ -18,12 +14,17 @@ import {
   ITransactionsModule,
   Symbols
 } from '@risevision/core-interfaces';
-import { DBOp, SignedAndChainedBlockType, SignedBlockType, TransactionType } from '@risevision/core-types';
-import { WordPressHookSystem } from 'mangiafuoco';
-import { BlocksSymbols } from '../blocksSymbols';
-import { ModelSymbols } from '@risevision/core-models';
-import { catchToLoggerAndRemapError, wait, WrapInBalanceSequence } from '@risevision/core-utils';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
+import { ModelSymbols } from '@risevision/core-models';
+import { DBOp, SignedAndChainedBlockType, SignedBlockType, TransactionType } from '@risevision/core-types';
+import { catchToLoggerAndRemapError, wait, WrapInBalanceSequence } from '@risevision/core-utils';
+import bs = require('binary-search');
+import { inject, injectable, named } from 'inversify';
+import * as _ from 'lodash';
+import { WordPressHookSystem } from 'mangiafuoco';
+import { Op, Transaction } from 'sequelize';
+import { BlocksSymbols } from '../blocksSymbols';
+import { OnDestroyBlock, OnPostApplyBlock, OnTransactionsSaved } from '../hooks';
 
 @injectable()
 export class BlocksModuleChain implements IBlocksModuleChain {
@@ -177,7 +178,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     }
     this.blocksModule.lastBlock = new this.BlocksModel(block);
     await this.BlocksModel.sequelize
-      .transaction((tx) => this.hookSystem.do_action('core/blocks/chain/applyBlock.post', this.blocksModule.lastBlock, tx));
+      .transaction((tx) => this.hookSystem.do_action(OnPostApplyBlock.name, this.blocksModule.lastBlock, tx));
     // TODO: add this on dpos-consensus via hook ^^.
     // await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
   }
@@ -220,9 +221,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       }
 
       ops.push({
-        type : 'custom',
-        query: await this.AccountsModel.createBulkAccountsSQL(recipients),
         model: this.AccountsModel,
+        query: await this.AccountsModel.createBulkAccountsSQL(recipients),
+        type : 'custom',
       });
 
       for (const tx of block.transactions) {
@@ -265,7 +266,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       // await this.roundsModule.tick(block, dbTX);
 
       this.blocksModule.lastBlock = new this.BlocksModel(block);
-      await this.hookSystem.do_action('core/blocks/chain/applyBlock.post', this.blocksModule.lastBlock, dbTX);
+      await this.hookSystem.do_action(OnPostApplyBlock.name, this.blocksModule.lastBlock, dbTX);
     }).catch((err) => {
       // Allow cleanup as processing finished even if rollback.
       this.isProcessing = false;
@@ -314,7 +315,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   private async afterSave(block: SignedBlockType) {
     // await this.bus.message('transactionsSaved', block.transactions);
     // TODO:
-    await this.hookSystem.do_action('core-blocks/onTransactionsSaved', block.transactions, block);
+    await this.hookSystem.do_action(OnTransactionsSaved.name, block.transactions, block);
     // Execute afterSave callbacks for each transaction, depends on tx type
     for (const tx of  block.transactions) {
       await this.transactionLogic.afterSave(tx);
@@ -347,7 +348,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       await this.dbHelper.performOps(ops, dbTX);
       // await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
       await lb.destroy({ transaction: dbTX });
-      await this.hookSystem.do_action('core/blocks/chain/onDestroyBlock', this.blocksModule.lastBlock, dbTX);
+      await this.hookSystem.do_action(OnDestroyBlock.name, this.blocksModule.lastBlock, dbTX);
     });
 
     return previousBlock;
