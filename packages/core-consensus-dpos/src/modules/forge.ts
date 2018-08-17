@@ -16,7 +16,7 @@ import { inject, injectable, named } from 'inversify';
 import { DposAppConfig, dPoSSymbols, Slots } from '../helpers/';
 import { AccountsModelForDPOS } from '../models';
 import { DelegatesModule } from './delegates';
-
+import { BlocksSymbols, BlocksModuleProcess } from '@risevision/core-blocks';
 
 @injectable()
 export class ForgeModule implements IModule {
@@ -54,8 +54,8 @@ export class ForgeModule implements IModule {
   private accountsModule: IAccountsModule<AccountsModelForDPOS>;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.blocksSubmodules.process)
-  private blocksProcessModule: IBlocksModuleProcess;
+  @inject(BlocksSymbols.modules.process)
+  private blocksProcessModule: BlocksModuleProcess;
   @inject(dPoSSymbols.modules.delegates)
   private delegatesModule: DelegatesModule;
   @inject(Symbols.modules.transactions)
