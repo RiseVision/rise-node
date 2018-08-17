@@ -1,30 +1,23 @@
-import { expect } from 'chai';
 import * as chai from 'chai';
+import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as crypto from 'crypto';
-import {Container} from 'inversify';
-import { SinonFakeTimers, SinonSandbox, SinonSpy, SinonStub } from 'sinon';
+import { Container } from 'inversify';
 import * as sinon from 'sinon';
-import * as helpers from '../../../src/helpers';
-import { catchToLoggerAndRemapError, constants } from '../../../src/helpers';
-import {Symbols} from '../../../src/ioc/symbols';
-import { ForgeModule } from '../../../src/modules';
-import {
-  AccountsModuleStub,
-  AppStateStub,
-  BlocksModuleStub,
-  BlocksSubmoduleProcessStub,
-  BroadcasterLogicStub,
-  DelegatesModuleStub,
-  EdStub,
-  JobsQueueStub,
-  LoggerStub, SequenceStub,
-  SlotsStub,
-  TransactionsModuleStub
-} from '../../stubs';
-import { CreateHashSpy } from '../../stubs/utils/CreateHashSpy';
-import { createContainer } from '../../utils/containerCreator';
-import { BlocksModel } from '../../../src/models';
+import { SinonFakeTimers, SinonSandbox, SinonSpy, SinonStub } from 'sinon';
+import { AppState, JobsQueue } from '../../../core-helpers/src';
+import { ICrypto, ILogger } from '../../../core-interfaces/src/helpers';
+import { dPoSSymbols, Slots } from '../../src/helpers';
+import { BroadcasterLogic } from '../../../core-p2p/src/broadcaster';
+import { IAccountsModule, IBlocksModule, ITransactionsModule } from '../../../core-interfaces/src/modules';
+import { DelegatesModule, ForgeModule } from '../../src/modules';
+import { BlocksModuleProcess } from '../../../core-blocks/src/modules';
+import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
+import { Symbols } from '../../../core-interfaces/src';
+import { BlocksSymbols } from '../../../core-blocks/src';
+import { ModelSymbols } from '../../../core-models/src/helpers';
+import { IBlocksModel } from '../../../core-interfaces/src/models';
+import { LiskWallet } from 'dpos-offline';
+import { ConstantsType } from '../../../core-types/src';
 
 chai.use(chaiAsPromised);
 
@@ -33,70 +26,53 @@ describe('modules/forge', () => {
   let sandbox: SinonSandbox;
   let container: Container;
   let clock: SinonFakeTimers;
-  let instance: any;
+  let instance: ForgeModule;
   let fakeConfig: any;
-  let jobsQueueStub: JobsQueueStub;
-  let loggerStub: LoggerStub;
-  let edStub: EdStub;
+  let jobsQueueStub: JobsQueue;
+  let edStub: ICrypto;
   let sequenceStub: { addAndPromise: SinonSpy };
-  let slotsStub: SlotsStub;
-  let appStateStub: AppStateStub;
-  let broadcasterLogicStub: BroadcasterLogicStub;
-  let accountsModuleStub: AccountsModuleStub;
-  let blocksModuleStub: BlocksModuleStub;
-  let delegatesModuleStub: DelegatesModuleStub;
-  let transactionsModuleStub: TransactionsModuleStub;
-  let blocksProcessModuleStub: BlocksSubmoduleProcessStub;
+  let slotsStub: Slots;
+  let appStateStub: AppState;
+  let broadcasterLogicStub: BroadcasterLogic;
+  let accountsModuleStub: IAccountsModule;
+  let blocksModuleStub: IBlocksModule;
+  let delegatesModuleStub: DelegatesModule;
+  let transactionsModuleStub: ITransactionsModule;
+  let blocksProcessModuleStub: BlocksModuleProcess;
+  let logger: ILogger;
+  let blocksModel: typeof IBlocksModel;
+  let constants: ConstantsType;
 
-  let createHashSpy: CreateHashSpy;
   let loadKeypairs: () => void;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     sandbox    = sinon.createSandbox();
-    container = createContainer();
+    container  = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
     clock      = sandbox.useFakeTimers();
     fakeConfig = { forging: { secret: ['secret1', 'secret2'] } };
-
-    jobsQueueStub           = container.get(Symbols.helpers.jobsQueue);
-    loggerStub              = container.get(Symbols.helpers.logger);
-    edStub                  = container.get(Symbols.helpers.crypto);
-    slotsStub               = container.get(Symbols.helpers.slots);
-    appStateStub            = container.get(Symbols.logic.appState);
-    broadcasterLogicStub    = container.get(Symbols.logic.broadcaster);
-    accountsModuleStub      = container.get(Symbols.modules.accounts);
-    blocksModuleStub        = container.get(Symbols.modules.blocks);
-    delegatesModuleStub     = container.get(Symbols.modules.delegates);
-    transactionsModuleStub  = container.get(Symbols.modules.transactions);
-    blocksProcessModuleStub = container.get(Symbols.modules.blocksSubModules.process);
-    sequenceStub            = {
+    container.get<any>(Symbols.generic.appConfig).forging = fakeConfig.forging;
+    logger                     = container.get(Symbols.helpers.logger);
+    constants                  = container.get(Symbols.generic.constants);
+    jobsQueueStub              = container.get(Symbols.helpers.jobsQueue);
+    edStub                     = container.get(Symbols.generic.crypto);
+    slotsStub                  = container.get(dPoSSymbols.helpers.slots);
+    appStateStub               = container.get(Symbols.logic.appState);
+    broadcasterLogicStub       = container.get(Symbols.logic.broadcaster);
+    accountsModuleStub         = container.get(Symbols.modules.accounts);
+    blocksModuleStub           = container.get(Symbols.modules.blocks);
+    delegatesModuleStub        = container.get(dPoSSymbols.modules.delegates);
+    transactionsModuleStub     = container.get(Symbols.modules.transactions);
+    blocksProcessModuleStub    = container.get(BlocksSymbols.modules.process);
+    blocksModel                = container.getNamed(ModelSymbols.model, Symbols.models.blocks)
+    instance                   = container.get(dPoSSymbols.modules.forge)
+    sequenceStub               = {
       addAndPromise: sandbox.spy((w) => {
         return Promise.resolve(
           w()
         );
       }),
     };
-
-    instance = new ForgeModule();
-    instance = instance as any;
-
-    instance.enabledKeys         = {};
-    instance.config              = fakeConfig;
-    instance.constants           = constants;
-    instance.jobsQueue           = jobsQueueStub;
-    instance.logger              = loggerStub;
-    instance.ed                  = edStub;
-    instance.defaultSequence     = sequenceStub;
-    instance.slots               = slotsStub;
-    instance.appState            = appStateStub;
-    instance.broadcasterLogic    = broadcasterLogicStub;
-    instance.accountsModule      = accountsModuleStub;
-    instance.blocksModule        = blocksModuleStub;
-    instance.delegatesModule     = delegatesModuleStub;
-    instance.transactionsModule  = transactionsModuleStub;
-    instance.blocksProcessModule = blocksProcessModuleStub;
-
-    createHashSpy              = new CreateHashSpy(crypto, sandbox);
-    blocksModuleStub.lastBlock = BlocksModel.classFromPOJO({
+    blocksModuleStub.lastBlock = new blocksModel({
       blockSignature      : Buffer.from('blockSignature'),
       generatorPublicKey  : Buffer.from('pubKey'),
       height              : 12422,
@@ -117,11 +93,11 @@ describe('modules/forge', () => {
         bbbb: true,
         cccc: true,
       };
-      instance.keypairs    = {
+      instance['keypairs'] = {
         aaaa: { publicKey: Buffer.from('aaaa', 'hex') },
         bbbb: { publicKey: Buffer.from('bbbb', 'hex') },
         cccc: { publicKey: Buffer.from('cccc', 'hex') },
-      };
+      } as any;
     };
   });
 
@@ -135,7 +111,7 @@ describe('modules/forge', () => {
         key1: true,
         key2: false,
         key3: true,
-      };
+      } as any;
       const retVal         = instance.getEnabledKeys();
       expect(retVal).to.be.deep.equal(['key1', 'key3']);
     });
@@ -150,7 +126,7 @@ describe('modules/forge', () => {
       });
 
       it('should return false if this.enabledKeys[pk] is false or not set', () => {
-        instance.enabledKeys[pk] = false;
+        instance.enabledKeys[pk] = false as any;
         expect(instance.isForgeEnabledOn(pk)).to.be.false;
         delete instance.enabledKeys[pk];
         expect(instance.isForgeEnabledOn(pk)).to.be.false;
@@ -166,7 +142,7 @@ describe('modules/forge', () => {
 
       it('should store the keypair in this.keypairs', () => {
         instance.isForgeEnabledOn(pk);
-        expect(instance.keypairs[hex]).to.be.deep.equal(pk);
+        expect(instance['keypairs'][hex]).to.be.deep.equal(pk);
       });
 
       it('should return true if the public key is enabled', () => {
@@ -175,7 +151,7 @@ describe('modules/forge', () => {
       });
 
       it('should return false if the public key is NOT enabled', () => {
-        instance.enabledKeys[hex] = false;
+        instance.enabledKeys[hex] = false as any;
         expect(instance.isForgeEnabledOn(pk)).to.be.false;
         delete instance.enabledKeys[hex];
         expect(instance.isForgeEnabledOn(pk)).to.be.false;
@@ -185,16 +161,16 @@ describe('modules/forge', () => {
 
   describe('enableForge', () => {
     beforeEach(() => {
-      instance.enabledKeys = {
+      instance['enabledKeys'] = {
         aaaa: false,
         bbbb: false,
         cccc: true,
-      };
-      instance.keypairs    = {
+      } as any;
+      instance['keypairs']    = {
         aaaa: {},
         bbbb: {},
         cccc: {},
-      };
+      } as any;
     });
 
     it('should set all enabledKeys to true if no keypair is passed', () => {
@@ -218,7 +194,7 @@ describe('modules/forge', () => {
     it('should store the passed key in keypairs', () => {
       const kp = { publicKey: Buffer.from('dddd', 'hex'), privateKey: Buffer.from('0') };
       instance.enableForge(kp);
-      expect(instance.keypairs.dddd).to.be.deep.equal(kp);
+      expect(instance['keypairs'].dddd).to.be.deep.equal(kp);
     });
   });
 
@@ -228,10 +204,10 @@ describe('modules/forge', () => {
         bbbb: true,
         cccc: true,
       };
-      instance.keypairs    = {
+      instance['keypairs'] = {
         bbbb: {},
         cccc: {},
-      };
+      } as any;
     });
 
     it('should delete all enabledKeys if no keypair is passed', () => {
@@ -248,43 +224,42 @@ describe('modules/forge', () => {
   });
 
   describe('onBlockchainReady', () => {
-    let inst: ForgeModule;
     let forgeStub: SinonStub;
+    let jobsRegister: SinonStub;
+    let fillPoolStub: SinonStub;
+    let loggerWarnStub: SinonStub;
     beforeEach(() => {
-      jobsQueueStub.stubs.register.resolves();
-      transactionsModuleStub.stubs.fillPool.resolves();
-      inst = new ForgeModule();
-      inst.defaultSequence = new SequenceStub() as any;
+
+      fillPoolStub = sandbox.stub(transactionsModuleStub, 'fillPool').resolves();
+      loggerWarnStub = sandbox.stub(logger, 'warn').returns(null);
+
       // Immediately execute the jobsQueue Job for testing it
-      jobsQueueStub.stubs.register.callsFake((k, t) => {
+      jobsRegister = sandbox.stub(jobsQueueStub, 'register').callsFake((k, t) => {
         t();
       });
-      (inst as any).jobsQueue = jobsQueueStub;
-      (inst as any).transactionsModule = transactionsModuleStub;
-      (inst as any).logger = loggerStub;
-      forgeStub = sandbox.stub(inst as any, 'forge');
+      forgeStub                        = sandbox.stub(instance as any, 'forge');
     });
 
     it('should call jobsQueue.register after 10 seconds', async () => {
-      const p = inst.onBlockchainReady();
-      expect(jobsQueueStub.stubs.register.notCalled).to.be.true;
+      const p = instance.onBlockchainReady();
+      expect(jobsRegister.notCalled).to.be.true;
       clock.tick(10100);
       await p;
-      expect(jobsQueueStub.stubs.register.called).to.be.true;
-      expect(jobsQueueStub.stubs.register.firstCall.args[0]).to.be.equal('delegatesNextForge');
-      expect(jobsQueueStub.stubs.register.firstCall.args[1]).to.be.a('function');
-      expect(jobsQueueStub.stubs.register.firstCall.args[2]).to.be.equal(1000);
+      expect(jobsRegister.called).to.be.true;
+      expect(jobsRegister.firstCall.args[0]).to.be.equal('delegatesNextForge');
+      expect(jobsRegister.firstCall.args[1]).to.be.a('function');
+      expect(jobsRegister.firstCall.args[2]).to.be.equal(1000);
     });
 
     it('should call transactionsModule.fillPool in scheduled job', async () => {
-      const p = inst.onBlockchainReady();
+      const p = instance.onBlockchainReady();
       clock.tick(10100);
       await p;
-      expect(transactionsModuleStub.stubs.fillPool.calledOnce).to.be.true;
+      expect(fillPoolStub.calledOnce).to.be.true;
     });
 
     it('should call this.forge in scheduled job', async () => {
-      const p = inst.onBlockchainReady();
+      const p = instance.onBlockchainReady();
       clock.tick(10100);
       await p;
       expect(forgeStub.calledOnce).to.be.true;
@@ -292,264 +267,239 @@ describe('modules/forge', () => {
 
     it('should call logger.warn in scheduled job if transactionsModule.fillPool throws', async () => {
       const expectedError = new Error('err');
-      transactionsModuleStub.stubs.fillPool.throws(expectedError);
-      const p = inst.onBlockchainReady();
+      fillPoolStub.throws(expectedError);
+      const p = instance.onBlockchainReady();
       clock.tick(10100);
       await p;
       expect(forgeStub.notCalled).to.be.true;
-      expect(loggerStub.stubs.warn.calledOnce).to.be.true;
-      expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Error in nextForge');
-      expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.deep.equal(expectedError);
+      expect(loggerWarnStub.calledOnce).to.be.true;
+      expect(loggerWarnStub.firstCall.args[0]).to.be.equal('Error in nextForge');
+      expect(loggerWarnStub.firstCall.args[1]).to.be.deep.equal(expectedError);
     });
 
     it('should call logger.warn in scheduled job if this.forge throws', async () => {
       const expectedError = new Error('err');
       forgeStub.throws(expectedError);
-      const p = inst.onBlockchainReady();
+      const p = instance.onBlockchainReady();
       clock.tick(500000);
       await p;
-      expect(loggerStub.stubs.warn.calledOnce).to.be.true;
-      expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Error in nextForge');
-      expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.deep.equal(expectedError);
+      expect(loggerWarnStub.calledOnce).to.be.true;
+      expect(loggerWarnStub.firstCall.args[0]).to.be.equal('Error in nextForge');
+      expect(loggerWarnStub.firstCall.args[1]).to.be.deep.equal(expectedError);
     });
   });
 
   describe('forge', () => {
     let loadDelegatesStub: SinonStub;
+    let appStateGetStub: SinonStub
     beforeEach(() => {
-      // We stub instance.loadDelegates to assert that function returns
+      // We stub instance['loadDelegates'] to assert that function returns
       loadDelegatesStub = sandbox.stub(instance as any, 'loadDelegates');
+      appStateGetStub   = sandbox.stub(appStateStub, 'get');
     });
 
     describe('When not ready to forge', () => {
       it('should call appState.get', async () => {
-        appStateStub.enqueueResponse('get', true);
-        await instance.forge();
-        expect(appStateStub.stubs.get.calledOnce).to.be.true;
-        expect(appStateStub.stubs.get.firstCall.args[0]).to.be.equal('loader.isSyncing');
+        appStateGetStub.returns(true);
+        await instance['forge']();
+        expect(appStateGetStub.calledOnce).to.be.true;
+        expect(appStateGetStub.firstCall.args[0]).to.be.equal('loader.isSyncing');
 
-        appStateStub.reset();
-        appStateStub.enqueueResponse('get', false);
-        appStateStub.enqueueResponse('get', false);
-        await instance.forge();
-        expect(appStateStub.stubs.get.calledTwice).to.be.true;
-        expect(appStateStub.stubs.get.firstCall.args[0]).to.be.equal('loader.isSyncing');
-        expect(appStateStub.stubs.get.secondCall.args[0]).to.be.equal('rounds.isLoaded');
+        appStateGetStub.resetHistory();
+        appStateGetStub.returns(false);
+        await instance['forge']();
+        expect(appStateGetStub.calledTwice).to.be.true;
+        expect(appStateGetStub.firstCall.args[0]).to.be.equal('loader.isSyncing');
+        expect(appStateGetStub.secondCall.args[0]).to.be.equal('rounds.isLoaded');
 
-        appStateStub.reset();
-        appStateStub.enqueueResponse('get', false);
-        appStateStub.enqueueResponse('get', true);
-        appStateStub.enqueueResponse('get', true);
-        await instance.forge();
-        expect(appStateStub.stubs.get.calledThrice).to.be.true;
-        expect(appStateStub.stubs.get.firstCall.args[0]).to.be.equal('loader.isSyncing');
-        expect(appStateStub.stubs.get.secondCall.args[0]).to.be.equal('rounds.isLoaded');
-        expect(appStateStub.stubs.get.thirdCall.args[0]).to.be.equal('rounds.isTicking');
+        appStateGetStub.resetHistory();
+        appStateGetStub.onFirstCall().returns(false);
+        appStateGetStub.returns(true);
+        await instance['forge']();
+        expect(appStateGetStub.calledThrice).to.be.true;
+        expect(appStateGetStub.firstCall.args[0]).to.be.equal('loader.isSyncing');
+        expect(appStateGetStub.secondCall.args[0]).to.be.equal('rounds.isLoaded');
+        expect(appStateGetStub.thirdCall.args[0]).to.be.equal('rounds.isTicking');
       });
 
-      it('should call logger.debug and return if loader.isSyncing', async () => {
-        appStateStub.enqueueResponse('get', true);
-        await instance.forge();
-        expect(loggerStub.stubs.debug.calledOnce).to.be.true;
-        expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Client not ready to forge');
+      it('should call return if rounds is not loaded', async () => {
+        appStateGetStub.returns(false);
+        await instance['forge']();
         expect(loadDelegatesStub.notCalled).to.be.true;
       });
 
-      it('should call logger.debug and return if rounds is not loaded', async () => {
-        appStateStub.enqueueResponse('get', false);
-        appStateStub.enqueueResponse('get', false);
-        await instance.forge();
-        expect(loggerStub.stubs.debug.calledOnce).to.be.true;
-        expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Client not ready to forge');
-        expect(loadDelegatesStub.notCalled).to.be.true;
-      });
-
-      it('should call logger.debug and return if rounds is ticking', async () => {
-        appStateStub.enqueueResponse('get', false);
-        appStateStub.enqueueResponse('get', true);
-        appStateStub.enqueueResponse('get', true);
-        await instance.forge();
-        expect(loggerStub.stubs.debug.calledOnce).to.be.true;
-        expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Client not ready to forge');
+      it('should call return if rounds is ticking', async () => {
+        appStateGetStub.onFirstCall().returns(false);
+        appStateGetStub.returns(true);
+        await instance['forge']();
         expect(loadDelegatesStub.notCalled).to.be.true;
       });
     });
 
     describe('When no delegates are loaded or no delegates at all', () => {
       beforeEach(() => {
-        appStateStub.enqueueResponse('get', false); // loader.isSyncing
-        appStateStub.enqueueResponse('get', true);  // rounds.isLoaded
-        appStateStub.enqueueResponse('get', false); // rounds.isTicking
+        appStateGetStub.onFirstCall().returns(false); // loader.isSyncing
+        appStateGetStub.onSecondCall().returns(true); // rounds.isLoaded
+        appStateGetStub.onThirdCall().returns(false); // rounds.isTicking
       });
 
       it('should call loadDelegates if keypairs is empty', async () => {
-        instance.keypairs = {};
-        await instance.forge();
+        instance['keypairs'] = {};
+        await instance['forge']();
         expect(loadDelegatesStub.calledOnce).to.be.true;
       });
 
-      it('should call logger.debug and return if still no delegates after loadDelegates call', async () => {
-        instance.keypairs = {};
-        // loadDelegates is stubbed and doesn't modify the keypairs object
-        await instance.forge();
-        expect(loggerStub.stubs.debug.calledOnce).to.be.true;
-        expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('No delegates enabled');
-      });
     });
 
     describe('When waiting for next delegate slot', () => {
       let getBlockSlotDataStub: SinonStub;
+      let getSlotNumberStub: SinonStub;
       beforeEach(() => {
-        appStateStub.enqueueResponse('get', false); // loader.isSyncing
-        appStateStub.enqueueResponse('get', true);  // rounds.isLoaded
-        appStateStub.enqueueResponse('get', false); // rounds.isTicking
+        appStateGetStub.onFirstCall().returns(false); // loader.isSyncing
+        appStateGetStub.onSecondCall().returns(true); // rounds.isLoaded
+        appStateGetStub.onThirdCall().returns(false); // rounds.isTicking
         loadKeypairs();
-        slotsStub.enqueueResponse('getSlotNumber', 100);
-        slotsStub.enqueueResponse('getSlotNumber', 100);
+        getSlotNumberStub    = sandbox.stub(slotsStub, 'getSlotNumber').returns(100);
         // we stub getBlockSlotDataStub to assert that function returns
-        getBlockSlotDataStub = sandbox.stub(instance, 'getBlockSlotData');
+        getBlockSlotDataStub = sandbox.stub(instance as any, 'getBlockSlotData');
       });
 
       it('should call slots.getSlotNumber twice', async () => {
-        await instance.forge();
-        expect(slotsStub.stubs.getSlotNumber.calledTwice).to.be.true;
-        expect(slotsStub.stubs.getSlotNumber.firstCall.args.length).to.be.equal(0);
-        expect(slotsStub.stubs.getSlotNumber.secondCall.args[0]).to.be.equal(blocksModuleStub.lastBlock.timestamp);
+        await instance['forge']();
+        expect(getSlotNumberStub.calledTwice).to.be.true;
+        expect(getSlotNumberStub.firstCall.args.length).to.be.equal(0);
+        expect(getSlotNumberStub.secondCall.args[0]).to.be.equal(blocksModuleStub.lastBlock.timestamp);
       });
 
-      it('should call logger.debug and return if currentSlot is the same of last Block', async () => {
-        await instance.forge();
-        expect(loggerStub.stubs.debug.calledOnce).to.be.true;
-        expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Waiting for next delegate slot');
+      it('should return if currentSlot is the same of last Block', async () => {
+        await instance['forge']();
         expect(getBlockSlotDataStub.notCalled).to.be.true;
       });
     });
 
     describe('When skipping slots or no blockData', () => {
       let getBlockSlotDataStub: SinonStub;
+      let getSlotNumberStub: SinonStub;
+
       beforeEach(() => {
-        appStateStub.enqueueResponse('get', false); // loader.isSyncing
-        appStateStub.enqueueResponse('get', true);  // rounds.isLoaded
-        appStateStub.enqueueResponse('get', false); // rounds.isTicking
+        appStateGetStub.onFirstCall().returns(false); // loader.isSyncing
+        appStateGetStub.onSecondCall().returns(true); // rounds.isLoaded
+        appStateGetStub.onThirdCall().returns(false); // rounds.isTicking
         loadKeypairs();
+        getSlotNumberStub = sandbox.stub(slotsStub, 'getSlotNumber');
         // currentSlot must not be the same slot of lastBlock => This will pass
-        slotsStub.enqueueResponse('getSlotNumber', 97);
-        slotsStub.enqueueResponse('getSlotNumber', 98);
+        getSlotNumberStub.onCall(0).returns(97);
+        getSlotNumberStub.onCall(1).returns(98);
         // currentSlot must have the same slotNumber of blockData => This will get catched
-        slotsStub.enqueueResponse('getSlotNumber', 99);
-        slotsStub.enqueueResponse('getSlotNumber', 100);
-        slotsStub.enqueueResponse('getSlotNumber', 100);
-        getBlockSlotDataStub = sandbox.stub(instance, 'getBlockSlotData').resolves({ time: 11111 });
+        getSlotNumberStub.onCall(2).returns(99);
+        getSlotNumberStub.onCall(3).returns(100);
+        getSlotNumberStub.onCall(4).returns(100);
+        getBlockSlotDataStub = sandbox.stub(instance as any, 'getBlockSlotData').resolves({ time: 11111 });
       });
 
       it('should call getBlockSlotData', async () => {
-        await instance.forge();
+        await instance['forge']();
         expect(getBlockSlotDataStub.calledOnce).to.be.true;
         expect(getBlockSlotDataStub.firstCall.args[0]).to.be.equal(97);
         expect(getBlockSlotDataStub.firstCall.args[1]).to.be.equal(blocksModuleStub.lastBlock.height + 1);
       });
 
-      it('should call logger.warn and return if getBlockSlotData returns null', async () => {
+      it('should return if getBlockSlotData returns null', async () => {
         getBlockSlotDataStub.resolves(null);
-        await instance.forge();
-        expect(loggerStub.stubs.warn.calledOnce).to.be.true;
-        expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Skipping delegate slot');
+        await instance['forge']();
         // Called twice means that function returns
-        expect(slotsStub.stubs.getSlotNumber.calledTwice).to.be.true;
+        expect(getSlotNumberStub.calledTwice).to.be.true;
       });
 
       it('should call slots.getSlotNumber five times', async () => {
-        await instance.forge();
-        expect(slotsStub.stubs.getSlotNumber.callCount).to.be.equal(5);
-        expect(slotsStub.stubs.getSlotNumber.getCall(0).args.length).to.be.equal(0);
-        expect(slotsStub.stubs.getSlotNumber.getCall(1).args.length).to.be.equal(1);
-        expect(slotsStub.stubs.getSlotNumber.getCall(1).args[0]).to.be.equal(blocksModuleStub.lastBlock.timestamp);
-        expect(slotsStub.stubs.getSlotNumber.getCall(2).args.length).to.be.equal(1);
-        expect(slotsStub.stubs.getSlotNumber.getCall(2).args[0]).to.be.equal(11111);
-        expect(slotsStub.stubs.getSlotNumber.getCall(3).args.length).to.be.equal(0);
-        expect(slotsStub.stubs.getSlotNumber.getCall(4).args.length).to.be.equal(0);
+        await instance['forge']();
+        expect(getSlotNumberStub.callCount).to.be.equal(5);
+        expect(getSlotNumberStub.getCall(0).args.length).to.be.equal(0);
+        expect(getSlotNumberStub.getCall(1).args.length).to.be.equal(1);
+        expect(getSlotNumberStub.getCall(1).args[0]).to.be.equal(blocksModuleStub.lastBlock.timestamp);
+        expect(getSlotNumberStub.getCall(2).args.length).to.be.equal(1);
+        expect(getSlotNumberStub.getCall(2).args[0]).to.be.equal(11111);
+        expect(getSlotNumberStub.getCall(3).args.length).to.be.equal(0);
+        expect(getSlotNumberStub.getCall(4).args.length).to.be.equal(0);
       });
 
-      it('should call logger.debug and return if not current slot', async () => {
-        await instance.forge();
-        expect(loggerStub.stubs.debug.calledOnce).to.be.true;
-        expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Delegate slot 100');
+      it('should call return if not current slot', async () => {
+        await instance['forge']();
         expect(sequenceStub.addAndPromise.notCalled).to.be.true;
       });
     });
 
     describe('When OK', () => {
       let getBlockSlotDataStub: SinonStub;
-      let catcherStub: SinonStub;
-      let catcherLastErr: any;
+      let getComputedStub: SinonStub;
+      let getSlotNumberStub: SinonStub;
+      let getPeersStub: SinonStub;
+      let genBlockStub: SinonStub;
+
       beforeEach(() => {
-        appStateStub.enqueueResponse('get', false); // loader.isSyncing
-        appStateStub.enqueueResponse('get', true);  // rounds.isLoaded
-        appStateStub.enqueueResponse('get', false); // rounds.isTicking
-        appStateStub.enqueueResponse('get', 10); // node.consensus
-        appStateStub.enqueueResponse('getComputed', false); // node.poorConsensus
+        appStateGetStub.onFirstCall().returns(false); // loader.isSyncing
+        appStateGetStub.onSecondCall().returns(true); // rounds.isLoaded
+        appStateGetStub.onThirdCall().returns(false); // rounds.isTicking
+        appStateGetStub.onCall(3).returns(10); // node.consensus
+        getComputedStub   = sandbox.stub(appStateStub, 'getComputed').returns(false); // node.poorConsensus
+        getSlotNumberStub = sandbox.stub(slotsStub, 'getSlotNumber');
         loadKeypairs();
         // currentSlot must not be the same slot of lastBlock => This will pass
-        slotsStub.enqueueResponse('getSlotNumber', 97);
-        slotsStub.enqueueResponse('getSlotNumber', 98);
+        getSlotNumberStub.onCall(0).returns(97);
+        getSlotNumberStub.onCall(1).returns(98);
         // currentSlot must have the same slotNumber of blockData => This will get catched
-        slotsStub.enqueueResponse('getSlotNumber', 100);
-        slotsStub.enqueueResponse('getSlotNumber', 100);
-        getBlockSlotDataStub = sandbox.stub(instance, 'getBlockSlotData').resolves({ time: 11111, keypair: {} });
-        broadcasterLogicStub.enqueueResponse('getPeers', Promise.resolve());
-        blocksProcessModuleStub.enqueueResponse('generateBlock', Promise.resolve());
-        catcherStub   = sandbox.stub(helpers, 'catchToLoggerAndRemapError');
-        catcherStub.callsFake((rejectString) => {
-          return (err: Error) => {
-            catcherLastErr = err;
-            return Promise.reject(rejectString);
-          };
-        });
-        catcherLastErr = null;
+        getSlotNumberStub.onCall(2).returns(100);
+        getSlotNumberStub.onCall(3).returns(100);
+
+        getBlockSlotDataStub = sandbox.stub(instance as any, 'getBlockSlotData').resolves({ time: 11111, keypair: {} });
+
+        getPeersStub = sandbox.stub(broadcasterLogicStub, 'getPeers').resolves();
+        genBlockStub = sandbox.stub(blocksProcessModuleStub, 'generateBlock').resolves();
       });
 
       it('should call broadcasterLogic.getPeers (in sequence worker)', async () => {
-        await instance.forge();
-        expect(broadcasterLogicStub.stubs.getPeers.calledOnce).to.be.true;
-        expect(broadcasterLogicStub.stubs.getPeers.firstCall.args[0]).to.be.deep.equal({ limit: constants.maxPeers });
+        await instance['forge']();
+        expect(getPeersStub.calledOnce).to.be.true;
+        expect(getPeersStub.firstCall.args[0]).to.be.deep.equal({ limit: constants.maxPeers });
       });
 
       it('should call appState.getComputed (in sequence worker)', async () => {
-        await instance.forge();
-        expect(appStateStub.stubs.getComputed.calledOnce).to.be.true;
-        expect(appStateStub.stubs.getComputed.firstCall.args[0]).to.be.equal('node.poorConsensus');
+        await instance['forge']();
+        expect(getComputedStub.calledOnce).to.be.true;
+        expect(getComputedStub.firstCall.args[0]).to.be.equal('node.poorConsensus');
       });
 
       it('should throw if node has poor consensus (in sequence worker)', async () => {
-        appStateStub.stubs.getComputed.returns(true);
-        await expect(instance.forge()).to.be.rejectedWith('Inadequate broadhash consensus 10 %');
+        getComputedStub.returns(true);
+        await expect(instance['forge']()).to.be.rejectedWith('Inadequate broadhash consensus 10 %');
       });
 
       it('should call blocksProcessModule.generateBlock (in sequence worker)', async () => {
-        await instance.forge();
-        expect(blocksProcessModuleStub.stubs.generateBlock.calledOnce).to.be.true;
-        expect(blocksProcessModuleStub.stubs.generateBlock.firstCall.args[0]).to.be.deep.equal({});
-        expect(blocksProcessModuleStub.stubs.generateBlock.firstCall.args[1]).to.be.equal(11111);
+        await instance['forge']();
+        expect(genBlockStub.calledOnce).to.be.true;
+        expect(genBlockStub.firstCall.args[0]).to.be.deep.equal({});
+        expect(genBlockStub.firstCall.args[1]).to.be.equal(11111);
       });
 
       it('should call catchToLoggerAndRemapError if addAndPromise promise is rejected', async () => {
-        blocksProcessModuleStub.stubs.generateBlock.rejects(new Error('hey'));
-        await expect(instance.forge()).to.be.rejectedWith('Failed to generate block within delegate slot');
-        expect(catcherStub.calledOnce).to.be.true;
+        genBlockStub.rejects(new Error('hey'));
+        await expect(instance['forge']()).to.be.rejectedWith('Failed to generate block within delegate slot');
       });
     });
   });
 
   describe('loadDelegates', () => {
+    let getAccountStub: SinonStub;
+    let makeKeyPairStub: SinonStub;
     beforeEach(() => {
-      accountsModuleStub.stubs.getAccount.callsFake((filter) => {
+      getAccountStub  = sandbox.stub(accountsModuleStub, 'getAccount').callsFake((filter) => {
         return {
           address   : 'addr_' + filter.publicKey,
           isDelegate: true,
           publicKey : filter.publicKey,
         };
       });
-      edStub.stubs.makeKeypair.callsFake((hash) => {
+      makeKeyPairStub = sandbox.stub(edStub, 'makeKeyPair').callsFake((hash) => {
         return {
           privateKey: 'pr' + hash.toString('hex'),
           publicKey : 'pu' + hash.toString('hex'),
@@ -559,145 +509,123 @@ describe('modules/forge', () => {
 
     it('should return if no forging.secret or empty forging.secret', async () => {
       fakeConfig.forging.secret = false;
-      await instance.loadDelegates();
-      expect(loggerStub.stubs.info.notCalled).to.be.true;
+      await instance['loadDelegates']();
       fakeConfig.forging.secret = [];
-      await instance.loadDelegates();
-      expect(loggerStub.stubs.info.notCalled).to.be.true;
-    });
-
-    it('should call logger.info', async () => {
-      await instance.loadDelegates();
-      expect(loggerStub.stubs.info.callCount).to.be.equal(3);
-      expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal('Loading 2 delegates from config');
-    });
-
-    it('should call crypto.createhash(sha256).update.digest', async () => {
-      await instance.loadDelegates();
-      expect(createHashSpy.callCount).to.be.equal(2);
-      expect(createHashSpy.spies.update[0].firstCall.args[0]).to.be.equal('secret1');
-      expect(createHashSpy.spies.update[1].firstCall.args[0]).to.be.equal('secret2');
+      await instance['loadDelegates']();
     });
 
     it('should call ed.makeKeypair with the hash', async () => {
-      await instance.loadDelegates();
-      expect(edStub.stubs.makeKeypair.callCount).to.be.equal(2);
-      expect(edStub.stubs.makeKeypair.firstCall.args[0]).to.be.deep.
-        equal(createHashSpy.spies.digest[0].firstCall.returnValue);
-      expect(edStub.stubs.makeKeypair.secondCall.args[0]).to.be.deep.
-        equal(createHashSpy.spies.digest[1].firstCall.returnValue);
+      await instance['loadDelegates']();
+      expect(makeKeyPairStub.callCount).to.be.equal(2);
+      expect(makeKeyPairStub.firstCall.args[0].toString('hex')).to.be.deep.equal('5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6');
+      expect(makeKeyPairStub.secondCall.args[0].toString('hex')).to.be.deep.equal('35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2');
     });
 
     it('should call accountsModule.getAccount', async () => {
-      await instance.loadDelegates();
-      expect(accountsModuleStub.stubs.getAccount.callCount).to.be.equal(2);
-      expect(accountsModuleStub.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({
+      await instance['loadDelegates']();
+      expect(getAccountStub.callCount).to.be.equal(2);
+      expect(getAccountStub.firstCall.args[0]).to.be.deep.equal({
         publicKey: 'pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
       });
-      expect(accountsModuleStub.stubs.getAccount.secondCall.args[0]).to.be.deep.equal({
+      expect(getAccountStub.secondCall.args[0]).to.be.deep.equal({
         publicKey: 'pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
       });
     });
 
     it('should throw if account not found', async () => {
-      accountsModuleStub.stubs.getAccount.resolves(false);
+      getAccountStub.resolves(false);
       const e = 'Account with publicKey: pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6 not found';
-      await expect(instance.loadDelegates()).to.be.rejectedWith(e);
+      await expect(instance['loadDelegates']()).to.be.rejectedWith(e);
     });
 
     it('should add the keypair to this.keypairs if account is a delegate', async () => {
-      await instance.loadDelegates();
-      expect(instance.keypairs).to.be.deep.equal({
-        pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2:
-          {
-            privateKey: 'pr35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
-            publicKey : 'pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
-          },
-        pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6:
-          {
-            privateKey: 'pr5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
-            publicKey : 'pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
-          },
+      await instance['loadDelegates']();
+      expect(instance['keypairs']).to.be.deep.equal({
+          pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2:
+            {
+              privateKey: 'pr35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
+              publicKey : 'pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
+            },
+          pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6:
+            {
+              privateKey: 'pr5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
+              publicKey : 'pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
+            },
         }
       );
     });
 
-    it('should call logger.info if account is a delegate', async () => {
-      await instance.loadDelegates();
-      expect(loggerStub.stubs.info.callCount).to.be.equal(3);
-      expect(loggerStub.stubs.info.getCall(1).args[0]).to.match(/Forging enabled on account addr_pu5b11618c2e/);
-      expect(loggerStub.stubs.info.getCall(2).args[0]).to.match(/Forging enabled on account addr_pu35224d0d34/);
-    });
-
-    it('should call logger.warn if account is NOT a delegate', async () => {
-      accountsModuleStub.stubs.getAccount.returns({publicKey: 'a', isDelegate: false});
-      await instance.loadDelegates();
-      expect(loggerStub.stubs.warn.callCount).to.be.equal(2);
-      expect(loggerStub.stubs.warn.getCall(0).args[0]).to.be.equal('Account with public Key: a is not a delegate');
-      expect(loggerStub.stubs.warn.getCall(1).args[0]).to.be.equal('Account with public Key: a is not a delegate');
-    });
-
     it('should call this.enableForge', async () => {
       const enableForgeStub = sandbox.stub(instance, 'enableForge');
-      await instance.loadDelegates();
+      await instance['loadDelegates']();
       expect(enableForgeStub.calledOnce).to.be.true;
     });
   });
 
   describe('getBlockSlotData', () => {
     const delegates = {
-      puk1: {publicKey: 'puk1', privateKey: 'prk1'},
-      puk2: {publicKey: 'puk2', privateKey: 'prk2'},
+      puk1: {
+        publicKey : Buffer.from(new LiskWallet('puk1', 'R').publicKey, 'hex'),
+        privateKey: Buffer.from(new LiskWallet('puk1', 'R').privKey, 'hex')
+      },
+      puk2: {
+        publicKey : Buffer.from(new LiskWallet('puk2', 'R').publicKey, 'hex'),
+        privateKey: Buffer.from(new LiskWallet('puk1', 'R').privKey, 'hex')
+      },
     };
 
+    let generateDelegateListStub: SinonStub;
+    let lastSlotStub: SinonStub;
+    let getSlotTimeStub: SinonStub;
     beforeEach(() => {
-      delegatesModuleStub.enqueueResponse('generateDelegateList', Object.keys(delegates));
-      slotsStub.enqueueResponse('getLastSlot', 2);
-      slotsStub.enqueueResponse('getSlotTime', 1000);
+      generateDelegateListStub = sandbox.stub(delegatesModuleStub, 'generateDelegateList')
+        .returns(Object.keys(delegates));
+      lastSlotStub             = sandbox.stub(slotsStub, 'getLastSlot').returns(2);
+      getSlotTimeStub          = sandbox.stub(slotsStub, 'getSlotTime').returns(1000);
     });
 
     it('should call delegatesModule.generateDelegateList', async () => {
-      await instance.getBlockSlotData(0, 12345);
-      expect(delegatesModuleStub.stubs.generateDelegateList.calledOnce).to.be.true;
-      expect(delegatesModuleStub.stubs.generateDelegateList.firstCall.args[0]).to.be.equal(12345);
+      await instance['getBlockSlotData'](0, 12345);
+      expect(generateDelegateListStub.calledOnce).to.be.true;
+      expect(generateDelegateListStub.firstCall.args[0]).to.be.equal(12345);
     });
 
     it('should call slots.getLastSlot', async () => {
-      await instance.getBlockSlotData(0, 12345);
-      expect(slotsStub.stubs.getLastSlot.calledOnce).to.be.true;
-      expect(slotsStub.stubs.getLastSlot.firstCall.args[0]).to.be.equal(0);
+      await instance['getBlockSlotData'](0, 12345);
+      expect(lastSlotStub.calledOnce).to.be.true;
+      expect(lastSlotStub.firstCall.args[0]).to.be.equal(0);
     });
 
     describe('if a valid delegate is found in the list and it is enabled to forge', () => {
       beforeEach(() => {
         instance.enabledKeys.puk2 = true;
-        instance.keypairs.puk2 = delegates.puk2;
+        instance['keypairs'].puk2 = delegates.puk2;
       });
 
       it('should call slots.getSlotTime for the slot corresponding to the enabled delegate', async () => {
-        await instance.getBlockSlotData(0, 12345);
-        expect(slotsStub.stubs.getSlotTime.callCount).to.be.eq(1);
-        expect(slotsStub.stubs.getSlotTime.firstCall.args[0]).to.be.equal(1);
+        await instance['getBlockSlotData'](0, 12345);
+        expect(getSlotTimeStub.callCount).to.be.eq(1);
+        expect(getSlotTimeStub.firstCall.args[0]).to.be.equal(1);
       });
 
       it('should return an object with keypair and slotTime', async () => {
-        const retVal = await instance.getBlockSlotData(0, 12345);
+        const retVal = await instance['getBlockSlotData'](0, 12345);
         expect(retVal).to.be.deep.eq({
           keypair: delegates.puk2,
-          time: 1000,
+          time   : 1000,
         });
       });
     });
 
     describe('else', () => {
       it('should return null', async () => {
-        const retVal = await instance.getBlockSlotData(0, 12345);
+        const retVal = await instance['getBlockSlotData'](0, 12345);
         expect(retVal).to.be.null;
       });
 
       it('should NOT call slots.getSlotTime', async () => {
-        await instance.getBlockSlotData(0, 12345);
-        expect(slotsStub.stubs.getSlotTime.notCalled).to.be.true;
+        await instance['getBlockSlotData'](0, 12345);
+        expect(getSlotTimeStub.notCalled).to.be.true;
       });
     });
   });

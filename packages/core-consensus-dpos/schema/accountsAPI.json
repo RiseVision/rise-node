@@ -19,5 +19,28 @@
         "maxLength": 100
       }
     }
+  },
+  "getDelegatesFee"  : {
+    "id"        : "accounts.getDelegatesFee",
+    "type"      : "object",
+    "properties": {
+      "height": {
+        "type"   : "integer",
+        "minimum": 1
+      }
+    }
+  },
+  "getDelegates"     : {
+    "id"        : "accounts.getDelegates",
+    "type"      : "object",
+    "properties": {
+      "address": {
+        "type"     : "string",
+        "format"   : "address",
+        "minLength": 1,
+        "maxLength": 22
+      }
+    },
+    "required"  : ["address"]
   }
 }

@@ -1,12 +1,12 @@
 import * as chai from 'chai';
-import { constants, RoundChanges, Slots } from '../src';
+import { RoundChanges, Slots } from '../../src/helpers';
 
 const { expect } = chai;
 
 describe('helpers/RoundChanges', () => {
   const slots = new Slots();
   // Dependency inj
-  (slots as any).constants = constants;
+  (slots as any).dposConstants = { activeDelegates: 101 };
   const fullFees = 25 * 101 * 0.1; // 252.5 for a full round with 25 tx per block;
   const fullRewards = [];
 
