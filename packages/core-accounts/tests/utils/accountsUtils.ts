@@ -9,7 +9,7 @@ export const generateFakeAddress = (): string => {
   return generateAccount().address;
 };
 
-export const generateAccounts = (howMany: number): LiskWallet[] => {
+export const generateWallets = (howMany: number): LiskWallet[] => {
   const toRet = [];
   for (let i = 0; i < howMany; i++) {
     toRet.push(generateAccount());
@@ -18,5 +18,5 @@ export const generateAccounts = (howMany: number): LiskWallet[] => {
 };
 
 export const generateFakeAddresses = (howMany: number): string[] => {
-  return generateAccounts(howMany).map((a) => a.address);
+  return generateWallets(howMany).map((a) => a.address);
 };
