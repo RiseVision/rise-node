@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { IKeypair } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as proxyquire from 'proxyquire';
@@ -18,7 +19,7 @@ describe('helpers/crypto', () => {
 
   beforeEach(() => {
     sodiumStub.api = sodium.api;
-    proxiedInst    = new ProxiedEd.Ed();
+    proxiedInst    = new ProxiedEd.Crypto();
   });
 
   describe('constructor', () => {
@@ -27,7 +28,7 @@ describe('helpers/crypto', () => {
     });
   });
 
-  describe('makeKeypair', () => {
+  describe('makeKeyPair', () => {
     const oldImplementation = sodium.api.crypto_sign_seed_keypair;
     let stub: SinonStub;
 
@@ -41,25 +42,25 @@ describe('helpers/crypto', () => {
     });
 
     it('should return object', () => {
-      const retval = proxiedInst.makeKeypair(new Buffer('aaaa'));
+      const retval = proxiedInst.makeKeyPair(new Buffer('aaaa'));
       expect(retval).to.be.an('object');
     });
 
     it('should call sodium.crypto_sign_seed_keypair', () => {
-      proxiedInst.makeKeypair(new Buffer('aaaa'));
+      proxiedInst.makeKeyPair(new Buffer('aaaa'));
       expect(stub.called).is.true;
     });
 
     it('should pass hash to sodium.crypto_sign_seed_keypair', () => {
       const hash = new Buffer('aaaa');
-      proxiedInst.makeKeypair(hash);
+      proxiedInst.makeKeyPair(hash);
       expect(stub.firstCall.args[0]).to.be.deep.eq(hash);
     });
 
     it('should use sodium output to build return value', () => {
       stub.returns({ secretKey: 'privASD', publicKey: 'pubASD' });
       const expectedReturn = { privateKey: 'privASD', publicKey: 'pubASD' };
-      const retval         = proxiedInst.makeKeypair(new Buffer('aaaa'));
+      const retval         = proxiedInst.makeKeyPair(new Buffer('aaaa'));
       expect(retval).to.be.deep.eq(expectedReturn);
     });
   });
@@ -68,7 +69,7 @@ describe('helpers/crypto', () => {
     let stub: SinonStub;
     const hashBuf           = new Buffer('hash');
     const outBuf            = new Buffer('output');
-    const keyPair           = realCrypto.makeKeypair(new Buffer('12345678901234567890123456789012'));
+    const keyPair           = realCrypto.makeKeyPair(new Buffer('12345678901234567890123456789012'));
     const oldImplementation = sodium.api.crypto_sign_detached;
 
     beforeEach(() => {
@@ -145,7 +146,7 @@ describe('helpers/crypto', () => {
     const expectedOutputSignature      = Buffer.from(signatureHex, 'hex');
 
     it('makeKeyPair should return the expected output', () => {
-      const outputKeys = realCrypto.makeKeypair(inputSeed);
+      const outputKeys = realCrypto.makeKeyPair(inputSeed);
       expect(outputKeys).to.be.deep.equal(expectedOutputKeys);
     });
 

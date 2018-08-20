@@ -4,7 +4,7 @@ import * as proxyquire from 'proxyquire';
 import 'reflect-metadata';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
-import { AppState } from '../../../src/logic';
+import { AppState } from '../src/appState';
 
 // tslint:disable no-unused-expression
 describe('appState', () => {
@@ -13,7 +13,7 @@ describe('appState', () => {
   let computedStub: SinonStub;
   let sandbox: SinonSandbox;
 
-  const ProxyAppState = proxyquire('../../../src/logic/appState.ts', {
+  const ProxyAppState = proxyquire('../src/appState', {
     jsonpath,
   });
 

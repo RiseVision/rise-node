@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js';
 import { expect } from 'chai';
 import * as crypto from 'crypto';
-import MyBigNumb from '../src/bignum';
+import { MyBigNumb } from '../src/bignum';
 
 describe('helpers/bignum', () => {
   describe('fromBuffer', () => {
@@ -54,9 +54,9 @@ describe('helpers/bignum', () => {
 
     // In RISE toBuffer is called with size 8 for block IDs, like 17106814500804965614
     it('should return the expected value', () => {
-      const bn  = new MyBigNumb('17106814500804965614');
+      const bn             = new MyBigNumb('17106814500804965614');
       const expectedBuffer = Buffer.from('ed679d2716fb34ee', 'hex');
-      const buf = bn.toBuffer({ size: 8 });
+      const buf            = bn.toBuffer({ size: 8 });
       expect(buf).to.be.deep.eq(expectedBuffer);
     });
   });
