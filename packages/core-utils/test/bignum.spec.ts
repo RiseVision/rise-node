@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js';
 import { expect } from 'chai';
 import * as crypto from 'crypto';
-import MyBigNumb from '../src/bignum';
+import { MyBigNumb } from '../src/bignum';
 
 describe('helpers/bignum', () => {
   describe('fromBuffer', () => {
