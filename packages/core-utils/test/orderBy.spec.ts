@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
-import { OrderBy } from '../../../src/helpers';
+import { OrderBy } from '../src';
 
 // tslint:disable no-unused-expression
 describe('helpers/orderBy', () => {

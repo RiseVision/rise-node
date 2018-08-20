@@ -1,10 +1,9 @@
-import {LoggerStub} from '@risevision/core-test-utils';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import {Container} from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { BlockProgressLogger, Symbols } from '../src/';
+import { BlockProgressLogger } from '../src/';
+import { LoggerStub } from './stubs';
 
 
 // tslint:disable no-var-requires no-string-literal no-unused-expression
@@ -17,12 +16,10 @@ describe('helpers/blocksProgressLogger', () => {
   let sandbox: SinonSandbox;
   let instance: BlockProgressLogger;
   let loggerStub: LoggerStub;
-  let container: Container;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     sandbox = sinon.createSandbox();
-    container = createContainer();
-    loggerStub = container.get(Symbols.helpers.logger);
+    loggerStub = new LoggerStub();
     instance = new BlockProgressLogger(10, 2, 'My message', loggerStub);
   });
 
