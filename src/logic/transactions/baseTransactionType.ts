@@ -61,6 +61,7 @@ const emptyBuffer = new Buffer(0);
 @injectable()
 export abstract class BaseTransactionType<T, M extends Model<any>> {
 
+  // TODO: Move this to non-static method.
   public static getMaxBytesSize(): number {
     let size = 0;
     size += 1 + 4 + 32 + 32 + 8 + 8 + 64 + 64; // TransactionLogic.getBytes Buffer base size

@@ -2,7 +2,7 @@ import { Request } from 'express';
 import { inject, injectable } from 'inversify';
 import * as Long from 'long';
 import { Body, ContentType, Controller, Get, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
-import { Op } from 'sequelize';
+import { Op, default as sequelize } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { Bus, constants as constantsType, ProtoBufHelper, TransactionType, } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
@@ -227,17 +227,12 @@ export class TransportV2API {
     const maxBytes = maxPayloadSize * 0.98;
     // Best case scenario: we find 2MB of empty blocks.
     const maxHeightDelta = Math.ceil(maxBytes / BlockLogic.getMinBytesSize());
-    // We can also limit the number of transactions, with a very rough estimation of the max number of txs that will fit
-    // in maxPayloadSize. We assume that block metadata is smaller than a single tx. In RISE the value is about 7500 TXs
-    const txLimit = Math.ceil(maxBytes / (( BlockLogic.getMinBytesSize() + TransactionLogic.getMinBytesSize()) / 2));
 
-    // Get only height and type for all the txs in this height range
-    const txsInRange = await this.TransactionsModel.findAll({
-      attributes: ['type', 'height'],
-      limit: txLimit,
-      order: [
-        ['height', 'ASC'],
-      ],
+    // Get The number of txs within the range grouped by type.
+    const txsInRange: Array<{type: number, count: number}> = await this.TransactionsModel.findAll({
+      attributes: ['type', sequelize.fn('count', sequelize.col('type'))],
+      group: ['type'],
+      raw: true,
       where: {
         height: {
           [Op.and]: {
@@ -246,48 +241,19 @@ export class TransportV2API {
           },
         },
       },
-    });
+    }) as any;
 
     // Calculate the number of blocks to load
-    let blocksToLoad: number;
-    if (txsInRange.length > 0) {
-      blocksToLoad = 0;
-      let previousHeight = lastBlock.height;
-      let blocksSize = 0;
-      let txsSize = 0;
-      for (const tx of txsInRange) {
-        // If the size for all txs in previous blocks have been added to total.
-        if (previousHeight !== tx.height && blocksSize > 0) {
-          if (blocksSize + txsSize <= maxBytes) {
-            blocksToLoad++;
-          } else {
-            // This block doesn't fit, break the cycle
-            break;
-          }
-        }
-        const heightDelta = tx.height - previousHeight;
-        previousHeight = tx.height;
-        // Add blocks size one by one
-        for (let i = 0; i < heightDelta; i++) {
-          // First add the empty block's size
-          blocksSize += BlockLogic.getMinBytesSize();
-          // If it doesn't fit already, don't increase the number of blocks to load.
-          if (blocksSize + txsSize > maxBytes) {
-            break;
-          } else if (i !== heightDelta) {
-            // If this is not the block where this transaction is, it is empty, so we can increase the number now
-            blocksToLoad++;
-          }
-        }
-        txsSize += this.getSizeByTxType(tx.type);
-      }
-    } else {
-      blocksToLoad = maxHeightDelta;
+    let blocksToLoad: number = maxHeightDelta;
+    for (const entry of txsInRange) {
+      // We remove from the current total as many empty blocks as this tx type occupy within the range.
+      blocksToLoad -= this.getSizeByTxType(entry.type) * entry.count / BlockLogic.getMinBytesSize();
     }
-    return blocksToLoad;
+    return Math.max(1, Math.floor(blocksToLoad)); // At least one block must be returned.
   }
 
   private getSizeByTxType(txType): number {
+    // TODO: Move this logic into transactionlogic.
     switch (txType) {
       case TransactionType.SEND:
         return SendTransaction.getMaxBytesSize();

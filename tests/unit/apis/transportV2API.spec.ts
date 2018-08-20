@@ -31,6 +31,7 @@ import { BlockLogicStub } from '../../stubs/logic/BlockLogicStub';
 import { createFakeBlock } from '../../utils/blockCrafter';
 import { createContainer } from '../../utils/containerCreator';
 import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
+import { SendTransaction } from '../../../src/logic/transactions';
 
 const validatorStubs: any = {
   SchemaValid,
@@ -563,13 +564,14 @@ describe('apis/transportV2API', () => {
   describe('getBlocks()', () => {
     let blocks;
     let generateBytesBlockStub: SinonStub;
+    let numblocksToLoadStub: SinonStub;
     beforeEach(() => {
       (instance as any).BlocksModel = {
         findOne: sandbox.stub().resolves({
           height: 123456,
         }),
       };
-      (instance as any).calcNumBlocksToLoad = sandbox.stub().resolves(2100);
+      numblocksToLoadStub = sandbox.stub(instance as any, 'calcNumBlocksToLoad').resolves(2100);
       blocks = ['blk1', 'blk2', 'blk3'];
       blocksSubmoduleUtilsStub.stubs.loadBlocksData.returns(blocks);
       generateBytesBlockStub = sandbox.stub(instance as any, 'generateBytesBlock').callsFake((b) => b);
@@ -595,7 +597,28 @@ describe('apis/transportV2API', () => {
       expect(resp).to.be.an.instanceOf(Buffer);
       expect(resp.toString()).to.be.eq(JSON.stringify({blocks}));
     });
-  });
+
+    describe('with calculated data', () => {
+      let findAllTxsStub: SinonStub;
+      const maxNumberInPayload = 10653;
+      beforeEach(() => {
+        numblocksToLoadStub.restore();
+        findAllTxsStub = sandbox.stub(transactionsModel, 'findAll').resolves([]);
+      });
+      it('should calculate properly', async () => {
+        findAllTxsStub.resolves([{type: 0, count: 1}]);
+        await instance.getBlocks('123');
+        const lastHeight = blocksSubmoduleUtilsStub.stubs.loadBlocksData.firstCall.args[0].limit;
+        expect(lastHeight).eq(maxNumberInPayload - 2); // 1 tx weights more than 1 block
+      });
+      it('should return at least 1 block', async () => {
+        findAllTxsStub.resolves([{type: 0, count: Math.floor(BlockLogic.getMinBytesSize() * maxNumberInPayload / SendTransaction.getMaxBytesSize())}]);
+        await instance.getBlocks('123');
+        const lastHeight = blocksSubmoduleUtilsStub.stubs.loadBlocksData.firstCall.args[0].limit;
+        expect(lastHeight).eq(1);
+      });
+    });
+  })
 
   describe('generateBytesTransaction()', () => {
     beforeEach(() => {

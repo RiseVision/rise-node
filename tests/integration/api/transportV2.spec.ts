@@ -43,7 +43,8 @@ import {
   createRandomAccountWithFunds,
   createRandomWallet,
   createSendTransaction,
-  getRandomDelegateWallet
+  getRandomDelegateWallet,
+  createVoteTransaction,
 } from '../common/utils';
 import { checkReturnObjKeyVal } from './utils';
 
@@ -660,6 +661,7 @@ describe('v2/peer/transport', function() {
         const { wallet } = await createRandomAccountWithFunds(Math.pow(10, 10));
         wallets.push(wallet);
       }
+      let vote = 0;
       for (let i = 0; i < nBlocks; i++) {
         let txs = [];
         if (i % (Math.round(nBlocks / 10)) === 0) {
@@ -667,7 +669,11 @@ describe('v2/peer/transport', function() {
           txs = [];
         }
         if (i > nBlocks / 2) {
-          txs = [];
+          if (i > nBlocks / 4 * 3) {
+            txs = (await Promise.all(new Array(3).fill(null)
+              .map((_, idx) => createVoteTransaction(0, wallets[vote++], getRandomDelegateWallet().publicKey, true))))
+              .map((tx) => toBufferedTransaction(tx));
+          }
         } else {
           txs = (await Promise.all(new Array(txsPerBlock).fill(null)
             .map((_, idx) => createSendTransaction(0, i * txsPerBlock + idx + 1, wallets[i], '1R'))))
