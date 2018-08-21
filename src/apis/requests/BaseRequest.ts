@@ -72,7 +72,7 @@ export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
   }
 
   protected peerSupportsProtoBuf(peer: IPeerLogic) {
-    return semver.gte(peer.version, '1.1.1');
+    return typeof(peer.version) !== 'undefined' && semver.gte(peer.version, '1.1.1');
   }
 
   protected getQueryString(): string {

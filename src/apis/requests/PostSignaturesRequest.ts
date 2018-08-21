@@ -20,12 +20,19 @@ export class PostSignaturesRequest extends BaseRequest<any, PostSignaturesReques
     const reqOptions = super.getRequestOptions(peerSupportsProto);
     if (peerSupportsProto) {
       if (Array.isArray(reqOptions.data.signatures)) {
-        reqOptions.data.signatures = reqOptions.data.signatures.map((sig) => {
-          sig.transaction = Long.fromString(sig.transaction, true) as any;
-          return sig;
-        }) as any;
+        reqOptions.data = {
+          signatures: reqOptions.data.signatures.map((sig) => {
+            sig.transaction = Long.fromString(sig.transaction, true) as any;
+            return sig;
+          }) as any,
+        };
       } else {
-        reqOptions.data.signature.transaction = Long.fromString(reqOptions.data.signature.transaction, true) as any;
+        reqOptions.data = {
+          signature: {
+            ...reqOptions.data.signature,
+            transaction: Long.fromString(reqOptions.data.signature.transaction, true) as any
+          },
+        };
       }
       if (this.protoBufHelper.validate(reqOptions.data, 'transportSignatures', 'postSignatures')) {
         reqOptions.data = this.protoBufHelper.encode(reqOptions.data, 'transportSignatures', 'postSignatures') as any;
@@ -34,14 +41,21 @@ export class PostSignaturesRequest extends BaseRequest<any, PostSignaturesReques
       }
     } else {
       if (Array.isArray(reqOptions.data.signatures)) {
-        reqOptions.data.signatures = reqOptions.data.signatures.map((s) => {
-          if (typeof s.signature !== 'undefined') {
-            s.signature = s.signature.toString('hex') as any;
-          }
-          return s;
-        });
+        reqOptions.data = {
+          signatures: reqOptions.data.signatures.map((s) => {
+            if (typeof s.signature !== 'undefined') {
+              s.signature = s.signature.toString('hex') as any;
+            }
+            return s;
+          }),
+        };
       } else {
-        reqOptions.data.signature.signature = reqOptions.data.signature.signature.toString('hex') as any;
+        reqOptions.data = {
+          signature: {
+            ...reqOptions.data.signature,
+            signature: reqOptions.data.signature.signature.toString('hex') as any,
+          },
+        };
       }
     }
     return reqOptions;

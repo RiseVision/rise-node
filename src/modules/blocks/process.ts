@@ -356,7 +356,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
           'height:', block.height,
           'round:', this.roundsLogic.calcRound(block.height),
           'slot:', this.slots.getSlotNumber(block.timestamp),
-          'generator:', block.generatorPublicKey,
+          'generator:', block.generatorPublicKey.toString('hex'),
         ].join(' '));
         throw new Error('Block discarded - not in current chain');
       }

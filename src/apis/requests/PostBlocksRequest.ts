@@ -29,10 +29,10 @@ export class PostBlocksRequest extends BaseRequest<any, PostBlocksRequestDataTyp
   public getRequestOptions(peerSupportsProto) {
     const reqOptions = super.getRequestOptions(peerSupportsProto);
     if (peerSupportsProto) {
-      if (this.protoBufHelper.validate(reqOptions.data, 'transportBlocks', 'transportBlock')) {
+      if (this.protoBufHelper.validate(this.options.data, 'transportBlocks', 'transportBlock')) {
         const newData = {
-          ...reqOptions.data,
-          block: this.generateBytesBlock(reqOptions.data.block as BlocksModel),
+          ...this.options.data,
+          block: this.generateBytesBlock(this.options.data.block as BlocksModel),
         };
         reqOptions.data =
           this.protoBufHelper.encode(newData, 'transportBlocks', 'transportBlock') as any;
@@ -40,11 +40,13 @@ export class PostBlocksRequest extends BaseRequest<any, PostBlocksRequestDataTyp
         throw new Error('Failed to encode ProtoBuf');
       }
     } else {
-      reqOptions.data.block = this.blocksModel.toStringBlockType(
-        reqOptions.data.block ,
-        this.transactionsModel,
-        this.blocksModule
-      ) as any;
+      reqOptions.data = {
+        block: this.blocksModel.toStringBlockType(
+          this.options.data.block,
+          this.transactionsModel,
+          this.blocksModule
+        ) as any,
+      };
     }
     return reqOptions;
   }

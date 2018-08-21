@@ -118,7 +118,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
       peers = await this.getPeers(params);
     }
 
-    this.logger.debug('Begin broadcast', options);
+    this.logger.debug('Begin broadcast');
 
     if (params.limit === this.constants.maxPeers) {
       peers = peers.slice(0, this.config.broadcasts.broadcastLimit);

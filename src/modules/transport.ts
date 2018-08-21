@@ -1,4 +1,5 @@
 import { inject, injectable, postConstruct, tagged } from 'inversify';
+import * as _ from 'lodash';
 import * as popsicle from 'popsicle';
 import { Request, Response } from 'popsicle';
 import * as Throttle from 'promise-parallel-throttle';
@@ -18,12 +19,12 @@ import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
-IBlocksModule,
-IMultisignaturesModule,
-IPeersModule,
-ISystemModule,
-ITransactionsModule,
-ITransportModule
+  IBlocksModule,
+  IMultisignaturesModule,
+  IPeersModule,
+  ISystemModule,
+  ITransactionsModule,
+  ITransportModule
 } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { BasePeerType, PeerHeaders, PeerState, SignedBlockType } from '../logic/';
@@ -116,7 +117,7 @@ export class TransportModule implements ITransportModule {
       url = `/peer${options.api}`;
     }
     const thePeer = this.peersLogic.create(peer);
-    const req = {
+    const req     = {
       body     : null,
       headers  : this.systemModule.headers as any,
       method   : options.method,
@@ -129,14 +130,17 @@ export class TransportModule implements ITransportModule {
       req.body = options.data;
     }
     if (options.isProtoBuf) {
-      req.headers.accept = 'application/octet-stream';
-      req.headers['content-type'] = 'application/octet-stream';
+      req.headers   = {
+        accept        : 'application/octet-stream',
+        ...req.headers,
+        'content-type': 'application/octet-stream',
+      };
       req.transport = popsicle.createTransport({ type: 'buffer' });
     } else {
       delete req.transport;
     }
 
-    const nullPlugin: popsicle.Middleware = (request: Request, next: () => Promise<Response>) =>  {
+    const nullPlugin: popsicle.Middleware = (request: Request, next: () => Promise<Response>) => {
       return next().then((response) => response);
     };
 
@@ -150,7 +154,7 @@ export class TransportModule implements ITransportModule {
           .catch(retry),
         {
           minTimeout: 2000, /* this is the timeout for the retry. Lets wait at least 2seconds before retrying. */
-          retries: 1,
+          retries   : 1,
         }
       );
     } catch (err) {
@@ -242,7 +246,7 @@ export class TransportModule implements ITransportModule {
       const requestHandler = this.psrFactory({
         data: {
           signatures: [{
-            signature: Buffer.from(signature.signature, 'hex'),
+            signature  : Buffer.from(signature.signature, 'hex'),
             transaction: signature.transaction,
           }],
         },
@@ -282,8 +286,7 @@ export class TransportModule implements ITransportModule {
 
       await this.systemModule.update();
       if (!this.broadcasterLogic.maxRelays(block)) {
-        const reqHandler = this.pblocksFactory({ data: { block } });
-
+        const reqHandler = this.pblocksFactory({ data: { block: _.cloneDeep(block) } });
         // We avoid awaiting the broadcast result as it could result in unnecessary peer removals.
         // Ex: Peer A, B, C
         // A broadcasts block to B which wants to rebroadcast to A (which is waiting for B to respond) =>
@@ -292,7 +295,7 @@ export class TransportModule implements ITransportModule {
         /* await */
         this.broadcasterLogic.broadcast({ limit: this.constants.maxPeers, broadhash },
           {
-            immediate: true,
+            immediate     : true,
             requestHandler: reqHandler,
           })
           .catch((err) => this.logger.warn('Error broadcasting block', err));
@@ -380,16 +383,16 @@ export class TransportModule implements ITransportModule {
   private async discoverPeers(): Promise<void> {
     this.logger.trace('Transport->discoverPeers');
 
-    const requestHandler = this.plFactory({data: null});
-    const response = await this.getFromRandomPeer<any>(
+    const requestHandler = this.plFactory({ data: null });
+    const response       = await this.getFromRandomPeer<PeersListRequestDataType>(
       {},
       requestHandler
     );
 
-    await cbToPromise((cb) => this.schema.validate(response.body, peersSchema.discover.peers, cb));
+    await cbToPromise((cb) => this.schema.validate(response, peersSchema.discover.peers, cb));
 
     // Filter only acceptable peers.
-    const acceptablePeers = this.peersLogic.acceptable(response.body.peers);
+    const acceptablePeers = this.peersLogic.acceptable(response.peers);
 
     let discovered   = 0;
     let alreadyKnown = 0;

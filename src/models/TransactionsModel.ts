@@ -5,6 +5,7 @@ import { IBaseTransaction, ITransportTransaction } from '../logic/transactions';
 import { BlocksModel } from './BlocksModel';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
+import * as _ from 'lodash';
 
 @Table({ tableName: 'trs' })
 export class TransactionsModel<Asset = any> extends Model<TransactionsModel<Asset>> {
@@ -78,7 +79,8 @@ export class TransactionsModel<Asset = any> extends Model<TransactionsModel<Asse
     return TransactionsModel.toTransportTransaction(this, blocksModule);
   }
 
-  public static toTransportTransaction<Asset>(t: IBaseTransaction<Asset>, blocksModule: IBlocksModule): ITransportTransaction<Asset> & { confirmations?: number } {
+  public static toTransportTransaction<Asset>(ttmp: IBaseTransaction<Asset>, blocksModule: IBlocksModule): ITransportTransaction<Asset> & { confirmations?: number } {
+    const t = _.cloneDeep(ttmp);
     let obj;
     if (t instanceof TransactionsModel) {
       obj = { ... t.toJSON(), asset: t.asset };

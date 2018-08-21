@@ -584,7 +584,7 @@ export class LoaderModule implements ILoaderModule {
         try {
           await this.loadSignatures();
         } catch (e) {
-          this.logger.warn('Error loading transactions... Retrying... ', e);
+          this.logger.warn('Error loading signatures... Retrying... ', e);
           retry(e);
         }
       }, { retries: this.retries });
@@ -634,9 +634,10 @@ export class LoaderModule implements ILoaderModule {
    */
   private async loadTransactions() {
     const peer = await this.getRandomPeer();
-    this.logger.log(`Loading transactions from: ${peer.string}`);
+    this.logger.info(`Loading transactions from: ${peer.string}`);
     const body = await peer.makeRequest<any>(this.gtFactory({data: null}));
 
+    console.log(body, typeof(body));
     if (!this.schema.validate(body, loaderSchema.loadTransactions)) {
       throw new Error('Cannot validate load transactions schema against peer');
     }
