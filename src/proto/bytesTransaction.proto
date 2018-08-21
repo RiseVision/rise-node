@@ -5,4 +5,5 @@ message bytesTransaction {
     bool hasRequesterPublicKey = 2;
     bool hasSignSignature = 3;
     uint32 fee = 4;
+    uint32 relays = 5;
 }

@@ -3,6 +3,7 @@ syntax = "proto3";
 message transportSignaturesItem {
     uint64 transaction = 1;
     bytes signature = 2;
+    uint32 relays = 3;
 }
 
 message postSignatures {

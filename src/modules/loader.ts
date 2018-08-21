@@ -35,7 +35,7 @@ export class LoaderModule implements ILoaderModule {
   public loaded: boolean                       = false;
   private blocksToSync: number                 = 0;
   private isActive: boolean                    = false;
-  private lastblock: BlocksModel               = null;
+  private lastblock: SignedAndChainedBlockType = null;
   private network: { height: number, peers: IPeerLogic[] };
   private retries: number                      = 5;
   private syncInterval                         = 1000;
@@ -431,8 +431,8 @@ export class LoaderModule implements ILoaderModule {
   private async innerLoad() {
     let loaded = false;
 
-    const randomPeer             = await this.getRandomPeer();
-    const lastBlock: BlocksModel = this.blocksModule.lastBlock;
+    const randomPeer = await this.getRandomPeer();
+    const lastBlock  = this.blocksModule.lastBlock;
     if (typeof(randomPeer) === 'undefined') {
       await wait(1000);
       // This could happen when we received a block but we did not get the updated peer list.
@@ -637,7 +637,6 @@ export class LoaderModule implements ILoaderModule {
     this.logger.info(`Loading transactions from: ${peer.string}`);
     const body = await peer.makeRequest<any>(this.gtFactory({data: null}));
 
-    console.log(body, typeof(body));
     if (!this.schema.validate(body, loaderSchema.loadTransactions)) {
       throw new Error('Cannot validate load transactions schema against peer');
     }

@@ -4,7 +4,7 @@ import * as Long from 'long';
 import { BaseRequest } from './BaseRequest';
 
 // tslint:disable-next-line
-export type Signature = { transaction: string, signature: Buffer };
+export type Signature = { transaction: string, signature: Buffer, relays: number };
 // tslint:disable-next-line
 export type PostSignaturesRequestDataType = {
   signatures?: Signature[],

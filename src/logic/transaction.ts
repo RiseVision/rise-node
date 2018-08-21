@@ -210,7 +210,7 @@ export class TransactionLogic implements ITransactionLogic {
   }
 
   // tslint:disable-next-line
-  public fromBytes(tx: IBytesTransaction): IBaseTransaction<any> {
+  public fromBytes(tx: IBytesTransaction): IBaseTransaction<any> & { relays: number } {
     const bb = ByteBuffer.wrap(tx.bytes, 'binary', true);
     const type = bb.readByte(0);
     const timestamp = bb.readInt(1);
@@ -256,11 +256,12 @@ export class TransactionLogic implements ITransactionLogic {
       assetBytes = bb.copy(offset, offset + assetLength);
     }
 
-    const transaction: IBaseTransaction<any> =  {
+    const transaction: IBaseTransaction<any> & { relays: number } =  {
       amount: amount.toNumber(),
       fee: tx.fee,
       id: this.getIdFromBytes(tx.bytes),
       recipientId,
+      relays: tx.relays,
       requesterPublicKey,
       senderId: this.accountLogic.generateAddressByPublicKey(senderPublicKey),
       senderPublicKey,

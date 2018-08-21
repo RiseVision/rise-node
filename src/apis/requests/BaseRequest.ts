@@ -13,6 +13,7 @@ export interface IAPIRequest<Out, In> {
   getOrigOptions(): { data: In, query?: any};
   mergeIntoThis(...objs: this[]): void;
   makeRequest(peer: IPeerLogic): Promise<Out>;
+  isRequestExpired(): Promise<boolean>;
 }
 
 @injectable()
@@ -57,6 +58,10 @@ export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
 
   public mergeIntoThis(...objs: this[]) {
     throw new Error('This is not mergiable - or logic is not implemented in subclass');
+  }
+
+  public isRequestExpired() {
+    return Promise.resolve(false);
   }
 
   public getOrigOptions(): { data: In, query?: any} {

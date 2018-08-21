@@ -246,6 +246,7 @@ export class TransportModule implements ITransportModule {
       const requestHandler = this.psrFactory({
         data: {
           signatures: [{
+            relays     : Number.isInteger(signature.relays) ? signature.relays : 1,
             signature  : Buffer.from(signature.signature, 'hex'),
             transaction: signature.transaction,
           }],
@@ -285,8 +286,9 @@ export class TransportModule implements ITransportModule {
       const broadhash = this.systemModule.broadhash;
 
       await this.systemModule.update();
+      block = _.cloneDeep(block);
       if (!this.broadcasterLogic.maxRelays(block)) {
-        const reqHandler = this.pblocksFactory({ data: { block: _.cloneDeep(block) } });
+        const reqHandler = this.pblocksFactory({ data: { block } });
         // We avoid awaiting the broadcast result as it could result in unnecessary peer removals.
         // Ex: Peer A, B, C
         // A broadcasts block to B which wants to rebroadcast to A (which is waiting for B to respond) =>
@@ -361,7 +363,7 @@ export class TransportModule implements ITransportModule {
       if (confirmedIDs.indexOf(tx.id) !== -1) {
         continue; // Transaction already confirmed.
       }
-      this.logger.debug(`Received transaction ${tx.id} ${peer ? `from peer ${peer.string}` : ' '}`);
+      this.logger.info(`Received transaction ${tx.id} ${peer ? `from peer ${peer.string}` : ' '}`);
       await this.transactionModule.processUnconfirmedTransaction(
         tx,
         broadcast

@@ -170,7 +170,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
    */
   @WrapInDBSequence
   // tslint:disable-next-line max-line-length
-  public async loadBlocksOffset(limit: number, offset: number = 0, verify: boolean): Promise<BlocksModel> {
+  public async loadBlocksOffset(limit: number, offset: number = 0, verify: boolean): Promise<SignedAndChainedBlockType> {
     const newLimit = limit + (offset || 0);
     const params   = { limit: newLimit, offset: offset || 0 };
 
@@ -387,7 +387,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   /**
    * Receive block detected as fork cause 1: Consecutive height but different previous block id
    */
-  private async receiveForkOne(block: SignedBlockType, lastBlock: BlocksModel) {
+  private async receiveForkOne(block: SignedBlockType, lastBlock: SignedAndChainedBlockType) {
     const tmpBlock = _.clone(block);
 
     // Fork: Consecutive height but different previous block id

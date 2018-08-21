@@ -22,7 +22,7 @@ export interface IBlocksModuleProcess extends IModule {
    * @param {boolean} verify
    * @return {Promise<void>}
    */
-  loadBlocksOffset(limit: number, offset: number, verify: boolean): Promise<BlocksModel>;
+  loadBlocksOffset(limit: number, offset: number, verify: boolean): Promise<SignedAndChainedBlockType>;
 
   /**
    * Query remote peer for block, process them and return last processed (and valid) block

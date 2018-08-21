@@ -3,16 +3,18 @@ import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import { IBlocksModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import { IBytesBlock, SignedBlockType } from '../../logic';
-import { IBaseTransaction, IBytesTransaction } from '../../logic/transactions';
 import { BlocksModel, TransactionsModel } from '../../models';
 import { BaseRequest } from './BaseRequest';
+import { requestSymbols } from './requestSymbols';
+import { RequestFactoryType } from './requestFactoryType';
+import { PostTransactionsRequest, PostTransactionsRequestDataType } from './PostTransactionsRequest';
 
 // tslint:disable-next-line
 export type PostBlocksRequestDataType = { block: SignedBlockType<Buffer> };
 
 @injectable()
 export class PostBlocksRequest extends BaseRequest<any, PostBlocksRequestDataType> {
-  protected readonly method = 'POST';
+  protected readonly method           = 'POST';
   protected readonly supportsProtoBuf = true;
 
   @inject(Symbols.logic.block)
@@ -25,14 +27,16 @@ export class PostBlocksRequest extends BaseRequest<any, PostBlocksRequestDataTyp
   private blocksModule: IBlocksModule;
   @inject(Symbols.models.transactions)
   private transactionsModel: typeof TransactionsModel;
+  @inject(requestSymbols.postTransactions)
+  private ptrFactory: RequestFactoryType<PostTransactionsRequestDataType, PostTransactionsRequest>;
 
   public getRequestOptions(peerSupportsProto) {
     const reqOptions = super.getRequestOptions(peerSupportsProto);
     if (peerSupportsProto) {
       if (this.protoBufHelper.validate(this.options.data, 'transportBlocks', 'transportBlock')) {
-        const newData = {
+        const newData   = {
           ...this.options.data,
-          block: this.generateBytesBlock(this.options.data.block as BlocksModel),
+          block: this.generateBytesBlock(this.options.data.block),
         };
         reqOptions.data =
           this.protoBufHelper.encode(newData, 'transportBlocks', 'transportBlock') as any;
@@ -59,24 +63,17 @@ export class PostBlocksRequest extends BaseRequest<any, PostBlocksRequestDataTyp
     }
   }
 
-  protected getBaseUrl(isProto) {
-    return isProto ? '/v2/peer/blocks' : '/peer/blocks';
-  }
-
-  private generateBytesTransaction(tx: IBaseTransaction<any>): IBytesTransaction {
-    return {
-      bytes                : this.transactionLogic.getBytes(tx),
-      fee                  : tx.fee,
-      hasRequesterPublicKey: typeof tx.requesterPublicKey !== 'undefined' && tx.requesterPublicKey != null,
-      hasSignSignature     : typeof tx.signSignature !== 'undefined' && tx.signSignature != null,
-    };
-  }
-
-  private generateBytesBlock(block: BlocksModel): IBytesBlock {
+  public generateBytesBlock(block: SignedBlockType & { relays?: number}): IBytesBlock {
+    const tmpTrxReq = this.ptrFactory({data: null});
     return {
       bytes       : this.blockLogic.getBytes(block),
       height      : block.height,
-      transactions: block.transactions.map((tx) => this.generateBytesTransaction(tx)),
+      relays      : Number.isInteger(block.relays) ? block.relays : 1,
+      transactions: (block.transactions || []).map((tx) => tmpTrxReq.generateBytesTransaction(tx)),
     };
+  }
+
+  protected getBaseUrl(isProto) {
+    return isProto ? '/v2/peer/blocks' : '/peer/blocks';
   }
 }

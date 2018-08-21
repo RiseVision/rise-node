@@ -51,6 +51,7 @@ export interface IBytesTransaction {
   hasRequesterPublicKey: boolean;
   hasSignSignature: boolean;
   fee: number;
+  relays: number;
 }
 
 const emptyBuffer = new Buffer(0);

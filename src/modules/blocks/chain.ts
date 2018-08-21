@@ -1,4 +1,5 @@
 import bs = require('binary-search');
+import * as deepFreeze from 'js-flock/deepFreeze';
 import { inject, injectable, tagged } from 'inversify';
 import { Op, Transaction } from 'sequelize';
 import * as _ from 'lodash';
@@ -254,8 +255,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       }
 
       await this.roundsModule.tick(block, dbTX);
-
-      this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
+      this.blocksModule.lastBlock = deepFreeze(block);
 
       await this.bus.message('newBlock', block, broadcast);
     }).catch((err) => {
@@ -313,11 +313,12 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
   /**
    * Deletes the last block (passed), undo txs and backwardTick round
-   * @param {SignedBlockType} lb
+   * @param {SignedBlockType} lb1
    * @returns {Promise<SignedBlockType>}
    */
   @WrapInBalanceSequence
-  private async popLastBlock(lb: BlocksModel): Promise<BlocksModel> {
+  private async popLastBlock(lb1: SignedAndChainedBlockType): Promise<BlocksModel> {
+    const lb = await this.BlocksModel.findById(lb1.id, { include: [this.TransactionsModel] });
     const previousBlock = await this.BlocksModel.findById(lb.previousBlock, { include: [this.TransactionsModel] });
 
     if (previousBlock === null) {

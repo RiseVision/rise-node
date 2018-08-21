@@ -51,6 +51,7 @@ export interface IBytesBlock {
   bytes: Buffer;
   transactions: IBytesTransaction[];
   height?: number;
+  relays: number;
 }
 
 @injectable()
@@ -375,7 +376,7 @@ export class BlockLogic implements IBlockLogic {
   /**
    * Restores a block from its bytes
    */
-  public fromBytes(blk: IBytesBlock): SignedAndChainedBlockType {
+  public fromBytes(blk: IBytesBlock): SignedAndChainedBlockType & {relays: number} {
     if (blk === null || typeof blk === 'undefined') {
       return null;
     }
@@ -430,6 +431,7 @@ export class BlockLogic implements IBlockLogic {
       blockSignature,
       transactions,
       height: blk.height,
+      relays: blk.relays,
     };
   }
 }

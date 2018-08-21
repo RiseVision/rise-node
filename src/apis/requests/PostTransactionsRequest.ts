@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
 import { ITransactionLogic } from '../../ioc/interfaces/logic';
-import { IBlocksModule } from '../../ioc/interfaces/modules';
+import { IBlocksModule, ITransactionsModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import { IBaseTransaction, IBytesTransaction } from '../../logic/transactions';
 import { TransactionsModel } from '../../models';
@@ -24,6 +24,9 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
 
   @inject(Symbols.models.transactions)
   private txModel: typeof TransactionsModel;
+
+  @inject(Symbols.modules.transactions)
+  private txModule: ITransactionsModule;
 
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
@@ -91,16 +94,30 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
     this.options.data.transaction = null;
   }
 
-  protected getBaseUrl(isProto) {
-    return isProto ? '/v2/peer/transactions' : '/peer/transactions';
+  public async isRequestExpired() {
+    const txs = this.options.data.transactions || [this.options.data.transaction];
+
+    const ids = txs.map((tx) => tx.id);
+
+    const confirmedIDs = await this.txModule.filterConfirmedIds(ids);
+    if (confirmedIDs.length === txs.length) {
+      return true;
+    }
+
+    return false;
   }
 
-  private generateBytesTransaction(tx: IBaseTransaction<any>): IBytesTransaction {
+  public generateBytesTransaction(tx: IBaseTransaction<any> & { relays?: number }): IBytesTransaction {
     return {
       bytes                : this.txLogic.getBytes(tx),
       fee                  : tx.fee,
       hasRequesterPublicKey: typeof tx.requesterPublicKey !== 'undefined' && tx.requesterPublicKey != null,
       hasSignSignature     : typeof tx.signSignature !== 'undefined' && tx.signSignature != null,
+      relays               : Number.isInteger(tx.relays) ? tx.relays : 1,
     };
+  }
+
+  protected getBaseUrl(isProto) {
+    return isProto ? '/v2/peer/transactions' : '/peer/transactions';
   }
 }

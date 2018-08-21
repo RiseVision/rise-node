@@ -26,6 +26,10 @@ import transportSchema from '../schema/transport';
 import { APIError } from './errors';
 import { AttachPeerHeaders } from './utils/attachPeerHeaders';
 import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
+import { requestSymbols } from './requests/requestSymbols';
+import { RequestFactoryType } from './requests/requestFactoryType';
+import { PostBlocksRequest, PostBlocksRequestDataType } from './requests/PostBlocksRequest';
+import { PostTransactionsRequest, PostTransactionsRequestDataType } from './requests/PostTransactionsRequest';
 
 @Controller('/v2/peer')
 @injectable()
@@ -64,6 +68,11 @@ export class TransportV2API {
   private BlocksModel: typeof BlocksModel;
   @inject(Symbols.models.transactions)
   private TransactionsModel: typeof TransactionsModel;
+
+  @inject(requestSymbols.postBlocks)
+  private pblocksFactory: RequestFactoryType<PostBlocksRequestDataType, PostBlocksRequest>;
+  @inject(requestSymbols.postTransactions)
+  private ptFactory: RequestFactoryType<PostTransactionsRequestDataType, PostTransactionsRequest>;
 
   @Get('/list')
   public async list() {
@@ -127,7 +136,8 @@ export class TransportV2API {
   @Get('/transactions')
   public transactions() {
     const transactions                 = this.transactionsModule.getMergedTransactionList(this.constants.maxSharedTxs);
-    const byteTxs: IBytesTransaction[] = transactions.map((tx) => this.generateBytesTransaction(tx));
+    const tmpPT = this.ptFactory({data: { transactions }});
+    const byteTxs: IBytesTransaction[] = transactions.map((tx) => tmpPT.generateBytesTransaction(tx));
     return this.getResponse({ transactions: byteTxs }, 'transportTransactions');
   }
 
@@ -178,7 +188,9 @@ export class TransportV2API {
       raw  : true,
       where: { id: { [Op.in]: excapedIds } },
     });
-    const bytesBlock = common !== null ? this.generateBytesBlock(common) : null;
+
+    const tmpPB = this.pblocksFactory({data: {block: common}});
+    const bytesBlock = common !== null ? tmpPB.generateBytesBlock(common) : null;
     return this.getResponse({ common: bytesBlock }, 'transportBlocks', 'commonBlock');
   }
 
@@ -212,8 +224,9 @@ export class TransportV2API {
         lastId: lastBlockId,
         limit : blocksToLoad,
       });
+      const tmpPB = this.pblocksFactory({data: null});
       const blocks   = await Promise.all(dbBlocks
-        .map(async (block): Promise<IBytesBlock> => this.generateBytesBlock(block)));
+        .map(async (block): Promise<IBytesBlock> => tmpPB.generateBytesBlock(block)));
       return this.getResponse({ blocks }, 'transportBlocks');
     } else {
       throw new Error(`Block ${lastBlockId} not found!`);
@@ -308,27 +321,6 @@ export class TransportV2API {
     } else {
       throw new Error('Failed to encode response - ' + this.protoBuf.lastError);
     }
-  }
-
-  private generateBytesTransaction(tx: IBaseTransaction<any>): IBytesTransaction {
-    return {
-      bytes                : this.transactionLogic.getBytes(tx),
-      fee                  : tx.fee,
-      hasRequesterPublicKey: typeof tx.requesterPublicKey !== 'undefined' && tx.requesterPublicKey != null,
-      hasSignSignature     : typeof tx.signSignature !== 'undefined' && tx.signSignature != null,
-    };
-  }
-
-  private generateBytesBlock(block: BlocksModel): IBytesBlock {
-    const bb = {
-      bytes       : this.blockLogic.getBytes(block),
-      height      : block.height,
-      transactions: [],
-    };
-    if (block.transactions) {
-      bb.transactions = block.transactions.map((tx) => this.generateBytesTransaction(tx));
-    }
-    return bb;
   }
 
   private parseRequest<T>(body: Buffer, pbNamespace: string, pbMessageType?: string): T {

@@ -42,7 +42,7 @@ describe('modules/accounts', () => {
 
   describe('.getAccount', () => {
     it('should call accountLogic.get', async () => {
-      accountLogicStub.enqueueResponse('get', 'diocan');
+      accountLogicStub.enqueueResponse('get', 'meow');
       await accountModule.getAccount({address: '1L'});
       expect(accountLogicStub.stubs.get.called).is.true;
     });

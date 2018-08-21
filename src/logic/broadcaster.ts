@@ -2,10 +2,6 @@ import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
 import { IAPIRequest } from '../apis/requests/BaseRequest';
-import { RequestFactoryType } from '../apis/requests/requestFactoryType';
-import { requestSymbols } from '../apis/requests/requestSymbols';
-import { PostSignaturesRequest, PostSignaturesRequestDataType } from '../apis/requests/PostSignaturesRequest';
-import { PostTransactionsRequest, PostTransactionsRequestDataType } from '../apis/requests/PostTransactionsRequest';
 import { constants, ILogger } from '../helpers/';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
@@ -13,7 +9,6 @@ import { IPeersModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { AppConfig } from '../types/genericTypes';
 import { PeerType } from './peer';
-import { IBaseTransaction } from './transactions/';
 
 // tslint:disable interface-over-type-literal
 
@@ -55,11 +50,6 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   private peersModule: IPeersModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
-
-  @inject(requestSymbols.postTransactions)
-  private ptrFactory: RequestFactoryType<PostTransactionsRequestDataType, PostTransactionsRequest>;
-  @inject(requestSymbols.postSignatures)
-  private psrFactory: RequestFactoryType<PostSignaturesRequestDataType, PostSignaturesRequest>;
 
   @postConstruct()
   public afterConstruct() {
@@ -165,37 +155,18 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   private async filterQueue(): Promise<void> {
     this.logger.debug(`Broadcast before filtering: ${this.queue.length}`);
     const newQueue = [];
-    for (const task of this.queue) {
+    const oldQueue = this.queue.slice();
+    this.queue = [];
+    for (const task of oldQueue) {
       if (task.options.immediate) {
         newQueue.push(task);
-      } else if (task.options.requestHandler.getOrigOptions().data) {
-        if (await this.filterTransaction(
-            (task.options.requestHandler.getOrigOptions().data.transaction
-              || task.options.requestHandler.getOrigOptions().data.signature))
-        ) {
-          newQueue.push(task);
-        }
-      } else {
+      } else if (! await task.options.requestHandler.isRequestExpired()) {
         newQueue.push(task);
       }
     }
 
-    this.queue = newQueue;
+    this.queue.push(...newQueue);
     this.logger.debug(`Broadcasts after filtering: ${this.queue.length}`);
-  }
-
-  /**
-   * returns true if tx is in pool or is non confirmed.
-   */
-  private async filterTransaction(tx: IBaseTransaction<any>): Promise<boolean> {
-    if (typeof(tx) !== 'undefined') {
-      if (this.transactionsModule.transactionInPool(tx.id)) {
-        return true;
-      } else {
-        return (await this.transactionsModule.filterConfirmedIds([tx.id])).length === 0;
-      }
-    }
-    return false;
   }
 
   /**

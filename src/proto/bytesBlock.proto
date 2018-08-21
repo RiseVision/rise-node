@@ -6,4 +6,5 @@ message bytesBlock {
     bytes bytes = 1;
     repeated bytesTransaction transactions = 2;
     uint32 height = 3;
+    uint32 relays = 4;
 }
