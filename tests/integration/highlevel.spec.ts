@@ -592,8 +592,10 @@ describe('highlevel checks', function () {
           tx.signature = Buffer.from(tx.signature, 'hex');
           tx.height = block.height;
           tx.blockId = block.id;
+          tx.relays = undefined;
           return tx;
         });
+        block.relays = 1;
         const origBytes = blockLogic.getBytes(block);
         const bytesBlock: IBytesBlock = {
           bytes: origBytes as any,

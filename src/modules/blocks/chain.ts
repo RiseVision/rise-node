@@ -327,6 +327,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     if (previousBlock === null) {
       throw new Error('previousBlock is null');
     }
+    // Attach assets for transactions
+    await this.transactionLogic.attachAssets(lb.transactions);
     await this.transactionLogic.attachAssets(previousBlock.transactions);
 
     const txs = lb.transactions.slice().reverse();

@@ -134,7 +134,12 @@ export class TransportV2API {
   public transactions() {
     const transactions                 = this.transactionsModule.getMergedTransactionList(this.constants.maxSharedTxs);
     const tmpPT = this.ptFactory({data: { transactions }});
-    const byteTxs: IBytesTransaction[] = transactions.map((tx) => tmpPT.generateBytesTransaction(tx));
+    const byteTxs: IBytesTransaction[] = transactions
+      .map((tx) => tmpPT.generateBytesTransaction(tx))
+      .map((bt) => {
+        delete bt.relays;
+        return bt;
+      });
     return this.getResponse({ transactions: byteTxs }, 'transportTransactions');
   }
 

@@ -696,11 +696,15 @@ describe('v2/peer/transport', function() {
       const r = await peer.makeRequest(gbFactory({data: null, query: {lastBlockId: blocks[0].previousBlock}}));
       r.blocks = r.blocks.map((blk, idx) => {
         blk.transactions = blk.transactions.map((tx) => {
-          delete tx.asset;
+          if (tx.type === 0) {
+            delete tx.asset;
+          }
           delete tx.height;
           delete tx.requesterPublicKey;
+          delete tx.relays;
           return tx;
         });
+        delete blk.relays;
         return blk;
       });
       expect(r.blocks).to.be.deep.equal(blocks);
