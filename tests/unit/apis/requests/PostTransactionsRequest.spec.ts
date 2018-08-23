@@ -88,4 +88,34 @@ describe('apis/requests/PostTransactionsRequest', () => {
       });
     });
   });
+
+  // TODO: Move this test to APIRequest
+  /*
+  describe('generateBytesTransaction()', () => {
+    beforeEach(() => {
+      transactionLogicStub.stubs.getBytes.returns(Buffer.from('112233', 'hex'));
+    });
+
+    it('should call getBytes', () => {
+      (instance as any).generateBytesTransaction('tx');
+      expect(transactionLogicStub.stubs.getBytes.calledOnce).to.be.true;
+      expect(transactionLogicStub.stubs.getBytes.firstCall.args).to.be.deep.equal(['tx']);
+    });
+
+    it('should include all fields', () => {
+      const tx = {
+        fee: 1,
+        requesterPublicKey: 'ABC',
+        signSignature: 'aaa',
+      };
+      const val = (instance as any).generateBytesTransaction(tx);
+      expect(val).to.be.deep.equal({
+        bytes: Buffer.from('112233', 'hex'),
+        fee: 1,
+        hasRequesterPublicKey: true,
+        hasSignSignature: true,
+      });
+    });
+  });
+  */
 });

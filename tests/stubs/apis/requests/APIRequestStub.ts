@@ -3,7 +3,7 @@ import { IAPIRequest } from '../../../../src/apis/requests/BaseRequest';
 import { IPeerLogic } from '../../../../src/ioc/interfaces/logic';
 import { PeerRequestOptions } from '../../../../src/modules';
 import { BaseStubClass } from '../../BaseStubClass';
-import { spyMethod, stubMethod } from '../../stubDecorator';
+import { stubMethod } from '../../stubDecorator';
 
 @injectable()
 export class APIRequestStub extends BaseStubClass implements IAPIRequest<any, any> {
@@ -29,5 +29,10 @@ export class APIRequestStub extends BaseStubClass implements IAPIRequest<any, an
 
   @stubMethod()
   public mergeIntoThis(...objs: this[]) {
+  }
+
+  @stubMethod(true)
+  public isRequestExpired(): Promise<boolean> {
+    return Promise.resolve(false);
   }
 }

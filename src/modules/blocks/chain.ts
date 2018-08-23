@@ -319,6 +319,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   @WrapInBalanceSequence
   private async popLastBlock(lb1: SignedAndChainedBlockType): Promise<BlocksModel> {
     const lb = await this.BlocksModel.findById(lb1.id, { include: [this.TransactionsModel] });
+    if (lb === null) {
+      throw new Error('previousBlock is null');
+    }
     const previousBlock = await this.BlocksModel.findById(lb.previousBlock, { include: [this.TransactionsModel] });
 
     if (previousBlock === null) {

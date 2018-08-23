@@ -13,7 +13,6 @@ import { IBlocksModuleChain } from '../../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../../src/ioc/symbols';
 import { IBaseTransaction } from '../../../../src/logic/transactions';
 import { BlocksModuleChain } from '../../../../src/modules/blocks/';
-import { createRandomWallet } from '../../../integration/common/utils';
 import { BlocksSubmoduleUtilsStub, BusStub, SequenceStub, TransactionsModuleStub } from '../../../stubs';
 import { BlockLogicStub } from '../../../stubs/logic/BlockLogicStub';
 import TransactionLogicStub from '../../../stubs/logic/TransactionLogicStub';
@@ -112,7 +111,8 @@ describe('modules/blocks/chain', () => {
         return cb('tx');
       });
       findStub = sandbox.stub(blocksModel, 'findById');
-      findStub.resolves({ id: 'previousBlock' });
+      findStub.onCall(0).resolves(blocksModule.lastBlock);
+      findStub.onCall(1).resolves({ id: 'previousBlock' });
 
       const accountsModel = container.get<any>(Symbols.models.accounts);
       accountsFindStub    = sandbox.stub().returns('senderAccount');
@@ -126,7 +126,7 @@ describe('modules/blocks/chain', () => {
     });
     it('should throw error if previousblock is null', async () => {
       blocksUtils.reset();
-      findStub.resolves(null);
+      findStub.onCall(0).resolves(null);
       await expect(inst.deleteLastBlock()).to.be.rejectedWith('previousBlock is null');
       expect(findStub.called).is.true;
     });
@@ -370,7 +370,7 @@ describe('modules/blocks/chain', () => {
 
     it('should save block in blocksModule', async () => {
       await inst.applyBlock({id: '1', transactions: allTxs} as any, false, false, accountsMap);
-      expect(blocksModule.lastBlock).instanceof(BlocksModel);
+      expect(blocksModule.lastBlock).instanceof(Object);
       expect(blocksModule.lastBlock.id).eq('1');
       expect(blocksModule.lastBlock.transactions).deep.eq(allTxs);
       // expect (blocksModule.lastBlock).deep.eq({transactions: allTxs});

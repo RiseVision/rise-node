@@ -605,7 +605,8 @@ describe('highlevel checks', function () {
               fee: tx.fee
             };
           }),
-          height: block.height
+          height: block.height,
+          relays: 1
         };
         const fromBytesBlock = blockLogic.fromBytes(bytesBlock);
         expect(fromBytesBlock).to.be.deep.eq(block);

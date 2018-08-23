@@ -25,12 +25,6 @@ export type VoteAsset = {
 @injectable()
 export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> {
 
-  public static getMaxBytesSize(): number {
-    let size = BaseTransactionType.getMaxBytesSize();
-    size += constants.maxVotesPerTransaction * 65; //Votes
-    return size;
-  }
-
   // Generic
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
@@ -302,5 +296,11 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
         votes: info.votes.split(','),
       };
     });
+  }
+
+  public getMaxBytesSize(): number {
+    let size = super.getMaxBytesSize();
+    size += constants.maxVotesPerTransaction * 65; // Votes
+    return size;
   }
 }

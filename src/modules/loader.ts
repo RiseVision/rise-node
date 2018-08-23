@@ -634,7 +634,7 @@ export class LoaderModule implements ILoaderModule {
    */
   private async loadTransactions() {
     const peer = await this.getRandomPeer();
-    this.logger.info(`Loading transactions from: ${peer.string}`);
+    this.logger.log(`Loading transactions from: ${peer.string}`);
     const body = await peer.makeRequest<any>(this.gtFactory({data: null}));
 
     if (!this.schema.validate(body, loaderSchema.loadTransactions)) {

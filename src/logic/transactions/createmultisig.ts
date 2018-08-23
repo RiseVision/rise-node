@@ -33,13 +33,6 @@ export type MultisigAsset = {
 @injectable()
 export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset, MultiSignaturesModel> {
 
-  public static getMaxBytesSize(): number {
-    let size = BaseTransactionType.getMaxBytesSize();
-    size += 8; // min, lifetime
-    size += 32 * constants.multisigConstraints.keysgroup.maxItems; // keysgroup
-    return size;
-  }
-
   private unconfirmedSignatures: { [name: string]: true };
 
   // Generics
@@ -386,6 +379,13 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
         },
       };
     });
+  }
+
+  public getMaxBytesSize(): number {
+    let size = super.getMaxBytesSize();
+    size += 8; // min, lifetime
+    size += 32 * constants.multisigConstraints.keysgroup.maxItems; // keysgroup
+    return size;
   }
 
   private calcOps(type: 'confirmed' | 'unconfirmed', asset: MultisigAsset, blockId: string, sender: AccountsModel): Array<DBOp<any>> {

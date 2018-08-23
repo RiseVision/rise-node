@@ -23,34 +23,10 @@ import txSchema from '../schema/logic/transaction';
 import { DBBulkCreateOp, DBOp } from '../types/genericTypes';
 import { SignedAndChainedBlockType, SignedBlockType } from './block';
 import { BaseTransactionType, IBaseTransaction,
-         IBytesTransaction, IConfirmedTransaction, ITransportTransaction,
-         MultiSignatureTransaction, RegisterDelegateTransaction, SecondSignatureTransaction,
-         SendTransaction, VoteTransaction } from './transactions/';
+         IBytesTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
 
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
-
-  public static getMaxBytesSize(): number {
-    let max = 0;
-    const txTypes = [BaseTransactionType, MultiSignatureTransaction, RegisterDelegateTransaction,
-                     SecondSignatureTransaction, SendTransaction, VoteTransaction];
-    for (const txType of txTypes) {
-      const size = txType.getMaxBytesSize();
-      max = Math.max(max, size);
-    }
-    return max;
-  }
-
-  public static getMinBytesSize(): number {
-    let min = Number.MAX_SAFE_INTEGER;
-    const txTypes = [BaseTransactionType, MultiSignatureTransaction, RegisterDelegateTransaction,
-      SecondSignatureTransaction, SendTransaction, VoteTransaction];
-    for (const txType of txTypes) {
-      const size = txType.getMaxBytesSize();
-      min = Math.min(min, size);
-    }
-    return min;
-  }
 
   @inject(Symbols.helpers.exceptionsManager)
   public excManager: ExceptionsManager;
@@ -702,6 +678,26 @@ export class TransactionLogic implements ITransactionLogic {
       this.assertKnownTransactionType(loopTXs[0].type);
       await this.types[loopTXs[0].type].attachAssets(loopTXs);
     }
+  }
+
+  public getMaxBytesSize(): number {
+    let max = 0;
+    Object.keys(this.types).forEach((type) => {
+      max = Math.max(max, this.types[type].getMaxBytesSize());
+    });
+    return max;
+  }
+
+  public getMinBytesSize(): number {
+    let min = Number.MAX_SAFE_INTEGER;
+    Object.keys(this.types).forEach((type) => {
+      min = Math.min(min, this.types[type].getMaxBytesSize());
+    });
+    return min;
+  }
+
+  public getByteSizeByTxType(txType: number): number {
+    return this.types[txType].getMaxBytesSize();
   }
 
   /**

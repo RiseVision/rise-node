@@ -76,7 +76,7 @@ export class BlocksModel extends Model<BlocksModel> {
 
   public static toStringBlockType(btmp: SignedBlockType, TxModel: typeof TransactionsModel, blocksModule: IBlocksModule): SignedBlockType<string> {
     const b = _.cloneDeep(btmp instanceof BlocksModel ? btmp.toJSON() : btmp);
-    const txs = (b.transactions || [])
+    const txs = (btmp.transactions || [])
       .map((t) => TxModel.toTransportTransaction(t, blocksModule));
     if (!Buffer.isBuffer(b.blockSignature) || !Buffer.isBuffer(b.generatorPublicKey) || !Buffer.isBuffer(b.payloadHash)) {
       throw new Error('toStringBlockType used with non Buffer block type');

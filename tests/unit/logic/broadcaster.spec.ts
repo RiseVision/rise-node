@@ -263,9 +263,8 @@ describe('logic/broadcaster', () => {
       await instance.broadcast(params, options);
 
       expect(loggerStub.stubs.debug.callCount).to.be.equal(peers.length + 2);
-      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(2);
+      expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Begin broadcast');
-      expect(loggerStub.stubs.debug.firstCall.args[1]).to.be.equal(options);
 
       createdPeers.forEach((peer, index) => {
         expect(loggerStub.stubs.debug.getCall(index + 1).args.length).to.be.equal(2);
@@ -367,13 +366,13 @@ describe('logic/broadcaster', () => {
           requestHandler: new APIRequestStub(),
         },
       };
-      task.options.requestHandler.stubs.getOrigOptions.returns({ data: { transaction: 'transaction' } });
-
       instance.queue.push(task);
       length = instance.queue.length;
 
-      filterStub = sandbox.stub((instance as any), 'filterTransaction');
-      filterStub.resolves(true);
+      filterStub = sandbox.stub();
+      filterStub.resolves(false);
+      task.options.requestHandler.stubs.getOrigOptions.returns({ data: { transaction: 'transaction' },
+        isRequestExpired: filterStub});
     });
 
     it('should call logger.debug', async () => {
@@ -400,7 +399,7 @@ describe('logic/broadcaster', () => {
       task.options.immediate = false;
       filterStub.resolves(false);
       await (instance as any).filterQueue();
-      expect(instance.queue).to.be.deep.equal([]);
+      expect(instance.queue).to.be.deep.equal([task]);
     });
 
     it('should behave correctly when immediate false; data false', async () => {
@@ -408,57 +407,6 @@ describe('logic/broadcaster', () => {
       task.options.data      = false;
       await (instance as any).filterQueue();
       expect(instance.queue).to.be.deep.equal([task]);
-    });
-  });
-
-  describe('filterTransaction', () => {
-    let tx;
-
-    beforeEach(() => {
-      tx = { id: 'id' };
-      transactionsModuleStub.stubs.filterConfirmedIds.resolves([]);
-    });
-
-    it('should return false when tx undefined', async () => {
-      const result = await (instance as any).filterTransaction();
-      expect(transactionsModuleStub.stubs.transactionInPool.called).to.be.false;
-      expect(result).to.be.false;
-    });
-
-    it('should return true when tx is in pool', async () => {
-      transactionsModuleStub.stubs.transactionInPool.returns(true);
-      const result = await (instance as any).filterTransaction(tx);
-      expect(transactionsModuleStub.stubs.transactionInPool.calledOnce).to.be.true;
-      expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args.length).to.be.equal(1);
-      expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args[0]).to.be.equal(tx.id);
-      expect(transactionsModuleStub.stubs.filterConfirmedIds.called).to.be.false;
-      expect(result).to.be.true;
-    });
-
-    it('should behave correctly when tx is not in pool not in db already confirmed', async () => {
-      transactionsModuleStub.stubs.transactionInPool.returns(false);
-      transactionsModuleStub.stubs.filterConfirmedIds.resolves([]);
-      const result = await (instance as any).filterTransaction(tx);
-      expect(transactionsModuleStub.stubs.transactionInPool.calledOnce).to.be.true;
-      expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args.length).to.be.equal(1);
-      expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args[0]).to.be.equal(tx.id);
-      expect(transactionsModuleStub.stubs.filterConfirmedIds.calledOnce).to.be.true;
-      expect(transactionsModuleStub.stubs.filterConfirmedIds.firstCall.args.length).to.be.equal(1);
-      expect(transactionsModuleStub.stubs.filterConfirmedIds.firstCall.args[0]).to.be.deep.equal([tx.id]);
-      expect(result).to.be.true;
-    });
-
-    it('should behave correctly when tx is not in pool; but tx is in db confirmed', async () => {
-      transactionsModuleStub.stubs.transactionInPool.returns(false);
-      transactionsModuleStub.stubs.filterConfirmedIds.resolves(['ahah', tx.id, 'eheh']);
-      const result = await (instance as any).filterTransaction(tx);
-      expect(transactionsModuleStub.stubs.transactionInPool.calledOnce).to.be.true;
-      expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args.length).to.be.equal(1);
-      expect(transactionsModuleStub.stubs.transactionInPool.firstCall.args[0]).to.be.equal(tx.id);
-      expect(transactionsModuleStub.stubs.filterConfirmedIds.calledOnce).to.be.true;
-      expect(transactionsModuleStub.stubs.filterConfirmedIds.firstCall.args.length).to.be.equal(1);
-      expect(transactionsModuleStub.stubs.filterConfirmedIds.firstCall.args[0]).to.be.deep.equal([tx.id]);
-      expect(result).to.be.false;
     });
   });
 
