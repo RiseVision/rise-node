@@ -8,10 +8,9 @@ import {
   WrapInBalanceSequence,
   WrapInDBSequence,
   WrapInDefaultSequence
-} from '../../../../src/helpers/decorators/wrapInSequence';
-import { Symbols } from '../../../../src/ioc/symbols';
-import { SequenceStub } from '../../../stubs';
-import {createContainer} from '../../../utils/containerCreator';
+} from '../../src/decorators';
+import { ISequence, Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
 
 // tslint:disable next-line no-var-requires max-classes-per-file
 const assertArrays = require('chai-arrays');
@@ -25,15 +24,14 @@ describe('helpers/decorators/wrapInSequence', () => {
   let defineMetadataSpy;
   let target;
   let container: Container;
-  let sequenceStub: SequenceStub;
+  let sequenceStub: ISequence;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     sandbox = sinon.createSandbox();
-    container = createContainer();
+    container = await createContainer(['core-helpers', 'core-blocks', 'core', 'core-accounts', 'core-transactions']);
     defineMetadataSpy = sandbox.spy(Reflect, 'defineMetadata');
     target = () => 123;
-    sequenceStub = container.getTagged(Symbols.helpers.sequence,
-      Symbols.helpers.sequence, Symbols.tags.helpers.dbSequence);
+    sequenceStub = container.getNamed(Symbols.helpers.sequence, Symbols.names.helpers.dbSequence);
   });
 
   afterEach(() => {
@@ -43,7 +41,7 @@ describe('helpers/decorators/wrapInSequence', () => {
   describe('WrapInBalanceSequence', () => {
     @injectable()
     class Tst {
-      public balancesSequence: any = sequenceStub;
+      public balancesSequence: ISequence = sequenceStub;
       public spy: SinonSpy = sinon.spy();
       @WrapInBalanceSequence
       public async method(): Promise<string> {
@@ -53,14 +51,15 @@ describe('helpers/decorators/wrapInSequence', () => {
     }
     it('should wrap method in balancesSequence', async () => {
       const tObj = new Tst();
+      const spy = sandbox.spy(tObj.balancesSequence, 'addAndPromise');
       expect(await tObj.method()).to.be.eq('hey');
-      expect(tObj.balancesSequence.spies.addAndPromise.calledBefore(tObj.spy)).is.true;
+      expect(spy.calledBefore(tObj.spy)).is.true;
     });
   });
   describe('WrapInDBSequence', () => {
     @injectable()
     class Tst {
-      public dbSequence: any = sequenceStub;
+      public dbSequence: ISequence = sequenceStub;
       public spy: SinonSpy = sinon.spy();
       @WrapInDBSequence
       public async method(): Promise<string> {
@@ -70,14 +69,15 @@ describe('helpers/decorators/wrapInSequence', () => {
     }
     it('should wrap method in balancesSequence', async () => {
       const tObj = new Tst();
+      const spy = sandbox.spy(tObj.dbSequence, 'addAndPromise');
       expect(await tObj.method()).to.be.eq('hey');
-      expect(tObj.dbSequence.spies.addAndPromise.calledBefore(tObj.spy)).is.true;
+      expect(spy.calledBefore(tObj.spy)).is.true;
     });
   });
   describe('WrapInDefaultSequence', () => {
     @injectable()
     class Tst {
-      public defaultSequence: any = sequenceStub;
+      public defaultSequence: ISequence = sequenceStub;
       public spy: SinonSpy = sinon.spy();
       @WrapInDefaultSequence
       public async method(): Promise<string> {
@@ -87,8 +87,9 @@ describe('helpers/decorators/wrapInSequence', () => {
     }
     it('should wrap method in balancesSequence', async () => {
       const tObj = new Tst();
+      const spy = sandbox.spy(tObj.defaultSequence, 'addAndPromise');
       expect(await tObj.method()).to.be.eq('hey');
-      expect(tObj.defaultSequence.spies.addAndPromise.calledBefore(tObj.spy)).is.true;
+      expect(spy.calledBefore(tObj.spy)).is.true;
     });
   });
 });

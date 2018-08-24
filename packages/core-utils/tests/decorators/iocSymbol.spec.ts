@@ -3,8 +3,8 @@ import * as chaiAsPromised from 'chai-as-promised';
 import 'reflect-metadata';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { IoCSymbol } from '../../../../src/helpers/decorators/iocSymbol';
-import { Symbols } from '../../../../src/ioc/symbols';
+import { IoCSymbol } from '../../src/decorators/';
+import { UtilsSymbols } from '../../src';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -30,15 +30,16 @@ describe('helpers/decorators/iocSymbol', () => {
 
   describe('IoCSymbol()', () => {
     it('should be return a decorator and call to defineMetadata() successfully', () => {
-      const decorator = IoCSymbol(Symbols.api.peers);
+      const symbol = Symbol.for('testt');
+      const decorator = IoCSymbol(symbol);
       expect(decorator).to.be.an.instanceof(Function);
       expect(defineMetadataSpy.called).to.be.false;
       const result = decorator(target);
       expect(defineMetadataSpy.calledOnce).to.be.true;
       expect(defineMetadataSpy.args[0][0]).to.equal(
-        Symbols.__others.metadata.classSymbol
+        UtilsSymbols.classSymbol
       );
-      expect(defineMetadataSpy.args[0][1]).to.equal(Symbols.api.peers);
+      expect(defineMetadataSpy.args[0][1]).to.equal(symbol);
       expect(defineMetadataSpy.args[0][2]).to.be.an.instanceof(Function);
       expect(target()).to.be.equal(result());
     });

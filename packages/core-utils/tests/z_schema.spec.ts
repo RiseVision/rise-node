@@ -89,9 +89,8 @@ describe('helpers/z_schema', () => {
 
   describe('Format "publicKey"', ()  => {
     const schema = { type: 'string', format: 'publicKey' };
-    // Y ?
-    it('should accept an empty string', () => {
-      expect(validator.validate('', schema)).to.be.true;
+    it('should NOT accept an empty string', () => {
+      expect(validator.validate('', schema)).to.be.false;
     });
     it('should accept a hex string 64 characters long', () => {
       expect(

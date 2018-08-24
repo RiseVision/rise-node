@@ -9,8 +9,8 @@ import * as z_schema from 'z-schema';
 const { expect } = chai;
 chai.use(chaiAsPromised);
 const helpersStub = {} as any;
-const ProxySchemaValidators = proxyquire('../../../../src/helpers/decorators/schemavalidators', {
-  '../': helpersStub,
+const ProxySchemaValidators = proxyquire('../../src/decorators/schemavalidators', {
+  '../castFieldsUsingSchema': helpersStub
 });
 const { SchemaValid, ValidateSchema } = ProxySchemaValidators;
 
@@ -190,7 +190,7 @@ describe('helpers/decorators', () => {
       helpersStub.castFieldsToNumberUsingSchema = castSpy;
       const instance = new TestCase();
       // Passing a valid value
-      instance.method({ str: 'RISE', num: 42 });
+      await instance.method({ str: 'RISE', num: 42 });
       expect(castSpy.called).to.be.true;
     });
 
