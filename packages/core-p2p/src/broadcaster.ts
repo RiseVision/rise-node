@@ -10,7 +10,7 @@ import {
   ITransactionsModule,
   Symbols
 } from '@risevision/core-interfaces';
-import { ConstantsType, IBaseTransaction, PeerType } from '@risevision/core-types';
+import { AppConfig, ConstantsType, IBaseTransaction, PeerType } from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
@@ -21,7 +21,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   public queue: BroadcastTask[] = [];
   // Generics
   @inject(Symbols.generic.appConfig)
-  private config: P2pConfig;
+  private config: AppConfig;
 
   // Helpers
   @inject(p2pSymbols.constants)
@@ -186,7 +186,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     }
 
     await this.filterQueue();
-    let broadcasts = this.queue.splice(0, this.config.broadcasts.releaseLimit);
+    let broadcasts = this.queue.splice(0, this.p2pConstants.releaseLimit);
 
     broadcasts = this.squashQueue(broadcasts);
 

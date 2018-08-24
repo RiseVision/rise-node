@@ -1,49 +1,10 @@
-import { IPeerLogic, Symbols } from '@risevision/core-interfaces';
-import { BasePeerType, PeerHeaders, PeerRequestOptions, PeerState, PeerType } from '@risevision/core-types';
+import { IAPIRequest, IPeerLogic, ITransportModule, Symbols } from '@risevision/core-interfaces';
+import { BasePeerType, PeerHeaders, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
-import { IAPIRequest } from '../apis/requests/BaseRequest';
-import { HeightRequest } from '../apis/requests/HeightRequest';
-import { RequestFactoryType } from '../apis/requests/requestFactoryType';
-import { requestSymbols } from '../apis/requests/requestSymbols';
-import { IPeerLogic } from '../ioc/interfaces/logic/';
-import { ITransportModule } from '../ioc/interfaces/modules';
-import { Symbols } from '../ioc/symbols';
-
-export enum PeerState {
-  BANNED       = 0,
-  DISCONNECTED = 1,
-  CONNECTED    = 2,
-}
-
-// tslint:disable-next-line
-export type PeerHeaders = {
-  nethash: string;
-  port: number;
-  version: string;
-  broadhash?: string;
-  height?: number;
-  nonce?: string;
-  os?: string;
-};
-
-// tslint:disable-next-line
-export interface BasePeerType {
-  ip: string;
-  port: number;
-}
-
-// tslint:disable-next-line
-export interface PeerType extends BasePeerType {
-  state: PeerState;
-  os: string;
-  version: string;
-  broadhash: string;
-  height: number;
-  clock: number;
-  updated: number;
-  nonce: string;
-}
+import { HeightRequest } from './requests/HeightRequest';
+import { p2pSymbols } from './helpers';
+import { RequestFactoryType } from './requests/requestFactoryType';
 
 const nullable = [
   'os',
@@ -97,7 +58,7 @@ export class PeerLogic implements PeerType, IPeerLogic {
   @inject(Symbols.modules.transport)
   private transportModule: ITransportModule;
 
-  @inject(requestSymbols.height)
+  @inject(p2pSymbols.requests.height)
   private hrFactory: RequestFactoryType<void, HeightRequest>;
 
   public accept(peer: BasePeerType) {
@@ -178,7 +139,7 @@ export class PeerLogic implements PeerType, IPeerLogic {
     return copy;
   }
 
-  public makeRequest<T>(requestHandler: IAPIRequest<any, any>): Promise<T> {
+  public makeRequest<T>(requestHandler: IAPIRequest<T, any>): Promise<T> {
     return requestHandler.makeRequest(this);
   }
 

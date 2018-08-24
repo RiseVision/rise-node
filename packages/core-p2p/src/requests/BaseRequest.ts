@@ -1,13 +1,9 @@
+import { IAPIRequest, IPeerLogic, ITransportModule, Symbols } from '@risevision/core-interfaces';
 import { inject, injectable } from 'inversify';
 import * as querystring from 'querystring';
 import * as semver from 'semver';
-import { MyConvOptions, ProtoBufHelper } from '../../helpers';
-import { IPeerLogic } from '../../ioc/interfaces/logic';
-import { ITransportModule } from '../../ioc/interfaces/modules';
-import { Symbols } from '../../ioc/symbols';
-import { PeerRequestOptions } from '../../modules';
-
-
+import { MyConvOptions, p2pSymbols, ProtoBufHelper } from '../helpers';
+import { PeerRequestOptions } from '@risevision/core-types';
 
 @injectable()
 export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
@@ -18,7 +14,7 @@ export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
   protected readonly supportsProtoBuf: boolean = false;
   // protected peer: IPeerLogic;
 
-  @inject(Symbols.helpers.protoBuf)
+  @inject(p2pSymbols.helpers.protoBuf)
   protected protoBufHelper: ProtoBufHelper;
 
   @inject(Symbols.modules.transport)

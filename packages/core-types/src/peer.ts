@@ -36,6 +36,5 @@ export interface PeerType extends BasePeerType {
 // tslint:disable-next-line
 export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip?: string, port?: number, broadhash?: string, state?: PeerState };
 
-
-
-export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };
+// tslint:disable-next-line
+export type PeerRequestOptions<T = any> = { api?: string, url?: string, method: 'GET' | 'POST', data?: T, isProtoBuf?: boolean, query?: any };

@@ -1,10 +1,8 @@
-import { inject, injectable } from 'inversify';
-import { ITransactionLogic } from '../../ioc/interfaces/logic';
-import { IBlocksModule } from '../../ioc/interfaces/modules';
-import { Symbols } from '../../ioc/symbols';
-import { IBytesTransaction, ITransportTransaction } from '../../logic/transactions';
-import { TransactionsModel } from '../../models';
+import { inject, injectable, named } from 'inversify';
 import { BaseRequest } from './BaseRequest';
+import { IBytesTransaction, ITransportTransaction } from '@risevision/core-types';
+import { ITransactionLogic, ITransactionsModel, Symbols } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 
 // tslint:disable-next-line
 export type GetTransactionsRequestDataType = {
@@ -19,17 +17,17 @@ export class GetTransactionsRequest extends BaseRequest<GetTransactionsRequestDa
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
 
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.transactions)
+  private TransactionsModel: typeof ITransactionsModel;
 
   public getResponseData(res) {
     if (this.peerSupportsProtoBuf(res.peer)) {
       const rawRes = this.decodeProtoBufResponse(res, 'transportTransactions');
       if (typeof rawRes.transactions !== 'undefined') {
         rawRes.transactions = rawRes.transactions.map(
-          (tx: any) => TransactionsModel.toTransportTransaction(
-            this.transactionLogic.fromBytes(tx as IBytesTransaction), this.blocksModule
-          )
+          (tx: any) => this.TransactionsModel
+            .toTransportTransaction(this.transactionLogic.fromBytes(tx))
         );
       }
       return rawRes;

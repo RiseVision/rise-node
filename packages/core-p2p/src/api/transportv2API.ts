@@ -1,36 +1,27 @@
 import { Request } from 'express';
-import { inject, injectable } from 'inversify';
-import * as Long from 'long';
-import { Body, ContentType, Controller, Get, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
+import { inject, injectable, named } from 'inversify';
+import { ContentType, Controller, Get, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-import { Bus, constants, constants as constantsType, ProtoBufHelper, } from '../helpers';
-import { IoCSymbol } from '../helpers/decorators/iocSymbol';
-import { assertValidSchema, SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
-import { IBlockLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
+import { p2pSymbols, ProtoBufHelper, } from '../helpers';
+import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import {
-  IBlocksModule,
-  IBlocksModuleUtils,
-  IPeersModule,
-  ITransactionsModule,
-  ITransportModule
-} from '../ioc/interfaces/modules';
-import { Symbols } from '../ioc/symbols';
-import { IBytesBlock, SignedAndChainedBlockType } from '../logic';
-import { IBaseTransaction, IBytesTransaction } from '../logic/transactions';
-import { BlocksModel, TransactionsModel } from '../models';
-import transportSchema from '../schema/transport';
-import { APIError } from './errors';
-import { AttachPeerHeaders } from './utils/attachPeerHeaders';
-import { ValidatePeerHeaders } from './utils/validatePeerHeaders';
-import { requestSymbols } from './requests/requestSymbols';
-import { RequestFactoryType } from './requests/requestFactoryType';
-import { PostBlocksRequest, PostBlocksRequestDataType } from './requests/PostBlocksRequest';
-import { PostTransactionsRequest, PostTransactionsRequestDataType } from './requests/PostTransactionsRequest';
+  Symbols, IBlockLogic, ITransactionLogic, IBlocksModule, IPeersLogic, IPeersModule, ITransactionsModule,
+  ITransportModule, IBlocksModel, ITransactionsModel
+} from '@risevision/core-interfaces';
+import { ValidatePeerHeaders } from './validatePeerHeaders';
+import { AttachPeerHeaders } from './attachPeerHeaders';
+import { ConstantsType, IBytesBlock, IBytesTransaction, SignedAndChainedBlockType } from '@risevision/core-types';
+import { ModelSymbols } from '@risevision/core-models';
+import { RequestFactoryType } from '../requests/requestFactoryType';
+import { PostBlocksRequest, PostBlocksRequestDataType } from '../requests/PostBlocksRequest';
+import { PostTransactionsRequest, PostTransactionsRequestDataType } from '../requests/PostTransactionsRequest';
+
+const transportSchema = require('../../schema/transport.json');
 
 @Controller('/v2/peer')
 @injectable()
-@IoCSymbol(Symbols.api.transportV2)
+@IoCSymbol(p2pSymbols.api.transportV2)
 @UseBefore(ValidatePeerHeaders)
 @UseBefore(AttachPeerHeaders)
 @ContentType('application/octet-stream')
@@ -43,13 +34,13 @@ export class TransportV2API {
   private transactionLogic: ITransactionLogic;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.blocksSubModules.utils)
-  private blocksModuleUtils: IBlocksModuleUtils;
-  @inject(Symbols.helpers.bus)
-  private bus: Bus;
-  @inject(Symbols.helpers.constants)
-  private constants: typeof constantsType;
-  @inject(Symbols.helpers.protoBuf)
+  // @inject(Symbols.modules.blocksSubModules.utils)
+  // private blocksModuleUtils: IBlocksModuleUtils;
+  // @inject(Symbols.helpers.bus)
+  // private bus: Bus;
+  @inject(Symbols.generic.constants)
+  private constants: ConstantsType;
+  @inject(p2pSymbols.helpers.protoBuf)
   private protoBuf: ProtoBufHelper;
   @inject(Symbols.logic.peers)
   private peersLogic: IPeersLogic;
@@ -61,14 +52,16 @@ export class TransportV2API {
   private transportModule: ITransportModule;
 
   // models
-  @inject(Symbols.models.blocks)
-  private BlocksModel: typeof BlocksModel;
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.blocks)
+  private BlocksModel: typeof IBlocksModel;
   @inject(Symbols.models.transactions)
-  private TransactionsModel: typeof TransactionsModel;
+  @named(Symbols.models.transactions)
+  private TransactionsModel: typeof ITransactionsModel;
 
-  @inject(requestSymbols.postBlocks)
+  @inject(p2pSymbols.requests.postBlocks)
   private pblocksFactory: RequestFactoryType<PostBlocksRequestDataType, PostBlocksRequest>;
-  @inject(requestSymbols.postTransactions)
+  @inject(p2pSymbols.requests.postTransactions)
   private ptFactory: RequestFactoryType<PostTransactionsRequestDataType, PostTransactionsRequest>;
 
   @Get('/list')
@@ -77,58 +70,59 @@ export class TransportV2API {
     return this.getResponse({ peers }, 'transportPeers');
   }
 
-  @Get('/signatures')
-  public signatures() {
-    const txs: Array<IBaseTransaction<any>> = this.transactionsModule
-      .getMultisignatureTransactionList(true, this.constants.maxSharedTxs);
-    const signatures                        = [];
-    for (const tx of txs) {
-      if (tx.signatures && tx.signatures.length > 0) {
-        signatures.push({
-          signatures : tx.signatures.map((sig) => {
-            return Buffer.from(sig, 'hex');
-          }),
-          transaction: Long.fromString(tx.id),
-        });
-      }
-    }
-    return this.getResponse({ signatures }, 'transportSignatures', 'getSignaturesResponse');
-  }
+  // TODO: Move in multisignatures.
+  // @Get('/signatures')
+  // public signatures() {
+  //   const txs: Array<IBaseTransaction<any>> = this.transactionsModule
+  //     .getMultisignatureTransactionList(true, this.constants.maxSharedTxs);
+  //   const signatures                        = [];
+  //   for (const tx of txs) {
+  //     if (tx.signatures && tx.signatures.length > 0) {
+  //       signatures.push({
+  //         signatures : tx.signatures.map((sig) => {
+  //           return Buffer.from(sig, 'hex');
+  //         }),
+  //         transaction: Long.fromString(tx.id),
+  //       });
+  //     }
+  //   }
+  //   return this.getResponse({ signatures }, 'transportSignatures', 'getSignaturesResponse');
+  // }
 
-  @Post('/signatures')
-  public async postSignatures(@Body() body: Buffer) {
-    // tslint:disable-next-line
-    type Signature = { transaction: Long, signature?: Buffer };
-    const obj = this.parseRequest<{ signatures?: Signature[], signature?: Signature }>
-    (body, 'transportSignatures', 'postSignatures');
-
-    const signatures: Signature[] = [];
-
-    if (Array.isArray(obj.signatures)) {
-      signatures.push(...obj.signatures);
-    }
-
-    if (typeof(obj.signature) !== 'undefined' && obj.signature !== null) {
-      signatures.push(obj.signature);
-    }
-
-    assertValidSchema(this.schema, signatures, {
-      obj : transportSchema.signatures.properties.signatures,
-      opts: { errorString: 'Error validating schema.' },
-    });
-
-    const finalSigs: Array<{ signature: string, transaction: string }> = [];
-    for (const sigEl of signatures) {
-      finalSigs.push({
-        signature  : sigEl.signature.toString('hex'),
-        transaction: sigEl.transaction.toString(),
-      });
-    }
-
-    await this.transportModule.receiveSignatures(finalSigs);
-
-    return this.getResponse({ success: true }, 'APISuccess');
-  }
+  // @Post('/signatures')
+  // public async postSignatures(@Body() body: Buffer) {
+  //   // tslint:disable-next-line
+  //   type Signature = { transaction: Long, signature?: Buffer };
+  //   const obj = this.parseRequest<{ signatures?: Signature[], signature?: Signature }>
+  //   (body, 'transportSignatures', 'postSignatures');
+  //
+  //   const signatures: Signature[] = [];
+  //
+  //   if (Array.isArray(obj.signatures)) {
+  //     signatures.push(...obj.signatures);
+  //   }
+  //
+  //   if (typeof(obj.signature) !== 'undefined' && obj.signature !== null) {
+  //     signatures.push(obj.signature);
+  //   }
+  //
+  //   assertValidSchema(this.schema, signatures, {
+  //     obj : transportSchema.signatures.properties.signatures,
+  //     opts: { errorString: 'Error validating schema.' },
+  //   });
+  //
+  //   const finalSigs: Array<{ signature: string, transaction: string }> = [];
+  //   for (const sigEl of signatures) {
+  //     finalSigs.push({
+  //       signature  : sigEl.signature.toString('hex'),
+  //       transaction: sigEl.transaction.toString(),
+  //     });
+  //   }
+  //
+  //   await this.transportModule.receiveSignatures(finalSigs);
+  //
+  //   return this.getResponse({ success: true }, 'APISuccess');
+  // }
 
   @Get('/transactions')
   public transactions() {
@@ -160,7 +154,7 @@ export class TransportV2API {
     if (transactions.length > 0) {
       await this.transportModule.receiveTransactions(transactions.map(
         (tx: IBytesTransaction) =>
-          TransactionsModel.toTransportTransaction(this.transactionLogic.fromBytes(tx), this.blocksModule)
+          this.TransactionsModel.toTransportTransaction(this.transactionLogic.fromBytes(tx))
       ), thePeer, true);
     }
 
@@ -181,7 +175,7 @@ export class TransportV2API {
       .filter((id) => /^[0-9]+$/.test(id));
     if (excapedIds.length === 0 || excapedIds.length > 10) {
       this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
-      throw new APIError('Invalid block id sequence', 200);
+      throw new HTTPError('Invalid block id sequence', 200);
     }
 
     const common     = await this.BlocksModel.findOne({
@@ -206,7 +200,8 @@ export class TransportV2API {
       this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
       throw e;
     }
-    await this.bus.message('receiveBlock', normalizedBlock);
+    // TODO:
+    // await this.bus.message('receiveBlock', normalizedBlock);
     return this.getResponse({ success: true, blockId: normalizedBlock.id },
       'transportBlocks', 'transportBlockResponse');
   }
@@ -222,10 +217,12 @@ export class TransportV2API {
     });
     if (lastBlock != null) {
       const blocksToLoad = await this.calcNumBlocksToLoad(lastBlock);
-      const dbBlocks = await this.blocksModuleUtils.loadBlocksData({
-        lastId: lastBlockId,
-        limit : blocksToLoad,
-      });
+      // TODO: fix blocksmodule
+      const dbBlocks = [];
+      // const dbBlocks = await this.blocksModuleUtils.loadBlocksData({
+      //   lastId: lastBlockId,
+      //   limit : blocksToLoad,
+      // });
       const tmpPB = this.pblocksFactory({data: null});
       const blocks   = await Promise.all(dbBlocks
         .map(async (block): Promise<IBytesBlock> => tmpPB.generateBytesBlock(block)));
@@ -235,7 +232,7 @@ export class TransportV2API {
     }
   }
 
-  private async calcNumBlocksToLoad(lastBlock: BlocksModel): Promise<number> {
+  private async calcNumBlocksToLoad(lastBlock: IBlocksModel): Promise<number> {
     // TODO Move me to a constant maybe?
     const maxPayloadSize = 2000000;
     // We take 98% of the theoretical value to allow for some overhead
@@ -246,8 +243,8 @@ export class TransportV2API {
     // in maxPayloadSize. We assume a stream blocks completely full of the smallest transactions.
     // In RISE the value is about 8000 TXs
     const txLimit = Math.ceil(
-      (maxBytes * constants.maxTxsPerBlock ) /
-      ( this.transactionLogic.getMinBytesSize() * constants.maxTxsPerBlock + this.blockLogic.getMinBytesSize())
+      (maxBytes * this.constants.maxTxsPerBlock ) /
+      ( this.transactionLogic.getMinBytesSize() * this.constants.maxTxsPerBlock + this.blockLogic.getMinBytesSize())
     );
 
     // Get only height and type for all the txs in this height range

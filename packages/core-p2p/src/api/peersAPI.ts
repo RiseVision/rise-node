@@ -33,13 +33,10 @@ export class PeersAPI {
                         @QueryParams() params: any) {
     try {
       const peers = await this.peersModule.getByFilter(params);
-      return { peers };
+      return { peers: peers.map((peer) => peer.object()) };
     } catch (err) {
       throw new HTTPError('Failed to get peers', 200);
     }
-    return {
-      peers: peers.map((peer) => peer.object()),
-    };
   }
 
   @Get('/get')

@@ -1,4 +1,4 @@
-import { BroadcastTaskOptions, PeerType } from '@risevision/core-types';
+import { PeerType } from '@risevision/core-types';
 import { IAPIRequest } from './IAPIRequest';
 
 export interface BroadcastTaskOptions {

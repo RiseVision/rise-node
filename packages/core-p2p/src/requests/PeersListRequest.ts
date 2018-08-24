@@ -1,7 +1,7 @@
+import { PeerType } from '@risevision/core-types';
 import { injectable } from 'inversify';
-import { MyConvOptions } from '../../helpers';
-import { PeerType } from '../../logic';
 import { BaseRequest } from './BaseRequest';
+import { MyConvOptions } from '../helpers';
 
 // tslint:disable-next-line
 export type PeersListRequestDataType = {peers: PeerType[]};

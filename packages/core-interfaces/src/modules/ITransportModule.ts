@@ -1,22 +1,18 @@
 import {
   BasePeerType,
-  IBaseTransaction,
   ITransportTransaction,
   PeerState,
-  SignedBlockType
+  PeerRequestOptions
 } from '@risevision/core-types';
-import { IPeerLogic } from '../logic';
+import { IPeerLogic, IAPIRequest } from '../logic';
 import { IModule } from './IModule';
-
-// tslint:disable-next-line interface-over-type-literal
-export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };
 
 export interface ITransportModule extends IModule {
 
   getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: IPeerLogic }>;
 
   getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] },
-                       options: PeerRequestOptions): Promise<{ body: T; peer: IPeerLogic }>;
+                       requestHandler: IAPIRequest<any, any>): Promise<{ body: any; peer: IPeerLogic }>;
 
   /**
    * Loops over the received transactions, Checks tx is ok by normalizing it and eventually remove peer if tx is not valid

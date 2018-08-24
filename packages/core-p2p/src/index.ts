@@ -1,3 +1,3 @@
 export * from './coremodule';
 export * from './helpers';
-export * from './BaseRequest';
+export * from './requests';

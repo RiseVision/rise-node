@@ -1,5 +1,5 @@
+import { Symbols } from '@risevision/core-interfaces';
 import { inject, injectable } from 'inversify';
-import { Symbols } from '../../ioc/symbols';
 import { BaseRequest } from './BaseRequest';
 
 // tslint:disable-next-line

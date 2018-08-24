@@ -1,36 +1,40 @@
-import { inject, injectable, postConstruct, tagged } from 'inversify';
+import { inject, injectable, named, postConstruct } from 'inversify';
+import * as _ from 'lodash';
 import * as popsicle from 'popsicle';
 import * as Throttle from 'promise-parallel-throttle';
 import * as promiseRetry from 'promise-retry';
 import SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
-import { cbToPromise, constants as constantsType, ILogger, Sequence } from '../helpers/';
-import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
-import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
-import { IJobsQueue } from '../ioc/interfaces/helpers';
-import { IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
 import {
-  IBlocksModule,
-  IMultisignaturesModule,
-  IPeersModule,
-  ISystemModule,
-  ITransactionsModule,
-  ITransportModule
-} from '../ioc/interfaces/modules/';
-import { Symbols } from '../ioc/symbols';
-import { BasePeerType, PeerHeaders, PeerState, SignedBlockType } from '../logic/';
-import { IBaseTransaction, ITransportTransaction } from '../logic/transactions/';
-import { BlocksModel, TransactionsModel } from '../models';
-import peersSchema from '../schema/peers';
-import schema from '../schema/transport';
-import { AppConfig } from '../types/genericTypes';
+  IAPIRequest, IAppState, IBlocksModel, IBlocksModule,
+  IBroadcasterLogic,
+  IJobsQueue,
+  ILogger, IPeerLogic, IPeersLogic, IPeersModule,
+  ISequence, ISystemModule, ITransactionLogic, ITransactionsModel, ITransactionsModule,
+  ITransportModule,
+  Symbols,
+} from '@risevision/core-interfaces';
+import {
+  AppConfig,
+  BasePeerType,
+  ConstantsType, IBaseTransaction, ITransportTransaction,
+  PeerHeaders,
+  PeerRequestOptions,
+  PeerState, SignedBlockType
+} from '@risevision/core-types';
+import { WordPressHookSystem } from 'mangiafuoco';
+import { ModelSymbols } from '@risevision/core-models';
+import { cbToPromise, SchemaValid, ValidateSchema, WrapInBalanceSequence} from '@risevision/core-utils';
+import { PeersListRequest, PeersListRequestDataType } from './requests/PeersListRequest';
+import { p2pSymbols } from './helpers';
+import { PostTransactionsRequest, PostTransactionsRequestDataType } from './requests/PostTransactionsRequest';
+import { RequestFactoryType } from './requests/requestFactoryType';
+import { PostBlocksRequest, PostBlocksRequestDataType } from './requests/PostBlocksRequest';
 
 const peersSchema     = require('../schema/peers.json');
 const transportSchema = require('../schema/transport.json');
 
 // tslint:disable-next-line
-export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };
-
 @injectable()
 export class TransportModule implements ITransportModule {
   // Generics
@@ -85,6 +89,16 @@ export class TransportModule implements ITransportModule {
   @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
+  // requests
+  @inject(p2pSymbols.requests.postTransactions)
+  private ptrFactory: RequestFactoryType<PostTransactionsRequestDataType, PostTransactionsRequest>;
+  // @inject(p2pSymbols.requests.postSignatures)
+  // private psrFactory: RequestFactoryType<PostSignaturesRequestDataType, PostSignaturesRequest>;
+  @inject(p2pSymbols.requests.postBlocks)
+  private pblocksFactory: RequestFactoryType<PostBlocksRequestDataType, PostBlocksRequest>;
+  @inject(p2pSymbols.requests.peersList)
+  private plFactory: RequestFactoryType<PeersListRequestDataType, PeersListRequest>;
+
   private loaded: boolean = false;
 
   @postConstruct()
@@ -127,7 +141,7 @@ export class TransportModule implements ITransportModule {
       delete req.transport;
     }
 
-    const nullPlugin: popsicle.Middleware = (request: Request, next: () => Promise<Response>) => {
+    const nullPlugin: popsicle.Middleware = (request: popsicle.Request, next: () => Promise<popsicle.Response>) => {
       return next().then((response) => response);
     };
 
@@ -229,19 +243,20 @@ export class TransportModule implements ITransportModule {
    * TODO: Move me to consensus-dpos.
    */
   public onSignature(signature: { transaction: string, signature: string, relays?: number }, broadcast: boolean) {
-    if (broadcast && !this.broadcasterLogic.maxRelays(signature)) {
-      const requestHandler = this.psrFactory({
-        data: {
-          signatures: [{
-            relays     : Number.isInteger(signature.relays) ? signature.relays : 1,
-            signature  : Buffer.from(signature.signature, 'hex'),
-            transaction: signature.transaction,
-          }],
-        },
-      });
-      this.broadcasterLogic.enqueue({}, { requestHandler });
-      this.io.sockets.emit('signature/change', signature);
-    }
+    // signature.relays = signature.relays || 1;
+    // if (broadcast && signature.relays < this.broadcasterLogic.maxRelays()) {
+    //   const requestHandler = this.psrFactory({
+    //     data: {
+    //       signatures: [{
+    //         relays     : Number.isInteger(signature.relays) ? signature.relays : 1,
+    //         signature  : Buffer.from(signature.signature, 'hex'),
+    //         transaction: signature.transaction,
+    //       }],
+    //     },
+    //   });
+    //   this.broadcasterLogic.enqueue({}, { requestHandler });
+    //   this.io.sockets.emit('signature/change', signature);
+    // }
   }
 
   /**
@@ -250,7 +265,8 @@ export class TransportModule implements ITransportModule {
    * TODO: Eventually fixme
    */
   public onUnconfirmedTransaction(transaction: IBaseTransaction<any> & { relays?: number }, broadcast: boolean) {
-    if (broadcast && !this.broadcasterLogic.maxRelays(transaction)) {
+    transaction.relays = transaction.relays || 1;
+    if (broadcast && transaction.relays < this.broadcasterLogic.maxRelays()) {
       const requestHandler = this.ptrFactory({
         data: {
           transactions: [transaction],
@@ -273,8 +289,9 @@ export class TransportModule implements ITransportModule {
       const broadhash = this.systemModule.broadhash;
 
       await this.systemModule.update();
-      block = _.cloneDeep(block);
-      if (!this.broadcasterLogic.maxRelays(block)) {
+      block        = _.cloneDeep(block);
+      block.relays = block.relays || 1;
+      if (block.relays < this.broadcasterLogic.maxRelays()) {
         const reqHandler = this.pblocksFactory({ data: { block } });
         // We avoid awaiting the broadcast result as it could result in unnecessary peer removals.
         // Ex: Peer A, B, C

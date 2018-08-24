@@ -1,4 +1,5 @@
 export * from './IAccountLogic';
+export * from './IAPIRequest';
 export * from './IAppState';
 export * from './IBaseTransactionType';
 export * from './IBlockLogic';

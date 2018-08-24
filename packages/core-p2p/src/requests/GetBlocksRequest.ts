@@ -1,8 +1,7 @@
 import { inject, injectable } from 'inversify';
-import { IBlockLogic } from '../../ioc/interfaces/logic';
-import { Symbols } from '../../ioc/symbols';
-import { SignedAndChainedBlockType } from '../../logic';
 import { BaseRequest } from './BaseRequest';
+import { SignedAndChainedBlockType } from '@risevision/core-types';
+import { IBlockLogic, Symbols } from '@risevision/core-interfaces';
 
 // tslint:disable-next-line
 export type GetBlocksRequestDataType = { blocks: SignedAndChainedBlockType[]};
@@ -12,7 +11,8 @@ export class GetBlocksRequest extends BaseRequest<GetBlocksRequestDataType, void
   protected readonly method = 'GET';
   protected readonly supportsProtoBuf = true;
 
-  @inject(Symbols.modules.blocksSubModules.utils)
+// TODO: How to migrate this?
+  // @inject(Symbols.modules.blocksSubModules.utils)
   private blocksUtilsModule;
 
   @inject(Symbols.logic.block)

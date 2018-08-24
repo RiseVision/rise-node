@@ -1,13 +1,17 @@
-import { inject, injectable } from 'inversify';
-import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
-import { IBlocksModule } from '../../ioc/interfaces/modules';
-import { Symbols } from '../../ioc/symbols';
-import { IBytesBlock, SignedBlockType } from '../../logic';
-import { BlocksModel, TransactionsModel } from '../../models';
+import {
+  IBlockLogic,
+  IBlocksModel,
+  IBlocksModule,
+  ITransactionLogic,
+  Symbols
+} from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
+import { IBytesBlock, SignedBlockType } from '@risevision/core-types';
+import { inject, injectable, named } from 'inversify';
 import { BaseRequest } from './BaseRequest';
-import { requestSymbols } from './requestSymbols';
-import { RequestFactoryType } from './requestFactoryType';
 import { PostTransactionsRequest, PostTransactionsRequestDataType } from './PostTransactionsRequest';
+import { RequestFactoryType } from './requestFactoryType';
+import { p2pSymbols } from '../helpers';
 
 // tslint:disable-next-line
 export type PostBlocksRequestDataType = { block: SignedBlockType<Buffer> };
@@ -21,13 +25,12 @@ export class PostBlocksRequest extends BaseRequest<any, PostBlocksRequestDataTyp
   private blockLogic: IBlockLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
-  @inject(Symbols.models.blocks)
-  private blocksModel: typeof BlocksModel;
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.blocks)
+  private blocksModel: typeof IBlocksModel;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
-  @inject(Symbols.models.transactions)
-  private transactionsModel: typeof TransactionsModel;
-  @inject(requestSymbols.postTransactions)
+  @inject(p2pSymbols.requests.postTransactions)
   private ptrFactory: RequestFactoryType<PostTransactionsRequestDataType, PostTransactionsRequest>;
 
   public getRequestOptions(peerSupportsProto) {
@@ -45,11 +48,7 @@ export class PostBlocksRequest extends BaseRequest<any, PostBlocksRequestDataTyp
       }
     } else {
       reqOptions.data = {
-        block: this.blocksModel.toStringBlockType(
-          this.options.data.block,
-          this.transactionsModel,
-          this.blocksModule
-        ) as any,
+        block: this.blocksModel.toStringBlockType(this.options.data.block) as any,
       };
     }
     return reqOptions;
@@ -63,8 +62,8 @@ export class PostBlocksRequest extends BaseRequest<any, PostBlocksRequestDataTyp
     }
   }
 
-  public generateBytesBlock(block: SignedBlockType & { relays?: number}): IBytesBlock {
-    const tmpTrxReq = this.ptrFactory({data: null});
+  public generateBytesBlock(block: SignedBlockType & { relays?: number }): IBytesBlock {
+    const tmpTrxReq = this.ptrFactory({ data: null });
     return {
       bytes       : this.blockLogic.getBytes(block),
       height      : block.height,

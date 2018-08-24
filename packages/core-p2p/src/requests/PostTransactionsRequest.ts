@@ -1,12 +1,15 @@
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
-import { ITransactionLogic } from '../../ioc/interfaces/logic';
-import { IBlocksModule, ITransactionsModule } from '../../ioc/interfaces/modules';
-import { Symbols } from '../../ioc/symbols';
-import { IBaseTransaction, IBytesTransaction } from '../../logic/transactions';
-import { TransactionsModel } from '../../models';
-import { PeerRequestOptions } from '../../modules';
 import { BaseRequest } from './BaseRequest';
+import { IBaseTransaction, IBytesTransaction, PeerRequestOptions } from '@risevision/core-types';
+import {
+  IBlocksModule,
+  ITransactionLogic,
+  ITransactionsModel,
+  ITransactionsModule,
+  Symbols
+} from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 
 // tslint:disable-next-line
 export type PostTransactionsRequestDataType = {
@@ -22,14 +25,12 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
   @inject(Symbols.logic.transaction)
   private txLogic: ITransactionLogic;
 
-  @inject(Symbols.models.transactions)
-  private txModel: typeof TransactionsModel;
+  @inject(ModelSymbols.model)
+  @named(Symbols.models.transactions)
+  private txModel: typeof ITransactionsModel;
 
   @inject(Symbols.modules.transactions)
   private txModule: ITransactionsModule;
-
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
 
   public getRequestOptions(peerSupportsProto): PeerRequestOptions<PostTransactionsRequestDataType> {
     const reqOptions = super.getRequestOptions(peerSupportsProto);
@@ -58,14 +59,13 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
         newData = {
           ...reqOptions.data,
           transactions: reqOptions.data.transactions.map(
-            (tx) => this.txModel.toTransportTransaction<any>(tx as IBaseTransaction<any>, this.blocksModule)
+            (tx) => this.txModel.toTransportTransaction<any>(tx as IBaseTransaction<any>)
           ),
         };
       } else if (typeof reqOptions.data.transaction !== 'undefined') {
         newData = {
           ...reqOptions.data,
-          transaction: this.txModel.toTransportTransaction<any>(reqOptions.data.transaction as IBaseTransaction<any>,
-            this.blocksModule),
+          transaction: this.txModel.toTransportTransaction<any>(reqOptions.data.transaction as IBaseTransaction<any>),
         };
       }
       reqOptions.data = newData;

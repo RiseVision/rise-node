@@ -1,22 +1,11 @@
+import { ILogger, Symbols } from '@risevision/core-interfaces';
 import * as fs from 'fs';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as path from 'path';
 import * as protobuf from 'protobufjs';
 import { IConversionOptions, Root, Type } from 'protobufjs';
-import * as traverse from 'traverse';
-import { Symbols } from '../ioc/symbols';
-import { ILogger } from './logger';
 
 export type MyConvOptions<T> = IConversionOptions & { postProcess?: (obj: T) => T };
-
-export function allBuffersToHex(obj) {
-  traverse(obj).forEach(function(x) {
-    if (Buffer.isBuffer(x)) {
-      this.update(x.toString('hex'));
-    }
-  });
-  return obj;
-}
 
 @injectable()
 export class ProtoBufHelper {
@@ -134,7 +123,7 @@ export class ProtoBufHelper {
   }
 
   private loadProtos() {
-    const protoDir = path.join(process.cwd(), 'src', 'proto');
+    const protoDir = path.join(__dirname, '..', '..', 'proto');
     const files = fs.readdirSync(protoDir);
     files.forEach((filePath: string) => {
       if (filePath.match(/\.proto$/)) {

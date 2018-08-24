@@ -1,5 +1,5 @@
 import { BaseCoreModule } from '@risevision/core-launchpad';
-import { ModelSymbols } from '@risevision/core-models';
+// import { ModelSymbols } from '@risevision/core-models';
 import { ExceptionsManager } from './exceptionManager';
 import { ExceptionModel } from './ExceptionModel';
 import { ExceptionSymbols } from './symbols';
@@ -9,9 +9,9 @@ export class CoreModule extends BaseCoreModule<any> {
   public constants    = {};
 
   public addElementsToContainer(): void {
-    this.container.bind(ExceptionSymbols.manager).to(ExceptionsManager).inSingletonScope();
-    this.container.bind(ModelSymbols.model).toConstructor(ExceptionModel)
-      .whenTargetNamed(ExceptionSymbols.model);
+    // this.container.bind(ExceptionSymbols.manager).to(ExceptionsManager).inSingletonScope();
+    // this.container.bind(ModelSymbols.model).toConstructor(ExceptionModel)
+    //   .whenTargetNamed(ExceptionSymbols.model);
   }
 
 }
