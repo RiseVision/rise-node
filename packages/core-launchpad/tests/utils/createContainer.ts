@@ -3,7 +3,7 @@ import { loadCoreSortedModules, resolveModule } from '../../src/modulesLoader';
 import { Symbols } from '../../../core-interfaces/dist';
 import { z_schema } from '../../../core-utils';
 import { WordPressHookSystem, InMemoryFilterModel } from 'mangiafuoco';
-import { LoggerStub } from '../../../core-utils/test/stubs';
+import { LoggerStub } from '../../../core-utils/tests/stubs';
 import { SignedAndChainedBlockType } from '../../../core-types/dist';
 import { CoreSymbols } from '../../../core/dist';
 import * as path from 'path';

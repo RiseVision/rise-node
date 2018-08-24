@@ -5,7 +5,7 @@ import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
 import { AppManager } from '../src/AppManager';
-import { LoggerStub } from '../../core-utils/test/stubs/';
+import { LoggerStub } from '../../core-utils/tests/stubs/';
 import { OnFinishBoot, OnInitContainer } from '../src/hooks';
 import { CoreModuleStub } from './stubs/CoreModuleStub';
 

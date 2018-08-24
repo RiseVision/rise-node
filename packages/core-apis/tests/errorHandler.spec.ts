@@ -5,7 +5,7 @@ import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
 import { DeprecatedAPIError } from '../src/errors';
 import { APIErrorHandler } from '../src/utils';
-import { LoggerStub } from '../../core-utils/test/stubs';
+import { LoggerStub } from '../../core-utils/tests/stubs';
 import { createContainer } from '../../core-launchpad/tests/utils/createContainer';
 import { APISymbols } from '../src/helpers';
 import { p2pSymbols } from '../../core-p2p/src/helpers';
