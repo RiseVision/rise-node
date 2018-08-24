@@ -7,7 +7,7 @@ export type CommonBlockRequestDataType = { common: { id: string, previousBlock: 
 
 @injectable()
 export class CommonBlockRequest extends BaseRequest<CommonBlockRequestDataType, void> {
-  protected readonly method                    = 'GET';
+  protected readonly method: 'GET'             = 'GET';
   protected readonly supportsProtoBuf: boolean = true;
 
   @inject(Symbols.logic.block)

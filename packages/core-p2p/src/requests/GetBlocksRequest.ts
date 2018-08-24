@@ -8,7 +8,7 @@ export type GetBlocksRequestDataType = { blocks: SignedAndChainedBlockType[]};
 
 @injectable()
 export class GetBlocksRequest extends BaseRequest<GetBlocksRequestDataType, void> {
-  protected readonly method = 'GET';
+  protected readonly method: 'GET' = 'GET';
   protected readonly supportsProtoBuf = true;
 
 // TODO: How to migrate this?

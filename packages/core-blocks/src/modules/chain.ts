@@ -1,13 +1,6 @@
-import bs = require('binary-search');
-import * as deepFreeze from 'js-flock/deepFreeze';
-import { inject, injectable, tagged } from 'inversify';
-import { Op, Transaction } from 'sequelize';
-import * as _ from 'lodash';
-import { Bus, catchToLoggerAndRemapError, DBHelper, ILogger, Sequence, TransactionType, wait } from '../../helpers/';
-import { WrapInBalanceSequence } from '../../helpers/decorators/wrapInSequence';
-import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
-  IAccountsModule,
+  IAccountsModel,
+  IAccountsModule, IBlockLogic, IBlocksModel,
   IBlocksModule,
   IBlocksModuleChain,
   IBlocksModuleUtils,
@@ -23,6 +16,7 @@ import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { DBOp, SignedAndChainedBlockType, SignedBlockType, TransactionType } from '@risevision/core-types';
 import { catchToLoggerAndRemapError, wait, WrapInBalanceSequence } from '@risevision/core-utils';
+import * as deepFreeze from 'js-flock/deepFreeze';
 import bs = require('binary-search');
 import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
@@ -62,8 +56,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   private blocksModule: IBlocksModule;
   @inject(BlocksSymbols.modules.utils)
   private blocksModuleUtils: IBlocksModuleUtils;
-  @inject(Symbols.modules.rounds)
-  private roundsModule: IRoundsModule;
+  // @inject(Symbols.modules.rounds)
+  // private roundsModule: IRoundsModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
@@ -335,10 +329,10 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * @returns {Promise<SignedBlockType>}
    */
   @WrapInBalanceSequence
-  private async popLastBlock(lb1: SignedAndChainedBlockType): Promise<BlocksModel> {
+  private async popLastBlock(lb1: SignedAndChainedBlockType): Promise<IBlocksModel> {
     const lb = await this.BlocksModel.findById(lb1.id, { include: [this.TransactionsModel] });
     if (lb === null) {
-      throw new Error('previousBlock is null');
+      throw new Error('curBlock is null');
     }
     const previousBlock = await this.BlocksModel.findById(lb.previousBlock, { include: [this.TransactionsModel] });
 

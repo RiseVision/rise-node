@@ -40,6 +40,13 @@ export abstract class BaseTx<T, M extends Model<any>> implements IBaseTransactio
     return emptyBuffer;
   }
 
+  /**
+   * Returns asset, given Buffer containing it
+   */
+  public fromBytes(bytes: Buffer, tx: IBaseTransaction<any>): T {
+    return null;
+  }
+
   public apply(tx: IConfirmedTransaction<T>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     return Promise.resolve([]);
   }
@@ -86,4 +93,10 @@ export abstract class BaseTx<T, M extends Model<any>> implements IBaseTransactio
     return Promise.resolve();
   }
 
+  public getMaxBytesSize(): number {
+    let size = 0;
+    size += 1 + 4 + 32 + 32 + 8 + 8 + 64 + 64; // TransactionLogic.getBytes Buffer base size
+    size += 6; // hasRequesterPublicKey, has signSignature, fee;
+    return size;
+  }
 }

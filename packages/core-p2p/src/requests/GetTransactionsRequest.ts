@@ -11,7 +11,7 @@ export type GetTransactionsRequestDataType = {
 
 @injectable()
 export class GetTransactionsRequest extends BaseRequest<GetTransactionsRequestDataType, void> {
-  protected readonly method = 'GET';
+  protected readonly method: 'GET' = 'GET';
   protected readonly supportsProtoBuf = true;
 
   @inject(Symbols.logic.transaction)

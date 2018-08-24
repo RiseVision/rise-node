@@ -6,25 +6,25 @@ import {
   ITransactionLogic,
   Symbols
 } from '@risevision/core-interfaces';
-import * as ByteBuffer from 'bytebuffer';
-import * as crypto from 'crypto';
-import * as filterObject from 'filter-object';
-import { inject, injectable, named } from 'inversify';
-import z_schema from 'z-schema';
-import { BlockRewardLogic } from './blockReward';
+import { ModelSymbols } from '@risevision/core-models';
 import {
   BlockType,
   ConstantsType,
   DBOp,
-  IBaseTransaction,
-  IKeypair,
+  IBaseTransaction, IBytesBlock, IConfirmedTransaction,
+  IKeypair, ITransportTransaction,
   RawFullBlockListType,
   SignedAndChainedBlockType,
   SignedAndChainedTransportBlockType,
   SignedBlockType
 } from '@risevision/core-types';
 import { MyBigNumb } from '@risevision/core-utils';
-import { ModelSymbols } from '@risevision/core-models';
+import * as ByteBuffer from 'bytebuffer';
+import * as crypto from 'crypto';
+import * as filterObject from 'filter-object';
+import { inject, injectable, named } from 'inversify';
+import z_schema from 'z-schema';
+import { BlockRewardLogic } from './blockReward';
 import { BlocksSymbols } from '../blocksSymbols';
 
 const blockSchema = require('../../schema/block.json');
@@ -280,10 +280,12 @@ export class BlockLogic implements IBlockLogic {
   /**
    * Calculates block id.
    * @param {BlockType} block
+   * @param fromBytes
    * @returns {string}
    */
-  public getId(block: BlockType): string {
-    const hash = crypto.createHash('sha256').update(this.getBytes(block)).digest();
+  public getId(block: BlockType, fromBytes?: Buffer): string {
+    const bytes = fromBytes ? fromBytes : this.getBytes(block);
+    const hash = crypto.createHash('sha256').update(bytes).digest();
     const temp = Buffer.alloc(8);
     for (let i = 0; i < 8; i++) {
       temp[i] = hash[7 - i];
@@ -372,7 +374,7 @@ export class BlockLogic implements IBlockLogic {
       }
     }
     const previousBlock = previousValid ?
-      BigNum.fromBuffer(previousIdBytes.toBuffer() as any).toString() : null;
+      MyBigNumb.fromBuffer(previousIdBytes.toBuffer() as any).toString() : null;
 
     const numberOfTransactions = bb.readInt(16);
     const totalAmount = bb.readLong(20).toNumber();
@@ -422,7 +424,7 @@ export class BlockLogic implements IBlockLogic {
   public getMaxBytesSize(): number {
     let size = this.getMinBytesSize();
     const maxTxSize = this.transaction.getMaxBytesSize();
-    size += constants.maxTxsPerBlock * maxTxSize; // transactions
+    size += this.constants.maxTxsPerBlock * maxTxSize; // transactions
     return size;
   }
 
@@ -437,6 +439,6 @@ export class BlockLogic implements IBlockLogic {
     for (let i = 0; i < 8; i++) {
       temp[i] = publicKeyHash[7 - i];
     }
-    return `${BigNum.fromBuffer(temp).toString()}R`;
+    return `${MyBigNumb.fromBuffer(temp).toString()}R`;
   }
 }

@@ -1,24 +1,24 @@
-import { ExceptionsManager, ExceptionSymbols } from '@risevision/core-exceptions';
+import { ExceptionsManager, ExceptionSymbols, RunThroughExceptions } from '@risevision/core-exceptions';
 import {
   IAccountLogic,
   IAccountsModel,
   ICrypto,
-  ILogger,
+  ILogger, ITransactionLogic,
   ITransactionsModel,
-  Symbols,
+  Symbols, VerificationType,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   ConstantsType,
   DBBulkCreateOp,
   DBOp,
-  IBaseTransaction,
+  IBaseTransaction, IBytesTransaction,
   IConfirmedTransaction,
   ITransportTransaction,
   SignedAndChainedBlockType,
   SignedBlockType
 } from '@risevision/core-types';
-import { MyBigNumb, RunThroughExceptions } from '@risevision/core-utils';
+import { MyBigNumb } from '@risevision/core-utils';
 import { BigNumber } from 'bignumber.js';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
@@ -29,9 +29,9 @@ import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
 import { BaseTx } from './BaseTx';
 import { TXExceptions } from './exceptionLists';
-import { TXSymbols } from './txSymbols';
-import { TxApplyFilter, TxApplyUnconfirmedFilter, TxUndoFilter, TxUndoUnconfirmedFilter } from './hooks/filters';
 import { TxLogicStaticCheck, TxLogicVerify } from './hooks/actions';
+import { TxApplyFilter, TxApplyUnconfirmedFilter, TxUndoFilter, TxUndoUnconfirmedFilter } from './hooks/filters';
+import { TXSymbols } from './txSymbols';
 
 // tslint:disable-next-line no-var-requires
 const txSchema = require('../schema/transaction.json');
@@ -132,7 +132,7 @@ export class TransactionLogic implements ITransactionLogic {
 
     if (tx.recipientId) {
       const recipient = tx.recipientId.slice(0, -1);
-      const recBuf    = new BigNum(recipient).toBuffer({ size: 8 });
+      const recBuf    = new MyBigNumb(recipient).toBuffer({ size: 8 });
 
       for (let i = 0; i < 8; i++) {
         bb.writeByte(recBuf[i] || 0);
@@ -200,7 +200,7 @@ export class TransactionLogic implements ITransactionLogic {
       }
     }
     const recipientId = recipientValid ?
-      BigNum.fromBuffer(recipientIdBytes.toBuffer() as any).toString() + 'R' : null;
+      MyBigNumb.fromBuffer(recipientIdBytes.toBuffer() as any).toString() + 'R' : null;
 
     const amount = bb.readLong(offset);
     offset += 8;
@@ -244,7 +244,7 @@ export class TransactionLogic implements ITransactionLogic {
     return transaction;
   }
 
-  public ready(tx: IBaseTransaction<any>, sender: AccountsModel): boolean {
+  public async ready(tx: IBaseTransaction<any>, sender: IAccountsModel): Promise<boolean> {
     this.assertKnownTransactionType(tx.type);
 
     if (!sender) {
@@ -262,22 +262,22 @@ export class TransactionLogic implements ITransactionLogic {
   /**
    * Checks if balanceKey is less than amount for sender
    */
-  @RunThroughExceptions(ExceptionsList.checkBalance)
+  @RunThroughExceptions(TXExceptions.checkBalance)
   public checkBalance(amount: number | BigNumber, balanceKey: 'balance' | 'u_balance',
-                      tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel) {
+                      tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: IAccountsModel) {
     const accountBalance  = sender[balanceKey].toString();
-    const exceededBalance = new BigNum(accountBalance).isLessThan(amount);
+    const exceededBalance = new MyBigNumb(accountBalance).isLessThan(amount);
     // tslint:disable-next-line
     const exceeded        = (tx['blockId'] !== this.genesisBlock.id && exceededBalance);
     return {
       error: exceeded ? `Account does not have enough currency: ${sender.address} balance: ${
-        new BigNum(accountBalance || 0).div(Math.pow(10, 8))} - ${new BigNum(amount).div(Math.pow(10, 8))}` : null,
+        new MyBigNumb(accountBalance || 0).div(Math.pow(10, 8))} - ${new MyBigNumb(amount).div(Math.pow(10, 8))}` : null,
       exceeded,
     };
   }
 
-  public async verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel,
-                      requester: AccountsModel, height: number) {
+  public async verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: IAccountsModel,
+                      requester: IAccountsModel, height: number) {
     this.assertKnownTransactionType(tx.type);
     if (!sender) {
       throw new Error('Missing sender');
@@ -600,7 +600,7 @@ export class TransactionLogic implements ITransactionLogic {
     for (let i = 0; i < 8; i++) {
       temp[i] = hash[7 - i];
     }
-    return BigNum.fromBuffer(temp).toString();
+    return MyBigNumb.fromBuffer(temp).toString();
   }
 
 }

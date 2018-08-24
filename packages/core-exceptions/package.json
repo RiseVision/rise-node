@@ -18,9 +18,9 @@
     "@risevision/core-launchpad": "^1.0.0"
   },
   "devDependencies": {
-    "shx": "0.3.2",
+    "shx": "=0.3.2",
     "@types/node": "^9.6.0",
-    "ts-node": "7.0.0",
-    "typescript": "2.9.2"
+    "ts-node": "=7.0.0",
+    "typescript": "=2.9.2"
   }
 }

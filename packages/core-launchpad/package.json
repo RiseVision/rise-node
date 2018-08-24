@@ -20,18 +20,18 @@
     "@risevision/core-types": "^1.0.0",
     "@risevision/core-utils": "^1.0.0",
     "app-module-path": "2.2.0",
-    "inversify": "4.13.0",
-    "sequelize": "4.38.0",
+    "inversify": "=4.13.0",
+    "sequelize": "=4.38.0",
     "pkginfo": "0.4.1",
     "dag-map": "=2.0.2",
     "find-pkg": "2.0.0",
-    "sequelize-typescript": ">=0.6.6-beta.1 <=0.6.6-beta.1"
+    "sequelize-typescript": "=0.6.6-beta.1"
   },
   "devDependencies": {
-    "shx": "0.3.2",
-    "mocha": "5.2.0",
-    "ts-node": "7.0.0",
-    "typescript": "2.9.2",
+    "shx": "=0.3.2",
+    "mocha": "=5.2.0",
+    "ts-node": "=7.0.0",
+    "typescript": "=2.9.2",
     "proxyquire": "^2.0.0"
   }
 }

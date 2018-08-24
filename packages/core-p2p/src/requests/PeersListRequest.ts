@@ -8,7 +8,7 @@ export type PeersListRequestDataType = {peers: PeerType[]};
 
 @injectable()
 export class PeersListRequest extends BaseRequest<{peers: PeerType[]}, PeersListRequestDataType> {
-  protected readonly method = 'GET';
+  protected readonly method: 'GET'   = 'GET';
   protected readonly supportsProtoBuf = true;
 
   public getResponseData(res) {

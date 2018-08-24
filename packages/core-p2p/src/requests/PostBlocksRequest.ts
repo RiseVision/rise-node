@@ -18,7 +18,7 @@ export type PostBlocksRequestDataType = { block: SignedBlockType<Buffer> };
 
 @injectable()
 export class PostBlocksRequest extends BaseRequest<any, PostBlocksRequestDataType> {
-  protected readonly method           = 'POST';
+  protected readonly method: 'POST'   = 'POST';
   protected readonly supportsProtoBuf = true;
 
   @inject(Symbols.logic.block)

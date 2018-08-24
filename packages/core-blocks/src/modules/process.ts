@@ -1,40 +1,31 @@
-import { inject, injectable, tagged } from 'inversify';
+import { inject, injectable, named, tagged } from 'inversify';
 import * as _ from 'lodash';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-import { constants, ForkType, IKeypair, ILogger, Sequence } from '../../helpers/';
-import { WrapInDBSequence, WrapInDefaultSequence } from '../../helpers/decorators/wrapInSequence';
-import { ISlots } from '../../ioc/interfaces/helpers';
-import {
-  IAppState,
-  IBlockLogic,
-  IPeerLogic,
-  IPeersLogic,
-  IRoundsLogic,
-  ITransactionLogic
-} from '../../ioc/interfaces/logic';
 import {
   IAccountsModule,
-  IBlocksModule,
-  IBlocksModuleChain,
-  IBlocksModuleProcess,
-  IBlocksModuleUtils,
-  IBlocksModuleVerify,
-  IDelegatesModule,
-  IForkModule,
-  ITransactionsModule,
-  ITransportModule
-} from '../../ioc/interfaces/modules/';
-import { Symbols } from '../../ioc/symbols';
+  IAppState,
+  IBlockLogic, IBlocksModel, IBlocksModule, IBlocksModuleChain,
+  IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify, IForkModule,
+  ILogger,
+  IPeersLogic,
+  ISequence, ITransactionLogic, ITransactionsModel, ITransactionsModule,
+  Symbols
+  ITransportModule,
+} from '@risevision/core-interfaces';
 import {
   BasePeerType,
+  ConstantsType, ForkType, IBaseTransaction,
+  IKeypair,
   SignedAndChainedBlockType,
-  SignedBlockType,
-} from '../../logic/';
-import { IBaseTransaction } from '../../logic/transactions/';
-import { BlocksModel, TransactionsModel } from '../../models';
-import schema from '../../schema/blocks';
-import { RawFullBlockListType } from '../../types/rawDBTypes';
+  SignedBlockType
+} from '@risevision/core-types';
+import { BlocksSymbols } from '../blocksSymbols';
+import { ModelSymbols } from '@risevision/core-models';
+import { CommonBlockRequest, GetBlocksRequest, p2pSymbols, RequestFactoryType } from '@risevision/core-p2p';
+import { IPeerLogic } from '@risevision/core-interfaces';
+import { WrapInDBSequence, WrapInDefaultSequence } from '@risevision/core-utils';
+const schema = require('../../schema/blocks.json');
 
 @injectable()
 export class BlocksModuleProcess implements IBlocksModuleProcess {
@@ -97,9 +88,9 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
   private isCleaning: boolean = false;
 
-  @inject(requestSymbols.getBlocks)
+  @inject(p2pSymbols.requests.getBlocks)
   private gbFactory: RequestFactoryType<void, GetBlocksRequest>;
-  @inject(requestSymbols.commonBlock)
+  @inject(p2pSymbols.requests.commonBlock)
   private cbFactory: RequestFactoryType<void, CommonBlockRequest>;
 
   public cleanup() {
@@ -233,7 +224,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
    * @return {Promise<SignedBlockType>}
    */
   public async loadBlocksFromPeer(rawPeer: IPeerLogic | BasePeerType): Promise<SignedBlockType> {
-    let lastValidBlock: SignedBlockType = this.blocksModule.lastBlock;
+    const lastValidBlock: SignedBlockType = this.blocksModule.lastBlock;
 
     // normalize Peer
     const peer = this.peersLogic.create(rawPeer);

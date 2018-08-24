@@ -21,6 +21,7 @@
       "@risevision/core-apis": ["../core-apis/*"],
       "@risevision/core-interfaces": ["../core-interfaces/*"],
       "@risevision/core-types": ["../core-types/*"],
+      "@risevision/core-p2p": ["../core-p2p/*"],
       "@risevision/core-utils": ["../core-utils/*"]
     }
   },
