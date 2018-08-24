@@ -1,4 +1,5 @@
 import { Column, DataType, HasMany, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import * as _ from 'lodash';
 import { SignedBlockType } from '../logic';
 import { TransactionsModel } from './TransactionsModel';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
@@ -66,25 +67,19 @@ export class BlocksModel extends Model<BlocksModel> {
   @HasMany(() => this.BlocksModel.container.getNamed(ModelSymbols.model, Symbols.models.transactions), { as: "TransactionsModel" })
   private TransactionsModel: ITransactionsModel[];
 
-  public static toStringBlockType(b: SignedBlockType): SignedBlockType<string> {
-    const TxModel      = this.container.getNamed<typeof ITransactionsModel>(
-      ModelSymbols.model,
-      Symbols.models.transactions
-    );
-    const txs = (b.transactions || [])
-      .map((t) => TxModel.toTransportTransaction(t));
-    if (
-      !Buffer.isBuffer(b.blockSignature) || !Buffer.isBuffer(b.generatorPublicKey) ||
-      !Buffer.isBuffer(b.payloadHash)
-    ) {
+  public static toStringBlockType(btmp: SignedBlockType, TxModel: typeof TransactionsModel, blocksModule: IBlocksModule): SignedBlockType<string> {
+    const b = _.cloneDeep(btmp instanceof BlocksModel ? btmp.toJSON() : btmp);
+    const txs = (btmp.transactions || [])
+      .map((t) => TxModel.toTransportTransaction(t, blocksModule));
+    if (!Buffer.isBuffer(b.blockSignature) || !Buffer.isBuffer(b.generatorPublicKey) || !Buffer.isBuffer(b.payloadHash)) {
       throw new Error('toStringBlockType used with non Buffer block type');
     }
     const toRet = {
       ...(b instanceof BlocksModel ? b.toJSON() : b),
       blockSignature    : b.blockSignature.toString('hex'),
+      transactions      : txs as any,
       generatorPublicKey: b.generatorPublicKey.toString('hex'),
       payloadHash       : b.payloadHash.toString('hex'),
-      transactions      : txs as any,
     };
     delete toRet.TransactionsModel;
     return toRet;

@@ -452,7 +452,7 @@ describe('modules/loader', () => {
       expect(loggerStub.stubs.warn.calledOnce).to.be.true;
       expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
       expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal(
-        'Error loading transactions... Retrying... '
+        'Error loading signatures... Retrying... '
       );
       expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.equal(error);
 

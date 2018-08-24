@@ -4,7 +4,7 @@ import * as Long from 'long';
 import { Body, ContentType, Controller, Get, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-import { Bus, constants as constantsType, ProtoBufHelper, TransactionType, } from '../helpers';
+import { Bus, constants, constants as constantsType, ProtoBufHelper, } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { assertValidSchema, SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { IBlockLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
@@ -16,11 +16,8 @@ import {
   ITransportModule
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { BlockLogic, IBytesBlock, SignedAndChainedBlockType, TransactionLogic } from '../logic';
-import {
-  IBaseTransaction, IBytesTransaction, MultiSignatureTransaction, RegisterDelegateTransaction,
-  SecondSignatureTransaction, SendTransaction, VoteTransaction
-} from '../logic/transactions';
+import { IBytesBlock, SignedAndChainedBlockType } from '../logic';
+import { IBaseTransaction, IBytesTransaction } from '../logic/transactions';
 import { BlocksModel, TransactionsModel } from '../models';
 import transportSchema from '../schema/transport';
 import { APIError } from './errors';
@@ -137,7 +134,12 @@ export class TransportV2API {
   public transactions() {
     const transactions                 = this.transactionsModule.getMergedTransactionList(this.constants.maxSharedTxs);
     const tmpPT = this.ptFactory({data: { transactions }});
-    const byteTxs: IBytesTransaction[] = transactions.map((tx) => tmpPT.generateBytesTransaction(tx));
+    const byteTxs: IBytesTransaction[] = transactions
+      .map((tx) => tmpPT.generateBytesTransaction(tx))
+      .map((bt) => {
+        delete bt.relays;
+        return bt;
+      });
     return this.getResponse({ transactions: byteTxs }, 'transportTransactions');
   }
 
@@ -239,10 +241,14 @@ export class TransportV2API {
     // We take 98% of the theoretical value to allow for some overhead
     const maxBytes = maxPayloadSize * 0.98;
     // Best case scenario: we find 2MB of empty blocks.
-    const maxHeightDelta = Math.ceil(maxBytes / BlockLogic.getMinBytesSize());
+    const maxHeightDelta = Math.ceil(maxBytes / this.blockLogic.getMinBytesSize());
     // We can also limit the number of transactions, with a very rough estimation of the max number of txs that will fit
-    // in maxPayloadSize. We assume that block metadata is smaller than a single tx. In RISE the value is about 7500 TXs
-    const txLimit = Math.ceil(maxBytes / (( BlockLogic.getMinBytesSize() + TransactionLogic.getMinBytesSize()) / 2));
+    // in maxPayloadSize. We assume a stream blocks completely full of the smallest transactions.
+    // In RISE the value is about 8000 TXs
+    const txLimit = Math.ceil(
+      (maxBytes * constants.maxTxsPerBlock ) /
+      ( this.transactionLogic.getMinBytesSize() * constants.maxTxsPerBlock + this.blockLogic.getMinBytesSize())
+    );
 
     // Get only height and type for all the txs in this height range
     const txsInRange = await this.TransactionsModel.findAll({
@@ -283,7 +289,7 @@ export class TransportV2API {
         // Add blocks size one by one
         for (let i = 0; i < heightDelta; i++) {
           // First add the empty block's size
-          blocksSize += BlockLogic.getMinBytesSize();
+          blocksSize += this.blockLogic.getMinBytesSize();
           // If it doesn't fit already, don't increase the number of blocks to load.
           if (blocksSize + txsSize > maxBytes) {
             break;
@@ -292,27 +298,16 @@ export class TransportV2API {
             blocksToLoad++;
           }
         }
-        txsSize += this.getSizeByTxType(tx.type);
+        txsSize += this.transactionLogic.getByteSizeByTxType(tx.type);
+      }
+      // If arrived here we didn't fill the payload enough, add enough empty blocks
+      if (maxBytes - blocksSize - txsSize > this.blockLogic.getMinBytesSize()) {
+        blocksToLoad += Math.ceil((maxBytes - blocksSize - txsSize) / this.blockLogic.getMinBytesSize());
       }
     } else {
       blocksToLoad = maxHeightDelta;
     }
-    return blocksToLoad;
-  }
-
-  private getSizeByTxType(txType): number {
-    switch (txType) {
-      case TransactionType.SEND:
-        return SendTransaction.getMaxBytesSize();
-      case TransactionType.DELEGATE:
-        return RegisterDelegateTransaction.getMaxBytesSize();
-      case TransactionType.SIGNATURE:
-        return SecondSignatureTransaction.getMaxBytesSize();
-      case TransactionType.MULTI:
-        return MultiSignatureTransaction.getMaxBytesSize();
-      case TransactionType.VOTE:
-        return VoteTransaction.getMaxBytesSize();
-    }
+    return Math.max(1, blocksToLoad);
   }
 
   private getResponse(payload: any, pbNamespace: string, pbMessageType?: string) {

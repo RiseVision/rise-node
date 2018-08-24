@@ -1,10 +1,13 @@
 import bs = require('binary-search');
 import * as deepFreeze from 'js-flock/deepFreeze';
+import { inject, injectable, tagged } from 'inversify';
+import { Op, Transaction } from 'sequelize';
+import * as _ from 'lodash';
+import { Bus, catchToLoggerAndRemapError, DBHelper, ILogger, Sequence, TransactionType, wait } from '../../helpers/';
+import { WrapInBalanceSequence } from '../../helpers/decorators/wrapInSequence';
+import { IBlockLogic, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
-  IAccountsModel,
   IAccountsModule,
-  IBlockLogic,
-  IBlocksModel,
   IBlocksModule,
   IBlocksModuleChain,
   IBlocksModuleUtils,
@@ -59,6 +62,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   private blocksModule: IBlocksModule;
   @inject(BlocksSymbols.modules.utils)
   private blocksModuleUtils: IBlocksModuleUtils;
+  @inject(Symbols.modules.rounds)
+  private roundsModule: IRoundsModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
 
@@ -326,22 +331,28 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
   /**
    * Deletes the last block (passed), undo txs and backwardTick round
-   * @param {SignedBlockType} lb
+   * @param {SignedBlockType} lb1
    * @returns {Promise<SignedBlockType>}
    */
   @WrapInBalanceSequence
-  private async popLastBlock(lb: IBlocksModel): Promise<IBlocksModel> {
+  private async popLastBlock(lb1: SignedAndChainedBlockType): Promise<BlocksModel> {
+    const lb = await this.BlocksModel.findById(lb1.id, { include: [this.TransactionsModel] });
+    if (lb === null) {
+      throw new Error('previousBlock is null');
+    }
     const previousBlock = await this.BlocksModel.findById(lb.previousBlock, { include: [this.TransactionsModel] });
 
     if (previousBlock === null) {
       throw new Error('previousBlock is null');
     }
+    // Attach assets for transactions
+    await this.transactionLogic.attachAssets(lb.transactions);
     await this.transactionLogic.attachAssets(previousBlock.transactions);
 
     const txs = lb.transactions.slice().reverse();
 
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
-      const accountsMap           = await this.accountsModule.resolveAccountsForTransactions(txs);
+      const accountsMap = await this.accountsModule.resolveAccountsForTransactions(txs);
       const ops: Array<DBOp<any>> = [];
       for (const tx of txs) {
         ops.push(... await this.transactionLogic.undo(tx, lb, accountsMap[tx.senderId]));

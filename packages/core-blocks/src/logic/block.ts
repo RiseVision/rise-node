@@ -412,4 +412,31 @@ export class BlockLogic implements IBlockLogic {
       relays: blk.relays,
     };
   }
+
+  public getMinBytesSize(): number {
+    let size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64; // Block's bytes
+    size += 4; // height
+    return size;
+  }
+
+  public getMaxBytesSize(): number {
+    let size = this.getMinBytesSize();
+    const maxTxSize = this.transaction.getMaxBytesSize();
+    size += constants.maxTxsPerBlock * maxTxSize; // transactions
+    return size;
+  }
+
+  private getAddressByPublicKey(publicKey: Buffer | string) {
+    if (typeof(publicKey) === 'string') {
+      publicKey = new Buffer(publicKey, 'hex');
+    }
+    const publicKeyHash = crypto.createHash('sha256')
+      .update(publicKey).digest();
+    const temp          = Buffer.alloc(8);
+
+    for (let i = 0; i < 8; i++) {
+      temp[i] = publicKeyHash[7 - i];
+    }
+    return `${BigNum.fromBuffer(temp).toString()}R`;
+  }
 }

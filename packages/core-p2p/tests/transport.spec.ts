@@ -646,6 +646,7 @@ describe('src/modules/transport.ts', () => {
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[0]).to.be.deep.equal({});
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[1].requestHandler).to.be.instanceOf(PostSignaturesRequest);
       expect(broadcasterLogic.stubs.enqueue.firstCall.args[1].requestHandler.options).to.be.deep.equal({data: { signatures: [{
+        relays: 1,
         signature: Buffer.from(signature.signature, 'hex'),
         transaction: signature.transaction,
       }] }});
@@ -1069,7 +1070,7 @@ describe('src/modules/transport.ts', () => {
 
       expect(schemaStub.stubs.validate.calledTwice).to.be.true;
       expect(schemaStub.stubs.validate.firstCall.args.length).to.be.equal(3);
-      expect(schemaStub.stubs.validate.firstCall.args[0]).to.be.equal(response.body);
+      expect(schemaStub.stubs.validate.firstCall.args[0]).to.be.equal(response);
       expect(schemaStub.stubs.validate.firstCall.args[1]).to.be.equal(peersSchema.discover.peers);
       expect(schemaStub.stubs.validate.firstCall.args[2]).to.be.a('function');
     });
@@ -1079,7 +1080,7 @@ describe('src/modules/transport.ts', () => {
 
       expect(peersLogic.stubs.acceptable.calledOnce).to.be.true;
       expect(peersLogic.stubs.acceptable.firstCall.args.length).to.be.equal(1);
-      expect(peersLogic.stubs.acceptable.firstCall.args[0]).to.be.equal(response.body.peers);
+      expect(peersLogic.stubs.acceptable.firstCall.args[0]).to.be.equal(response.peers);
     });
 
     it('should call peersLogic.create', async () => {

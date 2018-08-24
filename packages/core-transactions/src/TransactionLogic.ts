@@ -176,6 +176,76 @@ export class TransactionLogic implements ITransactionLogic {
     return bb.toBuffer() as any;
   }
 
+  // tslint:disable-next-line
+  public fromBytes(tx: IBytesTransaction): IBaseTransaction<any> & { relays: number } {
+    const bb = ByteBuffer.wrap(tx.bytes, 'binary', true);
+    const type = bb.readByte(0);
+    const timestamp = bb.readInt(1);
+    const senderPublicKey = new Buffer(bb.copy(5, 37).toBuffer());
+    let requesterPublicKey = null;
+    let offset = 37;
+
+    // Read requesterPublicKey if available
+    if (tx.hasRequesterPublicKey) {
+      requesterPublicKey = bb.copy(offset, offset + 32).toBuffer() as any;
+      offset += 32;
+    }
+
+    // RecipientId is valid only if it's not 8 bytes with 0 value
+    const recipientIdBytes = bb.copy(offset, offset + 8);
+    offset += 8;
+    let recipientValid = false;
+    for (let i = 0; i < 8; i++) {
+      if (recipientIdBytes.readByte(i) !== 0) {
+        recipientValid = true;
+        break;
+      }
+    }
+    const recipientId = recipientValid ?
+      BigNum.fromBuffer(recipientIdBytes.toBuffer() as any).toString() + 'R' : null;
+
+    const amount = bb.readLong(offset);
+    offset += 8;
+
+    const signature = bb.copy(bb.buffer.length - 64, bb.buffer.length).toBuffer() as any;
+
+    // Read signSignature if available
+    const signSignature = tx.hasSignSignature ?
+      bb.copy(bb.buffer.length - 128, bb.buffer.length - 64) as any : null;
+
+    // All remaining bytes between amount and signSignature (or signature) are the asset.
+    let assetBytes = null;
+    const optionalElementsLength = (tx.hasRequesterPublicKey ? 32 : 0) + (tx.hasSignSignature ? 64 : 0);
+    const assetLength = bb.buffer.length - ( 1 + 4 + 32 + 8 + 8 + 64 + optionalElementsLength);
+    if (assetLength < 0) {
+      throw new Error('Buffer length does not match expected sequence');
+    } else if (assetLength > 0) {
+      assetBytes = bb.copy(offset, offset + assetLength);
+    }
+
+    const transaction: IBaseTransaction<any> & { relays: number } =  {
+      amount: amount.toNumber(),
+      fee: tx.fee,
+      id: this.getIdFromBytes(tx.bytes),
+      recipientId,
+      relays: tx.relays,
+      requesterPublicKey,
+      senderId: this.accountLogic.generateAddressByPublicKey(senderPublicKey),
+      senderPublicKey,
+      signature,
+      timestamp,
+      type,
+    };
+    if (tx.hasRequesterPublicKey) {
+      transaction.requesterPublicKey = requesterPublicKey;
+    }
+    if (tx.hasSignSignature) {
+      transaction.signSignature = signSignature;
+    }
+    transaction.asset = this.types[type].fromBytes(assetBytes, transaction);
+    return transaction;
+  }
+
   public ready(tx: IBaseTransaction<any>, sender: AccountsModel): boolean {
     this.assertKnownTransactionType(tx.type);
 
@@ -500,6 +570,26 @@ export class TransactionLogic implements ITransactionLogic {
       this.assertKnownTransactionType(loopTXs[0].type);
       await this.types[loopTXs[0].type].attachAssets(loopTXs);
     }
+  }
+
+  public getMaxBytesSize(): number {
+    let max = 0;
+    Object.keys(this.types).forEach((type) => {
+      max = Math.max(max, this.types[type].getMaxBytesSize());
+    });
+    return max;
+  }
+
+  public getMinBytesSize(): number {
+    let min = Number.MAX_SAFE_INTEGER;
+    Object.keys(this.types).forEach((type) => {
+      min = Math.min(min, this.types[type].getMaxBytesSize());
+    });
+    return min;
+  }
+
+  public getByteSizeByTxType(txType: number): number {
+    return this.types[txType].getMaxBytesSize();
   }
 
   /**

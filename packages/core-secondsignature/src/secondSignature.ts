@@ -26,12 +26,6 @@ export type SecondSignatureAsset = {
 @injectable()
 export class SecondSignatureTransaction extends BaseTx<SecondSignatureAsset, SignaturesModel> {
 
-  public static getMaxBytesSize(): number {
-    let size = BaseTransactionType.getMaxBytesSize();
-    size += 32; // publicKey
-    return size;
-  }
-
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
 
@@ -229,5 +223,11 @@ export class SecondSignatureTransaction extends BaseTx<SecondSignatureAsset, Sig
         },
       };
     });
+  }
+
+  public getMaxBytesSize(): number {
+    let size = super.getMaxBytesSize();
+    size += 32; // publicKey
+    return size;
   }
 }

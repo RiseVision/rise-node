@@ -107,4 +107,23 @@ export interface ITransactionLogic {
    * @return {Promise<void>}
    */
   attachAssets(txs: Array<IConfirmedTransaction<any>>): Promise<void>;
+
+  /**
+   * Gets maximum size in bytes for a transaction. Used in Protocol Buffer response space allocation calculations.
+   * @returns {number} maximum bytes size
+   */
+  getMaxBytesSize(): number;
+
+  /**
+   * Gets minimum size in bytes for a transaction. Used in Protocol Buffer response space allocation calculations.
+   * @returns {number} minimum bytes size
+   */
+  getMinBytesSize(): number;
+
+  /**
+   * Gets maximum size in bytes for a specific transaction type. Used in Protocol Buffer response space allocation.
+   * @param {number} txType numeric identifier of the transaction type
+   * @returns {number} maximum bytes size for this type
+   */
+  getByteSizeByTxType(txType: number): number;
 }

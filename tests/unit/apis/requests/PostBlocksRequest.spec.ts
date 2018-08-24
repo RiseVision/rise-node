@@ -88,4 +88,41 @@ describe('apis/requests/PostBlocksRequest', () => {
       });
     });
   });
+
+  // TODO: Move this test to APIRequest
+  /*
+  describe('generateBytesBlock()', () => {
+    const block = {
+      height: 112233,
+      transactions: ['tx1', 'tx2'],
+    };
+
+    beforeEach(() => {
+      blockLogicStub.stubs.getBytes.returns(Buffer.from('112233', 'hex'));
+      generateBytesTransactionStub = sandbox.stub(instance as any, 'generateBytesTransaction')
+        .returns(Buffer.from('0123', 'hex'));
+    });
+
+    it('should call getBytes', () => {
+      (instance as any).generateBytesBlock(block);
+      expect(blockLogicStub.stubs.getBytes.calledOnce).to.be.true;
+      expect(blockLogicStub.stubs.getBytes.firstCall.args).to.be.deep.equal([block]);
+    });
+
+    it('should call generateBytesTransaction for each tx', () => {
+      (instance as any).generateBytesBlock(block);
+      expect(generateBytesTransactionStub.callCount).to.be.equal(block.transactions.length);
+      expect(generateBytesTransactionStub.args).to.be.deep.equal(block.transactions.map((t) => [t]));
+    });
+
+    it('should included all fields', () => {
+      const val = (instance as any).generateBytesBlock(block);
+      expect(val).to.be.deep.equal({
+        bytes       : Buffer.from('112233', 'hex'),
+        height      : block.height,
+        transactions: block.transactions.map(() => Buffer.from('0123', 'hex')),
+      });
+    });
+  });
+  */
 });

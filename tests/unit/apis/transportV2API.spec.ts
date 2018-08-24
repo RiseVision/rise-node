@@ -257,8 +257,10 @@ describe('apis/transportV2API', () => {
 
   describe('transactions()', () => {
     beforeEach(() => {
-      generateBytesTransactionStub = sandbox.stub(instance as any, 'generateBytesTransaction')
-        .returns(Buffer.from('0123', 'hex'));
+      generateBytesTransactionStub = sandbox.stub().returns(Buffer.from('0123', 'hex'));
+      (instance as any).ptFactory = () => ({
+        generateBytesTransaction: generateBytesTransactionStub,
+      });
     });
     it('should get transactions list', async () => {
       await instance.transactions();
@@ -362,7 +364,10 @@ describe('apis/transportV2API', () => {
     let getResStub: SinonStub;
     beforeEach(() => {
       findOneStub = sandbox.stub(blocksModel, 'findOne');
-      genBBStub = sandbox.stub(instance as any, 'generateBytesBlock').returns(Buffer.from('aaa123', 'hex'));
+      genBBStub = sandbox.stub().returns(Buffer.from('aaa123', 'hex'));
+      (instance as any).pblocksFactory = () => ({
+        generateBytesBlock: genBBStub,
+      });
       getResStub = sandbox.stub(instance as any, 'getResponse').returns({success: true});
     });
 
@@ -563,16 +568,20 @@ describe('apis/transportV2API', () => {
   describe('getBlocks()', () => {
     let blocks;
     let generateBytesBlockStub: SinonStub;
+    let numblocksToLoadStub: SinonStub;
     beforeEach(() => {
       (instance as any).BlocksModel = {
         findOne: sandbox.stub().resolves({
           height: 123456,
         }),
       };
-      (instance as any).calcNumBlocksToLoad = sandbox.stub().resolves(2100);
+      numblocksToLoadStub = sandbox.stub(instance as any, 'calcNumBlocksToLoad').resolves(2100);
       blocks = ['blk1', 'blk2', 'blk3'];
       blocksSubmoduleUtilsStub.stubs.loadBlocksData.returns(blocks);
-      generateBytesBlockStub = sandbox.stub(instance as any, 'generateBytesBlock').callsFake((b) => b);
+      generateBytesBlockStub = sandbox.stub().callsFake((b) => b);
+      (instance as any).pblocksFactory = () => ({
+        generateBytesBlock: generateBytesBlockStub,
+      });
     });
 
     it('should call loadBlocksData', async () => {
@@ -595,65 +604,31 @@ describe('apis/transportV2API', () => {
       expect(resp).to.be.an.instanceOf(Buffer);
       expect(resp.toString()).to.be.eq(JSON.stringify({blocks}));
     });
-  });
 
-  describe('generateBytesTransaction()', () => {
-    beforeEach(() => {
-      transactionLogicStub.stubs.getBytes.returns(Buffer.from('112233', 'hex'));
-    });
-
-    it('should call getBytes', () => {
-      (instance as any).generateBytesTransaction('tx');
-      expect(transactionLogicStub.stubs.getBytes.calledOnce).to.be.true;
-      expect(transactionLogicStub.stubs.getBytes.firstCall.args).to.be.deep.equal(['tx']);
-    });
-
-    it('should include all fields', () => {
-      const tx = {
-        fee: 1,
-        requesterPublicKey: 'ABC',
-        signSignature: 'aaa',
-      };
-      const val = (instance as any).generateBytesTransaction(tx);
-      expect(val).to.be.deep.equal({
-        bytes: Buffer.from('112233', 'hex'),
-        fee: 1,
-        hasRequesterPublicKey: true,
-        hasSignSignature: true,
+    describe('with calculated data', () => {
+      let findAllTxsStub: SinonStub;
+      const maxNumberInPayload = 10653;
+      beforeEach(() => {
+        numblocksToLoadStub.restore();
+        findAllTxsStub = sandbox.stub(transactionsModel, 'findAll').resolves([]);
+        blockLogicStub.stubs.getMinBytesSize.returns(184);
+        blockLogicStub.stubs.getMaxBytesSize.returns(18000);
+        transactionLogicStub.stubs.getMaxBytesSize.returns(700);
+        transactionLogicStub.stubs.getMinBytesSize.returns(219);
+        transactionLogicStub.stubs.getByteSizeByTxType.returns(219);
       });
-    });
-  });
-
-  describe('generateBytesBlock()', () => {
-    const block = {
-      height: 112233,
-      transactions: ['tx1', 'tx2'],
-    };
-
-    beforeEach(() => {
-      blockLogicStub.stubs.getBytes.returns(Buffer.from('112233', 'hex'));
-      generateBytesTransactionStub = sandbox.stub(instance as any, 'generateBytesTransaction')
-        .returns(Buffer.from('0123', 'hex'));
-    });
-
-    it('should call getBytes', () => {
-      (instance as any).generateBytesBlock(block);
-      expect(blockLogicStub.stubs.getBytes.calledOnce).to.be.true;
-      expect(blockLogicStub.stubs.getBytes.firstCall.args).to.be.deep.equal([block]);
-    });
-
-    it('should call generateBytesTransaction for each tx', () => {
-      (instance as any).generateBytesBlock(block);
-      expect(generateBytesTransactionStub.callCount).to.be.equal(block.transactions.length);
-      expect(generateBytesTransactionStub.args).to.be.deep.equal(block.transactions.map((t) => [t]));
-    });
-
-    it('should included all fields', () => {
-      const val = (instance as any).generateBytesBlock(block);
-      expect(val).to.be.deep.equal({
-        bytes       : Buffer.from('112233', 'hex'),
-        height      : block.height,
-        transactions: block.transactions.map(() => Buffer.from('0123', 'hex')),
+      it('should calculate properly', async () => {
+        findAllTxsStub.resolves([{type: 0, height: 123457}]);
+        await instance.getBlocks('123');
+        const lastHeight = blocksSubmoduleUtilsStub.stubs.loadBlocksData.firstCall.args[0].limit;
+        expect(lastHeight).eq(maxNumberInPayload - 2); // 1 tx weights more than 1 block
+      });
+      it('should return at least 1 block', async () => {
+        blockLogicStub.stubs.getMinBytesSize.returns(2000000);
+        findAllTxsStub.resolves([{type: 0, height: 123457}]);
+        await instance.getBlocks('123');
+        const lastHeight = blocksSubmoduleUtilsStub.stubs.loadBlocksData.firstCall.args[0].limit;
+        expect(lastHeight).eq(1);
       });
     });
   });

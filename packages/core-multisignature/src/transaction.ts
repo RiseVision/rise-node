@@ -1,33 +1,25 @@
-import {
-  IAccountLogic,
-  ISystemModule,
-  ITransactionLogic,
-  ITransactionsModel, Symbols,
-  VerificationType
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { BaseTx } from '@risevision/core-transactions';
-import {
-  DBCreateOp,
-  DBOp,
-  DBUpsertOp,
-  IBaseTransaction,
-  IConfirmedTransaction,
-  SignedBlockType,
-  TransactionType
-} from '@risevision/core-types';
 import * as ByteBuffer from 'bytebuffer';
-import { inject, injectable, named, postConstruct } from 'inversify';
+import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import * as SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
-
-import { MultisigConstantsType, MultisigSymbols } from './helpers';
-import { Accounts2MultisignaturesModel, Accounts2U_MultisignaturesModel, MultiSignaturesModel } from './models/';
-import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
-import { MultiSigUtils } from './utils';
+import { constants, Diff, TransactionType } from '../../helpers/';
+import { IAccountLogic, IRoundsLogic, ITransactionLogic, VerificationType } from '../../ioc/interfaces/logic';
+import { ISystemModule } from '../../ioc/interfaces/modules';
+import { Symbols } from '../../ioc/symbols';
+import {
+  Accounts2MultisignaturesModel,
+  Accounts2U_MultisignaturesModel,
+  AccountsModel,
+  MultiSignaturesModel,
+  TransactionsModel
+} from '../../models/';
+import multiSigSchema from '../../schema/logic/transactions/multisignature';
+import { DBCreateOp, DBOp, DBUpsertOp } from '../../types/genericTypes';
+import { SignedBlockType } from '../block';
+import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
 
 // tslint:disable-next-line interface-over-type-literal
 export type MultisigAsset = {
@@ -40,13 +32,6 @@ export type MultisigAsset = {
 
 @injectable()
 export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset, MultiSignaturesModel> {
-
-  public static getMaxBytesSize(): number {
-    let size = BaseTransactionType.getMaxBytesSize();
-    size += 8; // min, lifetime
-    size += 32 * constants.multisigConstraints.keysgroup.maxItems; // keysgroup
-    return size;
-  }
 
   private unconfirmedSignatures: { [name: string]: true };
 

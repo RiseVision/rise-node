@@ -124,4 +124,18 @@ export default class TransactionLogicStub extends BaseStubClass implements ITran
     return Promise.resolve();
   }
 
+  @stubMethod()
+  public getMaxBytesSize(): number {
+    return null;
+  }
+
+  @stubMethod()
+  public getMinBytesSize(): number {
+    return null;
+  }
+
+  @stubMethod()
+  public getByteSizeByTxType(txType: number): number {
+    return null;
+  }
 }
