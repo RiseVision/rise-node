@@ -100,6 +100,7 @@ export interface ITransactionLogic {
   objectNormalize(tx: IConfirmedTransaction<any>): IConfirmedTransaction<any>;
   objectNormalize(tx: ITransportTransaction<any> | IBaseTransaction<any>): IBaseTransaction<any>;
 
+  fromBytes(tx: IBytesTransaction): IBaseTransaction<any>;
   /**
    * Attach Asset object to each transaction passed
    * @param {Array<IConfirmedTransaction<any>>} txs

@@ -1,57 +1,41 @@
-import {
-  IAccountLogic,
-  IAccountsModel,
-  IAppState,
-  IBlocksModel,
-  IBlocksModule,
-  IBlocksModuleChain,
-  IBlocksModuleProcess,
-  IBlocksModuleUtils,
-  IBlocksModuleVerify,
-  IBroadcasterLogic,
-  IJobsQueue,
-  ILoaderModule,
-  ILogger,
-  IPeerLogic,
-  IPeersLogic,
-  IPeersModule, ISequence,
-  ISystemModule,
-  ITransactionLogic,
-  ITransactionsModule,
-  ITransportModule, Symbols
-} from '@risevision/core-interfaces';
-import {
-  AppConfig,
-  ConstantsType,
-  ITransportTransaction,
-  PeerType,
-  SignedAndChainedBlockType,
-  SignedBlockType
-} from '@risevision/core-types';
-import { inject, injectable, named, postConstruct, tagged } from 'inversify';
+import { inject, injectable, postConstruct, tagged } from 'inversify';
 import * as promiseRetry from 'promise-retry';
 import * as sequelize from 'sequelize';
-import { Op } from 'sequelize';
+import {Op} from 'sequelize';
 import SocketIO from 'socket.io';
 import z_schema from 'z-schema';
-import { WordPressHookSystem } from 'mangiafuoco';
-import sql from '../sql/loader';
-import Timer = NodeJS.Timer;
-import { wait, WrapInDefaultSequence } from '@risevision/core-utils';
-import { ModelSymbols } from '@risevision/core-models';
+import { Bus, constants as constantsType, ILogger, Sequence, wait } from '../helpers/';
+import { WrapInDefaultSequence } from '../helpers/decorators/wrapInSequence';
+import { IJobsQueue } from '../ioc/interfaces/helpers';
+import {
+  IAccountLogic, IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, IRoundsLogic,
+  ITransactionLogic
+} from '../ioc/interfaces/logic';
 
-const loaderSchema = require('../../schema/loader.json');
+import {
+  IBlocksModule, IBlocksModuleChain, IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify,
+  ILoaderModule, IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule, ITransportModule
+} from '../ioc/interfaces/modules/';
+import { Symbols } from '../ioc/symbols';
+import { PeerType, SignedAndChainedBlockType, SignedBlockType, } from '../logic/';
+import { ITransportTransaction } from '../logic/transactions/';
+import { AccountsModel, BlocksModel, DelegatesModel, RoundsModel } from '../models';
+import loaderSchema from '../schema/loader';
+import sql from '../sql/loader';
+import { AppConfig } from '../types/genericTypes';
+import Timer = NodeJS.Timer;
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
 
-  public loaded: boolean          = false;
-  private blocksToSync: number    = 0;
-  private isActive: boolean       = false;
-  private lastblock: IBlocksModel = null;
+  public loaded: boolean                       = false;
+  private blocksToSync: number                 = 0;
+  private isActive: boolean                    = false;
+  private lastblock: BlocksModel               = null;
   private network: { height: number, peers: IPeerLogic[] };
-  private retries: number         = 5;
-  private syncIntervalId: Timer   = null;
+  private retries: number                      = 5;
+  private syncInterval                         = 1000;
+  private syncIntervalId: Timer                = null;
 
   // Generic
   @inject(Symbols.generic.appConfig)
@@ -60,14 +44,12 @@ export class LoaderModule implements ILoaderModule {
   private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.generic.socketIO)
   private io: SocketIO.Server;
-  @inject(Symbols.generic.hookSystem)
-  private hookSystem: WordPressHookSystem;
 
   // Helpers
-  // @inject(Symbols.helpers.bus)
-  // private bus: Bus;
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  @inject(Symbols.helpers.bus)
+  private bus: Bus;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constantsType;
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
@@ -76,8 +58,8 @@ export class LoaderModule implements ILoaderModule {
   private schema: z_schema;
   // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.sequence)
-  @named(Symbols.names.helpers.defaultSequence)
-  public defaultSequence: ISequence;
+  @tagged(Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence)
+  public defaultSequence: Sequence;
 
   // Logic
   @inject(Symbols.logic.account)
@@ -88,20 +70,24 @@ export class LoaderModule implements ILoaderModule {
   private broadcasterLogic: IBroadcasterLogic;
   @inject(Symbols.logic.peers)
   private peersLogic: IPeersLogic;
+  @inject(Symbols.logic.rounds)
+  private roundsLogic: IRoundsLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
 
   // Modules
-  @inject(Symbols.modules.blocksSubmodules.chain)
+  @inject(Symbols.modules.blocksSubModules.chain)
   private blocksChainModule: IBlocksModuleChain;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.blocksSubmodules.process)
+  @inject(Symbols.modules.blocksSubModules.process)
   private blocksProcessModule: IBlocksModuleProcess;
-  @inject(Symbols.modules.blocksSubmodules.utils)
+  @inject(Symbols.modules.blocksSubModules.utils)
   private blocksUtilsModule: IBlocksModuleUtils;
-  @inject(Symbols.modules.blocksSubmodules.verify)
+  @inject(Symbols.modules.blocksSubModules.verify)
   private blocksVerifyModule: IBlocksModuleVerify;
+  @inject(Symbols.modules.multisignatures)
+  private multisigModule: IMultisignaturesModule;
   @inject(Symbols.modules.peers)
   private peersModule: IPeersModule;
   @inject(Symbols.modules.system)
@@ -118,6 +104,12 @@ export class LoaderModule implements ILoaderModule {
   @inject(ModelSymbols.model)
   @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
+
+  // reuqest
+  @inject(requestSymbols.getSignatures)
+  private gsFactory: RequestFactoryType<void, GetSignaturesRequest>;
+  @inject(requestSymbols.getTransactions)
+  private gtFactory: RequestFactoryType<void, GetTransactionsRequest>;
 
   @postConstruct()
   public initialize() {
@@ -568,22 +560,76 @@ export class LoaderModule implements ILoaderModule {
   }
 
   /**
+   * Tries loading multisig transactions from peers for this.retries times or logs errors
+   */
+  private async syncSignatures() {
+    // load multisignature transactions
+    try {
+      await promiseRetry(async (retry) => {
+        try {
+          await this.loadSignatures();
+        } catch (e) {
+          this.logger.warn('Error loading transactions... Retrying... ', e);
+          retry(e);
+        }
+      }, { retries: this.retries });
+    } catch (e) {
+      this.logger.log('Multisig pending transactions loader error', e);
+    }
+  }
+
+  /**
+   * Loads pending multisignature transactions
+   */
+  private async loadSignatures() {
+    const randomPeer = await this.getRandomPeer();
+    this.logger.log(`Loading signatures from: ${randomPeer.string}`);
+    const res = await this.transportModule.getFromPeer<any>(
+      randomPeer,
+      {
+        api   : '/signatures',
+        method: 'GET',
+      });
+
+    if (!this.schema.validate(res.body, loaderSchema.loadSignatures)) {
+      throw new Error('Failed to validate /signatures schema');
+    }
+
+    // FIXME: signatures array
+    const { signatures }: { signatures: any[] } = res.body;
+
+    // Process multisignature transactions and validate signatures in sequence
+    await this.defaultSequence.addAndPromise(async () => {
+      for (const multiSigTX of signatures) {
+        for (const signature of  multiSigTX.signatures) {
+          try {
+            await this.multisigModule.processSignature({
+              signature,
+              transaction: multiSigTX.transaction,
+            });
+          } catch (err) {
+            this.logger.warn(`Cannot process multisig signature for ${multiSigTX.transaction} `, err);
+          }
+        }
+      }
+      return void 0;
+    });
+  }
+
+  /**
    * Load transactions from a random peer.
    * Validates each transaction from peer and eventually remove the peer if invalid.
    */
   private async loadTransactions() {
     const peer = await this.getRandomPeer();
-    this.logger.log(`Loading transactions from: ${peer.string}`);
-    const res = await this.transportModule.getFromPeer<any>(peer, {
-      api   : '/transactions',
-      method: 'GET',
-    });
+    this.logger.info(`Loading transactions from: ${peer.string}`);
+    const body = await peer.makeRequest<any>(this.gtFactory({data: null}));
 
-    if (!this.schema.validate(res.body, loaderSchema.loadTransactions)) {
+    if (!this.schema.validate(body, loaderSchema.loadTransactions)) {
       throw new Error('Cannot validate load transactions schema against peer');
     }
 
-    const { transactions }: { transactions: Array<ITransportTransaction<any>> } = res.body;
+    const { transactions }: { transactions: Array<ITransportTransaction<any>> } = body;
 
     const trans = transactions || [];
     while (trans.length > 0) {
@@ -593,5 +639,6 @@ export class LoaderModule implements ILoaderModule {
         this.logger.warn(err);
       }
     }
+
   }
 }

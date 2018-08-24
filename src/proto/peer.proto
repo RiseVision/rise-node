@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+message peer {
+    string ip = 1;
+    uint32 port = 2;
+    uint32 state = 3;
+    string os = 4;
+    string version = 5;
+    string broadhash = 6;
+    uint32 height = 7;
+    uint32 clock = 8;
+    uint64 updated = 9;
+    string nonce = 10;
+}

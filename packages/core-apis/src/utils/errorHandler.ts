@@ -14,6 +14,9 @@ export class APIErrorHandler implements ExpressErrorMiddlewareInterface {
   private logger: ILogger;
 
   public error(error: any, req: express.Request, res: express.Response, next: (err: any) => any) {
+    if (req.url.startsWith('/v2')) {
+      return next(error);
+    }
     if (error instanceof HTTPError) {
       res.status(error.statusCode);
     } else {
@@ -22,7 +25,7 @@ export class APIErrorHandler implements ExpressErrorMiddlewareInterface {
     if (error instanceof Error) {
       error = error.message;
     }
-    if (req.url.startsWith('/peer')) {
+    if (req.url.startsWith('/peer') || req.url.startsWith('/v2/peer')) {
       this.logger.warn(`Transport error [${req.ip}]: ${req.url}`, error);
     } else {
       this.logger.error('API error ' + req.url, error);

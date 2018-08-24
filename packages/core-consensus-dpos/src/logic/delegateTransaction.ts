@@ -27,6 +27,14 @@ export type DelegateAsset = {
 @injectable()
 export class RegisterDelegateTransaction extends BaseTx<DelegateAsset, DelegatesModel> {
 
+  public static getMaxBytesSize(): number {
+    let size = BaseTransactionType.getMaxBytesSize();
+    size += 20; // username
+    size += 32; // publicKey
+    size += 8; // address
+    return size;
+  }
+
   // Generic
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
@@ -57,6 +65,20 @@ export class RegisterDelegateTransaction extends BaseTx<DelegateAsset, Delegates
       return null;
     }
     return Buffer.from(tx.asset.delegate.username, 'utf8');
+  }
+
+  /**
+   * Returns asset, given Buffer containing it
+   */
+  public fromBytes(bytes: Buffer, tx: IBaseTransaction<any>): DelegateAsset {
+    if (bytes === null) {
+      return null;
+    }
+    return {
+      delegate: {
+        username: bytes.toString('utf8'),
+      },
+    };
   }
 
   public async verify(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModelForDPOS): Promise<void> {

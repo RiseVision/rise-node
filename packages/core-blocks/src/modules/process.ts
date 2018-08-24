@@ -1,43 +1,40 @@
+import { inject, injectable, tagged } from 'inversify';
+import * as _ from 'lodash';
+import { Op } from 'sequelize';
+import * as z_schema from 'z-schema';
+import { constants, ForkType, IKeypair, ILogger, Sequence } from '../../helpers/';
+import { WrapInDBSequence, WrapInDefaultSequence } from '../../helpers/decorators/wrapInSequence';
+import { ISlots } from '../../ioc/interfaces/helpers';
 import {
-  IAccountsModule,
   IAppState,
   IBlockLogic,
-  IBlocksModel,
+  IPeerLogic,
+  IPeersLogic,
+  IRoundsLogic,
+  ITransactionLogic
+} from '../../ioc/interfaces/logic';
+import {
+  IAccountsModule,
   IBlocksModule,
   IBlocksModuleChain,
   IBlocksModuleProcess,
   IBlocksModuleUtils,
   IBlocksModuleVerify,
+  IDelegatesModule,
   IForkModule,
-  ILogger,
-  IPeerLogic,
-  IPeersLogic,
-  ISequence,
-  ITransactionLogic,
-  ITransactionsModel,
   ITransactionsModule,
-  ITransportModule,
-  Symbols
-} from '@risevision/core-interfaces';
+  ITransportModule
+} from '../../ioc/interfaces/modules/';
+import { Symbols } from '../../ioc/symbols';
 import {
   BasePeerType,
-  ConstantsType,
-  ForkType,
-  IBaseTransaction,
-  IKeypair,
-  RawFullBlockListType,
   SignedAndChainedBlockType,
-  SignedBlockType
-} from '@risevision/core-types';
-import { WrapInDBSequence, WrapInDefaultSequence } from '@risevision/core-utils';
-import { inject, injectable, named } from 'inversify';
-import * as _ from 'lodash';
-import { Op } from 'sequelize';
-import * as z_schema from 'z-schema';
-import { BlocksSymbols } from '../blocksSymbols';
-import { ModelSymbols } from '@risevision/core-models';
-
-const schema = require('../../schema/blocks.json');
+  SignedBlockType,
+} from '../../logic/';
+import { IBaseTransaction } from '../../logic/transactions/';
+import { BlocksModel, TransactionsModel } from '../../models';
+import schema from '../../schema/blocks';
+import { RawFullBlockListType } from '../../types/rawDBTypes';
 
 @injectable()
 export class BlocksModuleProcess implements IBlocksModuleProcess {
@@ -100,6 +97,11 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
   private isCleaning: boolean = false;
 
+  @inject(requestSymbols.getBlocks)
+  private gbFactory: RequestFactoryType<void, GetBlocksRequest>;
+  @inject(requestSymbols.commonBlock)
+  private cbFactory: RequestFactoryType<void, CommonBlockRequest>;
+
   public cleanup() {
     this.isCleaning = true;
     return Promise.resolve();
@@ -116,11 +118,9 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   // tslint:disable-next-line max-line-length
   public async getCommonBlock(peer: IPeerLogic, height: number): Promise<{ id: string, previousBlock: string, height: number } | void> {
     const { ids }              = await this.blocksUtilsModule.getIdSequence(height);
-    const { body: commonResp } = await this.transportModule
-      .getFromPeer<{ common: { id: string, previousBlock: string, height: number } }>(peer, {
-        api   : `/blocks/common?ids=${ids.join(',')}`,
-        method: 'GET',
-      });
+    const commonResp = await peer.makeRequest<{ common: { id: string, previousBlock: string, height: number } }>(
+      this.cbFactory(({data: null, query: { ids: ids.join(',')}}))
+    );
     // FIXME: Need better checking here, is base on 'common' property enough?
     if (!commonResp.common) {
       if (this.appStateLogic.getComputed('node.poorConsensus')) {
@@ -227,6 +227,11 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     return this.blocksModule.lastBlock;
   }
 
+  /**
+   * Query remote peer for block, process them and return last processed (and valid) block
+   * @param {PeerLogic | BasePeerType} rawPeer
+   * @return {Promise<SignedBlockType>}
+   */
   public async loadBlocksFromPeer(rawPeer: IPeerLogic | BasePeerType): Promise<SignedBlockType> {
     let lastValidBlock: SignedBlockType = this.blocksModule.lastBlock;
 
@@ -234,12 +239,9 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     const peer = this.peersLogic.create(rawPeer);
 
     this.logger.info(`Loading blocks from ${peer.string}`);
-
-    const { body: blocksFromPeer } = await this.transportModule
-      .getFromPeer<{ blocks: RawFullBlockListType[] }>(peer, {
-        api   : `/blocks?lastBlockId=${lastValidBlock.id}`,
-        method: 'GET',
-      });
+    const blocksFromPeer = await peer.makeRequest<{ blocks: SignedAndChainedBlockType[] }>(
+      this.gbFactory({data: null, query: {lastBlockId: lastValidBlock.id}})
+    );
 
     // TODO: fix schema of loadBlocksFromPeer
     if (!this.schema.validate(blocksFromPeer.blocks, schema.loadBlocksFromPeer)) {
@@ -348,7 +350,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         this.logger.warn([
           'Discarded block that does not match with current chain:', block.id,
           'height:', block.height,
-          'generator:', block.generatorPublicKey,
+          'generator:', block.generatorPublicKey.toString('hex'),
         ].join(' '));
         throw new Error('Block discarded - not in current chain');
       }
@@ -390,6 +392,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       this.logger.info('Last block and parent loses');
       try {
         const tmpBlockN = this.blockLogic.objectNormalize(tmpBlock);
+        // await this.delegatesModule.assertValidBlockSlot(block);
         const check     = await this.blocksVerifyModule.verifyReceipt(tmpBlockN);
         if (!check.verified) {
           this.logger.error(`Block ${tmpBlockN.id} verification failed`, check.errors.join(', '));

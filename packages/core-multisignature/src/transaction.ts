@@ -39,7 +39,14 @@ export type MultisigAsset = {
 };
 
 @injectable()
-export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignaturesModel> {
+export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset, MultiSignaturesModel> {
+
+  public static getMaxBytesSize(): number {
+    let size = BaseTransactionType.getMaxBytesSize();
+    size += 8; // min, lifetime
+    size += 32 * constants.multisigConstraints.keysgroup.maxItems; // keysgroup
+    return size;
+  }
 
   private unconfirmedSignatures: { [name: string]: true };
 
@@ -135,7 +142,33 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     return bb.toBuffer() as any;
   }
 
-  public async verify(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModelWithMultisig): Promise<void> {
+  /**
+   * Returns asset, given Buffer containing it
+   */
+  public fromBytes(bytes: Buffer, tx: IBaseTransaction<any>): MultisigAsset {
+    if (bytes === null) {
+      return null;
+    }
+    const bb = ByteBuffer.wrap(bytes, 'binary');
+    const min = bb.readByte(1);
+    const lifetime = bb.readByte(2);
+    const keysString = bb.copy(3, bb.buffer.length).toString('hex');
+    // Cut keys string into 32-bytes chunks
+    const keysgroup = [].concat.apply([],
+      keysString.split('').map(
+        (x, i) => i % 64 ? [] : keysString.slice(i, i + 64)
+      )
+    );
+    return {
+      multisignature: {
+        keysgroup,
+        lifetime,
+        min,
+      },
+    };
+  }
+
+  public async verify(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModel): Promise<void> {
     if (!tx.asset || !tx.asset.multisignature) {
       throw new Error('Invalid transaction asset');
     }

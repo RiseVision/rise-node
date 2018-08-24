@@ -1,0 +1,6 @@
+syntax = "proto3";
+import "./peer.proto";
+
+message transportPeers {
+    repeated peer peers = 1;
+}

@@ -30,7 +30,7 @@ export interface IPeerLogic {
    */
   object(): PeerType;
 
-  makeRequest<T>(options: PeerRequestOptions): Promise<T>;
+  makeRequest<T>(reqHandler: IAPIRequest<T, any>): Promise<T>;
 
   /**
    * Pings peer and update itself using response headers (transportModule)

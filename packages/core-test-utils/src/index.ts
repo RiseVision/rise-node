@@ -11,6 +11,8 @@ import AccountsModuleStub from './modules/AccountsModuleStub';
 import { TransactionsModuleStub } from './modules/TransactionsModuleStub';
 import { SequenceStub } from './helpers/SequenceStub';
 import { SlotsStub } from './helpers/SlotsStub';
+import { ProtoBufHelperStub } from './helpers/ProtoBufHelperStub';
+
 // Logic
 import AccountLogicStub from './logic/AccountLogicStub';
 import { AppStateStub } from './logic/AppStateStub';
@@ -48,11 +50,11 @@ import {BlocksModelStub} from './models/BlocksModelStub';
 import ByteBufferStub from './utils/ByteBufferStub';
 import RedisClientStub from './utils/RedisClientStub';
 import SocketIOStub from './utils/SocketIOStub';
+import { APIRequestStub } from './apis/requests/APIRequestStub';
 
 export {
   AccountsModelStub,
   BlocksModelStub,
-
   AccountLogicStub,
   AccountsModuleStub,
   AppStateStub,
@@ -76,6 +78,7 @@ export {
   PeerLogicStub,
   PeersLogicStub,
   PeersModuleStub,
+  ProtoBufHelperStub,
   RoundLogicStub,
   RoundsLogicStub,
   SlotsStub,
@@ -91,5 +94,6 @@ export {
   IAppStateStub,
   BroadcasterLogicStub,
   MultisignaturesModuleStub,
-  SequenceStub
+  SequenceStub,
+  APIRequestStub
 };

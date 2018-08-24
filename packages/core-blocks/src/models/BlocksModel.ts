@@ -1,13 +1,12 @@
-import { IBlocksModel, IBlocksModule, ITransactionsModel, Symbols } from '@risevision/core-interfaces';
-import { BaseModel, ModelSymbols } from '@risevision/core-models';
-import { SignedBlockType } from '@risevision/core-types';
-import { Column, DataType, HasMany, PrimaryKey, Table } from 'sequelize-typescript';
+import { Column, DataType, HasMany, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import { SignedBlockType } from '../logic';
+import { TransactionsModel } from './TransactionsModel';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
+import { IBlocksModule } from '../ioc/interfaces/modules';
 
-// tslint:disable member-ordering
 @Table({ tableName: 'blocks' })
-export class BlocksModel extends BaseModel<BlocksModel> implements IBlocksModel {
+export class BlocksModel extends Model<BlocksModel> {
 
   constructor(values?: FilteredModelAttributes<BlocksModel>, options?: IBuildOptions) {
     super(values, options);

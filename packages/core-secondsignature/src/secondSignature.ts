@@ -26,6 +26,12 @@ export type SecondSignatureAsset = {
 @injectable()
 export class SecondSignatureTransaction extends BaseTx<SecondSignatureAsset, SignaturesModel> {
 
+  public static getMaxBytesSize(): number {
+    let size = BaseTransactionType.getMaxBytesSize();
+    size += 32; // publicKey
+    return size;
+  }
+
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
 
@@ -54,6 +60,20 @@ export class SecondSignatureTransaction extends BaseTx<SecondSignatureAsset, Sig
   public getBytes(tx: IBaseTransaction<SecondSignatureAsset>, skipSignature: boolean,
                   skipSecondSignature: boolean): Buffer {
     return Buffer.from(tx.asset.signature.publicKey, 'hex');
+  }
+
+  /**
+   * Returns asset, given Buffer containing it
+   */
+  public fromBytes(bytes: Buffer, tx?: IBaseTransaction<any>): SecondSignatureAsset {
+    if (bytes === null) {
+      return null;
+    }
+    return {
+      signature: {
+        publicKey: bytes.toString('hex'),
+      },
+    };
   }
 
   public async verify(tx: IBaseTransaction<SecondSignatureAsset>, sender: IAccountsModel): Promise<void> {

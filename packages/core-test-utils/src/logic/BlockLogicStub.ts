@@ -60,4 +60,8 @@ export class BlockLogicStub extends BaseStubClass implements IBlockLogic {
     return undefined;
   }
 
+  @stubMethod()
+  public fromBytes(blk: IBytesBlock): SignedAndChainedBlockType {
+    return undefined;
+  }
 }

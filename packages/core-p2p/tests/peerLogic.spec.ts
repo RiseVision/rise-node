@@ -4,11 +4,13 @@ import * as ip from 'ip';
 import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
 import { SinonSpy } from 'sinon';
+import { HeightRequest } from '../../../src/apis/requests/HeightRequest';
 import { PeerState, PeerType } from '../../../src/logic';
-import { TransportModuleStub } from '../../stubs';
+import { APIRequestStub, TransportModuleStub } from '../../stubs';
 
 const expect          = chai.expect;
 const ProxyPeerLogic = proxyquire('../../../src/logic/peer.ts', {ip});
+let hr: any;
 
 chai.use(chaiAsPromised);
 
@@ -20,6 +22,9 @@ describe('logic/peer', () => {
     transportModuleStub               = new TransportModuleStub();
     instance                          = new ProxyPeerLogic.PeerLogic();
     (instance as any).transportModule = transportModuleStub;
+    hr = new HeightRequest();
+    (hr as any).transportModule = {getFromPeer: (a) => Promise.resolve(a)};
+    (instance as any).hrFactory = () => hr;
   });
 
   describe('properties', () => {
@@ -442,50 +447,46 @@ describe('logic/peer', () => {
   });
 
   describe('makeRequest', () => {
+    let requestHandlerStub: APIRequestStub;
+    let reqData;
+    const response = { body: 1, peer: 'peer' };
     beforeEach(() => {
-      transportModuleStub.enqueueResponse('getFromPeer', Promise.resolve({ body: 1, peer: 'peer' }));
+      transportModuleStub.enqueueResponse('getFromPeer', Promise.resolve(response));
+      requestHandlerStub = new APIRequestStub();
+      requestHandlerStub.enqueueResponse('makeRequest', Promise.resolve(response.body));
+      reqData = {data: { transactions: [] }, isProtoBuf: false, method: 'GET', url: '/peer/height'};
+      requestHandlerStub.enqueueResponse('getRequestOptions', reqData);
+      requestHandlerStub.enqueueResponse('getResponseData', response.body);
     });
-    it('should call transportModule.getFromPeer', () => {
-      instance.makeRequest({});
-      expect(transportModuleStub.stubs.getFromPeer.called).to.be.true;
-    });
-
     it('should return a promise', () => {
-      const retVal = instance.makeRequest({});
+      const retVal = instance.makeRequest(requestHandlerStub);
       expect(retVal).to.be.instanceOf(Promise);
     });
 
-    it('should pass first parameter to getFromPeer as second parameter', () => {
-      const requestOptions = { api: '/what', url: 'test' };
-      instance.makeRequest(requestOptions);
-      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[1]).to.be.deep.equal(requestOptions);
-    });
-
-    it('should fullfill with object.body from promise', async () => {
-      const expected                                    = { body: 'body', peer: {} };
-      transportModuleStub.reset();
-      transportModuleStub.enqueueResponse('getFromPeer', Promise.resolve(expected));
-
-      const retVal                                      = await instance.makeRequest({});
-      expect(retVal).to.be.deep.equal(expected.body);
+    it('should call reqHandler.makeRequest', async () => {
+      const result = await instance.makeRequest(requestHandlerStub);
+      expect(requestHandlerStub.stubs.makeRequest.calledOnce).to.be.true;
+      expect(requestHandlerStub.stubs.makeRequest.firstCall.args[0]).to.be.deep.eq(instance);
+      expect(result).to.be.eq(response.body);
     });
   });
 
   describe('pingAndUpdate', () => {
-    it('should call transportModule.getFromPeer', () => {
-      transportModuleStub.enqueueResponse('getFromPeer', Promise.resolve());
+    beforeEach(() => {
+      instance.version = '1.0.0';
+    });
+    it('should call makeRequest', () => {
+      const makeRequestStub = sinon.stub(instance, 'makeRequest');
+      makeRequestStub.resolves('1');
       let p;
       p = instance.pingAndUpdate();
-      expect(transportModuleStub.stubs.getFromPeer.called).to.be.true;
-      expect(transportModuleStub.stubs.getFromPeer.firstCall.args[1]).to.be.deep.equal({
-        api   : '/height',
-        method: 'GET',
-      });
+      expect(makeRequestStub.calledOnce).to.be.true;
+      expect(makeRequestStub.firstCall.args[0]).to.be.deep.equal(hr);
       expect(p).to.be.fulfilled;
     });
 
     it('should return a promise', () => {
-      transportModuleStub.enqueueResponse('getFromPeer', Promise.resolve());
+      transportModuleStub.enqueueResponse('getFromPeer', Promise.resolve({body: '1'}));
       const retVal = instance.pingAndUpdate();
       expect(retVal).to.be.instanceOf(Promise);
     });

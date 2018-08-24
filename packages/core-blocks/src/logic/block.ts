@@ -30,6 +30,35 @@ import { BlocksSymbols } from '../blocksSymbols';
 const blockSchema = require('../../schema/block.json');
 
 // tslint:disable-next-line interface-over-type-literal
+export type BlockType<T = Buffer> = {
+  height?: number;
+  version: number;
+  totalAmount: number;
+  totalFee: number;
+  reward: number;
+  payloadHash: T;
+  timestamp: number;
+  numberOfTransactions: number;
+  payloadLength: number;
+  previousBlock: string;
+  generatorPublicKey: T;
+  transactions?: Array<IBaseTransaction<any>>;
+};
+
+export type SignedBlockType<T = Buffer> = BlockType<T> & {
+  id: string;
+  blockSignature: T;
+  transactions?: Array<IConfirmedTransaction<any>>;
+};
+
+export type SignedAndChainedBlockType = SignedBlockType<Buffer> & {
+  height: number
+};
+
+export type SignedAndChainedTransportBlockType = SignedBlockType<string> & {
+  height: number;
+  transactions?: Array<ITransportTransaction<any>>
+};
 
 @injectable()
 export class BlockLogic implements IBlockLogic {
@@ -322,4 +351,65 @@ export class BlockLogic implements IBlockLogic {
     return bb.toBuffer() as any;
   }
 
+  /**
+   * Restores a block from its bytes
+   */
+  public fromBytes(blk: IBytesBlock): SignedAndChainedBlockType & {relays: number} {
+    if (blk === null || typeof blk === 'undefined') {
+      return null;
+    }
+    const bb = ByteBuffer.wrap(blk.bytes, 'binary', true);
+    const version = bb.readInt(0);
+    const timestamp = bb.readInt(4);
+
+    // PreviousBlock is valid only if it's not 8 bytes with 0 value
+    const previousIdBytes = bb.copy(8, 16);
+    let previousValid = false;
+    for (let i = 0; i < 8; i++) {
+      if (previousIdBytes.readByte(i) !== 0) {
+        previousValid = true;
+        break;
+      }
+    }
+    const previousBlock = previousValid ?
+      BigNum.fromBuffer(previousIdBytes.toBuffer() as any).toString() : null;
+
+    const numberOfTransactions = bb.readInt(16);
+    const totalAmount = bb.readLong(20).toNumber();
+    const totalFee = bb.readLong(28).toNumber();
+    const reward = bb.readLong(36).toNumber();
+    const payloadLength = bb.readInt(44);
+    const payloadHash = bb.copy(48, 80).toBuffer() as any;
+    const generatorPublicKey = bb.copy(80, 112).toBuffer() as any;
+    const blockSignature = bb.buffer.length === 176 ? bb.copy(112, 176).toBuffer() as any : null;
+    const id = this.getId(null, blk.bytes);
+    const transactions = blk.transactions.map((tx) => {
+      const baseTx = this.transaction.fromBytes(tx);
+      return {
+        ...baseTx,
+        blockId: id,
+        height: blk.height,
+        senderId: this.getAddressByPublicKey(baseTx.senderPublicKey),
+      };
+    });
+
+    // tslint:disable object-literal-sort-keys
+    return {
+      id,
+      version,
+      timestamp,
+      previousBlock,
+      numberOfTransactions,
+      totalAmount,
+      totalFee,
+      reward,
+      payloadLength,
+      payloadHash,
+      generatorPublicKey,
+      blockSignature,
+      transactions,
+      height: blk.height,
+      relays: blk.relays,
+    };
+  }
 }

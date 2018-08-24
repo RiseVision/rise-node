@@ -40,6 +40,8 @@ import {
 import { createContainer } from '../../utils/containerCreator';
 import { createFakePeers } from '../../utils/fakePeersFactory';
 import { AccountsModel, BlocksModel, RoundsModel } from '../../../src/models';
+import { GetSignaturesRequest } from '../../../src/apis/requests/GetSignaturesRequest';
+import { GetTransactionsRequest } from '../../../src/apis/requests/GetTransactionsRequest';
 
 chai.use(chaiAsPromised);
 
@@ -1366,9 +1368,8 @@ describe('modules/loader', () => {
     let randomPeer;
 
     beforeEach(() => {
-      randomPeer = { string: 'string' };
+      randomPeer = { string: 'string', makeRequest: sandbox.stub()};
       res = {
-        body: {
           signatures: [
             {
               signatures: [
@@ -1387,8 +1388,8 @@ describe('modules/loader', () => {
               transaction: 'tr22',
             },
           ],
-        },
       };
+      randomPeer.makeRequest.resolves(res);
 
       loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
       transportModuleStub = container.get<TransportModuleStub>(
@@ -1428,7 +1429,6 @@ describe('modules/loader', () => {
 
     it('should call instance.getRandomPeer', async () => {
       await (instance as any).loadSignatures();
-
       expect(getRandomPeerStub.calledOnce).to.be.true;
       expect(getRandomPeerStub.firstCall.args.length).to.be.equal(0);
     });
@@ -1443,22 +1443,19 @@ describe('modules/loader', () => {
       );
     });
 
-    it('should call transportModule.getFromPeer', async () => {
+    it('should call peer.makeRequest', async () => {
       await (instance as any).loadSignatures();
 
-      expect(transportModuleStub.stubs.getFromPeer.calledOnce).to.be.true;
+      expect(randomPeer.makeRequest.calledOnce).to.be.true;
       expect(
-        transportModuleStub.stubs.getFromPeer.firstCall.args.length
-      ).to.be.equal(2);
+        randomPeer.makeRequest.firstCall.args.length
+      ).to.be.equal(1);
       expect(
-        transportModuleStub.stubs.getFromPeer.firstCall.args[0]
-      ).to.be.deep.equal(randomPeer);
+        randomPeer.makeRequest.firstCall.args[0]
+      ).to.be.instanceOf(GetSignaturesRequest);
       expect(
-        transportModuleStub.stubs.getFromPeer.firstCall.args[1]
-      ).to.be.deep.equal({
-        api: '/signatures',
-        method: 'GET',
-      });
+        randomPeer.makeRequest.firstCall.args[0].options
+      ).to.be.deep.equal({ data: null, });
     });
 
     it('should call schema.validate', async () => {
@@ -1466,9 +1463,7 @@ describe('modules/loader', () => {
 
       expect(schemaStub.stubs.validate.calledOnce).to.be.true;
       expect(schemaStub.stubs.validate.firstCall.args.length).to.be.equal(2);
-      expect(schemaStub.stubs.validate.firstCall.args[0]).to.be.deep.equal(
-        res.body
-      );
+      expect(schemaStub.stubs.validate.firstCall.args[0]).to.be.deep.equal(res);
       expect(schemaStub.stubs.validate.firstCall.args[1]).to.be.equal(
         loaderSchema.loadSignatures
       );
@@ -1553,14 +1548,12 @@ describe('modules/loader', () => {
     let tx2;
 
     beforeEach(() => {
-      peer = { string: 'string', ip: '127.0.0.uganda', port: 65488 };
       tx1 = { id: 1 };
       tx2 = { id: 2 };
       res = {
-        body: {
           transactions: [tx1, tx2],
-        },
       };
+      peer = { string: 'string', ip: '127.0.0.uganda', port: 65488, makeRequest: sandbox.stub().resolves(res) };
 
       transactionLogicStub = container.get<TransactionLogicStub>(
         Symbols.logic.transaction
@@ -1583,7 +1576,6 @@ describe('modules/loader', () => {
       getRandomPeerStub = sandbox
         .stub(instance as any, 'getRandomPeer')
         .resolves(peer);
-      transportModuleStub.enqueueResponse('getFromPeer', res);
       transactionLogicStub.enqueueResponse('objectNormalize', {});
       transactionLogicStub.enqueueResponse('objectNormalize', {});
 
@@ -1617,22 +1609,19 @@ describe('modules/loader', () => {
       );
     });
 
-    it('should call transportModule.getFromPeer', async () => {
+    it('should call peer.makeRequest', async () => {
       await (instance as any).loadTransactions();
 
-      expect(transportModuleStub.stubs.getFromPeer.calledOnce).to.be.true;
+      expect(peer.makeRequest.calledOnce).to.be.true;
       expect(
-        transportModuleStub.stubs.getFromPeer.firstCall.args.length
-      ).to.be.equal(2);
+        peer.makeRequest.firstCall.args.length
+      ).to.be.equal(1);
       expect(
-        transportModuleStub.stubs.getFromPeer.firstCall.args[0]
-      ).to.be.deep.equal(peer);
+        peer.makeRequest.firstCall.args[0]
+      ).to.be.instanceOf(GetTransactionsRequest);
       expect(
-        transportModuleStub.stubs.getFromPeer.firstCall.args[1]
-      ).to.be.deep.equal({
-        api: '/transactions',
-        method: 'GET',
-      });
+        peer.makeRequest.firstCall.args[0].options
+      ).to.be.deep.equal({ data: null, });
     });
 
     it('should call schema.validate', async () => {
@@ -1641,7 +1630,7 @@ describe('modules/loader', () => {
       expect(schemaStub.stubs.validate.calledOnce).to.be.true;
       expect(schemaStub.stubs.validate.firstCall.args.length).to.be.equal(2);
       expect(schemaStub.stubs.validate.firstCall.args[0]).to.be.deep.equal(
-        res.body
+        res
       );
       expect(schemaStub.stubs.validate.firstCall.args[1]).to.be.equal(
         loaderSchema.loadTransactions
@@ -1668,7 +1657,7 @@ describe('modules/loader', () => {
       expect(transportModuleStub.stubs.receiveTransactions.firstCall.args[2]).deep.eq(false);
     });
     it('shoudlnt call transport.receiveTransaction if no transactions were returned', async () => {
-      transportModuleStub.stubs.getFromPeer.resolves({ body: { transactions: [] }});
+      peer.makeRequest.resolves({ transactions: [] });
 
       await (instance as any).loadTransactions();
 
@@ -1677,7 +1666,7 @@ describe('modules/loader', () => {
     });
 
     it('should split transactions in groups of 25 ', async () => {
-      transportModuleStub.stubs.getFromPeer.resolves({ body: { transactions: new Array(51).fill(null).map((_, idx) => idx) }});
+      peer.makeRequest.resolves({ transactions: new Array(51).fill(null).map((_, idx) => idx) });
 
       await (instance as any).loadTransactions();
 
@@ -1689,7 +1678,7 @@ describe('modules/loader', () => {
     it('should call logger.debug if transportModule.receiveTransaction throw error', async () => {
       const error = new Error('error');
       transportModuleStub.reset();
-      transportModuleStub.stubs.getFromPeer.resolves(res);
+      peer.makeRequest.resolves(res);
       transportModuleStub.stubs.receiveTransactions.rejects(error);
 
       await (instance as any).loadTransactions();

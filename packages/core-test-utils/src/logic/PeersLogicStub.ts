@@ -36,6 +36,7 @@ export class PeersLogicStub extends BaseStubClass implements IPeersLogic {
     return undefined;
   }
 
+  public acceptable(peers: IPeerLogic[]): IPeerLogic[];
   @stubMethod()
   public acceptable(peers: PeerType[]): PeerType[] {
     return undefined;

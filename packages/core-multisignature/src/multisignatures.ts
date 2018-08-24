@@ -112,6 +112,7 @@ export class MultisignaturesModule {
     }
 
     this.io.sockets.emit('multisignatures/signature/change', tx);
+
   }
 
   private async processMultiSigSignature(tx: IBaseTransaction<MultisigAsset>, signature: string, sender: AccountsModelWithMultisig) {
@@ -121,7 +122,7 @@ export class MultisignaturesModule {
     }
     let verify    = false;
     const allKeys = tx.asset.multisignature.keysgroup
-    // add wannabe multisig member keys
+      // add wannabe multisig member keys
       .map((k) => k.substring(1))
       // add current multisignature member keys
       .concat(sender.isMultisignature() ? sender.multisignatures : []);

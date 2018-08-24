@@ -8,6 +8,9 @@ import { APISymbols } from '../helpers';
 @IoCSymbol(APISymbols.successInterceptor)
 export class SuccessInterceptor implements InterceptorInterface {
   public intercept(action: Action, result: any): any | Promise<any> {
+    if (Buffer.isBuffer(result)) {
+      return result;
+    }
     return {...{success: true}, ...result};
   }
 }

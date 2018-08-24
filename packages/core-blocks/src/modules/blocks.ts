@@ -6,7 +6,7 @@ import { inject, injectable } from 'inversify';
 // TODO Eventually remove this module and use appState instead.
 @injectable()
 export class BlocksModule implements IBlocksModule {
-  public lastBlock: IBlocksModel;
+  public lastBlock: SignedAndChainedBlockType;
   public lastReceipt: { get: () => number, isStale: () => boolean, update: (time?: number) => void };
   @inject(LaunchpadSymbols.constants)
   private constants: ConstantsType;

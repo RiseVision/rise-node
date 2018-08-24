@@ -37,6 +37,9 @@ export class PeersAPI {
     } catch (err) {
       throw new HTTPError('Failed to get peers', 200);
     }
+    return {
+      peers: peers.map((peer) => peer.object()),
+    };
   }
 
   @Get('/get')

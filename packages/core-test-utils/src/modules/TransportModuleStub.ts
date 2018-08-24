@@ -1,14 +1,13 @@
-import { IPeerLogic, ITransportModule, PeerRequestOptions } from '@risevision/core-interfaces';
-import {
-  BasePeerType,
-  IBaseTransaction,
-  ITransportTransaction,
-  PeerState,
-  SignedBlockType
-} from '@risevision/core-types';
 import { injectable } from 'inversify';
+import { IAPIRequest } from '../../../src/apis/requests/BaseRequest';
+import { IPeerLogic } from '../../../src/ioc/interfaces/logic';
+import { ITransportModule } from '../../../src/ioc/interfaces/modules';
+import { BasePeerType, PeerState, SignedBlockType } from '../../../src/logic';
+import { IBaseTransaction, ITransportTransaction } from '../../../src/logic/transactions';
+import { PeerRequestOptions } from '../../../src/modules';
 import { BaseStubClass } from '../BaseStubClass';
 import { stubMethod } from '../stubDecorator';
+import { ITransportTransaction } from '../../../src/logic/transactions/baseTransactionType';
 
 @injectable()
 export default class TransportModuleStub extends BaseStubClass implements ITransportModule {
@@ -23,7 +22,8 @@ export default class TransportModuleStub extends BaseStubClass implements ITrans
   }
 
   @stubMethod()
-  public getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }, options: PeerRequestOptions): Promise<{ body: any; peer: IPeerLogic }> {
+  public getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] },
+                              requestHandler: IAPIRequest<void, void>): Promise<{ body: any; peer: IPeerLogic }> {
     return null;
   }
 
@@ -56,5 +56,6 @@ export default class TransportModuleStub extends BaseStubClass implements ITrans
   public receiveTransactions(transactions: Array<ITransportTransaction<any>>, peer: IPeerLogic, broadcast: boolean): Promise<void> {
     return null;
   }
+
 
 }

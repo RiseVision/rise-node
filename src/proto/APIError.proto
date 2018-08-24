@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message APIError {
+    bool success = 1;
+    string error = 2;
+}

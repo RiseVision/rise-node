@@ -2,7 +2,48 @@ import { IPeerLogic, Symbols } from '@risevision/core-interfaces';
 import { BasePeerType, PeerHeaders, PeerRequestOptions, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
-import { TransportModule } from './transport';
+import { IAPIRequest } from '../apis/requests/BaseRequest';
+import { HeightRequest } from '../apis/requests/HeightRequest';
+import { RequestFactoryType } from '../apis/requests/requestFactoryType';
+import { requestSymbols } from '../apis/requests/requestSymbols';
+import { IPeerLogic } from '../ioc/interfaces/logic/';
+import { ITransportModule } from '../ioc/interfaces/modules';
+import { Symbols } from '../ioc/symbols';
+
+export enum PeerState {
+  BANNED       = 0,
+  DISCONNECTED = 1,
+  CONNECTED    = 2,
+}
+
+// tslint:disable-next-line
+export type PeerHeaders = {
+  nethash: string;
+  port: number;
+  version: string;
+  broadhash?: string;
+  height?: number;
+  nonce?: string;
+  os?: string;
+};
+
+// tslint:disable-next-line
+export interface BasePeerType {
+  ip: string;
+  port: number;
+}
+
+// tslint:disable-next-line
+export interface PeerType extends BasePeerType {
+  state: PeerState;
+  os: string;
+  version: string;
+  broadhash: string;
+  height: number;
+  clock: number;
+  updated: number;
+  nonce: string;
+}
 
 const nullable = [
   'os',
@@ -54,7 +95,10 @@ export class PeerLogic implements PeerType, IPeerLogic {
   public string: string;
 
   @inject(Symbols.modules.transport)
-  private transportModule: TransportModule;
+  private transportModule: ITransportModule;
+
+  @inject(requestSymbols.height)
+  private hrFactory: RequestFactoryType<void, HeightRequest>;
 
   public accept(peer: BasePeerType) {
     // Normalize peer data
@@ -134,14 +178,12 @@ export class PeerLogic implements PeerType, IPeerLogic {
     return copy;
   }
 
-  public makeRequest<T>(requestOptions: PeerRequestOptions): Promise<T> {
-    return this.transportModule.getFromPeer<T>(this, requestOptions)
-      .then(({body}) => body);
+  public makeRequest<T>(requestHandler: IAPIRequest<any, any>): Promise<T> {
+    return requestHandler.makeRequest(this);
   }
 
   public pingAndUpdate(): Promise<void> {
-    return this.transportModule.getFromPeer(this, {api: '/height', method: 'GET'})
-      .then(() => null);
+    return this.makeRequest(this.hrFactory({data: null})).then(() => null);
   }
 
   public get nullable() {

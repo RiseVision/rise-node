@@ -1,24 +1,26 @@
-import { IAccountsModel, IBaseTransactionType, ITransactionLogic, VerificationType } from '@risevision/core-interfaces';
-import {
-  DBOp,
-  IBaseTransaction,
-  IConfirmedTransaction,
-  IKeypair,
-  ITransportTransaction,
-  SignedBlockType
-} from '@risevision/core-types';
 import { injectable } from 'inversify';
 import { BaseStubClass } from '../BaseStubClass';
+import { ITransactionLogic } from '../../../src/ioc/interfaces/logic';
+import {
+  BaseTransactionType,
+  IBaseTransaction, IBytesTransaction,
+  IConfirmedTransaction,
+  ITransportTransaction
+} from '../../../src/logic/transactions';
+import { MemAccountsData, SignedBlockType } from '../../../src/logic';
 import BigNumber from 'bignumber.js';
-import { stubMethod } from '../stubDecorator';
+import { IKeypair } from '../../../src/helpers';
+import { spyMethod, stubMethod } from '../stubDecorator';
 import { Model } from 'sequelize-typescript';
-
+import { AccountsModel } from '../../../src/models';
+import { VerificationType } from '../../../src/ioc/interfaces/logic/ITransactionLogic';
+import { DBOp } from '../../../src/types/genericTypes';
 
 @injectable()
 export default class TransactionLogicStub extends BaseStubClass implements ITransactionLogic {
 
   @stubMethod()
-  public attachAssetType<K, M extends Model<any>>(instance: IBaseTransactionType<K, M>): IBaseTransactionType<K, M> {
+  public attachAssetType<K, M extends Model<any>>(instance: BaseTransactionType<K, M>): BaseTransactionType<K, M> {
     return null;
   }
 
@@ -48,7 +50,7 @@ export default class TransactionLogicStub extends BaseStubClass implements ITran
   }
 
   @stubMethod()
-  public ready(tx: IBaseTransaction<any>, sender: IAccountsModel): boolean {
+  public ready(tx: IBaseTransaction<any>, sender: AccountsModel): boolean {
     return null;
   }
 
@@ -63,12 +65,7 @@ export default class TransactionLogicStub extends BaseStubClass implements ITran
   }
 
   @stubMethod()
-  public process<T = any>(tx: IBaseTransaction<T>, sender: IAccountsModel, requester: IAccountsModel): Promise<IBaseTransaction<T>> {
-    return null;
-  }
-
-  @stubMethod()
-  public verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: IAccountsModel, requester: IAccountsModel, height: number): Promise<void> {
+  public verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel, requester: AccountsModel, height: number): Promise<void> {
     return null;
   }
 
@@ -78,22 +75,22 @@ export default class TransactionLogicStub extends BaseStubClass implements ITran
   }
 
   @stubMethod()
-  public apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
+  public apply(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     return null;
   }
 
   @stubMethod()
-  public undo(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
+  public undo(tx: IConfirmedTransaction<any>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     return null;
   }
 
   @stubMethod()
-  public applyUnconfirmed(tx: IBaseTransaction<any>, sender: IAccountsModel, requester?: IAccountsModel): Promise<Array<DBOp<any>>> {
+  public applyUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel, requester?: AccountsModel): Promise<Array<DBOp<any>>> {
     return null;
   }
 
   @stubMethod()
-  public undoUnconfirmed(tx: IBaseTransaction<any>, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
+  public undoUnconfirmed(tx: IBaseTransaction<any>, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     return null;
   }
 
@@ -118,6 +115,10 @@ export default class TransactionLogicStub extends BaseStubClass implements ITran
     return null;
   }
 
+  @stubMethod()
+  public fromBytes(tx: IBytesTransaction): IBaseTransaction<any> {
+    return null;
+  }
   @stubMethod(true)
   public attachAssets(txs: Array<IConfirmedTransaction<any>>): Promise<void> {
     return Promise.resolve();

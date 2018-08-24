@@ -34,7 +34,7 @@ describe('apis/peersAPI', () => {
       .to(PeersAPI)
       .inSingletonScope();
     peersModuleStub = container.get(Symbols.modules.peers);
-    peersModuleStub.enqueueResponse('getByFilter', { hello: 'world' });
+    peersModuleStub.enqueueResponse('getByFilter', [{object: () => ({ hello: 'world' })}]);
     systemModuleStub = container.get(Symbols.modules.system);
     systemModuleStub.enqueueResponse('getMinVersion', '1.0');
     instance = container.get(Symbols.api.peers);
@@ -60,7 +60,7 @@ describe('apis/peersAPI', () => {
 
     it('should return an object with a peers property', async () => {
       result = await instance.getPeers({ a: 1, b: 2 });
-      expect(result).to.deep.equal({ peers: { hello: 'world' } });
+      expect(result).to.deep.equal({ peers: [{ hello: 'world' }] });
       expect(peersModuleStub.stubs.getByFilter.calledOnce).to.be.true;
       expect(peersModuleStub.stubs.getByFilter.args[0][0]).to.deep.equal({
         a: 1,

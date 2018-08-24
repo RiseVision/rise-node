@@ -1,3 +1,5 @@
+import bs = require('binary-search');
+import * as deepFreeze from 'js-flock/deepFreeze';
 import {
   IAccountsModel,
   IAccountsModule,
@@ -265,7 +267,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       // TODO: add this on consensus dpos using hook ^^
       // await this.roundsModule.tick(block, dbTX);
 
-      this.blocksModule.lastBlock = new this.BlocksModel(block);
+      this.blocksModule.lastBlock = deepFreeze(block);
       await this.hookSystem.do_action(OnPostApplyBlock.name, this.blocksModule.lastBlock, dbTX);
     }).catch((err) => {
       // Allow cleanup as processing finished even if rollback.

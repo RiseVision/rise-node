@@ -1,42 +1,35 @@
-import {
-  IAppState,
-  IBlocksModel,
-  IBlocksModule,
-  IBroadcasterLogic,
-  IJobsQueue,
-  ILogger,
-  IPeerLogic,
-  IPeersLogic,
-  IPeersModule, ISequence,
-  ISystemModule,
-  ITransactionLogic,
-  ITransactionsModel,
-  ITransactionsModule,
-  ITransportModule, Symbols
-} from '@risevision/core-interfaces';
-import {
-  AppConfig,
-  BasePeerType,
-  ConstantsType,
-  IBaseTransaction,
-  ITransportTransaction,
-  PeerHeaders,
-  PeerRequestOptions,
-  PeerState,
-  SignedBlockType
-} from '@risevision/core-types';
-import { cbToPromise, SchemaValid, ValidateSchema, WrapInBalanceSequence } from '@risevision/core-utils';
-import { inject, injectable, named, postConstruct } from 'inversify';
-import { WordPressHookSystem } from 'mangiafuoco';
+import { inject, injectable, postConstruct, tagged } from 'inversify';
 import * as popsicle from 'popsicle';
 import * as Throttle from 'promise-parallel-throttle';
 import * as promiseRetry from 'promise-retry';
 import SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
-import { ModelSymbols } from '@risevision/core-models';
+import { cbToPromise, constants as constantsType, ILogger, Sequence } from '../helpers/';
+import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
+import { IJobsQueue } from '../ioc/interfaces/helpers';
+import { IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic';
+import {
+  IBlocksModule,
+  IMultisignaturesModule,
+  IPeersModule,
+  ISystemModule,
+  ITransactionsModule,
+  ITransportModule
+} from '../ioc/interfaces/modules/';
+import { Symbols } from '../ioc/symbols';
+import { BasePeerType, PeerHeaders, PeerState, SignedBlockType } from '../logic/';
+import { IBaseTransaction, ITransportTransaction } from '../logic/transactions/';
+import { BlocksModel, TransactionsModel } from '../models';
+import peersSchema from '../schema/peers';
+import schema from '../schema/transport';
+import { AppConfig } from '../types/genericTypes';
 
 const peersSchema     = require('../schema/peers.json');
 const transportSchema = require('../schema/transport.json');
+
+// tslint:disable-next-line
+export type PeerRequestOptions = { api?: string, url?: string, method: 'GET' | 'POST', data?: any };
 
 @injectable()
 export class TransportModule implements ITransportModule {
@@ -81,6 +74,8 @@ export class TransportModule implements ITransportModule {
   private systemModule: ISystemModule;
   @inject(Symbols.modules.transactions)
   private transactionModule: ITransactionsModule;
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
 
   // models
   @inject(ModelSymbols.model)
@@ -110,22 +105,39 @@ export class TransportModule implements ITransportModule {
     }
     const thePeer = this.peersLogic.create(peer);
     const req     = {
-      body   : null,
-      headers: await this.hookSystem.apply_filters<any, any>('core-p2p/headers', this.systemModule.headers as any),
-      method : options.method,
-      timeout: this.appConfig.peers.options.timeout,
-      url    : `http://${peer.ip}:${peer.port}${url}`,
+      body     : null,
+      headers  : this.systemModule.headers as any,
+      method   : options.method,
+      timeout  : this.appConfig.peers.options.timeout,
+      transport: undefined,
+      url      : `http://${peer.ip}:${peer.port}${url}`,
     };
 
     if (options.data) {
       req.body = options.data;
     }
+    if (options.isProtoBuf) {
+      req.headers   = {
+        accept        : 'application/octet-stream',
+        ...req.headers,
+        'content-type': 'application/octet-stream',
+      };
+      req.transport = popsicle.createTransport({ type: 'buffer' });
+    } else {
+      delete req.transport;
+    }
+
+    const nullPlugin: popsicle.Middleware = (request: Request, next: () => Promise<Response>) => {
+      return next().then((response) => response);
+    };
+
+    const parsingPlugin = options.isProtoBuf ? nullPlugin : popsicle.plugins.parse(['json'], false);
 
     let res: popsicle.Response;
     try {
       res = await promiseRetry(
         (retry) => popsicle.request(req)
-          .use(popsicle.plugins.parse(['json'], false))
+          .use(parsingPlugin)
           .catch(retry),
         {
           minTimeout: 2000, /* this is the timeout for the retry. Lets wait at least 2seconds before retrying. */
@@ -158,7 +170,6 @@ export class TransportModule implements ITransportModule {
       // tslint:disable-next-line max-line-length
       return Promise.reject(new Error(`Peer is using incompatible version ${headers.version} ${req.method} ${req.url}`));
     }
-
     this.peersModule.update(thePeer);
     return {
       body: res.body,
@@ -167,11 +178,14 @@ export class TransportModule implements ITransportModule {
   }
 
   // tslint:disable-next-line max-line-length
-  public async getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }, options: PeerRequestOptions) {
+  public async getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }, requestHandler: IAPIRequest<T, any>) {
     config.limit         = 1;
     config.allowedStates = [PeerState.CONNECTED, PeerState.DISCONNECTED];
     const { peers }      = await this.peersModule.list(config);
-    return this.getFromPeer<T>(peers[0], options);
+    if (peers.length === 0) {
+      throw new Error('No peer available');
+    }
+    return peers[0].makeRequest<T>(requestHandler);
   }
 
   public cleanup() {
@@ -210,7 +224,25 @@ export class TransportModule implements ITransportModule {
     }, 5000);
   }
 
-
+  /**
+   * Calls enqueue signatures and emits a signature change socket message
+   * TODO: Move me to consensus-dpos.
+   */
+  public onSignature(signature: { transaction: string, signature: string, relays?: number }, broadcast: boolean) {
+    if (broadcast && !this.broadcasterLogic.maxRelays(signature)) {
+      const requestHandler = this.psrFactory({
+        data: {
+          signatures: [{
+            relays     : Number.isInteger(signature.relays) ? signature.relays : 1,
+            signature  : Buffer.from(signature.signature, 'hex'),
+            transaction: signature.transaction,
+          }],
+        },
+      });
+      this.broadcasterLogic.enqueue({}, { requestHandler });
+      this.io.sockets.emit('signature/change', signature);
+    }
+  }
 
   /**
    * Calls enqueue if broadcast is true and did not exhaust relays
@@ -218,16 +250,14 @@ export class TransportModule implements ITransportModule {
    * TODO: Eventually fixme
    */
   public onUnconfirmedTransaction(transaction: IBaseTransaction<any> & { relays?: number }, broadcast: boolean) {
-    transaction.relays = transaction.relays || 0;
-    if (broadcast && transaction.relays < this.broadcasterLogic.maxRelays()) {
-      transaction.relays++;
-      this.broadcasterLogic.enqueue({}, {
-        api   : '/transactions',
-        data  : {
-          transaction: this.TransactionsModel.toTransportTransaction(transaction),
+    if (broadcast && !this.broadcasterLogic.maxRelays(transaction)) {
+      const requestHandler = this.ptrFactory({
+        data: {
+          transactions: [transaction],
         },
-        method: 'POST',
       });
+
+      this.broadcasterLogic.enqueue({}, { requestHandler });
       this.io.sockets.emit('transactions/change', transaction);
     }
   }
@@ -242,10 +272,10 @@ export class TransportModule implements ITransportModule {
     if (broadcast) {
       const broadhash = this.systemModule.broadhash;
 
-      block.relays = block.relays || 0;
       await this.systemModule.update();
-      if (block.relays < this.broadcasterLogic.maxRelays()) {
-        block.relays++;
+      block = _.cloneDeep(block);
+      if (!this.broadcasterLogic.maxRelays(block)) {
+        const reqHandler = this.pblocksFactory({ data: { block } });
         // We avoid awaiting the broadcast result as it could result in unnecessary peer removals.
         // Ex: Peer A, B, C
         // A broadcasts block to B which wants to rebroadcast to A (which is waiting for B to respond) =>
@@ -254,10 +284,8 @@ export class TransportModule implements ITransportModule {
         /* await */
         this.broadcasterLogic.broadcast({ limit: this.constants.maxPeers, broadhash },
           {
-            api      : '/blocks',
-            data     : { block: this.BlocksModel.toStringBlockType(block) },
-            immediate: true,
-            method   : 'POST',
+            immediate     : true,
+            requestHandler: reqHandler,
           })
           .catch((err) => this.logger.warn('Error broadcasting block', err));
       }
@@ -345,18 +373,17 @@ export class TransportModule implements ITransportModule {
    */
   private async discoverPeers(): Promise<void> {
     this.logger.trace('Transport->discoverPeers');
-    const response = await this.getFromRandomPeer<any>(
+
+    const requestHandler = this.plFactory({ data: null });
+    const response       = await this.getFromRandomPeer<PeersListRequestDataType>(
       {},
-      {
-        api   : '/list',
-        method: 'GET',
-      }
+      requestHandler
     );
 
-    await cbToPromise((cb) => this.schema.validate(response.body, peersSchema.discover.peers, cb));
+    await cbToPromise((cb) => this.schema.validate(response, peersSchema.discover.peers, cb));
 
     // Filter only acceptable peers.
-    const acceptablePeers = this.peersLogic.acceptable(response.body.peers);
+    const acceptablePeers = this.peersLogic.acceptable(response.peers);
 
     let discovered   = 0;
     let alreadyKnown = 0;

@@ -134,7 +134,7 @@ export class TransactionLogic implements ITransactionLogic {
 
     if (tx.recipientId) {
       const recipient = tx.recipientId.slice(0, -1);
-      const recBuf    = new MyBigNumb(recipient).toBuffer({ size: 8 });
+      const recBuf    = new BigNum(recipient).toBuffer({ size: 8 });
 
       for (let i = 0; i < 8; i++) {
         bb.writeByte(recBuf[i] || 0);
@@ -176,7 +176,7 @@ export class TransactionLogic implements ITransactionLogic {
     return bb.toBuffer() as any;
   }
 
-  public async ready(tx: IBaseTransaction<any>, sender: IAccountsModel): Promise<boolean> {
+  public ready(tx: IBaseTransaction<any>, sender: AccountsModel): boolean {
     this.assertKnownTransactionType(tx.type);
 
     if (!sender) {
@@ -191,26 +191,25 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error(`Unknown transaction type ${type}`);
     }
   }
-
   /**
    * Checks if balanceKey is less than amount for sender
    */
-  @RunThroughExceptions(TXExceptions.checkBalance)
+  @RunThroughExceptions(ExceptionsList.checkBalance)
   public checkBalance(amount: number | BigNumber, balanceKey: 'balance' | 'u_balance',
-                      tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: IAccountsModel) {
+                      tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel) {
     const accountBalance  = sender[balanceKey].toString();
-    const exceededBalance = new MyBigNumb(accountBalance).isLessThan(amount);
+    const exceededBalance = new BigNum(accountBalance).isLessThan(amount);
     // tslint:disable-next-line
     const exceeded        = (tx['blockId'] !== this.genesisBlock.id && exceededBalance);
     return {
       error: exceeded ? `Account does not have enough currency: ${sender.address} balance: ${
-        new MyBigNumb(accountBalance || 0).div(Math.pow(10, 8))} - ${new MyBigNumb(amount).div(Math.pow(10, 8))}` : null,
+        new BigNum(accountBalance || 0).div(Math.pow(10, 8))} - ${new BigNum(amount).div(Math.pow(10, 8))}` : null,
       exceeded,
     };
   }
 
-  public async verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: IAccountsModel,
-                      requester: IAccountsModel, height: number) {
+  public async verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel,
+                      requester: AccountsModel, height: number) {
     this.assertKnownTransactionType(tx.type);
     if (!sender) {
       throw new Error('Missing sender');
@@ -496,11 +495,24 @@ export class TransactionLogic implements ITransactionLogic {
       return;
     }
     const txsByGroup = _.groupBy(txs, (i) => i.type);
-    // tslint:disable-next-line forin
     for (const type in txsByGroup) {
       const loopTXs = txsByGroup[type];
       this.assertKnownTransactionType(loopTXs[0].type);
       await this.types[loopTXs[0].type].attachAssets(loopTXs);
     }
   }
+
+  /**
+   * Calculate tx id from getBytes() output
+   * @returns {string} the id.
+   */
+  private getIdFromBytes(bytes: Buffer): string {
+    const hash = crypto.createHash('sha256').update(bytes).digest();
+    const temp = Buffer.alloc(8);
+    for (let i = 0; i < 8; i++) {
+      temp[i] = hash[7 - i];
+    }
+    return BigNum.fromBuffer(temp).toString();
+  }
+
 }

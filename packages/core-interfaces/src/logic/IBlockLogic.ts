@@ -1,3 +1,4 @@
+import { IKeypair } from '../../../helpers';
 import {
   BlockType,
   DBOp,
@@ -58,4 +59,5 @@ export interface IBlockLogic {
 
   dbRead(rawBlock: RawFullBlockListType): SignedBlockType & { totalForged: string, readonly generatorId: string };
 
+  fromBytes(blk: IBytesBlock): SignedAndChainedBlockType;
 }
