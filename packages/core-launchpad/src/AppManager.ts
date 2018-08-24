@@ -5,6 +5,7 @@ import { InMemoryFilterModel, WordPressHookSystem } from 'mangiafuoco';
 import * as pg from 'pg';
 import 'reflect-metadata';
 import { ICoreModule } from './module';
+import { LaunchpadSymbols } from './launchpadSymbols';
 
 export class AppManager {
   public container: Container = new Container();
@@ -58,6 +59,8 @@ export class AppManager {
       m.container = this.container;
       m.sortedModules = this.modules;
     });
+
+    this.container.bind(LaunchpadSymbols.coremodules).toConstantValue(this.modules);
 
     this.modules.forEach((m) => m.addElementsToContainer());
 

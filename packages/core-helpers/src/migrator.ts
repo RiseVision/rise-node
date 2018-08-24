@@ -1,16 +1,20 @@
+import { IMigrationsModel } from '@risevision/core-interfaces';
+import { ICoreModule, LaunchpadSymbols } from '@risevision/core-launchpad';
+import { ModelSymbols } from '@risevision/core-models';
 import { BigNumber } from 'bignumber.js';
 import * as fs from 'fs';
 import { inject, injectable, named } from 'inversify';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
-import { IMigrationsModel } from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
 
 @injectable()
 export class Migrator {
   @inject(ModelSymbols.model)
   @named(ModelSymbols.names.migrations)
   private MigrationsModel: typeof IMigrationsModel;
+
+  @inject(LaunchpadSymbols.coremodules)
+  private modules: Array<ICoreModule<any>>;
 
   public async init(): Promise<void> {
     const hasMigrations   = await this.checkMigrations();
@@ -50,7 +54,16 @@ export class Migrator {
    */
   // tslint:disable-next-line max-line-length
   private async readPendingMigrations(lastMigration: BigNumber): Promise<Array<{ id: BigNumber, name: string, path: string }>> {
-    const migrationsPath = path.join(process.cwd(), 'sql', 'migrations');
+    return this.modules
+      .map((m) => this.readPendingMigrationsForSingleCoreModule(m, lastMigration))
+      .reduce((a, b) => a.concat(b), []);
+  }
+
+  private async readPendingMigrationsForSingleCoreModule(coreModule: ICoreModule<any>, lastMigration: BigNumber): Promise<Array<{ id: BigNumber, name: string, path: string }>> {
+    const migrationsPath = path.join(coreModule.directory, 'sql', 'migrations');
+    if (!fs.existsSync(migrationsPath)) {
+      return [];
+    }
 
     function matchMigrationName(file) {
       const name = file.match(/_.+\.sql$/);

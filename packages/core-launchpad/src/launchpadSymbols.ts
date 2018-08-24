@@ -1,9 +1,10 @@
 import { Symbols } from '@risevision/core-interfaces';
 
 export const LaunchpadSymbols = {
-  appConfig: Symbols.generic.appConfig,
-  constants: Symbols.generic.constants,
+  appConfig   : Symbols.generic.appConfig,
+  constants   : Symbols.generic.constants,
+  coremodules : Symbol.for('rise.launchpad.core-modules'),
   genesisBlock: Symbols.generic.genesisBlock,
-  hookSystem: Symbols.generic.hookSystem,
-  zschema: Symbols.generic.zschema,
+  hookSystem  : Symbols.generic.hookSystem,
+  zschema     : Symbols.generic.zschema,
 };

@@ -1,6 +1,6 @@
+import { ICrypto } from '@risevision/core-interfaces';
 import { IKeypair } from '@risevision/core-types';
 import { api as sodium } from 'sodium';
-import { ICrypto } from '@risevision/core-interfaces';
 
 export class Crypto implements ICrypto {
   public makeKeyPair(hash: Buffer): IKeypair {

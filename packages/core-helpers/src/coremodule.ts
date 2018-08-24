@@ -10,8 +10,6 @@ import { Migrator } from './migrator';
 import { Sequence } from './sequence';
 import { AppState } from './appState';
 
-
-
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
   public constants    = {};

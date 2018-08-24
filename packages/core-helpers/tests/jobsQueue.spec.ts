@@ -1,7 +1,7 @@
 import { IJobsQueue } from '@risevision/core-interfaces';
 import { expect } from 'chai';
 import * as sinon from 'sinon';
-import { JobsQueue, wait } from '../src';
+import { JobsQueue } from '../src';
 
 const waitingPromise = (msToWait: number): Promise<void> => {
   return new Promise<void>((resolve) => setTimeout(resolve, msToWait));
@@ -27,7 +27,7 @@ describe('helpers/jobsQueue', () => {
     });
 
     it('should run the job again after [time] milliseconds after the execution of the job', async () => {
-      const job = async () => await wait(5);
+      const job = async () => await waitingPromise(5);
       const spy = sinon.spy(job);
       // This job runs 5ms, and needs to be re-executed after 5 ms
       jobsQueue.register('test3', spy, 5);

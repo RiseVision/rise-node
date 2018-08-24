@@ -1,7 +1,8 @@
+import { wait } from '@risevision/core-utils';
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
-import { Sequence, wait } from '../src';
+import { Sequence } from '../src';
 
 const seqConfig = {
   onWarning   : (curPending: number, warnLimit: number) => {
