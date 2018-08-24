@@ -1,8 +1,7 @@
-import { IKeypair } from '../../../helpers';
 import {
   BlockType,
   DBOp,
-  IBaseTransaction,
+  IBaseTransaction, IBytesBlock,
   IKeypair,
   RawFullBlockListType,
   SignedAndChainedBlockType,

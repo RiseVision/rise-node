@@ -1,6 +1,5 @@
-import { BasePeerType, IKeypair, SignedBlockType } from '@risevision/core-types';
+import { BasePeerType, IKeypair, SignedAndChainedBlockType, SignedBlockType } from '@risevision/core-types';
 import { IPeerLogic } from '../../logic';
-import { IBlocksModel } from '../../models';
 import { IModule } from '../IModule';
 
 export interface IBlocksModuleProcess extends IModule {

@@ -1,4 +1,14 @@
 import { BroadcastTaskOptions, PeerType } from '@risevision/core-types';
+import { IAPIRequest } from './IAPIRequest';
+
+export interface BroadcastTaskOptions {
+  immediate?: boolean;
+  requestHandler: IAPIRequest<any, any>;
+}
+export interface BroadcastTask {
+  options: BroadcastTaskOptions;
+  params?: any;
+}
 
 export interface IBroadcasterLogic {
 

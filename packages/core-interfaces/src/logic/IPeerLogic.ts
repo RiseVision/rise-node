@@ -1,4 +1,5 @@
 import { BasePeerType, PeerHeaders, PeerRequestOptions, PeerState, PeerType } from '@risevision/core-types';
+import { IAPIRequest } from './IAPIRequest';
 
 export interface IPeerLogic {
   ip: string;

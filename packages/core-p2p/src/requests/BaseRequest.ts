@@ -7,14 +7,7 @@ import { ITransportModule } from '../../ioc/interfaces/modules';
 import { Symbols } from '../../ioc/symbols';
 import { PeerRequestOptions } from '../../modules';
 
-export interface IAPIRequest<Out, In> {
-  getRequestOptions(peerSupportsProto: boolean): PeerRequestOptions;
-  getResponseData(res: {body: Buffer | Out, peer: IPeerLogic}): Out;
-  getOrigOptions(): { data: In, query?: any};
-  mergeIntoThis(...objs: this[]): void;
-  makeRequest(peer: IPeerLogic): Promise<Out>;
-  isRequestExpired(): Promise<boolean>;
-}
+
 
 @injectable()
 export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {

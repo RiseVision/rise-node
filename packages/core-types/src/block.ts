@@ -1,4 +1,4 @@
-import { IBaseTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions';
+import { IBaseTransaction, IBytesTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions';
 
 // tslint:disable-next-line
 export type BlockType<T = Buffer> = {
@@ -30,3 +30,10 @@ export type SignedAndChainedTransportBlockType = SignedBlockType<string> & {
   height: number;
   transactions?: Array<ITransportTransaction<any>>
 };
+
+export interface IBytesBlock {
+  bytes: Buffer;
+  transactions: IBytesTransaction[];
+  height?: number;
+  relays: number;
+}

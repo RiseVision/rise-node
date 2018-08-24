@@ -1,4 +1,5 @@
 import {
+  BroadcastTask, BroadcastTaskOptions,
   IAppState,
   IBroadcasterLogic,
   IJobsQueue,
@@ -9,26 +10,12 @@ import {
   ITransactionsModule,
   Symbols
 } from '@risevision/core-interfaces';
-import { BroadcastTask, BroadcastTaskOptions, ConstantsType, IBaseTransaction, PeerType } from '@risevision/core-types';
+import { ConstantsType, IBaseTransaction, PeerType } from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
 import { P2pConfig, P2PConstantsType, p2pSymbols } from './helpers';
 
-// tslint:disable interface-over-type-literal
-
-export type BroadcastTaskOptions = {
-  immediate?: boolean;
-  data: any;
-  api: string;
-  method: string;
-};
-export type BroadcastTask = {
-  options: BroadcastTaskOptions;
-  params?: any
-};
-
-// tslint:enable interface-over-type-literal
 @injectable()
 export class BroadcasterLogic implements IBroadcasterLogic {
   public queue: BroadcastTask[] = [];

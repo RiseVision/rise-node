@@ -1,6 +1,6 @@
 import {
   DBOp,
-  IBaseTransaction,
+  IBaseTransaction, IBytesTransaction,
   IConfirmedTransaction,
   ITransportTransaction,
   SignedBlockType,

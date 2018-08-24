@@ -4,10 +4,8 @@ import {
   IAccountsModel,
   ICrypto,
   ILogger,
-  ITransactionLogic,
   ITransactionsModel,
   Symbols,
-  VerificationType
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
