@@ -22,6 +22,14 @@ import { PeerLogic } from './peer';
 import { BasePeerType } from '@risevision/core-types';
 import { TransportModule } from './transport';
 import { BroadcasterLogic } from './broadcaster';
+import {
+  CommonBlockRequest,
+  GetBlocksRequest,
+  GetTransactionsRequest,
+  HeightRequest,
+  PeersListRequest, PingRequest, PostBlocksRequest, PostTransactionsRequest
+} from './requests';
+import { requestFactory } from './utils/requestFactoryType';
 
 const configSchema = require('../schema/config.json');
 
@@ -120,6 +128,16 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     this.container.bind(p2pSymbols.modules.peers).to(PeersModule).inSingletonScope();
     this.container.bind(p2pSymbols.modules.transport).to(TransportModule).inSingletonScope();
     this.container.bind(p2pSymbols.socketIO).toConstantValue(socketIO(this.srv));
+
+    this.container.bind(p2pSymbols.requests.commonBlocks).toFactory(requestFactory(CommonBlockRequest));
+    this.container.bind(p2pSymbols.requests.getBlocks).toFactory(requestFactory(GetBlocksRequest));
+    this.container.bind(p2pSymbols.requests.getTransactions).toFactory(requestFactory(GetTransactionsRequest));
+    this.container.bind(p2pSymbols.requests.height).toFactory(requestFactory(HeightRequest));
+    this.container.bind(p2pSymbols.requests.peersList).toFactory(requestFactory(PeersListRequest));
+    this.container.bind(p2pSymbols.requests.ping).toFactory(requestFactory(PingRequest));
+    this.container.bind(p2pSymbols.requests.postBlocks).toFactory(requestFactory(PostBlocksRequest));
+
+    this.container.bind(p2pSymbols.requests.postTransactions).toFactory(requestFactory(PostTransactionsRequest));
   }
 
   public teardown(): Promise<void> {

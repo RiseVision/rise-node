@@ -1,6 +1,6 @@
+import { IBlocksModule, ILogger, Symbols } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
-import { IBlocksModel, IBlocksModule, ILogger, Symbols } from '@risevision/core-interfaces';
-import { ConstantsType } from '@risevision/core-types';
+import { ConstantsType, SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 
 // TODO Eventually remove this module and use appState instead.

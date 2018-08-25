@@ -1,30 +1,43 @@
-import { inject, injectable, named, tagged } from 'inversify';
-import * as _ from 'lodash';
-import { Op } from 'sequelize';
-import * as z_schema from 'z-schema';
 import {
   IAccountsModule,
   IAppState,
-  IBlockLogic, IBlocksModel, IBlocksModule, IBlocksModuleChain,
-  IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify, IForkModule,
+  IBlockLogic,
+  IBlocksModel,
+  IBlocksModule,
+  IBlocksModuleChain,
+  IBlocksModuleProcess,
+  IBlocksModuleUtils,
+  IBlocksModuleVerify,
+  IForkModule,
   ILogger,
+  IPeerLogic,
   IPeersLogic,
-  ISequence, ITransactionLogic, ITransactionsModel, ITransactionsModule,
-  Symbols
+  ISequence,
+  ITransactionLogic,
+  ITransactionsModel,
+  ITransactionsModule,
   ITransportModule,
+  Symbols,
 } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
+import { CommonBlockRequest, GetBlocksRequest, p2pSymbols, RequestFactoryType } from '@risevision/core-p2p';
 import {
   BasePeerType,
-  ConstantsType, ForkType, IBaseTransaction,
+  ConstantsType,
+  ForkType,
+  IBaseTransaction,
   IKeypair,
   SignedAndChainedBlockType,
   SignedBlockType
 } from '@risevision/core-types';
-import { BlocksSymbols } from '../blocksSymbols';
-import { ModelSymbols } from '@risevision/core-models';
-import { CommonBlockRequest, GetBlocksRequest, p2pSymbols, RequestFactoryType } from '@risevision/core-p2p';
-import { IPeerLogic } from '@risevision/core-interfaces';
 import { WrapInDBSequence, WrapInDefaultSequence } from '@risevision/core-utils';
+import { inject, injectable, named } from 'inversify';
+import * as _ from 'lodash';
+import { Op } from 'sequelize';
+import * as z_schema from 'z-schema';
+
+import { BlocksSymbols } from '../blocksSymbols';
+
 const schema = require('../../schema/blocks.json');
 
 @injectable()
@@ -90,7 +103,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
   @inject(p2pSymbols.requests.getBlocks)
   private gbFactory: RequestFactoryType<void, GetBlocksRequest>;
-  @inject(p2pSymbols.requests.commonBlock)
+  @inject(p2pSymbols.requests.commonBlocks)
   private cbFactory: RequestFactoryType<void, CommonBlockRequest>;
 
   public cleanup() {
@@ -108,9 +121,9 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   // FIXME VOid return for recoverChain
   // tslint:disable-next-line max-line-length
   public async getCommonBlock(peer: IPeerLogic, height: number): Promise<{ id: string, previousBlock: string, height: number } | void> {
-    const { ids }              = await this.blocksUtilsModule.getIdSequence(height);
+    const { ids }    = await this.blocksUtilsModule.getIdSequence(height);
     const commonResp = await peer.makeRequest<{ common: { id: string, previousBlock: string, height: number } }>(
-      this.cbFactory(({data: null, query: { ids: ids.join(',')}}))
+      this.cbFactory(({ data: null, query: { ids: ids.join(',') } }))
     );
     // FIXME: Need better checking here, is base on 'common' property enough?
     if (!commonResp.common) {
@@ -156,7 +169,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
    */
   @WrapInDBSequence
   // tslint:disable-next-line max-line-length
-  public async loadBlocksOffset(limit: number, offset: number = 0, verify: boolean): Promise<IBlocksModel> {
+  public async loadBlocksOffset(limit: number, offset: number = 0, verify: boolean): Promise<SignedAndChainedBlockType> {
     const newLimit = limit + (offset || 0);
     const params   = { limit: newLimit, offset: offset || 0 };
 
@@ -231,7 +244,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
     this.logger.info(`Loading blocks from ${peer.string}`);
     const blocksFromPeer = await peer.makeRequest<{ blocks: SignedAndChainedBlockType[] }>(
-      this.gbFactory({data: null, query: {lastBlockId: lastValidBlock.id}})
+      this.gbFactory({ data: null, query: { lastBlockId: lastValidBlock.id } })
     );
 
     // TODO: fix schema of loadBlocksFromPeer
@@ -370,7 +383,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   /**
    * Receive block detected as fork cause 1: Consecutive height but different previous block id
    */
-  private async receiveForkOne(block: SignedBlockType, lastBlock: IBlocksModel) {
+  private async receiveForkOne(block: SignedBlockType, lastBlock: SignedAndChainedBlockType) {
     const tmpBlock = _.clone(block);
 
     // Fork: Consecutive height but different previous block id

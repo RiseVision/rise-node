@@ -10,8 +10,8 @@ import { IBytesBlock, SignedBlockType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { BaseRequest } from './BaseRequest';
 import { PostTransactionsRequest, PostTransactionsRequestDataType } from './PostTransactionsRequest';
-import { RequestFactoryType } from './requestFactoryType';
 import { p2pSymbols } from '../helpers';
+import { RequestFactoryType } from '../utils';
 
 // tslint:disable-next-line
 export type PostBlocksRequestDataType = { block: SignedBlockType<Buffer> };

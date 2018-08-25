@@ -1,10 +1,11 @@
 import { ITransactionsModel, Symbols } from '@risevision/core-interfaces';
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
+import { SignedBlockType } from '@risevision/core-types';
 import * as _ from 'lodash';
 import { Column, DataType, HasMany, PrimaryKey, Table } from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { SignedBlockType } from '../logic';
+
 
 @Table({ tableName: 'blocks' })
 export class BlocksModel extends BaseModel<BlocksModel> {

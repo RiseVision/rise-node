@@ -6,30 +6,48 @@ import * as promiseRetry from 'promise-retry';
 import SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
 import {
-  IAPIRequest, IAppState, IBlocksModel, IBlocksModule,
+  IAPIRequest,
+  IAppState,
+  IBlocksModel,
+  IBlocksModule,
   IBroadcasterLogic,
   IJobsQueue,
-  ILogger, IPeerLogic, IPeersLogic, IPeersModule,
-  ISequence, ISystemModule, ITransactionLogic, ITransactionsModel, ITransactionsModule,
+  ILogger,
+  IPeerLogic,
+  IPeersLogic,
+  IPeersModule,
+  ISequence,
+  ISystemModule,
+  ITransactionLogic,
+  ITransactionsModel,
+  ITransactionsModule,
   ITransportModule,
   Symbols,
 } from '@risevision/core-interfaces';
 import {
   AppConfig,
   BasePeerType,
-  ConstantsType, IBaseTransaction, ITransportTransaction,
+  ConstantsType,
+  IBaseTransaction,
+  ITransportTransaction,
   PeerHeaders,
   PeerRequestOptions,
-  PeerState, SignedBlockType
+  PeerState,
+  SignedBlockType
 } from '@risevision/core-types';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { ModelSymbols } from '@risevision/core-models';
-import { cbToPromise, SchemaValid, ValidateSchema, WrapInBalanceSequence} from '@risevision/core-utils';
-import { PeersListRequest, PeersListRequestDataType } from './requests/PeersListRequest';
+import { cbToPromise, SchemaValid, ValidateSchema, WrapInBalanceSequence } from '@risevision/core-utils';
+import {
+  PeersListRequest,
+  PeersListRequestDataType,
+  PostBlocksRequest,
+  PostBlocksRequestDataType,
+  PostTransactionsRequest,
+  PostTransactionsRequestDataType
+} from './requests/';
 import { p2pSymbols } from './helpers';
-import { PostTransactionsRequest, PostTransactionsRequestDataType } from './requests/PostTransactionsRequest';
-import { RequestFactoryType } from './requests/requestFactoryType';
-import { PostBlocksRequest, PostBlocksRequestDataType } from './requests/PostBlocksRequest';
+import { RequestFactoryType } from './utils/requestFactoryType';
 
 const peersSchema     = require('../schema/peers.json');
 const transportSchema = require('../schema/transport.json');

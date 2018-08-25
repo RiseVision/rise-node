@@ -1,7 +1,7 @@
+import { BaseRequest, MyConvOptions } from '@risevision/core-p2p';
 import { injectable } from 'inversify';
 import * as _ from 'lodash';
 import * as Long from 'long';
-import { BaseRequest } from './BaseRequest';
 
 // tslint:disable-next-line
 export type Signature = { transaction: string, signature: Buffer, relays: number };
@@ -13,7 +13,7 @@ export type PostSignaturesRequestDataType = {
 
 @injectable()
 export class PostSignaturesRequest extends BaseRequest<any, PostSignaturesRequestDataType> {
-  protected readonly method           = 'POST';
+  protected readonly method: 'POST'   = 'POST';
   protected readonly supportsProtoBuf = true;
 
   public getRequestOptions(peerSupportsProto) {
@@ -30,7 +30,7 @@ export class PostSignaturesRequest extends BaseRequest<any, PostSignaturesReques
         reqOptions.data = {
           signature: {
             ...reqOptions.data.signature,
-            transaction: Long.fromString(reqOptions.data.signature.transaction, true) as any
+            transaction: Long.fromString(reqOptions.data.signature.transaction, true) as any,
           },
         };
       }
@@ -79,7 +79,7 @@ export class PostSignaturesRequest extends BaseRequest<any, PostSignaturesReques
       allSignatures,
       (item) => `${item.transaction}${item.signature.toString('hex')}`
     );
-    this.options.data.signature = null;
+    this.options.data.signature  = null;
 
   }
 

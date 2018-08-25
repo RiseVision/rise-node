@@ -24,6 +24,7 @@
     "@risevision/core-transactions": "^1.0.0",
     "@risevision/core-models": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
+    "@risevision/core-p2p": "^1.0.0",
     "@risevision/core-utils": "^1.0.0",
     "sequelize": "=4.38.0",
     "inversify": "=4.13.0",

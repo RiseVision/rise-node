@@ -1,6 +1,5 @@
+import { BaseRequest, MyConvOptions } from '@risevision/core-p2p';
 import { injectable } from 'inversify';
-import {allBuffersToHex, MyConvOptions } from '../../helpers';
-import { BaseRequest } from './BaseRequest';
 
 // tslint:disable-next-line
 export type GetSignaturesRequestDataType = {
@@ -12,7 +11,7 @@ export type GetSignaturesRequestDataType = {
 
 @injectable()
 export class GetSignaturesRequest extends BaseRequest<GetSignaturesRequestDataType, any> {
-  protected readonly method = 'GET';
+  protected readonly method: 'GET' = 'GET';
   protected readonly supportsProtoBuf = true;
 
   public getResponseData(res) {
@@ -28,7 +27,7 @@ export class GetSignaturesRequest extends BaseRequest<GetSignaturesRequestDataTy
       ...super.getConversionOptions(),
       bytes: Buffer,
       longs: String,
-      postProcess: allBuffersToHex,
+      // postProcess: allBuffersToHex, // TODO: Check me?
     };
   }
 

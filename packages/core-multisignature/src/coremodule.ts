@@ -1,5 +1,5 @@
 import { APISymbols } from '@risevision/core-apis';
-import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
+import { Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ICoreModuleWithModels, ModelSymbols, utils } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
@@ -12,6 +12,9 @@ import { MultiSignatureTransaction } from './transaction';
 import { MultisigTransportModule } from './transport';
 import { MultisigHooksListener } from './hooks/hooksListener';
 import { MultiSigUtils } from './utils';
+import { requestFactory } from '@risevision/core-p2p';
+import { PostSignaturesRequest } from './requests/PostSignaturesRequest';
+import { GetSignaturesRequest } from './requests/GetSignaturesRequest';
 
 export class CoreModule extends BaseCoreModule implements ICoreModuleWithModels {
   public configSchema = {};
@@ -56,6 +59,11 @@ export class CoreModule extends BaseCoreModule implements ICoreModuleWithModels 
     this.container.bind(MultisigSymbols.utils)
       .to(MultiSigUtils)
       .inSingletonScope();
+
+    this.container.bind(MultisigSymbols.requests.postSignatures)
+      .toFactory(requestFactory(PostSignaturesRequest));
+    this.container.bind(MultisigSymbols.requests.getSignatures)
+      .toFactory(requestFactory(GetSignaturesRequest));
   }
 
   public onPreInitModels() {

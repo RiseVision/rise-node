@@ -7,4 +7,3 @@ export * from './PeersListRequest';
 export * from './PingRequest';
 export * from './PostBlocksRequest';
 export * from './PostTransactionsRequest';
-export * from './requestFactoryType';

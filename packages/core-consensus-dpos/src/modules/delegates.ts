@@ -1,6 +1,6 @@
 import { OnCheckIntegrity } from '@risevision/core';
 import { VerifyBlock, VerifyReceipt } from '@risevision/core-blocks';
-import { ExceptionsManager, ExceptionSymbols } from '@risevision/core-exceptions';
+import { ExceptionsManager, ExceptionSymbols, RunThroughExceptions } from '@risevision/core-exceptions';
 import {
   IAccountsModule,
   IAppState,
@@ -11,7 +11,7 @@ import {
   ITransactionsModule, Symbols
 } from '@risevision/core-interfaces';
 import { ConstantsType, publicKey, SignedBlockType } from '@risevision/core-types';
-import { OrderBy, RunThroughExceptions } from '@risevision/core-utils';
+import { OrderBy } from '@risevision/core-utils';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import { decorate, inject, injectable, named } from 'inversify';

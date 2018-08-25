@@ -2,9 +2,9 @@ import { IAPIRequest, IPeerLogic, ITransportModule, Symbols } from '@risevision/
 import { BasePeerType, PeerHeaders, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
-import { HeightRequest } from './requests/HeightRequest';
+import { HeightRequest } from './requests';
 import { p2pSymbols } from './helpers';
-import { RequestFactoryType } from './requests/requestFactoryType';
+import { RequestFactoryType } from './utils';
 
 const nullable = [
   'os',

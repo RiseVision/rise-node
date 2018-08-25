@@ -3,6 +3,8 @@ import { inject, injectable, named } from 'inversify';
 import z_schema from 'z-schema';
 import { MultisigSymbols } from './helpers';
 import { MultisignaturesModule } from './multisignatures';
+import { RequestFactoryType } from '@risevision/core-p2p';
+import { GetSignaturesRequest } from './requests/GetSignaturesRequest';
 
 const loaderSchema = require('../schema/loader.json');
 
@@ -23,6 +25,10 @@ export class MultisigLoader {
 
   @inject(MultisigSymbols.module)
   private multisigModule: MultisignaturesModule;
+
+  @inject(MultisigSymbols.requests.getSignatures)
+  private getRequestSignatureFactory: RequestFactoryType<void, GetSignaturesRequest>;
+
   /**
    * Loads pending multisignature transactions
    */
@@ -30,10 +36,8 @@ export class MultisigLoader {
     this.logger.log('Loading signatures');
     const res = await this.transportModule.getFromRandomPeer<any>(
       {},
-      {
-        api   : '/signatures',
-        method: 'GET',
-      });
+      this.getRequestSignatureFactory({ data: null })
+    );
 
     if (!this.schema.validate(res.body, loaderSchema.loadSignatures)) {
       throw new Error('Failed to validate /signatures schema');

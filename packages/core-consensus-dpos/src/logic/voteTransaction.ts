@@ -325,7 +325,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
 
   public getMaxBytesSize(): number {
     let size = super.getMaxBytesSize();
-    size += constants.maxVotesPerTransaction * 65; // Votes
+    size += this.dposConstants.maxVotesPerTransaction * 65; // 64 bytes for pubkey + "sign"
     return size;
   }
 }

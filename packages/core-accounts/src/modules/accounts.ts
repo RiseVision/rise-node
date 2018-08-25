@@ -1,17 +1,19 @@
-import { inject, injectable } from 'inversify';
-import { DBHelper } from '../helpers';
-import { AccountDiffType, IAccountLogic } from '../ioc/interfaces/logic';
-import { IAccountsModule } from '../ioc/interfaces/modules';
-import { Symbols } from '../ioc/symbols';
-import { AccountFilterData, MemAccountsData } from '../logic/';
-import { AccountsModel } from '../models/';
-import { DBOp } from '../types/genericTypes';
-import { FieldsInModel } from '../types/utils';
-import { IBaseTransaction } from '../logic/transactions';
+import {
+  AccountDiffType,
+  AccountFilterData,
+  IAccountsModel,
+  IAccountsModule,
+} from '@risevision/core-interfaces';
+import { DBHelper, ModelSymbols } from '@risevision/core-models';
+import { DBOp, IBaseTransaction } from '@risevision/core-types';
+import { inject, injectable, named } from 'inversify';
+import { AccountLogic } from '../logic';
+import { AccountsSymbols } from '../symbols';
 
 @injectable()
 export class AccountsModule implements IAccountsModule {
 
+  // TODO: migrate to IAccountLogic
   @inject(AccountsSymbols.logic)
   private accountLogic: AccountLogic;
   @inject(ModelSymbols.helpers.db)
