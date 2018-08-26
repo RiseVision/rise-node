@@ -190,37 +190,37 @@ export class TransactionLogic implements ITransactionLogic {
     const bb = ByteBuffer.wrap(tx.bytes, 'binary', true);
     const type = bb.readByte(0);
     const timestamp = bb.readInt(1);
-    const senderPublicKey = new Buffer(bb.copy(5, 37).toBuffer());
+    const senderPublicKey = tx.bytes.slice(5, 37);
     let requesterPublicKey = null;
     let offset = 37;
 
     // Read requesterPublicKey if available
     if (tx.hasRequesterPublicKey) {
-      requesterPublicKey = bb.copy(offset, offset + 32).toBuffer() as any;
+      requesterPublicKey = tx.bytes.slice(offset, offset + 32);
       offset += 32;
     }
 
     // RecipientId is valid only if it's not 8 bytes with 0 value
-    const recipientIdBytes = bb.copy(offset, offset + 8);
+    const recipientIdBytes = tx.bytes.slice(offset, offset + 8);
     offset += 8;
     let recipientValid = false;
     for (let i = 0; i < 8; i++) {
-      if (recipientIdBytes.readByte(i) !== 0) {
+      if (recipientIdBytes.readUInt8(i) !== 0) {
         recipientValid = true;
         break;
       }
     }
     const recipientId = recipientValid ?
-      BigNum.fromBuffer(recipientIdBytes.toBuffer() as any).toString() + 'R' : null;
+      BigNum.fromBuffer(recipientIdBytes).toString() + 'R' : null;
 
     const amount = bb.readLong(offset);
     offset += 8;
 
-    const signature = bb.copy(bb.buffer.length - 64, bb.buffer.length).toBuffer() as any;
+    const signature = tx.bytes.slice(bb.buffer.length - 64, bb.buffer.length);
 
     // Read signSignature if available
     const signSignature = tx.hasSignSignature ?
-      bb.copy(bb.buffer.length - 128, bb.buffer.length - 64) as any : null;
+      tx.bytes.slice(bb.buffer.length - 128, bb.buffer.length - 64) : null;
 
     // All remaining bytes between amount and signSignature (or signature) are the asset.
     let assetBytes = null;
@@ -229,7 +229,7 @@ export class TransactionLogic implements ITransactionLogic {
     if (assetLength < 0) {
       throw new Error('Buffer length does not match expected sequence');
     } else if (assetLength > 0) {
-      assetBytes = bb.copy(offset, offset + assetLength);
+      assetBytes = tx.bytes.slice(offset, offset + assetLength);
     }
 
     const transaction: IBaseTransaction<any> & { relays: number } =  {

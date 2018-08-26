@@ -607,7 +607,7 @@ describe('apis/transportV2API', () => {
 
     describe('with calculated data', () => {
       let findAllTxsStub: SinonStub;
-      const maxNumberInPayload = 10653;
+      const maxNumberInPayload = 8379;
       beforeEach(() => {
         numblocksToLoadStub.restore();
         findAllTxsStub = sandbox.stub(transactionsModel, 'findAll').resolves([]);

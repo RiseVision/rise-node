@@ -76,6 +76,7 @@ export default {
   maxConfirmations             : 77 * 100,
   maxPayloadLength             : 1024 * 1024,
   maxPeers                     : 100,
+  maxProtoBufPayloadLength     : 1572864, // (1.5MB) Maximum number of bytes for a Protocol Buffer Request/Response Body
   maxRequests                  : 10000 * 12,
   maxSharedTxs                 : 100,
   maxSignaturesLength          : 196 * 256,

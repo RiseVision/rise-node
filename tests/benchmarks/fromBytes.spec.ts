@@ -1,43 +1,12 @@
-import { Container } from 'inversify';
-import * as Long from 'long';
-import { BlockLogic, TransactionLogic } from '../../src/logic';
+import { IBlockLogic, ITransactionLogic } from '../../src/ioc/interfaces/logic';
+import { Symbols } from '../../src/ioc/symbols';
+import { IBytesBlock, SignedBlockType } from '../../src/logic';
+import { IBaseTransaction, IBytesTransaction } from '../../src/logic/transactions';
 import initializer from '../integration/common/init';
 import { createFakeBlock } from '../utils/blockCrafter';
 import { createRandomTransactions, toBufferedTransaction } from '../utils/txCrafter';
-import { reportedIT } from './benchutils';
-import { IBlockLogic, ITransactionLogic } from '../../src/ioc/interfaces/logic';
-import { Symbols } from '../../src/ioc/symbols';
-import { IBaseTransaction, IBytesTransaction } from '../../src/logic/transactions';
-
-class SimpleMicroSecondTimer {
-  private startTime: [number, number];
-  private intermediate: { [k: string]: [number, number]};
-  public start() {
-    this.startTime = process.hrtime();
-    this.intermediate = {};
-    this.intermediate.start = this.startTime;
-  }
-
-  public elapsed(label?: string): number {
-    label = label || '_step_' + Object.keys(this.intermediate).length;
-    const now = process.hrtime(this.startTime);
-    this.intermediate[label] = now;
-    return now[0] * 1000000 + now[1] / 1000;
-  }
-
-  public getAllSteps(): {[k: string]: number} {
-    const toRet = {};
-    Object.keys(this.intermediate).forEach((key, index) => {
-      let microseconds = 0;
-      if (key !== 'start')  {
-        microseconds = this.intermediate[key][0] * 1000000 + this.intermediate[key][1] / 1000;
-      }
-      toRet[key] = microseconds;
-    });
-    return toRet;
-  }
-
-}
+import { reportedIT, SimpleMicroSecondTimer } from './benchutils';
+import { constants } from '../../src/helpers';
 
 describe('FromBytes benchmark', function() {
   initializer.setup();
@@ -50,40 +19,43 @@ describe('FromBytes benchmark', function() {
     blockLogic = initializer.appManager.container.get(Symbols.logic.block);
   });
 
-  const getTxBytes = (transactions) => {
+  function getTxBytes(transactions) {
     return transactions
       .map((tx) => toBufferedTransaction(tx))
       .map((tx) => generateBytesTransaction(tx));
-  };
+  }
 
-  const generateBytesTransaction = (tx: IBaseTransaction<any>): IBytesTransaction => {
+  function getBlockBytes(blocks) {
+    return blocks
+      .map((b) => generateBytesBlock(b));
+  }
+
+  function generateBytesTransaction(tx: IBaseTransaction<any>): IBytesTransaction {
     return {
       bytes                : txLogic.getBytes(tx),
       fee                  : tx.fee,
       hasRequesterPublicKey: typeof tx.requesterPublicKey !== 'undefined' && tx.requesterPublicKey != null,
       hasSignSignature     : typeof tx.signSignature !== 'undefined' && tx.signSignature != null,
     };
-  };
+  }
+
+  function generateBytesBlock(block: SignedBlockType & { relays?: number}): IBytesBlock {
+    return {
+      bytes       : blockLogic.getBytes(block),
+      height      : block.height,
+      relays      : Number.isInteger(block.relays) ? block.relays : 1,
+      transactions: (block.transactions || []).map((tx) => generateBytesTransaction(tx)),
+    };
+  }
 
   describe('TransactionLogic.fromBytes', () => {
-    const flavors = [1000];
-    reportedIT('send', flavors, async (txNum: number) => {
-      const timer = new SimpleMicroSecondTimer();
-      const bytesTxs = getTxBytes(createRandomTransactions({
-        send: txNum,
-      }));
-      console.log(`Created ${txNum} BytesTransactions`);
-      timer.start();
-      const realTxs = bytesTxs.map((tx) => txLogic.fromBytes(tx));
-      return Promise.resolve(timer.elapsed() / txNum);
-    });
-
+    const flavors = [10000];
     reportedIT('vote', flavors, async (txNum: number) => {
       const timer = new SimpleMicroSecondTimer();
-      const bytesTxs = getTxBytes(createRandomTransactions({
-        vote: txNum,
-      }));
-      console.log(`Created ${txNum} BytesTransactions`);
+      const sameTX = createRandomTransactions({
+        vote: 1,
+      })[0];
+      const bytesTxs = getTxBytes(new Array(txNum).fill(sameTX));
       timer.start();
       const realTxs = bytesTxs.map((tx) => txLogic.fromBytes(tx));
       return Promise.resolve(timer.elapsed() / txNum);
@@ -91,10 +63,10 @@ describe('FromBytes benchmark', function() {
 
     reportedIT('delegate', flavors, async (txNum: number) => {
       const timer = new SimpleMicroSecondTimer();
-      const bytesTxs = getTxBytes(createRandomTransactions({
-        delegate: txNum,
-      }));
-      console.log(`Created ${txNum} BytesTransactions`);
+      const sameTX = createRandomTransactions({
+        delegate: 1,
+      })[0];
+      const bytesTxs = getTxBytes(new Array(txNum).fill(sameTX));
       timer.start();
       const realTxs = bytesTxs.map((tx) => txLogic.fromBytes(tx));
       return Promise.resolve(timer.elapsed() / txNum);
@@ -102,34 +74,91 @@ describe('FromBytes benchmark', function() {
 
     reportedIT('signature', flavors, async (txNum: number) => {
       const timer = new SimpleMicroSecondTimer();
-      const bytesTxs = getTxBytes(createRandomTransactions({
-        signature: txNum,
-      }));
-      console.log(`Created ${txNum} BytesTransactions`);
+      const sameTX = createRandomTransactions({
+        signature: 1,
+      })[0];
+      const bytesTxs = getTxBytes(new Array(txNum).fill(sameTX));
       timer.start();
       const realTxs = bytesTxs.map((tx) => txLogic.fromBytes(tx));
       return Promise.resolve(timer.elapsed() / txNum);
     });
 
-    reportedIT('mixed', flavors, async (txNum: number) => {
+    reportedIT('send', flavors, async (txNum: number) => {
       const timer = new SimpleMicroSecondTimer();
-      const bytesTxs = getTxBytes(createRandomTransactions({
-        delegate: txNum / 4,
-        send: txNum / 4,
-        signature: txNum / 4,
-        vote: txNum / 4,
-      }));
-      console.log(`Created ${txNum} BytesTransactions`);
+      const sameTX = createRandomTransactions({
+        send: 1,
+      })[0];
+      const bytesTxs = getTxBytes(new Array(txNum).fill(sameTX));
       timer.start();
       const realTxs = bytesTxs.map((tx) => txLogic.fromBytes(tx));
       return Promise.resolve(timer.elapsed() / txNum);
     });
   });
+
   describe('BlockLogic.fromBytes', () => {
-    it('empty');
-    it('with 1 tx');
-    it('with 10 txs');
-    it('with 25txs');
+    const flavors = [5000];
+    reportedIT('empty', flavors, async (txNum: number) => {
+      const timer = new SimpleMicroSecondTimer();
+      const sameBlock = createFakeBlock({
+        transactions: [],
+      });
+      const bytesBlocks = getBlockBytes(new Array(txNum).fill(sameBlock));
+      timer.start();
+      const realBlocks = bytesBlocks.map((tx) => blockLogic.fromBytes(tx));
+      return Promise.resolve(timer.elapsed() / txNum);
+    });
+
+    reportedIT('with 10 txs', flavors, async (txNum: number) => {
+      const timer = new SimpleMicroSecondTimer();
+      const sameTx = createRandomTransactions({
+        send: 1,
+      })[0];
+      const sameBlock = createFakeBlock({
+        transactions: new Array(10).fill(sameTx),
+      });
+      const bytesBlocks = getBlockBytes(new Array(txNum).fill(sameBlock));
+      timer.start();
+      const realBlocks = bytesBlocks.map((tx) => blockLogic.fromBytes(tx));
+      return Promise.resolve(timer.elapsed() / txNum);
+    });
+
+    reportedIT('with 25 txs', flavors, async (txNum: number) => {
+      const timer = new SimpleMicroSecondTimer();
+      const sameTx = createRandomTransactions({
+        send: 1,
+      })[0];
+      const sameBlock = createFakeBlock({
+        transactions: new Array(25).fill(sameTx),
+      });
+      const bytesBlocks = getBlockBytes(new Array(txNum).fill(sameBlock));
+      timer.start();
+      const realBlocks = bytesBlocks.map((tx) => blockLogic.fromBytes(tx));
+      return Promise.resolve(timer.elapsed() / txNum);
+    });
+
+    reportedIT('Milliseconds to decode payload sized in kB', [512, 1024, 1536, 2048], async (kiloBytes: number) => {
+      const maxBytes = kiloBytes * 1024;
+      const timer = new SimpleMicroSecondTimer();
+      const numBlocks = Math.ceil(
+        (maxBytes * constants.maxTxsPerBlock ) /
+        ( txLogic.getMinBytesSize() * constants.maxTxsPerBlock + blockLogic.getMinBytesSize())
+        / constants.maxTxsPerBlock );
+
+      console.log(`In ${kiloBytes} kB payload: ${numBlocks} full blocks.`);
+
+      const sameTx = createRandomTransactions({
+        send: 1,
+      })[0];
+
+      const sameBlock = createFakeBlock({
+        transactions: new Array(25).fill(sameTx),
+      });
+
+      const bytesBlocks = getBlockBytes(new Array(numBlocks).fill(sameBlock));
+      timer.start();
+      const realBlocks = bytesBlocks.map((tx) => blockLogic.fromBytes(tx));
+      return Promise.resolve(timer.elapsed() / 1000);
+    });
   });
 
 });

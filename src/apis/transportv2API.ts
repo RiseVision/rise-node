@@ -236,11 +236,10 @@ export class TransportV2API {
   }
 
   private async calcNumBlocksToLoad(lastBlock: BlocksModel): Promise<number> {
-    // TODO Move me to a constant maybe?
-    const maxPayloadSize = 2000000;
+    const maxPayloadSize = constants.maxProtoBufPayloadLength;
     // We take 98% of the theoretical value to allow for some overhead
     const maxBytes = maxPayloadSize * 0.98;
-    // Best case scenario: we find 2MB of empty blocks.
+    // Best case scenario: we find 1.5MB of empty blocks.
     const maxHeightDelta = Math.ceil(maxBytes / this.blockLogic.getMinBytesSize());
     // We can also limit the number of transactions, with a very rough estimation of the max number of txs that will fit
     // in maxPayloadSize. We assume a stream blocks completely full of the smallest transactions.
