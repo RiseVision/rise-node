@@ -1,5 +1,5 @@
 import { BaseCoreModule } from '@risevision/core-launchpad';
-import { constants, middleware, P2pConfig, p2pSymbols } from './helpers';
+import { constants, middleware, P2pConfig, p2pSymbols, ProtoBufHelper } from './helpers';
 import { CommanderStatic } from 'commander';
 import * as express from 'express';
 import * as http from 'http';
@@ -128,6 +128,7 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     this.container.bind(p2pSymbols.modules.peers).to(PeersModule).inSingletonScope();
     this.container.bind(p2pSymbols.modules.transport).to(TransportModule).inSingletonScope();
     this.container.bind(p2pSymbols.socketIO).toConstantValue(socketIO(this.srv));
+    this.container.bind(p2pSymbols.helpers.protoBuf).to(ProtoBufHelper);
 
     this.container.bind(p2pSymbols.requests.commonBlocks).toFactory(requestFactory(CommonBlockRequest));
     this.container.bind(p2pSymbols.requests.getBlocks).toFactory(requestFactory(GetBlocksRequest));

@@ -1,4 +1,4 @@
-import { inject, injectable, named, postConstruct } from 'inversify';
+import { decorate, inject, injectable, named, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as popsicle from 'popsicle';
 import * as Throttle from 'promise-parallel-throttle';
@@ -35,7 +35,7 @@ import {
   PeerState,
   SignedBlockType
 } from '@risevision/core-types';
-import { WordPressHookSystem } from 'mangiafuoco';
+import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { ModelSymbols } from '@risevision/core-models';
 import { cbToPromise, SchemaValid, ValidateSchema, WrapInBalanceSequence } from '@risevision/core-utils';
 import {
@@ -47,14 +47,17 @@ import {
   PostTransactionsRequestDataType
 } from './requests/';
 import { p2pSymbols } from './helpers';
-import { RequestFactoryType } from './utils/requestFactoryType';
+import { RequestFactoryType } from './utils/';
+import { OnPeersReady } from './hooks/actions';
 
 const peersSchema     = require('../schema/peers.json');
 const transportSchema = require('../schema/transport.json');
 
+const Extendable = WPHooksSubscriber(Object);
+decorate(injectable(), Extendable);
 // tslint:disable-next-line
 @injectable()
-export class TransportModule implements ITransportModule {
+export class TransportModule extends Extendable implements ITransportModule {
   // Generics
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
@@ -65,7 +68,7 @@ export class TransportModule implements ITransportModule {
   public schema: z_schema;
   // tslint:disable-next-line member-ordering
   @inject(Symbols.generic.hookSystem)
-  private hookSystem: WordPressHookSystem;
+  public hookSystem: WordPressHookSystem;
 
   // Helpers
   // tslint:disable-next-line member-ordering
@@ -131,10 +134,7 @@ export class TransportModule implements ITransportModule {
 
   // tslint:disable-next-line max-line-length
   public async getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: IPeerLogic }> {
-    let url = options.url;
-    if (options.api) {
-      url = `/peer${options.api}`;
-    }
+    const url = options.url;
     const thePeer = this.peersLogic.create(peer);
     const req     = {
       body     : null,
@@ -229,6 +229,7 @@ export class TransportModule implements ITransportModule {
     this.loaded = true;
   }
 
+  @OnPeersReady()
   public async onPeersReady() {
     this.logger.trace('Peers ready');
     // await this.discoverPeers();
@@ -305,7 +306,6 @@ export class TransportModule implements ITransportModule {
   public async onNewBlock(block: SignedBlockType & { relays?: number }, broadcast: boolean) {
     if (broadcast) {
       const broadhash = this.systemModule.broadhash;
-
       await this.systemModule.update();
       block        = _.cloneDeep(block);
       block.relays = block.relays || 1;

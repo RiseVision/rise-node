@@ -6,7 +6,7 @@ import { MyConvOptions, p2pSymbols, ProtoBufHelper } from '../helpers';
 import { PeerRequestOptions } from '@risevision/core-types';
 
 @injectable()
-export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
+export class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
   public options: { data: In, query?: any} = {data: null};
   // AppManager will inject the dependency here
   protected readonly method: 'GET' | 'POST';

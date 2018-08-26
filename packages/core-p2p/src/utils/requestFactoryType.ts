@@ -4,4 +4,3 @@ export const requestFactory = (what: (new () => any)) => (ctx) => (options) => {
   toRet.options = options;
   return toRet;
 };
-

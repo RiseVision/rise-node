@@ -15,7 +15,7 @@ export const createFakeBlock = (container: Container, cfg: {
   keypair?: IKeypair,
   transactions?: Array<IBaseTransaction<any>>,
   previousBlock?: SignedAndChainedBlockType
-} = {}): SignedBlockType => {
+} = {}): SignedAndChainedBlockType => {
   const blockLogic: BlockLogic = container.get(BlocksSymbols.logic.block);
   const ed: ICrypto            = container.get(Symbols.generic.crypto);
   const keypair                = cfg.keypair || ed.makeKeyPair(crypto
@@ -31,4 +31,3 @@ export const createFakeBlock = (container: Container, cfg: {
     transactions,
   });
 };
-

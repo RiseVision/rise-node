@@ -41,5 +41,5 @@ export const p2pSymbols = {
     postBlocks      : Symbol.for('rise.p2p.postBlocks'),
     postTransactions: Symbol.for('rise.p2p.postTransactions'),
   },
-  model     : Symbol.for('rise.p2p.peersmodel'),
+  model     : Symbols.models.peers,
 };

@@ -2,11 +2,13 @@ import * as chai from 'chai';
 import {Container} from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import {Symbols} from '../../../src/ioc/symbols';
-import { PeerLogic } from '../../../src/logic';
-import { PeersLogic } from '../../../src/logic';
-import { LoggerStub, PeerLogicStub, SystemModuleStub } from '../../stubs';
-import { createContainer } from '../../utils/containerCreator';
+import { PeersLogic } from '../src/peersLogic';
+import { PeerLogic } from '../src/peer';
+import { SystemModule } from '../../core/src/modules';
+import { LoggerStub } from '../../core-utils/tests/stubs';
+import { createContainer } from '../../core-launchpad/tests/utils/createContainer';
+import { Symbols } from '../../core-interfaces/src';
+import { p2pSymbols } from '../src/helpers';
 
 const expect = chai.expect;
 
@@ -14,23 +16,22 @@ const expect = chai.expect;
 describe('logic/peers', () => {
   let instance: PeersLogic;
   let loggerStub: LoggerStub;
-  let peerLogicStub: PeerLogicStub;
-  let systemModuleStub: SystemModuleStub;
+  let peerLogicStub: PeerLogic;
+  let systemModuleStub: SystemModule;
   let peersFactoryStub: SinonStub;
   let container: Container;
   let sandbox: SinonSandbox;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     sandbox = sinon.createSandbox();
-    container = createContainer();
-    loggerStub = container.get(Symbols.helpers.logger);
-    peerLogicStub = new PeerLogicStub();
-    systemModuleStub = container.get(Symbols.modules.system);
+    container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    peerLogicStub = new PeerLogic();
     peersFactoryStub = sandbox.stub().returns(peerLogicStub);
-    instance = new PeersLogic();
-    (instance as any).logger = loggerStub;
-    (instance as any).peersFactory = peersFactoryStub;
-    (instance as any).systemModule = systemModuleStub;
+    container.rebind(p2pSymbols.logic.peerFactory).toConstantValue(peersFactoryStub);
+    loggerStub = container.get(Symbols.helpers.logger);
+    systemModuleStub = container.get(Symbols.modules.system);
+    container.rebind(p2pSymbols.logic.peersLogic).to(PeersLogic);
+    instance = container.get(p2pSymbols.logic.peersLogic);
   });
 
   afterEach(() => {
@@ -55,7 +56,7 @@ describe('logic/peers', () => {
 
   describe('exists', () => {
     it('should return true if the peer exists', () => {
-      (instance as any).peers[peerLogicStub.defaults.string] = peerLogicStub;
+      (instance as any).peers[peerLogicStub.string] = peerLogicStub;
       expect(instance.exists(peerLogicStub)).to.equal(true);
     });
 
@@ -67,8 +68,8 @@ describe('logic/peers', () => {
 
   describe('get', () => {
     it('should return peer if passed string', () => {
-      (instance as any).peers[peerLogicStub.defaults.string] = peerLogicStub;
-      const retVal = instance.get(peerLogicStub.defaults.string);
+      (instance as any).peers[peerLogicStub.string] = peerLogicStub;
+      const retVal = instance.get(peerLogicStub.string);
       expect(retVal).to.deep.equal(peerLogicStub);
     });
 
@@ -117,29 +118,30 @@ describe('logic/peers', () => {
 
     it('should call update on peer and return false if peer exists and, insertOnly=false', () => {
       existsStub.returns(true);
-      (instance as any).peers[peerLogicStub.defaults.string] = peerLogicStub;
+      const updateStub = sandbox.stub(peerLogicStub, 'update');
+      (instance as any).peers[peerLogicStub.string] = peerLogicStub;
       const retVal = instance.upsert(peerLogicStub, false);
-      expect(peerLogicStub.stubs.update.calledOnce).to.be.true;
+      expect(updateStub.calledOnce).to.be.true;
       expect(retVal).to.equal(true);
     });
 
     it ('should call logger.debug if peer has changed', () => {
       existsStub.returns(true);
-      (instance as any).peers[peerLogicStub.defaults.string] = peerLogicStub;
+      (instance as any).peers[peerLogicStub.string] = peerLogicStub;
       // newPeer.string == peerLogicStub.string
-      const newPeer = new PeerLogicStub();
+      const newPeer = new PeerLogic();
       // modify one of the default values
       newPeer.ip = newPeer.ip + '0';
       // make sure that create() doesn't modify our passed peer
       createStub.returns(newPeer);
       instance.upsert(newPeer, false);
       expect(loggerStub.stubs.debug.called).to.be.true;
-      expect(loggerStub.stubs.debug.firstCall.args[1].ip).to.be.deep.equal(newPeer.ip);
+      expect(loggerStub.stubs.debug.thirdCall.args[1].ip).to.be.deep.equal(newPeer.ip);
     });
 
     it ('should call logger.trace if peer has NOT changed', () => {
       existsStub.returns(true);
-      (instance as any).peers[peerLogicStub.defaults.string] = peerLogicStub;
+      (instance as any).peers[peerLogicStub.string] = peerLogicStub;
       instance.upsert(peerLogicStub, false);
       expect(loggerStub.stubs.trace.called).to.be.true;
       expect(loggerStub.stubs.trace.firstCall.args[1]).to.be.deep.equal(peerLogicStub.string);
@@ -173,62 +175,26 @@ describe('logic/peers', () => {
       expect((instance as any).peers).to.be.deep.equal({});
     });
 
-    it('should not insert the peer and call logger.debug if this.acceptable([thePeer]) returns empty array', () => {
+    it('should not insert the peer if this.acceptable([thePeer]) returns empty array', () => {
       existsStub.returns(false);
       acceptableStub.returns([]);
       instance.upsert(peerLogicStub, false);
       expect(createStub.calledOnce).to.equal(true);
       expect(createStub.firstCall.args[0]).to.deep.equal(peerLogicStub);
-      expect(loggerStub.stubs.debug.calledOnce).to.equal(true);
-      expect(loggerStub.stubs.debug.firstCall.args.length).to.equal(2);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.equal('Rejecting unacceptable peer');
       expect((instance as any).peers).to.be.deep.equal({});
     });
 
-    it('should insert the peer and call logger.debug if this.acceptable([thePeer]) returns our peer', () => {
+    it('should insert the peer  if this.acceptable([thePeer]) returns our peer', () => {
       existsStub.returns(false);
       acceptableStub.returns([peerLogicStub]);
       instance.upsert(peerLogicStub, false);
       expect(createStub.calledOnce).to.equal(true);
       expect(createStub.firstCall.args[0]).to.deep.equal(peerLogicStub);
-      expect(loggerStub.stubs.debug.calledOnce).to.equal(true);
-      expect(loggerStub.stubs.debug.firstCall.args.length).to.equal(2);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.equal('Inserted new peer');
-      expect(loggerStub.stubs.debug.firstCall.args[1]).to.equal(peerLogicStub.string);
       const expectedPeers = {};
       expectedPeers[peerLogicStub.string] = peerLogicStub;
       expect((instance as any).peers).to.be.deep.equal(expectedPeers);
     });
 
-    it('should call logger.trace with PeerStats', () => {
-      existsStub.returns(false);
-      acceptableStub.returns([peerLogicStub]);
-      instance.upsert(peerLogicStub, false);
-      expect(loggerStub.stubs.trace.calledOnce).to.equal(true);
-      expect(loggerStub.stubs.trace.firstCall.args[0]).to.equal('PeerStats');
-      expect(loggerStub.stubs.trace.firstCall.args[1]).to.deep.equal({
-        alive         : 1,
-        emptyBroadhash: 0,
-        emptyHeight   : 0,
-        total         : 1,
-      });
-    });
-
-    it('should call logger.trace with PeerStats without height and broadhash fields', () => {
-      delete (peerLogicStub as any).height;
-      delete (peerLogicStub as any).broadhash;
-      existsStub.returns(false);
-      acceptableStub.returns([peerLogicStub]);
-      instance.upsert(peerLogicStub, false);
-      expect(loggerStub.stubs.trace.calledOnce).to.equal(true);
-      expect(loggerStub.stubs.trace.firstCall.args[0]).to.equal('PeerStats');
-      expect(loggerStub.stubs.trace.firstCall.args[1]).to.deep.equal({
-        alive         : 1,
-        emptyBroadhash: 1,
-        emptyHeight   : 1,
-        total         : 1,
-      });
-    });
   });
 
   describe('remove', () => {
@@ -246,14 +212,12 @@ describe('logic/peers', () => {
     it('should call logger.debug and return false if not exists', () => {
       existsStub.returns(false);
       const retVal = instance.remove(peerLogicStub);
-      expect(loggerStub.stubs.debug.calledOnce).to.be.true;
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.eq('Failed to remove peer');
       expect(retVal).to.be.false;
     });
 
     it('should add the time of removal to the lastRemoved list', () => {
       existsStub.returns(true);
-      (instance as any).peers[peerLogicStub.defaults.string] = peerLogicStub;
+      (instance as any).peers[peerLogicStub.string] = peerLogicStub;
       instance.remove(peerLogicStub);
       expect((instance as any).lastRemoved[peerLogicStub.string]).to.exist;
       expect((instance as any).lastRemoved[peerLogicStub.string]).to.be.lte(Date.now());
@@ -262,7 +226,7 @@ describe('logic/peers', () => {
 
     it('should remove the peer from the list if exists', () => {
       existsStub.returns(true);
-      (instance as any).peers[peerLogicStub.defaults.string] = peerLogicStub;
+      (instance as any).peers[peerLogicStub.string] = peerLogicStub;
       const toRet = instance.remove(peerLogicStub);
       expect((instance as any).peers).to.be.deep.equal({});
       expect(toRet).to.be.eq(true);
@@ -290,46 +254,49 @@ describe('logic/peers', () => {
   });
 
   describe('acceptable', () => {
+    let versionCompatibleStub: SinonStub;
+    let getNonceStub: SinonStub;
     beforeEach(() => {
-      systemModuleStub.stubs.versionCompatible.returns(true);
+      versionCompatibleStub = sandbox.stub(systemModuleStub, 'versionCompatible').returns(true);
+      getNonceStub = sandbox.stub(systemModuleStub, 'getNonce');
     });
     it('should call systemModule.getNonce if ip is not private', () => {
       // non-private ip
       peerLogicStub.ip = '8.8.8.8';
       instance.acceptable([peerLogicStub]);
-      expect(systemModuleStub.stubs.getNonce.called).to.be.true;
+      expect(getNonceStub.called).to.be.true;
     });
 
     it('should call systemModule.getNonce if NODE_ENV === TEST', () => {
       const tmp = process.env.NODE_ENV;
       process.env.NODE_ENV = 'TEST';
       instance.acceptable([peerLogicStub]);
-      expect(systemModuleStub.stubs.getNonce.called).to.be.true;
+      expect(getNonceStub.called).to.be.true;
       process.env.NODE_ENV = tmp;
     });
 
     it('should filter out peers with same ip', () => {
-      systemModuleStub.enqueueResponse('getNonce', 'otherValue');
-      const peer1 = new PeerLogicStub();
-      const peer2 = new PeerLogicStub();
+      getNonceStub.returns('otherValue');
+      const peer1 = new PeerLogic();
+      const peer2 = new PeerLogic();
       peer1.ip = '8.8.8.8';
       peer2.ip = '8.8.8.8';
       const retVal = instance.acceptable([peer1, peer2]);
       expect(retVal).to.be.deep.equal([peer1]);
     });
     it('should filter out peers with incompatible version', () => {
-      systemModuleStub.enqueueResponse('getNonce', 'otherValue');
-      const peer1 = new PeerLogicStub();
-      const peer2 = new PeerLogicStub();
+      getNonceStub.returns('otherValue');
+      const peer1 = new PeerLogic();
+      const peer2 = new PeerLogic();
       peer1.ip = '8.8.8.8';
       peer2.ip = '8.8.8.7';
-      systemModuleStub.stubs.versionCompatible.onSecondCall().returns(false);
+      versionCompatibleStub.onSecondCall().returns(false);
       const retVal = instance.acceptable([peer1, peer2]);
       expect(retVal).to.be.deep.eq([peer1]);
 
     });
     it('should filter out peers with my same nonce', () => {
-      systemModuleStub.enqueueResponse('getNonce', 'systemNonce');
+      getNonceStub.returns('systemNonce');
 
       peerLogicStub.ip = '8.8.8.8';
       peerLogicStub.nonce = 'systemNonce';
@@ -356,4 +323,5 @@ describe('logic/peers', () => {
       expect((instance as any).wasRecentlyRemoved(peerLogicStub)).to.be.false;
     });
   });
+
 });

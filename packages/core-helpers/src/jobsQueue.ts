@@ -23,7 +23,12 @@ export class JobsQueue implements IJobsQueue {
   }
 
   public unregister(name: string) {
-    clearTimeout(this.jobs[name]);
+    try {
+      clearTimeout(this.jobs[name]);
+    } catch (e) {
+      // just registered
+      console.log(e);
+    }
     delete this.jobs[name];
   }
 

@@ -1,12 +1,14 @@
+import { WordPressHookSystem } from 'mangiafuoco';
 import { ILogger, IPeerLogic, IPeersModel, IPeersModule, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { AppConfig, ConstantsType, PeerFilter, PeerType, PeerState } from '@risevision/core-types';
+import { AppConfig, ConstantsType, PeerFilter, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
 import * as shuffle from 'shuffle-array';
 import { PeersLogic } from './peersLogic';
 import { p2pSymbols } from './helpers';
+import { OnPeersReady } from './hooks/actions';
 
 @injectable()
 export class PeersModule implements IPeersModule {
@@ -14,6 +16,8 @@ export class PeersModule implements IPeersModule {
   // Generic
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
+  @inject(Symbols.generic.hookSystem)
+  private hookSystem: WordPressHookSystem;
 
   // Helpers
   @inject(Symbols.generic.constants)
@@ -56,7 +60,7 @@ export class PeersModule implements IPeersModule {
       this.logger.debug('Cannot remove frozen peer', peerIP + ':' + port);
       return false;
     } else {
-      return this.peersLogic.remove({ip: peerIP, port});
+      return this.peersLogic.remove({ ip: peerIP, port });
     }
   }
 
@@ -116,7 +120,7 @@ export class PeersModule implements IPeersModule {
     options.broadhash     = options.broadhash || this.systemModule.broadhash;
     options.allowedStates = options.allowedStates || [PeerState.CONNECTED];
 
-    let peersList = (await this.getByFilter({broadhash: options.broadhash}))
+    let peersList = (await this.getByFilter({ broadhash: options.broadhash }))
     // only matching states
       .filter((p) => options.allowedStates.indexOf(p.state) !== -1);
 
@@ -142,14 +146,15 @@ export class PeersModule implements IPeersModule {
     consensus = isNaN(consensus) ? 0 : consensus;
 
     this.logger.debug(`Listing ${peersList.length} total peers`);
-    return {consensus, peers: peersList};
+    return { consensus, peers: peersList };
   }
 
   public async onBlockchainReady() {
     if (process.env.NODE_ENV !== 'test') {
       await this.insertSeeds();
       await this.dbLoad();
-      // TODO: Fixme.
+
+      await this.hookSystem.do_action(OnPeersReady.name);
       // await this.bus.message('peersReady');
     }
   }
@@ -187,7 +192,7 @@ export class PeersModule implements IPeersModule {
     this.logger.trace('Importing peers from database');
 
     try {
-      const rows = await this.PeersModel.findAll({raw: true});
+      const rows  = await this.PeersModel.findAll({ raw: true });
       let updated = 0;
       await Promise.all(rows
         .map((rawPeer) => this.peersLogic.create(rawPeer))
@@ -201,9 +206,9 @@ export class PeersModule implements IPeersModule {
           }
         })
       );
-      this.logger.trace('Peers->dbLoad Peers discovered', {updated, total: rows.length});
+      this.logger.trace('Peers->dbLoad Peers discovered', { updated, total: rows.length });
     } catch (e) {
-      this.logger.error('Import peers from database failed', {error: e.message || e});
+      this.logger.error('Import peers from database failed', { error: e.message || e });
     }
   }
 
