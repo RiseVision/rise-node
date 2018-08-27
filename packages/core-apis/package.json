@@ -33,7 +33,6 @@
   },
   "devDependencies": {
     "shx": "=0.3.2",
-    "@risevision/core-test-utils": "^1.0.0",
     "@types/node": "^9.6.0",
     "@types/chai": "=4.1.4",
     "@types/chai-arrays": "^1.0.2",

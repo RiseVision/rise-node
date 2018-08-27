@@ -5,7 +5,7 @@ import { Container } from 'inversify';
 import * as Throttle from 'promise-parallel-throttle';
 import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
+import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import { TransportModule } from '../src/transport';
 import { createContainer } from '../../core-launchpad/tests/utils/createContainer';
 import { Symbols } from '../../core-interfaces/src';
@@ -87,7 +87,7 @@ describe('src/modules/transport.ts', () => {
     transactionLogic = container.get(Symbols.logic.transaction);
     peersLogic       = container.get(Symbols.logic.peers);
 
-    peersModule       = container.get(Symbols.modules.peers);
+    peersModule = container.get(Symbols.modules.peers);
 
     transactionModule = container.get(Symbols.modules.transactions);
     systemModule      = container.get(Symbols.modules.system);
@@ -95,7 +95,7 @@ describe('src/modules/transport.ts', () => {
 
     blocksModule.lastBlock = createFakeBlock(container);
     // set appState.setComputed call for @postConstruct method
-    inst = container.get(Symbols.modules.transport);
+    inst                   = container.get(Symbols.modules.transport);
 
     (inst as  any).sequence = {
       addAndPromise: sandbox.spy((w) => Promise.resolve(w())),
@@ -128,7 +128,7 @@ describe('src/modules/transport.ts', () => {
     let removePeerStub: SinonStub;
 
     beforeEach(() => {
-      peer    = { makeRequest: sandbox.stub(), ip: '127.0.0.1', port: 100};
+      peer    = { makeRequest: sandbox.stub(), ip: '127.0.0.1', port: 100 };
       options = {
         method: 'put',
         url   : 'url.com',
@@ -136,12 +136,12 @@ describe('src/modules/transport.ts', () => {
       headers = {
         nethash: systemModule.headers.nethash,
         version: '1.1.1',
-        port: 100,
-        height: 100,
+        port   : 100,
+        height : 100,
       };
       res     = {
         body   : {},
-        headers: {...headers},
+        headers: { ...headers },
         method : 'put',
         status : 200,
         url    : 'example.com',
@@ -190,7 +190,6 @@ describe('src/modules/transport.ts', () => {
     });
 
 
-
     it('check if options.data', async () => {
       options.data = 'data';
 
@@ -209,7 +208,7 @@ describe('src/modules/transport.ts', () => {
       this.timeout(2100);
       const start = Date.now();
       popsicleUseStub.use.onFirstCall().rejects(error);
-      popsicleUseStub.use.onSecondCall().resolves({status: 500});
+      popsicleUseStub.use.onSecondCall().resolves({ status: 500 });
       await expect(inst.getFromPeer(peer, options)).to.be.rejectedWith('bad response code 500');
 
       expect(popsicleUseStub.use.calledTwice).is.true;
@@ -264,7 +263,7 @@ describe('src/modules/transport.ts', () => {
 
     it('should call removePeer and return rejected promise if systemModule.networkCompatible returned false', async () => {
       res.headers.nethash = Array(64).fill('a').join('');
-      error = new Error('Peer is not on the same network aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa put http://127.0.0.1:100url.com');
+      error               = new Error('Peer is not on the same network aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa put http://127.0.0.1:100url.com');
       await expect(inst.getFromPeer(peer, options)).to.be.rejectedWith(error.message);
 
       expect(removePeerStub.calledOnce).to.be.true;
@@ -275,7 +274,7 @@ describe('src/modules/transport.ts', () => {
     });
 
     it('should call systemModule.versionCompatible', async () => {
-      sandbox.stub(systemModule, 'versionCompatible').returns('false');
+      sandbox.stub(systemModule, 'versionCompatible').returns(false);
       await expect(inst.getFromPeer(peer, options))
         .to.be.rejectedWith('Peer is using incompatible version 1.1.1 put http://127.0.0.1:100url.com');
       expect(removePeerStub.calledOnce).to.be.true;
@@ -313,11 +312,11 @@ describe('src/modules/transport.ts', () => {
 
     beforeEach(() => {
       requestHandler = new StubbedRequest();
-      result  = 'hehehe';
-      config  = {};
-      peers   = [{makeRequest: sandbox.stub().returns(result)}];
+      result         = 'hehehe';
+      config         = {};
+      peers          = [{ makeRequest: sandbox.stub().returns(result) }];
 
-      peersModuleListStub = sandbox.stub(peersModule, 'list').resolves({peers});
+      peersModuleListStub = sandbox.stub(peersModule, 'list').resolves({ peers });
     });
 
     it('should call peersModule.list', async () => {
@@ -340,399 +339,399 @@ describe('src/modules/transport.ts', () => {
     });
   });
 
-    describe('cleanup', () => {
-      it('should set loaded in false and return promise.resolve', () => {
-        expect(inst.cleanup()).to.be.fulfilled;
-        expect((inst as any).loaded).to.be.false;
+  describe('cleanup', () => {
+    it('should set loaded in false and return promise.resolve', () => {
+      expect(inst.cleanup()).to.be.fulfilled;
+      expect((inst as any).loaded).to.be.false;
+    });
+  });
+
+  describe('onBlockchainReady', () => {
+    it('should set loaded in true', () => {
+      inst.onBlockchainReady();
+
+      expect((inst as any).loaded).to.be.true;
+    });
+  });
+
+  describe('onPeersReady', () => {
+    let peers;
+    let discoverPeersStub: SinonStub;
+    let registerStub: SinonStub;
+    let peerListStub: SinonStub;
+    beforeEach(() => {
+      peers = [{
+        pingAndUpdate: sandbox.stub(),
+        state        : PeerState.CONNECTED,
+        string       : 'string',
+        updated      : false,
+      }];
+
+      throttleStub.all = sandbox.stub().callsFake((fkArray) => {
+        const promiseArray = [];
+        for (const fk of fkArray) {
+          promiseArray.push(fk());
+        }
+        return Promise.all(promiseArray);
+      });
+      registerStub     = sandbox.stub(jobsQueue, 'register').callsArg(1);
+
+      discoverPeersStub = sandbox.stub(inst as any, 'discoverPeers');
+      peerListStub      = sandbox.stub(peersLogic, 'list').returns(peers);
+    });
+
+    it('should call logger.trace', async () => {
+      await inst.onPeersReady();
+
+      // use to async call of jobsQueue.register callback
+      process.nextTick(() => {
+        const loggerTraceStub = logger.stubs.trace;
+
+        expect(loggerTraceStub.callCount).to.be.equal(4);
+
+        expect(loggerTraceStub.getCall(0).args.length).to.be.equal(1);
+        expect(loggerTraceStub.getCall(0).args[0]).to.be.equal('Peers ready');
+
+        expect(loggerTraceStub.getCall(1).args.length).to.be.equal(2);
+        expect(loggerTraceStub.getCall(1).args[0]).to.be.equal('Updating peers');
+        expect(loggerTraceStub.getCall(1).args[1]).to.be.deep.equal({ count: peers.length });
+
+        expect(loggerTraceStub.getCall(2).args.length).to.be.equal(2);
+        expect(loggerTraceStub.getCall(2).args[0]).to.be.equal('Updating peer');
+        expect(loggerTraceStub.getCall(2).args[1]).to.be.equal(peers[0].string);
+
+        expect(loggerTraceStub.getCall(3).args.length).to.be.equal(1);
+        expect(loggerTraceStub.getCall(3).args[0]).to.be.equal('Updated Peers');
       });
     });
 
-    describe('onBlockchainReady', () => {
-      it('should set loaded in true', () => {
-        inst.onBlockchainReady();
+    it('should call jobsQueue.register', async () => {
+      await inst.onPeersReady();
 
-        expect((inst as any).loaded).to.be.true;
+      expect(registerStub.calledOnce).to.be.true;
+      expect(registerStub.firstCall.args.length).to.be.equal(3);
+      expect(registerStub.firstCall.args[0]).to.be.equal('peersDiscoveryAndUpdate');
+      expect(registerStub.firstCall.args[1]).to.be.a('function');
+      expect(registerStub.firstCall.args[2]).to.be.equal(5000);
+    });
+
+    it('should call discoverPeers', async () => {
+      await inst.onPeersReady();
+
+      expect(discoverPeersStub.calledOnce).to.be.true;
+      expect(discoverPeersStub.firstCall.args.length).to.be.equal(0);
+    });
+
+    it('should logger.error if discoverPeers throw', async () => {
+      const error = new Error('error');
+      discoverPeersStub.rejects(error);
+
+      await inst.onPeersReady();
+
+      process.nextTick(() => {
+        expect(logger.stubs.error.calledOnce).to.be.true;
+        expect(logger.stubs.error.firstCall.args.length).to.be.equal(2);
+        expect(logger.stubs.error.firstCall.args[0]).to.be.equal('Discovering new peers failed');
+        expect(logger.stubs.error.firstCall.args[1]).to.be.equal(error);
       });
     });
 
-    describe('onPeersReady', () => {
-      let peers;
-      let discoverPeersStub: SinonStub;
-      let registerStub: SinonStub;
-      let peerListStub: SinonStub;
-      beforeEach(() => {
-        peers = [{
-          pingAndUpdate: sandbox.stub(),
-          state        : PeerState.CONNECTED,
-          string       : 'string',
-          updated      : false,
-        }];
+    it('should call peersLogic.list', async () => {
+      await inst.onPeersReady();
 
-        throttleStub.all = sandbox.stub().callsFake((fkArray) => {
-          const promiseArray = [];
-          for (const fk of fkArray) {
-            promiseArray.push(fk());
-          }
-          return Promise.all(promiseArray);
-        });
-        registerStub = sandbox.stub(jobsQueue, 'register').callsArg(1);
+      expect(peerListStub.calledOnce).to.be.true;
+      expect(peerListStub.firstCall.args.length).to.be.equal(1);
+      expect(peerListStub.firstCall.args[0]).to.be.equal(false);
+    });
 
-        discoverPeersStub = sandbox.stub(inst as any, 'discoverPeers');
-        peerListStub = sandbox.stub(peersLogic, 'list').returns(peers);
-      });
+    it('should call Throttle.all', async () => {
+      await inst.onPeersReady();
 
-      it('should call logger.trace', async () => {
+      expect(throttleStub.all.calledOnce).to.be.true;
+      expect(throttleStub.all.firstCall.args.length).to.be.equal(2);
+      expect(throttleStub.all.firstCall.args[0]).to.be.a('array');
+      expect(throttleStub.all.firstCall.args[1]).to.be.deep.equal({ maxInProgress: 50 });
+    });
+
+    describe('Throttle.all callback(for each peer in peers)', () => {
+
+      it('should call pingAndUpdate(check on p.updated is false)', async () => {
         await inst.onPeersReady();
 
-        // use to async call of jobsQueue.register callback
-        process.nextTick(() => {
-          const loggerTraceStub = logger.stubs.trace;
-
-          expect(loggerTraceStub.callCount).to.be.equal(4);
-
-          expect(loggerTraceStub.getCall(0).args.length).to.be.equal(1);
-          expect(loggerTraceStub.getCall(0).args[0]).to.be.equal('Peers ready');
-
-          expect(loggerTraceStub.getCall(1).args.length).to.be.equal(2);
-          expect(loggerTraceStub.getCall(1).args[0]).to.be.equal('Updating peers');
-          expect(loggerTraceStub.getCall(1).args[1]).to.be.deep.equal({ count: peers.length });
-
-          expect(loggerTraceStub.getCall(2).args.length).to.be.equal(2);
-          expect(loggerTraceStub.getCall(2).args[0]).to.be.equal('Updating peer');
-          expect(loggerTraceStub.getCall(2).args[1]).to.be.equal(peers[0].string);
-
-          expect(loggerTraceStub.getCall(3).args.length).to.be.equal(1);
-          expect(loggerTraceStub.getCall(3).args[0]).to.be.equal('Updated Peers');
-        });
+        expect(peers[0].pingAndUpdate.calledOnce).to.be.true;
+        expect(peers[0].pingAndUpdate.firstCall.args.length).to.be.equal(0);
       });
 
-      it('should call jobsQueue.register', async () => {
+      it('should call pingAndUpdate(check on Date.now() - p.updated > 3000)', async () => {
+        peers[0].updated = Date.now() - 3001;
+
         await inst.onPeersReady();
-
-        expect(registerStub.calledOnce).to.be.true;
-        expect(registerStub.firstCall.args.length).to.be.equal(3);
-        expect(registerStub.firstCall.args[0]).to.be.equal('peersDiscoveryAndUpdate');
-        expect(registerStub.firstCall.args[1]).to.be.a('function');
-        expect(registerStub.firstCall.args[2]).to.be.equal(5000);
+        await wait(10);
+        expect(peers[0].pingAndUpdate.calledOnce).to.be.true;
+        expect(peers[0].pingAndUpdate.firstCall.args.length).to.be.equal(0);
       });
 
-      it('should call discoverPeers', async () => {
-        await inst.onPeersReady();
-
-        expect(discoverPeersStub.calledOnce).to.be.true;
-        expect(discoverPeersStub.firstCall.args.length).to.be.equal(0);
-      });
-
-      it('should logger.error if discoverPeers throw', async () => {
+      it('should call logger.debug if pingAndUpdate throw', async () => {
         const error = new Error('error');
-        discoverPeersStub.rejects(error);
+        logger.stubs.debug.resetHistory();
+        peers[0].pingAndUpdate.rejects(error);
 
         await inst.onPeersReady();
+        await wait(10);
+        expect(logger.stubs.debug.calledOnce).to.be.true;
+        expect(logger.stubs.debug.firstCall.args.length).to.be.equal(2);
+        expect(logger.stubs.debug.firstCall.args[0]).to.be.equal('Ping failed when updating peer string');
+        expect(logger.stubs.debug.firstCall.args[1]).to.be.deep.equal(error);
 
-        process.nextTick(() => {
-          expect(logger.stubs.error.calledOnce).to.be.true;
-          expect(logger.stubs.error.firstCall.args.length).to.be.equal(2);
-          expect(logger.stubs.error.firstCall.args[0]).to.be.equal('Discovering new peers failed');
-          expect(logger.stubs.error.firstCall.args[1]).to.be.equal(error);
-        });
       });
 
-      it('should call peersLogic.list', async () => {
-        await inst.onPeersReady();
+      describe('false in condition of Throttle.all"s callback', () => {
 
-        expect(peerListStub.calledOnce).to.be.true;
-        expect(peerListStub.firstCall.args.length).to.be.equal(1);
-        expect(peerListStub.firstCall.args[0]).to.be.equal(false);
-      });
+        it('p in null', async () => {
+          peers[0] = null;
 
-      it('should call Throttle.all', async () => {
-        await inst.onPeersReady();
-
-        expect(throttleStub.all.calledOnce).to.be.true;
-        expect(throttleStub.all.firstCall.args.length).to.be.equal(2);
-        expect(throttleStub.all.firstCall.args[0]).to.be.a('array');
-        expect(throttleStub.all.firstCall.args[1]).to.be.deep.equal({ maxInProgress: 50 });
-      });
-
-      describe('Throttle.all callback(for each peer in peers)', () => {
-
-        it('should call pingAndUpdate(check on p.updated is false)', async () => {
           await inst.onPeersReady();
-
-          expect(peers[0].pingAndUpdate.calledOnce).to.be.true;
-          expect(peers[0].pingAndUpdate.firstCall.args.length).to.be.equal(0);
+          await wait(100);
+          expect(logger.stubs.trace.callCount).to.be.equal(3);
         });
 
-        it('should call pingAndUpdate(check on Date.now() - p.updated > 3000)', async () => {
-          peers[0].updated = Date.now() - 3001;
+        it('p.state === PeerState.BANNED', async () => {
+          peers[0].state = PeerState.BANNED;
 
           await inst.onPeersReady();
           await wait(10);
-          expect(peers[0].pingAndUpdate.calledOnce).to.be.true;
-          expect(peers[0].pingAndUpdate.firstCall.args.length).to.be.equal(0);
+          expect(logger.stubs.trace.callCount).to.be.equal(3);
         });
 
-        it('should call logger.debug if pingAndUpdate throw', async () => {
-          const error = new Error('error');
-          peers[0].pingAndUpdate.rejects(error);
+        it('p.update is true and (Date.now() - p.updated) <= 3000', async () => {
+          peers[0].updated = Date.now() - 2000;
 
           await inst.onPeersReady();
           await wait(10);
-          expect(logger.stubs.debug.calledOnce).to.be.true;
-          expect(logger.stubs.debug.firstCall.args.length).to.be.equal(2);
-          expect(logger.stubs.debug.firstCall.args[0]).to.be.equal('Ping failed when updating peer string');
-          expect(logger.stubs.debug.firstCall.args[1]).to.be.deep.equal(error);
 
-        });
-
-        describe('false in condition of Throttle.all"s callback', () => {
-
-          it('p in null', async () => {
-            peers[0] = null;
-
-            await inst.onPeersReady();
-            await wait(100);
-            expect(logger.stubs.trace.callCount).to.be.equal(3);
-          });
-
-          it('p.state === PeerState.BANNED', async () => {
-            peers[0].state = PeerState.BANNED;
-
-            await inst.onPeersReady();
-            await wait(10);
-            expect(logger.stubs.trace.callCount).to.be.equal(3);
-          });
-
-          it('p.update is true and (Date.now() - p.updated) <= 3000', async () => {
-            peers[0].updated = Date.now() - 2000;
-
-            await inst.onPeersReady();
-            await wait(10);
-
-            expect(logger.stubs.trace.callCount).to.be.equal(3);
-          });
+          expect(logger.stubs.trace.callCount).to.be.equal(3);
         });
       });
     });
+  });
 
-    // describe('onSignature', () => {
-    //
-    //   let broadcast;
-    //   let signature;
-    //
-    //   beforeEach(() => {
-    //     signature = { transaction: '1111111', signature: 'aaaabbbb' };
-    //     broadcast = true;
-    //     broadcasterLogic.enqueueResponse('maxRelays', false);
-    //     broadcasterLogic.enqueueResponse('enqueue', false);
-    //     (inst as any).appState = {get: () => 1000};
-    //     const p = new PostSignaturesRequest();
-    //     (inst as any).psrFactory = (a) => {
-    //       p.options = a;
-    //       return p;
-    //     };
-    //   });
-    //
-    //   it('should call broadcasterLogic.maxRelays', () => {
-    //     inst.onSignature(signature, broadcast);
-    //     expect(broadcasterLogic.stubs.maxRelays.calledOnce).to.be.true;
-    //     expect(broadcasterLogic.stubs.maxRelays.firstCall.args.length).to.be.equal(1);
-    //     expect(broadcasterLogic.stubs.maxRelays.firstCall.args[0]).to.be.deep.equal(signature);
-    //   });
-    //
-    //   it('should call broadcasterLogic.enqueue', async () => {
-    //     inst.onSignature(signature, broadcast);
-    //
-    //     expect(broadcasterLogic.stubs.enqueue.calledOnce).to.be.true;
-    //     expect(broadcasterLogic.stubs.enqueue.firstCall.args.length).to.be.equal(2);
-    //     expect(broadcasterLogic.stubs.enqueue.firstCall.args[0]).to.be.deep.equal({});
-    //     expect(broadcasterLogic.stubs.enqueue.firstCall.args[1].requestHandler).to.be.instanceOf(PostSignaturesRequest);
-    //     expect(broadcasterLogic.stubs.enqueue.firstCall.args[1].requestHandler.options).to.be.deep.equal({data: { signatures: [{
-    //       relays: 1,
-    //       signature: Buffer.from(signature.signature, 'hex'),
-    //       transaction: signature.transaction,
-    //     }] }});
-    //   });
-    //
-    //   it('should call io.sockets.emit', async () => {
-    //     inst.onSignature(signature, broadcast);
-    //
-    //     expect(io.sockets.emit.calledOnce).to.be.true;
-    //     expect(io.sockets.emit.firstCall.args.length).to.be.equal(2);
-    //     expect(io.sockets.emit.firstCall.args[0]).to.be.deep.equal('signature/change');
-    //     expect(io.sockets.emit.firstCall.args[1]).to.be.deep.equal(signature);
-    //   });
-    //
-    //   it('should not call broadcasterLogic.enqueue if broadcast is false', () => {
-    //     broadcast = false;
-    //
-    //     inst.onSignature(signature, broadcast);
-    //
-    //     expect(broadcasterLogic.stubs.enqueue.notCalled).to.be.true;
-    //   });
-    //
-    //   it('should not call broadcasterLogic.enqueue if this.broadcasterLogic.maxRelays returned true', () => {
-    //     broadcasterLogic.reset();
-    //     broadcasterLogic.enqueueResponse('maxRelays', true);
-    //
-    //     inst.onSignature(signature, broadcast);
-    //
-    //     expect(broadcasterLogic.stubs.enqueue.notCalled).to.be.true;
-    //   });
+  // describe('onSignature', () => {
+  //
+  //   let broadcast;
+  //   let signature;
+  //
+  //   beforeEach(() => {
+  //     signature = { transaction: '1111111', signature: 'aaaabbbb' };
+  //     broadcast = true;
+  //     broadcasterLogic.enqueueResponse('maxRelays', false);
+  //     broadcasterLogic.enqueueResponse('enqueue', false);
+  //     (inst as any).appState = {get: () => 1000};
+  //     const p = new PostSignaturesRequest();
+  //     (inst as any).psrFactory = (a) => {
+  //       p.options = a;
+  //       return p;
+  //     };
+  //   });
+  //
+  //   it('should call broadcasterLogic.maxRelays', () => {
+  //     inst.onSignature(signature, broadcast);
+  //     expect(broadcasterLogic.stubs.maxRelays.calledOnce).to.be.true;
+  //     expect(broadcasterLogic.stubs.maxRelays.firstCall.args.length).to.be.equal(1);
+  //     expect(broadcasterLogic.stubs.maxRelays.firstCall.args[0]).to.be.deep.equal(signature);
+  //   });
+  //
+  //   it('should call broadcasterLogic.enqueue', async () => {
+  //     inst.onSignature(signature, broadcast);
+  //
+  //     expect(broadcasterLogic.stubs.enqueue.calledOnce).to.be.true;
+  //     expect(broadcasterLogic.stubs.enqueue.firstCall.args.length).to.be.equal(2);
+  //     expect(broadcasterLogic.stubs.enqueue.firstCall.args[0]).to.be.deep.equal({});
+  //     expect(broadcasterLogic.stubs.enqueue.firstCall.args[1].requestHandler).to.be.instanceOf(PostSignaturesRequest);
+  //     expect(broadcasterLogic.stubs.enqueue.firstCall.args[1].requestHandler.options).to.be.deep.equal({data: { signatures: [{
+  //       relays: 1,
+  //       signature: Buffer.from(signature.signature, 'hex'),
+  //       transaction: signature.transaction,
+  //     }] }});
+  //   });
+  //
+  //   it('should call io.sockets.emit', async () => {
+  //     inst.onSignature(signature, broadcast);
+  //
+  //     expect(io.sockets.emit.calledOnce).to.be.true;
+  //     expect(io.sockets.emit.firstCall.args.length).to.be.equal(2);
+  //     expect(io.sockets.emit.firstCall.args[0]).to.be.deep.equal('signature/change');
+  //     expect(io.sockets.emit.firstCall.args[1]).to.be.deep.equal(signature);
+  //   });
+  //
+  //   it('should not call broadcasterLogic.enqueue if broadcast is false', () => {
+  //     broadcast = false;
+  //
+  //     inst.onSignature(signature, broadcast);
+  //
+  //     expect(broadcasterLogic.stubs.enqueue.notCalled).to.be.true;
+  //   });
+  //
+  //   it('should not call broadcasterLogic.enqueue if this.broadcasterLogic.maxRelays returned true', () => {
+  //     broadcasterLogic.reset();
+  //     broadcasterLogic.enqueueResponse('maxRelays', true);
+  //
+  //     inst.onSignature(signature, broadcast);
+  //
+  //     expect(broadcasterLogic.stubs.enqueue.notCalled).to.be.true;
+  //   });
+  // });
+
+  describe('onUnconfirmedTransaction', () => {
+
+    let broadcast;
+    let transaction;
+    let enqueueStub: SinonStub;
+
+    beforeEach(() => {
+      transaction              = {};
+      broadcast                = true;
+      const p                  = new StubbedRequest();
+      (inst as any).ptrFactory = (a) => {
+        p.options = a;
+        return p;
+      };
+      enqueueStub              = sandbox.stub(broadcasterLogic, 'enqueue');
+    });
+
+    it('should NOT enqueue only if tx passed maxRelays', () => {
+      transaction.relays = 1000;
+      inst.onUnconfirmedTransaction(transaction, broadcast);
+      expect(enqueueStub.called).false;
+    });
+
+    it('should call broadcasterLogic.enqueue', async () => {
+      inst.onUnconfirmedTransaction(transaction, broadcast);
+      expect(enqueueStub.called).true;
+    });
+    // TODO: Migrate to core-apis
+    // it('should call io.sockets.emit', async () => {
+    //   const emitStub = sandbox.stub(io.sockets, 'emit');
+    //   inst.onUnconfirmedTransaction(transaction, broadcast);
+    //   expect(emitStub.calledOnce).to.be.true;
+    //   expect(emitStub.firstCall.args.length).to.be.equal(2);
+    //   expect(emitStub.firstCall.args[0]).to.be.deep.equal('transactions/change');
+    //   expect(emitStub.firstCall.args[1]).to.be.deep.equal(transaction);
     // });
 
-      describe('onUnconfirmedTransaction', () => {
+    it('should not call broadcasterLogic.enqueue if broadcast is false', () => {
+      broadcast = false;
 
-        let broadcast;
-        let transaction;
-        let enqueueStub: SinonStub;
+      inst.onUnconfirmedTransaction(transaction, broadcast);
 
-        beforeEach(() => {
-          transaction = {};
-          broadcast   = true;
-          const p = new StubbedRequest();
-          (inst as any).ptrFactory = (a) => {
-            p.options = a;
-            return p;
-          };
-          enqueueStub = sandbox.stub(broadcasterLogic, 'enqueue');
-        });
+      expect(enqueueStub.notCalled).to.be.true;
+    });
 
-        it('should NOT enqueue only if tx passed maxRelays', () => {
-          transaction.relays = 1000;
-          inst.onUnconfirmedTransaction(transaction, broadcast);
-          expect(enqueueStub.called).false;
-        });
+    it('should not call broadcasterLogic.enqueue if this.broadcasterLogic.maxRelays returned true', () => {
+      inst.onUnconfirmedTransaction({ ...transaction, relays: broadcasterLogic.maxRelays() }, broadcast);
 
-        it('should call broadcasterLogic.enqueue', async () => {
-          inst.onUnconfirmedTransaction(transaction, broadcast);
-          expect(enqueueStub.called).true;
-        });
+      expect(enqueueStub.notCalled).to.be.true;
+    });
+  });
 
-        it('should call io.sockets.emit', async () => {
-          inst.onUnconfirmedTransaction(transaction, broadcast);
-          const emitStub = sandbox.stub(io.sockets, 'emit');
-          expect(emitStub.calledOnce).to.be.true;
-          expect(emitStub.firstCall.args.length).to.be.equal(2);
-          expect(emitStub.firstCall.args[0]).to.be.deep.equal('transactions/change');
-          expect(emitStub.firstCall.args[1]).to.be.deep.equal(transaction);
-        });
+  describe('onNewBlock', () => {
 
-        it('should not call broadcasterLogic.enqueue if broadcast is false', () => {
-          broadcast = false;
+    let broadcast;
+    let block;
+    let broadcastStub: SinonStub;
+    let socketIOEmitStub: SinonStub;
+    let maxRelaysSpy: SinonSpy;
 
-          inst.onUnconfirmedTransaction(transaction, broadcast);
+    beforeEach(() => {
+      block                          = {
+        blockSignature    : Buffer.from('aa', 'hex'),
+        generatorPublicKey: Buffer.from('bb', 'hex'),
+        payloadHash       : Buffer.from('cc', 'hex'),
+        transactions      : [],
+      };
+      broadcast                      = true;
+      systemModule.headers.broadhash = 'broadhash';
+      broadcastStub                  = sandbox.stub(broadcasterLogic, 'broadcast').resolves();
+      maxRelaysSpy                   = sandbox.spy(broadcasterLogic, 'maxRelays');
+      socketIOEmitStub               = sandbox.stub(io.sockets, 'emit');
+      const p                        = new StubbedRequest();
+      (inst as any).pblocksFactory   = (a) => {
+        p.options = a;
+        return p;
+      };
+    });
 
-          expect(enqueueStub.notCalled).to.be.true;
-        });
+    // it('should call systemModule.update', async () => {
+    //   await inst.onNewBlock(block, broadcast);
+    //
+    //   expect(systemModule.stubs.update.calledOnce).to.be.true;
+    //   expect(systemModule.stubs.update.firstCall.args.length).to.be.equal(0);
+    // });
 
-        it('should not call broadcasterLogic.enqueue if this.broadcasterLogic.maxRelays returned true', () => {
-          inst.onUnconfirmedTransaction(transaction, broadcast);
+    it('should not call broadcast if relays exhausted', async () => {
+      await inst.onNewBlock({ ...block, relays: 10 }, broadcast);
 
-          expect(enqueueStub.notCalled).to.be.true;
-        });
+      expect(maxRelaysSpy.calledOnce).to.be.true;
+      expect(broadcastStub.called).false;
+    });
+
+    it('should call broadcasterLogic.broadcast and increment relays', async () => {
+      await inst.onNewBlock({ ...block, relays: 1 }, broadcast);
+
+      expect(broadcastStub.calledOnce).to.be.true;
+      expect(broadcastStub.firstCall.args.length).to.be.equal(2);
+      expect(broadcastStub.firstCall.args[0]).to.be.deep.equal({
+        broadhash: 'broadhash',
+        limit    : constants.maxPeers,
       });
+      expect(broadcastStub.firstCall.args[1].requestHandler.options).to.be.deep.equal({
+        data: {
+          block: {
+            blockSignature    : Buffer.from('aa', 'hex'),
+            generatorPublicKey: Buffer.from('bb', 'hex'),
+            payloadHash       : Buffer.from('cc', 'hex'),
+            transactions      : [],
+            relays            : 2
+          },
+        },
+      });
+    });
+    // TODO: Migrate to core-apis
+    // it('should call io.sockets.emit', async () => {
+    //   await inst.onNewBlock(block, broadcast);
+    //
+    //   expect(socketIOEmitStub.calledOnce).to.be.true;
+    //   expect(socketIOEmitStub.firstCall.args.length).to.be.equal(2);
+    //   expect(socketIOEmitStub.firstCall.args[0]).to.be.deep.equal('blocks/change');
+    //   expect(socketIOEmitStub.firstCall.args[1]).to.be.deep.equal(block);
+    // });
 
-       describe('onNewBlock', () => {
+    it('should not call broadcasterLogic.broadcast if broadcasterLogic.maxRelays returns true', async () => {
 
-         let broadcast;
-         let block;
-         let broadcastStub: SinonStub;
+      await inst.onNewBlock({ ...block, relays: broadcasterLogic.maxRelays() }, broadcast);
 
-         beforeEach(() => {
-           block                                = {
-             blockSignature    : Buffer.from('aa', 'hex'),
-             generatorPublicKey: Buffer.from('bb', 'hex'),
-             payloadHash       : Buffer.from('cc', 'hex'),
-             transactions      : [],
-           };
-           broadcast                            = true;
-           (inst as any).systemModule.broadhash = 'broadhash';
-           systemModule.enqueueResponse('update', Promise.resolve());
-           broadcastStub = sandbox.stub(broadcasterLogic, 'broadcast');
-           const p = new StubbedRequest();
-           (inst as any).pblocksFactory = (a) => {
-             p.options = a;
-             return p;
-           };
-         });
+      expect(broadcastStub.notCalled).to.be.true;
+    });
 
-         it('should call systemModule.update', async () => {
-           await inst.onNewBlock(block, broadcast);
+    it('check if broadcast is false', () => {
+      broadcast = false;
 
-           expect(systemModule.stubs.update.calledOnce).to.be.true;
-           expect(systemModule.stubs.update.firstCall.args.length).to.be.equal(0);
-         });
+      const p = inst.onNewBlock(block, broadcast);
 
-         it('should call broadcasterLogic.maxRelays', async () => {
-           await inst.onNewBlock(block, broadcast);
+      expect(p).to.be.fulfilled;
+      expect(broadcastStub.notCalled).to.be.true;
+    });
+    it('should ignore broadcast error if any and, more importantly avoid waiting for broadcaster result', async () => {
+      let finished  = false;
+      const promise = wait(1000)
+        .then(() => finished = true);
 
-           expect(broadcasterLogic.stubs.maxRelays.calledOnce).to.be.true;
-           expect(broadcasterLogic.stubs.maxRelays.firstCall.args.length).to.be.equal(1);
-           expect(broadcasterLogic.stubs.maxRelays.firstCall.args[0]).to.be.deep.equal(block);
-         });
+      broadcastStub.returns(promise);
 
-         it('should call broadcasterLogic.broadcast', async () => {
-           await inst.onNewBlock(block, broadcast);
-
-           expect(broadcasterLogic.stubs.broadcast.calledOnce).to.be.true;
-           expect(broadcasterLogic.stubs.broadcast.firstCall.args.length).to.be.equal(2);
-           expect(broadcasterLogic.stubs.broadcast.firstCall.args[0]).to.be.deep.equal({
-             broadhash: 'broadhash',
-             limit    : constants.maxPeers,
-           });
-           expect(broadcasterLogic.stubs.broadcast.firstCall.args[1].requestHandler.options).to.be.deep.equal({
-               data     : {
-                 block: {
-                   blockSignature    : Buffer.from('aa', 'hex'),
-                   generatorPublicKey: Buffer.from('bb', 'hex'),
-                   payloadHash       : Buffer.from('cc', 'hex'),
-                   transactions      : [],
-                 },
-               },
-           });
-         });
-
-         it('should call io.sockets.emit', async () => {
-           await inst.onNewBlock(block, broadcast);
-
-           expect(io.sockets.emit.calledOnce).to.be.true;
-           expect(io.sockets.emit.firstCall.args.length).to.be.equal(2);
-           expect(io.sockets.emit.firstCall.args[0]).to.be.deep.equal('blocks/change');
-           expect(io.sockets.emit.firstCall.args[1]).to.be.deep.equal(block);
-         });
-
-         it('should not call broadcasterLogic.broadcast if broadcasterLogic.maxRelays returns true', async () => {
-           broadcasterLogic.reset();
-           broadcasterLogic.enqueueResponse('maxRelays', true);
-
-           await inst.onNewBlock(block, broadcast);
-
-           expect(broadcasterLogic.stubs.broadcast.notCalled).to.be.true;
-         });
-
-         it('check if broadcast is false', () => {
-           broadcast = false;
-
-           const p = inst.onNewBlock(block, broadcast);
-
-           expect(p).to.be.fulfilled;
-           expect(broadcasterLogic.stubs.enqueue.notCalled).to.be.true;
-         });
-         it('should ignore broadcast error if any and, more importantly avoid waiting for broadcaster result', async () => {
-           broadcasterLogic.reset();
-           broadcasterLogic.enqueueResponse('maxRelays', false);
-           let finished  = false;
-           const promise = wait(1000)
-             .then(() => finished = true);
-
-           broadcasterLogic.enqueueResponse('broadcast', promise);
-
-           await inst.onNewBlock(block, true);
-           expect(finished).to.be.false;
-           await promise;
-         });
-       });
+      await inst.onNewBlock(block, true);
+      expect(finished).to.be.false;
+      await promise;
+    });
+  });
   /*
        // describe('receiveSignatures', () => {
        //

@@ -4,6 +4,7 @@ import { p2pSymbols } from '@risevision/core-p2p';
 import { AppConfig } from '@risevision/core-types';
 import { APISymbols, limitsMiddleware } from './helpers';
 import { APIErrorHandler, PrivateApisGuard, SuccessInterceptor } from './utils';
+import { SocketIOAPI } from './socketio';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = require('../schema/config.json');
@@ -22,6 +23,19 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     this.container
       .bind(Symbols.class)
       .toConstantValue(limitsMiddleware).whenTargetNamed(APISymbols.applyLimitsMiddleware);
+
+    this.container
+      .bind(APISymbols.socketIOAPI)
+      .to(SocketIOAPI)
+      .inSingletonScope();
+  }
+
+  public async initAppElements() {
+    await this.container.get<SocketIOAPI>(APISymbols.socketIOAPI).hookMethods();
+  }
+
+  public async teardown() {
+    await this.container.get<SocketIOAPI>(APISymbols.socketIOAPI).unHook();
   }
 
 }

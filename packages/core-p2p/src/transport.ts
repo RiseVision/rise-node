@@ -61,8 +61,8 @@ export class TransportModule extends Extendable implements ITransportModule {
   // Generics
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
-  @inject(Symbols.generic.socketIO)
-  private io: SocketIO.Server;
+  // @inject(Symbols.generic.socketIO)
+  // private io: SocketIO.Server;
   // tslint:disable-next-line member-ordering
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
@@ -208,7 +208,6 @@ export class TransportModule extends Extendable implements ITransportModule {
       peer: thePeer,
     };
   }
-
   // tslint:disable-next-line max-line-length
   public async getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }, requestHandler: IAPIRequest<T, any>) {
     config.limit         = 1;
@@ -293,7 +292,7 @@ export class TransportModule extends Extendable implements ITransportModule {
       });
 
       this.broadcasterLogic.enqueue({}, { requestHandler });
-      this.io.sockets.emit('transactions/change', transaction);
+
     }
   }
 
@@ -306,10 +305,11 @@ export class TransportModule extends Extendable implements ITransportModule {
   public async onNewBlock(block: SignedBlockType & { relays?: number }, broadcast: boolean) {
     if (broadcast) {
       const broadhash = this.systemModule.broadhash;
-      await this.systemModule.update();
+      // await this.systemModule.update();
       block        = _.cloneDeep(block);
-      block.relays = block.relays || 1;
+      block.relays = block.relays || 0;
       if (block.relays < this.broadcasterLogic.maxRelays()) {
+        block.relays++;
         const reqHandler = this.pblocksFactory({ data: { block } });
         // We avoid awaiting the broadcast result as it could result in unnecessary peer removals.
         // Ex: Peer A, B, C
@@ -324,7 +324,6 @@ export class TransportModule extends Extendable implements ITransportModule {
           })
           .catch((err) => this.logger.warn('Error broadcasting block', err));
       }
-      this.io.sockets.emit('blocks/change', block);
     }
   }
 

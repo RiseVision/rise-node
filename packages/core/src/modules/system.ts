@@ -1,15 +1,26 @@
+import { OnPostApplyBlock } from '@risevision/core-blocks';
 import { IBlocksModel, IBlocksModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { AppConfig, ConstantsType, PeerHeaders, SignedAndChainedBlockType } from '@risevision/core-types';
+import {
+  AppConfig,
+  ConstantsType,
+  PeerHeaders,
+  SignedAndChainedBlockType,
+  SignedBlockType
+} from '@risevision/core-types';
 import * as crypto from 'crypto';
-import { inject, injectable, named, postConstruct } from 'inversify';
+import { decorate, inject, injectable, named, postConstruct } from 'inversify';
+import { WPHooksSubscriber, WordPressHookSystem } from 'mangiafuoco';
 import * as os from 'os';
 import * as semver from 'semver';
 
 const rcRegExp = /[a-z]+$/;
 
+const Extendable = WPHooksSubscriber(Object);
+decorate(injectable(), Extendable);
+
 @injectable()
-export class SystemModule implements ISystemModule {
+export class SystemModule extends Extendable implements ISystemModule {
   public headers: PeerHeaders;
   public minVersion: string;
   private lastMinVer: string;
@@ -22,6 +33,9 @@ export class SystemModule implements ISystemModule {
   private constants: ConstantsType;
   @inject(Symbols.generic.nonce)
   private nonce: string;
+
+  @inject(Symbols.generic.hookSystem)
+  public hookSystem: WordPressHookSystem;
 
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
@@ -210,5 +224,12 @@ export class SystemModule implements ISystemModule {
   public async update() {
     this.headers.broadhash = await this.getBroadhash();
     this.headers.height    = this.blocksModule.lastBlock.height;
+  }
+
+  @OnPostApplyBlock()
+  public async onNewBlock(block: SignedBlockType & { relays?: number }, broadcast: boolean) {
+    if (broadcast) {
+      await this.update();
+    }
   }
 }
