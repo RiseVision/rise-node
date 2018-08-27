@@ -1,10 +1,11 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { PostTransactionsRequest } from '../../../../src/apis/requests/PostTransactionsRequest';
-import { Symbols } from '../../../../src/ioc/symbols';
-import { ProtoBufHelperStub } from '../../../stubs/helpers/ProtoBufHelperStub';
-import { createContainer } from '../../../utils/containerCreator';
+import { Symbols } from '@risevision/core-interfaces';
+import { ProtoBufHelperStub } from '../stubs/protobufhelperStub';
+import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
+import { PostTransactionsRequest } from '../../src/requests';
+import { p2pSymbols } from '../../src/helpers';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/PostTransactionsRequest', () => {
@@ -13,17 +14,18 @@ describe('apis/requests/PostTransactionsRequest', () => {
   let pbHelperStub: ProtoBufHelperStub;
   let sandbox: SinonSandbox;
 
-  beforeEach(() => {
-    const container = createContainer();
+  beforeEach(async () => {
+    const container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container.rebind(p2pSymbols.helpers.protoBuf).to(ProtoBufHelperStub).inSingletonScope();
     options = {data: {transactions: [ 'transaction1', 'transaction2' ]}};
     sandbox = sinon.createSandbox();
     instance = new PostTransactionsRequest();
     instance.options = options;
-    pbHelperStub = container.get(Symbols.helpers.protoBuf);
+    pbHelperStub = container.get(p2pSymbols.helpers.protoBuf);
     (instance as any).protoBufHelper = pbHelperStub;
     (instance as any).txModel = {toTransportTransaction: sandbox.stub().callsFake((a) => a)};
     (instance as any).generateBytesTransaction = sandbox.stub().callsFake((a) => a);
-    pbHelperStub.enqueueResponse('encode', 'encodedValue');
+    pbHelperStub.stubs.encode.returns('encodedValue');
   });
 
   afterEach(() => {

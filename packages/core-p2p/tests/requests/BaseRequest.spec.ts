@@ -2,12 +2,13 @@ import { expect } from 'chai';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { BaseRequest, IAPIRequest } from '../../../../src/apis/requests/BaseRequest';
-import { RequestFactoryType } from '../../../../src/apis/requests/requestFactoryType';
-import { Symbols } from '../../../../src/ioc/symbols';
-import { PeerType } from '../../../../src/logic';
-import { ProtoBufHelperStub } from '../../../stubs/helpers/ProtoBufHelperStub';
-import { createContainer } from '../../../utils/containerCreator';
+import { BaseRequest } from '../../src/requests';
+import { IAPIRequest, Symbols } from '@risevision/core-interfaces';
+import { ProtoBufHelperStub } from '../stubs/protobufhelperStub';
+import { PeerType } from '@risevision/core-types';
+import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
+import { RequestFactoryType } from '../../src/utils';
+import { p2pSymbols } from '../../src/helpers';
 
 class TestRequest extends BaseRequest<any, any> implements IAPIRequest<any, any> {
   protected readonly method = 'POST';
@@ -30,11 +31,12 @@ describe('apis/requests/BaseRequest', () => {
   let peer: PeerType;
   const testSymbol = Symbol('testRequest');
 
-  beforeEach(() => {
+  beforeEach(async () => {
     sandbox   = sinon.createSandbox();
-    container = createContainer();
+    container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
     container.bind(testSymbol).toFactory(factory(TestRequest));
-    protoBufStub = container.get(Symbols.helpers.protoBuf);
+    container.rebind(p2pSymbols.helpers.protoBuf).to(ProtoBufHelperStub).inSingletonScope();
+    protoBufStub = container.get(p2pSymbols.helpers.protoBuf);
     peer = {
       broadhash: '123123123',
       clock: 9999999,
@@ -163,7 +165,7 @@ describe('apis/requests/BaseRequest', () => {
     describe('when response status is 200', () => {
       const res = {status: 200, body: Buffer.from('', 'hex')};
       it('should call protoBufHelper.decodeToObj and return if it message is validated', () => {
-        protoBufStub.enqueueResponse('decodeToObj', 'decodedResult');
+        protoBufStub.stubs.decodeToObj.returns('decodedResult');
         const resp = (instance as any).decodeProtoBufResponse(res, 'namespace', 'messageType');
         expect(protoBufStub.stubs.decodeToObj.calledOnce).to.be.true;
         expect(protoBufStub.stubs.decodeToObj.firstCall.args[0]).to.be.deep.equal(res.body);

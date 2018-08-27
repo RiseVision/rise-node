@@ -1,10 +1,10 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { PostSignaturesRequest } from '../../../../src/apis/requests/PostSignaturesRequest';
-import { Symbols } from '../../../../src/ioc/symbols';
-import { ProtoBufHelperStub } from '../../../stubs/helpers/ProtoBufHelperStub';
-import { createContainer } from '../../../utils/containerCreator';
+import { PostSignaturesRequest } from '../../src/requests/PostSignaturesRequest';
+import { ProtoBufHelperStub } from '../../../core-p2p/tests/stubs/protobufhelperStub';
+import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
+import { p2pSymbols } from '@risevision/core-p2p';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/PostSignaturesRequest', () => {
@@ -13,8 +13,8 @@ describe('apis/requests/PostSignaturesRequest', () => {
   let pbHelperStub: ProtoBufHelperStub;
   let sandbox: SinonSandbox;
 
-  beforeEach(() => {
-    const container = createContainer();
+  beforeEach(async () => {
+    const container = await createContainer(['core-multisignature', 'core', 'core-helpers']);
     options = {data: {signatures: [{
       signature: 'aabbccddeeeff',
       transaction: '12345678901234567890',
@@ -22,7 +22,7 @@ describe('apis/requests/PostSignaturesRequest', () => {
     sandbox = sinon.createSandbox();
     instance = new PostSignaturesRequest();
     instance.options = options;
-    pbHelperStub = container.get(Symbols.helpers.protoBuf);
+    pbHelperStub = container.get(p2pSymbols.helpers.protoBuf);
     (instance as any).protoBufHelper = pbHelperStub;
     pbHelperStub.enqueueResponse('validate', true);
     pbHelperStub.enqueueResponse('encode', 'encodedValue');

@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
-import { GetSignaturesRequest } from '../../../../src/apis/requests/GetSignaturesRequest';
+import { GetSignaturesRequest } from '../../src/requests/GetSignaturesRequest';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/GetSignaturesRequest', () => {

@@ -17,18 +17,13 @@ export class JobsQueue implements IJobsQueue {
         this.jobs[name] = setTimeout(nextJob, time);
       }
     };
-
-    this.jobs[name] = setImmediate(nextJob);
+    // We use setTimeout(what, 0) instead of setImmediate cause you cannot unregister a setImmediate
+    this.jobs[name] = setTimeout(nextJob, 0);
     return this.jobs[name];
   }
 
   public unregister(name: string) {
-    try {
-      clearTimeout(this.jobs[name]);
-    } catch (e) {
-      // just registered
-      console.log(e);
-    }
+    clearTimeout(this.jobs[name]);
     delete this.jobs[name];
   }
 

@@ -26,6 +26,7 @@ import { LiskWallet } from 'dpos-offline';
 import { StubbedRequest } from './utils/StubbedRequest';
 import { PeerState } from '../../core-types/src';
 import { wait } from '../../core-utils/src';
+import { p2pSymbols } from '../src/helpers';
 
 chai.use(chaiAsPromised);
 
@@ -600,6 +601,7 @@ describe('src/modules/transport.ts', () => {
 
     it('should NOT enqueue only if tx passed maxRelays', () => {
       transaction.relays = 1000;
+      enqueueStub.resetHistory();
       inst.onUnconfirmedTransaction(transaction, broadcast);
       expect(enqueueStub.called).false;
     });

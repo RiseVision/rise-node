@@ -35,8 +35,6 @@ describe('logic/broadcaster', () => {
   let transactionsModule: TransactionsModule;
   let container: Container;
 
-
-
   beforeEach(async () => {
     sandbox      = sinon.createSandbox({
       useFakeTimers: true,
@@ -46,7 +44,8 @@ describe('logic/broadcaster', () => {
     loggerStub   = new LoggerStub();
     container.rebind(Symbols.logic.appState).toConstantValue(fakeAppState);
     container.rebind(Symbols.helpers.logger).toConstantValue(loggerStub);
-    container.rebind(p2pSymbols.logic.broadcaster).to(BroadcasterLogic);
+    await container.get<BroadcasterLogic>(p2pSymbols.logic.broadcaster).cleanup();
+    container.rebind(p2pSymbols.logic.broadcaster).to(BroadcasterLogic).inSingletonScope();
 
     constants = container.get(Symbols.generic.constants);
     jobsQueue = container.get(Symbols.helpers.jobsQueue);
@@ -308,8 +307,10 @@ describe('logic/broadcaster', () => {
       const result       = instance.maxRelays();
       expect(result).eq(p2pConstants.relayLimit);
 
-      p2pConstants.relayLimit = 0x3e0a;
-      expect(instance.maxRelays()).eq(0x3e0a);
+      const oldy = p2pConstants.relayLimit;
+      p2pConstants.relayLimit = 15882;
+      expect(instance.maxRelays()).eq(15882);
+      p2pConstants.relayLimit = oldy;
     });
   });
 

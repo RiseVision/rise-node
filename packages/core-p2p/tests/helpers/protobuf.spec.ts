@@ -3,7 +3,7 @@ import * as Long from 'long';
 import { util } from 'protobufjs';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy } from 'sinon';
-import { allBuffersToHex, ProtoBufHelper } from '../../../src/helpers/';
+import { ProtoBufHelper } from '../../src/helpers/';
 import ProtocolError = util.ProtocolError;
 
 // tslint:disable no-unused-expression no-big-function object-literal-sort-keys
@@ -28,35 +28,6 @@ describe('helpers/protobuf', () => {
     sandbox.restore();
   });
 
-  describe('allBuffersToHex', () => {
-    it('should convert all buffers to hex string', () => {
-      const input  = {
-        bool   : false,
-        buf    : Buffer.from('aabbcc', 'hex'),
-        num    : 12,
-        s      : 'str',
-        sibling: {
-          buf    : Buffer.from('123456', 'hex'),
-          sibling: {
-            buf: Buffer.from('789012', 'hex'),
-          },
-        },
-      };
-      const output = {
-        bool   : false,
-        buf    : 'aabbcc',
-        num    : 12,
-        s      : 'str',
-        sibling: {
-          buf    : '123456',
-          sibling: {
-            buf: '789012',
-          },
-        },
-      };
-      expect(allBuffersToHex(input)).to.be.deep.equal(output);
-    });
-  });
 
   describe('encode/decodeToObj', () => {
     it('encode -> decodeToObj should result to the same object', async () => {

@@ -10,7 +10,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "transpile": "shx rm -rf dist; tsc",
-    "test-unit": "mocha  --bail --exit --require ts-node/register './tests/**/*.spec.ts'"
+    "test-unit": "NODE_ENV=test mocha  --bail --exit --require ts-node/register './tests/**/*.spec.ts'"
   },
   "author": "",
   "license": "ISC",
@@ -29,6 +29,7 @@
     "shx": "=0.3.2",
     "@types/node": "^9.6.0",
     "ts-node": "=7.0.0",
+    "mocha": "=5.2.0",
     "typescript": "=2.9.2"
   }
 }

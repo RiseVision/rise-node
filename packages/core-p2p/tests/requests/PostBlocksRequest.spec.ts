@@ -1,11 +1,10 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { PostBlocksRequest } from '../../../../src/apis/requests/PostBlocksRequest';
-import { Symbols } from '../../../../src/ioc/symbols';
-import { ProtoBufHelperStub } from '../../../stubs/helpers/ProtoBufHelperStub';
-import { createContainer } from '../../../utils/containerCreator';
-
+import { p2pSymbols } from '../../src/helpers';
+import { PostBlocksRequest } from '../../src/requests';
+import { ProtoBufHelperStub } from '../stubs/protobufhelperStub';
+import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
 // tslint:disable no-unused-expression
 describe('apis/requests/PostBlocksRequest', () => {
   let options;
@@ -14,19 +13,20 @@ describe('apis/requests/PostBlocksRequest', () => {
   let blocksModelStub: any;
   let sandbox: SinonSandbox;
 
-  beforeEach(() => {
-    const container = createContainer();
+  beforeEach(async () => {
+    const container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container.rebind(p2pSymbols.helpers.protoBuf).to(ProtoBufHelperStub).inSingletonScope();
     options = {data: {block: 'b1'}};
     sandbox = sinon.createSandbox();
     instance = new PostBlocksRequest();
     instance.options = options;
-    pbHelperStub = container.get(Symbols.helpers.protoBuf);
+    pbHelperStub = container.get(p2pSymbols.helpers.protoBuf);
     (instance as any).protoBufHelper = pbHelperStub;
     blocksModelStub = {toStringBlockType: sandbox.stub().callsFake((a) => a) };
     (instance as any).blocksModel = blocksModelStub;
     (instance as any).generateBytesBlock = sandbox.stub().callsFake((a) => a);
-    pbHelperStub.enqueueResponse('validate', true);
-    pbHelperStub.enqueueResponse('encode', 'encodedValue');
+    pbHelperStub.stubs.validate.returns(true);
+    pbHelperStub.stubs.encode.returns('encodedValue');
   });
 
   afterEach(() => {

@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
-import { PeersListRequest } from '../../../../src/apis/requests/PeersListRequest';
+import { PeersListRequest } from '../../src/requests';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/PeersListRequest', () => {
