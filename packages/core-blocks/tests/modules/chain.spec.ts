@@ -65,9 +65,9 @@ describe('modules/blocks/chain', () => {
         height       : 10,
         previousBlock: 'previousBlock',
         transactions : [
-          { senderPublicKey: 'first' },
-          { senderPublicKey: 'second' },
-          { senderPublicKey: 'third' },
+          { type: 0, senderPublicKey: 'first' },
+          { type: 0, senderPublicKey: 'second' },
+          { type: 0, senderPublicKey: 'third' },
         ],
         destroy      : destroyStub,
       } as any;
@@ -84,7 +84,8 @@ describe('modules/blocks/chain', () => {
         return cb('tx');
       });
       findStub = sandbox.stub(blocksModel, 'findById');
-      findStub.resolves({ id: 'previousBlock' });
+      findStub.onFirstCall().resolves(blocksModule.lastBlock);
+      findStub.onSecondCall().resolves({ id: 'previousBlock' });
 
       const accountsModel = container.getNamed<any>(ModelSymbols.model, Symbols.models.accounts);
       accountsFindStub    = sandbox.stub().returns('senderAccount');
@@ -96,8 +97,13 @@ describe('modules/blocks/chain', () => {
       blocksModule.lastBlock = { height: 1 } as any;
       return expect(instance.deleteLastBlock()).to.be.rejectedWith('Cannot delete genesis block');
     });
-    it('should throw error if previousblock is null', async () => {
-      findStub.resolves(null);
+    it('should throw error if curBlock cannot be found in db', async () => {
+      findStub.onFirstCall().resolves(null);
+      await expect(instance.deleteLastBlock()).to.be.rejectedWith('curBlock is null');
+      expect(findStub.called).is.true;
+    });
+    it('should throw error if prevBlock cannot be found in db', async () => {
+      findStub.onSecondCall().resolves(null);
       await expect(instance.deleteLastBlock()).to.be.rejectedWith('previousBlock is null');
       expect(findStub.called).is.true;
     });

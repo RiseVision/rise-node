@@ -2,11 +2,11 @@ import * as pq from 'proxyquire';
 import * as program from 'commander';
 
 import * as sinon from 'sinon';
-import { StubbedInstance } from '../../core-test-utils/src/stubCreator';
 import { AppManager } from '../src/AppManager';
 import { expect } from 'chai';
 import { wait } from '../../core-utils/src';
 import { SinonStub } from 'sinon';
+import { StubbedInstance } from '../../core-utils/tests/stubs';
 
 const proxyquire = pq.noPreserveCache();
 describe('app', () => {

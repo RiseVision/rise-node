@@ -5,14 +5,10 @@ import { Container } from 'inversify';
 import { SinonSandbox } from 'sinon';
 import * as sinon from 'sinon';
 import { LoaderAPI } from '../../../src/apis';
-import { Symbols } from '../../../src/ioc/symbols';
-import {
-  AppStateStub,
-  BlocksModuleStub,
-  SystemModuleStub,
-} from '../../stubs';
-import { LoaderModuleStub } from '../../stubs/modules/LoaderModuleStub';
-import { createContainer } from '../../utils/containerCreator';
+import { IAppState, IBlocksModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '../../../../core-launchpad/tests/utils/createContainer';
+import { LoaderModule } from '../../../src/modules';
+import { CoreSymbols } from '../../../src';
 
 chai.use(chaiAsPromised);
 
@@ -23,27 +19,26 @@ describe('apis/loaderAPI', () => {
   let sandbox: SinonSandbox;
   let container: Container;
   let instance: LoaderAPI;
-  let appState: AppStateStub;
-  let blocksModule: BlocksModuleStub;
-  let loaderModule: LoaderModuleStub;
-  let system: SystemModuleStub;
+  let appState: IAppState;
+  let blocksModule: IBlocksModule;
+  let loaderModule: LoaderModule;
+  let system: ISystemModule;
   let constants;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     sandbox   = sinon.createSandbox();
-    container = createContainer();
-    container.bind(Symbols.api.loader).to(LoaderAPI);
+    container = await createContainer(['core']);
 
     appState     = container.get(Symbols.logic.appState);
     blocksModule = container.get(Symbols.modules.blocks);
     system       = container.get(Symbols.modules.system);
-    constants    = container.get(Symbols.helpers.constants);
-    loaderModule = container.get(Symbols.modules.loader);
+    constants    = container.get(Symbols.generic.constants);
+    loaderModule = container.get(CoreSymbols.modules.loader);
 
     loaderModule.loaded    = true;
     blocksModule.lastBlock = { height: 1 } as any;
 
-    instance = container.get(Symbols.api.loader);
+    instance = container.get(CoreSymbols.api.loader);
   });
 
   afterEach(() => {
@@ -63,13 +58,13 @@ describe('apis/loaderAPI', () => {
   describe('getStatusSync', () => {
 
     it('should return an object with the properties: broadhash, consensus, height and syncing', () => {
-      appState.enqueueResponse('get', 'consensus');
+      const appStateGet = sandbox.stub(appState, 'get').returns('consensus');
 
       const ret = instance.getStatusSync();
 
-      expect(appState.stubs.get.calledOnce).to.be.true;
-      expect(appState.stubs.get.firstCall.args.length).to.be.equal(1);
-      expect(appState.stubs.get.firstCall.args[0]).to.be.equal('node.consensus');
+      expect(appStateGet.calledOnce).to.be.true;
+      expect(appStateGet.firstCall.args.length).to.be.equal(1);
+      expect(appStateGet.firstCall.args[0]).to.be.equal('node.consensus');
 
       expect(ret).to.be.deep.equal({
         broadhash: undefined,

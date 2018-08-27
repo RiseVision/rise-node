@@ -179,7 +179,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     }
     this.blocksModule.lastBlock = new this.BlocksModel(block);
     await this.BlocksModel.sequelize
-      .transaction((tx) => this.hookSystem.do_action(OnPostApplyBlock.name, this.blocksModule.lastBlock, tx));
+      .transaction((tx) => this.hookSystem.do_action(
+        OnPostApplyBlock.name,
+        this.blocksModule.lastBlock, tx,
+        false)
+      );
     // TODO: add this on dpos-consensus via hook ^^.
     // await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
   }
@@ -267,7 +271,12 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       // await this.roundsModule.tick(block, dbTX);
 
       this.blocksModule.lastBlock = deepFreeze(block);
-      await this.hookSystem.do_action(OnPostApplyBlock.name, this.blocksModule.lastBlock, dbTX);
+      await this.hookSystem.do_action(
+        OnPostApplyBlock.name,
+        this.blocksModule.lastBlock,
+        dbTX,
+        broadcast
+      );
     }).catch((err) => {
       // Allow cleanup as processing finished even if rollback.
       this.isProcessing = false;
@@ -346,7 +355,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     const txs = lb.transactions.slice().reverse();
 
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
-      const accountsMap = await this.accountsModule.resolveAccountsForTransactions(txs);
+      const accountsMap           = await this.accountsModule.resolveAccountsForTransactions(txs);
       const ops: Array<DBOp<any>> = [];
       for (const tx of txs) {
         ops.push(... await this.transactionLogic.undo(tx, lb, accountsMap[tx.senderId]));

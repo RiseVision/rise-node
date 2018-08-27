@@ -547,7 +547,7 @@ describe('logic/block', () => {
       expect(getAddressByPublicKeySpy.called).to.be.false;
       result.generatorId;
       expect(getAddressByPublicKeySpy.called).to.be.true;
-      expect(getAddressByPublicKeySpy.firstCall.args[0]).to.be.eq(raw.b_generatorPublicKey);
+      expect(getAddressByPublicKeySpy.firstCall.args[0]).to.be.deep.eq(Buffer.from(raw.b_generatorPublicKey, 'hex'));
       getAddressByPublicKeySpy.restore();
     });
 

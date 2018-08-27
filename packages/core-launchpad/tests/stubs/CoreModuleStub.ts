@@ -1,5 +1,5 @@
-import { StubbedInstance } from '../../../core-test-utils/src/stubCreator';
 import { BaseCoreModule } from '../../src';
+import { StubbedInstance } from '../../../core-utils/tests/stubs';
 
 export class Meow extends BaseCoreModule {
   configSchema: any;

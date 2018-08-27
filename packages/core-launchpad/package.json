@@ -8,7 +8,7 @@
   },
   "scripts": {
     "transpile": "shx rm -rf dist; tsc; chmod +x ./dist/binary.js",
-    "test": "mocha  --bail --exit --require ts-node/register './tests/**/*.spec.ts'",
+    "test-unit": "mocha  --bail --exit --require ts-node/register './tests/**/*.spec.ts'",
     "tsnodev": "ts-node -v",
     "mochjav": "mocha -V"
   },

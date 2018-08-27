@@ -12,8 +12,8 @@ describe('modulesLoader', () => {
       '@risevision/core-transactions',
       '@risevision/core-blocks',
       '@risevision/core',
-      '@risevision/core-consensus-dpos',
       '@risevision/core-accounts',
+      '@risevision/core-consensus-dpos',
       '@risevision/core-multisignature',
       '@risevision/core-secondsignature']);
   });

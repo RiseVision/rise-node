@@ -4,6 +4,7 @@ import { ContentType, Controller, Get, Post, QueryParam, Req, UseBefore } from '
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { p2pSymbols, ProtoBufHelper, } from '../helpers';
+import { WordPressHookSystem } from 'mangiafuoco';
 import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import {
   IBlockLogic,
@@ -28,6 +29,7 @@ import {
   PostTransactionsRequestDataType
 } from '../requests/';
 import { RequestFactoryType } from '../utils';
+import { OnReceiveBlock } from '../hooks/actions';
 
 const transportSchema = require('../../schema/transport.json');
 
@@ -46,6 +48,8 @@ export class TransportV2API {
   private transactionLogic: ITransactionLogic;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
+  @inject(Symbols.generic.hookSystem)
+  private hookSystem: WordPressHookSystem;
   // @inject(Symbols.modules.blocksSubModules.utils)
   // private blocksModuleUtils: IBlocksModuleUtils;
   // @inject(Symbols.helpers.bus)
@@ -67,7 +71,7 @@ export class TransportV2API {
   @inject(ModelSymbols.model)
   @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
-  @inject(Symbols.models.transactions)
+  @inject(ModelSymbols.model)
   @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
@@ -214,6 +218,7 @@ export class TransportV2API {
     }
     // TODO:
     // await this.bus.message('receiveBlock', normalizedBlock);
+    await this.hookSystem.do_action(OnReceiveBlock.name, normalizedBlock);
     return this.getResponse({ success: true, blockId: normalizedBlock.id },
       'transportBlocks', 'transportBlockResponse');
   }

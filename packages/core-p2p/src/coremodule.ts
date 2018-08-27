@@ -14,7 +14,6 @@ import { Symbols } from '@risevision/core-interfaces';
 import { cbToPromise } from '@risevision/core-utils';
 import { ModelSymbols } from '@risevision/core-models';
 import { PeersModel } from './PeersModel';
-import { TransportAPI } from './api/transportAPI';
 import { PeersAPI } from './api/peersAPI';
 import { PeersLogic } from './peersLogic';
 import { PeersModule } from './peersModule';
@@ -29,7 +28,8 @@ import {
   HeightRequest,
   PeersListRequest, PingRequest, PostBlocksRequest, PostTransactionsRequest
 } from './requests';
-import { requestFactory } from './utils/requestFactoryType';
+import { requestFactory } from './utils/';
+import { TransportV2API } from './api/transportv2API';
 
 const configSchema = require('../schema/config.json');
 
@@ -107,7 +107,7 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     const app = express();
     this.srv = http.createServer(app);
     this.container.bind(p2pSymbols.constants).toConstantValue(this.constants);
-    this.container.bind(p2pSymbols.controller).to(TransportAPI).inSingletonScope().whenTargetNamed(p2pSymbols.api.transport);
+    this.container.bind(p2pSymbols.controller).to(TransportV2API).inSingletonScope().whenTargetNamed(p2pSymbols.api.transportV2);
     this.container.bind(p2pSymbols.controller).to(PeersAPI).inSingletonScope().whenTargetNamed(p2pSymbols.api.peersAPI);
     this.container.bind(p2pSymbols.express).toConstantValue(app);
     this.container.bind(p2pSymbols.server).toConstantValue(this.srv);

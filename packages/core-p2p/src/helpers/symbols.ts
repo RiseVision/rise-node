@@ -18,7 +18,6 @@ export const p2pSymbols = {
   api       : {
     attachPeerHeaders            : Symbol.for('rise.p2p.attachPeerHeaders'),
     peersAPI                     : Symbol.for('rise.p2p.peersAPI'),
-    transport                    : Symbol.for('rise.p2p.transport'),
     transportV2                  : Symbol.for('rise.p2p.transportV2'),
     validatePeerHeadersMiddleware: Symbol.for('rise.p2p.validatePeerHeadersMiddleware'),
   },

@@ -11,12 +11,11 @@ import { IBaseTransaction, SignedAndChainedBlockType } from '../../../core-types
 import { ITransactionLogic } from '../../../core-interfaces/src/logic';
 import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
 import { Symbols } from '../../../core-interfaces/src';
-import { StubbedInstance } from '../../../core-test-utils/src/stubCreator';
 import { InnerTXQueue } from '../../src/poolTXsQueue';
-import { createRandomTransaction } from '../utils/txCrafter';
-import { toBufferedTransaction } from '../../../core-test-utils/dist/utils/txCrafter';
+import { createRandomTransaction, toBufferedTransaction } from '../utils/txCrafter';
 import { IAccountsModel } from '../../../core-interfaces/src/models';
 import { ModelSymbols } from '../../../core-models/src/helpers';
+import { StubbedInstance } from '../../../core-utils/tests/stubs';
 
 
 chai.use(chaiAsPromised);
