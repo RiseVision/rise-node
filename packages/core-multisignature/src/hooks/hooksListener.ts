@@ -1,12 +1,12 @@
-import { IAccountsModel, ITransactionLogic, Symbols, VerificationType } from '@risevision/core-interfaces';
-import { TxLogicVerify, TxReadyFilter } from '@risevision/core-transactions';
-import { IBaseTransaction, IConfirmedTransaction } from '@risevision/core-types';
+import { ITransactionLogic, Symbols, VerificationType } from '@risevision/core-interfaces';
+import { TxLogicStaticCheck, TxLogicVerify, TxReadyFilter } from '@risevision/core-transactions';
+import { IBaseTransaction } from '@risevision/core-types';
 import { decorate, inject, injectable } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { AccountsModelWithMultisig } from '../models/AccountsModelWithMultisig';
 import { MultiSigUtils } from '../utils';
 import { MultisigSymbols } from '../helpers';
-import { FilterAPIGetAccount } from '../../../core-accounts/src/hooks';
+import { FilterAPIGetAccount } from '@risevision/core-accounts';
 
 const ExtendableClass = WPHooksSubscriber(Object);
 decorate(injectable(), ExtendableClass);
@@ -31,28 +31,45 @@ export class MultisigHooksListener extends ExtendableClass {
     return this.multisigUtils.txMultiSigReady(tx, sender);
   }
 
-  @TxLogicVerify()
-  public async txLogicVerify(tx: IBaseTransaction<any>, sender: AccountsModelWithMultisig, requester: AccountsModelWithMultisig) {
-    if (!this.multisigUtils.txMultiSigReady(tx, sender)) {
-      throw new Error('MultiSig Transaction is not ready');
-    }
-
+  @TxLogicStaticCheck()
+  public async txLogicStaticChecks(tx: IBaseTransaction<any>, sender: AccountsModelWithMultisig, requester: AccountsModelWithMultisig) {
     if (tx.requesterPublicKey && (!sender.isMultisignature() || requester == null)) {
       throw new Error('Account or requester account is not multisignature');
     }
-
-    const multisignatures = (sender.multisignatures || sender.u_multisignatures || []).slice();
 
     if (tx.asset && tx.asset.multisignature && tx.asset.multisignature.keysgroup) {
       for (const key of tx.asset.multisignature.keysgroup) {
         if (!key || typeof key !== 'string') {
           throw new Error('Invalid member in keysgroup');
         }
-        multisignatures.push(key.slice(1));
       }
     } else if (tx.requesterPublicKey) {
       if (sender.multisignatures.indexOf(tx.requesterPublicKey.toString('hex')) < 0) {
         throw new Error('Account does not belong to multisignature group');
+      }
+    }
+
+    if (!this.multisigUtils.txMultiSigReady(tx, sender)) {
+      throw new Error('MultiSig Transaction is not ready');
+    }
+
+    // In multisig accounts
+    if (Array.isArray(tx.signatures) && tx.signatures.length > 0) {
+      // check that signatures are unique.
+      const duplicatedSignatures = tx.signatures.filter((sig, idx, arr) => arr.indexOf(sig) !== idx);
+      if (duplicatedSignatures.length > 0) {
+        throw new Error('Encountered duplicate signature in transaction');
+      }
+    }
+  }
+
+  @TxLogicVerify()
+  public async txLogicVerify(tx: IBaseTransaction<any>, sender: AccountsModelWithMultisig, requester: AccountsModelWithMultisig) {
+    const multisignatures = (sender.multisignatures || sender.u_multisignatures || []).slice();
+
+    if (tx.asset && tx.asset.multisignature && tx.asset.multisignature.keysgroup) {
+      for (const key of tx.asset.multisignature.keysgroup) {
+        multisignatures.push(key.slice(1));
       }
     }
 
@@ -87,7 +104,7 @@ export class MultisigHooksListener extends ExtendableClass {
   public getAccountFilter(what: any, accData: AccountsModelWithMultisig) {
     return {
       ...what,
-      multisignatures: accData.multisignatures,
+      multisignatures  : accData.multisignatures,
       u_multisignatures: accData.u_multisignatures,
     };
   }

@@ -153,7 +153,7 @@ describe('HooksListener', () => {
       sender.multilifetime = 0;
       const ttx            = signMultiSigTxRequester(multisigners[0]);
       await expect(txLogic.verify(ttx, sender, requester, 1))
-        .to.rejectedWith('MultiSig Transaction is not ready');
+        .to.rejectedWith('Account or requester account is not multisignature');
     });
     it('should reject tx if requesterPublicKey, account is multisign but requester is null', async () => {
       const ttx = signMultiSigTxRequester(multisigners[0]);
@@ -175,8 +175,8 @@ describe('HooksListener', () => {
       await expect(txLogic.verify(ttx, sender, requester, 1)).to.rejectedWith('Account does not belong to multisignature group');
     });
     it('should reject if duplicated signature', async () => {
-      const ttx = signMultiSigTxRequester(new LiskWallet('other'));
-      ttx.signatures.push(ttx.signatures[0])
+      const ttx = signMultiSigTxRequester(multisigners[0]);
+      ttx.signatures.push(ttx.signatures[0]);
       await expect(txLogic.verify(ttx, sender, requester, 1)).to.rejectedWith('Encountered duplicate signature in transaction');
     });
     describe('multisig registration', () => {
@@ -192,12 +192,15 @@ describe('HooksListener', () => {
         tx.type = 4;
         tx.fee = 500000000;
         tx.amount = 0;
+        tx.senderPublicKey = wallet.publicKey;
         delete tx.recipientId;
       });
       it('should reject if multisignature.keysgroup has non string members', async () => {
         const signedTX = wallet.signTransaction(tx);
         signedTX.asset.multisignature.keysgroup.push(1);
-        await expect(txLogic.verify(toBufferedTransaction(signedTX), sender, requester, 1))
+        const btx = toBufferedTransaction(signedTX);
+        btx.id = txLogic.getId(btx);
+        await expect(txLogic.verify(btx, sender, requester, 1))
           .to.rejectedWith('Invalid member in keysgroup');
       });
       it('should reject if multisignature.keysgroup has wrong pubkey');

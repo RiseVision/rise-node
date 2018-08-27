@@ -22,10 +22,11 @@ describe('apis/requests/PostSignaturesRequest', () => {
     sandbox = sinon.createSandbox();
     instance = new PostSignaturesRequest();
     instance.options = options;
+    container.rebind(p2pSymbols.helpers.protoBuf).to(ProtoBufHelperStub).inSingletonScope();
     pbHelperStub = container.get(p2pSymbols.helpers.protoBuf);
     (instance as any).protoBufHelper = pbHelperStub;
-    pbHelperStub.enqueueResponse('validate', true);
-    pbHelperStub.enqueueResponse('encode', 'encodedValue');
+    pbHelperStub.stubs.validate.returns(true);
+    pbHelperStub.stubs.encode.returns('encodedValue');
   });
 
   afterEach(() => {
