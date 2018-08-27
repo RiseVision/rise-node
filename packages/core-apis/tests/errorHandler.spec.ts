@@ -2,7 +2,7 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
-import { SinonSandbox } from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import { DeprecatedAPIError } from '../src/errors';
 import { APIErrorHandler } from '../src/utils';
 import { LoggerStub } from '../../core-utils/tests/stubs';
@@ -28,7 +28,7 @@ describe('apis/utils/errorHandler', () => {
   let responseStatusSpy: any;
   let next: any;
   let container: Container;
-  let requestStub: any;
+  let requestStub: SinonStub;
   let loggerStub: LoggerStub;
   let sendSpy: any;
 
@@ -40,10 +40,14 @@ describe('apis/utils/errorHandler', () => {
     sendSpy           = { send: sandbox.spy() };
     response          = { status: () => sendSpy, send: sendSpy.send };
     responseStatusSpy = sandbox.spy(response, 'status');
-    request           = { url: { startsWith: () => true } };
+    request           = { url: { startsWith: () => false } };
     requestStub       = sandbox.stub(request.url, 'startsWith');
     next              = sandbox.spy();
     loggerStub        = container.get(Symbols.helpers.logger);
+    loggerStub.stubs.error.resetHistory();
+    loggerStub.stubs.warn.resetHistory();
+    requestStub.returns(false);
+    requestStub.onSecondCall().returns(true);
   });
 
   afterEach(() => {
@@ -52,7 +56,6 @@ describe('apis/utils/errorHandler', () => {
 
   describe('error()', () => {
     it('If url starts with /peer', () => {
-      requestStub.returns(true);
       instance.error(new Error('Fake error'), request, response, next);
       expect(loggerStub.stubs.error.called).to.be.false;
       expect(loggerStub.stubs.warn.calledOnce).to.be.true;
@@ -67,6 +70,7 @@ describe('apis/utils/errorHandler', () => {
     });
 
     it('If url NOT starts with /peer', () => {
+      requestStub.resetBehavior();
       requestStub.returns(false);
       instance.error('Another fake error', request, response, next);
       expect(loggerStub.stubs.warn.called).to.be.false;
@@ -84,12 +88,14 @@ describe('apis/utils/errorHandler', () => {
 
   describe('APIError', () => {
     it('should honorate statusCode of APIError', () => {
+      requestStub.resetBehavior();
       requestStub.returns(false);
       instance.error(new HTTPError('Another fake error', 500), request, response, next);
       expect(responseStatusSpy.args[0][0]).to.equal(500);
       expect(sendSpy.send.args[0][0]).to.deep.equal({ success: false, error: 'Another fake error' });
     });
     it('should honorate Deprecated API Error (which is child of APIError)', () => {
+      requestStub.resetBehavior();
       requestStub.returns(false);
       instance.error(new DeprecatedAPIError(), request, response, next);
       expect(responseStatusSpy.args[0][0]).to.equal(500);
