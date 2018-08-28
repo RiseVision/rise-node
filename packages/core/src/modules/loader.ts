@@ -45,6 +45,7 @@ import {
 import { wait, WrapInDefaultSequence } from '@risevision/core-utils';
 import { GetTransactionsRequest, p2pSymbols, RequestFactoryType } from '@risevision/core-p2p';
 import Timer = NodeJS.Timer;
+import { OnBlockchainReady, RecreateAccountsTables } from '../hooks';
 
 const loaderSchema = require('../../schema/loader.json');
 
@@ -303,7 +304,7 @@ export class LoaderModule implements ILoaderModule {
       this.logger.warn('Recreating memory tables');
     }
 
-    await this.hookSystem.do_action('core/loader/load/recreateAccountsDatastores');
+    await this.hookSystem.do_action(RecreateAccountsTables.name);
     // await this.accountLogic.removeTables();
 
     // await this.accountLogic.createTables();
@@ -323,7 +324,7 @@ export class LoaderModule implements ILoaderModule {
       }
       if (emitBlockchainReady) {
         this.logger.info('Blockchain ready');
-        await this.hookSystem.do_action('core/loader/onBlockchainReady');
+        await this.hookSystem.do_action(OnBlockchainReady.name);
       }
     } catch (err) {
       this.logger.error(err);
@@ -331,7 +332,7 @@ export class LoaderModule implements ILoaderModule {
         this.logger.error('Blockchain failed at: ' + err.block.height);
         await this.blocksChainModule.deleteAfterBlock(err.block.id);
         this.logger.error('Blockchain clipped');
-        await this.hookSystem.do_action('core/loader/onBlockchainReady');
+        await this.hookSystem.do_action(OnBlockchainReady.name);
       } else {
         throw err;
       }
@@ -412,7 +413,7 @@ export class LoaderModule implements ILoaderModule {
       this.logger.trace('Setting sync interval');
       this.syncIntervalId = setTimeout(() => {
         this.logger.trace('Sync trigger');
-        this.io.sockets.emit('loader/sync', {
+        this.hookSystem.do_action('pushapi/onNewMessage', 'loader/sync', {
           blocks: this.blocksToSync,
           height: this.blocksModule.lastBlock.height,
         });
@@ -521,8 +522,7 @@ export class LoaderModule implements ILoaderModule {
   private async doSync() {
     const shouldSyncBlocks     = this.loaded && !this.isSyncing && (this.blocksModule.lastReceipt.isStale());
     const whatToSync: string[] = await this.hookSystem
-      .apply_filters('core/loader/whatToSync', shouldSyncBlocks ? ['blocks'] : []);
-
+      .apply_filters('core/loader/whatToSync', shouldSyncBlocks ? ['blocks', 'transactions'] : []);
     for (const what of whatToSync) {
       switch (what) {
         case 'blocks':
@@ -549,7 +549,6 @@ export class LoaderModule implements ILoaderModule {
 
   private async syncTimer() {
     this.logger.trace('Setting sync timer');
-
     this.jobsQueue.register('loaderSyncTimer', async () => {
         this.logger.trace('Sync timer trigger', {
           last_receipt: this.blocksModule.lastReceipt.get(),

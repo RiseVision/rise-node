@@ -7,6 +7,7 @@ import * as sinon from 'sinon';
 import { LoaderAPI } from '../../../src/apis';
 import { IAppState, IBlocksModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '../../../../core-launchpad/tests/utils/createContainer';
+import { APISymbols } from '@risevision/core-apis';
 import { LoaderModule } from '../../../src/modules';
 import { CoreSymbols } from '../../../src';
 
@@ -27,7 +28,7 @@ describe('apis/loaderAPI', () => {
 
   beforeEach(async () => {
     sandbox   = sinon.createSandbox();
-    container = await createContainer(['core']);
+    container = await createContainer(['core', 'core-helpers', 'core-accounts']);
 
     appState     = container.get(Symbols.logic.appState);
     blocksModule = container.get(Symbols.modules.blocks);
@@ -38,7 +39,7 @@ describe('apis/loaderAPI', () => {
     loaderModule.loaded    = true;
     blocksModule.lastBlock = { height: 1 } as any;
 
-    instance = container.get(CoreSymbols.api.loader);
+    instance = container.getNamed(APISymbols.api, CoreSymbols.api.loader);
   });
 
   afterEach(() => {
@@ -61,16 +62,14 @@ describe('apis/loaderAPI', () => {
       const appStateGet = sandbox.stub(appState, 'get').returns('consensus');
 
       const ret = instance.getStatusSync();
-
-      expect(appStateGet.calledOnce).to.be.true;
       expect(appStateGet.firstCall.args.length).to.be.equal(1);
       expect(appStateGet.firstCall.args[0]).to.be.equal('node.consensus');
 
       expect(ret).to.be.deep.equal({
-        broadhash: undefined,
+        broadhash: 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
         consensus: 'consensus',
         height   : 1,
-        syncing  : undefined,
+        syncing  : 'consensus',
       });
     });
 

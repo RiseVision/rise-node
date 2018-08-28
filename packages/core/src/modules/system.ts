@@ -184,7 +184,7 @@ export class SystemModule extends Extendable implements ISystemModule {
       raw       : true,
     });
     if (rows.length <= 1) {
-      return this.appConfig.nethash;
+      return this.headers.nethash;
     }
 
     const seed = rows.map((r) => r.id).join('');

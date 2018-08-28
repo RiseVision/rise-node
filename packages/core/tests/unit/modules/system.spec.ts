@@ -3,32 +3,29 @@ import 'chai-as-promised';
 import { Container } from 'inversify';
 import 'reflect-metadata';
 import * as sinon from 'sinon';
-import { constants as constantsType } from '../../../src/helpers/';
-import { ISystemModule } from '../../../src/ioc/interfaces/modules';
-import { Symbols } from '../../../src/ioc/symbols';
-import { SystemModule } from '../../../src/modules';
-import { DbStub, IBlocksStub } from '../../stubs';
-import { createContainer } from '../../utils/containerCreator';
-import { BlocksModel } from '../../../src/models';
 import { SinonSandbox, SinonStub } from 'sinon';
+import { createContainer } from '../../../../core-launchpad/tests/utils/createContainer';
+import { SystemModule } from '../../../src/modules';
+import { ConstantsType } from '@risevision/core-types';
+import { IBlocksModel, IBlocksModule, Symbols } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 
 // tslint:disable no-unused-expression
 describe('modules/system', () => {
-  let inst: ISystemModule;
-  let instB: SystemModule;
+  let inst: SystemModule;
   let container: Container;
   const appConfig = {
-    nethash: 'nethash',
     port   : 1234,
     version: '1.0.0',
     forging: {
       pollingInterval: 1000
     }
   };
-  let constants: typeof constantsType;
+  let constants: ConstantsType;
   let sandbox: SinonSandbox;
-  before(() => {
-    container = createContainer();
+  let blocksModule: IBlocksModule;
+  before(async () => {
+    container = await createContainer(['core', 'core-helpers', 'core-accounts']);
     constants = {
       fees      : [
         { height: 1, fees: { send: 1 } },
@@ -43,16 +40,17 @@ describe('modules/system', () => {
         { height: 11, ver: '0.1.4b' },
       ],
     } as any;
-    container.rebind(Symbols.helpers.constants).toConstantValue(constants);
+    container.rebind(Symbols.generic.constants).toConstantValue(constants);
     container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
-    container.bind(Symbols.generic.nonce).toConstantValue('nonce');
+    container.rebind(Symbols.generic.nonce).toConstantValue('nonce');
     container.rebind(Symbols.modules.system).to(SystemModule);
   });
 
   beforeEach(() => {
     sandbox                   = sinon.createSandbox();
-    inst = instB = container.get(Symbols.modules.system);
-    container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = {
+    inst = container.get(Symbols.modules.system);
+    blocksModule = container.get(Symbols.modules.blocks);
+    blocksModule.lastBlock = {
       height: 10,
     } as any;
   });
@@ -74,7 +72,6 @@ describe('modules/system', () => {
       expect(inst.getMinVersion(3)).to.be.eq('^0.1.3');
     });
     it('should return ^0.1.3 for default height taken from blocksModule', () => {
-      const blocksModule = container.get<IBlocksStub>(Symbols.modules.blocks);
       const origStub     = sinon.stub().returns(10);
       const stub         = sinon.stub(blocksModule.lastBlock, 'height')
         .get(() => origStub());
@@ -132,7 +129,6 @@ describe('modules/system', () => {
     });
 
     it('should use height from blockmodule if not provided', () => {
-      const blocksModule = container.get<IBlocksStub>(Symbols.modules.blocks);
       const origStub     = sinon.stub().returns(10);
       const stub         = sinon.stub(blocksModule.lastBlock, 'height')
         .get(() => origStub());
@@ -145,15 +141,14 @@ describe('modules/system', () => {
   });
 
   describe('.getBroadHash', () => {
-    let blocksModel: typeof BlocksModel;
+    let blocksModel: typeof IBlocksModel;
     let findAllStub: SinonStub;
     beforeEach(() => {
-      blocksModel = container.get(Symbols.models.blocks);
+      blocksModel = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
       findAllStub = sandbox.stub(blocksModel, 'findAll').resolves([]);
     });
-    it('should return broadhash from appConfig  if db.query returns empty array', async () => {
-      (instB as any).appConfig.nethash = 'hahaha'
-      expect(await inst.getBroadhash()).to.be.eq('hahaha');
+    it('should return broadhash from genesisBlock if db.query returns empty array', async () => {
+      expect(await inst.getBroadhash()).to.be.eq('e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6');
     });
     it('should compute broadhash from returned db data', async () => {
       findAllStub.resolves([1, 2, 3, 4].map((id) => ({ id })));
@@ -165,7 +160,7 @@ describe('modules/system', () => {
 
   describe('.networkCompatible', () => {
     it('should return true if given is same as headers nethash', () => {
-      expect(inst.networkCompatible(appConfig.nethash)).is.true;
+      expect(inst.networkCompatible('e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6')).is.true;
     });
     it('should return false if given is same as headers nethash', () => {
       expect(inst.networkCompatible('balallaa')).is.false;
@@ -174,7 +169,7 @@ describe('modules/system', () => {
 
   describe('.versionCompatible', () => {
     beforeEach(() => {
-      container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = {
+      blocksModule.lastBlock = {
         height: 2,
       } as any; // ^0.1.2
     });
@@ -194,7 +189,7 @@ describe('modules/system', () => {
       expect(inst.versionCompatible('0.2.0')).is.false;
     });
     it('should return true if 0.1.4b', () => {
-      container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = {
+      blocksModule.lastBlock = {
         height: 11,
       } as any;
       expect(inst.versionCompatible('0.1.4b')).is.true;
@@ -206,7 +201,7 @@ describe('modules/system', () => {
       sandbox.stub(inst, 'getBroadhash').resolves('meow');
       inst.headers.height    = 0;
       inst.headers.broadhash = 'haha';
-      container.get<IBlocksStub>(Symbols.modules.blocks).lastBlock = {
+      blocksModule.lastBlock = {
         height: 2,
       } as any; // ^0.1.2
       await inst.update();
@@ -225,7 +220,7 @@ describe('modules/system', () => {
   // instance methods
   describe('.cleanup', () => {
     it('should return promise', async () => {
-      expect(instB.cleanup()).to.be.instanceof(Promise);
+      expect(inst.cleanup()).to.be.instanceof(Promise);
     });
   });
 
