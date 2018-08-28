@@ -131,7 +131,6 @@ export class ForgeModule implements IModule {
    */
   private async forge() {
     if (this.appState.get('loader.isSyncing') ||
-      !this.appState.get('rounds.isLoaded') ||
       this.appState.get('rounds.isTicking')) {
 
       this.logger.debug('Client not ready to forge');

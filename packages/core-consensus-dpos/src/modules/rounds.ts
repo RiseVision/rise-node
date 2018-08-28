@@ -10,7 +10,7 @@ import {
 } from '@risevision/core-interfaces';
 import { address, AppConfig, DBOp, SignedBlockType } from '@risevision/core-types';
 import * as fs from 'fs';
-import { inject, injectable, named } from 'inversify';
+import { decorate, inject, injectable, named } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { Transaction } from 'sequelize';
 import SocketIO from 'socket.io';
@@ -25,9 +25,11 @@ const performRoundSnapshotSQL = fs.readFileSync(
   `${__dirname}/../../sql/performRoundSnapshot.sql`,
   { encoding: 'utf8' }
 );
+const Extended = WPHooksSubscriber(Object);
+decorate(injectable(), Extended);
 
 @injectable()
-export class RoundsModule extends WPHooksSubscriber(Object) {
+export class RoundsModule extends Extended {
   @inject(dPoSSymbols.helpers.roundChanges)
   private RoundChanges: typeof RoundChanges;
 
@@ -73,19 +75,6 @@ export class RoundsModule extends WPHooksSubscriber(Object) {
   @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.rounds)
   private RoundsModel: typeof RoundsModel;
-
-  public onFinishRound(round: number) {
-    this.io.sockets.emit('rounds/change', { number: round });
-  }
-
-  public onBlockchainReady() {
-    this.appStateLogic.set('rounds.isLoaded', true);
-  }
-
-  public cleanup() {
-    this.appStateLogic.set('rounds.isLoaded', false);
-    return this.unHook();
-  }
 
   /**
    * Performs a backward tick on the round
