@@ -2,17 +2,12 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
-import { SinonSandbox } from 'sinon';
-import { ValidatePeerHeaders } from '../../../../src/apis/utils/validatePeerHeaders';
-import { Symbols } from '../../../../src/ioc/symbols';
-import {
-  PeersLogicStub,
-  PeersModuleStub,
-  SystemModuleStub,
-  ZSchemaStub
-} from '../../../stubs';
-import { createContainer } from '../../../utils/containerCreator';
-import { createFakePeer } from '../../../utils/fakePeersFactory';
+import { SinonSandbox, SinonStub } from 'sinon';
+import { ValidatePeerHeaders } from '../../src/api/validatePeerHeaders';
+import { p2pSymbols, PeersLogic } from '../../src';
+import { IPeersModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
+import { createFakePeer } from '../utils/fakePeersFactory';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -25,88 +20,87 @@ describe('apis/utils/validatePeerHeaders', () => {
   let sandbox: SinonSandbox;
   let instance: ValidatePeerHeaders;
   let container: Container;
-  let peersLogicStub: PeersLogicStub;
+  let peersLogicStub: PeersLogic;
   let request: any;
   let next: any;
   // tslint:disable prefer-const
   let appConfig: any;
-  let systemModuleStub: SystemModuleStub;
+  let systemModuleStub: ISystemModule;
   let fakePeer: any;
-  let schemaStub: ZSchemaStub;
-  let peersModuleStub: PeersModuleStub;
+  let schemaStub: any;
+  let peersModuleStub: IPeersModule;
+  let lastErrorStub: SinonStub;
+  let getLastErrorsStub: SinonStub;
+  let validateStub: SinonStub;
+  let peersModuleUpdateStub: SinonStub;
+  let peersLogicCreateStub: SinonStub;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     sandbox = sinon.createSandbox();
     request = {
-      headers: { port: 5555, version: '1.0', nethash: 'zxy' },
+      headers: { port: 5555, version: '1.0.0', nethash: 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6' },
       ip: '80.1.2.3',
     };
     next = sandbox.spy();
 
     // Container
-    container = createContainer();
+    container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
     container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
-    container
-      .bind(Symbols.api.utils.validatePeerHeadersMiddleware)
-      .to(ValidatePeerHeaders);
-
     // Instance
-    instance = container.get(Symbols.api.utils.validatePeerHeadersMiddleware);
+    instance = container.get(p2pSymbols.api.validatePeerHeadersMiddleware);
 
     // systemModuleStub
     systemModuleStub = container.get(Symbols.modules.system);
-    systemModuleStub.enqueueResponse('networkCompatible', true);
-    systemModuleStub.enqueueResponse('versionCompatible', true);
-    systemModuleStub.enqueueResponse('getNethash', 'abcd');
-    systemModuleStub.enqueueResponse('getMinVersion', '1.0');
 
     // peersLogicStub
     peersLogicStub = container.get(Symbols.logic.peers);
     fakePeer = createFakePeer();
     fakePeer.applyHeaders = sandbox.spy();
-    peersLogicStub.enqueueResponse('create', fakePeer);
-    peersLogicStub.enqueueResponse('upsert', true);
-    peersLogicStub.enqueueResponse('remove', true);
+    peersLogicCreateStub = sandbox.stub(peersLogicStub, 'create').returns(fakePeer);
+    // peersLogicStub.enqueueResponse('upsert', true);
+    // peersLogicStub.enqueueResponse('remove', true);
 
     // schemaStub
     schemaStub = container.get(Symbols.generic.zschema);
-    schemaStub.enqueueResponse('getLastError', {
+    lastErrorStub = sandbox.stub(schemaStub, 'getLastError').returns({
       details: [{ path: '/foo/bar' }],
     });
-    schemaStub.enqueueResponse('getLastErrors', [{ message: 'Schema error' }]);
-    schemaStub.stubs.validate.returns(true);
+    getLastErrorsStub = sandbox.stub(schemaStub, 'getLastErrors').returns([{ message: 'Schema error' }]);
+    validateStub = sandbox.stub(schemaStub, 'validate').returns(true);
 
     // peersModuleStub
     peersModuleStub = container.get(Symbols.modules.peers);
-    peersModuleStub.enqueueResponse('update', true);
+    peersModuleUpdateStub = sandbox.stub(peersModuleStub, 'update').returns(true);
+    const blocksModule = container.get<any>(Symbols.modules.blocks);
+    blocksModule.lastBlock = { height: 10 };
   });
 
   describe('use()', () => {
     it('if headers schema is not valid', () => {
-      schemaStub.stubs.validate.returns(false);
+      validateStub.returns(false);
       instance.use(request, false, next);
       expect(next.calledOnce).to.be.true;
       expect(next.args[0][0].message).to.contain('Schema error');
     });
 
     it('if is NOT networkCompatible', () => {
-      systemModuleStub.stubs.networkCompatible.returns(false);
+      request.headers.nethash = 'zxy';
       instance.use(request, false, next);
       expect(next.calledOnce).to.be.true;
       expect(next.args[0][0]).to.deep.equal({
-        expected: 'abcd',
+        expected: 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
         message: 'Request is made on the wrong network',
         received: 'zxy',
       });
     });
 
     it('if version is NOT compatible', () => {
-      systemModuleStub.stubs.versionCompatible.returns(false);
+      sandbox.stub(systemModuleStub, 'versionCompatible').returns(false);
       request.headers.version = '3.0';
       instance.use(request, false, next);
       expect(next.calledOnce).to.be.true;
       expect(next.args[0][0]).to.deep.equal({
-        expected: '1.0',
+        expected: '>=0.1.0',
         message: 'Request is made from incompatible version',
         received: '3.0',
       });
@@ -116,19 +110,19 @@ describe('apis/utils/validatePeerHeaders', () => {
       instance.use(request, false, next);
       expect(next.calledOnce).to.be.true;
       expect(next.args[0][0]).to.equal(undefined);
-      expect(peersLogicStub.stubs.create.calledOnce).to.be.true;
-      expect(peersLogicStub.stubs.create.args[0][0]).to.deep.equal({
+      expect(peersLogicCreateStub.calledOnce).to.be.true;
+      expect(peersLogicCreateStub.args[0][0]).to.deep.equal({
         ip: '80.1.2.3',
         port: 5555,
       });
       expect(fakePeer.applyHeaders.calledOnce).to.be.true;
       expect(fakePeer.applyHeaders.args[0][0]).to.deep.equal({
-        nethash: 'zxy',
+        nethash: 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
         port: 5555,
-        version: '1.0',
+        version: '1.0.0',
       });
-      expect(peersModuleStub.stubs.update.calledOnce).to.be.true;
-      expect(peersModuleStub.stubs.update.args[0][0]).to.deep.equal(fakePeer);
+      expect(peersModuleUpdateStub.calledOnce).to.be.true;
+      expect(peersModuleUpdateStub.args[0][0]).to.deep.equal(fakePeer);
     });
   });
 });

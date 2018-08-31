@@ -30,6 +30,8 @@ import {
 } from './requests';
 import { requestFactory } from './utils/';
 import { TransportV2API } from './api/transportv2API';
+import { AttachPeerHeaders } from './api/attachPeerHeaders';
+import { ValidatePeerHeaders } from './api/validatePeerHeaders';
 
 const configSchema = require('../schema/config.json');
 
@@ -139,6 +141,14 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     this.container.bind(p2pSymbols.requests.postBlocks).toFactory(requestFactory(PostBlocksRequest));
 
     this.container.bind(p2pSymbols.requests.postTransactions).toFactory(requestFactory(PostTransactionsRequest));
+
+    // APIs
+    this.container.bind(p2pSymbols.api.attachPeerHeaders)
+      .to(AttachPeerHeaders)
+      .inSingletonScope();
+    this.container.bind(p2pSymbols.api.validatePeerHeadersMiddleware)
+      .to(ValidatePeerHeaders)
+      .inSingletonScope();
   }
 
   public teardown(): Promise<void> {
