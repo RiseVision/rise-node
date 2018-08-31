@@ -17,7 +17,7 @@ import { FilterAPIGetAccount } from '../hooks';
 const accountSchema = require('../../schema/accounts.json');
 @JsonController('/api/accounts')
 @injectable()
-@IoCSymbol(CoreSymbols.api.accounts)
+@IoCSymbol(AccountsSymbols.api)
 export class AccountsAPI {
   @inject(LaunchpadSymbols.zschema)
   public schema: z_schema;

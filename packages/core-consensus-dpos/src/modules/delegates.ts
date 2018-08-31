@@ -208,7 +208,7 @@ export class DelegatesModule extends Extendable implements IModule {
   }
 
   @OnCheckIntegrity()
-  private async checkLoadingIntegrity() {
+  private async checkLoadingIntegrity(totalBlocks: number) {
     const delegatesCount = await this.accountsModel.count({ where: { isDelegate: 1 } });
     if (delegatesCount === 0) {
       throw new Error('No delegates found');

@@ -8,11 +8,6 @@ import { SignedBlockType } from '@risevision/core-types';
 export const SnapshotBlocksCountFilter = createFilter<(bc: number) => Promise<number>>('core/loader/snapshot/blocksCount');
 
 /**
- * Filter to modify output of accounts API
- */
-export const AccountApisGetAccount = createFilter<(accData: any, model?: IAccountsModel) => Promise<any>>('core/apis/accounts/account');
-
-/**
  * Called when verifying a block a submodule could either add its error or bypass other errors.
  */
 export const VerifyBlockFilter = createFilter<(p: { errors: string[], verified: boolean }, block: SignedBlockType, lastBlock?: SignedBlockType) => Promise<{ errors: string[], verified: boolean }>>('core/blocks/verify/verifyBlock');
