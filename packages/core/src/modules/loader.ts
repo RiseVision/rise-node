@@ -181,6 +181,7 @@ export class LoaderModule implements ILoaderModule {
 
   public cleanup() {
     this.loaded = false;
+    this.jobsQueue.unregister('loaderSyncTimer');
     return Promise.resolve();
   }
 

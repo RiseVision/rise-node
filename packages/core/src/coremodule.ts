@@ -1,11 +1,11 @@
 import { APISymbols } from '@risevision/core-apis';
 import { Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
+import { LoaderAPI } from './apis';
 import { constants } from './constants';
 import { TimeToEpoch } from './helpers';
 import { ForkModule, LoaderModule, SystemModule } from './modules';
 import { CoreSymbols } from './symbols';
-import { LoaderAPI } from './apis';
 
 export class CoreModule extends BaseCoreModule<void> {
   public configSchema = {};
@@ -22,4 +22,7 @@ export class CoreModule extends BaseCoreModule<void> {
       .whenTargetNamed(CoreSymbols.api.loader);
   }
 
+  public async teardown(): Promise<void> {
+    await this.container.get<LoaderModule>(CoreSymbols.modules.loader).cleanup();
+  }
 }

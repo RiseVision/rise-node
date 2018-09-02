@@ -35,11 +35,14 @@ describe('logic/broadcaster', () => {
   let transactionsModule: TransactionsModule;
   let container: Container;
 
+  before(async () => {
+    container    = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+  });
   beforeEach(async () => {
     sandbox      = sinon.createSandbox({
-      useFakeTimers: true,
+      // useFakeTimers: true,
     });
-    container    = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+
     fakeAppState = { set: sandbox.stub() };
     loggerStub   = new LoggerStub();
     container.rebind(Symbols.logic.appState).toConstantValue(fakeAppState);

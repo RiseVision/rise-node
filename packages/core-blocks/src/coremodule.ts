@@ -27,6 +27,7 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
 
     this.container.bind(APISymbols.api)
       .to(BlocksAPI)
+      .inSingletonScope()
       .whenTargetNamed(BlocksSymbols.api);
 
   }

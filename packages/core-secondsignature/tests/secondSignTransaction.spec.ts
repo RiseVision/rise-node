@@ -31,9 +31,12 @@ describe('logic/transactions/secondSignature', () => {
   let sender: any;
   let block: any;
 
+  before(async () => {
+    container          = await createContainer(['core-secondsignature', 'core', 'core-helpers']);
+  });
   beforeEach(async () => {
     sandbox            = sinon.createSandbox();
-    container          = await createContainer(['core-secondsignature', 'core', 'core-helpers']);
+
     zSchemaStub        = {
       getLastErrors: () => [],
       validate     : sandbox.stub(),

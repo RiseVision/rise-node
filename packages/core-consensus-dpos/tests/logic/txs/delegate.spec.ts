@@ -32,9 +32,13 @@ describe('logic/transactions/delegate', () => {
 
   let getFeesStub: SinonStub;
 
+  before(async () => {
+    container          = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
+  });
+
   beforeEach(async () => {
     sandbox            = sinon.createSandbox();
-    container          = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
+
     accountsModel      = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
     delegatesModel     = container.getNamed(ModelSymbols.model, dPoSSymbols.models.delegates);
     accountsModuleStub = container.get(Symbols.modules.accounts);

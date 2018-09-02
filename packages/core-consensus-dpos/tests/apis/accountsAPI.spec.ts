@@ -18,7 +18,8 @@ chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression max-line-length
 
-describe('apis/accountsAPI', () => {
+describe('apis/accountsAPI', function () {
+  this.timeout(10000);
   let sandbox: SinonSandbox;
   let container: Container;
   let instance: AccountsAPI;
@@ -26,7 +27,7 @@ describe('apis/accountsAPI', () => {
   let delegatesModule: DelegatesModule;
   let accountsModel: typeof AccountsModelForDPOS;
   let system: ISystemModule;
-  beforeEach(async () => {
+  before(async () => {
     sandbox         = sinon.createSandbox();
     container       = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
     accountsModel   = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
@@ -35,6 +36,7 @@ describe('apis/accountsAPI', () => {
     system          = container.get(Symbols.modules.system);
     instance        = container.getNamed(APISymbols.api, dPoSSymbols.accountsAPI);
   });
+
 
   afterEach(() => {
     sandbox.restore();

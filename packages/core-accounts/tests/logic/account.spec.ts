@@ -32,13 +32,16 @@ describe('logic/account', () => {
   let instance: AccountLogic;
   let container: Container;
   let accModel: typeof IAccountsModel;
-  beforeEach(async () => {
-    sandbox   = sinon.createSandbox();
+  before(async () => {
     container = await createContainer([
       'core-accounts',
       'core',
       'core-helpers',
     ]);
+  });
+  beforeEach(async () => {
+    sandbox   = sinon.createSandbox();
+
     instance = container.get(AccountsSymbols.logic);
     accModel = container.getNamed(ModelSymbols.model, AccountsSymbols.model);
   });

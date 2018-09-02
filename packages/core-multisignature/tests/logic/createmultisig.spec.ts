@@ -49,9 +49,14 @@ describe('logic/transactions/createmultisig', () => {
   let sig1Wallet: LiskWallet;
   let sig2Wallet: LiskWallet;
 
+  before(async () => {
+    container               = await createContainer(['core-multisignature', 'core', 'core-helpers']);
+    container.getNamed(TXSymbols.transaction, MultisigSymbols.tx);
+    container.rebind(TXSymbols.transaction).to(MultiSignatureTransaction).whenTargetNamed(MultisigSymbols.tx);
+  });
+
   beforeEach(async () => {
     sandbox                 = sinon.createSandbox();
-    container               = await createContainer(['core-multisignature', 'core', 'core-helpers']);
     AccountsModel           = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
     accounts2MultisigModel  = container.getNamed(ModelSymbols.model, MultisigSymbols.models.accounts2Multi);
     accounts2UMultisigModel = container.getNamed(ModelSymbols.model, MultisigSymbols.models.accounts2U_Multi);

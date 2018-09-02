@@ -38,9 +38,11 @@ describe('apis/delegatesAPI', () => {
   let system: ISystemModule;
   let accountsModel: typeof AccountsModelForDPOS;
   let accounts2delegatesModel: typeof Accounts2DelegatesModel;
+  before(async () => {
+    container = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
+  });
   beforeEach(async () => {
     sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
     accounts            = container.get(Symbols.modules.accounts);
     accountsModel       = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
     blocksModel         = container.getNamed(ModelSymbols.model, Symbols.models.blocks);

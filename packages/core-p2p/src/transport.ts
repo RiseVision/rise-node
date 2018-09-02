@@ -221,6 +221,7 @@ export class TransportModule extends Extendable implements ITransportModule {
 
   public cleanup() {
     this.loaded = false;
+    this.jobsQueue.unregister('peersDiscoveryAndUpdate');
     return Promise.resolve();
   }
 

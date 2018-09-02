@@ -44,10 +44,12 @@ describe('logic/block', () => {
   bb.writeInt(123);
   bb.flip();
   const buffer = bb.toBuffer();
-
+  before(async () => {
+    container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
+  });
   beforeEach(async () => {
     sandbox = sinon.createSandbox();
-    container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
+
     cryptoImplementation = container.get(Symbols.generic.crypto);
     keyPair = cryptoImplementation.makeKeyPair(
       crypto.createHash('sha256').update(passphrase, 'utf8').digest()

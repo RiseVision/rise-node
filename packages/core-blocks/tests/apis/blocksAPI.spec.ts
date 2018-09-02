@@ -27,8 +27,7 @@ describe('apis/blocksAPI', () => {
   let container: Container;
   let fakeBlock: SignedBlockType;
   let blocksModel: typeof IBlocksModel;
-  beforeEach(async () => {
-    sandbox      = sinon.createSandbox();
+  before(async () => {
     container    = await createContainer([
       'core-blocks',
       'core-helpers',
@@ -37,6 +36,10 @@ describe('apis/blocksAPI', () => {
       'core-apis',
       'core-transactions',
     ]);
+  });
+  beforeEach(async () => {
+    sandbox      = sinon.createSandbox();
+
     instance     = container.getNamed(APISymbols.api, BlocksSymbols.api);
     blocksModule = container.get(BlocksSymbols.modules.blocks);
     blocksModel  = container.getNamed(ModelSymbols.model, BlocksSymbols.model);

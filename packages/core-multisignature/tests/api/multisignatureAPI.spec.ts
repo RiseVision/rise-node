@@ -137,7 +137,6 @@ describe('apis/multisignatureAPI', () => {
   });
   afterEach(async () => {
     sandbox.restore();
-    await tearDownContainer(container);
   });
 
   describe('getAccounts()', () => {

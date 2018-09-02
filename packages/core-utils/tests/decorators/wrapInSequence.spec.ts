@@ -26,9 +26,11 @@ describe('helpers/decorators/wrapInSequence', () => {
   let container: Container;
   let sequenceStub: ISequence;
 
+  before(async () => {
+    container = await createContainer(['core-helpers', 'core-blocks', 'core', 'core-accounts', 'core-transactions']);
+  });
   beforeEach(async () => {
     sandbox = sinon.createSandbox();
-    container = await createContainer(['core-helpers', 'core-blocks', 'core', 'core-accounts', 'core-transactions']);
     defineMetadataSpy = sandbox.spy(Reflect, 'defineMetadata');
     target = () => 123;
     sequenceStub = container.getNamed(Symbols.helpers.sequence, Symbols.names.helpers.dbSequence);

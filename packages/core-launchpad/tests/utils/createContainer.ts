@@ -1,24 +1,30 @@
-import { Container } from 'inversify';
+import { Container, interfaces } from 'inversify';
 import { loadCoreSortedModules, resolveModule } from '../../src/modulesLoader';
 import { Symbols } from '../../../core-interfaces/dist';
 import { z_schema } from '../../../core-utils';
 import { WordPressHookSystem, InMemoryFilterModel } from 'mangiafuoco';
 import { LoggerStub } from '../../../core-utils/tests/stubs';
 import { SignedAndChainedBlockType } from '../../../core-types/dist';
-import { CoreSymbols } from '../../../core/dist';
 import * as path from 'path';
 import { ICoreModule } from '../../src';
 import { IBlockLogic } from '../../../core-interfaces/src/logic';
+import { ModelSymbols } from '../../../core-models/src/helpers';
+import { IJobsQueue } from '@risevision/core-interfaces';
+import * as activeHandles from 'active-handles';
+import * as fs from 'fs';
+activeHandles.hookSetInterval();
 
-let curContainer: Container;
+let curContainer: Container = new Container();
 
+curContainer.snapshot();
+curContainer.bind<Array<ICoreModule<any>>>('__test__modules').toConstantValue([]);
 export async function createContainer(modules: string[],
-                                      config: any                      = require('../assets/config.json'),
-                                      block: SignedAndChainedBlockType = require('../assets/genesisBlock.json')): Promise<Container> {
-  if (curContainer) {
-    await tearDownContainer(curContainer);
-  }
-  const container = new Container();
+                                      config: any                      = JSON.parse(fs.readFileSync(`${__dirname}/../assets/config.json`, 'utf8')),
+                                      block: SignedAndChainedBlockType = JSON.parse(fs.readFileSync(`${__dirname}/../assets/genesisBlock.json`, 'utf8'))): Promise<Container> {
+
+  await tearDownContainer();
+  // global.gc();
+  const container = curContainer;
   const allDeps   = {};
   for (const m of modules) {
     allDeps[`@risevision/${m}`] = resolveModule(path.resolve(`${__dirname}/../../../${m}`), allDeps);
@@ -49,11 +55,12 @@ export async function createContainer(modules: string[],
   block.previousBlock = null;
 
   container.bind('__test__modules').toConstantValue(sortedModules);
-  curContainer = container;
+  // curContainer = container;
   return container;
 }
-
-export async function tearDownContainer(container: Container) {
+let firstRun = true;
+export async function tearDownContainer() {
+  const container = curContainer;
   const modules = container.get<Array<ICoreModule<any>>>('__test__modules');
   for (const m of modules) {
     try {
@@ -62,4 +69,70 @@ export async function tearDownContainer(container: Container) {
       console.log(e);
     }
   }
+
+  const bd = container['_bindingDictionary'] as interfaces.Lookup<interfaces.Binding<any>>;
+  // console.log(modules.map((m) => m.directory));
+  bd.traverse((key, value) => {
+    // console.log(key);
+    if (key === ModelSymbols.sequelize || key === ModelSymbols.sequelizeNamespace || key === ModelSymbols.model) {
+      return;
+    }
+    value.forEach((v) => {
+      if (v.type === 'Constructor') {
+        return;
+      } else if (v.type === 'ConstantValue') {
+        return;
+      }
+      if (v.cache === null) {
+        // console.log(key, 'is NULL');
+        return;
+      }
+      if (typeof (v.cache) !== 'object' || Array.isArray(v.cache)) {
+        // console.log(key, 'is not an object', typeof(v.cache));
+        return;
+      }
+      // console.log(Object.keys(v.cache));
+      Object.keys(v.cache).forEach((k) => v.cache[k] = null);
+    });
+  });
+  // if (!firstRun) {
+  //   process.exit(0);
+  // }
+  // firstRun = false;
+  container.unbindAll();
+  container.restore();
+  container.snapshot();
 }
+
+const Memwatch = require('memwatch-next');
+const Util = require('util');
+/**
+ * Check for memory leaks
+ */
+let hd = null;
+Memwatch.on('leak', (info) => {
+  console.log('memwatch::leak');
+  console.error(info);
+  // if (!hd) {
+  //   hd = new Memwatch.HeapDiff();
+  // }
+  // else {console.log('ciao');
+  //   const diff = hd.end();
+  //   console.error(Util.inspect(diff, true, null));
+  //   console.log('memwatch::leak', {
+  //     HeapDiff: hd
+  //   });
+  //   hd = null;
+  // }
+});
+
+// Memwatch.on('stats', (stats) => {
+//   console.log('memwatch::stats');
+//   console.error(Util.inspect(stats, true, null));
+//   console.log('memwatch::stats', {
+//     Stats: stats
+//   });
+// });
+
+
+

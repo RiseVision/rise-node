@@ -61,8 +61,10 @@ describe('logic/transaction', () => {
 
   let sender: IAccountsModel;
   const requester: IAccountsModel = null;
-  beforeEach(async () => {
+  before(async() => {
     container       = await createContainer(['core-transactions', 'core-helpers', 'core-blocks', 'core', 'core-accounts']);
+  });
+  beforeEach(async () => {
     AccountsModel   = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
     instance        = container.get(Symbols.logic.transaction);
     cryptoImpl      = container.get(Symbols.generic.crypto);

@@ -21,21 +21,24 @@ describe('logic/peers', () => {
   let peersFactoryStub: SinonStub;
   let container: Container;
   let sandbox: SinonSandbox;
-
+  before(async () => {
+    container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container.get(p2pSymbols.logic.peersLogic); // Should not throw
+    container.rebind(p2pSymbols.logic.peersLogic).to(PeersLogic);
+  });
   beforeEach(async () => {
     sandbox = sinon.createSandbox();
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
     peerLogicStub = new PeerLogic();
     peersFactoryStub = sandbox.stub().returns(peerLogicStub);
     container.rebind(p2pSymbols.logic.peerFactory).toConstantValue(peersFactoryStub);
     loggerStub = container.get(Symbols.helpers.logger);
     systemModuleStub = container.get(Symbols.modules.system);
-    container.rebind(p2pSymbols.logic.peersLogic).to(PeersLogic);
     instance = container.get(p2pSymbols.logic.peersLogic);
   });
 
   afterEach(() => {
     sandbox.restore();
+    loggerStub.stubReset();
   });
 
   describe('create', () => {
@@ -136,7 +139,7 @@ describe('logic/peers', () => {
       createStub.returns(newPeer);
       instance.upsert(newPeer, false);
       expect(loggerStub.stubs.debug.called).to.be.true;
-      expect(loggerStub.stubs.debug.thirdCall.args[1].ip).to.be.deep.equal(newPeer.ip);
+      expect(loggerStub.stubs.debug.firstCall.args[1].ip).to.be.deep.equal(newPeer.ip);
     });
 
     it ('should call logger.trace if peer has NOT changed', () => {

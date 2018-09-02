@@ -49,7 +49,7 @@ export class CoreModule extends BaseCoreModule {
 
   public async teardown() {
     const txPool = this.container.get<TransactionPool>(Symbols.logic.txpool);
-    txPool.cleanup();
+    await txPool.cleanup();
   }
 
 }

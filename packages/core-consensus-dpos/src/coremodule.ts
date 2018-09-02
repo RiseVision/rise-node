@@ -44,10 +44,10 @@ export class CoreModule extends BaseCoreModule<DposAppConfig> implements ICoreMo
 
     // APIs
     this.container.bind(APISymbols.api)
-      .to(AccountsAPI)
+      .to(AccountsAPI).inSingletonScope()
       .whenTargetNamed(dPoSSymbols.accountsAPI);
     this.container.bind(APISymbols.api)
-      .to(DelegatesAPI)
+      .to(DelegatesAPI).inSingletonScope()
       .whenTargetNamed(dPoSSymbols.delegatesAPI);
 
     this.container.bind(dPoSSymbols.logic.round).toConstructor(RoundLogic);

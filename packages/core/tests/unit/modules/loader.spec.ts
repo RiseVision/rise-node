@@ -1820,6 +1820,7 @@ describe('modules/loader', () => {
     it('should call logger.warn if instance.sync throw error', async () => {
       syncStub.rejects({});
       loggerStub.stubReset();
+      console.log(blocksModule);
       await (instance as any).syncTimer();
       await wait (1000);
       expect(retryStub.called).to.be.true;

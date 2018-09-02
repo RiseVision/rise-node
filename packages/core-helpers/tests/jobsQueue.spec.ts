@@ -2,6 +2,7 @@ import { IJobsQueue } from '@risevision/core-interfaces';
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { JobsQueue } from '../src';
+import { createContainer, tearDownContainer } from '../../core-launchpad/tests/utils/createContainer';
 
 const waitingPromise = (msToWait: number): Promise<void> => {
   return new Promise<void>((resolve) => setTimeout(resolve, msToWait));
@@ -9,6 +10,8 @@ const waitingPromise = (msToWait: number): Promise<void> => {
 
 describe('helpers/jobsQueue', () => {
   let jobsQueue: IJobsQueue;
+  // before(() => tearDownContainer());
+  // after(() => createContainer([]));
   beforeEach(() => { jobsQueue = new JobsQueue(); });
 
   describe('register', () => {
@@ -27,13 +30,17 @@ describe('helpers/jobsQueue', () => {
     });
 
     it('should run the job again after [time] milliseconds after the execution of the job', async () => {
-      const job = async () => await waitingPromise(5);
+      const job = async () => {
+        await waitingPromise(5);
+      };
       const spy = sinon.spy(job);
       // This job runs 5ms, and needs to be re-executed after 5 ms
       jobsQueue.register('test3', spy, 5);
       // Wait 20ms: we expect it to be run at least 2 times:
       // 5ms ( duration of first call of job() ) + 5ms (timeout) + 5ms (duration of second call of job) = 15
-      await waitingPromise(18);
+      let time = Date.now();
+      await waitingPromise(20);
+      console.log(Date.now() - time, time);
       expect(spy.callCount).to.be.greaterThan(1);
       // Double check for impossible condition (if it ran 4 times, we have an issue)
       expect(spy.callCount).to.be.below(4);

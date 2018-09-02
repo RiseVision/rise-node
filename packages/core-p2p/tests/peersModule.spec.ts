@@ -28,9 +28,11 @@ describe('modules/peers', () => {
     },
   };
   let sandbox: SinonSandbox;
+  before(async () => {
+    container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+  });
   beforeEach(async () => {
     sandbox                = sinon.createSandbox();
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
     container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
     container.rebind(p2pSymbols.modules.peers).to(PeersModule);
     inst = container.get(Symbols.modules.peers);

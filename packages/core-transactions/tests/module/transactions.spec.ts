@@ -44,13 +44,17 @@ describe('modules/transactions', () => {
   let txPool: StubTxPool;
   let txLogic: ITransactionLogic;
 
+  before(async () => {
+    container = await createContainer(['core-transactions', 'core-helpers', 'core-blocks', 'core', 'core-accounts']);
+    container.get<TransactionPool>(Symbols.logic.txpool).cleanup();
+    container.rebind(Symbols.logic.txpool).to(StubTxPool);
+
+  });
   beforeEach(async () => {
     sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-transactions', 'core-helpers', 'core-blocks', 'core', 'core-accounts']);
-    container.rebind(Symbols.logic.txpool).to(StubTxPool).inSingletonScope();
     instance                    = container.get(TXSymbols.module);
     txPool                      = container.get(TXSymbols.pool);
-    instance['transactionPool'] = txPool
+    instance['transactionPool'] = txPool;
     accountsModule              = container.get(Symbols.modules.accounts);
     AccountsModel               = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
     dbHelper                    = container.get(Symbols.helpers.db);

@@ -56,10 +56,14 @@ describe('logic/transactions/vote', () => {
   let accounts2DelegatesModel: typeof Accounts2DelegatesModel;
   let accounts2U_DelegatesModel: typeof Accounts2U_DelegatesModel;
   let roundsModel: typeof RoundsModel;
+  before(async () => {
+    container = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
+
+  });
 
   beforeEach(async () => {
     sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
+
     // zSchemaStub         = {
     //   getLastErrors: () => [],
     //   validate     : sandbox.stub(),

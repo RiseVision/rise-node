@@ -75,12 +75,6 @@ export class RoundLogic {
    * @returns {Promise<void>}
    */
   public mergeBlockGenerator(): Array<DBOp<any>> {
-    console.log(this.scope.modules.accounts.mergeAccountAndGetOPs({
-      blockId       : this.scope.block.id,
-      producedblocks: (this.scope.backwards ? -1 : 1),
-      publicKey     : this.scope.block.generatorPublicKey,
-      round         : this.scope.round,
-    }))
     return this.scope.modules.accounts.mergeAccountAndGetOPs({
       blockId       : this.scope.block.id,
       producedblocks: (this.scope.backwards ? -1 : 1),

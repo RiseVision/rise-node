@@ -134,7 +134,7 @@ describe('logic/round', () => {
         blockId       : scope.block.id,
         producedblocks: scope.backwards ? -1 : 1,
         publicKey     : scope.block.generatorPublicKey,
-        round         : scope.round,
+        // round         : scope.round,
       });
     });
   });

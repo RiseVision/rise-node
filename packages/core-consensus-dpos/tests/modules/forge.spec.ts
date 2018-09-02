@@ -25,7 +25,6 @@ chai.use(chaiAsPromised);
 describe('modules/forge', () => {
   let sandbox: SinonSandbox;
   let container: Container;
-  let clock: SinonFakeTimers;
   let instance: ForgeModule;
   let fakeConfig: any;
   let jobsQueueStub: JobsQueue;
@@ -44,11 +43,11 @@ describe('modules/forge', () => {
   let constants: ConstantsType;
 
   let loadKeypairs: () => void;
-
-  beforeEach(async () => {
+  before(async () => {
     sandbox    = sinon.createSandbox();
+  });
+  beforeEach(async () => {
     container  = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
-    clock      = sandbox.useFakeTimers();
     fakeConfig = { forging: { secret: ['secret1', 'secret2'] } };
     container.get<any>(Symbols.generic.appConfig).forging = fakeConfig.forging;
     logger                     = container.get(Symbols.helpers.logger);
@@ -63,8 +62,8 @@ describe('modules/forge', () => {
     delegatesModuleStub        = container.get(dPoSSymbols.modules.delegates);
     transactionsModuleStub     = container.get(Symbols.modules.transactions);
     blocksProcessModuleStub    = container.get(BlocksSymbols.modules.process);
-    blocksModel                = container.getNamed(ModelSymbols.model, Symbols.models.blocks)
-    instance                   = container.get(dPoSSymbols.modules.forge)
+    blocksModel                = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
+    instance                   = container.get(dPoSSymbols.modules.forge);
     sequenceStub               = {
       addAndPromise: sandbox.spy((w) => {
         return Promise.resolve(
@@ -228,7 +227,9 @@ describe('modules/forge', () => {
     let jobsRegister: SinonStub;
     let fillPoolStub: SinonStub;
     let loggerWarnStub: SinonStub;
+    let clock: SinonFakeTimers;
     beforeEach(() => {
+      clock      = sandbox.useFakeTimers();
 
       fillPoolStub = sandbox.stub(transactionsModuleStub, 'fillPool').resolves();
       loggerWarnStub = sandbox.stub(logger, 'warn').returns(null);
@@ -291,11 +292,14 @@ describe('modules/forge', () => {
 
   describe('forge', () => {
     let loadDelegatesStub: SinonStub;
-    let appStateGetStub: SinonStub
+    let appStateGetStub: SinonStub;
+    let getBlockSlotDataStub: SinonStub;
+
     beforeEach(() => {
       // We stub instance['loadDelegates'] to assert that function returns
       loadDelegatesStub = sandbox.stub(instance as any, 'loadDelegates');
       appStateGetStub   = sandbox.stub(appStateStub, 'get');
+      getBlockSlotDataStub = sandbox.stub(instance as any, 'getBlockSlotData').resolves({ time: 11111, keypair: {} });
     });
 
     describe('When not ready to forge', () => {
@@ -304,33 +308,24 @@ describe('modules/forge', () => {
         await instance['forge']();
         expect(appStateGetStub.calledOnce).to.be.true;
         expect(appStateGetStub.firstCall.args[0]).to.be.equal('loader.isSyncing');
-
         appStateGetStub.resetHistory();
         appStateGetStub.returns(false);
         await instance['forge']();
         expect(appStateGetStub.calledTwice).to.be.true;
         expect(appStateGetStub.firstCall.args[0]).to.be.equal('loader.isSyncing');
-        expect(appStateGetStub.secondCall.args[0]).to.be.equal('rounds.isLoaded');
-
+        console.log('a');
         appStateGetStub.resetHistory();
         appStateGetStub.onFirstCall().returns(false);
         appStateGetStub.returns(true);
-        await instance['forge']();
-        expect(appStateGetStub.calledThrice).to.be.true;
-        expect(appStateGetStub.firstCall.args[0]).to.be.equal('loader.isSyncing');
-        expect(appStateGetStub.secondCall.args[0]).to.be.equal('rounds.isLoaded');
-        expect(appStateGetStub.thirdCall.args[0]).to.be.equal('rounds.isTicking');
-      });
 
-      it('should call return if rounds is not loaded', async () => {
-        appStateGetStub.returns(false);
         await instance['forge']();
-        expect(loadDelegatesStub.notCalled).to.be.true;
+        expect(appStateGetStub.calledTwice).to.be.true;
+        expect(appStateGetStub.firstCall.args[0]).to.be.equal('loader.isSyncing');
+        expect(appStateGetStub.secondCall.args[0]).to.be.equal('rounds.isTicking');
       });
 
       it('should call return if rounds is ticking', async () => {
-        appStateGetStub.onFirstCall().returns(false);
-        appStateGetStub.returns(true);
+        appStateGetStub.onSecondCall().returns(true);
         await instance['forge']();
         expect(loadDelegatesStub.notCalled).to.be.true;
       });
@@ -339,8 +334,7 @@ describe('modules/forge', () => {
     describe('When no delegates are loaded or no delegates at all', () => {
       beforeEach(() => {
         appStateGetStub.onFirstCall().returns(false); // loader.isSyncing
-        appStateGetStub.onSecondCall().returns(true); // rounds.isLoaded
-        appStateGetStub.onThirdCall().returns(false); // rounds.isTicking
+        appStateGetStub.onSecondCall().returns(false); // rounds.isTicking
       });
 
       it('should call loadDelegates if keypairs is empty', async () => {
@@ -352,16 +346,13 @@ describe('modules/forge', () => {
     });
 
     describe('When waiting for next delegate slot', () => {
-      let getBlockSlotDataStub: SinonStub;
       let getSlotNumberStub: SinonStub;
       beforeEach(() => {
         appStateGetStub.onFirstCall().returns(false); // loader.isSyncing
-        appStateGetStub.onSecondCall().returns(true); // rounds.isLoaded
-        appStateGetStub.onThirdCall().returns(false); // rounds.isTicking
+        appStateGetStub.onSecondCall().returns(false); // rounds.isTicking
         loadKeypairs();
         getSlotNumberStub    = sandbox.stub(slotsStub, 'getSlotNumber').returns(100);
         // we stub getBlockSlotDataStub to assert that function returns
-        getBlockSlotDataStub = sandbox.stub(instance as any, 'getBlockSlotData');
       });
 
       it('should call slots.getSlotNumber twice', async () => {
@@ -378,13 +369,11 @@ describe('modules/forge', () => {
     });
 
     describe('When skipping slots or no blockData', () => {
-      let getBlockSlotDataStub: SinonStub;
       let getSlotNumberStub: SinonStub;
 
       beforeEach(() => {
         appStateGetStub.onFirstCall().returns(false); // loader.isSyncing
-        appStateGetStub.onSecondCall().returns(true); // rounds.isLoaded
-        appStateGetStub.onThirdCall().returns(false); // rounds.isTicking
+        appStateGetStub.onSecondCall().returns(false); // rounds.isTicking
         loadKeypairs();
         getSlotNumberStub = sandbox.stub(slotsStub, 'getSlotNumber');
         // currentSlot must not be the same slot of lastBlock => This will pass
@@ -394,7 +383,7 @@ describe('modules/forge', () => {
         getSlotNumberStub.onCall(2).returns(99);
         getSlotNumberStub.onCall(3).returns(100);
         getSlotNumberStub.onCall(4).returns(100);
-        getBlockSlotDataStub = sandbox.stub(instance as any, 'getBlockSlotData').resolves({ time: 11111 });
+
       });
 
       it('should call getBlockSlotData', async () => {
@@ -438,9 +427,8 @@ describe('modules/forge', () => {
 
       beforeEach(() => {
         appStateGetStub.onFirstCall().returns(false); // loader.isSyncing
-        appStateGetStub.onSecondCall().returns(true); // rounds.isLoaded
-        appStateGetStub.onThirdCall().returns(false); // rounds.isTicking
-        appStateGetStub.onCall(3).returns(10); // node.consensus
+        appStateGetStub.onSecondCall().returns(false); // rounds.isTicking
+        appStateGetStub.onCall(2).returns(10); // node.consensus
         getComputedStub   = sandbox.stub(appStateStub, 'getComputed').returns(false); // node.poorConsensus
         getSlotNumberStub = sandbox.stub(slotsStub, 'getSlotNumber');
         loadKeypairs();
@@ -450,8 +438,6 @@ describe('modules/forge', () => {
         // currentSlot must have the same slotNumber of blockData => This will get catched
         getSlotNumberStub.onCall(2).returns(100);
         getSlotNumberStub.onCall(3).returns(100);
-
-        getBlockSlotDataStub = sandbox.stub(instance as any, 'getBlockSlotData').resolves({ time: 11111, keypair: {} });
 
         getPeersStub = sandbox.stub(broadcasterLogicStub, 'getPeers').resolves();
         genBlockStub = sandbox.stub(blocksProcessModuleStub, 'generateBlock').resolves();
@@ -539,18 +525,20 @@ describe('modules/forge', () => {
     });
 
     it('should add the keypair to this.keypairs if account is a delegate', async () => {
+      let before = {...instance['keypairs']};
       await instance['loadDelegates']();
       expect(instance['keypairs']).to.be.deep.equal({
-          pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2:
-            {
-              privateKey: 'pr35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
-              publicKey : 'pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
-            },
-          pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6:
-            {
-              privateKey: 'pr5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
-              publicKey : 'pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
-            },
+        ...before,
+        pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2:
+          {
+            privateKey: 'pr35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
+            publicKey : 'pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
+          },
+        pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6:
+          {
+            privateKey: 'pr5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
+            publicKey : 'pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
+          },
         }
       );
     });
@@ -619,6 +607,7 @@ describe('modules/forge', () => {
 
     describe('else', () => {
       it('should return null', async () => {
+        console.log(instance.enabledKeys);
         const retVal = await instance['getBlockSlotData'](0, 12345);
         expect(retVal).to.be.null;
       });
