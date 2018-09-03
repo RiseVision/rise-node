@@ -109,7 +109,7 @@ describe('src/modules/transport.ts', () => {
   });
 
   describe('getFromPeer', function () {
-    this.timeout(2100);
+    this.timeout(3000);
 
     let peer;
     let options;

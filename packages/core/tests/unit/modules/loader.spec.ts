@@ -1634,7 +1634,7 @@ describe('modules/loader', () => {
     });
     afterEach(() => {
       loggerStub.stubReset();
-      (instance as any).syncIntervalId = null;
+      clearTimeout((instance as any).syncIntervalId);
     });
 
     describe('if turnOn==false && this.syncIntervalId', () => {
@@ -1723,6 +1723,7 @@ describe('modules/loader', () => {
       (instance as any).syncTrigger(true);
 
       expect(loggerStub.stubs.trace.notCalled).to.be.true;
+
     });
   });
 
@@ -1819,10 +1820,10 @@ describe('modules/loader', () => {
 
     it('should call logger.warn if instance.sync throw error', async () => {
       syncStub.rejects({});
+
       loggerStub.stubReset();
-      console.log(blocksModule);
       await (instance as any).syncTimer();
-      await wait (1000);
+      await wait (1500);
       expect(retryStub.called).to.be.true;
       expect(loggerStub.stubs.warn.called).to.be.true;
     });
