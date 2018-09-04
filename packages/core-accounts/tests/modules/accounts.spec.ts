@@ -77,13 +77,13 @@ describe('modules/accounts', () => {
   describe('resolveAccountsForTransactions', () => {
     let accountsModel: typeof IAccountsModel;
     let findAllStub: SinonStub;
-    let setAccountAndGetStub: SinonStub;
+    let assignPublicKeyToAccount: SinonStub;
     beforeEach(() => {
       accountsModel = container.getNamed(ModelSymbols.model, AccountsSymbols.model);
       findAllStub   = sandbox.stub(accountsModel, 'findAll').resolves([]);
-      setAccountAndGetStub = sandbox.stub(accountModule, 'setAccountAndGet')
+      assignPublicKeyToAccount = sandbox.stub(accountModule, 'assignPublicKeyToAccount')
         .callsFake(
-          ({ publicKey }) => Promise
+          ({publicKey}) => Promise
             .resolve({ publicKey, address: `add${publicKey.toString('hex')}` })
         );
     });
@@ -111,9 +111,9 @@ describe('modules/accounts', () => {
       await expect(accountModule.resolveAccountsForTransactions([
         { senderId: 'add11', senderPublicKey: Buffer.from('22', 'hex') } as any
       ])).rejectedWith('Stealing attempt type.1 for add11');
-      expect(setAccountAndGetStub.called).is.true;
-      expect(setAccountAndGetStub.firstCall.args[0])
-        .is.deep.eq({ publicKey: Buffer.from('22', 'hex') });
+      expect(assignPublicKeyToAccount.called).is.true;
+      expect(assignPublicKeyToAccount.firstCall.args[0])
+        .is.deep.eq({address: 'add11', publicKey: Buffer.from('22', 'hex')});
     });
     it('should also query for requesterPublicKey', async () => {
       sandbox.stub(accountLogic, 'generateAddressByPublicKey').returns('add33');
@@ -135,7 +135,7 @@ describe('modules/accounts', () => {
 
   });
 
-  describe('.setAccountAndGet', () => {
+  describe('.assignPublicKeyToAccount', () => {
     let setStub: SinonStub;
     let getStub: SinonStub;
     beforeEach(() => {
@@ -143,20 +143,25 @@ describe('modules/accounts', () => {
       getStub = sandbox.stub(accountLogic, 'get').resolves();
     });
     it('should throw if no publicKey and address is provided', async () => {
-      await expect(accountModule.setAccountAndGet({} as any))
-        .to.be.rejectedWith('Missing address and public key');
+      await expect(accountModule.assignPublicKeyToAccount({address: '1a', publicKey: null}))
+        .to.be.rejectedWith('Missing publicKey for 1a');
     });
-    it('should derive address from publicKey if not provided', async () => {
-      await accountModule.setAccountAndGet({ publicKey: validPubKey });
+    it('should check address against publicKey', async () => {
+      await expect(accountModule.assignPublicKeyToAccount({address: '1a', publicKey: validPubKey}))
+        .rejectedWith('Attempting to assign publicKey to non correct address 2355684370867218400R != 1a');
+    });
+    it('should allow empty address', async () => {
+      await accountModule.assignPublicKeyToAccount({publicKey: validPubKey});
       expect(setStub.calledWith(validAddress, { publicKey: validPubKey })).true;
-      expect(getStub.calledWith({ address: validAddress })).true;
     });
     it('should accountLogi.get with address and return its value', async () => {
       getStub.resolves('antani')
-      const toRet = await accountModule.setAccountAndGet({ address: '1L' });
-
+      const toRet = await accountModule.assignPublicKeyToAccount({address: validAddress, publicKey: validPubKey});
+      expect(getStub.calledWith({ address: validAddress })).true;
+      expect(setStub.calledWith(validAddress, { publicKey: validPubKey })).true;
       expect(toRet).to.be.eq('antani');
     });
+
   });
   //
   describe('.mergeAccountAndGetOPs', () => {

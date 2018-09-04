@@ -157,7 +157,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       for (const tx of block.transactions) {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
         const sender                = await this.accountsModule
-          .setAccountAndGet({ publicKey: tx.senderPublicKey });
+          .assignPublicKeyToAccount(tx.senderId, tx.senderPublicKey);
         // Apply tx.
         const ops: Array<DBOp<any>> = [
           {
@@ -303,7 +303,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * @returns {Promise<void>}
    */
   public async saveBlock(b: SignedBlockType, dbTX: Transaction) {
-    const saveOp = this.blockLogic.dbSave(b);
+    const saveOp = this.blockLogic.dbSaveOp(b);
     const txOps  = this.transactionLogic.dbSave(b.transactions, b.id, b.height);
 
     await this.dbHelper.performOps([saveOp, ...txOps], dbTX);

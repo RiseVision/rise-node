@@ -190,7 +190,6 @@ export class AccountLogic extends DecoratedSubscriber implements IAccountLogic {
     this.assertPublicKey(fields.publicKey);
     address        = String(address).toUpperCase();
     fields.address = address;
-    // TODO: check if publicKey and address are coherent. ?
     await this.AccountsModel.upsert(fields);
   }
 

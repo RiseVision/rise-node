@@ -12,10 +12,9 @@ export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> exte
   getAccounts(filter: AccountFilterData): Promise<T[]>;
 
   /**
-   * Sets some data to specific account
+   * Assign public key to the account
    */
-  // tslint:disable-next-line max-line-length
-  setAccountAndGet(data: Partial<T>  & ({ publicKey: Buffer } | { address: string })): Promise<T>;
+  assignPublicKeyToAccount(opts: {address?: string, publicKey: Buffer}): Promise<T>;
 
   mergeAccountAndGetOPs(diff: AccountDiffType): Array<DBOp<any>>;
 

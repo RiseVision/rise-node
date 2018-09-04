@@ -1,6 +1,6 @@
 import {
   AccountDiffType,
-  AccountFilterData,
+  AccountFilterData, IAccountLogic,
   IAccountsModel,
   IAccountsModule,
 } from '@risevision/core-interfaces';
@@ -66,7 +66,7 @@ export class AccountsModule implements IAccountsModule {
         throw new Error(`Account ${address} not found in db.`);
       }
       if (!sendersMap[address].publicKey) {
-        sendersMap[address] = await this.setAccountAndGet({ publicKey });
+        sendersMap[address] = await this.assignPublicKeyToAccount({ publicKey });
       }
       // sanity checks. A transaction could be broadcasted
       if (sendersMap[address].address !== address) {
@@ -82,18 +82,19 @@ export class AccountsModule implements IAccountsModule {
 
   /**
    * Sets some data to specific account
-   * @param {MemAccountsData} data
-   * @returns {Promise<MemAccountsData>}
    */
   // tslint:disable-next-line max-line-length
-  public async setAccountAndGet(data: ({ publicKey: Buffer } | { address: string }) & Partial<IAccountsModel>): Promise<IAccountsModel> {
-    data              = this.fixAndCheckInputParams(data);
-    // no need to reset address!
-    const { address } = data;
-    delete data.address;
-
-    await this.accountLogic.set(address, data);
-    return this.accountLogic.get({ address });
+  public async assignPublicKeyToAccount(opts: {address?: string, publicKey: Buffer}): Promise<IAccountsModel> {
+    const {address, publicKey} = opts;
+    if (!publicKey) {
+      throw new Error(`Missing publicKey for ${address}`);
+    }
+    const data = this.fixAndCheckInputParams({address, publicKey});
+    if (data.address !== address && address) {
+      throw new Error(`Attempting to assign publicKey to non correct address ${data.address} != ${address}`);
+    }
+    await this.accountLogic.set(data.address, {publicKey: data.publicKey});
+    return this.accountLogic.get({ address: data.address });
   }
 
   public mergeAccountAndGetOPs(diff: AccountDiffType): Array<DBOp<any>> {

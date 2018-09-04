@@ -11,8 +11,8 @@ import {
   BlockType,
   ConstantsType,
   DBOp,
-  IBaseTransaction, IBytesBlock, IConfirmedTransaction,
-  IKeypair, ITransportTransaction,
+  IBaseTransaction, IBytesBlock,
+  IKeypair,
   RawFullBlockListType,
   SignedAndChainedBlockType,
   SignedAndChainedTransportBlockType,
@@ -24,8 +24,8 @@ import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import { inject, injectable, named } from 'inversify';
 import z_schema from 'z-schema';
-import { BlockRewardLogic } from './blockReward';
 import { BlocksSymbols } from '../blocksSymbols';
+import { BlockRewardLogic } from './blockReward';
 
 const blockSchema = require('../../schema/block.json');
 
@@ -168,9 +168,8 @@ export class BlockLogic implements IBlockLogic {
   /**
    * Creates db object transaction to `blocks` table.
    * @param {BlockType} block
-   * TODO: Change method name to something more meaningful as this does NOT save
    */
-  public dbSave(block: SignedBlockType): DBOp<IBlocksModel & { id: string }> {
+  public dbSaveOp(block: SignedBlockType): DBOp<IBlocksModel & { id: string }> {
     const values = { ...filterObject(block, this.dbFields) };
     return {
       model: this.BlocksModel,

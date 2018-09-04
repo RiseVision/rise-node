@@ -44,7 +44,7 @@ export interface IBlockLogic {
    * Creates db object transaction to `blocks` table.
    * @param {BlockType} block
    */
-  dbSave(block: SignedBlockType): DBOp<IBlocksModel>;
+  dbSaveOp(block: SignedBlockType): DBOp<IBlocksModel>;
 
   /**
    * Normalize block object and eventually throw if something is not valid

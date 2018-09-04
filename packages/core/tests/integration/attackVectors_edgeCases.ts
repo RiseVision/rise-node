@@ -455,7 +455,8 @@ describe('attackVectors/edgeCases', () => {
         accsMap[senderAccount.address].balance   = funds * 10; // poison
 
         // set u balance to valid value.
-        await accModule.setAccountAndGet({address: senderAccount.address, u_balance: funds * 10});
+        // TODO: lerna - call has been removed - Change to model
+        // await accModule.setAccountAndGet({address: senderAccount.address, u_balance: funds * 10});
 
         await expect(chainModule.applyBlock(block, false, true, accsMap))
           .to.rejectedWith(`Address ${senderAccount.address} cannot go < 0 on balance: ${-fee} u_balance: ${funds * 10 - funds - fee}`);
@@ -464,7 +465,8 @@ describe('attackVectors/edgeCases', () => {
         const acc = await accModule.getAccount({address: senderAccount.address});
         expect(acc.u_balance).be.eq(funds * 10);
         // Restoring u_balance for afterEachChecks
-        await accModule.setAccountAndGet({address: acc.address, u_balance: funds});
+        // TODO: lerna - call has been removed - Change to model
+        // await accModule.setAccountAndGet({address: acc.address, u_balance: funds});
 
       });
     });

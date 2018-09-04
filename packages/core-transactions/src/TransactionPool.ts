@@ -303,7 +303,7 @@ export class TransactionPool implements ITransactionPoolLogic {
       throw new Error('Missing transaction');
     }
 
-    const sender = await this.accountsModule.setAccountAndGet({ publicKey: transaction.senderPublicKey });
+    const sender = await this.accountsModule.assignPublicKeyToAccount({ publicKey: transaction.senderPublicKey });
     // TODO: Verify this is needed.
     // const isMultisigAccount = sender && sender.isMultisignature();
     // if (isMultisigAccount) {

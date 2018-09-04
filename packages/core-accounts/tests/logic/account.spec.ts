@@ -22,10 +22,6 @@ const table = 'mem_accounts';
 
 // tslint:disable no-unused-expression
 
-/**
- * TODO: Better describe test cases
- * TODO: Check if more test cases are needed
- */
 describe('logic/account', () => {
 
   let sandbox: SinonSandbox;
