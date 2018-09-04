@@ -6,7 +6,7 @@ import { PostBlocksRequest } from '../../src/requests';
 import { ProtoBufHelperStub } from '../stubs/protobufhelperStub';
 import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
 // tslint:disable no-unused-expression
-describe('apis/requests/PostBlocksRequest', () => {
+describe('apis/requests/PostBlockRequest', () => {
   let options;
   let instance: PostBlocksRequest;
   let pbHelperStub: ProtoBufHelperStub;

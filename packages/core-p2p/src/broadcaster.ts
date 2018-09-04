@@ -1,5 +1,5 @@
 import {
-  BroadcastTask, BroadcastTaskOptions,
+  BroadcastParams, BroadcastTask, BroadcastTaskOptions, IAPIRequest,
   IAppState,
   IBroadcasterLogic,
   IJobsQueue,
@@ -10,11 +10,11 @@ import {
   ITransactionsModule,
   Symbols
 } from '@risevision/core-interfaces';
-import { AppConfig, ConstantsType, IBaseTransaction, PeerType } from '@risevision/core-types';
+import { AppConfig, ConstantsType, PeerType } from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
-import { P2pConfig, P2PConstantsType, p2pSymbols } from './helpers';
+import { P2PConstantsType, p2pSymbols } from './helpers';
 
 @injectable()
 export class BroadcasterLogic implements IBroadcasterLogic {
@@ -74,7 +74,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
 
     const peersList = await this.peersModule.list(params);
     const peers     = peersList.peers;
-    const consensus   = peersList.consensus;
+    const consensus = peersList.consensus;
 
     if (originalLimit === this.constants.maxPeers) {
       this.appState.set('node.consensus', consensus);
@@ -82,15 +82,30 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     return peers;
   }
 
-  public enqueue(params: any, options: BroadcastTaskOptions): number {
+  /**
+   * Checks if object is entitled for being broadcasted. If so it will enqueue the object.
+   * @param obj
+   * @param requestHandler
+   * @param params
+   */
+  public maybeEnqueue<T, K>(obj: any & { relays?: number }, requestHandler: IAPIRequest<T, K>, params?: BroadcastParams): boolean {
+    obj.relays = (obj.relays || 0) + 1;
+    if (obj.relays < this.maxRelays()) {
+      this.enqueue(params, {
+        immediate: false,
+        requestHandler,
+      });
+      return true;
+    }
+    return false;
+  }
+
+  public enqueue(params: BroadcastParams, options: BroadcastTaskOptions): number {
     options.immediate = false;
     return this.queue.push({ params, options });
   }
 
-  public async broadcast(params: {
-                           limit?: number, broadhash?: string,
-                           peers?: PeerType[]
-                         } = {},
+  public async broadcast(params: BroadcastParams = {},
                          options: BroadcastTaskOptions): Promise<{ peer: PeerType[] }> {
 
     params.limit     = params.limit || this.constants.maxPeers;
@@ -139,11 +154,11 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     this.logger.debug(`Broadcast before filtering: ${this.queue.length}`);
     const newQueue = [];
     const oldQueue = this.queue.slice();
-    this.queue = [];
+    this.queue     = [];
     for (const task of oldQueue) {
       if (task.options.immediate) {
         newQueue.push(task);
-      } else if (! await task.options.requestHandler.isRequestExpired()) {
+      } else if (!await task.options.requestHandler.isRequestExpired()) {
         newQueue.push(task);
       }
     }
@@ -162,11 +177,11 @@ export class BroadcasterLogic implements IBroadcasterLogic {
 
     for (const type in byRequests) {
       const requests = byRequests[type];
-      const [first] = requests;
+      const [first]  = requests;
       first.options.requestHandler.mergeIntoThis(... requests.slice(1).map((item) => item.options.requestHandler));
       squashed.push({
         options: {
-          immediate: false,
+          immediate     : false,
           requestHandler: first.options.requestHandler,
         },
       });

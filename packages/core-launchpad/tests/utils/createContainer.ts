@@ -1,6 +1,5 @@
 import { Container, interfaces } from 'inversify';
 import { loadCoreSortedModules, resolveModule } from '../../src/modulesLoader';
-import { Symbols } from '../../../core-interfaces/dist';
 import { z_schema } from '../../../core-utils';
 import { WordPressHookSystem, InMemoryFilterModel } from 'mangiafuoco';
 import { LoggerStub } from '../../../core-utils/tests/stubs';
@@ -9,7 +8,7 @@ import * as path from 'path';
 import { ICoreModule } from '../../src';
 import { IBlockLogic } from '../../../core-interfaces/src/logic';
 import { ModelSymbols } from '../../../core-models/src/helpers';
-import { IJobsQueue } from '@risevision/core-interfaces';
+import { Symbols, IJobsQueue } from '@risevision/core-interfaces';
 import * as activeHandles from 'active-handles';
 import * as fs from 'fs';
 activeHandles.hookSetInterval();
@@ -46,6 +45,7 @@ export async function createContainer(modules: string[],
   container.rebind(Symbols.helpers.logger).toConstantValue(new LoggerStub());
 
   for (const sortedModule of sortedModules) {
+    console.log(sortedModule.directory);
     await sortedModule.initAppElements();
   }
 

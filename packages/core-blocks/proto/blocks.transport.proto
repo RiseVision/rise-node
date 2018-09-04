@@ -1,19 +1,19 @@
 syntax = "proto3";
-import "./bytesBlock.proto";
+import "./blocks.bytes.proto";
 
 message transportBlocks {
-    repeated bytesBlock blocks = 1;
+    repeated bytes blocks = 1;
 }
 
 message transportBlock {
-    bytesBlock block = 1;
+    bytes block = 1;
 }
 
 message commonBlock {
     bytesBlock common = 1;
 }
 
-message transportBlockResponse {
+message postTransportBlockResponse {
     bool success = 1;
     string blockId = 2;
 }

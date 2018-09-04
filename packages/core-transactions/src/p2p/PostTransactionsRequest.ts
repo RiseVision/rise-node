@@ -1,16 +1,14 @@
-import { inject, injectable, named } from 'inversify';
-import * as _ from 'lodash';
-import { BaseRequest } from './BaseRequest';
-import { IBaseTransaction, IBytesTransaction, PeerRequestOptions } from '@risevision/core-types';
 import {
-  IBlocksModule,
   ITransactionLogic,
   ITransactionsModel,
   ITransactionsModule,
   Symbols
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-
+import { BaseRequest } from '@risevision/core-p2p';
+import { IBaseTransaction, IBytesTransaction, PeerRequestOptions } from '@risevision/core-types';
+import { inject, injectable, named } from 'inversify';
+import * as _ from 'lodash';
 // tslint:disable-next-line
 export type PostTransactionsRequestDataType = {
   transactions?: Array<IBaseTransaction<any>>,

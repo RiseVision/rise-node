@@ -26,7 +26,8 @@
       "@risevision/core-launchpad": ["../core-launchpad/*"],
       "@risevision/core-types": ["../core-types/*"],
       "@risevision/core-helpers": ["../core-helpers/*"],
-      "@risevision/core-utils": ["../core-utils/*"]
+      "@risevision/core-utils": ["../core-utils/*"],
+      "@risevision/core-p2p": ["../core-p2p/*"]
     }
   },
   "include": ["./src/**/*.ts"],

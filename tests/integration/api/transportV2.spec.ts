@@ -10,7 +10,7 @@ import { GetBlocksRequest } from '../../../src/apis/requests/GetBlocksRequest';
 import { GetSignaturesRequest } from '../../../src/apis/requests/GetSignaturesRequest';
 import { GetTransactionsRequest } from '../../../src/apis/requests/GetTransactionsRequest';
 import { PeersListRequest } from '../../../src/apis/requests/PeersListRequest';
-import { PostBlocksRequest, PostBlocksRequestDataType } from '../../../src/apis/requests/PostBlocksRequest';
+import { PostBlocksRequest, PostBlocksRequestDataType } from '../../../src/apis/requests/PostBlockRequest';
 import { PostSignaturesRequest, PostSignaturesRequestDataType } from '../../../src/apis/requests/PostSignaturesRequest';
 import { PostTransactionsRequest } from '../../../src/apis/requests/PostTransactionsRequest';
 import { RequestFactoryType } from '../../../src/apis/requests/requestFactoryType';

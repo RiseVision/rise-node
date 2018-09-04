@@ -52,31 +52,6 @@
       "nethash"
     ]
   },
-  "commonBlock": {
-    "id": "transport.commonBlock",
-    "type": "object",
-    "properties": {
-      "ids": {
-        "type": "string",
-        "format": "csv"
-      }
-    },
-    "required": [
-      "ids"
-    ]
-  },
-  "blocks": {
-    "id": "transport.blocks",
-    "type": "object",
-    "properties": {
-      "lastBlockId": {
-        "type": "string",
-        "format": "id",
-        "minLength": 1,
-        "maxLength": 20
-      }
-    }
-  },
   "transactions": {
     "id": "transport.transactions",
     "type": "object",

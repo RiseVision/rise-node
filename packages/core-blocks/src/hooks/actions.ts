@@ -2,7 +2,7 @@
 import { IBlocksModel } from '@risevision/core-interfaces';
 import { createActionDecorator as createAction } from '@risevision/core-utils';
 import { Transaction } from 'sequelize';
-import { IConfirmedTransaction, SignedBlockType } from '@risevision/core-types';
+import { IConfirmedTransaction, SignedAndChainedBlockType, SignedBlockType } from '@risevision/core-types';
 
 /**
  * Called Before core module starts issuing any database query.
@@ -19,3 +19,6 @@ export const OnDestroyBlock   = createAction<(block: IBlocksModel, tx?: Transact
  * Called after transactions are persisted in the database
  */
 export const OnTransactionsSaved = createAction<(txs: Array<IConfirmedTransaction<any>>, block?: SignedBlockType) => Promise<void>>('core-blocks/onTransactionsSaved');
+
+
+export const OnReceiveBlock = createAction<(block: SignedAndChainedBlockType) => Promise<void>>('core-p2p/onReceiveBlock');

@@ -104,8 +104,13 @@ export class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
     if (error && !error.success && error.error) {
       throw new Error(error.error);
     } else {
-      return this.protoBufHelper
-        .decodeToObj(res.body, pbNamespace, pbMessageType, this.getConversionOptions());
+      return this.decodeProtoBufValidResponse(res.body);
+      // return this.protoBufHelper
+      //   .decodeToObj(res.body, pbNamespace, pbMessageType, this.getConversionOptions());
     }
+  }
+
+  protected decodeProtoBufValidResponse(res: Buffer): Out {
+    throw new Error('Implement ME!');
   }
 }

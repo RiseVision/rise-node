@@ -1,9 +1,7 @@
 import { decorate, inject, injectable, named, postConstruct } from 'inversify';
-import * as _ from 'lodash';
 import * as popsicle from 'popsicle';
 import * as Throttle from 'promise-parallel-throttle';
 import * as promiseRetry from 'promise-retry';
-import SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
 import {
   IAPIRequest,
@@ -40,11 +38,7 @@ import { ModelSymbols } from '@risevision/core-models';
 import { cbToPromise, SchemaValid, ValidateSchema, WrapInBalanceSequence } from '@risevision/core-utils';
 import {
   PeersListRequest,
-  PeersListRequestDataType,
-  PostBlocksRequest,
-  PostBlocksRequestDataType,
-  PostTransactionsRequest,
-  PostTransactionsRequestDataType
+  PeersListRequestDataType
 } from './requests/';
 import { p2pSymbols } from './helpers';
 import { RequestFactoryType } from './utils/';
@@ -111,12 +105,11 @@ export class TransportModule extends Extendable implements ITransportModule {
   private TransactionsModel: typeof ITransactionsModel;
 
   // requests
-  @inject(p2pSymbols.requests.postTransactions)
-  private ptrFactory: RequestFactoryType<PostTransactionsRequestDataType, PostTransactionsRequest>;
+
   // @inject(p2pSymbols.requests.postSignatures)
   // private psrFactory: RequestFactoryType<PostSignaturesRequestDataType, PostSignaturesRequest>;
-  @inject(p2pSymbols.requests.postBlocks)
-  private pblocksFactory: RequestFactoryType<PostBlocksRequestDataType, PostBlocksRequest>;
+  // @inject(p2pSymbols.requests.postBlocks)
+  // private pblocksFactory: RequestFactoryType<PostBlockRequestDataType, PostBlockRequest>;
   @inject(p2pSymbols.requests.peersList)
   private plFactory: RequestFactoryType<PeersListRequestDataType, PeersListRequest>;
 
@@ -279,55 +272,36 @@ export class TransportModule extends Extendable implements ITransportModule {
   }
 
   /**
-   * Calls enqueue if broadcast is true and did not exhaust relays
-   * Be aware that the transaction object is modified by adding relays: number
-   * TODO: Eventually fixme
-   */
-  public onUnconfirmedTransaction(transaction: IBaseTransaction<any> & { relays?: number }, broadcast: boolean) {
-    transaction.relays = transaction.relays || 1;
-    if (broadcast && transaction.relays < this.broadcasterLogic.maxRelays()) {
-      const requestHandler = this.ptrFactory({
-        data: {
-          transactions: [transaction],
-        },
-      });
-
-      this.broadcasterLogic.enqueue({}, { requestHandler });
-
-    }
-  }
-
-  /**
    * On new block get current broadhash, update system (to calc new broadhash) and broadcast block to all
    * peers on old broadhash.
    * Be aware that original block will be modified by adding relays if not there.
    * TODO: eventually fixme ^^
    */
-  public async onNewBlock(block: SignedBlockType & { relays?: number }, broadcast: boolean) {
-    if (broadcast) {
-      const broadhash = this.systemModule.broadhash;
-      // await this.systemModule.update();
-      block        = _.cloneDeep(block);
-      block.relays = block.relays || 0;
-      if (block.relays < this.broadcasterLogic.maxRelays()) {
-        block.relays++;
-        const reqHandler = this.pblocksFactory({ data: { block } });
-        // We avoid awaiting the broadcast result as it could result in unnecessary peer removals.
-        // Ex: Peer A, B, C
-        // A broadcasts block to B which wants to rebroadcast to A (which is waiting for B to respond) =>
-        // | - A will remove B as it will timeout and the same will happen to B
-
-        /* await */
-        this.broadcasterLogic.broadcast({ limit: this.constants.maxPeers, broadhash },
-          {
-            immediate     : true,
-            requestHandler: reqHandler,
-          })
-          .catch((err) => this.logger.warn('Error broadcasting block', err));
-      }
-    }
-  }
-
+  // public async onNewBlock(block: SignedBlockType & { relays?: number }, broadcast: boolean) {
+  //   if (broadcast) {
+  //     const broadhash = this.systemModule.broadhash;
+  //     // await this.systemModule.update();
+  //     block        = _.cloneDeep(block);
+  //     block.relays = block.relays || 0;
+  //     if (block.relays < this.broadcasterLogic.maxRelays()) {
+  //       block.relays++;
+  //       const reqHandler = this.pblocksFactory({ data: { block } });
+  //       // We avoid awaiting the broadcast result as it could result in unnecessary peer removals.
+  //       // Ex: Peer A, B, C
+  //       // A broadcasts block to B which wants to rebroadcast to A (which is waiting for B to respond) =>
+  //       // | - A will remove B as it will timeout and the same will happen to B
+  //
+  //       /* await */
+  //       this.broadcasterLogic.broadcast({ limit: this.constants.maxPeers, broadhash },
+  //         {
+  //           immediate     : true,
+  //           requestHandler: reqHandler,
+  //         })
+  //         .catch((err) => this.logger.warn('Error broadcasting block', err));
+  //     }
+  //   }
+  // }
+  //
   // TODO:
   // tslint:disable-next-line
   // public async receiveSignatures(signatures: Array<{ transaction: string, signature: string }>): Promise<void> {

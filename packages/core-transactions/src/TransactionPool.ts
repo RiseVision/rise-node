@@ -15,6 +15,7 @@ import { inject, injectable, named, postConstruct } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { TXAppConfig } from './helpers/appconfig';
 import { InnerTXQueue } from './poolTXsQueue';
+import { OnNewUnconfirmedTransation } from './hooks/actions';
 
 // tslint:disable-next-line
 @injectable()
@@ -321,8 +322,7 @@ export class TransactionPool implements ITransactionPoolLogic {
     // Verify the transaction
     await this.transactionLogic.verify(normalizedTx, sender, requester, null);
 
-    // TODO ->
-    await this.hookSystem.do_action('core-transactions/pool/onUnconfirmedTx', normalizedTx, broadcast);
+    await this.hookSystem.do_action(OnNewUnconfirmedTransation.name, normalizedTx, broadcast);
     // await this.bus.message('unconfirmedTransaction', normalizedTx, broadcast);
     return sender;
   }

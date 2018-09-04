@@ -1,6 +1,6 @@
 import {
   IAccountsModel,
-  IAccountsModule,
+  IAccountsModule, IBroadcasterLogic,
   ILogger,
   ITransactionLogic,
   ITransactionPoolLogic,
@@ -10,10 +10,18 @@ import {
 } from '@risevision/core-interfaces';
 import { DBHelper, ModelSymbols } from '@risevision/core-models';
 import { ConstantsType, IBaseTransaction, SignedAndChainedBlockType } from '@risevision/core-types';
-import { inject, injectable, named } from 'inversify';
+import { decorate, inject, injectable, named } from 'inversify';
+import { TXSymbols } from './txSymbols';
+import { RequestFactoryType } from '@risevision/core-p2p';
+import { PostTransactionsRequest, PostTransactionsRequestDataType } from './p2p/PostTransactionsRequest';
+import { OnNewUnconfirmedTransation } from './hooks/actions';
+import { WPHooksSubscriber, WordPressHookSystem } from 'mangiafuoco';
+
+const ExtendableClass = WPHooksSubscriber(Object);
+decorate(injectable(), ExtendableClass);
 
 @injectable()
-export class TransactionsModule implements ITransactionsModule {
+export class TransactionsModule extends ExtendableClass implements ITransactionsModule {
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
   @inject(Symbols.generic.genesisBlock)
@@ -29,10 +37,18 @@ export class TransactionsModule implements ITransactionsModule {
   private transactionPool: ITransactionPoolLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
+  @inject(Symbols.logic.broadcaster)
+  private broadcasterLogic: IBroadcasterLogic;
 
   @inject(ModelSymbols.model)
   @named(Symbols.models.transactions)
   private TXModel: typeof ITransactionsModel;
+
+  @inject(TXSymbols.p2p.postTxRequest)
+  private ptrFactory: RequestFactoryType<PostTransactionsRequestDataType, PostTransactionsRequest>;
+
+  @inject(Symbols.generic.hookSystem)
+  public hookSystem: WordPressHookSystem;
 
   public cleanup() {
     return Promise.resolve();
@@ -222,6 +238,17 @@ export class TransactionsModule implements ITransactionsModule {
       throw new Error(`Transaction ${tx.id} is not ready`);
     }
     await this.transactionLogic.verify(tx, acc, requester, height);
+
+  }
+
+  @OnNewUnconfirmedTransation()
+  private async onUnconfirmedTransaction(tx: IBaseTransaction<any>, broadcast: boolean) {
+    if (!broadcast) {
+      return;
+    }
+    this.broadcasterLogic.maybeEnqueue(tx, this.ptrFactory({
+      data: { transactions: [tx] },
+    }));
 
   }
 

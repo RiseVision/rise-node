@@ -157,7 +157,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       for (const tx of block.transactions) {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
         const sender                = await this.accountsModule
-          .assignPublicKeyToAccount(tx.senderId, tx.senderPublicKey);
+          .assignPublicKeyToAccount({ address: tx.senderId, publicKey: tx.senderPublicKey });
         // Apply tx.
         const ops: Array<DBOp<any>> = [
           {
@@ -271,6 +271,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       // await this.roundsModule.tick(block, dbTX);
 
       this.blocksModule.lastBlock = deepFreeze(block);
+      // Be aware that if you don't use dbTX you'll not receive infos from an updated database.
       await this.hookSystem.do_action(
         OnPostApplyBlock.name,
         this.blocksModule.lastBlock,

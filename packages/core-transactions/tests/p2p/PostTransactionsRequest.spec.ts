@@ -1,11 +1,10 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { Symbols } from '@risevision/core-interfaces';
-import { ProtoBufHelperStub } from '../stubs/protobufhelperStub';
 import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
-import { PostTransactionsRequest } from '../../src/requests';
-import { p2pSymbols } from '../../src/helpers';
+import { PostTransactionsRequest } from '../../src/p2p';
+import { ProtoBufHelperStub } from '@risevision/core-p2p/tests/stubs/protobufhelperStub';
+import { p2pSymbols } from '@risevision/core-p2p';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/PostTransactionsRequest', () => {

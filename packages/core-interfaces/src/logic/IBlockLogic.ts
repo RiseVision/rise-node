@@ -58,7 +58,8 @@ export interface IBlockLogic {
 
   dbRead(rawBlock: RawFullBlockListType): SignedBlockType & { totalForged: string, readonly generatorId: string };
 
-  fromBytes(blk: IBytesBlock): SignedAndChainedBlockType;
+  fromProtoBuffer(protoBuffer: Buffer): SignedAndChainedBlockType;
+  toProtoBuffer(block: SignedAndChainedBlockType): Buffer;
 
   /**
    * Gets maximum size in bytes for a block. Used in Protocol Buffer response space allocation calculations.

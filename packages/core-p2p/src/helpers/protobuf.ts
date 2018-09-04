@@ -4,6 +4,7 @@ import { inject, injectable, postConstruct } from 'inversify';
 import * as path from 'path';
 import * as protobuf from 'protobufjs';
 import { IConversionOptions, Root, Type } from 'protobufjs';
+import { ICoreModule, LaunchpadSymbols } from '@risevision/core-launchpad';
 
 export type MyConvOptions<T> = IConversionOptions & { postProcess?: (obj: T) => T };
 
@@ -15,6 +16,8 @@ export class ProtoBufHelper {
   private logger: ILogger;
   private protos: { [k: string]: Root } = {};
 
+  @inject(LaunchpadSymbols.coremodules)
+  private modules: Array<ICoreModule<any>>;
   @postConstruct()
   public init() {
     this.loadProtos();
@@ -46,12 +49,12 @@ export class ProtoBufHelper {
    * @param {string} messageType (optional) specific message type to lookup in the proto
    * @returns {Buffer} a Buffer containing the ProtoBuf encoded data
    */
-  public encode(payload: object, namespace: string, messageType?: string): (Uint8Array|Buffer) {
+  public encode(payload: object, namespace: string, messageType?: string): Buffer {
     if (!this.validate(payload, namespace, messageType)) {
       return null;
     }
     const message = this.getMessageInstance(namespace, messageType);
-    return message.encode(payload).finish();
+    return message.encode(payload).finish() as Buffer;
   }
 
   /**
@@ -123,20 +126,29 @@ export class ProtoBufHelper {
   }
 
   private loadProtos() {
-    const protoDir = path.join(__dirname, '..', '..', 'proto');
-    const files = fs.readdirSync(protoDir);
-    files.forEach((filePath: string) => {
-      if (filePath.match(/\.proto$/)) {
-        const namespace = path.basename(filePath, '.proto');
-        let root: Root;
-        try {
-          root = protobuf.loadSync(path.join(protoDir, filePath));
-          this.protos[namespace] = root;
-        } catch (err) {
-          this.logger.error(err.message);
-          throw err;
-        }
+    for (const module of this.modules) {
+      const protoDir = path.join(module.directory, '..', '..', 'proto');
+      if (!fs.existsSync(protoDir)) {
+        continue;
       }
-    });
+      const files = fs.readdirSync(protoDir);
+      files.forEach((filePath: string) => {
+        if (filePath.match(/\.proto$/)) {
+          const namespace = path.basename(filePath, '.proto');
+          let root: Root;
+          if (typeof(this.protos[namespace]) !== 'undefined') {
+            throw new Error(`Proto[${namespace}] already defined and redefinition attempted in ${module.name}`);
+          }
+          try {
+            root = protobuf.loadSync(path.join(protoDir, filePath));
+            this.protos[namespace] = root;
+          } catch (err) {
+            this.logger.error(err.message);
+            throw err;
+          }
+        }
+      });
+    }
+
   }
 }

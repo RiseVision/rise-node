@@ -14,4 +14,7 @@ export const BlocksSymbols = {
     utils  : Symbol.for('rise.blocks.utilsModule'),
     verify : Symbol.for('rise.blocks.verifyModule'),
   },
+  p2p: {
+    postBlocks: Symbol.for('rise.blocks.p2p.post'),
+  }
 };

@@ -26,6 +26,7 @@ import { inject, injectable, named } from 'inversify';
 import z_schema from 'z-schema';
 import { BlocksSymbols } from '../blocksSymbols';
 import { BlockRewardLogic } from './blockReward';
+import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 
 const blockSchema = require('../../schema/block.json');
 
@@ -53,6 +54,10 @@ export class BlockLogic implements IBlockLogic {
 
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
+
+  @inject(p2pSymbols.helpers.protoBuf)
+  private protobufHelper: ProtoBufHelper;
+
   @inject(Symbols.logic.blockReward)
   private blockReward: BlockRewardLogic;
   @inject(Symbols.generic.crypto)
@@ -321,13 +326,29 @@ export class BlockLogic implements IBlockLogic {
     return bb.toBuffer() as any;
   }
 
+  public toProtoBuffer(block: SignedAndChainedBlockType & { relays?: number }): Buffer {
+    const blk = {
+      bytes       : this.getBytes(block),
+      height      : block.height,
+      relays      : Number.isInteger(block.relays) ? block.relays : 1,
+      transactions: (block.transactions || []).map((tx) => this.transaction.toProtoBuffer(tx)),
+    };
+    return this.protobufHelper.encode(blk, 'blocks.bytes', 'bytesBlock');
+  }
+
   /**
    * Restores a block from its bytes
    */
-  public fromBytes(blk: IBytesBlock): SignedAndChainedBlockType & {relays: number} {
-    if (blk === null || typeof blk === 'undefined') {
+  public fromProtoBuffer(buffer: Buffer): SignedAndChainedBlockType & {relays: number} {
+    if (buffer === null || typeof buffer === 'undefined') {
       return null;
     }
+    const blk: IBytesBlock = this.protobufHelper
+      .decode(
+        buffer,
+        'blocks.bytes',
+        'bytesBlock'
+      );
     const bb = ByteBuffer.wrap(blk.bytes, 'binary', true);
     const version = bb.readInt(0);
     const timestamp = bb.readInt(4);

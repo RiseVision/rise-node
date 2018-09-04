@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
-import { BaseRequest } from './BaseRequest';
 import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { IBlockLogic, Symbols } from '@risevision/core-interfaces';
+import { BaseRequest } from '@risevision/core-p2p';
 
 // tslint:disable-next-line
 export type GetBlocksRequestDataType = { blocks: SignedAndChainedBlockType[]};
@@ -20,13 +20,15 @@ export class GetBlocksRequest extends BaseRequest<GetBlocksRequestDataType, void
 
   public getResponseData(res) {
     if (this.peerSupportsProtoBuf(res.peer)) {
-      const rawRes = this.decodeProtoBufResponse(res, 'transportBlocks') as any;
+      const rawRes: {blocks: Buffer[]} = this.decodeProtoBufResponse(res, 'blocks.transport', 'transportBlocks') as any;
       if (typeof rawRes.blocks === 'undefined' || rawRes.blocks === null) {
-        rawRes.blocks = [];
+        return { blocks: [] };
       } else {
-        rawRes.blocks = rawRes.blocks.map((b) => this.blockLogic.fromBytes(b));
+        return {
+          blocks: rawRes.blocks
+            .map((b) => this.blockLogic.fromProtoBuffer(b)),
+        };
       }
-      return rawRes;
     } else {
       const blocks = this.blocksUtilsModule.readDbRows(res.body.blocks);
       return { blocks };

@@ -5,7 +5,10 @@ export const TXSymbols = {
   logic      : Symbols.logic.transaction,
   model      : Symbols.models.transactions,
   module     : Symbols.modules.transactions,
+  p2p: {
+    postTxRequest: Symbol.for('rise.txs.p2p.postTransaction'),
+  },
   pool       : Symbols.logic.txpool,
   sendTX     : Symbol.for('rise.txs.sendTX'),
-  transaction: Symbol.for('rise.txs.transaction'),
+  transaction: Symbol.for('rise.txs.transaction')
 };

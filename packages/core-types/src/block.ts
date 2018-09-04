@@ -33,7 +33,7 @@ export type SignedAndChainedTransportBlockType = SignedBlockType<string> & {
 
 export interface IBytesBlock {
   bytes: Buffer;
-  transactions: IBytesTransaction[];
+  transactions: Buffer[];
   height?: number;
   relays: number;
 }

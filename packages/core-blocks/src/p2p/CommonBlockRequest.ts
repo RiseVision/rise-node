@@ -1,6 +1,6 @@
 import { Symbols } from '@risevision/core-interfaces';
 import { inject, injectable } from 'inversify';
-import { BaseRequest } from './BaseRequest';
+import { BaseRequest } from '@risevision/core-p2p';
 
 // tslint:disable-next-line
 export type CommonBlockRequestDataType = { common: { id: string, previousBlock: string, height: number } };
