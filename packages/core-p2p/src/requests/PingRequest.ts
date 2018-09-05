@@ -5,5 +5,5 @@ import { BaseRequest } from './BaseRequest';
 @injectable()
 export class PingRequest extends BaseRequest<void, void> {
   protected readonly method: 'GET' = 'GET';
-  protected readonly baseUrl = '/peer/ping';
+  protected readonly baseUrl       = '/peer/ping';
 }

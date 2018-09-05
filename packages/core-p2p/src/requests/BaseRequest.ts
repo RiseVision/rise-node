@@ -1,18 +1,15 @@
 import { IAPIRequest, IPeerLogic, ITransportModule, Symbols } from '@risevision/core-interfaces';
+import { PeerRequestOptions } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as querystring from 'querystring';
-import * as semver from 'semver';
-import { MyConvOptions, p2pSymbols, ProtoBufHelper } from '../helpers';
-import { PeerRequestOptions } from '@risevision/core-types';
+import { p2pSymbols, ProtoBufHelper } from '../helpers';
 
 @injectable()
 export class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
-  public options: { data: In, query?: any} = {data: null};
+  public options: { data: In, query?: any } = { data: null };
   // AppManager will inject the dependency here
   protected readonly method: 'GET' | 'POST';
   protected readonly baseUrl: string;
-  protected readonly supportsProtoBuf: boolean = false;
-  // protected peer: IPeerLogic;
 
   @inject(p2pSymbols.helpers.protoBuf)
   protected protoBufHelper: ProtoBufHelper;
@@ -20,28 +17,24 @@ export class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
   @inject(Symbols.modules.transport)
   protected transportModule: ITransportModule;
 
-  public getRequestOptions(peerSupportsProto: boolean): PeerRequestOptions<In> {
-    const isProtoBuf = this.supportsProtoBuf && peerSupportsProto;
+  public getRequestOptions(): PeerRequestOptions<Buffer> {
     const reqOptions: PeerRequestOptions = {
-      isProtoBuf,
-      method: this.getMethod(),
-      url: this.getBaseUrl(isProtoBuf),
+      method: this.method,
+      url   : `${this.baseUrl}${this.getQueryString()}`,
     };
     if (this.options.data) {
-      reqOptions.data = this.options.data;
+      reqOptions.data = this.encodeRequestData(this.options.data);
     }
     return reqOptions;
   }
 
-  public getResponseData(res: { body: Buffer | Out, peer: IPeerLogic }): Out {
-    return this.supportsProtoBuf && this.peerSupportsProtoBuf(res.peer) ?
-        this.decodeProtoBufResponse(res.body as Buffer) :
-        res.body as Out;
+  public getResponseData(res: { body: Buffer, peer: IPeerLogic }): Out {
+    return this.decodeProtoBufResponse(res.body as Buffer);
   }
 
   public makeRequest(peer: IPeerLogic): Promise<Out> {
-    const requestOptions = this.getRequestOptions(this.peerSupportsProtoBuf(peer));
-    return this.transportModule.getFromPeer<Buffer | Out>(peer, requestOptions)
+    const requestOptions = this.getRequestOptions();
+    return this.transportModule.getFromPeer<Buffer>(peer, requestOptions)
       .then((res) => this.getResponseData(res));
   }
 
@@ -53,20 +46,12 @@ export class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
     return Promise.resolve(false);
   }
 
-  public getOrigOptions(): { data: In, query?: any} {
+  public getOrigOptions(): { data: In, query?: any } {
     return this.options;
   }
 
-  protected getBaseUrl(isProtoBuf: boolean): string {
-    return this.baseUrl;
-  }
-
-  protected getMethod(): 'GET' | 'POST' {
-    return this.method;
-  }
-
-  protected peerSupportsProtoBuf(peer: IPeerLogic) {
-    return typeof(peer.version) !== 'undefined' && semver.gte(peer.version, '1.1.1');
+  protected encodeRequestData(data: In): Buffer {
+    return null;
   }
 
   protected getQueryString(): string {
@@ -75,23 +60,6 @@ export class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
       qs = querystring.stringify(this.options.query);
     }
     return qs.length === 0 ? '' : `?${qs}`;
-  }
-
-  /**
-   * Specifies how to convert message to plain object
-   * @returns {MyConvOptions<Out>}
-   */
-  protected getConversionOptions(): MyConvOptions<Out> {
-    const retSelf = (a) => a;
-    return {
-      arrays: true,   // populates empty arrays (repeated fields) even if defaults=false
-      bytes: retSelf, // bytes as Buffers
-      defaults: false, // includes default values
-      enums: String,  // enums as string names
-      longs: retSelf, // longs as long.js
-      objects: true,  // populates empty objects (map fields) even if defaults=false
-      oneofs: true,   // includes virtual oneof fields set to the present field's name
-    };
   }
 
   protected decodeProtoBufResponse(buf: Buffer): Out {

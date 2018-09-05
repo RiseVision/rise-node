@@ -11,6 +11,7 @@ import { TransactionsModel } from './TransactionsModel';
 import { TXSymbols } from './txSymbols';
 import { requestFactory } from '@risevision/core-p2p';
 import { PostTransactionsRequest } from './p2p';
+import { GetTransactionsRequest } from './p2p/GetTransactionsRequest';
 
 const schema = require('../schema/config.json');
 
@@ -38,8 +39,10 @@ export class CoreModule extends BaseCoreModule {
     this.container.bind(Symbols.logic.txpool)
       .to(TransactionPool).inSingletonScope();
 
-    // this.container.bind(TXSymbols.p2p.postTxRequest)
-    //   .toFactory(requestFactory(PostTransactionsRequest));
+    this.container.bind(TXSymbols.p2p.getTransactions)
+      .toFactory(requestFactory(GetTransactionsRequest));
+    this.container.bind(TXSymbols.p2p.postTxRequest)
+      .toFactory(requestFactory(PostTransactionsRequest));
   }
 
   public async initAppElements() {

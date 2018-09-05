@@ -1,4 +1,11 @@
 import {
+  BlocksModuleChain,
+  BlocksModuleProcess,
+  BlocksModuleUtils,
+  BlocksModuleVerify,
+  BlocksSymbols
+} from '@risevision/core-blocks';
+import {
   IAccountLogic,
   IAccountsModel,
   IAppState,
@@ -18,6 +25,8 @@ import {
   ITransportModule,
   Symbols
 } from '@risevision/core-interfaces';
+import { RequestFactoryType } from '@risevision/core-p2p';
+import { GetTransactionsRequest, TXSymbols } from '@risevision/core-transactions';
 import {
   AppConfig,
   ConstantsType,
@@ -26,6 +35,7 @@ import {
   SignedAndChainedBlockType,
   SignedBlockType
 } from '@risevision/core-types';
+import { wait, WrapInDefaultSequence } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import * as promiseRetry from 'promise-retry';
 import * as sequelize from 'sequelize';
@@ -35,15 +45,7 @@ import z_schema from 'z-schema';
 import { ModelSymbols } from '@risevision/core-models';
 import { WordPressHookSystem } from 'mangiafuoco';
 import sql from '../sql/loader';
-import {
-  BlocksModuleChain,
-  BlocksModuleProcess,
-  BlocksModuleUtils,
-  BlocksModuleVerify,
-  BlocksSymbols
-} from '@risevision/core-blocks';
-import { wait, WrapInDefaultSequence } from '@risevision/core-utils';
-import { GetTransactionsRequest, p2pSymbols, RequestFactoryType } from '@risevision/core-p2p';
+
 import Timer = NodeJS.Timer;
 import { OnBlockchainReady, RecreateAccountsTables } from '../hooks';
 
@@ -130,7 +132,7 @@ export class LoaderModule implements ILoaderModule {
   @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
 
-  @inject(p2pSymbols.requests.getTransactions)
+  @inject(TXSymbols.p2p.getTransactions)
   private gtFactory: RequestFactoryType<void, GetTransactionsRequest>;
 
   @postConstruct()

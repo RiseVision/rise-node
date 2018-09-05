@@ -1,13 +1,13 @@
 import { APISymbols } from '@risevision/core-apis';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
+import { requestFactory } from '@risevision/core-p2p';
 import { AppConfig } from '@risevision/core-types';
 import { BlocksAPI } from './apis/blocksAPI';
 import { BlocksSymbols } from './blocksSymbols';
 import { BlockLogic, BlockRewardLogic } from './logic/';
 import { BlocksModel } from './models/BlocksModel';
 import { BlocksModule, BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify } from './modules';
-import { requestFactory } from '@risevision/core-p2p';
 import { CommonBlockRequest } from './p2p/CommonBlockRequest';
 import { GetBlocksRequest } from './p2p/GetBlocksRequest';
 import { PostBlockRequest } from './p2p/PostBlockRequest';

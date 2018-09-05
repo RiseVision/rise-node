@@ -8,7 +8,6 @@ message transportSignaturesItem {
 
 message postSignatures {
     repeated transportSignaturesItem signatures = 1;
-    transportSignaturesItem signature = 2;
 }
 
 

@@ -212,7 +212,7 @@ describe('logic/block', () => {
 
   describe('dbSave', () => {
     it('should return a specific object', () => {
-      const result: DBCreateOp<BlocksModel> = instance.dbSave(dummyBlock) as any;
+      const result: DBCreateOp<BlocksModel> = instance.dbSaveOp(dummyBlock) as any;
       expect(result.model).to.be.deep.eq(blocksModel);
       expect(result.type).to.be.deep.eq('create');
       const toSave = {... dummyBlock};

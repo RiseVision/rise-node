@@ -5,4 +5,5 @@ import { BaseRequest } from './BaseRequest';
 export class HeightRequest extends BaseRequest<void, void> {
   protected readonly method: 'GET' = 'GET';
   protected readonly baseUrl = '/peer/height';
+
 }

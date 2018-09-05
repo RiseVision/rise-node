@@ -29,15 +29,16 @@ export class MultisigTransportModule {
           immediate: false,
           requestHandler: this.postSigsRequestFactory({
             data: {
-              signature: {
-                relays: signature.relays,
-                signature: Buffer.from(signature.signature, 'hex'),
+              signatures: [{
+                relays     : signature.relays,
+                signature  : Buffer.from(signature.signature, 'hex'),
                 transaction: signature.transaction,
-              },
+              }],
             },
           }),
         }
       );
+      // TODO: Change with hookSystem message Event.
       this.io.sockets.emit('signature/change', signature);
     }
   }

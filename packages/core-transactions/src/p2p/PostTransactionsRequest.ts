@@ -1,12 +1,7 @@
-import {
-  ITransactionLogic,
-  ITransactionsModel,
-  ITransactionsModule,
-  Symbols
-} from '@risevision/core-interfaces';
+import { ITransactionLogic, ITransactionsModel, ITransactionsModule, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { BaseRequest } from '@risevision/core-p2p';
-import { IBaseTransaction, PeerRequestOptions } from '@risevision/core-types';
+import { IBaseTransaction } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 // tslint:disable-next-line
@@ -16,8 +11,9 @@ export type PostTransactionsRequestDataType = {
 
 @injectable()
 export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRequestDataType> {
-  protected readonly method: 'POST' = 'POST';
+  protected readonly method: 'POST'   = 'POST';
   protected readonly supportsProtoBuf = true;
+  protected readonly baseUrl          = '/v2/peer/transactions';
 
   @inject(Symbols.logic.transaction)
   private txLogic: ITransactionLogic;
@@ -28,18 +24,6 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
 
   @inject(Symbols.modules.transactions)
   private txModule: ITransactionsModule;
-
-  public getRequestOptions(peerSupportsProto): PeerRequestOptions<PostTransactionsRequestDataType> {
-    const reqOptions = super.getRequestOptions(peerSupportsProto);
-    reqOptions.data = this.protoBufHelper.encode(
-      {
-        transactions: reqOptions.data.transactions.map((tx) => this.txLogic.toProtoBuffer(tx))
-      },
-      'transactions.transport',
-      'transportTransactions'
-    ) as any;
-    return reqOptions;
-  }
 
   public mergeIntoThis(...objs: this[]): void {
     const allTransactions = [this, ...objs]
@@ -69,7 +53,15 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
     return false;
   }
 
-  protected getBaseUrl() {
-    return '/v2/peer/transactions';
+  protected encodeRequestData(data: PostTransactionsRequestDataType): Buffer {
+    return this.protoBufHelper.encode(
+      {
+        transactions: data.transactions.map((tx) => this.txLogic.toProtoBuffer(tx)),
+      },
+      'transactions.transport',
+      'transportTransactions'
+    );
   }
+
+
 }

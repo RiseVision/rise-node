@@ -10,7 +10,7 @@ message transportBlock {
 }
 
 message commonBlock {
-    bytesBlock common = 1;
+    bytes common = 1;
 }
 
 message postTransportBlockResponse {

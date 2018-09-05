@@ -1,34 +1,23 @@
-import { Symbols } from '@risevision/core-interfaces';
-import { inject, injectable } from 'inversify';
+import { IBlockLogic, Symbols } from '@risevision/core-interfaces';
 import { BaseRequest } from '@risevision/core-p2p';
+import { SignedAndChainedBlockType } from '@risevision/core-types';
+import { inject, injectable } from 'inversify';
 
 // tslint:disable-next-line
-export type CommonBlockRequestDataType = { common: { id: string, previousBlock: string, height: number } };
-
 @injectable()
-export class CommonBlockRequest extends BaseRequest<CommonBlockRequestDataType, void> {
+export class CommonBlockRequest extends BaseRequest<{ common: SignedAndChainedBlockType }, void> {
   protected readonly method: 'GET'             = 'GET';
   protected readonly supportsProtoBuf: boolean = true;
+  protected readonly baseUrl: string           = '/v2/peer/blocks/common';
 
   @inject(Symbols.logic.block)
-  private blockLogic;
-
-  public getResponseData(res) {
-    if (this.peerSupportsProtoBuf(res.peer)) {
-      const rawRes = this.decodeProtoBufResponse(res);
-      rawRes.common = (typeof rawRes.common !== 'undefined') ? this.blockLogic.fromBytes(rawRes.common) : null;
-      return rawRes;
-    } else {
-      return res.body;
-    }
-  }
-
-  protected getBaseUrl(isProto) {
-    const queryString = this.getQueryString();
-    return isProto ? `/v2/peer/blocks/common${queryString}` : `/peer/blocks/common${queryString}`;
-  }
+  private blockLogic: IBlockLogic;
 
   protected decodeProtoBufValidResponse(buf: Buffer) {
-    return this.protoBufHelper.decode(buf, 'blocks.transport', 'commonBlock');
+    const { common } = this.protoBufHelper.decode<{ common: Buffer }>(buf, 'blocks.transport', 'commonBlock');
+    return {
+      common: this.blockLogic.fromProtoBuffer(common)
+    };
   }
+
 }

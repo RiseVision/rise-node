@@ -1,49 +1,28 @@
-import {
-  IBlockLogic,
-  IBlocksModel,
-  IBlocksModule,
-  ITransactionLogic,
-  Symbols
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
+import { IBlockLogic, Symbols } from '@risevision/core-interfaces';
 import { BaseRequest, RequestFactoryType } from '@risevision/core-p2p';
-import { SignedAndChainedBlockType, SignedBlockType } from '@risevision/core-types';
-import { inject, injectable, named } from 'inversify';
+import { SignedAndChainedBlockType } from '@risevision/core-types';
+import { inject, injectable } from 'inversify';
 
 // tslint:disable-next-line
 export type PostBlockRequestDataType = { block: SignedAndChainedBlockType };
 
 @injectable()
-export class PostBlockRequest extends BaseRequest<any, PostBlockRequestDataType> {
+export class PostBlockRequest extends BaseRequest<{ blockId: string }, PostBlockRequestDataType> {
   protected readonly method: 'POST'   = 'POST';
   protected readonly supportsProtoBuf = true;
+  protected readonly baseUrl          = '/v2/peer/blocks';
 
   @inject(Symbols.logic.block)
   private blockLogic: IBlockLogic;
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
-  @inject(ModelSymbols.model)
-  @named(Symbols.models.blocks)
-  private blocksModel: typeof IBlocksModel;
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
 
-  public getRequestOptions(peerSupportsProto) {
-    const reqOptions = super.getRequestOptions(peerSupportsProto);
-    if (peerSupportsProto) {
-      const block = this.blockLogic.toProtoBuffer(this.options.data.block);
-      reqOptions.data = this.protoBufHelper
-        .encode({ block }, 'blocks.transport', 'transportBlock') as any;
-    } else {
-      reqOptions.data = {
-        block: this.blocksModel.toStringBlockType(this.options.data.block) as any,
-      };
-    }
-    return reqOptions;
-  }
-
-  protected getBaseUrl(isProto) {
-    return isProto ? '/v2/peer/blocks' : '/peer/blocks';
+  protected encodeRequestData(data: PostBlockRequestDataType): Buffer {
+    return this.protoBufHelper.encode(
+      {
+        block: this.blockLogic.toProtoBuffer(data.block),
+      },
+      'blocks.transport',
+      'transportBlock'
+    );
   }
 
   protected decodeProtoBufValidResponse(res: Buffer) {
