@@ -32,6 +32,7 @@ import { TXExceptions } from './exceptionLists';
 import { TxLogicStaticCheck, TxLogicVerify } from './hooks/actions';
 import { TxApplyFilter, TxApplyUnconfirmedFilter, TxUndoFilter, TxUndoUnconfirmedFilter } from './hooks/filters';
 import { TXSymbols } from './txSymbols';
+import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 
 // tslint:disable-next-line no-var-requires
 const txSchema = require('../schema/transaction.json');
@@ -56,6 +57,8 @@ export class TransactionLogic implements ITransactionLogic {
 
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  @inject(p2pSymbols.helpers.protoBuf)
+  private protoBufHelper: ProtoBufHelper;
 
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
@@ -174,8 +177,25 @@ export class TransactionLogic implements ITransactionLogic {
     return bb.toBuffer() as any;
   }
 
+  public toProtoBuffer(tx: IBaseTransaction<any> & {relays: number}): Buffer {
+    const obj = {
+      bytes                : this.getBytes(tx),
+      fee                  : tx.fee,
+      hasRequesterPublicKey: typeof tx.requesterPublicKey !== 'undefined' && tx.requesterPublicKey != null,
+      hasSignSignature     : typeof tx.signSignature !== 'undefined' && tx.signSignature != null,
+      relays               : Number.isInteger(tx.relays) ? tx.relays : 1,
+    };
+    return this.protoBufHelper.encode(obj, 'transactions.tx', 'bytesTransaction');
+  }
+
   // tslint:disable-next-line
-  public fromBytes(tx: IBytesTransaction): IBaseTransaction<any> & { relays: number } {
+  public fromProtoBuffer(data: Buffer): IBaseTransaction<any> & { relays: number } {
+    const tx: IBytesTransaction = this.protoBufHelper
+      .decode(
+        data,
+        'transactions.tx',
+        'bytesTransaction'
+      );
     const bb = ByteBuffer.wrap(tx.bytes, 'binary', true);
     const type = bb.readByte(0);
     const timestamp = bb.readInt(1);

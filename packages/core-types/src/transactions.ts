@@ -49,11 +49,3 @@ export interface IConfirmedTransaction<T> extends IBaseTransaction<T> {
   recipientPublicKey?: string;
   confirmations?: number;
 }
-
-export interface IBytesTransaction {
-  bytes: Buffer;
-  hasRequesterPublicKey: boolean;
-  hasSignSignature: boolean;
-  fee: number;
-  relays?: number;
-}

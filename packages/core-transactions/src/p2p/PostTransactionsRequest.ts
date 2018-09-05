@@ -6,13 +6,12 @@ import {
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { BaseRequest } from '@risevision/core-p2p';
-import { IBaseTransaction, IBytesTransaction, PeerRequestOptions } from '@risevision/core-types';
+import { IBaseTransaction, PeerRequestOptions } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 // tslint:disable-next-line
 export type PostTransactionsRequestDataType = {
   transactions?: Array<IBaseTransaction<any>>,
-  transaction?: IBaseTransaction<any>,
 };
 
 @injectable()
@@ -32,42 +31,13 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
 
   public getRequestOptions(peerSupportsProto): PeerRequestOptions<PostTransactionsRequestDataType> {
     const reqOptions = super.getRequestOptions(peerSupportsProto);
-    let newData;
-    if (peerSupportsProto) {
-      if (typeof reqOptions.data.transactions !== 'undefined') {
-        newData = {
-          ...reqOptions.data,
-          transactions: reqOptions.data.transactions.map(
-            (tx) => this.generateBytesTransaction(tx as IBaseTransaction<any>)
-          ),
-        };
-      } else if (typeof reqOptions.data.transaction !== 'undefined') {
-        newData = {
-          ...reqOptions.data,
-          transaction: this.generateBytesTransaction(reqOptions.data.transaction as IBaseTransaction<any>),
-        };
-      }
-      if (this.protoBufHelper.validate(newData, 'transportTransactions')) {
-        reqOptions.data = this.protoBufHelper.encode(newData, 'transportTransactions') as any;
-      } else {
-        throw new Error('Failed to encode ProtoBuf');
-      }
-    } else {
-      if (typeof reqOptions.data.transactions !== 'undefined') {
-        newData = {
-          ...reqOptions.data,
-          transactions: reqOptions.data.transactions.map(
-            (tx) => this.txModel.toTransportTransaction<any>(tx as IBaseTransaction<any>)
-          ),
-        };
-      } else if (typeof reqOptions.data.transaction !== 'undefined') {
-        newData = {
-          ...reqOptions.data,
-          transaction: this.txModel.toTransportTransaction<any>(reqOptions.data.transaction as IBaseTransaction<any>),
-        };
-      }
-      reqOptions.data = newData;
-    }
+    reqOptions.data = this.protoBufHelper.encode(
+      {
+        transactions: reqOptions.data.transactions.map((tx) => this.txLogic.toProtoBuffer(tx))
+      },
+      'transactions.transport',
+      'transportTransactions'
+    ) as any;
     return reqOptions;
   }
 
@@ -75,12 +45,7 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
     const allTransactions = [this, ...objs]
       .map((item) => {
         const toRet: Array<IBaseTransaction<any>> = [];
-        if (Array.isArray(item.options.data.transactions)) {
-          toRet.push(...item.options.data.transactions);
-        }
-        if (item.options.data.transaction) {
-          toRet.push(item.options.data.transaction);
-        }
+        toRet.push(...item.options.data.transactions);
         return toRet;
       })
       .reduce((a, b) => a.concat(b));
@@ -89,11 +54,10 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
       allTransactions,
       (item) => `${item.id}${item.signature.toString('hex')}`
     );
-    this.options.data.transaction = null;
   }
 
   public async isRequestExpired() {
-    const txs = this.options.data.transactions || [this.options.data.transaction];
+    const txs = this.options.data.transactions;
 
     const ids = txs.map((tx) => tx.id);
 
@@ -105,17 +69,7 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
     return false;
   }
 
-  public generateBytesTransaction(tx: IBaseTransaction<any> & { relays?: number }): IBytesTransaction {
-    return {
-      bytes                : this.txLogic.getBytes(tx),
-      fee                  : tx.fee,
-      hasRequesterPublicKey: typeof tx.requesterPublicKey !== 'undefined' && tx.requesterPublicKey != null,
-      hasSignSignature     : typeof tx.signSignature !== 'undefined' && tx.signSignature != null,
-      relays               : Number.isInteger(tx.relays) ? tx.relays : 1,
-    };
-  }
-
-  protected getBaseUrl(isProto) {
-    return isProto ? '/v2/peer/transactions' : '/peer/transactions';
+  protected getBaseUrl() {
+    return '/v2/peer/transactions';
   }
 }
