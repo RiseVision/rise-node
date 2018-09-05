@@ -31,13 +31,13 @@ describe('apis/requests/PeersListRequest', () => {
     describe('protoBuf = false', () => {
       it('should return response body', () => {
         peer.version = '1.0.0';
-        const body = instance.getResponseData({body: 'theBody', peer});
+        const body = instance.getResponseData({body: new Buffer('theBody'), peer});
         expect(body).to.be.equal('theBody');
       });
     });
     describe('protoBuf = true', () => {
       it('should call decodeProtoBufResponse', () => {
-        const res = {body: 'theBody', peer};
+        const res = {body: new Buffer('theBody'), peer};
         instance.getResponseData(res);
         expect(decodeStub.calledOnce).to.be.true;
         expect(decodeStub.firstCall.args).to.be.deep.equal([res, 'transportPeers']);
@@ -45,7 +45,7 @@ describe('apis/requests/PeersListRequest', () => {
 
       it('should return the decoded value', () => {
         decodeStub.returns('decodedValue');
-        const decoded = instance.getResponseData({body: 'theBody', peer});
+        const decoded = instance.getResponseData({body: new Buffer('theBody'), peer});
         expect(decoded).to.be.equal('decodedValue');
       });
     });

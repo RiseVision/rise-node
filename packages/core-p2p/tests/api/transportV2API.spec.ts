@@ -25,7 +25,6 @@ import * as Sinon from 'sinon';
 import { AccountLogic } from '../../../core-accounts/src/logic';
 import { createFakeBlock } from '../../../core-blocks/tests/utils/createFakeBlocks';
 import { RequestFactoryType } from '../../src/utils';
-import { PostBlocksRequest } from '../../src/requests';
 import { ProtoBufHelperStub } from '../stubs/protobufhelperStub';
 import { peers } from 'dpos-api-wrapper/dist/es5/apis';
 import { ConstantsType } from '@risevision/core-types';
@@ -267,321 +266,322 @@ describe('apis/transportV2API', () => {
   //   });
   // });
 
-  describe('transactions()', () => {
-    beforeEach(() => {
-      generateBytesTransactionStub = sandbox.stub().returns(Buffer.from('0123', 'hex'));
-      (instance as any).ptFactory = () => ({
-        generateBytesTransaction: generateBytesTransactionStub,
-      });
-    });
-    it('should get transactions list', async () => {
-      await instance.transactions();
-      expect(getMergedTransactionList.calledOnce).to.be.true;
-      expect(getMergedTransactionList.firstCall.args).to.be.deep.equal([
-        constants.maxSharedTxs,
-      ]);
-    });
-
-    it('should call generateBytesTransaction for each tx', async () => {
-      getMergedTransactionList.returns(txs);
-      await instance.transactions();
-      expect(generateBytesTransactionStub.callCount).to.be.equal(txs.length);
-      expect(generateBytesTransactionStub.args).to.be.deep.equal(txs.map((tx) => [tx]));
-    });
-
-    it('should call sendResponse passing an object with the property transactions', async () => {
-      getMergedTransactionList.returns(txs);
-      await instance.transactions();
-      expect(protoBufStub.stubs.encode.calledOnce).is.true;
-      expect(protoBufStub.stubs.encode.firstCall.args).deep.eq([
-        { transactions: txs.map(() => Buffer.from('0123', 'hex')), },
-        'transportTransactions',
-        undefined,
-      ]);
-    });
-  });
-
-  describe('postTransactions()', () => {
-    let parseRequestStub: SinonStub;
-    let fromBytesStub: SinonStub;
-    beforeEach(() => {
-      parseRequestStub = sandbox.stub(instance as any, 'parseRequest');
-      fromBytesStub = sandbox.stub(transactionLogicStub, 'fromBytes');
-    });
-
-    it('should parse the request', async () => {
-      parseRequestStub.returns({transactions: []});
-      req.body = 'meow';
-      result = await instance.postTransactions(req);
-      expect(parseRequestStub.calledOnce).to.be.true;
-      expect(parseRequestStub.firstCall.args).to.be.deep.equal(['meow', 'transportTransactions']);
-    });
-
-    it('should return an error response if request is not parsable', async () => {
-      const err = new Error('tx err');
-      parseRequestStub.throws(err);
-      await expect(instance.postTransactions(req)).rejectedWith(err);
-    });
-
-    it('should call peersLogic.create', async () => {
-      parseRequestStub.returns({transactions: []});
-      result = await instance.postTransactions(req);
-      expect(peersLogicCreateStub.calledOnce).to.be.true;
-      expect(peersLogicCreateStub.firstCall.args).to.be.deep.equal([{
-        ip  : req.ip,
-        port: parseInt(req.headers.port as string, 10),
-      }]);
-    });
-
-    it('should handle a single transaction', async () => {
-      parseRequestStub.returns({transaction: 'singleTx'});
-      fromBytesStub.callsFake((what) => ({id: what}));
-      result = await instance.postTransactions(req);
-      expect(receiveTXStub.firstCall.args).to.be.deep.equal([
-        [{id: 'singleTx'}],
-        peersLogicCreateStub.firstCall.returnValue,
-        true,
-      ]);
-    });
-
-    it('should call receiveTransactions after calling fromBytes for each tx', async () => {
-      const thetxs = ['tx1', 'tx2', 'tx3'];
-      parseRequestStub.returns({transactions: thetxs});
-      fromBytesStub.callsFake((what) => ({id: what}));
-      result = await instance.postTransactions(req);
-      expect(fromBytesStub.callCount).to.be.equal(thetxs.length);
-      expect(fromBytesStub.args).to.be.deep.equal([['tx1'], ['tx2'], ['tx3']]);
-      expect(receiveTXStub.calledOnce).to.be.true;
-      expect(receiveTXStub.firstCall.args).to.be.deep.equal([
-        [{id: 'tx1'}, {id: 'tx2'}, {id: 'tx3'}],
-        peersLogicCreateStub.firstCall.returnValue,
-        true,
-      ]);
-    });
-    it('should respond with APISuccess', async () => {
-      const thetxs = ['tx1', 'tx2', 'tx3'];
-      parseRequestStub.returns({transactions: thetxs});
-      fromBytesStub.returns('a');
-      result = await instance.postTransactions(req);
-      expect(protoBufStub.stubs.encode.calledOnce).is.true;
-      expect(protoBufStub.stubs.encode.firstCall.args).deep.eq([
-        {success: true},
-        'APISuccess',
-        undefined,
-      ]);
-    });
-  });
-
-  describe('getBlocksCommon()', () => {
-    let findOneStub: SinonStub;
-    let genBBStub: SinonStub;
-    let getResStub: SinonStub;
-    beforeEach(() => {
-      findOneStub = sandbox.stub(blocksModel, 'findOne');
-      genBBStub = sandbox.stub().returns(Buffer.from('aaa123', 'hex'));
-      (instance as any).pblocksFactory = () => ({
-        generateBytesBlock: genBBStub,
-      });
-      getResStub = sandbox.stub(instance as any, 'getResponse').returns({success: true});
-    });
-
-    it('should accept and remove quotes in ids', async () => {
-      findOneStub.returns(null);
-      await instance.getBlocksCommon('"123",\'456\'', req);
-      expect(findOneStub.calledOnce).to.be.true;
-      expect(findOneStub.firstCall.args[0].where.id[Op.in]).to.be.deep.equal(['123', '456']);
-    });
-
-    it('should remove non numeric ids', async () => {
-      findOneStub.returns(null);
-      await instance.getBlocksCommon('123,nonNumericID,456', req);
-      expect(findOneStub.calledOnce).to.be.true;
-      expect(findOneStub.firstCall.args[0].where.id[Op.in]).to.be.deep.equal(['123', '456']);
-    });
-
-    it('should call peersModule.remove and throw if no valid id is found', async () => {
-      findOneStub.returns(null);
-      await expect(instance.getBlocksCommon('invalidID', req)).to.be.rejectedWith('Invalid block id sequence');
-      expect(peersModuleRemoveStub.calledOnce).to.be.true;
-      expect(peersModuleRemoveStub.firstCall.args).to.be.deep
-        .equal([req.ip, parseInt(req.headers.port as string, 10)]);
-    });
-
-    it('should call peersModule.remove if more than 10 ids were passed', async () => {
-      findOneStub.returns(null);
-      await expect(instance.getBlocksCommon('1,2,3,4,5,6,7,8,9,10,11', req))
-        .to.be.rejectedWith('Invalid block id sequence');
-      expect(peersModuleRemoveStub.calledOnce).to.be.true;
-      expect(peersModuleRemoveStub.firstCall.args).to.be.deep
-        .equal([req.ip, parseInt(req.headers.port as string, 10)]);
-    });
-
-    it('should call BlocksModel.findOne', async () => {
-      findOneStub.returns(null);
-      await instance.getBlocksCommon('123,456', req);
-      expect(findOneStub.calledOnce).to.be.true;
-      expect(findOneStub.firstCall.args).to.be.deep
-        .equal([{
-          limit: 1,
-          order: [['height', 'DESC']],
-          raw: true,
-          where: {
-            id: {
-              [Op.in]: ['123', '456'],
-            },
-          },
-        }]);
-    });
-
-    it('should call generateBytesBlock if findOne returns a valid block', async () => {
-      findOneStub.returns({blockId: '123456'});
-      await instance.getBlocksCommon('1,2,3', req);
-      expect(genBBStub.calledOnce).to.be.true;
-      expect(genBBStub.firstCall.args).to.be.deep.equal([{blockId: '123456'}]);
-    });
-
-    it('should set the block to null if findOne returns null', async () => {
-      findOneStub.returns(null);
-      genBBStub.callsFake((a) => a);
-      await instance.getBlocksCommon('1,2,3', req);
-      expect(genBBStub.notCalled).to.be.true;
-      expect(getResStub.calledOnce).to.be.true;
-      expect(getResStub.firstCall.args).to.be.deep.equal([{common: null}, 'transportBlocks', 'commonBlock']);
-    });
-
-    it('should call getResponse and return', async () => {
-      getResStub.returns('success');
-      findOneStub.returns({blockId: '123456'});
-      genBBStub.callsFake((a) => a);
-      const ret = await instance.getBlocksCommon('1,2,3', req);
-      expect(getResStub.calledOnce).to.be.true;
-      expect(getResStub.firstCall.args).to.be.deep
-        .equal([{common: {blockId: '123456'}}, 'transportBlocks', 'commonBlock']);
-      expect(ret).to.be.equal('success');
-    });
-
-    it('getResponse should throw if invalid data is passed', async () => {
-      getResStub.restore();
-      genBBStub.returns('InvalidDataForProtoBuf');
-      protoBufStub.stubs.validate.returns(false);
-      await expect(instance.getBlocksCommon('1,2,3', req)).to.be.rejectedWith(/Failed to encode response - /);
-    });
-  });
-
-  describe('postBlock()', () => {
-    let parseRequestStub: SinonStub;
-    let blockFromBytes: SinonStub;
-    let blockObjNormalize: SinonStub;
-    beforeEach(() => {
-      parseRequestStub = sandbox.stub(instance as any, 'parseRequest');
-      blockFromBytes = sandbox.stub(blockLogicStub, 'fromBytes').returns({id: '1'});
-      blockObjNormalize = sandbox.stub(blockLogicStub, 'objectNormalize').callsFake((a) => a);
-    });
-
-    it('should parse the request', async () => {
-      parseRequestStub.returns({block: 'block'});
-      req.body = {cat: 'meows'};
-      result = await instance.postBlock(req);
-      expect(parseRequestStub.calledOnce).to.be.true;
-      expect(parseRequestStub.firstCall.args).to.be.deep.equal([{cat: 'meows'}, 'transportBlocks', 'transportBlock']);
-    });
-
-    it('should call BlockLogic.fromBytes', async () => {
-      const blk = {block: 'theBlock'};
-      parseRequestStub.returns(blk);
-      result = await instance.postBlock(req);
-      expect(blockFromBytes.calledOnce).to.be.true;
-      expect(blockFromBytes.firstCall.args).to.be.deep.equal([blk.block]);
-    });
-
-    it('should call objectNormalize', async () => {
-      const blk = {block: 'theBlock'};
-      parseRequestStub.returns(blk);
-      result = await instance.postBlock(req);
-      expect(blockObjNormalize.calledOnce).to.be.true;
-      expect(blockObjNormalize.firstCall.args).to.be.deep.equal([{id: '1'}]);
-    });
-
-    it('should throw and remove peer if parseRequest throws', async () => {
-      const err = new Error('pr err');
-      parseRequestStub.throws(err);
-      await expect(instance.postBlock(req)).to.be.rejectedWith(err);
-      expect(peersModuleRemoveStub.calledOnce).to.be.true;
-      expect(peersModuleRemoveStub.firstCall.args)
-        .to.be.deep.equal([req.ip, parseInt(req.headers.port as string, 10)]);
-    });
-
-    it('should throw and remove peer if objectNormalize throws', async () => {
-      const blk = {block: 'theBlock'};
-      parseRequestStub.returns(blk);
-      const err = new Error('on err');
-      blockObjNormalize.throws(err);
-      await expect(instance.postBlock(req)).to.be.rejectedWith(err);
-      expect(peersModuleRemoveStub.calledOnce).to.be.true;
-      expect(peersModuleRemoveStub.firstCall.args)
-        .to.be.deep.equal([req.ip, parseInt(req.headers.port as string, 10)]);
-    });
-
-    it('should throw and remove peer if fromBytes throws', async () => {
-      const blk = {block: 'theBlock'};
-      parseRequestStub.returns(blk);
-      const err = new Error('fb err');
-      blockFromBytes.throws(err);
-      await expect(instance.postBlock(req)).to.be.rejectedWith(err);
-      expect(peersModuleRemoveStub.calledOnce).to.be.true;
-      expect(peersModuleRemoveStub.firstCall.args)
-        .to.be.deep.equal([req.ip, parseInt(req.headers.port as string, 10)]);
-    });
-
-    it('should call bus.message', async () => {
-      // TODO: Check hookSystem
-    });
-
-    it('should respond with transportBlockResponse', async () => {
-      const blk = {block: 'theBlock'};
-      parseRequestStub.returns(blk);
-      const thaRes = await instance.postBlock(req);
-      expect(thaRes.toString()).eq(JSON.stringify({success: true, blockId: '1'}));
-      expect(protoBufStub.stubs.encode.calledOnce).is.true;
-      expect(protoBufStub.stubs.encode.firstCall.args[0]).deep.eq({success: true, blockId: '1'});
-      expect(protoBufStub.stubs.encode.firstCall.args[1]).eq('transportBlocks');
-      expect(protoBufStub.stubs.encode.firstCall.args[2]).eq('transportBlockResponse');
-    });
-
-    describe('unstubbed tests', () => {
-      beforeEach(() => {
-        container.rebind(p2pSymbols.helpers.protoBuf).to(ProtoBufHelper).inSingletonScope();
-        container.rebind(p2pSymbols.controller)
-          .to(TransportV2API)
-          .inSingletonScope()
-          .whenTargetNamed(p2pSymbols.api.transportV2);
-        instance               = container.getNamed(p2pSymbols.controller, p2pSymbols.api.transportV2);
-      });
-      it('should throw if request body is not in binary', async () => {
-        await expect(instance.postBlock(req)).rejectedWith('No binary data in request body');
-      });
-      it('should throw if data is not decodable', async () => {
-        req.body = Buffer.from('meow', 'utf8');
-        await expect(instance.postBlock(req)).rejectedWith('Invalid binary data for message');
-      });
-      it('should not throw if data is in correct format', async () => {
-        // container.rebind(Symbols.logic.block).to(BlockLogic).inSingletonScope();
-        // container.rebind(Symbols.logic.transaction).to(TransactionLogic).inSingletonScope();
-        // container.rebind(Symbols.logic.account).to(AccountLogic).inSingletonScope();
-        // container.rebind(Symbols.helpers.protoBuf).to(ProtoBufHelper).inSingletonScope();
-        const txLogic: TransactionLogic = container.get(Symbols.logic.transaction);
-        // txLogic.attachAssetType(container.get(Symbols.logic.transactions.send));
-
-        // container.rebind(Symbols.logic.pro).to(BlockLogic).inSingletonScope();
-        const pbFactory = container.get<RequestFactoryType<any, PostBlocksRequest>>(p2pSymbols.requests.postBlocks);
-        const data = pbFactory({data: {block: fakeBlock}}).getRequestOptions(true);
-        expect(Buffer.isBuffer(data.data)).true;
-        req.body = data.data;
-        instance = container.getNamed(p2pSymbols.controller, p2pSymbols.api.transportV2);
-        await instance.postBlock(req);
-      });
-    });
-  });
+  // TODO: Move to corresponding modules.
+  // describe('transactions()', () => {
+  //   beforeEach(() => {
+  //     generateBytesTransactionStub = sandbox.stub().returns(Buffer.from('0123', 'hex'));
+  //     (instance as any).ptFactory = () => ({
+  //       generateBytesTransaction: generateBytesTransactionStub,
+  //     });
+  //   });
+  //   it('should get transactions list', async () => {
+  //     await instance.transactions();
+  //     expect(getMergedTransactionList.calledOnce).to.be.true;
+  //     expect(getMergedTransactionList.firstCall.args).to.be.deep.equal([
+  //       constants.maxSharedTxs,
+  //     ]);
+  //   });
+  //
+  //   it('should call generateBytesTransaction for each tx', async () => {
+  //     getMergedTransactionList.returns(txs);
+  //     await instance.transactions();
+  //     expect(generateBytesTransactionStub.callCount).to.be.equal(txs.length);
+  //     expect(generateBytesTransactionStub.args).to.be.deep.equal(txs.map((tx) => [tx]));
+  //   });
+  //
+  //   it('should call sendResponse passing an object with the property transactions', async () => {
+  //     getMergedTransactionList.returns(txs);
+  //     await instance.transactions();
+  //     expect(protoBufStub.stubs.encode.calledOnce).is.true;
+  //     expect(protoBufStub.stubs.encode.firstCall.args).deep.eq([
+  //       { transactions: txs.map(() => Buffer.from('0123', 'hex')), },
+  //       'transportTransactions',
+  //       undefined,
+  //     ]);
+  //   });
+  // });
+  //
+  // describe('postTransactions()', () => {
+  //   let parseRequestStub: SinonStub;
+  //   let fromBytesStub: SinonStub;
+  //   beforeEach(() => {
+  //     parseRequestStub = sandbox.stub(instance as any, 'parseRequest');
+  //     fromBytesStub = sandbox.stub(transactionLogicStub, 'fromBytes');
+  //   });
+  //
+  //   it('should parse the request', async () => {
+  //     parseRequestStub.returns({transactions: []});
+  //     req.body = 'meow';
+  //     result = await instance.postTransactions(req);
+  //     expect(parseRequestStub.calledOnce).to.be.true;
+  //     expect(parseRequestStub.firstCall.args).to.be.deep.equal(['meow', 'transportTransactions']);
+  //   });
+  //
+  //   it('should return an error response if request is not parsable', async () => {
+  //     const err = new Error('tx err');
+  //     parseRequestStub.throws(err);
+  //     await expect(instance.postTransactions(req)).rejectedWith(err);
+  //   });
+  //
+  //   it('should call peersLogic.create', async () => {
+  //     parseRequestStub.returns({transactions: []});
+  //     result = await instance.postTransactions(req);
+  //     expect(peersLogicCreateStub.calledOnce).to.be.true;
+  //     expect(peersLogicCreateStub.firstCall.args).to.be.deep.equal([{
+  //       ip  : req.ip,
+  //       port: parseInt(req.headers.port as string, 10),
+  //     }]);
+  //   });
+  //
+  //   it('should handle a single transaction', async () => {
+  //     parseRequestStub.returns({transaction: 'singleTx'});
+  //     fromBytesStub.callsFake((what) => ({id: what}));
+  //     result = await instance.postTransactions(req);
+  //     expect(receiveTXStub.firstCall.args).to.be.deep.equal([
+  //       [{id: 'singleTx'}],
+  //       peersLogicCreateStub.firstCall.returnValue,
+  //       true,
+  //     ]);
+  //   });
+  //
+  //   it('should call receiveTransactions after calling fromBytes for each tx', async () => {
+  //     const thetxs = ['tx1', 'tx2', 'tx3'];
+  //     parseRequestStub.returns({transactions: thetxs});
+  //     fromBytesStub.callsFake((what) => ({id: what}));
+  //     result = await instance.postTransactions(req);
+  //     expect(fromBytesStub.callCount).to.be.equal(thetxs.length);
+  //     expect(fromBytesStub.args).to.be.deep.equal([['tx1'], ['tx2'], ['tx3']]);
+  //     expect(receiveTXStub.calledOnce).to.be.true;
+  //     expect(receiveTXStub.firstCall.args).to.be.deep.equal([
+  //       [{id: 'tx1'}, {id: 'tx2'}, {id: 'tx3'}],
+  //       peersLogicCreateStub.firstCall.returnValue,
+  //       true,
+  //     ]);
+  //   });
+  //   it('should respond with APISuccess', async () => {
+  //     const thetxs = ['tx1', 'tx2', 'tx3'];
+  //     parseRequestStub.returns({transactions: thetxs});
+  //     fromBytesStub.returns('a');
+  //     result = await instance.postTransactions(req);
+  //     expect(protoBufStub.stubs.encode.calledOnce).is.true;
+  //     expect(protoBufStub.stubs.encode.firstCall.args).deep.eq([
+  //       {success: true},
+  //       'APISuccess',
+  //       undefined,
+  //     ]);
+  //   });
+  // });
+  //
+  // describe('getBlocksCommon()', () => {
+  //   let findOneStub: SinonStub;
+  //   let genBBStub: SinonStub;
+  //   let getResStub: SinonStub;
+  //   beforeEach(() => {
+  //     findOneStub = sandbox.stub(blocksModel, 'findOne');
+  //     genBBStub = sandbox.stub().returns(Buffer.from('aaa123', 'hex'));
+  //     (instance as any).pblocksFactory = () => ({
+  //       generateBytesBlock: genBBStub,
+  //     });
+  //     getResStub = sandbox.stub(instance as any, 'getResponse').returns({success: true});
+  //   });
+  //
+  //   it('should accept and remove quotes in ids', async () => {
+  //     findOneStub.returns(null);
+  //     await instance.getBlocksCommon('"123",\'456\'', req);
+  //     expect(findOneStub.calledOnce).to.be.true;
+  //     expect(findOneStub.firstCall.args[0].where.id[Op.in]).to.be.deep.equal(['123', '456']);
+  //   });
+  //
+  //   it('should remove non numeric ids', async () => {
+  //     findOneStub.returns(null);
+  //     await instance.getBlocksCommon('123,nonNumericID,456', req);
+  //     expect(findOneStub.calledOnce).to.be.true;
+  //     expect(findOneStub.firstCall.args[0].where.id[Op.in]).to.be.deep.equal(['123', '456']);
+  //   });
+  //
+  //   it('should call peersModule.remove and throw if no valid id is found', async () => {
+  //     findOneStub.returns(null);
+  //     await expect(instance.getBlocksCommon('invalidID', req)).to.be.rejectedWith('Invalid block id sequence');
+  //     expect(peersModuleRemoveStub.calledOnce).to.be.true;
+  //     expect(peersModuleRemoveStub.firstCall.args).to.be.deep
+  //       .equal([req.ip, parseInt(req.headers.port as string, 10)]);
+  //   });
+  //
+  //   it('should call peersModule.remove if more than 10 ids were passed', async () => {
+  //     findOneStub.returns(null);
+  //     await expect(instance.getBlocksCommon('1,2,3,4,5,6,7,8,9,10,11', req))
+  //       .to.be.rejectedWith('Invalid block id sequence');
+  //     expect(peersModuleRemoveStub.calledOnce).to.be.true;
+  //     expect(peersModuleRemoveStub.firstCall.args).to.be.deep
+  //       .equal([req.ip, parseInt(req.headers.port as string, 10)]);
+  //   });
+  //
+  //   it('should call BlocksModel.findOne', async () => {
+  //     findOneStub.returns(null);
+  //     await instance.getBlocksCommon('123,456', req);
+  //     expect(findOneStub.calledOnce).to.be.true;
+  //     expect(findOneStub.firstCall.args).to.be.deep
+  //       .equal([{
+  //         limit: 1,
+  //         order: [['height', 'DESC']],
+  //         raw: true,
+  //         where: {
+  //           id: {
+  //             [Op.in]: ['123', '456'],
+  //           },
+  //         },
+  //       }]);
+  //   });
+  //
+  //   it('should call generateBytesBlock if findOne returns a valid block', async () => {
+  //     findOneStub.returns({blockId: '123456'});
+  //     await instance.getBlocksCommon('1,2,3', req);
+  //     expect(genBBStub.calledOnce).to.be.true;
+  //     expect(genBBStub.firstCall.args).to.be.deep.equal([{blockId: '123456'}]);
+  //   });
+  //
+  //   it('should set the block to null if findOne returns null', async () => {
+  //     findOneStub.returns(null);
+  //     genBBStub.callsFake((a) => a);
+  //     await instance.getBlocksCommon('1,2,3', req);
+  //     expect(genBBStub.notCalled).to.be.true;
+  //     expect(getResStub.calledOnce).to.be.true;
+  //     expect(getResStub.firstCall.args).to.be.deep.equal([{common: null}, 'transportBlocks', 'commonBlock']);
+  //   });
+  //
+  //   it('should call getResponse and return', async () => {
+  //     getResStub.returns('success');
+  //     findOneStub.returns({blockId: '123456'});
+  //     genBBStub.callsFake((a) => a);
+  //     const ret = await instance.getBlocksCommon('1,2,3', req);
+  //     expect(getResStub.calledOnce).to.be.true;
+  //     expect(getResStub.firstCall.args).to.be.deep
+  //       .equal([{common: {blockId: '123456'}}, 'transportBlocks', 'commonBlock']);
+  //     expect(ret).to.be.equal('success');
+  //   });
+  //
+  //   it('getResponse should throw if invalid data is passed', async () => {
+  //     getResStub.restore();
+  //     genBBStub.returns('InvalidDataForProtoBuf');
+  //     protoBufStub.stubs.validate.returns(false);
+  //     await expect(instance.getBlocksCommon('1,2,3', req)).to.be.rejectedWith(/Failed to encode response - /);
+  //   });
+  // });
+  //
+  // describe('postBlock()', () => {
+  //   let parseRequestStub: SinonStub;
+  //   let blockFromBytes: SinonStub;
+  //   let blockObjNormalize: SinonStub;
+  //   beforeEach(() => {
+  //     parseRequestStub = sandbox.stub(instance as any, 'parseRequest');
+  //     blockFromBytes = sandbox.stub(blockLogicStub, 'fromBytes').returns({id: '1'});
+  //     blockObjNormalize = sandbox.stub(blockLogicStub, 'objectNormalize').callsFake((a) => a);
+  //   });
+  //
+  //   it('should parse the request', async () => {
+  //     parseRequestStub.returns({block: 'block'});
+  //     req.body = {cat: 'meows'};
+  //     result = await instance.postBlock(req);
+  //     expect(parseRequestStub.calledOnce).to.be.true;
+  //     expect(parseRequestStub.firstCall.args).to.be.deep.equal([{cat: 'meows'}, 'transportBlocks', 'transportBlock']);
+  //   });
+  //
+  //   it('should call BlockLogic.fromBytes', async () => {
+  //     const blk = {block: 'theBlock'};
+  //     parseRequestStub.returns(blk);
+  //     result = await instance.postBlock(req);
+  //     expect(blockFromBytes.calledOnce).to.be.true;
+  //     expect(blockFromBytes.firstCall.args).to.be.deep.equal([blk.block]);
+  //   });
+  //
+  //   it('should call objectNormalize', async () => {
+  //     const blk = {block: 'theBlock'};
+  //     parseRequestStub.returns(blk);
+  //     result = await instance.postBlock(req);
+  //     expect(blockObjNormalize.calledOnce).to.be.true;
+  //     expect(blockObjNormalize.firstCall.args).to.be.deep.equal([{id: '1'}]);
+  //   });
+  //
+  //   it('should throw and remove peer if parseRequest throws', async () => {
+  //     const err = new Error('pr err');
+  //     parseRequestStub.throws(err);
+  //     await expect(instance.postBlock(req)).to.be.rejectedWith(err);
+  //     expect(peersModuleRemoveStub.calledOnce).to.be.true;
+  //     expect(peersModuleRemoveStub.firstCall.args)
+  //       .to.be.deep.equal([req.ip, parseInt(req.headers.port as string, 10)]);
+  //   });
+  //
+  //   it('should throw and remove peer if objectNormalize throws', async () => {
+  //     const blk = {block: 'theBlock'};
+  //     parseRequestStub.returns(blk);
+  //     const err = new Error('on err');
+  //     blockObjNormalize.throws(err);
+  //     await expect(instance.postBlock(req)).to.be.rejectedWith(err);
+  //     expect(peersModuleRemoveStub.calledOnce).to.be.true;
+  //     expect(peersModuleRemoveStub.firstCall.args)
+  //       .to.be.deep.equal([req.ip, parseInt(req.headers.port as string, 10)]);
+  //   });
+  //
+  //   it('should throw and remove peer if fromBytes throws', async () => {
+  //     const blk = {block: 'theBlock'};
+  //     parseRequestStub.returns(blk);
+  //     const err = new Error('fb err');
+  //     blockFromBytes.throws(err);
+  //     await expect(instance.postBlock(req)).to.be.rejectedWith(err);
+  //     expect(peersModuleRemoveStub.calledOnce).to.be.true;
+  //     expect(peersModuleRemoveStub.firstCall.args)
+  //       .to.be.deep.equal([req.ip, parseInt(req.headers.port as string, 10)]);
+  //   });
+  //
+  //   it('should call bus.message', async () => {
+  //     // TODO: Check hookSystem
+  //   });
+  //
+  //   it('should respond with transportBlockResponse', async () => {
+  //     const blk = {block: 'theBlock'};
+  //     parseRequestStub.returns(blk);
+  //     const thaRes = await instance.postBlock(req);
+  //     expect(thaRes.toString()).eq(JSON.stringify({success: true, blockId: '1'}));
+  //     expect(protoBufStub.stubs.encode.calledOnce).is.true;
+  //     expect(protoBufStub.stubs.encode.firstCall.args[0]).deep.eq({success: true, blockId: '1'});
+  //     expect(protoBufStub.stubs.encode.firstCall.args[1]).eq('transportBlocks');
+  //     expect(protoBufStub.stubs.encode.firstCall.args[2]).eq('transportBlockResponse');
+  //   });
+  //
+  //   describe('unstubbed tests', () => {
+  //     beforeEach(() => {
+  //       container.rebind(p2pSymbols.helpers.protoBuf).to(ProtoBufHelper).inSingletonScope();
+  //       container.rebind(p2pSymbols.controller)
+  //         .to(TransportV2API)
+  //         .inSingletonScope()
+  //         .whenTargetNamed(p2pSymbols.api.transportV2);
+  //       instance               = container.getNamed(p2pSymbols.controller, p2pSymbols.api.transportV2);
+  //     });
+  //     it('should throw if request body is not in binary', async () => {
+  //       await expect(instance.postBlock(req)).rejectedWith('No binary data in request body');
+  //     });
+  //     it('should throw if data is not decodable', async () => {
+  //       req.body = Buffer.from('meow', 'utf8');
+  //       await expect(instance.postBlock(req)).rejectedWith('Invalid binary data for message');
+  //     });
+  //     it('should not throw if data is in correct format', async () => {
+  //       // container.rebind(Symbols.logic.block).to(BlockLogic).inSingletonScope();
+  //       // container.rebind(Symbols.logic.transaction).to(TransactionLogic).inSingletonScope();
+  //       // container.rebind(Symbols.logic.account).to(AccountLogic).inSingletonScope();
+  //       // container.rebind(Symbols.helpers.protoBuf).to(ProtoBufHelper).inSingletonScope();
+  //       const txLogic: TransactionLogic = container.get(Symbols.logic.transaction);
+  //       // txLogic.attachAssetType(container.get(Symbols.logic.transactions.send));
+  //
+  //       // container.rebind(Symbols.logic.pro).to(BlockLogic).inSingletonScope();
+  //       const pbFactory = container.get<RequestFactoryType<any, PostBlocksRequest>>(p2pSymbols.requests.postBlocks);
+  //       const data = pbFactory({data: {block: fakeBlock}}).getRequestOptions(true);
+  //       expect(Buffer.isBuffer(data.data)).true;
+  //       req.body = data.data;
+  //       instance = container.getNamed(p2pSymbols.controller, p2pSymbols.api.transportV2);
+  //       await instance.postBlock(req);
+  //     });
+  //   });
+  // });
 
   // describe('getBlocks()', () => {
   //   let blocks;

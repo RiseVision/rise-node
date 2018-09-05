@@ -12,14 +12,13 @@ import { Symbols } from '../../core-interfaces/src';
 import { P2PConstantsType, p2pSymbols } from '../src/helpers';
 import { ConstantsType } from '../../core-types/src';
 import { BroadcastTaskOptions } from '../../core-interfaces/src/logic';
-import { LoggerStub, StubbedInstance } from '../../core-utils/tests/stubs';
-import { BaseRequest, PostTransactionsRequest } from '../src/requests';
+import { LoggerStub } from '../../core-utils/tests/stubs';
 import {
   createRandomTransaction,
   createRandomTransactions,
   toBufferedTransaction
 } from '../../core-transactions/tests/utils/txCrafter';
-import { StubbedRequest } from './utils/StubbedRequest';
+import { StubbedRequest, StubbedRequest2 } from './utils/StubbedRequest';
 
 // tslint:disable no-unused-expression
 describe('logic/broadcaster', () => {
@@ -377,24 +376,24 @@ describe('logic/broadcaster', () => {
 
   describe('squashQueue', () => {
     let broadcasts;
-    let pt0: PostTransactionsRequest;
-    let pt1: PostTransactionsRequest;
+    let pt0: StubbedRequest2;
+    let pt1: StubbedRequest2;
     let ps0: StubbedRequest;
     beforeEach(() => {
-      pt0         = new PostTransactionsRequest();
+      pt0         = new StubbedRequest2();
       pt0.options = {
         data: {
           transaction: toBufferedTransaction(createRandomTransaction()),
         },
       };
 
-      pt1         = new PostTransactionsRequest();
+      pt1         = new StubbedRequest2();
       pt1.options = {
         data:
           {
             transactions: createRandomTransactions(3)
               .map((tx) => toBufferedTransaction(tx))
-              .concat(pt0.options.data.transaction)
+              .concat(pt0.options.data.transaction),
           },
       };
 

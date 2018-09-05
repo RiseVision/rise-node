@@ -40,14 +40,10 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   private appState: IAppState;
   @inject(Symbols.logic.peers)
   private peersLogic: IPeersLogic;
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
 
   // Modules
   @inject(Symbols.modules.peers)
   private peersModule: IPeersModule;
-  @inject(Symbols.modules.transactions)
-  private transactionsModule: ITransactionsModule;
 
   @postConstruct()
   public afterConstruct() {

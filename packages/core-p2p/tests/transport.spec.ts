@@ -576,158 +576,159 @@ describe('src/modules/transport.ts', () => {
   //   });
   // });
 
-  describe('onUnconfirmedTransaction', () => {
-
-    let broadcast;
-    let transaction;
-    let enqueueStub: SinonStub;
-
-    beforeEach(() => {
-      transaction              = {};
-      broadcast                = true;
-      const p                  = new StubbedRequest();
-      (inst as any).ptrFactory = (a) => {
-        p.options = a;
-        return p;
-      };
-      enqueueStub              = sandbox.stub(broadcasterLogic, 'enqueue');
-    });
-
-    it('should NOT enqueue only if tx passed maxRelays', () => {
-      transaction.relays = 1000;
-      enqueueStub.resetHistory();
-      inst.onUnconfirmedTransaction(transaction, broadcast);
-      expect(enqueueStub.called).false;
-    });
-
-    it('should call broadcasterLogic.enqueue', async () => {
-      inst.onUnconfirmedTransaction(transaction, broadcast);
-      expect(enqueueStub.called).true;
-    });
-    // TODO: Migrate to core-apis
-    // it('should call io.sockets.emit', async () => {
-    //   const emitStub = sandbox.stub(io.sockets, 'emit');
-    //   inst.onUnconfirmedTransaction(transaction, broadcast);
-    //   expect(emitStub.calledOnce).to.be.true;
-    //   expect(emitStub.firstCall.args.length).to.be.equal(2);
-    //   expect(emitStub.firstCall.args[0]).to.be.deep.equal('transactions/change');
-    //   expect(emitStub.firstCall.args[1]).to.be.deep.equal(transaction);
-    // });
-
-    it('should not call broadcasterLogic.enqueue if broadcast is false', () => {
-      broadcast = false;
-
-      inst.onUnconfirmedTransaction(transaction, broadcast);
-
-      expect(enqueueStub.notCalled).to.be.true;
-    });
-
-    it('should not call broadcasterLogic.enqueue if this.broadcasterLogic.maxRelays returned true', () => {
-      inst.onUnconfirmedTransaction({ ...transaction, relays: broadcasterLogic.maxRelays() }, broadcast);
-
-      expect(enqueueStub.notCalled).to.be.true;
-    });
-  });
-
-  describe('onNewBlock', () => {
-
-    let broadcast;
-    let block;
-    let broadcastStub: SinonStub;
-    let socketIOEmitStub: SinonStub;
-    let maxRelaysSpy: SinonSpy;
-
-    beforeEach(() => {
-      block                          = {
-        blockSignature    : Buffer.from('aa', 'hex'),
-        generatorPublicKey: Buffer.from('bb', 'hex'),
-        payloadHash       : Buffer.from('cc', 'hex'),
-        transactions      : [],
-      };
-      broadcast                      = true;
-      systemModule.headers.broadhash = 'broadhash';
-      broadcastStub                  = sandbox.stub(broadcasterLogic, 'broadcast').resolves();
-      maxRelaysSpy                   = sandbox.spy(broadcasterLogic, 'maxRelays');
-      socketIOEmitStub               = sandbox.stub(io.sockets, 'emit');
-      const p                        = new StubbedRequest();
-      (inst as any).pblocksFactory   = (a) => {
-        p.options = a;
-        return p;
-      };
-    });
-
-    // it('should call systemModule.update', async () => {
-    //   await inst.onNewBlock(block, broadcast);
-    //
-    //   expect(systemModule.stubs.update.calledOnce).to.be.true;
-    //   expect(systemModule.stubs.update.firstCall.args.length).to.be.equal(0);
-    // });
-
-    it('should not call broadcast if relays exhausted', async () => {
-      await inst.onNewBlock({ ...block, relays: 10 }, broadcast);
-
-      expect(maxRelaysSpy.calledOnce).to.be.true;
-      expect(broadcastStub.called).false;
-    });
-
-    it('should call broadcasterLogic.broadcast and increment relays', async () => {
-      await inst.onNewBlock({ ...block, relays: 1 }, broadcast);
-
-      expect(broadcastStub.calledOnce).to.be.true;
-      expect(broadcastStub.firstCall.args.length).to.be.equal(2);
-      expect(broadcastStub.firstCall.args[0]).to.be.deep.equal({
-        broadhash: 'broadhash',
-        limit    : constants.maxPeers,
-      });
-      expect(broadcastStub.firstCall.args[1].requestHandler.options).to.be.deep.equal({
-        data: {
-          block: {
-            blockSignature    : Buffer.from('aa', 'hex'),
-            generatorPublicKey: Buffer.from('bb', 'hex'),
-            payloadHash       : Buffer.from('cc', 'hex'),
-            transactions      : [],
-            relays            : 2
-          },
-        },
-      });
-    });
-    // TODO: Migrate to core-apis
-    // it('should call io.sockets.emit', async () => {
-    //   await inst.onNewBlock(block, broadcast);
-    //
-    //   expect(socketIOEmitStub.calledOnce).to.be.true;
-    //   expect(socketIOEmitStub.firstCall.args.length).to.be.equal(2);
-    //   expect(socketIOEmitStub.firstCall.args[0]).to.be.deep.equal('blocks/change');
-    //   expect(socketIOEmitStub.firstCall.args[1]).to.be.deep.equal(block);
-    // });
-
-    it('should not call broadcasterLogic.broadcast if broadcasterLogic.maxRelays returns true', async () => {
-
-      await inst.onNewBlock({ ...block, relays: broadcasterLogic.maxRelays() }, broadcast);
-
-      expect(broadcastStub.notCalled).to.be.true;
-    });
-
-    it('check if broadcast is false', () => {
-      broadcast = false;
-
-      const p = inst.onNewBlock(block, broadcast);
-
-      expect(p).to.be.fulfilled;
-      expect(broadcastStub.notCalled).to.be.true;
-    });
-    it('should ignore broadcast error if any and, more importantly avoid waiting for broadcaster result', async () => {
-      let finished  = false;
-      const promise = wait(1000)
-        .then(() => finished = true);
-
-      broadcastStub.returns(promise);
-
-      await inst.onNewBlock(block, true);
-      expect(finished).to.be.false;
-      await promise;
-    });
-  });
+  // TODO: lerna move to core-transactions
+  // describe('onUnconfirmedTransaction', () => {
+  //
+  //   let broadcast;
+  //   let transaction;
+  //   let enqueueStub: SinonStub;
+  //
+  //   beforeEach(() => {
+  //     transaction              = {};
+  //     broadcast                = true;
+  //     const p                  = new StubbedRequest();
+  //     (inst as any).ptrFactory = (a) => {
+  //       p.options = a;
+  //       return p;
+  //     };
+  //     enqueueStub              = sandbox.stub(broadcasterLogic, 'enqueue');
+  //   });
+  //
+  //   it('should NOT enqueue only if tx passed maxRelays', () => {
+  //     transaction.relays = 1000;
+  //     enqueueStub.resetHistory();
+  //     inst.onUnconfirmedTransaction(transaction, broadcast);
+  //     expect(enqueueStub.called).false;
+  //   });
+  //
+  //   it('should call broadcasterLogic.enqueue', async () => {
+  //     inst.onUnconfirmedTransaction(transaction, broadcast);
+  //     expect(enqueueStub.called).true;
+  //   });
+  //   // TODO: Migrate to core-apis
+  //   // it('should call io.sockets.emit', async () => {
+  //   //   const emitStub = sandbox.stub(io.sockets, 'emit');
+  //   //   inst.onUnconfirmedTransaction(transaction, broadcast);
+  //   //   expect(emitStub.calledOnce).to.be.true;
+  //   //   expect(emitStub.firstCall.args.length).to.be.equal(2);
+  //   //   expect(emitStub.firstCall.args[0]).to.be.deep.equal('transactions/change');
+  //   //   expect(emitStub.firstCall.args[1]).to.be.deep.equal(transaction);
+  //   // });
+  //
+  //   it('should not call broadcasterLogic.enqueue if broadcast is false', () => {
+  //     broadcast = false;
+  //
+  //     inst.onUnconfirmedTransaction(transaction, broadcast);
+  //
+  //     expect(enqueueStub.notCalled).to.be.true;
+  //   });
+  //
+  //   it('should not call broadcasterLogic.enqueue if this.broadcasterLogic.maxRelays returned true', () => {
+  //     inst.onUnconfirmedTransaction({ ...transaction, relays: broadcasterLogic.maxRelays() }, broadcast);
+  //
+  //     expect(enqueueStub.notCalled).to.be.true;
+  //   });
+  // });
+  //
+  // describe('onNewBlock', () => {
+  //
+  //   let broadcast;
+  //   let block;
+  //   let broadcastStub: SinonStub;
+  //   let socketIOEmitStub: SinonStub;
+  //   let maxRelaysSpy: SinonSpy;
+  //
+  //   beforeEach(() => {
+  //     block                          = {
+  //       blockSignature    : Buffer.from('aa', 'hex'),
+  //       generatorPublicKey: Buffer.from('bb', 'hex'),
+  //       payloadHash       : Buffer.from('cc', 'hex'),
+  //       transactions      : [],
+  //     };
+  //     broadcast                      = true;
+  //     systemModule.headers.broadhash = 'broadhash';
+  //     broadcastStub                  = sandbox.stub(broadcasterLogic, 'broadcast').resolves();
+  //     maxRelaysSpy                   = sandbox.spy(broadcasterLogic, 'maxRelays');
+  //     socketIOEmitStub               = sandbox.stub(io.sockets, 'emit');
+  //     const p                        = new StubbedRequest();
+  //     (inst as any).pblocksFactory   = (a) => {
+  //       p.options = a;
+  //       return p;
+  //     };
+  //   });
+  //
+  //   // it('should call systemModule.update', async () => {
+  //   //   await inst.onNewBlock(block, broadcast);
+  //   //
+  //   //   expect(systemModule.stubs.update.calledOnce).to.be.true;
+  //   //   expect(systemModule.stubs.update.firstCall.args.length).to.be.equal(0);
+  //   // });
+  //
+  //   it('should not call broadcast if relays exhausted', async () => {
+  //     await inst.onNewBlock({ ...block, relays: 10 }, broadcast);
+  //
+  //     expect(maxRelaysSpy.calledOnce).to.be.true;
+  //     expect(broadcastStub.called).false;
+  //   });
+  //
+  //   it('should call broadcasterLogic.broadcast and increment relays', async () => {
+  //     await inst.onNewBlock({ ...block, relays: 1 }, broadcast);
+  //
+  //     expect(broadcastStub.calledOnce).to.be.true;
+  //     expect(broadcastStub.firstCall.args.length).to.be.equal(2);
+  //     expect(broadcastStub.firstCall.args[0]).to.be.deep.equal({
+  //       broadhash: 'broadhash',
+  //       limit    : constants.maxPeers,
+  //     });
+  //     expect(broadcastStub.firstCall.args[1].requestHandler.options).to.be.deep.equal({
+  //       data: {
+  //         block: {
+  //           blockSignature    : Buffer.from('aa', 'hex'),
+  //           generatorPublicKey: Buffer.from('bb', 'hex'),
+  //           payloadHash       : Buffer.from('cc', 'hex'),
+  //           transactions      : [],
+  //           relays            : 2
+  //         },
+  //       },
+  //     });
+  //   });
+  //   // TODO: Migrate to core-apis
+  //   // it('should call io.sockets.emit', async () => {
+  //   //   await inst.onNewBlock(block, broadcast);
+  //   //
+  //   //   expect(socketIOEmitStub.calledOnce).to.be.true;
+  //   //   expect(socketIOEmitStub.firstCall.args.length).to.be.equal(2);
+  //   //   expect(socketIOEmitStub.firstCall.args[0]).to.be.deep.equal('blocks/change');
+  //   //   expect(socketIOEmitStub.firstCall.args[1]).to.be.deep.equal(block);
+  //   // });
+  //
+  //   it('should not call broadcasterLogic.broadcast if broadcasterLogic.maxRelays returns true', async () => {
+  //
+  //     await inst.onNewBlock({ ...block, relays: broadcasterLogic.maxRelays() }, broadcast);
+  //
+  //     expect(broadcastStub.notCalled).to.be.true;
+  //   });
+  //
+  //   it('check if broadcast is false', () => {
+  //     broadcast = false;
+  //
+  //     const p = inst.onNewBlock(block, broadcast);
+  //
+  //     expect(p).to.be.fulfilled;
+  //     expect(broadcastStub.notCalled).to.be.true;
+  //   });
+  //   it('should ignore broadcast error if any and, more importantly avoid waiting for broadcaster result', async () => {
+  //     let finished  = false;
+  //     const promise = wait(1000)
+  //       .then(() => finished = true);
+  //
+  //     broadcastStub.returns(promise);
+  //
+  //     await inst.onNewBlock(block, true);
+  //     expect(finished).to.be.false;
+  //     await promise;
+  //   });
+  // });
   /*
        // describe('receiveSignatures', () => {
        //

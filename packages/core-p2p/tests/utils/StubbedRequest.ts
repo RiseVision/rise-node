@@ -5,3 +5,8 @@ export class StubbedRequest extends StubbedInstance(class  extends BaseRequest<a
 }) {
 
 }
+
+export class StubbedRequest2 extends StubbedInstance(class  extends BaseRequest<any, any> {
+}) {
+
+}

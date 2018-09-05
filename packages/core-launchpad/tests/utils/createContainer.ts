@@ -5,7 +5,7 @@ import { WordPressHookSystem, InMemoryFilterModel } from 'mangiafuoco';
 import { LoggerStub } from '../../../core-utils/tests/stubs';
 import { SignedAndChainedBlockType } from '../../../core-types/dist';
 import * as path from 'path';
-import { ICoreModule } from '../../src';
+import { ICoreModule, LaunchpadSymbols } from '../../src';
 import { IBlockLogic } from '../../../core-interfaces/src/logic';
 import { ModelSymbols } from '../../../core-models/src/helpers';
 import { Symbols, IJobsQueue } from '@risevision/core-interfaces';
@@ -43,9 +43,9 @@ export async function createContainer(modules: string[],
   container.bind(Symbols.generic.zschema).toConstantValue(new z_schema({}));
   container.bind(Symbols.generic.hookSystem).toConstantValue(new WordPressHookSystem(new InMemoryFilterModel()));
   container.rebind(Symbols.helpers.logger).toConstantValue(new LoggerStub());
+  container.bind(LaunchpadSymbols.coremodules).toConstantValue(sortedModules);
 
   for (const sortedModule of sortedModules) {
-    console.log(sortedModule.directory);
     await sortedModule.initAppElements();
   }
 

@@ -13,7 +13,6 @@ import { p2pSymbols } from '../../src/helpers';
 class TestRequest extends BaseRequest<any, any> implements IAPIRequest<any, any> {
   protected readonly method = 'POST';
   protected readonly baseUrl = '/test/';
-  protected readonly supportsProtoBuf = true;
 }
 
 const factory = (what: (new () => any)) => (ctx) => (options) => {
@@ -58,43 +57,38 @@ describe('apis/requests/BaseRequest', () => {
   });
 
   describe('getRequestOptions', () => {
-    let getMethodStub: SinonStub;
-    let getBaseUrlStub: SinonStub;
 
-    beforeEach(() => {
-      getMethodStub = sandbox.stub(instance as any, 'getMethod').returns('GET');
-      getBaseUrlStub = sandbox.stub(instance as any, 'getBaseUrl').returns('/testurl');
-    });
-
-    it('should call getMethod', () => {
-      instance.getRequestOptions(true);
-      expect(getMethodStub.calledOnce).to.be.true;
-    });
-
-    it('should call getBaseUrl', () => {
-      instance.getRequestOptions(true);
-      expect(getBaseUrlStub.calledOnce).to.be.true;
-    });
-
-    it('should add data if available in original options', () => {
+    it('should add manipulated data if available in original options', () => {
       const origOptions = {data: {tx: {a: 1}}};
       const inst2 = new TestRequest();
       inst2.options = origOptions;
-      const reqOptions = inst2.getRequestOptions(true);
+      const encodeStub = sandbox.stub(inst2 as any, 'encodeRequestData');
+      encodeStub.returns({woof: 'meow'})
+      const reqOptions = inst2.getRequestOptions();
       expect(reqOptions.data).to.not.be.undefined;
-      expect(reqOptions.data).to.be.deep.equal(origOptions.data);
+      expect(reqOptions.data).to.be.deep.equal({woof: 'meow'});
     });
 
     it('should return the expected object', () => {
       const origOptions = {data: {tx: {a: 1}}};
       const inst2 = new TestRequest();
       inst2.options = origOptions;
-      const reqOptions = inst2.getRequestOptions(true);
+      const reqOptions = inst2.getRequestOptions();
       expect(reqOptions).to.be.deep.equal({
-        data: origOptions.data,
-        isProtoBuf: true,
+        data: null,
         method: 'POST',
         url: '/test/',
+      });
+    });
+
+    it ('should append querystring if present', () => {
+      const origOptions = {query: { cat: 'meows', dog: 'woofs'}};
+      const inst2 = new TestRequest();
+      inst2.options = origOptions as any;
+      const reqOptions = inst2.getRequestOptions();
+      expect(reqOptions).to.be.deep.equal({
+        method: 'POST',
+        url: '/test/?cat=meows&dog=woofs',
       });
     });
   });
@@ -105,7 +99,7 @@ describe('apis/requests/BaseRequest', () => {
 
     beforeEach(() => {
       decodeProtoBufResponseStub = sandbox.stub(instance as any, 'decodeProtoBufResponse');
-      res =  {body: {success: 1}, peer: {version: '1.1.1'}};
+      res =  {body: new Buffer('meow', 'utf8'), peer: {version: '1.1.1'}};
     });
 
     it('should call isProtoBuf', () => {
@@ -117,24 +111,13 @@ describe('apis/requests/BaseRequest', () => {
       decodeProtoBufResponseStub.returns(val);
       const ret = instance.getResponseData(res);
       expect(decodeProtoBufResponseStub.calledOnce).to.be.true;
-      expect(decodeProtoBufResponseStub.firstCall.args.length).to.be.equal(2);
-      expect(decodeProtoBufResponseStub.firstCall.args[0]).to.be.deep.equal(res);
-      expect(decodeProtoBufResponseStub.firstCall.args[1]).to.be.equal('APISuccess');
+      expect(decodeProtoBufResponseStub.firstCall.args.length).to.be.equal(1);
+      expect(decodeProtoBufResponseStub.firstCall.args[0]).to.be.deep.equal(new Buffer('meow', 'utf8'));
       expect(ret).to.be.deep.equal(val);
     });
-
-    it('should not call decodeProtoBufResponse if isProtoBuf returns false', () => {
-      (instance as any).supportsProtoBuf = false;
-      instance.getResponseData(res);
-      expect(decodeProtoBufResponseStub.notCalled).to.be.true;
-    });
-
-    it('should return response body if not protoBuf', () => {
-      (instance as any).supportsProtoBuf = false;
-      const ret = instance.getResponseData(res);
-      expect(ret).to.be.deep.equal(res.body);
-    });
+    // TODO: Check decodeProtoBufValidResponse called.
   });
+
   describe('getOrigOptions', () => {
     it('should return the original options', () => {
       const opt = {data: 'data'};
@@ -163,14 +146,12 @@ describe('apis/requests/BaseRequest', () => {
   describe('decodeProtoBufResponse', () => {
 
     describe('when response status is 200', () => {
-      const res = {status: 200, body: Buffer.from('', 'hex')};
-      it('should call protoBufHelper.decodeToObj and return if it message is validated', () => {
-        protoBufStub.stubs.decodeToObj.returns('decodedResult');
-        const resp = (instance as any).decodeProtoBufResponse(res, 'namespace', 'messageType');
-        expect(protoBufStub.stubs.decodeToObj.calledOnce).to.be.true;
-        expect(protoBufStub.stubs.decodeToObj.firstCall.args[0]).to.be.deep.equal(res.body);
-        expect(protoBufStub.stubs.decodeToObj.firstCall.args[1]).to.be.deep.equal('namespace');
-        expect(protoBufStub.stubs.decodeToObj.firstCall.args[2]).to.be.deep.equal('messageType');
+      it('should call pdecodeProtoBufValidResponse and return if it message is validated', () => {
+        protoBufStub.stubs.decode.onFirstCall().returns({success: true});
+        const decpbvrStub = sandbox.stub(instance as any, 'decodeProtoBufValidResponse').returns('decodedResult');
+        const resp = (instance as any).decodeProtoBufResponse(Buffer.from('', 'hex'));
+        expect(decpbvrStub.calledOnce).to.be.true;
+        expect(decpbvrStub.firstCall.args[0]).to.be.deep.equal(Buffer.from('', 'hex'));
         expect(resp).to.be.equal('decodedResult');
       });
     });
