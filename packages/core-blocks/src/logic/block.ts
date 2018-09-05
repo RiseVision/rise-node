@@ -375,7 +375,7 @@ export class BlockLogic implements IBlockLogic {
     const blockSignature = bb.buffer.length === 176 ? bb.copy(112, 176).toBuffer() as any : null;
     const id = this.getId(null, blk.bytes);
     const transactions = blk.transactions.map((tx) => {
-      const baseTx = this.transaction.fromBytes(tx);
+      const baseTx = this.transaction.fromProtoBuffer(tx);
       return {
         ...baseTx,
         blockId: id,

@@ -20,7 +20,7 @@ export class GetBlocksRequest extends BaseRequest<GetBlocksRequestDataType, void
 
   public getResponseData(res) {
     if (this.peerSupportsProtoBuf(res.peer)) {
-      const rawRes: {blocks: Buffer[]} = this.decodeProtoBufResponse(res, 'blocks.transport', 'transportBlocks') as any;
+      const rawRes: {blocks: Buffer[]} = this.decodeProtoBufResponse(res) as any;
       if (typeof rawRes.blocks === 'undefined' || rawRes.blocks === null) {
         return { blocks: [] };
       } else {
@@ -38,5 +38,9 @@ export class GetBlocksRequest extends BaseRequest<GetBlocksRequestDataType, void
   protected getBaseUrl(isProtoBuf) {
     const queryString = this.getQueryString();
     return isProtoBuf ? `/v2/peer/blocks${queryString}` : `/peer/blocks${queryString}`;
+  }
+
+  protected decodeProtoBufValidResponse(buf: Buffer) {
+    return this.protoBufHelper.decode(buf, 'blocks.transport', 'transportBlocks');
   }
 }

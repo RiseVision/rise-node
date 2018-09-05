@@ -15,7 +15,7 @@ export class CommonBlockRequest extends BaseRequest<CommonBlockRequestDataType, 
 
   public getResponseData(res) {
     if (this.peerSupportsProtoBuf(res.peer)) {
-      const rawRes = this.decodeProtoBufResponse(res, 'transportBlocks', 'commonBlock');
+      const rawRes = this.decodeProtoBufResponse(res);
       rawRes.common = (typeof rawRes.common !== 'undefined') ? this.blockLogic.fromBytes(rawRes.common) : null;
       return rawRes;
     } else {
@@ -26,5 +26,9 @@ export class CommonBlockRequest extends BaseRequest<CommonBlockRequestDataType, 
   protected getBaseUrl(isProto) {
     const queryString = this.getQueryString();
     return isProto ? `/v2/peer/blocks/common${queryString}` : `/peer/blocks/common${queryString}`;
+  }
+
+  protected decodeProtoBufValidResponse(buf: Buffer) {
+    return this.protoBufHelper.decode(buf, 'blocks.transport', 'commonBlock');
   }
 }

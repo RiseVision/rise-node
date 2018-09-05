@@ -7,12 +7,11 @@ import {
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { BaseRequest, RequestFactoryType } from '@risevision/core-p2p';
-import { PostTransactionsRequest, PostTransactionsRequestDataType, TXSymbols } from '@risevision/core-transactions';
-import { SignedBlockType } from '@risevision/core-types';
+import { SignedAndChainedBlockType, SignedBlockType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 
 // tslint:disable-next-line
-export type PostBlockRequestDataType = { block: SignedBlockType<Buffer> };
+export type PostBlockRequestDataType = { block: SignedAndChainedBlockType };
 
 @injectable()
 export class PostBlockRequest extends BaseRequest<any, PostBlockRequestDataType> {
@@ -28,8 +27,6 @@ export class PostBlockRequest extends BaseRequest<any, PostBlockRequestDataType>
   private blocksModel: typeof IBlocksModel;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
-  @inject(TXSymbols.p2p.postTxRequest)
-  private ptrFactory: RequestFactoryType<PostTransactionsRequestDataType, PostTransactionsRequest>;
 
   public getRequestOptions(peerSupportsProto) {
     const reqOptions = super.getRequestOptions(peerSupportsProto);
@@ -49,7 +46,7 @@ export class PostBlockRequest extends BaseRequest<any, PostBlockRequestDataType>
     return isProto ? '/v2/peer/blocks' : '/peer/blocks';
   }
 
-  protected decodeProtoBufValidResponse(res: Buffer): any {
-    return this.decodeProtoBufResponse(res, 'blocks.transport', 'transportBlockResponse');
+  protected decodeProtoBufValidResponse(res: Buffer) {
+    return this.protoBufHelper.decode(res, 'blocks.transport', 'transportBlockResponse');
   }
 }

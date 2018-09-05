@@ -20,7 +20,7 @@ import {
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { CommonBlockRequest, GetBlocksRequest, p2pSymbols, RequestFactoryType } from '@risevision/core-p2p';
+import { p2pSymbols, RequestFactoryType } from '@risevision/core-p2p';
 import {
   BasePeerType,
   ConstantsType,
@@ -37,6 +37,8 @@ import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 
 import { BlocksSymbols } from '../blocksSymbols';
+import { GetBlocksRequest } from '../p2p/GetBlocksRequest';
+import { CommonBlockRequest } from '../p2p/CommonBlockRequest';
 
 const schema = require('../../schema/blocks.json');
 
@@ -101,9 +103,9 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
   private isCleaning: boolean = false;
 
-  @inject(p2pSymbols.requests.getBlocks)
+  @inject(BlocksSymbols.p2p.getBlocks)
   private gbFactory: RequestFactoryType<void, GetBlocksRequest>;
-  @inject(p2pSymbols.requests.commonBlocks)
+  @inject(BlocksSymbols.p2p.commonBlocks)
   private cbFactory: RequestFactoryType<void, CommonBlockRequest>;
 
   public cleanup() {

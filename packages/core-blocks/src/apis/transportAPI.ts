@@ -1,10 +1,3 @@
-import { Request } from 'express';
-import { inject, injectable, named } from 'inversify';
-import { ContentType, Controller, Get, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
-import { Op } from 'sequelize';
-import * as z_schema from 'z-schema';
-import { WordPressHookSystem } from 'mangiafuoco';
-import { HTTPError, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import {
   IBlockLogic,
   IBlocksModel,
@@ -17,12 +10,19 @@ import {
   ITransportModule,
   Symbols
 } from '@risevision/core-interfaces';
-import { ConstantsType, IBytesBlock, IBytesTransaction, SignedAndChainedBlockType } from '@risevision/core-types';
 import { ModelSymbols } from '@risevision/core-models';
-import { RequestFactoryType } from '../utils';
-import { PostBlockRequest, PostBlocksRequestDataType } from '../p2p/PostBlocksRequest';
 import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
+import { ConstantsType, SignedAndChainedBlockType } from '@risevision/core-types';
+import { HTTPError, SchemaValid, ValidateSchema } from '@risevision/core-utils';
+import { Request } from 'express';
+import { inject, named } from 'inversify';
+import { WordPressHookSystem } from 'mangiafuoco';
+import { Controller, Get, Post, QueryParam, Req } from 'routing-controllers';
+import { Op } from 'sequelize';
+import * as z_schema from 'z-schema';
+import { BlocksSymbols } from '../blocksSymbols';
 import { OnReceiveBlock } from '../hooks';
+import { BlocksModuleUtils } from '../modules';
 
 const transportSchema = require('../../schema/transport.json');
 
@@ -38,8 +38,8 @@ export class TransportV2API {
   private blocksModule: IBlocksModule;
   @inject(Symbols.generic.hookSystem)
   private hookSystem: WordPressHookSystem;
-  // @inject(Symbols.modules.blocksSubModules.utils)
-  // private blocksModuleUtils: IBlocksModuleUtils;
+  @inject(BlocksSymbols.modules.utils)
+  private blocksModuleUtils: BlocksModuleUtils;
   // @inject(Symbols.helpers.bus)
   // private bus: Bus;
   @inject(Symbols.generic.constants)
@@ -62,9 +62,6 @@ export class TransportV2API {
   @inject(ModelSymbols.model)
   @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
-
-  @inject(p2pSymbols.requests.postBlocks)
-  private pblocksFactory: RequestFactoryType<PostBlocksRequestDataType, PostBlockRequest>;
 
   @Get('/blocks/common')
   @ValidateSchema()
@@ -90,8 +87,7 @@ export class TransportV2API {
       where: { id: { [Op.in]: excapedIds } },
     });
 
-    const tmpPB      = this.pblocksFactory({ data: { block: common } });
-    const bytesBlock = common !== null ? tmpPB.generateBytesBlock(common) : null;
+    const bytesBlock = common !== null ? this.blockLogic.toProtoBuffer(common) : null;
     return this.getResponse({ common: bytesBlock }, 'blocks.transport', 'commonBlock');
   }
 
@@ -99,8 +95,8 @@ export class TransportV2API {
   public async postBlock(@Req() req: Request) {
     let normalizedBlock: SignedAndChainedBlockType;
     try {
-      const requestData = this.parseRequest<any>(req.body, 'blocks.transport', 'transportBlock');
-      normalizedBlock   = this.blockLogic.objectNormalize(this.blockLogic.fromBytes(requestData.block));
+      const requestData = this.parseRequest<{ block: Buffer }>(req.body, 'blocks.transport', 'transportBlock');
+      normalizedBlock   = this.blockLogic.objectNormalize(this.blockLogic.fromProtoBuffer(requestData.block));
     } catch (e) {
       this.peersModule.remove(req.ip, parseInt(req.headers.port as string, 10));
       throw e;
@@ -123,16 +119,12 @@ export class TransportV2API {
     });
     if (lastBlock != null) {
       const blocksToLoad = await this.calcNumBlocksToLoad(lastBlock);
-      // TODO: fix blocksmodule
-      const dbBlocks     = [];
-      // const dbBlocks = await this.blocksModuleUtils.loadBlocksData({
-      //   lastId: lastBlockId,
-      //   limit : blocksToLoad,
-      // });
-      const tmpPB  = this.pblocksFactory({ data: null });
-      const blocks = await Promise.all(dbBlocks
-        .map(async (block): Promise<IBytesBlock> => tmpPB.generateBytesBlock(block)));
-      return this.getResponse({ blocks }, 'blocks.transport');
+      const dbBlocks     = await this.blocksModuleUtils.loadBlocksData({
+        lastId: lastBlockId,
+        limit : blocksToLoad,
+      });
+      const blocks       = dbBlocks.map((block) => this.blockLogic.toProtoBuffer(block));
+      return this.getResponse({ blocks }, 'blocks.transport', 'transportBlocks');
     } else {
       throw new Error(`Block ${lastBlockId} not found!`);
     }

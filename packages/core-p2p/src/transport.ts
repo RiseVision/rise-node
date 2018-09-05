@@ -38,7 +38,7 @@ import { ModelSymbols } from '@risevision/core-models';
 import { cbToPromise, SchemaValid, ValidateSchema, WrapInBalanceSequence } from '@risevision/core-utils';
 import {
   PeersListRequest,
-  PeersListRequestDataType
+  PeersListResponse
 } from './requests/';
 import { p2pSymbols } from './helpers';
 import { RequestFactoryType } from './utils/';
@@ -111,7 +111,7 @@ export class TransportModule extends Extendable implements ITransportModule {
   // @inject(p2pSymbols.requests.postBlocks)
   // private pblocksFactory: RequestFactoryType<PostBlockRequestDataType, PostBlockRequest>;
   @inject(p2pSymbols.requests.peersList)
-  private plFactory: RequestFactoryType<PeersListRequestDataType, PeersListRequest>;
+  private plFactory: RequestFactoryType<PeersListResponse, PeersListRequest>;
 
   private loaded: boolean = false;
 
@@ -384,7 +384,7 @@ export class TransportModule extends Extendable implements ITransportModule {
     this.logger.trace('Transport->discoverPeers');
 
     const requestHandler = this.plFactory({ data: null });
-    const response       = await this.getFromRandomPeer<PeersListRequestDataType>(
+    const response       = await this.getFromRandomPeer<PeersListResponse>(
       {},
       requestHandler
     );
