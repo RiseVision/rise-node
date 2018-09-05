@@ -7,6 +7,10 @@ import { BlocksSymbols } from './blocksSymbols';
 import { BlockLogic, BlockRewardLogic } from './logic/';
 import { BlocksModel } from './models/BlocksModel';
 import { BlocksModule, BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify } from './modules';
+import { requestFactory } from '@risevision/core-p2p';
+import { CommonBlockRequest } from './p2p/CommonBlockRequest';
+import { GetBlocksRequest } from './p2p/GetBlocksRequest';
+import { PostBlockRequest } from './p2p/PostBlockRequest';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
@@ -30,6 +34,10 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       .inSingletonScope()
       .whenTargetNamed(BlocksSymbols.api);
 
+    // Adding request factories
+    this.container.bind(BlocksSymbols.p2p.commonBlocks).toFactory(requestFactory(CommonBlockRequest));
+    this.container.bind(BlocksSymbols.p2p.getBlocks).toFactory(requestFactory(GetBlocksRequest));
+    this.container.bind(BlocksSymbols.p2p.postBlocks).toFactory(requestFactory(PostBlockRequest));
   }
 
 }
