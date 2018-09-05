@@ -199,7 +199,7 @@ describe('src/modules/transport.ts', () => {
       };
       headers = {
         nethash: 'as8776fsg76sd87',
-        version: '1.1.1',
+        version: '1.2.0',
       };
 
       thePeer = { applyHeaders: sandbox.stub() };
@@ -331,7 +331,7 @@ describe('src/modules/transport.ts', () => {
 
     it('should call removePeer and return rejected promise if schemaStub.validate returned false', async () => {
       schemaStub.stubs.validate.returns(false);
-      error = new Error('Invalid response headers {"nethash":"as8776fsg76sd87","version":"1.1.1"} put http://undefined:undefinedurl.com');
+      error = new Error('Invalid response headers {"nethash":"as8776fsg76sd87","version":"1.2.0"} put http://undefined:undefinedurl.com');
 
       await expect(inst.getFromPeer(peer, options)).to.be.rejectedWith(error.message);
 
@@ -371,7 +371,7 @@ describe('src/modules/transport.ts', () => {
     });
 
     it('should call removePeer and return rejected promise if systemModule.versionCompatible returned false', async () => {
-      error = new Error('Peer is using incompatible version 1.1.1 put http://undefined:undefinedurl.com');
+      error = new Error('Peer is using incompatible version 1.2.0 put http://undefined:undefinedurl.com');
       systemModule.reset();
       systemModule.enqueueResponse('networkCompatible', true);
       systemModule.enqueueResponse('versionCompatible', false);
@@ -380,7 +380,7 @@ describe('src/modules/transport.ts', () => {
 
       expect(removePeerStub.calledOnce).to.be.true;
       expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({ peer: thePeer, code: 'EVERSION 1.1.1' });
+      expect(removePeerStub.firstCall.args[0]).to.be.deep.equal({ peer: thePeer, code: 'EVERSION 1.2.0' });
       expect(removePeerStub.firstCall.args[1]).to.be.equal('put http://undefined:undefinedurl.com');
 
     });

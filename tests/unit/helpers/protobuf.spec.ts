@@ -266,7 +266,7 @@ describe('helpers/protobuf', () => {
               port: 5555,
               state: 2,
               os: 'linux',
-              version: '1.1.1',
+              version: '1.2.0',
               broadhash: '123124125152asdadf',
               height: 5,
               clock: 86400,
@@ -287,7 +287,7 @@ describe('helpers/protobuf', () => {
             },
           ],
         };
-        const buf = Buffer.from('0a420a093132372e302e302e3110b32b180222056c696e75782a05312e312e31321231323331323431323531353261736461646638054080a305480a52066e6f6e6365310a440a093132372e302e302e32109f2b180322067562756e74752a05312e302e31321361736461646631333432333532333532333532380540c0ea34480c52066e6f6e636532', 'hex');
+        const buf = Buffer.from('0a420a093132372e302e302e3110b32b180222056c696e75782a05312e322e30321231323331323431323531353261736461646638054080a305480a52066e6f6e6365310a440a093132372e302e302e32109f2b180322067562756e74752a05312e302e31321361736461646631333432333532333532333532380540c0ea34480c52066e6f6e636532', 'hex');
         const out = instance.encode(obj, 'transportPeers') as Buffer;
         expect(out).to.be.deep.equal(buf);
       });

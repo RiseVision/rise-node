@@ -364,10 +364,14 @@ export class TransportModule implements ITransportModule {
         continue; // Transaction already confirmed.
       }
       this.logger.info(`Received transaction ${tx.id} ${peer ? `from peer ${peer.string}` : ' '}`);
-      await this.transactionModule.processUnconfirmedTransaction(
-        tx,
-        broadcast
-      );
+      try {
+        await this.transactionModule.processUnconfirmedTransaction(
+          tx,
+          broadcast
+        );
+      } catch (e) {
+        this.logger.debug(`Ignoring transaction ${tx.id}: Already processed or pool is full.`);
+      }
     }
   }
 

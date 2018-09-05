@@ -23,7 +23,7 @@ describe('apis/requests/PeersListRequest', () => {
       port: 5555,
       state: 2,
       updated: 123,
-      version: '1.1.1',
+      version: '1.2.0',
     };
   });
 

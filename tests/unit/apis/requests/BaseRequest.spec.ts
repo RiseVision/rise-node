@@ -45,7 +45,7 @@ describe('apis/requests/BaseRequest', () => {
       port: 5555,
       state: 2,
       updated: 123,
-      version: '1.1.1',
+      version: '1.2.0',
     };
     const instanceFactory = container.get<RequestFactoryType<any, TestRequest>>(testSymbol);
     instance = instanceFactory({data: null});
@@ -103,7 +103,7 @@ describe('apis/requests/BaseRequest', () => {
 
     beforeEach(() => {
       decodeProtoBufResponseStub = sandbox.stub(instance as any, 'decodeProtoBufResponse');
-      res =  {body: {success: 1}, peer: {version: '1.1.1'}};
+      res =  {body: {success: 1}, peer: {version: '1.2.0'}};
     });
 
     it('should call isProtoBuf', () => {

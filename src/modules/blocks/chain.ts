@@ -269,7 +269,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     // txPool.processBundled loop.
     for (const overTX of overlappingTXs) {
       this.transactionsModule.removeUnconfirmedTransaction(overTX.id);
-      await this.transactionsModule.processUnconfirmedTransaction(overTX, false);
+      try {
+        await this.transactionsModule.processUnconfirmedTransaction(overTX, false);
+      } catch (e) {
+        this.logger.debug(`Ignoring overlapping tx ${overTX.id}: Already processed or pool is full.`);
+      }
     }
 
     block = null;
