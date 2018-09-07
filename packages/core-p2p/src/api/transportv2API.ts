@@ -77,7 +77,12 @@ export class TransportV2API {
   @Get('/list')
   public async list() {
     const { peers } = await this.peersModule.list({ limit: this.constants.maxPeers });
-    return this.getResponse({ peers }, 'transportPeers');
+    return this.getResponse({ peers }, 'p2p.peers', 'transportPeers');
+  }
+
+  @Get('/height')
+  public async height() {
+    return this.getResponse({ height: this.blocksModule.lastBlock.height }, 'p2p.height', 'height');
   }
 
   // TODO: Move in multisignatures.

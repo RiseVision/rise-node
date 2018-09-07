@@ -34,7 +34,6 @@ export const p2pSymbols = {
     // getTransactions : Symbol.for('rise.p2p.getTransactions'),
     height          : Symbol.for('rise.p2p.height'),
     peersList       : Symbol.for('rise.p2p.peersList'),
-    ping            : Symbol.for('rise.p2p.ping'),
     // postBlocks      : Symbol.for('rise.p2p.postBlocks'),
     // postTransactions: Symbol.for('rise.p2p.postTransactions'),
   },

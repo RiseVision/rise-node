@@ -23,7 +23,7 @@ import { TransportModule } from './transport';
 import { BroadcasterLogic } from './broadcaster';
 import {
   HeightRequest,
-  PeersListRequest, PingRequest
+  PeersListRequest
 } from './requests';
 import { requestFactory } from './utils/';
 import { TransportV2API } from './api/transportv2API';
@@ -134,7 +134,6 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     // this.container.bind(p2pSymbols.requests.getTransactions).toFactory(requestFactory(GetTransactionsRequest));
     this.container.bind(p2pSymbols.requests.height).toFactory(requestFactory(HeightRequest));
     this.container.bind(p2pSymbols.requests.peersList).toFactory(requestFactory(PeersListRequest));
-    this.container.bind(p2pSymbols.requests.ping).toFactory(requestFactory(PingRequest));
     // this.container.bind(p2pSymbols.requests.postBlocks).toFactory(requestFactory(PostBlockRequest));
 
     // this.container.bind(p2pSymbols.requests.postTransactions).toFactory(requestFactory(PostTransactionsRequest));

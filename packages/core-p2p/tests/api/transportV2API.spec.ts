@@ -159,8 +159,8 @@ describe('apis/transportV2API', () => {
       expect(protoBufStub.stubs.encode.firstCall.args)
         .deep.eq([
         { peers: fakePeers },
+        'p2p.peers',
         'transportPeers',
-        undefined,
       ]);
     });
   });

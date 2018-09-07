@@ -8,7 +8,6 @@ export type PeersListResponse = {peers: PeerType[]};
 @injectable()
 export class PeersListRequest extends BaseRequest<PeersListResponse, void> {
   protected readonly method: 'GET'   = 'GET';
-  protected readonly supportsProtoBuf = true;
   protected readonly baseUrl = '/v2/peer/list';
 
   protected decodeProtoBufValidResponse(buf: Buffer) {
