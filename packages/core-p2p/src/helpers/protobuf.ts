@@ -20,7 +20,7 @@ export class ProtoBufHelper {
   private modules: Array<ICoreModule<any>>;
   @postConstruct()
   public init() {
-    this.loadProtos();
+    this.autoLoadProtos();
   }
 
   /**
@@ -108,6 +108,20 @@ export class ProtoBufHelper {
     return postProcess(inst.toObject(message, converters));
   }
 
+  public loadProto(filename: string, namespace: string) {
+    if (typeof(this.protos[namespace]) !== 'undefined') {
+      throw new Error(`Proto[${namespace}] already defined and redefinition attempted in ${filename}`);
+    }
+    let root: Root;
+    try {
+      root = protobuf.loadSync(filename);
+      this.protos[namespace] = root;
+    } catch (err) {
+      this.logger.error(err.message);
+      throw err;
+    }
+  }
+
   private getMessageInstance(namespace: string, messageType?: any): Type {
     const typeToLookup = messageType ? `${messageType}` : `${namespace}`;
     if (typeof this.protos[namespace] !== 'undefined') {
@@ -125,9 +139,9 @@ export class ProtoBufHelper {
     }
   }
 
-  private loadProtos() {
+  private autoLoadProtos() {
     for (const module of this.modules) {
-      const protoDir = path.join(module.directory, '..', '..', 'proto');
+      const protoDir = path.join(module.directory,  'proto');
       if (!fs.existsSync(protoDir)) {
         continue;
       }
@@ -135,20 +149,10 @@ export class ProtoBufHelper {
       files.forEach((filePath: string) => {
         if (filePath.match(/\.proto$/)) {
           const namespace = path.basename(filePath, '.proto');
-          let root: Root;
-          if (typeof(this.protos[namespace]) !== 'undefined') {
-            throw new Error(`Proto[${namespace}] already defined and redefinition attempted in ${module.name}`);
-          }
-          try {
-            root = protobuf.loadSync(path.join(protoDir, filePath));
-            this.protos[namespace] = root;
-          } catch (err) {
-            this.logger.error(err.message);
-            throw err;
-          }
+          this.loadProto(path.join(protoDir, filePath), namespace);
         }
       });
     }
-
   }
+
 }

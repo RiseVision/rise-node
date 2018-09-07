@@ -392,8 +392,7 @@ describe('logic/broadcaster', () => {
         data:
           {
             transactions: createRandomTransactions(3)
-              .map((tx) => toBufferedTransaction(tx))
-              .concat(pt0.options.data.transaction),
+              .map((tx) => toBufferedTransaction(tx)),
           },
       };
 
@@ -407,26 +406,35 @@ describe('logic/broadcaster', () => {
       }];
     });
 
-    it('should return the expected result', () => {
+    it('should call mergeintothis and', () => {
+      pt0.stubs.mergeIntoThis.callsFake((...stuff) => {
+        pt0.options.data = {
+          transactions: [
+            pt0.options.data.transaction,
+            ...stuff
+              .map((s) => s.options.data.transactions)
+              .reduce((a, b) => [...a, ...b], []),
+          ],
+        };
+      });
       const txResults = [
         pt0.options.data.transaction,
-        ... pt1.options.data.transactions.slice(0, pt1.options.data.transactions.length - 1),
+        ...pt1.options.data.transactions,
       ];
       const retObj    = {
         immediate     : false,
         requestHandler: {
-          method          : 'POST',
           options         : {
             data: {
-              transaction : null,
               transactions: txResults,
             },
           },
-          supportsProtoBuf: true,
         },
       };
       const results   = (instance as any).squashQueue(broadcasts);
-      expect(results[0].options).to.be.deep.eq(retObj);
+      expect(results[0].options.immediate).to.be.deep.eq(retObj.immediate);
+      expect(results[0].options.requestHandler.options).to.be.deep.eq(retObj.requestHandler.options);
+      expect(pt0.stubs.mergeIntoThis.calledOnce).true;
     });
   });
 
