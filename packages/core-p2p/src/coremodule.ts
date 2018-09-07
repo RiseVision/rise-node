@@ -27,8 +27,7 @@ import {
 } from './requests';
 import { requestFactory } from './utils/';
 import { TransportV2API } from './api/transportv2API';
-import { AttachPeerHeaders } from './api/attachPeerHeaders';
-import { ValidatePeerHeaders } from './api/validatePeerHeaders';
+import { AttachPeerHeaders, ValidatePeerHeaders } from './api/middlewares';
 
 const configSchema = require('../schema/config.json');
 
@@ -129,14 +128,9 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     this.container.bind(p2pSymbols.socketIO).toConstantValue(socketIO(this.srv));
     this.container.bind(p2pSymbols.helpers.protoBuf).to(ProtoBufHelper);
 
-    // this.container.bind(p2pSymbols.requests.commonBlocks).toFactory(requestFactory(CommonBlockRequest));
-    // this.container.bind(p2pSymbols.requests.getBlocks).toFactory(requestFactory(GetBlocksRequest));
-    // this.container.bind(p2pSymbols.requests.getTransactions).toFactory(requestFactory(GetTransactionsRequest));
+    // Request factories.
     this.container.bind(p2pSymbols.requests.height).toFactory(requestFactory(HeightRequest));
     this.container.bind(p2pSymbols.requests.peersList).toFactory(requestFactory(PeersListRequest));
-    // this.container.bind(p2pSymbols.requests.postBlocks).toFactory(requestFactory(PostBlockRequest));
-
-    // this.container.bind(p2pSymbols.requests.postTransactions).toFactory(requestFactory(PostTransactionsRequest));
 
     // APIs
     this.container.bind(p2pSymbols.api.attachPeerHeaders)

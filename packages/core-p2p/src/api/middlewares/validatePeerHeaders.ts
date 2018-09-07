@@ -5,8 +5,8 @@ import * as express from 'express';
 import { inject, injectable } from 'inversify';
 import { ExpressMiddlewareInterface, Middleware } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import { p2pSymbols } from '../helpers';
-const transportSchema = require( '../../schema/transport.json');
+import { p2pSymbols } from '../../helpers';
+const transportSchema = require( '../../../schema/transport.json');
 
 @Middleware({ type: 'before' })
 @injectable()

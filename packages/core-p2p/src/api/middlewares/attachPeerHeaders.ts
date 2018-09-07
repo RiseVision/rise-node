@@ -3,7 +3,7 @@ import * as express from 'express';
 import { inject, injectable } from 'inversify';
 import { ExpressMiddlewareInterface, Middleware } from 'routing-controllers';
 import { IoCSymbol } from '@risevision/core-utils';
-import { p2pSymbols } from '../helpers';
+import { p2pSymbols } from '../../helpers';
 
 @Middleware({ type: 'before' })
 @injectable()
