@@ -11,6 +11,7 @@ import { BlocksModule, BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils
 import { CommonBlockRequest } from './p2p/CommonBlockRequest';
 import { GetBlocksRequest } from './p2p/GetBlocksRequest';
 import { PostBlockRequest } from './p2p/PostBlockRequest';
+import { BlocksTransportV2API } from './apis/transportAPI';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
@@ -32,7 +33,12 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     this.container.bind(APISymbols.api)
       .to(BlocksAPI)
       .inSingletonScope()
-      .whenTargetNamed(BlocksSymbols.api);
+      .whenTargetNamed(BlocksSymbols.api.api);
+
+    this.container.bind(APISymbols.api)
+      .to(BlocksTransportV2API)
+      .inSingletonScope()
+      .whenTargetNamed(BlocksSymbols.api.transport);
 
     // Adding request factories
     this.container.bind(BlocksSymbols.p2p.commonBlocks).toFactory(requestFactory(CommonBlockRequest));

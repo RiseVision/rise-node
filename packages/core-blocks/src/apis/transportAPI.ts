@@ -11,13 +11,13 @@ import {
   Symbols
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
+import { AttachPeerHeaders, p2pSymbols, ProtoBufHelper, ValidatePeerHeaders } from '@risevision/core-p2p';
 import { ConstantsType, SignedAndChainedBlockType } from '@risevision/core-types';
-import { HTTPError, SchemaValid, ValidateSchema } from '@risevision/core-utils';
+import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { Request } from 'express';
-import { inject, named } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
-import { Controller, Get, Post, QueryParam, Req } from 'routing-controllers';
+import { ContentType, Controller, Get, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { BlocksSymbols } from '../blocksSymbols';
@@ -26,8 +26,14 @@ import { BlocksModuleUtils } from '../modules';
 
 const transportSchema = require('../../schema/transport.json');
 
-@Controller()
-export class TransportV2API {
+
+@Controller('/v2/peer')
+@injectable()
+@IoCSymbol(BlocksSymbols.api.transport)
+@UseBefore(ValidatePeerHeaders)
+@UseBefore(AttachPeerHeaders)
+@ContentType('application/octet-stream')
+export class BlocksTransportV2API {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
   @inject(Symbols.logic.block)

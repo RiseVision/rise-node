@@ -2,7 +2,6 @@ import { APISymbols } from '@risevision/core-apis';
 import { IBaseTransactionType, ITransactionLogic, Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
-import { TransactionsAPI } from './httpApi';
 import { SendTransaction } from './sendTransaction';
 import { TransactionLogic } from './TransactionLogic';
 import { TransactionsModule } from './TransactionModule';
@@ -10,8 +9,8 @@ import { TransactionPool } from './TransactionPool';
 import { TransactionsModel } from './TransactionsModel';
 import { TXSymbols } from './txSymbols';
 import { requestFactory } from '@risevision/core-p2p';
-import { PostTransactionsRequest } from './p2p';
-import { GetTransactionsRequest } from './p2p/GetTransactionsRequest';
+import { GetTransactionsRequest, PostTransactionsRequest } from './p2p';
+import { TransactionsAPI, TransactionTransport } from './api';
 
 const schema = require('../schema/config.json');
 
@@ -26,7 +25,10 @@ export class CoreModule extends BaseCoreModule {
 
     this.container.bind(APISymbols.api).to(TransactionsAPI)
       .inSingletonScope()
-      .whenTargetNamed(TXSymbols.api);
+      .whenTargetNamed(TXSymbols.api.api);
+    this.container.bind(APISymbols.api).to(TransactionTransport)
+      .inSingletonScope()
+      .whenTargetNamed(TXSymbols.api.transport);
 
     this.container.bind(ModelSymbols.model)
       .toConstructor(TransactionsModel)

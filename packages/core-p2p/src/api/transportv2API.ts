@@ -94,43 +94,7 @@ export class TransportV2API {
   //   return this.getResponse({ success: true }, 'APISuccess');
   // }
 
-  // @Get('/transactions')
-  // public transactions() {
-  //   const transactions                 = this.transactionsModule.getMergedTransactionList(this.constants.maxSharedTxs);
-  //   const tmpPT                        = this.ptFactory({ data: { transactions } });
-  //   const byteTxs: IBytesTransaction[] = transactions
-  //     .map((tx) => tmpPT.generateBytesTransaction(tx))
-  //     .map((bt) => {
-  //       delete bt.relays;
-  //       return bt;
-  //     });
-  //   return this.getResponse({ transactions: byteTxs }, 'transportTransactions');
-  // }
-  //
-  // @Post('/transactions')
-  // public async postTransactions(@Req() req: Request) {
-  //   let transactions  = [];
-  //   const requestData = this.parseRequest<any>(req.body, 'transportTransactions');
-  //   if (typeof requestData.transaction !== 'undefined' && requestData.transaction !== null) {
-  //     transactions = [requestData.transaction];
-  //   } else {
-  //     transactions = requestData.transactions ? requestData.transactions : [];
-  //   }
-  //   const thePeer = this.peersLogic.create({
-  //     ip  : req.ip,
-  //     port: parseInt(req.headers.port as string, 10),
-  //   });
-  //
-  //   if (transactions.length > 0) {
-  //     await this.transportModule.receiveTransactions(transactions.map(
-  //       (tx: IBytesTransaction) =>
-  //         this.TransactionsModel.toTransportTransaction(this.transactionLogic.fromBytes(tx))
-  //     ), thePeer, true);
-  //   }
-  //
-  //   return this.getResponse({ success: true }, 'APISuccess');
-  // }
-  //
+
 
   private getResponse(payload: any, pbNamespace: string, pbMessageType?: string) {
     if (this.protoBuf.validate(payload, pbNamespace, pbMessageType)) {

@@ -83,16 +83,16 @@ export class TransportModule extends Extendable implements ITransportModule {
   private broadcasterLogic: IBroadcasterLogic;
   @inject(Symbols.logic.peers)
   private peersLogic: IPeersLogic;
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
+  // @inject(Symbols.logic.transaction)
+  // private transactionLogic: ITransactionLogic;
 
   // Modules
   @inject(Symbols.modules.peers)
   private peersModule: IPeersModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
-  @inject(Symbols.modules.transactions)
-  private transactionModule: ITransactionsModule;
+  // @inject(Symbols.modules.transactions)
+  // private transactionModule: ITransactionsModule;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
 
@@ -327,47 +327,6 @@ export class TransportModule extends Extendable implements ITransportModule {
   //     throw new Error(`Error processing signature: ${e.message || e}`);
   //   }
   // }
-
-  @ValidateSchema()
-  // tslint:disable-next-line
-  @WrapInBalanceSequence
-  public async receiveTransactions(@SchemaValid(transportSchema.transactions.properties.transactions, 'Invalid transactions body')
-                                     transactions: Array<ITransportTransaction<any>>,
-                                   peer: IPeerLogic | null,
-                                   broadcast: boolean) {
-    // normalize transactions
-    const txs: Array<IBaseTransaction<any>> = [];
-    for (const tx of transactions) {
-      try {
-        txs.push(this.transactionLogic.objectNormalize(tx));
-      } catch (e) {
-        this.logger.debug('Transaction normalization failed', {
-          err   : e.toString(),
-          id    : tx.id,
-          module: 'transport',
-          tx,
-        });
-        if (peer) {
-          this.removePeer({ peer, code: 'ETRANSACTION' }, 'ReceiveTransactions Error');
-        }
-        throw new Error(`Invalid transaction body ${e.message}`);
-      }
-    }
-
-    // filter out already confirmed transactions
-    const confirmedIDs = await this.transactionModule.filterConfirmedIds(txs.map((tx) => tx.id));
-
-    for (const tx of txs) {
-      if (confirmedIDs.indexOf(tx.id) !== -1) {
-        continue; // Transaction already confirmed.
-      }
-      this.logger.debug(`Received transaction ${tx.id} ${peer ? `from peer ${peer.string}` : ' '}`);
-      await this.transactionModule.processUnconfirmedTransaction(
-        tx,
-        broadcast
-      );
-    }
-  }
 
   /**
    * Removes a peer by calling modules peer remove

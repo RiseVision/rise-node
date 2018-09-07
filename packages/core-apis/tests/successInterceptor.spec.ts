@@ -1,7 +1,7 @@
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
-import { SuccessInterceptor } from '../src';
+import { APISuccessInterceptor } from '../src';
 import { APISymbols } from '../src/helpers';
 import { createContainer } from '../../core-launchpad/tests/utils/createContainer';
 
@@ -13,13 +13,13 @@ chai.use(assertArrays);
 
 // tslint:disable no-unused-expression
 describe('apis/utils/attachPeerHeaders', () => {
-  let instance: SuccessInterceptor;
+  let instance: APISuccessInterceptor;
   let container: Container;
   let result: any;
 
   beforeEach(async () => {
     container = await createContainer(['core-apis', 'core', 'core-helpers', 'core-accounts']);
-    container.bind(APISymbols.successInterceptor).to(SuccessInterceptor);
+    container.bind(APISymbols.successInterceptor).to(APISuccessInterceptor);
     instance = container.get(APISymbols.successInterceptor);
   });
 

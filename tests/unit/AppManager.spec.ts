@@ -491,7 +491,7 @@ describe('AppManager', () => {
       expect(containerStub.bindings[Symbols.api.utils.successInterceptor]).to.be.deep.equal([
         {
           inSingletonScope: true,
-          to              : 'SuccessInterceptor',
+          to              : 'APISuccessInterceptor',
         },
       ]);
 

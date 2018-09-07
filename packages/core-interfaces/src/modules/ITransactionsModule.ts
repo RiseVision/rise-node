@@ -1,6 +1,7 @@
-import { IBaseTransaction, IConfirmedTransaction } from '@risevision/core-types';
+import { IBaseTransaction, IConfirmedTransaction, ITransportTransaction } from '@risevision/core-types';
 import { IAccountsModel, ITransactionsModel } from '../models';
 import { IModule } from './IModule';
+import { IPeerLogic } from '../logic';
 
 export interface ITransactionsModule extends IModule {
   /**
@@ -69,7 +70,7 @@ export interface ITransactionsModule extends IModule {
   /**
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
-  applyUnconfirmed(transaction: IBaseTransaction<any>|IConfirmedTransaction<any>, sender: IAccountsModel): Promise<void>;
+  applyUnconfirmed(transaction: IBaseTransaction<any> | IConfirmedTransaction<any>, sender: IAccountsModel): Promise<void>;
 
   /**
    * Validates account and Undoes unconfirmed transaction.
@@ -93,5 +94,15 @@ export interface ITransactionsModule extends IModule {
    * If it does not throw the tx should be valid.
    * NOTE: this must be called with an unconfirmed transaction
    */
-  checkTransaction(tx: IBaseTransaction<any>, accountsMap: {[address: string]: IAccountsModel}, height: number): Promise<void>;
+  checkTransaction(tx: IBaseTransaction<any>, accountsMap: { [address: string]: IAccountsModel }, height: number): Promise<void>;
+
+  /**
+   * Loops over the received transactions, Checks tx is ok by normalizing it and eventually remove peer if tx is not valid
+   * Also checks tx is not already confirmed.
+   * calls processUnconfirmedTransaction over it.
+   * @returns {Promise<void>}
+   */
+  processIncomingTransactions(transactions: Array<IBaseTransaction<any>>,
+                              peer: IPeerLogic | null,
+                              broadcast: boolean): Promise<void>;
 }

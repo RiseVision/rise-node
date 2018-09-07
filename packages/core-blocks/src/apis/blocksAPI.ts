@@ -27,7 +27,7 @@ import { BlocksSymbols } from '../blocksSymbols';
 const blocksSchema = require('../../schema/blocks.json');
 
 @JsonController('/api/blocks')
-@IoCSymbol(BlocksSymbols.api)
+@IoCSymbol(BlocksSymbols.api.api)
 @injectable()
 export class BlocksAPI {
 

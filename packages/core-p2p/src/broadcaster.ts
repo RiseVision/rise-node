@@ -6,8 +6,6 @@ import {
   ILogger,
   IPeersLogic,
   IPeersModule,
-  ITransactionLogic,
-  ITransactionsModule,
   Symbols
 } from '@risevision/core-interfaces';
 import { AppConfig, ConstantsType, PeerType } from '@risevision/core-types';

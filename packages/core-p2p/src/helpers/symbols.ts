@@ -31,11 +31,8 @@ export const p2pSymbols = {
     v2ErrorHandler: Symbol.for('rise.p2p.v2ErrorHandler'),
   },
   requests: {
-    // getTransactions : Symbol.for('rise.p2p.getTransactions'),
     height          : Symbol.for('rise.p2p.height'),
     peersList       : Symbol.for('rise.p2p.peersList'),
-    // postBlocks      : Symbol.for('rise.p2p.postBlocks'),
-    // postTransactions: Symbol.for('rise.p2p.postTransactions'),
   },
   model     : Symbols.models.peers,
 };

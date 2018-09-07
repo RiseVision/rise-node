@@ -1,7 +1,7 @@
 import {
   IAccountsModel,
   IAccountsModule, IBroadcasterLogic,
-  ILogger,
+  ILogger, IPeerLogic, IPeersModule, ISequence,
   ITransactionLogic,
   ITransactionPoolLogic,
   ITransactionsModel,
@@ -9,13 +9,19 @@ import {
   Symbols
 } from '@risevision/core-interfaces';
 import { DBHelper, ModelSymbols } from '@risevision/core-models';
-import { ConstantsType, IBaseTransaction, SignedAndChainedBlockType } from '@risevision/core-types';
+import {
+  ConstantsType,
+  IBaseTransaction,
+  ITransportTransaction,
+  SignedAndChainedBlockType
+} from '@risevision/core-types';
 import { decorate, inject, injectable, named } from 'inversify';
 import { TXSymbols } from './txSymbols';
 import { RequestFactoryType } from '@risevision/core-p2p';
-import { PostTransactionsRequest, PostTransactionsRequestDataType } from './p2p/PostTransactionsRequest';
+import { PostTransactionsRequest, PostTransactionsRequestDataType } from './p2p/';
 import { OnNewUnconfirmedTransation } from './hooks/actions';
 import { WPHooksSubscriber, WordPressHookSystem } from 'mangiafuoco';
+import { WrapInBalanceSequence } from '@risevision/core-utils';
 
 const ExtendableClass = WPHooksSubscriber(Object);
 decorate(injectable(), ExtendableClass);
@@ -40,6 +46,10 @@ export class TransactionsModule extends ExtendableClass implements ITransactions
   @inject(Symbols.logic.broadcaster)
   private broadcasterLogic: IBroadcasterLogic;
 
+  @inject(Symbols.helpers.sequence)
+  @named(Symbols.names.helpers.balancesSequence)
+  public balancesSequence: ISequence;
+
   @inject(ModelSymbols.model)
   @named(Symbols.models.transactions)
   private TXModel: typeof ITransactionsModel;
@@ -49,6 +59,9 @@ export class TransactionsModule extends ExtendableClass implements ITransactions
 
   @inject(Symbols.generic.hookSystem)
   public hookSystem: WordPressHookSystem;
+
+  @inject(Symbols.modules.peers)
+  private peersModule: IPeersModule;
 
   public cleanup() {
     return Promise.resolve();
@@ -134,6 +147,44 @@ export class TransactionsModule extends ExtendableClass implements ITransactions
     this.transactionPool.pending.remove(id);
     this.transactionPool.bundled.remove(id);
     return wasUnconfirmed;
+  }
+
+  @WrapInBalanceSequence
+  public async processIncomingTransactions(transactions: Array<IBaseTransaction<any>>,
+                                           peer: IPeerLogic | null,
+                                           broadcast: boolean) {
+    // normalize transactions
+    const txs: Array<IBaseTransaction<any>> = [];
+    for (const tx of transactions) {
+      try {
+        txs.push(this.transactionLogic.objectNormalize(tx));
+      } catch (e) {
+        this.logger.debug('Transaction normalization failed', {
+          err   : e.toString(),
+          id    : tx.id,
+          module: 'transport',
+          tx,
+        });
+        if (peer) {
+          this.peersModule.remove(peer.ip, peer.port);
+        }
+        throw new Error(`Invalid transaction body ${e.message}`);
+      }
+    }
+
+    // filter out already confirmed transactions
+    const confirmedIDs = await this.filterConfirmedIds(txs.map((tx) => tx.id));
+
+    for (const tx of txs) {
+      if (confirmedIDs.indexOf(tx.id) !== -1) {
+        continue; // Transaction already confirmed.
+      }
+      this.logger.debug(`Received transaction ${tx.id} ${peer ? `from peer ${peer.string}` : ' '}`);
+      await this.processUnconfirmedTransaction(
+        tx,
+        broadcast
+      );
+    }
   }
 
   /**

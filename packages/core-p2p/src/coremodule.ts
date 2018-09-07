@@ -83,7 +83,7 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
         get: (clz: any) => {
           const symbol = Reflect.getMetadata(Symbols.class, clz);
           if (symbol == null) {
-            throw new Error(`ERROR instantiating for HTTP ${symbol}`);
+            throw new Error(`ERROR instantiating for HTTP ${clz}`);
           }
           return this.container
             .getNamed(Symbols.class, clz);
@@ -139,6 +139,10 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     this.container.bind(p2pSymbols.api.validatePeerHeadersMiddleware)
       .to(ValidatePeerHeaders)
       .inSingletonScope();
+    this.container.bind(p2pSymbols.api.transportV2)
+      .to(ValidatePeerHeaders)
+      .inSingletonScope();
+
   }
 
   public teardown(): Promise<void> {

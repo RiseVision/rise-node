@@ -5,7 +5,6 @@ import { inject, injectable } from 'inversify';
 import { ExpressErrorMiddlewareInterface, Middleware } from 'routing-controllers';
 import { APISymbols } from '../helpers';
 
-@Middleware({ type: 'after' })
 @IoCSymbol(APISymbols.errorHandler)
 @injectable()
 export class APIErrorHandler implements ExpressErrorMiddlewareInterface {
@@ -14,9 +13,6 @@ export class APIErrorHandler implements ExpressErrorMiddlewareInterface {
   private logger: ILogger;
 
   public error(error: any, req: express.Request, res: express.Response, next: (err: any) => any) {
-    if (req.url.startsWith('/v2')) {
-      return next(error);
-    }
     if (error instanceof HTTPError) {
       res.status(error.statusCode);
     } else {
@@ -25,6 +21,7 @@ export class APIErrorHandler implements ExpressErrorMiddlewareInterface {
     if (error instanceof Error) {
       error = error.message;
     }
+
     if (req.url.startsWith('/peer')) {
       this.logger.warn(`Transport error [${req.ip}]: ${req.url}`, error);
     } else {

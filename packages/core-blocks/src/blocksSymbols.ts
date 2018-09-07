@@ -1,7 +1,10 @@
 import { Symbols } from '@risevision/core-interfaces';
 
 export const BlocksSymbols = {
-  api    : Symbol.for('rise.blocks.api'),
+  api    : {
+    api      : Symbol.for('rise.blocks.api.api'),
+    transport: Symbol.for('rise.blocks.api.transport'),
+  },
   logic: {
     block: Symbols.logic.block,
     blockReward: Symbols.logic.blockReward,

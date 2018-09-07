@@ -20,15 +20,15 @@ import * as _ from 'lodash';
 import { Body, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-import { TXSymbols } from './txSymbols';
-import { TXApiGetTxFilter } from './hooks/filters';
+import { TXSymbols } from '../txSymbols';
+import { TXApiGetTxFilter } from '../hooks/filters';
 
 // tslint:disable-next-line
 const schema = require('../schema/api.json');
 
 @JsonController('/api/transactions')
 @injectable()
-@IoCSymbol(TXSymbols.api)
+@IoCSymbol(TXSymbols.api.api)
 export class TransactionsAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
@@ -287,9 +287,9 @@ export class TransactionsAPI {
       }))
     );
     if (validTxs.length > 0) {
-      // Schema validation is done in transportModule
-      await this.transportModule.receiveTransactions(
-        validTxs.map((tx) => transportTxs[tx.id]),
+      // Schema validation is done in txLogic.objectNormalize.
+      await this.transactionsModule.processIncomingTransactions(
+        validTxs.map((tx) => this.txLogic.objectNormalize(transportTxs[tx.id])),
         null,
         true
       );
