@@ -41,6 +41,16 @@ describe('apis/requests/PostTransactionsRequest', () => {
           url: '/peer/transactions',
         });
       });
+      it('should support being called with a single transaction', () => {
+        instance.options = {data: {transaction: 'singleTX'}} as any;
+        const reqOptions = instance.getRequestOptions(false);
+        expect(reqOptions).to.be.deep.equal({
+          isProtoBuf: false,
+          method: 'POST',
+          url: '/peer/transactions',
+          data: {transaction: 'singleTX'},
+        });
+      });
     });
     describe('protoBuf = true', () => {
       it('should call protoBufHelper.validate', () => {
@@ -71,6 +81,22 @@ describe('apis/requests/PostTransactionsRequest', () => {
         pbHelperStub.stubs.validate.returns(false);
         expect(() => { instance.getRequestOptions(true); }).to.throw('Failed to encode ProtoBuf');
       });
+
+      it('should support being called with a single transaction', () => {
+        pbHelperStub.stubs.validate.returns(true);
+        instance.options = {data: {transaction: 'singleTX'}} as any;
+        const reqOptions = instance.getRequestOptions(true);
+        expect(pbHelperStub.stubs.validate.firstCall.args).to.be.deep.equal([
+          {transaction: 'singleTX', },
+          'transportTransactions',
+        ]);
+        expect(reqOptions).to.be.deep.equal({
+          isProtoBuf: true,
+          method: 'POST',
+          url: '/v2/peer/transactions',
+          data: 'encodedValue',
+        });
+      });
     });
   });
 
@@ -86,6 +112,37 @@ describe('apis/requests/PostTransactionsRequest', () => {
         const url = (instance as any).getBaseUrl(true);
         expect(url).to.be.equal('/v2/peer/transactions');
       });
+    });
+  });
+
+  describe('isRequestExpired', () => {
+    let txModule;
+    beforeEach(() => {
+      instance.options.data = {transactions: [{id: 1}, {id: 2}]} as any;
+      txModule = { filterConfirmedIds: sandbox.stub().callsFake((ids: any[]) => ids) };
+      (instance as any).txModule = txModule;
+    });
+    it('should return true if all txs in data are confirmed', async () => {
+      txModule.filterConfirmedIds.returns([1, 2]);
+      const res = await instance.isRequestExpired();
+      expect(res).to.be.true;
+    });
+    it('should support being called with a single transaction', async () => {
+      delete instance.options.data.transactions;
+      instance.options.data.transaction =  {id: 3} as any;
+      txModule.filterConfirmedIds.returns([3]);
+      const res = await instance.isRequestExpired();
+      expect(res).to.be.true;
+    });
+    it('should return false if no at least one tx is not confirmed yet', async () => {
+      txModule.filterConfirmedIds.returns([1]);
+      const res = await instance.isRequestExpired();
+      expect(res).to.be.false;
+    });
+    it('should return false if no tx is confirmed yet', async () => {
+      txModule.filterConfirmedIds.returns([]);
+      const res = await instance.isRequestExpired();
+      expect(res).to.be.false;
     });
   });
 
