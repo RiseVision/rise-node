@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
-import { SinonSandbox } from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import { PostBlocksRequest } from '../../../../src/apis/requests/PostBlocksRequest';
 import { Symbols } from '../../../../src/ioc/symbols';
 import { ProtoBufHelperStub } from '../../../stubs/helpers/ProtoBufHelperStub';
@@ -89,11 +89,37 @@ describe('apis/requests/PostBlocksRequest', () => {
     });
   });
 
+  describe('getResponseData', () => {
+    let supportsStub: SinonStub;
+    let decodeStub: SinonStub;
+    beforeEach(() => {
+      supportsStub = sandbox.stub();
+      decodeStub = sandbox.stub().returns('decodedValue');
+      (instance as any).peerSupportsProtoBuf = supportsStub;
+      (instance as any).decodeProtoBufResponse = decodeStub;
+    });
+
+    describe('protoBuf = false', () => {
+      it('should return the response body', () => {
+        supportsStub.returns(false);
+        const ret = instance.getResponseData({body: 'responseBody'});
+        expect(ret).to.be.equal('responseBody');
+      });
+    });
+    describe('protoBuf = true', () => {
+      it('should return the decoded response body', () => {
+        supportsStub.returns(true);
+        decodeStub.returns('decodedValue');
+        const ret = instance.getResponseData({body: 'requestBody'});
+        expect(ret).to.be.equal('decodedValue');
+      });
+    });
+  });
+
   // TODO: Move this test to APIRequest
   /*
   describe('generateBytesBlock()', () => {
     const block = {
-      height: 112233,
       transactions: ['tx1', 'tx2'],
     };
 
