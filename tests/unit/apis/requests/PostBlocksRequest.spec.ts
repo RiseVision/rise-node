@@ -120,7 +120,6 @@ describe('apis/requests/PostBlocksRequest', () => {
   /*
   describe('generateBytesBlock()', () => {
     const block = {
-      height: 112233,
       transactions: ['tx1', 'tx2'],
     };
 
