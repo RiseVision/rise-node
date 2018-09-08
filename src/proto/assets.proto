@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+message multiSignatureAsset {
+    uint32 min = 1;
+    uint32 lifetime = 2;
+    repeated string keysgroup = 3;
+}
+
+message delegateAsset {
+    string username = 1;
+    bytes publicKey = 2;
+    uint64 address = 3;
+}
+
+message secondSignatureAsset {
+    bytes publicKey = 1;
+}
+
+message voteAsset {
+    repeated singleVote votes = 1;
+}
+
+message singleVote {
+    enum action {
+        ADD = 0;
+        REMOVE = 1;
+    }
+    bytes publicKey = 1;
+}

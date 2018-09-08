@@ -7,11 +7,11 @@ import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { AccountsAPI } from '../../../src/apis';
 import { Symbols } from '../../../src/ioc/symbols';
+import { AccountsModel } from '../../../src/models';
+import { AppConfig } from '../../../src/types/genericTypes';
 import { AccountsModuleStub, DelegatesModuleStub, SystemModuleStub, } from '../../stubs';
 import ZSchemaStub from '../../stubs/helpers/ZSchemaStub';
 import { createContainer } from '../../utils/containerCreator';
-import { AccountsModel } from '../../../src/models';
-import { AppConfig } from '../../../src/types/genericTypes';
 
 chai.use(chaiAsPromised);
 
@@ -20,7 +20,7 @@ const ProxyAccountsAPI = proxyquire('../../../src/apis/accountsAPI', {
   'is-empty': (...args) => isEmptyStub.apply(this, args),
 });
 
-// tslint:disable no-unused-expression max-line-length
+// tslint:disable no-unused-expression max-line-length no-big-function
 describe('apis/accountsAPI', () => {
 
   let sandbox: SinonSandbox;
@@ -181,7 +181,7 @@ describe('apis/accountsAPI', () => {
           u_multisignatures   : accData.u_multisignatures,
           unconfirmedBalance  : accData.u_balance,
           unconfirmedSignature: accData.u_secondSignature,
-        }
+        },
       });
     });
 
@@ -309,10 +309,10 @@ describe('apis/accountsAPI', () => {
         account.delegates  = ['1', '2'];
         delegatesFromQuery = [del1, del2].map((d, idx) => ({
           delegate: new AccountsModel(d), info: {
-            rate        : idx,
-            rank        : idx,
             approval    : 100,
             productivity: 100,
+            rank        : idx,
+            rate        : idx,
           },
         }));
         accountsModule.reset();
@@ -339,11 +339,11 @@ describe('apis/accountsAPI', () => {
               missedblocks: undefined,
               producedblocks: undefined,
               productivity: 100,
+              publicKey: '1',
               rank: 0,
               rate: 0,
               username: undefined,
               vote: undefined,
-              publicKey: '1',
             },
           ],
         });
@@ -436,9 +436,9 @@ describe('apis/accountsAPI', () => {
       await instance.topAccounts({});
       expect(accountsModule.stubs.getAccounts.calledOnce).is.true;
       expect(accountsModule.stubs.getAccounts.firstCall.args[0]).deep.eq({
-        sort: { balance: -1 },
         limit: 100,
-        offset: 0
+        offset: 0,
+        sort: { balance: -1 },
       });
     });
     it('should query accountsModule.getAccounts with proper params', async () => {
@@ -446,9 +446,9 @@ describe('apis/accountsAPI', () => {
       const res = await instance.topAccounts({limit: 1, offset: 10});
       expect(accountsModule.stubs.getAccounts.calledOnce).is.true;
       expect(accountsModule.stubs.getAccounts.firstCall.args[0]).deep.eq({
-        sort: { balance: -1 },
         limit: 1,
-        offset: 10
+        offset: 10,
+        sort: { balance: -1 },
       });
       expect(accountsModule.stubs.getAccounts.firstCall.args[1]).deep.eq(
         ['address', 'balance', 'publicKey']
@@ -464,7 +464,7 @@ describe('apis/accountsAPI', () => {
       expect(res).to.be.deep.eq({
         accounts: [
           {address: '1', balance: 10, publicKey: null},
-          {address: '2', balance: 12, publicKey: '6161616161616161616161616161616161616161616161616161616161616161'}
+          {address: '2', balance: 12, publicKey: '6161616161616161616161616161616161616161616161616161616161616161'},
         ],
       });
     });

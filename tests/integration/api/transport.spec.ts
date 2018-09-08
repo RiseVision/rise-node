@@ -192,7 +192,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
 
 }
 
-describe('api/transport', () => {
+describe('peer/transport', () => {
 
   initializer.setup();
 
@@ -291,10 +291,76 @@ describe('api/transport', () => {
 
       multisigAccount = wallet;
       multisigKeys = keys;
+      txPool.multisignature.list(false).forEach((w) => txPool.multisignature.remove(w.id));
+
     });
     checkHeadersValidation(() => supertest(initializer.appManager.expressApp)
       .get('/peer/signatures'));
     checkReturnObjKeyVal('signatures', [], '/peer/signatures', headers);
+    it('POST: should allow signature', async () => {
+      const tx = await createSendTransaction(0, 1, multisigAccount, '1R');
+      await supertest(initializer.appManager.expressApp)
+        .post('/peer/transactions')
+        .set(headers)
+        .send({transaction: tx})
+        .expect(200, {success: true});
+      await txPool.processBundled();
+      await txModule.fillPool();
+      await supertest(initializer.appManager.expressApp)
+        .post('/peer/signatures')
+        .set(headers)
+        .send({
+          signature: {
+            signature: multisigKeys[0].getSignatureOfTransaction(tx),
+            transaction: tx.id,
+          },
+        })
+        .expect(200, {success: true});
+
+      await supertest(initializer.appManager.expressApp)
+        .post('/peer/signatures')
+        .set(headers)
+        .send({
+          signature: {
+            antani: multisigKeys[1].getSignatureOfTransaction(tx),
+            transaction: tx.id,
+          },
+        })
+        .expect(200, {success: false, error: '#/ - Missing required property: signature'});
+    });
+    it('POST: should allow signatures', async () => {
+      const tx = await createSendTransaction(0, 1, multisigAccount, '1R');
+      await supertest(initializer.appManager.expressApp)
+        .post('/peer/transactions')
+        .set(headers)
+        .send({transaction: tx})
+        .expect(200, {success: true});
+      await txPool.processBundled();
+      await txModule.fillPool();
+      await supertest(initializer.appManager.expressApp)
+        .post('/peer/signatures')
+        .set(headers)
+        .send({
+          signatures: [{
+            signature: multisigKeys[0].getSignatureOfTransaction(tx),
+            transaction: tx.id,
+          }],
+        })
+        .expect(200, {success: true});
+
+      await supertest(initializer.appManager.expressApp)
+        .post('/peer/signatures')
+        .set(headers)
+        .send({
+          signatures: [{
+            antani: multisigKeys[1].getSignatureOfTransaction(tx),
+            transaction: tx.id,
+          }, 'antani'],
+        })
+        .expect(200, {success: true}); // Even if it is not valid.
+
+
+    });
     it('should return multisig signatures missing some sigs', async () => {
       const tx = await createSendTransaction(0, 1, multisigAccount, '1R');
       await supertest(initializer.appManager.expressApp)
@@ -310,7 +376,6 @@ describe('api/transport', () => {
       // add 2 out of 3 signatures.
       const sigs = [];
       for (let i = 0; i < multisigKeys.length; i++) {
-        console.log(i);
         const signature = ed.sign(
           txLogic.getHash(toBufferedTransaction(tx), false, false),
           {
@@ -322,10 +387,14 @@ describe('api/transport', () => {
           .post('/peer/signatures')
           .set(headers)
           .send({
-            signatures: [{
-              signature  : signature.toString('hex'),
-              transaction: tx.id,
-            }],
+            // signatures: [{
+            //   signature  : signature.toString('hex'),
+            //   transaction: tx.id,
+            // }],
+            signature: {
+              signature: signature.toString('hex'),
+              transaction: tx.id
+            }
           })
           .expect(200, {success: true});
 

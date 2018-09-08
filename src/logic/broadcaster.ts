@@ -1,22 +1,20 @@
 import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
-import { constants, ILogger} from '../helpers/';
+import { IAPIRequest } from '../apis/requests/BaseRequest';
+import { constants, ILogger } from '../helpers/';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import { IAppState, IBroadcasterLogic, IPeersLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
 import { IPeersModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { AppConfig } from '../types/genericTypes';
 import { PeerType } from './peer';
-import { IBaseTransaction } from './transactions/';
 
 // tslint:disable interface-over-type-literal
 
 export type BroadcastTaskOptions = {
   immediate?: boolean;
-  data: any;
-  api: string;
-  method: string;
+  requestHandler: IAPIRequest<any, any>;
 };
 export type BroadcastTask = {
   options: BroadcastTaskOptions;
@@ -27,20 +25,6 @@ export type BroadcastTask = {
 @injectable()
 export class BroadcasterLogic implements IBroadcasterLogic {
   public queue: BroadcastTask[] = [];
-
-  // Broadcast routes
-  public routes = [{
-    collection: 'transactions',
-    method    : 'POST',
-    object    : 'transaction',
-    path      : '/transactions',
-  }, {
-    collection: 'signatures',
-    method    : 'POST',
-    object    : 'signature',
-    path      : '/signatures',
-  }];
-
   // Generics
   @inject(Symbols.generic.appConfig)
   private config: AppConfig;
@@ -77,12 +61,13 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     this.jobsQueue.register(
       'broadcasterNextRelease',
       () => this.releaseQueue()
-          .catch((err) => {
-            this.logger.log('Broadcast timer', err);
-            return;
-          }),
+        .catch((err) => {
+          this.logger.log('Broadcast timer', err);
+          return;
+        }),
       this.config.broadcasts.broadcastInterval
     );
+
   }
 
   public async getPeers(params: { limit?: number, broadhash?: string }): Promise<PeerType[]> {
@@ -92,8 +77,8 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     const originalLimit = params.limit;
 
     const peersList = await this.peersModule.list(params);
-    const peers = peersList.peers;
-    let consensus = peersList.consensus;
+    const peers     = peersList.peers;
+    let consensus   = peersList.consensus;
 
     if (originalLimit === this.constants.maxPeers) {
       if (this.config.forging.force) {
@@ -113,7 +98,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
                            limit?: number, broadhash?: string,
                            peers?: PeerType[]
                          } = {},
-                         options: any): Promise<{ peer: PeerType[] }> {
+                         options: BroadcastTaskOptions): Promise<{ peer: PeerType[] }> {
 
     params.limit     = params.limit || this.constants.maxPeers;
     params.broadhash = params.broadhash || null;
@@ -123,7 +108,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
       peers = await this.getPeers(params);
     }
 
-    this.logger.debug('Begin broadcast', options);
+    this.logger.debug('Begin broadcast');
 
     if (params.limit === this.constants.maxPeers) {
       peers = peers.slice(0, this.config.broadcasts.broadcastLimit);
@@ -132,11 +117,13 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     await PromiseThrottle.all(
       peers
         .map((p) => this.peersLogic.create(p))
-        .map((peer) => () => peer.makeRequest(options)
-          .catch((err) => {
-            this.logger.debug(`Failed to broadcast to peer: ${peer.string}`, err);
-            return null;
-          })
+        .map((peer) => () => {
+            return peer.makeRequest(options.requestHandler)
+              .catch((err) => {
+                this.logger.debug(`Failed to broadcast to peer: ${peer.string}`, err);
+                return null;
+              });
+          }
         ),
       { maxInProgress: this.config.broadcasts.parallelLimit }
     );
@@ -168,61 +155,39 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   private async filterQueue(): Promise<void> {
     this.logger.debug(`Broadcast before filtering: ${this.queue.length}`);
     const newQueue = [];
-    for (const task of this.queue) {
+    const oldQueue = this.queue.slice();
+    this.queue = [];
+    for (const task of oldQueue) {
       if (task.options.immediate) {
         newQueue.push(task);
-      } else if (task.options.data) {
-        if (await this.filterTransaction((task.options.data.transaction || task.options.data.signature))) {
-          newQueue.push(task);
-        }
-      } else {
+      } else if (! await task.options.requestHandler.isRequestExpired()) {
         newQueue.push(task);
       }
     }
 
-    this.queue = newQueue;
+    this.queue.push(...newQueue);
     this.logger.debug(`Broadcasts after filtering: ${this.queue.length}`);
-  }
-
-  /**
-   * returns true if tx is in pool or is non confirmed.
-   */
-  private async filterTransaction(tx: IBaseTransaction<any>): Promise<boolean> {
-    if (typeof(tx) !== 'undefined') {
-      if (this.transactionsModule.transactionInPool(tx.id)) {
-        return true;
-      } else {
-        return (await this.transactionsModule.filterConfirmedIds([tx.id])).length === 0;
-      }
-    }
-    return false;
   }
 
   /**
    * Group broadcast requests by API.
    */
   private squashQueue(broadcasts: BroadcastTask[]): BroadcastTask[] {
-    const groupedByAPI = _.groupBy(broadcasts, (b) => b.options.api);
+    const byRequests = _.groupBy(broadcasts, ((b) => b.options.requestHandler.constructor.name));
 
     const squashed: BroadcastTask[] = [];
 
-    this.routes
-    // Filter out empty grouped requests
-      .filter((route) => Array.isArray(groupedByAPI[route.path]))
-      .forEach((route) => {
-        const data             = {};
-        data[route.collection] = groupedByAPI[route.path]
-          .map((b) => b.options.data[route.object])
-          .filter((item) => !!item); // needs to be defined.
-        squashed.push({
-          options: {
-            api      : route.path,
-            data,
-            immediate: false,
-            method   : route.method,
-          },
-        });
+    for (const type in byRequests) {
+      const requests = byRequests[type];
+      const [first] = requests;
+      first.options.requestHandler.mergeIntoThis(... requests.slice(1).map((item) => item.options.requestHandler));
+      squashed.push({
+        options: {
+          immediate: false,
+          requestHandler: first.options.requestHandler,
+        },
       });
+    }
 
     return squashed;
   }
@@ -240,7 +205,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     await this.filterQueue();
     let broadcasts = this.queue.splice(0, this.config.broadcasts.releaseLimit);
 
-    broadcasts  = this.squashQueue(broadcasts);
+    broadcasts = this.squashQueue(broadcasts);
 
     try {
       for (const brc of broadcasts) {

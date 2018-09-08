@@ -1,21 +1,22 @@
 {
   "compilerOptions": {
-    "target"                      : "es2017",
-    "module"                      : "commonjs",
-    "emitDecoratorMetadata"       : true,
-    "experimentalDecorators"      : true,
-    "allowJs"                     : true,
-    "moduleResolution"            : "node",
-    "outDir"                      : "dist",
+    "target":                       "es2017",
+    "module":                       "commonjs",
+    "emitDecoratorMetadata":        true,
+    "experimentalDecorators":       true,
+    "allowJs":                      true,
+    "moduleResolution":             "node",
+    "outDir":                       "dist",
     "allowSyntheticDefaultImports": true,
-    "inlineSourceMap"             : true,
-    "inlineSources"               : true,
-    "lib"                         : [
+    "inlineSourceMap":              true,
+    "alwaysStrict":                 true,
+    "inlineSources":                true,
+    "lib":                          [
       "dom",
       "es7"
     ]
   },
-  "exclude"        : [
+  "exclude":         [
     "tests",
     "node_modules",
     "public",

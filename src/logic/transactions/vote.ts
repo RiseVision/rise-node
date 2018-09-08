@@ -24,6 +24,7 @@ export type VoteAsset = {
 
 @injectable()
 export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> {
+
   // Generic
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
@@ -96,6 +97,24 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
 
   public getBytes(tx: IBaseTransaction<VoteAsset>, skipSignature: boolean, skipSecondSignature: boolean): Buffer {
     return tx.asset.votes ? Buffer.from(tx.asset.votes.join(''), 'utf8') : null;
+  }
+
+  /**
+   * Returns asset, given Buffer containing it
+   */
+  public fromBytes(bytes: Buffer, tx?: IBaseTransaction<any>): VoteAsset {
+    if (bytes === null) {
+      return null;
+    }
+    const votesString = bytes.toString('utf8');
+    // Splits the votes into 33 bytes chunks (1 for the sign, 32 for the publicKey)
+    return {
+      votes: [].concat.apply([],
+        votesString.split('').map(
+          (x, i) => i % 65 ? [] : votesString.slice(i, i + 65)
+        )
+      ),
+    };
   }
 
   // tslint:disable-next-line max-line-length
@@ -277,5 +296,11 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
         votes: info.votes.split(','),
       };
     });
+  }
+
+  public getMaxBytesSize(): number {
+    let size = super.getMaxBytesSize();
+    size += constants.maxVotesPerTransaction * 65; // Votes
+    return size;
   }
 }

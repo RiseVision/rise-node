@@ -74,9 +74,6 @@ z_schema.registerFormat('csv', (str: string) => {
 });
 
 z_schema.registerFormat('signature', (str: string) => {
-  if (str.length === 0) {
-    return true;
-  }
   return /^[a-f0-9]{128}$/i.test(str);
 });
 

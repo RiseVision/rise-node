@@ -49,6 +49,20 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
     return Buffer.from(tx.asset.delegate.username, 'utf8');
   }
 
+  /**
+   * Returns asset, given Buffer containing it
+   */
+  public fromBytes(bytes: Buffer, tx: IBaseTransaction<any>): DelegateAsset {
+    if (bytes === null) {
+      return null;
+    }
+    return {
+      delegate: {
+        username: bytes.toString('utf8'),
+      },
+    };
+  }
+
   public async verify(tx: IBaseTransaction<DelegateAsset>, sender: AccountsModel): Promise<void> {
     if (tx.recipientId) {
       throw new Error('Invalid recipient');
@@ -242,5 +256,13 @@ export class RegisterDelegateTransaction extends BaseTransactionType<DelegateAss
         },
       };
     });
+  }
+
+  public getMaxBytesSize(): number {
+    let size = super.getMaxBytesSize();
+    size += 20; // username
+    size += 32; // publicKey
+    size += 8; // address
+    return size;
   }
 }

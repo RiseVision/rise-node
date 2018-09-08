@@ -4,10 +4,10 @@ import { AccountDiffType, IAccountLogic } from '../ioc/interfaces/logic';
 import { IAccountsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { AccountFilterData, MemAccountsData } from '../logic/';
+import { IBaseTransaction } from '../logic/transactions';
 import { AccountsModel } from '../models/';
 import { DBOp } from '../types/genericTypes';
 import { FieldsInModel } from '../types/utils';
-import { IBaseTransaction } from '../logic/transactions';
 
 @injectable()
 export class AccountsModule implements IAccountsModule {

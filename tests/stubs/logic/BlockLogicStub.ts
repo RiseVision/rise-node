@@ -1,7 +1,7 @@
 import { injectable } from 'inversify';
 import { IKeypair } from '../../../src/helpers';
 import { IBlockLogic } from '../../../src/ioc/interfaces/logic';
-import { BlockType, SignedAndChainedBlockType, SignedBlockType } from '../../../src/logic';
+import { BlockType, IBytesBlock, SignedAndChainedBlockType, SignedBlockType } from '../../../src/logic';
 import { IBaseTransaction } from '../../../src/logic/transactions';
 import { BaseStubClass } from '../BaseStubClass';
 import { stubMethod } from '../stubDecorator';
@@ -56,4 +56,18 @@ export class BlockLogicStub extends BaseStubClass implements IBlockLogic {
     return undefined;
   }
 
+  @stubMethod()
+  public fromBytes(blk: IBytesBlock): SignedAndChainedBlockType {
+    return undefined;
+  }
+
+  @stubMethod()
+  public getMaxBytesSize(): number {
+    return null;
+  }
+
+  @stubMethod()
+  public getMinBytesSize(): number {
+    return null;
+  }
 }

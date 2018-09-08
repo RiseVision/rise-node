@@ -83,6 +83,8 @@ if (program.overrideConfig) {
 
     if (typeof(oldValue) === 'number') {
       jp.value(appConfig, item.path, parseFloat(item.val));
+    } else if (typeof(oldValue) === 'object') {
+      jp.value(appConfig, item.path, JSON.parse(item.val));
     } else {
       jp.value(appConfig, item.path, item.val);
     }

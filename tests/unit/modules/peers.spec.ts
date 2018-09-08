@@ -79,11 +79,11 @@ describe('modules/peers', () => {
   describe('.getByFilter', () => {
     const fields = ['ip', 'port', 'state', 'os', 'version', 'broadhash', 'height', 'nonce'];
 
-    it('should call peersLogic.list with true', async () => {
+    it('should call peersLogic.list with false', async () => {
       peersLogicStub.enqueueResponse('list', []);
       await inst.getByFilter({});
       expect(peersLogicStub.stubs.list.called).is.true;
-      expect(peersLogicStub.stubs.list.firstCall.args[0]).is.true;
+      expect(peersLogicStub.stubs.list.firstCall.args[0]).is.false;
     });
 
     for (const f of fields) {

@@ -11,7 +11,8 @@ import logicBlockSchema from '../schema/logic/block';
 import { DBOp } from '../types/genericTypes';
 import { RawFullBlockListType } from '../types/rawDBTypes';
 import { BlockRewardLogic } from './blockReward';
-import { IBaseTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
+import { IBaseTransaction, IBytesTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
+import { TransactionLogic } from './transaction';
 
 // import * as OldImplementation from './_block.js';
 
@@ -45,6 +46,13 @@ export type SignedAndChainedTransportBlockType = SignedBlockType<string> & {
   height: number;
   transactions?: Array<ITransportTransaction<any>>
 };
+
+export interface IBytesBlock {
+  bytes: Buffer;
+  transactions: IBytesTransaction[];
+  height?: number;
+  relays: number;
+}
 
 @injectable()
 export class BlockLogic implements IBlockLogic {
@@ -270,12 +278,7 @@ export class BlockLogic implements IBlockLogic {
    * @returns {string}
    */
   public getId(block: BlockType): string {
-    const hash = crypto.createHash('sha256').update(this.getBytes(block)).digest();
-    const temp = Buffer.alloc(8);
-    for (let i = 0; i < 8; i++) {
-      temp[i] = hash[7 - i];
-    }
-    return BigNum.fromBuffer(temp).toString();
+    return this.getIdFromBytes(this.getBytes(block));
   }
 
   public getHash(block: BlockType, includeSignature: boolean = true) {
@@ -338,6 +341,81 @@ export class BlockLogic implements IBlockLogic {
     return bb.toBuffer() as any;
   }
 
+  /**
+   * Restores a block from its bytes
+   */
+  public fromBytes(blk: IBytesBlock): SignedAndChainedBlockType & {relays: number} {
+    if (blk === null || typeof blk === 'undefined') {
+      return null;
+    }
+    const bb = ByteBuffer.wrap(blk.bytes, 'binary', true);
+    const version = bb.readInt(0);
+    const timestamp = bb.readInt(4);
+
+    // PreviousBlock is valid only if it's not 8 bytes with 0 value
+    const previousIdBytes = blk.bytes.slice(8, 16);
+    let previousValid = false;
+    for (let i = 0; i < 8; i++) {
+      if (previousIdBytes.readUInt8(i) !== 0) {
+        previousValid = true;
+        break;
+      }
+    }
+    const previousBlock = previousValid ?
+      BigNum.fromBuffer(previousIdBytes).toString() : null;
+
+    const numberOfTransactions = bb.readInt(16);
+    const totalAmount = bb.readLong(20).toNumber();
+    const totalFee = bb.readLong(28).toNumber();
+    const reward = bb.readLong(36).toNumber();
+    const payloadLength = bb.readInt(44);
+    const payloadHash = blk.bytes.slice(48, 80);
+    const generatorPublicKey = blk.bytes.slice(80, 112);
+    const blockSignature = blk.bytes.length === 176 ? blk.bytes.slice(112, 176) : null;
+    const id = this.getIdFromBytes(blk.bytes);
+    const transactions = blk.transactions.map((tx) => {
+      const baseTx = this.transaction.fromBytes(tx);
+      return {
+        ...baseTx,
+        blockId: id,
+        height: blk.height,
+        senderId: this.getAddressByPublicKey(baseTx.senderPublicKey),
+      };
+    });
+
+    // tslint:disable object-literal-sort-keys
+    return {
+      id,
+      version,
+      timestamp,
+      previousBlock,
+      numberOfTransactions,
+      totalAmount,
+      totalFee,
+      reward,
+      payloadLength,
+      payloadHash,
+      generatorPublicKey,
+      blockSignature,
+      transactions,
+      height: blk.height,
+      relays: blk.relays,
+    };
+  }
+
+  public getMinBytesSize(): number {
+    let size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64; // Block's bytes
+    size += 4; // height
+    return size;
+  }
+
+  public getMaxBytesSize(): number {
+    let size = this.getMinBytesSize();
+    const maxTxSize = this.transaction.getMaxBytesSize();
+    size += constants.maxTxsPerBlock * maxTxSize; // transactions
+    return size;
+  }
+
   private getAddressByPublicKey(publicKey: Buffer | string) {
     if (typeof(publicKey) === 'string') {
       publicKey = new Buffer(publicKey, 'hex');
@@ -350,6 +428,15 @@ export class BlockLogic implements IBlockLogic {
       temp[i] = publicKeyHash[7 - i];
     }
     return `${BigNum.fromBuffer(temp).toString()}R`;
+  }
+
+  private getIdFromBytes(bytes: Buffer): string {
+    const hash = crypto.createHash('sha256').update(bytes).digest();
+    const temp = Buffer.alloc(8);
+    for (let i = 0; i < 8; i++) {
+      temp[i] = hash[7 - i];
+    }
+    return BigNum.fromBuffer(temp).toString();
   }
 
 }

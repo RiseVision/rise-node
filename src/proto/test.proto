@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+message test {
+    uint64 longnumber = 1;
+    string test = 2;
+    bool success = 1000;
+}
+
+message test2 {
+    int32 id = 1;
+    string message = 2;
+    bool success = 1000;
+}

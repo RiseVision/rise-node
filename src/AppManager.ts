@@ -12,9 +12,21 @@ import { Model, Sequelize } from 'sequelize-typescript';
 import * as socketIO from 'socket.io';
 import * as uuid from 'uuid';
 import { allControllers, APIErrorHandler } from './apis';
+import { CommonBlockRequest } from './apis/requests/CommonBlockRequest';
+import { GetBlocksRequest } from './apis/requests/GetBlocksRequest';
+import { GetSignaturesRequest } from './apis/requests/GetSignaturesRequest';
+import { GetTransactionsRequest } from './apis/requests/GetTransactionsRequest';
+import { HeightRequest } from './apis/requests/HeightRequest';
+import { PeersListRequest } from './apis/requests/PeersListRequest';
+import { PingRequest } from './apis/requests/PingRequest';
+import { PostBlocksRequest } from './apis/requests/PostBlocksRequest';
+import { PostSignaturesRequest } from './apis/requests/PostSignaturesRequest';
+import { PostTransactionsRequest } from './apis/requests/PostTransactionsRequest';
+import { requestSymbols } from './apis/requests/requestSymbols';
 import { AttachPeerHeaders } from './apis/utils/attachPeerHeaders';
 import { ForgingApisWatchGuard } from './apis/utils/forgingApisWatchGuard';
 import { SuccessInterceptor } from './apis/utils/successInterceptor';
+import { V2APIErrorHandler } from './apis/utils/v2ErrorHandler';
 import { ValidatePeerHeaders } from './apis/utils/validatePeerHeaders';
 import {
   applyExpressLimits,
@@ -25,11 +37,12 @@ import {
   constants as constantsType,
   DBHelper,
   Ed,
-  ExceptionsManager, ExceptionType,
+  ExceptionsManager,
   ILogger,
   JobsQueue,
   middleware,
   Migrator,
+  ProtoBufHelper,
   Sequence,
   Slots,
   z_schema,
@@ -183,6 +196,8 @@ export class AppManager {
 
     app.use(middleware.applyAPIAccessRules(this.appConfig));
 
+    // app.use(middleware.protoBuf());
+
     // Init HTTP Apis
     const container = this.container;
     useContainerForHTTP({
@@ -201,7 +216,7 @@ export class AppManager {
       {
         controllers        : allControllers,
         defaultErrorHandler: false,
-        middlewares        : [APIErrorHandler],
+        middlewares        : [V2APIErrorHandler, APIErrorHandler],
       }
     );
 
@@ -253,6 +268,7 @@ export class AppManager {
       this.container.bind(symbol).to(controller).inSingletonScope();
     }
     this.container.bind(Symbols.api.utils.errorHandler).to(APIErrorHandler).inSingletonScope();
+    this.container.bind(Symbols.api.utils.v2ErrorHandler).to(V2APIErrorHandler).inSingletonScope();
     this.container.bind(Symbols.api.utils.successInterceptor).to(SuccessInterceptor).inSingletonScope();
     this.container.bind(Symbols.api.utils.forgingApisWatchGuard).to(ForgingApisWatchGuard).inSingletonScope();
     this.container.bind(Symbols.api.utils.validatePeerHeadersMiddleware).to(ValidatePeerHeaders).inSingletonScope();
@@ -272,6 +288,9 @@ export class AppManager {
 
     // Add models
     this.modelsElements(sequelize);
+
+    // Add all API request elements
+    this.requestElements();
 
     // Start migrations/runtime queries.
     await this.container.get<Migrator>(Symbols.helpers.migrator).init();
@@ -416,6 +435,25 @@ export class AppManager {
           .whenTargetTagged(Symbols.helpers.sequence, sequenceTag);
       });
     this.container.bind(Symbols.helpers.slots).to(Slots).inSingletonScope();
+    this.container.bind(Symbols.helpers.protoBuf).to(ProtoBufHelper).inSingletonScope();
+  }
+
+  private requestElements() {
+    const factory = (what: (new () => any)) => (ctx) => (options) => {
+      const toRet = ctx.container.resolve(what);
+      toRet.options = options;
+      return toRet;
+    };
+    this.container.bind(requestSymbols.commonBlock).toFactory(factory(CommonBlockRequest));
+    this.container.bind(requestSymbols.getBlocks).toFactory(factory(GetBlocksRequest));
+    this.container.bind(requestSymbols.getSignatures).toFactory(factory(GetSignaturesRequest));
+    this.container.bind(requestSymbols.getTransactions).toFactory(factory(GetTransactionsRequest));
+    this.container.bind(requestSymbols.height).toFactory(factory(HeightRequest));
+    this.container.bind(requestSymbols.peersList).toFactory(factory(PeersListRequest));
+    this.container.bind(requestSymbols.ping).toFactory(factory(PingRequest));
+    this.container.bind(requestSymbols.postBlocks).toFactory(factory(PostBlocksRequest));
+    this.container.bind(requestSymbols.postSignatures).toFactory(factory(PostSignaturesRequest));
+    this.container.bind(requestSymbols.postTransactions).toFactory(factory(PostTransactionsRequest));
   }
 
   private genericsElements(theCache, sequelize, namespace, io) {

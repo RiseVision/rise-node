@@ -22,6 +22,7 @@ import { createContainer } from '../utils/containerCreator';
 
 import { Sequelize } from 'sequelize-typescript';
 import { BlockLogicStub } from '../stubs/logic/BlockLogicStub';
+import { V2APIErrorHandler } from '../../src/apis/utils/v2ErrorHandler';
 
 const { expect } = chai;
 
@@ -239,6 +240,7 @@ describe('AppManager', () => {
       fakeMiddleware.logClientConnections = sandbox.stub().returns('logClientConnections');
       fakeMiddleware.attachResponseHeader = sandbox.stub().returns('attachResponseHeader');
       fakeMiddleware.applyAPIAccessRules  = sandbox.stub().returns('applyAPIAccessRules');
+      fakeMiddleware.protoBuf             = sandbox.stub().returns('protoBuf');
 
       applyExpressLimitsStub  = sandbox.stub();
       compressionStub         = sandbox.stub().returns('compression');
@@ -386,7 +388,7 @@ describe('AppManager', () => {
       expect(useExpressServerStub.firstCall.args[1]).to.be.deep.equal({
         controllers        : allControllers,
         defaultErrorHandler: false,
-        middlewares        : [APIErrorHandler],
+        middlewares        : [V2APIErrorHandler, APIErrorHandler],
       });
     });
   });
@@ -461,9 +463,9 @@ describe('AppManager', () => {
     });
 
     // Test added to make sure this file is updated every time a new element is bound in container
-    it('should call bind exactly 86 times', async () => {
+    it('should call bind exactly 100 times', async () => {
       await instance.initAppElements();
-      expect(containerStub.bindCount).to.be.equal(87);
+      expect(containerStub.bindCount).to.be.equal(100);
     });
 
     it('should bind each API controller to its symbol', async () => {
@@ -588,6 +590,13 @@ describe('AppManager', () => {
       expect(containerStub.bindings[Symbols.helpers.logger]).to.be.deep.equal([
         {
           toConstantValue: (instance as any).logger,
+        },
+      ]);
+
+      expect(containerStub.bindings[Symbols.helpers.protoBuf]).to.be.deep.equal([
+        {
+          inSingletonScope: true,
+          to              : 'ProtoBufHelper',
         },
       ]);
 

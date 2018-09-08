@@ -1,13 +1,12 @@
 import { BigNumber } from 'bignumber.js';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
-import * as _ from 'lodash';
 import { inject, injectable } from 'inversify';
+import * as _ from 'lodash';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
 import {
   BigNum,
-  catchToLoggerAndRemapError,
   constants,
   Ed,
   ExceptionsList,
@@ -23,7 +22,8 @@ import { AccountsModel, TransactionsModel } from '../models/';
 import txSchema from '../schema/logic/transaction';
 import { DBBulkCreateOp, DBOp } from '../types/genericTypes';
 import { SignedAndChainedBlockType, SignedBlockType } from './block';
-import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
+import { BaseTransactionType, IBaseTransaction,
+         IBytesTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
 
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
@@ -123,14 +123,16 @@ export class TransactionLogic implements ITransactionLogic {
     bb.writeByte(tx.type);
     bb.writeInt(tx.timestamp);
 
-    const senderPublicKeyBuffer = tx.senderPublicKey;
+    const senderPublicKeyBuffer = Buffer.isBuffer(tx.senderPublicKey) ?
+      tx.senderPublicKey : Buffer.from(tx.senderPublicKey, 'hex');
     // tslint:disable-next-line
     for (let i = 0; i < senderPublicKeyBuffer.length; i++) {
       bb.writeByte(senderPublicKeyBuffer[i]);
     }
 
     if (tx.requesterPublicKey) {
-      const requesterPublicKey = tx.requesterPublicKey;
+      const requesterPublicKey = Buffer.isBuffer(tx.requesterPublicKey) ?
+        tx.requesterPublicKey : Buffer.from(tx.requesterPublicKey, 'hex');
       // tslint:disable-next-line
       for (let i = 0; i < requesterPublicKey.length; i++) {
         bb.writeByte(requesterPublicKey[i]);
@@ -161,7 +163,8 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     if (!skipSignature && tx.signature) {
-      const signatureBuffer = tx.signature;
+      const signatureBuffer = Buffer.isBuffer(tx.signature) ?
+        tx.signature : Buffer.from(tx.signature, 'hex');
       // tslint:disable-next-line
       for (let i = 0; i < signatureBuffer.length; i++) {
         bb.writeByte(signatureBuffer[i]);
@@ -169,7 +172,8 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     if (!skipSecondSignature && tx.signSignature) {
-      const signSignatureBuffer = tx.signSignature;
+      const signSignatureBuffer = Buffer.isBuffer(tx.signSignature) ?
+        tx.signSignature : Buffer.from(tx.signSignature, 'hex');
       // tslint:disable-next-line
       for (let i = 0; i < signSignatureBuffer.length; i++) {
         bb.writeByte(signSignatureBuffer[i]);
@@ -179,6 +183,76 @@ export class TransactionLogic implements ITransactionLogic {
     bb.flip();
 
     return bb.toBuffer() as any;
+  }
+
+  // tslint:disable-next-line
+  public fromBytes(tx: IBytesTransaction): IBaseTransaction<any> & { relays: number } {
+    const bb = ByteBuffer.wrap(tx.bytes, 'binary', true);
+    const type = bb.readByte(0);
+    const timestamp = bb.readInt(1);
+    const senderPublicKey = tx.bytes.slice(5, 37);
+    let requesterPublicKey = null;
+    let offset = 37;
+
+    // Read requesterPublicKey if available
+    if (tx.hasRequesterPublicKey) {
+      requesterPublicKey = tx.bytes.slice(offset, offset + 32);
+      offset += 32;
+    }
+
+    // RecipientId is valid only if it's not 8 bytes with 0 value
+    const recipientIdBytes = tx.bytes.slice(offset, offset + 8);
+    offset += 8;
+    let recipientValid = false;
+    for (let i = 0; i < 8; i++) {
+      if (recipientIdBytes.readUInt8(i) !== 0) {
+        recipientValid = true;
+        break;
+      }
+    }
+    const recipientId = recipientValid ?
+      BigNum.fromBuffer(recipientIdBytes).toString() + 'R' : null;
+
+    const amount = bb.readLong(offset);
+    offset += 8;
+
+    const signature = tx.bytes.slice(bb.buffer.length - 64, bb.buffer.length);
+
+    // Read signSignature if available
+    const signSignature = tx.hasSignSignature ?
+      tx.bytes.slice(bb.buffer.length - 128, bb.buffer.length - 64) : null;
+
+    // All remaining bytes between amount and signSignature (or signature) are the asset.
+    let assetBytes = null;
+    const optionalElementsLength = (tx.hasRequesterPublicKey ? 32 : 0) + (tx.hasSignSignature ? 64 : 0);
+    const assetLength = bb.buffer.length - ( 1 + 4 + 32 + 8 + 8 + 64 + optionalElementsLength);
+    if (assetLength < 0) {
+      throw new Error('Buffer length does not match expected sequence');
+    } else if (assetLength > 0) {
+      assetBytes = tx.bytes.slice(offset, offset + assetLength);
+    }
+
+    const transaction: IBaseTransaction<any> & { relays: number } =  {
+      amount: amount.toNumber(),
+      fee: tx.fee,
+      id: this.getIdFromBytes(tx.bytes),
+      recipientId,
+      relays: tx.relays,
+      requesterPublicKey,
+      senderId: this.accountLogic.generateAddressByPublicKey(senderPublicKey),
+      senderPublicKey,
+      signature,
+      timestamp,
+      type,
+    };
+    if (tx.hasRequesterPublicKey) {
+      transaction.requesterPublicKey = requesterPublicKey;
+    }
+    if (tx.hasSignSignature) {
+      transaction.signSignature = signSignature;
+    }
+    transaction.asset = this.types[type].fromBytes(assetBytes, transaction);
+    return transaction;
   }
 
   public ready(tx: IBaseTransaction<any>, sender: AccountsModel): boolean {
@@ -604,6 +678,39 @@ export class TransactionLogic implements ITransactionLogic {
       this.assertKnownTransactionType(loopTXs[0].type);
       await this.types[loopTXs[0].type].attachAssets(loopTXs);
     }
+  }
+
+  public getMaxBytesSize(): number {
+    let max = 0;
+    Object.keys(this.types).forEach((type) => {
+      max = Math.max(max, this.types[type].getMaxBytesSize());
+    });
+    return max;
+  }
+
+  public getMinBytesSize(): number {
+    let min = Number.MAX_SAFE_INTEGER;
+    Object.keys(this.types).forEach((type) => {
+      min = Math.min(min, this.types[type].getMaxBytesSize());
+    });
+    return min;
+  }
+
+  public getByteSizeByTxType(txType: number): number {
+    return this.types[txType].getMaxBytesSize();
+  }
+
+  /**
+   * Calculate tx id from getBytes() output
+   * @returns {string} the id.
+   */
+  private getIdFromBytes(bytes: Buffer): string {
+    const hash = crypto.createHash('sha256').update(bytes).digest();
+    const temp = Buffer.alloc(8);
+    for (let i = 0; i < 8; i++) {
+      temp[i] = hash[7 - i];
+    }
+    return BigNum.fromBuffer(temp).toString();
   }
 
 }

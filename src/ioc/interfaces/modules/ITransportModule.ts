@@ -1,16 +1,16 @@
+import { IAPIRequest } from '../../../apis/requests/BaseRequest';
 import { BasePeerType, PeerState, SignedBlockType } from '../../../logic';
-import { IBaseTransaction } from '../../../logic/transactions';
+import { IBaseTransaction, ITransportTransaction } from '../../../logic/transactions';
 import { PeerRequestOptions } from '../../../modules';
 import { IPeerLogic } from '../logic';
 import { IModule } from './IModule';
-import { ITransportTransaction } from '../../../logic/transactions/baseTransactionType';
 
 export interface ITransportModule extends IModule {
 
   getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: IPeerLogic }>;
 
   getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] },
-                       options: PeerRequestOptions): Promise<{ body: any; peer: IPeerLogic }>;
+                       requestHandler: IAPIRequest<any, any>): Promise<{ body: any; peer: IPeerLogic }>;
 
   /**
    * Calls enqueue signatures and emits a signature change socket message
@@ -30,7 +30,7 @@ export interface ITransportModule extends IModule {
    */
   onNewBlock(block: SignedBlockType & { relays?: number }, broadcast: boolean): Promise<void>;
 
-  receiveSignatures(signatures: Array<{ transaction: string, signature: string }> ): Promise<void>;
+  receiveSignatures(signatures: Array<{ transaction: string, signature: string }>): Promise<void>;
 
   /**
    * Validate signature with schema and calls processSignature from module multisignautre
@@ -46,7 +46,6 @@ export interface ITransportModule extends IModule {
   receiveTransactions(transactions: Array<ITransportTransaction<any>>,
                       peer: IPeerLogic | null,
                       broadcast: boolean): Promise<void>;
-
 
 
 }

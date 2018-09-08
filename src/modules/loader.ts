@@ -4,17 +4,21 @@ import * as sequelize from 'sequelize';
 import {Op} from 'sequelize';
 import SocketIO from 'socket.io';
 import z_schema from 'z-schema';
+import { GetSignaturesRequest } from '../apis/requests/GetSignaturesRequest';
+import {GetTransactionsRequest} from '../apis/requests/GetTransactionsRequest';
+import { RequestFactoryType } from '../apis/requests/requestFactoryType';
+import { requestSymbols } from '../apis/requests/requestSymbols';
 import { Bus, constants as constantsType, ILogger, Sequence, wait } from '../helpers/';
 import { WrapInDefaultSequence } from '../helpers/decorators/wrapInSequence';
 import { IJobsQueue } from '../ioc/interfaces/helpers';
 import {
-  IAccountLogic, IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, IRoundsLogic,
-  ITransactionLogic
+IAccountLogic, IAppState, IBroadcasterLogic, IPeerLogic, IPeersLogic, IRoundsLogic,
+ITransactionLogic
 } from '../ioc/interfaces/logic';
 
 import {
-  IBlocksModule, IBlocksModuleChain, IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify,
-  ILoaderModule, IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule, ITransportModule
+IBlocksModule, IBlocksModuleChain, IBlocksModuleProcess, IBlocksModuleUtils, IBlocksModuleVerify,
+ILoaderModule, IMultisignaturesModule, IPeersModule, ISystemModule, ITransactionsModule, ITransportModule
 } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
 import { PeerType, SignedAndChainedBlockType, SignedBlockType, } from '../logic/';
@@ -31,7 +35,7 @@ export class LoaderModule implements ILoaderModule {
   public loaded: boolean                       = false;
   private blocksToSync: number                 = 0;
   private isActive: boolean                    = false;
-  private lastblock: BlocksModel               = null;
+  private lastblock: SignedAndChainedBlockType = null;
   private network: { height: number, peers: IPeerLogic[] };
   private retries: number                      = 5;
   private syncInterval                         = 1000;
@@ -106,6 +110,12 @@ export class LoaderModule implements ILoaderModule {
   private DelegatesModel: typeof DelegatesModel;
   @inject(Symbols.models.rounds)
   private RoundsModel: typeof RoundsModel;
+
+  // reuqest
+  @inject(requestSymbols.getSignatures)
+  private gsFactory: RequestFactoryType<void, GetSignaturesRequest>;
+  @inject(requestSymbols.getTransactions)
+  private gtFactory: RequestFactoryType<void, GetTransactionsRequest>;
 
   @postConstruct()
   public initialize() {
@@ -421,8 +431,8 @@ export class LoaderModule implements ILoaderModule {
   private async innerLoad() {
     let loaded = false;
 
-    const randomPeer             = await this.getRandomPeer();
-    const lastBlock: BlocksModel = this.blocksModule.lastBlock;
+    const randomPeer = await this.getRandomPeer();
+    const lastBlock  = this.blocksModule.lastBlock;
     if (typeof(randomPeer) === 'undefined') {
       await wait(1000);
       // This could happen when we received a block but we did not get the updated peer list.
@@ -574,7 +584,7 @@ export class LoaderModule implements ILoaderModule {
         try {
           await this.loadSignatures();
         } catch (e) {
-          this.logger.warn('Error loading transactions... Retrying... ', e);
+          this.logger.warn('Error loading signatures... Retrying... ', e);
           retry(e);
         }
       }, { retries: this.retries });
@@ -589,19 +599,16 @@ export class LoaderModule implements ILoaderModule {
   private async loadSignatures() {
     const randomPeer = await this.getRandomPeer();
     this.logger.log(`Loading signatures from: ${randomPeer.string}`);
-    const res = await this.transportModule.getFromPeer<any>(
-      randomPeer,
-      {
-        api   : '/signatures',
-        method: 'GET',
-      });
+    const res = await randomPeer.makeRequest<{signatures: any[]}>(
+      this.gsFactory({data: null})
+    );
 
-    if (!this.schema.validate(res.body, loaderSchema.loadSignatures)) {
+    if (!this.schema.validate(res, loaderSchema.loadSignatures)) {
       throw new Error('Failed to validate /signatures schema');
     }
 
     // FIXME: signatures array
-    const { signatures }: { signatures: any[] } = res.body;
+    const { signatures }: { signatures: any[] } = res;
 
     // Process multisignature transactions and validate signatures in sequence
     await this.defaultSequence.addAndPromise(async () => {
@@ -628,16 +635,13 @@ export class LoaderModule implements ILoaderModule {
   private async loadTransactions() {
     const peer = await this.getRandomPeer();
     this.logger.log(`Loading transactions from: ${peer.string}`);
-    const res = await this.transportModule.getFromPeer<any>(peer, {
-      api   : '/transactions',
-      method: 'GET',
-    });
+    const body = await peer.makeRequest<any>(this.gtFactory({data: null}));
 
-    if (!this.schema.validate(res.body, loaderSchema.loadTransactions)) {
+    if (!this.schema.validate(body, loaderSchema.loadTransactions)) {
       throw new Error('Cannot validate load transactions schema against peer');
     }
 
-    const { transactions }: { transactions: Array<ITransportTransaction<any>> } = res.body;
+    const { transactions }: { transactions: Array<ITransportTransaction<any>> } = body;
 
     const trans = transactions || [];
     while (trans.length > 0) {
@@ -647,5 +651,6 @@ export class LoaderModule implements ILoaderModule {
         this.logger.warn(err);
       }
     }
+
   }
 }

@@ -138,9 +138,8 @@ describe('helpers/z_schema', () => {
 
   describe('Format "signature"', ()  => {
     const schema = { type: 'string', format: 'signature' };
-    // Y ? FIXME
-    it('should accept an empty string', () => {
-      expect(validator.validate('', schema)).to.be.true;
+    it('should not accept an empty string', () => {
+      expect(validator.validate('', schema)).to.be.false;
     });
     it('should accept a hex string of 64 bytes', () => {
       const signatureHex  = 'b2c9aab1ee31cecfe2a0547fe9e70f4d89d505e3f05c0f777f32cdc3dbb79fcd' +

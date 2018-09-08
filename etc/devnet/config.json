@@ -1,0 +1,190 @@
+{
+    "port": 9999,
+    "address": "0.0.0.0",
+    "version": "1.2.0",
+    "fileLogLevel": "info",
+    "logFileName": "logs/lisk.log",
+    "consoleLogLevel": "debug",
+    "trustProxy": false,
+    "cacheEnabled": false,
+    "db": {
+        "host": "localhost",
+        "port": 5432,
+        "database": "test",
+        "user": "test",
+        "password": "password",
+        "poolSize": 95,
+        "poolIdleTimeout": 30000,
+        "reapIntervalMillis": 1000,
+        "logEvents": [
+            "error"
+        ]
+    },
+    "redis": {
+        "host": "127.0.0.1",
+        "port": 6379,
+        "db": 0,
+        "password": null
+    },
+    "api": {
+        "enabled": true,
+        "access": {
+            "public": true,
+            "whiteList": ["127.0.0.1"]
+        },
+        "options": {
+            "limits": {
+                "max": 0,
+                "delayMs": 0,
+                "delayAfter": 0,
+                "windowMs": 60000
+            }
+        }
+    },
+    "peers": {
+        "enabled": true,
+        "list": [{
+            "ip": "127.0.0.1",
+            "port": 9999
+        }],
+        "access": {
+            "blackList": []
+        },
+        "options": {
+            "limits": {
+                "max": 0,
+                "delayMs": 0,
+                "delayAfter": 0,
+                "windowMs": 60000
+            },
+            "timeout": 5000
+        }
+    },
+    "broadcasts": {
+        "broadcastInterval": 5000,
+        "broadcastLimit": 20,
+        "parallelLimit": 20,
+        "releaseLimit": 25,
+        "relayLimit": 2
+    },
+    "transactions": {
+        "maxTxsPerQueue": 1000
+    },
+    "forging": {
+        "force": false,
+        "secret": [
+            "fluid slim diary sniff device cotton fun wonder jar submit gentle during",
+            "buddy clay absurd crunch charge hood gaze embark awesome diesel sniff tribe",
+            "diamond grain object regular enact tool gadget recipe cactus neutral nominee exile",
+            "decrease timber august arch manual jelly toilet fix distance roof crumble present",
+            "steak baby sting staff ceiling taste snow drum avoid pet paddle love",
+            "square fish depend column want sample tuition master net wise topple ship",
+            "joy river genius timber climb spin draft retire inner sort axis disagree",
+            "clutch moral energy merit century idea ritual enough raccoon soft betray rich",
+            "chunk chapter salt sustain pet penalty goat toy one boil orbit sell",
+            "anxiety clown make stick shift dad snack diesel alert game spot earn",
+            "collect intact safe parade source smooth brand worth dwarf flat output ceiling",
+            "pluck air blouse box ankle dragon awful spawn coffee rain sight truly",
+            "idea water stem mutual fluid miss tragic general attack seek federal urge",
+            "south luggage furnace illness math spin fade throw radar casual argue bracket",
+            "extra seed correct left recycle quarter cousin jealous climb estate ripple vague",
+            "chase lemon mass dwarf clarify allow era mask sauce ready secret rib",
+            "knee sample all bronze concert time sand case damage art typical sister",
+            "stone rotate idea garage equip weekend trim humor example rely together obey",
+            "empty wave enough under soon pencil rocket manual keen avocado laundry goose",
+            "prefer super artwork model staff reopen vanish task vanish bike write robot",
+            "kitchen whale airport all trouble hero volume cabin twenty zone believe text",
+            "mimic improve brush problem picnic glow birth time length limit hidden visa",
+            "foam cloth element caught antique media sight robot lamp path flower autumn",
+            "check coconut bird ankle staff better before crane discover display flight decorate",
+            "monkey soccer dust story hour fit pig valley clarify clog able family",
+            "aim crew unaware debate online nominee enable unique moral filter shell race",
+            "pencil device pink speed general confirm bless stick curve door subway film",
+            "tooth drop control mirror rebuild comfort talk clay kid chef recipe universe",
+            "pair betray local manual harbor visa trap river olive love simple lumber",
+            "sense reduce weird pluck result business unable dust garage gaze business anchor",
+            "forward trumpet door indoor crucial stamp verify fly festival almost zoo indicate",
+            "exit mobile mesh display maple imitate hotel essence oil patrol artwork garlic",
+            "circle cargo pyramid find emotion satisfy jacket fork grow ask regular lend",
+            "fashion hero child crash hard hold laundry outside approve rural cause fiction",
+            "jelly trouble word polar penalty then season retire cup salute damage emerge",
+            "victory note wrestle cigar jungle stuff afraid flip amused obtain door review",
+            "doll rich chapter toilet vivid chunk about quiz physical remove social vanish",
+            "ripple repair exile dolphin transfer point volume long husband eager decline cereal",
+            "deposit group shuffle jealous spray bean minor actual hammer lunch guilt above",
+            "impose stamp problem prize limit stable tortoise receive mandate measure list mean",
+            "trust pig absent turkey uncle exile useless police snow annual protect figure",
+            "open spirit fresh impulse hidden vapor runway castle salmon farm foster catch",
+            "couch affair hour slice skin obvious loyal flight elite middle march then",
+            "leg again elder alcohol reduce size thought invest mask budget harsh install",
+            "average lesson debris sketch garage flat zoo tomato arrive suffer entire add",
+            "dose try wing phone large identify phone kangaroo wear tool second final",
+            "screen melody humor cross fatigue valley survey anxiety among saddle view cotton",
+            "verify measure luxury olympic banner alarm observe job setup caution crack frozen",
+            "feature absent pyramid tennis ability guilt police clinic midnight jungle hint wall",
+            "egg resemble banner flat cash grass forum answer pigeon force dry spot",
+            "disease elbow write general upon grain cricket fitness pet cricket clump soon",
+            "weapon across frog shoot market great curtain mule relax limit later bomb",
+            "business banana snow soda problem warrior song sunset accident room state middle",
+            "track short canvas hammer hard clean forward truth gather story harsh energy",
+            "earn ethics salmon hard away filter category catch weather want toss cake",
+            "chunk torch ice snow lunar cute school trigger portion gift home canal",
+            "feed damp winner hidden position text taste slam diesel curtain phone regular",
+            "various erase radio infant hidden vault way eight chapter universe ramp sign",
+            "dynamic vendor vivid pear replace force gate immense air lobster relief enhance",
+            "coast summer south match chest crop copy goose obvious true point boat",
+            "puppy jaguar card tail taxi tortoise mind flat upset various outdoor clinic",
+            "health actress actor trial subway chalk arrow spoon begin noise since luxury",
+            "old alcohol fashion music rally win pulp pool renew squeeze tray knife",
+            "glide lottery elevator cherry pottery moment middle near joy exist produce mad",
+            "that brain brisk portion wire solid magic sample deposit dance client ribbon",
+            "fetch salt advice cherry mass into easily twice giraffe lemon soul build",
+            "sniff case husband impulse nerve aunt vacant air shallow hope fold hole",
+            "kick maze normal cruise local push narrow leave mammal risk page rather",
+            "borrow change vapor drip abuse crime protect metal fee slow icon zoo",
+            "miss museum affair sorry spider fork tumble journey pudding alarm team reduce",
+            "power pudding quit upgrade cry pear decide copper piano double again marine",
+            "ship net bracket bike fantasy engage flee breeze traffic source sudden usual",
+            "interest add security mask prison struggle swap cake height culture machine enrich",
+            "museum judge secret veteran word biology chief witness goat couple rally mystery",
+            "clump ice embrace fitness juice episode manual victory door need rain breeze",
+            "smile genuine august gorilla cycle slam observe click cupboard annual habit dove",
+            "atom unknown chef famous call ladder century tennis harsh solar edit proud",
+            "stereo citizen steak open deal hobby net grant speak ritual cruise help",
+            "twenty crowd label main consider airport absurd worry denial equip foam account",
+            "total depend robust exit civil accuse network squirrel renew loan hurdle drive",
+            "gauge script text caution cube depth clay episode cube wage debris evolve",
+            "devote disorder hood boat piano hammer quote service door ugly autumn rescue",
+            "rural project glue faith access trial spread life green energy peanut cube",
+            "time dismiss cover tilt dance chat rifle reflect comic clog route ostrich",
+            "time cute scale flame pass turkey copper pupil force sniff return absurd",
+            "core hover advice lumber home face edge next pudding junior gallery achieve",
+            "evoke little galaxy enroll present assault silver bright shoulder credit head exile",
+            "stock rough awful card lounge fan outer raw magnet myself duty poet",
+            "weekend panther undo soda card frost bicycle help budget chair omit fuel",
+            "steak misery butter perfect satisfy action major laundry high country adult rebel",
+            "change festival attitude vote call village exhibit mandate bag awkward turkey auction",
+            "rug seven indicate switch lunar become open one betray trim alley knife",
+            "fluid wire sentence mushroom price mother entire wheel orient grocery minor subway",
+            "cruel combine autumn fossil urban call aware maple sponsor gloom sniff chase",
+            "horror just walnut hollow shaft inhale century bus awkward hood crawl cancel",
+            "february modify dragon reason mass skate traffic spice essence island quit gallery",
+            "disorder access left negative build spell ignore oven supreme require identify arrow",
+            "radio cloth banana good fiscal flavor fatal rice second tunnel law clarify",
+            "denial clay color manage sister require future spy jealous donate cabbage dad",
+            "taste diagram hammer vehicle cinnamon hurt hospital quote duck uphold expire bright",
+            "circle process arm rapid industry weasel window pipe tool seed nut attack"
+        ],
+        "access": {
+            "whiteList": [
+                "127.0.0.1",
+                "::ffff:127.0.0.1"
+            ]
+        }
+    },
+    "loading": {
+        "verifyOnLoading": false,
+        "loadPerIteration": 5000
+    },
+    "nethash": "198f2b61a8eb95fbeed58b8216780b68f697f26b849acf00c8c93bb9b24f783d"
+}

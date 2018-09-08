@@ -6,6 +6,7 @@ import { SignedBlockType } from '../../../logic';
 import {
   BaseTransactionType,
   IBaseTransaction,
+  IBytesTransaction,
   IConfirmedTransaction,
   ITransportTransaction
 } from '../../../logic/transactions';
@@ -116,10 +117,30 @@ export interface ITransactionLogic {
 
   dbRead(raw: any): IConfirmedTransaction<any>;
 
+  fromBytes(tx: IBytesTransaction): IBaseTransaction<any>;
   /**
    * Attach Asset object to each transaction passed
    * @param {Array<IConfirmedTransaction<any>>} txs
    * @return {Promise<void>}
    */
   attachAssets(txs: Array<IConfirmedTransaction<any>>): Promise<void>;
+
+  /**
+   * Gets maximum size in bytes for a transaction. Used in Protocol Buffer response space allocation calculations.
+   * @returns {number} maximum bytes size
+   */
+  getMaxBytesSize(): number;
+
+  /**
+   * Gets minimum size in bytes for a transaction. Used in Protocol Buffer response space allocation calculations.
+   * @returns {number} minimum bytes size
+   */
+  getMinBytesSize(): number;
+
+  /**
+   * Gets maximum size in bytes for a specific transaction type. Used in Protocol Buffer response space allocation.
+   * @param {number} txType numeric identifier of the transaction type
+   * @returns {number} maximum bytes size for this type
+   */
+  getByteSizeByTxType(txType: number): number;
 }

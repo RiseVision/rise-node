@@ -1,4 +1,5 @@
 import bs = require('binary-search');
+import * as deepFreeze from 'js-flock/deepFreeze';
 import { inject, injectable, tagged } from 'inversify';
 import { Op, Transaction } from 'sequelize';
 import * as _ from 'lodash';
@@ -253,11 +254,10 @@ export class BlocksModuleChain implements IBlocksModuleChain {
         this.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');
       }
 
-      await this.bus.message('newBlock', block, broadcast);
-
       await this.roundsModule.tick(block, dbTX);
+      this.blocksModule.lastBlock = deepFreeze(block);
 
-      this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
+      await this.bus.message('newBlock', block, broadcast);
     }).catch((err) => {
       // Allow cleanup as processing finished even if rollback.
       this.isProcessing = false;
@@ -269,7 +269,11 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     // txPool.processBundled loop.
     for (const overTX of overlappingTXs) {
       this.transactionsModule.removeUnconfirmedTransaction(overTX.id);
-      await this.transactionsModule.processUnconfirmedTransaction(overTX, false);
+      try {
+        await this.transactionsModule.processUnconfirmedTransaction(overTX, false);
+      } catch (e) {
+        this.logger.debug(`Ignoring overlapping tx ${overTX.id}: Already processed or pool is full.`);
+      }
     }
 
     block = null;
@@ -313,16 +317,22 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
   /**
    * Deletes the last block (passed), undo txs and backwardTick round
-   * @param {SignedBlockType} lb
+   * @param {SignedBlockType} lb1
    * @returns {Promise<SignedBlockType>}
    */
   @WrapInBalanceSequence
-  private async popLastBlock(lb: BlocksModel): Promise<BlocksModel> {
+  private async popLastBlock(lb1: SignedAndChainedBlockType): Promise<BlocksModel> {
+    const lb = await this.BlocksModel.findById(lb1.id, { include: [this.TransactionsModel] });
+    if (lb === null) {
+      throw new Error('previousBlock is null');
+    }
     const previousBlock = await this.BlocksModel.findById(lb.previousBlock, { include: [this.TransactionsModel] });
 
     if (previousBlock === null) {
       throw new Error('previousBlock is null');
     }
+    // Attach assets for transactions
+    await this.transactionLogic.attachAssets(lb.transactions);
     await this.transactionLogic.attachAssets(previousBlock.transactions);
 
     const txs = lb.transactions.slice().reverse();

@@ -2,6 +2,10 @@ import { inject, injectable, tagged } from 'inversify';
 import * as _ from 'lodash';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
+import { CommonBlockRequest } from '../../apis/requests/CommonBlockRequest';
+import { GetBlocksRequest } from '../../apis/requests/GetBlocksRequest';
+import { RequestFactoryType } from '../../apis/requests/requestFactoryType';
+import { requestSymbols } from '../../apis/requests/requestSymbols';
 import { constants, ForkType, IKeypair, ILogger, Sequence } from '../../helpers/';
 import { WrapInDBSequence, WrapInDefaultSequence } from '../../helpers/decorators/wrapInSequence';
 import { ISlots } from '../../ioc/interfaces/helpers';
@@ -34,7 +38,6 @@ import {
 import { IBaseTransaction } from '../../logic/transactions/';
 import { BlocksModel, TransactionsModel } from '../../models';
 import schema from '../../schema/blocks';
-import { RawFullBlockListType } from '../../types/rawDBTypes';
 
 @injectable()
 export class BlocksModuleProcess implements IBlocksModuleProcess {
@@ -99,6 +102,11 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
   private isCleaning: boolean = false;
 
+  @inject(requestSymbols.getBlocks)
+  private gbFactory: RequestFactoryType<void, GetBlocksRequest>;
+  @inject(requestSymbols.commonBlock)
+  private cbFactory: RequestFactoryType<void, CommonBlockRequest>;
+
   public cleanup() {
     this.isCleaning = true;
     return Promise.resolve();
@@ -115,11 +123,9 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   // tslint:disable-next-line max-line-length
   public async getCommonBlock(peer: IPeerLogic, height: number): Promise<{ id: string, previousBlock: string, height: number } | void> {
     const { ids }              = await this.blocksUtilsModule.getIdSequence(height);
-    const { body: commonResp } = await this.transportModule
-      .getFromPeer<{ common: { id: string, previousBlock: string, height: number } }>(peer, {
-        api   : `/blocks/common?ids=${ids.join(',')}`,
-        method: 'GET',
-      });
+    const commonResp = await peer.makeRequest<{ common: { id: string, previousBlock: string, height: number } }>(
+      this.cbFactory(({data: null, query: { ids: ids.join(',')}}))
+    );
     // FIXME: Need better checking here, is base on 'common' property enough?
     if (!commonResp.common) {
       if (this.appStateLogic.getComputed('node.poorConsensus')) {
@@ -164,7 +170,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
    */
   @WrapInDBSequence
   // tslint:disable-next-line max-line-length
-  public async loadBlocksOffset(limit: number, offset: number = 0, verify: boolean): Promise<BlocksModel> {
+  public async loadBlocksOffset(limit: number, offset: number = 0, verify: boolean): Promise<SignedAndChainedBlockType> {
     const newLimit = limit + (offset || 0);
     const params   = { limit: newLimit, offset: offset || 0 };
 
@@ -238,19 +244,16 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     const peer = this.peersLogic.create(rawPeer);
 
     this.logger.info(`Loading blocks from ${peer.string}`);
-
-    const { body: blocksFromPeer } = await this.transportModule
-      .getFromPeer<{ blocks: RawFullBlockListType[] }>(peer, {
-        api   : `/blocks?lastBlockId=${lastValidBlock.id}`,
-        method: 'GET',
-      });
+    const blocksFromPeer = await peer.makeRequest<{ blocks: SignedAndChainedBlockType[] }>(
+      this.gbFactory({data: null, query: {lastBlockId: lastValidBlock.id}})
+    );
 
     // TODO: fix schema of loadBlocksFromPeer
     if (!this.schema.validate(blocksFromPeer.blocks, schema.loadBlocksFromPeer)) {
       throw new Error('Received invalid blocks data');
     }
 
-    const blocks = this.blocksUtilsModule.readDbRows(blocksFromPeer.blocks);
+    const blocks = blocksFromPeer.blocks;
     for (const block of blocks) {
       if (this.isCleaning) {
         return lastValidBlock;
@@ -353,7 +356,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
           'height:', block.height,
           'round:', this.roundsLogic.calcRound(block.height),
           'slot:', this.slots.getSlotNumber(block.timestamp),
-          'generator:', block.generatorPublicKey,
+          'generator:', block.generatorPublicKey.toString('hex'),
         ].join(' '));
         throw new Error('Block discarded - not in current chain');
       }
@@ -384,7 +387,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   /**
    * Receive block detected as fork cause 1: Consecutive height but different previous block id
    */
-  private async receiveForkOne(block: SignedBlockType, lastBlock: BlocksModel) {
+  private async receiveForkOne(block: SignedBlockType, lastBlock: SignedAndChainedBlockType) {
     const tmpBlock = _.clone(block);
 
     // Fork: Consecutive height but different previous block id

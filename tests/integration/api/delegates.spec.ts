@@ -14,6 +14,7 @@ import * as chaiSorted from 'chai-sorted';
 import { IBlocksModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
 import { ISlots } from '../../../src/ioc/interfaces/helpers';
+import { SignedAndChainedBlockType } from '../../../src/logic';
 import { AppConfig } from '../../../src/types/genericTypes';
 import {
   confirmTransactions,
@@ -294,7 +295,7 @@ describe('api/delegates', () => {
   });
 
   describe('/getNextForgers', () => {
-    let curBlock: BlocksModel;
+    let curBlock: SignedAndChainedBlockType;
     let slots: ISlots;
     let blocksModel: typeof BlocksModel;
     let blocksModule: IBlocksModule;

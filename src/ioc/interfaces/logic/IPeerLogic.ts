@@ -1,5 +1,5 @@
+import { IAPIRequest } from '../../../apis/requests/BaseRequest';
 import { BasePeerType, PeerHeaders, PeerState, PeerType } from '../../../logic';
-import { PeerRequestOptions } from '../../../modules';
 
 export interface IPeerLogic {
   ip: string;
@@ -36,7 +36,7 @@ export interface IPeerLogic {
    */
   object(): PeerType;
 
-  makeRequest<T>(options: PeerRequestOptions): Promise<T>;
+  makeRequest<T>(reqHandler: IAPIRequest<T, any>): Promise<T>;
 
   /**
    * Pings peer and update itself using response headers (transportModule)

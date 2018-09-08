@@ -1,9 +1,12 @@
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
+import { IAPIRequest } from '../apis/requests/BaseRequest';
+import { HeightRequest } from '../apis/requests/HeightRequest';
+import { RequestFactoryType } from '../apis/requests/requestFactoryType';
+import { requestSymbols } from '../apis/requests/requestSymbols';
 import { IPeerLogic } from '../ioc/interfaces/logic/';
 import { ITransportModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { PeerRequestOptions } from '../modules';
 
 export enum PeerState {
   BANNED       = 0,
@@ -92,6 +95,9 @@ export class PeerLogic implements PeerType, IPeerLogic {
   @inject(Symbols.modules.transport)
   private transportModule: ITransportModule;
 
+  @inject(requestSymbols.height)
+  private hrFactory: RequestFactoryType<void, HeightRequest>;
+
   public accept(peer: BasePeerType) {
     // Normalize peer data
     peer = this.normalize(peer);
@@ -170,14 +176,12 @@ export class PeerLogic implements PeerType, IPeerLogic {
     return copy;
   }
 
-  public makeRequest<T>(requestOptions: PeerRequestOptions): Promise<T> {
-    return this.transportModule.getFromPeer<T>(this, requestOptions)
-      .then(({body}) => body);
+  public makeRequest<T>(requestHandler: IAPIRequest<any, any>): Promise<T> {
+    return requestHandler.makeRequest(this);
   }
 
   public pingAndUpdate(): Promise<void> {
-    return this.transportModule.getFromPeer(this, {api: '/height', method: 'GET'})
-      .then(() => null);
+    return this.makeRequest(this.hrFactory({data: null})).then(() => null);
   }
 
   public get nullable() {

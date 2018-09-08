@@ -15,6 +15,7 @@ import {
 } from '../stubs';
 import EdStub from '../stubs/helpers/EdStub';
 import JobsQueueStub from '../stubs/helpers/jobsQueueStub';
+import { ProtoBufHelperStub } from '../stubs/helpers/ProtoBufHelperStub';
 import { SequenceStub } from '../stubs/helpers/SequenceStub';
 import { SlotsStub } from '../stubs/helpers/SlotsStub';
 import ZSchemaStub from '../stubs/helpers/ZSchemaStub';
@@ -50,6 +51,18 @@ import {
 } from '../../src/logic/transactions';
 import DbStub from '../stubs/helpers/DbStub';
 import { MigratorStub } from '../stubs/helpers/MigratorStub';
+import { BaseRequest } from '../../src/apis/requests/BaseRequest';
+import { requestSymbols } from '../../src/apis/requests/requestSymbols';
+import { CommonBlockRequest } from '../../src/apis/requests/CommonBlockRequest';
+import { GetBlocksRequest } from '../../src/apis/requests/GetBlocksRequest';
+import { GetSignaturesRequest } from '../../src/apis/requests/GetSignaturesRequest';
+import { GetTransactionsRequest } from '../../src/apis/requests/GetTransactionsRequest';
+import { HeightRequest } from '../../src/apis/requests/HeightRequest';
+import { PeersListRequest } from '../../src/apis/requests/PeersListRequest';
+import { PingRequest } from '../../src/apis/requests/PingRequest';
+import { PostBlocksRequest } from '../../src/apis/requests/PostBlocksRequest';
+import { PostSignaturesRequest } from '../../src/apis/requests/PostSignaturesRequest';
+import { PostTransactionsRequest } from '../../src/apis/requests/PostTransactionsRequest';
 
 export const createContainer = (): Container => {
   const container = new Container();
@@ -82,6 +95,9 @@ export const createContainer = (): Container => {
   container.bind(Symbols.helpers.exceptionsManager).to(ExceptionsManagerStub).inSingletonScope();
   container.bind(Symbols.helpers.jobsQueue).to(JobsQueueStub).inSingletonScope();
   container.bind(Symbols.helpers.logger).to(LoggerStub).inSingletonScope();
+  container.bind(Symbols.helpers.protoBuf).to(ProtoBufHelperStub).inSingletonScope();
+  // BaseRequest.protoBufHelper = container.get(Symbols.helpers.protoBuf);
+
   container.bind(Symbols.helpers.sequence).to(SequenceStub).inSingletonScope().whenTargetTagged(
     Symbols.helpers.sequence,
     Symbols.tags.helpers.defaultSequence,
@@ -151,6 +167,23 @@ export const createContainer = (): Container => {
   container.bind(Symbols.logic.transactions.secondSignature).to(SecondSignatureTransaction).inSingletonScope();
   container.bind(Symbols.logic.transactions.send).to(SendTransaction).inSingletonScope();
   container.bind(Symbols.logic.transactions.vote).to(VoteTransaction).inSingletonScope();
+
+  // Requests
+  const factory = (what: (new () => any)) => (ctx) => (options) => {
+    const toRet = ctx.container.resolve(what);
+    toRet.options = options;
+    return toRet;
+  };
+  container.bind(requestSymbols.commonBlock).toFactory(factory(CommonBlockRequest));
+  container.bind(requestSymbols.getBlocks).toFactory(factory(GetBlocksRequest));
+  container.bind(requestSymbols.getSignatures).toFactory(factory(GetSignaturesRequest));
+  container.bind(requestSymbols.getTransactions).toFactory(factory(GetTransactionsRequest));
+  container.bind(requestSymbols.height).toFactory(factory(HeightRequest));
+  container.bind(requestSymbols.peersList).toFactory(factory(PeersListRequest));
+  container.bind(requestSymbols.ping).toFactory(factory(PingRequest));
+  container.bind(requestSymbols.postBlocks).toFactory(factory(PostBlocksRequest));
+  container.bind(requestSymbols.postSignatures).toFactory(factory(PostSignaturesRequest));
+  container.bind(requestSymbols.postTransactions).toFactory(factory(PostTransactionsRequest));
 
   const sequelize = container.get<Sequelize>(Symbols.generic.sequelize);
   const models = [

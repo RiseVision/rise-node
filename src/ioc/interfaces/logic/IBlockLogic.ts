@@ -1,6 +1,7 @@
 import { IKeypair } from '../../../helpers';
 import {
   BlockType,
+  IBytesBlock,
   SignedAndChainedBlockType,
   SignedAndChainedTransportBlockType,
   SignedBlockType
@@ -54,4 +55,18 @@ export interface IBlockLogic {
   objectNormalize<T extends BlockType<Buffer | string>>(block: T): T;
 
   dbRead(rawBlock: RawFullBlockListType): SignedBlockType & { totalForged: string, readonly generatorId: string };
+
+  fromBytes(blk: IBytesBlock): SignedAndChainedBlockType;
+
+  /**
+   * Gets maximum size in bytes for a block. Used in Protocol Buffer response space allocation calculations.
+   * @returns {number} maximum bytes size
+   */
+  getMaxBytesSize(): number;
+
+  /**
+   * Gets minimum size in bytes for a block. Used in Protocol Buffer response space allocation calculations.
+   * @returns {number} minimum bytes size
+   */
+  getMinBytesSize(): number;
 }

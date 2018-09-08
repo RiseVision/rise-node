@@ -295,7 +295,7 @@ export class TransactionPool implements ITransactionPoolLogic {
    */
   public async processNewTransaction(tx: IBaseTransaction<any>, broadcast: boolean): Promise<void> {
     if (this.transactionInPool(tx.id)) {
-      return Promise.reject(`Transaction is already processed: ${tx.id}`);
+      throw new Error(`Transaction is already processed: ${tx.id}`);
     }
     this.processed++;
     if (this.processed > 1000) {

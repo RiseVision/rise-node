@@ -8,7 +8,7 @@ import secondSignatureSchema from '../../schema/logic/transactions/secondSignatu
 import { DBOp } from '../../types/genericTypes';
 import { SignedBlockType } from '../block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction } from './baseTransactionType';
-import { DelegatesModel } from '../../models';
+
 // tslint:disable-next-line interface-over-type-literal
 export type SecondSignatureAsset = {
   signature: {
@@ -45,6 +45,20 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
   public getBytes(tx: IBaseTransaction<SecondSignatureAsset>, skipSignature: boolean,
                   skipSecondSignature: boolean): Buffer {
     return Buffer.from(tx.asset.signature.publicKey, 'hex');
+  }
+
+  /**
+   * Returns asset, given Buffer containing it
+   */
+  public fromBytes(bytes: Buffer, tx?: IBaseTransaction<any>): SecondSignatureAsset {
+    if (bytes === null) {
+      return null;
+    }
+    return {
+      signature: {
+        publicKey: bytes.toString('hex'),
+      },
+    };
   }
 
   public async verify(tx: IBaseTransaction<SecondSignatureAsset>, sender: AccountsModel): Promise<void> {
@@ -201,5 +215,11 @@ export class SecondSignatureTransaction extends BaseTransactionType<SecondSignat
         },
       };
     });
+  }
+
+  public getMaxBytesSize(): number {
+    let size = super.getMaxBytesSize();
+    size += 32; // publicKey
+    return size;
   }
 }

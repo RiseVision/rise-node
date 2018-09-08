@@ -121,6 +121,17 @@ describe('attackVectors/edgeCases', () => {
         expect(postAcc.u_balance).to.be.eq(funds);
         expect(blocksModule.lastBlock.id).to.be.eq(lastId);
       });
+      it('should disallow block with same tx twice with crafted wrong id', async () => {
+        const lastId = blocksModule.lastBlock.id;
+        const tx     = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
+        await expect(initializer.rawMineBlockWithTxs(
+          [tx, {...tx, id: '12123123123123123'}].map((t) => toBufferedTransaction(t)),
+        )).to.rejectedWith('Duplicated transaction found in block with id');
+        const postAcc = await accModule.getAccount({address: senderAccount.address});
+        expect(postAcc.balance).to.be.eq(funds);
+        expect(postAcc.u_balance).to.be.eq(funds);
+        expect(blocksModule.lastBlock.id).to.be.eq(lastId);
+      });
       it('should disallow a block with a previously existing tx', async () => {
         const tx     = await createSendTransaction(1, 1, senderAccount, createRandomWallet().address);
         const lastId = blocksModule.lastBlock.id;
@@ -141,7 +152,7 @@ describe('attackVectors/edgeCases', () => {
         const tx       = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
         tx.recipientId = tx.recipientId.toLowerCase();
         await expect(initializer.rawMineBlockWithTxs(
-          [tx].map((t) => toBufferedTransaction(t)),
+          [tx].map((t) => toBufferedTransaction(t))
         )).to.rejectedWith('Failed to validate transaction schema');
         const postAcc = await accModule.getAccount({address: senderAccount.address});
         expect(postAcc.balance).to.be.eq(funds);

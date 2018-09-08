@@ -137,7 +137,9 @@ export class PeersLogic implements IPeersLogic {
   /**
    * Filters peers with private ips, same nonce or incompatible version
    */
-  public acceptable(peers: PeerType[]): PeerType[] {
+  public acceptable(peers: IPeerLogic[]): IPeerLogic[];
+  public acceptable(peers: PeerType[]): PeerType[];
+  public acceptable(peers: PeerType[]|IPeerLogic[]): PeerType[]|IPeerLogic[] {
     return _(peers)
       .uniqWith((a, b) => `${a.ip}${a.port}` === `${b.ip}${b.port}`)
       .filter((peer) => {

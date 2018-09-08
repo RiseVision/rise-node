@@ -1,12 +1,12 @@
 import { inject, injectable, tagged } from 'inversify';
 import SocketIO from 'socket.io';
 import { Bus, ILogger, Sequence, TransactionType } from '../helpers/';
+import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
 import { ITransactionLogic, ITransactionPoolLogic, VerificationType } from '../ioc/interfaces/logic';
 import { IAccountsModule, IMultisignaturesModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { IBaseTransaction, MultisigAsset, MultiSignatureTransaction } from '../logic/transactions/';
 import { AccountsModel } from '../models';
-import { WrapInBalanceSequence } from '../helpers/decorators/wrapInSequence';
 
 @injectable()
 export class MultisignaturesModule implements IMultisignaturesModule {

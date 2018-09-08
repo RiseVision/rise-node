@@ -1,18 +1,18 @@
+import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
 import * as isEmpty from 'is-empty';
-import * as filterObject from 'filter-object';
 import { Body, Get, JsonController, Post, Put, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { IAccountsModule, IDelegatesModule, ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
+import { AccountsModel } from '../models';
 import accountSchema from '../schema/accounts';
 import { AppConfig } from '../types/genericTypes';
 import { publicKey } from '../types/sanityTypes';
-import { APIError, DeprecatedAPIError } from './errors';
 import { FieldsInModel } from '../types/utils';
-import { AccountsModel } from '../models';
+import { APIError, DeprecatedAPIError } from './errors';
 
 @JsonController('/api/accounts')
 @injectable()
@@ -106,16 +106,16 @@ export class AccountsAPI {
         delegates: delegates
           .filter((d) => account.delegates.indexOf(d.delegate.hexPublicKey) !== -1)
           .map((d) => ({
-            username      : d.delegate.username,
             address       : d.delegate.address,
-            publicKey     : d.delegate.hexPublicKey,
-            vote          : d.delegate.vote,
-            producedblocks: d.delegate.producedblocks,
-            missedblocks  : d.delegate.missedblocks,
-            rate          : d.info.rank,
-            rank          : d.info.rank,
             approval      : d.info.approval,
-            productivity  : d.info.productivity
+            missedblocks  : d.delegate.missedblocks,
+            producedblocks: d.delegate.producedblocks,
+            productivity  : d.info.productivity,
+            publicKey     : d.delegate.hexPublicKey,
+            rank          : d.info.rank,
+            rate          : d.info.rank,
+            username      : d.delegate.username,
+            vote          : d.delegate.vote,
           })),
       };
     }
