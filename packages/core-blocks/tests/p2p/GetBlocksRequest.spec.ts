@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
-import { GetBlocksRequest } from '../../src/requests';
+import { GetBlocksRequest } from '../../src/p2p';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/GetBlocksRequest', () => {

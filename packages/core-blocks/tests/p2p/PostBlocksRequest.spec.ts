@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
 import { p2pSymbols } from '../../src/helpers';
-import { PostBlocksRequest } from '../../src/requests';
+import { PostBlocksRequest } from '../../src/p2p';
 import { ProtoBufHelperStub } from '../stubs/protobufhelperStub';
 import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
 // tslint:disable no-unused-expression

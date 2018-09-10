@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import {SinonStub} from 'sinon';
 import * as sinon from 'sinon';
-import { CommonBlockRequest } from '../../src/requests';
+import { CommonBlockRequest } from '../../src/p2p';
 
 describe('apis/requests/CommonBlockRequest', () => {
   let instance: CommonBlockRequest;

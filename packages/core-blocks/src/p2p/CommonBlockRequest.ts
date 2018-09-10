@@ -7,7 +7,6 @@ import { inject, injectable } from 'inversify';
 @injectable()
 export class CommonBlockRequest extends BaseRequest<{ common: SignedAndChainedBlockType }, void> {
   protected readonly method: 'GET'             = 'GET';
-  protected readonly supportsProtoBuf: boolean = true;
   protected readonly baseUrl: string           = '/v2/peer/blocks/common';
 
   @inject(Symbols.logic.block)

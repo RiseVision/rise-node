@@ -40,7 +40,7 @@ describe('apis/blocksAPI', () => {
   beforeEach(async () => {
     sandbox      = sinon.createSandbox();
 
-    instance     = container.getNamed(APISymbols.api, BlocksSymbols.api);
+    instance     = container.getNamed(APISymbols.api, BlocksSymbols.api.api);
     blocksModule = container.get(BlocksSymbols.modules.blocks);
     blocksModel  = container.getNamed(ModelSymbols.model, BlocksSymbols.model);
     fakeBlock    = createFakeBlock(container);
