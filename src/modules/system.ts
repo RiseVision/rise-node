@@ -8,7 +8,7 @@ import { Symbols } from '../ioc/symbols';
 import { BlocksModel } from '../models';
 import { AppConfig, PeerHeaders } from '../types/genericTypes';
 
-const rcRegExp = /[a-z]+$/;
+const rcRegExp = /-?[a-z]+$/;
 
 @injectable()
 export class SystemModule implements ISystemModule {
