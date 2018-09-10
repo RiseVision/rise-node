@@ -127,13 +127,13 @@ export class TransportV2API {
 
     await this.transportModule.receiveSignatures(finalSigs);
 
-    return this.getResponse({ success: true }, 'APISuccess');
+    return this.getResponse(null);
   }
 
   @Get('/transactions')
   public transactions() {
     const transactions                 = this.transactionsModule.getMergedTransactionList(this.constants.maxSharedTxs);
-    const tmpPT = this.ptFactory({data: { transactions }});
+    const tmpPT                        = this.ptFactory({ data: { transactions } });
     const byteTxs: IBytesTransaction[] = transactions
       .map((tx) => tmpPT.generateBytesTransaction(tx))
       .map((bt) => {
@@ -164,7 +164,7 @@ export class TransportV2API {
       ), thePeer, true);
     }
 
-    return this.getResponse({ success: true }, 'APISuccess');
+    return this.getResponse(null);
   }
 
   @Get('/blocks/common')
@@ -184,14 +184,14 @@ export class TransportV2API {
       throw new APIError('Invalid block id sequence', 200);
     }
 
-    const common     = await this.BlocksModel.findOne({
+    const common = await this.BlocksModel.findOne({
       limit: 1,
       order: [['height', 'DESC']],
       raw  : true,
       where: { id: { [Op.in]: excapedIds } },
     });
 
-    const tmpPB = this.pblocksFactory({data: {block: common}});
+    const tmpPB      = this.pblocksFactory({ data: { block: common } });
     const bytesBlock = common !== null ? tmpPB.generateBytesBlock(common) : null;
     return this.getResponse({ common: bytesBlock }, 'transportBlocks', 'commonBlock');
   }
@@ -222,12 +222,12 @@ export class TransportV2API {
     });
     if (lastBlock != null) {
       const blocksToLoad = await this.calcNumBlocksToLoad(lastBlock);
-      const dbBlocks = await this.blocksModuleUtils.loadBlocksData({
+      const dbBlocks     = await this.blocksModuleUtils.loadBlocksData({
         lastId: lastBlockId,
         limit : blocksToLoad,
       });
-      const tmpPB = this.pblocksFactory({data: null});
-      const blocks   = await Promise.all(dbBlocks
+      const tmpPB        = this.pblocksFactory({ data: null });
+      const blocks       = await Promise.all(dbBlocks
         .map(async (block): Promise<IBytesBlock> => tmpPB.generateBytesBlock(block)));
       return this.getResponse({ blocks }, 'transportBlocks');
     } else {
@@ -238,28 +238,28 @@ export class TransportV2API {
   private async calcNumBlocksToLoad(lastBlock: BlocksModel): Promise<number> {
     const maxPayloadSize = constants.maxProtoBufPayloadLength;
     // We take 98% of the theoretical value to allow for some overhead
-    const maxBytes = maxPayloadSize * 0.98;
+    const maxBytes       = maxPayloadSize * 0.98;
     // Best case scenario: we find 1.5MB of empty blocks.
     const maxHeightDelta = Math.ceil(maxBytes / this.blockLogic.getMinBytesSize());
     // We can also limit the number of transactions, with a very rough estimation of the max number of txs that will fit
     // in maxPayloadSize. We assume a stream blocks completely full of the smallest transactions.
     // In RISE the value is about 8000 TXs
     const txLimit = Math.ceil(
-      (maxBytes * constants.maxTxsPerBlock ) /
-      ( this.transactionLogic.getMinBytesSize() * constants.maxTxsPerBlock + this.blockLogic.getMinBytesSize())
+      (maxBytes * constants.maxTxsPerBlock) /
+      (this.transactionLogic.getMinBytesSize() * constants.maxTxsPerBlock + this.blockLogic.getMinBytesSize())
     );
 
     // Get only height and type for all the txs in this height range
     const txsInRange = await this.TransactionsModel.findAll({
       attributes: ['type', 'height'],
-      limit: txLimit,
-      order: [
+      limit     : txLimit,
+      order     : [
         ['height', 'ASC'],
       ],
-      where: {
+      where     : {
         height: {
           [Op.and]: {
-            [Op.gt]: lastBlock.height,
+            [Op.gt] : lastBlock.height,
             [Op.lte]: lastBlock.height + maxHeightDelta,
           },
         },
@@ -269,10 +269,10 @@ export class TransportV2API {
     // Calculate the number of blocks to load
     let blocksToLoad: number;
     if (txsInRange.length > 0) {
-      blocksToLoad = 0;
+      blocksToLoad       = 0;
       let previousHeight = lastBlock.height;
-      let blocksSize = 0;
-      let txsSize = 0;
+      let blocksSize     = 0;
+      let txsSize        = 0;
       for (const tx of txsInRange) {
         // If the size for all txs in previous blocks have been added to total.
         if (previousHeight !== tx.height && blocksSize > 0) {
@@ -284,7 +284,7 @@ export class TransportV2API {
           }
         }
         const heightDelta = tx.height - previousHeight;
-        previousHeight = tx.height;
+        previousHeight    = tx.height;
         // Add blocks size one by one
         for (let i = 0; i < heightDelta; i++) {
           // First add the empty block's size
@@ -309,9 +309,19 @@ export class TransportV2API {
     return Math.max(1, blocksToLoad);
   }
 
-  private getResponse(payload: any, pbNamespace: string, pbMessageType?: string) {
-    if (this.protoBuf.validate(payload, pbNamespace, pbMessageType)) {
-      return this.protoBuf.encode(payload, pbNamespace, pbMessageType);
+  private getResponse(payload: any, pbNamespace?: string, pbMessageType?: string) {
+    if (payload === null || this.protoBuf.validate(payload, pbNamespace, pbMessageType)) {
+      const wrappedResponse = payload === null
+        ? null
+        : this.protoBuf.encode(payload, pbNamespace, pbMessageType);
+      return this.protoBuf.encode(
+        {
+          success: true,
+          wrappedResponse,
+        },
+        'transport',
+        'transportMethod'
+      );
     } else {
       throw new Error('Failed to encode response - ' + this.protoBuf.lastError);
     }

@@ -115,9 +115,10 @@ describe('apis/requests/BaseRequest', () => {
       decodeProtoBufResponseStub.returns(val);
       const ret = instance.getResponseData(res);
       expect(decodeProtoBufResponseStub.calledOnce).to.be.true;
-      expect(decodeProtoBufResponseStub.firstCall.args.length).to.be.equal(2);
+      expect(decodeProtoBufResponseStub.firstCall.args.length).to.be.equal(3);
       expect(decodeProtoBufResponseStub.firstCall.args[0]).to.be.deep.equal(res);
-      expect(decodeProtoBufResponseStub.firstCall.args[1]).to.be.equal('APISuccess');
+      expect(decodeProtoBufResponseStub.firstCall.args[1]).to.be.equal('transport');
+      expect(decodeProtoBufResponseStub.firstCall.args[2]).to.be.equal('transportMethod');
       expect(ret).to.be.deep.equal(val);
     });
 

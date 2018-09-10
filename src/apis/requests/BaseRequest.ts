@@ -46,7 +46,7 @@ export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
 
   public getResponseData(res: { body: Buffer | Out, peer: IPeerLogic }): Out {
     return this.supportsProtoBuf && this.peerSupportsProtoBuf(res.peer) ?
-        this.decodeProtoBufResponse(res as any, 'APISuccess') :
+        this.decodeProtoBufResponse(res as any, 'transport', 'transportMethod') :
         res.body as Out;
   }
 
@@ -106,17 +106,17 @@ export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
   }
 
   protected decodeProtoBufResponse(res: {body: Buffer, peer: IPeerLogic}, pbNamespace: string, pbMessageType?: string): Out {
-    let error: { success: false, error: string };
-    try {
-      error = this.protoBufHelper.decode(res.body, 'APIError');
-    } catch (e) {
-      // NOOP;
-    }
-    if (error && !error.success && error.error) {
-      throw new Error(error.error);
+    const resp = this.protoBufHelper
+      .decode<{ success: boolean, wrappedResponse?: Buffer, error?: string }>(
+        res.body,
+        'transport',
+        'transportMethod'
+      );
+    if (!resp || !resp.success) {
+      throw new Error(resp.error || 'Generic error');
     } else {
       return this.protoBufHelper
-        .decodeToObj(res.body, pbNamespace, pbMessageType, this.getConversionOptions());
+        .decodeToObj(resp.wrappedResponse, pbNamespace, pbMessageType, this.getConversionOptions());
     }
   }
 }

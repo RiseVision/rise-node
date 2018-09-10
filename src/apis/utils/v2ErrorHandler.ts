@@ -33,7 +33,7 @@ export class V2APIErrorHandler implements ExpressErrorMiddlewareInterface {
       error = error.message;
     }
     res.contentType('application/octet-stream')
-      .end(this.protoBuf.encode({success: false, error: error.toString()}, 'APIError'));
+      .end(this.protoBuf.encode({success: false, error: error.toString()}, 'transport', 'transportMethod'));
   }
 
 }

@@ -251,7 +251,7 @@ describe('apis/transportV2API', () => {
       parseRequestStub.returns({signatures : []});
       validatorStubs.assertValidSchema.returns(true);
       result = await instance.postSignatures(null);
-      expect(result.toString()).deep.eq('{"success":true}');
+      expect(result.toString()).deep.eq('{"error":false,"wrappedResponse":null}');
     });
   });
 
@@ -280,7 +280,7 @@ describe('apis/transportV2API', () => {
     it('should call sendResponse passing an object with the property transactions', async () => {
       transactionsModuleStub.stubs.getMergedTransactionList.returns(txs);
       await instance.transactions();
-      expect(protoBufStub.stubs.encode.calledOnce).is.true;
+      expect(protoBufStub.stubs.encode.callCount).eq(2);
       expect(protoBufStub.stubs.encode.firstCall.args).deep.eq([
         { transactions: txs.map(() => Buffer.from('0123', 'hex')), },
         'transportTransactions',
@@ -531,7 +531,7 @@ describe('apis/transportV2API', () => {
       parseRequestStub.returns(blk);
       const thaRes = await instance.postBlock(req);
       expect(thaRes.toString()).eq(JSON.stringify({success: true, blockId: '1'}));
-      expect(protoBufStub.stubs.encode.calledOnce).is.true;
+      expect(protoBufStub.stubs.encode.calledTwice).is.true;
       expect(protoBufStub.stubs.encode.firstCall.args[0]).deep.eq({success: true, blockId: '1'});
       expect(protoBufStub.stubs.encode.firstCall.args[1]).eq('transportBlocks');
       expect(protoBufStub.stubs.encode.firstCall.args[2]).eq('transportBlockResponse');
@@ -602,7 +602,12 @@ describe('apis/transportV2API', () => {
     it('should respond with transportBlocks message', async () => {
       const resp = await instance.getBlocks('123');
       expect(resp).to.be.an.instanceOf(Buffer);
-      expect(resp.toString()).to.be.eq(JSON.stringify({blocks}));
+
+      expect(resp.toString()).to.be.eq(JSON.stringify({
+          error          : false,
+          wrappedResponse: new Buffer(JSON.stringify({blocks}), 'utf8')
+        })
+      );
     });
 
     describe('with calculated data', () => {
