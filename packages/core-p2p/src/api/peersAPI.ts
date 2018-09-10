@@ -1,10 +1,11 @@
-import { IPeersModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { AppConfig, PeerState } from '@risevision/core-types';
 import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { p2pSymbols } from '../helpers';
+import { PeersModule } from '../peersModule';
 
 const peersSchema = require('../../schema/peers.json');
 
@@ -23,7 +24,7 @@ export class PeersAPI {
 
   // Modules
   @inject(Symbols.modules.peers)
-  private peersModule: IPeersModule;
+  private peersModule: PeersModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 

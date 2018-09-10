@@ -8,7 +8,7 @@ import { createContainer } from '../../core-launchpad/tests/utils/createContaine
 import { Symbols } from '../../core-interfaces/src';
 import { PeersLogic } from '../src/peersLogic';
 import { PeersModule } from '../src/peersModule';
-import { PeerLogic } from '../src/peer';
+import { Peer } from '../src/peer';
 import { BasePeerType, PeerState } from '../../core-types/src';
 import { createFakePeer, createFakePeers } from './utils/fakePeersFactory';
 import { SystemModule } from '../../core/src/modules';
@@ -47,7 +47,7 @@ describe('modules/peers', () => {
       upsertStub = sandbox.stub(peersLogicStub,'upsert').returns(false);
     });
     it('should update peer.state to CONNECTED', () => {
-      const p: PeerLogic = {} as any;
+      const p: Peer = {} as any;
       inst.update(p);
       expect(p.state).to.be.eq(PeerState.CONNECTED);
     });

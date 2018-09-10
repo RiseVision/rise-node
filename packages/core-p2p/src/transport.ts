@@ -1,57 +1,48 @@
-import { decorate, inject, injectable, named, postConstruct } from 'inversify';
-import * as popsicle from 'popsicle';
-import * as Throttle from 'promise-parallel-throttle';
-import * as promiseRetry from 'promise-retry';
-import * as z_schema from 'z-schema';
 import {
-  IAPIRequest,
   IAppState,
   IBlocksModel,
   IBlocksModule,
-  IBroadcasterLogic,
   IJobsQueue,
   ILogger,
-  IPeerLogic,
-  IPeersLogic,
-  IPeersModule,
   ISequence,
   ISystemModule,
-  ITransactionLogic,
   ITransactionsModel,
-  ITransactionsModule,
-  ITransportModule,
   Symbols,
 } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 import {
   AppConfig,
   BasePeerType,
   ConstantsType,
-  IBaseTransaction,
-  ITransportTransaction,
   PeerHeaders,
   PeerRequestOptions,
-  PeerState,
-  SignedBlockType
+  PeerState, PeerType,
 } from '@risevision/core-types';
+import { cbToPromise } from '@risevision/core-utils';
+import { decorate, inject, injectable, named, postConstruct } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
-import { ModelSymbols } from '@risevision/core-models';
-import { cbToPromise, SchemaValid, ValidateSchema, WrapInBalanceSequence } from '@risevision/core-utils';
-import {
-  PeersListRequest,
-  PeersListResponse
-} from './requests/';
+import * as popsicle from 'popsicle';
+import * as Throttle from 'promise-parallel-throttle';
+import * as promiseRetry from 'promise-retry';
+import * as z_schema from 'z-schema';
+import { BroadcasterLogic } from './broadcaster';
 import { p2pSymbols } from './helpers';
-import { RequestFactoryType } from './utils/';
 import { OnPeersReady } from './hooks/actions';
+import { PeersLogic } from './peersLogic';
+import { PeersModule } from './peersModule';
+import { BaseTransportMethod, PeersListRequest, PeersListResponse, SingleTransportPayload } from './requests/';
 
+// tslint:disable-next-line
 const peersSchema     = require('../schema/peers.json');
+// tslint:disable-next-line
 const transportSchema = require('../schema/transport.json');
 
 const Extendable = WPHooksSubscriber(Object);
 decorate(injectable(), Extendable);
+
 // tslint:disable-next-line
 @injectable()
-export class TransportModule extends Extendable implements ITransportModule {
+export class TransportModule extends Extendable {
   // Generics
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
@@ -80,19 +71,15 @@ export class TransportModule extends Extendable implements ITransportModule {
   @inject(Symbols.logic.appState)
   private appState: IAppState;
   @inject(Symbols.logic.broadcaster)
-  private broadcasterLogic: IBroadcasterLogic;
+  private broadcasterLogic: BroadcasterLogic;
   @inject(Symbols.logic.peers)
-  private peersLogic: IPeersLogic;
-  // @inject(Symbols.logic.transaction)
-  // private transactionLogic: ITransactionLogic;
+  private peersLogic: PeersLogic;
 
   // Modules
   @inject(Symbols.modules.peers)
-  private peersModule: IPeersModule;
+  private peersModule: PeersModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
-  // @inject(Symbols.modules.transactions)
-  // private transactionModule: ITransactionsModule;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
 
@@ -104,14 +91,8 @@ export class TransportModule extends Extendable implements ITransportModule {
   @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
-  // requests
-
-  // @inject(p2pSymbols.requests.postSignatures)
-  // private psrFactory: RequestFactoryType<PostSignaturesRequestDataType, PostSignaturesRequest>;
-  // @inject(p2pSymbols.requests.postBlocks)
-  // private pblocksFactory: RequestFactoryType<PostBlockRequestDataType, PostBlockRequest>;
   @inject(p2pSymbols.requests.peersList)
-  private plFactory: RequestFactoryType<PeersListResponse, PeersListRequest>;
+  private peersListMethod: PeersListRequest;
 
   private loaded: boolean = false;
 
@@ -126,49 +107,38 @@ export class TransportModule extends Extendable implements ITransportModule {
   }
 
   // tslint:disable-next-line max-line-length
-  public async getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: IPeerLogic }> {
-    const url = options.url;
+  public async getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: PeerType }> {
+    const url     = options.url;
     const thePeer = this.peersLogic.create(peer);
     const req     = {
       body     : null,
-      headers  : this.systemModule.headers as any,
+      headers  : {
+        ... this.systemModule.headers as any,
+        accept        : 'application/octet-stream',
+        'content-type': 'application/octet-stream',
+      },
       method   : options.method,
       timeout  : this.appConfig.peers.options.timeout,
-      transport: undefined,
+      transport: popsicle.createTransport({ type: 'buffer' }),
       url      : `http://${peer.ip}:${peer.port}${url}`,
     };
 
-    if (options.data) {
-      req.body = options.data;
-    }
-    if (options.isProtoBuf) {
-      req.headers   = {
-        accept        : 'application/octet-stream',
-        ...req.headers,
-        'content-type': 'application/octet-stream',
-      };
-      req.transport = popsicle.createTransport({ type: 'buffer' });
-    } else {
-      delete req.transport;
-    }
-
-    const nullPlugin: popsicle.Middleware = (request: popsicle.Request, next: () => Promise<popsicle.Response>) => {
+    const parsingPlugin = (request: popsicle.Request, next: () => Promise<popsicle.Response>) => {
       return next().then((response) => response);
     };
 
-    const parsingPlugin = options.isProtoBuf ? nullPlugin : popsicle.plugins.parse(['json'], false);
-
     let res: popsicle.Response;
     try {
-      res = await promiseRetry(
-        (retry) => popsicle.request(req)
-          .use(parsingPlugin)
-          .catch(retry),
-        {
-          minTimeout: 2000, /* this is the timeout for the retry. Lets wait at least 2seconds before retrying. */
-          retries   : 1,
-        }
-      );
+      res = await
+        promiseRetry(
+          (retry) => popsicle.request(req)
+            .use(parsingPlugin)
+            .catch(retry),
+          {
+            minTimeout: 2000, /* this is the timeout for the retry. Lets wait at least 2seconds before retrying. */
+            retries   : 1,
+          }
+        );
     } catch (err) {
       this.removePeer({ peer: thePeer, code: 'HTTPERROR' }, err.message);
       return Promise.reject(err);
@@ -201,15 +171,19 @@ export class TransportModule extends Extendable implements ITransportModule {
       peer: thePeer,
     };
   }
+
   // tslint:disable-next-line max-line-length
-  public async getFromRandomPeer<T>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }, requestHandler: IAPIRequest<T, any>) {
+  public async getFromRandomPeer<Body, Query, Out>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] },
+                                                   transportMethod: BaseTransportMethod<Body, Query, Out>,
+                                                   payload: SingleTransportPayload<Body, Query>
+  ): Promise<Out> {
     config.limit         = 1;
     config.allowedStates = [PeerState.CONNECTED, PeerState.DISCONNECTED];
     const { peers }      = await this.peersModule.list(config);
     if (peers.length === 0) {
       throw new Error('No peer available');
     }
-    return peers[0].makeRequest<T>(requestHandler);
+    return transportMethod.makeRequest(peers[0], payload);
   }
 
   public cleanup() {
@@ -314,24 +288,24 @@ export class TransportModule extends Extendable implements ITransportModule {
   //   }
   // }
 
-  // TODO
-  // /**
-  //  * Validate signature with schema and calls processSignature from module multisignautre
-  //  */
-  // @ValidateSchema()
-  // public async receiveSignature(@SchemaValid(transportSchema.signature, 'Invalid signature body')
-  //                                 signature: { transaction: string, signature: string }) {
-  //   try {
-  //     await this.multisigModule.processSignature(signature);
-  //   } catch (e) {
-  //     throw new Error(`Error processing signature: ${e.message || e}`);
-  //   }
-  // }
+// TODO
+// /**
+//  * Validate signature with schema and calls processSignature from module multisignautre
+//  */
+// @ValidateSchema()
+// public async receiveSignature(@SchemaValid(transportSchema.signature, 'Invalid signature body')
+//                                 signature: { transaction: string, signature: string }) {
+//   try {
+//     await this.multisigModule.processSignature(signature);
+//   } catch (e) {
+//     throw new Error(`Error processing signature: ${e.message || e}`);
+//   }
+// }
 
   /**
    * Removes a peer by calling modules peer remove
    */
-  private removePeer(options: { code: string, peer: IPeerLogic }, extraMessage: string) {
+  private removePeer(options: { code: string, peer: PeerType }, extraMessage: string) {
     this.logger.debug(`${options.code} Removing peer ${options.peer.string} ${extraMessage}`);
     this.peersModule.remove(options.peer.ip, options.peer.port);
   }
@@ -342,10 +316,10 @@ export class TransportModule extends Extendable implements ITransportModule {
   private async discoverPeers(): Promise<void> {
     this.logger.trace('Transport->discoverPeers');
 
-    const requestHandler = this.plFactory({ data: null });
-    const response       = await this.getFromRandomPeer<PeersListResponse>(
+    const response       = await this.getFromRandomPeer<void, void, PeersListResponse>(
       {},
-      requestHandler
+      this.peersListMethod,
+      null
     );
 
     await cbToPromise((cb) => this.schema.validate(response, peersSchema.discover.peers, cb));
@@ -357,7 +331,7 @@ export class TransportModule extends Extendable implements ITransportModule {
     let alreadyKnown = 0;
     let rejected     = 0;
     for (const rawPeer of acceptablePeers) {
-      const peer: IPeerLogic = this.peersLogic.create(rawPeer);
+      const peer = this.peersLogic.create(rawPeer);
       if (this.schema.validate(peer, peersSchema.discover.peer)) {
         peer.state   = PeerState.DISCONNECTED;
         const newOne = this.peersLogic.upsert(peer, true);

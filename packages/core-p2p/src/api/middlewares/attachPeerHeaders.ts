@@ -7,7 +7,7 @@ import { p2pSymbols } from '../../helpers';
 
 @Middleware({ type: 'before' })
 @injectable()
-@IoCSymbol(p2pSymbols.api.attachPeerHeaders)
+@IoCSymbol(p2pSymbols.transportMiddlewares.attachPeerHeaders)
 export class AttachPeerHeaders implements ExpressMiddlewareInterface {
 
   @inject(Symbols.modules.system)

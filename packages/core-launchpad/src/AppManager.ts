@@ -169,7 +169,7 @@ export class AppManager {
   //   this.container.bind(Symbols.logic.block).to(BlockLogic).inSingletonScope();
   //   this.container.bind(Symbols.logic.blockReward).to(BlockRewardLogic).inSingletonScope();
   //   this.container.bind(Symbols.logic.broadcaster).to(BroadcasterLogic).inSingletonScope();
-  //   this.container.bind(Symbols.logic.peer).to(PeerLogic);
+  //   this.container.bind(Symbols.logic.peer).to(Peer);
   //   this.container.bind(Symbols.logic.peerFactory).toFactory((ctx) => {
   //     return (peer: BasePeerType) => {
   //       const p = ctx.container.get<IPeerLogic>(Symbols.logic.peer);

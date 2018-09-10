@@ -26,7 +26,7 @@ describe('apis/requests/CommonBlockRequest', () => {
 
     beforeEach(() => {
       fakeBlockLogic = {fromBytes: sinon.stub().returns('fromBytes')};
-      decodeStub = sinon.stub((instance as any), 'decodeProtoBufResponse').returns({common: 'CommonBlockID'});
+      decodeStub = sinon.stub((instance as any), 'unwrapResponse').returns({common: 'CommonBlockID'});
       supportsStub = sinon.stub((instance as any), 'peerSupportsProtoBuf').returns(true);
       (instance as any).blockLogic = fakeBlockLogic;
       res = {peer: 'peer', body: 'resBody'};
@@ -39,7 +39,7 @@ describe('apis/requests/CommonBlockRequest', () => {
     });
 
     describe('peerSupportsProtoBuf is true', () => {
-      it('should call decodeProtoBufResponse with commonBlock message type', () => {
+      it('should call unwrapResponse with commonBlock message type', () => {
         instance.getResponseData(res);
         expect(decodeStub.calledOnce).to.be.true;
         expect(decodeStub.firstCall.args).to.be.deep.equal([res, 'transportBlocks', 'commonBlock']);

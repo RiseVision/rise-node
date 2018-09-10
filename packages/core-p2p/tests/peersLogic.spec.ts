@@ -3,7 +3,7 @@ import {Container} from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { PeersLogic } from '../src/peersLogic';
-import { PeerLogic } from '../src/peer';
+import { Peer } from '../src/peer';
 import { SystemModule } from '../../core/src/modules';
 import { LoggerStub } from '../../core-utils/tests/stubs';
 import { createContainer } from '../../core-launchpad/tests/utils/createContainer';
@@ -16,7 +16,7 @@ const expect = chai.expect;
 describe('logic/peers', () => {
   let instance: PeersLogic;
   let loggerStub: LoggerStub;
-  let peerLogicStub: PeerLogic;
+  let peerLogicStub: Peer;
   let systemModuleStub: SystemModule;
   let peersFactoryStub: SinonStub;
   let container: Container;
@@ -28,7 +28,7 @@ describe('logic/peers', () => {
   });
   beforeEach(async () => {
     sandbox = sinon.createSandbox();
-    peerLogicStub = new PeerLogic();
+    peerLogicStub = new Peer();
     peersFactoryStub = sandbox.stub().returns(peerLogicStub);
     container.rebind(p2pSymbols.logic.peerFactory).toConstantValue(peersFactoryStub);
     loggerStub = container.get(Symbols.helpers.logger);
@@ -49,8 +49,8 @@ describe('logic/peers', () => {
       expect(peersFactoryStub.firstCall.args[0]).to.be.deep.equal(peerObj);
       expect(retVal).to.be.deep.equal(peerLogicStub);
     });
-    it('should not call peersFactory peer is instanceof PeerLogic', () => {
-      const peerObj = new PeerLogic();
+    it('should not call peersFactory peer is instanceof Peer', () => {
+      const peerObj = new Peer();
       const retVal = instance.create(peerObj);
       expect(peersFactoryStub.notCalled).to.be.true;
       expect(retVal).to.be.deep.equal(peerObj);
@@ -132,7 +132,7 @@ describe('logic/peers', () => {
       existsStub.returns(true);
       (instance as any).peers[peerLogicStub.string] = peerLogicStub;
       // newPeer.string == peerLogicStub.string
-      const newPeer = new PeerLogic();
+      const newPeer = new Peer();
       // modify one of the default values
       newPeer.ip = newPeer.ip + '0';
       // make sure that create() doesn't modify our passed peer
@@ -280,8 +280,8 @@ describe('logic/peers', () => {
 
     it('should filter out peers with same ip', () => {
       getNonceStub.returns('otherValue');
-      const peer1 = new PeerLogic();
-      const peer2 = new PeerLogic();
+      const peer1 = new Peer();
+      const peer2 = new Peer();
       peer1.ip = '8.8.8.8';
       peer2.ip = '8.8.8.8';
       const retVal = instance.acceptable([peer1, peer2]);
@@ -289,8 +289,8 @@ describe('logic/peers', () => {
     });
     it('should filter out peers with incompatible version', () => {
       getNonceStub.returns('otherValue');
-      const peer1 = new PeerLogic();
-      const peer2 = new PeerLogic();
+      const peer1 = new Peer();
+      const peer2 = new Peer();
       peer1.ip = '8.8.8.8';
       peer2.ip = '8.8.8.7';
       versionCompatibleStub.onSecondCall().returns(false);

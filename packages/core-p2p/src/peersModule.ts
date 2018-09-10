@@ -1,17 +1,18 @@
-import { WordPressHookSystem } from 'mangiafuoco';
-import { ILogger, IPeerLogic, IPeersModel, IPeersModule, Symbols } from '@risevision/core-interfaces';
+import { ILogger, IPeersModel, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { AppConfig, ConstantsType, PeerFilter, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
+import { WordPressHookSystem } from 'mangiafuoco';
 import * as shuffle from 'shuffle-array';
-import { PeersLogic } from './peersLogic';
 import { p2pSymbols } from './helpers';
 import { OnPeersReady } from './hooks/actions';
+import { Peer } from './peer';
+import { PeersLogic } from './peersLogic';
 
 @injectable()
-export class PeersModule implements IPeersModule {
+export class PeersModule  {
 
   // Generic
   @inject(Symbols.generic.appConfig)
@@ -45,7 +46,7 @@ export class PeersModule implements IPeersModule {
   /**
    * Sets peer state to active and updates it to the list
    */
-  public update(peer: IPeerLogic) {
+  public update(peer: Peer) {
     peer.state = PeerState.CONNECTED;
     return this.peersLogic.upsert(peer, false);
   }
@@ -68,7 +69,7 @@ export class PeersModule implements IPeersModule {
    * Gets the peers using the given filter.
    * if orderBy Is not specified then returned peers are shuffled.
    */
-  public async getByFilter(filter: PeerFilter): Promise<IPeerLogic[]> {
+  public async getByFilter(filter: PeerFilter): Promise<Peer[]> {
     const allowedFields = ['ip', 'port', 'state', 'os', 'version', 'broadhash', 'height', 'nonce'];
     const limit         = filter.limit ? Math.abs(filter.limit) : 0;
     const offset        = filter.offset ? Math.abs(filter.offset) : 0;
@@ -115,7 +116,7 @@ export class PeersModule implements IPeersModule {
    * Gets peers list and calculated consensus.
    */
   // tslint:disable-next-line max-line-length
-  public async list(options: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }): Promise<{ consensus: number, peers: IPeerLogic[] }> {
+  public async list(options: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }): Promise<{ consensus: number, peers: Peer[] }> {
     options.limit         = options.limit || this.constants.maxPeers;
     options.broadhash     = options.broadhash || this.systemModule.broadhash;
     options.allowedStates = options.allowedStates || [PeerState.CONNECTED];

@@ -1,34 +1,30 @@
+import { Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
-import { constants, middleware, P2pConfig, p2pSymbols, ProtoBufHelper } from './helpers';
-import { CommanderStatic } from 'commander';
-import * as express from 'express';
-import * as http from 'http';
+import { ModelSymbols } from '@risevision/core-models';
+import { BasePeerType } from '@risevision/core-types';
+import { cbToPromise } from '@risevision/core-utils';
 import * as bodyParser from 'body-parser';
-
+import { CommanderStatic } from 'commander';
 import * as compression from 'compression';
 import * as cors from 'cors';
+import * as express from 'express';
 import { Application } from 'express';
+import * as http from 'http';
 import { useContainer as useContainerForHTTP, useExpressServer } from 'routing-controllers';
 import * as socketIO from 'socket.io';
-import { Symbols } from '@risevision/core-interfaces';
-import { cbToPromise } from '@risevision/core-utils';
-import { ModelSymbols } from '@risevision/core-models';
-import { PeersModel } from './PeersModel';
-import { PeersAPI } from './api/peersAPI';
-import { PeersLogic } from './peersLogic';
-import { PeersModule } from './peersModule';
-import { PeerLogic } from './peer';
-import { BasePeerType } from '@risevision/core-types';
-import { TransportModule } from './transport';
-import { BroadcasterLogic } from './broadcaster';
-import {
-  HeightRequest,
-  PeersListRequest
-} from './requests';
-import { requestFactory } from './utils/';
-import { TransportV2API } from './api/transportv2API';
 import { AttachPeerHeaders, ValidatePeerHeaders } from './api/middlewares';
+import { PeersAPI } from './api/peersAPI';
+import { TransportAPI } from './api/transport';
+import { BroadcasterLogic } from './broadcaster';
+import { constants, middleware, P2pConfig, p2pSymbols, ProtoBufHelper } from './helpers';
+import { Peer } from './peer';
+import { PeersLogic } from './peersLogic';
+import { PeersModel } from './PeersModel';
+import { PeersModule } from './peersModule';
+import { PeersListRequest, PingRequest } from './requests';
+import { TransportModule } from './transport';
 
+// tslint:disable-next-line
 const configSchema = require('../schema/config.json');
 
 export class CoreModule extends BaseCoreModule<P2pConfig> {
@@ -103,9 +99,9 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
 
   public addElementsToContainer(): void {
     const app = express();
-    this.srv = http.createServer(app);
+    this.srv  = http.createServer(app);
     this.container.bind(p2pSymbols.constants).toConstantValue(this.constants);
-    this.container.bind(p2pSymbols.controller).to(TransportV2API).inSingletonScope().whenTargetNamed(p2pSymbols.api.transportV2);
+    this.container.bind(p2pSymbols.api.transport).to(TransportAPI).inSingletonScope();
     this.container.bind(p2pSymbols.controller).to(PeersAPI).inSingletonScope().whenTargetNamed(p2pSymbols.api.peersAPI);
     this.container.bind(p2pSymbols.express).toConstantValue(app);
     this.container.bind(p2pSymbols.server).toConstantValue(this.srv);
@@ -114,11 +110,11 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
       .whenTargetNamed(p2pSymbols.model);
 
     this.container.bind(p2pSymbols.logic.broadcaster).to(BroadcasterLogic).inSingletonScope();
-    this.container.bind(p2pSymbols.logic.peerLogic).to(PeerLogic).inSingletonScope();
+    this.container.bind(p2pSymbols.logic.peerLogic).to(Peer).inSingletonScope();
     this.container.bind(p2pSymbols.logic.peersLogic).to(PeersLogic).inSingletonScope();
     this.container.bind(p2pSymbols.logic.peerFactory).toFactory((ctx) => {
       return (peer: BasePeerType) => {
-        const p = ctx.container.get<PeerLogic>(Symbols.logic.peer);
+        const p = ctx.container.get<Peer>(Symbols.logic.peer);
         p.accept({ ... {}, ...peer });
         return p;
       };
@@ -129,19 +125,20 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     this.container.bind(p2pSymbols.helpers.protoBuf).to(ProtoBufHelper);
 
     // Request factories.
-    this.container.bind(p2pSymbols.requests.height).toFactory(requestFactory(HeightRequest));
-    this.container.bind(p2pSymbols.requests.peersList).toFactory(requestFactory(PeersListRequest));
+    this.container.bind(p2pSymbols.transportMethod).to(PingRequest).inSingletonScope()
+      .whenTargetNamed(p2pSymbols.requests.ping);
+    this.container.bind(p2pSymbols.transportMethod).to(PeersListRequest).inSingletonScope()
+      .whenTargetNamed(p2pSymbols.requests.peersList);
 
     // APIs
-    this.container.bind(p2pSymbols.api.attachPeerHeaders)
+    this.container.bind(p2pSymbols.transportMiddleware)
       .to(AttachPeerHeaders)
-      .inSingletonScope();
-    this.container.bind(p2pSymbols.api.validatePeerHeadersMiddleware)
+      .inSingletonScope()
+      .whenTargetNamed(p2pSymbols.transportMiddlewares.attachPeerHeaders);
+    this.container.bind(p2pSymbols.transportMiddleware)
       .to(ValidatePeerHeaders)
-      .inSingletonScope();
-    this.container.bind(p2pSymbols.api.transportV2)
-      .to(ValidatePeerHeaders)
-      .inSingletonScope();
+      .inSingletonScope()
+      .whenTargetNamed(p2pSymbols.transportMiddlewares.validatePeer);
 
   }
 
@@ -152,8 +149,11 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
       .catch((e) => void 0);
   }
 
-  public boot(): Promise<void> {
+  public async boot(): Promise<void> {
     const appConfig = this.container.get<P2pConfig>(Symbols.generic.appConfig);
-    return cbToPromise((cb) => this.srv.listen(appConfig.port, appConfig.address, cb));
+    // This calls postConstruct which installs all the transport routes.
+    this.container.get(p2pSymbols.api.transport);
+    await cbToPromise((cb) => this.srv.listen(appConfig.port, appConfig.address, cb));
+
   }
 }

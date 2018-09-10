@@ -1,12 +1,12 @@
-import { IPeerLogic } from '../logic';
+import { PeerType } from '@risevision/core-types';
 
 export interface ILoaderModule {
   readonly isSyncing: boolean;
   readonly loaded: boolean;
 
-  getNetwork(): Promise<{ height: number; peers: IPeerLogic[] }>;
+  getNetwork(): Promise<{ height: number; peers: PeerType[] }>;
 
-  getRandomPeer(): Promise<IPeerLogic>;
+  getRandomPeer(): Promise<PeerType>;
 
   cleanup(): Promise<void>;
 

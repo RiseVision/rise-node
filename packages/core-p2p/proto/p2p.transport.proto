@@ -1,0 +1,8 @@
+syntax = "proto3";
+import "./peer.proto";
+
+message transportMethod {
+    bool success = 1;
+    string error = 2;
+    bytes wrappedResponse = 3;
+}

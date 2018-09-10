@@ -1,3 +1,3 @@
-export * from './BaseRequest';
-export * from './HeightRequest';
+export * from './BaseTransportMethod';
 export * from './PeersListRequest';
+export * from './PingRequest';

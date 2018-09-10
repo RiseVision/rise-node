@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { BaseRequest } from '../../src/requests';
+import { BaseTransportMethod } from '../../src/requests';
 import { IAPIRequest, Symbols } from '@risevision/core-interfaces';
 import { ProtoBufHelperStub } from '../stubs/protobufhelperStub';
 import { PeerType } from '@risevision/core-types';
@@ -10,7 +10,7 @@ import { createContainer } from '../../../core-launchpad/tests/utils/createConta
 import { RequestFactoryType } from '../../src/utils';
 import { p2pSymbols } from '../../src/helpers';
 
-class TestRequest extends BaseRequest<any, any> implements IAPIRequest<any, any> {
+class TestRequest extends BaseTransportMethod<any, any> implements IAPIRequest<any, any> {
   protected readonly method = 'POST';
   protected readonly baseUrl = '/test/';
 }
@@ -22,7 +22,7 @@ const factory = (what: (new () => any)) => (ctx) => (options) => {
 };
 
 // tslint:disable no-unused-expression max-line-length
-describe('apis/requests/BaseRequest', () => {
+describe('apis/requests/BaseTransportMethod', () => {
   let sandbox: SinonSandbox;
   let instance: TestRequest;
   let container: Container;
@@ -98,7 +98,7 @@ describe('apis/requests/BaseRequest', () => {
     let res;
 
     beforeEach(() => {
-      decodeProtoBufResponseStub = sandbox.stub(instance as any, 'decodeProtoBufResponse');
+      decodeProtoBufResponseStub = sandbox.stub(instance as any, 'unwrapResponse');
       res =  {body: new Buffer('meow', 'utf8'), peer: {version: '1.1.1'}};
     });
 
@@ -106,7 +106,7 @@ describe('apis/requests/BaseRequest', () => {
       instance.getResponseData(res);
     });
 
-    it('should call decodeProtoBufResponse if isProtoBuf returns true', () => {
+    it('should call unwrapResponse if isProtoBuf returns true', () => {
       const val = {success: true};
       decodeProtoBufResponseStub.returns(val);
       const ret = instance.getResponseData(res);
@@ -143,13 +143,13 @@ describe('apis/requests/BaseRequest', () => {
     });
   });
 
-  describe('decodeProtoBufResponse', () => {
+  describe('unwrapResponse', () => {
 
     describe('when response status is 200', () => {
       it('should call pdecodeProtoBufValidResponse and return if it message is validated', () => {
         protoBufStub.stubs.decode.onFirstCall().returns({success: true});
         const decpbvrStub = sandbox.stub(instance as any, 'decodeProtoBufValidResponse').returns('decodedResult');
-        const resp = (instance as any).decodeProtoBufResponse(Buffer.from('', 'hex'));
+        const resp = (instance as any).unwrapResponse(Buffer.from('', 'hex'));
         expect(decpbvrStub.calledOnce).to.be.true;
         expect(decpbvrStub.firstCall.args[0]).to.be.deep.equal(Buffer.from('', 'hex'));
         expect(resp).to.be.equal('decodedResult');
@@ -164,7 +164,7 @@ describe('apis/requests/BaseRequest', () => {
         protoBufStub.stubs.decodeToObj.throws(new Error('decodeToObjError'));
         let resp;
         expect(() => {
-          resp = (instance as any).decodeProtoBufResponse(res, 'namespace', 'messageType');
+          resp = (instance as any).unwrapResponse(res, 'namespace', 'messageType');
         }).to.throw('thisIsAnErr');
       });
     });

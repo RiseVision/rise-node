@@ -1,29 +1,29 @@
-import { ILogger, IPeerLogic, IPeersLogic, ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { ILogger, ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { BasePeerType, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
-import { PeerLogic } from './peer';
 import { p2pSymbols } from './helpers';
+import { Peer } from './peer';
 
 @injectable()
-export class PeersLogic implements IPeersLogic {
+export class PeersLogic {
 
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
-  private peers: { [peerIdentifier: string]: IPeerLogic } = {};
+  private peers: { [peerIdentifier: string]: Peer } = {};
 
   private lastRemoved: { [peerIdentifier: string]: number } = {};
 
   @inject(p2pSymbols.logic.peerFactory)
-  private peersFactory: (bp: BasePeerType) => IPeerLogic;
+  private peersFactory: (bp: BasePeerType) => Peer;
 
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
-  public create(peer: BasePeerType): IPeerLogic {
-    if (!(peer instanceof PeerLogic)) {
+  public create(peer: BasePeerType): Peer {
+    if (!(peer instanceof Peer)) {
       return this.peersFactory(peer);
     }
     return peer as any;
@@ -91,7 +91,7 @@ export class PeersLogic implements IPeersLogic {
 
     Object.keys(this.peers)
       .map((key) => this.peers[key])
-      .forEach((p: IPeerLogic) => {
+      .forEach((p) => {
         stats.total++;
 
         if (p.state === PeerState.CONNECTED) {
@@ -126,7 +126,7 @@ export class PeersLogic implements IPeersLogic {
   }
 
   public list(normalize: true): PeerType[];
-  public list(normalize: false): IPeerLogic[];
+  public list(normalize: false): Peer[];
   public list(normalize: boolean) {
     return Object.keys(this.peers)
       .map((k) => this.peers[k])
@@ -136,9 +136,9 @@ export class PeersLogic implements IPeersLogic {
   /**
    * Filters peers with private ips, same nonce or incompatible version
    */
-  public acceptable(peers: IPeerLogic[]): IPeerLogic[];
+  public acceptable(peers: Peer[]): Peer[];
   public acceptable(peers: PeerType[]): PeerType[];
-  public acceptable(peers: PeerType[]|IPeerLogic[]): PeerType[]|IPeerLogic[] {
+  public acceptable(peers: PeerType[] | Peer[]): PeerType[] | Peer[] {
     return _(peers)
       .uniqWith((a, b) => `${a.ip}${a.port}` === `${b.ip}${b.port}`)
       .filter((peer) => {
@@ -156,7 +156,7 @@ export class PeersLogic implements IPeersLogic {
    * @param {IPeerLogic} thePeer
    * @returns {boolean}
    */
-  private wasRecentlyRemoved(thePeer: IPeerLogic) {
+  private wasRecentlyRemoved(thePeer: Peer) {
     if (typeof this.lastRemoved[thePeer.string] === 'undefined') {
       return false;
     }

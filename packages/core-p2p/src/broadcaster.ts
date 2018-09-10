@@ -1,11 +1,7 @@
 import {
-  BroadcastParams, BroadcastTask, BroadcastTaskOptions, IAPIRequest,
   IAppState,
-  IBroadcasterLogic,
   IJobsQueue,
   ILogger,
-  IPeersLogic,
-  IPeersModule,
   Symbols
 } from '@risevision/core-interfaces';
 import { AppConfig, ConstantsType, PeerType } from '@risevision/core-types';
@@ -13,10 +9,33 @@ import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
 import { P2PConstantsType, p2pSymbols } from './helpers';
+import { PeersLogic } from './peersLogic';
+import { PeersModule } from './peersModule';
+import { BaseTransportMethod, SingleTransportPayload } from './requests/';
+
+// tslint:disable-next-line
+export type BroadcastFilters = {
+  limit?: number,
+  broadhash?: string,
+  peers?: PeerType[]
+};
+
+// tslint:disable-next-line
+export interface BroadcastTaskOptions<Body, Query, Out> {
+  immediate?: boolean;
+  method: BaseTransportMethod<Body, Query, Out>;
+  payload: SingleTransportPayload<Body, Query>;
+}
+
+// tslint:disable-next-line
+export interface BroadcastTask<Body, Query, Out> {
+  options: BroadcastTaskOptions<Body, Query, Out>;
+  filters?: BroadcastFilters;
+}
 
 @injectable()
-export class BroadcasterLogic implements IBroadcasterLogic {
-  public queue: BroadcastTask[] = [];
+export class BroadcasterLogic {
+  public queue: Array<BroadcastTask<any, any, any>> = [];
   // Generics
   @inject(Symbols.generic.appConfig)
   private config: AppConfig;
@@ -37,11 +56,11 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   @inject(Symbols.logic.appState)
   private appState: IAppState;
   @inject(Symbols.logic.peers)
-  private peersLogic: IPeersLogic;
+  private peersLogic: PeersLogic;
 
   // Modules
   @inject(Symbols.modules.peers)
-  private peersModule: IPeersModule;
+  private peersModule: PeersModule;
 
   @postConstruct()
   public afterConstruct() {
@@ -78,41 +97,45 @@ export class BroadcasterLogic implements IBroadcasterLogic {
 
   /**
    * Checks if object is entitled for being broadcasted. If so it will enqueue the object.
-   * @param obj
-   * @param requestHandler
-   * @param params
+   * @param payload payload object to broadcast
+   * @param method
+   * @param filters eventual filters.
    */
-  public maybeEnqueue<T, K>(obj: any & { relays?: number }, requestHandler: IAPIRequest<T, K>, params?: BroadcastParams): boolean {
-    obj.relays = (obj.relays || 0) + 1;
-    if (obj.relays < this.maxRelays()) {
-      this.enqueue(params, {
+  public maybeEnqueue<Body, Query, Out>(
+    payload: SingleTransportPayload<Body & { relays?: number }, Query>,
+    method: BaseTransportMethod<Body, Query, Out>,
+    filters?: BroadcastFilters): boolean {
+
+    payload.body.relays = (payload.body.relays || 0) + 1;
+    if (payload.body.relays < this.maxRelays()) {
+      this.enqueue(filters, {
         immediate: false,
-        requestHandler,
+        method,
+        payload,
       });
       return true;
     }
     return false;
   }
 
-  public enqueue(params: BroadcastParams, options: BroadcastTaskOptions): number {
+  public enqueue(filters: BroadcastFilters, options: BroadcastTaskOptions<any, any, any>): number {
     options.immediate = false;
-    return this.queue.push({ params, options });
+    return this.queue.push({ filters, options });
   }
 
-  public async broadcast(params: BroadcastParams = {},
-                         options: BroadcastTaskOptions): Promise<{ peer: PeerType[] }> {
+  public async broadcast(task: BroadcastTask<any, any, any>): Promise<{ peer: PeerType[] }> {
+    task.filters           = task.filters || {};
+    task.filters.limit     = task.filters.limit || this.constants.maxPeers;
+    task.filters.broadhash = task.filters.broadhash || null;
 
-    params.limit     = params.limit || this.constants.maxPeers;
-    params.broadhash = params.broadhash || null;
-
-    let peers = params.peers;
-    if (!params.peers) {
-      peers = await this.getPeers(params);
+    let peers = task.filters.peers;
+    if (!task.filters.peers) {
+      peers = await this.getPeers(task.filters);
     }
 
     this.logger.debug('Begin broadcast');
 
-    if (params.limit === this.constants.maxPeers) {
+    if (task.filters.limit === this.constants.maxPeers) {
       peers = peers.slice(0, this.p2pConstants.broadcastLimit);
     }
 
@@ -120,7 +143,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
       peers
         .map((p) => this.peersLogic.create(p))
         .map((peer) => () => {
-            return peer.makeRequest(options.requestHandler)
+            return task.options.method.makeRequest(peer, task.options.payload)
               .catch((err) => {
                 this.logger.debug(`Failed to broadcast to peer: ${peer.string}`, err);
                 return null;
@@ -152,7 +175,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     for (const task of oldQueue) {
       if (task.options.immediate) {
         newQueue.push(task);
-      } else if (!await task.options.requestHandler.isRequestExpired()) {
+      } else if (!await task.options.method.isRequestExpired(task.options.payload)) {
         newQueue.push(task);
       }
     }
@@ -164,21 +187,26 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   /**
    * Group broadcast requests by API.
    */
-  private squashQueue(broadcasts: BroadcastTask[]): BroadcastTask[] {
-    const byRequests = _.groupBy(broadcasts, ((b) => b.options.requestHandler.constructor.name));
+  private squashQueue(broadcasts: Array<BroadcastTask<any, any, any>>): Array<BroadcastTask<any, any, any>> {
+    const byRequests = _.groupBy(broadcasts, ((b) => b.options.method.baseUrl));
 
-    const squashed: BroadcastTask[] = [];
+    const squashed: Array<BroadcastTask<any, any, any>> = [];
 
+    // tslint:disable-next-line
     for (const type in byRequests) {
       const requests = byRequests[type];
       const [first]  = requests;
-      first.options.requestHandler.mergeIntoThis(... requests.slice(1).map((item) => item.options.requestHandler));
-      squashed.push({
+
+      const newRequests = first.options.method
+        .mergeRequests(requests.map((item) => item.options.payload));
+
+      squashed.push(... newRequests.map((payload) => ({
         options: {
-          immediate     : false,
-          requestHandler: first.options.requestHandler,
+          immediate: false,
+          method   : first.options.method,
+          payload,
         },
-      });
+      })));
     }
 
     return squashed;
@@ -201,7 +229,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
 
     try {
       for (const brc of broadcasts) {
-        await this.broadcast(brc.params, brc.options);
+        await this.broadcast(brc);
       }
       this.logger.debug(`Broadcasts released ${broadcasts.length}`);
     } catch (e) {

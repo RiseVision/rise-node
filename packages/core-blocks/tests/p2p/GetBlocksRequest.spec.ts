@@ -15,7 +15,7 @@ describe('apis/requests/GetBlocksRequest', () => {
     instance.options = {data: null, query: {lastBlockId: '123456'}};
     (instance as any).blocksUtilsModule = {readDbRows: sinon.stub()};
     (instance as any).blockLogic = {fromBytes: sinon.stub()};
-    decodeStub = sinon.stub(instance as any, 'decodeProtoBufResponse');
+    decodeStub = sinon.stub(instance as any, 'unwrapResponse');
     peer = {
       broadhash: '123123123',
       clock: 9999999,
@@ -49,7 +49,7 @@ describe('apis/requests/GetBlocksRequest', () => {
         supportsPBStub.returns(true);
       });
 
-      it('should call decodeProtoBufResponse', () => {
+      it('should call unwrapResponse', () => {
         const res = {body: 'theBody', peer};
         decodeStub.returns({blocks: ['b1', 'b2']});
         instance.getResponseData(res);

@@ -116,7 +116,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   /**
    * Performs chain comparison with remote peer
    * WARNING: Can trigger chain recovery
-   * @param {PeerLogic} peer
+   * @param {Peer} peer
    * @param {number} height
    * @return {Promise<void>}
    */
@@ -235,7 +235,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
   /**
    * Query remote peer for block, process them and return last processed (and valid) block
-   * @param {PeerLogic | BasePeerType} rawPeer
+   * @param {Peer | BasePeerType} rawPeer
    * @return {Promise<SignedBlockType>}
    */
   public async loadBlocksFromPeer(rawPeer: IPeerLogic | BasePeerType): Promise<SignedBlockType> {

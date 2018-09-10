@@ -1,4 +1,4 @@
-import { IPeersLogic, IPeersModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { BasePeerType } from '@risevision/core-types';
 import { castFieldsToNumberUsingSchema, IoCSymbol } from '@risevision/core-utils';
 import * as express from 'express';
@@ -6,17 +6,18 @@ import { inject, injectable } from 'inversify';
 import { ExpressMiddlewareInterface, Middleware } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { p2pSymbols } from '../../helpers';
+import { PeersLogic, PeersModule } from '../../';
 const transportSchema = require( '../../../schema/transport.json');
 
 @Middleware({ type: 'before' })
 @injectable()
-@IoCSymbol(p2pSymbols.api.validatePeerHeadersMiddleware)
+@IoCSymbol(p2pSymbols.transportMiddlewares.validatePeer)
 export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
 
   @inject(Symbols.logic.peers)
-  private peersLogic: IPeersLogic;
+  private peersLogic: PeersLogic;
   @inject(Symbols.modules.peers)
-  private peersModule: IPeersModule;
+  private peersModule: PeersModule;
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
   @inject(Symbols.modules.system)

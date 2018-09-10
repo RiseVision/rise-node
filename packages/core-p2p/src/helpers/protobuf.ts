@@ -1,10 +1,10 @@
+import { ICoreModule, LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ILogger, Symbols } from '@risevision/core-interfaces';
 import * as fs from 'fs';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as path from 'path';
 import * as protobuf from 'protobufjs';
 import { IConversionOptions, Root, Type } from 'protobufjs';
-import { ICoreModule, LaunchpadSymbols } from '@risevision/core-launchpad';
 
 export type MyConvOptions<T> = IConversionOptions & { postProcess?: (obj: T) => T };
 
@@ -49,7 +49,7 @@ export class ProtoBufHelper {
    * @param {string} messageType (optional) specific message type to lookup in the proto
    * @returns {Buffer} a Buffer containing the ProtoBuf encoded data
    */
-  public encode(payload: object, namespace: string, messageType?: string): Buffer {
+  public encode(payload: any, namespace: string, messageType?: string): Buffer {
     if (!this.validate(payload, namespace, messageType)) {
       return null;
     }

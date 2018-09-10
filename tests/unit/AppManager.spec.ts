@@ -667,7 +667,7 @@ describe('AppManager', () => {
 
       expect(containerStub.bindings[Symbols.logic.peer]).to.be.deep.equal([
         {
-          to: 'PeerLogic',
+          to: 'Peer',
         },
       ]);
 

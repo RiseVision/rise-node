@@ -12,7 +12,7 @@ describe('apis/requests/GetSignaturesRequest', () => {
   beforeEach(() => {
     instance = new GetSignaturesRequest();
     instance.options = {data: null};
-    decodeStub = sinon.stub(instance as any, 'decodeProtoBufResponse');
+    decodeStub = sinon.stub(instance as any, 'unwrapResponse');
     peer = {
       broadhash: '123123123',
       clock: 9999999,
@@ -36,7 +36,7 @@ describe('apis/requests/GetSignaturesRequest', () => {
       });
     });
     describe('protoBuf = true', () => {
-      it('should call decodeProtoBufResponse', () => {
+      it('should call unwrapResponse', () => {
         const res = {body: 'theBody', peer};
         instance.getResponseData(res);
         expect(decodeStub.calledOnce).to.be.true;

@@ -1,10 +1,9 @@
-import { IAPIRequest, IPeerLogic, ITransportModule, Symbols } from '@risevision/core-interfaces';
 import { BasePeerType, PeerHeaders, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
-import { HeightRequest } from './requests';
 import { p2pSymbols } from './helpers';
-import { RequestFactoryType } from './utils';
+import { BaseTransportMethod, SingleTransportPayload } from './requests/';
+import { PingRequest } from './requests/PingRequest';
 
 const nullable = [
   'os',
@@ -42,7 +41,7 @@ const properties = [
   'nonce',
 ];
 @injectable()
-export class PeerLogic implements PeerType, IPeerLogic {
+export class Peer implements PeerType {
   public ip: string;
   public port: number;
   public state: PeerState;
@@ -55,11 +54,8 @@ export class PeerLogic implements PeerType, IPeerLogic {
   public nonce: string;
   public string: string;
 
-  @inject(Symbols.modules.transport)
-  private transportModule: ITransportModule;
-
-  @inject(p2pSymbols.requests.height)
-  private hrFactory: RequestFactoryType<void, HeightRequest>;
+  @inject(p2pSymbols.requests.ping)
+  private pingRequest: PingRequest;
 
   public accept(peer: BasePeerType) {
     // Normalize peer data
@@ -139,12 +135,13 @@ export class PeerLogic implements PeerType, IPeerLogic {
     return copy;
   }
 
-  public makeRequest<T>(requestHandler: IAPIRequest<T, any>): Promise<T> {
-    return requestHandler.makeRequest(this);
+  public makeRequest<Body, Query, Out>(method: BaseTransportMethod<Body, Query, Out>,
+                                       payload: SingleTransportPayload<Body, Query>): Promise<Out> {
+    return method.makeRequest(this, payload);
   }
 
   public pingAndUpdate(): Promise<void> {
-    return this.makeRequest(this.hrFactory({data: null})).then(() => null);
+    return this.makeRequest(this.pingRequest, null).then(() => null);
   }
 
   public get nullable() {

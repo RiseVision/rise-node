@@ -1,7 +1,6 @@
-import { IBaseTransaction, IConfirmedTransaction, ITransportTransaction } from '@risevision/core-types';
+import { BasePeerType, IBaseTransaction, IConfirmedTransaction, ITransportTransaction } from '@risevision/core-types';
 import { IAccountsModel, ITransactionsModel } from '../models';
 import { IModule } from './IModule';
-import { IPeerLogic } from '../logic';
 
 export interface ITransactionsModule extends IModule {
   /**
@@ -103,6 +102,6 @@ export interface ITransactionsModule extends IModule {
    * @returns {Promise<void>}
    */
   processIncomingTransactions(transactions: Array<IBaseTransaction<any>>,
-                              peer: IPeerLogic | null,
+                              peer: BasePeerType | null,
                               broadcast: boolean): Promise<void>;
 }

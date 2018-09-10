@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message APISuccess {
-    bool success = 1;
-    string message = 2;
-}
