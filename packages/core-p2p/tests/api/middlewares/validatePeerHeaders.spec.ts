@@ -3,11 +3,11 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { ValidatePeerHeaders } from '../../src/api/validatePeerHeaders';
-import { p2pSymbols, PeersLogic } from '../../src';
+import { ValidatePeerHeaders } from '../../../src/api/middlewares/';
+import { p2pSymbols, PeersLogic } from '../../../src';
 import { IPeersModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
-import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
-import { createFakePeer } from '../utils/fakePeersFactory';
+import { createContainer } from '../../../../core-launchpad/tests/utils/createContainer';
+import { createFakePeer } from '../../utils/fakePeersFactory';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');

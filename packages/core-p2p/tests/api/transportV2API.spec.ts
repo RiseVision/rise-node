@@ -107,7 +107,7 @@ describe('apis/transportV2API', () => {
       { id: 12 },
     ]);
     transportModuleStub = container.get(Symbols.modules.transport);
-    receiveTXStub = sandbox.stub(transportModuleStub, 'receiveTransactions').returns(true);
+    // receiveTXStub = sandbox.stub(transportModuleStub, 'receiveTransactions').returns(true);
     // sandbox.stub(transportModuleStub,  'receiveSignatures').resolves();
     peersLogicStub = container.get(Symbols.logic.peers);
     thePeer        = { ip: '8.8.8.8', port: 1234 };

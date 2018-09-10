@@ -1,3 +1,4 @@
+export * from './api';
 export * from './BaseTx';
 export * from './hooks/actions';
 export * from './hooks/filters';

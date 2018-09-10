@@ -48,8 +48,7 @@ describe('apis/transactionsAPI', () => {
     sandbox   = sinon.createSandbox();
     txModule  = container.get(TXSymbols.module);
 
-
-    instance          = container.getNamed(APISymbols.api, TXSymbols.api);
+    instance          = container.getNamed(APISymbols.api, TXSymbols.api.api);
     TransactionsModel = container.getNamed(ModelSymbols.model, Symbols.models.transactions);
     transportModule   = container.get(Symbols.modules.transport);
     blocksModule      = container.get<IBlocksModule>(Symbols.modules.blocks);
@@ -451,7 +450,7 @@ describe('apis/transactionsAPI', () => {
         validTXs.push(tx);
         return Promise.resolve();
       });
-      sandbox.stub(transportModule, 'receiveTransactions').resolves();
+      sandbox.stub(txModule, 'processIncomingTransactions').resolves();
 
       const res = await instance.put({ transaction: sendTX, transactions: txs });
       expect(res).deep.eq({

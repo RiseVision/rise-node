@@ -21,8 +21,8 @@ import { ContentType, Controller, Get, Post, QueryParam, Req, UseBefore } from '
 
 import * as z_schema from 'z-schema';
 import { TXSymbols } from '../txSymbols';
-
-const transportSchema = require('../../schema/transport.json');
+//
+// const transportSchema = require('../../schema/transport.json');
 
 @Controller('/v2/peer')
 @injectable()
@@ -45,7 +45,6 @@ export class TransactionTransport {
   private peersLogic: IPeersLogic;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
-
 
   @Get('/transactions')
   public transactions() {

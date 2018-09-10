@@ -24,7 +24,7 @@ import { TXSymbols } from '../txSymbols';
 import { TXApiGetTxFilter } from '../hooks/filters';
 
 // tslint:disable-next-line
-const schema = require('../schema/api.json');
+const schema = require('../../schema/api.json');
 
 @JsonController('/api/transactions')
 @injectable()

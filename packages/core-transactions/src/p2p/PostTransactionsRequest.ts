@@ -6,13 +6,12 @@ import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 // tslint:disable-next-line
 export type PostTransactionsRequestDataType = {
-  transactions?: Array<IBaseTransaction<any>>,
+  transactions: Array<IBaseTransaction<any>>,
 };
 
 @injectable()
 export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRequestDataType> {
   protected readonly method: 'POST'   = 'POST';
-  protected readonly supportsProtoBuf = true;
   protected readonly baseUrl          = '/v2/peer/transactions';
 
   @inject(Symbols.logic.transaction)
@@ -56,7 +55,8 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
   protected encodeRequestData(data: PostTransactionsRequestDataType): Buffer {
     return this.protoBufHelper.encode(
       {
-        transactions: data.transactions.map((tx) => this.txLogic.toProtoBuffer(tx)),
+        transactions: data.transactions
+          .map((tx) => this.txLogic.toProtoBuffer(tx)),
       },
       'transactions.transport',
       'transportTransactions'

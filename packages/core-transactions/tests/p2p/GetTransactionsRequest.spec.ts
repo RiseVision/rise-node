@@ -1,69 +1,54 @@
 import { expect } from 'chai';
-import * as sinon from 'sinon';
-import { SinonStub } from 'sinon';
-import { GetTransactionsRequest } from '../../src/requests';
+import { GetTransactionsRequest, TransactionLogic, TXSymbols } from '../../src/';
+import { createFakePeer } from '@risevision/core-p2p/tests/utils/fakePeersFactory';
+import { createContainer } from '@risevision/core-launchpad/tests/utils/createContainer';
+import { Container } from 'inversify';
+import { RequestFactoryType } from '@risevision/core-p2p';
+import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
+import { createRandomTransactions } from '../utils/txCrafter';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/GetTransactionsRequest', () => {
   let instance: GetTransactionsRequest;
-  let decodeStub: SinonStub;
   let peer: any;
-
+  let container: Container;
+  before(async () => {
+    container = await createContainer(['core-transactions', 'core-helpers', 'core-blocks', 'core', 'core-accounts']);
+  });
   beforeEach(() => {
-    instance = new GetTransactionsRequest();
-    instance.options = {data: null};
-    decodeStub = sinon.stub(instance as any, 'decodeProtoBufResponse');
-    peer = {
-      broadhash: '123123123',
-      clock: 9999999,
-      height: 123,
-      ip: '127.0.0.1',
-      nonce: '1231234',
-      os: 'unix',
-      port: 5555,
-      state: 2,
-      updated: 123,
-      version: '1.1.1',
-    };
+    const factory = container.get<RequestFactoryType<any, any>>(TXSymbols.p2p.getTransactions)
+    instance = factory({data: null});
+    peer             = createFakePeer();
   });
 
   describe('getResponseData', () => {
-    describe('protoBuf = false', () => {
-      it('should return response body', () => {
-        peer.version = '1.0.0';
-        const body = instance.getResponseData({body: 'theBody', peer});
-        expect(body).to.be.equal('theBody');
+    it('should decode valid response', async () => {
+      const protoBuf = container.get<ProtoBufHelper>(p2pSymbols.helpers.protoBuf);
+      const txLogic = container.get<TransactionLogic>(TXSymbols.logic);
+      const txs = createRandomTransactions(10)
+        .map((t) => txLogic.objectNormalize(t));
+      const byteTxs = txs
+        .map((tx, idx) => txLogic.toProtoBuffer({
+          ...tx,
+          relays: idx
+        }));
+      const buf = protoBuf.encode(
+        { transactions: byteTxs },
+        'transactions.transport',
+        'transportTransactions'
+      );
+      const bit = instance.getResponseData({ body: buf, peer});
+      expect(bit).deep.eq({
+        transactions: txs.map((tx, idx) => ({...tx, relays: idx, asset: null, requesterPublicKey: null}))
       });
     });
-    describe('protoBuf = true', () => {
-      it('should call decodeProtoBufResponse', () => {
-        decodeStub.returns({transactions: []});
-        const res = {body: 'theBody', peer};
-        instance.getResponseData(res);
-        expect(decodeStub.calledOnce).to.be.true;
-        expect(decodeStub.firstCall.args).to.be.deep.equal([res, 'transportTransactions']);
-      });
-
-      it('should return the decoded value', () => {
-        decodeStub.returns({transactions: []});
-        const decoded = instance.getResponseData({body: 'theBody', peer});
-        expect(decoded).to.deep.equal({transactions: []});
-      });
+    it('should handle null buffer', async () => {
+      expect(() => instance.getResponseData({body: null, peer}))
+        .throw;
     });
-  });
-
-  describe('getBaseUrl', () => {
-    describe('protoBuf = false', () => {
-      it('should return the right URL', () => {
-        const url = (instance as any).getBaseUrl(false);
-        expect(url).to.be.equal('/peer/transactions');
-      });
-    });
-    describe('protoBuf = true', () => {
-      it('should return the right URL', () => {
-        const url = (instance as any).getBaseUrl(true);
-        expect(url).to.be.equal('/v2/peer/transactions');
-      });
+    it('should handle invalid buffer', async () => {
+      expect(() => instance.getResponseData({body: new Buffer('meow'), peer}))
+        .throw;
     });
   });
 });

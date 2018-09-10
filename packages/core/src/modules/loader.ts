@@ -587,23 +587,24 @@ export class LoaderModule implements ILoaderModule {
    * Validates each transaction from peer and eventually remove the peer if invalid.
    */
   private async loadTransactions() {
-    const peer = await this.getRandomPeer();
-    this.logger.log(`Loading transactions from: ${peer.string}`);
-    const body = await peer.makeRequest<any>(this.gtFactory({ data: null }));
-
-    if (!this.schema.validate(body, loaderSchema.loadTransactions)) {
-      throw new Error('Cannot validate load transactions schema against peer');
-    }
-
-    const { transactions }: { transactions: Array<ITransportTransaction<any>> } = body;
-
-    const trans = transactions || [];
-    while (trans.length > 0) {
-      try {
-        await this.transportModule.receiveTransactions(trans.splice(0, 25), peer, false);
-      } catch (err) {
-        this.logger.warn(err);
-      }
-    }
+    // TODO: lerna Move me to core-transactions
+    // const peer = await this.getRandomPeer();
+    // this.logger.log(`Loading transactions from: ${peer.string}`);
+    // const body = await peer.makeRequest<any>(this.gtFactory({ data: null }));
+    //
+    // if (!this.schema.validate(body, loaderSchema.loadTransactions)) {
+    //   throw new Error('Cannot validate load transactions schema against peer');
+    // }
+    //
+    // const { transactions }: { transactions: Array<ITransportTransaction<any>> } = body;
+    //
+    // const trans = transactions || [];
+    // while (trans.length > 0) {
+    //   try {
+    //     await this.transportModule.receiveTransactions(trans.splice(0, 25), peer, false);
+    //   } catch (err) {
+    //     this.logger.warn(err);
+    //   }
+    // }
   }
 }

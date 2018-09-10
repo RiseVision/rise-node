@@ -3,9 +3,9 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { AttachPeerHeaders } from '../../src/api/attachPeerHeaders';
-import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
-import { p2pSymbols } from '../../src/helpers';
+import { AttachPeerHeaders } from '../../../src/api/middlewares/';
+import { createContainer } from '../../../../core-launchpad/tests/utils/createContainer';
+import { p2pSymbols } from '../../../src/helpers';
 import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 
 // tslint:disable-next-line no-var-requires

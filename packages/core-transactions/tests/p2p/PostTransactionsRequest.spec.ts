@@ -1,122 +1,97 @@
-import { expect } from 'chai';
 import * as sinon from 'sinon';
+import { expect } from 'chai';
 import { SinonSandbox } from 'sinon';
 import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
-import { PostTransactionsRequest } from '../../src/p2p';
-import { ProtoBufHelperStub } from '@risevision/core-p2p/tests/stubs/protobufhelperStub';
-import { p2pSymbols } from '@risevision/core-p2p';
+import { PostTransactionsRequest, TransactionsModule, TXSymbols } from '../../src';
+import { Container } from 'inversify';
+import { RequestFactoryType } from '@risevision/core-p2p';
+import { ITransactionLogic } from '@risevision/core-interfaces';
+import { createRandomTransactions } from '../utils/txCrafter';
+import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/PostTransactionsRequest', () => {
-  let options;
-  let instance: PostTransactionsRequest;
-  let pbHelperStub: ProtoBufHelperStub;
+  let container: Container;
+  let factory: RequestFactoryType<any, PostTransactionsRequest>;
+  let txLogic: ITransactionLogic;
+  let protoBuf: ProtoBufHelper;
   let sandbox: SinonSandbox;
-
-  beforeEach(async () => {
-    const container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
-    container.rebind(p2pSymbols.helpers.protoBuf).to(ProtoBufHelperStub).inSingletonScope();
-    options = {data: {transactions: [ 'transaction1', 'transaction2' ]}};
+  before(async () => {
     sandbox = sinon.createSandbox();
-    instance = new PostTransactionsRequest();
-    instance.options = options;
-    pbHelperStub = container.get(p2pSymbols.helpers.protoBuf);
-    (instance as any).protoBufHelper = pbHelperStub;
-    (instance as any).txModel = {toTransportTransaction: sandbox.stub().callsFake((a) => a)};
-    (instance as any).generateBytesTransaction = sandbox.stub().callsFake((a) => a);
-    pbHelperStub.stubs.encode.returns('encodedValue');
+    container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
   });
-
-  afterEach(() => {
+  beforeEach(async () => {
+    factory  = container.get<RequestFactoryType<any, PostTransactionsRequest>>(TXSymbols.p2p.postTxRequest);
+    txLogic  = container.get(TXSymbols.logic);
+    protoBuf = container.get(p2pSymbols.helpers.protoBuf);
     sandbox.restore();
   });
 
-  describe('getRequestOptions', () => {
-    describe('protoBuf = false', () => {
-      it('should return request options as json', () => {
-        const reqOpts = instance.getRequestOptions(false);
-        expect(reqOpts).to.deep.equal({
-          data: { transactions: [ 'transaction1', 'transaction2' ] },
-          isProtoBuf: false,
-          method: 'POST',
-          url: '/peer/transactions',
-        });
-      });
-    });
-    describe('protoBuf = true', () => {
-      it('should call protoBufHelper.validate', () => {
-        pbHelperStub.stubs.validate.returns(true);
-        instance.getRequestOptions(true);
-        expect(pbHelperStub.stubs.validate.calledOnce)
-          .to.be.true;
-        expect(pbHelperStub.stubs.validate.firstCall.args)
-          .to.be.deep.equal([options.data, 'transportTransactions']);
-      });
-
-      it('should call protoBufHelper.encode if validate is true', () => {
-        pbHelperStub.stubs.validate.returns(true);
-        instance.getRequestOptions(true);
-        expect(pbHelperStub.stubs.encode.calledOnce)
-          .to.be.true;
-        expect(pbHelperStub.stubs.encode.firstCall.args)
-          .to.be.deep.equal([options.data, 'transportTransactions']);
-      });
-
-      it('should return from protoBufHelper.encode into .data if validate is true', () => {
-        pbHelperStub.stubs.validate.returns(true);
-        const val = instance.getRequestOptions(true);
-        expect(val.data).to.be.equal('encodedValue');
-      });
-
-      it('should throw if validate is false', () => {
-        pbHelperStub.stubs.validate.returns(false);
-        expect(() => { instance.getRequestOptions(true); }).to.throw('Failed to encode ProtoBuf');
-      });
+  describe('request encoding', () => {
+    it('should be readable using protobuf.', async () => {
+      const txs      = createRandomTransactions(1)
+        .map((t) => txLogic.objectNormalize(t));
+      const instance = factory({ data: { transactions: txs } });
+      const opts     = instance.getRequestOptions();
+      const res      = protoBuf.decode(opts.data, 'transactions.transport', 'transportTransactions');
+      expect(res.transactions.map((t) => t.toString('hex'))).deep
+        .eq(txs.map((t) => txLogic.toProtoBuffer(t).toString('hex')));
     });
   });
 
-  describe('getBaseUrl', () => {
-    describe('protoBuf = false', () => {
-      it('should return the right URL', () => {
-        const url = (instance as any).getBaseUrl(false);
-        expect(url).to.be.equal('/peer/transactions');
+  describe('mergeIntoThis', () => {
+    it('should merge other requests into one', () => {
+      const txs       = createRandomTransactions(1)
+        .map((t) => txLogic.objectNormalize(t));
+      const instance  = factory({ data: { transactions: txs } });
+      const instance3 = factory({
+        data: {
+          transactions: createRandomTransactions(5)
+            .map((t) => txLogic.objectNormalize(t)),
+        },
       });
+
+      instance.mergeIntoThis(instance, instance3);
+
+      expect(instance.options.data.transactions.length).eq(1 + 5);
     });
-    describe('protoBuf = true', () => {
-      it('should return the right URL', () => {
-        const url = (instance as any).getBaseUrl(true);
-        expect(url).to.be.equal('/v2/peer/transactions');
+    it('should remove duplicates', () => {
+      const txs       = createRandomTransactions(1)
+        .map((t) => txLogic.objectNormalize(t));
+      const instance  = factory({ data: { transactions: txs } });
+      const instance3 = factory({
+        data: {
+          transactions: createRandomTransactions(5)
+            .map((t) => txLogic.objectNormalize(t)).concat(txs),
+        },
       });
+
+      instance.mergeIntoThis(instance, instance3);
+
+      expect(instance.options.data.transactions.length).eq(1 + 5);
     });
   });
 
-  // TODO: Move this test to APIRequest
-  /*
-  describe('generateBytesTransaction()', () => {
-    beforeEach(() => {
-      transactionLogicStub.stubs.getBytes.returns(Buffer.from('112233', 'hex'));
-    });
+  describe('isRequestExpired', () => {
 
-    it('should call getBytes', () => {
-      (instance as any).generateBytesTransaction('tx');
-      expect(transactionLogicStub.stubs.getBytes.calledOnce).to.be.true;
-      expect(transactionLogicStub.stubs.getBytes.firstCall.args).to.be.deep.equal(['tx']);
-    });
+    it('should return true if all txs are confirmed', async () => {
+      const txs       = createRandomTransactions(10)
+        .map((t) => txLogic.objectNormalize(t));
+      const instance  = factory({ data: { transactions: txs } });
+      const txModule: TransactionsModule = container.get(TXSymbols.module);
+      sandbox.stub(txModule, 'filterConfirmedIds').resolves(txs.map((t) => t.id));
 
-    it('should include all fields', () => {
-      const tx = {
-        fee: 1,
-        requesterPublicKey: 'ABC',
-        signSignature: 'aaa',
-      };
-      const val = (instance as any).generateBytesTransaction(tx);
-      expect(val).to.be.deep.equal({
-        bytes: Buffer.from('112233', 'hex'),
-        fee: 1,
-        hasRequesterPublicKey: true,
-        hasSignSignature: true,
-      });
+      expect(await instance.isRequestExpired()).true;
+    });
+    it('should return false if at least one  of the tx is unconfirmed', async () => {
+      const txs       = createRandomTransactions(10)
+        .map((t) => txLogic.objectNormalize(t));
+      const instance  = factory({ data: { transactions: txs } });
+      const txModule: TransactionsModule = container.get(TXSymbols.module);
+      sandbox.stub(txModule, 'filterConfirmedIds')
+        .resolves(txs.slice(1).map((t) => t.id));
+
+      expect(await instance.isRequestExpired()).false;
     });
   });
-  */
 });
