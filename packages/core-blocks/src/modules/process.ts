@@ -122,9 +122,8 @@ export class BlocksModuleProcess {
   public async getCommonBlock(peer: Peer, height: number): Promise<{ id: string, previousBlock: string, height: number } | void> {
     const { ids }    = await this.blocksUtilsModule.getIdSequence(height);
 
-    const commonResp = await this.commonBlockRequest
-      .makeRequest(
-        peer,
+    const commonResp = await peer.makeRequest(
+      this.commonBlockRequest,
         { query: { ids: ids.join(',') } }
       );
 
@@ -245,8 +244,8 @@ export class BlocksModuleProcess {
     const peer = this.peersLogic.create(rawPeer);
 
     this.logger.info(`Loading blocks from ${peer.string}`);
-    const blocksFromPeer = await this.getBlocksRequest.makeRequest(
-      peer,
+    const blocksFromPeer = await peer.makeRequest(
+      this.getBlocksRequest,
       { query: { lastBlockId: lastValidBlock.id } }
     );
 

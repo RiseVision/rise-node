@@ -10,7 +10,8 @@ import { Container } from 'inversify';
 import { p2pSymbols } from '../src/helpers';
 import { PeerState, PeerType } from '../../core-types/src';
 import { StubbedRequest } from './utils/StubbedRequest';
-import { HeightRequest } from '../src/requests';
+import { PingRequest } from '../src/requests';
+import { createFakePeer } from './utils/fakePeersFactory';
 
 const expect          = chai.expect;
 const ProxyPeerLogic = proxyquire('../src/peer.ts', {ip});
@@ -25,7 +26,7 @@ describe('logic/peer', () => {
   let sandbox: SinonSandbox;
   beforeEach(async () => {
     container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
-    container.rebind(p2pSymbols.logic.peerLogic).to(ProxyPeerLogic.PeerLogic);
+    container.rebind(p2pSymbols.logic.peerLogic).to(ProxyPeerLogic.Peer);
     instance = container.get(p2pSymbols.logic.peerLogic);
     transportModule = container.get(p2pSymbols.modules.transport);
     sandbox = sinon.createSandbox();
@@ -100,18 +101,7 @@ describe('logic/peer', () => {
     let peer: PeerType;
 
     beforeEach(() => {
-      peer = {
-        broadhash: '',
-        clock    : 1,
-        height   : 9999,
-        ip       : '1.2.3.4',
-        nonce    : 'nonce',
-        os       : 'ubuntu',
-        port     : 5555,
-        state    : PeerState.CONNECTED,
-        updated  : 0,
-        version  : '1.0',
-      };
+      peer = createFakePeer();
     });
 
     it('should set instance.string to ip:port string', () => {
@@ -455,12 +445,11 @@ describe('logic/peer', () => {
     let requestHandlerStub: StubbedRequest;
     let reqData;
     const response = { body: 1, peer: 'peer' };
+    let getFromPeerStub: SinonStub;
     beforeEach(() => {
       requestHandlerStub = new StubbedRequest();
-      requestHandlerStub.stubs.makeRequest.resolves(response.body);
       reqData = {data: { transactions: [] }, isProtoBuf: false, method: 'GET', url: '/peer/height'};
-      requestHandlerStub.stubs.getRequestOptions.returns(reqData);
-      requestHandlerStub.stubs.getResponseData.returns(response.body);
+      getFromPeerStub = sandbox.stub(transportModule, 'getFromPeer').resolves(response);
     });
     it('should return a promise', () => {
       const retVal = instance.makeRequest(requestHandlerStub);
@@ -469,25 +458,28 @@ describe('logic/peer', () => {
 
     it('should call reqHandler.makeRequest', async () => {
       const result = await instance.makeRequest(requestHandlerStub);
-      expect(requestHandlerStub.stubs.makeRequest.calledOnce).to.be.true;
-      expect(requestHandlerStub.stubs.makeRequest.firstCall.args[0]).to.be.deep.eq(instance);
-      expect(result).to.be.eq(response.body);
+      expect(requestHandlerStub.stubs.handleResponse.calledOnce).to.be.true;
+      expect(requestHandlerStub.stubs.handleResponse.firstCall.args[0]).to.be.deep
+        .eq(instance);
+      expect(requestHandlerStub.stubs.handleResponse.firstCall.args[1]).to.be.deep
+        .eq(response.body);
     });
   });
 
   describe('pingAndUpdate', () => {
     let getFromPeerStub: SinonStub;
+    let makeRequestStub: SinonStub;
     beforeEach(() => {
       instance.version = '1.0.0';
       getFromPeerStub = sandbox.stub(transportModule, 'getFromPeer').resolves({body: '1'});
+      makeRequestStub = sinon.stub(instance, 'makeRequest');
+      makeRequestStub.resolves('1');
     });
     it('should call makeRequest', () => {
-      const makeRequestStub = sinon.stub(instance, 'makeRequest');
-      makeRequestStub.resolves('1');
       let p;
       p = instance.pingAndUpdate();
       expect(makeRequestStub.calledOnce).to.be.true;
-      expect(makeRequestStub.firstCall.args[0].baseUrl).to.be.eq('/v2/peer/height');
+      expect(makeRequestStub.firstCall.args[0].baseUrl).to.be.eq('/v2/peer/ping');
       expect(p).to.be.fulfilled;
     });
 

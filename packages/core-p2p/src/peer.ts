@@ -1,9 +1,10 @@
 import { BasePeerType, PeerHeaders, PeerState, PeerType } from '@risevision/core-types';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import * as ip from 'ip';
 import { p2pSymbols } from './helpers';
-import { BaseTransportMethod, SingleTransportPayload } from './requests/';
+import { BaseTransportMethod, ITransportMethod, SingleTransportPayload } from './requests/';
 import { PingRequest } from './requests/PingRequest';
+import { TransportModule } from './transport';
 
 const nullable = [
   'os',
@@ -40,6 +41,7 @@ const properties = [
   'updated',
   'nonce',
 ];
+
 @injectable()
 export class Peer implements PeerType {
   public ip: string;
@@ -54,8 +56,12 @@ export class Peer implements PeerType {
   public nonce: string;
   public string: string;
 
-  @inject(p2pSymbols.requests.ping)
+  @inject(p2pSymbols.transportMethod)
+  @named(p2pSymbols.requests.ping)
   private pingRequest: PingRequest;
+
+  @inject(p2pSymbols.modules.transport)
+  private transportModule: TransportModule;
 
   public accept(peer: BasePeerType) {
     // Normalize peer data
@@ -135,13 +141,17 @@ export class Peer implements PeerType {
     return copy;
   }
 
-  public makeRequest<Body, Query, Out>(method: BaseTransportMethod<Body, Query, Out>,
-                                       payload: SingleTransportPayload<Body, Query>): Promise<Out> {
-    return method.makeRequest(this, payload);
+  public async makeRequest<Body, Query, Out>(method: ITransportMethod<Body, Query, Out>,
+                                             payload: SingleTransportPayload<Body, Query> = {}): Promise<Out> {
+    const {body} = await this.transportModule.getFromPeer<Buffer>(
+      this,
+      await method.createRequestOptions(payload)
+    );
+    return method.handleResponse(this, body);
   }
 
   public pingAndUpdate(): Promise<void> {
-    return this.makeRequest(this.pingRequest, null).then(() => null);
+    return this.makeRequest(this.pingRequest);
   }
 
   public get nullable() {

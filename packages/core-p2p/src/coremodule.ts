@@ -102,7 +102,7 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     this.srv  = http.createServer(app);
     this.container.bind(p2pSymbols.constants).toConstantValue(this.constants);
     this.container.bind(p2pSymbols.api.transport).to(TransportAPI).inSingletonScope();
-    this.container.bind(p2pSymbols.controller).to(PeersAPI).inSingletonScope().whenTargetNamed(p2pSymbols.api.peersAPI);
+    // this.container.bind(p2pSymbols.controller).to(PeersAPI).inSingletonScope().whenTargetNamed(p2pSymbols.api.peersAPI);
     this.container.bind(p2pSymbols.express).toConstantValue(app);
     this.container.bind(p2pSymbols.server).toConstantValue(this.srv);
     this.container.bind(ModelSymbols.model)
@@ -110,7 +110,7 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
       .whenTargetNamed(p2pSymbols.model);
 
     this.container.bind(p2pSymbols.logic.broadcaster).to(BroadcasterLogic).inSingletonScope();
-    this.container.bind(p2pSymbols.logic.peerLogic).to(Peer).inSingletonScope();
+    this.container.bind(p2pSymbols.logic.peerLogic).to(Peer);
     this.container.bind(p2pSymbols.logic.peersLogic).to(PeersLogic).inSingletonScope();
     this.container.bind(p2pSymbols.logic.peerFactory).toFactory((ctx) => {
       return (peer: BasePeerType) => {

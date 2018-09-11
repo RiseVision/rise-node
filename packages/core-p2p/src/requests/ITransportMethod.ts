@@ -1,20 +1,14 @@
 import { Peer } from '../peer';
+import { PeerRequestOptions } from '@risevision/core-types';
 export type SingleTransportPayload<Body, Query> = { body?: Body, query?: Query, requester?: Peer } | null;
 
 export type WrappedTransportMessage = { error: true, message: string } |
   { error: false, wrappedResponse: Buffer };
 
-
 export interface ITransportMethod<Data, Query, Out> {
   batchable: boolean;
   method: 'GET' | 'POST';
   baseUrl: string;
-  /**
-   * Performs request to a specific peer.
-   * @param peer the peer to query
-   * @param req payload & query
-   */
-  makeRequest(peer: Peer, req: SingleTransportPayload<Data, Query>): Promise<Out>;
 
   /**
    * For batchable requests this method could be called to batch different requests together.
@@ -33,9 +27,23 @@ export interface ITransportMethod<Data, Query, Out> {
    * @param query query object.
    * NOTE: all errors should be handled here.
    */
-  requestHandler(buf: Buffer, query: Query | null): Promise<Buffer>;
+  handleRequest(buf: Buffer, query: Query | null): Promise<Buffer>;
+
+  /**
+   * handles response
+   * @param peer the peer to query
+   * @param body the buffer containing the response
+   */
+  handleResponse(peer: Peer, body: Buffer): Promise<Out>;
+
+  /**
+   * Creates request options
+   * @param req
+   */
+  createRequestOptions(req?: SingleTransportPayload<Data, Query>): Promise<PeerRequestOptions<Buffer>>;
 
   wrapResponse(r: WrappedTransportMessage): Promise<Buffer>;
 
   unwrapResponse(b: Buffer): Promise<WrappedTransportMessage>;
+
 }

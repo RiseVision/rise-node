@@ -14,6 +14,13 @@ export const createFakePeer = (item: any = {}): PeerType => {
     clock    : item.clock || 1,
     updated  : item.updated || 1,
     nonce    : item.nonce || v4(),
+    get string() {
+      return `${this.ip}:${this.port}`;
+    },
+    applyHeaders() {
+      console.log('stubme?');
+      return null;
+    },
   };
 };
 

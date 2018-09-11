@@ -3,16 +3,15 @@ import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { BaseTransportMethod } from '../../src/requests';
-import { IAPIRequest, Symbols } from '@risevision/core-interfaces';
 import { ProtoBufHelperStub } from '../stubs/protobufhelperStub';
 import { PeerType } from '@risevision/core-types';
 import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
-import { RequestFactoryType } from '../../src/utils';
 import { p2pSymbols } from '../../src/helpers';
+import { createFakePeer } from '../utils/fakePeersFactory';
 
-class TestRequest extends BaseTransportMethod<any, any> implements IAPIRequest<any, any> {
-  readonly method = 'POST';
-  readonly baseUrl = '/test/';
+class TestRequest extends BaseTransportMethod<any, any, any> {
+  public readonly method = 'POST';
+  public readonly baseUrl = '/test/';
 }
 
 const factory = (what: (new () => any)) => (ctx) => (options) => {
@@ -33,115 +32,18 @@ describe('apis/requests/BaseTransportMethod', () => {
   beforeEach(async () => {
     sandbox   = sinon.createSandbox();
     container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
-    container.bind(testSymbol).toFactory(factory(TestRequest));
+    container.bind(p2pSymbols.transportMethod).to(TestRequest).inSingletonScope().whenTargetNamed(testSymbol);
     container.rebind(p2pSymbols.helpers.protoBuf).to(ProtoBufHelperStub).inSingletonScope();
     protoBufStub = container.get(p2pSymbols.helpers.protoBuf);
-    peer = {
-      broadhash: '123123123',
-      clock: 9999999,
-      height: 123,
-      ip: '127.0.0.1',
-      nonce: '1231234',
-      os: 'unix',
-      port: 5555,
-      state: 2,
-      updated: 123,
-      version: '1.1.1',
-    };
-    const instanceFactory = container.get<RequestFactoryType<any, TestRequest>>(testSymbol);
-    instance = instanceFactory({data: null});
+    peer = createFakePeer();
+    instance = container.getNamed(p2pSymbols.transportMethod, testSymbol);
   });
 
   afterEach(() => {
     sandbox.restore();
   });
 
-  describe('getRequestOptions', () => {
-
-    it('should add manipulated data if available in original options', () => {
-      const origOptions = {data: {tx: {a: 1}}};
-      const inst2 = new TestRequest();
-      inst2.options = origOptions;
-      const encodeStub = sandbox.stub(inst2 as any, 'encodeRequestData');
-      encodeStub.returns({woof: 'meow'})
-      const reqOptions = inst2.getRequestOptions();
-      expect(reqOptions.data).to.not.be.undefined;
-      expect(reqOptions.data).to.be.deep.equal({woof: 'meow'});
-    });
-
-    it('should return the expected object', () => {
-      const origOptions = {data: {tx: {a: 1}}};
-      const inst2 = new TestRequest();
-      inst2.options = origOptions;
-      const reqOptions = inst2.getRequestOptions();
-      expect(reqOptions).to.be.deep.equal({
-        data: null,
-        method: 'POST',
-        url: '/test/',
-      });
-    });
-
-    it ('should append querystring if present', () => {
-      const origOptions = {query: { cat: 'meows', dog: 'woofs'}};
-      const inst2 = new TestRequest();
-      inst2.options = origOptions as any;
-      const reqOptions = inst2.getRequestOptions();
-      expect(reqOptions).to.be.deep.equal({
-        method: 'POST',
-        url: '/test/?cat=meows&dog=woofs',
-      });
-    });
-  });
-
-  describe('getResponseData', () => {
-    let decodeProtoBufResponseStub: SinonStub;
-    let res;
-
-    beforeEach(() => {
-      decodeProtoBufResponseStub = sandbox.stub(instance as any, 'unwrapResponse');
-      res =  {body: new Buffer('meow', 'utf8'), peer: {version: '1.1.1'}};
-    });
-
-    it('should call isProtoBuf', () => {
-      instance.getResponseData(res);
-    });
-
-    it('should call unwrapResponse if isProtoBuf returns true', () => {
-      const val = {success: true};
-      decodeProtoBufResponseStub.returns(val);
-      const ret = instance.getResponseData(res);
-      expect(decodeProtoBufResponseStub.calledOnce).to.be.true;
-      expect(decodeProtoBufResponseStub.firstCall.args.length).to.be.equal(1);
-      expect(decodeProtoBufResponseStub.firstCall.args[0]).to.be.deep.equal(new Buffer('meow', 'utf8'));
-      expect(ret).to.be.deep.equal(val);
-    });
-    // TODO: Check decodeProtoBufValidResponse called.
-  });
-
-  describe('getOrigOptions', () => {
-    it('should return the original options', () => {
-      const opt = {data: 'data'};
-      const instance2 = new TestRequest();
-      instance2.options = opt;
-      expect(instance2.getOrigOptions()).to.be.deep.equal(opt);
-    });
-  });
-
-  describe('getQueryString', () => {
-    it('should return empty string if options.query is undefined', () => {
-      const opt = {data: 'data'};
-      const instance2 = new TestRequest();
-      instance2.options = opt;
-      expect((instance2 as any).getQueryString()).to.be.equal('');
-    });
-
-    it('should return query string with question mark if options.query is passed', () => {
-      const opt = {data: 'data', query: {a: 'a', b: 'b'}};
-      const instance2 = new TestRequest();
-      instance2.options = opt;
-      expect((instance2 as any).getQueryString()).to.be.equal('?a=a&b=b');
-    });
-  });
+  // TODO: Create tests.
 
   describe('unwrapResponse', () => {
 

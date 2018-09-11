@@ -1,57 +1,49 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
-import { SinonStub } from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import { PeersListRequest } from '../../src/requests';
 import { Container } from 'inversify';
 import { createContainer } from '@risevision/core-launchpad/tests/utils/createContainer';
 import { p2pSymbols, ProtoBufHelper } from '../../src/helpers';
-import { RequestFactoryType } from '../../src/utils';
+import { createFakePeer, createFakePeers } from '../utils/fakePeersFactory';
+import { PeerType } from '@risevision/core-types';
+import { PeersModule } from '../../src';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/PeersListRequest', () => {
   let instance: PeersListRequest;
   // let decodeStub: SinonStub;
-  let peer: any;
+  let peers: PeerType[];
   let container: Container;
-  let peerRequestFactory: RequestFactoryType<any, PeersListRequest>;
-  let protobufHelper: ProtoBufHelper;
+  let peerRequestFactory: PeersListRequest;
+  let sandbox: SinonSandbox;
   before(async () => {
     container          = await createContainer();
-    peerRequestFactory = container.get(p2pSymbols.requests.peersList);
+    sandbox            = sinon.createSandbox();
+    peerRequestFactory = container.getNamed(p2pSymbols.transportMethod, p2pSymbols.requests.peersList);
   });
   beforeEach(() => {
-    protobufHelper = container.get<ProtoBufHelper>(p2pSymbols.helpers.protoBuf);
-    peer           = {
-      broadhash: '123123123',
-      clock    : 9999999,
-      height   : 123,
-      ip       : '127.0.0.1',
-      nonce    : '1231234',
-      os       : 'unix',
-      port     : 5555,
-      state    : 2,
-      updated  : 123,
-      version  : '1.1.1',
-    };
-    const buf      = protobufHelper.encode(peer, 'peer');
-    const decoded  = protobufHelper.decodeToObj(buf, 'peer', 'peer', {
-      longs: Number,
-    });
-    expect(decoded).deep.eq(peer);
-    instance = peerRequestFactory({ data: null });
+    peers = createFakePeers(10);
   });
+  afterEach(() => sandbox.restore());
 
-  describe('getResponseData', () => {
-    it('should decode properly', () => {
-      const buf = protobufHelper.encode({
-        peers: [
-          peer, peer, peer,
-        ],
-      }, 'p2p.peers', 'transportPeers');
-      const resp = instance.getResponseData({body: buf, peer});
-      expect(resp).deep.eq({
-        peers: [ peer, peer, peer]
+  describe('round trip', () => {
+    it('bau', async () => {
+      const peersModule = container.get<PeersModule>(p2pSymbols.modules.peers);
+      const stub        = sandbox.stub(peersModule, 'list').resolves({ peers });
+      const buf         = await peerRequestFactory.handleRequest(null, null);
+      expect(buf.length).gte(10);
+
+      // try decoding
+      const response = await peerRequestFactory.handleResponse(peers[0] as any, buf);
+      expect(response).deep.eq({
+        peers: peers.map((p) => {
+          delete p.applyHeaders;
+          delete (p as any).string;
+          return p;
+        }),
       });
+
     });
   });
 

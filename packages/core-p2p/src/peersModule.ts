@@ -10,6 +10,7 @@ import { p2pSymbols } from './helpers';
 import { OnPeersReady } from './hooks/actions';
 import { Peer } from './peer';
 import { PeersLogic } from './peersLogic';
+import { PingRequest } from './requests';
 
 @injectable()
 export class PeersModule  {
@@ -37,6 +38,10 @@ export class PeersModule  {
   @inject(ModelSymbols.model)
   @named(p2pSymbols.model)
   private PeersModel: typeof IPeersModel;
+
+  @inject(p2pSymbols.transportMethod)
+  @named(p2pSymbols.requests.ping)
+  private pingRequest: PingRequest;
 
   public cleanup() {
     // save on cleanup.
@@ -200,7 +205,7 @@ export class PeersModule  {
         .filter((peer) => !this.peersLogic.exists(peer))
         .map(async (peer) => {
           try {
-            await peer.pingAndUpdate();
+            await peer.makeRequest(this.pingRequest);
             updated++;
           } catch (e) {
             this.logger.info(`Peer ${peer.string} seems to be unresponsive.`, e.message);
@@ -221,7 +226,7 @@ export class PeersModule  {
       this.logger.trace(`Processing seed peer ${peer.string}`);
       // Sets the peer as connected. Seed can be offline but it will be removed later.
       try {
-        await peer.pingAndUpdate();
+        await peer.makeRequest(this.pingRequest)
         updated++;
       } catch (e) {
         // seed peer is down?

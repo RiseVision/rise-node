@@ -30,7 +30,7 @@ import { p2pSymbols } from './helpers';
 import { OnPeersReady } from './hooks/actions';
 import { PeersLogic } from './peersLogic';
 import { PeersModule } from './peersModule';
-import { ITransportMethod, PeersListResponse, SingleTransportPayload } from './requests/';
+import { ITransportMethod, PeersListResponse, PingRequest, SingleTransportPayload } from './requests/';
 
 // tslint:disable-next-line
 const peersSchema     = require('../schema/peers.json');
@@ -70,8 +70,6 @@ export class TransportModule extends Extendable {
   // Logic
   @inject(Symbols.logic.appState)
   private appState: IAppState;
-  @inject(Symbols.logic.broadcaster)
-  private broadcasterLogic: BroadcasterLogic;
   @inject(Symbols.logic.peers)
   private peersLogic: PeersLogic;
 
@@ -91,8 +89,13 @@ export class TransportModule extends Extendable {
   @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
-  @inject(p2pSymbols.requests.peersList)
+  @inject(p2pSymbols.transportMethod)
+  @named(p2pSymbols.requests.peersList)
   private peersListMethod: ITransportMethod<any, any, any>;
+
+  @inject(p2pSymbols.transportMethod)
+  @named(p2pSymbols.requests.ping)
+  private pingRequest: ITransportMethod<any, any, any>;
 
   private loaded: boolean = false;
 
@@ -183,7 +186,7 @@ export class TransportModule extends Extendable {
     if (peers.length === 0) {
       throw new Error('No peer available');
     }
-    return transportMethod.makeRequest(peers[0], payload);
+    return peers[0].makeRequest(transportMethod, payload);
   }
 
   public cleanup() {
@@ -214,7 +217,7 @@ export class TransportModule extends Extendable {
         if (p && p.state !== PeerState.BANNED && (!p.updated || Date.now() - p.updated > 3000)) {
           this.logger.trace('Updating peer', p.string);
           try {
-            await p.pingAndUpdate();
+            await p.makeRequest(this.pingRequest)
           } catch (err) {
             this.logger.debug(`Ping failed when updating peer ${p.string}`, err);
           }
@@ -222,27 +225,6 @@ export class TransportModule extends Extendable {
       }), { maxInProgress: 50 });
       this.logger.trace('Updated Peers');
     }, 5000);
-  }
-
-  /**
-   * Calls enqueue signatures and emits a signature change socket message
-   * TODO: Move me to consensus-dpos.
-   */
-  public onSignature(signature: { transaction: string, signature: string, relays?: number }, broadcast: boolean) {
-    // signature.relays = signature.relays || 1;
-    // if (broadcast && signature.relays < this.broadcasterLogic.maxRelays()) {
-    //   const requestHandler = this.psrFactory({
-    //     data: {
-    //       signatures: [{
-    //         relays     : Number.isInteger(signature.relays) ? signature.relays : 1,
-    //         signature  : Buffer.from(signature.signature, 'hex'),
-    //         transaction: signature.transaction,
-    //       }],
-    //     },
-    //   });
-    //   this.broadcasterLogic.enqueue({}, { requestHandler });
-    //   this.io.sockets.emit('signature/change', signature);
-    // }
   }
 
   /**

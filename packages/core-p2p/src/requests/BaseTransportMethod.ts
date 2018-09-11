@@ -4,8 +4,8 @@ import * as querystring from 'querystring';
 import * as z_schema from 'z-schema';
 import { p2pSymbols, ProtoBufHelper } from '../helpers';
 import { Peer } from '../peer';
-import { TransportModule } from '../transport';
 import { ITransportMethod, SingleTransportPayload, WrappedTransportMessage } from './ITransportMethod';
+import { PeerRequestOptions } from '@risevision/core-types';
 
 @injectable()
 export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<Data, Query, Out> {
@@ -22,31 +22,37 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
   @inject(p2pSymbols.helpers.protoBuf)
   public protoBufHelper: ProtoBufHelper;
 
-  @inject(Symbols.modules.transport)
-  public transportModule: TransportModule;
-
-  /**
-   * Performs request to a specific peer.
-   * @param peer the peer to query
-   * @param req payload & query
-   */
-  public async makeRequest(peer: Peer, req: SingleTransportPayload<Data, Query> = {}): Promise<Out> {
-    const queryString = req.query !==
-    null ? `?${querystring.stringify(req.query)}` : '';
-    const { body } = await this.transportModule.getFromPeer<Buffer>(peer, {
+  public async createRequestOptions(req: SingleTransportPayload<Data, Query> = {}): Promise<PeerRequestOptions<Buffer>> {
+    const queryString = req.query !== null ? `?${querystring.stringify(req.query)}` : '';
+    return {
       data  : await this.encodeRequest(req.body),
       method: this.method,
       url   : `${this.baseUrl}${queryString}`,
-    });
+    };
+  }
 
-    const unwrappedResponse = await this.unwrapResponse(body);
-    if (unwrappedResponse.error) {
-      throw new Error(unwrappedResponse.message);
-    }
-
-    const decodedResponse = await this.decodeResponse((unwrappedResponse as any).wrappedResponse);
+  /**
+   * handles response
+   * @param peer the peer to query
+   * @param body the buffer containing the response
+   */
+  public async handleResponse(peer: Peer, body: Buffer): Promise<Out> {
+    const decodedResponse = await this.decodeResponse(body);
     await this.assertValidResponse(decodedResponse);
     return decodedResponse;
+  }
+
+  /**
+   * The handler of the request. It's being called upon a request.
+   * @param buf the input buffer containing the request payload.
+   * @param query query object.
+   * NOTE: all errors should be handled here.
+   */
+  public async handleRequest(buf: Buffer, query: Query | null): Promise<Buffer> {
+    const body     = await this.decodeRequest(buf);
+    await this.assertValidRequest(body);
+    const response = await this.produceResponse({ body, query });
+    return this.encodeResponse(response);
   }
 
   /**
@@ -62,19 +68,6 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
    */
   public isRequestExpired(req: SingleTransportPayload<Data, Query>) {
     return Promise.resolve(false);
-  }
-
-  /**
-   * The handler of the request. It's being called upon a request.
-   * @param buf the input buffer containing the request payload.
-   * @param query query object.
-   * NOTE: all errors should be handled here.
-   */
-  public async requestHandler(buf: Buffer, query: Query | null): Promise<Buffer> {
-    const body     = await this.decodeRequest(buf);
-    await this.assertValidRequest(body);
-    const response = await this.produceResponse({ body, query });
-    return this.encodeResponse(response);
   }
 
   public async wrapResponse(r: WrappedTransportMessage): Promise<Buffer> {

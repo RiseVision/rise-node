@@ -53,9 +53,9 @@ export class TransactionsModule extends ExtendableClass implements ITransactions
   @named(Symbols.models.transactions)
   private TXModel: typeof ITransactionsModel;
 
-  @inject(p2pSymbols.transportMethod)
-  @named(TXSymbols.p2p.postTxRequest)
-  private postTransactionMethod: PostTransactionsRequest;
+  // @inject(p2pSymbols.transportMethod)
+  // @named(TXSymbols.p2p.postTxRequest)
+  // private postTransactionMethod: PostTransactionsRequest;
 
   @inject(Symbols.generic.hookSystem)
   public hookSystem: WordPressHookSystem;
@@ -294,16 +294,15 @@ export class TransactionsModule extends ExtendableClass implements ITransactions
 
   @OnNewUnconfirmedTransation()
   private async onUnconfirmedTransaction(tx: IBaseTransaction<any> & {relays: number}, broadcast: boolean) {
-    if (!broadcast) {
-      return;
-    }
-    this.broadcasterLogic.maybeEnqueue(
-      {
-        body: { transactions: [tx] },
-      },
-      this.postTransactionMethod
-    );
-
+    // if (!broadcast) {
+    //   return;
+    // }
+    // this.broadcasterLogic.maybeEnqueue(
+    //   {
+    //     body: { transactions: [tx] },
+    //   },
+    //   this.postTransactionMethod
+    // );
   }
 
 }

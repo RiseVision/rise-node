@@ -31,7 +31,7 @@ describe('apis/utils/attachPeerHeaders', () => {
     responseSpy = sandbox.spy(response, 'set');
     request = {};
     next = sandbox.spy();
-    instance = container.get(p2pSymbols.api.attachPeerHeaders);
+    instance = container.getNamed(p2pSymbols.transportMiddleware, p2pSymbols.transportMiddlewares.attachPeerHeaders);
   });
 
   afterEach(() => {

@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { BroadcasterLogic } from '../src/broadcaster';
+import { BroadcasterLogic, BroadcastTaskOptions } from '../src/broadcaster';
 import { IJobsQueue } from '../../core-interfaces/src/helpers';
 import { PeersLogic } from '../src/peersLogic';
 import { TransactionLogic, TransactionsModule } from '../../core-transactions/src';
@@ -11,7 +11,6 @@ import { createContainer } from '../../core-launchpad/tests/utils/createContaine
 import { Symbols } from '../../core-interfaces/src';
 import { P2PConstantsType, p2pSymbols } from '../src/helpers';
 import { ConstantsType } from '../../core-types/src';
-import { BroadcastTaskOptions } from '../../core-interfaces/src/logic';
 import { LoggerStub } from '../../core-utils/tests/stubs';
 import {
   createRandomTransaction,
@@ -157,13 +156,13 @@ describe('logic/broadcaster', () => {
 
   describe('enqueue', () => {
     let params: any;
-    let options: BroadcastTaskOptions;
+    let options: BroadcastTaskOptions<any, any, any>;
     // tslint:disable-next-line
 
     beforeEach(() => {
       params  = {};
       options = {
-        requestHandler: new StubbedRequest(),
+        method: new StubbedRequest(),
       };
     });
 
@@ -196,7 +195,7 @@ describe('logic/broadcaster', () => {
   });
 
   describe('broadcast', () => {
-    let params: any;
+    let filters: any;
     let options: any;
     let peers: any[];
     let createdPeers: any[];
@@ -205,7 +204,7 @@ describe('logic/broadcaster', () => {
     let createPeerStub: SinonStub;
 
     beforeEach(() => {
-      params       = {
+      filters       = {
         broadhash: 'broadhash',
         limit    : 100,
         peers    : null,
@@ -226,15 +225,15 @@ describe('logic/broadcaster', () => {
     });
 
     it('should call getPeers', async () => {
-      await instance.broadcast(params, options);
+      await instance.broadcast({filters, options});
       expect(getPeersStub.calledOnce).to.be.true;
       expect(getPeersStub.firstCall.args.length).to.be.equal(1);
-      expect(getPeersStub.firstCall.args[0]).to.be.equal(params);
+      expect(getPeersStub.firstCall.args[0]).to.be.equal(filters);
     });
 
     it('should not call getPeers if peers passed', async () => {
-      params.peers = peers;
-      await instance.broadcast(params, options);
+      filters.peers = peers;
+      await instance.broadcast({filters, options});
       expect(getPeersStub.called).to.be.false;
     });
 
@@ -244,7 +243,7 @@ describe('logic/broadcaster', () => {
         p.makeRequest.rejects(error);
       });
 
-      await instance.broadcast(params, options);
+      await instance.broadcast({filters, options});
 
       expect(loggerStub.stubs.debug.callCount).to.be.equal(peers.length + 2);
       expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
@@ -261,7 +260,7 @@ describe('logic/broadcaster', () => {
     });
 
     it('should call peersLogic.create for each peer', async () => {
-      await instance.broadcast(params, options);
+      await instance.broadcast({filters, options});
       expect(createPeerStub.callCount).to.be.equal(peers.length);
       peers.forEach((peer, index) => {
         expect(createPeerStub.getCall(index).args.length).to.be.equal(1);
@@ -285,7 +284,7 @@ describe('logic/broadcaster', () => {
         return peer;
       });
 
-      await instance.broadcast(params, options);
+      await instance.broadcast({filters, options});
       expect(makeRequestCallCount).to.be.equal(peers.length);
       peers.forEach((peer, index) => {
         expect(stubs[index].makeRequest.args.length).to.be.equal(1);
@@ -294,7 +293,7 @@ describe('logic/broadcaster', () => {
     });
 
     it('should return the right value', async () => {
-      const result = await instance.broadcast(params, options);
+      const result = await instance.broadcast({filters, options});
 
       expect(result).to.be.deep.equal({
         peer: peers,
@@ -406,8 +405,8 @@ describe('logic/broadcaster', () => {
       }];
     });
 
-    it('should call mergeintothis and', () => {
-      pt0.stubs.mergeIntoThis.callsFake((...stuff) => {
+    it('should call mergeRequests and', () => {
+      pt0.stubs.mergeRequests.callsFake((...stuff) => {
         pt0.options.data = {
           transactions: [
             pt0.options.data.transaction,
@@ -434,7 +433,7 @@ describe('logic/broadcaster', () => {
       const results   = (instance as any).squashQueue(broadcasts);
       expect(results[0].options.immediate).to.be.deep.eq(retObj.immediate);
       expect(results[0].options.requestHandler.options).to.be.deep.eq(retObj.requestHandler.options);
-      expect(pt0.stubs.mergeIntoThis.calledOnce).true;
+      expect(pt0.stubs.mergeRequests.calledOnce).true;
     });
   });
 

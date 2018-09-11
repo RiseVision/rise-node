@@ -4,8 +4,8 @@ import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { ValidatePeerHeaders } from '../../../src/api/middlewares/';
-import { p2pSymbols, PeersLogic } from '../../../src';
-import { IPeersModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { p2pSymbols, PeersLogic, PeersModule } from '../../../src';
+import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '../../../../core-launchpad/tests/utils/createContainer';
 import { createFakePeer } from '../../utils/fakePeersFactory';
 
@@ -28,7 +28,7 @@ describe('apis/utils/validatePeerHeaders', () => {
   let systemModuleStub: ISystemModule;
   let fakePeer: any;
   let schemaStub: any;
-  let peersModuleStub: IPeersModule;
+  let peersModuleStub: PeersModule;
   let lastErrorStub: SinonStub;
   let getLastErrorsStub: SinonStub;
   let validateStub: SinonStub;
@@ -47,7 +47,7 @@ describe('apis/utils/validatePeerHeaders', () => {
     container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
     container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
     // Instance
-    instance = container.get(p2pSymbols.api.validatePeerHeadersMiddleware);
+    instance = container.getNamed(p2pSymbols.transportMiddleware, p2pSymbols.transportMiddlewares.validatePeer);
 
     // systemModuleStub
     systemModuleStub = container.get(Symbols.modules.system);

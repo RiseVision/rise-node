@@ -4,12 +4,12 @@ import { Application, NextFunction, Request, RequestHandler, Response } from 'ex
 import { inject, injectable, multiInject, postConstruct } from 'inversify';
 import { ExpressMiddlewareInterface } from 'routing-controllers';
 import { p2pSymbols, ProtoBufHelper } from '../helpers';
-import { BaseTransportMethod } from '../requests/BaseTransportMethod';
+import { ITransportMethod } from '../requests';
 
 @injectable()
 export class TransportAPI {
   @multiInject(p2pSymbols.transportMethod)
-  private transportMethods: Array<BaseTransportMethod<any, any, any>>;
+  private transportMethods: Array<ITransportMethod<any, any, any>>;
 
   @inject(p2pSymbols.express)
   private express: Application;
@@ -38,7 +38,7 @@ export class TransportAPI {
         // Real work.
         async (req: Request, res: Response, next: NextFunction) => {
           res.set('content-type', 'application/octet-stream');
-          const resp = await tm.requestHandler(req.body, req.query);
+          const resp = await tm.handleRequest(req.body, req.query);
           return tm.wrapResponse({error: false, wrappedResponse: resp});
         },
 
@@ -56,7 +56,7 @@ export class TransportAPI {
     this.express.use(router);
   }
 
-  private handleError(tm: BaseTransportMethod<any, any, any>) {
+  private handleError(tm: ITransportMethod<any, any, any>) {
     return (err: any, req: Request, res: Response, next: NextFunction) => {
       let message = err;
       if (message instanceof Error) {
