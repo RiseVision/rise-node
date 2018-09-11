@@ -3,8 +3,7 @@ import {
   IBlocksModule,
   ITimeToEpoch, ITransactionLogic,
   ITransactionsModel,
-  ITransactionsModule,
-  ITransportModule, Symbols
+  ITransactionsModule, Symbols
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { IBaseTransaction, ITransportTransaction } from '@risevision/core-types';
@@ -45,8 +44,6 @@ export class TransactionsAPI {
   private blocksModule: IBlocksModule;
   @inject(TXSymbols.module)
   private transactionsModule: ITransactionsModule;
-  @inject(Symbols.modules.transport)
-  private transportModule: ITransportModule;
 
   @inject(ModelSymbols.model)
   @named(TXSymbols.model)

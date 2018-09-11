@@ -1,14 +1,15 @@
+import { BlocksModuleProcess, BlocksSymbols } from '@risevision/core-blocks';
 import {
   IAccountsModule,
   IAppState,
   IBlocksModule,
-  IBlocksModuleProcess,
-  IBroadcasterLogic, ICrypto,
+  ICrypto,
   IJobsQueue,
   ILogger,
   IModule, ISequence,
   ITransactionsModule, Symbols
 } from '@risevision/core-interfaces';
+import { BroadcasterLogic } from '@risevision/core-p2p';
 import { ConstantsType, IKeypair, publicKey } from '@risevision/core-types';
 import { catchToLoggerAndRemapError, WrapInDefaultSequence } from '@risevision/core-utils';
 import * as crypto from 'crypto';
@@ -16,7 +17,6 @@ import { inject, injectable, named } from 'inversify';
 import { DposAppConfig, dPoSSymbols, Slots } from '../helpers/';
 import { AccountsModelForDPOS } from '../models';
 import { DelegatesModule } from './delegates';
-import { BlocksSymbols, BlocksModuleProcess } from '@risevision/core-blocks';
 
 @injectable()
 export class ForgeModule implements IModule {
@@ -47,7 +47,7 @@ export class ForgeModule implements IModule {
   @inject(Symbols.logic.appState)
   private appState: IAppState;
   @inject(Symbols.logic.broadcaster)
-  private broadcasterLogic: IBroadcasterLogic;
+  private broadcasterLogic: BroadcasterLogic;
 
   // modules
   @inject(Symbols.modules.accounts)

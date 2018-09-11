@@ -11,8 +11,8 @@ import { RequestFactoryType } from '../../src/utils';
 import { p2pSymbols } from '../../src/helpers';
 
 class TestRequest extends BaseTransportMethod<any, any> implements IAPIRequest<any, any> {
-  protected readonly method = 'POST';
-  protected readonly baseUrl = '/test/';
+  readonly method = 'POST';
+  readonly baseUrl = '/test/';
 }
 
 const factory = (what: (new () => any)) => (ctx) => (options) => {

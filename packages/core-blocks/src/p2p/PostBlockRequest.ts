@@ -1,31 +1,49 @@
 import { IBlockLogic, Symbols } from '@risevision/core-interfaces';
-import { BaseRequest, RequestFactoryType } from '@risevision/core-p2p';
+import { BaseProtobufTransportMethod, ProtoIdentifier, SingleTransportPayload } from '@risevision/core-p2p';
 import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
+import { WordPressHookSystem } from 'mangiafuoco';
+import { OnReceiveBlock } from '../hooks';
 
 // tslint:disable-next-line
 export type PostBlockRequestDataType = { block: SignedAndChainedBlockType };
 
 @injectable()
-export class PostBlockRequest extends BaseRequest<{ blockId: string }, PostBlockRequestDataType> {
-  protected readonly method: 'POST'   = 'POST';
-  protected readonly supportsProtoBuf = true;
-  protected readonly baseUrl          = '/v2/peer/blocks';
+export class PostBlockRequest extends BaseProtobufTransportMethod<PostBlockRequestDataType, null, null> {
+  public readonly method: 'POST' = 'POST';
+  public readonly baseUrl        = '/v2/peer/blocks';
+
+  protected readonly protoRequest: ProtoIdentifier<any> = {
+    messageType: 'blocks.transport',
+    namespace  : 'transportBlock',
+  };
 
   @inject(Symbols.logic.block)
   private blockLogic: IBlockLogic;
 
-  protected encodeRequestData(data: PostBlockRequestDataType): Buffer {
-    return this.protoBufHelper.encode(
-      {
-        block: this.blockLogic.toProtoBuffer(data.block),
-      },
-      'blocks.transport',
-      'transportBlock'
-    );
+  @inject(Symbols.generic.hookSystem)
+  private hookSystem: WordPressHookSystem;
+
+  protected async encodeRequest(data: PostBlockRequestDataType): Promise<Buffer> {
+    return super.encodeRequest({
+      block: this.blockLogic.toProtoBuffer(data.block) as any,
+    });
   }
 
-  protected decodeProtoBufValidResponse(res: Buffer) {
-    return this.protoBufHelper.decode(res, 'blocks.transport', 'transportBlockResponse');
+  protected async decodeRequest(buf: Buffer): Promise<PostBlockRequestDataType> {
+    const data: any = await super.decodeResponse(buf);
+    return {
+      block: this.blockLogic.objectNormalize(
+        this.blockLogic.fromProtoBuffer(data.block)
+      ),
+    };
+  }
+
+  protected async produceResponse(req: SingleTransportPayload<PostBlockRequestDataType, null>): Promise<null> {
+    const normalizedBlock = this.blockLogic
+      .objectNormalize(req.body.block);
+
+    await this.hookSystem.do_action(OnReceiveBlock.name, normalizedBlock);
+    return null;
   }
 }

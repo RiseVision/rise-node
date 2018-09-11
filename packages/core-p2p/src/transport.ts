@@ -30,7 +30,7 @@ import { p2pSymbols } from './helpers';
 import { OnPeersReady } from './hooks/actions';
 import { PeersLogic } from './peersLogic';
 import { PeersModule } from './peersModule';
-import { BaseTransportMethod, PeersListRequest, PeersListResponse, SingleTransportPayload } from './requests/';
+import { ITransportMethod, PeersListResponse, SingleTransportPayload } from './requests/';
 
 // tslint:disable-next-line
 const peersSchema     = require('../schema/peers.json');
@@ -92,7 +92,7 @@ export class TransportModule extends Extendable {
   private TransactionsModel: typeof ITransactionsModel;
 
   @inject(p2pSymbols.requests.peersList)
-  private peersListMethod: PeersListRequest;
+  private peersListMethod: ITransportMethod<any, any, any>;
 
   private loaded: boolean = false;
 
@@ -174,7 +174,7 @@ export class TransportModule extends Extendable {
 
   // tslint:disable-next-line max-line-length
   public async getFromRandomPeer<Body, Query, Out>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] },
-                                                   transportMethod: BaseTransportMethod<Body, Query, Out>,
+                                                   transportMethod: ITransportMethod<Body, Query, Out>,
                                                    payload: SingleTransportPayload<Body, Query>
   ): Promise<Out> {
     config.limit         = 1;
@@ -276,17 +276,6 @@ export class TransportModule extends Extendable {
   //   }
   // }
   //
-  // TODO:
-  // tslint:disable-next-line
-  // public async receiveSignatures(signatures: Array<{ transaction: string, signature: string }>): Promise<void> {
-  //   for (const signature of signatures) {
-  //     try {
-  //       await this.receiveSignature(signature);
-  //     } catch (err) {
-  //       this.logger.debug(err, signature);
-  //     }
-  //   }
-  // }
 
 // TODO
 // /**

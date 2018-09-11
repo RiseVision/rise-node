@@ -11,27 +11,18 @@ import {
   IAppState,
   IBlocksModel,
   IBlocksModule,
-  IBroadcasterLogic,
   IJobsQueue,
   ILoaderModule,
   ILogger,
-  IPeerLogic,
-  IPeersLogic,
-  IPeersModule,
   ISequence,
   ISystemModule,
   ITransactionLogic,
   ITransactionsModule,
-  ITransportModule,
   Symbols
 } from '@risevision/core-interfaces';
-import { RequestFactoryType } from '@risevision/core-p2p';
-import { GetTransactionsRequest, TXSymbols } from '@risevision/core-transactions';
 import {
   AppConfig,
   ConstantsType,
-  ITransportTransaction,
-  PeerType,
   SignedAndChainedBlockType,
   SignedBlockType
 } from '@risevision/core-types';
@@ -48,6 +39,7 @@ import sql from '../sql/loader';
 
 import Timer = NodeJS.Timer;
 import { OnBlockchainReady, RecreateAccountsTables } from '../hooks';
+import { BroadcasterLogic, Peer, PeersModule } from '@risevision/core-p2p';
 
 const loaderSchema = require('../../schema/loader.json');
 
@@ -58,7 +50,7 @@ export class LoaderModule implements ILoaderModule {
   private blocksToSync: number                 = 0;
   private isActive: boolean                    = false;
   private lastblock: SignedAndChainedBlockType = null;
-  private network: { height: number, peers: IPeerLogic[] };
+  private network: { height: number, peers: Peer[] };
   private retries: number                      = 5;
   private syncIntervalId: Timer                = null;
 
@@ -94,11 +86,7 @@ export class LoaderModule implements ILoaderModule {
   @inject(Symbols.logic.appState)
   private appState: IAppState;
   @inject(Symbols.logic.broadcaster)
-  private broadcasterLogic: IBroadcasterLogic;
-  @inject(Symbols.logic.peers)
-  private peersLogic: IPeersLogic;
-  // @inject(Symbols.logic.rounds)
-  // private roundsLogic: IRoundsLogic;
+  private broadcasterLogic: BroadcasterLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
 
@@ -111,18 +99,18 @@ export class LoaderModule implements ILoaderModule {
   private blocksProcessModule: BlocksModuleProcess;
   @inject(BlocksSymbols.modules.utils)
   private blocksUtilsModule: BlocksModuleUtils;
-  @inject(BlocksSymbols.modules.verify)
-  private blocksVerifyModule: BlocksModuleVerify;
+  // @inject(BlocksSymbols.modules.verify)
+  // private blocksVerifyModule: BlocksModuleVerify;
   // @inject(Symbols.modules.multisignatures)
   // private multisigModule: IMultisignaturesModule;
   @inject(Symbols.modules.peers)
-  private peersModule: IPeersModule;
+  private peersModule: PeersModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
-  @inject(Symbols.modules.transport)
-  private transportModule: ITransportModule;
+  // @inject(Symbols.modules.transport)
+  // private transportModule: ITransportModule;
 
   // Models
   @inject(ModelSymbols.model)
@@ -131,9 +119,9 @@ export class LoaderModule implements ILoaderModule {
   @inject(ModelSymbols.model)
   @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
-
-  @inject(TXSymbols.p2p.getTransactions)
-  private gtFactory: RequestFactoryType<void, GetTransactionsRequest>;
+  //
+  // @inject(TXSymbols.p2p.getTransactions)
+  // private gtFactory: RequestFactoryType<void, GetTransactionsRequest>;
 
   @postConstruct()
   public initialize() {
@@ -154,7 +142,7 @@ export class LoaderModule implements ILoaderModule {
     return this.network;
   }
 
-  public async getRandomPeer(): Promise<IPeerLogic> {
+  public async getRandomPeer(): Promise<Peer> {
     const { peers } = await this.getNetwork();
     if (peers.length === 0) {
       throw new Error('No acceptable peers for the operation');
@@ -351,8 +339,8 @@ export class LoaderModule implements ILoaderModule {
    * therefore need to aggregate).
    * Gets the list of good peers.
    */
-  private findGoodPeers(peers: PeerType[]): {
-    height: number, peers: IPeerLogic[]
+  private findGoodPeers(peers: Peer[]): {
+    height: number, peers: Peer[]
   } {
     const lastBlockHeight: number = this.blocksModule.lastBlock.height;
 
@@ -390,8 +378,7 @@ export class LoaderModule implements ILoaderModule {
 
       // Performing histogram cut of peers too far from histogram maximum
       const peerObjs = peers
-        .filter((peer) => peer && Math.abs(height - peer.height) < aggregation + 1)
-        .map((peer) => this.peersLogic.create(peer));
+        .filter((peer) => peer && Math.abs(height - peer.height) < aggregation + 1);
 
       this.logger.trace('Good peers - accepted', { count: peerObjs.length });
       this.logger.debug('Good peers', peerObjs.map((p) => p.string));

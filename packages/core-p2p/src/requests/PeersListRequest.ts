@@ -11,7 +11,7 @@ export type PeersListResponse = { peers: PeerType[] };
 @injectable()
 export class PeersListRequest extends BaseProtobufTransportMethod<null, null, PeersListResponse> {
   public readonly method: 'GET' = 'GET';
-  public readonly baseUrl       = '/v2/peer/list';
+  public readonly baseUrl = '/v2/peer/list';
 
   protected readonly protoResponse: ProtoIdentifier<PeersListResponse> = {
     convOptions: { longs: Number },

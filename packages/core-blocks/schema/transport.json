@@ -3,14 +3,20 @@
     "id": "transport.commonBlock",
     "type": "object",
     "properties": {
-      "ids": {
-        "type": "string",
-        "format": "csv"
+      "query": {
+        "properties": {
+          "ids": {
+            "type": "string",
+            "format": "csv"
+          }
+        },
+        "required": [ "ids" ]
+      },
+      "body": {
+        "type": "null"
       }
     },
-    "required": [
-      "ids"
-    ]
+    "required": [ "query", "body" ]
   },
   "blocks": {
     "id": "transport.blocks",

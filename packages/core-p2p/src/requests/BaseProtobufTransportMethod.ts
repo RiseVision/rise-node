@@ -2,6 +2,7 @@ import { injectable } from 'inversify';
 import { BaseTransportMethod } from './BaseTransportMethod';
 import { MyConvOptions } from '../helpers';
 
+
 // tslint:disable-next-line
 export type ProtoIdentifier<T> = { namespace: string, messageType: string, convOptions?: MyConvOptions<T> };
 

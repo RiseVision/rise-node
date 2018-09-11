@@ -20,6 +20,7 @@ export const BlocksSymbols = {
   p2p: {
     commonBlocks    : Symbol.for('rise.blocks.p2p.getCommonBlocks'),
     getBlocks       : Symbol.for('rise.blocks.p2p.getBlocks'),
+    getHeight       : Symbol.for('rise.blocks.p2p.getHeight'),
     postBlocks      : Symbol.for('rise.blocks.p2p.post'),
   },
 };

@@ -8,9 +8,9 @@ import { TransactionsModule } from './TransactionModule';
 import { TransactionPool } from './TransactionPool';
 import { TransactionsModel } from './TransactionsModel';
 import { TXSymbols } from './txSymbols';
-import { requestFactory } from '@risevision/core-p2p';
 import { GetTransactionsRequest, PostTransactionsRequest } from './p2p';
-import { TransactionsAPI, TransactionTransport } from './api';
+import { TransactionsAPI  } from './api';
+import { p2pSymbols } from '@risevision/core-p2p';
 
 const schema = require('../schema/config.json');
 
@@ -26,9 +26,6 @@ export class CoreModule extends BaseCoreModule {
     this.container.bind(APISymbols.api).to(TransactionsAPI)
       .inSingletonScope()
       .whenTargetNamed(TXSymbols.api.api);
-    this.container.bind(APISymbols.api).to(TransactionTransport)
-      .inSingletonScope()
-      .whenTargetNamed(TXSymbols.api.transport);
 
     this.container.bind(ModelSymbols.model)
       .toConstructor(TransactionsModel)
@@ -41,10 +38,15 @@ export class CoreModule extends BaseCoreModule {
     this.container.bind(Symbols.logic.txpool)
       .to(TransactionPool).inSingletonScope();
 
-    this.container.bind(TXSymbols.p2p.getTransactions)
-      .toFactory(requestFactory(GetTransactionsRequest));
-    this.container.bind(TXSymbols.p2p.postTxRequest)
-      .toFactory(requestFactory(PostTransactionsRequest));
+    this.container.bind(p2pSymbols.transportMethod)
+      .to(GetTransactionsRequest)
+      .inSingletonScope()
+      .whenTargetNamed(TXSymbols.p2p.getTransactions);
+
+    this.container.bind(p2pSymbols.transportMethod)
+      .to(PostTransactionsRequest)
+      .inSingletonScope()
+      .whenTargetNamed(TXSymbols.p2p.postTxRequest);
   }
 
   public async initAppElements() {

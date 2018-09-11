@@ -12,8 +12,3 @@ message transportBlock {
 message commonBlock {
     bytes common = 1;
 }
-
-message postTransportBlockResponse {
-    bool success = 1;
-    string blockId = 2;
-}

@@ -1,10 +1,10 @@
-import { ILogger, ISequence, ITransportModule, Symbols } from '@risevision/core-interfaces';
+import { ILogger, ISequence, Symbols } from '@risevision/core-interfaces';
 import { inject, injectable, named } from 'inversify';
 import z_schema from 'z-schema';
 import { MultisigSymbols } from './helpers';
 import { MultisignaturesModule } from './multisignatures';
-import { RequestFactoryType } from '@risevision/core-p2p';
 import { GetSignaturesRequest } from './requests/GetSignaturesRequest';
+import { p2pSymbols, TransportModule } from '@risevision/core-p2p';
 
 const loaderSchema = require('../schema/loader.json');
 
@@ -17,7 +17,7 @@ export class MultisigLoader {
   private schema: z_schema;
 
   @inject(Symbols.modules.transport)
-  private transportModule: ITransportModule;
+  private transportModule: TransportModule;
 
   @inject(Symbols.helpers.sequence)
   @named(Symbols.names.helpers.balancesSequence)
@@ -26,25 +26,27 @@ export class MultisigLoader {
   @inject(MultisigSymbols.module)
   private multisigModule: MultisignaturesModule;
 
-  @inject(MultisigSymbols.requests.getSignatures)
-  private getRequestSignatureFactory: RequestFactoryType<void, GetSignaturesRequest>;
+  @inject(p2pSymbols.transportMethod)
+  @named(MultisigSymbols.requests.getSignatures)
+  private getSignaturesRequest: GetSignaturesRequest;
 
   /**
    * Loads pending multisignature transactions
    */
   private async loadSignatures() {
     this.logger.log('Loading signatures');
-    const res = await this.transportModule.getFromRandomPeer<any>(
+    const res = await this.transportModule.getFromRandomPeer(
       {},
-      this.getRequestSignatureFactory({ data: null })
+      this.getSignaturesRequest,
+      {}
     );
 
-    if (!this.schema.validate(res.body, loaderSchema.loadSignatures)) {
+    // TODO: lerna This should be in getSignature request
+    if (!this.schema.validate(res, loaderSchema.loadSignatures)) {
       throw new Error('Failed to validate /signatures schema');
     }
 
-    // FIXME: signatures array
-    const { signatures }: { signatures: any[] } = res.body;
+    const { signatures } = res;
 
     // Process multisignature transactions and validate signatures in sequence
     await this.defaultSequence.addAndPromise(async () => {
@@ -52,7 +54,8 @@ export class MultisigLoader {
         for (const signature of  multiSigTX.signatures) {
           try {
             await this.multisigModule.processSignature({
-              signature,
+              relays: 3,
+              signature: signature.toString('hex'),
               transaction: multiSigTX.transaction,
             });
           } catch (err) {

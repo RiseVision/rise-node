@@ -1,27 +1,29 @@
 import { Symbols } from '@risevision/core-interfaces';
 import { inject, injectable } from 'inversify';
 import * as querystring from 'querystring';
+import * as z_schema from 'z-schema';
 import { p2pSymbols, ProtoBufHelper } from '../helpers';
 import { Peer } from '../peer';
 import { TransportModule } from '../transport';
-
-export type SingleTransportPayload<Body, Query> = { body?: Body, query?: Query } | null;
-
-export type WrappedTransportMessage = { error: true, message: string } |
-  { error: false, wrappedResponse: Buffer };
+import { ITransportMethod, SingleTransportPayload, WrappedTransportMessage } from './ITransportMethod';
 
 @injectable()
-export class BaseTransportMethod<Data, Query, Out> {
+export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<Data, Query, Out> {
   public readonly batchable: boolean = false;
   // AppManager will inject the dependency here
   public readonly method!: 'GET' | 'POST';
   public readonly baseUrl!: string;
+  public readonly requestSchema?: any;
+  public readonly responseSchema?: any;
+
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
 
   @inject(p2pSymbols.helpers.protoBuf)
-  protected protoBufHelper: ProtoBufHelper;
+  public protoBufHelper: ProtoBufHelper;
 
   @inject(Symbols.modules.transport)
-  protected transportModule: TransportModule;
+  public transportModule: TransportModule;
 
   /**
    * Performs request to a specific peer.
@@ -31,19 +33,20 @@ export class BaseTransportMethod<Data, Query, Out> {
   public async makeRequest(peer: Peer, req: SingleTransportPayload<Data, Query> = {}): Promise<Out> {
     const queryString = req.query !==
     null ? `?${querystring.stringify(req.query)}` : '';
-    return this.transportModule.getFromPeer<Buffer>(peer, {
+    const { body } = await this.transportModule.getFromPeer<Buffer>(peer, {
       data  : await this.encodeRequest(req.body),
       method: this.method,
       url   : `${this.baseUrl}${queryString}`,
-    })
-      .then(({ body }) => this.unwrapResponse(body))
-      .then((r) => {
-        if (r.error) {
-          throw new Error(r.message);
-        } else {
-          return this.decodeResponse((r as any).wrappedResponse);
-        }
-      });
+    });
+
+    const unwrappedResponse = await this.unwrapResponse(body);
+    if (unwrappedResponse.error) {
+      throw new Error(unwrappedResponse.message);
+    }
+
+    const decodedResponse = await this.decodeResponse((unwrappedResponse as any).wrappedResponse);
+    await this.assertValidResponse(decodedResponse);
+    return decodedResponse;
   }
 
   /**
@@ -69,6 +72,7 @@ export class BaseTransportMethod<Data, Query, Out> {
    */
   public async requestHandler(buf: Buffer, query: Query | null): Promise<Buffer> {
     const body     = await this.decodeRequest(buf);
+    await this.assertValidRequest(body);
     const response = await this.produceResponse({ body, query });
     return this.encodeResponse(response);
   }
@@ -116,5 +120,31 @@ export class BaseTransportMethod<Data, Query, Out> {
    */
   protected encodeResponse(data: Out): Promise<Buffer> {
     throw new Error('Implement encoder');
+  }
+
+  /**
+   * Validate request is valid (aka formerly valid)
+   * should throw if request is invalid
+   */
+  protected async assertValidRequest(request: SingleTransportPayload<Data, Query>): Promise<void> {
+    if (this.requestSchema) {
+      const res = this.schema.validate(request, this.requestSchema);
+      if (!res) {
+        throw new Error(this.schema.getLastError().message);
+      }
+    }
+  }
+
+  /**
+   * Validate desererialized response is valid (aka formerly valid)
+   * should throw if response is invalid
+   */
+  protected async assertValidResponse(data: Out): Promise<void> {
+    if (this.responseSchema) {
+      const res = this.schema.validate(data, this.responseSchema);
+      if (!res) {
+        throw new Error(this.schema.getLastError().message);
+      }
+    }
   }
 }

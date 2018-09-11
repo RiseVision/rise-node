@@ -1,8 +1,9 @@
 import { inject, injectable, named } from 'inversify';
-import { IBaseTransaction } from '@risevision/core-types';
-import { ITransactionLogic, ITransactionsModel, Symbols } from '@risevision/core-interfaces';
+import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
+import { ITransactionLogic, ITransactionsModel, ITransactionsModule, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { BaseRequest } from '@risevision/core-p2p';
+import { BaseProtobufTransportMethod, ProtoIdentifier, SingleTransportPayload } from '@risevision/core-p2p';
+import { PostTransactionsRequestDataType } from './PostTransactionsRequest';
 
 // tslint:disable-next-line
 export type GetTransactionsRequestDataType = {
@@ -10,26 +11,46 @@ export type GetTransactionsRequestDataType = {
 };
 
 @injectable()
-export class GetTransactionsRequest extends BaseRequest<GetTransactionsRequestDataType, void> {
-  protected readonly method: 'GET' = 'GET';
+export class GetTransactionsRequest extends BaseProtobufTransportMethod<null, null, GetTransactionsRequestDataType> {
+  public readonly method: 'GET' = 'GET';
+  public readonly baseUrl       = '/v2/peer/transactions';
+
+  public protoResponse: ProtoIdentifier<PostTransactionsRequestDataType> = {
+    messageType: 'transportTransactions',
+    namespace  : 'transactions.transport',
+  };
 
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
+
+  @inject(Symbols.modules.transactions)
+  private transactionModule: ITransactionsModule;
 
   @inject(ModelSymbols.model)
   @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
-  protected getBaseUrl() {
-    return '/v2/peer/transactions';
+  // TODO: lerna remove me and use tx type constants.
+  @inject(Symbols.generic.constants)
+  private constants: ConstantsType;
+
+  protected async produceResponse(request: SingleTransportPayload<null, null>): Promise<GetTransactionsRequestDataType> {
+    const transactions = this.transactionModule.getMergedTransactionList(this.constants.maxSharedTxs);
+    return { transactions };
   }
 
-  protected decodeProtoBufValidResponse(buf: Buffer) {
-    const obj = this.protoBufHelper
-      .decode<{transactions: Buffer[]}>(buf, 'transactions.transport', 'transportTransactions');
+  // Necessary to keep types easy to use by consumers.
+  protected encodeResponse(data: GetTransactionsRequestDataType): Promise<Buffer> {
+    return super.encodeResponse({
+      transactions: data.transactions.map((tx) => this.transactionLogic.toProtoBuffer(tx)),
+    } as any);
+  }
+
+  protected async decodeResponse(res: Buffer): Promise<GetTransactionsRequestDataType> {
+    const superRes: { transactions: Buffer[] } = await super.decodeResponse(res) as any;
     return {
-      transactions: obj.transactions
-        .map((txPBuf) => this.transactionLogic.fromProtoBuffer(txPBuf)),
+      transactions: superRes.transactions
+        .map((bufTx) => this.transactionLogic.fromProtoBuffer(bufTx))
     };
   }
 }

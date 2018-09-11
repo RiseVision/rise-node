@@ -5,17 +5,15 @@ import {
   IBlockReward,
   IBlocksModel,
   IBlocksModule,
-  IBlocksModuleChain,
-  IBlocksModuleVerify,
   IForkModule,
   ILogger,
   ITransactionLogic,
   ITransactionsModule, Symbols
 } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 import {
   ConstantsType,
   ForkType,
-  IConfirmedTransaction,
   SignedAndChainedBlockType,
   SignedBlockType
 } from '@risevision/core-types';
@@ -23,11 +21,11 @@ import * as crypto from 'crypto';
 import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { BlocksSymbols } from '../blocksSymbols';
-import { ModelSymbols } from '@risevision/core-models';
 import { VerifyBlock, VerifyReceipt } from '../hooks';
+import { BlocksModuleChain } from './chain';
 
 @injectable()
-export class BlocksModuleVerify implements IBlocksModuleVerify {
+export class BlocksModuleVerify {
 
   // Helpers
   @inject(Symbols.generic.constants)
@@ -49,7 +47,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
   @inject(BlocksSymbols.modules.chain)
-  private blocksChainModule: IBlocksModuleChain;
+  private blocksChainModule: BlocksModuleChain;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
   @inject(Symbols.modules.fork)

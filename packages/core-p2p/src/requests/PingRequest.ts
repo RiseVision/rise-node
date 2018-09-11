@@ -1,4 +1,3 @@
-import { PeerType } from '@risevision/core-types';
 import { injectable } from 'inversify';
 import { BaseTransportMethod } from './BaseTransportMethod';
 
@@ -6,5 +5,5 @@ import { BaseTransportMethod } from './BaseTransportMethod';
 @injectable()
 export class PingRequest extends BaseTransportMethod<null, null, null> {
   public readonly method: 'GET' = 'GET';
-  public readonly baseUrl       = '/v2/peer/ping';
+  public readonly baseUrl = '/v2/peer/ping';
 }

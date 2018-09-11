@@ -1,7 +1,7 @@
 import {
   IAccountsModel,
-  IAccountsModule, IBroadcasterLogic,
-  ILogger, IPeerLogic, IPeersModule, ISequence,
+  IAccountsModule,
+  ILogger, ISequence,
   ITransactionLogic,
   ITransactionPoolLogic,
   ITransactionsModel,
@@ -11,14 +11,13 @@ import {
 import { DBHelper, ModelSymbols } from '@risevision/core-models';
 import {
   ConstantsType,
-  IBaseTransaction,
-  ITransportTransaction,
+  IBaseTransaction, PeerType,
   SignedAndChainedBlockType
 } from '@risevision/core-types';
 import { decorate, inject, injectable, named } from 'inversify';
 import { TXSymbols } from './txSymbols';
-import { RequestFactoryType } from '@risevision/core-p2p';
-import { PostTransactionsRequest, PostTransactionsRequestDataType } from './p2p/';
+import { BroadcasterLogic, p2pSymbols, PeersModule } from '@risevision/core-p2p';
+import { PostTransactionsRequest } from './p2p/';
 import { OnNewUnconfirmedTransation } from './hooks/actions';
 import { WPHooksSubscriber, WordPressHookSystem } from 'mangiafuoco';
 import { WrapInBalanceSequence } from '@risevision/core-utils';
@@ -44,7 +43,7 @@ export class TransactionsModule extends ExtendableClass implements ITransactions
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
   @inject(Symbols.logic.broadcaster)
-  private broadcasterLogic: IBroadcasterLogic;
+  private broadcasterLogic: BroadcasterLogic;
 
   @inject(Symbols.helpers.sequence)
   @named(Symbols.names.helpers.balancesSequence)
@@ -54,14 +53,15 @@ export class TransactionsModule extends ExtendableClass implements ITransactions
   @named(Symbols.models.transactions)
   private TXModel: typeof ITransactionsModel;
 
-  @inject(TXSymbols.p2p.postTxRequest)
-  private ptrFactory: RequestFactoryType<PostTransactionsRequestDataType, PostTransactionsRequest>;
+  @inject(p2pSymbols.transportMethod)
+  @named(TXSymbols.p2p.postTxRequest)
+  private postTransactionMethod: PostTransactionsRequest;
 
   @inject(Symbols.generic.hookSystem)
   public hookSystem: WordPressHookSystem;
 
   @inject(Symbols.modules.peers)
-  private peersModule: IPeersModule;
+  private peersModule: PeersModule;
 
   public cleanup() {
     return Promise.resolve();
@@ -151,7 +151,7 @@ export class TransactionsModule extends ExtendableClass implements ITransactions
 
   @WrapInBalanceSequence
   public async processIncomingTransactions(transactions: Array<IBaseTransaction<any>>,
-                                           peer: IPeerLogic | null,
+                                           peer: PeerType | null,
                                            broadcast: boolean) {
     // normalize transactions
     const txs: Array<IBaseTransaction<any>> = [];
@@ -293,13 +293,16 @@ export class TransactionsModule extends ExtendableClass implements ITransactions
   }
 
   @OnNewUnconfirmedTransation()
-  private async onUnconfirmedTransaction(tx: IBaseTransaction<any>, broadcast: boolean) {
+  private async onUnconfirmedTransaction(tx: IBaseTransaction<any> & {relays: number}, broadcast: boolean) {
     if (!broadcast) {
       return;
     }
-    this.broadcasterLogic.maybeEnqueue(tx, this.ptrFactory({
-      data: { transactions: [tx] },
-    }));
+    this.broadcasterLogic.maybeEnqueue(
+      {
+        body: { transactions: [tx] },
+      },
+      this.postTransactionMethod
+    );
 
   }
 

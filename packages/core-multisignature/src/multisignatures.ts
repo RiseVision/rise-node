@@ -47,7 +47,7 @@ export class MultisignaturesModule {
    * @return {Promise<void>}
    */
   @WrapInBalanceSequence
-  public async processSignature(tx: { signature: string, transaction: string }) {
+  public async processSignature(tx: { signature: string, transaction: string, relays: number }) {
     const transaction = this.transactionsModule.getPendingTransaction(tx.transaction);
     if (!transaction) {
       throw new Error('Transaction not found');
@@ -82,7 +82,8 @@ export class MultisignaturesModule {
     }
     payload.ready = await this.multiTx.ready(transaction, sender);
 
-    this.multisigTransport.onSignature({ transaction: tx.transaction, signature: tx.signature}, true);
+    this.multisigTransport
+      .onSignature({...tx, signature: Buffer.from(tx.signature, 'hex')}, true);
     return null;
   }
 

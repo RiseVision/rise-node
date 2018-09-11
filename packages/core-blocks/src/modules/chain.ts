@@ -2,8 +2,6 @@ import {
   IAccountsModel,
   IAccountsModule, IBlockLogic, IBlocksModel,
   IBlocksModule,
-  IBlocksModuleChain,
-  IBlocksModuleUtils,
   IDBHelper,
   ILogger,
   ISequence,
@@ -24,9 +22,10 @@ import { WordPressHookSystem } from 'mangiafuoco';
 import { Op, Transaction } from 'sequelize';
 import { BlocksSymbols } from '../blocksSymbols';
 import { OnDestroyBlock, OnPostApplyBlock, OnTransactionsSaved } from '../hooks';
+import { BlocksModuleUtils } from './utils';
 
 @injectable()
-export class BlocksModuleChain implements IBlocksModuleChain {
+export class BlocksModuleChain {
 
   // Generic
   @inject(Symbols.generic.genesisBlock)
@@ -55,7 +54,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
   @inject(BlocksSymbols.modules.utils)
-  private blocksModuleUtils: IBlocksModuleUtils;
+  private blocksModuleUtils: BlocksModuleUtils;
   // @inject(Symbols.modules.rounds)
   // private roundsModule: IRoundsModule;
   @inject(Symbols.modules.transactions)

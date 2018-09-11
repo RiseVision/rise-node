@@ -1,67 +1,93 @@
-import { ITransactionLogic, ITransactionsModel, ITransactionsModule, Symbols } from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { BaseRequest } from '@risevision/core-p2p';
-import { IBaseTransaction } from '@risevision/core-types';
+import { ITransactionsModule, Symbols } from '@risevision/core-interfaces';
+import { BaseProtobufTransportMethod, ProtoIdentifier, SingleTransportPayload } from '@risevision/core-p2p';
+import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
+import { TransactionLogic } from '../TransactionLogic';
 // tslint:disable-next-line
 export type PostTransactionsRequestDataType = {
-  transactions: Array<IBaseTransaction<any>>,
+  transactions: Array<IBaseTransaction<any> & {relays: number}>,
 };
 
 @injectable()
-export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRequestDataType> {
-  protected readonly method: 'POST'   = 'POST';
-  protected readonly baseUrl          = '/v2/peer/transactions';
+export class PostTransactionsRequest extends BaseProtobufTransportMethod<PostTransactionsRequestDataType, null, null> {
+  public readonly method: 'POST' = 'POST';
+  public readonly baseUrl        = '/v2/peer/transactions';
 
-  @inject(Symbols.logic.transaction)
-  private txLogic: ITransactionLogic;
-
-  @inject(ModelSymbols.model)
-  @named(Symbols.models.transactions)
-  private txModel: typeof ITransactionsModel;
+  protected readonly protoRequest: ProtoIdentifier<PostTransactionsRequestDataType> = {
+    messageType: 'transportTransactions',
+    namespace  : 'transactions.transport',
+  };
 
   @inject(Symbols.modules.transactions)
   private txModule: ITransactionsModule;
 
-  public mergeIntoThis(...objs: this[]): void {
-    const allTransactions = [this, ...objs]
-      .map((item) => {
-        const toRet: Array<IBaseTransaction<any>> = [];
-        toRet.push(...item.options.data.transactions);
-        return toRet;
-      })
-      .reduce((a, b) => a.concat(b));
+  @inject(Symbols.logic.transaction)
+  private txLogic: TransactionLogic;
 
-    this.options.data.transactions = _.uniqBy(
-      allTransactions,
-      (item) => `${item.id}${item.signature.toString('hex')}`
+  @inject(Symbols.generic.constants)
+  private constants: ConstantsType;
+
+  public mergeRequests(reqs: Array<SingleTransportPayload<PostTransactionsRequestDataType, null>>) {
+    const allTransactions = _.uniqBy(
+      reqs.map((r) => r.body.transactions)
+        .reduce((a, b) => a.concat(b), []),
+      (t) => t.id
     );
+
+    const chunks = Math.ceil(allTransactions.length / this.constants.maxTxsPerBlock);
+
+    // split requests into chunks of size maxTxsPerBlock
+    return new Array(chunks)
+      .fill(null)
+      .map((_, idx) => {
+        return {
+          body: {
+            transactions: allTransactions
+              .slice(
+                idx * this.constants.maxTxsPerBlock,
+                (idx + 1) * this.constants.maxTxsPerBlock
+              ),
+          },
+        };
+      });
   }
 
-  public async isRequestExpired() {
-    const txs = this.options.data.transactions;
-
-    const ids = txs.map((tx) => tx.id);
+  public async isRequestExpired(req: SingleTransportPayload<PostTransactionsRequestDataType, null>) {
+    const ids = req.body.transactions.map((t) => t.id);
 
     const confirmedIDs = await this.txModule.filterConfirmedIds(ids);
-    if (confirmedIDs.length === txs.length) {
+
+    // If all confirmed then the whole request is expired.
+    if (confirmedIDs.length === ids.length) {
       return true;
     }
 
     return false;
   }
 
-  protected encodeRequestData(data: PostTransactionsRequestDataType): Buffer {
-    return this.protoBufHelper.encode(
-      {
-        transactions: data.transactions
-          .map((tx) => this.txLogic.toProtoBuffer(tx)),
-      },
-      'transactions.transport',
-      'transportTransactions'
-    );
+  protected async produceResponse(request: SingleTransportPayload<PostTransactionsRequestDataType, null>): Promise<null> {
+    if (request.body.transactions.length > 0) {
+      await this.txModule.processIncomingTransactions(
+        request.body.transactions,
+        request.requester,
+        true
+      );
+    }
+    return null;
   }
 
+  protected encodeRequest(data: PostTransactionsRequestDataType): Promise<Buffer> {
+    return super.encodeRequest({
+      transactions: data.transactions
+        .map((tx) => this.txLogic.toProtoBuffer(tx)) as any,
+    });
+  }
 
+  protected async decodeRequest(buf: Buffer): Promise<PostTransactionsRequestDataType> {
+    const d = await super.decodeRequest(buf);
+    return {
+      transactions: d.transactions.map((txBuf) => this.txLogic.fromProtoBuffer(txBuf as any)),
+    };
+  }
 }

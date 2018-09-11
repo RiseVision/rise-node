@@ -3,21 +3,21 @@ import {
   IBlockLogic,
   IBlocksModel,
   IBlocksModule,
-  IBlocksModuleUtils,
   ILogger, ISequence,
   ITransactionLogic,
   ITransactionsModel, Symbols
 } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 import { ConstantsType, SignedAndChainedBlockType } from '@risevision/core-types';
 import { BlockProgressLogger, catchToLoggerAndRemapError } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Op } from 'sequelize';
-import { ModelSymbols } from '@risevision/core-models';
+
 import { CommonHeightsToQuery } from '../hooks';
 
 @injectable()
-export class BlocksModuleUtils implements IBlocksModuleUtils {
+export class BlocksModuleUtils {
 
   // Generic
   @inject(Symbols.generic.genesisBlock)

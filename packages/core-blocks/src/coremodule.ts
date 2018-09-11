@@ -1,17 +1,14 @@
 import { APISymbols } from '@risevision/core-apis';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
-import { requestFactory } from '@risevision/core-p2p';
 import { AppConfig } from '@risevision/core-types';
 import { BlocksAPI } from './apis/blocksAPI';
 import { BlocksSymbols } from './blocksSymbols';
 import { BlockLogic, BlockRewardLogic } from './logic/';
 import { BlocksModel } from './models/BlocksModel';
 import { BlocksModule, BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify } from './modules';
-import { CommonBlockRequest } from './p2p/CommonBlockRequest';
-import { GetBlocksRequest } from './p2p/GetBlocksRequest';
-import { PostBlockRequest } from './p2p/PostBlockRequest';
-import { BlocksTransportV2API } from './apis/transportAPI';
+import { p2pSymbols } from '@risevision/core-p2p';
+import { CommonBlockRequest, GetBlocksRequest, HeightRequest, PostBlockRequest } from './p2p';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
@@ -35,15 +32,23 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       .inSingletonScope()
       .whenTargetNamed(BlocksSymbols.api.api);
 
-    this.container.bind(APISymbols.api)
-      .to(BlocksTransportV2API)
-      .inSingletonScope()
-      .whenTargetNamed(BlocksSymbols.api.transport);
-
     // Adding request factories
-    this.container.bind(BlocksSymbols.p2p.commonBlocks).toFactory(requestFactory(CommonBlockRequest));
-    this.container.bind(BlocksSymbols.p2p.getBlocks).toFactory(requestFactory(GetBlocksRequest));
-    this.container.bind(BlocksSymbols.p2p.postBlocks).toFactory(requestFactory(PostBlockRequest));
+    this.container.bind(p2pSymbols.transportMethod)
+      .to(CommonBlockRequest)
+      .inSingletonScope()
+      .whenTargetNamed(BlocksSymbols.p2p.commonBlocks);
+    this.container.bind(p2pSymbols.transportMethod)
+      .to(GetBlocksRequest)
+      .inSingletonScope()
+      .whenTargetNamed(BlocksSymbols.p2p.getBlocks);
+    this.container.bind(p2pSymbols.transportMethod)
+      .to(PostBlockRequest)
+      .inSingletonScope()
+      .whenTargetNamed(BlocksSymbols.p2p.postBlocks);
+    this.container.bind(p2pSymbols.transportMethod)
+      .to(HeightRequest)
+      .inSingletonScope()
+      .whenTargetNamed(BlocksSymbols.p2p.getHeight);
   }
 
 }

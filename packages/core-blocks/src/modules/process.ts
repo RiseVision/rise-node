@@ -4,29 +4,22 @@ import {
   IBlockLogic,
   IBlocksModel,
   IBlocksModule,
-  IBlocksModuleChain,
-  IBlocksModuleProcess,
-  IBlocksModuleUtils,
-  IBlocksModuleVerify,
   IForkModule,
   ILogger,
-  IPeerLogic,
-  IPeersLogic,
   ISequence,
   ITransactionLogic,
   ITransactionsModel,
   ITransactionsModule,
-  ITransportModule,
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { p2pSymbols, RequestFactoryType } from '@risevision/core-p2p';
+import { p2pSymbols, Peer, PeersLogic } from '@risevision/core-p2p';
 import {
   BasePeerType,
   ConstantsType,
   ForkType,
   IBaseTransaction,
-  IKeypair,
+  IKeypair, PeerType,
   SignedAndChainedBlockType,
   SignedBlockType
 } from '@risevision/core-types';
@@ -37,13 +30,15 @@ import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 
 import { BlocksSymbols } from '../blocksSymbols';
-import { GetBlocksRequest } from '../p2p/GetBlocksRequest';
-import { CommonBlockRequest } from '../p2p/CommonBlockRequest';
+import { BlocksModuleChain } from './chain';
+import { BlocksModuleUtils } from './utils';
+import { BlocksModuleVerify } from './verify';
+import { CommonBlockRequest, GetBlocksRequest } from '../p2p';
 
 const schema = require('../../schema/blocks.json');
 
 @injectable()
-export class BlocksModuleProcess implements IBlocksModuleProcess {
+export class BlocksModuleProcess {
 
   // Generics
   @inject(Symbols.generic.genesisBlock)
@@ -71,7 +66,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   @inject(Symbols.logic.block)
   private blockLogic: IBlockLogic;
   @inject(Symbols.logic.peers)
-  private peersLogic: IPeersLogic;
+  private peersLogic: PeersLogic;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
 
@@ -79,19 +74,19 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
   @inject(BlocksSymbols.modules.chain)
-  private blocksChainModule: IBlocksModuleChain;
+  private blocksChainModule: BlocksModuleChain;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
   @inject(BlocksSymbols.modules.utils)
-  private blocksUtilsModule: IBlocksModuleUtils;
+  private blocksUtilsModule: BlocksModuleUtils;
   @inject(BlocksSymbols.modules.verify)
-  private blocksVerifyModule: IBlocksModuleVerify;
+  private blocksVerifyModule: BlocksModuleVerify;
   @inject(Symbols.modules.fork)
   private forkModule: IForkModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
-  @inject(Symbols.modules.transport)
-  private transportModule: ITransportModule;
+  // @inject(Symbols.modules.transport)
+  // private transportModule: ITransportModule;
 
   // models
   @inject(ModelSymbols.model)
@@ -103,10 +98,12 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
   private isCleaning: boolean = false;
 
-  @inject(BlocksSymbols.p2p.getBlocks)
-  private gbFactory: RequestFactoryType<void, GetBlocksRequest>;
-  @inject(BlocksSymbols.p2p.commonBlocks)
-  private cbFactory: RequestFactoryType<void, CommonBlockRequest>;
+  @inject(p2pSymbols.transportMethod)
+  @named(BlocksSymbols.p2p.getBlocks)
+  private getBlocksRequest: GetBlocksRequest;
+  @inject(p2pSymbols.transportMethod)
+  @named(BlocksSymbols.p2p.commonBlocks)
+  private commonBlockRequest: CommonBlockRequest;
 
   public cleanup() {
     this.isCleaning = true;
@@ -122,13 +119,16 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
    */
   // FIXME VOid return for recoverChain
   // tslint:disable-next-line max-line-length
-  public async getCommonBlock(peer: IPeerLogic, height: number): Promise<{ id: string, previousBlock: string, height: number } | void> {
+  public async getCommonBlock(peer: Peer, height: number): Promise<{ id: string, previousBlock: string, height: number } | void> {
     const { ids }    = await this.blocksUtilsModule.getIdSequence(height);
-    const commonResp = await peer.makeRequest<{ common: { id: string, previousBlock: string, height: number } }>(
-      this.cbFactory(({ data: null, query: { ids: ids.join(',') } }))
-    );
-    // FIXME: Need better checking here, is base on 'common' property enough?
-    if (!commonResp.common) {
+
+    const commonResp = await this.commonBlockRequest
+      .makeRequest(
+        peer,
+        { query: { ids: ids.join(',') } }
+      );
+
+    if (!commonResp || !commonResp.common) {
       if (this.appStateLogic.getComputed('node.poorConsensus')) {
         return this.blocksChainModule.recoverChain();
       } else {
@@ -238,39 +238,38 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
    * @param {Peer | BasePeerType} rawPeer
    * @return {Promise<SignedBlockType>}
    */
-  public async loadBlocksFromPeer(rawPeer: IPeerLogic | BasePeerType): Promise<SignedBlockType> {
-    const lastValidBlock: SignedBlockType = this.blocksModule.lastBlock;
+  public async loadBlocksFromPeer(rawPeer: Peer | BasePeerType): Promise<SignedBlockType> {
+    let lastValidBlock: SignedBlockType = this.blocksModule.lastBlock;
 
     // normalize Peer
     const peer = this.peersLogic.create(rawPeer);
 
     this.logger.info(`Loading blocks from ${peer.string}`);
-    const blocksFromPeer = await peer.makeRequest<{ blocks: SignedAndChainedBlockType[] }>(
-      this.gbFactory({ data: null, query: { lastBlockId: lastValidBlock.id } })
+    const blocksFromPeer = await this.getBlocksRequest.makeRequest(
+      peer,
+      { query: { lastBlockId: lastValidBlock.id } }
     );
 
-    // TODO: fix schema of loadBlocksFromPeer
+    // TODO: move this to GetBlocksRequest.
     if (!this.schema.validate(blocksFromPeer.blocks, schema.loadBlocksFromPeer)) {
       throw new Error('Received invalid blocks data');
     }
 
-    // TODO: Restore this but probably wait for matteo's implementation
-    // const blocks = this.blocksUtilsModule.readDbRows(blocksFromPeer.blocks);
-    // for (const block of blocks) {
-    //   if (this.isCleaning) {
-    //     return lastValidBlock;
-    //   }
-    //   try {
-    //     await this.blocksVerifyModule.processBlock(block, false, true);
-    //     lastValidBlock = block;
-    //     this.logger.info(`Block ${block.id} loaded from ${peer.string}`, `height: ${block.height}`);
-    //   } catch (err) {
-    //     this.logger.debug('Block processing failed',
-    //       { id: block.id, err: err.message || err.toString(), module: 'blocks', block }
-    //     );
-    //     throw err;
-    //   }
-    // }
+    for (const block of blocksFromPeer.blocks) {
+      if (this.isCleaning) {
+        return lastValidBlock;
+      }
+      try {
+        await this.blocksVerifyModule.processBlock(block, false, true);
+        lastValidBlock = block;
+        this.logger.info(`Block ${block.id} loaded from ${peer.string}`, `height: ${block.height}`);
+      } catch (err) {
+        this.logger.debug('Block processing failed',
+          { id: block.id, err: err.message || err.toString(), module: 'blocks', block }
+        );
+        throw err;
+      }
+    }
 
     return lastValidBlock;
   }

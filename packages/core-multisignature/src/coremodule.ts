@@ -2,19 +2,19 @@ import { APISymbols } from '@risevision/core-apis';
 import { Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ICoreModuleWithModels, ModelSymbols, utils } from '@risevision/core-models';
+import { p2pSymbols } from '@risevision/core-p2p';
 import { TXSymbols } from '@risevision/core-transactions';
 import { constants, MultisigSymbols } from './helpers';
+import { MultisigHooksListener } from './hooks/hooksListener';
 import { Accounts2MultisignaturesModel, Accounts2U_MultisignaturesModel, MultiSignaturesModel } from './models';
 import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
 import { MultisignaturesModule } from './multisignatures';
 import { MultiSignaturesApi } from './multiSignaturesApi';
 import { MultiSignatureTransaction } from './transaction';
 import { MultisigTransportModule } from './transport';
-import { MultisigHooksListener } from './hooks/hooksListener';
 import { MultiSigUtils } from './utils';
-import { requestFactory } from '@risevision/core-p2p';
-import { PostSignaturesRequest } from './requests/PostSignaturesRequest';
-import { GetSignaturesRequest } from './requests/GetSignaturesRequest';
+
+import { GetSignaturesRequest, PostSignaturesRequest } from './requests';
 
 export class CoreModule extends BaseCoreModule implements ICoreModuleWithModels {
   public configSchema = {};
@@ -60,10 +60,17 @@ export class CoreModule extends BaseCoreModule implements ICoreModuleWithModels 
       .to(MultiSigUtils)
       .inSingletonScope();
 
-    this.container.bind(MultisigSymbols.requests.postSignatures)
-      .toFactory(requestFactory(PostSignaturesRequest));
-    this.container.bind(MultisigSymbols.requests.getSignatures)
-      .toFactory(requestFactory(GetSignaturesRequest));
+    this.container
+      .bind(p2pSymbols.transportMethod)
+      .to(PostSignaturesRequest)
+      .inSingletonScope()
+      .whenTargetNamed(MultisigSymbols.requests.postSignatures);
+
+    this.container
+      .bind(p2pSymbols.transportMethod)
+      .to(GetSignaturesRequest)
+      .inSingletonScope()
+      .whenTargetNamed(MultisigSymbols.requests.getSignatures);
   }
 
   public onPreInitModels() {
