@@ -144,7 +144,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
       .expect(200)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
-        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'transport', 'transportMethod');
+        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
         expect(err.success).is.false;
         expect(err.error).to.contain('Missing required property: version');
       });
@@ -158,7 +158,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
       .expect(200)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
-        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'transport', 'transportMethod');
+        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
         expect(err.success).is.false;
         expect(err.error).to.contain('Missing required property: nethash');
       });
@@ -172,7 +172,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
       .expect(200)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
-        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'transport', 'transportMethod');
+        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
         expect(err.success).is.false;
         expect(err.error).to.contain('Missing required property: port');
       });
@@ -186,7 +186,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
       .expect(200)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
-        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'transport', 'transportMethod');
+        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
         expect(err.success).is.false;
         expect(err.error).to.contain('Request is made on the wrong network');
       });
@@ -200,7 +200,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
       .expect(200)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
-        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'transport', 'transportMethod');
+        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
         expect(err.success).is.false;
         expect(err.error).to.contain('broadhash - Object didn\'t pass validation for format');
       });
@@ -214,7 +214,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
       .expect(200)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
-        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'transport', 'transportMethod');
+        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
         expect(err.success).is.false;
         expect(err.error).to.contain('height - Expected type integer');
       });
@@ -228,7 +228,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
       .expect(200)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
-        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'transport', 'transportMethod');
+        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
         expect(err.success).is.false;
         expect(err.error).to.contain('nonce - String is too short (15 chars)');
       });
@@ -242,7 +242,7 @@ function checkHeadersValidation(p: () => supertest.Test) {
       .expect(200)
       .then((res) => {
         expect(Buffer.isBuffer(res.body)).true;
-        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'transport', 'transportMethod');
+        const err = protoBufHelper.decode<{success: boolean, error: string}>(res.body, 'APIError');
         expect(err.success).is.false;
         expect(err.error).to.contain('nonce - String is too long (37 chars)');
       });
@@ -346,6 +346,7 @@ describe('v2/peer/transport', function() {
           transactions: [toBufferedTransaction(tx)],
         },
       }));
+      expect(sendTxResult.success).to.be.true;
       await txPool.processBundled();
       await txModule.fillPool();
       const a = psFactory({
@@ -410,6 +411,7 @@ describe('v2/peer/transport', function() {
           transactions: [toBufferedTransaction(tx)],
         },
       }));
+      expect(sendTxResult.success).to.be.true;
       await txPool.processBundled();
       await txModule.fillPool();
       let req = psFactory({
@@ -440,11 +442,12 @@ describe('v2/peer/transport', function() {
     });
     it('POST: should allow signature', async () => {
       const tx = await createSendTransaction(0, 1, multisigAccount, '1R');
-      await peer.makeRequest(ptFactory({
+      const sendTxResult = await peer.makeRequest(ptFactory({
         data: {
           transactions: [toBufferedTransaction(tx)],
         },
       }));
+      expect(sendTxResult.success).to.be.true;
       await txPool.processBundled();
       await txModule.fillPool();
       let req = psFactory({
@@ -479,6 +482,7 @@ describe('v2/peer/transport', function() {
           transactions: [toBufferedTransaction(tx)],
         },
       }));
+      expect(sendTxResult.success).to.be.true;
 
       await txPool.processBundled();
       await txModule.fillPool();
@@ -504,6 +508,7 @@ describe('v2/peer/transport', function() {
             }],
           },
         }));
+        expect(r.success).to.be.true;
 
         sigs.push(signature);
         const r2 = await peer.makeRequest(psFactory({
@@ -517,6 +522,7 @@ describe('v2/peer/transport', function() {
             }),
           },
         }));
+        expect(r2.success).to.be.true;
       }
 
       const currentSigs = await peer.makeRequest(gsFactory({data: null}));
@@ -551,6 +557,7 @@ describe('v2/peer/transport', function() {
       const r = await peer.makeRequest(ptFactory({
         data: { transactions: [tx1, tx2] } as any,
       }));
+      expect(r.success).to.be.true;
       await txPool.processBundled();
       const getTxs = await peer.makeRequest(gtFactory({data: null}));
       expect(getTxs.transactions.length).eq(2);
@@ -593,6 +600,7 @@ describe('v2/peer/transport', function() {
           transaction: tx,
         } as any,
       }));
+      expect(res.success).to.be.true;
       expect(txPool.transactionInPool(tx.id)).is.true;
     });
 
