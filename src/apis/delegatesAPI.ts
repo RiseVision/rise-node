@@ -199,7 +199,7 @@ export class DelegatesAPI {
     }
     const delQuery  = this.AccountsModel.searchDelegate(
       params.q,
-      params.limit || constants.activeDelegates,
+      params.limit || this.slots.numDelegates(),
       orderBy[0],
       orderBy[1] as any
     );
@@ -224,10 +224,11 @@ export class DelegatesAPI {
     const currentBlockSlot      = this.slots.getSlotNumber(curBlock.timestamp);
     const currentSlot           = this.slots.getSlotNumber();
     const nextForgers: string[] = [];
-    for (let i = 1; i <= this.slots.delegates && i <= limit; i++) {
+    const numDelegates = this.slots.numDelegates(curBlock.height);
+    for (let i = 1; i <= numDelegates && i <= limit; i++) {
       // This if looks a bit stupid to me.
-      if (activeDelegates[(currentSlot + i) % this.slots.delegates]) {
-        nextForgers.push(activeDelegates[(currentSlot + i) % this.slots.delegates].toString('hex'));
+      if (activeDelegates[(currentSlot + i) % numDelegates]) {
+        nextForgers.push(activeDelegates[(currentSlot + i) % numDelegates].toString('hex'));
       }
     }
 

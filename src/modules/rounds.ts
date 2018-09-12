@@ -111,7 +111,7 @@ export class RoundsModule implements IRoundsModule {
       async () => {
         // Check if we are one block before last block of round, if yes - perform round snapshot
         // TODO: Check either logic or comment one of the 2 seems off.
-        if ((block.height + 1) % this.slots.delegates === 0) {
+        if ((block.height + 1) % this.slots.numDelegates(block.height) === 0) {
           this.logger.debug('Performing round snapshot...');
 
           await this.dbHelper.performOps([
@@ -206,7 +206,8 @@ export class RoundsModule implements IRoundsModule {
   // tslint:disable-next-line
   private async sumRound(round: number, tx: Transaction): Promise<{ roundFees: number, roundRewards: number[], roundDelegates: Buffer[] }> {
     this.logger.debug('Summing round', round);
-    const res = await this.RoundsModel.sumRound(this.constants.activeDelegates, round, tx);
+    const firstBlockHeight = this.roundsLogic.firstInRound(round);
+    const res = await this.RoundsModel.sumRound(this.slots.numDelegates(firstBlockHeight), round, tx);
 
     const roundRewards   = res.rewards.map((reward) => Math.floor(parseFloat(reward)));
     const roundFees      = Math.floor(parseFloat(res.fees));

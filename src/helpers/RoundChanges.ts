@@ -1,6 +1,7 @@
 import BigNumber from 'bignumber.js';
 import Bignum from './bignum';
 import {Slots} from './slots';
+import { RoundLogicScope } from '../logic/round';
 
 export class RoundChanges {
   private roundFees: number;
@@ -11,12 +12,13 @@ export class RoundChanges {
   // The fees that are excluded by math precision
   private feesRemaining: BigNumber;
 
-  constructor(scope: { roundFees?: number, roundRewards: number[] }, private slots: Slots) {
+  constructor(scope: RoundLogicScope, private slots: Slots) {
     this.roundFees    = Math.floor(scope.roundFees) || 0;
     this.roundRewards = scope.roundRewards || [];
-    this.fees = new Bignum(this.roundFees.toPrecision(15)).dividedBy(this.slots.delegates)
+    this.fees = new Bignum(this.roundFees.toPrecision(15)).dividedBy(this.slots.numDelegates(scope.block.height))
       .integerValue(BigNumber.ROUND_FLOOR);
-    this.feesRemaining = new Bignum(this.roundFees.toPrecision(15)).minus(this.fees.times(this.slots.delegates));
+    this.feesRemaining = new Bignum(this.roundFees.toPrecision(15))
+      .minus(this.fees.times(this.slots.numDelegates(scope.block.height)));
   }
 
   /**

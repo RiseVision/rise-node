@@ -129,7 +129,7 @@ export class DelegatesModule implements IDelegatesModule {
         100 - (delegates[i].missedblocks / ((delegates[i].producedblocks + delegates[i].missedblocks) / 100))
       ) || 0;
 
-      const outsider     = i + 1 > this.slots.delegates;
+      const outsider     = i + 1 > this.slots.numDelegates();
       const productivity = (!outsider) ? Math.round(percent * 1e2) / 1e2 : 0;
 
       crunchedDelegates.push({
@@ -162,7 +162,7 @@ export class DelegatesModule implements IDelegatesModule {
     const delegates = await this.generateDelegateList(block.height);
 
     const curSlot = this.slots.getSlotNumber(block.timestamp);
-    const delegId = delegates[curSlot % this.slots.delegates];
+    const delegId = delegates[curSlot % this.slots.numDelegates(block.height)];
     if (!(delegId && block.generatorPublicKey.equals(delegId))) {
       this.logger.error(`Expected generator ${delegId.toString('hex')} Received generator: ${block.generatorPublicKey.toString('hex')}`);
       throw new Error(`Failed to verify slot ${curSlot}`);
@@ -187,7 +187,7 @@ export class DelegatesModule implements IDelegatesModule {
   private async getKeysSortByVote(): Promise<Buffer[]> {
     const rows = await this.accountsModule.getAccounts({
       isDelegate: 1,
-      limit     : this.slots.delegates,
+      limit     : this.slots.numDelegates(),
       sort      : {vote: -1, publicKey: 1},
     }, ['publicKey']);
     return rows.map((r) => r.publicKey);

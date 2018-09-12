@@ -1,5 +1,5 @@
 export interface ISlots {
-  readonly delegates: number;
+  numDelegates(height?: number): number;
 
   /**
    * Calculates time since epoch.
@@ -13,5 +13,5 @@ export interface ISlots {
   /**
    * Basically adds the given slot number with the number of forging delegates
    */
-  getLastSlot(nextSlot: number): any;
+  getLastSlot(nextSlot: number, height: number): any;
 }

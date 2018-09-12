@@ -2,17 +2,22 @@ import { inject, injectable } from 'inversify';
 import { ISlots } from '../ioc/interfaces/helpers/ISlots';
 import { Symbols } from '../ioc/symbols';
 import constantsType from './constants';
+import { IBlocksModule } from '../ioc/interfaces/modules';
 
 @injectable()
 export class Slots implements ISlots {
   @inject(Symbols.helpers.constants)
   private constants: typeof constantsType;
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
 
   /**
    * Active delegates
    */
-  public get delegates() {
-    return this.constants.activeDelegates;
+  public numDelegates(height?: number) {
+    height = height || this.blocksModule.lastBlock.height;
+    return height < this.constants.fairVoteSystem.firstBlock ? this.constants.activeDelegates
+      : this.constants.activeDelegates + this.constants.fairVoteSystem.activeOutsiders;
   }
 
   /**
@@ -41,8 +46,8 @@ export class Slots implements ISlots {
   /**
    * Basically adds the given slot number with the number of forging delegates
    */
-  public getLastSlot(nextSlot: number) {
-    return nextSlot + this.delegates;
+  public getLastSlot(nextSlot: number, height: number) {
+    return nextSlot + this.numDelegates(height);
   }
 
 }

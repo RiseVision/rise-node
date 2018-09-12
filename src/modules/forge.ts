@@ -220,10 +220,10 @@ export class ForgeModule implements IForgeModule {
   private async getBlockSlotData(slot: number, height: number): Promise<{ time: number, keypair: IKeypair }> {
     const pkeys = await this.delegatesModule.generateDelegateList(height);
 
-    const lastSlot = this.slots.getLastSlot(slot);
+    const lastSlot = this.slots.getLastSlot(slot, height);
 
     for (let cs = slot; cs < lastSlot; cs++) {
-      const delegPos = cs % this.slots.delegates;
+      const delegPos = cs % this.slots.numDelegates(height);
       const delegId  = pkeys[delegPos];
       if (delegId && this.enabledKeys[delegId.toString('hex')]) {
         return {

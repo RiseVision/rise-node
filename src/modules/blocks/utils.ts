@@ -137,6 +137,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     const firstInRound             = this.rounds.firstInRound(this.rounds.calcRound(height));
     const heightsToQuery: number[] = [];
     for (let i = 0; i < 5; i++) {
+      // TODO fix me for fairvote
       heightsToQuery.push(firstInRound - this.constants.activeDelegates * i);
     }
 
@@ -224,7 +225,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   public async aggregateBlockReward(filter: { generatorPublicKey: publicKey, start?: number, end?: number }): Promise<{ fees: number, rewards: number, count: number }> {
     const params: any                                                         = {};
     params.generatorPublicKey                                                 = filter.generatorPublicKey;
-    params.delegates                                                          = this.constants.activeDelegates;
+    params.delegates                                                          = this.constants.activeDelegates; // TODO fixme for fairvote
     const timestampClausole: { timestamp?: any } = {timestamp: {}};
 
     if (typeof(filter.start) !== 'undefined') {

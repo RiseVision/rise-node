@@ -280,6 +280,7 @@ export class LoaderModule implements ILoaderModule {
     }
     if (this.config.loading.snapshot >= round) {
       this.config.loading.snapshot = round;
+      // TODO fix for fairvote
       if (blocksCount % this.constants.activeDelegates > 0) {
         // Normalize to previous round if we
         this.config.loading.snapshot = (round > 1) ? (round - 1) : 1;

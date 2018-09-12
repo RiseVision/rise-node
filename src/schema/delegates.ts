@@ -107,7 +107,7 @@ export default {
       limit  : {
         type   : 'integer',
         minimum: 1,
-        maximum: constants.activeDelegates,
+        maximum: constants.activeDelegates + constants.fairVoteSystem.activeOutsiders,
       },
       offset : {
         type   : 'integer',
