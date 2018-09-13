@@ -2,8 +2,7 @@ import {
   IAccountsModule,
   ILogger,
   ISequence,
-  ITransactionLogic,
-  ITransactionPoolLogic,
+  ITransactionLogic, ITransactionPool,
   ITransactionsModule,
   Symbols,
   VerificationType
@@ -11,7 +10,7 @@ import {
 import { IBaseTransaction, TransactionType } from '@risevision/core-types';
 import { WrapInBalanceSequence } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
-import SocketIO from 'socket.io';
+import { WordPressHookSystem } from 'mangiafuoco';
 import { MultisigSymbols } from './helpers';
 import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
 import { MultisigAsset, MultiSignatureTransaction } from './transaction';
@@ -20,15 +19,16 @@ import { MultisigTransportModule } from './transport';
 @injectable()
 export class MultisignaturesModule {
   @inject(Symbols.logic.txpool)
-  private transactionPool: ITransactionPoolLogic;
+  private txPool: ITransactionPool;
+
+  @inject(Symbols.generic.hookSystem)
+  private hookSystem: WordPressHookSystem;
 
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule<AccountsModelWithMultisig>;
   @inject(Symbols.helpers.sequence)
   @named(Symbols.names.helpers.balancesSequence)
   public balancesSequence: ISequence;
-  @inject(Symbols.generic.socketIO)
-  private io: SocketIO.Server;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.logic.transaction)
@@ -48,10 +48,10 @@ export class MultisignaturesModule {
    */
   @WrapInBalanceSequence
   public async processSignature(tx: { signature: string, transaction: string, relays: number }) {
-    const transaction = this.transactionsModule.getPendingTransaction(tx.transaction);
-    if (!transaction) {
+    if (!this.txPool.pending.has(tx.transaction)) {
       throw new Error('Transaction not found');
     }
+    const transaction = this.txPool.pending.get(tx.transaction).tx;
 
     const sender = await this.accountsModule.getAccount({ address: transaction.senderId });
     if (!sender) {
@@ -76,7 +76,7 @@ export class MultisignaturesModule {
     transaction.signatures.push(tx.signature);
 
     // update readyness so that it can be inserted into pool
-    const payload = this.transactionPool.pending.getPayload(transaction);
+    const payload = this.txPool.pending.getPayload(transaction);
     if (!payload) {
       throw new Error('Cannot find payload for such multisig tx');
     }
@@ -112,8 +112,7 @@ export class MultisignaturesModule {
       throw new Error('Failed to verify signature');
     }
 
-    this.io.sockets.emit('multisignatures/signature/change', tx);
-
+    await this.hookSystem.do_action('pushapi/onNewMessage', 'multisignatures/signature/change', tx);
   }
 
   private async processMultiSigSignature(tx: IBaseTransaction<MultisigAsset>, signature: string, sender: AccountsModelWithMultisig) {

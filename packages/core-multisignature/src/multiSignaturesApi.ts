@@ -1,9 +1,8 @@
 import {
   IAccountsModule,
   ILogger,
-  ITransactionLogic,
+  ITransactionLogic, ITransactionPool,
   ITransactionsModel,
-  ITransactionsModule,
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
@@ -42,8 +41,8 @@ export class MultiSignaturesApi {
   // Modules
   @inject(Symbols.modules.accounts)
   private accounts: IAccountsModule<AccountsModelWithMultisig>;
-  @inject(Symbols.modules.transactions)
-  private transactions: ITransactionsModule;
+  @inject(Symbols.logic.txpool)
+  private txPool: ITransactionPool;
 
   // models
   @inject(ModelSymbols.model)
@@ -95,9 +94,9 @@ export class MultiSignaturesApi {
   public async getPending(@SchemaValid(apiSchema.pending)
                           @QueryParams() params: { publicKey: publicKey }) {
     const bufPubKey = Buffer.from(params.publicKey, 'hex');
-    const txs       = this.transactions.getPendingTransactionList(false);
+    const txs       = this.txPool.pending.txList();
 
-    const accounts = await this.accounts.resolveAccountsForTransactions(txs);
+    const accounts = await this.accounts.txAccounts(txs);
 
     const toRet = txs
       .map((tx) => {

@@ -5,7 +5,7 @@ import {
   IDBHelper,
   ILogger,
   ISequence,
-  ITransactionLogic,
+  ITransactionLogic, ITransactionPool,
   ITransactionsModel,
   ITransactionsModule,
   Symbols
@@ -58,7 +58,7 @@ export class BlocksModuleChain {
   // @inject(Symbols.modules.rounds)
   // private roundsModule: IRoundsModule;
   @inject(Symbols.modules.transactions)
-  private transactionsModule: ITransactionsModule;
+  private txPool: ITransactionPool;
 
   @inject(ModelSymbols.model)
   @named(Symbols.models.accounts)
@@ -203,7 +203,7 @@ export class BlocksModuleChain {
     // in the block but are NOT in the block.
     // Overlapping txs needs to be undoUnconfirmed since they could eventually exclude a tx
     // bundled within a block
-    const allUnconfirmedTxs = this.transactionsModule.getUnconfirmedTransactionList(false);
+    const allUnconfirmedTxs = this.txPool.unconfirmed.txList({});
     const allBlockTXIds     = block.transactions.map((tx) => tx.id).sort();
     const overlappingTXs    = allUnconfirmedTxs.filter((tx) => {
       const exists = bs(allBlockTXIds, tx.id, (a, b) => a.localeCompare(b)) >= 0;
@@ -231,7 +231,7 @@ export class BlocksModuleChain {
       });
 
       for (const tx of block.transactions) {
-        if (this.transactionsModule.transactionUnconfirmed(tx.id)) {
+        if (this.txPool.unconfirmed.has(tx.id)) {
           continue;
         }
         ops.push(
@@ -250,7 +250,7 @@ export class BlocksModuleChain {
         ops.push(
           ... await this.transactionLogic.apply(tx as any, block, accountsMap[tx.senderId])
         );
-        this.transactionsModule.removeUnconfirmedTransaction(tx.id);
+        this.txPool.unconfirmed.remove(tx.id);
       }
 
       await this.dbHelper.performOps(ops, dbTX);
@@ -287,8 +287,8 @@ export class BlocksModuleChain {
     // If some of the overlapping txs are now "invalid" they will be discared within the next
     // txPool.processBundled loop.
     for (const overTX of overlappingTXs) {
-      this.transactionsModule.removeUnconfirmedTransaction(overTX.id);
-      await this.transactionsModule.processUnconfirmedTransaction(overTX, false);
+      const info = this.txPool.unconfirmed.get(overTX.id);
+      this.txPool.queued.add(info.tx, info.payload);
     }
 
     block = null;
@@ -355,7 +355,7 @@ export class BlocksModuleChain {
     const txs = lb.transactions.slice().reverse();
 
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
-      const accountsMap           = await this.accountsModule.resolveAccountsForTransactions(txs);
+      const accountsMap           = await this.accountsModule.txAccounts(txs);
       const ops: Array<DBOp<any>> = [];
       for (const tx of txs) {
         ops.push(... await this.transactionLogic.undo(tx, lb, accountsMap[tx.senderId]));

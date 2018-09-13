@@ -1,4 +1,4 @@
-import { ILogger, ITransactionLogic, Symbols } from '@risevision/core-interfaces';
+import { IInnerTXQueue, ILogger, ITransactionLogic, ITransactionPool, Symbols } from '@risevision/core-interfaces';
 import { ConstantsType } from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import { TXAppConfig } from './helpers/appconfig';
@@ -9,7 +9,7 @@ type QueueType = 'queued' | 'pending' | 'ready' | 'unconfirmed';
 
 // tslint:disable-next-line
 @injectable()
-export class TransactionPool {
+export class TransactionPool implements ITransactionPool {
   private queues: {[k in QueueType]: InnerTXQueue};
 
   get queued() {
@@ -79,14 +79,6 @@ export class TransactionPool {
   public removeFromPool(transactionId: string) {
     this.allQueues
       .forEach((q) => q.remove(transactionId));
-  }
-
-  /**
-   * Calls reindex to each queue to clean memory
-   */
-  private async reindexAllQueues() {
-    await Promise.all(this.allQueues
-      .map((queue) => queue.reindex()));
   }
 
   public get allQueues(): InnerTXQueue[] {

@@ -4,4 +4,4 @@ export * from './IBaseTransactionType';
 export * from './IBlockLogic';
 export * from './IBlockReward';
 export * from './ITransactionLogic';
-export * from './ITransactionPoolLogic';
+export * from './ITransactionPool';

@@ -7,7 +7,7 @@ import {
   IBlocksModule,
   IForkModule,
   ILogger,
-  ITransactionLogic,
+  ITransactionLogic, ITransactionPool,
   ITransactionsModule, Symbols
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
@@ -54,6 +54,8 @@ export class BlocksModuleVerify {
   private forkModule: IForkModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
+  @inject(Symbols.logic.txpool)
+  private txPool: ITransactionPool;
 
   // Models
   @inject(ModelSymbols.model)
@@ -155,7 +157,8 @@ export class BlocksModuleVerify {
     }
 
     // check transactions
-    const accountsMap = await this.accountsModule.resolveAccountsForTransactions(block.transactions);
+    const accountsMap = await this.accountsModule.txAccounts(block.transactions);
+    await this.accountsModule.checkTXsAccountsMap(block.transactions, accountsMap);
     await this.checkBlockTransactions(block, accountsMap);
 
     // if nothing has thrown till here then block is valid and can be applied.
@@ -348,10 +351,10 @@ export class BlocksModuleVerify {
     // check that none of the transaction exists in db.
     const confirmedIDs = await this.transactionsModule.filterConfirmedIds(allIds);
     if (confirmedIDs.length > 0) {
-      // Error, some of the included transactions are included
+      // Error, some of the included transactions are confirmed
       await this.forkModule.fork(block, ForkType.TX_ALREADY_CONFIRMED);
       for (const confirmedID of confirmedIDs) {
-        if (this.transactionsModule.removeUnconfirmedTransaction(confirmedID)) {
+        if (this.txPool.unconfirmed.remove(confirmedID)) {
           await this.transactionsModule.undoUnconfirmed(block.transactions.filter((t) => t.id === confirmedID)[0]);
         }
       }

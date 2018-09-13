@@ -7,7 +7,7 @@ import {
   IForkModule,
   ILogger,
   ISequence,
-  ITransactionLogic,
+  ITransactionLogic, ITransactionPool,
   ITransactionsModel,
   ITransactionsModule,
   Symbols,
@@ -85,6 +85,9 @@ export class BlocksModuleProcess {
   private forkModule: IForkModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
+  @inject(Symbols.logic.txpool)
+  private txPool: ITransactionPool;
+
   // @inject(Symbols.modules.transport)
   // private transportModule: ITransportModule;
 
@@ -221,7 +224,7 @@ export class BlocksModuleProcess {
           block,
           false,
           false,
-          await this.accountsModule.resolveAccountsForTransactions(block.transactions)
+          await this.accountsModule.txAccounts(block.transactions)
         );
       }
 
@@ -281,7 +284,7 @@ export class BlocksModuleProcess {
    */
   public async generateBlock(keypair: IKeypair, timestamp: number) {
     const previousBlock = this.blocksModule.lastBlock;
-    const txs           = this.transactionsModule.getUnconfirmedTransactionList(false, this.constants.maxTxsPerBlock);
+    const txs           = this.txPool.unconfirmed.txList({limit: this.constants.maxTxsPerBlock});
 
     const ready: Array<IBaseTransaction<any>> = [];
     const confirmedTxs                        = await this.transactionsModule.filterConfirmedIds(txs.map((tx) => tx.id));
@@ -294,8 +297,8 @@ export class BlocksModuleProcess {
       if (confirmedTxs.indexOf(tx.id) !== -1) {
         // TODO: this should be unnecessary as there shouldnt be any chance for the txs to be in unconfirmedstate
         // if it was already confirmed.
+        this.txPool.unconfirmed.remove(tx.id);
         await this.transactionsModule.undoUnconfirmed(tx);
-        await this.transactionsModule.removeUnconfirmedTransaction(tx.id);
         continue;
       }
 

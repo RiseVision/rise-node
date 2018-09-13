@@ -1,9 +1,9 @@
 import { inject, injectable } from 'inversify';
 import { BaseProtobufTransportMethod, SingleTransportPayload } from '@risevision/core-p2p';
-import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
+import { ConstantsType } from '@risevision/core-types';
 import Long from 'long';
 import { TransactionsModule, TXSymbols } from '@risevision/core-transactions';
-import { Symbols } from '@risevision/core-interfaces';
+import { ITransactionPool, Symbols } from '@risevision/core-interfaces';
 
 // tslint:disable-next-line
 export type GetSignaturesRequestDataType = {
@@ -25,12 +25,11 @@ export class GetSignaturesRequest extends BaseProtobufTransportMethod<null, null
 
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
-  @inject(TXSymbols.module)
-  private transactionsModule: TransactionsModule;
+  @inject(TXSymbols.pool)
+  private txPool: ITransactionPool;
 
   protected async produceResponse(request: SingleTransportPayload<null, null>): Promise<GetSignaturesRequestDataType> {
-    const txs: Array<IBaseTransaction<any>> = this.transactionsModule
-      .getPendingTransactionList(true);
+    const txs = this.txPool.pending.txList({reverse: true});
 
     const signatures = [];
     for (const tx of txs) {

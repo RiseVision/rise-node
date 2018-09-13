@@ -1,17 +1,7 @@
+import { IInnerTXQueue, ListingOptions, QueueEntry } from '@risevision/core-interfaces';
 import { IBaseTransaction } from '@risevision/core-types';
 
-export type QueueEntry<T extends { receivedAt: Date }> = {
-  tx: IBaseTransaction<any>;
-  payload: T
-};
-export type ListingOptions<T extends { receivedAt: Date }> = {
-  reverse?: boolean,
-  limit?: number,
-  filterFn?: (entry: QueueEntry<T>) => boolean,
-  sortFn?: (a: QueueEntry<T>, b: QueueEntry<T>) => number
-};
-
-export class InnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }> {
+export class InnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }> implements IInnerTXQueue<T> {
   private transactions: Array<IBaseTransaction<any>> = [];
   private index: { [k: string]: number }             = {};
   private payload: { [k: string]: T }                = {};

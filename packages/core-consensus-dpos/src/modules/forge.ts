@@ -6,8 +6,7 @@ import {
   ICrypto,
   IJobsQueue,
   ILogger,
-  IModule, ISequence,
-  ITransactionsModule, Symbols
+  IModule, ISequence, Symbols
 } from '@risevision/core-interfaces';
 import { BroadcasterLogic } from '@risevision/core-p2p';
 import { ConstantsType, IKeypair, publicKey } from '@risevision/core-types';
@@ -58,8 +57,6 @@ export class ForgeModule implements IModule {
   private blocksProcessModule: BlocksModuleProcess;
   @inject(dPoSSymbols.modules.delegates)
   private delegatesModule: DelegatesModule;
-  @inject(Symbols.modules.transactions)
-  private transactionsModule: ITransactionsModule;
 
   public cleanup(): Promise<void> {
     this.jobsQueue.unregister('delegatesNextForge');
@@ -117,7 +114,6 @@ export class ForgeModule implements IModule {
   @WrapInDefaultSequence
   private async delegatesNextForge() {
     try {
-      await this.transactionsModule.fillPool();
       await this.forge();
     } catch (err) {
       this.logger.warn('Error in nextForge', err);
