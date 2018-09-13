@@ -12,12 +12,12 @@ import { PeerState, PeerType } from '../../core-types/src';
 import { StubbedRequest } from './utils/StubbedRequest';
 import { PingRequest } from '../src/requests';
 import { createFakePeer } from './utils/fakePeersFactory';
+import { TransportWrapper } from '../src/utils/TransportWrapper';
 
 const expect          = chai.expect;
 const ProxyPeerLogic = proxyquire('../src/peer.ts', {ip});
 
 chai.use(chaiAsPromised);
-
 // tslint:disable no-unused-expression
 describe('logic/peer', () => {
   let instance;
@@ -444,12 +444,15 @@ describe('logic/peer', () => {
   describe('makeRequest', () => {
     let requestHandlerStub: StubbedRequest;
     let reqData;
-    const response = { body: 1, peer: 'peer' };
+    const response = { body: null, peer: 'peer' };
     let getFromPeerStub: SinonStub;
-    beforeEach(() => {
+    beforeEach(async () => {
       requestHandlerStub = new StubbedRequest();
-      reqData = {data: { transactions: [] }, isProtoBuf: false, method: 'GET', url: '/peer/height'};
+      reqData = {data: { transactions: [] }, method: 'GET', url: '/peer/height'};
       getFromPeerStub = sandbox.stub(transportModule, 'getFromPeer').resolves(response);
+
+      const tw = container.get<TransportWrapper>(p2pSymbols.utils.transportWrapper);
+      response.body = await tw.wrapResponse({success: true, wrappedResponse: Buffer.from('aa', 'hex')});
     });
     it('should return a promise', () => {
       const retVal = instance.makeRequest(requestHandlerStub);
@@ -462,7 +465,7 @@ describe('logic/peer', () => {
       expect(requestHandlerStub.stubs.handleResponse.firstCall.args[0]).to.be.deep
         .eq(instance);
       expect(requestHandlerStub.stubs.handleResponse.firstCall.args[1]).to.be.deep
-        .eq(response.body);
+        .eq(Buffer.from('aa', 'hex'));
     });
   });
 

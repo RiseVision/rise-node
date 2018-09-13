@@ -1,9 +1,7 @@
-import { Peer } from '../peer';
 import { PeerRequestOptions } from '@risevision/core-types';
-export type SingleTransportPayload<Body, Query> = { body?: Body, query?: Query, requester?: Peer } | null;
+import { Peer } from '../peer';
 
-export type WrappedTransportMessage = { error: true, message: string } |
-  { error: false, wrappedResponse: Buffer };
+export type SingleTransportPayload<Body, Query> = { body?: Body, query?: Query, requester?: Peer } | null;
 
 export interface ITransportMethod<Data, Query, Out> {
   batchable: boolean;
@@ -41,9 +39,5 @@ export interface ITransportMethod<Data, Query, Out> {
    * @param req
    */
   createRequestOptions(req?: SingleTransportPayload<Data, Query>): Promise<PeerRequestOptions<Buffer>>;
-
-  wrapResponse(r: WrappedTransportMessage): Promise<Buffer>;
-
-  unwrapResponse(b: Buffer): Promise<WrappedTransportMessage>;
 
 }

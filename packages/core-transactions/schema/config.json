@@ -8,7 +8,7 @@
           "type": "integer",
           "minValue": 0
         },
-        "bundledInterval": {
+        "processQueueInterval": {
           "$comment": "ms interval to process bundled transactions",
           "type": "integer",
           "minValue": 1
@@ -19,7 +19,7 @@
           "minValue": 1
         }
       },
-      "required": [ "maxTxsPerQueue", "bundledInterval", "expiryInterval" ]
+      "required": [ "maxTxsPerQueue", "processQueueInterval", "expiryInterval" ]
     }
   },
   "required"  : [

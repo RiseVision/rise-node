@@ -44,32 +44,32 @@ describe('apis/requests/BaseTransportMethod', () => {
   });
 
   // TODO: Create tests.
-
-  describe('unwrapResponse', () => {
-
-    describe('when response status is 200', () => {
-      it('should call pdecodeProtoBufValidResponse and return if it message is validated', () => {
-        protoBufStub.stubs.decode.onFirstCall().returns({success: true});
-        const decpbvrStub = sandbox.stub(instance as any, 'decodeProtoBufValidResponse').returns('decodedResult');
-        const resp = (instance as any).unwrapResponse(Buffer.from('', 'hex'));
-        expect(decpbvrStub.calledOnce).to.be.true;
-        expect(decpbvrStub.firstCall.args[0]).to.be.deep.equal(Buffer.from('', 'hex'));
-        expect(resp).to.be.equal('decodedResult');
-      });
-    });
-
-    describe('when response is an error', () => {
-      const res = {status: 200, body: Buffer.from('', 'hex')};
-      it('should try first to parse the request as an API error', () => {
-        const err = {success: false, error: 'thisIsAnErr'};
-        protoBufStub.stubs.decode.returns(err);
-        protoBufStub.stubs.decodeToObj.throws(new Error('decodeToObjError'));
-        let resp;
-        expect(() => {
-          resp = (instance as any).unwrapResponse(res, 'namespace', 'messageType');
-        }).to.throw('thisIsAnErr');
-      });
-    });
-  });
+  //
+  // describe('unwrapResponse', () => {
+  //
+  //   describe('when response status is 200', () => {
+  //     it('should call pdecodeProtoBufValidResponse and return if it message is validated', () => {
+  //       protoBufStub.stubs.decode.onFirstCall().returns({success: true});
+  //       const decpbvrStub = sandbox.stub(instance as any, 'decodeProtoBufValidResponse').returns('decodedResult');
+  //       const resp = (instance as any).unwrapResponse(Buffer.from('', 'hex'));
+  //       expect(decpbvrStub.calledOnce).to.be.true;
+  //       expect(decpbvrStub.firstCall.args[0]).to.be.deep.equal(Buffer.from('', 'hex'));
+  //       expect(resp).to.be.equal('decodedResult');
+  //     });
+  //   });
+  //
+  //   describe('when response is an error', () => {
+  //     const res = {status: 200, body: Buffer.from('', 'hex')};
+  //     it('should try first to parse the request as an API error', () => {
+  //       const err = {success: false, error: 'thisIsAnErr'};
+  //       protoBufStub.stubs.decode.returns(err);
+  //       protoBufStub.stubs.decodeToObj.throws(new Error('decodeToObjError'));
+  //       let resp;
+  //       expect(() => {
+  //         resp = (instance as any).unwrapResponse(res, 'namespace', 'messageType');
+  //       }).to.throw('thisIsAnErr');
+  //     });
+  //   });
+  // });
 
 });

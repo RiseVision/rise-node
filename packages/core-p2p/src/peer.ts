@@ -5,6 +5,7 @@ import { p2pSymbols } from './helpers';
 import { BaseTransportMethod, ITransportMethod, SingleTransportPayload } from './requests/';
 import { PingRequest } from './requests/PingRequest';
 import { TransportModule } from './transport';
+import { TransportWrapper } from './utils/TransportWrapper';
 
 const nullable = [
   'os',
@@ -62,6 +63,9 @@ export class Peer implements PeerType {
 
   @inject(p2pSymbols.modules.transport)
   private transportModule: TransportModule;
+
+  @inject(p2pSymbols.utils.transportWrapper)
+  private transportWrapper: TransportWrapper;
 
   public accept(peer: BasePeerType) {
     // Normalize peer data
@@ -147,7 +151,15 @@ export class Peer implements PeerType {
       this,
       await method.createRequestOptions(payload)
     );
-    return method.handleResponse(this, body);
+    const resp = await this.transportWrapper.unwrapResponse(body);
+    if (resp === null) {
+      throw new Error('Received null wrapped response');
+    }
+    if (resp.success) {
+      return method.handleResponse(this, resp.wrappedResponse);
+    } else {
+      throw new Error((resp as any).error);
+    }
   }
 
   public pingAndUpdate(): Promise<void> {

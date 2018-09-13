@@ -23,6 +23,7 @@ import { PeersModel } from './PeersModel';
 import { PeersModule } from './peersModule';
 import { PeersListRequest, PingRequest } from './requests';
 import { TransportModule } from './transport';
+import { TransportWrapper } from './utils/TransportWrapper';
 
 // tslint:disable-next-line
 const configSchema = require('../schema/config.json');
@@ -86,12 +87,25 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
         },
       }
     );
+    let controllers: any[] = []
+    try {
+      controllers = this.container.getAll<any>(p2pSymbols.controller);
+    } catch (e) {
+      // Amen
+    }
+    let middlewares: any[] = []
+    try {
+      middlewares = this.container.getAll<any>(p2pSymbols.middleware);
+    } catch (e) {
+      // Amen
+    }
+
     useExpressServer(
       app,
       {
-        controllers        : this.container.getAll<any>(p2pSymbols.controller),
+        controllers,
         defaultErrorHandler: false,
-        middlewares        : this.container.getAll<any>(p2pSymbols.middleware),
+        middlewares,
       }
     );
 
@@ -101,8 +115,9 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     const app = express();
     this.srv  = http.createServer(app);
     this.container.bind(p2pSymbols.constants).toConstantValue(this.constants);
+    this.container.bind(p2pSymbols.utils.transportWrapper).to(TransportWrapper).inSingletonScope();
     this.container.bind(p2pSymbols.api.transport).to(TransportAPI).inSingletonScope();
-    // this.container.bind(p2pSymbols.controller).to(PeersAPI).inSingletonScope().whenTargetNamed(p2pSymbols.api.peersAPI);
+    this.container.bind(p2pSymbols.controller).to(PeersAPI).inSingletonScope().whenTargetNamed(p2pSymbols.api.peersAPI);
     this.container.bind(p2pSymbols.express).toConstantValue(app);
     this.container.bind(p2pSymbols.server).toConstantValue(this.srv);
     this.container.bind(ModelSymbols.model)
@@ -130,7 +145,7 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     this.container.bind(p2pSymbols.transportMethod).to(PeersListRequest).inSingletonScope()
       .whenTargetNamed(p2pSymbols.requests.peersList);
 
-    // APIs
+    // API
     this.container.bind(p2pSymbols.transportMiddleware)
       .to(AttachPeerHeaders)
       .inSingletonScope()

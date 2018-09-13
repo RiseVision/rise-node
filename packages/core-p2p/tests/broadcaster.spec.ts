@@ -34,10 +34,10 @@ describe('logic/broadcaster', () => {
   let container: Container;
 
   before(async () => {
-    container    = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
   });
   beforeEach(async () => {
-    sandbox      = sinon.createSandbox({
+    sandbox = sinon.createSandbox({
       // useFakeTimers: true,
     });
 
@@ -154,6 +154,11 @@ describe('logic/broadcaster', () => {
     });
   });
 
+  describe('maybeEnqueue', () => {
+    it('should create body.relays if not exists and set to 1');
+    it('should honorate the maxRelays()');
+  });
+
   describe('enqueue', () => {
     let params: any;
     let options: BroadcastTaskOptions<any, any, any>;
@@ -169,34 +174,30 @@ describe('logic/broadcaster', () => {
     it('should call queue.push called; immediate is set', () => {
       const spy = sandbox.spy(instance.queue, 'push');
 
-      instance.enqueue(params, options);
+      instance.enqueue({ body: 'meow' }, options.method, params);
 
       expect(spy.calledOnce).to.be.true;
       expect(spy.firstCall.args.length).to.be.equal(1);
       expect(spy.firstCall.args[0]).to.be.deep.equal({
-        options: options,
-        params : params,
+        options: {
+          immediate: false,
+          method   : options.method,
+          payload  : { body: 'meow' }
+        },
+        filters: params,
       });
     });
 
-    it('build the queue as expected', () => {
-      instance.enqueue(params, options);
-
-      expect(instance.queue).to.be.deep.equal([{
-        options: options,
-        params : params,
-      }]);
-    });
 
     it('should return the right value', () => {
-      const result: any = instance.enqueue(params, options);
+      const result: any = instance.enqueue({}, options.method, {});
       expect(result).to.be.deep.equal(1);
     });
   });
 
   describe('broadcast', () => {
     let filters: any;
-    let options: any;
+    let options: BroadcastTaskOptions<any, any, any>;
     let peers: any[];
     let createdPeers: any[];
 
@@ -204,12 +205,12 @@ describe('logic/broadcaster', () => {
     let createPeerStub: SinonStub;
 
     beforeEach(() => {
-      filters       = {
+      filters      = {
         broadhash: 'broadhash',
         limit    : 100,
         peers    : null,
       };
-      options      = { requestHandler: new StubbedRequest() };
+      options      = { method: new StubbedRequest() };
       peers        = [{}, {}];
       createdPeers = [
         { string: 'first', makeRequest: sandbox.stub().resolves(), },
@@ -225,7 +226,7 @@ describe('logic/broadcaster', () => {
     });
 
     it('should call getPeers', async () => {
-      await instance.broadcast({filters, options});
+      await instance.broadcast({ filters, options });
       expect(getPeersStub.calledOnce).to.be.true;
       expect(getPeersStub.firstCall.args.length).to.be.equal(1);
       expect(getPeersStub.firstCall.args[0]).to.be.equal(filters);
@@ -233,7 +234,7 @@ describe('logic/broadcaster', () => {
 
     it('should not call getPeers if peers passed', async () => {
       filters.peers = peers;
-      await instance.broadcast({filters, options});
+      await instance.broadcast({ filters, options });
       expect(getPeersStub.called).to.be.false;
     });
 
@@ -243,7 +244,7 @@ describe('logic/broadcaster', () => {
         p.makeRequest.rejects(error);
       });
 
-      await instance.broadcast({filters, options});
+      await instance.broadcast({ filters, options });
 
       expect(loggerStub.stubs.debug.callCount).to.be.equal(peers.length + 2);
       expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
@@ -260,7 +261,7 @@ describe('logic/broadcaster', () => {
     });
 
     it('should call peersLogic.create for each peer', async () => {
-      await instance.broadcast({filters, options});
+      await instance.broadcast({ filters, options });
       expect(createPeerStub.callCount).to.be.equal(peers.length);
       peers.forEach((peer, index) => {
         expect(createPeerStub.getCall(index).args.length).to.be.equal(1);
@@ -284,16 +285,16 @@ describe('logic/broadcaster', () => {
         return peer;
       });
 
-      await instance.broadcast({filters, options});
+      await instance.broadcast({ filters, options });
       expect(makeRequestCallCount).to.be.equal(peers.length);
       peers.forEach((peer, index) => {
         expect(stubs[index].makeRequest.args.length).to.be.equal(1);
-        expect(stubs[index].makeRequest.firstCall.args[0]).to.be.deep.equal(options.requestHandler);
+        expect(stubs[index].makeRequest.firstCall.args[0]).to.be.deep.equal(options.method);
       });
     });
 
     it('should return the right value', async () => {
-      const result = await instance.broadcast({filters, options});
+      const result = await instance.broadcast({ filters, options });
 
       expect(result).to.be.deep.equal({
         peer: peers,
@@ -308,7 +309,7 @@ describe('logic/broadcaster', () => {
       const result       = instance.maxRelays();
       expect(result).eq(p2pConstants.relayLimit);
 
-      const oldy = p2pConstants.relayLimit;
+      const oldy              = p2pConstants.relayLimit;
       p2pConstants.relayLimit = 15882;
       expect(instance.maxRelays()).eq(15882);
       p2pConstants.relayLimit = oldy;
@@ -323,8 +324,8 @@ describe('logic/broadcaster', () => {
     beforeEach(() => {
       task = {
         options: {
-          immediate     : true,
-          requestHandler: new StubbedRequest(),
+          immediate: true,
+          method   : new StubbedRequest(),
         },
       };
       instance.queue.push(task);
@@ -332,9 +333,8 @@ describe('logic/broadcaster', () => {
 
       filterStub = sandbox.stub();
       filterStub.resolves(false);
-      task.options.requestHandler.stubs.getOrigOptions.returns({
+      task.options.method.stubs.createRequestOptions.returns({
         data            : { transaction: 'transaction' },
-        isRequestExpired: filterStub
       });
     });
 
@@ -374,67 +374,7 @@ describe('logic/broadcaster', () => {
   });
 
   describe('squashQueue', () => {
-    let broadcasts;
-    let pt0: StubbedRequest2;
-    let pt1: StubbedRequest2;
-    let ps0: StubbedRequest;
-    beforeEach(() => {
-      pt0         = new StubbedRequest2();
-      pt0.options = {
-        data: {
-          transaction: toBufferedTransaction(createRandomTransaction()),
-        },
-      };
-
-      pt1         = new StubbedRequest2();
-      pt1.options = {
-        data:
-          {
-            transactions: createRandomTransactions(3)
-              .map((tx) => toBufferedTransaction(tx)),
-          },
-      };
-
-      ps0        = new StubbedRequest();
-      broadcasts = [{
-        options: { requestHandler: pt0 },
-      }, {
-        options: { requestHandler: pt1 },
-      }, {
-        options: { requestHandler: ps0 },
-      }];
-    });
-
-    it('should call mergeRequests and', () => {
-      pt0.stubs.mergeRequests.callsFake((...stuff) => {
-        pt0.options.data = {
-          transactions: [
-            pt0.options.data.transaction,
-            ...stuff
-              .map((s) => s.options.data.transactions)
-              .reduce((a, b) => [...a, ...b], []),
-          ],
-        };
-      });
-      const txResults = [
-        pt0.options.data.transaction,
-        ...pt1.options.data.transactions,
-      ];
-      const retObj    = {
-        immediate     : false,
-        requestHandler: {
-          options         : {
-            data: {
-              transactions: txResults,
-            },
-          },
-        },
-      };
-      const results   = (instance as any).squashQueue(broadcasts);
-      expect(results[0].options.immediate).to.be.deep.eq(retObj.immediate);
-      expect(results[0].options.requestHandler.options).to.be.deep.eq(retObj.requestHandler.options);
-      expect(pt0.stubs.mergeRequests.calledOnce).true;
-    });
+    it('should squash requests together by baseUrl');
   });
 
   describe('releaseQueue', () => {
@@ -501,11 +441,13 @@ describe('logic/broadcaster', () => {
       await (instance as any).releaseQueue();
       expect(broadcastStub.callCount).to.be.equal(broadcasts.length);
       broadcasts.forEach((broadcast, index) => {
-        expect(broadcastStub.getCall(index).args.length).to.be.equal(2);
+        expect(broadcastStub.getCall(index).args.length).to.be.equal(1);
         expect(broadcastStub.getCall(index).args[0]).to.be.deep.equal({
-          name: broadcast.params.name,
+          options: broadcast.options,
+          params: {
+            name: broadcast.params.name,
+          },
         });
-        expect(broadcastStub.getCall(index).args[1]).to.be.equal(broadcast.options);
       });
     });
 

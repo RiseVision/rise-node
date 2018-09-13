@@ -110,18 +110,13 @@ export class BroadcasterLogic {
   }
 
   public enqueue<Body, Query, Out>(
-    payload: SingleTransportPayload<Body & { relays?: number }, Query>,
+    payload: SingleTransportPayload<Body, Query>,
     method: BaseTransportMethod<Body, Query, Out>,
     filters?: BroadcastFilters): number {
     return this.queue.push({
       filters,
-      options: { immediate: false, method, payload }
+      options: { immediate: false, method, payload },
     });
-  }
-
-  public _enqueue(filters: BroadcastFilters, options: BroadcastTaskOptions<any, any, any>): number {
-    options.immediate = false;
-    return this.queue.push({ filters, options });
   }
 
   public async broadcast(task: BroadcastTask<any, any, any>): Promise<{ peer: PeerType[] }> {

@@ -49,10 +49,12 @@ export async function createContainer(modules: string[] = ['core', 'core-account
     await sortedModule.initAppElements();
   }
 
-  block.previousBlock = '1'; // exception for genesisblock
-  block.transactions = [];
-  container.get<IBlockLogic>(Symbols.logic.block).objectNormalize(block);
-  block.previousBlock = null;
+  if (sortedModules.some((m) => m.name.indexOf('core-blocks') !== -1)) {
+    block.previousBlock = '1'; // exception for genesisblock
+    block.transactions = [];
+    container.get<IBlockLogic>(Symbols.logic.block).objectNormalize(block);
+    block.previousBlock = null;
+  }
 
   container.bind('__test__modules').toConstantValue(sortedModules);
   // curContainer = container;

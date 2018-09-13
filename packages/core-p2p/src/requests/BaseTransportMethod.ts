@@ -5,7 +5,7 @@ import * as querystring from 'querystring';
 import * as z_schema from 'z-schema';
 import { p2pSymbols, ProtoBufHelper } from '../helpers';
 import { Peer } from '../peer';
-import { ITransportMethod, SingleTransportPayload, WrappedTransportMessage } from './ITransportMethod';
+import { ITransportMethod, SingleTransportPayload } from './ITransportMethod';
 
 @injectable()
 export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<Data, Query, Out> {
@@ -18,6 +18,7 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
 
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
+
 
   @inject(p2pSymbols.helpers.protoBuf)
   public protoBufHelper: ProtoBufHelper;
@@ -70,13 +71,6 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
     return Promise.resolve(false);
   }
 
-  public async wrapResponse(r: WrappedTransportMessage): Promise<Buffer> {
-    return this.protoBufHelper.encode(r, 'p2p.transport', 'transportMethod');
-  }
-
-  public async unwrapResponse(b: Buffer): Promise<WrappedTransportMessage> {
-    return this.protoBufHelper.decode(b, 'p2p.transport', 'transportMethod');
-  }
 
   /**
    * Given input request it produces a response.

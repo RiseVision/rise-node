@@ -165,9 +165,14 @@ describe('src/modules/transport.ts', () => {
 
       expect(popsicleStub.request.calledOnce).to.be.true;
       expect(popsicleStub.request.firstCall.args.length).to.be.equal(1);
+      delete popsicleStub.request.firstCall.args[0].transport;
       expect(popsicleStub.request.firstCall.args[0]).to.be.deep.equal({
         body   : null,
-        headers: systemModule.headers,
+        headers: {
+          ...systemModule.headers,
+          accept: 'application/octet-stream',
+          'content-type': 'application/octet-stream',
+        },
         method : 'put',
         timeout: 1000,
         url    : `http://127.0.0.1:${peer.port}url.com`,
@@ -175,28 +180,9 @@ describe('src/modules/transport.ts', () => {
 
       expect(popsicleUseStub.use.calledOnce).to.be.true;
       expect(popsicleUseStub.use.firstCall.args.length).to.be.equal(1);
-      expect(popsicleUseStub.use.firstCall.args[0]).to.be.equal(1);
-
-      expect(popsicleStub.plugins.parse.calledOnce).to.be.true;
-      expect(popsicleStub.plugins.parse.firstCall.args.length).to.be.equal(2);
-      expect(popsicleStub.plugins.parse.firstCall.args[0]).to.be.deep.equal(['json']);
-      expect(popsicleStub.plugins.parse.firstCall.args[1]).to.be.equal(false);
+      expect(popsicleUseStub.use.firstCall.args[0]).to.be.a('function');
     });
 
-
-    it('check if options.data', async () => {
-      options.data = 'data';
-
-      await inst.getFromPeer(peer, options);
-
-      expect(popsicleStub.request.firstCall.args[0]).to.be.deep.equal({
-        body   : 'data',
-        headers: systemModule.headers,
-        method : 'put',
-        timeout: 1000,
-        url    : `http://127.0.0.1:${peer.port}url.com`,
-      });
-    });
 
     it('should call popsicle twice (retry) if rejects and return 2nd result', async function () {
       this.timeout(2100);
@@ -313,7 +299,7 @@ describe('src/modules/transport.ts', () => {
     });
 
     it('should call peersModule.list', async () => {
-      await inst.getFromRandomPeer(config, requestHandler);
+      await inst.getFromRandomPeer(config, requestHandler, {});
 
       expect(peersModuleListStub.calledOnce).to.be.true;
       expect(peersModuleListStub.firstCall.args.length).to.be.equal(1);
@@ -324,11 +310,12 @@ describe('src/modules/transport.ts', () => {
     });
 
     it('should call makeRequest and return result', async () => {
-      expect(await inst.getFromRandomPeer(config, requestHandler)).to.be.equal(result);
+      expect(await inst.getFromRandomPeer(config, requestHandler, {body: {my: 'payload'}} )).to.be.equal(result);
       expect(peers[0].makeRequest.calledOnce).to.be.true;
-      expect(peers[0].makeRequest.firstCall.args.length).to.be.equal(1);
-      expect(peers[0].makeRequest.firstCall.args[0]).to.be.deep.equal(requestHandler);
+      expect(peers[0].makeRequest.firstCall.args.length).to.be.equal(2);
+      expect(peers[0].makeRequest.firstCall.args[0]).deep.eq(requestHandler);
       expect(peers[0].makeRequest.firstCall.args[0]).to.be.instanceOf(StubbedRequest);
+      expect(peers[0].makeRequest.firstCall.args[1]).deep.eq({body: {my: 'payload'}});
     });
   });
 

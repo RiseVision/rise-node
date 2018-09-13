@@ -46,8 +46,6 @@ export class TransportModule extends Extendable {
   // Generics
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
-  // @inject(Symbols.generic.socketIO)
-  // private io: SocketIO.Server;
   // tslint:disable-next-line member-ordering
   @inject(Symbols.generic.zschema)
   public schema: z_schema;

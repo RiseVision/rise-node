@@ -3,13 +3,13 @@ import { BasePeerType } from '@risevision/core-types';
 import { castFieldsToNumberUsingSchema, IoCSymbol } from '@risevision/core-utils';
 import * as express from 'express';
 import { inject, injectable } from 'inversify';
-import { ExpressMiddlewareInterface, Middleware } from 'routing-controllers';
+import { ExpressMiddlewareInterface } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { p2pSymbols } from '../../helpers';
 import { PeersLogic, PeersModule } from '../../';
-const transportSchema = require( '../../../schema/transport.json');
 
-@Middleware({ type: 'before' })
+const transportSchema = require('../../../schema/transport.json');
+
 @injectable()
 @IoCSymbol(p2pSymbols.transportMiddlewares.validatePeer)
 export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
@@ -31,7 +31,7 @@ export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
     if (!this.schema.validate(request.headers, transportSchema.headers)) {
       this.removePeer(request);
       return next(new Error(`${this.schema.getLastError().details[0].path
-      } - ${this.schema.getLastErrors()[0].message}`));
+        } - ${this.schema.getLastErrors()[0].message}`));
     }
     if (!this.systemModule.networkCompatible(request.headers.nethash as string)) {
       this.removePeer(request);

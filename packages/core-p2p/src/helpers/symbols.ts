@@ -34,7 +34,8 @@ export const p2pSymbols = {
     peersLogic : Symbols.logic.peers,
   },
   utils               : {
-    v2ErrorHandler: Symbol.for('rise.p2p.v2ErrorHandler'),
+    transportWrapper: Symbol.for('rise.p2p.transportWrapper'),
+    v2ErrorHandler  : Symbol.for('rise.p2p.v2ErrorHandler'),
   },
   requests            : {
     ping     : Symbol.for('rise.p2p.ping'),

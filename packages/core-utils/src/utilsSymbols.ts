@@ -1,3 +1,5 @@
+import { Symbols } from '@risevision/core-interfaces';
+
 export const UtilsSymbols = {
-  classSymbol: Symbol('classSymbol'),
+  classSymbol: Symbols.class,
 };

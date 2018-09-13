@@ -45,7 +45,7 @@ describe('apis/utils/validatePeerHeaders', () => {
 
     // Container
     container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
-    container.bind(Symbols.generic.appConfig).toConstantValue(appConfig);
+    container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
     // Instance
     instance = container.getNamed(p2pSymbols.transportMiddleware, p2pSymbols.transportMiddlewares.validatePeer);
 

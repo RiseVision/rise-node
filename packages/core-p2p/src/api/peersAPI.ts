@@ -14,18 +14,18 @@ const peersSchema = require('../../schema/peers.json');
 @IoCSymbol(p2pSymbols.api.peersAPI)
 export class PeersAPI {
   // Generics
-  // @inject(Symbols.generic.appConfig)
+  @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
   // tslint:disable-next-line member-ordering
-  // @inject(Symbols.generic.zschema)
+  @inject(Symbols.generic.zschema)
   public schema: z_schema;
-  // @inject(Symbols.generic.versionBuild)
+  @inject(Symbols.generic.versionBuild)
   private versionBuild: string;
 
   // Modules
-  // @inject(Symbols.modules.peers)
+  @inject(Symbols.modules.peers)
   private peersModule: PeersModule;
-  // @inject(Symbols.modules.system)
+  @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
   @Get('/')

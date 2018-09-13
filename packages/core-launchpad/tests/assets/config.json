@@ -74,7 +74,7 @@
     },
     "transactions"   : {
         "maxTxsPerQueue": 1000,
-        "bundledInterval": 1000,
+        "processQueueInterval": 1000,
         "expiryInterval": 30000,
         "bundleLimit": 100
     },
