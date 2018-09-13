@@ -1,32 +1,24 @@
 import {
   IAccountsModel,
   IAccountsModule,
-  ILogger, ISequence,
+  ILogger,
+  ISequence,
   ITransactionLogic,
-  ITransactionPoolLogic,
   ITransactionsModel,
   ITransactionsModule,
   Symbols
 } from '@risevision/core-interfaces';
 import { DBHelper, ModelSymbols } from '@risevision/core-models';
-import {
-  ConstantsType,
-  IBaseTransaction, PeerType,
-  SignedAndChainedBlockType
-} from '@risevision/core-types';
-import { decorate, inject, injectable, named } from 'inversify';
-import { TXSymbols } from './txSymbols';
-import { BroadcasterLogic, p2pSymbols, PeersModule } from '@risevision/core-p2p';
-import { PostTransactionsRequest } from './p2p/';
-import { OnNewUnconfirmedTransation } from './hooks/actions';
-import { WPHooksSubscriber, WordPressHookSystem } from 'mangiafuoco';
+import { PeersModule } from '@risevision/core-p2p';
+import { ConstantsType, IBaseTransaction, PeerType, SignedAndChainedBlockType } from '@risevision/core-types';
 import { WrapInBalanceSequence } from '@risevision/core-utils';
-
-const ExtendableClass = WPHooksSubscriber(Object);
-decorate(injectable(), ExtendableClass);
+import { inject, injectable, named } from 'inversify';
+import { WordPressHookSystem } from 'mangiafuoco';
+import { TransactionPool } from './TransactionPool';
 
 @injectable()
-export class TransactionsModule extends ExtendableClass implements ITransactionsModule {
+export class TransactionsModule implements ITransactionsModule {
+
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
   @inject(Symbols.generic.genesisBlock)
@@ -39,11 +31,9 @@ export class TransactionsModule extends ExtendableClass implements ITransactions
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.logic.txpool)
-  private transactionPool: ITransactionPoolLogic;
+  private transactionPool: TransactionPool;
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
-  @inject(Symbols.logic.broadcaster)
-  private broadcasterLogic: BroadcasterLogic;
 
   @inject(Symbols.helpers.sequence)
   @named(Symbols.names.helpers.balancesSequence)
@@ -53,29 +43,14 @@ export class TransactionsModule extends ExtendableClass implements ITransactions
   @named(Symbols.models.transactions)
   private TXModel: typeof ITransactionsModel;
 
-  // @inject(p2pSymbols.transportMethod)
-  // @named(TXSymbols.p2p.postTxRequest)
-  // private postTransactionMethod: PostTransactionsRequest;
-
   @inject(Symbols.generic.hookSystem)
   public hookSystem: WordPressHookSystem;
 
   @inject(Symbols.modules.peers)
   private peersModule: PeersModule;
 
-  public cleanup() {
-    return Promise.resolve();
-  }
-
-  /**
-   * Checks if txid is in pool
-   */
-  public transactionInPool(id: string): boolean {
+  public transactionInPool(id: string) {
     return this.transactionPool.transactionInPool(id);
-  }
-
-  public transactionUnconfirmed(id: string): boolean {
-    return this.transactionPool.unconfirmed.has(id);
   }
 
   /**
@@ -88,71 +63,9 @@ export class TransactionsModule extends ExtendableClass implements ITransactions
     return idObjs.map((idObj) => idObj.id);
   }
 
-  /**
-   * Get unconfirmed transaction from pool by id
-   */
-  public getUnconfirmedTransaction<T = any>(id: string): IBaseTransaction<T> {
-    return this.transactionPool.unconfirmed.get(id);
-  }
-
-  /**
-   * Get queued tx from pool by id
-   */
-  public getQueuedTransaction<T = any>(id: string): IBaseTransaction<T> {
-    return this.transactionPool.queued.get(id);
-  }
-
-  /**
-   * Get pending tx from pool by id
-   */
-  public getPendingTransaction<T = any>(id: string): IBaseTransaction<T> {
-    return this.transactionPool.pending.get(id);
-  }
-
-  /**
-   * Gets unconfirmed transactions based on limit and reverse option.
-   */
-  public getUnconfirmedTransactionList(reverse: boolean, limit?: number): Array<IBaseTransaction<any>> {
-    return this.transactionPool.unconfirmed.list(reverse, limit);
-  }
-
-  /**
-   * Gets queued transactions based on limit and reverse option.
-   */
-  public getQueuedTransactionList(reverse: boolean, limit?: number): Array<IBaseTransaction<any>> {
-    return this.transactionPool.queued.list(reverse, limit);
-  }
-
-  /**
-   * Gets pending transactions based on limit and reverse option.
-   */
-  public getPendingTransactionList(reverse: boolean, limit?: number): Array<IBaseTransaction<any>> {
-    return this.transactionPool.pending.list(reverse, limit);
-  }
-
-  /**
-   * Gets unconfirmed, multisignature and queued transactions based on limit and reverse option.
-   */
-  public getMergedTransactionList(limit?: number): Array<IBaseTransaction<any>> {
-    return this.transactionPool.getMergedTransactionList(limit);
-  }
-
-  /**
-   * Removes transaction from unconfirmed, queued and multisignature.
-   * @return true if the tx was in the unconfirmed queue.
-   */
-  public removeUnconfirmedTransaction(id: string) {
-    const wasUnconfirmed = this.transactionPool.unconfirmed.remove(id);
-    this.transactionPool.queued.remove(id);
-    this.transactionPool.pending.remove(id);
-    this.transactionPool.bundled.remove(id);
-    return wasUnconfirmed;
-  }
-
   @WrapInBalanceSequence
   public async processIncomingTransactions(transactions: Array<IBaseTransaction<any>>,
-                                           peer: PeerType | null,
-                                           broadcast: boolean) {
+                                           peer: PeerType | null) {
     // normalize transactions
     const txs: Array<IBaseTransaction<any>> = [];
     for (const tx of transactions) {
@@ -180,21 +93,8 @@ export class TransactionsModule extends ExtendableClass implements ITransactions
         continue; // Transaction already confirmed.
       }
       this.logger.debug(`Received transaction ${tx.id} ${peer ? `from peer ${peer.string}` : ' '}`);
-      await this.processUnconfirmedTransaction(
-        tx,
-        broadcast
-      );
+      await this.transactionPool.queued.add(tx, { receivedAt: new Date() });
     }
-  }
-
-  /**
-   * Checks kind of unconfirmed transaction and process it, resets queue
-   * if limit reached.
-   * NOTE: transaction must be unknown and already checked AGAINST database for its non existence.
-   */
-  public processUnconfirmedTransaction(transaction: IBaseTransaction<any>,
-                                       broadcast: boolean): Promise<void> {
-    return this.transactionPool.processNewTransaction(transaction);
   }
 
   /**
@@ -231,29 +131,14 @@ export class TransactionsModule extends ExtendableClass implements ITransactions
     await this.dbHelper.performOps(await this.transactionLogic.undoUnconfirmed(transaction, sender));
   }
 
-  public async count(): Promise<{ confirmed: number, pending: number, queued: number, unconfirmed: number }> {
+  public async count() {
     return {
       confirmed  : await this.TXModel.count(),
-      pending    : this.transactionPool.pending.count,
-      queued     : this.transactionPool.queued.count,
-      unconfirmed: this.transactionPool.unconfirmed.count,
+      pending    : this.transactionPool.pending.getCount(),
+      queued     : this.transactionPool.queued.getCount(),
+      ready      : this.transactionPool.ready.getCount(),
+      unconfirmed: this.transactionPool.unconfirmed.getCount(),
     };
-  }
-
-  /**
-   * Fills the pool.
-   */
-  public async fillPool(): Promise<void> {
-    const newUnconfirmedTXs   = await this.transactionPool.fillPool();
-    const ids                 = newUnconfirmedTXs.map((tx) => tx.id);
-    const alreadyConfirmedIDs = await this.filterConfirmedIds(ids);
-    for (const confirmedID of alreadyConfirmedIDs) {
-      this.logger.debug(`TX ${confirmedID} was already confirmed but still in pool`);
-      this.removeUnconfirmedTransaction(confirmedID);
-      const idx = newUnconfirmedTXs.findIndex((a) => a.id === confirmedID);
-      newUnconfirmedTXs.splice(idx, 1);
-    }
-    await this.transactionPool.applyUnconfirmedList(newUnconfirmedTXs, this);
   }
 
   /**
@@ -284,25 +169,8 @@ export class TransactionsModule extends ExtendableClass implements ITransactions
         throw new Error('Cannot find requester from accounts');
       }
     }
-    // Verify will throw if any error occurs during validation.
-    if (!this.transactionLogic.ready(tx, acc)) {
-      throw new Error(`Transaction ${tx.id} is not ready`);
-    }
     await this.transactionLogic.verify(tx, acc, requester, height);
 
-  }
-
-  @OnNewUnconfirmedTransation()
-  private async onUnconfirmedTransaction(tx: IBaseTransaction<any> & {relays: number}, broadcast: boolean) {
-    // if (!broadcast) {
-    //   return;
-    // }
-    // this.broadcasterLogic.maybeEnqueue(
-    //   {
-    //     body: { transactions: [tx] },
-    //   },
-    //   this.postTransactionMethod
-    // );
   }
 
 }

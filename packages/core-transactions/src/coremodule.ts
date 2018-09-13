@@ -11,6 +11,8 @@ import { TXSymbols } from './txSymbols';
 import { GetTransactionsRequest, PostTransactionsRequest } from './p2p';
 import { TransactionsAPI  } from './api';
 import { p2pSymbols } from '@risevision/core-p2p';
+import { InnerTXQueue } from './poolTXsQueue';
+import { PoolManager } from './PoolManager';
 
 const schema = require('../schema/config.json');
 
@@ -47,6 +49,12 @@ export class CoreModule extends BaseCoreModule {
       .to(PostTransactionsRequest)
       .inSingletonScope()
       .whenTargetNamed(TXSymbols.p2p.postTxRequest);
+
+    this.container.bind(TXSymbols.poolQueue)
+      .toConstructor(InnerTXQueue);
+    this.container.bind(TXSymbols.poolManager)
+      .to(PoolManager)
+      .inSingletonScope();
   }
 
   public async initAppElements() {
@@ -56,16 +64,14 @@ export class CoreModule extends BaseCoreModule {
     for (const txType of TXTypes) {
       txLogic.attachAssetType(txType);
     }
-    const txModule = this.container.get<TransactionsModule>(TXSymbols.module);
-    await txModule.hookMethods();
+
+    // initializes through postConstruct
+    this.container.get<PoolManager>(TXSymbols.poolManager);
   }
 
   public async teardown() {
-    const txPool = this.container.get<TransactionPool>(Symbols.logic.txpool);
-    await txPool.cleanup();
-    const txModule = this.container.get<TransactionsModule>(TXSymbols.module);
-    await txModule.cleanup();
-    await txModule.unHook();
+    await this.container.get<PoolManager>(TXSymbols.poolManager)
+      .cleanup();
   }
 
 }

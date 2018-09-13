@@ -13,6 +13,8 @@ export const TXSymbols = {
     postTxRequest  : Symbol.for('rise.txs.p2p.postTransaction'),
   },
   pool       : Symbols.logic.txpool,
+  poolManager: Symbol.for('rise.txs.poolManager'),
+  poolQueue  : Symbol.for('rise.txs.poolQueue'),
   sendTX     : Symbol.for('rise.txs.sendTX'),
   transaction: Symbol.for('rise.txs.transaction'),
 };

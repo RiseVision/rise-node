@@ -4,6 +4,13 @@ export type cback<T = void> = (err: Error, data?: T) => void;
 
 export const emptyCB: cback<any> = () => void 0;
 
+export function logOnly(logger: ILogger, severity: 'warn' | 'error' | 'debug' | 'info' = 'warn'): (e: Error) => Promise<null> {
+  return async (err: Error) => {
+    logger[severity](err.stack);
+    return null;
+  };
+}
+
 export function catchToLoggerAndRemapError<T>(rejectString: string, logger: ILogger): (err: Error) => Promise<T> {
   return (err: Error) => {
     logger.error(err.stack);

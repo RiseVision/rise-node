@@ -5,7 +5,11 @@ import { IModule } from './IModule';
 
 export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> extends IModule {
 
-  resolveAccountsForTransactions(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: T }>;
+  unfoldSenders(txs: Array<IBaseTransaction<any>>): Array<{address: string, publicKey: Buffer}>;
+
+  txAccounts(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: T }>;
+
+  checkTXsAccountsMap(txs: Array<IBaseTransaction<any>>, accMap: { [address: string]: T }): Promise<void>;
 
   getAccount(filter: AccountFilterData): Promise<T>;
 

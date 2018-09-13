@@ -1,9 +1,4 @@
-import {
-  IAppState,
-  IJobsQueue,
-  ILogger,
-  Symbols
-} from '@risevision/core-interfaces';
+import { IAppState, IJobsQueue, ILogger, Symbols } from '@risevision/core-interfaces';
 import { AppConfig, ConstantsType, PeerType } from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
@@ -108,17 +103,23 @@ export class BroadcasterLogic {
 
     payload.body.relays = (payload.body.relays || 0) + 1;
     if (payload.body.relays < this.maxRelays()) {
-      this.enqueue(filters, {
-        immediate: false,
-        method,
-        payload,
-      });
+      this.enqueue(payload, method, filters);
       return true;
     }
     return false;
   }
 
-  public enqueue(filters: BroadcastFilters, options: BroadcastTaskOptions<any, any, any>): number {
+  public enqueue<Body, Query, Out>(
+    payload: SingleTransportPayload<Body & { relays?: number }, Query>,
+    method: BaseTransportMethod<Body, Query, Out>,
+    filters?: BroadcastFilters): number {
+    return this.queue.push({
+      filters,
+      options: { immediate: false, method, payload }
+    });
+  }
+
+  public _enqueue(filters: BroadcastFilters, options: BroadcastTaskOptions<any, any, any>): number {
     options.immediate = false;
     return this.queue.push({ filters, options });
   }

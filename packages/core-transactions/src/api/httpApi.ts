@@ -1,17 +1,23 @@
 import {
-  IAccountsModel, IAccountsModule,
+  IAccountsModel,
+  IAccountsModule,
   IBlocksModule,
-  ITimeToEpoch, ITransactionLogic,
+  ITimeToEpoch,
+  ITransactionLogic,
   ITransactionsModel,
-  ITransactionsModule, Symbols
+  ITransactionsModule,
+  Symbols
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { IBaseTransaction, ITransportTransaction } from '@risevision/core-types';
 import {
   assertValidSchema,
-  castFieldsToNumberUsingSchema, HTTPError,
+  castFieldsToNumberUsingSchema,
+  HTTPError,
   IoCSymbol,
-  removeEmptyObjKeys, SchemaValid, ValidateSchema
+  removeEmptyObjKeys,
+  SchemaValid,
+  ValidateSchema
 } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
@@ -21,6 +27,7 @@ import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { TXSymbols } from '../txSymbols';
 import { TXApiGetTxFilter } from '../hooks/filters';
+import { TransactionPool } from '../TransactionPool';
 
 // tslint:disable-next-line
 const schema = require('../../schema/api.json');
@@ -54,6 +61,9 @@ export class TransactionsAPI {
 
   @inject(TXSymbols.logic)
   private txLogic: ITransactionLogic;
+
+  @inject(TXSymbols.pool)
+  private pool: TransactionPool;
 
   @Get()
   public async getTransactions(@QueryParams() body: any) {
@@ -109,7 +119,7 @@ export class TransactionsAPI {
   }
 
   @Get('/count')
-  public getCount(): Promise<{ confirmed: number, pending: number, queued: number, unconfirmed: number }> {
+  public getCount() {
     return this.transactionsModule.count();
   }
 
@@ -120,30 +130,19 @@ export class TransactionsAPI {
     @QueryParams() params: { id: string }) {
 
     const { id } = params;
-    const txOBJ     = (await this.transactionsModule.getByID(id));
+    const txOBJ  = await this.TXModel.findById(id);
     await this.txLogic.attachAssets([txOBJ]);
 
     const tx = await this.hookSystem.apply_filters(TXApiGetTxFilter.name, txOBJ.toTransport());
-    // TODO
-    // if (tx.type === TransactionType.VOTE) {
-    //   // tslint:disable-next-line
-    //   tx['votes'] = {
-    //     added  : tx.asset.votes
-    //       .filter((v) => v.startsWith('+'))
-    //       .map((v) => v.substr(1)),
-    //     deleted: tx.asset.votes
-    //       .filter((v) => v.startsWith('-'))
-    //       .map((v) => v.substr(1)),
-    //   };
-    // }
     return { transaction: tx };
   }
 
   @Get('/pending')
   @ValidateSchema()
   public async getPendings(@SchemaValid(schema.getPooledTransactions)
-                            @QueryParams() params: { senderPublicKey?: string, address?: string }) {
-    const txs = this.transactionsModule.getPendingTransactionList(true);
+                           @QueryParams() params: { senderPublicKey?: string, address?: string }) {
+    const txs = this.pool.pending.txList({ reverse: true });
+
     return {
       count       : txs.length,
       transactions: txs
@@ -158,19 +157,19 @@ export class TransactionsAPI {
   @Get('/pending/get')
   @ValidateSchema()
   public async getPending(@SchemaValid(schema.getPooledTransaction.properties.id)
-                           @QueryParam('id') id: string) {
-    const transaction = this.transactionsModule.getPendingTransaction(id);
-    if (!transaction) {
+                          @QueryParam('id') id: string) {
+    if (!this.pool.pending.has(id)) {
       throw new HTTPError('Transaction not found', 200);
     }
-    return { transaction: this.TXModel.toTransportTransaction(transaction) };
+    const { tx } = this.pool.pending.get(id);
+    return { transaction: this.TXModel.toTransportTransaction(tx) };
   }
 
   @Get('/queued')
   @ValidateSchema()
   public async getQueuedTxs(@SchemaValid(schema.getPooledTransactions)
                             @QueryParams() params: { senderPublicKey?: string, address?: string }) {
-    const txs = this.transactionsModule.getQueuedTransactionList(true);
+    const txs = this.pool.queued.txList({ reverse: true });
 
     return {
       count       : txs.length,
@@ -187,25 +186,25 @@ export class TransactionsAPI {
   @ValidateSchema()
   public async getQueuedTx(@SchemaValid(schema.getPooledTransaction.properties.id)
                            @QueryParam('id') id: string) {
-    const transaction = this.transactionsModule.getQueuedTransaction(id);
-    if (!transaction) {
+    if (!this.pool.queued.has(id)) {
       throw new HTTPError('Transaction not found', 200);
     }
-    return { transaction: this.TXModel.toTransportTransaction(transaction) };
+    const { tx } = this.pool.queued.get(id);
+    return { transaction: this.TXModel.toTransportTransaction(tx) };
   }
 
   @Get('/unconfirmed')
   @ValidateSchema()
   public async getUnconfirmedTxs(@SchemaValid(schema.getPooledTransactions)
                                  @QueryParams() params: { senderPublicKey?: string, address?: string }) {
-    const txs = this.transactionsModule.getUnconfirmedTransactionList(true);
+    const txs = this.pool.unconfirmed.txList({ reverse: true })
     return {
       count       : txs.length,
       transactions: txs
         .filter((tx) => {
           // Either senderPublicKey or address matching as recipientId
           // or all if no params were set.
-          return ( !params.senderPublicKey && !params.address) ||
+          return (!params.senderPublicKey && !params.address) ||
             (
               params.senderPublicKey ?
                 Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
@@ -225,17 +224,20 @@ export class TransactionsAPI {
   @ValidateSchema()
   public async getUnconfirmedTx(@SchemaValid(schema.getPooledTransaction.properties.id)
                                 @QueryParam('id') id: string) {
-    const transaction = this.transactionsModule.getUnconfirmedTransaction(id);
-    if (!transaction) {
+    if (!this.pool.unconfirmed.has(id)) {
       throw new HTTPError('Transaction not found', 200);
     }
-    return { transaction: this.TXModel.toTransportTransaction(transaction) };
+    const {tx} = this.pool.unconfirmed.get(id);
+    return { transaction: this.TXModel.toTransportTransaction(tx) };
   }
 
   @Put()
   @ValidateSchema()
   public async put(
-    @SchemaValid({type: 'object', properties: { transaction: {type: 'object'}, transactions: {type: 'array', maxItems: 10}}})
+    @SchemaValid({
+      type      : 'object',
+      properties: { transaction: { type: 'object' }, transactions: { type: 'array', maxItems: 10 } }
+    })
     @Body() body: {
       transaction?: ITransportTransaction<any>,
       transactions?: Array<ITransportTransaction<any>>
@@ -272,7 +274,8 @@ export class TransactionsAPI {
     // Validate transactions against db. this is a mechanism to avoid pollution of queues of invalid transactions.
     // We filter them here even before we queue them
     // NOTE: These checks are performed here and then in transactionlogic.
-    const accountsMap = await this.accountsModule.resolveAccountsForTransactions(validTxs);
+    const accountsMap = await this.accountsModule.txAccounts(validTxs);
+
     await Promise.all(validTxs.slice().map((tx) => this.transactionsModule
       .checkTransaction(tx, accountsMap, this.blocksModule.lastBlock.height)
       .then(() => validTxsIDs.push(tx.id))
@@ -287,8 +290,7 @@ export class TransactionsAPI {
       // Schema validation is done in txLogic.objectNormalize.
       await this.transactionsModule.processIncomingTransactions(
         validTxs.map((tx) => this.txLogic.objectNormalize(transportTxs[tx.id])),
-        null,
-        true
+        null
       );
     }
 

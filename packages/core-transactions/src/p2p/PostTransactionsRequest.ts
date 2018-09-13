@@ -4,6 +4,7 @@ import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { TransactionLogic } from '../TransactionLogic';
+import { TransactionsModule } from '../TransactionModule';
 // tslint:disable-next-line
 export type PostTransactionsRequestDataType = {
   transactions: Array<IBaseTransaction<any> & {relays: number}>,
@@ -20,7 +21,7 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<PostTra
   };
 
   @inject(Symbols.modules.transactions)
-  private txModule: ITransactionsModule;
+  private txModule: TransactionsModule;
 
   @inject(Symbols.logic.transaction)
   private txLogic: TransactionLogic;
@@ -66,17 +67,6 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<PostTra
     return false;
   }
 
-  protected async produceResponse(request: SingleTransportPayload<PostTransactionsRequestDataType, null>): Promise<null> {
-    if (request.body.transactions.length > 0) {
-      await this.txModule.processIncomingTransactions(
-        request.body.transactions,
-        request.requester,
-        true
-      );
-    }
-    return null;
-  }
-
   protected encodeRequest(data: PostTransactionsRequestDataType): Promise<Buffer> {
     return super.encodeRequest({
       transactions: data.transactions
@@ -89,5 +79,15 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<PostTra
     return {
       transactions: d.transactions.map((txBuf) => this.txLogic.fromProtoBuffer(txBuf as any)),
     };
+  }
+
+  protected async produceResponse(request: SingleTransportPayload<PostTransactionsRequestDataType, null>): Promise<null> {
+    if (request.body.transactions.length > 0) {
+      await this.txModule.processIncomingTransactions(
+        request.body.transactions,
+        request.requester
+      );
+    }
+    return null;
   }
 }

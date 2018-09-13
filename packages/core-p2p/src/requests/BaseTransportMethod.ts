@@ -1,11 +1,11 @@
 import { Symbols } from '@risevision/core-interfaces';
+import { PeerRequestOptions } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as querystring from 'querystring';
 import * as z_schema from 'z-schema';
 import { p2pSymbols, ProtoBufHelper } from '../helpers';
 import { Peer } from '../peer';
 import { ITransportMethod, SingleTransportPayload, WrappedTransportMessage } from './ITransportMethod';
-import { PeerRequestOptions } from '@risevision/core-types';
 
 @injectable()
 export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<Data, Query, Out> {

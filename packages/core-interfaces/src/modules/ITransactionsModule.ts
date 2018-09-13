@@ -1,17 +1,11 @@
-import { BasePeerType, IBaseTransaction, IConfirmedTransaction, ITransportTransaction } from '@risevision/core-types';
-import { IAccountsModel, ITransactionsModel } from '../models';
-import { IModule } from './IModule';
+import { BasePeerType, IBaseTransaction, IConfirmedTransaction } from '@risevision/core-types';
+import { IAccountsModel } from '../models';
 
-export interface ITransactionsModule extends IModule {
+export interface ITransactionsModule {
   /**
    * Checks if txid is in pool
    */
   transactionInPool(id: string): boolean;
-
-  /**
-   * Checks if tx is in unconfirmed state.
-   */
-  transactionUnconfirmed(id: string): boolean;
 
   /**
    * filters the provided input ids returning only the ids that are
@@ -19,52 +13,6 @@ export interface ITransactionsModule extends IModule {
    * @return {Promise<string[]>} already existing ids
    */
   filterConfirmedIds(ids: string[]): Promise<string[]>;
-
-  /**
-   * Get unconfirmed transaction from pool by id
-   */
-  getUnconfirmedTransaction<T = any>(id: string): IBaseTransaction<T>;
-
-  /**
-   * Get queued tx from pool by id
-   */
-  getQueuedTransaction<T = any>(id: string): IBaseTransaction<T>;
-
-  /**
-   * Get pending tx from pool by id
-   */
-  getPendingTransaction<T = any>(id: string): IBaseTransaction<T>;
-
-  /**
-   * Gets unconfirmed transactions based on limit and reverse option.
-   */
-  getUnconfirmedTransactionList(reverse: boolean, limit?: number): Array<IBaseTransaction<any>>;
-
-  /**
-   * Gets queued transactions based on limit and reverse option.
-   */
-  getQueuedTransactionList(reverse: boolean, limit?: number): Array<IBaseTransaction<any>>;
-
-  /**
-   * Gets pending transactions based on limit and reverse option.
-   */
-  getPendingTransactionList(reverse: boolean, limit?: number): Array<IBaseTransaction<any>>;
-
-  /**
-   * Gets unconfirmed, multisignature and queued transactions based on limit and reverse option.
-   */
-  getMergedTransactionList(limit?: number): Array<IBaseTransaction<any>>;
-
-  /**
-   * Removes transaction from unconfirmed, queued and multisignature.
-   */
-  removeUnconfirmedTransaction(id: string): boolean;
-
-  /**
-   * Checks kind of unconfirmed transaction and process it, resets queue
-   * if limit reached.
-   */
-  processUnconfirmedTransaction(transaction: IBaseTransaction<any>, broadcast: boolean): Promise<void>;
 
   /**
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
@@ -76,17 +24,7 @@ export interface ITransactionsModule extends IModule {
    */
   undoUnconfirmed(transaction: IBaseTransaction<any>): Promise<void>;
 
-  count(): Promise<{ confirmed: number, pending: number, queued: number, unconfirmed: number }>;
-
-  /**
-   * Fills the pool.
-   */
-  fillPool(): Promise<void>;
-
-  /**
-   * Get transaction by id
-   */
-  getByID<T = any>(id: string): Promise<ITransactionsModel>;
+  count(): Promise<{ [k: string]: number }>;
 
   /**
    * Check transaction - perform transaction validation when processing block
@@ -102,6 +40,5 @@ export interface ITransactionsModule extends IModule {
    * @returns {Promise<void>}
    */
   processIncomingTransactions(transactions: Array<IBaseTransaction<any>>,
-                              peer: BasePeerType | null,
-                              broadcast: boolean): Promise<void>;
+                              peer: BasePeerType | null): Promise<void>;
 }

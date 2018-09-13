@@ -4,6 +4,8 @@ import { ITransactionLogic, ITransactionsModel, ITransactionsModule, Symbols } f
 import { ModelSymbols } from '@risevision/core-models';
 import { BaseProtobufTransportMethod, ProtoIdentifier, SingleTransportPayload } from '@risevision/core-p2p';
 import { PostTransactionsRequestDataType } from './PostTransactionsRequest';
+import { TXSymbols } from '../txSymbols';
+import { TransactionPool } from '../TransactionPool';
 
 // tslint:disable-next-line
 export type GetTransactionsRequestDataType = {
@@ -23,20 +25,25 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<null, nu
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
 
-  @inject(Symbols.modules.transactions)
-  private transactionModule: ITransactionsModule;
-
-  @inject(ModelSymbols.model)
-  @named(Symbols.models.transactions)
-  private TransactionsModel: typeof ITransactionsModel;
+  @inject(TXSymbols.pool)
+  private pool: TransactionPool;
 
   // TODO: lerna remove me and use tx type constants.
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
 
   protected async produceResponse(request: SingleTransportPayload<null, null>): Promise<GetTransactionsRequestDataType> {
-    const transactions = this.transactionModule.getMergedTransactionList(this.constants.maxSharedTxs);
-    return { transactions };
+    let limit = this.constants.maxSharedTxs;
+
+    const unconfirmed = this.pool.unconfirmed.list({limit}).map((t) => t.tx);
+    limit -= unconfirmed.length;
+
+    const pending = this.pool.pending.list({limit}).map((t) => t.tx);
+    limit -= pending.length;
+
+    const ready = this.pool.ready.list({limit}).map((t) => t.tx);
+
+    return { transactions: unconfirmed.concat(pending).concat(ready)};
   }
 
   // Necessary to keep types easy to use by consumers.

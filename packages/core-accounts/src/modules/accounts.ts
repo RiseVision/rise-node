@@ -39,7 +39,7 @@ export class AccountsModule implements IAccountsModule {
     return this.accountLogic.getAll(filter);
   }
 
-  public async resolveAccountsForTransactions(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: IAccountsModel }> {
+  public unfoldSenders(txs: Array<IBaseTransaction<any>>): Array<{ publicKey: Buffer, address: string }> {
     const allSenders: Array<{ publicKey: Buffer, address: string }> = [];
     txs.forEach((tx) => {
       if (!allSenders.find((item) => item.address === tx.senderId)) {
@@ -52,6 +52,11 @@ export class AccountsModule implements IAccountsModule {
         }
       }
     });
+    return allSenders;
+  }
+
+  public async txAccounts(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: IAccountsModel }> {
+    const allSenders = this.unfoldSenders(txs);
 
     const senderAccounts = await this.AccountsModel
       .findAll({ where: { address: allSenders.map((s) => s.address) } });
@@ -61,23 +66,27 @@ export class AccountsModule implements IAccountsModule {
       sendersMap[senderAccount.address] = senderAccount;
     }
 
+    return sendersMap;
+  }
+
+  public async checkTXsAccountsMap(txs: Array<IBaseTransaction<any>>, accMap: {[add: string]: IAccountsModel}) {
+    const allSenders = this.unfoldSenders(txs);
+
     await Promise.all(allSenders.map(async ({ address, publicKey }) => {
-      if (!sendersMap[address]) {
+      if (!accMap[address]) {
         throw new Error(`Account ${address} not found in db.`);
       }
-      if (!sendersMap[address].publicKey) {
-        sendersMap[address] = await this.assignPublicKeyToAccount({ publicKey });
+      if (!accMap[address].publicKey) {
+        accMap[address] = await this.assignPublicKeyToAccount({ publicKey });
       }
       // sanity checks. A transaction could be broadcasted
-      if (sendersMap[address].address !== address) {
+      if (accMap[address].address !== address) {
         throw new Error(`Stealing attempt type.1 for ${address}`);
       }
-      if (!sendersMap[address].publicKey.equals(publicKey)) {
+      if (!accMap[address].publicKey.equals(publicKey)) {
         throw new Error(`Stealing attempt type.2 for ${address}`);
       }
     }));
-
-    return sendersMap;
   }
 
   /**
