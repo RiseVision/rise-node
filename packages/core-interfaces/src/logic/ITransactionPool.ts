@@ -14,8 +14,7 @@ export type ListingOptions<T extends { receivedAt: Date }> = {
 
 export interface IInnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }> {
   readonly identifier: string;
-
-  getCount(): number;
+  readonly count: number;
 
   has(id: string): boolean;
 

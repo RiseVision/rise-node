@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
+import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import { TransactionPool, TransactionsModel, TransactionsModule, TXSymbols } from '../../src';
 import { IAccountsModule } from '../../../core-interfaces/src/modules';
 import { IDBHelper } from '../../../core-interfaces/src/helpers';
@@ -16,6 +16,7 @@ import { createRandomTransaction, toBufferedTransaction } from '../utils/txCraft
 import { IAccountsModel } from '../../../core-interfaces/src/models';
 import { ModelSymbols } from '../../../core-models/src/helpers';
 import { StubbedInstance } from '../../../core-utils/tests/stubs';
+import { generateAccount } from '../../../core-accounts/tests/utils/accountsUtils';
 
 
 chai.use(chaiAsPromised);
@@ -24,10 +25,12 @@ class StubTxQueue extends StubbedInstance(InnerTXQueue) {
 }
 
 class StubTxPool extends StubbedInstance(TransactionPool) {
-  public unconfirmed = new StubTxQueue();
-  public bundled     = new StubTxQueue();
-  public queued      = new StubTxQueue();
-  public pending     = new StubTxQueue() as any;
+  protected queues = {
+    unconfirmed: new StubTxQueue('unconfirmed'),
+    ready      : new StubTxQueue('ready'),
+    queued     : new StubTxQueue('queued'),
+    pending    : new StubTxQueue('pending')
+  };
 }
 
 // tslint:disable no-unused-expression
@@ -46,12 +49,11 @@ describe('modules/transactions', () => {
 
   before(async () => {
     container = await createContainer(['core-transactions', 'core-helpers', 'core-blocks', 'core', 'core-accounts']);
-    container.get<TransactionPool>(Symbols.logic.txpool).cleanup();
     container.rebind(Symbols.logic.txpool).to(StubTxPool);
 
   });
   beforeEach(async () => {
-    sandbox   = sinon.createSandbox();
+    sandbox                     = sinon.createSandbox();
     instance                    = container.get(TXSymbols.module);
     txPool                      = container.get(TXSymbols.pool);
     instance['transactionPool'] = txPool;
@@ -66,12 +68,6 @@ describe('modules/transactions', () => {
     sandbox.restore();
   });
 
-  describe('cleanup', () => {
-    it('should resolve', async () => {
-      await expect(instance.cleanup()).to.be.fulfilled;
-    });
-  });
-
   describe('transactionInPool', () => {
     it('should call txPool.transactionInPool and return', () => {
       txPool.stubs.transactionInPool.returns(true);
@@ -83,231 +79,108 @@ describe('modules/transactions', () => {
     });
   });
 
-  describe('getUnconfirmedTransaction', () => {
-    it('should call txPool.unconfirmed.get and return', () => {
-      const returnedTx = { test: 'tx' };
-      txPool.unconfirmed.stubs.get.returns(returnedTx);
-      const retVal = instance.getUnconfirmedTransaction('testTxId');
-      expect(txPool.unconfirmed.stubs.get.calledOnce).to.be.true;
-      expect(txPool.unconfirmed.stubs.get.firstCall.args.length).to.be.equal(1);
-      expect(txPool.unconfirmed.stubs.get.firstCall.args[0]).to.be.equal('testTxId');
-      expect(retVal).to.be.deep.equal(returnedTx);
-    });
-  });
+  describe('applyUnconfirmed', () => {
+    let tx;
+    let sender;
+    let requester: IAccountsModel;
+    let getAccountStub: SinonStub;
+    let applyUnconfirmedSpy: SinonSpy;
+    beforeEach(() => {
+      const acc = generateAccount();
+      tx     = createRandomTransaction(acc);
+      sender = new AccountsModel({
+        address  : acc.address,
+        balance  : tx.amount * 2 + tx.fee,
+        u_balance: tx.amount * 2 + tx.fee,
+        publicKey: Buffer.from(acc.publicKey, 'hex')
+      });
 
-  describe('getQueuedTransaction', () => {
-    it('should call txPool.queued.get and return', () => {
-      const returnedTx = { test: 'tx' };
-      txPool.queued.stubs.get.returns(returnedTx);
-      const retVal = instance.getQueuedTransaction('testTxId');
-      expect(txPool.queued.stubs.get.calledOnce).to.be.true;
-      expect(txPool.queued.stubs.get.firstCall.args.length).to.be.equal(1);
-      expect(txPool.queued.stubs.get.firstCall.args[0]).to.be.equal('testTxId');
-      expect(retVal).to.be.deep.equal(returnedTx);
-    });
-  });
+      const req      = generateAccount();
+      requester      = new AccountsModel({ address: req.address, publicKey: Buffer.from(req.publicKey, 'hex') });
+      getAccountStub = sandbox.stub(accountsModule, 'getAccount').resolves(requester);
+      applyUnconfirmedSpy = sandbox.spy(txLogic, 'applyUnconfirmed');
 
-  describe('getQueuedTransaction', () => {
-    it('should call txPool.queued.get and return', () => {
-      it('should call txPool.unconfirmed.get and return', () => {
-        const returnedTx = { test: 'tx' };
-        txPool.queued.stubs.get.returns(returnedTx);
-        const retVal = instance.getQueuedTransaction('testTxId');
-        expect(txPool.queued.stubs.get.calledOnce).to.be.true;
-        expect(txPool.queued.stubs.get.firstCall.args.length).to.be.equal(1);
-        expect(txPool.queued.stubs.get.firstCall.args[0]).to.be.equal('testTxId');
-        expect(retVal).to.be.deep.equal(returnedTx);
+      sandbox.stub(dbHelper, 'performOps').resolves();
+    });
+
+    it('should throw if sender not set', async () => {
+      await expect(instance.applyUnconfirmed(tx as any, undefined)).to.be.rejectedWith('Invalid sender');
+    });
+
+    describe('when requesterPublicKey is set', () => {
+      beforeEach(() => {
+        tx.requesterPublicKey = 'requesterPublicKey';
+      });
+
+      it('should call accountsModule.getAccount', async () => {
+        await instance.applyUnconfirmed(tx as any, sender);
+        expect(getAccountStub.calledOnce).to.be.true;
+        expect(getAccountStub.firstCall.args.length).to.be.equal(1);
+        expect(getAccountStub.firstCall.args[0]).to.be.deep
+          .equal({ publicKey: tx.requesterPublicKey });
+      });
+
+      it('should throw if requester not found', async () => {
+        getAccountStub.returns(false);
+        await expect(instance.applyUnconfirmed(tx as any, sender)).to.be.rejectedWith('Requester not found');
+      });
+
+      it('should call transactionLogic.applyUnconfirmed with 3 parameters', async () => {
+        await instance.applyUnconfirmed(tx as any, sender);
+        expect(applyUnconfirmedSpy.calledOnce).to.be.true;
+        expect(applyUnconfirmedSpy.firstCall.args.length).to.be.equal(3);
+        expect(applyUnconfirmedSpy.firstCall.args[0]).to.be.deep.equal(tx);
+        expect(applyUnconfirmedSpy.firstCall.args[1]).to.be.deep.equal(sender);
+        expect(applyUnconfirmedSpy.firstCall.args[2]).to.be.deep.equal(requester);
+      });
+    });
+    describe('when requesterPublicKey is NOT set', () => {
+      it('should call transactionLogic.applyUnconfirmed with 2 parameters', async () => {
+        await instance.applyUnconfirmed(tx as any, sender);
+        expect(applyUnconfirmedSpy.calledOnce).to.be.true;
+        expect(applyUnconfirmedSpy.firstCall.args.length).to.be.equal(2);
+        expect(applyUnconfirmedSpy.firstCall.args[0]).to.be.deep.equal(tx);
+        expect(applyUnconfirmedSpy.firstCall.args[1]).to.be.deep.equal(sender);
       });
     });
   });
 
-  // describe('getMultisignatureTransaction', () => {
-  //   it('should call txPool.multisignature.get and return', () => {
-  //     const returnedTx = { test: 'tx' };
-  //     txPool.multisignature.stubs.get.returns(returnedTx);
-  //     const retVal = instance.getMultisignatureTransaction('testTxId');
-  //     expect(txPool.multisignature.stubs.get.calledOnce).to.be.true;
-  //     expect(txPool.multisignature.stubs.get.firstCall.args.length).to.be.equal(1);
-  //     expect(txPool.multisignature.stubs.get.firstCall.args[0]).to.be.equal('testTxId');
-  //     expect(retVal).to.be.deep.equal(returnedTx);
-  //   });
-  // });
+  describe('undoUnconfirmed', () => {
+    let tx;
+    let sender;
 
-  describe('getUnconfirmedTransactionList', () => {
-    it('should call txPool.unconfirmed.list and return', () => {
-      const returnedAr = [{ test: 'tx' }];
-      txPool.unconfirmed.stubs.list.returns(returnedAr);
-      const retVal = instance.getUnconfirmedTransactionList(false, 10);
-      expect(txPool.unconfirmed.stubs.list.calledOnce).to.be.true;
-      expect(txPool.unconfirmed.stubs.list.firstCall.args.length).to.be.equal(2);
-      expect(txPool.unconfirmed.stubs.list.firstCall.args[0]).to.be.equal(false);
-      expect(txPool.unconfirmed.stubs.list.firstCall.args[1]).to.be.equal(10);
-      expect(retVal).to.be.deep.equal(returnedAr);
+    let getAccountStub: SinonStub;
+    let undoUnconfirmedSpy: SinonSpy;
+    let dbHelperStub: SinonStub;
+    beforeEach(() => {
+      const acc = generateAccount();
+      tx     = createRandomTransaction(acc);
+      sender = new AccountsModel({
+        address  : acc.address,
+        balance  : tx.amount * 2 + tx.fee,
+        u_balance: tx.amount * 2 + tx.fee,
+        publicKey: Buffer.from(acc.publicKey, 'hex')
+      });
+      getAccountStub     = sandbox.stub(accountsModule, 'getAccount').resolves(sender);
+      undoUnconfirmedSpy = sandbox.spy(txLogic, 'undoUnconfirmed');
+      dbHelperStub       = sandbox.stub(dbHelper, 'performOps').resolves();
+    });
+
+    it('should call accountsModule.getAccount', async () => {
+      await instance.undoUnconfirmed(tx);
+      expect(getAccountStub.calledOnce).to.be.true;
+      expect(getAccountStub.firstCall.args.length).to.be.equal(1);
+      expect(getAccountStub.firstCall.args[0]).to.be.deep.equal({ publicKey: tx.senderPublicKey });
+    });
+
+    it('should call transactionLogic.undoUnconfirmed', async () => {
+      await instance.undoUnconfirmed(tx);
+      expect(undoUnconfirmedSpy.calledOnce).to.be.true;
+      expect(undoUnconfirmedSpy.firstCall.args.length).to.be.equal(2);
+      expect(undoUnconfirmedSpy.firstCall.args[0]).to.be.equal(tx);
+      expect(undoUnconfirmedSpy.firstCall.args[1]).to.be.equal(sender);
     });
   });
-
-  describe('getQueuedTransactionList', () => {
-    it('should call txPool.queued.list and return', () => {
-      const returnedAr = [{ test: 'tx' }];
-      txPool.queued.stubs.list.returns(returnedAr);
-      const retVal = instance.getQueuedTransactionList(false, 10);
-      expect(txPool.queued.stubs.list.calledOnce).to.be.true;
-      expect(txPool.queued.stubs.list.firstCall.args.length).to.be.equal(2);
-      expect(txPool.queued.stubs.list.firstCall.args[0]).to.be.equal(false);
-      expect(txPool.queued.stubs.list.firstCall.args[1]).to.be.equal(10);
-      expect(retVal).to.be.deep.equal(returnedAr);
-    });
-  });
-
-  // describe('getMultisignatureTransactionList', () => {
-  //   it('should call txPool.multisignature.list and return', () => {
-  //     const returnedAr = [{ test: 'tx' }];
-  //     txPool.multisignature.stubs.list.returns(returnedAr);
-  //     const retVal = instance.getMultisignatureTransactionList(false, 10);
-  //     expect(txPool.multisignature.stubs.list.calledOnce).to.be.true;
-  //     expect(txPool.multisignature.stubs.list.firstCall.args.length).to.be.equal(2);
-  //     expect(txPool.multisignature.stubs.list.firstCall.args[0]).to.be.equal(false);
-  //     expect(txPool.multisignature.stubs.list.firstCall.args[1]).to.be.equal(10);
-  //     expect(retVal).to.be.deep.equal(returnedAr);
-  //   });
-  // });
-
-  describe('getMergedTransactionList', () => {
-    it('should call txPool.getMergedTransactionList and return', () => {
-      const returnedAr = [{ test: 'tx' }];
-      txPool.stubs.getMergedTransactionList.returns(returnedAr);
-      const retVal = instance.getMergedTransactionList(10);
-      expect(txPool.stubs.getMergedTransactionList.calledOnce).to.be.true;
-      expect(txPool.stubs.getMergedTransactionList.firstCall.args.length).to.be.equal(1);
-      expect(txPool.stubs.getMergedTransactionList.firstCall.args[0]).to.be.equal(10);
-      expect(retVal).to.be.deep.equal(returnedAr);
-    });
-  });
-
-  describe('removeUnconfirmedTransaction', () => {
-    it('should call txPool.unconfirmed.remove, txPool.queued.remove, txPool.multisignature.remove', () => {
-      instance.removeUnconfirmedTransaction('txId');
-      expect(txPool.unconfirmed.stubs.remove.calledOnce).to.be.true;
-      expect(txPool.unconfirmed.stubs.remove.firstCall.args.length).to.be.equal(1);
-      expect(txPool.unconfirmed.stubs.remove.firstCall.args[0]).to.be.equal('txId');
-      expect(txPool.queued.stubs.remove.calledOnce).to.be.true;
-      expect(txPool.queued.stubs.remove.firstCall.args.length).to.be.equal(1);
-      expect(txPool.queued.stubs.remove.firstCall.args[0]).to.be.equal('txId');
-      expect(txPool.pending.stubs.remove.calledOnce).to.be.true;
-      expect(txPool.pending.stubs.remove.firstCall.args.length).to.be.equal(1);
-      expect(txPool.pending.stubs.remove.firstCall.args[0]).to.be.equal('txId');
-    });
-  });
-
-  describe('processUnconfirmedTransaction', () => {
-    it('should call txPool.processNewTransaction and return', () => {
-      const tx = { the: 'tx' };
-      txPool.stubs.processNewTransaction.returns('done');
-      const retVal = instance.processUnconfirmedTransaction(tx as any, false);
-      expect(txPool.stubs.processNewTransaction.calledOnce).to.be.true;
-      expect(txPool.stubs.processNewTransaction.firstCall.args.length).to.be.equal(1);
-      expect(txPool.stubs.processNewTransaction.firstCall.args[0]).to.be.deep.equal(tx);
-      expect(retVal).to.be.equal('done');
-    });
-  });
-
-  // describe('applyUnconfirmed', () => {
-  //   let tx;
-  //   let sender;
-  //   const requester = { the: 'requester' };
-  //   let getAccountStub: SinonStub;
-  //   beforeEach(() => {
-  //     tx             = { the: 'tx', id: 'tx1', blockId: 'blockId' };
-  //     sender         = { the: 'sender' };
-  //     getAccountStub = sandbox.stub(accountsModule, 'getAccount');
-  //     txLogic.stubs.applyUnconfirmed.returns('done');
-  //     dbHelper.enqueueResponse('performOps', Promise.resolve());
-  //
-  //   });
-  //
-  //
-  //   it('should throw if sender not set and tx not in genesis block', async () => {
-  //     await expect(instance.applyUnconfirmed(tx as any, undefined)).to.be.rejectedWith('Invalid block id');
-  //   });
-  //
-  //   it('should not throw if sender not set and tx IS in genesis block', async () => {
-  //     tx.blockId = genesisBlock.id;
-  //     await expect(instance.applyUnconfirmed(tx as any, undefined)).to.be.fulfilled;
-  //   });
-  //
-  //   describe('when requesterPublicKey is set', () => {
-  //     beforeEach(() => {
-  //       tx.requesterPublicKey = 'requesterPublicKey';
-  //     });
-  //
-  //     it('should call accountsModule.getAccount', async () => {
-  //       await instance.applyUnconfirmed(tx as any, sender);
-  //       expect(accountsModuleStub.stubs.getAccount.calledOnce).to.be.true;
-  //       expect(accountsModuleStub.stubs.getAccount.firstCall.args.length).to.be.equal(1);
-  //       expect(accountsModuleStub.stubs.getAccount.firstCall.args[0]).to.be.deep
-  //         .equal({ publicKey: tx.requesterPublicKey });
-  //     });
-  //
-  //     it('should throw if requester not found', async () => {
-  //       accountsModuleStub.stubs.getAccount.returns(false);
-  //       await expect(instance.applyUnconfirmed(tx as any, sender)).to.be.rejectedWith('Requester not found');
-  //     });
-  //
-  //     it('should call transactionLogic.applyUnconfirmed with 3 parameters', async () => {
-  //       await instance.applyUnconfirmed(tx as any, sender);
-  //       expect(txLogic.stubs.applyUnconfirmed.calledOnce).to.be.true;
-  //       expect(txLogic.stubs.applyUnconfirmed.firstCall.args.length).to.be.equal(3);
-  //       expect(txLogic.stubs.applyUnconfirmed.firstCall.args[0]).to.be.deep.equal(tx);
-  //       expect(txLogic.stubs.applyUnconfirmed.firstCall.args[1]).to.be.deep.equal(sender);
-  //       expect(txLogic.stubs.applyUnconfirmed.firstCall.args[2]).to.be.deep.equal(requester);
-  //     });
-  //   });
-  //   describe('when requesterPublicKey is NOT set', () => {
-  //     it('should call transactionLogic.applyUnconfirmed with 2 parameters', async () => {
-  //       await instance.applyUnconfirmed(tx as any, sender);
-  //       expect(txLogic.stubs.applyUnconfirmed.calledOnce).to.be.true;
-  //       expect(txLogic.stubs.applyUnconfirmed.firstCall.args.length).to.be.equal(2);
-  //       expect(txLogic.stubs.applyUnconfirmed.firstCall.args[0]).to.be.deep.equal(tx);
-  //       expect(txLogic.stubs.applyUnconfirmed.firstCall.args[1]).to.be.deep.equal(sender);
-  //     });
-  //   });
-  // });
-  //
-  // describe('undoUnconfirmed', () => {
-  //   const tx     = {
-  //     id             : 'txId',
-  //     senderPublicKey: 'pubKey',
-  //   };
-  //   const sender = { account: 'id' };
-  //
-  //   beforeEach(() => {
-  //     accountsModuleStub.stubs.getAccount.resolves(sender);
-  //     txLogic.stubs.undoUnconfirmed.resolves();
-  //     dbHelper.enqueueResponse('performOps', Promise.resolve());
-  //   });
-  //
-  //   it('should call logger.debug', async () => {
-  //     await instance.undoUnconfirmed(tx);
-  //     expect(loggerStub.stubs.debug.calledOnce).to.be.true;
-  //     expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
-  //     expect(loggerStub.stubs.debug.firstCall.args[0]).to.contain('Undoing unconfirmed transaction');
-  //   });
-  //
-  //   it('should call accountsModule.getAccount', async () => {
-  //     await instance.undoUnconfirmed(tx);
-  //     expect(accountsModuleStub.stubs.getAccount.calledOnce).to.be.true;
-  //     expect(accountsModuleStub.stubs.getAccount.firstCall.args.length).to.be.equal(1);
-  //     expect(accountsModuleStub.stubs.getAccount.firstCall.args[0]).to.be.deep.equal({ publicKey: tx.senderPublicKey });
-  //   });
-  //
-  //   it('should call transactionLogic.undoUnconfirmed', async () => {
-  //     await instance.undoUnconfirmed(tx);
-  //     expect(txLogic.stubs.undoUnconfirmed.calledOnce).to.be.true;
-  //     expect(txLogic.stubs.undoUnconfirmed.firstCall.args.length).to.be.equal(2);
-  //     expect(txLogic.stubs.undoUnconfirmed.firstCall.args[0]).to.be.equal(tx);
-  //     expect(txLogic.stubs.undoUnconfirmed.firstCall.args[1]).to.be.equal(sender);
-  //   });
-  // });
 
   describe('count', () => {
     let txModel: typeof TransactionsModel;
@@ -315,9 +188,9 @@ describe('modules/transactions', () => {
     beforeEach(() => {
       txModel     = container.getNamed(ModelSymbols.model, Symbols.models.transactions);
       txCountStub = sandbox.stub(txModel, 'count').resolves(12345);
-      Object.defineProperty(txPool.pending, 'count', {value: 3});
-      Object.defineProperty(txPool.queued, 'count', {value: 2});
-      Object.defineProperty(txPool.unconfirmed, 'count', {value: 1});
+      Object.defineProperty(txPool.pending, 'count', { value: 3 });
+      Object.defineProperty(txPool.queued, 'count', { value: 2 });
+      Object.defineProperty(txPool.unconfirmed, 'count', { value: 1 });
     });
 
     it('should call db.query', async () => {
@@ -332,51 +205,8 @@ describe('modules/transactions', () => {
         pending    : 3,
         queued     : 2,
         unconfirmed: 1,
+        ready      : 0,
       });
-    });
-  });
-
-  describe('fillPool', () => {
-    const newUnconfirmedTXs = new Array(3).fill(null)
-      .map(() => createRandomTransaction())
-      .map((t) => toBufferedTransaction(t));
-    let filterConfIDsStub: SinonStub;
-    beforeEach(() => {
-      txPool.stubs.fillPool.resolves(newUnconfirmedTXs.slice());
-      txPool.stubs.applyUnconfirmedList.resolves();
-      filterConfIDsStub = sandbox.stub(instance, 'filterConfirmedIds').resolves([]);
-    });
-
-    it('should call txPool.fillPool', async () => {
-      await instance.fillPool();
-      expect(txPool.stubs.fillPool.calledOnce).to.be.true;
-      expect(txPool.stubs.fillPool.firstCall.args.length).to.be.equal(0);
-    });
-
-    it('should call transactionPool.applyUnconfirmedList', async () => {
-      await instance.fillPool();
-      expect(txPool.stubs.applyUnconfirmedList.calledOnce).to.be.true;
-      expect(txPool.stubs.applyUnconfirmedList.firstCall.args.length).to.be.equal(2);
-      expect(txPool.stubs.applyUnconfirmedList.firstCall.args[0]).to.be.deep.equal(newUnconfirmedTXs);
-      expect(txPool.stubs.applyUnconfirmedList.firstCall.args[1]).to.be.deep.equal(instance);
-    });
-
-    it('should query for confirmed ids', async () => {
-      await instance.fillPool();
-      expect(filterConfIDsStub.called).is.true;
-      expect(filterConfIDsStub.firstCall.args[0]).is.deep.eq(newUnconfirmedTXs.map((t) => t.id));
-    });
-
-    it('should exclude already confirmed transaction', async () => {
-      filterConfIDsStub.resolves([newUnconfirmedTXs[1].id]);
-      await instance.fillPool();
-      expect(txPool.stubs.applyUnconfirmedList.calledOnce).to.be.true;
-      expect(txPool.stubs.applyUnconfirmedList.firstCall.args.length).to.be.equal(2);
-      expect(txPool.stubs.applyUnconfirmedList.firstCall.args[0]).to.be.deep.equal([
-        newUnconfirmedTXs[0],
-        newUnconfirmedTXs[2],
-      ]);
-      expect(txPool.stubs.applyUnconfirmedList.firstCall.args[1]).to.be.deep.equal(instance);
     });
   });
 
@@ -404,6 +234,7 @@ describe('modules/transactions', () => {
       expect(retVal).to.be.deep.equal('tx');
     });
   });
+
   describe('checkTransaction', () => {
     let tx: IBaseTransaction<any>;
     let readyStub: SinonStub;
@@ -425,11 +256,12 @@ describe('modules/transactions', () => {
       await expect(instance.checkTransaction(tx, { [tx.senderId]: new AccountsModel() }, 1))
         .to.rejectedWith('Cannot find requester from accounts');
     });
-    it('should query readyness and throw if not ready', async () => {
-      readyStub.returns(false);
-      await expect(instance.checkTransaction(tx, { [tx.senderId]: new AccountsModel() }, 1))
-        .to.rejectedWith(`Transaction ${tx.id} is not ready`);
-    });
+
+    // it('should query readyness and throw if not ready', async () => {
+    //   readyStub.returns(false);
+    //   await expect(instance.checkTransaction(tx, { [tx.senderId]: new AccountsModel() }, 1))
+    //     .to.rejectedWith(`Transaction ${tx.id} is not ready`);
+    // });
     it('should query txLogic.verify with proper data', async () => {
       tx.requesterPublicKey = Buffer.from('abababab', 'hex');
       genAddressStub.returns('1111R');
@@ -449,5 +281,12 @@ describe('modules/transactions', () => {
       expect(verifyStub.firstCall.args[2]).deep.eq(requester);
       expect(verifyStub.firstCall.args[3]).deep.eq(1);
     });
+  });
+
+  describe('processIncomingTransactions', () => {
+    it('should throw if tx is not passing through txLogic.objectNormalize');
+    it('should remove peer if normalizationf ailed');
+    it('should add valid transactions to the queued queue of the txpool');
+    it('should filter already confirmed transactions');
   });
 });

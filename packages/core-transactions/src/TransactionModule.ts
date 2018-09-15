@@ -102,8 +102,11 @@ export class TransactionsModule implements ITransactionsModule {
    */
   // tslint:disable-next-line max-line-length
   public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: IAccountsModel): Promise<void> {
+    if (!sender) {
+      throw new Error('Invalid sender');
+    }
     // tslint:disable-next-line max-line-length
-    this.logger.debug(`Applying unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${(sender || { u_balance: undefined }).u_balance}`);
+    this.logger.debug(`Applying unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${(sender || { } as any).u_balance}`);
 
     if (!sender && transaction.blockId !== this.genesisBlock.id) {
       throw new Error('Invalid block id');
@@ -134,10 +137,10 @@ export class TransactionsModule implements ITransactionsModule {
   public async count() {
     return {
       confirmed  : await this.TXModel.count(),
-      pending    : this.transactionPool.pending.getCount(),
-      queued     : this.transactionPool.queued.getCount(),
-      ready      : this.transactionPool.ready.getCount(),
-      unconfirmed: this.transactionPool.unconfirmed.getCount(),
+      pending    : this.transactionPool.pending.count,
+      queued     : this.transactionPool.queued.count,
+      ready      : this.transactionPool.ready.count,
+      unconfirmed: this.transactionPool.unconfirmed.count,
     };
   }
 

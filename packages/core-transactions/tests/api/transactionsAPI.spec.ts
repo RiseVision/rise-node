@@ -5,15 +5,21 @@ import { Op } from 'sequelize';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { TransactionsAPI, TXApiGetTxFilter, TXSymbols } from '../../src';
+import {
+  TransactionLogic,
+  TransactionPool,
+  TransactionsAPI,
+  TransactionsModule,
+  TXApiGetTxFilter,
+  TXSymbols
+} from '../../src';
 import { createContainer } from '@risevision/core-launchpad/tests/utils/createContainer';
 import {
   IAccountsModule,
   IBlocksModule,
   ITransactionsModule,
-  ITransportModule
 } from '../../../core-interfaces/src/modules';
-import { ITransactionLogic, ITransactionPoolLogic } from '../../../core-interfaces/src/logic';
+import { ITransactionLogic } from '../../../core-interfaces/src/logic';
 import { ITransactionsModel } from '../../../core-interfaces/src/models';
 import { Symbols } from '../../../core-interfaces/src';
 import { APISymbols } from '../../../core-apis/src/helpers';
@@ -36,9 +42,9 @@ describe('apis/transactionsAPI', () => {
   let instance: TransactionsAPI;
   let container: Container;
   let result: any;
-  let txModule: ITransactionsModule;
-  let txLogic: ITransactionLogic;
-  let transportModule: ITransportModule;
+  let txModule: TransactionsModule;
+  let txLogic: TransactionLogic;
+  let txPool: TransactionPool;
   let hookSystem: WordPressHookSystem;
   let TransactionsModel: typeof ITransactionsModel;
   let blocksModule: IBlocksModule;
@@ -50,9 +56,9 @@ describe('apis/transactionsAPI', () => {
 
     instance          = container.getNamed(APISymbols.api, TXSymbols.api.api);
     TransactionsModel = container.getNamed(ModelSymbols.model, Symbols.models.transactions);
-    transportModule   = container.get(Symbols.modules.transport);
     blocksModule      = container.get<IBlocksModule>(Symbols.modules.blocks);
     txLogic           = container.get(Symbols.logic.transaction);
+    txPool           = container.get(TXSymbols.pool);
   });
 
   afterEach(() => {
@@ -143,15 +149,14 @@ describe('apis/transactionsAPI', () => {
   });
 
   describe('getTX()', () => {
-    let getByIDStub: SinonStub;
-    beforeEach(() => {
-      getByIDStub = sandbox.stub(txModule, 'getByID');
-    });
 
     it('should return tx with attached assets and passed through filter.', async () => {
       const t  = createRandomTransaction();
       const tx = toBufferedTransaction(t);
-      getByIDStub.resolves(new TransactionsModel(tx));
+      const TxModel = container.getNamed<typeof TransactionsModel>(ModelSymbols.model, TXSymbols.model);
+      const findStub = sandbox.stub(TxModel, 'findById').resolves(new TxModel(tx));
+
+
       const attachAssetsStub = sandbox.stub(txLogic, 'attachAssets').callsFake((txs) => {
         txs.forEach((tx) => {
           tx.asset = { delegate: { username: 'meow' } };
@@ -272,21 +277,23 @@ describe('apis/transactionsAPI', () => {
     it('should call transactionsModule.getQueuedTransaction and return transaction', async () => {
       const id                      = '1';
       const transaction             = {};
-      const getQueueTransactionStub = sandbox.stub(txModule, 'getQueuedTransaction').returns(transaction);
+      sandbox.stub(txPool.queued, 'has').returns(true);
+      const getStub = sandbox.stub(txPool.queued, 'get').returns({tx: transaction});
+
       expect(await instance.getQueuedTx(id)).to.be.deep.equal({ transaction });
 
-      expect(getQueueTransactionStub.calledOnce).to.be
+      expect(getStub.calledOnce).to.be
         .true;
       expect(
-        getQueueTransactionStub.firstCall.args.length
+        getStub.firstCall.args.length
       ).to.be.equal(1);
       expect(
-        getQueueTransactionStub.firstCall.args[0]
+        getStub.firstCall.args[0]
       ).to.be.equal(id);
     });
 
     it('should throw error if transaction is null', async () => {
-      const getQueueTransactionStub = sandbox.stub(txModule, 'getQueuedTransaction').returns(null);
+      sandbox.stub(txPool.queued, 'has').returns(false);
       await expect(instance.getQueuedTx('1')).to.be.rejectedWith(
         'Transaction not found'
       );
@@ -297,12 +304,10 @@ describe('apis/transactionsAPI', () => {
     let transportTxs: Array<ITransaction<any>>;
     let txs: Array<IBaseTransaction<any>>;
     beforeEach(() => {
-      const txPool: ITransactionPoolLogic = container.get(TXSymbols.pool);
-
       transportTxs = new Array(5).fill(null).map(() => createRandomTransaction());
       txs          = transportTxs.map((t) => toBufferedTransaction(t));
 
-      txs.forEach((tx) => txPool.queued.add(tx));
+      txs.forEach((tx) => txPool.queued.add(tx, {receivedAt: new Date()}));
     })
     it('filtering by senderPublicKey & address', async () => {
       result = await instance.getQueuedTxs({
@@ -350,9 +355,8 @@ describe('apis/transactionsAPI', () => {
   describe('getUnconfirmedTxs()', () => {
     let transportTXS: ITransaction[];
     beforeEach(() => {
-      const txPool: ITransactionPoolLogic = container.get(TXSymbols.pool);
       transportTXS = createRandomTransactions(5);
-      transportTXS.forEach((t) => txPool.unconfirmed.add(toBufferedTransaction(t)));
+      transportTXS.forEach((t) => txPool.unconfirmed.add(toBufferedTransaction(t), {receivedAt: new Date()}));
     });
     it('filtering by senderPublicKey &  address', async () => {
       result = await instance.getUnconfirmedTxs({
@@ -386,8 +390,7 @@ describe('apis/transactionsAPI', () => {
 
     it('should to be reject with a message \'Transaction not found\'', async () => {
       const t = createRandomTransaction();
-      const txPool: ITransactionPoolLogic = container.get(TXSymbols.pool);
-      txPool.unconfirmed.add(toBufferedTransaction(t));
+      txPool.unconfirmed.add(toBufferedTransaction(t), {receivedAt: new Date()});
       const r = await instance.getUnconfirmedTx(t.id);
       expect(r).deep.eq({transaction: {...t, signSignature: null, requesterPublicKey: null}});
     });
@@ -397,7 +400,7 @@ describe('apis/transactionsAPI', () => {
     let resolveAccTransactionStub: SinonStub;
     beforeEach(() => {
       accModule                 = container.get(Symbols.modules.accounts);
-      resolveAccTransactionStub = sandbox.stub(accModule, 'resolveAccountsForTransactions').resolves({});
+      resolveAccTransactionStub = sandbox.stub(accModule, 'txAccounts').resolves({});
     });
 
     it('should respond correctly even if no transaction is provided', async () => {

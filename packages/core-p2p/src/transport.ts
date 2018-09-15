@@ -215,7 +215,7 @@ export class TransportModule extends Extendable {
         if (p && p.state !== PeerState.BANNED && (!p.updated || Date.now() - p.updated > 3000)) {
           this.logger.trace('Updating peer', p.string);
           try {
-            await p.makeRequest(this.pingRequest)
+            await p.makeRequest(this.pingRequest);
           } catch (err) {
             this.logger.debug(`Ping failed when updating peer ${p.string}`, err);
           }

@@ -19,11 +19,10 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
 
-
   @inject(p2pSymbols.helpers.protoBuf)
   public protoBufHelper: ProtoBufHelper;
 
-  public async createRequestOptions(req: SingleTransportPayload<Data, Query> = {}): Promise<PeerRequestOptions<Buffer>> {
+  public async createRequestOptions(req: SingleTransportPayload<Data, Query> = {body: null}): Promise<PeerRequestOptions<Buffer>> {
     const queryString = req.query !== null ? `?${querystring.stringify(req.query)}` : '';
     return {
       data  : await this.encodeRequest(req.body),

@@ -13,7 +13,7 @@ export class InnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }>
     return id in this.index;
   }
 
-  public getCount() {
+  public get count() {
     return Object.keys(this.index).length;
   }
 

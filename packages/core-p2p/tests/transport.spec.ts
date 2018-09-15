@@ -22,6 +22,8 @@ import { createFakeBlock } from '../../core-blocks/tests/utils/createFakeBlocks'
 import { StubbedRequest } from './utils/StubbedRequest';
 import { PeerState } from '../../core-types/src';
 import { wait } from '../../core-utils/src';
+import { p2pSymbols } from '../src/helpers';
+import { PingRequest } from '../src/requests';
 
 chai.use(chaiAsPromised);
 
@@ -339,9 +341,10 @@ describe('src/modules/transport.ts', () => {
     let discoverPeersStub: SinonStub;
     let registerStub: SinonStub;
     let peerListStub: SinonStub;
+    let pingRequest: PingRequest;
     beforeEach(() => {
       peers = [{
-        pingAndUpdate: sandbox.stub(),
+        makeRequest: sandbox.stub(),
         state        : PeerState.CONNECTED,
         string       : 'string',
         updated      : false,
@@ -358,6 +361,7 @@ describe('src/modules/transport.ts', () => {
 
       discoverPeersStub = sandbox.stub(inst as any, 'discoverPeers');
       peerListStub      = sandbox.stub(peersLogic, 'list').returns(peers);
+      pingRequest = container.getNamed(p2pSymbols.transportMethod, p2pSymbols.requests.ping);
     });
 
     it('should call logger.trace', async () => {
@@ -440,8 +444,9 @@ describe('src/modules/transport.ts', () => {
       it('should call pingAndUpdate(check on p.updated is false)', async () => {
         await inst.onPeersReady();
 
-        expect(peers[0].pingAndUpdate.calledOnce).to.be.true;
-        expect(peers[0].pingAndUpdate.firstCall.args.length).to.be.equal(0);
+        expect(peers[0].makeRequest.calledOnce).to.be.true;
+        expect(peers[0].makeRequest.firstCall.args.length).to.be.equal(1);
+        expect(peers[0].makeRequest.firstCall.args[0]).deep.eq(pingRequest);
       });
 
       it('should call pingAndUpdate(check on Date.now() - p.updated > 3000)', async () => {
@@ -449,14 +454,14 @@ describe('src/modules/transport.ts', () => {
 
         await inst.onPeersReady();
         await wait(10);
-        expect(peers[0].pingAndUpdate.calledOnce).to.be.true;
-        expect(peers[0].pingAndUpdate.firstCall.args.length).to.be.equal(0);
+        expect(peers[0].makeRequest.calledOnce).to.be.true;
+        expect(peers[0].makeRequest.firstCall.args[0]).deep.eq(pingRequest);
       });
 
       it('should call logger.debug if pingAndUpdate throw', async () => {
         const error = new Error('error');
         logger.stubs.debug.resetHistory();
-        peers[0].pingAndUpdate.rejects(error);
+        peers[0].makeRequest.rejects(error);
 
         await inst.onPeersReady();
         await wait(10);

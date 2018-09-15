@@ -1,54 +1,71 @@
 import { expect } from 'chai';
-import { GetTransactionsRequest, TransactionLogic, TXSymbols } from '../../src/';
+import { GetTransactionsRequest, TransactionPool, TXSymbols } from '../../src/';
 import { createFakePeer } from '@risevision/core-p2p/tests/utils/fakePeersFactory';
 import { createContainer } from '@risevision/core-launchpad/tests/utils/createContainer';
 import { Container } from 'inversify';
-import { RequestFactoryType } from '@risevision/core-p2p';
-import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
-import { createRandomTransactions } from '../utils/txCrafter';
+import { p2pSymbols } from '@risevision/core-p2p';
+import { createRandomTransaction, toBufferedTransaction } from '../utils/txCrafter';
+import { Symbols } from '../../../core-interfaces/src';
+import { ConstantsType } from '../../../core-types/src';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/GetTransactionsRequest', () => {
   let instance: GetTransactionsRequest;
   let peer: any;
   let container: Container;
-  before(async () => {
+
+  let txPool: TransactionPool;
+  beforeEach(async () => {
     container = await createContainer(['core-transactions', 'core-helpers', 'core-blocks', 'core', 'core-accounts']);
-  });
-  beforeEach(() => {
-    const factory = container.get<RequestFactoryType<any, any>>(TXSymbols.p2p.getTransactions)
-    instance = factory({data: null});
-    peer             = createFakePeer();
+    instance = container.getNamed(p2pSymbols.transportMethod, TXSymbols.p2p.getTransactions);
+    txPool   = container.get(TXSymbols.pool);
+    peer     = createFakePeer();
   });
 
-  describe('getResponseData', () => {
-    it('should decode valid response', async () => {
-      const protoBuf = container.get<ProtoBufHelper>(p2pSymbols.helpers.protoBuf);
-      const txLogic = container.get<TransactionLogic>(TXSymbols.logic);
-      const txs = createRandomTransactions(10)
-        .map((t) => txLogic.objectNormalize(t));
-      const byteTxs = txs
-        .map((tx, idx) => txLogic.toProtoBuffer({
-          ...tx,
-          relays: idx
-        }));
-      const buf = protoBuf.encode(
-        { transactions: byteTxs },
-        'transactions.transport',
-        'transportTransactions'
-      );
-      const bit = instance.getResponseData({ body: buf, peer});
-      expect(bit).deep.eq({
-        transactions: txs.map((tx, idx) => ({...tx, relays: idx, asset: null, requesterPublicKey: null}))
-      });
-    });
-    it('should handle null buffer', async () => {
-      expect(() => instance.getResponseData({body: null, peer}))
-        .throw;
-    });
-    it('should handle invalid buffer', async () => {
-      expect(() => instance.getResponseData({body: new Buffer('meow'), peer}))
-        .throw;
-    });
+  async function createRequest() {
+    const { data }  = await instance.createRequestOptions();
+    const resp      = await instance.handleRequest(data, null);
+    return instance.handleResponse(null, resp);
+  }
+  it('emptytest', async () => {
+    const finalData = await createRequest();
+    expect(finalData).deep.eq({ transactions: [] });
+  });
+  it('with 1 tx', async () => {
+    const tx = toBufferedTransaction(createRandomTransaction());
+    txPool.unconfirmed.add(tx, { receivedAt: new Date() });
+    const finalData = await createRequest();
+    delete tx.signSignature;
+    expect(finalData).deep.eq({ transactions: [{...tx, relays: 1, asset: null}] });
+  });
+  it('with some txs from dif pool - order is respsected', async () => {
+    const unconfirmed = toBufferedTransaction(createRandomTransaction());
+    const pending = toBufferedTransaction(createRandomTransaction());
+    const ready = toBufferedTransaction(createRandomTransaction());
+
+    txPool.unconfirmed.add(unconfirmed, {receivedAt: new Date()});
+    txPool.pending.add(pending, {receivedAt: new Date(), ready: false});
+    txPool.ready.add(ready, {receivedAt: new Date()});
+
+    delete unconfirmed.signSignature;
+    delete pending.signSignature;
+    delete ready.signSignature;
+
+    const finalData = await createRequest();
+    expect(finalData).deep.eq({ transactions: [unconfirmed, pending, ready].map((t) => ({
+        ...t, asset: null, relays: 1
+      })) });
+  });
+  it('should honor limit', async () => {
+    const constants = container.get<ConstantsType>(Symbols.generic.constants);
+    constants.maxSharedTxs = 10;
+    new Array(10)
+      .fill(null)
+      .map(() => toBufferedTransaction(createRandomTransaction()))
+      .forEach((t) => txPool.unconfirmed.add(t, {receivedAt: new Date()}));
+    txPool.pending.add(toBufferedTransaction(createRandomTransaction()), {receivedAt: new Date(), ready: false});
+    txPool.ready.add(toBufferedTransaction(createRandomTransaction()), {receivedAt: new Date()});
+    const finalData = await createRequest();
+    expect(finalData.transactions.length).eq(10);
   });
 });

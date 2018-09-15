@@ -10,7 +10,7 @@ type QueueType = 'queued' | 'pending' | 'ready' | 'unconfirmed';
 // tslint:disable-next-line
 @injectable()
 export class TransactionPool implements ITransactionPool {
-  private queues: {[k in QueueType]: InnerTXQueue};
+  protected queues: {[k in QueueType]: InnerTXQueue};
 
   get queued() {
     return this.queues.queued;

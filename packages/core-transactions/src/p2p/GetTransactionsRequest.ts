@@ -1,7 +1,6 @@
-import { inject, injectable, named } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
-import { ITransactionLogic, ITransactionsModel, ITransactionsModule, Symbols } from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
+import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
 import { BaseProtobufTransportMethod, ProtoIdentifier, SingleTransportPayload } from '@risevision/core-p2p';
 import { PostTransactionsRequestDataType } from './PostTransactionsRequest';
 import { TXSymbols } from '../txSymbols';
@@ -35,15 +34,15 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<null, nu
   protected async produceResponse(request: SingleTransportPayload<null, null>): Promise<GetTransactionsRequestDataType> {
     let limit = this.constants.maxSharedTxs;
 
-    const unconfirmed = this.pool.unconfirmed.list({limit}).map((t) => t.tx);
+    const unconfirmed = this.pool.unconfirmed.list({ limit }).map((t) => t.tx);
     limit -= unconfirmed.length;
 
-    const pending = this.pool.pending.list({limit}).map((t) => t.tx);
+    const pending = this.pool.pending.list({ limit }).map((t) => t.tx);
     limit -= pending.length;
 
-    const ready = this.pool.ready.list({limit}).map((t) => t.tx);
+    const ready = this.pool.ready.list({ limit }).map((t) => t.tx);
 
-    return { transactions: unconfirmed.concat(pending).concat(ready)};
+    return { transactions: unconfirmed.concat(pending).concat(ready) };
   }
 
   // Necessary to keep types easy to use by consumers.
@@ -56,8 +55,8 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<null, nu
   protected async decodeResponse(res: Buffer): Promise<GetTransactionsRequestDataType> {
     const superRes: { transactions: Buffer[] } = await super.decodeResponse(res) as any;
     return {
-      transactions: superRes.transactions
-        .map((bufTx) => this.transactionLogic.fromProtoBuffer(bufTx))
+      transactions: (superRes.transactions || [])
+        .map((bufTx) => this.transactionLogic.fromProtoBuffer(bufTx)),
     };
   }
 }

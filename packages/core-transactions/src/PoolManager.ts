@@ -122,7 +122,7 @@ export class PoolManager {
   @WrapInBalanceSequence
   protected async applyUnconfirmed() {
 // Unconfirm some txs.
-    const missingUnconfirmed = this.constants.maxTxsPerBlock - this.pool.unconfirmed.getCount();
+    const missingUnconfirmed = this.constants.maxTxsPerBlock - this.pool.unconfirmed.count;
     const readyTxs           = this.pool.ready.list({
       limit  : missingUnconfirmed,
       reverse: true,
