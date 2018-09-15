@@ -21,6 +21,15 @@ export class Slots implements ISlots {
   }
 
   /**
+   * Maxim number of delegates between which forgers are chosen
+   */
+  public getDelegatesPoolSize(height?: number): number {
+    height = height || this.blocksModule.lastBlock.height;
+    return height < this.constants.fairVoteSystem.firstBlock ? this.constants.activeDelegates
+      : this.constants.activeDelegates + this.constants.fairVoteSystem.outsidersPoolSize;
+  }
+
+  /**
    * Slot interval in seconds
    */
   private get interval() {

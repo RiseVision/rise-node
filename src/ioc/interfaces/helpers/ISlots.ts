@@ -1,6 +1,8 @@
 export interface ISlots {
   numDelegates(height?: number): number;
 
+  getDelegatesPoolSize(height?: number): number;
+
   /**
    * Calculates time since epoch.
    */

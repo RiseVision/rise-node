@@ -15,6 +15,7 @@ import { SignedAndChainedBlockType } from '../../logic/';
 import { AccountsModel, BlocksModel, RoundsFeesModel, TransactionsModel } from '../../models';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
 import { publicKey } from '../../types/sanityTypes';
+import { ISlots } from '../../ioc/interfaces/helpers';
 
 @injectable()
 export class BlocksModuleUtils implements IBlocksModuleUtils {
@@ -31,6 +32,8 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   private dbSequence: Sequence;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  @inject(Symbols.helpers.slots)
+  private slots: ISlots;
 
   // Logic
   @inject(Symbols.logic.block)
@@ -136,9 +139,10 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     // 1999599, 1999498
     const firstInRound             = this.rounds.firstInRound(this.rounds.calcRound(height));
     const heightsToQuery: number[] = [];
+    let curHeight = firstInRound;
     for (let i = 0; i < 5; i++) {
-      // TODO fix me for fairvote
-      heightsToQuery.push(firstInRound - this.constants.activeDelegates * i);
+      heightsToQuery.push(curHeight);
+      curHeight -= this.slots.numDelegates( curHeight - 1 );
     }
 
     const blocks: Array<{ id: string, height: number }> = await BlocksModel

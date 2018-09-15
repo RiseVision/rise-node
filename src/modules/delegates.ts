@@ -66,22 +66,51 @@ export class DelegatesModule implements IDelegatesModule {
    * @return {Promise<publicKey[]>}
    */
   public async generateDelegateList(height: number): Promise<Buffer[]> {
-    const pkeys      = await this.getKeysSortByVote();
+    const delegates      = await this.getKeysSortByVote();
     const seedSource = this.roundsLogic.calcRound(height).toString();
     let currentSeed  = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
 
-    // Shuffle public keys.
-    for (let i = 0, delegatesCount = pkeys.length; i < delegatesCount; i++) {
+    // Shuffle the first ${constants.activeDelegates or less} delegates.
+    const delegatesCount = delegates.length < this.constants.activeDelegates ?
+      delegates.length : this.constants.activeDelegates;
+
+    for (let i = 0; i < delegatesCount; i++) {
       for (let x = 0; x < 4 && i < delegatesCount; i++, x++) {
         const newIndex  = currentSeed[x] % delegatesCount;
-        const b         = pkeys[newIndex];
-        pkeys[newIndex] = pkeys[i];
-        pkeys[i]        = b;
+        const b         = delegates[newIndex];
+        delegates[newIndex] = delegates[i];
+        delegates[i]        = b;
       }
       currentSeed = crypto.createHash('sha256').update(currentSeed).digest();
     }
 
-    return pkeys;
+    // Rank the remaining ${constants.fairVoteSystem.outsidersPoolSize or less} keys.
+    if (delegates.length > this.constants.activeDelegates && height >= this.constants.fairVoteSystem.firstBlock) {
+      let outsiders: Array<{publicKey: Buffer, vote: number, score?: number}>;
+      outsiders = delegates.slice(this.constants.activeDelegates, this.constants.fairVoteSystem.outsidersPoolSize);
+
+      let swapSeed = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
+      while (swapSeed.length < outsiders.length) {
+        swapSeed = Buffer.concat([swapSeed,
+          crypto.createHash('sha256').update(swapSeed, 'utf8').digest()]);
+      }
+
+      outsiders = outsiders.map((d, index) => {
+        const weightedVoteRanking = index * this.constants.fairVoteSystem.forgingProbability.voteWeight;
+        const weightedOrderRanking = (swapSeed[index] % outsiders.length) *
+          this.constants.fairVoteSystem.forgingProbability.orderWeight;
+        d.score = weightedVoteRanking + weightedOrderRanking;
+        return d;
+      });
+
+      this.selectionSortOutsiders(outsiders);
+
+      outsiders.forEach((d, index) => {
+        delegates[this.constants.activeDelegates + index] = d;
+      });
+    }
+
+    return delegates.slice(0, this.slots.numDelegates(height)).map((d) => d.publicKey);
   }
 
   /**
@@ -109,7 +138,7 @@ export class DelegatesModule implements IDelegatesModule {
       ['username', 'address', 'publicKey', 'vote', 'missedblocks', 'producedblocks']
     );
 
-    const limit  = Math.min(this.constants.activeDelegates, query.limit || this.constants.activeDelegates);
+    const limit  = Math.min(this.slots.getDelegatesPoolSize(), query.limit || this.slots.getDelegatesPoolSize());
     const offset = query.offset || 0;
 
     const count     = delegates.length;
@@ -184,13 +213,13 @@ export class DelegatesModule implements IDelegatesModule {
   /**
    * Get delegates public keys sorted by descending vote.
    */
-  private async getKeysSortByVote(): Promise<Buffer[]> {
+  private async getKeysSortByVote(): Promise<Array<{publicKey: Buffer, vote: number}>> {
     const rows = await this.accountsModule.getAccounts({
       isDelegate: 1,
-      limit     : this.slots.numDelegates(),
+      limit     : this.slots.getDelegatesPoolSize(),
       sort      : {vote: -1, publicKey: 1},
-    }, ['publicKey']);
-    return rows.map((r) => r.publicKey);
+    }, ['publicKey', 'vote']);
+    return rows.map((r) => ({publicKey: r.publicKey, vote: r.vote}));
   }
 
   /**
@@ -247,6 +276,27 @@ export class DelegatesModule implements IDelegatesModule {
     if (total > this.constants.maximumVotes) {
       const exceeded = total - this.constants.maximumVotes;
       throw new Error(`Maximum number of ${this.constants.maximumVotes} votes exceeded (${exceeded} too many)`);
+    }
+  }
+
+  // We use a predictable sorting algorithm (Selection sort) to avoid ordering differences in case of equal scores.
+  private selectionSortOutsiders(outsiders: Array<{publicKey: Buffer, vote: number, score?: number }>) {
+    let i: number;
+    let j: number;
+    const n = outsiders.length;
+    for (j = 0; j < n - 1; j++) {
+      let iMin = j;
+      for (i = j + 1; i < n; i++) {
+        if (outsiders[i].score < outsiders[iMin].score) {
+          iMin = i;
+        }
+      }
+      if (iMin !== j) {
+        // Swap
+        const tmp = outsiders[j];
+        outsiders[j] = outsiders[iMin];
+        outsiders[iMin] = tmp;
+      }
     }
   }
 }
