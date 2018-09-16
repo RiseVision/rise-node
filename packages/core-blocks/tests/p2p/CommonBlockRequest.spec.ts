@@ -1,71 +1,65 @@
-import { expect } from 'chai';
-import {SinonStub} from 'sinon';
 import * as sinon from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as chai from 'chai';
+import { expect } from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
 import { CommonBlockRequest } from '../../src/p2p';
+import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
+import { Container } from 'inversify';
+import { p2pSymbols } from '../../../core-p2p/src/helpers';
+import { BlocksModel, BlocksSymbols } from '../../src';
+import { ModelSymbols } from '../../../core-models/src/helpers';
+import { createFakeBlock } from '../utils/createFakeBlocks';
+
+chai.use(chaiAsPromised);
 
 describe('apis/requests/CommonBlockRequest', () => {
+  let sandbox: SinonSandbox;
+  let container: Container;
   let instance: CommonBlockRequest;
-
+  before(async () => {
+    sandbox   = sinon.createSandbox();
+    container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
+  });
   beforeEach(() => {
-    instance = new CommonBlockRequest();
-    instance.options = {data: null, query: { ids: '1,2,3'}};
+    sandbox.restore();
+    instance = container.getNamed(p2pSymbols.transportMethod, BlocksSymbols.p2p.commonBlocks);
   });
 
-  describe('getBaseUrl', () => {
-    it('should return the right URL', () => {
-      const url = (instance as any).getBaseUrl();
-      expect(url).to.be.equal('/peer/blocks/common?ids=1%2C2%2C3');
-    });
-  });
-
-  describe('getResponseData', () => {
-    let decodeStub: SinonStub;
-    let supportsStub: SinonStub;
-    let fakeBlockLogic: any;
-    let res: any;
-
+  describe('in/out', () => {
+    let sequelizeQueryStub: SinonStub;
     beforeEach(() => {
-      fakeBlockLogic = {fromBytes: sinon.stub().returns('fromBytes')};
-      decodeStub = sinon.stub((instance as any), 'unwrapResponse').returns({common: 'CommonBlockID'});
-      supportsStub = sinon.stub((instance as any), 'peerSupportsProtoBuf').returns(true);
-      (instance as any).blockLogic = fakeBlockLogic;
-      res = {peer: 'peer', body: 'resBody'};
+      const BM = container.getNamed<typeof BlocksModel>(ModelSymbols.model, BlocksSymbols.model);
+
+      sequelizeQueryStub = sandbox.stub(BM.sequelize, 'query');
     });
 
-    it('should call peerSupportsProtoBuf', () => {
-      instance.getResponseData(res);
-      expect(supportsStub.calledOnce).to.be.true;
-      expect(supportsStub.firstCall.args).to.be.deep.equal([res.peer]);
+    async function createRequest(query: any, body: any = null) {
+      const resp = await instance.handleRequest(body, query);
+      return instance.handleResponse(null, resp);
+    }
+
+    it('should fail if request is invalid', async () => {
+      await expect(createRequest({ ids: null })).rejectedWith('query/ids - Expected type');
+      await expect(createRequest({})).rejectedWith('query - Missing required property');
+      await expect(createRequest({ ids: 'a,b' })).rejectedWith('Invalid block id sequence');
+      await expect(createRequest({ ids: '' })).rejectedWith('Invalid block id sequence');
+      await expect(createRequest({ ids: '1,2,3,4,5,6,7,8,9,0,1' })).rejectedWith('Invalid block id sequence');
     });
-
-    describe('peerSupportsProtoBuf is true', () => {
-      it('should call unwrapResponse with commonBlock message type', () => {
-        instance.getResponseData(res);
-        expect(decodeStub.calledOnce).to.be.true;
-        expect(decodeStub.firstCall.args).to.be.deep.equal([res, 'transportBlocks', 'commonBlock']);
-      });
-
-      it('should call blockLogic.fromBytes if common is defined, and return it', () => {
-        const ret = instance.getResponseData(res);
-        expect(fakeBlockLogic.fromBytes.calledOnce).to.be.true;
-        expect(fakeBlockLogic.fromBytes.firstCall.args).to.be.deep.equal(['CommonBlockID']);
-        expect(ret).to.be.deep.equal({common: 'fromBytes'});
-      });
-
-      it('should set common to null if common is undefined, and return it', () => {
-        decodeStub.returns( {});
-        const ret = instance.getResponseData(res);
-        expect(fakeBlockLogic.fromBytes.notCalled).to.be.true;
-        expect(ret).to.be.deep.equal({common: null});
-      });
+    it('should return common: null and properly call database', async () => {
+      sequelizeQueryStub.resolves(null);
+      const res = await createRequest({ ids: '1,2,3' });
+      expect(res).deep.eq({ common: null });
+      expect(sequelizeQueryStub.calledOnce).is.true;
+      expect(sequelizeQueryStub.firstCall.args[1].where).contain("IN ('1', '2', '3')");
+      expect(sequelizeQueryStub.firstCall.args[1].limit).eq(1);
+      expect(sequelizeQueryStub.firstCall.args[0]).contain('ORDER BY "BlocksModel"."height" DESC');
     });
-
-    describe('supportsProtobuf is false', () => {
-      it('should return res.body', () => {
-        supportsStub.returns( false);
-        const ret = instance.getResponseData(res);
-        expect(ret).to.be.deep.equal(res.body);
-      });
+    it('should return proper encoded data', async () => {
+      const block = createFakeBlock(container);
+      sequelizeQueryStub.resolves(block);
+      const res = await createRequest({ ids: '1,2,3' });
+      expect(res).deep.eq({ common: { ...block, relays: 1 } });
     });
   });
 });

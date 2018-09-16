@@ -18,6 +18,7 @@ import { createRandomTransactions, toBufferedTransaction } from '../../../core-t
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { VerifyReceipt } from '../../src/hooks';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
+import { TransactionPool, TXSymbols } from '../../../core-transactions/src';
 
 chai.use(chaiAsPromised);
 
@@ -42,12 +43,12 @@ describe('modules/blocks/verify', () => {
 
   before(async () => {
     container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
-    const b = container.get<BlocksModuleVerify>(BlocksSymbols.modules.verify); // should not throw as it should be included
+    const b   = container.get<BlocksModuleVerify>(BlocksSymbols.modules.verify); // should not throw as it should be included
     await b.cleanup(); // clean up this instance
     container.rebind(BlocksSymbols.modules.verify).to(BlocksModuleVerify); // Force recreation of module at each instance.
   });
   beforeEach(async () => {
-    inst      = container.get(BlocksSymbols.modules.verify);
+    inst = container.get(BlocksSymbols.modules.verify);
 
     sandbox        = sinon.createSandbox();
     blocksModule   = container.get(Symbols.modules.blocks);
@@ -349,7 +350,7 @@ describe('modules/blocks/verify', () => {
     let filterConfirmedIDsStub: SinonStub;
     beforeEach(() => {
       findByIdStub     = sandbox.stub(blocksModel, 'findById');
-      resolveAcctsStub = sandbox.stub(accountsModule, 'resolveAccountsForTransactions');
+      resolveAcctsStub = sandbox.stub(accountsModule, 'txAccounts');
 
       resolveAcctsStub.callsFake((txs) => {
         const toRet = {};
@@ -444,8 +445,10 @@ describe('modules/blocks/verify', () => {
         expect(resolveAcctsStub.firstCall.args[0]).to.be.eq(txs);
       });
       it('should properly handle tx already confirmed', async () => {
-        const unconUnconfirmedStub  = sandbox.stub(txModule, 'undoUnconfirmed').resolves();
-        const removeUnconfirmedStub = sandbox.stub(txModule, 'removeUnconfirmedTransaction').onFirstCall().returns(true);
+        const txPool               = container.get<TransactionPool>(TXSymbols.pool);
+        const unconUnconfirmedStub = sandbox.stub(txModule, 'undoUnconfirmed').resolves();
+
+        const removeUnconfirmedStub = sandbox.stub(txPool.unconfirmed, 'remove').onFirstCall().returns(true);
         removeUnconfirmedStub.onSecondCall().returns(false);
         const alreadyConfirmedId1 = normalizedBlock.transactions[1].id;
         const alreadyConfirmedId2 = normalizedBlock.transactions[2].id;
@@ -481,7 +484,7 @@ describe('modules/blocks/verify', () => {
         { id: '1', normalized: 'block', transactions: [] },
         true, // broadcast
         false, // saveblock
-        { a: 'b' }
+        { a: 'b' },
       ]);
     });
   });

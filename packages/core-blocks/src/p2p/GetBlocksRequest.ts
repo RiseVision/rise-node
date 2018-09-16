@@ -1,11 +1,4 @@
-import {
-  IBlockLogic,
-  IBlocksModel,
-  IBlocksModule,
-  ITransactionLogic,
-  ITransactionsModel,
-  Symbols
-} from '@risevision/core-interfaces';
+import { IBlockLogic, IBlocksModel, ITransactionLogic, ITransactionsModel, Symbols } from '@risevision/core-interfaces';
 import { BaseProtobufTransportMethod, SingleTransportPayload } from '@risevision/core-p2p';
 import { ConstantsType, SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
@@ -22,10 +15,11 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<null, { lastBl
 
   public readonly method: 'GET' = 'GET';
   public readonly baseUrl       = '/v2/peer/blocks';
+  public readonly requestSchema = require('../../schema/transport.json').getBlocks;
 
   protected readonly protoResponse = {
-    messageType: 'blocks.transport',
-    namespace  : 'transportBlocks',
+    messageType: 'transportBlocks',
+    namespace  : 'blocks.transport',
   };
 
   @inject(Symbols.logic.block)
@@ -75,7 +69,7 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<null, { lastBl
   protected async decodeResponse(res: Buffer): Promise<GetBlocksRequestDataType> {
     const d = await super.decodeResponse(res);
     return {
-      blocks: d.blocks.map((b) => this.blockLogic.fromProtoBuffer(b as any)),
+      blocks: (d.blocks || []).map((b) => this.blockLogic.fromProtoBuffer(b as any)),
     };
   }
 

@@ -11,7 +11,7 @@ export class BaseProtobufTransportMethod<Data, Query, Out> extends BaseTransport
   protected readonly protoRequest: ProtoIdentifier<Data>;
   protected readonly protoResponse: ProtoIdentifier<Out>;
 
-  protected async encodeRequest(data: Data | null): Promise<Buffer> {
+  protected async encodeRequest(data: Data | null = null): Promise<Buffer> {
     if (data === null) {
       return null;
     }
@@ -24,7 +24,7 @@ export class BaseProtobufTransportMethod<Data, Query, Out> extends BaseTransport
   }
 
   protected async decodeRequest(buf: Buffer): Promise<Data> {
-    if (buf === null) {
+    if (buf === null || !this.protoRequest) {
       return null;
     }
     return this.protoBufHelper
@@ -37,7 +37,7 @@ export class BaseProtobufTransportMethod<Data, Query, Out> extends BaseTransport
   }
 
   protected async decodeResponse(res: Buffer): Promise<Out> {
-    if (res === null) {
+    if (res === null || !this.protoResponse) {
       return null;
     }
     return this.protoBufHelper

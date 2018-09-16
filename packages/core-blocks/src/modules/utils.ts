@@ -160,6 +160,10 @@ export class BlocksModuleUtils {
           .then(() => b))
         )
       )
+      .catch((E) => {
+        console.log(E);
+        return Promise.reject(E);
+      })
       .catch(catchToLoggerAndRemapError<IBlocksModel[]>('Blocks#loadBlockData error', this.logger));
   }
 

@@ -8,27 +8,27 @@ import { createRandomTransactions, toBufferedTransaction } from '../../../core-t
 import {
   IAccountsModule,
   IBlocksModule,
-  IBlocksModuleVerify,
   ITransactionsModule
 } from '../../../core-interfaces/src/modules';
-import { IBlockLogic, ITransactionLogic, ITransactionPoolLogic } from '../../../core-interfaces/src/logic';
+import { IBlockLogic, ITransactionLogic } from '../../../core-interfaces/src/logic';
 import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
 import { Symbols } from '../../../core-interfaces/src';
 import { BlocksSymbols } from '../../src/blocksSymbols';
 import { IAccountsModel } from '../../../core-interfaces/src/models';
 import { ModelSymbols } from '../../../core-models/src/helpers';
-import { BlocksModuleProcess } from '../../src/modules';
+import { BlocksModuleProcess, BlocksModuleVerify } from '../../src/modules';
 import { LiskWallet } from 'dpos-offline';
+import { TransactionPool } from '../../../core-transactions/src';
 
 chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression
 describe('modules/blocks/process', () => {
   let txModule: ITransactionsModule;
-  let txPool: ITransactionPoolLogic;
+  let txPool: TransactionPool;
   let accountsModule: IAccountsModule;
   let blocksModule: IBlocksModule;
-  let blockVerifyModule: IBlocksModuleVerify;
+  let blockVerifyModule: BlocksModuleVerify;
   let blockLogic: IBlockLogic;
   let txLogic: ITransactionLogic;
   let sandbox: SinonSandbox;
@@ -421,7 +421,7 @@ describe('modules/blocks/process', () => {
     it('should filter transactions by verifying them', async () => {
       blocksModule.lastBlock = { height: 10, id: '11'} as any;
       const txs = createRandomTransactions(3).map((t) => toBufferedTransaction(t));
-      txs.forEach((t) => txPool.unconfirmed.add(t));
+      txs.forEach((t) => txPool.unconfirmed.add(t, {receivedAt: new Date()}));
 
       const stub = sandbox.stub(txLogic, 'verify').resolves();
       stub.onCall(2).rejects();
@@ -440,7 +440,7 @@ describe('modules/blocks/process', () => {
     it('should filter transactions that are not ready', async () => {
       blocksModule.lastBlock = { height: 10, id: '11'} as any;
       const txs = createRandomTransactions(3).map((t) => toBufferedTransaction(t));
-      txs.forEach((t) => txPool.unconfirmed.add(t));
+      txs.forEach((t) => txPool.unconfirmed.add(t, {receivedAt: new Date()}));
 
       const stub = sandbox.stub(txLogic, 'ready').resolves(true);
       sandbox.stub(txLogic, 'verify').resolves(true);

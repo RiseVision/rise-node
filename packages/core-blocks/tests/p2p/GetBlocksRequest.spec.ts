@@ -1,83 +1,93 @@
 import { expect } from 'chai';
+import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
 import { GetBlocksRequest } from '../../src/p2p';
+import { ModelSymbols } from '../../../core-models/src/helpers';
+import { BlocksModel, BlocksSymbols } from '../../src';
+import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
+import { p2pSymbols } from '../../../core-p2p/src/helpers';
+import { SinonSandbox } from 'sinon';
+import { Container } from 'inversify';
+import { createFakeBlock } from '../utils/createFakeBlocks';
+import { BlocksModuleUtils } from '../../src/modules';
+import { TransactionsModel, TXSymbols } from '../../../core-transactions/src';
+
+chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression
 describe('apis/requests/GetBlocksRequest', () => {
+  let sandbox: SinonSandbox;
+  let container: Container;
   let instance: GetBlocksRequest;
-  let decodeStub: SinonStub;
-  let supportsPBStub: SinonStub;
-  let peer;
-
+  let blocksUtils: BlocksModuleUtils;
+  before(async () => {
+    sandbox   = sinon.createSandbox();
+    container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
+  });
   beforeEach(() => {
-    instance = new GetBlocksRequest();
-    instance.options = {data: null, query: {lastBlockId: '123456'}};
-    (instance as any).blocksUtilsModule = {readDbRows: sinon.stub()};
-    (instance as any).blockLogic = {fromBytes: sinon.stub()};
-    decodeStub = sinon.stub(instance as any, 'unwrapResponse');
-    peer = {
-      broadhash: '123123123',
-      clock: 9999999,
-      height: 123,
-      ip: '127.0.0.1',
-      nonce: '1231234',
-      os: 'unix',
-      port: 5555,
-      state: 2,
-      updated: 123,
-      version: '1.1.1',
-    };
-    supportsPBStub = sinon.stub(instance as any, 'peerSupportsProtoBuf');
+    sandbox.restore();
+    instance = container.getNamed(p2pSymbols.transportMethod, BlocksSymbols.p2p.getBlocks);
+    blocksUtils = container.get(BlocksSymbols.modules.utils);
   });
 
-  describe('getResponseData', () => {
-    describe('protoBuf = false', () => {
-      it('should call readDbRows and return from it', () => {
-        supportsPBStub.returns(false);
-        (instance as any).blocksUtilsModule.readDbRows.callsFake((a) => a);
-        const res = instance.getResponseData({body: {blocks : ['b1', 'b2']}, peer});
-        expect((instance as any).blocksUtilsModule.readDbRows.calledOnce).to.be.true;
-        expect((instance as any).blocksUtilsModule.readDbRows.firstCall.args[0])
-          .to.be.deep.equal(['b1', 'b2']);
-        expect(res).to.be.deep.equal({blocks : ['b1', 'b2']});
-      });
+  describe('in/out', () => {
+    let sequelizeQueryStub: SinonStub;
+    beforeEach(() => {
+      const BM = container.getNamed<typeof BlocksModel>(ModelSymbols.model, BlocksSymbols.model);
+
+      sequelizeQueryStub = sandbox.stub(BM.sequelize, 'query');
     });
 
-    describe('protoBuf = true', () => {
-      beforeEach(() => {
-        supportsPBStub.returns(true);
-      });
+    async function createRequest(query: any, body: any = null) {
+      const resp = await instance.handleRequest(body, query);
+      return instance.handleResponse(null, resp);
+    }
 
-      it('should call unwrapResponse', () => {
-        const res = {body: 'theBody', peer};
-        decodeStub.returns({blocks: ['b1', 'b2']});
-        instance.getResponseData(res);
-        expect(decodeStub.calledOnce).to.be.true;
-        expect(decodeStub.firstCall.args).to.be.deep.equal([res, 'transportBlocks']);
-      });
+    it('should fail if request is invalid', async () => {
+      await expect(createRequest({})).rejectedWith('query - Missing required property: lastBlockId');
+      await expect(createRequest({ lastBlockId: 'a,b' })).rejectedWith('lastBlockId - Object didn\'t pass validation');
+      await expect(createRequest({ lastBlockId: '' })).rejected;
+      await expect(createRequest({ lastBlockId: null })).rejected;
+      expect(sequelizeQueryStub.called).false;
+    });
+    it('should fail if block does not exist', async () => {
+      sequelizeQueryStub.resolves(null);
+      await expect(createRequest({lastBlockId: '10'})).rejectedWith('Block 10 not found!');
+      expect(sequelizeQueryStub.calledOnce).true;
+      expect(sequelizeQueryStub.firstCall.args[0]).contain('"id" = \'10\'');
+    });
+    it('should empty array if no further blocks in db', async () => {
+      const block = createFakeBlock(container, {previousBlock: { id: '1', height: 100} as any});
+      sequelizeQueryStub.resolves([]);
+      sequelizeQueryStub.onFirstCall().resolves(block);
 
-      it('should call blockLogic.fromBytes return the decoded value', () => {
-        (instance as any).blockLogic.fromBytes.callsFake((a) => a);
-        decodeStub.returns({blocks: ['b1', 'b2']});
-        const decoded = instance.getResponseData({body: 'theBody'});
-        expect(decoded).to.be.deep.equal({blocks: ['b1', 'b2']});
-      });
+      const st = sandbox.stub(blocksUtils, 'loadBlocksData').resolves([]);
+      const res = await createRequest({ lastBlockId: '10' });
+      expect(res).deep.eq({ blocks: [] });
+      expect(st.firstCall.args[0]).deep.eq({lastId: '10', limit: 10653});
     });
-  });
 
-  describe('getBaseUrl', () => {
-    describe('protoBuf = false', () => {
-      it('should return the right URL', () => {
-        const url = (instance as any).getBaseUrl(false);
-        expect(url).to.be.equal('/peer/blocks?lastBlockId=123456');
-      });
+    it('should encode/decode some blocks', async () => {
+      const block = createFakeBlock(container, {previousBlock: { id: '1', height: 100} as any});
+      const block2 = createFakeBlock(container, {previousBlock: block});
+      const block3 = createFakeBlock(container, {previousBlock: block2});
+      const block4 = createFakeBlock(container, {previousBlock: block3});
+
+      sequelizeQueryStub.resolves([]);
+      sequelizeQueryStub.onFirstCall().resolves(block);
+
+      sandbox.stub(blocksUtils, 'loadBlocksData').resolves([block2, block3, block4]);
+      const res = await createRequest({ lastBlockId: '10' });
+      expect(res).deep.eq({ blocks: [block2, block3, block4].map((r) => ({...r, relays: 1})) });
     });
-    describe('protoBuf = true', () => {
-      it('should return the right URL', () => {
-        const url = (instance as any).getBaseUrl(true);
-        expect(url).to.be.equal('/v2/peer/blocks?lastBlockId=123456');
-      });
+
+    it('should query blocks properly', async () => {
+      const block = createFakeBlock(container, {previousBlock: { id: '1', height: 100} as any});
+      const TxModel = container.getNamed<TransactionsModel>(ModelSymbols.model, TXSymbols.model);
+
     });
+
   });
 });

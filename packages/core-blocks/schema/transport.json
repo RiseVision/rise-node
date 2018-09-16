@@ -4,6 +4,7 @@
     "type": "object",
     "properties": {
       "query": {
+        "type": "object",
         "properties": {
           "ids": {
             "type": "string",
@@ -18,16 +19,26 @@
     },
     "required": [ "query", "body" ]
   },
-  "blocks": {
+  "getBlocks": {
     "id": "transport.blocks",
     "type": "object",
     "properties": {
-      "lastBlockId": {
-        "type": "string",
-        "format": "id",
-        "minLength": 1,
-        "maxLength": 20
+      "query": {
+        "type": "object",
+        "properties": {
+          "lastBlockId": {
+            "type"     : "string",
+            "format"   : "id",
+            "minLength": 1,
+            "maxLength": 20
+          }
+        },
+        "required": ["lastBlockId"]
+      },
+      "body": {
+        "type": "null"
       }
-    }
+    },
+    "required": [ "query", "body"]
   }
 }

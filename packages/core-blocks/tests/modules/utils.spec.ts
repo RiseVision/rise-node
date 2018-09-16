@@ -4,11 +4,10 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { IBlocksModuleUtils } from '../../../core-interfaces/src/modules';
 import { Symbols } from '../../../core-interfaces/src';
 import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
 import { BlocksSymbols } from '../../src/blocksSymbols';
-import { BlocksModule } from '../../src/modules';
+import { BlocksModule, BlocksModuleUtils } from '../../src/modules';
 import { SignedAndChainedBlockType } from '../../../core-types/src';
 import { ISequence } from '../../../core-interfaces/src/helpers';
 import { IBlockLogic, ITransactionLogic } from '../../../core-interfaces/src/logic';
@@ -22,7 +21,7 @@ import { Op } from 'sequelize';
 chai.use(chaiAsPromised);
 
 describe('modules/utils', () => {
-  let inst: IBlocksModuleUtils;
+  let inst: BlocksModuleUtils;
   let container: Container;
   beforeEach(async () => {
     container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
@@ -74,7 +73,7 @@ describe('modules/utils', () => {
     let findOneStub: SinonStub;
     beforeEach(() => {
       findOneStub               = sandbox.stub(blocksModel, 'findOne').resolves({});
-      inst['TransactionsModel'] = 'txModel'; // useful for chai deep equality.
+      inst['TransactionsModel'] = 'txModel' as any; // useful for chai deep equality.
     });
     it('should query db', async () => {
       await inst.loadLastBlock();
@@ -177,7 +176,7 @@ describe('modules/utils', () => {
       findOneStub = sandbox.stub(blocksModel, 'findOne').resolves({height: 10});
       findAllStub = sandbox.stub(blocksModel, 'findAll').resolves([{height: 11}, {height: 12}]);
       dbSequenceStub = sandbox.stub(dbSequence, 'addAndPromise').callsFake((b) => b());
-      inst['TransactionsModel'] = 'txModel';
+      inst['TransactionsModel'] = 'txModel' as any;
     });
     it('should disallow passing both id and lastId', async () => {
       await expect(inst.loadBlocksData({ id: '1', lastId: '2' }))

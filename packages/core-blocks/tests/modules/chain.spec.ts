@@ -73,7 +73,7 @@ describe('modules/blocks/chain', () => {
       } as any;
       performOpsStub = sandbox.stub(dbHelper, 'performOps').resolves();
       // accountsModule.stubs.getAccount.callsFake((a) => a);
-      resolveAccountsForTransactionStub = sandbox.stub(accModule, 'resolveAccountsForTransactions')
+      resolveAccountsForTransactionStub = sandbox.stub(accModule, 'txAccounts')
         .callsFake((txs) => {
           const toRet = {};
           txs.forEach((tx) => toRet[tx.senderId] = tx.senderId);

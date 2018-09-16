@@ -22,7 +22,7 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
   @inject(p2pSymbols.helpers.protoBuf)
   public protoBufHelper: ProtoBufHelper;
 
-  public async createRequestOptions(req: SingleTransportPayload<Data, Query> = {body: null}): Promise<PeerRequestOptions<Buffer>> {
+  public async createRequestOptions(req: SingleTransportPayload<Data, Query> = { body: null }): Promise<PeerRequestOptions<Buffer>> {
     const queryString = req.query !== null ? `?${querystring.stringify(req.query)}` : '';
     return {
       data  : await this.encodeRequest(req.body),
@@ -49,8 +49,8 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
    * NOTE: all errors should be handled here.
    */
   public async handleRequest(buf: Buffer, query: Query | null): Promise<Buffer> {
-    const body     = await this.decodeRequest(buf);
-    await this.assertValidRequest(body);
+    const body = await this.decodeRequest(buf);
+    await this.assertValidRequest({ body, query });
     const response = await this.produceResponse({ body, query });
     return this.encodeResponse(response);
   }
@@ -116,7 +116,7 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
     if (this.requestSchema) {
       const res = this.schema.validate(request, this.requestSchema);
       if (!res) {
-        throw new Error(this.schema.getLastError().message);
+        throw new Error(this.schema.getLastErrors().map((e) => `${e.path} - ${e.message}`).join(' - '));
       }
     }
   }
@@ -129,7 +129,7 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
     if (this.responseSchema) {
       const res = this.schema.validate(data, this.responseSchema);
       if (!res) {
-        throw new Error(this.schema.getLastError().message);
+        throw new Error(this.schema.getLastErrors().map((e) => `${e.path} - ${e.message}`).join(' - '));
       }
     }
   }
