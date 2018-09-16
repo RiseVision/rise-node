@@ -220,7 +220,7 @@ export class TransactionLogic implements ITransactionLogic {
       }
     }
     const recipientId = recipientValid ?
-      MyBigNumb.fromBuffer(recipientIdBytes.toBuffer() as any).toString() + 'R' : null;
+      MyBigNumb.fromBuffer(recipientIdBytes).toString() + 'R' : null;
 
     const amount = bb.readLong(offset);
     offset += 8;

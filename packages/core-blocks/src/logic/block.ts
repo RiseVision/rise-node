@@ -348,7 +348,7 @@ export class BlockLogic implements IBlockLogic {
     const timestamp = bb.readInt(4);
 
     // PreviousBlock is valid only if it's not 8 bytes with 0 value
-    const previousIdBytes = bb.slice(8, 16);
+    const previousIdBytes = blk.bytes.slice(8, 16);
     let previousValid = false;
     for (let i = 0; i < 8; i++) {
       if (previousIdBytes.readUInt8(i) !== 0) {
@@ -357,17 +357,17 @@ export class BlockLogic implements IBlockLogic {
       }
     }
     const previousBlock = previousValid ?
-      BigNum.fromBuffer(previousIdBytes).toString() : null;
+      MyBigNumb.fromBuffer(previousIdBytes).toString() : null;
 
     const numberOfTransactions = bb.readInt(16);
     const totalAmount = bb.readLong(20).toNumber();
     const totalFee = bb.readLong(28).toNumber();
     const reward = bb.readLong(36).toNumber();
     const payloadLength = bb.readInt(44);
-    const payloadHash = bb.slice(48, 80);
-    const generatorPublicKey = bb.slice(80, 112);
-    const blockSignature = bb.length === 176 ? bb.slice(112, 176) : null;
-    const id = this.getIdFromBytes(bb);
+    const payloadHash = blk.bytes.slice(48, 80);
+    const generatorPublicKey = blk.bytes.slice(80, 112);
+    const blockSignature = blk.bytes.length === 176 ? blk.bytes.slice(112, 176) : null;
+    const id = this.getIdFromBytes(blk.bytes);
     const transactions = blk.transactions.map((tx) => {
       const baseTx = this.transaction.fromProtoBuffer(tx);
       return {
@@ -431,7 +431,7 @@ export class BlockLogic implements IBlockLogic {
     for (let i = 0; i < 8; i++) {
       temp[i] = hash[7 - i];
     }
-    return BigNum.fromBuffer(temp).toString();
+    return MyBigNumb.fromBuffer(temp).toString();
   }
 
 }

@@ -1,11 +1,16 @@
 import { IBlockLogic, IBlocksModel, ITransactionLogic, ITransactionsModel, Symbols } from '@risevision/core-interfaces';
-import { BaseProtobufTransportMethod, SingleTransportPayload } from '@risevision/core-p2p';
+import { ModelSymbols } from '@risevision/core-models';
+import {
+  BaseProtobufTransportMethod,
+  P2PConstantsType,
+  p2pSymbols,
+  SingleTransportPayload
+} from '@risevision/core-p2p';
 import { ConstantsType, SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { Op } from 'sequelize';
-import { BlocksModuleUtils } from '../modules';
 import { BlocksSymbols } from '../blocksSymbols';
-import { ModelSymbols } from '@risevision/core-models';
+import { BlocksModuleUtils } from '../modules';
 
 // tslint:disable-next-line
 export type GetBlocksRequestDataType = { blocks: SignedAndChainedBlockType[] };
@@ -24,6 +29,9 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<null, { lastBl
 
   @inject(Symbols.logic.block)
   private blockLogic: IBlockLogic;
+
+  @inject(p2pSymbols.constants)
+  private p2pConstants: P2PConstantsType;
 
   @inject(BlocksSymbols.modules.utils)
   private blocksModuleUtils: BlocksModuleUtils;
@@ -74,11 +82,10 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<null, { lastBl
   }
 
   private async calcNumBlocksToLoad(lastBlock: IBlocksModel): Promise<number> {
-    // TODO Move me to a constant maybe?
-    const maxPayloadSize = 2000000;
+    const maxPayloadSize = this.p2pConstants.maxProtoBufPayloadLength;
     // We take 98% of the theoretical value to allow for some overhead
     const maxBytes       = maxPayloadSize * 0.98;
-    // Best case scenario: we find 2MB of empty blocks.
+    // Best case scenario: we find 1.5MB of empty blocks.
     const maxHeightDelta = Math.ceil(maxBytes / this.blockLogic.getMinBytesSize());
     // We can also limit the number of transactions, with a very rough estimation of the max number of txs that will fit
     // in maxPayloadSize. We assume a stream blocks completely full of the smallest transactions.
