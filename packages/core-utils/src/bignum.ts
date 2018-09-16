@@ -17,8 +17,11 @@ export class MyBigNumb extends BigNumber {
    * @param {Buffer} buf
    * @param opts
    */
-  public static fromBuffer(buf: Buffer, opts: IToFromBufferOpts = {}): BigNumber {
+  public static fromBuffer(buf: Buffer, opts?: IToFromBufferOpts): BigNumber {
+    return opts ? MyBigNumb.fromBufferWithOptions(buf, opts) : new BigNumber(buf.toString('hex'), 16);
+  }
 
+  public static fromBufferWithOptions(buf: Buffer, opts: IToFromBufferOpts = {}) {
     const endian = opts.endian || 'big';
 
     const size = opts.size === 'auto' ? Math.ceil(buf.length) : (opts.size || 1);
@@ -60,13 +63,19 @@ export class MyBigNumb extends BigNumber {
     const size = opts.size === 'auto' ? Math.ceil(hex.length / 2) : (opts.size || 1);
 
     const len = Math.ceil(hex.length / (2 * size)) * size;
-    const buf = new Buffer(len);
 
     // Zero-pad the hex string so the chunks are all `size` long
     while (hex.length < 2 * len) {
       hex = '0' + hex;
     }
 
+    // Avoid complex processing if we got exactly one chunk of the requested size
+    // All calls to this method in RISE always enter here...
+    if (hex.length === size * 2 && endian === 'big') {
+      return Buffer.from(hex, 'hex');
+    }
+
+    const buf = new Buffer(len);
     const hx = hex
       .split(new RegExp('(.{' + (2 * size) + '})'))
       .filter((s) => s.length > 0);

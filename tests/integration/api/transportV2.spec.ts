@@ -54,7 +54,7 @@ chai.use(chaiAsPromised);
 const headers = {
   nethash: 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
   port   : 1,
-  version: '1.1.10',
+  version: '1.2.10',
 };
 
 const transportTXSchema = {
@@ -607,11 +607,12 @@ describe('v2/peer/transport', function() {
     it('should enqueue bundled transactions', async () => {
       const tx  = await createSendTransaction(0, 1, account, createRandomWallet().address);
       // const tx2  = await createSendTransaction(0, 1, account, createRandomWallet().address);
-      await expect(peer.makeRequest(ptFactory({
+      await peer.makeRequest(ptFactory({
         data: {
           transactions: [tx, tx],
         } as any,
-      }))).rejectedWith('Transaction is already processed');
+      }));
+      expect(txPool.bundled.has(tx.id)).to.be.true;
     });
   });
 

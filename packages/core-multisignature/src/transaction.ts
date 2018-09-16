@@ -145,7 +145,7 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     const bb = ByteBuffer.wrap(bytes, 'binary');
     const min = bb.readByte(1);
     const lifetime = bb.readByte(2);
-    const keysString = bb.copy(3, bb.buffer.length).toString('hex');
+    const keysString = bytes.slice(3, bb.buffer.length).toString('hex');
     // Cut keys string into 32-bytes chunks
     const keysgroup = [].concat.apply([],
       keysString.split('').map(

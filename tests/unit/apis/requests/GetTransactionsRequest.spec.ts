@@ -1,18 +1,18 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
-import { GetSignaturesRequest } from '../../src/requests/GetSignaturesRequest';
+import { GetTransactionsRequest } from '../../../../src/apis/requests/GetTransactionsRequest';
 
 // tslint:disable no-unused-expression
-describe('apis/requests/GetSignaturesRequest', () => {
-  let instance: GetSignaturesRequest;
+describe('apis/requests/GetTransactionsRequest', () => {
+  let instance: GetTransactionsRequest;
   let decodeStub: SinonStub;
   let peer: any;
 
   beforeEach(() => {
-    instance = new GetSignaturesRequest();
+    instance = new GetTransactionsRequest();
     instance.options = {data: null};
-    decodeStub = sinon.stub(instance as any, 'unwrapResponse');
+    decodeStub = sinon.stub(instance as any, 'decodeProtoBufResponse');
     peer = {
       broadhash: '123123123',
       clock: 9999999,
@@ -36,17 +36,18 @@ describe('apis/requests/GetSignaturesRequest', () => {
       });
     });
     describe('protoBuf = true', () => {
-      it('should call unwrapResponse', () => {
+      it('should call decodeProtoBufResponse', () => {
+        decodeStub.returns({transactions: []});
         const res = {body: 'theBody', peer};
         instance.getResponseData(res);
         expect(decodeStub.calledOnce).to.be.true;
-        expect(decodeStub.firstCall.args).to.be.deep.equal([res, 'transportSignatures', 'getSignaturesResponse']);
+        expect(decodeStub.firstCall.args).to.be.deep.equal([res, 'transportTransactions']);
       });
 
       it('should return the decoded value', () => {
-        decodeStub.returns('decodedValue');
+        decodeStub.returns({transactions: []});
         const decoded = instance.getResponseData({body: 'theBody', peer});
-        expect(decoded).to.be.equal('decodedValue');
+        expect(decoded).to.deep.equal({transactions: []});
       });
     });
   });
@@ -55,13 +56,13 @@ describe('apis/requests/GetSignaturesRequest', () => {
     describe('protoBuf = false', () => {
       it('should return the right URL', () => {
         const url = (instance as any).getBaseUrl(false);
-        expect(url).to.be.equal('/peer/signatures');
+        expect(url).to.be.equal('/peer/transactions');
       });
     });
     describe('protoBuf = true', () => {
       it('should return the right URL', () => {
         const url = (instance as any).getBaseUrl(true);
-        expect(url).to.be.equal('/v2/peer/signatures');
+        expect(url).to.be.equal('/v2/peer/transactions');
       });
     });
   });

@@ -14,7 +14,7 @@ import { WPHooksSubscriber, WordPressHookSystem } from 'mangiafuoco';
 import * as os from 'os';
 import * as semver from 'semver';
 
-const rcRegExp = /[a-z]+$/;
+const rcRegExp = /-?[a-z]+$/;
 
 const Extendable = WPHooksSubscriber(Object);
 decorate(injectable(), Extendable);

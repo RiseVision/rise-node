@@ -1,18 +1,18 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
-import { GetSignaturesRequest } from '../../src/requests/GetSignaturesRequest';
+import { PeersListRequest } from '../../../../src/apis/requests/PeersListRequest';
 
 // tslint:disable no-unused-expression
-describe('apis/requests/GetSignaturesRequest', () => {
-  let instance: GetSignaturesRequest;
+describe('apis/requests/PeersListRequest', () => {
+  let instance: PeersListRequest;
   let decodeStub: SinonStub;
   let peer: any;
 
   beforeEach(() => {
-    instance = new GetSignaturesRequest();
+    instance = new PeersListRequest();
     instance.options = {data: null};
-    decodeStub = sinon.stub(instance as any, 'unwrapResponse');
+    decodeStub = sinon.stub(instance as any, 'decodeProtoBufResponse');
     peer = {
       broadhash: '123123123',
       clock: 9999999,
@@ -36,11 +36,11 @@ describe('apis/requests/GetSignaturesRequest', () => {
       });
     });
     describe('protoBuf = true', () => {
-      it('should call unwrapResponse', () => {
+      it('should call decodeProtoBufResponse', () => {
         const res = {body: 'theBody', peer};
         instance.getResponseData(res);
         expect(decodeStub.calledOnce).to.be.true;
-        expect(decodeStub.firstCall.args).to.be.deep.equal([res, 'transportSignatures', 'getSignaturesResponse']);
+        expect(decodeStub.firstCall.args).to.be.deep.equal([res, 'transportPeers']);
       });
 
       it('should return the decoded value', () => {
@@ -55,13 +55,13 @@ describe('apis/requests/GetSignaturesRequest', () => {
     describe('protoBuf = false', () => {
       it('should return the right URL', () => {
         const url = (instance as any).getBaseUrl(false);
-        expect(url).to.be.equal('/peer/signatures');
+        expect(url).to.be.equal('/peer/list');
       });
     });
     describe('protoBuf = true', () => {
       it('should return the right URL', () => {
         const url = (instance as any).getBaseUrl(true);
-        expect(url).to.be.equal('/v2/peer/signatures');
+        expect(url).to.be.equal('/v2/peer/list');
       });
     });
   });

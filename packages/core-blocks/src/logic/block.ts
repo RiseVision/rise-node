@@ -256,14 +256,8 @@ export class BlockLogic implements IBlockLogic {
    * @param fromBytes
    * @returns {string}
    */
-  public getId(block: BlockType, fromBytes?: Buffer): string {
-    const bytes = fromBytes ? fromBytes : this.getBytes(block);
-    const hash = crypto.createHash('sha256').update(bytes).digest();
-    const temp = Buffer.alloc(8);
-    for (let i = 0; i < 8; i++) {
-      temp[i] = hash[7 - i];
-    }
-    return MyBigNumb.fromBuffer(temp).toString();
+  public getId(block: BlockType): string {
+    return this.getIdFromBytes(this.getBytes(block));
   }
 
   public getHash(block: BlockType, includeSignature: boolean = true) {
@@ -354,26 +348,26 @@ export class BlockLogic implements IBlockLogic {
     const timestamp = bb.readInt(4);
 
     // PreviousBlock is valid only if it's not 8 bytes with 0 value
-    const previousIdBytes = bb.copy(8, 16);
+    const previousIdBytes = bb.slice(8, 16);
     let previousValid = false;
     for (let i = 0; i < 8; i++) {
-      if (previousIdBytes.readByte(i) !== 0) {
+      if (previousIdBytes.readUInt8(i) !== 0) {
         previousValid = true;
         break;
       }
     }
     const previousBlock = previousValid ?
-      MyBigNumb.fromBuffer(previousIdBytes.toBuffer() as any).toString() : null;
+      BigNum.fromBuffer(previousIdBytes).toString() : null;
 
     const numberOfTransactions = bb.readInt(16);
     const totalAmount = bb.readLong(20).toNumber();
     const totalFee = bb.readLong(28).toNumber();
     const reward = bb.readLong(36).toNumber();
     const payloadLength = bb.readInt(44);
-    const payloadHash = bb.copy(48, 80).toBuffer() as any;
-    const generatorPublicKey = bb.copy(80, 112).toBuffer() as any;
-    const blockSignature = bb.buffer.length === 176 ? bb.copy(112, 176).toBuffer() as any : null;
-    const id = this.getId(null, blk.bytes);
+    const payloadHash = bb.slice(48, 80);
+    const generatorPublicKey = bb.slice(80, 112);
+    const blockSignature = bb.length === 176 ? bb.slice(112, 176) : null;
+    const id = this.getIdFromBytes(bb);
     const transactions = blk.transactions.map((tx) => {
       const baseTx = this.transaction.fromProtoBuffer(tx);
       return {
@@ -430,4 +424,14 @@ export class BlockLogic implements IBlockLogic {
     }
     return `${MyBigNumb.fromBuffer(temp).toString()}R`;
   }
+
+  private getIdFromBytes(bytes: Buffer): string {
+    const hash = crypto.createHash('sha256').update(bytes).digest();
+    const temp = Buffer.alloc(8);
+    for (let i = 0; i < 8; i++) {
+      temp[i] = hash[7 - i];
+    }
+    return BigNum.fromBuffer(temp).toString();
+  }
+
 }

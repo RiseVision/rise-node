@@ -1,9 +1,9 @@
 {
-    "port": 5566,
+    "port": 5555,
     "address": "0.0.0.0",
-    "version": "1.2.0-t",
+    "version": "1.2.0",
     "fileLogLevel": "info",
-    "logFileName": "logs/rise-testnet.log",
+    "logFileName": "logs/rise-master.log",
     "consoleLogLevel": "info",
     "trustProxy": false,
     "topAccounts": false,
@@ -11,7 +11,7 @@
     "db": {
         "host": "localhost",
         "port": 5432,
-        "database": "rise_testnet_db",
+        "database": "rise_db",
         "user": "rise",
         "password": "password",
         "poolSize": 95,
@@ -48,16 +48,16 @@
         "enabled": true,
         "list": [
             {
-                "ip": "45.63.91.77",
-                "port": 5566
+                "ip": "45.32.136.66",
+                "port": 5555
             },
             {
-                "ip": "108.61.99.202",
-                "port": 5566
+                "ip": "45.76.36.14",
+                "port": 5555
             },
             {
-                "ip": "194.135.95.105",
-                "port": 5566
+                "ip": "212.24.96.99",
+                "port": 5555
             }
         ],
         "access": {
@@ -81,10 +81,7 @@
         "relayLimit": 2
     },
     "transactions": {
-        "maxTxsPerQueue" : 1000,
-        "bundledInterval": 1000,
-        "expiryInterval" : 60000,
-        "bundleLimit": 100
+        "maxTxsPerQueue": 1000
     },
     "forging": {
         "force": false,
@@ -99,5 +96,5 @@
         "verifyOnLoading": false,
         "loadPerIteration": 5000
     },
-    "nethash": "e90d39ac200c495b97deb6d9700745177c7fc4aa80a404108ec820cbeced054c"
+    "nethash": "cd8171332c012514864edd8eb6f68fc3ea6cb2afbaf21c56e12751022684cea5"
 }
