@@ -84,10 +84,11 @@ export class DelegatesModule implements IDelegatesModule {
       currentSeed = crypto.createHash('sha256').update(currentSeed).digest();
     }
 
-    // Rank the remaining ${constants.fairVoteSystem.outsidersPoolSize or less} keys.
+    // Rank the remaining ${constants.fairVoteSystem.outsidersPoolSize} or less keys.
     if (delegates.length > this.constants.activeDelegates && height >= this.constants.fairVoteSystem.firstBlock) {
       let outsiders: Array<{publicKey: Buffer, vote: number, score?: number}>;
-      outsiders = delegates.slice(this.constants.activeDelegates, this.constants.fairVoteSystem.outsidersPoolSize);
+      outsiders = delegates.slice(this.constants.activeDelegates,
+        this.constants.activeDelegates + this.constants.fairVoteSystem.outsidersPoolSize);
 
       let swapSeed = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
       while (swapSeed.length < outsiders.length) {
@@ -95,15 +96,25 @@ export class DelegatesModule implements IDelegatesModule {
           crypto.createHash('sha256').update(swapSeed, 'utf8').digest()]);
       }
 
+      const minOutsiderVote = outsiders[outsiders.length - 1].vote;
+      const outsiderVotesDelta = outsiders[0].vote - minOutsiderVote;
       outsiders = outsiders.map((d, index) => {
-        const weightedVoteRanking = index * this.constants.fairVoteSystem.forgingProbability.voteWeight;
-        const weightedOrderRanking = (swapSeed[index] % outsiders.length) *
+        const thisVoteDelta = d.vote - minOutsiderVote;
+        const realVoteRanking = outsiders.length - (thisVoteDelta * (outsiders.length / outsiderVotesDelta));
+        const weightedVoteRanking = realVoteRanking * this.constants.fairVoteSystem.forgingProbability.voteWeight;
+        const weightedOrderRanking = (swapSeed[index] % outsiders.length - outsiders.length  / 2) *
           this.constants.fairVoteSystem.forgingProbability.orderWeight;
         d.score = weightedVoteRanking + weightedOrderRanking;
         return d;
       });
 
-      this.selectionSortOutsiders(outsiders);
+      outsiders.sort((a, b) => {
+        // If same score is obtained, publicKey defines the position (higher value first)
+        if (a.score === b.score) {
+          return Buffer.compare(b.publicKey, a.publicKey);
+        }
+        return a.score > b.score ? 1 : -1;
+      });
 
       outsiders.forEach((d, index) => {
         delegates[this.constants.activeDelegates + index] = d;
@@ -279,24 +290,4 @@ export class DelegatesModule implements IDelegatesModule {
     }
   }
 
-  // We use a predictable sorting algorithm (Selection sort) to avoid ordering differences in case of equal scores.
-  private selectionSortOutsiders(outsiders: Array<{publicKey: Buffer, vote: number, score?: number }>) {
-    let i: number;
-    let j: number;
-    const n = outsiders.length;
-    for (j = 0; j < n - 1; j++) {
-      let iMin = j;
-      for (i = j + 1; i < n; i++) {
-        if (outsiders[i].score < outsiders[iMin].score) {
-          iMin = i;
-        }
-      }
-      if (iMin !== j) {
-        // Swap
-        const tmp = outsiders[j];
-        outsiders[j] = outsiders[iMin];
-        outsiders[iMin] = tmp;
-      }
-    }
-  }
 }

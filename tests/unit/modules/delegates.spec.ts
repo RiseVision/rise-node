@@ -216,6 +216,18 @@ describe('modules/delegates', () => {
         ['41', '59', '2c', '1', '6', '20', '25', '1c', '5c', 'b', '26', '55', '60', '3a', '56', '3c', '1a', '24', '39', '13', '4c', '21', '4e', '35', '5b', '3e', '34', '9', '2a', '1d', '61', '8', '40', '15', '5d', '1e', '44', '37', '31', '64', '46', '4', '7', '22', '3f', '14', '28', '57', '51', 'a', '5', '27', '33', '36', '17', '4b', '19', '16', '48', '3b', '5a', '38', '30', '2', '32', '3', '11', 'f', '53', '45', '2e', '47', 'd', '49', '4a', '12', '2d', '58', '42', 'c', '50', '3d', '52', '2f', '54', '1f', 'e', '29', '62', '0', '43', '4d', '1b', '2b', '5e', '5f', '4f', '23', '18', '63', '10']
       );
     });
+
+    it('should return 106 keys when fairVoteSystem is on', async () => {
+      slotsStub.stubs.numDelegates.returns(106);
+      const delegates = new Array(132).fill(null).map((a, idx) => ({
+        publicKey: Buffer.from(Math.ceil(Math.random() * 1000000000) .toString(16), 'hex'),
+        vote: Math.ceil((132 - idx) * 1000 + Math.random() * 999),
+      }));
+      getKeysSortByVoteStub.resolves(delegates);
+      const list = await instance.generateDelegateList(123456790);
+      expect(list).to.be.instanceOf(Array);
+      expect(list.length).to.be.equal(106);
+    });
   });
 
   describe('getDelegates', () => {
