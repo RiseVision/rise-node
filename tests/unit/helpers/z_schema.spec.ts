@@ -224,6 +224,9 @@ describe('helpers/z_schema', () => {
     it('should reject version subnumbers with more than 3 digits', () => {
       expect(validator.validate('1.22.3333', schema)).to.be.false;
     });
+    it('should consider 1.1.0-t a valid version', () => {
+      expect(validator.validate('1.1.0-t', schema)).to.be.true;
+    });
   });
 
   describe('castFieldsToNumberUsingSchema', () => {
