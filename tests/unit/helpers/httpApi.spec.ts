@@ -65,58 +65,64 @@ describe('helpers/httpApi', () => {
   });
 
   describe('applyAPIAccessRules()', () => {
-    it('Internal API: Forwarding to next()', () => {
-      config = {
-        peers: {
-          access: { blackList: [] },
-          enabled: true,
-        },
-      };
-      const result = middleware.applyAPIAccessRules(config);
-      req.url = '/peer';
-      result(req, res, next);
-      expect(next.calledOnce).to.be.true;
-      expect(statusSpy.called).to.be.false;
-      expect(sendSpy.called).to.be.false;
-    });
+    const transportEndpoints = ['/peer', '/v2/peer'];
 
-    it('Internal API: Returning a 403 response', () => {
-      config = {
-        peers: {
-          access: { blackList: ['80.3.10.20'] },
-          enabled: true,
-        },
-      };
-      const result = middleware.applyAPIAccessRules(config);
-      req.url = '/peer';
-      result(req, res, next);
-      expect(next.called).to.be.false;
-      expect(statusSpy.calledOnce).to.be.true;
-      expect(statusSpy.args[0][0]).to.equal(403);
-      expect(sendSpy.calledOnce).to.be.true;
-      expect(sendSpy.args[0][0]).deep.equal({
-        error: 'API access denied',
-        success: false,
-      });
-    });
+    transportEndpoints.forEach((endpoint) => {
+      describe(endpoint, () => {
+        it('Internal API: Forwarding to next()', () => {
+          config = {
+            peers: {
+              access: { blackList: [] },
+              enabled: true,
+            },
+          };
+          const result = middleware.applyAPIAccessRules(config);
+          req.url = endpoint;
+          result(req, res, next);
+          expect(next.calledOnce).to.be.true;
+          expect(statusSpy.called).to.be.false;
+          expect(sendSpy.called).to.be.false;
+        });
 
-    it('Internal API: Returning a 500 response', () => {
-      config = {
-        peers: {
-          access: { blackList: [] },
-          enabled: false,
-        },
-      };
-      const result = middleware.applyAPIAccessRules(config);
-      req.url = '/peer';
-      result(req, res, next);
-      expect(next.called).to.be.false;
-      expect(statusSpy.calledOnce).to.be.true;
-      expect(statusSpy.args[0][0]).to.equal(500);
-      expect(sendSpy.calledOnce).to.be.true;
-      expect(sendSpy.args[0][0]).deep.equal({
-        error: 'API access disabled',
-        success: false,
+        it('Internal API: Returning a 403 response', () => {
+          config = {
+            peers: {
+              access: { blackList: ['80.3.10.20'] },
+              enabled: true,
+            },
+          };
+          const result = middleware.applyAPIAccessRules(config);
+          req.url = endpoint;
+          result(req, res, next);
+          expect(next.called).to.be.false;
+          expect(statusSpy.calledOnce).to.be.true;
+          expect(statusSpy.args[0][0]).to.equal(403);
+          expect(sendSpy.calledOnce).to.be.true;
+          expect(sendSpy.args[0][0]).deep.equal({
+            error: 'API access denied',
+            success: false,
+          });
+        });
+
+        it('Internal API: Returning a 500 response', () => {
+          config = {
+            peers: {
+              access: { blackList: [] },
+              enabled: false,
+            },
+          };
+          const result = middleware.applyAPIAccessRules(config);
+          req.url = endpoint;
+          result(req, res, next);
+          expect(next.called).to.be.false;
+          expect(statusSpy.calledOnce).to.be.true;
+          expect(statusSpy.args[0][0]).to.equal(500);
+          expect(sendSpy.calledOnce).to.be.true;
+          expect(sendSpy.args[0][0]).deep.equal({
+            error: 'API access disabled',
+            success: false,
+          });
+        });
       });
     });
 

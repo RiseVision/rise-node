@@ -31,7 +31,7 @@ export const middleware = {
    */
   applyAPIAccessRules(config: AppConfig) {
     return (req: Request, res: Response, next: NextFunction) => {
-      if (req.url.match(/^\/peer[\/]?.*/)) {
+      if (req.url.match(/^\/(v2\/)?peer[\/]?.*/)) {
         const internalApiAllowed = config.peers.enabled && !checkIpInList(config.peers.access.blackList,
           req.ip);
         rejectDisallowed(internalApiAllowed, config.peers.enabled);
