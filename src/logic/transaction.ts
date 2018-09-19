@@ -216,11 +216,12 @@ export class TransactionLogic implements ITransactionLogic {
     const amount = bb.readLong(offset);
     offset += 8;
 
-    const signature = tx.bytes.slice(bb.buffer.length - 64, bb.buffer.length);
+    const signature = tx.hasSignSignature ?
+      tx.bytes.slice(bb.buffer.length - 128, bb.buffer.length - 64) :
+      tx.bytes.slice(bb.buffer.length - 64, bb.buffer.length);
 
     // Read signSignature if available
-    const signSignature = tx.hasSignSignature ?
-      tx.bytes.slice(bb.buffer.length - 128, bb.buffer.length - 64) : null;
+    const signSignature = tx.bytes.slice(bb.buffer.length - 64, bb.buffer.length);
 
     // All remaining bytes between amount and signSignature (or signature) are the asset.
     let assetBytes = null;
@@ -252,6 +253,10 @@ export class TransactionLogic implements ITransactionLogic {
       transaction.signSignature = signSignature;
     }
     transaction.asset = this.types[type].fromBytes(assetBytes, transaction);
+
+    if (tx.signatures && tx.signatures.length > 0) {
+      transaction.signatures = tx.signatures.map((s) => s.toString('hex'));
+    }
     return transaction;
   }
 

@@ -55,6 +55,7 @@ export interface AppConfig {
 
   peers: {
     enabled: boolean;
+    banTime: number;
     list: Array<{
       ip: string,
       port: number

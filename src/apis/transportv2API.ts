@@ -221,14 +221,16 @@ export class TransportV2API {
       where: { id: lastBlockId },
     });
     if (lastBlock != null) {
-      const blocksToLoad = await this.calcNumBlocksToLoad(lastBlock);
+      // TODO: We limit the number of blocks to return to not overload this node.
+      // We might implement a way to avoid spamming nodes by using some kind of PoW upon requesting the block. or by limiting this
+      // endpoint on the IP requesting the resource.
+      const blocksToLoad = Math.ceil(Math.min(500, (await this.calcNumBlocksToLoad(lastBlock)) * 0.5));
       const dbBlocks = await this.blocksModuleUtils.loadBlocksData({
         lastId: lastBlockId,
-        limit : blocksToLoad,
+        limit: blocksToLoad,
       });
       const tmpPB = this.pblocksFactory({data: null});
-      const blocks   = await Promise.all(dbBlocks
-        .map(async (block): Promise<IBytesBlock> => tmpPB.generateBytesBlock(block)));
+      const blocks   = dbBlocks.map((b) => tmpPB.generateBytesBlock(b));
       return this.getResponse({ blocks }, 'transportBlocks');
     } else {
       throw new Error(`Block ${lastBlockId} not found!`);
