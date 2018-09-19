@@ -145,6 +145,10 @@ export default {
           enabled: {
             type: 'boolean',
           },
+          banTime: {
+            type: 'integer',
+            minimum: 1000,
+          },
           list   : {
             type: 'array',
           },
