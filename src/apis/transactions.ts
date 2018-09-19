@@ -1,19 +1,28 @@
+import { LiskWallet as RISEWallet, SendTx } from 'dpos-offline';
+import { Request } from 'express';
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
-import { Body, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
+import {Body, Get, JsonController, Post, Put, QueryParam, QueryParams, Req, UseBefore} from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-import { castFieldsToNumberUsingSchema, removeEmptyObjKeys, TransactionType } from '../helpers';
+import {castFieldsToNumberUsingSchema, checkIpInList, constants, removeEmptyObjKeys, TransactionType} from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { assertValidSchema, SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { ISlots } from '../ioc/interfaces/helpers';
 import { ITransactionLogic } from '../ioc/interfaces/logic';
-import { IAccountsModule, IBlocksModule, ITransactionsModule, ITransportModule } from '../ioc/interfaces/modules';
+import {
+  IAccountsModule,
+  IBlocksModule,
+  ISystemModule,
+  ITransactionsModule,
+  ITransportModule
+} from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { IBaseTransaction, ITransportTransaction } from '../logic/transactions';
 import { TransactionsModel } from '../models';
 import schema from '../schema/transactions';
 import { APIError } from './errors';
+import {ForgingApisWatchGuard} from './utils/forgingApisWatchGuard';
 
 @JsonController('/api/transactions')
 @injectable()
@@ -39,6 +48,11 @@ export class TransactionsAPI {
 
   @inject(Symbols.logic.transaction)
   private txLogic: ITransactionLogic;
+
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constants;
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
 
   @Get()
   public async getTransactions(@QueryParams() body: any) {
@@ -214,6 +228,37 @@ export class TransactionsAPI {
       throw new APIError('Transaction not found', 200);
     }
     return { transaction: this.TXModel.toTransportTransaction(transaction, this.blocksModule) };
+  }
+
+  @Post()
+  @ValidateSchema()
+  @UseBefore(ForgingApisWatchGuard)
+  public async oldCreate(
+    @SchemaValid(schema.addTransactions, {castNumbers: true})
+    @Body() body: {
+      secret: string,
+      recipientId: string,
+      amount: number,
+      secondSecret?: string
+    }
+  ) {
+    const w = new RISEWallet(body.secret, this.constants.addressSuffix);
+    const second = body.secondSecret ? new RISEWallet(body.secondSecret, this.constants.addressSuffix) : undefined;
+    const transaction = w.signTransaction(
+      new SendTx()
+      .set('amount', body.amount)
+      .set('timestamp', this.slots.getTime())
+      .set('recipientId', body.recipientId)
+      .set('fee', this.systemModule.getFees().fees.send),
+      second
+    );
+
+    const res = await this.put({ transaction });
+    if (res.accepted && res.accepted.length === 1) {
+      return { transactionId: res.accepted[0] };
+    } else {
+      throw new Error(res.invalid[0].reason);
+    }
   }
 
   @Put()

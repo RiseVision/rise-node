@@ -248,10 +248,14 @@ export const createSendTransaction = async (confirmations: number, amount: numbe
   return tx;
 };
 
-export const getRandomDelegateWallet = (): LiskWallet => {
+export const getRandomDelegateSecret = (): string => {
   const d = delegates[Math.floor(Math.random() * delegates.length)];
-  return new dposOffline.wallets.LiskLikeWallet(d.secret, 'R');
-}
+  return d.secret;
+};
+
+export const getRandomDelegateWallet = (): LiskWallet => {
+  return new dposOffline.wallets.LiskLikeWallet(getRandomDelegateSecret(), 'R');
+};
 
 export const createRandomAccountWithFunds = async (howMany: number = 1000, recipientWallet: LiskWallet = createRandomWallet()) => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);

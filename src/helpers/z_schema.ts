@@ -1,5 +1,6 @@
 import * as ip from 'ip';
 import * as z_schema from 'z-schema';
+import constants from './constants';
 
 /**
  * Uses JSON Schema validator z_schema to register custom formats.
@@ -30,13 +31,8 @@ z_schema.registerFormat('id', (str: string) => {
   return /^[0-9]+$/g.test(str);
 });
 
-// TODO: Move validator outside so that it can be used everywhere in the code.
 z_schema.registerFormat('address', (str: string) => {
-  if (str.length === 0) {
-    return true;
-  }
-
-  return /^[0-9]+[R]$/g.test(str);
+  return new RegExp(`^[0-9]{1,20}${constants.addressSuffix}$`).test(str);
 });
 
 z_schema.registerFormat('username', (str: string) => {

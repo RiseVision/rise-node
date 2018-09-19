@@ -17,6 +17,8 @@ import { DBCreateOp } from '../../../src/types/genericTypes';
 import { z_schema } from '../../../src/helpers/z_schema';
 import { createFakeBlock } from '../../utils/blockCrafter';
 import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
+import {IAccountLogic} from '../../../src/ioc/interfaces/logic';
+import AccountLogicStub from '../../stubs/logic/AccountLogicStub';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -39,6 +41,7 @@ describe('logic/block', () => {
   let dummyTransactions;
   let callback;
   let instance: IBlockLogic;
+  let accLogic: AccountLogicStub;
   let data;
   let blockRewardLogicStub: BlockRewardLogicStub;
   let zschemastub: ZSchemaStub;
@@ -116,6 +119,7 @@ describe('logic/block', () => {
     container.rebind(Symbols.helpers.ed).toConstantValue(ed);
     container.rebind(Symbols.logic.block).to(BlockLogic).inSingletonScope();
     instance = container.get(Symbols.logic.block);
+    accLogic = container.get(Symbols.logic.account);
     transactionLogicStub = container.get(Symbols.logic.transaction);
 
     // Default stub configuration
@@ -576,13 +580,12 @@ describe('logic/block', () => {
     });
 
     it('should not call this.getAddressByPublicKey with b_generatorPublicKey until generatorId is read', () => {
-      const getAddressByPublicKeySpy = sinon.spy(instance as any, 'getAddressByPublicKey');
+      accLogic.enqueueResponse('generateAddressByPublicKey', 'meow');
       const result = instance.dbRead(raw);
-      expect(getAddressByPublicKeySpy.called).to.be.false;
+      expect(accLogic.stubs.generateAddressByPublicKey.called).to.be.false;
       result.generatorId;
-      expect(getAddressByPublicKeySpy.called).to.be.true;
-      expect(getAddressByPublicKeySpy.firstCall.args[0]).to.be.eq(raw.b_generatorPublicKey);
-      getAddressByPublicKeySpy.restore();
+      expect(accLogic.stubs.generateAddressByPublicKey.called).to.be.true;
+      expect(accLogic.stubs.generateAddressByPublicKey.firstCall.args[0]).to.be.eq(raw.b_generatorPublicKey);
     });
 
     it('should call parseInt on 8 fields', () => {

@@ -1241,10 +1241,19 @@ describe('logic/transaction', () => {
           tx[add] = 'asd';
           expect(() => instance.objectNormalize(tx)).to.throw('format address');
           tx[add] = '';
-          expect(() => instance.objectNormalize(tx)).to.throw('too short');
-          tx[add] = Array(22).fill('1').join('') + 'R';
-          expect(() => instance.objectNormalize(tx)).to.throw('too long');
+          expect(() => instance.objectNormalize(tx)).to.throw('format address');
+          tx[add] = Array(21).fill('1').join('') + 'R';
+          expect(() => instance.objectNormalize(tx)).to.throw('format address');
+          tx[add] = Array(20).fill('1').join('') + 'R';
+          expect(() => instance.objectNormalize(tx)).to.not.throw;
         });
+      });
+      it('should not allow missing senderId', () => {
+        tx.senderId = null;
+        expect(() => instance.objectNormalize(tx)).to.throw('Missing required property: senderId');
+
+        delete tx.senderId;
+        expect(() => instance.objectNormalize(tx)).to.throw('Missing required property: senderId');
       });
 
       ['fee', 'amount'].forEach((field) => {
