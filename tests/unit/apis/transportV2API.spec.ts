@@ -584,21 +584,21 @@ describe('apis/transportV2API', () => {
       });
     });
 
-    it('should call loadBlocksData with limit 500 ', async () => {
+    it('should call loadBlocksData with limit 2100 ', async () => {
       await instance.getBlocks('123');
       expect(blocksSubmoduleUtilsStub.stubs.loadBlocksData.calledOnce).to.be.true;
       expect(blocksSubmoduleUtilsStub.stubs.loadBlocksData.firstCall.args).to.be.deep.equal([{
         lastId: '123',
-        limit : 500,
+        limit : 2100,
       }]);
     });
-    it('should call loadBlocksData with limit 400 ', async () => {
+    it('should call loadBlocksData with limit 800 ', async () => {
       numblocksToLoadStub.resolves(800);
       await instance.getBlocks('123');
       expect(blocksSubmoduleUtilsStub.stubs.loadBlocksData.calledOnce).to.be.true;
       expect(blocksSubmoduleUtilsStub.stubs.loadBlocksData.firstCall.args).to.be.deep.equal([{
         lastId: '123',
-        limit : 400,
+        limit : 800,
       }]);
     });
 
