@@ -114,6 +114,9 @@ export class PostTransactionsRequest extends BaseRequest<any, PostTransactionsRe
       hasRequesterPublicKey: typeof tx.requesterPublicKey !== 'undefined' && tx.requesterPublicKey != null,
       hasSignSignature     : typeof tx.signSignature !== 'undefined' && tx.signSignature != null,
       relays               : Number.isInteger(tx.relays) ? tx.relays : 1,
+      signatures           : tx.signatures && tx.signatures.length > 0
+        ? tx.signatures.map((s) => Buffer.from(s, 'hex'))
+        : null,
     };
   }
 

@@ -6,6 +6,7 @@ import { IPeerLogic, IPeersLogic } from '../ioc/interfaces/logic/';
 import {ISystemModule} from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { BasePeerType, PeerLogic, PeerState, PeerType } from './peer';
+import {AppConfig} from '../types/genericTypes';
 
 @injectable()
 export class PeersLogic implements IPeersLogic {
@@ -22,6 +23,9 @@ export class PeersLogic implements IPeersLogic {
 
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
+
+  @inject(Symbols.generic.appConfig)
+  private config: AppConfig;
 
   public create(peer: BasePeerType): IPeerLogic {
     if (!(peer instanceof PeerLogic)) {
@@ -161,7 +165,7 @@ export class PeersLogic implements IPeersLogic {
     if (typeof this.lastRemoved[thePeer.string] === 'undefined') {
       return false;
     }
-    return (Date.now() - this.lastRemoved[thePeer.string]) < 15 * 60 * 1000;
+    return (Date.now() - this.lastRemoved[thePeer.string]) < this.config.peers.banTime;
   }
 
 }

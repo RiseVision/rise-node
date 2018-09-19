@@ -2,9 +2,10 @@ import * as chai from 'chai';
 import {Container} from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import {Symbols} from '../../../src/ioc/symbols';
+import { Symbols } from '../../../src/ioc/symbols';
 import { PeerLogic } from '../../../src/logic';
 import { PeersLogic } from '../../../src/logic';
+import { AppConfig } from '../../../src/types/genericTypes';
 import { LoggerStub, PeerLogicStub, SystemModuleStub } from '../../stubs';
 import { createContainer } from '../../utils/containerCreator';
 
@@ -28,6 +29,7 @@ describe('logic/peers', () => {
     systemModuleStub = container.get(Symbols.modules.system);
     peersFactoryStub = sandbox.stub().returns(peerLogicStub);
     instance = new PeersLogic();
+    (instance as any).config = container.get(Symbols.generic.appConfig);
     (instance as any).logger = loggerStub;
     (instance as any).peersFactory = peersFactoryStub;
     (instance as any).systemModule = systemModuleStub;
@@ -339,6 +341,10 @@ describe('logic/peers', () => {
   });
 
   describe('wasRecentlyRemoved', () => {
+    let config: AppConfig;
+    beforeEach(() => {
+      config = container.get(Symbols.generic.appConfig);
+    });
     it('should return false if peer is not in lastRemoved ', () => {
       (instance as any).lastRemoved = {};
       expect((instance as any).wasRecentlyRemoved(peerLogicStub)).to.be.false;
@@ -346,13 +352,13 @@ describe('logic/peers', () => {
 
     it('should return true if removal was less than 15 minutes ago', () => {
       (instance as any).lastRemoved = {};
-      (instance as any).lastRemoved[peerLogicStub.string] = Date.now() - 5 * 60 * 1000;
+      (instance as any).lastRemoved[peerLogicStub.string] = Date.now() - config.peers.banTime + 1;
       expect((instance as any).wasRecentlyRemoved(peerLogicStub)).to.be.true;
     });
 
     it('should return false if removal was more than 15 minutes ago', () => {
       (instance as any).lastRemoved = {};
-      (instance as any).lastRemoved[peerLogicStub.string] = Date.now() - 20 * 60 * 1000;
+      (instance as any).lastRemoved[peerLogicStub.string] = Date.now() - config.peers.banTime - 1;
       expect((instance as any).wasRecentlyRemoved(peerLogicStub)).to.be.false;
     });
   });
