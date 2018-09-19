@@ -52,6 +52,7 @@ export interface IBytesTransaction {
   hasSignSignature: boolean;
   fee: number;
   relays?: number;
+  signatures?: Buffer[];
 }
 
 const emptyBuffer = new Buffer(0);

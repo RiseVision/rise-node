@@ -7,8 +7,9 @@ import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { BigNum, IKeypair, TransactionType } from '../../../src/helpers';
 import { Symbols } from '../../../src/ioc/symbols';
-import { SignedAndChainedBlockType, TransactionLogic } from '../../../src/logic';
-import { IConfirmedTransaction, SendTransaction, VoteTransaction } from '../../../src/logic/transactions';
+import { SignedAndChainedBlockType, TransactionLogic, AccountLogic } from '../../../src/logic';
+import { IConfirmedTransaction, SendTransaction, VoteTransaction, RegisterDelegateTransaction,
+  SecondSignatureTransaction } from '../../../src/logic/transactions';
 import {
   AccountLogicStub,
   EdStub,
@@ -24,6 +25,7 @@ import { VerificationType } from '../../../src/ioc/interfaces/logic';
 import { DBBulkCreateOp } from '../../../src/types/genericTypes';
 import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
 import { z_schema } from '../../../src/helpers/z_schema';
+import {createRandomWallet} from '../../integration/common/utils';
 
 chai.use(chaiAsPromised);
 
@@ -446,8 +448,6 @@ describe('logic/transaction', () => {
       expect(retVal.error).to.match(/Account does not have enough currency/);
     });
   });
-
-
 
   describe('verify', () => {
     let verifySignatureStub: SinonStub;
@@ -1344,4 +1344,108 @@ describe('logic/transaction', () => {
     });
   });
 
+  describe('fromBytes', () => {
+    beforeEach(() => {
+      container.rebind(Symbols.logic.account).to(AccountLogic).inSingletonScope();
+      container.rebind(Symbols.logic.transaction).to(TransactionLogic).inSingletonScope();
+      instance = container.get(Symbols.logic.transaction);
+      instance.attachAssetType(sendTransaction);
+      instance.attachAssetType(new VoteTransaction());
+      instance.attachAssetType(new RegisterDelegateTransaction());
+      instance.attachAssetType(new SecondSignatureTransaction());
+    });
+    it('should return the original send transaction', () => {
+      const [t] = createRandomTransactions({send: 1});
+      const b = instance.getBytes(toBufferedTransaction(t));
+      const expected = {... toBufferedTransaction(t), relays: 0, asset: null};
+
+      delete expected.signSignature;
+      expect(instance.fromBytes({
+        bytes: b,
+        hasRequesterPublicKey: false,
+        hasSignSignature: false,
+        fee: t.fee,
+        relays: 0,
+      })).deep.eq(expected);
+    });
+    it('should return the original send transaction with signsignature', () => {
+      const [t] = createRandomTransactions({send: 1});
+      t.signSignature = t.signature.split('').reverse().join('');
+      t.id = instance.getId(toBufferedTransaction(t));
+      const b = instance.getBytes(toBufferedTransaction(t));
+      const expected = {... toBufferedTransaction(t), relays: 0, asset: null};
+
+      expect(instance.fromBytes({
+        bytes: b,
+        hasRequesterPublicKey: false,
+        hasSignSignature: true,
+        fee: t.fee,
+        relays: 0,
+      })).deep.eq(expected);
+    });
+    it('should work for vote tx and signSignature', () => {
+      const [t] = createRandomTransactions({vote: 1});
+      t.signSignature = t.signature.split('').reverse().join('');
+      t.id = instance.getId(toBufferedTransaction(t));
+      const b = instance.getBytes(toBufferedTransaction(t));
+      const expected = {... toBufferedTransaction(t), relays: 0 };
+
+      expect(instance.fromBytes({
+        bytes: b,
+        hasRequesterPublicKey: false,
+        hasSignSignature: true,
+        fee: t.fee,
+        relays: 0,
+      })).deep.eq(expected);
+    });
+    it('should work for delegate tx and signSignature', () => {
+      const [t] = createRandomTransactions({delegate: 1});
+      t.signSignature = t.signature.split('').reverse().join('');
+      t.id = instance.getId(toBufferedTransaction(t));
+      const b = instance.getBytes(toBufferedTransaction(t));
+      const expected = {... toBufferedTransaction(t), relays: 0, recipientId: null };
+
+      expect(instance.fromBytes({
+        bytes: b,
+        hasRequesterPublicKey: false,
+        hasSignSignature: true,
+        fee: t.fee,
+        relays: 0,
+      })).deep.eq(expected);
+    });
+    it('should work for secondSign tx', () => {
+      const [t] = createRandomTransactions({signature: 1});
+      t.id = instance.getId(toBufferedTransaction(t));
+      const b = instance.getBytes(toBufferedTransaction(t));
+      const expected = {... toBufferedTransaction(t), relays: 0, recipientId: null };
+      delete expected.signSignature;
+      expect(instance.fromBytes({
+        bytes: b,
+        hasRequesterPublicKey: false,
+        hasSignSignature: false,
+        fee: t.fee,
+        relays: 0,
+      })).deep.eq(expected);
+    });
+    describe('with signatures', () => {
+      it('will restore tx with signatures', () => {
+        const [t] = createRandomTransactions({send: 1});
+        t.signatures = new Array(5)
+          .fill(null)
+          .map(() => createRandomWallet().publicKey + createRandomWallet().publicKey);
+        t.id = instance.getId(toBufferedTransaction(t));
+        const b = instance.getBytes(toBufferedTransaction(t));
+        const expected = {... toBufferedTransaction(t), relays: 0, asset: null };
+        delete expected.signSignature;
+        expect(instance.fromBytes({
+          bytes: b,
+          hasRequesterPublicKey: false,
+          hasSignSignature: false,
+          fee: t.fee,
+          relays: 0,
+          signatures: t.signatures.map((s) => Buffer.from(s, 'hex'))
+        })).deep.eq(expected);
+      });
+    });
+  });
 });

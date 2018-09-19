@@ -46,6 +46,7 @@
     },
     "peers": {
         "enabled": true,
+        "banTime": 90000,
         "list": [
             {
                 "ip": "45.63.91.77",
