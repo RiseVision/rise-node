@@ -414,6 +414,8 @@ describe('api/transactions', () => {
   describe('/post', () => {
 
     it('should create a new tx', async () => {
+      const txPool = initializer.appManager.container.get<ITransactionPoolLogic>(Symbols.logic.transactionPool);
+
       const s = getRandomDelegateSecret();
       await supertest(initializer.appManager.expressApp)
         .post('/api/transactions')
@@ -422,6 +424,7 @@ describe('api/transactions', () => {
         .then((r) => {
           expect(r.body.success).true;
           expect(r.body.transactionId).not.empty;
+          expect(txPool.transactionInPool(r.body.transactionId)).is.true;
         });
     });
     it('should fail tx', async () => {
@@ -433,6 +436,19 @@ describe('api/transactions', () => {
         .then((r) => {
           expect(r.body.success).false;
           expect(r.body.error).contain('enough currency');
+        });
+    });
+    it('should return 403', async () => {
+      initializer.appManager.expressApp.enable('trust proxy');
+      const s = getRandomDelegateSecret();
+      await supertest(initializer.appManager.expressApp)
+        .post('/api/transactions')
+        .set('X-Forwarded-For', '8.8.8.8')
+        .send({secret: s, recipientId: createRandomWallet().address, amount: 1})
+        .expect(403)
+        .then((r) => {
+          expect(r.body.success).false;
+          expect(r.body.error).contain('Secure API access denied');
         });
     });
   });

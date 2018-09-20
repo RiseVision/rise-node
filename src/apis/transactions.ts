@@ -1,11 +1,10 @@
 import { LiskWallet as RISEWallet, SendTx } from 'dpos-offline';
-import { Request } from 'express';
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
-import {Body, Get, JsonController, Post, Put, QueryParam, QueryParams, Req, UseBefore} from 'routing-controllers';
+import {Body, Get, JsonController, Post, Put, QueryParam, QueryParams, UseBefore} from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-import {castFieldsToNumberUsingSchema, checkIpInList, constants, removeEmptyObjKeys, TransactionType} from '../helpers';
+import {castFieldsToNumberUsingSchema, constants, removeEmptyObjKeys, TransactionType} from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { assertValidSchema, SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { ISlots } from '../ioc/interfaces/helpers';
@@ -22,7 +21,7 @@ import { IBaseTransaction, ITransportTransaction } from '../logic/transactions';
 import { TransactionsModel } from '../models';
 import schema from '../schema/transactions';
 import { APIError } from './errors';
-import {ForgingApisWatchGuard} from './utils/forgingApisWatchGuard';
+import { RestrictedAPIWatchGuard } from './utils/restrictedAPIWatchGuard';
 
 @JsonController('/api/transactions')
 @injectable()
@@ -232,8 +231,8 @@ export class TransactionsAPI {
 
   @Post()
   @ValidateSchema()
-  @UseBefore(ForgingApisWatchGuard)
-  public async oldCreate(
+  @UseBefore(RestrictedAPIWatchGuard)
+  public async localCreate(
     @SchemaValid(schema.addTransactions, {castNumbers: true})
     @Body() body: {
       secret: string,

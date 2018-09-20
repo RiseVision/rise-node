@@ -15,6 +15,7 @@ export const Symbols = {
       attachPeerHeaderToResponseObject: Symbol('attachPeerHeaderToResponseObject'),
       errorHandler                    : Symbol('errorHandler'),
       forgingApisWatchGuard           : Symbol('forgingApisWatchGuard'),
+      restrictedWhiteList             : Symbol('restrictedWhiteList'),
       successInterceptor              : Symbol('successInterceptor'),
       v2ErrorHandler                  : Symbol('v2errorHandler'),
       validatePeerHeadersMiddleware   : Symbol('validatePeerHeadersMiddleware'),
