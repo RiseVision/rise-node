@@ -240,6 +240,7 @@ export default {
         type     : 'string',
         format   : 'address',
         minLength: 1,
+
         maxLength: 22,
       },
       publicKey               : {

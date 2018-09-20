@@ -43,6 +43,7 @@ export interface AppConfig {
       public: boolean;
       whiteList: string[]
     },
+    restrictedWhiteList: string[]
     options: {
       limits: {
         max: number,

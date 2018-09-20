@@ -27,8 +27,8 @@ describe('helpers/z_schema', () => {
   describe('Format "address"', ()  => {
     const schema = { type: 'string', format: 'address' };
     // Y ?
-    it('should accept an empty string', () => {
-      expect(validator.validate('', schema)).to.be.true;
+    it('should NOT accept an empty string', () => {
+      expect(validator.validate('', schema)).to.be.false;
     });
     it('should accept a sequence of numbers followed by uppercase "R"', () => {
       expect(validator.validate('18338120857045062830R', schema)).to.be.true;

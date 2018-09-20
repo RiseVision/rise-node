@@ -1,5 +1,16 @@
-import * as ip from 'ip';
+import {Address4, Address6} from 'ip-address';
 
+function getAddressClass(addr: string): Address4|Address6 {
+  const address4 = new Address4(addr);
+  if (address4.isValid()) {
+    return address4;
+  }
+  const address6 = new Address6(addr);
+  if (address6.isValid()) {
+    return address6;
+  }
+  throw new Error(`Address ${addr} is neither v4 or v6`);
+}
 /**
  * Checks if ip address is in list (e.g. whitelist, blacklist).
  * @memberof module:helpers
@@ -8,32 +19,16 @@ import * as ip from 'ip';
  * @param {string} addr - The ip address to check if in array.
  * @return {boolean} True if ip is in the list, false otherwise.
  */
-export function checkIpInList(list: string[] & { _subNets?: SubnetInfo[] }, addr: string): boolean {
-
-  if (!list._subNets) { // First call, create subnet list
-    list._subNets = [];
-    for (let entry of list) {
-      if (ip.isV4Format(entry)) { // IPv4 host entry
-        entry = entry + '/32';
-      } else if (ip.isV6Format(entry)) { // IPv6 host entry
-        entry = entry + '/128';
-      }
-      try {
-        list._subNets.push(ip.cidrSubnet(entry));
-      } catch (err) {
-        // tslint:disable-next-line no-console
-        console.error('CheckIpInList:', err.toString());
-      }
-    }
-  }
-
+export function checkIpInList(list: string[], addr: string): boolean {
   // Check subnets
-  for (const subnet of list._subNets) {
-    if (subnet.contains(addr)) {
+  const l = list
+    .map((entry) => getAddressClass(entry));
+
+  const testAddr = getAddressClass(addr);
+  for (const entry of l) {
+    if (testAddr.isInSubnet(entry)) {
       return true;
     }
   }
-
-  // IP address not found
   return false;
 }

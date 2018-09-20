@@ -14,7 +14,7 @@ import {
   createRandomWallet,
   createSecondSignTransaction,
   createSendTransaction,
-  createVoteTransaction,
+  createVoteTransaction, getRandomDelegateSecret,
   getRandomDelegateWallet
 } from '../common/utils';
 import {
@@ -408,6 +408,48 @@ describe('api/transactions', () => {
             expect(resp.body.transaction.votes.deleted).to.be.deep.eq([delegate1.publicKey]);
           });
       });
+    });
+  });
+
+  describe('/post', () => {
+
+    it('should create a new tx', async () => {
+      const txPool = initializer.appManager.container.get<ITransactionPoolLogic>(Symbols.logic.transactionPool);
+
+      const s = getRandomDelegateSecret();
+      await supertest(initializer.appManager.expressApp)
+        .post('/api/transactions')
+        .send({secret: s, recipientId: createRandomWallet().address, amount: 10})
+        .expect(200)
+        .then((r) => {
+          expect(r.body.success).true;
+          expect(r.body.transactionId).not.empty;
+          expect(txPool.transactionInPool(r.body.transactionId)).is.true;
+        });
+    });
+    it('should fail tx', async () => {
+      const s = getRandomDelegateSecret();
+      await supertest(initializer.appManager.expressApp)
+        .post('/api/transactions')
+        .send({secret: s, recipientId: createRandomWallet().address, amount: 10999999991000000 - 1})
+        .expect(200)
+        .then((r) => {
+          expect(r.body.success).false;
+          expect(r.body.error).contain('enough currency');
+        });
+    });
+    it('should return 403', async () => {
+      initializer.appManager.expressApp.enable('trust proxy');
+      const s = getRandomDelegateSecret();
+      await supertest(initializer.appManager.expressApp)
+        .post('/api/transactions')
+        .set('X-Forwarded-For', '8.8.8.8')
+        .send({secret: s, recipientId: createRandomWallet().address, amount: 1})
+        .expect(403)
+        .then((r) => {
+          expect(r.body.success).false;
+          expect(r.body.error).contain('Secure API access denied');
+        });
     });
   });
 
