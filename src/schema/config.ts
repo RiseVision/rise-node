@@ -108,9 +108,18 @@ export default {
               },
               whiteList: {
                 type: 'array',
+                items: {
+                  type: 'string',
+                },
               },
             },
             required  : ['public', 'whiteList'],
+          },
+          restrictedWhiteList: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
           },
           options: {
             type      : 'object',
@@ -137,7 +146,7 @@ export default {
             required  : ['limits'],
           },
         },
-        required  : ['enabled', 'access', 'options'],
+        required  : ['enabled', 'access', 'options', 'restrictedWhiteList'],
       },
       peers          : {
         type      : 'object',
@@ -157,6 +166,9 @@ export default {
             properties: {
               blackList: {
                 type: 'array',
+                items: {
+                  type: 'string',
+                },
               },
             },
             required  : ['blackList'],
