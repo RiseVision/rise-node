@@ -4,7 +4,7 @@ import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import * as supertest from 'supertest';
 import initializer from '../common/init';
 // tslint:disable-next-line
-import { constants, TransactionType } from '../../../src/helpers';
+import {constants, TransactionType, wait} from '../../../src/helpers';
 import { ITransactionPoolLogic } from '../../../src/ioc/interfaces/logic';
 import { IBlocksModule, ITransactionsModule } from '../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../src/ioc/symbols';
@@ -421,9 +421,11 @@ describe('api/transactions', () => {
         .post('/api/transactions')
         .send({secret: s, recipientId: createRandomWallet().address, amount: 10})
         .expect(200)
-        .then((r) => {
+        .then(async (r) => {
+          console.log(r.body);
           expect(r.body.success).true;
           expect(r.body.transactionId).not.empty;
+          await wait(1000);
           expect(txPool.transactionInPool(r.body.transactionId)).is.true;
         });
     });
