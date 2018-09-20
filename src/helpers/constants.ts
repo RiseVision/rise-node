@@ -50,6 +50,7 @@ export default {
   blockTime                    : 27,
   blockReceiptTimeOut          : 30 * 2, // 2 blocks
   confirmationLength           : 77,
+  addressSuffix                : 'R',
   epochTime                    : new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
   minVersion                   : [
     { height: 1, ver: '>=0.1.0' },

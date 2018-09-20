@@ -4,7 +4,7 @@ import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
 import z_schema from 'z-schema';
 import { BigNum, constants, Ed, IKeypair } from '../helpers/';
-import { IBlockLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
+import {IAccountLogic, IBlockLogic, ITransactionLogic} from '../ioc/interfaces/logic/';
 import { Symbols } from '../ioc/symbols';
 import { BlocksModel } from '../models';
 import logicBlockSchema from '../schema/logic/block';
@@ -12,7 +12,6 @@ import { DBOp } from '../types/genericTypes';
 import { RawFullBlockListType } from '../types/rawDBTypes';
 import { BlockRewardLogic } from './blockReward';
 import { IBaseTransaction, IBytesTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
-import { TransactionLogic } from './transaction';
 
 // import * as OldImplementation from './_block.js';
 
@@ -76,6 +75,8 @@ export class BlockLogic implements IBlockLogic {
   @inject(Symbols.generic.zschema)
   public zschema: z_schema;
 
+  @inject(Symbols.logic.account)
+  private accountLogic: IAccountLogic;
   @inject(Symbols.logic.blockReward)
   private blockReward: BlockRewardLogic;
   @inject(Symbols.helpers.ed)
@@ -251,7 +252,7 @@ export class BlockLogic implements IBlockLogic {
       const block       = {
         blockSignature      : Buffer.from(rawBlock.b_blockSignature, 'hex'),
         get generatorId() {
-          return self.getAddressByPublicKey(rawBlock.b_generatorPublicKey);
+          return self.accountLogic.generateAddressByPublicKey(rawBlock.b_generatorPublicKey);
         },
         generatorPublicKey  : Buffer.from(rawBlock.b_generatorPublicKey, 'hex'),
         height              : parseInt(`${rawBlock.b_height}`, 10),
@@ -379,7 +380,7 @@ export class BlockLogic implements IBlockLogic {
         ...baseTx,
         blockId: id,
         height: blk.height,
-        senderId: this.getAddressByPublicKey(baseTx.senderPublicKey),
+        senderId: this.accountLogic.generateAddressByPublicKey(baseTx.senderPublicKey),
       };
     });
 
@@ -414,20 +415,6 @@ export class BlockLogic implements IBlockLogic {
     const maxTxSize = this.transaction.getMaxBytesSize();
     size += constants.maxTxsPerBlock * maxTxSize; // transactions
     return size;
-  }
-
-  private getAddressByPublicKey(publicKey: Buffer | string) {
-    if (typeof(publicKey) === 'string') {
-      publicKey = new Buffer(publicKey, 'hex');
-    }
-    const publicKeyHash = crypto.createHash('sha256')
-      .update(publicKey).digest();
-    const temp          = Buffer.alloc(8);
-
-    for (let i = 0; i < 8; i++) {
-      temp[i] = publicKeyHash[7 - i];
-    }
-    return `${BigNum.fromBuffer(temp).toString()}R`;
   }
 
   private getIdFromBytes(bytes: Buffer): string {
