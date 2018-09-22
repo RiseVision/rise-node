@@ -224,11 +224,10 @@ export class TransportV2API {
       const blocksToLoad = await this.calcNumBlocksToLoad(lastBlock);
       const dbBlocks = await this.blocksModuleUtils.loadBlocksData({
         lastId: lastBlockId,
-        limit : blocksToLoad,
+        limit: blocksToLoad,
       });
       const tmpPB = this.pblocksFactory({data: null});
-      const blocks   = await Promise.all(dbBlocks
-        .map(async (block): Promise<IBytesBlock> => tmpPB.generateBytesBlock(block)));
+      const blocks   = dbBlocks.map((b) => tmpPB.generateBytesBlock(b));
       return this.getResponse({ blocks }, 'transportBlocks');
     } else {
       throw new Error(`Block ${lastBlockId} not found!`);

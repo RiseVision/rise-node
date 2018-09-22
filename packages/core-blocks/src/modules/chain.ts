@@ -269,8 +269,13 @@ export class BlocksModuleChain {
       // TODO: add this on consensus dpos using hook ^^
       // await this.roundsModule.tick(block, dbTX);
 
-      this.blocksModule.lastBlock = deepFreeze(block);
-      // Be aware that if you don't use dbTX you'll not receive infos from an updated database.
+      this.blocksModule.lastBlock = deepFreeze(
+        this.BlocksModel.toStringBlockType(
+          block,
+          this.TransactionsModel,
+          this.blocksModule
+        )
+      );
       await this.hookSystem.do_action(
         OnPostApplyBlock.name,
         this.blocksModule.lastBlock,

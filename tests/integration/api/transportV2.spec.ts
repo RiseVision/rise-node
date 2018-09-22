@@ -665,7 +665,7 @@ describe('v2/peer/transport', function() {
       .get('/v2/peer/blocks/'));
 
     it('should query last blocks from given lastId', async () => {
-      const nBlocks = 200;
+      const nBlocks = 80;
       const txsPerBlock = 10;
       const blocks = [];
       const wallets = [];
@@ -708,7 +708,9 @@ describe('v2/peer/transport', function() {
         delete blk.relays;
         return blk;
       });
-      expect(r.blocks).to.be.deep.equal(blocks);
+      for (let i = 0; i < r.blocks.length; i++) {
+        expect(r.blocks[i]).deep.eq(blocks[i]);
+      }
     });
   });
 

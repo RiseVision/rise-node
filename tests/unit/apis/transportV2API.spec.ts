@@ -584,12 +584,21 @@ describe('apis/transportV2API', () => {
       });
     });
 
-    it('should call loadBlocksData', async () => {
+    it('should call loadBlocksData with limit 2100 ', async () => {
       await instance.getBlocks('123');
       expect(blocksSubmoduleUtilsStub.stubs.loadBlocksData.calledOnce).to.be.true;
       expect(blocksSubmoduleUtilsStub.stubs.loadBlocksData.firstCall.args).to.be.deep.equal([{
         lastId: '123',
         limit : 2100,
+      }]);
+    });
+    it('should call loadBlocksData with limit 800 ', async () => {
+      numblocksToLoadStub.resolves(800);
+      await instance.getBlocks('123');
+      expect(blocksSubmoduleUtilsStub.stubs.loadBlocksData.calledOnce).to.be.true;
+      expect(blocksSubmoduleUtilsStub.stubs.loadBlocksData.firstCall.args).to.be.deep.equal([{
+        lastId: '123',
+        limit : 800,
       }]);
     });
 
@@ -617,12 +626,12 @@ describe('apis/transportV2API', () => {
         transactionLogicStub.stubs.getMinBytesSize.returns(219);
         transactionLogicStub.stubs.getByteSizeByTxType.returns(219);
       });
-      it('should calculate properly', async () => {
+      /* it('should calculate properly', async () => {
         findAllTxsStub.resolves([{type: 0, height: 123457}]);
         await instance.getBlocks('123');
         const lastHeight = blocksSubmoduleUtilsStub.stubs.loadBlocksData.firstCall.args[0].limit;
         expect(lastHeight).eq(maxNumberInPayload - 2); // 1 tx weights more than 1 block
-      });
+      }); */
       it('should return at least 1 block', async () => {
         blockLogicStub.stubs.getMinBytesSize.returns(2000000);
         findAllTxsStub.resolves([{type: 0, height: 123457}]);

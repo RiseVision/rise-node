@@ -32,6 +32,7 @@ describe('logic/peers', () => {
     peersFactoryStub = sandbox.stub().returns(peerLogicStub);
     container.rebind(p2pSymbols.logic.peerFactory).toConstantValue(peersFactoryStub);
     loggerStub = container.get(Symbols.helpers.logger);
+    peerLogicStub = new PeerLogicStub();
     systemModuleStub = container.get(Symbols.modules.system);
     instance = container.get(p2pSymbols.logic.peersLogic);
   });
@@ -309,6 +310,10 @@ describe('logic/peers', () => {
   });
 
   describe('wasRecentlyRemoved', () => {
+    let config: AppConfig;
+    beforeEach(() => {
+      config = container.get(Symbols.generic.appConfig);
+    });
     it('should return false if peer is not in lastRemoved ', () => {
       (instance as any).lastRemoved = {};
       expect((instance as any).wasRecentlyRemoved(peerLogicStub)).to.be.false;
@@ -316,13 +321,13 @@ describe('logic/peers', () => {
 
     it('should return true if removal was less than 15 minutes ago', () => {
       (instance as any).lastRemoved = {};
-      (instance as any).lastRemoved[peerLogicStub.string] = Date.now() - 5 * 60 * 1000;
+      (instance as any).lastRemoved[peerLogicStub.string] = Date.now() - config.peers.banTime + 1000;
       expect((instance as any).wasRecentlyRemoved(peerLogicStub)).to.be.true;
     });
 
     it('should return false if removal was more than 15 minutes ago', () => {
       (instance as any).lastRemoved = {};
-      (instance as any).lastRemoved[peerLogicStub.string] = Date.now() - 20 * 60 * 1000;
+      (instance as any).lastRemoved[peerLogicStub.string] = Date.now() - config.peers.banTime - 1000;
       expect((instance as any).wasRecentlyRemoved(peerLogicStub)).to.be.false;
     });
   });

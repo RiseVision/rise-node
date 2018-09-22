@@ -465,7 +465,7 @@ describe('AppManager', () => {
     // Test added to make sure this file is updated every time a new element is bound in container
     it('should call bind exactly 100 times', async () => {
       await instance.initAppElements();
-      expect(containerStub.bindCount).to.be.equal(100);
+      expect(containerStub.bindCount).to.be.equal(101);
     });
 
     it('should bind each API controller to its symbol', async () => {
@@ -506,6 +506,13 @@ describe('AppManager', () => {
         {
           inSingletonScope: true,
           to              : 'AttachPeerHeaders',
+        },
+      ]);
+
+      expect(containerStub.bindings[Symbols.api.utils.restrictedWhiteList]).to.be.deep.equal([
+        {
+          inSingletonScope: true,
+          to              : 'RestrictedAPIWatchGuard',
         },
       ]);
     });

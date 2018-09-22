@@ -1,3 +1,4 @@
+import { LiskWallet as RISEWallet, SendTx } from 'dpos-offline';
 import {
   IAccountsModel,
   IAccountsModule,
@@ -231,6 +232,37 @@ export class TransactionsAPI {
     return { transaction: this.TXModel.toTransportTransaction(tx) };
   }
 
+  @Post()
+  @ValidateSchema()
+  @UseBefore(RestrictedAPIWatchGuard)
+  public async localCreate(
+    @SchemaValid(schema.addTransactions, {castNumbers: true})
+    @Body() body: {
+      secret: string,
+      recipientId: string,
+      amount: number,
+      secondSecret?: string
+    }
+  ) {
+    const w = new RISEWallet(body.secret, this.constants.addressSuffix);
+    const second = body.secondSecret ? new RISEWallet(body.secondSecret, this.constants.addressSuffix) : undefined;
+    const transaction = w.signTransaction(
+      new SendTx()
+      .set('amount', body.amount)
+      .set('timestamp', this.slots.getTime())
+      .set('recipientId', body.recipientId)
+      .set('fee', this.systemModule.getFees().fees.send),
+      second
+    );
+
+    const res = await this.put({ transaction });
+    if (res.accepted && res.accepted.length === 1) {
+      return { transactionId: res.accepted[0] };
+    } else {
+      throw new Error(res.invalid[0].reason);
+    }
+  }
+
   @Put()
   @ValidateSchema()
   public async put(
@@ -378,4 +410,5 @@ export class TransactionsAPI {
     }
     return whereClause;
   }
+
 }

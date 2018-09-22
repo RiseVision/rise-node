@@ -27,8 +27,8 @@ describe('helpers/z_schema', () => {
   describe('Format "address"', ()  => {
     const schema = { type: 'string', format: 'address' };
     // Y ?
-    it('should accept an empty string', () => {
-      expect(validator.validate('', schema)).to.be.true;
+    it('should NOT accept an empty string', () => {
+      expect(validator.validate('', schema)).to.be.false;
     });
     it('should accept a sequence of numbers followed by uppercase "R"', () => {
       expect(validator.validate('18338120857045062830R', schema)).to.be.true;
@@ -222,6 +222,9 @@ describe('helpers/z_schema', () => {
     });
     it('should reject version subnumbers with more than 3 digits', () => {
       expect(validator.validate('1.22.3333', schema)).to.be.false;
+    });
+    it('should consider 1.1.0-t a valid version', () => {
+      expect(validator.validate('1.1.0-t', schema)).to.be.true;
     });
   });
 

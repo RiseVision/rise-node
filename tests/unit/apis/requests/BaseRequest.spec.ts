@@ -158,6 +158,21 @@ describe('apis/requests/BaseRequest', () => {
     });
   });
 
+  describe('peersSupportsProtoBuf', () => {
+    it('should return true for several versions after 1.2.0', () => {
+      expect(instance['peerSupportsProtoBuf']({version: '1.2.0'} as any)).true;
+      expect(instance['peerSupportsProtoBuf']({version: '1.2.1'} as any)).true;
+      expect(instance['peerSupportsProtoBuf']({version: '1.2.1-t'} as any)).true;
+      expect(instance['peerSupportsProtoBuf']({version: '1.2.1t'} as any)).true;
+      expect(instance['peerSupportsProtoBuf']({version: '1.2.0t'} as any)).true;
+      expect(instance['peerSupportsProtoBuf']({version: '1.2.0-t'} as any)).true;
+      expect(instance['peerSupportsProtoBuf']({version: '12.0.0'} as any)).true;
+    });
+    it('should return false if 1.1.99', () => {
+      expect(instance['peerSupportsProtoBuf']({version: '1.1.99'} as any)).false;
+    });
+  })
+
   describe('decodeProtoBufResponse', () => {
 
     describe('when response status is 200', () => {

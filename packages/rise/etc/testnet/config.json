@@ -1,7 +1,7 @@
 {
     "port": 5566,
     "address": "0.0.0.0",
-    "version": "1.2.0-t",
+    "version": "1.2.0t",
     "fileLogLevel": "info",
     "logFileName": "logs/rise-testnet.log",
     "consoleLogLevel": "info",
@@ -35,6 +35,7 @@
                 "127.0.0.1"
             ]
         },
+        "restrictedWhiteList": [ "127.0.0.1" ],
         "options": {
             "limits": {
                 "max": 0,
@@ -46,6 +47,7 @@
     },
     "peers": {
         "enabled": true,
+        "banTime": 90000,
         "list": [
             {
                 "ip": "45.63.91.77",

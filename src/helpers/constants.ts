@@ -50,6 +50,7 @@ export default {
   blockTime                    : 30,
   blockReceiptTimeOut          : 30 * 2, // 2 blocks
   confirmationLength           : 77,
+  addressSuffix                : 'R',
   epochTime                    : new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
   minVersion                   : [
     { height: 1, ver: '>=0.1.0' },
@@ -76,7 +77,7 @@ export default {
   maxConfirmations             : 77 * 100,
   maxPayloadLength             : 1024 * 1024,
   maxPeers                     : 100,
-  maxProtoBufPayloadLength     : 1572864, // (1.5MB) Maximum number of bytes for a Protocol Buffer Request/Response Body
+  maxProtoBufPayloadLength     : 100 * 1024, // (100KB) Maximum number of bytes for a Protocol Buffer Request/Response Body
   maxRequests                  : 10000 * 12,
   maxSharedTxs                 : 100,
   maxSignaturesLength          : 196 * 256,

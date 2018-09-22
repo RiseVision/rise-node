@@ -43,6 +43,7 @@
     },
     "peers": {
         "enabled": true,
+        "banTime": 90000,
         "list": [{
             "ip": "127.0.0.1",
             "port": 9999
@@ -50,6 +51,7 @@
         "access": {
             "blackList": []
         },
+        "restrictedWhiteList": [ "127.0.0.1" ],
         "options": {
             "limits": {
                 "max": 0,

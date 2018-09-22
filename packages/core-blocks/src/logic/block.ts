@@ -229,7 +229,7 @@ export class BlockLogic implements IBlockLogic {
       const block = {
         blockSignature      : Buffer.from(rawBlock.b_blockSignature, 'hex'),
         get generatorId() {
-          return self.accountLogic.generateAddressByPublicKey(generatorPublicKey);
+          return self.accountLogic.generateAddressByPublicKey(rawBlock.b_generatorPublicKey);
         },
         generatorPublicKey,
         height              : parseInt(`${rawBlock.b_height}`, 10),
@@ -253,7 +253,6 @@ export class BlockLogic implements IBlockLogic {
   /**
    * Calculates block id.
    * @param {BlockType} block
-   * @param fromBytes
    * @returns {string}
    */
   public getId(block: BlockType): string {
@@ -374,7 +373,7 @@ export class BlockLogic implements IBlockLogic {
         ...baseTx,
         blockId: id,
         height: blk.height,
-        senderId: this.getAddressByPublicKey(baseTx.senderPublicKey),
+        senderId: this.accountLogic.generateAddressByPublicKey(baseTx.senderPublicKey),
       };
     });
 
@@ -409,20 +408,6 @@ export class BlockLogic implements IBlockLogic {
     const maxTxSize = this.transaction.getMaxBytesSize();
     size += this.constants.maxTxsPerBlock * maxTxSize; // transactions
     return size;
-  }
-
-  private getAddressByPublicKey(publicKey: Buffer | string) {
-    if (typeof(publicKey) === 'string') {
-      publicKey = new Buffer(publicKey, 'hex');
-    }
-    const publicKeyHash = crypto.createHash('sha256')
-      .update(publicKey).digest();
-    const temp          = Buffer.alloc(8);
-
-    for (let i = 0; i < 8; i++) {
-      temp[i] = publicKeyHash[7 - i];
-    }
-    return `${MyBigNumb.fromBuffer(temp).toString()}R`;
   }
 
   private getIdFromBytes(bytes: Buffer): string {

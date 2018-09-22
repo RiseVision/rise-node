@@ -352,7 +352,6 @@ describe('logic/transaction', () => {
     });
   });
 
-
   describe('verify', () => {
     let verifySignatureStub: SinonStub;
     let checkBalanceStub: SinonStub;
@@ -567,7 +566,7 @@ describe('logic/transaction', () => {
       });
     });
   });
-  //
+
   describe('verifySignature', () => {
     let akttStub: SinonStub;
     let getHashStub: SinonStub;

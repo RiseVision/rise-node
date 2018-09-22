@@ -1,4 +1,4 @@
-import { ILogger, ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { AppConfig, ILogger, ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { BasePeerType, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
@@ -21,6 +21,9 @@ export class PeersLogic {
 
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
+
+  @inject(Symbols.generic.appConfig)
+  private config: AppConfig;
 
   public create(peer: BasePeerType): Peer {
     if (!(peer instanceof Peer)) {
@@ -160,7 +163,7 @@ export class PeersLogic {
     if (typeof this.lastRemoved[thePeer.string] === 'undefined') {
       return false;
     }
-    return (Date.now() - this.lastRemoved[thePeer.string]) < 15 * 60 * 1000;
+    return (Date.now() - this.lastRemoved[thePeer.string]) < this.config.peers.banTime;
   }
 
 }
