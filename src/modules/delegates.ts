@@ -91,12 +91,9 @@ export class DelegatesModule implements IDelegatesModule {
       pool = delegates.map((delegate, index) => {
         // const rand = (randSeed[index * 2] * 256 + randSeed[index * 2 + 1]) / 65536; // 0 >= rand < 1, 16 bit prec.
         const rand = generator.random(); // 0 >= rand < 1
-        // This is the vote weight for the current delegate, normalized with the pool's total votes as maximum
-        // 0 >= thisVoteWeight < 1
-        const thisVoteWeight = delegate.vote / totalVotes;
         return {
           ...delegate,
-          weight: thisVoteWeight * rand,
+          weight: rand ** ( 1 / delegate.vote ), // Weighted Random Sampling (Efraimidis, Spirakis, 2005)
         };
       });
 

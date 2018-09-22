@@ -260,11 +260,8 @@ describe('modules/delegates', () => {
             inclusionCount[idx] = typeof inclusionCount[idx] !== 'undefined' ? inclusionCount[idx] + 1 : 1;
           });
         }
-        // TODO: Does not pass!! WHY?
-        // expect(Object.keys(inclusionCount).length).to.be.eq(delegates.length - 1);
-
-        // Passes
-        expect(Object.keys(inclusionCount).length).to.be.gte(0.8 * delegates.length);
+        // Only one delegate has zero vote, so it should never be included in round
+        expect(Object.keys(inclusionCount).length).to.be.eq(delegates.length - 1);
       });
 
       it('should include the top 101 delegates at least once in a short streak of rounds', async () => {
