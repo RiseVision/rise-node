@@ -1,5 +1,5 @@
 export interface ISlots {
-  numDelegates(height?: number): number;
+  readonly delegates: number;
 
   getDelegatesPoolSize(height?: number): number;
 
@@ -15,5 +15,5 @@ export interface ISlots {
   /**
    * Basically adds the given slot number with the number of forging delegates
    */
-  getLastSlot(nextSlot: number, height: number): any;
+  getLastSlot(nextSlot: number): any;
 }

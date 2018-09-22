@@ -40,6 +40,7 @@
     "jsonpath": "^1.0.0",
     "lodash": "=4.17.10",
     "long": "^4.0.0",
+    "mersenne-twister": "^1.1.0",
     "pg-native": "^3.0.0",
     "pg-promise": "=7.3.2",
     "popsicle": "=10.0.1",

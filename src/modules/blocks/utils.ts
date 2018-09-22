@@ -15,7 +15,6 @@ import { SignedAndChainedBlockType } from '../../logic/';
 import { AccountsModel, BlocksModel, RoundsFeesModel, TransactionsModel } from '../../models';
 import { RawFullBlockListType } from '../../types/rawDBTypes';
 import { publicKey } from '../../types/sanityTypes';
-import { ISlots } from '../../ioc/interfaces/helpers';
 
 @injectable()
 export class BlocksModuleUtils implements IBlocksModuleUtils {
@@ -32,8 +31,6 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   private dbSequence: Sequence;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
-  @inject(Symbols.helpers.slots)
-  private slots: ISlots;
 
   // Logic
   @inject(Symbols.logic.block)
@@ -139,10 +136,8 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
     // 1999599, 1999498
     const firstInRound             = this.rounds.firstInRound(this.rounds.calcRound(height));
     const heightsToQuery: number[] = [];
-    let curHeight = firstInRound;
     for (let i = 0; i < 5; i++) {
-      heightsToQuery.push(curHeight);
-      curHeight -= this.slots.numDelegates( curHeight - 1 );
+      heightsToQuery.push(firstInRound - this.constants.activeDelegates * i);
     }
 
     const blocks: Array<{ id: string, height: number }> = await BlocksModel
@@ -229,7 +224,7 @@ export class BlocksModuleUtils implements IBlocksModuleUtils {
   public async aggregateBlockReward(filter: { generatorPublicKey: publicKey, start?: number, end?: number }): Promise<{ fees: number, rewards: number, count: number }> {
     const params: any                                                         = {};
     params.generatorPublicKey                                                 = filter.generatorPublicKey;
-    params.delegates                                                          = this.constants.activeDelegates; // TODO fixme for fairvote
+    params.delegates                                                          = this.constants.activeDelegates;
     const timestampClausole: { timestamp?: any } = {timestamp: {}};
 
     if (typeof(filter.start) !== 'undefined') {

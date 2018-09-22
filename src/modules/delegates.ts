@@ -1,5 +1,6 @@
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
+import * as MersenneTwister from 'mersenne-twister';
 import * as z_schema from 'z-schema';
 import {
   constants as constantsType, ExceptionsList, ExceptionsManager,
@@ -66,15 +67,54 @@ export class DelegatesModule implements IDelegatesModule {
    * @return {Promise<publicKey[]>}
    */
   public async generateDelegateList(height: number): Promise<Buffer[]> {
-    const delegates      = await this.getKeysSortByVote();
+    let delegates  = await this.getKeysSortByVote();
     const seedSource = this.roundsLogic.calcRound(height).toString();
+
+    // If dposv2 is on, do a Weighted Random Selection of the round forgers.
+    if (height >= this.constants.dposv2.firstBlock) {
+      let pool: Array<{publicKey: Buffer, vote: number, weight?: number}>;
+
+      // // Generate a predictable source of ${delegates.length} random numbers (16 bits each)
+      // let randSeed = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
+      // while (randSeed.length < delegates.length * 2) {
+      //   randSeed = Buffer.concat([randSeed,
+      //     crypto.createHash('sha256').update(randSeed, 'utf8').digest()]);
+      // }
+
+      const generator = new MersenneTwister(seedSource);
+
+      const totalVotes: number = delegates.reduce((prev: number, cur) => {
+        return prev + cur.vote;
+      }, 0);
+
+      // Assign a weight to each delegate, which is its normalized vote weight multiplied by a random factor
+      pool = delegates.map((delegate, index) => {
+        // const rand = (randSeed[index * 2] * 256 + randSeed[index * 2 + 1]) / 65536; // 0 >= rand < 1, 16 bit prec.
+        const rand = generator.random(); // 0 >= rand < 1
+        // This is the vote weight for the current delegate, normalized with the pool's total votes as maximum
+        // 0 >= thisVoteWeight < 1
+        const thisVoteWeight = delegate.vote / totalVotes;
+        return {
+          ...delegate,
+          weight: thisVoteWeight * rand,
+        };
+      });
+
+      // Sort by weight
+      pool.sort((a, b) => {
+        // If two elements have the same weight, publicKey defines the position (higher value first)
+        if (a.weight === b.weight) {
+          return Buffer.compare(b.publicKey, a.publicKey);
+        }
+        return a.weight > b.weight ? -1 : 1;
+      });
+      delegates = pool.slice(0, this.constants.activeDelegates);
+    }
+
+    // Shuffle the delegates.
     let currentSeed  = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
 
-    // Shuffle the first ${constants.activeDelegates or less} delegates.
-    const delegatesCount = delegates.length < this.constants.activeDelegates ?
-      delegates.length : this.constants.activeDelegates;
-
-    for (let i = 0; i < delegatesCount; i++) {
+    for (let i = 0, delegatesCount = delegates.length; i < delegatesCount; i++) {
       for (let x = 0; x < 4 && i < delegatesCount; i++, x++) {
         const newIndex  = currentSeed[x] % delegatesCount;
         const b         = delegates[newIndex];
@@ -84,44 +124,7 @@ export class DelegatesModule implements IDelegatesModule {
       currentSeed = crypto.createHash('sha256').update(currentSeed).digest();
     }
 
-    // Rank the remaining ${constants.fairVoteSystem.outsidersPoolSize} or less keys.
-    if (delegates.length > this.constants.activeDelegates && height >= this.constants.fairVoteSystem.firstBlock) {
-      let outsiders: Array<{publicKey: Buffer, vote: number, score?: number}>;
-      outsiders = delegates.slice(this.constants.activeDelegates,
-        this.constants.activeDelegates + this.constants.fairVoteSystem.outsidersPoolSize);
-
-      let swapSeed = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
-      while (swapSeed.length < outsiders.length) {
-        swapSeed = Buffer.concat([swapSeed,
-          crypto.createHash('sha256').update(swapSeed, 'utf8').digest()]);
-      }
-
-      const minOutsiderVote = outsiders[outsiders.length - 1].vote;
-      const outsiderVotesDelta = outsiders[0].vote - minOutsiderVote;
-      outsiders = outsiders.map((d, index) => {
-        const thisVoteDelta = d.vote - minOutsiderVote;
-        const realVoteRanking = outsiders.length - (thisVoteDelta * (outsiders.length / outsiderVotesDelta));
-        const weightedVoteRanking = realVoteRanking * this.constants.fairVoteSystem.forgingProbability.voteWeight;
-        const weightedOrderRanking = (swapSeed[index] % outsiders.length - outsiders.length  / 2) *
-          this.constants.fairVoteSystem.forgingProbability.orderWeight;
-        d.score = weightedVoteRanking + weightedOrderRanking;
-        return d;
-      });
-
-      outsiders.sort((a, b) => {
-        // If same score is obtained, publicKey defines the position (higher value first)
-        if (a.score === b.score) {
-          return Buffer.compare(b.publicKey, a.publicKey);
-        }
-        return a.score > b.score ? 1 : -1;
-      });
-
-      outsiders.forEach((d, index) => {
-        delegates[this.constants.activeDelegates + index] = d;
-      });
-    }
-
-    return delegates.slice(0, this.slots.numDelegates(height)).map((d) => d.publicKey);
+    return delegates.slice(0, this.slots.delegates).map((d) => d.publicKey);
   }
 
   /**
@@ -169,7 +172,7 @@ export class DelegatesModule implements IDelegatesModule {
         100 - (delegates[i].missedblocks / ((delegates[i].producedblocks + delegates[i].missedblocks) / 100))
       ) || 0;
 
-      const outsider     = i + 1 > this.slots.numDelegates();
+      const outsider     = i + 1 > this.slots.delegates;
       const productivity = (!outsider) ? Math.round(percent * 1e2) / 1e2 : 0;
 
       crunchedDelegates.push({
@@ -202,7 +205,7 @@ export class DelegatesModule implements IDelegatesModule {
     const delegates = await this.generateDelegateList(block.height);
 
     const curSlot = this.slots.getSlotNumber(block.timestamp);
-    const delegId = delegates[curSlot % this.slots.numDelegates(block.height)];
+    const delegId = delegates[curSlot % this.slots.delegates];
     if (!(delegId && block.generatorPublicKey.equals(delegId))) {
       this.logger.error(`Expected generator ${delegId.toString('hex')} Received generator: ${block.generatorPublicKey.toString('hex')}`);
       throw new Error(`Failed to verify slot ${curSlot}`);
@@ -289,5 +292,4 @@ export class DelegatesModule implements IDelegatesModule {
       throw new Error(`Maximum number of ${this.constants.maximumVotes} votes exceeded (${exceeded} too many)`);
     }
   }
-
 }

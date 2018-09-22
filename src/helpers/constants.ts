@@ -119,14 +119,9 @@ export default {
       maxItems: 15,
     },
   },
-  fairVoteSystem: {
-    firstBlock: 123456789, // Block height from which the fair delegates system will be enabled.
-    minForged: 200,        // Enable productivity-based vote weight after a delegate has forged  at least # blocks
-    outsidersPoolSize: 31, // Number of round outsiders to choose from, as additional forgers in each round
-    activeOutsiders: 5,    // Number of round outsiders that will be actually forging a block in each round
-    forgingProbability: {
-      voteWeight: 0.8,     // When picking the active outsiders, vote weight will have this relative weight (out of 1)
-      orderWeight: 0.2,    // When picking the active outsiders, forging order will have this relative weight (out of 1)
-    },
+  dposv2: {
+    firstBlock: 123456789,   // Block height from which the fair delegates system will be enabled.
+    minForged: 200,          // Enable productivity-based vote weight after a delegate has forged  at least # blocks
+    delegatesPoolSize: 202,  // Total number of delegates to choose forgers from, when dposv2 is on
   },
 };

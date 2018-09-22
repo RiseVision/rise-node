@@ -8,11 +8,7 @@ import { ISlots } from '../../../src/ioc/interfaces/helpers';
 
 @injectable()
 export class SlotsStub extends BaseStubClass implements ISlots {
-
-  @stubMethod()
-  public numDelegates(height?: number) {
-    return 1;
-  }
+  public delegates: number = 101;
 
   @stubMethod()
   public getDelegatesPoolSize(height?: number) {

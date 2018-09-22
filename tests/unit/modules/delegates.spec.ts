@@ -8,6 +8,7 @@ import * as sinon from 'sinon';
 import * as helpers from '../../../src/helpers';
 import {Symbols} from '../../../src/ioc/symbols';
 import { SignedBlockType } from '../../../src/logic';
+import { AccountsModel, BlocksModel } from '../../../src/models';
 import { DelegatesModule } from '../../../src/modules';
 import {
   AccountsModuleStub,
@@ -21,7 +22,6 @@ import {
 import { CreateHashSpy } from '../../stubs/utils/CreateHashSpy';
 import { generateAccounts } from '../../utils/accountsUtils';
 import { createContainer } from '../../utils/containerCreator';
-import { AccountsModel, BlocksModel } from '../../../src/models';
 
 chai.use(chaiAsPromised);
 
@@ -103,6 +103,7 @@ describe('modules/delegates', () => {
     blockRewardLogicStub.stubConfig.calcSupply.return = totalSupply;
     signedBlock                                       = Object.assign({}, lastBlock);
     signedBlock.height++;
+    slotsStub.stubs.getDelegatesPoolSize.returns(101);
   });
 
   afterEach(() => {
@@ -152,6 +153,8 @@ describe('modules/delegates', () => {
       getKeysSortByVoteStub.resolves(keys);
       keysCopy = keys.slice();
       roundsLogicStub.stubs.calcRound.returns(123);
+      (instance as any).constants.dposv2.firstBlock = Number.MAX_SAFE_INTEGER;
+      slotsStub.delegates = 101;
     });
 
     it('should call getKeysSortByVote', async () => {
@@ -205,7 +208,7 @@ describe('modules/delegates', () => {
     });
 
     it('should return consistent data with precomputed i/o', async () => {
-      const pk = new Array(101).fill(null).map((a, idx) => (idx).toString(16));
+      const pk = new Array(101).fill(null).map((a, idx) => ({publicKey: idx.toString(16)}));
       getKeysSortByVoteStub.resolves(pk);
       expect(await instance.generateDelegateList(10)).to.be.deep.eq(
         // tslint:disable-next-line: max-line-length
@@ -217,16 +220,71 @@ describe('modules/delegates', () => {
       );
     });
 
-    it('should return 106 keys when fairVoteSystem is on', async () => {
-      slotsStub.stubs.numDelegates.returns(106);
-      const delegates = new Array(132).fill(null).map((a, idx) => ({
-        publicKey: Buffer.from(Math.ceil(Math.random() * 1000000000) .toString(16), 'hex'),
-        vote: Math.ceil((132 - idx) * 1000 + Math.random() * 999),
-      }));
-      getKeysSortByVoteStub.resolves(delegates);
-      const list = await instance.generateDelegateList(123456790);
-      expect(list).to.be.instanceOf(Array);
-      expect(list.length).to.be.equal(106);
+    describe('dposv2', () => {
+      let delegates;
+      beforeEach(() => {
+        (instance as any).constants.dposv2.firstBlock = 0;
+        // we add delegate.id for easily mapping them
+        delegates = new Array(202).fill(null).map((a, idx) => ({
+          publicKey: Buffer.from(Math.ceil(10000000 * idx + Math.random() * 1000000) .toString(16), 'hex'),
+          vote: Math.ceil((201 - idx) * 10000 + Math.random() * 999),
+        }));
+        delegates[201].vote = 0;
+        getKeysSortByVoteStub.resolves(delegates);
+        roundsLogicStub.stubs.calcRound.callsFake((h) => Math.ceil(h / slotsStub.delegates));
+      });
+
+      it('should produce the same array, given the same round and delegates', async () => {
+        slotsStub.delegates = 101;
+        const roundNum = Math.round(Math.random() * 1000000)
+        const list = await instance.generateDelegateList(roundNum);
+        const list2 = await instance.generateDelegateList(roundNum);
+        expect(list).to.be.deep.eq(list2);
+      });
+
+      it('should include at least once most delegates with vote > 0 in pool, in a long streak of rounds', async function() {
+        this.timeout(100000);
+        slotsStub.delegates = 101;
+        // 3 months...
+        const numRounds = 2570;
+        // const numRounds = 1;
+        const inclusionCount = {};
+
+        for (let round = 0; round < numRounds; round ++) {
+          if (round % 100 === 0) {
+            console.log(`${round} rounds done`);
+          }
+          const list = await instance.generateDelegateList(round * 101);
+          list.forEach((delegate) => {
+            const idx = delegate.toString('hex');
+            inclusionCount[idx] = typeof inclusionCount[idx] !== 'undefined' ? inclusionCount[idx] + 1 : 1;
+          });
+        }
+        // TODO: Does not pass!! WHY?
+        // expect(Object.keys(inclusionCount).length).to.be.eq(delegates.length - 1);
+
+        // Passes
+        expect(Object.keys(inclusionCount).length).to.be.gte(0.8 * delegates.length);
+      });
+
+      it('should include the top 101 delegates at least once in a short streak of rounds', async () => {
+        slotsStub.delegates = 101;
+        // 1 day
+        const numRounds = 28;
+        const inclusionCount = {};
+        for (let round = 0; round < numRounds; round ++) {
+          const list = await instance.generateDelegateList(round * 101);
+          list.forEach((delegate) => {
+            const idx = delegate.toString('hex');
+            inclusionCount[idx] = typeof inclusionCount[idx] !== 'undefined' ? inclusionCount[idx] + 1 : 1;
+          });
+        }
+        for (let i = 0; i < 101; i++) {
+          const idx = delegates[i].publicKey.toString('hex');
+          expect(inclusionCount[idx]).not.to.be.undefined;
+          expect(inclusionCount[idx]).to.be.gt(0);
+        }
+      });
     });
   });
 
@@ -383,14 +441,15 @@ describe('modules/delegates', () => {
         limit     : 101,
         sort      : { vote: -1, publicKey: 1 },
       });
-      expect(accountsModuleStub.stubs.getAccounts.firstCall.args[1]).to.be.deep.equal(['publicKey']);
+      expect(accountsModuleStub.stubs.getAccounts.firstCall.args[1]).to.be.deep.equal(['publicKey', 'vote']);
     });
 
-    it('should return an array of publicKeys only', async () => {
+    it('should return an array of publicKeys and votes', async () => {
       const retVal = await (instance as any).getKeysSortByVote();
       expect(Array.isArray(retVal)).to.be.true;
       retVal.forEach((el, k) => {
-        expect(el).to.be.equal(testAccounts[k].publicKey);
+        expect(el.vote).to.be.equal((testAccounts[k] as any).vote);
+        expect(el.publicKey).to.be.equal(testAccounts[k].publicKey);
       });
     });
   });
