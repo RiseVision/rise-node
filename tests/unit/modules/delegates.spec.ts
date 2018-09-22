@@ -244,24 +244,46 @@ describe('modules/delegates', () => {
 
       it('should include at least once most delegates with vote > 0 in pool, in a long streak of rounds', async function() {
         this.timeout(100000);
+        createHashSpy.restore();
         slotsStub.delegates = 101;
-        // 3 months...
-        const numRounds = 2570;
-        // const numRounds = 1;
-        const inclusionCount = {};
+        // 1 year...
+        const numRounds = 10407;
+        let includedDelegates = 0;
+        const delegatesMap = {};
+        delegates.forEach((d) => {
+          const idx = d.publicKey.toString('hex');
+          delegatesMap[idx] = d;
+        });
 
         for (let round = 0; round < numRounds; round ++) {
-          if (round % 100 === 0) {
+          if (round % 1000 === 0) {
             console.log(`${round} rounds done`);
           }
           const list = await instance.generateDelegateList(round * 101);
           list.forEach((delegate) => {
             const idx = delegate.toString('hex');
-            inclusionCount[idx] = typeof inclusionCount[idx] !== 'undefined' ? inclusionCount[idx] + 1 : 1;
+            delegatesMap[idx].count = typeof delegatesMap[idx].count !== 'undefined' ? delegatesMap[idx].count + 1 : 1;
           });
+          roundsLogicStub.stubs.calcRound.resetHistory();
+          getKeysSortByVoteStub.resetHistory();
         }
+        const toSort = [];
+        Object.keys(delegatesMap).forEach((k) => {
+          const d = delegatesMap[k];
+          d.stringKey = d.publicKey.toString('hex');
+          toSort.push(d);
+        });
+        toSort.sort((a, b) => {
+          return b.vote - a.vote;
+        });
+        toSort.forEach((d, idx) => {
+          const count = d.count ? d.count : 0;
+          const percent = ((count * 100) / numRounds).toFixed(2);
+          // console.log(`#${idx} vote: ${d.vote} inclusions: ${count} ${percent}%`);
+          if (count > 0) includedDelegates++;
+        });
         // Only one delegate has zero vote, so it should never be included in round
-        expect(Object.keys(inclusionCount).length).to.be.eq(delegates.length - 1);
+        expect(includedDelegates).to.be.eq(delegates.length - 1);
       });
 
       it('should include the top 101 delegates at least once in a short streak of rounds', async () => {

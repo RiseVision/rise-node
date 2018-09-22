@@ -74,22 +74,11 @@ export class DelegatesModule implements IDelegatesModule {
     if (height >= this.constants.dposv2.firstBlock) {
       let pool: Array<{publicKey: Buffer, vote: number, weight?: number}>;
 
-      // // Generate a predictable source of ${delegates.length} random numbers (16 bits each)
-      // let randSeed = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
-      // while (randSeed.length < delegates.length * 2) {
-      //   randSeed = Buffer.concat([randSeed,
-      //     crypto.createHash('sha256').update(randSeed, 'utf8').digest()]);
-      // }
-
+      // Initialize source random numbers that will generate a predictable sequence, given the seed.
       const generator = new MersenneTwister(seedSource);
-
-      const totalVotes: number = delegates.reduce((prev: number, cur) => {
-        return prev + cur.vote;
-      }, 0);
 
       // Assign a weight to each delegate, which is its normalized vote weight multiplied by a random factor
       pool = delegates.map((delegate, index) => {
-        // const rand = (randSeed[index * 2] * 256 + randSeed[index * 2 + 1]) / 65536; // 0 >= rand < 1, 16 bit prec.
         const rand = generator.random(); // 0 >= rand < 1
         return {
           ...delegate,
