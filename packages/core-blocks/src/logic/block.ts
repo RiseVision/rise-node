@@ -229,7 +229,7 @@ export class BlockLogic implements IBlockLogic {
       const block = {
         blockSignature      : Buffer.from(rawBlock.b_blockSignature, 'hex'),
         get generatorId() {
-          return self.accountLogic.generateAddressByPublicKey(rawBlock.b_generatorPublicKey);
+          return self.accountLogic.generateAddressByPublicKey(generatorPublicKey);
         },
         generatorPublicKey,
         height              : parseInt(`${rawBlock.b_height}`, 10),

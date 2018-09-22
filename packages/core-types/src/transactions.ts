@@ -56,4 +56,5 @@ export interface IBytesTransaction {
   hasSignSignature: boolean;
   fee: number;
   relays?: number;
+  signatures?: Buffer[]
 }

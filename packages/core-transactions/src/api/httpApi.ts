@@ -2,7 +2,7 @@ import { LiskWallet as RISEWallet, SendTx } from 'dpos-offline';
 import {
   IAccountsModel,
   IAccountsModule,
-  IBlocksModule,
+  IBlocksModule, ISystemModule,
   ITimeToEpoch,
   ITransactionLogic,
   ITransactionsModel,
@@ -10,7 +10,7 @@ import {
   Symbols
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { IBaseTransaction, ITransportTransaction } from '@risevision/core-types';
+import { ConstantsType, IBaseTransaction, ITransportTransaction } from '@risevision/core-types';
 import {
   assertValidSchema,
   castFieldsToNumberUsingSchema,
@@ -23,12 +23,13 @@ import {
 import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import * as _ from 'lodash';
-import { Body, Get, JsonController, Post, Put, QueryParam, QueryParams } from 'routing-controllers';
+import { Body, Get, JsonController, Post, Put, QueryParam, QueryParams, UseBefore } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { TXSymbols } from '../txSymbols';
 import { TXApiGetTxFilter } from '../hooks/filters';
 import { TransactionPool } from '../TransactionPool';
+import { RestrictedAPIWatchGuard } from '@risevision/core-apis';
 
 // tslint:disable-next-line
 const schema = require('../../schema/api.json');
@@ -39,6 +40,8 @@ const schema = require('../../schema/api.json');
 export class TransactionsAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
+  @inject(Symbols.generic.constants)
+  public constants: ConstantsType;
 
   @inject(Symbols.helpers.timeToEpoch)
   public timeToEpoch: ITimeToEpoch;
@@ -52,6 +55,8 @@ export class TransactionsAPI {
   private blocksModule: IBlocksModule;
   @inject(TXSymbols.module)
   private transactionsModule: ITransactionsModule;
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
 
   @inject(ModelSymbols.model)
   @named(TXSymbols.model)
@@ -249,7 +254,7 @@ export class TransactionsAPI {
     const transaction = w.signTransaction(
       new SendTx()
       .set('amount', body.amount)
-      .set('timestamp', this.slots.getTime())
+      .set('timestamp', this.timeToEpoch.getTime())
       .set('recipientId', body.recipientId)
       .set('fee', this.systemModule.getFees().fees.send),
       second

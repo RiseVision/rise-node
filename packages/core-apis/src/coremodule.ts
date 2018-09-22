@@ -5,6 +5,7 @@ import { AppConfig } from '@risevision/core-types';
 import { APISymbols, limitsMiddleware } from './helpers';
 import { APIErrorHandler, APISuccessInterceptor, PrivateApisGuard } from './utils';
 import { SocketIOAPI } from './socketio';
+import { RestrictedAPIWatchGuard } from './utils/restrictedAPIWatchGuard';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = require('../schema/config.json');
@@ -24,6 +25,9 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     this.container
       .bind(Symbols.class)
       .toConstantValue(limitsMiddleware).whenTargetNamed(APISymbols.applyLimitsMiddleware);
+    this.container
+      .bind(Symbols.class)
+      .to(RestrictedAPIWatchGuard).inSingletonScope().whenTargetNamed(APISymbols.restrictedAPIWatchGuard);
 
     this.container
       .bind(APISymbols.socketIOAPI)

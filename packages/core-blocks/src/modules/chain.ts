@@ -270,11 +270,7 @@ export class BlocksModuleChain {
       // await this.roundsModule.tick(block, dbTX);
 
       this.blocksModule.lastBlock = deepFreeze(
-        this.BlocksModel.toStringBlockType(
-          block,
-          this.TransactionsModel,
-          this.blocksModule
-        )
+        this.BlocksModel.toStringBlockType(block)
       );
       await this.hookSystem.do_action(
         OnPostApplyBlock.name,

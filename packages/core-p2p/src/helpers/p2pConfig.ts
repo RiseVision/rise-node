@@ -7,6 +7,7 @@ export type P2pConfig = AppConfig & {
     access: {
       blackList: string[]
     },
+    banTime: number
     options: {
       max: number
       delayMs: number

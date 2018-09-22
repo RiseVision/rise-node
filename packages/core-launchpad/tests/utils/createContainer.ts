@@ -1,6 +1,6 @@
 import { Container, interfaces } from 'inversify';
 import { loadCoreSortedModules, resolveModule } from '../../src/modulesLoader';
-import { z_schema } from '../../../core-utils';
+import { z_schemaBuilder } from '../../../core-utils';
 import { WordPressHookSystem, InMemoryFilterModel } from 'mangiafuoco';
 import { LoggerStub } from '../../../core-utils/tests/stubs';
 import { SignedAndChainedBlockType } from '../../../core-types/dist';
@@ -40,7 +40,7 @@ export async function createContainer(modules: string[] = ['core', 'core-account
   container.bind(Symbols.generic.appConfig).toConstantValue(config);
   container.bind(Symbols.generic.nonce).toConstantValue('nonce');
   container.bind(Symbols.generic.versionBuild).toConstantValue('test');
-  container.bind(Symbols.generic.zschema).toConstantValue(new z_schema({}));
+  container.bind(Symbols.generic.zschema).toConstantValue(z_schemaBuilder(container.get(Symbols.generic.constants)));
   container.bind(Symbols.generic.hookSystem).toConstantValue(new WordPressHookSystem(new InMemoryFilterModel()));
   container.rebind(Symbols.helpers.logger).toConstantValue(new LoggerStub());
   container.bind(LaunchpadSymbols.coremodules).toConstantValue(sortedModules);

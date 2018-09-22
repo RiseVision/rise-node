@@ -1,5 +1,6 @@
 // tslint:disable-next-line
 export type ConstantsType = {
+  addressSuffix: string,
   blockSlotWindow: number,
   blockTime: number,
   blockReceiptTimeOut: number, // 2 blocks

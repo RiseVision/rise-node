@@ -134,7 +134,7 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     if (tx.recipientId) {
-      const recipient = tx.recipientId.slice(0, -1);
+      const recipient = tx.recipientId.slice(0, this.constants.addressSuffix.length);
       const recBuf    = new MyBigNumb(recipient).toBuffer({ size: 8 });
 
       for (let i = 0; i < 8; i++) {

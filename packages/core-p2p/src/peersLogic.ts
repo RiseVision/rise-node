@@ -1,9 +1,9 @@
-import { AppConfig, ILogger, ISystemModule, Symbols } from '@risevision/core-interfaces';
-import { BasePeerType, PeerState, PeerType } from '@risevision/core-types';
+import { ILogger, ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { AppConfig, BasePeerType, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
-import { p2pSymbols } from './helpers';
+import { P2pConfig, p2pSymbols } from './helpers';
 import { Peer } from './peer';
 
 @injectable()
@@ -23,7 +23,7 @@ export class PeersLogic {
   private systemModule: ISystemModule;
 
   @inject(Symbols.generic.appConfig)
-  private config: AppConfig;
+  private config: P2pConfig;
 
   public create(peer: BasePeerType): Peer {
     if (!(peer instanceof Peer)) {

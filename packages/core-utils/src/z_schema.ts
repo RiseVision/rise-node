@@ -1,27 +1,5 @@
 import * as ip from 'ip';
 import * as z_schema from 'z-schema';
-import constants from './constants';
-
-/**
- * Uses JSON Schema validator z_schema to register custom formats.
- * - id
- * - address
- * - username
- * - hex
- * - publicKey
- * - csv
- * - signature
- * - queryList
- * - delegatesList
- * - ip
- * - os
- * - version
- * @see {@link https://github.com/zaggino/z-schema}
- * @memberof module:helpers
- * @requires ip
- * @constructor
- * @return {Boolean} True if the format is valid
- */
 
 z_schema.registerFormat('id', (str: string) => {
   if (str.length === 0) {
@@ -31,9 +9,7 @@ z_schema.registerFormat('id', (str: string) => {
   return /^[0-9]+$/g.test(str);
 });
 
-z_schema.registerFormat('address', (str: string) => {
-  return new RegExp(`^[0-9]{1,20}${constants.addressSuffix}$`).test(str);
-});
+
 
 z_schema.registerFormat('username', (str: string) => {
   if (typeof(str) !== 'string') {
