@@ -6,7 +6,7 @@ export type APIConfig = AppConfig & {
     access: {
       public: boolean
       whiteList: string[]
-      restrictedAPIwhiteList: string[]
+      restrictedWhiteList: string[]
     }
     options: {
       limits: {

@@ -22,12 +22,6 @@ const assertArrays = require('chai-arrays');
 const { expect } = chai;
 chai.use(assertArrays);
 
-const ed = new Ed();
-
-const passphrase = 'oath polypody manumit effector half sigmoid abound osmium jewfish weed sunproof ramose';
-const dummyKeypair = ed.makeKeypair(
-  crypto.createHash('sha256').update(passphrase, 'utf8').digest()
-);
 
 // tslint:disable no-unused-expression
 describe('logic/block', () => {
@@ -41,9 +35,6 @@ describe('logic/block', () => {
   let instance: BlockLogic;
   let constants: ConstantsType;
   let data;
-  let blockRewardLogicStub: BlockRewardLogicStub;
-  let zschemastub: ZSchemaStub;
-  let transactionLogicStub: TransactionLogicStub;
   let createHashSpy: SinonSpy;
   let blocksModel: typeof BlocksModel;
   let cryptoImplementation: ICrypto;

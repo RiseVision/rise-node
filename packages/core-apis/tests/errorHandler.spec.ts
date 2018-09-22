@@ -55,21 +55,8 @@ describe('apis/utils/errorHandler', () => {
   });
 
   describe('error()', () => {
-    it('If url starts with /peer', () => {
-      instance.error(new Error('Fake error'), request, response, next);
-      expect(loggerStub.stubs.error.called).to.be.false;
-      expect(loggerStub.stubs.warn.calledOnce).to.be.true;
-      expect(loggerStub.stubs.warn.args[0][0]).to.contains('Transport error');
-      expect(loggerStub.stubs.warn.args[0][1]).to.equal('Fake error');
-      expect(responseStatusSpy.calledOnce).to.be.true;
-      expect(responseStatusSpy.args[0][0]).to.equal(200);
-      expect(sendSpy.send.calledOnce).to.be.true;
-      expect(sendSpy.send.args[0][0]).to.deep.equal({ success: false, error: 'Fake error' });
-      // expect(next.calledOnce).to.be.true;
-      // expect(next.args[0][0]).to.deep.equal({success: false, error: 'Fake error'});
-    });
 
-    it('If url NOT starts with /peer', () => {
+    it('it should spit error in console and respond with success:false', () => {
       requestStub.resetBehavior();
       requestStub.returns(false);
       instance.error('Another fake error', request, response, next);

@@ -23,7 +23,7 @@ import {
 import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import * as _ from 'lodash';
-import { Body, Get, JsonController, Put, QueryParam, QueryParams } from 'routing-controllers';
+import { Body, Get, JsonController, Post, Put, QueryParam, QueryParams } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { TXSymbols } from '../txSymbols';
