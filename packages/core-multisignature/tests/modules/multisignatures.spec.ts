@@ -4,7 +4,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { IAccountsModule, ISequence, ITransactionLogic, ITransactionPoolLogic, IInnerTXQueue } from '@risevision/core-interfaces';
+import { IAccountsModule, ISequence, ITransactionLogic, IInnerTXQueue } from '@risevision/core-interfaces';
 import SocketIO from 'socket.io';
 import { MultiSignatureTransaction } from '../../src/transaction';
 import { InnerTXQueue } from '@risevision/core-transactions/dist/poolTXsQueue';
@@ -18,6 +18,7 @@ import { LiskWallet } from 'dpos-offline';
 import { MultisigSymbols } from '../../src/helpers';
 import { TXSymbols } from '@risevision/core-transactions/dist/';
 import { MultisigTransportModule } from '../../src/transport';
+import { ITransactionPool } from '../../../core-interfaces/src/logic';
 
 chai.use(chaiAsPromised);
 
@@ -34,9 +35,8 @@ describe('modules/multisignatures', () => {
   let sequence: ISequence;
   let socketIO: SocketIO.Server;
   let transactionLogic: ITransactionLogic;
-  let transactionsModule: ITransactionsModule;
   let multisigTx: MultiSignatureTransaction;
-  let transactionPool: ITransactionPoolLogic;
+  let transactionPool: ITransactionPool;
   let pendingQueue: IInnerTXQueue<any>;
 
   let AccountsModel: typeof AccountsModelWithMultisig;
@@ -52,7 +52,6 @@ describe('modules/multisignatures', () => {
     sandbox            = sinon.createSandbox();
     AccountsModel      = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
     instance           = container.get(MultisigSymbols.module);
-    transactionsModule = container.get(Symbols.modules.transactions);
     accountsModule     = container.get(Symbols.modules.accounts);
     transactionLogic   = container.get(Symbols.logic.transaction);
     transactionPool    = container.get(Symbols.logic.txpool);
@@ -103,8 +102,11 @@ describe('modules/multisignatures', () => {
     let txReadyStub: SinonStub;
     let getPendingTXStub: SinonStub;
     let getPayloadStub: SinonStub;
+    let hasPendingTX: SinonStub;
     beforeEach(() => {
-      getPendingTXStub = sandbox.stub(transactionsModule, 'getPendingTransaction').returns(tx);
+      getPendingTXStub = sandbox.stub(pendingQueue, 'get').returns(tx);
+      hasPendingTX = sandbox.stub(pendingQueue, 'has').returns(true);
+
       // transactionsModule.enqueueResponse('getMultisignatureTransaction', tx);
       // transactionsModule.enqueueResponse('getMultisignatureTransaction', tx);
       processMultisigTxStub = sandbox.stub(instance as any, 'processMultiSigSignature').resolves();
@@ -114,7 +116,7 @@ describe('modules/multisignatures', () => {
     });
 
     it('should call transactionsModule.getMultisignatureTransaction', async () => {
-      await instance.processSignature({ signature, transaction: tx.id });
+      await instance.processSignature({ signature, transaction: tx.id, relays: 1 });
       expect(getPendingTXStub.called).to.be.true;
       expect(getPendingTXStub.firstCall.args[0]).to.be.equal(tx.id);
     });
@@ -125,12 +127,13 @@ describe('modules/multisignatures', () => {
       await expect(instance.processSignature({
         signature,
         transaction: tx.id,
+        relays: 1
       })).to.be.rejectedWith('Transaction not found');
     });
 
     it('should set tx.signatures to [] if TransactionType is MULTI and tx.signatures is not set', async () => {
       delete tx.signatures;
-      await instance.processSignature({ signature, transaction: tx.id });
+      await instance.processSignature({ signature, transaction: tx.id, relays: 1 });
       expect(processMultisigTxStub.calledOnce).to.be.true;
       // Our first arg is the modified tx
       expect(Array.isArray(processMultisigTxStub.firstCall.args[0].signatures)).to.be.true;
@@ -139,7 +142,7 @@ describe('modules/multisignatures', () => {
 
     it('should call processMultiSigSignature if TransactionType is MULTI', async () => {
       tx.type = TransactionType.MULTI;
-      await instance.processSignature({ signature, transaction: tx.id });
+      await instance.processSignature({ signature, transaction: tx.id, relays: 1 });
       expect(processMultisigTxStub.calledOnce).to.be.true;
       expect(processNormalTxStub.notCalled).to.be.true;
       expect(processMultisigTxStub.firstCall.args[0]).to.be.deep.equal(tx);
@@ -148,7 +151,7 @@ describe('modules/multisignatures', () => {
 
     it('should call processNormalTxSignature if TransactionType is NOT MULTI', async () => {
       tx.type = TransactionType.SEND;
-      await instance.processSignature({ signature, transaction: tx.id });
+      await instance.processSignature({ signature, transaction: tx.id, relays:1 });
       expect(processNormalTxStub.calledOnce).to.be.true;
       expect(processMultisigTxStub.notCalled).to.be.true;
       expect(processNormalTxStub.firstCall.args[0]).to.be.deep.equal(tx);
@@ -157,28 +160,28 @@ describe('modules/multisignatures', () => {
 
     it('should call balancesSequence.addAndPromise with a worker', async () => {
       const spy = sandbox.spy(sequence, 'addAndPromise');
-      await instance.processSignature({ signature, transaction: tx.id });
+      await instance.processSignature({ signature, transaction: tx.id, relays: 1 });
       expect(spy.calledOnce).to.be.true;
       expect(spy.firstCall.args[0]).to.be.a('function');
     });
 
     it('should call accountsModule.getAccount (in worker)', async () => {
-      await instance.processSignature({ signature, transaction: tx.id });
+      await instance.processSignature({ signature, transaction: tx.id, relays: 1 });
       expect(getAccountStub.calledOnce).to.be.true;
       expect(getAccountStub.firstCall.args[0]).to.be.deep.equal({ address: tx.senderId });
     });
 
     it('should throw if accountsModule.getAccount returns falsey (in worker)', async () => {
       getAccountStub.returns(false);
-      await expect(instance.processSignature({ signature, transaction: tx.id })).to.be.rejectedWith('Sender not found');
+      await expect(instance.processSignature({ signature, transaction: tx.id, relays: 1 })).to.be.rejectedWith('Sender not found');
     });
     //
     it('should call multisigTransport.onSignature with proper data', async () => {
       const transport = container.get<MultisigTransportModule>(MultisigSymbols.multiSigTransport);
       const stub = sandbox.stub(transport, 'onSignature');
-      await instance.processSignature({ signature, transaction: tx.id });
+      await instance.processSignature({ signature, transaction: tx.id, relays: 1 });
       expect(stub.calledOnce).to.be.true;
-      expect(stub.firstCall.args[0]).to.be.deep.equal({ transaction: tx.id, signature });
+      expect(stub.firstCall.args[0]).to.be.deep.equal({ transaction: tx.id, signature, relays: 1});
       expect(stub.firstCall.args[1]).to.be.true;
     });
 
@@ -187,6 +190,7 @@ describe('modules/multisignatures', () => {
       await expect(instance.processSignature({
         signature,
         transaction: tx.id,
+        relays: 1
       })).to.be.rejectedWith('Cannot find payload for such multisig tx');
     });
   });

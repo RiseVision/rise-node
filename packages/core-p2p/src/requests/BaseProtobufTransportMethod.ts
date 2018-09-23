@@ -15,7 +15,7 @@ export class BaseProtobufTransportMethod<Data, Query, Out> extends BaseTransport
     if (data === null) {
       return null;
     }
-    this.protoBufHelper
+    return this.protoBufHelper
       .encode(
         data,
         this.protoRequest.namespace,

@@ -66,7 +66,7 @@ export class TransportV2API {
   @inject(Symbols.models.transactions)
   private TransactionsModel: typeof TransactionsModel;
 
-  @inject(requestSymbols.postBlocks)
+  @inject(requestSymbols.postBlock)
   private pblocksFactory: RequestFactoryType<PostBlocksRequestDataType, PostBlocksRequest>;
   @inject(requestSymbols.postTransactions)
   private ptFactory: RequestFactoryType<PostTransactionsRequestDataType, PostTransactionsRequest>;

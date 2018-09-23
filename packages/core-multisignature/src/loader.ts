@@ -54,8 +54,7 @@ export class MultisigLoader {
         for (const signature of  multiSigTX.signatures) {
           try {
             await this.multisigModule.processSignature({
-              relays: 3,
-              signature: signature.toString('hex'),
+              signature,
               transaction: multiSigTX.transaction,
             });
           } catch (err) {

@@ -29,7 +29,7 @@ import * as z_schema from 'z-schema';
 import { TXSymbols } from '../txSymbols';
 import { TXApiGetTxFilter } from '../hooks/filters';
 import { TransactionPool } from '../TransactionPool';
-import { RestrictedAPIWatchGuard } from '@risevision/core-apis';
+import { PrivateApisGuard } from '@risevision/core-apis';
 
 // tslint:disable-next-line
 const schema = require('../../schema/api.json');
@@ -239,7 +239,7 @@ export class TransactionsAPI {
 
   @Post()
   @ValidateSchema()
-  @UseBefore(RestrictedAPIWatchGuard)
+  @UseBefore(PrivateApisGuard)
   public async localCreate(
     @SchemaValid(schema.addTransactions, {castNumbers: true})
     @Body() body: {

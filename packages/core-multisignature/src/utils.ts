@@ -45,7 +45,8 @@ export class MultiSigUtils {
         verified        = this.txLogic.verifySignature(
           tx,
           pubKey,
-          Buffer.from(signature, 'hex'), VerificationType.ALL
+          signature,
+          VerificationType.ALL
         );
       }
       return verified;

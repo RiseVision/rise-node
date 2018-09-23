@@ -35,9 +35,7 @@ export class GetSignaturesRequest extends BaseProtobufTransportMethod<null, null
     for (const tx of txs) {
       if (tx.signatures && tx.signatures.length > 0) {
         signatures.push({
-          signatures : tx.signatures.map((sig) => {
-            return Buffer.from(sig, 'hex');
-          }),
+          signatures : tx.signatures,
           transaction: Long.fromString(tx.id),
         });
       }

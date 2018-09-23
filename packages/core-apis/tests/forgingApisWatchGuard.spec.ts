@@ -31,7 +31,7 @@ describe('apis/utils/privateApisWatchGuard', () => {
   describe('use()', () => {
     it('should call to next() without or with parameters depending on the ip check', () => {
       const config = container.get<APIConfig>(Symbols.generic.appConfig);
-      config.api.access.restrictedAPIwhiteList = ['8.8.8.8'];
+      config.api.access.restrictedWhiteList = ['8.8.8.8'];
       instance.use({ip: '8.8.8.8'} as any, response, next);
       expect(next.calledOnce).to.be.true;
       expect(next.firstCall.args).deep.eq([]);

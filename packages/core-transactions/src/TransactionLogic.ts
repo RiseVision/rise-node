@@ -3,16 +3,19 @@ import {
   IAccountLogic,
   IAccountsModel,
   ICrypto,
-  ILogger, ITransactionLogic,
+  ILogger,
+  ITransactionLogic,
   ITransactionsModel,
-  Symbols, VerificationType,
+  Symbols,
+  VerificationType,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   ConstantsType,
   DBBulkCreateOp,
   DBOp,
-  IBaseTransaction, IBytesTransaction,
+  IBaseTransaction,
+  IBytesTransaction,
   IConfirmedTransaction,
   ITransportTransaction,
   SignedAndChainedBlockType,
@@ -134,7 +137,7 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     if (tx.recipientId) {
-      const recipient = tx.recipientId.slice(0, this.constants.addressSuffix.length);
+      const recipient = tx.recipientId.slice(0, -this.constants.addressSuffix.length);
       const recBuf    = new MyBigNumb(recipient).toBuffer({ size: 8 });
 
       for (let i = 0; i < 8; i++) {
@@ -184,7 +187,7 @@ export class TransactionLogic implements ITransactionLogic {
       hasRequesterPublicKey: typeof tx.requesterPublicKey !== 'undefined' && tx.requesterPublicKey != null,
       hasSignSignature     : typeof tx.signSignature !== 'undefined' && tx.signSignature != null,
       relays               : Number.isInteger(tx.relays) ? tx.relays : 1,
-      signatures           : tx.signatures ? tx.signatures.map((s) => Buffer.from(s, 'hex')) : null,
+      signatures           : tx.signatures,
     };
     return this.protoBufHelper.encode(obj, 'transactions.tx', 'bytesTransaction');
   }
@@ -220,6 +223,7 @@ export class TransactionLogic implements ITransactionLogic {
         break;
       }
     }
+
     const recipientId = recipientValid ?
       MyBigNumb.fromBuffer(recipientIdBytes).toString() + 'R' : null;
 
@@ -265,7 +269,7 @@ export class TransactionLogic implements ITransactionLogic {
     transaction.asset = this.types[type].fromBytes(assetBytes, transaction);
 
     if (tx.signatures && tx.signatures.length > 0) {
-      transaction.signatures = tx.signatures.map((s) => s.toString('hex'));
+      transaction.signatures = tx.signatures;
     }
     return transaction;
   }
@@ -534,7 +538,10 @@ export class TransactionLogic implements ITransactionLogic {
           fee        : tx.fee,
           signature,
           signSignature,
-          signatures : tx.signatures ? tx.signatures.join(',') : null,
+          signatures : tx.signatures
+            ? tx.signatures
+              .map((s: Buffer) => s.toString('hex')).join(',') as any // Signatures are stringified and joined.
+            : null,
           // tslint:enable object-literal-sort-keys
 
         };

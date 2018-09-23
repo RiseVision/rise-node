@@ -18,9 +18,9 @@ export const BlocksSymbols = {
     verify : Symbol.for('rise.blocks.verifyModule'),
   },
   p2p: {
-    commonBlocks    : Symbol.for('rise.blocks.p2p.getCommonBlocks'),
-    getBlocks       : Symbol.for('rise.blocks.p2p.getBlocks'),
-    getHeight       : Symbol.for('rise.blocks.p2p.getHeight'),
-    postBlocks      : Symbol.for('rise.blocks.p2p.post'),
+    commonBlocks: Symbol.for('rise.blocks.p2p.getCommonBlocks'),
+    getBlocks   : Symbol.for('rise.blocks.p2p.getBlocks'),
+    getHeight   : Symbol.for('rise.blocks.p2p.getHeight'),
+    postBlock   : Symbol.for('rise.blocks.p2p.post'),
   },
 };

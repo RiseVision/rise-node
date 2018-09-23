@@ -33,7 +33,7 @@ export class ITransactionsModel<Asset = any> extends IBaseModel<ITransactionsMod
 
   public asset: Asset;
 
-  public signatures: publicKey[];
+  public signatures: Buffer[];
 
   public toTransport(): ITransportTransaction<Asset> {
     return null;

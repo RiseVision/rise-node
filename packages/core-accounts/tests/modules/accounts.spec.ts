@@ -74,7 +74,7 @@ describe('modules/accounts', () => {
     });
   });
 
-  describe('resolveAccountsForTransactions', () => {
+  describe('txAccounts', () => {
     let accountsModel: typeof IAccountsModel;
     let findAllStub: SinonStub;
     let assignPublicKeyToAccount: SinonStub;
@@ -88,7 +88,7 @@ describe('modules/accounts', () => {
         );
     });
     it('shouldnt complain about empty txs array', async () => {
-      const res = await accountModule.resolveAccountsForTransactions([]);
+      const res = await accountModule.txAccounts([]);
       expect(res).to.be.deep.eq({});
 
       // should call findAll with empty array
@@ -96,19 +96,19 @@ describe('modules/accounts', () => {
       expect(findAllStub.firstCall.args[0]).deep.eq({ where: { address: [] } });
     });
     it('should throw if account is not found in db', async () => {
-      await expect(accountModule.resolveAccountsForTransactions([
+      await expect(accountModule.txAccounts([
         { senderId: 'add11', senderPublicKey: Buffer.from('11', 'hex') } as any
       ])).rejectedWith('Account add11 not found in db');
     });
     it('should throw if account has diff publicKey in db', async () => {
       findAllStub.resolves([{ address: 'add11', publicKey: Buffer.from('22', 'hex') }]);
-      await expect(accountModule.resolveAccountsForTransactions([
+      await expect(accountModule.txAccounts([
         { senderId: 'add11', senderPublicKey: Buffer.from('11', 'hex') } as any
       ])).rejectedWith('Stealing attempt type.2 for add11');
     });
     it('should setAccountAndGet if nopublickey set in db and throw if address does not match', async () => {
       findAllStub.resolves([{ address: 'add11' }]);
-      await expect(accountModule.resolveAccountsForTransactions([
+      await expect(accountModule.txAccounts([
         { senderId: 'add11', senderPublicKey: Buffer.from('22', 'hex') } as any
       ])).rejectedWith('Stealing attempt type.1 for add11');
       expect(assignPublicKeyToAccount.called).is.true;
@@ -121,7 +121,7 @@ describe('modules/accounts', () => {
         { address: 'add11', publicKey: Buffer.from('11', 'hex') },
         { address: 'add33', publicKey: Buffer.from('33', 'hex') },
       ]);
-      await accountModule.resolveAccountsForTransactions([{
+      await accountModule.txAccounts([{
         senderId          : 'add11',
         senderPublicKey   : Buffer.from('11', 'hex'),
         requesterPublicKey: Buffer.from('33', 'hex')

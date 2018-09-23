@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { checkIpInList } from '../../../src/helpers';
+import { checkIpInList } from '../src';
 // tslint:disable no-string-literal no-unused-expression
 
 describe('helpers/checkIpInList', () => {

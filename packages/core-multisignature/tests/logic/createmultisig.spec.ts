@@ -318,13 +318,13 @@ describe('logic/transactions/createmultisig', () => {
   describe('apply', () => {
     let applyDiffArray: SinonStub;
     let accountLogicMergeStub: SinonStub;
-    let setAccountAndGetStub: SinonStub;
+    // let setAccountAndGetStub: SinonStub;
     let genAddressSpy: SinonSpy;
     beforeEach(() => {
       accountLogicMergeStub = sandbox.stub(accountLogic, 'merge').returns([]);
       genAddressSpy         = sandbox.spy(accountLogic, 'generateAddressByPublicKey');
       // accountLogic.stubs.generateAddressByPublicKey.returns('123123124125R');
-      setAccountAndGetStub  = sandbox.stub(accountsModule, 'setAccountAndGet').resolves();
+      // setAccountAndGetStub  = sandbox.stub(accountsModule, 'setAccountAndGet').resolves();
       applyDiffArray        = sandbox.stub(sender, 'applyDiffArray');
       sandbox.stub(sender, 'applyValues');
     });

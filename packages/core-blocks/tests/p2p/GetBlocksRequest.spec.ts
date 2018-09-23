@@ -83,11 +83,6 @@ describe('apis/requests/GetBlocksRequest', () => {
       expect(res).deep.eq({ blocks: [block2, block3, block4].map((r) => ({...r, relays: 1})) });
     });
 
-    it('should query blocks properly', async () => {
-      const block = createFakeBlock(container, {previousBlock: { id: '1', height: 100} as any});
-      const TxModel = container.getNamed<TransactionsModel>(ModelSymbols.model, TXSymbols.model);
-
-    });
 
   });
 });

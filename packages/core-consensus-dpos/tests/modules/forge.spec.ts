@@ -225,13 +225,11 @@ describe('modules/forge', () => {
   describe('onBlockchainReady', () => {
     let forgeStub: SinonStub;
     let jobsRegister: SinonStub;
-    let fillPoolStub: SinonStub;
     let loggerWarnStub: SinonStub;
     let clock: SinonFakeTimers;
     beforeEach(() => {
       clock      = sandbox.useFakeTimers();
 
-      fillPoolStub = sandbox.stub(transactionsModuleStub, 'fillPool').resolves();
       loggerWarnStub = sandbox.stub(logger, 'warn').returns(null);
 
       // Immediately execute the jobsQueue Job for testing it
@@ -252,12 +250,12 @@ describe('modules/forge', () => {
       expect(jobsRegister.firstCall.args[2]).to.be.equal(1000);
     });
 
-    it('should call transactionsModule.fillPool in scheduled job', async () => {
-      const p = instance.onBlockchainReady();
-      clock.tick(10100);
-      await p;
-      expect(fillPoolStub.calledOnce).to.be.true;
-    });
+    // it('should call transactionsModule.fillPool in scheduled job', async () => {
+    //   const p = instance.onBlockchainReady();
+    //   clock.tick(10100);
+    //   await p;
+    //   expect(fillPoolStub.calledOnce).to.be.true;
+    // });
 
     it('should call this.forge in scheduled job', async () => {
       const p = instance.onBlockchainReady();
@@ -266,17 +264,17 @@ describe('modules/forge', () => {
       expect(forgeStub.calledOnce).to.be.true;
     });
 
-    it('should call logger.warn in scheduled job if transactionsModule.fillPool throws', async () => {
-      const expectedError = new Error('err');
-      fillPoolStub.throws(expectedError);
-      const p = instance.onBlockchainReady();
-      clock.tick(10100);
-      await p;
-      expect(forgeStub.notCalled).to.be.true;
-      expect(loggerWarnStub.calledOnce).to.be.true;
-      expect(loggerWarnStub.firstCall.args[0]).to.be.equal('Error in nextForge');
-      expect(loggerWarnStub.firstCall.args[1]).to.be.deep.equal(expectedError);
-    });
+    // it('should call logger.warn in scheduled job if transactionsModule.fillPool throws', async () => {
+    //   const expectedError = new Error('err');
+    //   fillPoolStub.throws(expectedError);
+    //   const p = instance.onBlockchainReady();
+    //   clock.tick(10100);
+    //   await p;
+    //   expect(forgeStub.notCalled).to.be.true;
+    //   expect(loggerWarnStub.calledOnce).to.be.true;
+    //   expect(loggerWarnStub.firstCall.args[0]).to.be.equal('Error in nextForge');
+    //   expect(loggerWarnStub.firstCall.args[1]).to.be.deep.equal(expectedError);
+    // });
 
     it('should call logger.warn in scheduled job if this.forge throws', async () => {
       const expectedError = new Error('err');
@@ -313,7 +311,7 @@ describe('modules/forge', () => {
         await instance['forge']();
         expect(appStateGetStub.calledTwice).to.be.true;
         expect(appStateGetStub.firstCall.args[0]).to.be.equal('loader.isSyncing');
-        console.log('a');
+
         appStateGetStub.resetHistory();
         appStateGetStub.onFirstCall().returns(false);
         appStateGetStub.returns(true);
@@ -607,7 +605,6 @@ describe('modules/forge', () => {
 
     describe('else', () => {
       it('should return null', async () => {
-        console.log(instance.enabledKeys);
         const retVal = await instance['getBlockSlotData'](0, 12345);
         expect(retVal).to.be.null;
       });

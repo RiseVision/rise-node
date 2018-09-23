@@ -97,6 +97,7 @@ export class MultiSignaturesApi {
     const txs       = this.txPool.pending.txList();
 
     const accounts = await this.accounts.txAccounts(txs);
+    await this.accounts.checkTXsAccountsMap(txs, accounts);
 
     const toRet = txs
       .map((tx) => {

@@ -1,9 +1,11 @@
 import { ILogger, Symbols } from '@risevision/core-interfaces';
-import { BaseProtobufTransportMethod, SingleTransportPayload } from '@risevision/core-p2p';
+import { BaseProtobufTransportMethod, BroadcasterLogic, SingleTransportPayload } from '@risevision/core-p2p';
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
 import { MultisigSymbols } from '../helpers';
 import { MultisignaturesModule } from '../multisignatures';
+import { MultisigTransportModule } from '../transport';
+import { logOnly } from '@risevision/core-utils';
 
 // tslint:disable-next-line
 export type Signature = { transaction: string, signature: Buffer, relays: number };
@@ -18,6 +20,9 @@ export class PostSignaturesRequest extends BaseProtobufTransportMethod<PostSigna
   public readonly method: 'POST'     = 'POST';
   public readonly baseUrl            = '/v2/peer/signatures';
 
+  // TODO: lerna create schema validation and use this.requestSchema
+  // public requestSchema = transportSchema.signatures.properties.signatures
+
   protected protoRequest = {
     messageType: 'postSignatures',
     namespace  : 'multisig',
@@ -28,6 +33,9 @@ export class PostSignaturesRequest extends BaseProtobufTransportMethod<PostSigna
 
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+
+  @inject(MultisigSymbols.multiSigTransport)
+  private multiTransport: MultisigTransportModule;
 
   public mergeRequests(reqs: Array<SingleTransportPayload<PostSignaturesRequestDataType, null>>): Array<SingleTransportPayload<PostSignaturesRequestDataType, null>> {
     // TODO: implement batching using a constant.
@@ -48,20 +56,15 @@ export class PostSignaturesRequest extends BaseProtobufTransportMethod<PostSigna
   protected async produceResponse(request: SingleTransportPayload<PostSignaturesRequestDataType, null>): Promise<null> {
     const { body }                = request;
     const signatures: Signature[] = body.signatures;
-
-    // TODO: lerna create schema validation and use this.requestSchema
-    // assertValidSchema(this.schema, signatures, {
-    //   obj : transportSchema.signatures.properties.signatures,
-    //   opts: { errorString: 'Error validating schema.' },
-    // });
-
     for (const sigEl of signatures) {
       try {
-        await this.multisigModule.processSignature({
-          signature  : sigEl.signature.toString('hex'),
+        const tx = {
+          signature  : sigEl.signature,
           transaction: sigEl.transaction,
-          relays     : sigEl.relays
-        });
+        };
+        await this.multisigModule.processSignature(tx);
+        await this.multiTransport.onSignature(tx, true, this)
+          .catch(logOnly(this.logger));
       } catch (e) {
         this.logger.debug('Failed to process multisig signature', e);
       }

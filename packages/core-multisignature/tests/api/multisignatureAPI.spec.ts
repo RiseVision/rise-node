@@ -14,6 +14,8 @@ import { MultiSignaturesApi } from '../../src/multiSignaturesApi';
 import { APISymbols } from '@risevision/core-apis';
 import { LiskWallet } from 'dpos-offline';
 import { AccountsModelWithMultisig } from '../../src/models/AccountsModelWithMultisig';
+import { ITransactionPool } from '../../../core-interfaces/src/logic';
+import { TXSymbols } from '../../../core-transactions/src';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -40,8 +42,8 @@ describe('apis/multisignatureAPI', () => {
   let tx3: any;
   let tx4: any;
   let accounts2multisignaturesModel: typeof Accounts2MultisignaturesModel;
-  let transactionsModule: ITransactionsModule;
   let transactionLogic: ITransactionLogic;
+  let txPool: ITransactionPool;
   let accounts: LiskWallet[];
   let getAccountsStub: SinonStub;
   let genAddressStub: SinonStub;
@@ -118,13 +120,13 @@ describe('apis/multisignatureAPI', () => {
     getAccountStub.onFirstCall().resolves(account5);
     getAccountStub.onSecondCall().resolves(account6);
 
-    transactionsModule = container.get(Symbols.modules.transactions);
+    txPool = container.get(TXSymbols.pool);
 
     tx1 = { id: 1, senderId: account1.address, type: 4, fee: 1, amount: 0, timestamp: 10, senderPublicKey: account1.publicKey, signatures: ['aaa'], asset: { multisignature: { keysgroup: [] } } };
     tx2 = { id: 2, senderId: account2.address, type: 4, fee: 2, amount: 0, timestamp: 10, senderPublicKey: account2.publicKey, asset: { multisignature: { keysgroup: [] } } };
     tx3 = { id: 3, senderId: account1.address, type: 4, fee: 3, amount: 0, timestamp: 10, senderPublicKey: account1.publicKey, asset: { multisignature: { keysgroup: [] } } };
     tx4 = { id: 4, senderId: account3.address, type: 0, fee: 4, amount: 0, timestamp: 10, senderPublicKey: account3.publicKey };
-    sandbox.stub(transactionsModule, 'getPendingTransactionList').returns([
+    sandbox.stub(txPool.pending, 'txList').returns([
       tx1,
       tx2,
       tx3,

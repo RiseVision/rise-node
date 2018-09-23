@@ -93,7 +93,7 @@ export class TransportModule implements ITransportModule {
   private ptrFactory: RequestFactoryType<PostTransactionsRequestDataType, PostTransactionsRequest>;
   @inject(requestSymbols.postSignatures)
   private psrFactory: RequestFactoryType<PostSignaturesRequestDataType, PostSignaturesRequest>;
-  @inject(requestSymbols.postBlocks)
+  @inject(requestSymbols.postBlock)
   private pblocksFactory: RequestFactoryType<PostBlocksRequestDataType, PostBlocksRequest>;
   @inject(requestSymbols.peersList)
   private plFactory: RequestFactoryType<PeersListRequestDataType, PeersListRequest>;

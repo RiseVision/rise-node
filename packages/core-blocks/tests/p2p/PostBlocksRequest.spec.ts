@@ -1,21 +1,24 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
-import { SinonSandbox } from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
-import { GetBlocksRequest, PostBlockRequest } from '../../src/p2p';
-import { p2pSymbols, ProtoBufHelper } from '../../../core-p2p/src/helpers';
-import { TransactionsModel, TXSymbols } from '../../../core-transactions/src';
+import { PostBlockRequest } from '../../src/p2p';
+import { p2pSymbols } from '../../../core-p2p/src/helpers';
 import { BlocksModel, BlocksSymbols } from '../../src';
-import { SinonStub } from 'sinon';
 import { ModelSymbols } from '../../../core-models/src/helpers';
 import { BlocksModuleUtils } from '../../src/modules';
 import { Container } from 'inversify';
 import { createFakeBlock } from '../utils/createFakeBlocks';
+import { createRandomTransactions, toBufferedTransaction } from '../../../core-transactions/tests/utils/txCrafter';
+import { SignedAndChainedBlockType } from '../../../core-types/src';
+import { Symbols } from '../../../core-interfaces/src';
+import { WordPressHookSystem } from 'mangiafuoco';
+import { OnReceiveBlock } from '../../src/hooks';
 // tslint:disable no-unused-expression
 describe('apis/requests/PostBlockRequest', () => {
   let sandbox: SinonSandbox;
   let container: Container;
-  let instance: GetBlocksRequest;
+  let instance: PostBlockRequest;
   let blocksUtils: BlocksModuleUtils;
   before(async () => {
     sandbox   = sinon.createSandbox();
@@ -23,7 +26,7 @@ describe('apis/requests/PostBlockRequest', () => {
   });
   beforeEach(() => {
     sandbox.restore();
-    instance = container.getNamed(p2pSymbols.transportMethod, BlocksSymbols.p2p.getBlocks);
+    instance    = container.getNamed(p2pSymbols.transportMethod, BlocksSymbols.p2p.postBlock);
     blocksUtils = container.get(BlocksSymbols.modules.utils);
   });
 
@@ -36,53 +39,40 @@ describe('apis/requests/PostBlockRequest', () => {
     });
 
     async function createRequest(query: any, body: any = null) {
-      const resp = await instance.handleRequest(body, query);
+      const r = await instance.createRequestOptions({query, body});
+      const resp = await instance.handleRequest(r.data, r.query);
       return instance.handleResponse(null, resp);
     }
 
-    it('should fail if request is invalid', async () => {
-      await expect(createRequest({})).rejectedWith('query - Missing required property: lastBlockId');
-      await expect(createRequest({ lastBlockId: 'a,b' })).rejectedWith('lastBlockId - Object didn\'t pass validation');
-      await expect(createRequest({ lastBlockId: '' })).rejected;
-      await expect(createRequest({ lastBlockId: null })).rejected;
-      expect(sequelizeQueryStub.called).false;
-    });
-    it('should fail if block does not exist', async () => {
-      sequelizeQueryStub.resolves(null);
-      await expect(createRequest({lastBlockId: '10'})).rejectedWith('Block 10 not found!');
-      expect(sequelizeQueryStub.calledOnce).true;
-      expect(sequelizeQueryStub.firstCall.args[0]).contain('"id" = \'10\'');
-    });
-    it('should empty array if no further blocks in db', async () => {
-      const block = createFakeBlock(container, {previousBlock: { id: '1', height: 100} as any});
-      sequelizeQueryStub.resolves([]);
-      sequelizeQueryStub.onFirstCall().resolves(block);
-
-      const st = sandbox.stub(blocksUtils, 'loadBlocksData').resolves([]);
-      const res = await createRequest({ lastBlockId: '10' });
-      expect(res).deep.eq({ blocks: [] });
-      expect(st.firstCall.args[0]).deep.eq({lastId: '10', limit: 10653});
-    });
-
     it('should encode/decode some blocks', async () => {
-      const block = createFakeBlock(container, {previousBlock: { id: '1', height: 100} as any});
-      const block2 = createFakeBlock(container, {previousBlock: block});
-      const block3 = createFakeBlock(container, {previousBlock: block2});
-      const block4 = createFakeBlock(container, {previousBlock: block3});
+      const hookSystem                          = container.get<WordPressHookSystem>(Symbols.generic.hookSystem);
+      const blocks: SignedAndChainedBlockType[] = [];
 
-      sequelizeQueryStub.resolves([]);
-      sequelizeQueryStub.onFirstCall().resolves(block);
+      blocks.push(createFakeBlock(container, { previousBlock: { id: '1', height: 100 } as any }));
+      blocks.push(createFakeBlock(container, { previousBlock: blocks[0] }));
+      blocks.push(createFakeBlock(container, { previousBlock: blocks[1] }));
+      blocks.push(createFakeBlock(container, {
+        previousBlock: blocks[2],
+        transactions : createRandomTransactions(3).map(toBufferedTransaction)
+      }));
 
-      sandbox.stub(blocksUtils, 'loadBlocksData').resolves([block2, block3, block4]);
-      const res = await createRequest({ lastBlockId: '10' });
-      expect(res).deep.eq({ blocks: [block2, block3, block4].map((r) => ({...r, relays: 1})) });
+      blocks[3].transactions.forEach((t: any) => {
+        t.blockId = blocks[3].id;
+        t.relays = 1;
+        t.height = blocks[3].height;
+        delete t.asset;
+      });
+
+      const hookSpy = sandbox.spy(hookSystem, 'do_action');
+      for (const b of blocks) {
+        await createRequest(null, {block: b});
+        expect(hookSpy.calledOnce).true;
+        expect(hookSpy.firstCall.args[0]).eq(OnReceiveBlock.name);
+        expect(hookSpy.firstCall.args[1]).deep.eq({...b, relays: 1});
+        hookSpy.resetHistory();
+      }
     });
 
-    it('should query blocks properly', async () => {
-      const block = createFakeBlock(container, {previousBlock: { id: '1', height: 100} as any});
-      const TxModel = container.getNamed<TransactionsModel>(ModelSymbols.model, TXSymbols.model);
-
-    });
 
   });
 });

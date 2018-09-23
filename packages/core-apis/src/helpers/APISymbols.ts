@@ -4,8 +4,7 @@ export const APISymbols = {
   api                    : p2pSymbols.controller,
   applyLimitsMiddleware  : Symbol.for('rise.api.applyLimitsMiddleware'),
   errorHandler           : Symbol.for('rise.api.errorHandler'),
-  privateApiGuard        : Symbol.for('rise.api.forgingApisWatchGuard'),
-  restrictedAPIWatchGuard: Symbol.for('rise.api.restrictedAPIWatchGuard'),
+  privateApiGuard        : Symbol.for('rise.api.privateAPIGuard'),
   socketIOAPI            : Symbol.for('rise.api.socketIOAPI'),
   successInterceptor     : Symbol.for('rise.api.successInterceptor'),
 };

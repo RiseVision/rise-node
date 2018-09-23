@@ -555,7 +555,7 @@ describe('apis/transportV2API', () => {
         txLogic.attachAssetType(container.get(Symbols.logic.transactions.send));
 
         // container.rebind(Symbols.logic.pro).to(BlockLogic).inSingletonScope();
-        const pbFactory = container.get<RequestFactoryType<any, PostBlocksRequest>>(requestSymbols.postBlocks);
+        const pbFactory = container.get<RequestFactoryType<any, PostBlocksRequest>>(requestSymbols.postBlock);
         const data = pbFactory({data: {block: fakeBlock}}).getRequestOptions(true);
         expect(Buffer.isBuffer(data.data)).true;
         req.body = data.data;

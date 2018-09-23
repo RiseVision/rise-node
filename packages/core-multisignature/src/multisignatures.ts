@@ -3,7 +3,6 @@ import {
   ILogger,
   ISequence,
   ITransactionLogic, ITransactionPool,
-  ITransactionsModule,
   Symbols,
   VerificationType
 } from '@risevision/core-interfaces';
@@ -14,7 +13,6 @@ import { WordPressHookSystem } from 'mangiafuoco';
 import { MultisigSymbols } from './helpers';
 import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
 import { MultisigAsset, MultiSignatureTransaction } from './transaction';
-import { MultisigTransportModule } from './transport';
 
 @injectable()
 export class MultisignaturesModule {
@@ -26,17 +24,16 @@ export class MultisignaturesModule {
 
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule<AccountsModelWithMultisig>;
+
   @inject(Symbols.helpers.sequence)
   @named(Symbols.names.helpers.balancesSequence)
   public balancesSequence: ISequence;
+
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
-  @inject(Symbols.modules.transactions)
-  private transactionsModule: ITransactionsModule;
-  @inject(MultisigSymbols.multiSigTransport)
-  private multisigTransport: MultisigTransportModule;
 
   @inject(Symbols.logic.transaction)
   @named(MultisigSymbols.tx)
@@ -47,7 +44,7 @@ export class MultisignaturesModule {
    * @return {Promise<void>}
    */
   @WrapInBalanceSequence
-  public async processSignature(tx: { signature: string, transaction: string, relays: number }) {
+  public async processSignature(tx: { signature: Buffer, transaction: string }) {
     if (!this.txPool.pending.has(tx.transaction)) {
       throw new Error('Transaction not found');
     }
@@ -81,13 +78,9 @@ export class MultisignaturesModule {
       throw new Error('Cannot find payload for such multisig tx');
     }
     payload.ready = await this.multiTx.ready(transaction, sender);
-
-    this.multisigTransport
-      .onSignature({...tx, signature: Buffer.from(tx.signature, 'hex')}, true);
-    return null;
   }
 
-  private async processNormalTxSignature(tx: IBaseTransaction<any>, signature: string, sender: AccountsModelWithMultisig) {
+  private async processNormalTxSignature(tx: IBaseTransaction<any>, signature: Buffer, sender: AccountsModelWithMultisig) {
     const multisignatures = sender.multisignatures;
 
     if (tx.requesterPublicKey) {
@@ -95,7 +88,7 @@ export class MultisignaturesModule {
     }
 
     tx.signatures = tx.signatures || [];
-    if (tx.signatures.indexOf(signature) >= 0) {
+    if (tx.signatures.some((s) => s.compare(signature) === 0)) {
       throw new Error('Signature already exists');
     }
     let verify = false;
@@ -103,7 +96,7 @@ export class MultisignaturesModule {
       verify = this.transactionLogic.verifySignature(
         tx,
         Buffer.from(multisignatures[i], 'hex'),
-        Buffer.from(signature, 'hex'),
+        signature,
         VerificationType.ALL
       );
     }
@@ -111,11 +104,9 @@ export class MultisignaturesModule {
     if (!verify) {
       throw new Error('Failed to verify signature');
     }
-
-    await this.hookSystem.do_action('pushapi/onNewMessage', 'multisignatures/signature/change', tx);
   }
 
-  private async processMultiSigSignature(tx: IBaseTransaction<MultisigAsset>, signature: string, sender: AccountsModelWithMultisig) {
+  private async processMultiSigSignature(tx: IBaseTransaction<MultisigAsset>, signature: Buffer, sender: AccountsModelWithMultisig) {
     // tslint:disable-next-line
     if (tx.asset.multisignature['signatures'] || tx.signatures.indexOf(signature) !== -1) {
       throw new Error('Permission to sign transaction denied');
@@ -132,7 +123,7 @@ export class MultisignaturesModule {
       verify    = this.transactionLogic.verifySignature(
         tx,
         Buffer.from(key, 'hex'),
-        Buffer.from(signature, 'hex'),
+        signature,
         VerificationType.ALL
       );
     }

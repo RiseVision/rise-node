@@ -195,7 +195,6 @@ describe('logic/transactions/delegate', () => {
   describe('apply', () => {
     let applyValuesStub: SinonStub;
     beforeEach(() => {
-      sandbox.stub(accountsModuleStub, 'setAccountAndGet').resolves()
       applyValuesStub = sandbox.stub(sender, 'applyValues');
     });
 
@@ -240,7 +239,6 @@ describe('logic/transactions/delegate', () => {
   describe('undo', () => {
     let applyValuesStub: SinonStub;
     beforeEach(() => {
-      sandbox.stub(accountsModuleStub, 'setAccountAndGet').resolves();
       applyValuesStub = sandbox.stub(sender, 'applyValues');
     });
     it('should call sender.applyValues with proper data', async () => {
@@ -279,7 +277,6 @@ describe('logic/transactions/delegate', () => {
   describe('applyUnconfirmed', () => {
     let applyValuesStub: SinonStub;
     beforeEach(() => {
-      sandbox.stub(accountsModuleStub, 'setAccountAndGet').resolves();
       applyValuesStub = sandbox.stub(sender, 'applyValues');
     });
     it('should call sender.applyValues with proper data', async () => {
@@ -323,7 +320,6 @@ describe('logic/transactions/delegate', () => {
   describe('undoUnconfirmed', () => {
     let applyValuesStub: SinonStub;
     beforeEach(() => {
-      sandbox.stub(accountsModuleStub, 'setAccountAndGet').resolves();
       applyValuesStub = sandbox.stub(sender, 'applyValues');
     });
     it('should call sender.applyValues with proper data', async () => {

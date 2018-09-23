@@ -88,7 +88,7 @@ export class MultisigHooksListener extends ExtendableClass {
           valid = this.txLogic.verifySignature(
             tx,
             Buffer.from(multisignatures[s], 'hex'),
-            Buffer.from(sig, 'hex'),
+            sig,
             VerificationType.ALL
           );
         }

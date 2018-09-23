@@ -44,7 +44,7 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     this.container.bind(p2pSymbols.transportMethod)
       .to(PostBlockRequest)
       .inSingletonScope()
-      .whenTargetNamed(BlocksSymbols.p2p.postBlocks);
+      .whenTargetNamed(BlocksSymbols.p2p.postBlock);
     this.container.bind(p2pSymbols.transportMethod)
       .to(HeightRequest)
       .inSingletonScope()

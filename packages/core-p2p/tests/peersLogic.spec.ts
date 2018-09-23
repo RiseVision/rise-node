@@ -9,6 +9,7 @@ import { LoggerStub } from '../../core-utils/tests/stubs';
 import { createContainer } from '../../core-launchpad/tests/utils/createContainer';
 import { Symbols } from '../../core-interfaces/src';
 import { p2pSymbols } from '../src/helpers';
+import { AppConfig } from '../../../src/types/genericTypes';
 
 const expect = chai.expect;
 
@@ -32,7 +33,6 @@ describe('logic/peers', () => {
     peersFactoryStub = sandbox.stub().returns(peerLogicStub);
     container.rebind(p2pSymbols.logic.peerFactory).toConstantValue(peersFactoryStub);
     loggerStub = container.get(Symbols.helpers.logger);
-    peerLogicStub = new PeerLogicStub();
     systemModuleStub = container.get(Symbols.modules.system);
     instance = container.get(p2pSymbols.logic.peersLogic);
   });

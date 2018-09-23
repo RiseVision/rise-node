@@ -13,12 +13,13 @@ import { IBlockLogic, IBlockReward, ITransactionLogic } from '../../../core-inte
 import { IAccountsModel, IBlocksModel } from '../../../core-interfaces/src/models';
 import { ModelSymbols } from '../../../core-models/src/helpers';
 import { createFakeBlock } from '../utils/createFakeBlocks';
-import { ForkType, SignedBlockType } from '../../../core-types/src';
+import { ForkType, IBaseTransaction, SignedBlockType } from '../../../core-types/src';
 import { createRandomTransactions, toBufferedTransaction } from '../../../core-transactions/tests/utils/txCrafter';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { VerifyReceipt } from '../../src/hooks';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { TransactionPool, TXSymbols } from '../../../core-transactions/src';
+import { BaseTransaction } from 'dpos-api-wrapper';
 
 chai.use(chaiAsPromised);
 
@@ -354,10 +355,11 @@ describe('modules/blocks/verify', () => {
 
       resolveAcctsStub.callsFake((txs) => {
         const toRet = {};
+
         txs.forEach((tx) => {
-          toRet[tx.senderId] = new AccountsModel({ address: tx.senderId });
+          toRet[tx.senderId] = new AccountsModel({ address: tx.senderId, publicKey: Buffer.from(tx.senderPublicKey, 'hex') });
           if (tx.requesterPublicKey) {
-            toRet['address'] = new AccountsModel({ address: 'address' });
+            toRet['address'] = new AccountsModel({ address: 'address', publicKey: Buffer.from(tx.requesterPublicKey, 'hex') });
           }
         });
         return toRet;
@@ -412,11 +414,11 @@ describe('modules/blocks/verify', () => {
     //   ]);
     // });
     describe('tx checks', () => {
-      let txs: Array<ITransaction<any>>;
+      let txs: Array<IBaseTransaction<any>>;
       let normalizedBlock: any;
       let checkTXStub: SinonStub;
       beforeEach(() => {
-        txs = createRandomTransactions(14);
+        txs = createRandomTransactions(14).map(toBufferedTransaction);
         sinon.stub(inst, 'verifyBlock').resolves(Promise.resolve({ errors: [], verified: true }));
         normalizedBlock = { id: '1', normalized: 'block', transactions: txs };
         sandbox.stub(blockLogic, 'objectNormalize').returns(normalizedBlock);

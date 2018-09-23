@@ -14,8 +14,8 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<PostBlockReque
   public readonly baseUrl        = '/v2/peer/blocks';
 
   protected readonly protoRequest: ProtoIdentifier<any> = {
-    messageType: 'blocks.transport',
-    namespace  : 'transportBlock',
+    messageType: 'transportBlock',
+    namespace  : 'blocks.transport',
   };
 
   @inject(Symbols.logic.block)
@@ -31,7 +31,7 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<PostBlockReque
   }
 
   protected async decodeRequest(buf: Buffer): Promise<PostBlockRequestDataType> {
-    const data: any = await super.decodeResponse(buf);
+    const data: any = await super.decodeRequest(buf);
     return {
       block: this.blockLogic.objectNormalize(
         this.blockLogic.fromProtoBuffer(data.block)

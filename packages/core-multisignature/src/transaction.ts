@@ -18,7 +18,6 @@ import {
 } from '@risevision/core-types';
 import * as ByteBuffer from 'bytebuffer';
 import { inject, injectable, named, postConstruct } from 'inversify';
-import * as _ from 'lodash';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import * as SocketIO from 'socket.io';
@@ -214,7 +213,7 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
               valid = this.transactionLogic.verifySignature(
                 tx,
                 Buffer.from(key.substring(1), 'hex'),
-                Buffer.from(tx.signatures[i], 'hex'),
+                tx.signatures[i],
                 VerificationType.ALL
               );
             }

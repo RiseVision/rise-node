@@ -38,7 +38,7 @@ export interface IBaseTransaction<T> {
   signature: Buffer;
   id: string;
   fee: number;
-  signatures?: string[];
+  signatures?: Buffer[];
   signSignature?: Buffer;
 }
 

@@ -277,7 +277,7 @@ describe('v2/peer/transport', function() {
     gtFactory = initializer.appManager.container.get<any>(requestSymbols.getTransactions);
     cbFactory = initializer.appManager.container.get<any>(requestSymbols.commonBlock);
     gbFactory = initializer.appManager.container.get<any>(requestSymbols.getBlocks);
-    pbFactory = initializer.appManager.container.get<any>(requestSymbols.postBlocks);
+    pbFactory = initializer.appManager.container.get<any>(requestSymbols.postBlock);
 
     peer = peerFactory({ip: '127.0.0.1', port: appConfig.port});
     systemModule.headers.version = '1.2.0';

@@ -1,10 +1,9 @@
 import { IBlocksModule, ITransactionsModel, Symbols } from '@risevision/core-interfaces';
 import { IBaseTransaction, ITransportTransaction, TransactionType } from '@risevision/core-types';
-import { Column, DataType, ForeignKey, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import { Column, DataType, ForeignKey, PrimaryKey, Table } from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
-
 
 @Table({ tableName: 'trs' })
 // tslint:disable-next-line max-line-length
@@ -63,16 +62,21 @@ export class TransactionsModel<Asset = any> extends BaseModel<TransactionsModel<
     }
   }
 
-  @Column(DataType.STRING)
-  public get signatures(): string[] {
+  @Column(DataType.BLOB)
+  public get signatures(): Buffer[] {
     if (this.getDataValue('signatures')) {
       return this.getDataValue('signatures').split(',');
     }
     return [];
   }
 
-  public set signatures(value: string[]) {
-    this.setDataValue('signatures', Array.isArray(value) ? value.join(',') : value);
+  public set signatures(value: Buffer[]) {
+    this.setDataValue(
+      'signatures',
+      Array.isArray(value)
+        ? value.map((s: Buffer) => s.toString('hex')).join(',')
+        : value
+    );
   }
 
   public toTransport(): ITransportTransaction<Asset> {
