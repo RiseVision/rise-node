@@ -7,7 +7,8 @@ import * as uuid from 'uuid';
 
 export const toBufferedTransaction = <T>(t: ITransaction<any>): IBaseTransaction<T> => {
   return {
-    ...t, ... {
+    ...t,
+
       requesterPublicKey: t.requesterPublicKey === null || typeof(t.requesterPublicKey) === 'undefined' ?
         null :
         Buffer.from(t.requesterPublicKey, 'hex'),
@@ -16,25 +17,25 @@ export const toBufferedTransaction = <T>(t: ITransaction<any>): IBaseTransaction
         null :
         Buffer.from(t.signSignature, 'hex'),
       signature         : Buffer.from(t.signature, 'hex'),
-    },
+    signatures: t.signatures ? t.signatures.map((s) => Buffer.from(s, 'hex')) : undefined
   };
-}
+};
 
 export const fromBufferedTransaction = <T>(t: IBaseTransaction<T>): ITransaction<any> => {
   return {
     ...t,
-    ... {
-      requesterPublicKey: t.requesterPublicKey === null || typeof(t.requesterPublicKey) === 'undefined' ?
-        null :
-        t.requesterPublicKey.toString('hex'),
-      senderPublicKey   : t.senderPublicKey.toString('hex'),
-      signSignature     : t.signSignature === null || typeof(t.signSignature) === 'undefined' ?
-        null :
-        t.signSignature.toString('hex'),
-      signature         : t.signature.toString('hex'),
-      senderId          : t.senderId
-    },
-  } as any;
+    requesterPublicKey: t.requesterPublicKey === null || typeof(t.requesterPublicKey) === 'undefined' ?
+      null :
+      t.requesterPublicKey.toString('hex'),
+    senderPublicKey   : t.senderPublicKey.toString('hex'),
+    signSignature     : t.signSignature === null || typeof(t.signSignature) === 'undefined' ?
+      null :
+      t.signSignature.toString('hex'),
+    signature         : t.signature.toString('hex'),
+    senderId          : t.senderId,
+    asset             : t.asset,
+    signatures        : t.signatures ? t.signatures.map((s) => s.toString('hex')) : null
+  };
 };
 
 // export const createRandomTransactions = (config: { send?: number, vote?: number, signature?: number, delegate?: number } = {}): Array<ITransaction> => {

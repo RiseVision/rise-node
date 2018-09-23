@@ -1,10 +1,9 @@
 import { ILogger, Symbols } from '@risevision/core-interfaces';
-import { BaseProtobufTransportMethod, BroadcasterLogic, SingleTransportPayload } from '@risevision/core-p2p';
+import { BaseProtobufTransportMethod, SingleTransportPayload } from '@risevision/core-p2p';
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
 import { MultisigSymbols } from '../helpers';
 import { MultisignaturesModule } from '../multisignatures';
-import { MultisigTransportModule } from '../transport';
 import { logOnly } from '@risevision/core-utils';
 
 // tslint:disable-next-line
@@ -28,14 +27,11 @@ export class PostSignaturesRequest extends BaseProtobufTransportMethod<PostSigna
     namespace  : 'multisig',
   };
 
-  @inject(MultisigSymbols.module)
-  private multisigModule: MultisignaturesModule;
-
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
-  @inject(MultisigSymbols.multiSigTransport)
-  private multiTransport: MultisigTransportModule;
+  @inject(MultisigSymbols._internal_.onSignatureListener)
+  private onSignatureListener: (obj: { signature: Buffer, transaction: string, relays: number }) => Promise<void>;
 
   public mergeRequests(reqs: Array<SingleTransportPayload<PostSignaturesRequestDataType, null>>): Array<SingleTransportPayload<PostSignaturesRequestDataType, null>> {
     // TODO: implement batching using a constant.
@@ -59,12 +55,11 @@ export class PostSignaturesRequest extends BaseProtobufTransportMethod<PostSigna
     for (const sigEl of signatures) {
       try {
         const tx = {
+          relays     : sigEl.relays,
           signature  : sigEl.signature,
           transaction: sigEl.transaction,
         };
-        await this.multisigModule.processSignature(tx);
-        await this.multiTransport.onSignature(tx, true, this)
-          .catch(logOnly(this.logger));
+        await this.onSignatureListener(tx);
       } catch (e) {
         this.logger.debug('Failed to process multisig signature', e);
       }

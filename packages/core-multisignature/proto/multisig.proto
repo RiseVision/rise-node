@@ -10,7 +10,6 @@ message postSignatures {
     repeated transportSignaturesItem signatures = 1;
 }
 
-
 message transportGetSignaturesItem {
     string transaction = 1;
     repeated bytes signatures = 2;

@@ -11,8 +11,11 @@ export const MultisigSymbols = {
   },
   multiSigTransport: Symbol.for('rise.multisig.transport'),
   utils            : Symbol.for('rise.multisig.utils'),
-  requests: {
+  p2p: {
     getSignatures: Symbol.for('rise.multisig.req.getSignatures'),
     postSignatures: Symbol.for('rise.multisig.req.postSignatures'),
+  },
+  _internal_: {
+    onSignatureListener: Symbol.for('rise.multisig.internal.onSignatureListener'),
   },
 };

@@ -29,7 +29,7 @@ describe('modules/multisignatures', () => {
   let sandbox: SinonSandbox;
   let tx: IBaseTransaction<any>;
   let sender: any;
-  let signature: string;
+  let signature: Buffer;
 
   let accountsModule: IAccountsModule;
   let sequence: ISequence;
@@ -74,8 +74,8 @@ describe('modules/multisignatures', () => {
       timestamp      : 0,
       type           : TransactionType.MULTI,
     };
-    signature      = '72d33c7dd285d84c5e6c984b10c4141e9ff8fbf9b8433bf1bbea971dc8b14c67' +
-      'e98b55898d982b3d5b9ba56ace902b910e05f8bd897083a7d1ca1d5028703e03';
+    signature      = Buffer.from('72d33c7dd285d84c5e6c984b10c4141e9ff8fbf9b8433bf1bbea971dc8b14c67' +
+      'e98b55898d982b3d5b9ba56ace902b910e05f8bd897083a7d1ca1d5028703e03', 'hex');
     sender         = new AccountsModel({
       address        : '1233456789012345R',
       balance        : 10000000,
@@ -104,7 +104,7 @@ describe('modules/multisignatures', () => {
     let getPayloadStub: SinonStub;
     let hasPendingTX: SinonStub;
     beforeEach(() => {
-      getPendingTXStub = sandbox.stub(pendingQueue, 'get').returns(tx);
+      getPendingTXStub = sandbox.stub(pendingQueue, 'get').returns({tx});
       hasPendingTX = sandbox.stub(pendingQueue, 'has').returns(true);
 
       // transactionsModule.enqueueResponse('getMultisignatureTransaction', tx);
@@ -116,24 +116,23 @@ describe('modules/multisignatures', () => {
     });
 
     it('should call transactionsModule.getMultisignatureTransaction', async () => {
-      await instance.processSignature({ signature, transaction: tx.id, relays: 1 });
+      await instance.onNewSignature({ signature, transaction: tx.id , relays: 1});
       expect(getPendingTXStub.called).to.be.true;
       expect(getPendingTXStub.firstCall.args[0]).to.be.equal(tx.id);
     });
 
     it('should throw if transactionsModule.getMultisignatureTransaction returns false', async () => {
       // transactionsModule.enqueueResponse('getMultisignatureTransaction', false);
-      getPendingTXStub.returns(false);
-      await expect(instance.processSignature({
+      hasPendingTX.returns(false);
+      await expect(instance.onNewSignature({
         signature,
-        transaction: tx.id,
-        relays: 1
+        transaction: tx.id, relays: 1,
       })).to.be.rejectedWith('Transaction not found');
     });
 
     it('should set tx.signatures to [] if TransactionType is MULTI and tx.signatures is not set', async () => {
       delete tx.signatures;
-      await instance.processSignature({ signature, transaction: tx.id, relays: 1 });
+      await instance.onNewSignature({ signature, transaction: tx.id , relays: 1});
       expect(processMultisigTxStub.calledOnce).to.be.true;
       // Our first arg is the modified tx
       expect(Array.isArray(processMultisigTxStub.firstCall.args[0].signatures)).to.be.true;
@@ -142,7 +141,7 @@ describe('modules/multisignatures', () => {
 
     it('should call processMultiSigSignature if TransactionType is MULTI', async () => {
       tx.type = TransactionType.MULTI;
-      await instance.processSignature({ signature, transaction: tx.id, relays: 1 });
+      await instance.onNewSignature({ signature, transaction: tx.id , relays: 1});
       expect(processMultisigTxStub.calledOnce).to.be.true;
       expect(processNormalTxStub.notCalled).to.be.true;
       expect(processMultisigTxStub.firstCall.args[0]).to.be.deep.equal(tx);
@@ -151,7 +150,7 @@ describe('modules/multisignatures', () => {
 
     it('should call processNormalTxSignature if TransactionType is NOT MULTI', async () => {
       tx.type = TransactionType.SEND;
-      await instance.processSignature({ signature, transaction: tx.id, relays:1 });
+      await instance.onNewSignature({ signature, transaction: tx.id , relays: 1});
       expect(processNormalTxStub.calledOnce).to.be.true;
       expect(processMultisigTxStub.notCalled).to.be.true;
       expect(processNormalTxStub.firstCall.args[0]).to.be.deep.equal(tx);
@@ -160,37 +159,36 @@ describe('modules/multisignatures', () => {
 
     it('should call balancesSequence.addAndPromise with a worker', async () => {
       const spy = sandbox.spy(sequence, 'addAndPromise');
-      await instance.processSignature({ signature, transaction: tx.id, relays: 1 });
+      await instance.onNewSignature({ signature, transaction: tx.id , relays: 1});
       expect(spy.calledOnce).to.be.true;
       expect(spy.firstCall.args[0]).to.be.a('function');
     });
 
     it('should call accountsModule.getAccount (in worker)', async () => {
-      await instance.processSignature({ signature, transaction: tx.id, relays: 1 });
+      await instance.onNewSignature({ signature, transaction: tx.id , relays: 1});
       expect(getAccountStub.calledOnce).to.be.true;
       expect(getAccountStub.firstCall.args[0]).to.be.deep.equal({ address: tx.senderId });
     });
 
     it('should throw if accountsModule.getAccount returns falsey (in worker)', async () => {
       getAccountStub.returns(false);
-      await expect(instance.processSignature({ signature, transaction: tx.id, relays: 1 })).to.be.rejectedWith('Sender not found');
+      await expect(instance.onNewSignature({ signature, transaction: tx.id , relays: 1})).to.be.rejectedWith('Sender not found');
     });
     //
-    it('should call multisigTransport.onSignature with proper data', async () => {
-      const transport = container.get<MultisigTransportModule>(MultisigSymbols.multiSigTransport);
-      const stub = sandbox.stub(transport, 'onSignature');
-      await instance.processSignature({ signature, transaction: tx.id, relays: 1 });
-      expect(stub.calledOnce).to.be.true;
-      expect(stub.firstCall.args[0]).to.be.deep.equal({ transaction: tx.id, signature, relays: 1});
-      expect(stub.firstCall.args[1]).to.be.true;
-    });
+    // it('should call multisigTransport.onSignature with proper data', async () => {
+    //   const transport = container.get<MultisigTransportModule>(MultisigSymbols.multiSigTransport);
+    //   const stub = sandbox.stub(transport, 'onSignature');
+    //   await instance.processSignature({ signature, transaction: tx.id , relays: 1});
+    //   expect(stub.calledOnce).to.be.true;
+    //   expect(stub.firstCall.args[0]).to.be.deep.equal({ transaction: tx.id, relays: 1, signature });
+    //   expect(stub.firstCall.args[1]).to.be.true;
+    // });
 
     it('Throw: Cannot find payload for such multisig tx', async () => {
       getPayloadStub.returns(false);
-      await expect(instance.processSignature({
+      await expect(instance.onNewSignature({
         signature,
-        transaction: tx.id,
-        relays: 1
+        transaction: tx.id, relays: 1,
       })).to.be.rejectedWith('Cannot find payload for such multisig tx');
     });
   });
@@ -232,13 +230,13 @@ describe('modules/multisignatures', () => {
       expect(verifySignStub.callCount).to.be.equal(3);
       expect(verifySignStub.getCall(0).args[0]).to.be.deep.equal(tx);
       expect(verifySignStub.getCall(0).args[1]).to.be.deep.equal(Buffer.from(sender.multisignatures[0], 'hex'));
-      expect(verifySignStub.getCall(0).args[2]).to.be.deep.equal(Buffer.from(signature, 'hex'));
+      expect(verifySignStub.getCall(0).args[2]).to.be.deep.equal(signature);
       expect(verifySignStub.getCall(1).args[0]).to.be.deep.equal(tx);
       expect(verifySignStub.getCall(1).args[1]).to.be.deep.equal(Buffer.from(sender.multisignatures[1], 'hex'));
-      expect(verifySignStub.getCall(1).args[2]).to.be.deep.equal(Buffer.from(signature, 'hex'));
+      expect(verifySignStub.getCall(1).args[2]).to.be.deep.equal(signature);
       expect(verifySignStub.getCall(2).args[0]).to.be.deep.equal(tx);
       expect(verifySignStub.getCall(2).args[1]).to.be.deep.equal(tx.senderPublicKey);
-      expect(verifySignStub.getCall(2).args[2]).to.be.deep.equal(Buffer.from(signature, 'hex'));
+      expect(verifySignStub.getCall(2).args[2]).to.be.deep.equal(signature);
     });
 
     it('should throw if no publicKey verifying the signature is found', async () => {
@@ -250,13 +248,13 @@ describe('modules/multisignatures', () => {
         .rejectedWith('Failed to verify signature');
     });
 
-    it('should call call io.sockets.emit', async () => {
-      const emitStub = sandbox.stub(socketIO.sockets, 'emit');
-      await (instance as any).processNormalTxSignature(tx, signature, sender);
-      expect(emitStub.calledOnce).to.be.true;
-      expect(emitStub.firstCall.args[0]).to.be.equal('multisignatures/signature/change');
-      expect(emitStub.firstCall.args[1]).to.be.deep.equal(tx);
-    });
+    // it('should call call io.sockets.emit', async () => {
+    //   const emitStub = sandbox.stub(socketIO.sockets, 'emit');
+    //   await (instance as any).processNormalTxSignature(tx, signature, sender);
+    //   expect(emitStub.calledOnce).to.be.true;
+    //   expect(emitStub.firstCall.args[0]).to.be.equal('multisignatures/signature/change');
+    //   expect(emitStub.firstCall.args[1]).to.be.deep.equal(tx);
+    // });
   });
 
   describe('processMultisigSignature', () => {
@@ -291,11 +289,11 @@ describe('modules/multisignatures', () => {
       expect(verifySignStub.getCall(0).args[0]).to.be.deep.equal(tx);
       expect(verifySignStub.getCall(0).args[1]).to.be.deep
         .equal(Buffer.from(tx.asset.multisignature.keysgroup[0].substring(1), 'hex'));
-      expect(verifySignStub.getCall(0).args[2]).to.be.deep.equal(Buffer.from(signature, 'hex'));
+      expect(verifySignStub.getCall(0).args[2]).to.be.deep.equal(signature);
       expect(verifySignStub.getCall(1).args[0]).to.be.deep.equal(tx);
       expect(verifySignStub.getCall(1).args[1]).to.be.deep
         .equal(Buffer.from(tx.asset.multisignature.keysgroup[1].substring(1), 'hex'));
-      expect(verifySignStub.getCall(1).args[2]).to.be.deep.equal(Buffer.from(signature, 'hex'));
+      expect(verifySignStub.getCall(1).args[2]).to.be.deep.equal(signature);
     });
 
     it('should throw if one or more signatures are not verified', async () => {

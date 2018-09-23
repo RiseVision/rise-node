@@ -78,8 +78,8 @@ describe('HooksListener', () => {
     sender.multilifetime   = 24;
     sender.multimin        = 2;
     bufTX.signatures       = [
-      account.getSignatureOfTransaction(tx),
-      account2.getSignatureOfTransaction(tx)
+      Buffer.from(account.getSignatureOfTransaction(tx), 'hex'),
+      Buffer.from(account2.getSignatureOfTransaction(tx), 'hex')
     ];
     expect(await hookSystem
       .apply_filters(TxReadyFilter.name, true, bufTX, sender)
@@ -99,13 +99,13 @@ describe('HooksListener', () => {
     sender.multilifetime   = 24;
     sender.multimin        = 2;
     bufTX.signatures       = [
-      account.getSignatureOfTransaction(tx),
+      Buffer.from(account.getSignatureOfTransaction(tx), 'hex'),
     ];
     expect(await hookSystem.apply_filters(TxReadyFilter.name, true, bufTX, sender))
       .false;
 
     // should not return true if provided payload is already false.
-    bufTX.signatures.push(account2.getSignatureOfTransaction(tx));
+    bufTX.signatures.push(Buffer.from(account2.getSignatureOfTransaction(tx), 'hex'));
     expect(await hookSystem.apply_filters(TxReadyFilter.name,
       true, bufTX, sender))
       .true; // just to make sure tx is now valid
@@ -127,7 +127,9 @@ describe('HooksListener', () => {
       const txOBJ      = createTransactionFromOBJ(tx);
       txOBJ.signature  = txOBJ.createSignature(r.privKey);
       const toRet      = toBufferedTransaction({ ... txOBJ.toObj(), senderId: wallet.address });
-      toRet.signatures = multisigners.map((m) => m.getSignatureOfTransaction(txOBJ));
+      toRet.signatures = multisigners
+        .map((m) => m.getSignatureOfTransaction(txOBJ))
+        .map((s) => Buffer.from(s, 'hex'));
       return toRet;
     }
 
@@ -162,12 +164,12 @@ describe('HooksListener', () => {
     });
     it('should reject if a signature is invalid', async () => {
       const ttx         = signMultiSigTxRequester(multisigners[0]);
-      ttx.signatures[0] = `5e1${ttx.signatures[0].substr(3)}`;
+      ttx.signatures[0] = Buffer.from(`5e1${ttx.signatures[0].toString('hex').substr(3)}`, 'hex');
       await expect(txLogic.verify(ttx, sender, requester, 1)).to.rejectedWith('Failed to verify multisignature');
     });
     it('should reject if extra signature of non member provided', async () => {
       const ttx = signMultiSigTxRequester(multisigners[0]);
-      ttx.signatures.push(new LiskWallet('other').getSignatureOfTransaction(fromBufferedTransaction(ttx)));
+      ttx.signatures.push(Buffer.from(new LiskWallet('other').getSignatureOfTransaction(fromBufferedTransaction(ttx)), 'hex'));
       await expect(txLogic.verify(ttx, sender, requester, 1)).to.rejectedWith('Failed to verify multisignature');
     });
     it('should reject if requesterPublicKey is not part of multisig group', async () => {

@@ -7,12 +7,13 @@ import {
   VerificationType
 } from '@risevision/core-interfaces';
 import { IBaseTransaction, TransactionType } from '@risevision/core-types';
-import { WrapInBalanceSequence } from '@risevision/core-utils';
+import { logOnly, WrapInBalanceSequence } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { MultisigSymbols } from './helpers';
 import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
 import { MultisigAsset, MultiSignatureTransaction } from './transaction';
+import { MultisigTransportModule } from './transport';
 
 @injectable()
 export class MultisignaturesModule {
@@ -39,12 +40,21 @@ export class MultisignaturesModule {
   @named(MultisigSymbols.tx)
   private multiTx: MultiSignatureTransaction;
 
+  @inject(MultisigSymbols.multiSigTransport)
+  private multiTransport: MultisigTransportModule;
+
+  // Called by PostSignatureRequest.
+  public async onNewSignature(tx: { signature: Buffer, transaction: string, relays: number }) {
+    await this.processSignature(tx);
+    await this.multiTransport.onSignature(tx, true)
+      .catch(logOnly(this.logger));
+  }
   /**
    * Gets the tx from the txID, verifies the given signature and
    * @return {Promise<void>}
    */
   @WrapInBalanceSequence
-  public async processSignature(tx: { signature: Buffer, transaction: string }) {
+  private async processSignature(tx: { signature: Buffer, transaction: string }) {
     if (!this.txPool.pending.has(tx.transaction)) {
       throw new Error('Transaction not found');
     }

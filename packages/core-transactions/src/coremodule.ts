@@ -13,6 +13,7 @@ import { TransactionsAPI  } from './api';
 import { p2pSymbols } from '@risevision/core-p2p';
 import { InnerTXQueue } from './poolTXsQueue';
 import { PoolManager } from './PoolManager';
+import * as z_schema from 'z-schema';
 
 const schema = require('../schema/config.json');
 
@@ -67,6 +68,9 @@ export class CoreModule extends BaseCoreModule {
 
     // initializes through postConstruct
     this.container.get<PoolManager>(TXSymbols.poolManager);
+    z_schema.registerFormat('txId', (value: string) => {
+      return /^[0-9]+$/.test(value);
+    });
   }
 
   public async teardown() {

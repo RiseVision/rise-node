@@ -70,7 +70,6 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
     return Promise.resolve(false);
   }
 
-
   /**
    * Given input request it produces a response.
    * @param request input body data object

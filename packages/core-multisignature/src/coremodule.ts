@@ -10,11 +10,10 @@ import { Accounts2MultisignaturesModel, Accounts2U_MultisignaturesModel, MultiSi
 import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
 import { MultisignaturesModule } from './multisignatures';
 import { MultiSignaturesApi } from './multiSignaturesApi';
+import { GetSignaturesRequest, PostSignaturesRequest } from './p2p';
 import { MultiSignatureTransaction } from './transaction';
 import { MultisigTransportModule } from './transport';
 import { MultiSigUtils } from './utils';
-
-import { GetSignaturesRequest, PostSignaturesRequest } from './requests';
 
 export class CoreModule extends BaseCoreModule implements ICoreModuleWithModels {
   public configSchema = {};
@@ -64,13 +63,19 @@ export class CoreModule extends BaseCoreModule implements ICoreModuleWithModels 
       .bind(p2pSymbols.transportMethod)
       .to(PostSignaturesRequest)
       .inSingletonScope()
-      .whenTargetNamed(MultisigSymbols.requests.postSignatures);
+      .whenTargetNamed(MultisigSymbols.p2p.postSignatures);
 
     this.container
       .bind(p2pSymbols.transportMethod)
       .to(GetSignaturesRequest)
       .inSingletonScope()
-      .whenTargetNamed(MultisigSymbols.requests.getSignatures);
+      .whenTargetNamed(MultisigSymbols.p2p.getSignatures);
+
+    this.container
+      .bind(MultisigSymbols._internal_.onSignatureListener)
+      .toConstantValue((obj: { signature: Buffer, transaction: string, relays: number }) => {
+        return this.container.get<MultisignaturesModule>(MultisigSymbols.module).onNewSignature(obj);
+      });
   }
 
   public onPreInitModels() {

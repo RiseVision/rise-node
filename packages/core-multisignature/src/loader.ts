@@ -1,10 +1,10 @@
 import { ILogger, ISequence, Symbols } from '@risevision/core-interfaces';
+import { p2pSymbols, TransportModule } from '@risevision/core-p2p';
 import { inject, injectable, named } from 'inversify';
 import z_schema from 'z-schema';
 import { MultisigSymbols } from './helpers';
 import { MultisignaturesModule } from './multisignatures';
-import { GetSignaturesRequest } from './requests/GetSignaturesRequest';
-import { p2pSymbols, TransportModule } from '@risevision/core-p2p';
+import { GetSignaturesRequest } from './p2p/';
 
 const loaderSchema = require('../schema/loader.json');
 
@@ -27,7 +27,7 @@ export class MultisigLoader {
   private multisigModule: MultisignaturesModule;
 
   @inject(p2pSymbols.transportMethod)
-  @named(MultisigSymbols.requests.getSignatures)
+  @named(MultisigSymbols.p2p.getSignatures)
   private getSignaturesRequest: GetSignaturesRequest;
 
   /**
@@ -53,7 +53,8 @@ export class MultisigLoader {
       for (const multiSigTX of signatures) {
         for (const signature of  multiSigTX.signatures) {
           try {
-            await this.multisigModule.processSignature({
+            await this.multisigModule.onNewSignature({
+              relays: Number.MAX_SAFE_INTEGER,
               signature,
               transaction: multiSigTX.transaction,
             });
