@@ -9,9 +9,9 @@ const config = proxyquire('../../../src/helpers/config', {
 
 // config() sometimes does console.log, this function disables console.log before the call and re-enables it after.
 const muteConfig = (path) => {
-  const unmute = mute();
+  // const unmute = mute();
   const cfg = config(path);
-  unmute();
+  // unmute();
   return cfg;
 };
 

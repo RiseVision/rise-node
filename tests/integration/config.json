@@ -32,6 +32,7 @@
             "public": true,
             "whiteList": ["127.0.0.1"]
         },
+        "restrictedWhiteList": [ "127.0.0.1", "::ffff:127.0.0.1" ],
         "options": {
             "limits": {
                 "max": 0,

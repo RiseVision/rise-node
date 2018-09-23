@@ -25,6 +25,7 @@ import { PostTransactionsRequest } from './apis/requests/PostTransactionsRequest
 import { requestSymbols } from './apis/requests/requestSymbols';
 import { AttachPeerHeaders } from './apis/utils/attachPeerHeaders';
 import { ForgingApisWatchGuard } from './apis/utils/forgingApisWatchGuard';
+import { RestrictedAPIWatchGuard } from './apis/utils/restrictedAPIWatchGuard';
 import { SuccessInterceptor } from './apis/utils/successInterceptor';
 import { V2APIErrorHandler } from './apis/utils/v2ErrorHandler';
 import { ValidatePeerHeaders } from './apis/utils/validatePeerHeaders';
@@ -271,6 +272,7 @@ export class AppManager {
     this.container.bind(Symbols.api.utils.v2ErrorHandler).to(V2APIErrorHandler).inSingletonScope();
     this.container.bind(Symbols.api.utils.successInterceptor).to(SuccessInterceptor).inSingletonScope();
     this.container.bind(Symbols.api.utils.forgingApisWatchGuard).to(ForgingApisWatchGuard).inSingletonScope();
+    this.container.bind(Symbols.api.utils.restrictedWhiteList).to(RestrictedAPIWatchGuard).inSingletonScope();
     this.container.bind(Symbols.api.utils.validatePeerHeadersMiddleware).to(ValidatePeerHeaders).inSingletonScope();
     this.container.bind(Symbols.api.utils.attachPeerHeaderToResponseObject).to(AttachPeerHeaders).inSingletonScope();
 

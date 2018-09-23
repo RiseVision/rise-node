@@ -352,13 +352,13 @@ describe('logic/peers', () => {
 
     it('should return true if removal was less than 15 minutes ago', () => {
       (instance as any).lastRemoved = {};
-      (instance as any).lastRemoved[peerLogicStub.string] = Date.now() - config.peers.banTime + 1;
+      (instance as any).lastRemoved[peerLogicStub.string] = Date.now() - config.peers.banTime + 1000;
       expect((instance as any).wasRecentlyRemoved(peerLogicStub)).to.be.true;
     });
 
     it('should return false if removal was more than 15 minutes ago', () => {
       (instance as any).lastRemoved = {};
-      (instance as any).lastRemoved[peerLogicStub.string] = Date.now() - config.peers.banTime - 1;
+      (instance as any).lastRemoved[peerLogicStub.string] = Date.now() - config.peers.banTime - 1000;
       expect((instance as any).wasRecentlyRemoved(peerLogicStub)).to.be.false;
     });
   });

@@ -6,7 +6,7 @@ import * as path from 'path';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-import { BigNum, catchToLoggerAndRemapError, ILogger } from '../helpers/';
+import { BigNum, catchToLoggerAndRemapError, constants, ILogger } from '../helpers/';
 import { IAccountLogic } from '../ioc/interfaces/';
 import { Symbols } from '../ioc/symbols';
 import {
@@ -124,6 +124,8 @@ export class AccountLogic implements IAccountLogic {
 
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  @inject(Symbols.helpers.constants)
+  private constants: typeof constants;
 
   @inject(Symbols.models.accounts2Delegates)
   private Accounts2DelegatesModel: typeof Accounts2DelegatesModel;
@@ -413,17 +415,20 @@ export class AccountLogic implements IAccountLogic {
     return await this.AccountsModel.destroy({ where: { address: address.toUpperCase() } });
   }
 
-  public generateAddressByPublicKey(publicKey: string): string {
+  public generateAddressByPublicKey(publicKey: string|Buffer): string {
     this.assertPublicKey(publicKey, false);
 
     const hash = crypto.createHash('sha256')
-      .update(new Buffer(publicKey, 'hex'))
+      .update(Buffer.isBuffer(publicKey)
+        ? publicKey
+        : new Buffer(publicKey, 'hex')
+      )
       .digest();
 
     const tmp = Buffer.alloc(8);
     for (let i = 0; i < 8; i++) {
       tmp[i] = hash[7 - i];
     }
-    return `${BigNum.fromBuffer(tmp).toString()}R`;
+    return `${BigNum.fromBuffer(tmp).toString()}${this.constants.addressSuffix}`;
   }
 }

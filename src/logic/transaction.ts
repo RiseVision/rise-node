@@ -28,6 +28,8 @@ import { BaseTransactionType, IBaseTransaction,
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
 
+  @inject(Symbols.helpers.constants)
+  public constants: typeof constants;
   @inject(Symbols.helpers.exceptionsManager)
   public excManager: ExceptionsManager;
 
@@ -140,7 +142,7 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     if (tx.recipientId) {
-      const recipient = tx.recipientId.slice(0, -1);
+      const recipient = tx.recipientId.slice(0, -this.constants.addressSuffix.length);
       const recBuf    = new BigNum(recipient).toBuffer({ size: 8 });
 
       for (let i = 0; i < 8; i++) {

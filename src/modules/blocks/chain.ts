@@ -255,7 +255,13 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       }
 
       await this.roundsModule.tick(block, dbTX);
-      this.blocksModule.lastBlock = deepFreeze(block);
+      this.blocksModule.lastBlock = deepFreeze(
+        this.BlocksModel.toStringBlockType(
+          block,
+          this.TransactionsModel,
+          this.blocksModule
+        )
+      );
 
       await this.bus.message('newBlock', block, broadcast);
     }).catch((err) => {

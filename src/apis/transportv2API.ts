@@ -221,10 +221,7 @@ export class TransportV2API {
       where: { id: lastBlockId },
     });
     if (lastBlock != null) {
-      // TODO: We limit the number of blocks to return to not overload this node.
-      // We might implement a way to avoid spamming nodes by using some kind of PoW upon requesting the block. or by limiting this
-      // endpoint on the IP requesting the resource.
-      const blocksToLoad = Math.ceil(Math.min(500, (await this.calcNumBlocksToLoad(lastBlock)) * 0.5));
+      const blocksToLoad = await this.calcNumBlocksToLoad(lastBlock);
       const dbBlocks = await this.blocksModuleUtils.loadBlocksData({
         lastId: lastBlockId,
         limit: blocksToLoad,

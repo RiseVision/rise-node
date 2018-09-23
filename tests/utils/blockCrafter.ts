@@ -37,7 +37,7 @@ export const createFakeBlock = (cfg: {
   keypair?: IKeypair,
   transactions?: Array<IBaseTransaction<any>>,
   previousBlock?: SignedAndChainedBlockType
-} = {}): SignedBlockType => {
+} = {}): SignedAndChainedBlockType => {
   const blockLogic: IBlockLogic = fakeContainer.get(Symbols.logic.block);
   const ed: Ed                  = fakeContainer.get(Symbols.helpers.ed);
   const keypair                 = cfg.keypair || ed.makeKeypair(crypto
