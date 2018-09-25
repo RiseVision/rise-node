@@ -1,14 +1,17 @@
 import { OnPostApplyBlock } from '@risevision/core-blocks';
 import { Symbols } from '@risevision/core-interfaces';
 import { SignedAndChainedBlockType } from '@risevision/core-types';
-import { inject, injectable } from 'inversify';
+import { decorate, inject, injectable } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import * as sequelize from 'sequelize';
 import { dPoSSymbols } from '../../helpers';
 import { RoundsModule } from '../../modules';
 
+const Extendable = WPHooksSubscriber(Object);
+decorate(injectable(), Extendable);
+
 @injectable()
-export class BlockHooks extends WPHooksSubscriber(Object) {
+export class BlockHooks extends Extendable {
   @inject(Symbols.generic.hookSystem)
   public hookSystem: WordPressHookSystem;
 

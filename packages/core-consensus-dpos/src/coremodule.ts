@@ -1,4 +1,5 @@
 import { BaseCoreModule } from '@risevision/core-launchpad';
+import { WPHooksSubscriber } from 'mangiafuoco';
 import { constants, DposAppConfig, dPoSSymbols, RoundChanges, Slots } from './helpers';
 import { CommanderStatic } from 'commander';
 import {
@@ -108,7 +109,11 @@ export class CoreModule extends BaseCoreModule<DposAppConfig> implements ICoreMo
       .inSingletonScope();
   }
 
-  public initAppElements() {
+  public async initAppElements() {
+    await this.container.get<any>(dPoSSymbols.hooksSubscribers.blocks)
+      .hookMethods();
+    await this.container.get<any>(dPoSSymbols.hooksSubscribers.transactions)
+      .hookMethods();
   }
 
   public onPreInitModels() {
@@ -120,5 +125,9 @@ export class CoreModule extends BaseCoreModule<DposAppConfig> implements ICoreMo
 
   public async teardown() {
     // TODO: Call modules.clean
+    await this.container.get<any>(dPoSSymbols.hooksSubscribers.blocks)
+      .unHook();
+    await this.container.get<any>(dPoSSymbols.hooksSubscribers.transactions)
+      .unHook();
   }
 }

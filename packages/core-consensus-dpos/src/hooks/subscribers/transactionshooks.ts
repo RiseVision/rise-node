@@ -2,17 +2,22 @@ import { Symbols } from '@risevision/core-interfaces';
 import { SendTxApplyFilter, SendTxUndoFilter, TxApplyFilter, TxUndoFilter } from '@risevision/core-transactions';
 import { address, DBCustomOp, DBOp, IConfirmedTransaction, SignedBlockType } from '@risevision/core-types';
 import { MyBigNumb } from '@risevision/core-utils';
-import { inject, injectable } from 'inversify';
+import { decorate, inject, injectable, named } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { dPoSSymbols, Slots } from '../../helpers';
 import { RoundsLogic } from '../../logic/rounds';
 import { RoundsModel } from '../../models';
+import { ModelSymbols } from '@risevision/core-models';
+
+const Extendable = WPHooksSubscriber(Object);
+decorate(injectable(), Extendable);
 
 @injectable()
-export class Transactionshooks extends WPHooksSubscriber(Object) {
+export class Transactionshooks extends Extendable {
   @inject(Symbols.generic.hookSystem)
   public hookSystem: WordPressHookSystem;
-  @inject(dPoSSymbols.models.rounds)
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.rounds)
   private roundsModel: typeof RoundsModel;
 
   @inject(dPoSSymbols.logic.rounds)
