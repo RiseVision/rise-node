@@ -1,6 +1,6 @@
-import { ILogger, IPeersModel, Symbols } from '@risevision/core-interfaces';
+import { IAppState, ILogger, IPeersModel, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { AppConfig, ConstantsType, PeerFilter, PeerState, PeerType } from '@risevision/core-types';
+import { AppConfig, ConstantsType, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
@@ -8,12 +8,13 @@ import { WordPressHookSystem } from 'mangiafuoco';
 import * as shuffle from 'shuffle-array';
 import { p2pSymbols } from './helpers';
 import { OnPeersReady } from './hooks/actions';
+import { IPeersModule, PeerFilter } from './interfaces';
 import { Peer } from './peer';
 import { PeersLogic } from './peersLogic';
 import { PingRequest } from './requests';
 
 @injectable()
-export class PeersModule  {
+export class PeersModule implements IPeersModule {
 
   // Generic
   @inject(Symbols.generic.appConfig)
@@ -30,6 +31,8 @@ export class PeersModule  {
   // Logic
   @inject(Symbols.logic.peers)
   private peersLogic: PeersLogic;
+  @inject(Symbols.logic.appState)
+  private appState: IAppState;
 
   // Modules
   @inject(Symbols.modules.system)
@@ -48,6 +51,21 @@ export class PeersModule  {
     return this.dbSave();
   }
 
+  public async getPeers(params: { limit?: number, broadhash?: string }): Promise<PeerType[]> {
+    params.limit     = params.limit || this.constants.maxPeers;
+    params.broadhash = params.broadhash || null;
+
+    const originalLimit = params.limit;
+
+    const peersList = await this.list(params);
+    const peers     = peersList.peers;
+    const consensus = peersList.consensus;
+
+    if (originalLimit === this.constants.maxPeers) {
+      this.appState.set('node.consensus', consensus);
+    }
+    return peers;
+  }
   /**
    * Sets peer state to active and updates it to the list
    */
@@ -226,7 +244,7 @@ export class PeersModule  {
       this.logger.trace(`Processing seed peer ${peer.string}`);
       // Sets the peer as connected. Seed can be offline but it will be removed later.
       try {
-        await peer.makeRequest(this.pingRequest)
+        await peer.makeRequest(this.pingRequest);
         updated++;
       } catch (e) {
         // seed peer is down?

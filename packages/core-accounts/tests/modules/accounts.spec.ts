@@ -74,6 +74,43 @@ describe('modules/accounts', () => {
     });
   });
 
+  describe('checkTXsAccountsMap', () => {
+
+    let accountsModel: typeof IAccountsModel;
+    let findAllStub: SinonStub;
+    let assignPublicKeyToAccount: SinonStub;
+    beforeEach(() => {
+      accountsModel = container.getNamed(ModelSymbols.model, AccountsSymbols.model);
+      findAllStub   = sandbox.stub(accountsModel, 'findAll').resolves([]);
+      assignPublicKeyToAccount = sandbox.stub(accountModule, 'assignPublicKeyToAccount')
+        .callsFake(
+          ({publicKey}) => Promise
+            .resolve({ publicKey, address: `add${publicKey.toString('hex')}` })
+        );
+    });
+    it('should throw if account is not found in db', async () => {
+      await expect(accountModule.checkTXsAccountsMap([
+        { senderId: 'add11', senderPublicKey: Buffer.from('11', 'hex') } as any
+      ], {})).rejectedWith('Account add11 not found in db');
+    });
+    it('should throw if account has diff publicKey in db', async () => {
+      await expect(accountModule.checkTXsAccountsMap([
+        { senderId: 'add11', senderPublicKey: Buffer.from('11', 'hex') } as any
+      ], { add11: { address: 'add11', publicKey: Buffer.from('22', 'hex') } } as any))
+        .rejectedWith('Stealing attempt type.2 for add11');
+    });
+    it('should setAccountAndGet if nopublickey set in db and throw if address does not match', async () => {
+      await expect(accountModule.checkTXsAccountsMap([
+        { senderId: 'add11', senderPublicKey: Buffer.from('22', 'hex') } as any
+      ],
+        { add11: {address: 'add11'} } as any
+        )).rejectedWith('Stealing attempt type.1 for add11');
+      expect(assignPublicKeyToAccount.called).is.true;
+      expect(assignPublicKeyToAccount.firstCall.args[0])
+        .is.deep.eq({publicKey: Buffer.from('22', 'hex')});
+    });
+  });
+
   describe('txAccounts', () => {
     let accountsModel: typeof IAccountsModel;
     let findAllStub: SinonStub;
@@ -95,26 +132,14 @@ describe('modules/accounts', () => {
       expect(findAllStub.calledOnce).is.true;
       expect(findAllStub.firstCall.args[0]).deep.eq({ where: { address: [] } });
     });
-    it('should throw if account is not found in db', async () => {
-      await expect(accountModule.txAccounts([
-        { senderId: 'add11', senderPublicKey: Buffer.from('11', 'hex') } as any
-      ])).rejectedWith('Account add11 not found in db');
+    it('should return empty object if account not in db', async () => {
+      const r = await accountModule
+        .txAccounts([
+          { senderId: 'add11', senderPublicKey: Buffer.from('11', 'hex') } as any
+        ]);
+      expect(r).deep.eq({});
     });
-    it('should throw if account has diff publicKey in db', async () => {
-      findAllStub.resolves([{ address: 'add11', publicKey: Buffer.from('22', 'hex') }]);
-      await expect(accountModule.txAccounts([
-        { senderId: 'add11', senderPublicKey: Buffer.from('11', 'hex') } as any
-      ])).rejectedWith('Stealing attempt type.2 for add11');
-    });
-    it('should setAccountAndGet if nopublickey set in db and throw if address does not match', async () => {
-      findAllStub.resolves([{ address: 'add11' }]);
-      await expect(accountModule.txAccounts([
-        { senderId: 'add11', senderPublicKey: Buffer.from('22', 'hex') } as any
-      ])).rejectedWith('Stealing attempt type.1 for add11');
-      expect(assignPublicKeyToAccount.called).is.true;
-      expect(assignPublicKeyToAccount.firstCall.args[0])
-        .is.deep.eq({address: 'add11', publicKey: Buffer.from('22', 'hex')});
-    });
+
     it('should also query for requesterPublicKey', async () => {
       sandbox.stub(accountLogic, 'generateAddressByPublicKey').returns('add33');
       findAllStub.resolves([

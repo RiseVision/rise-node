@@ -36,7 +36,8 @@ describe('multisigUtils', () => {
       tx            = toBufferedTransaction(t);
       accounts      = new Array(100).fill(null)
         .map(() => new LiskWallet(uuid.v4(), 'R'));
-      tx.signatures = accounts.map((acc) => acc.getSignatureOfTransaction(t));
+      tx.signatures = accounts.map((acc) => acc.getSignatureOfTransaction(t))
+        .map((s) => Buffer.from(s, 'hex'));
     });
     it('should return false if tx is not signed by that pubKey', () => {
       expect(instance.isTxSignedByPubKey(tx, Buffer.from(new LiskWallet('meow').publicKey, 'hex')))

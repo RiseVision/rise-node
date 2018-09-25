@@ -38,7 +38,7 @@ import { WordPressHookSystem } from 'mangiafuoco';
 import sql from '../sql/loader';
 
 import Timer = NodeJS.Timer;
-import { OnBlockchainReady, RecreateAccountsTables } from '../hooks';
+import { OnBlockchainReady, OnSyncRequested, RecreateAccountsTables, WhatToSync } from '../hooks';
 import { BroadcasterLogic, Peer, PeersModule } from '@risevision/core-p2p';
 
 const loaderSchema = require('../../schema/loader.json');
@@ -338,6 +338,7 @@ export class LoaderModule implements ILoaderModule {
    * sounds, since the histogram has likely been made accross several blocks,
    * therefore need to aggregate).
    * Gets the list of good peers.
+   * TODO: Move to p2p
    */
   private findGoodPeers(peers: Peer[]): {
     height: number, peers: Peer[]
@@ -490,13 +491,13 @@ export class LoaderModule implements ILoaderModule {
 
       // Establish consensus. (internally)
       this.logger.debug('Establishing broadhash consensus before sync');
-      await this.broadcasterLogic.getPeers({ limit: this.constants.maxPeers });
+      await this.peersModule.getPeers({ limit: this.constants.maxPeers });
 
       await this.loadBlocksFromNetwork();
       await this.systemModule.update();
 
       this.logger.debug('Establishing broadhash consensus after sync');
-      await this.broadcasterLogic.getPeers({ limit: this.constants.maxPeers });
+      await this.peersModule.getPeers({ limit: this.constants.maxPeers });
 
     }
 
@@ -512,28 +513,29 @@ export class LoaderModule implements ILoaderModule {
   private async doSync() {
     const shouldSyncBlocks     = this.loaded && !this.isSyncing && (this.blocksModule.lastReceipt.isStale());
     const whatToSync: string[] = await this.hookSystem
-      .apply_filters('core/loader/whatToSync', shouldSyncBlocks ? ['blocks', 'transactions'] : []);
+      .apply_filters(WhatToSync.name, shouldSyncBlocks ? ['blocks', 'transactions'] : []);
     for (const what of whatToSync) {
-      switch (what) {
-        case 'blocks':
-          await promiseRetry(async (retries) => {
-            try {
-              await this.sync();
-            } catch (err) {
-              this.logger.warn('Error syncing... Retrying... ', err);
-              retries(err);
-            }
-          }, { retries: this.retries });
-          break;
-        case 'transactions':
-          this.logger.info('Syncing transactions');
-          await this.syncTransactions();
-          break;
-        default:
-          this.logger.info(`Syncing ${what}`);
-          await this.hookSystem.do_action('core/loader/onSyncRequested', what);
-          break;
-      }
+      this.logger.info(`Syncing ${what}`);
+      await this.hookSystem.do_action(OnSyncRequested.name, what);
+      // switch (what) {
+      //   case 'blocks':
+      //     await promiseRetry(async (retries) => {
+      //       try {
+      //         await this.sync();
+      //       } catch (err) {
+      //         this.logger.warn('Error syncing... Retrying... ', err);
+      //         retries(err);
+      //       }
+      //     }, { retries: this.retries });
+      //     break;
+      //   case 'transactions':
+      //     this.logger.info('Syncing transactions');
+      //     await this.syncTransactions();
+      //     break;
+      //   default:
+      //
+      //     break;
+      // }
     }
   }
 

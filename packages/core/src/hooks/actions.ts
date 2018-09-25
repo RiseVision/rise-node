@@ -9,6 +9,7 @@ import { Transaction } from 'sequelize';
 export const OnBlockchainReady = createAction('core/loader/onBlockchainReady');
 export const OnSyncStarted     = createAction('core/loader/onSync.started');
 export const OnSyncFinished    = createAction('core/loader/onSync.finished');
+export const OnSyncRequested    = createAction<(what: string) => Promise<void>>('core/loader/onSyncRequested');
 export const OnCheckIntegrity    = createAction<(totalBlocks: number) => Promise<void>>('core/loader/loadBlockchain/checkIntegrity');
 
 /**
@@ -42,8 +43,5 @@ export const InitContainer = createAction<(container: Container) => Promise<Cont
  * Plugins could use this to monkey patch a model. Ex: adding fields or modifying scopes.
  */
 export const InitModel = createAction<(model: typeof BaseModel) => Promise<Container>>('core/init/model');
-
-
-
 
 // ## Account Logic Hooks

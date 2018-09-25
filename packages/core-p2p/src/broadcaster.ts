@@ -7,6 +7,7 @@ import { P2PConstantsType, p2pSymbols } from './helpers';
 import { PeersLogic } from './peersLogic';
 import { PeersModule } from './peersModule';
 import { BaseTransportMethod, SingleTransportPayload } from './requests/';
+import { IBroadcasterLogic } from './interfaces/IBroadcasterLogic';
 
 // tslint:disable-next-line
 export type BroadcastFilters = {
@@ -29,7 +30,7 @@ export interface BroadcastTask<Body, Query, Out> {
 }
 
 @injectable()
-export class BroadcasterLogic {
+export class BroadcasterLogic implements IBroadcasterLogic {
   public queue: Array<BroadcastTask<any, any, any>> = [];
   // Generics
   @inject(Symbols.generic.appConfig)
@@ -48,8 +49,6 @@ export class BroadcasterLogic {
   private logger: ILogger;
 
   // Logic
-  @inject(Symbols.logic.appState)
-  private appState: IAppState;
   @inject(Symbols.logic.peers)
   private peersLogic: PeersLogic;
 
@@ -72,22 +71,6 @@ export class BroadcasterLogic {
 
   public cleanup() {
     this.jobsQueue.unregister('broadcasterNextRelease');
-  }
-
-  public async getPeers(params: { limit?: number, broadhash?: string }): Promise<PeerType[]> {
-    params.limit     = params.limit || this.constants.maxPeers;
-    params.broadhash = params.broadhash || null;
-
-    const originalLimit = params.limit;
-
-    const peersList = await this.peersModule.list(params);
-    const peers     = peersList.peers;
-    const consensus = peersList.consensus;
-
-    if (originalLimit === this.constants.maxPeers) {
-      this.appState.set('node.consensus', consensus);
-    }
-    return peers;
   }
 
   /**
@@ -126,7 +109,7 @@ export class BroadcasterLogic {
 
     let peers = task.filters.peers;
     if (!task.filters.peers) {
-      peers = await this.getPeers(task.filters);
+      peers = await this.peersModule.getPeers(task.filters);
     }
 
     this.logger.debug('Begin broadcast');

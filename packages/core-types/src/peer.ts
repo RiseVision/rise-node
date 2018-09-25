@@ -38,7 +38,6 @@ export interface PeerType extends BasePeerType {
   applyHeaders(h?: PeerHeaders): PeerHeaders;
 }
 // tslint:disable-next-line
-export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip?: string, port?: number, broadhash?: string, state?: PeerState };
 
 // tslint:disable-next-line
 export type PeerRequestOptions<T = any> = { url?: string, method: 'GET' | 'POST', data?: T, query?: any };

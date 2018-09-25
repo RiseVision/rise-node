@@ -16,20 +16,15 @@ import {
   IBlocksModel,
   IBlocksModule,
   ITransactionsModule,
-  IBroadcasterLogic, ISystemModule, ITransportModule, ISequence, ITransactionLogic, IPeersModule, IJobsQueue
+  ISystemModule, ISequence, ITransactionLogic, IJobsQueue
 } from '@risevision/core-interfaces';
 import { CoreSymbols } from '../../../src';
 import { LoggerStub } from '../../../../core-utils/tests/stubs';
 import { PeerType } from '@risevision/core-types';
 import { createFakePeers } from '../../../../core-p2p/tests/utils/fakePeersFactory';
-import { PeersLogic } from '@risevision/core-p2p';
-import { PeersModule } from '@risevision/core-p2p';
-import { AccountLogic } from '../../../../core-accounts/src/logic';
+import { PeersLogic, IPeersModule, IBroadcasterLogic, p2pSymbols  } from '@risevision/core-p2p';
 import { wait } from '@risevision/core-utils';
-
-import { GetTransactionsRequest } from '@risevision/core-p2p';
 import { BlocksModuleProcess, BlocksSymbols } from '@risevision/core-blocks';
-import { blocks } from 'dpos-api-wrapper/dist/es5/apis';
 import { ModelSymbols } from '@risevision/core-models';
 
 chai.use(chaiAsPromised);
@@ -125,7 +120,7 @@ describe('modules/loader', () => {
   });
 
   describe('.getNetwork', () => {
-    let peersModuleStub: PeersModule;
+    let peersModuleStub: IPeersModule;
     let peersLogicStub: PeersLogic;
     let loggerStub: LoggerStub;
     let peers: PeerType[];
@@ -952,6 +947,7 @@ describe('modules/loader', () => {
     let syncTriggerStub: SinonStub;
     let loadBlocksFromNetworkStub: SinonStub;
     let systemModuleUpdateStub: SinonStub;
+    let peersModule: IPeersModule;
 
     beforeEach(() => {
       syncTriggerStub           = sandbox.stub(instance as any, 'syncTrigger');
@@ -969,9 +965,10 @@ describe('modules/loader', () => {
       systemModuleStub       = container.get(
         Symbols.modules.system
       );
+      peersModule = container.get(p2pSymbols.modules.peers);
       loggerStub             = container.get<LoggerStub>(Symbols.helpers.logger);
 
-      getPeersStub           = sandbox.stub(broadcasterLogicStub, 'getPeers').resolves();
+      getPeersStub           = sandbox.stub(peersModule, 'getPeers').resolves();
       systemModuleUpdateStub = sandbox.stub(systemModuleStub, 'update').resolves();
     });
 
@@ -1473,157 +1470,158 @@ describe('modules/loader', () => {
   //   });
   // });
 
-  describe('.loadTransactions', () => {
-    let getRandomPeerStub: SinonStub;
-    let loggerStub: LoggerStub;
-    let transportModuleStub: ITransportModule;
-    let sequenceStub: ISequence;
-    let transactionLogicStub: ITransactionLogic;
-    let transactionsModuleStub: ITransactionsModule;
-    let peersModuleStub: IPeersModule;
-
-
-    let objectNormalizeStub: SinonStub;
-    let receiveTransactionsStub: SinonStub;
-    let res;
-    let peer;
-    let tx1;
-    let tx2;
-
-    beforeEach(() => {
-      tx1  = { id: 1 };
-      tx2  = { id: 2 };
-      res  = {
-        transactions: [tx1, tx2],
-      };
-      peer = { string: 'string', ip: '127.0.0.uganda', port: 65488, makeRequest: sandbox.stub().resolves(res) };
-
-      transactionLogicStub   = container.get(
-        Symbols.logic.transaction
-      );
-      transactionsModuleStub = container.get(
-        Symbols.modules.transactions
-      );
-      peersModuleStub        = container.get(Symbols.modules.peers);
-      loggerStub             = container.get(Symbols.helpers.logger);
-      transportModuleStub    = container.get(
-        Symbols.modules.transport
-      );
-      sequenceStub           = container.getNamed(
-        Symbols.helpers.sequence,
-        Symbols.names.helpers.balancesSequence
-      );
-
-      getRandomPeerStub = sandbox
-        .stub(instance as any, 'getRandomPeer')
-        .resolves(peer);
-
-      objectNormalizeStub     = sandbox.stub(transactionLogicStub, 'objectNormalize').returns({});
-      receiveTransactionsStub = sandbox.stub(transportModuleStub, 'receiveTransactions').returns({});
-
-    });
-
-    afterEach(() => {
-      loggerStub.stubReset();
-    });
-
-    it('should call instance.getRandomPeer', async () => {
-      await (instance as any).loadTransactions();
-
-      expect(getRandomPeerStub.calledOnce).to.be.true;
-      expect(getRandomPeerStub.firstCall.args.length).to.be.equal(0);
-    });
-
-    it('should call logger.log', async () => {
-      await (instance as any).loadTransactions();
-
-      expect(loggerStub.stubs.log.calledOnce).to.be.true;
-      expect(loggerStub.stubs.log.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.log.firstCall.args[0]).to.be.equal(
-        `Loading transactions from: ${peer.string}`
-      );
-    });
-
-    it('should call peer.makeRequest', async () => {
-      await (instance as any).loadTransactions();
-
-      expect(peer.makeRequest.calledOnce).to.be.true;
-      expect(
-        peer.makeRequest.firstCall.args.length
-      ).to.be.equal(1);
-      expect(
-        peer.makeRequest.firstCall.args[0]
-      ).to.be.instanceOf(GetTransactionsRequest);
-      expect(
-        peer.makeRequest.firstCall.args[0].options
-      ).to.be.deep.equal({ data: null, });
-    });
-
-    // it('should call schema.validate', async () => {
-    //   await (instance as any).loadTransactions();
-    //
-    //   expect(schemaStub.stubs.validate.calledOnce).to.be.true;
-    //   expect(schemaStub.stubs.validate.firstCall.args.length).to.be.equal(2);
-    //   expect(schemaStub.stubs.validate.firstCall.args[0]).to.be.deep.equal(
-    //     res
-    //   );
-    //   expect(schemaStub.stubs.validate.firstCall.args[1]).to.be.equal(
-    //     loaderSchema.loadTransactions
-    //   );
-    // });
-    //
-    // it('should throw if validate was failed ', async () => {
-    //   schemaStub.reset();
-    //   schemaStub.enqueueResponse('validate', false);
-    //
-    //   await expect((instance as any).loadTransactions()).to.be.rejectedWith(
-    //     'Cannot validate load transactions schema against peer'
-    //   );
-    // });
-
-    it('should call transportModule.receiveTransaction for each tx', async () => {
-      await (instance as any).loadTransactions();
-
-      expect(receiveTransactionsStub.calledOnce).to.be
-        .true;
-
-      expect(receiveTransactionsStub.firstCall.args[0]).deep.eq([tx1, tx2]);
-      expect(receiveTransactionsStub.firstCall.args[1]).deep.eq(peer);
-      expect(receiveTransactionsStub.firstCall.args[2]).deep.eq(false);
-    });
-    it('shoudlnt call transport.receiveTransaction if no transactions were returned', async () => {
-      peer.makeRequest.resolves({ transactions: [] });
-
-      await (instance as any).loadTransactions();
-
-      expect(receiveTransactionsStub.calledOnce).to.be
-        .false;
-    });
-
-    it('should split transactions in groups of 25 ', async () => {
-      peer.makeRequest.resolves({ transactions: new Array(51).fill(null).map((_, idx) => idx) });
-
-      await (instance as any).loadTransactions();
-
-      expect(receiveTransactionsStub.calledThrice).to.be.true;
-      expect(receiveTransactionsStub.firstCall.args[0]).deep.eq([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]);
-      expect(receiveTransactionsStub.secondCall.args[0]).deep.eq([25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]);
-      expect(receiveTransactionsStub.thirdCall.args[0]).deep.eq([50]);
-    });
-    it('should call logger.debug if transportModule.receiveTransaction throw error', async () => {
-      const error = new Error('error');
-      peer.makeRequest.resolves(res);
-      receiveTransactionsStub.rejects(error);
-
-      await (instance as any).loadTransactions();
-
-      expect(loggerStub.stubs.warn.calledOnce).to.be.true;
-
-      expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal(error);
-
-    });
-  });
+  // TODO: lerna move to core-transactions
+  // describe('.loadTransactions', () => {
+  //   let getRandomPeerStub: SinonStub;
+  //   let loggerStub: LoggerStub;
+  //   let transportModuleStub: ITransportModule;
+  //   let sequenceStub: ISequence;
+  //   let transactionLogicStub: ITransactionLogic;
+  //   let transactionsModuleStub: ITransactionsModule;
+  //   let peersModuleStub: IPeersModule;
+  //
+  //
+  //   let objectNormalizeStub: SinonStub;
+  //   let receiveTransactionsStub: SinonStub;
+  //   let res;
+  //   let peer;
+  //   let tx1;
+  //   let tx2;
+  //
+  //   beforeEach(() => {
+  //     tx1  = { id: 1 };
+  //     tx2  = { id: 2 };
+  //     res  = {
+  //       transactions: [tx1, tx2],
+  //     };
+  //     peer = { string: 'string', ip: '127.0.0.uganda', port: 65488, makeRequest: sandbox.stub().resolves(res) };
+  //
+  //     transactionLogicStub   = container.get(
+  //       Symbols.logic.transaction
+  //     );
+  //     transactionsModuleStub = container.get(
+  //       Symbols.modules.transactions
+  //     );
+  //     peersModuleStub        = container.get(Symbols.modules.peers);
+  //     loggerStub             = container.get(Symbols.helpers.logger);
+  //     transportModuleStub    = container.get(
+  //       Symbols.modules.transport
+  //     );
+  //     sequenceStub           = container.getNamed(
+  //       Symbols.helpers.sequence,
+  //       Symbols.names.helpers.balancesSequence
+  //     );
+  //
+  //     getRandomPeerStub = sandbox
+  //       .stub(instance as any, 'getRandomPeer')
+  //       .resolves(peer);
+  //
+  //     objectNormalizeStub     = sandbox.stub(transactionLogicStub, 'objectNormalize').returns({});
+  //     receiveTransactionsStub = sandbox.stub(transportModuleStub, 'receiveTransactions').returns({});
+  //
+  //   });
+  //
+  //   afterEach(() => {
+  //     loggerStub.stubReset();
+  //   });
+  //
+  //   it('should call instance.getRandomPeer', async () => {
+  //     await (instance as any).loadTransactions();
+  //
+  //     expect(getRandomPeerStub.calledOnce).to.be.true;
+  //     expect(getRandomPeerStub.firstCall.args.length).to.be.equal(0);
+  //   });
+  //
+  //   it('should call logger.log', async () => {
+  //     await (instance as any).loadTransactions();
+  //
+  //     expect(loggerStub.stubs.log.calledOnce).to.be.true;
+  //     expect(loggerStub.stubs.log.firstCall.args.length).to.be.equal(1);
+  //     expect(loggerStub.stubs.log.firstCall.args[0]).to.be.equal(
+  //       `Loading transactions from: ${peer.string}`
+  //     );
+  //   });
+  //
+  //   it('should call peer.makeRequest', async () => {
+  //     await (instance as any).loadTransactions();
+  //
+  //     expect(peer.makeRequest.calledOnce).to.be.true;
+  //     expect(
+  //       peer.makeRequest.firstCall.args.length
+  //     ).to.be.equal(1);
+  //     expect(
+  //       peer.makeRequest.firstCall.args[0]
+  //     ).to.be.instanceOf(GetTransactionsRequest);
+  //     expect(
+  //       peer.makeRequest.firstCall.args[0].options
+  //     ).to.be.deep.equal({ data: null, });
+  //   });
+  //
+  //   // it('should call schema.validate', async () => {
+  //   //   await (instance as any).loadTransactions();
+  //   //
+  //   //   expect(schemaStub.stubs.validate.calledOnce).to.be.true;
+  //   //   expect(schemaStub.stubs.validate.firstCall.args.length).to.be.equal(2);
+  //   //   expect(schemaStub.stubs.validate.firstCall.args[0]).to.be.deep.equal(
+  //   //     res
+  //   //   );
+  //   //   expect(schemaStub.stubs.validate.firstCall.args[1]).to.be.equal(
+  //   //     loaderSchema.loadTransactions
+  //   //   );
+  //   // });
+  //   //
+  //   // it('should throw if validate was failed ', async () => {
+  //   //   schemaStub.reset();
+  //   //   schemaStub.enqueueResponse('validate', false);
+  //   //
+  //   //   await expect((instance as any).loadTransactions()).to.be.rejectedWith(
+  //   //     'Cannot validate load transactions schema against peer'
+  //   //   );
+  //   // });
+  //
+  //   it('should call transportModule.receiveTransaction for each tx', async () => {
+  //     await (instance as any).loadTransactions();
+  //
+  //     expect(receiveTransactionsStub.calledOnce).to.be
+  //       .true;
+  //
+  //     expect(receiveTransactionsStub.firstCall.args[0]).deep.eq([tx1, tx2]);
+  //     expect(receiveTransactionsStub.firstCall.args[1]).deep.eq(peer);
+  //     expect(receiveTransactionsStub.firstCall.args[2]).deep.eq(false);
+  //   });
+  //   it('shoudlnt call transport.receiveTransaction if no transactions were returned', async () => {
+  //     peer.makeRequest.resolves({ transactions: [] });
+  //
+  //     await (instance as any).loadTransactions();
+  //
+  //     expect(receiveTransactionsStub.calledOnce).to.be
+  //       .false;
+  //   });
+  //
+  //   it('should split transactions in groups of 25 ', async () => {
+  //     peer.makeRequest.resolves({ transactions: new Array(51).fill(null).map((_, idx) => idx) });
+  //
+  //     await (instance as any).loadTransactions();
+  //
+  //     expect(receiveTransactionsStub.calledThrice).to.be.true;
+  //     expect(receiveTransactionsStub.firstCall.args[0]).deep.eq([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]);
+  //     expect(receiveTransactionsStub.secondCall.args[0]).deep.eq([25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]);
+  //     expect(receiveTransactionsStub.thirdCall.args[0]).deep.eq([50]);
+  //   });
+  //   it('should call logger.debug if transportModule.receiveTransaction throw error', async () => {
+  //     const error = new Error('error');
+  //     peer.makeRequest.resolves(res);
+  //     receiveTransactionsStub.rejects(error);
+  //
+  //     await (instance as any).loadTransactions();
+  //
+  //     expect(loggerStub.stubs.warn.calledOnce).to.be.true;
+  //
+  //     expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(1);
+  //     expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal(error);
+  //
+  //   });
+  // });
 
   describe('.syncTrigger', () => {
     let setAppStub: SinonStub;
