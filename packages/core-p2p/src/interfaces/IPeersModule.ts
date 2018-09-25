@@ -27,4 +27,6 @@ export interface IPeersModule {
   list(options: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }): Promise<{ consensus: number, peers: Peer[] }>;
 
   getPeers(params: { limit?: number, broadhash?: string }): Promise<Peer[]>;
+
+  updateConsensus(): Promise<number>;
 }

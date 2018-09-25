@@ -268,8 +268,8 @@ describe('logic/transactions/createmultisig', () => {
     it('should throw if keysgroup contains the sender', async () => {
       tx.asset.multisignature.keysgroup[0] = '+' + sender.publicKey.toString('hex');
       tx.signatures                        = [
-        sig2Wallet.getSignatureOfTransaction(tx),
-        senderWallet.getSignatureOfTransaction(tx),
+        Buffer.from(sig2Wallet.getSignatureOfTransaction(tx), 'hex'),
+        Buffer.from(senderWallet.getSignatureOfTransaction(tx), 'hex'),
       ];
       await expect(instance.verify(tx, sender)).to.be.rejectedWith('Invalid multisignature keysgroup. Cannot contain sender');
     });
@@ -306,7 +306,7 @@ describe('logic/transactions/createmultisig', () => {
       tx.signatures                        = [
         sig1Wallet.getSignatureOfTransaction(tx),
         sig1Wallet.getSignatureOfTransaction(tx),
-      ];
+      ].map((s) => Buffer.from(s, 'hex'));
       await expect(instance.verify(tx, sender)).to.be.rejectedWith('Encountered duplicate public key in multisignature keysgroup');
     });
 

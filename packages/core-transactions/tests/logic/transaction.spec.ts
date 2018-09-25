@@ -1029,6 +1029,7 @@ describe('logic/transaction', () => {
       const dpassedTx = {...tx};
       delete dpassedTx.requesterPublicKey;
       delete dpassedTx.signSignature;
+      delete dpassedTx.signatures;
       expect(txTypeObjectNormalizeStub.firstCall.args[0]).to.be.deep.equal(dpassedTx);
       expect(retVal).to.be.equal('txType objectNormalize');
     });

@@ -8,7 +8,7 @@ import {
   ILogger,
   IModule, ISequence, Symbols
 } from '@risevision/core-interfaces';
-import { BroadcasterLogic } from '@risevision/core-p2p';
+import { IPeersModule, p2pSymbols } from '@risevision/core-p2p';
 import { ConstantsType, IKeypair, publicKey } from '@risevision/core-types';
 import { catchToLoggerAndRemapError, WrapInDefaultSequence } from '@risevision/core-utils';
 import * as crypto from 'crypto';
@@ -45,8 +45,8 @@ export class ForgeModule implements IModule {
   // logic
   @inject(Symbols.logic.appState)
   private appState: IAppState;
-  @inject(Symbols.logic.broadcaster)
-  private broadcasterLogic: BroadcasterLogic;
+  @inject(p2pSymbols.modules.peers)
+  private peersModule: IPeersModule;
 
   // modules
   @inject(Symbols.modules.accounts)
@@ -165,8 +165,7 @@ export class ForgeModule implements IModule {
 
     // NOTE: This is wrapped in a default sequence because it's called only from delegatesNextForge
 
-    // updates consensus.
-    await this.broadcasterLogic.getPeers({ limit: this.constants.maxPeers });
+    await this.peersModule.updateConsensus();
 
     if (this.appState.getComputed('node.poorConsensus')) {
       throw new Error(`Inadequate broadhash consensus ${this.appState

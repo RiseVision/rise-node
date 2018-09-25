@@ -18,6 +18,7 @@ import { ModelSymbols } from '../../../core-models/src/helpers';
 import { IBlocksModel } from '../../../core-interfaces/src/models';
 import { LiskWallet } from 'dpos-offline';
 import { ConstantsType } from '../../../core-types/src';
+import { IPeersModule, p2pSymbols } from '@risevision/core-p2p';
 
 chai.use(chaiAsPromised);
 
@@ -32,7 +33,7 @@ describe('modules/forge', () => {
   let sequenceStub: { addAndPromise: SinonSpy };
   let slotsStub: Slots;
   let appStateStub: AppState;
-  let broadcasterLogicStub: BroadcasterLogic;
+  let peersModule: IPeersModule;
   let accountsModuleStub: IAccountsModule;
   let blocksModuleStub: IBlocksModule;
   let delegatesModuleStub: DelegatesModule;
@@ -56,7 +57,7 @@ describe('modules/forge', () => {
     edStub                     = container.get(Symbols.generic.crypto);
     slotsStub                  = container.get(dPoSSymbols.helpers.slots);
     appStateStub               = container.get(Symbols.logic.appState);
-    broadcasterLogicStub       = container.get(Symbols.logic.broadcaster);
+    peersModule                = container.get(p2pSymbols.modules.peers);
     accountsModuleStub         = container.get(Symbols.modules.accounts);
     blocksModuleStub           = container.get(Symbols.modules.blocks);
     delegatesModuleStub        = container.get(dPoSSymbols.modules.delegates);
@@ -427,6 +428,7 @@ describe('modules/forge', () => {
         appStateGetStub.onFirstCall().returns(false); // loader.isSyncing
         appStateGetStub.onSecondCall().returns(false); // rounds.isTicking
         appStateGetStub.onCall(2).returns(10); // node.consensus
+        appStateGetStub.onCall(3).returns(10); // node.consensus
         getComputedStub   = sandbox.stub(appStateStub, 'getComputed').returns(false); // node.poorConsensus
         getSlotNumberStub = sandbox.stub(slotsStub, 'getSlotNumber');
         loadKeypairs();
@@ -437,7 +439,7 @@ describe('modules/forge', () => {
         getSlotNumberStub.onCall(2).returns(100);
         getSlotNumberStub.onCall(3).returns(100);
 
-        getPeersStub = sandbox.stub(broadcasterLogicStub, 'getPeers').resolves();
+        getPeersStub = sandbox.stub(peersModule, 'getPeers').resolves();
         genBlockStub = sandbox.stub(blocksProcessModuleStub, 'generateBlock').resolves();
       });
 

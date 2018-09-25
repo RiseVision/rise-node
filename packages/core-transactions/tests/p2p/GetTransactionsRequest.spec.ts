@@ -7,6 +7,7 @@ import { p2pSymbols } from '@risevision/core-p2p';
 import { createRandomTransaction, toBufferedTransaction } from '../utils/txCrafter';
 import { Symbols } from '../../../core-interfaces/src';
 import { ConstantsType } from '../../../core-types/src';
+import { generateAccount } from '../../../core-accounts/tests/utils/accountsUtils';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/GetTransactionsRequest', () => {
@@ -36,6 +37,7 @@ describe('apis/requests/GetTransactionsRequest', () => {
     txPool.unconfirmed.add(tx, { receivedAt: new Date() });
     const finalData = await createRequest();
     delete tx.signSignature;
+    delete tx.signatures;
     expect(finalData).deep.eq({ transactions: [{...tx, relays: 1, asset: null}] });
   });
   it('with some txs from dif pool - order is respsected', async () => {
@@ -50,11 +52,27 @@ describe('apis/requests/GetTransactionsRequest', () => {
     delete unconfirmed.signSignature;
     delete pending.signSignature;
     delete ready.signSignature;
+    delete unconfirmed.signatures;
+    delete pending.signatures;
+    delete ready.signatures;
 
     const finalData = await createRequest();
     expect(finalData).deep.eq({ transactions: [unconfirmed, pending, ready].map((t) => ({
         ...t, asset: null, relays: 1
       })) });
+  });
+  it('with some signatures', async () => {
+    const t                = createRandomTransaction();
+    const unconfirmed      = toBufferedTransaction(t);
+    unconfirmed.signatures = new Array(3).fill(null)
+      .map(() => generateAccount().getSignatureOfTransaction(t))
+      .map((s) => Buffer.from(s, 'hex'));
+    txPool.unconfirmed.add(unconfirmed, {receivedAt: new Date()});
+    const finalData = await createRequest();
+    expect(finalData.transactions).not.empty;
+    expect(finalData.transactions[0].signatures).not.empty;
+    expect(finalData.transactions[0].signatures.length).eq(3);
+    expect(finalData.transactions[0].signatures).deep.eq(unconfirmed.signatures);
   });
   it('should honor limit', async () => {
     const constants = container.get<ConstantsType>(Symbols.generic.constants);

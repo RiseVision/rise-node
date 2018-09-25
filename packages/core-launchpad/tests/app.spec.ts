@@ -8,6 +8,9 @@ import { wait } from '../../core-utils/src';
 import { SinonStub } from 'sinon';
 import { StubbedInstance } from '../../core-utils/tests/stubs';
 
+const stubExitHook:any = (cb) => cb();
+stubExitHook.unhandledRejectionHandler = () => {};
+
 const proxyquire = pq.noPreserveCache();
 describe('app', () => {
   let oldPWD: string;
@@ -44,7 +47,7 @@ describe('app', () => {
     StubbedAppManager.constructorCalls.splice(0, StubbedAppManager.constructorCalls.length);
   });
   it('constructor', () => {
-    proxyquire('../src/app', { './AppManager': { AppManager: StubbedAppManager } });
+    proxyquire('../src/app', { './AppManager': { AppManager: StubbedAppManager }, 'async-exit-hook': stubExitHook });
     expect(StubbedAppManager.instances.length).eq(1);
     expect(StubbedAppManager.constructorCalls[0][0]).deep.eq({
       ...require('./assets/app/etc/mainnet/config.json'),
@@ -57,7 +60,7 @@ describe('app', () => {
   it('should call appManager.boot and exitHook After ', async () => {
     proxyquire('../src/app', {
       './AppManager'   : { AppManager: StubbedAppManager },
-      'async-exit-hook': (cb) => cb(),
+      'async-exit-hook': stubExitHook,
     });
     const [instance] = StubbedAppManager.instances;
     await wait(100);
@@ -75,6 +78,7 @@ describe('app', () => {
 
       expect(() => proxyquire('../src/app', {
         './AppManager': { AppManager: StubbedAppManager },
+        'async-exit-hook': stubExitHook
       })).to.throw('haha');
     });
 
@@ -87,6 +91,7 @@ describe('app', () => {
       process.argv.push('$.db.host=myhost');
       proxyquire('../src/app', {
         './AppManager': { AppManager: StubbedAppManager },
+        'async-exit-hook': stubExitHook
       });
 
       const [constructorArgs] = StubbedAppManager.constructorCalls;
@@ -112,6 +117,7 @@ describe('app', () => {
       process.argv.push('-a', 'localhome');
       proxyquire('../src/app', {
         './AppManager': { AppManager: StubbedAppManager },
+        'async-exit-hook': stubExitHook
       });
 
       const [[config]] = StubbedAppManager.constructorCalls;
@@ -122,6 +128,7 @@ describe('app', () => {
       process.argv.push('-p', 'hahaa');
       proxyquire('../src/app', {
         './AppManager': { AppManager: StubbedAppManager },
+        'async-exit-hook': stubExitHook
       });
 
       expect(exitStub.calledOnce).is.true;
@@ -134,6 +141,7 @@ describe('app', () => {
       proxyquire('../src/app', {
         './AppManager' : { AppManager: StubbedAppManager },
         './loadConfigs': { configCreator: configStub },
+        'async-exit-hook': stubExitHook
       });
       expect(configStub.calledOnce).is.true;
       expect(configStub.firstCall.args[0]).deep.eq('/dev/null');
@@ -143,6 +151,7 @@ describe('app', () => {
       process.argv.push('-e', `${__dirname}/assets/app/extraConfig.json`);
       proxyquire('../src/app', {
         './AppManager': { AppManager: StubbedAppManager },
+        'async-exit-hook': stubExitHook
       });
 
       const [[config]] = StubbedAppManager.constructorCalls;
@@ -162,7 +171,6 @@ describe('app', () => {
         user              : 'test',
       });
     });
-
 
   });
 });

@@ -102,57 +102,57 @@ describe('logic/broadcaster', () => {
     });
   });
 
-  describe('getPeers', () => {
-    let limit: number;
-    let broadhash: string;
-    let peers: any[];
-    let consensus: number;
-    let peersModuleListStub: SinonStub;
-
-    beforeEach(() => {
-      limit               = 100;
-      broadhash           = 'asd';
-      peers               = [];
-      consensus           = 123;
-      peersModuleListStub = sandbox.stub(peersModule, 'list').resolves({ peers, consensus });
-    });
-
-    it('should call peersModule.list', async () => {
-      await instance.getPeers({ limit, broadhash });
-      expect(peersModuleListStub.calledOnce).to.be.true;
-      expect(peersModuleListStub.firstCall.args.length).to.be.equal(1);
-      expect(peersModuleListStub.firstCall.args[0]).to.be.deep.equal({ limit, broadhash });
-    });
-
-    it('should call peersModule.list also with default params', async () => {
-      await instance.getPeers({});
-      expect(peersModuleListStub.calledOnce).to.be.true;
-      expect(peersModuleListStub.firstCall.args.length).to.be.equal(1);
-      expect(peersModuleListStub.firstCall.args[0]).to.be.deep.equal({
-        broadhash: null,
-        limit    : constants.maxPeers,
-      });
-    });
-
-    it('should set consensus if limit is constants.maxPeers', async () => {
-      await instance.getPeers({ limit: constants.maxPeers });
-      expect(fakeAppState.set.calledOnce).to.be.true;
-      expect(fakeAppState.set.firstCall.args[0]).to.be.equal('node.consensus');
-      expect(fakeAppState.set.firstCall.args[1]).to.be.equal(consensus);
-    });
-
-    it('should set consensus in 100 if limit is constants.maxPeers and config.forging.force is true', async () => {
-      await instance.getPeers({ limit: constants.maxPeers });
-      expect(fakeAppState.set.calledOnce).to.be.true;
-      expect(fakeAppState.set.firstCall.args[0]).to.be.equal('node.consensus');
-      expect(fakeAppState.set.firstCall.args[1]).to.be.equal(123);
-    });
-
-    it('should return the right value', async () => {
-      const result = await instance.getPeers({ limit: constants.maxPeers });
-      expect(result).to.be.equal(peers);
-    });
-  });
+  // describe('getPeers', () => {
+  //   let limit: number;
+  //   let broadhash: string;
+  //   let peers: any[];
+  //   let consensus: number;
+  //   let peersModuleListStub: SinonStub;
+  //
+  //   beforeEach(() => {
+  //     limit               = 100;
+  //     broadhash           = 'asd';
+  //     peers               = [];
+  //     consensus           = 123;
+  //     peersModuleListStub = sandbox.stub(peersModule, 'list').resolves({ peers, consensus });
+  //   });
+  //
+  //   it('should call peersModule.list', async () => {
+  //     await instance.getPeers({ limit, broadhash });
+  //     expect(peersModuleListStub.calledOnce).to.be.true;
+  //     expect(peersModuleListStub.firstCall.args.length).to.be.equal(1);
+  //     expect(peersModuleListStub.firstCall.args[0]).to.be.deep.equal({ limit, broadhash });
+  //   });
+  //
+  //   it('should call peersModule.list also with default params', async () => {
+  //     await instance.getPeers({});
+  //     expect(peersModuleListStub.calledOnce).to.be.true;
+  //     expect(peersModuleListStub.firstCall.args.length).to.be.equal(1);
+  //     expect(peersModuleListStub.firstCall.args[0]).to.be.deep.equal({
+  //       broadhash: null,
+  //       limit    : constants.maxPeers,
+  //     });
+  //   });
+  //
+  //   it('should set consensus if limit is constants.maxPeers', async () => {
+  //     await instance.getPeers({ limit: constants.maxPeers });
+  //     expect(fakeAppState.set.calledOnce).to.be.true;
+  //     expect(fakeAppState.set.firstCall.args[0]).to.be.equal('node.consensus');
+  //     expect(fakeAppState.set.firstCall.args[1]).to.be.equal(consensus);
+  //   });
+  //
+  //   it('should set consensus in 100 if limit is constants.maxPeers and config.forging.force is true', async () => {
+  //     await instance.getPeers({ limit: constants.maxPeers });
+  //     expect(fakeAppState.set.calledOnce).to.be.true;
+  //     expect(fakeAppState.set.firstCall.args[0]).to.be.equal('node.consensus');
+  //     expect(fakeAppState.set.firstCall.args[1]).to.be.equal(123);
+  //   });
+  //
+  //   it('should return the right value', async () => {
+  //     const result = await instance.getPeers({ limit: constants.maxPeers });
+  //     expect(result).to.be.equal(peers);
+  //   });
+  // });
 
   describe('maybeEnqueue', () => {
     it('should create body.relays if not exists and set to 1');
@@ -188,7 +188,6 @@ describe('logic/broadcaster', () => {
       });
     });
 
-
     it('should return the right value', () => {
       const result: any = instance.enqueue({}, options.method, {});
       expect(result).to.be.deep.equal(1);
@@ -217,7 +216,7 @@ describe('logic/broadcaster', () => {
         { string: 'second', makeRequest: sandbox.stub().resolves(), },
       ];
 
-      getPeersStub = sandbox.stub(instance, 'getPeers');
+      getPeersStub = sandbox.stub(peersModule, 'getPeers');
       getPeersStub.resolves(peers);
       createPeerStub = sandbox.stub(peersLogic, 'create');
       peers.forEach((peer, index) => {

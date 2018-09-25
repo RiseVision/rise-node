@@ -304,11 +304,15 @@ describe('apis/transactionsAPI', () => {
     let transportTxs: Array<ITransaction<any>>;
     let txs: Array<IBaseTransaction<any>>;
     beforeEach(() => {
-      transportTxs = new Array(5).fill(null).map(() => createRandomTransaction());
+      transportTxs = new Array(5).fill(null)
+        .map(() => createRandomTransaction());
       txs          = transportTxs.map((t) => toBufferedTransaction(t));
 
-      txs.forEach((tx) => txPool.queued.add(tx, {receivedAt: new Date()}));
-    })
+      txs
+        .forEach((tx) => txPool.queued.add(tx, {receivedAt: new Date()}));
+      transportTxs
+        .forEach((tx) => tx.signatures = undefined);
+    });
     it('filtering by senderPublicKey & address', async () => {
       result = await instance.getQueuedTxs({
         address        : transportTxs[0].recipientId,
@@ -366,8 +370,8 @@ describe('apis/transactionsAPI', () => {
       expect(result).to.deep.equal({
         count       : 5,
         transactions: [
-          {...transportTXS[1], signSignature: null},
-          {...transportTXS[0], signSignature: null},
+          {...transportTXS[1], signSignature: null, signatures: undefined},
+          {...transportTXS[0], signSignature: null, signatures: undefined},
         ],
       });
     });
@@ -376,7 +380,7 @@ describe('apis/transactionsAPI', () => {
       result = await instance.getUnconfirmedTxs({});
       expect(result).to.deep.equal({
         count       : 5,
-        transactions: transportTXS.reverse().map((tx) => ({ ...tx, signSignature: null })),
+        transactions: transportTXS.reverse().map((tx) => ({ ...tx, signSignature: null, signatures: undefined })),
       });
     });
   });
@@ -392,7 +396,7 @@ describe('apis/transactionsAPI', () => {
       const t = createRandomTransaction();
       txPool.unconfirmed.add(toBufferedTransaction(t), {receivedAt: new Date()});
       const r = await instance.getUnconfirmedTx(t.id);
-      expect(r).deep.eq({transaction: {...t, signSignature: null, requesterPublicKey: null}});
+      expect(r).deep.eq({transaction: {...t, signSignature: null, requesterPublicKey: null, signatures: undefined}});
     });
   });
   describe('put', () => {

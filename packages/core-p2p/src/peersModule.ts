@@ -51,7 +51,12 @@ export class PeersModule implements IPeersModule {
     return this.dbSave();
   }
 
-  public async getPeers(params: { limit?: number, broadhash?: string }): Promise<PeerType[]> {
+  public async updateConsensus() {
+    await this.getPeers({limit: this.constants.maxPeers});
+    return this.appState.get('node.consensus');
+  }
+
+  public async getPeers(params: { limit?: number, broadhash?: string }): Promise<Peer[]> {
     params.limit     = params.limit || this.constants.maxPeers;
     params.broadhash = params.broadhash || null;
 

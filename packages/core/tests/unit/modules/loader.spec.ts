@@ -211,16 +211,9 @@ describe('modules/loader', () => {
         'Good peers'
       );
       expect(loggerStub.stubs.debug.getCall(0).args[1]).to.be.deep.equal([
-        undefined,
-        undefined,
+        peers[0].string,
+        peers[1].string,
       ]);
-    });
-
-    it('should call instance peersLogic.create', async () => {
-      listPEersStub.returns({ peers });
-
-      await instance.getNetwork();
-      expect(peersCreateStub.called).to.be.true;
     });
 
     it('should return instance.network with empty peersArray prop if each of peersModule.list() peers is null', async () => {
@@ -268,7 +261,6 @@ describe('modules/loader', () => {
       const ret = await instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 10, peers: [peers[0]] });
-      expect(peersCreateStub.calledOnce).to.be.true;
     });
   });
 
@@ -1743,7 +1735,7 @@ describe('modules/loader', () => {
       jobsQueueStub    = container.get(Symbols.helpers.jobsQueue);
       loggerStub       = container.get(Symbols.helpers.logger);
       syncStub         = sandbox
-        .stub(instance as any, 'sync')
+        .stub(instance as any, 'doSync')
         .resolves(Promise.resolve({}));
 
       (blocksModule as any).lastReceipt = lastReceiptStubs;
@@ -1800,30 +1792,21 @@ describe('modules/loader', () => {
       expect(lastReceiptStubs.get.firstCall.args.length).to.be.equal(0);
     });
 
-    it('should call blocksModule.lastReceipt.isStale', async () => {
-      await (instance as any).syncTimer();
-
-      expect(lastReceiptStubs.isStale.calledOnce).to.be.true;
-      expect(lastReceiptStubs.isStale.firstCall.args.length).to.be.equal(0);
-    });
+    // TODO: lerna
+    // it('should call blocksModule.lastReceipt.isStale', async () => {
+    //   await (instance as any).syncTimer();
+    //
+    //   expect(lastReceiptStubs.isStale.calledOnce).to.be.true;
+    //   expect(lastReceiptStubs.isStale.firstCall.args.length).to.be.equal(0);
+    // });
 
     it('should call instance.sync', async () => {
       await (instance as any).syncTimer();
 
-      process.nextTick(() => {
-        expect(syncStub.calledOnce).to.be.true;
-        expect(syncStub.firstCall.args.length).to.be.equal(0);
-      });
-    });
+      await wait(1000);
 
-    it('should call logger.warn if instance.sync throw error', async () => {
-      syncStub.rejects({});
-
-      loggerStub.stubReset();
-      await (instance as any).syncTimer();
-      await wait (1500);
-      expect(retryStub.called).to.be.true;
-      expect(loggerStub.stubs.warn.called).to.be.true;
+      expect(syncStub.calledOnce).to.be.true;
+      expect(syncStub.firstCall.args.length).to.be.equal(0);
     });
 
     it('should not call instance.sync if instance.loaded is false', async () => {
@@ -1834,22 +1817,6 @@ describe('modules/loader', () => {
       expect(retryStub.notCalled).to.be.true;
     });
 
-    it('should not call instance.synTc if !instance.isSyncing is false', async () => {
-      getAppStateStub.resetBehavior();
-      getAppStateStub.returns(true);
-
-      await (instance as any).syncTimer();
-
-      expect(syncStub.notCalled).to.be.true;
-    });
-
-    it('should not call instance.sync if blocksModule.lastReceipt.isStale return false', async () => {
-      lastReceiptStubs.isStale.returns(false);
-
-      await (instance as any).syncTimer();
-
-      expect(syncStub.notCalled).to.be.true;
-    });
   });
 
 });
