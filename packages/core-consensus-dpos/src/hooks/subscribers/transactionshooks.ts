@@ -4,12 +4,12 @@ import { address, DBCustomOp, DBOp, IConfirmedTransaction, SignedBlockType } fro
 import { MyBigNumb } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
-import { dPoSSymbols, Slots } from '../helpers';
-import { RoundsLogic } from '../logic/rounds';
-import { RoundsModel } from '../models';
+import { dPoSSymbols, Slots } from '../../helpers';
+import { RoundsLogic } from '../../logic/rounds';
+import { RoundsModel } from '../../models';
 
 @injectable()
-class Transactionshooks extends WPHooksSubscriber(Object) {
+export class Transactionshooks extends WPHooksSubscriber(Object) {
   @inject(Symbols.generic.hookSystem)
   public hookSystem: WordPressHookSystem;
   @inject(dPoSSymbols.models.rounds)

@@ -178,13 +178,14 @@ export class BlocksModuleChain {
     }
     this.blocksModule.lastBlock = new this.BlocksModel(block);
     await this.BlocksModel.sequelize
-      .transaction((tx) => this.hookSystem.do_action(
-        OnPostApplyBlock.name,
-        this.blocksModule.lastBlock, tx,
-        false)
+      .transaction((tx) => this.hookSystem
+        .do_action(
+          OnPostApplyBlock.name,
+          this.blocksModule.lastBlock,
+          tx,
+          false
+        )
       );
-    // TODO: add this on dpos-consensus via hook ^^.
-    // await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
   }
 
   @WrapInBalanceSequence
@@ -266,8 +267,6 @@ export class BlocksModuleChain {
       }
 
       // await this.bus.message('newBlock', block, broadcast);
-      // TODO: add this on consensus dpos using hook ^^
-      // await this.roundsModule.tick(block, dbTX);
 
       this.blocksModule.lastBlock = deepFreeze(
         this.BlocksModel.toStringBlockType(block)

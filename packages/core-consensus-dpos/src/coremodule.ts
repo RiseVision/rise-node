@@ -19,6 +19,7 @@ import { TXSymbols } from '@risevision/core-transactions';
 import { RegisterDelegateTransaction } from './logic/delegateTransaction';
 import { VoteTransaction } from './logic/voteTransaction';
 import { DelegatesModule, ForgeModule, RoundsModule } from './modules';
+import { BlockHooks, Transactionshooks } from './hooks/subscribers';
 
 const configSchema = require('../schema/config.json');
 
@@ -97,6 +98,13 @@ export class CoreModule extends BaseCoreModule<DposAppConfig> implements ICoreMo
       .inSingletonScope();
     this.container.bind(dPoSSymbols.modules.rounds)
       .to(RoundsModule)
+      .inSingletonScope();
+
+    this.container.bind(dPoSSymbols.hooksSubscribers.blocks)
+      .to(BlockHooks)
+      .inSingletonScope();
+    this.container.bind(dPoSSymbols.hooksSubscribers.transactions)
+      .to(Transactionshooks)
       .inSingletonScope();
   }
 
