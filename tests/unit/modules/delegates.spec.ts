@@ -247,7 +247,8 @@ describe('modules/delegates', () => {
         createHashSpy.restore();
         slotsStub.delegates = 101;
         // 1 year...
-        const numRounds = 10407;
+        // const numRounds = 10407;
+        const numRounds = 50000;
         let includedDelegates = 0;
         const delegatesMap = {};
         delegates.forEach((d) => {
@@ -279,8 +280,10 @@ describe('modules/delegates', () => {
         toSort.forEach((d, idx) => {
           const count = d.count ? d.count : 0;
           const percent = ((count * 100) / numRounds).toFixed(2);
-          // console.log(`#${idx} vote: ${d.vote} inclusions: ${count} ${percent}%`);
-          if (count > 0) includedDelegates++;
+          console.log(`#${idx} vote: ${d.vote} inclusions: ${count} ${percent}%`);
+          if (count > 0) {
+            includedDelegates++;
+          }
         });
         // Only one delegate has zero vote, so it should never be included in round
         expect(includedDelegates).to.be.eq(delegates.length - 1);

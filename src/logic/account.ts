@@ -38,6 +38,7 @@ export type OptionalsMemAccounts = {
   balance?: number;
   u_balance?: number;
   vote?: number;
+  votesWeight?: number;
   rate?: number;
   delegates?: string;
   u_delegates?: string;
@@ -68,6 +69,7 @@ export type MemAccountsData = OptionalsMemAccounts & {
   balance: number;
   u_balance: number;
   vote: string;
+  votesWeight: string;
   rate: number;
   delegates: string[];
   u_delegates: string[];

@@ -135,6 +135,17 @@ export class RoundLogic implements IRoundLogic {
   }
 
   /**
+   * Calls sql flush, deletes round from mem_round
+   */
+  public reCalcVotes(): DBOp<any> {
+    return {
+      model  : this.scope.models.RoundsModel,
+      query  : roundSQL.reCalcVotes,
+      type   : 'custom',
+    };
+  }
+
+  /**
    * Remove blocks higher than this block height
    */
   public truncateBlocks(): DBOp<BlocksModel> {
@@ -230,10 +241,12 @@ export class RoundLogic implements IRoundLogic {
   public land(): Array<DBOp<any>> {
     return [
       this.updateVotes(),
+      this.reCalcVotes(),
       this.updateMissedBlocks(),
       this.flushRound(),
       ...this.applyRound(),
       this.updateVotes(),
+      this.reCalcVotes(),
       this.flushRound(),
     ];
   }
@@ -244,10 +257,12 @@ export class RoundLogic implements IRoundLogic {
   public backwardLand(): Array<DBOp<any>> {
     return [
       this.updateVotes(),
+      this.reCalcVotes(),
       this.updateMissedBlocks(),
       this.flushRound(),
       ...this.applyRound(),
       this.updateVotes(),
+      this.reCalcVotes(),
       this.flushRound(),
       this.restoreRoundSnapshot(),
       this.restoreVotesSnapshot(),

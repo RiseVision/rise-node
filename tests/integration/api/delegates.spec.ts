@@ -52,7 +52,7 @@ describe('api/delegates', () => {
       'username:desc', 'username:asc',
       'publicKey:desc', 'publicKey:asc',
     ], '/api/delegates');
-    checkIntParam('limit', '/api/delegates', { min: 1, max: 101 });
+    checkIntParam('limit', '/api/delegates', { min: 1, max: 202 });
     checkIntParam('offset', '/api/delegates', { min: 0 });
 
     checkReturnObjKeyVal('totalCount', 101, '/api/delegates');

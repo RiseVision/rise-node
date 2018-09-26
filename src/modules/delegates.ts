@@ -130,12 +130,14 @@ export class DelegatesModule implements IDelegatesModule {
     if (!query) {
       throw new Error('Missing query argument');
     }
-
+    const sort: {vote?: 1|-1, votesWeight?: 1|-1, publicKey: 1|-1} =
+            this.blocksModule.lastBlock.height < this.constants.dposv2.firstBlock ?
+              {vote: -1, publicKey: 1} : {votesWeight: -1, publicKey: 1};
     const delegates = await this.accountsModule.getAccounts({
         isDelegate: 1,
-        sort      : {vote: -1, publicKey: 1},
+        sort,
       },
-      ['username', 'address', 'publicKey', 'vote', 'missedblocks', 'producedblocks']
+      ['username', 'address', 'publicKey', 'vote', 'votesWeight', 'missedblocks', 'producedblocks']
     );
 
     const limit  = Math.min(this.slots.getDelegatesPoolSize(), query.limit || this.slots.getDelegatesPoolSize());
@@ -214,12 +216,24 @@ export class DelegatesModule implements IDelegatesModule {
    * Get delegates public keys sorted by descending vote.
    */
   private async getKeysSortByVote(): Promise<Array<{publicKey: Buffer, vote: number}>> {
+    const fields: Array<'publicKey' | 'vote' | 'votesWeight'> = ['publicKey'];
+    let sort: {vote?: 1|-1, votesWeight?: 1|-1, publicKey: 1|-1};
+    if (this.blocksModule.lastBlock.height < this.constants.dposv2.firstBlock) {
+      sort = {vote: -1, publicKey: 1};
+      fields.push('vote');
+    } else {
+      sort = {votesWeight: -1, publicKey: 1};
+      fields.push('votesWeight');
+    }
     const rows = await this.accountsModule.getAccounts({
       isDelegate: 1,
       limit     : this.slots.getDelegatesPoolSize(),
-      sort      : {vote: -1, publicKey: 1},
-    }, ['publicKey', 'vote']);
-    return rows.map((r) => ({publicKey: r.publicKey, vote: r.vote}));
+      sort,
+    }, fields);
+    return rows.map((r) => ({
+      publicKey: r.publicKey,
+      vote: typeof r.votesWeight !== 'undefined' ? r.votesWeight : r.vote,
+    }));
   }
 
   /**
