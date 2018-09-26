@@ -5,6 +5,7 @@ import { Body, Get, JsonController, Post, Put, QueryParams } from 'routing-contr
 import * as z_schema from 'z-schema';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { ResponseSchema, OpenAPI } from 'rc-openapi-gen'
 import { IAccountsModule, IDelegatesModule, ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
 import { AccountsModel } from '../models';
@@ -31,6 +32,11 @@ export class AccountsAPI {
   private appConfig: AppConfig;
 
   @Get('/')
+  @ResponseSchema('responses.account')
+  @OpenAPI({
+    summary: 'Get Account',
+    description: 'A really nice **Description** for Get Account'
+  })
   @ValidateSchema()
   public async getAccount(@SchemaValid(accountSchema.getAccount)
                           @QueryParams() query: { address?: string, publicKey?: publicKey }) {

@@ -1,0 +1,3098 @@
+{
+  "components": {
+    "schemas": {
+      "Buffer": {
+        "id": "Buffer",
+        "type": "string",
+        "format": "binary"
+      },
+      "CSV": {
+        "id": "CSV",
+        "type": "string",
+        "format": "csv"
+      },
+      "ID": {
+        "id": "ID",
+        "type": "string",
+        "format": "id",
+        "minLength": 1,
+        "maxLength": 20
+      },
+      "TransactionQuery": {
+        "id": "TransactionQuery",
+        "type": "object",
+        "properties": {
+          "transaction": {
+            "type": "object"
+          },
+          "transactions": {
+            "type": "array",
+            "maxItems": 10
+          }
+        }
+      },
+      "accounts.openAccount": {
+        "id": "accounts.openAccount",
+        "type": "object",
+        "properties": {
+          "secret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "secret"
+        ]
+      },
+      "accounts.getBalance": {
+        "id": "accounts.getBalance",
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "format": "address",
+            "minLength": 1,
+            "maxLength": 22
+          }
+        },
+        "required": [
+          "address"
+        ]
+      },
+      "accounts.getPublickey": {
+        "id": "accounts.getPublickey",
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "format": "address",
+            "minLength": 1,
+            "maxLength": 22
+          }
+        },
+        "required": [
+          "address"
+        ]
+      },
+      "accounts.generatePublickey": {
+        "id": "accounts.generatePublickey",
+        "type": "object",
+        "properties": {
+          "secret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "secret"
+        ]
+      },
+      "accounts.getDelegates": {
+        "id": "accounts.getDelegates",
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "format": "address",
+            "minLength": 1,
+            "maxLength": 22
+          }
+        },
+        "required": [
+          "address"
+        ]
+      },
+      "accounts.getDelegatesFee": {
+        "id": "accounts.getDelegatesFee",
+        "type": "object",
+        "properties": {
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "accounts.addDelegates": {
+        "id": "accounts.addDelegates",
+        "type": "object",
+        "properties": {
+          "secret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "publicKey": {
+            "type": "string",
+            "format": "publicKey"
+          },
+          "secondSecret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        }
+      },
+      "accounts.getAccount": {
+        "id": "accounts.getAccount",
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "format": "address",
+            "minLength": 1,
+            "maxLength": 22
+          },
+          "publicKey": {
+            "type": "string",
+            "format": "publicKey"
+          }
+        }
+      },
+      "accounts.top": {
+        "id": "accounts.top",
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "blocks.loadBlocksFromPeer": {
+        "id": "blocks.loadBlocksFromPeer",
+        "type": "array"
+      },
+      "blocks.getBlock": {
+        "id": "blocks.getBlock",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "blocks.getBlocks": {
+        "id": "blocks.getBlocks",
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "orderBy": {
+            "type": "string",
+            "enum": [
+              "height:asc",
+              "height:desc"
+            ]
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "generatorPublicKey": {
+            "type": "string",
+            "format": "publicKey"
+          },
+          "totalAmount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10999999991000000
+          },
+          "totalFee": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10999999991000000
+          },
+          "reward": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "previousBlock": {
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "blocks.getFees": {
+        "id": "blocks.getFees",
+        "type": "object",
+        "properties": {
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "blocks.getFee": {
+        "id": "blocks.getFee",
+        "type": "object",
+        "properties": {
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "blocks.getStatus": {
+        "id": "blocks.getStatus",
+        "type": "object",
+        "properties": {
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "blocks.getCommonBlock": {
+        "id": "blocks.getCommonBlock",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "previousBlock": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "id",
+          "previousBlock",
+          "height"
+        ]
+      },
+      "appCon": {
+        "id": "appCon",
+        "type": "object",
+        "properties": {
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "address": {
+            "type": "string",
+            "format": "ip"
+          },
+          "version": {
+            "type": "string",
+            "format": "version",
+            "minLength": 5,
+            "maxLength": 12
+          },
+          "fileLogLevel": {
+            "type": "string"
+          },
+          "logFileName": {
+            "type": "string"
+          },
+          "consoleLogLevel": {
+            "type": "string"
+          },
+          "trustProxy": {
+            "type": "boolean"
+          },
+          "cacheEnabled": {
+            "type": "boolean"
+          },
+          "db": {
+            "type": "object",
+            "properties": {
+              "host": {
+                "type": "string"
+              },
+              "port": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535
+              },
+              "database": {
+                "type": "string"
+              },
+              "user": {
+                "type": "string"
+              },
+              "password": {
+                "type": "string"
+              },
+              "poolSize": {
+                "type": "integer"
+              },
+              "poolIdleTimeout": {
+                "type": "integer"
+              },
+              "reapIntervalMillis": {
+                "type": "integer"
+              },
+              "logEvents": {
+                "type": "array"
+              }
+            },
+            "required": [
+              "host",
+              "port",
+              "database",
+              "user",
+              "password",
+              "poolSize",
+              "poolIdleTimeout",
+              "reapIntervalMillis",
+              "logEvents"
+            ]
+          },
+          "redis": {
+            "type": "object",
+            "properties": {
+              "host": {
+                "type": "string",
+                "format": "ip"
+              },
+              "port": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535
+              },
+              "db": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 15
+              },
+              "password": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "host",
+              "port",
+              "db",
+              "password"
+            ]
+          },
+          "api": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "access": {
+                "type": "object",
+                "properties": {
+                  "public": {
+                    "type": "boolean"
+                  },
+                  "whiteList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "public",
+                  "whiteList"
+                ]
+              },
+              "restrictedWhiteList": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "options": {
+                "type": "object",
+                "properties": {
+                  "limits": {
+                    "type": "object",
+                    "properties": {
+                      "max": {
+                        "type": "integer"
+                      },
+                      "delayMs": {
+                        "type": "integer"
+                      },
+                      "delayAfter": {
+                        "type": "integer"
+                      },
+                      "windowMs": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "max",
+                      "delayMs",
+                      "delayAfter",
+                      "windowMs"
+                    ]
+                  }
+                },
+                "required": [
+                  "limits"
+                ]
+              }
+            },
+            "required": [
+              "enabled",
+              "access",
+              "options",
+              "restrictedWhiteList"
+            ]
+          },
+          "peers": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "banTime": {
+                "type": "integer",
+                "minimum": 1000
+              },
+              "list": {
+                "type": "array"
+              },
+              "access": {
+                "type": "object",
+                "properties": {
+                  "blackList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "blackList"
+                ]
+              },
+              "options": {
+                "properties": {
+                  "limits": {
+                    "type": "object",
+                    "properties": {
+                      "max": {
+                        "type": "integer"
+                      },
+                      "delayMs": {
+                        "type": "integer"
+                      },
+                      "delayAfter": {
+                        "type": "integer"
+                      },
+                      "windowMs": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "max",
+                      "delayMs",
+                      "delayAfter",
+                      "windowMs"
+                    ]
+                  },
+                  "timeout": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "limits",
+                  "timeout"
+                ]
+              }
+            },
+            "required": [
+              "enabled",
+              "list",
+              "access",
+              "options"
+            ]
+          },
+          "broadcasts": {
+            "type": "object",
+            "properties": {
+              "broadcastInterval": {
+                "type": "integer",
+                "minimum": 1000,
+                "maximum": 60000
+              },
+              "broadcastLimit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "parallelLimit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "releaseLimit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 25
+              },
+              "relayLimit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "broadcastInterval",
+              "broadcastLimit",
+              "parallelLimit",
+              "releaseLimit",
+              "relayLimit"
+            ]
+          },
+          "transactions": {
+            "type": "object",
+            "maxTxsPerQueue": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 5000
+            },
+            "required": [
+              "maxTxsPerQueue"
+            ]
+          },
+          "forging": {
+            "type": "object",
+            "properties": {
+              "force": {
+                "type": "boolean"
+              },
+              "secret": {
+                "type": "array"
+              },
+              "access": {
+                "type": "object",
+                "properties": {
+                  "whiteList": {
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "whiteList"
+                ]
+              },
+              "transactionsPolling": {
+                "type": "boolean"
+              },
+              "pollingInterval": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "force",
+              "secret",
+              "access"
+            ]
+          },
+          "loading": {
+            "type": "object",
+            "properties": {
+              "verifyOnLoading": {
+                "type": "boolean"
+              },
+              "loadPerIteration": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5000
+              }
+            },
+            "required": [
+              "verifyOnLoading",
+              "loadPerIteration"
+            ]
+          },
+          "ssl": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "options": {
+                "type": "object",
+                "properties": {
+                  "port": {
+                    "type": "integer"
+                  },
+                  "address": {
+                    "type": "string",
+                    "format": "ip"
+                  },
+                  "key": {
+                    "type": "string"
+                  },
+                  "cert": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "port",
+                  "address",
+                  "key",
+                  "cert"
+                ]
+              }
+            },
+            "required": [
+              "enabled",
+              "options"
+            ]
+          },
+          "nethash": {
+            "type": "string",
+            "format": "hex"
+          }
+        },
+        "required": [
+          "port",
+          "address",
+          "version",
+          "fileLogLevel",
+          "logFileName",
+          "consoleLogLevel",
+          "trustProxy",
+          "db",
+          "api",
+          "peers",
+          "broadcasts",
+          "transactions",
+          "forging",
+          "loading",
+          "nethash",
+          "cacheEnabled",
+          "redis"
+        ]
+      },
+      "delegates.enableForging": {
+        "id": "delegates.enableForging",
+        "type": "object",
+        "properties": {
+          "secret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "publicKey": {
+            "type": "string",
+            "format": "publicKey"
+          }
+        },
+        "required": [
+          "secret"
+        ]
+      },
+      "delegates.disableForging": {
+        "id": "delegates.disableForging",
+        "type": "object",
+        "properties": {
+          "secret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "publicKey": {
+            "type": "string",
+            "format": "publicKey"
+          }
+        },
+        "required": [
+          "secret"
+        ]
+      },
+      "delegates.forgingStatus": {
+        "id": "delegates.forgingStatus",
+        "type": "object",
+        "properties": {
+          "publicKey": {
+            "type": "string",
+            "format": "publicKey"
+          }
+        }
+      },
+      "delegates.getDelegate": {
+        "id": "delegates.getDelegate",
+        "type": "object",
+        "properties": {
+          "publicKey": {
+            "type": "string",
+            "format": "publicKey"
+          },
+          "username": {
+            "type": "string",
+            "format": "username",
+            "minLength": 1,
+            "maxLength": 20
+          }
+        }
+      },
+      "delegates.search": {
+        "id": "delegates.search",
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        },
+        "required": [
+          "q"
+        ]
+      },
+      "delegates.getVoters": {
+        "id": "delegates.getVoters",
+        "type": "object",
+        "properties": {
+          "publicKey": {
+            "type": "string",
+            "format": "publicKey"
+          }
+        },
+        "required": [
+          "publicKey"
+        ]
+      },
+      "delegates.getDelegates": {
+        "id": "delegates.getDelegates",
+        "type": "object",
+        "properties": {
+          "orderBy": {
+            "type": "string",
+            "enum": [
+              "approval:desc",
+              "approval:asc",
+              "productivity:desc",
+              "productivity:asc",
+              "rank:desc",
+              "rank:asc",
+              "vote:desc",
+              "vote:asc",
+              "address:desc",
+              "address:asc",
+              "username:desc",
+              "username:asc",
+              "publicKey:desc",
+              "publicKey:asc"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 101
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "delegates.getFee": {
+        "id": "delegates.getFee",
+        "type": "object",
+        "properties": {
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "delegates.getForgedByAccount": {
+        "id": "delegates.getForgedByAccount",
+        "type": "object",
+        "properties": {
+          "generatorPublicKey": {
+            "type": "string",
+            "format": "publicKey"
+          },
+          "start": {
+            "type": "integer"
+          },
+          "end": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "generatorPublicKey"
+        ]
+      },
+      "delegates.addDelegate": {
+        "id": "delegates.addDelegate",
+        "type": "object",
+        "properties": {
+          "secret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "publicKey": {
+            "type": "string",
+            "format": "publicKey"
+          },
+          "secondSecret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "username": {
+            "type": "string",
+            "format": "username",
+            "minLength": 1,
+            "maxLength": 20
+          }
+        },
+        "required": [
+          "secret"
+        ]
+      },
+      "loader.loadSignatures": {
+        "id": "loader.loadSignatures",
+        "type": "object",
+        "properties": {
+          "signatures": {
+            "type": "array",
+            "uniqueItems": true,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "signatures"
+        ]
+      },
+      "loader.loadTransactions": {
+        "id": "loader.loadTransactions",
+        "type": "object",
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "uniqueItems": true,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "transactions"
+        ]
+      },
+      "multisignatures.getAccounts": {
+        "id": "multisignatures.getAccounts",
+        "type": "object",
+        "properties": {
+          "publicKey": {
+            "type": "string",
+            "format": "publicKey"
+          }
+        },
+        "required": [
+          "publicKey"
+        ]
+      },
+      "multisignatures.pending": {
+        "id": "multisignatures.pending",
+        "type": "object",
+        "properties": {
+          "publicKey": {
+            "type": "string",
+            "format": "publicKey"
+          }
+        },
+        "required": [
+          "publicKey"
+        ]
+      },
+      "multisignatures.sign": {
+        "id": "multisignatures.sign",
+        "type": "object",
+        "properties": {
+          "secret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "secondSecret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "publicKey": {
+            "type": "string",
+            "format": "publicKey"
+          },
+          "transactionId": {
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          }
+        },
+        "required": [
+          "transactionId",
+          "secret"
+        ]
+      },
+      "multisignatures.addMultisignature": {
+        "id": "multisignatures.addMultisignature",
+        "type": "object",
+        "properties": {
+          "secret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "publicKey": {
+            "type": "string",
+            "format": "publicKey"
+          },
+          "secondSecret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "min": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 15
+          },
+          "lifetime": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 72
+          },
+          "keysgroup": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 15
+          }
+        },
+        "required": [
+          "min",
+          "lifetime",
+          "keysgroup",
+          "secret"
+        ]
+      },
+      "undefined": {
+        "peers": {
+          "id": "peers.discover.peers",
+          "type": "object",
+          "properties": {
+            "peers": {
+              "type": "array"
+            }
+          },
+          "required": [
+            "peers"
+          ]
+        },
+        "peer": {
+          "id": "peers.discover.peer",
+          "type": "object",
+          "properties": {
+            "ip": {
+              "type": "string",
+              "format": "ip"
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            "state": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "os": {
+              "type": "string",
+              "format": "os",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "version": {
+              "type": "string",
+              "format": "version",
+              "minLength": 5,
+              "maxLength": 12
+            },
+            "broadhash": {
+              "type": "string",
+              "format": "hex"
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "ip",
+            "port"
+          ]
+        }
+      },
+      "peer.getPeers": {
+        "id": "peer.getPeers",
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string",
+            "format": "ip"
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "state": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "os": {
+            "type": "string",
+            "format": "os",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "version": {
+            "type": "string",
+            "format": "version",
+            "minLength": 5,
+            "maxLength": 12
+          },
+          "broadhash": {
+            "type": "string",
+            "format": "hex"
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "orderBy": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "peer.getPeer": {
+        "id": "peer.getPeer",
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string",
+            "format": "ip"
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          }
+        },
+        "required": [
+          "ip",
+          "port"
+        ]
+      },
+      "peer.getMinVersion": {
+        "id": "peer.getMinVersion",
+        "type": "object",
+        "properties": {
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "responses.account": {
+        "id": "responses.account",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "account": {
+            "type": "object",
+            "properties": {
+              "address": {
+                "type": "string"
+              },
+              "balance": {
+                "type": "number"
+              },
+              "multisignatures": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "publicKey": {
+                "type": "string",
+                "format": "binary"
+              },
+              "secondPublicKey": {
+                "type": "string",
+                "format": "binary"
+              },
+              "secondSignature": {
+                "type": "boolean"
+              },
+              "u_multisignatures": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "unconfirmedBalance": {
+                "type": "number"
+              },
+              "unconfirmedSignature": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "example": {
+          "success": true,
+          "account": {
+            "address": "0xabc1234...",
+            "balance": 20,
+            "multisignatures": [],
+            "publicKey": "0xdef789...",
+            "unconfirmedBalance": 21,
+            "unconfirmedSignature": false,
+            "secondSignature": false,
+            "u_multisignatures": []
+          }
+        }
+      },
+      "signatures.getFee": {
+        "id": "signatures.getFee",
+        "type": "object",
+        "properties": {
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "transactions.getTransactions": {
+        "id": "transactions.getTransactions",
+        "type": "object",
+        "properties": {
+          "and:blockId": {
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "blockId": {
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "and:type": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "type": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "and:senderId": {
+            "type": "string",
+            "format": "address",
+            "minLength": 1,
+            "maxLength": 22
+          },
+          "senderId": {
+            "type": "string",
+            "format": "address",
+            "minLength": 1,
+            "maxLength": 22
+          },
+          "and:senderPublicKey": {
+            "type": "string",
+            "format": "publicKey"
+          },
+          "senderPublicKey": {
+            "type": "string",
+            "format": "publicKey"
+          },
+          "and:recipientId": {
+            "type": "string",
+            "format": "address",
+            "minLength": 1,
+            "maxLength": 22
+          },
+          "recipientId": {
+            "type": "string",
+            "format": "address",
+            "minLength": 1,
+            "maxLength": 22
+          },
+          "senderPublicKeys": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "format": "publicKey"
+            }
+          },
+          "senderIds": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "format": "address",
+              "minLength": 1,
+              "maxLength": 22
+            }
+          },
+          "recipientIds": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "format": "address",
+              "minLength": 1,
+              "maxLength": 22
+            }
+          },
+          "and:fromHeight": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "fromHeight": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "and:toHeight": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "toHeight": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "and:fromTimestamp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "fromTimestamp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "and:toTimestamp": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "toTimestamp": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "and:fromUnixTime": {
+            "type": "integer",
+            "minimum": 1464109200
+          },
+          "fromUnixTime": {
+            "type": "integer",
+            "minimum": 1464109200
+          },
+          "and:toUnixTime": {
+            "type": "integer",
+            "minimum": 1464109201
+          },
+          "toUnixTime": {
+            "type": "integer",
+            "minimum": 1464109201
+          },
+          "and:minAmount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minAmount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "and:maxAmount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "maxAmount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "and:minConfirmations": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minConfirmations": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "orderBy": {
+            "type": "string",
+            "enum": [
+              "height:desc",
+              "height:asc",
+              "timestamp:desc",
+              "timestamp:asc",
+              "amount:desc",
+              "amount:asc"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "transactions.getTransaction": {
+        "id": "transactions.getTransaction",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "transactions.getPooledTransaction": {
+        "id": "transactions.getPooledTransaction",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "transactions.getPooledTransactions": {
+        "id": "transactions.getPooledTransactions",
+        "type": "object",
+        "properties": {
+          "senderPublicKey": {
+            "type": "string",
+            "format": "publicKey"
+          },
+          "address": {
+            "type": "string",
+            "format": "address",
+            "minLength": 1,
+            "maxLength": 22
+          }
+        }
+      },
+      "transactions.addTransactions": {
+        "id": "transactions.addTransactions",
+        "type": "object",
+        "properties": {
+          "secret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10999999991000000
+          },
+          "recipientId": {
+            "type": "string",
+            "format": "address",
+            "minLength": 1,
+            "maxLength": 22
+          },
+          "publicKey": {
+            "type": "string",
+            "format": "publicKey"
+          },
+          "secondSecret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "multisigAccountPublicKey": {
+            "type": "string",
+            "format": "publicKey"
+          }
+        },
+        "required": [
+          "secret",
+          "amount",
+          "recipientId"
+        ]
+      },
+      "transport.headers": {
+        "id": "transport.headers",
+        "type": "object",
+        "properties": {
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "os": {
+            "type": "string",
+            "format": "os",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "version": {
+            "type": "string",
+            "format": "version",
+            "minLength": 5,
+            "maxLength": 12
+          },
+          "nethash": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "broadhash": {
+            "type": "string",
+            "format": "hex"
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "nonce": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 36
+          },
+          "firewalled": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false"
+            ]
+          }
+        },
+        "required": [
+          "port",
+          "version",
+          "nethash"
+        ]
+      },
+      "transport.commonBlock": {
+        "id": "transport.commonBlock",
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "string",
+            "format": "csv"
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      },
+      "transport.blocks": {
+        "id": "transport.blocks",
+        "type": "object",
+        "properties": {
+          "lastBlockId": {
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          }
+        }
+      },
+      "transport.transactions": {
+        "id": "transport.transactions",
+        "type": "object",
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 25
+          }
+        },
+        "required": [
+          "transactions"
+        ]
+      },
+      "transport.signatures": {
+        "id": "transport.signatures",
+        "type": "object",
+        "properties": {
+          "signatures": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 25
+          }
+        },
+        "required": [
+          "signatures"
+        ]
+      },
+      "transport.signature": {
+        "id": "transport.signature",
+        "type": "object",
+        "properties": {
+          "transaction": {
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "signature": {
+            "type": "string",
+            "format": "signature"
+          }
+        },
+        "required": [
+          "transaction",
+          "signature"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "RISE Node",
+    "version": "1.2.0",
+    "description": "## Rise-node version 1.2.0\n\n# RISE\n[![Build Status](https://travis-ci.org/RiseVision/rise-node.svg?branch=development)](https://travis-ci.org/RiseVision/rise-node) [![Coverage Status](https://coveralls.io/repos/github/RiseVision/rise-node/badge.svg?branch=development)](https://coveralls.io/github/RiseVision/rise-node?branch=development) \n## Installation\n\nAn automatic install script for Ubuntu is available.\n\n### Wiki \n\nFor detailed information on node installation and management please refer to the [wiki of this repository](https://github.com/RiseVision/rise-node/wiki).\n\n### Quick start Rise installation (Mainnet)\n\nFirst, perform some basic checks:\n\n- MAKE SURE NOT TO RUN AS ROOT OR WITH SUDO\n- Your user will need sudo privileges, though\n- PostgresSQL must **not** be installed on your server\n\nThen go home:\n\n```\ncd $HOME\n```\n\nDownload the installer:\n\n```\nwget https://raw.githubusercontent.com/RiseVision/rise-build/master/scripts/install.sh\n```\n\nInstall Rise:\n```\nbash install.sh install -r mainnet -u https://downloads.rise.vision/core/mainnet/latest.tar.gz\n```\n\nThe installer will start the node automatically if installation was successful.\n\n(Optional) Fast sync from a snapshot\n\n```\ncd rise\nwget https://downloads.rise.vision/snapshots/mainnet/latest -O latestsnap.gz\n./manager.sh restoreBackup latestsnap.gz\n```\n\n## Basic node management\n\nInstaller will create a `rise` folder in your homedir. Make sure to `cd` to this dir when managing your node.\n\n\nCheck the status of your node with:\n```\n./manager.sh status\n```\n\nStop node with: \n```\n./manager.sh stop node\n```\n\nInsert your passphrase so you can forge:\n```\nnano etc/node_config.json\n```\n\nAnd change this section to include your passphrase:\n```\n{\n  \"fileLogLevel\": \"error\",\n  \"forging\": {\n    \"secret\": [ \"my secret\" ],\n    \"access\": {\n      \"whiteList\": [ \"127.0.0.1\" ]\n    }\n  }\n}\n```\n\nAnd finally restart your node to apply the changes:\n```\n./manager.sh reload node\n```\n\n### Quick start Rise installation (Testnet) \nThe same as above, only the install step is different:\n```\nbash install.sh install -r testnet -u https://downloads.rise.vision/core/testnet/latest.tar.gz\n```\n\n\n(Optional) Fast sync from a snapshot\n\n```\nwget https://downloads.rise.vision/snapshots/testnet/latest -O latestsnap.gz\n./manager.sh restoreBackup latestsnap.gz\n```\n\n## Authors\n- Andrea B. <vekexasia+crypto@gmail.com>\n- Jan <lepetitjan@icloud.com>\n- Mariusz Serek <mariusz@serek.net>\n- Goldeneye (Shift Team)\n- Ralfs (Shift Team)\n- Joey <shiftcurrency@gmail.com>\n- Boris Povod <boris@crypti.me>\n- Pavel Nekrasov <landgraf.paul@gmail.com>\n- Sebastian Stupurac <stupurac.sebastian@gmail.com>\n- Oliver Beddows <oliver@lightcurve.io>\n- Isabella Dell <isabella@lightcurve.io>\n- Marius Serek <mariusz@serek.net>\n- Maciej Baj <maciej@lightcurve.io>\n\n## License\n\nCopyright © 2017 Rise<br>\nCopyright © 2016-2017 Shift<br>  \nCopyright © 2016-2017 Lisk Foundation\n\nThis program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.\n\nYou should have received a copy of the [GNU General Public License](https://github.com/RiseVision/rise-node/src/master/LICENSE) along with this program.  If not, see <http://www.gnu.org/licenses/>.\n\n***\n\nThis program also incorporates work previously released with lisk `0.7.0` (and earlier) versions under the [MIT License](https://opensource.org/licenses/MIT). To comply with the requirements of that license, the following permission notice, applicable to those parts of the code only, is included below:\n\nCopyright © 2017 Rise<br>\nCopyright © 2016-2017 Shift<br>\nCopyright © 2016-2017 Lisk Foundation<br>  \nCopyright © 2015 Crypti\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n"
+  },
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/accounts/": {
+      "get": {
+        "operationId": "AccountsAPI.getAccount",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "accounts.getAccount",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/accounts.getAccount"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.account"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Get Account",
+        "tags": [
+          "Accounts API"
+        ],
+        "description": "A really nice **Description** for Get Account",
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.accounts\n  .getAccount({ address: '0xabc1213...' })\n  .then(function(res) {\n    console.log(res.balance) // 20\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ]
+      }
+    },
+    "/api/accounts/getBalance": {
+      "get": {
+        "operationId": "AccountsAPI.getBalance",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "accounts.getBalance",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/accounts.getBalance"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get balance",
+        "tags": [
+          "Accounts API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/accounts/getPublicKey": {
+      "get": {
+        "operationId": "AccountsAPI.getPublickey",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "accounts.getPublickey",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/accounts.getPublickey"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get publickey",
+        "tags": [
+          "Accounts API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/accounts/delegates": {
+      "get": {
+        "operationId": "AccountsAPI.getDelegates",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "accounts.getDelegates",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/accounts.getDelegates"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get delegates",
+        "tags": [
+          "Accounts API"
+        ],
+        "x-code-samples": []
+      },
+      "put": {
+        "operationId": "AccountsAPI.addDelegate",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Add delegate",
+        "tags": [
+          "Accounts API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/accounts/delegates/fee": {
+      "get": {
+        "operationId": "AccountsAPI.getDelegatesFee",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "accounts.getDelegatesFee",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/accounts.getDelegatesFee"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get delegates fee",
+        "tags": [
+          "Accounts API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/accounts/top": {
+      "get": {
+        "operationId": "AccountsAPI.topAccounts",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "accounts.top",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/accounts.top"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Top accounts",
+        "tags": [
+          "Accounts API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/accounts/open": {
+      "post": {
+        "operationId": "AccountsAPI.open",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/accounts.openAccount"
+              }
+            }
+          },
+          "description": "accounts.openAccount",
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Open",
+        "tags": [
+          "Accounts API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/accounts/generatePublicKey": {
+      "post": {
+        "operationId": "AccountsAPI.generatePublicKey",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Generate public key",
+        "tags": [
+          "Accounts API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/blocks/": {
+      "get": {
+        "operationId": "BlocksAPI.getBlocks",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "blocks.getBlocks",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/blocks.getBlocks"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get blocks",
+        "tags": [
+          "Blocks API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/blocks/get": {
+      "get": {
+        "operationId": "BlocksAPI.getBlock",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "blocks.getBlock",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/blocks.getBlock"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get block",
+        "tags": [
+          "Blocks API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/blocks/getHeight": {
+      "get": {
+        "operationId": "BlocksAPI.getHeight",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get height",
+        "tags": [
+          "Blocks API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/blocks/getBroadhash": {
+      "get": {
+        "operationId": "BlocksAPI.getBroadHash",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get broad hash",
+        "tags": [
+          "Blocks API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/blocks/getEpoch": {
+      "get": {
+        "operationId": "BlocksAPI.getEpoch",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get epoch",
+        "tags": [
+          "Blocks API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/blocks/getFee": {
+      "get": {
+        "operationId": "BlocksAPI.getFee",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "blocks.getFee",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/blocks.getFee"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get fee",
+        "tags": [
+          "Blocks API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/blocks/getFees": {
+      "get": {
+        "operationId": "BlocksAPI.getFees",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "blocks.getFees",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/blocks.getFees"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get fees",
+        "tags": [
+          "Blocks API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/blocks/getNethash": {
+      "get": {
+        "operationId": "BlocksAPI.getNethash",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get nethash",
+        "tags": [
+          "Blocks API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/blocks/getMilestone": {
+      "get": {
+        "operationId": "BlocksAPI.getMilestone",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get milestone",
+        "tags": [
+          "Blocks API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/blocks/getReward": {
+      "get": {
+        "operationId": "BlocksAPI.getReward",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get reward",
+        "tags": [
+          "Blocks API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/blocks/getSupply": {
+      "get": {
+        "operationId": "BlocksAPI.getSupply",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get supply",
+        "tags": [
+          "Blocks API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/blocks/getStatus": {
+      "get": {
+        "operationId": "BlocksAPI.getStatus",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get status",
+        "tags": [
+          "Blocks API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/delegates/": {
+      "get": {
+        "operationId": "DelegatesAPI.getDelegates",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "delegates.getDelegates",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/delegates.getDelegates"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get delegates",
+        "tags": [
+          "Delegates API"
+        ],
+        "x-code-samples": []
+      },
+      "put": {
+        "operationId": "DelegatesAPI.createDelegate",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Create delegate",
+        "tags": [
+          "Delegates API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/delegates/fee": {
+      "get": {
+        "operationId": "DelegatesAPI.getFee",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "delegates.getFee",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/delegates.getFee"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get fee",
+        "tags": [
+          "Delegates API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/delegates/forging/getForgedByAccount": {
+      "get": {
+        "operationId": "DelegatesAPI.getForgedByAccount",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "delegates.getForgedByAccount",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/delegates.getForgedByAccount"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get forged by account",
+        "tags": [
+          "Delegates API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/delegates/get": {
+      "get": {
+        "operationId": "DelegatesAPI.getDelegate",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "delegates.getDelegate",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/delegates.getDelegate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get delegate",
+        "tags": [
+          "Delegates API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/delegates/voters": {
+      "get": {
+        "operationId": "DelegatesAPI.getVoters",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "delegates.getVoters",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/delegates.getVoters"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get voters",
+        "tags": [
+          "Delegates API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/delegates/search": {
+      "get": {
+        "operationId": "DelegatesAPI.search",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "delegates.search",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/delegates.search"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Search",
+        "tags": [
+          "Delegates API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/delegates/count": {
+      "get": {
+        "operationId": "DelegatesAPI.count",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Count",
+        "tags": [
+          "Delegates API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/delegates/getNextForgers": {
+      "get": {
+        "operationId": "DelegatesAPI.getNextForgers",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get next forgers",
+        "tags": [
+          "Delegates API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/delegates/forging/status": {
+      "get": {
+        "operationId": "DelegatesAPI.getForgingStatus",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "delegates.forgingStatus",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/delegates.forgingStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get forging status",
+        "tags": [
+          "Delegates API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/delegates/forging/enable": {
+      "post": {
+        "operationId": "DelegatesAPI.forgingEnable",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/delegates.disableForging"
+              }
+            }
+          },
+          "description": "delegates.disableForging",
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Forging enable",
+        "tags": [
+          "Delegates API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/delegates/forging/disable": {
+      "post": {
+        "operationId": "DelegatesAPI.forgingDisable",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/delegates.disableForging"
+              }
+            }
+          },
+          "description": "delegates.disableForging",
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Forging disable",
+        "tags": [
+          "Delegates API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/loader/status/": {
+      "get": {
+        "operationId": "LoaderAPI.getStatus",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get status",
+        "tags": [
+          "Loader API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/loader/status/sync": {
+      "get": {
+        "operationId": "LoaderAPI.getStatusSync",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get status sync",
+        "tags": [
+          "Loader API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/loader/status/ping": {
+      "get": {
+        "operationId": "LoaderAPI.ping",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Ping",
+        "tags": [
+          "Loader API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/multisignatures/accounts": {
+      "get": {
+        "operationId": "MultisignatureAPI.getAccounts",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "multisignatures.getAccounts",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/multisignatures.getAccounts"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get accounts",
+        "tags": [
+          "Multisignature API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/multisignatures/pending": {
+      "get": {
+        "operationId": "MultisignatureAPI.getPending",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "multisignatures.pending",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/multisignatures.pending"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get pending",
+        "tags": [
+          "Multisignature API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/multisignatures/sign": {
+      "post": {
+        "operationId": "MultisignatureAPI.sign",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Sign",
+        "tags": [
+          "Multisignature API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/multisignatures/": {
+      "put": {
+        "operationId": "MultisignatureAPI.addMultisignature",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Add multisignature",
+        "tags": [
+          "Multisignature API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/peers/": {
+      "get": {
+        "operationId": "PeersAPI.getPeers",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "peer.getPeers",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/peer.getPeers"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get peers",
+        "tags": [
+          "Peers API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/peers/get": {
+      "get": {
+        "operationId": "PeersAPI.getPeer",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "peer.getPeer",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/peer.getPeer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get peer",
+        "tags": [
+          "Peers API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/peers/count": {
+      "get": {
+        "operationId": "PeersAPI.count",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Count",
+        "tags": [
+          "Peers API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/peers/version": {
+      "get": {
+        "operationId": "PeersAPI.version",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Version",
+        "tags": [
+          "Peers API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/signatures/fee": {
+      "get": {
+        "operationId": "SignaturesAPI.fees",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "signatures.getFee",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/signatures.getFee"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Fees",
+        "tags": [
+          "Signatures API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/api/signatures/": {
+      "put": {
+        "operationId": "SignaturesAPI.addSignature",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Add signature",
+        "tags": [
+          "Signatures API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/peer/height": {
+      "get": {
+        "operationId": "TransportAPI.height",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Height",
+        "tags": [
+          "Transport API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/peer/ping": {
+      "get": {
+        "operationId": "TransportAPI.ping",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Ping",
+        "tags": [
+          "Transport API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/peer/list": {
+      "get": {
+        "operationId": "TransportAPI.list",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "List",
+        "tags": [
+          "Transport API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/peer/signatures": {
+      "get": {
+        "operationId": "TransportAPI.signatures",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Signatures",
+        "tags": [
+          "Transport API"
+        ],
+        "x-code-samples": []
+      },
+      "post": {
+        "operationId": "TransportAPI.postSignatures",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Post signatures",
+        "tags": [
+          "Transport API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/peer/transactions": {
+      "get": {
+        "operationId": "TransportAPI.transactions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Transactions",
+        "tags": [
+          "Transport API"
+        ],
+        "x-code-samples": []
+      },
+      "post": {
+        "operationId": "TransportAPI.postTransactions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Post transactions",
+        "tags": [
+          "Transport API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/peer/blocks/common": {
+      "get": {
+        "operationId": "TransportAPI.getBlocksCommon",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "ids",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CSV"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get blocks common",
+        "tags": [
+          "Transport API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/peer/blocks": {
+      "post": {
+        "operationId": "TransportAPI.postBlock",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Post block",
+        "tags": [
+          "Transport API"
+        ],
+        "x-code-samples": []
+      },
+      "get": {
+        "operationId": "TransportAPI.getBlocks",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "lastBlockId",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get blocks",
+        "tags": [
+          "Transport API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/v2/peer/list": {
+      "get": {
+        "operationId": "TransportV2API.list",
+        "responses": {
+          "200": {
+            "content": {
+              "text/html; charset=utf-8": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "List",
+        "tags": [
+          "Transport V 2 API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/v2/peer/signatures": {
+      "get": {
+        "operationId": "TransportV2API.signatures",
+        "responses": {
+          "200": {
+            "content": {
+              "text/html; charset=utf-8": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Signatures",
+        "tags": [
+          "Transport V 2 API"
+        ],
+        "x-code-samples": []
+      },
+      "post": {
+        "operationId": "TransportV2API.postSignatures",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Buffer"
+              }
+            }
+          },
+          "description": "Buffer",
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/html; charset=utf-8": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Post signatures",
+        "tags": [
+          "Transport V 2 API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/v2/peer/transactions": {
+      "get": {
+        "operationId": "TransportV2API.transactions",
+        "responses": {
+          "200": {
+            "content": {
+              "text/html; charset=utf-8": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Transactions",
+        "tags": [
+          "Transport V 2 API"
+        ],
+        "x-code-samples": []
+      },
+      "post": {
+        "operationId": "TransportV2API.postTransactions",
+        "responses": {
+          "200": {
+            "content": {
+              "text/html; charset=utf-8": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Post transactions",
+        "tags": [
+          "Transport V 2 API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/v2/peer/blocks/common": {
+      "get": {
+        "operationId": "TransportV2API.getBlocksCommon",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "ids",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CSV"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html; charset=utf-8": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get blocks common",
+        "tags": [
+          "Transport V 2 API"
+        ],
+        "x-code-samples": []
+      }
+    },
+    "/v2/peer/blocks": {
+      "post": {
+        "operationId": "TransportV2API.postBlock",
+        "responses": {
+          "200": {
+            "content": {
+              "text/html; charset=utf-8": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Post block",
+        "tags": [
+          "Transport V 2 API"
+        ],
+        "x-code-samples": []
+      },
+      "get": {
+        "operationId": "TransportV2API.getBlocks",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "lastBlockId",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html; charset=utf-8": {}
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "Get blocks",
+        "tags": [
+          "Transport V 2 API"
+        ],
+        "x-code-samples": []
+      }
+    }
+  }
+}
