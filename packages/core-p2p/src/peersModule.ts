@@ -1,4 +1,4 @@
-import { IAppState, ILogger, IPeersModel, Symbols } from '@risevision/core-interfaces';
+import { IAppState, IBlocksModule, ILogger, IPeersModel, ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { AppConfig, ConstantsType, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
@@ -36,7 +36,9 @@ export class PeersModule implements IPeersModule {
 
   // Modules
   @inject(Symbols.modules.system)
-  private systemModule;
+  private systemModule: ISystemModule;
+  @inject(Symbols.modules.blocks)
+  private blocksModule: IBlocksModule;
 
   @inject(ModelSymbols.model)
   @named(p2pSymbols.model)
@@ -54,6 +56,62 @@ export class PeersModule implements IPeersModule {
   public async updateConsensus() {
     await this.getPeers({limit: this.constants.maxPeers});
     return this.appState.get('node.consensus');
+  }
+
+  /**
+   * Given a list of peers (with associated blockchain height), we find a list
+   * of good peers (likely to sync with), then perform a histogram cut, removing
+   * peers far from the most common observed height. This is not as easy as it
+   * sounds, since the histogram has likely been made accross several blocks,
+   * therefore need to aggregate).
+   * Gets the list of good peers.
+   */
+  public findGoodPeers(peers: Peer[]): {
+    height: number, peers: Peer[]
+  } {
+    const lastBlockHeight: number = this.blocksModule.lastBlock.height;
+
+    this.logger.trace('Good peers - received', { count: peers.length });
+
+    // Removing unreachable peers or heights below last block height
+    peers = peers.filter((p) => p !== null && p.height >= lastBlockHeight);
+
+    this.logger.trace('Good peers - filtered', { count: peers.length });
+
+    // No peers found
+    if (peers.length === 0) {
+      return { height: 0, peers: [] };
+    } else {
+      // Ordering the peers with descending height
+      peers.sort((a, b) => b.height - a.height);
+
+      const histogram = {};
+      let max         = 0;
+      let height;
+
+      // Aggregating height by 2. TODO: To be changed if node latency increases?
+      const aggregation = 2;
+
+      // Histogram calculation, together with histogram maximum
+      for (const peer of peers) {
+        const val      = Math.floor(peer.height / aggregation) * aggregation;
+        histogram[val] = (histogram[val] ? histogram[val] : 0) + 1;
+
+        if (histogram[val] > max) {
+          max    = histogram[val];
+          height = val;
+        }
+      }
+
+      // Performing histogram cut of peers too far from histogram maximum
+      const peerObjs = peers
+        .filter((peer) => peer && Math.abs(height - peer.height) < aggregation + 1);
+
+      this.logger.trace('Good peers - accepted', { count: peerObjs.length });
+      this.logger.debug('Good peers', peerObjs.map((p) => p.string));
+
+      return { height, peers: peerObjs };
+    }
   }
 
   public async getPeers(params: { limit?: number, broadhash?: string }): Promise<Peer[]> {

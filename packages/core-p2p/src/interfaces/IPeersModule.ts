@@ -29,4 +29,15 @@ export interface IPeersModule {
   getPeers(params: { limit?: number, broadhash?: string }): Promise<Peer[]>;
 
   updateConsensus(): Promise<number>;
+
+  /**
+   * Given a list of peers (with associated blockchain height), we find a list
+   * of good peers (likely to sync with), then perform a histogram cut, removing
+   * peers far from the most common observed height. This is not as easy as it
+   * sounds, since the histogram has likely been made accross several blocks,
+   * therefore need to aggregate).
+   * Gets the list of good peers.
+   */
+  findGoodPeers(peers: Peer[]): { height: number, peers: Peer[]};
+
 }

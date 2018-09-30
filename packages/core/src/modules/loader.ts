@@ -20,6 +20,8 @@ import {
   ITransactionsModule,
   Symbols
 } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
+import { BroadcasterLogic, IPeersModule, Peer } from '@risevision/core-p2p';
 import {
   AppConfig,
   ConstantsType,
@@ -28,18 +30,17 @@ import {
 } from '@risevision/core-types';
 import { wait, WrapInDefaultSequence } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
+import { WordPressHookSystem } from 'mangiafuoco';
 import * as promiseRetry from 'promise-retry';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import SocketIO from 'socket.io';
 import z_schema from 'z-schema';
-import { ModelSymbols } from '@risevision/core-models';
-import { WordPressHookSystem } from 'mangiafuoco';
 import sql from '../sql/loader';
 
 import Timer = NodeJS.Timer;
 import { OnBlockchainReady, OnSyncRequested, RecreateAccountsTables, WhatToSync } from '../hooks';
-import { BroadcasterLogic, Peer, PeersModule } from '@risevision/core-p2p';
+
 
 const loaderSchema = require('../../schema/loader.json');
 
@@ -64,9 +65,6 @@ export class LoaderModule implements ILoaderModule {
   @inject(Symbols.generic.hookSystem)
   private hookSystem: WordPressHookSystem;
 
-  // Helpers
-  // @inject(Symbols.helpers.bus)
-  // private bus: Bus;
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
   @inject(Symbols.helpers.jobsQueue)
@@ -99,18 +97,12 @@ export class LoaderModule implements ILoaderModule {
   private blocksProcessModule: BlocksModuleProcess;
   @inject(BlocksSymbols.modules.utils)
   private blocksUtilsModule: BlocksModuleUtils;
-  // @inject(BlocksSymbols.modules.verify)
-  // private blocksVerifyModule: BlocksModuleVerify;
-  // @inject(Symbols.modules.multisignatures)
-  // private multisigModule: IMultisignaturesModule;
   @inject(Symbols.modules.peers)
-  private peersModule: PeersModule;
+  private peersModule: IPeersModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
-  // @inject(Symbols.modules.transport)
-  // private transportModule: ITransportModule;
 
   // Models
   @inject(ModelSymbols.model)
@@ -119,9 +111,6 @@ export class LoaderModule implements ILoaderModule {
   @inject(ModelSymbols.model)
   @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
-  //
-  // @inject(TXSymbols.p2p.getTransactions)
-  // private gtFactory: RequestFactoryType<void, GetTransactionsRequest>;
 
   @postConstruct()
   public initialize() {
@@ -137,7 +126,7 @@ export class LoaderModule implements ILoaderModule {
       Math.abs(this.network.height - this.blocksModule.lastBlock.height) === 1)
     ) {
       const { peers } = await this.peersModule.list({});
-      this.network    = this.findGoodPeers(peers);
+      this.network    = this.peersModule.findGoodPeers(peers);
     }
     return this.network;
   }
@@ -329,63 +318,6 @@ export class LoaderModule implements ILoaderModule {
       }
     }
 
-  }
-
-  /**
-   * Given a list of peers (with associated blockchain height), we find a list
-   * of good peers (likely to sync with), then perform a histogram cut, removing
-   * peers far from the most common observed height. This is not as easy as it
-   * sounds, since the histogram has likely been made accross several blocks,
-   * therefore need to aggregate).
-   * Gets the list of good peers.
-   * TODO: Move to p2p
-   */
-  private findGoodPeers(peers: Peer[]): {
-    height: number, peers: Peer[]
-  } {
-    const lastBlockHeight: number = this.blocksModule.lastBlock.height;
-
-    this.logger.trace('Good peers - received', { count: peers.length });
-
-    // Removing unreachable peers or heights below last block height
-    peers = peers.filter((p) => p !== null && p.height >= lastBlockHeight);
-
-    this.logger.trace('Good peers - filtered', { count: peers.length });
-
-    // No peers found
-    if (peers.length === 0) {
-      return { height: 0, peers: [] };
-    } else {
-      // Ordering the peers with descending height
-      peers.sort((a, b) => b.height - a.height);
-
-      const histogram = {};
-      let max         = 0;
-      let height;
-
-      // Aggregating height by 2. TODO: To be changed if node latency increases?
-      const aggregation = 2;
-
-      // Histogram calculation, together with histogram maximum
-      for (const peer of peers) {
-        const val      = Math.floor(peer.height / aggregation) * aggregation;
-        histogram[val] = (histogram[val] ? histogram[val] : 0) + 1;
-
-        if (histogram[val] > max) {
-          max    = histogram[val];
-          height = val;
-        }
-      }
-
-      // Performing histogram cut of peers too far from histogram maximum
-      const peerObjs = peers
-        .filter((peer) => peer && Math.abs(height - peer.height) < aggregation + 1);
-
-      this.logger.trace('Good peers - accepted', { count: peerObjs.length });
-      this.logger.debug('Good peers', peerObjs.map((p) => p.string));
-
-      return { height, peers: peerObjs };
-    }
   }
 
   /**
