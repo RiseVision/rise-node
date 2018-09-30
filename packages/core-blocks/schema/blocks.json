@@ -1,7 +1,13 @@
 {
   "loadBlocksFromPeer": {
     "id": "blocks.loadBlocksFromPeer",
-    "type": "array"
+    "type": "object",
+    "properties": {
+      "blocks": {
+        "type": "array"
+      }
+    },
+    "required": [ "blocks" ]
   },
   "getBlock": {
     "id": "blocks.getBlock",

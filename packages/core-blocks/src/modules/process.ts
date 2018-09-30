@@ -120,7 +120,7 @@ export class BlocksModuleProcess {
    * @param {number} height
    * @return {Promise<void>}
    */
-  // FIXME VOid return for recoverChain
+  // FIXME Void return for recoverChain
   // tslint:disable-next-line max-line-length
   public async getCommonBlock(peer: Peer, height: number): Promise<{ id: string, previousBlock: string, height: number } | void> {
     const { ids }    = await this.blocksUtilsModule.getIdSequence(height);
@@ -251,11 +251,6 @@ export class BlocksModuleProcess {
       this.getBlocksRequest,
       { query: { lastBlockId: lastValidBlock.id } }
     );
-
-    // TODO: move this to GetBlocksRequest.
-    if (!this.schema.validate(blocksFromPeer.blocks, schema.loadBlocksFromPeer)) {
-      throw new Error('Received invalid blocks data');
-    }
 
     for (const block of blocksFromPeer.blocks) {
       if (this.isCleaning) {

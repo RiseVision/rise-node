@@ -324,7 +324,6 @@ export class BlocksModuleChain {
    */
   private async afterSave(block: SignedBlockType) {
     // await this.bus.message('transactionsSaved', block.transactions);
-    // TODO:
     await this.hookSystem.do_action(OnTransactionsSaved.name, block.transactions, block);
     // Execute afterSave callbacks for each transaction, depends on tx type
     for (const tx of  block.transactions) {

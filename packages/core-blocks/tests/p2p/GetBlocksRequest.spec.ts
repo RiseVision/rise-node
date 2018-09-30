@@ -12,7 +12,6 @@ import { SinonSandbox } from 'sinon';
 import { Container } from 'inversify';
 import { createFakeBlock } from '../utils/createFakeBlocks';
 import { BlocksModuleUtils } from '../../src/modules';
-import { TransactionsModel, TXSymbols } from '../../../core-transactions/src';
 
 chai.use(chaiAsPromised);
 

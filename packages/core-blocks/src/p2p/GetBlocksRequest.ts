@@ -21,6 +21,7 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<null, { lastBl
   public readonly method: 'GET' = 'GET';
   public readonly baseUrl       = '/v2/peer/blocks';
   public readonly requestSchema = require('../../schema/transport.json').getBlocks;
+  public readonly responseSchema = require('../../schema/blocks.json').loadBlocksFromPeer;
 
   protected readonly protoResponse = {
     messageType: 'transportBlocks',
