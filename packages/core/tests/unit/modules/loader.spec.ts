@@ -324,7 +324,7 @@ describe('modules/loader', () => {
 
   describe('.onPeersReady', () => {
     let syncTimerStub: SinonStub;
-    let loadTransactionsStub: SinonStub;
+    // let loadTransactionsStub: SinonStub;
     let loadBlocksFromNetwork: SinonStub;
     let systemModuleUpdateStub: SinonStub;
     // let loadSignaturesStub: SinonStub;
@@ -335,9 +335,9 @@ describe('modules/loader', () => {
     beforeEach(() => {
       loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
 
-      loadTransactionsStub   = sandbox
-        .stub(instance as any, 'loadTransactions')
-        .resolves({});
+      // loadTransactionsStub   = sandbox
+      //   .stub(instance as any, 'loadTransactions')
+      //   .resolves({});
       loadBlocksFromNetwork  = sandbox.stub(instance as any, 'loadBlocksFromNetwork')
         .resolves();
       systemModuleUpdateStub = sandbox.stub(systemModule, 'update')
@@ -449,13 +449,13 @@ describe('modules/loader', () => {
     //   expect(retryStub.firstCall.args[0]).to.be.equal(error);
     // });
 
-    it('should not call instance.loadTransaction if instance.loaded is null', async () => {
-      instance.loaded = false;
-
-      await instance.onPeersReady();
-
-      expect(loadTransactionsStub.notCalled).to.be.true;
-    });
+    // it('should not call instance.loadTransaction if instance.loaded is null', async () => {
+    //   instance.loaded = false;
+    //
+    //   await instance.onPeersReady();
+    //
+    //   expect(loadTransactionsStub.notCalled).to.be.true;
+    // });
   });
 
   describe('.onBlockchainReady', () => {

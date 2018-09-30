@@ -21,6 +21,8 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<null, nu
     namespace  : 'transactions.transport',
   };
 
+  // TODO: lerna Schema validation on response?
+
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
 

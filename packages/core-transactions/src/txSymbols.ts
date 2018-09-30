@@ -3,8 +3,9 @@ import { Symbols } from '@risevision/core-interfaces';
 export const TXSymbols = {
   api        : {
     api      : Symbol.for('rise.txs.api.transactionsAPI'),
-    transport: Symbol.for('rise.txs.api.transportAPI')
+    transport: Symbol.for('rise.txs.api.transportAPI'),
   },
+  loader     : Symbol.for('rise.txs.loader'),
   logic      : Symbols.logic.transaction,
   model      : Symbols.models.transactions,
   module     : Symbols.modules.transactions,

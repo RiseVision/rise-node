@@ -1,10 +1,4 @@
-import {
-  BlocksModuleChain,
-  BlocksModuleProcess,
-  BlocksModuleUtils,
-  BlocksModuleVerify,
-  BlocksSymbols
-} from '@risevision/core-blocks';
+import { BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksSymbols } from '@risevision/core-blocks';
 import {
   IAccountLogic,
   IAccountsModel,
@@ -22,12 +16,7 @@ import {
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { BroadcasterLogic, IPeersModule, Peer } from '@risevision/core-p2p';
-import {
-  AppConfig,
-  ConstantsType,
-  SignedAndChainedBlockType,
-  SignedBlockType
-} from '@risevision/core-types';
+import { AppConfig, ConstantsType, SignedAndChainedBlockType, SignedBlockType } from '@risevision/core-types';
 import { wait, WrapInDefaultSequence } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
@@ -37,12 +26,8 @@ import { Op } from 'sequelize';
 import SocketIO from 'socket.io';
 import z_schema from 'z-schema';
 import sql from '../sql/loader';
-
-import Timer = NodeJS.Timer;
 import { OnBlockchainReady, OnSyncRequested, RecreateAccountsTables, WhatToSync } from '../hooks';
-
-
-const loaderSchema = require('../../schema/loader.json');
+import Timer = NodeJS.Timer;
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
@@ -448,7 +433,8 @@ export class LoaderModule implements ILoaderModule {
       .apply_filters(WhatToSync.name, shouldSyncBlocks ? ['blocks', 'transactions'] : []);
     for (const what of whatToSync) {
       this.logger.info(`Syncing ${what}`);
-      await this.hookSystem.do_action(OnSyncRequested.name, what);
+      await this.hookSystem.do_action(OnSyncRequested.name, what, () => this.getRandomPeer());
+      // TODO: Lerna blocks loading.
       // switch (what) {
       //   case 'blocks':
       //     await promiseRetry(async (retries) => {
@@ -459,10 +445,6 @@ export class LoaderModule implements ILoaderModule {
       //         retries(err);
       //       }
       //     }, { retries: this.retries });
-      //     break;
-      //   case 'transactions':
-      //     this.logger.info('Syncing transactions');
-      //     await this.syncTransactions();
       //     break;
       //   default:
       //
@@ -485,47 +467,4 @@ export class LoaderModule implements ILoaderModule {
     );
   }
 
-  /**
-   * Tries loading transactions from peers for this.retries times or logs errors
-   */
-  private async syncTransactions() {
-    try {
-      await promiseRetry(async (retry) => {
-        try {
-          await this.loadTransactions();
-        } catch (e) {
-          this.logger.warn('Error loading transactions... Retrying... ', e);
-          retry(e);
-        }
-      }, { retries: this.retries });
-    } catch (e) {
-      this.logger.log('Unconfirmed transactions loader error', e);
-    }
-  }
-
-  /**
-   * Load transactions from a random peer.
-   * Validates each transaction from peer and eventually remove the peer if invalid.
-   */
-  private async loadTransactions() {
-    // TODO: lerna Move me to core-transactions
-    // const peer = await this.getRandomPeer();
-    // this.logger.log(`Loading transactions from: ${peer.string}`);
-    // const body = await peer.makeRequest<any>(this.gtFactory({ data: null }));
-    //
-    // if (!this.schema.validate(body, loaderSchema.loadTransactions)) {
-    //   throw new Error('Cannot validate load transactions schema against peer');
-    // }
-    //
-    // const { transactions }: { transactions: Array<ITransportTransaction<any>> } = body;
-    //
-    // const trans = transactions || [];
-    // while (trans.length > 0) {
-    //   try {
-    //     await this.transportModule.receiveTransactions(trans.splice(0, 25), peer, false);
-    //   } catch (err) {
-    //     this.logger.warn(err);
-    //   }
-    // }
-  }
 }
