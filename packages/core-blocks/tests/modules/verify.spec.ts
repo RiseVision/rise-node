@@ -120,8 +120,15 @@ describe('modules/blocks/verify', () => {
           expect(res.verified).is.true;
           expect(res.errors).is.empty;
         });
+        it('should fail for invalid id', async () => {
+          block.id = '1';
+          const res = await inst[what](block);
+          expect(res.verified).is.false;
+          expect(res.errors[0]).matches(/^BlockID: Expected .*? - Received 1/);
+        });
         it('error if signature is invalid', async () => {
           block.blockSignature = Buffer.from(new Array(64).fill(null).map(() => 'aa').join(''), 'hex');
+          block.id = blockLogic.getId(block);
           const res            = await inst[what](block);
           expect(res.errors).to.be.deep.eq(['Failed to verify block signature']);
           expect(res.verified).is.false;

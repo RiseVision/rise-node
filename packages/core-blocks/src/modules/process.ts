@@ -290,7 +290,7 @@ export class BlocksModuleProcess {
       }
 
       if (confirmedTxs.indexOf(tx.id) !== -1) {
-        // TODO: this should be unnecessary as there shouldnt be any chance for the txs to be in unconfirmedstate
+        // NOTE: this should be unnecessary as there shouldnt be any chance for the txs to be in unconfirmedstate
         // if it was already confirmed.
         this.txPool.unconfirmed.remove(tx.id);
         await this.transactionsModule.undoUnconfirmed(tx);

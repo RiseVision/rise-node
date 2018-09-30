@@ -249,16 +249,12 @@ export class BlocksModuleVerify {
     return [];
   }
 
-  // TODO: This is totally useless!
   private verifyId(block: SignedBlockType) {
-    try {
-      // Get block ID
-      // FIXME: Why we don't have it?
-      block.id = this.blockLogic.getId(block);
-      return [];
-    } catch (e) {
-      return [e.toString()];
+    const id = this.blockLogic.getId(block);
+    if (block.id !== id) {
+      return [`BlockID: Expected ${id} - Received ${block.id}`];
     }
+    return [];
   }
 
   /**
