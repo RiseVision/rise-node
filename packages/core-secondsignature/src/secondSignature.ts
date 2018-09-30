@@ -181,16 +181,6 @@ export class SecondSignatureTransaction extends BaseTx<SecondSignatureAsset, Sig
     return tx;
   }
 
-  public dbRead(raw: any): SecondSignatureAsset {
-    if (!raw.s_publicKey) {
-      return null;
-    } else {
-      const signature = { publicKey: raw.s_publicKey };
-      // TODO: it used to return transactionId as well. Can be discarded?
-      return { signature };
-    }
-  }
-
   // tslint:disable-next-line max-line-length
   public dbSave(tx: IConfirmedTransaction<SecondSignatureAsset> & { senderId: string }): DBOp<any> {
     return {

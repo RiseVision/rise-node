@@ -66,9 +66,9 @@ describe('modules/peers', () => {
       removeStub = sandbox.stub(peersLogicStub, 'remove').returns(false);
 
     });
-    it('should avoid removing peer from config and return false', () => {
+    it('should remove peer evene if from config and return true', () => {
       expect(inst.remove(appConfig.peers.list[0].ip, appConfig.peers.list[0].port)).is.false;
-      expect(removeStub.called).is.false;
+      expect(removeStub.called).is.true;
     });
     it('should call peersLogic.remove with peerIP and port.', () => {
       inst.remove('ip', 1111);

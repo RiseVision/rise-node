@@ -43,15 +43,13 @@ export class CoreModule extends BaseCoreModule<DbAppConfig> {
       .whenTargetNamed(ModelSymbols.names.info);
     this.container.bind(ModelSymbols.model).toConstructor(MigrationsModel)
       .whenTargetNamed(ModelSymbols.names.migrations);
-    // container.bind(ModelSymbols.model).toConstructor(PeersModel)
-    //   .whenTargetNamed(ModelSymbols.names.peers); TODO:
-    // container.bind(ModelSymbols.model).toConstructor(TransactionsModel)
-    //   .whenTargetNamed(ModelSymbols.names.transactions);
   }
 
   public initAppElements() {
     for (const m of this.sortedModules) {
+      // tslint:disable-next-line
       if (typeof(m['onPreInitModels']) === 'function') {
+        // tslint:disable-next-line
         m['onPreInitModels']();
       }
     }

@@ -23,4 +23,8 @@ export const BlocksSymbols = {
     getHeight   : Symbol.for('rise.blocks.p2p.getHeight'),
     postBlock   : Symbol.for('rise.blocks.p2p.post'),
   },
+  // tslint:disable-next-line
+  __internals: {
+    mainP2P: Symbol.for('rise.blocks.internals.mainP2P'),
+  },
 };

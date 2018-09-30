@@ -225,37 +225,6 @@ export class TransportModule extends Extendable {
     }, 5000);
   }
 
-  /**
-   * On new block get current broadhash, update system (to calc new broadhash) and broadcast block to all
-   * peers on old broadhash.
-   * Be aware that original block will be modified by adding relays if not there.
-   * TODO: eventually fixme ^^
-   */
-  // public async onNewBlock(block: SignedBlockType & { relays?: number }, broadcast: boolean) {
-  //   if (broadcast) {
-  //     const broadhash = this.systemModule.broadhash;
-  //     // await this.systemModule.update();
-  //     block        = _.cloneDeep(block);
-  //     block.relays = block.relays || 0;
-  //     if (block.relays < this.broadcasterLogic.maxRelays()) {
-  //       block.relays++;
-  //       const reqHandler = this.pblocksFactory({ data: { block } });
-  //       // We avoid awaiting the broadcast result as it could result in unnecessary peer removals.
-  //       // Ex: Peer A, B, C
-  //       // A broadcasts block to B which wants to rebroadcast to A (which is waiting for B to respond) =>
-  //       // | - A will remove B as it will timeout and the same will happen to B
-  //
-  //       /* await */
-  //       this.broadcasterLogic.broadcast({ limit: this.constants.maxPeers, broadhash },
-  //         {
-  //           immediate     : true,
-  //           requestHandler: reqHandler,
-  //         })
-  //         .catch((err) => this.logger.warn('Error broadcasting block', err));
-  //     }
-  //   }
-  // }
-  //
 
 // TODO
 // /**

@@ -226,7 +226,7 @@ export class SystemModule extends Extendable implements ISystemModule {
     this.headers.height    = this.blocksModule.lastBlock.height;
   }
 
-  @OnPostApplyBlock()
+  @OnPostApplyBlock(1000)
   public async onNewBlock(block: SignedBlockType & { relays?: number }, dbTx: any, broadcast: boolean) {
     if (broadcast) {
       await this.update();

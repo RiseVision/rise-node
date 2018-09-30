@@ -89,7 +89,7 @@ export class PeersModule implements IPeersModule {
       let max         = 0;
       let height;
 
-      // Aggregating height by 2. TODO: To be changed if node latency increases?
+      // Aggregating height by 2.
       const aggregation = 2;
 
       // Histogram calculation, together with histogram maximum
@@ -141,14 +141,7 @@ export class PeersModule implements IPeersModule {
    * Remove a peer from the list if its not one from config files
    */
   public remove(peerIP: string, port: number): boolean {
-    const frozenPeer = _.find(this.appConfig.peers.list, (p) => p.ip === peerIP && p.port === port);
-    if (frozenPeer) {
-      // FIXME: Keeping peer frozen is bad idea at all
-      this.logger.debug('Cannot remove frozen peer', peerIP + ':' + port);
-      return false;
-    } else {
-      return this.peersLogic.remove({ ip: peerIP, port });
-    }
+    return this.peersLogic.remove({ ip: peerIP, port });
   }
 
   /**

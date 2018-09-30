@@ -6,7 +6,7 @@ import { PostBlockRequest } from '../../src/p2p';
 import { p2pSymbols } from '../../../core-p2p/src/helpers';
 import { BlocksModel, BlocksSymbols } from '../../src';
 import { ModelSymbols } from '../../../core-models/src/helpers';
-import { BlocksModuleUtils } from '../../src/modules';
+import { BlocksModule, BlocksModuleProcess, BlocksModuleUtils } from '../../src/modules';
 import { Container } from 'inversify';
 import { createFakeBlock } from '../utils/createFakeBlocks';
 import { createRandomTransactions, toBufferedTransaction } from '../../../core-transactions/tests/utils/txCrafter';
@@ -20,6 +20,9 @@ describe('apis/requests/PostBlockRequest', () => {
   let container: Container;
   let instance: PostBlockRequest;
   let blocksUtils: BlocksModuleUtils;
+  let blocksModule: BlocksModule;
+  let blocksProcess: BlocksModuleProcess;
+  let bpOnReceiveBlockStub: SinonStub;
   before(async () => {
     sandbox   = sinon.createSandbox();
     container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
@@ -28,6 +31,11 @@ describe('apis/requests/PostBlockRequest', () => {
     sandbox.restore();
     instance    = container.getNamed(p2pSymbols.transportMethod, BlocksSymbols.p2p.postBlock);
     blocksUtils = container.get(BlocksSymbols.modules.utils);
+    blocksModule = container.get(BlocksSymbols.modules.blocks);
+    blocksProcess = container.get(BlocksSymbols.modules.process);
+
+    blocksModule.lastBlock = {id: '1', height: 100} as any;
+    bpOnReceiveBlockStub = sandbox.stub(blocksProcess, 'onReceiveBlock').resolves();
   });
 
   describe('in/out', () => {
@@ -53,7 +61,7 @@ describe('apis/requests/PostBlockRequest', () => {
       blocks.push(createFakeBlock(container, { previousBlock: blocks[1] }));
       blocks.push(createFakeBlock(container, {
         previousBlock: blocks[2],
-        transactions : createRandomTransactions(3).map(toBufferedTransaction)
+        transactions : createRandomTransactions(3).map(toBufferedTransaction),
       }));
 
       blocks[3].transactions.forEach((t: any) => {
@@ -63,16 +71,13 @@ describe('apis/requests/PostBlockRequest', () => {
         delete t.asset;
       });
 
-      const hookSpy = sandbox.spy(hookSystem, 'do_action');
       for (const b of blocks) {
         await createRequest(null, {block: b});
-        expect(hookSpy.calledOnce).true;
-        expect(hookSpy.firstCall.args[0]).eq(OnReceiveBlock.name);
-        expect(hookSpy.firstCall.args[1]).deep.eq({...b, relays: 1});
-        hookSpy.resetHistory();
+        expect(bpOnReceiveBlockStub.calledOnce).true;
+        expect(bpOnReceiveBlockStub.firstCall.args[0]).deep.eq({...b, relays: 1});
+        bpOnReceiveBlockStub.resetHistory();
       }
     });
-
 
   });
 });

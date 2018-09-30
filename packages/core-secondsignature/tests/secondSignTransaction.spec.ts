@@ -301,24 +301,6 @@ describe('logic/transactions/secondSignature', () => {
     });
   });
 
-  describe('dbRead', () => {
-    it('should return null if !d_username', () => {
-      const retVal = instance.dbRead({});
-      expect(retVal).to.be.null;
-    });
-
-    it('should return the signature object', () => {
-      const retVal = instance.dbRead({
-        s_publicKey: 's_publicKey',
-      });
-      expect(retVal).to.be.deep.equal({
-        signature: {
-          publicKey: 's_publicKey',
-        },
-      });
-    });
-  });
-
   describe('dbSave', () => {
     it('should return the expected dbcreateop', () => {
       const op = instance.dbSave(tx);

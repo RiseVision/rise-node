@@ -2,7 +2,6 @@ import { inject, injectable } from 'inversify';
 import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
 import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
 import { BaseProtobufTransportMethod, ProtoIdentifier, SingleTransportPayload } from '@risevision/core-p2p';
-import { PostTransactionsRequestDataType } from './PostTransactionsRequest';
 import { TXSymbols } from '../txSymbols';
 import { TransactionPool } from '../TransactionPool';
 
@@ -16,12 +15,20 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<null, nu
   public readonly method: 'GET' = 'GET';
   public readonly baseUrl       = '/v2/peer/transactions';
 
-  public protoResponse: ProtoIdentifier<PostTransactionsRequestDataType> = {
+  public protoResponse: ProtoIdentifier<GetTransactionsRequestDataType> = {
     messageType: 'transportTransactions',
     namespace  : 'transactions.transport',
   };
 
-  // TODO: lerna Schema validation on response?
+  public schemaResponse = {
+    properties: {
+      transactions: {
+        type: 'array',
+      },
+    },
+    required: ['transactions'],
+    type: 'object',
+  };
 
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;

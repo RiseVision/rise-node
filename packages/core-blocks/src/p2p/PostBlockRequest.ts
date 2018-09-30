@@ -3,7 +3,9 @@ import { BaseProtobufTransportMethod, ProtoIdentifier, SingleTransportPayload } 
 import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
-import { OnReceiveBlock } from '../hooks';
+import { OnPostApplyBlock, OnReceiveBlock } from '../hooks';
+import { BlocksModuleProcess } from '../modules';
+import { BlocksSymbols } from '../blocksSymbols';
 
 // tslint:disable-next-line
 export type PostBlockRequestDataType = { block: SignedAndChainedBlockType };
@@ -21,8 +23,8 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<PostBlockReque
   @inject(Symbols.logic.block)
   private blockLogic: IBlockLogic;
 
-  @inject(Symbols.generic.hookSystem)
-  private hookSystem: WordPressHookSystem;
+  @inject(BlocksSymbols.modules.process)
+  private process: BlocksModuleProcess;
 
   protected async encodeRequest(data: PostBlockRequestDataType): Promise<Buffer> {
     return super.encodeRequest({
@@ -43,7 +45,7 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<PostBlockReque
     const normalizedBlock = this.blockLogic
       .objectNormalize(req.body.block);
 
-    await this.hookSystem.do_action(OnReceiveBlock.name, normalizedBlock);
+    await this.process.onReceiveBlock(normalizedBlock);
     return null;
   }
 }
