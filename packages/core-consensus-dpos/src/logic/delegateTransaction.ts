@@ -131,10 +131,6 @@ export class RegisterDelegateTransaction extends BaseTx<DelegateAsset, Delegates
       u_username  : tx.asset.delegate.username,
       username    : tx.asset.delegate.username,
     };
-    // TODO: Else? tx is not a valid tx. so why bothering doing an if ^^ ?
-    if (sender.isDelegate === 1) {
-      throw new Error('Account is already a delegate');
-    }
     sender.applyValues(data);
     return [{
       model  : this.AccountsModel,

@@ -1,7 +1,16 @@
+import { APISymbols } from '@risevision/core-apis';
+import { IModule, Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
-import { WPHooksSubscriber } from 'mangiafuoco';
-import { constants, DposAppConfig, dPoSSymbols, RoundChanges, Slots } from './helpers';
+import { ICoreModuleWithModels, ModelSymbols, utils } from '@risevision/core-models';
+import { TXSymbols } from '@risevision/core-transactions';
 import { CommanderStatic } from 'commander';
+import { AccountsAPI, DelegatesAPI } from './apis';
+import { constants, DposAppConfig, dPoSSymbols, RoundChanges, Slots } from './helpers';
+import { BlockHooks, Transactionshooks } from './hooks/subscribers';
+import { RegisterDelegateTransaction } from './logic/delegateTransaction';
+import { RoundLogic } from './logic/round';
+import { RoundsLogic } from './logic/rounds';
+import { VoteTransaction } from './logic/voteTransaction';
 import {
   Accounts2DelegatesModel,
   Accounts2U_DelegatesModel,
@@ -10,17 +19,7 @@ import {
   RoundsFeesModel,
   RoundsModel
 } from './models/';
-import { ICoreModuleWithModels, ModelSymbols, utils } from '@risevision/core-models';
-import { Symbols } from '@risevision/core-interfaces';
-import { APISymbols } from '@risevision/core-apis';
-import { AccountsAPI, DelegatesAPI } from './apis';
-import { RoundLogic } from './logic/round';
-import { RoundsLogic } from './logic/rounds';
-import { TXSymbols } from '@risevision/core-transactions';
-import { RegisterDelegateTransaction } from './logic/delegateTransaction';
-import { VoteTransaction } from './logic/voteTransaction';
 import { DelegatesModule, ForgeModule, RoundsModule } from './modules';
-import { BlockHooks, Transactionshooks } from './hooks/subscribers';
 
 const configSchema = require('../schema/config.json');
 
@@ -124,10 +123,14 @@ export class CoreModule extends BaseCoreModule<DposAppConfig> implements ICoreMo
   }
 
   public async teardown() {
-    // TODO: Call modules.clean
     await this.container.get<any>(dPoSSymbols.hooksSubscribers.blocks)
       .unHook();
     await this.container.get<any>(dPoSSymbols.hooksSubscribers.transactions)
       .unHook();
+
+    await Promise.all([dPoSSymbols.modules.forge, dPoSSymbols.modules.delegates]
+      .map((s) => this.container.get<IModule>(s))
+      .map((m) => m.cleanup())
+    );
   }
 }
