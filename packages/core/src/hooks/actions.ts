@@ -7,9 +7,10 @@ import { Transaction } from 'sequelize';
 // ### LOADER Module hooks ####
 
 export const OnBlockchainReady = createAction('core/loader/onBlockchainReady');
-export const OnSyncStarted     = createAction('core/loader/onSync.started');
-export const OnSyncFinished    = createAction('core/loader/onSync.finished');
 export const OnSyncRequested    = createAction<(what: string) => Promise<void>>('core/loader/onSyncRequested');
+/**
+ * Any DataStore integrity check needs to be performed here. Reject to let the core reload the blockchain from genesis
+ */
 export const OnCheckIntegrity    = createAction<(totalBlocks: number) => Promise<void>>('core/loader/loadBlockchain/checkIntegrity');
 
 /**
@@ -17,11 +18,6 @@ export const OnCheckIntegrity    = createAction<(totalBlocks: number) => Promise
  * so that unconfirmed values are equal to the confirmed ones.
  */
 export const RestoreUnconfirmedEntries = createAction('core/loader/accounts/restoreUnconfirmedEntries');
-
-/**
- * Any DataStore integrity check needs to be performed here. Reject to let the core reload the blockchain from genesis
- */
-export const PerformIntegrityChecks = createAction('core/loader/performIntegrityChecks');
 
 /**
  * Called when blockchain is loading from zero. Either because of snapshot verification or some other

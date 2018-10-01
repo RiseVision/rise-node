@@ -7,8 +7,7 @@ export const dPoSSymbols = {
     slots       : Symbol.for('rise.dpos.slots'),
   },
   hooksSubscribers: {
-    blocks      : Symbol.for('rise.dpos.hs.blocks'),
-    transactions: Symbol.for('rise.dpos.hs.transactions')
+    transactions: Symbol.for('rise.dpos.hs.transactions'),
   },
   logic           : {
     delegateTransaction: Symbol.for('rise.dpos.delegateTransaction'),

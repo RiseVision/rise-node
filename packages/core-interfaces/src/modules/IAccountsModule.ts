@@ -3,7 +3,7 @@ import { AccountDiffType, AccountFilterData } from '../logic';
 import { IAccountsModel } from '../models';
 import { IModule } from './IModule';
 
-export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> extends IModule {
+export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> {
 
   unfoldSenders(txs: Array<IBaseTransaction<any>>): Array<{address: string, publicKey: Buffer}>;
 

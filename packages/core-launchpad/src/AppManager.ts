@@ -1,11 +1,12 @@
-import { ILogger } from '@risevision/core-interfaces';
+import { ILogger, Symbols } from '@risevision/core-interfaces';
 import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
 import { Container } from 'inversify';
 import { InMemoryFilterModel, WordPressHookSystem } from 'mangiafuoco';
 import * as pg from 'pg';
 import 'reflect-metadata';
-import { ICoreModule } from './module';
+import { OnFinishBoot, OnInitContainer } from './hooks';
 import { LaunchpadSymbols } from './launchpadSymbols';
+import { ICoreModule } from './module';
 
 export class AppManager {
   public container: Container = new Container();
@@ -61,6 +62,9 @@ export class AppManager {
     });
 
     this.container.bind(LaunchpadSymbols.coremodules).toConstantValue(this.modules);
+    this.container.bind(Symbols.generic.appConfig).toConstantValue(this.appConfig);
+    this.container.bind(Symbols.generic.versionBuild).toConstantValue(this.versionBuild);
+    this.container.bind(Symbols.generic.genesisBlock).toConstantValue(this.genesisBlock);
 
     this.modules.forEach((m) => m.addElementsToContainer());
 
@@ -69,62 +73,21 @@ export class AppManager {
     }
 
     // hooks
-    await this.hookSystem.do_action('core/init/container', this.container);
-    //
-    // // allow plugins to just modify models
-    // const models = this.getElementsFromContainer<typeof IBaseModel>(Symbols.models);
-    // await Promise.all(models.map((model) => this.hookSystem.do_action('core/init/model', model)));
-    //
-    // // Start migrations/runtime queries.
-    // await this.container.get<Migrator>(Symbols.helpers.migrator).init();
-    // // Add exceptions by attaching exception handlers to the manager.
-    // const exceptionsManager = this.container.get<ExceptionsManager>(Symbols.helpers.exceptionsManager);
-    // await Promise.all(this.excCreators.map((exc) => exc(exceptionsManager)));
+    await this.hookSystem.do_action(OnInitContainer.name, this.container);
   }
 
   public async finishBoot() {
     for (const module of this.modules) {
       await module.boot();
     }
-    await this.hookSystem.do_action('core/init/onFinishBoot');
-    // const infoModel = this.container.get<typeof IInfoModel>(Symbols.models.info);
-    // Create or restore nonce!
-    // const [val] = await infoModel
-    //   .findOrCreate({where: {key: 'nonce'}, defaults: {value: uuid.v4()}});
-    // this.container.bind(Symbols.generic.nonce).toConstantValue(val.value);
-    // const bus       = this.container.get<Bus>(Symbols.helpers.bus);
-    // bus.modules     = this.getModules();
+    await this.hookSystem.do_action(OnFinishBoot.name);
 
-    // Register transaction types.
-    // const txLogic = this.container.get<ITransactionLogic>(Symbols.logic.transaction);
-    // const txs     = this.getElementsFromContainer<any>(Symbols.logic.transactions);
-    // txs.forEach((tx) => txLogic.attachAssetType(tx));
 
-    // await infoModel
-    //   .upsert({key: 'genesisAccount', value: this.genesisBlock.transactions[0].senderId});
-
-    // Move the genesis from string signatures to buffer signatures
-    // this.genesisBlock.previousBlock = '1'; // exception for genesisblock
-    // this.container.get<IBlockLogic>(Symbols.logic.block).objectNormalize(this.genesisBlock);
-    // this.genesisBlock.previousBlock = null;
 
     // const blocksChainModule = this.container.get<IBlocksModuleChain>(Symbols.modules.blocksSubModules.chain);
     // await blocksChainModule.saveGenesisBlock();
 
-    // Listen HTTP
-    // if (!this.appConfig.loading.snapshot) {
-    //   await cbToPromise((cb) => this.server.listen(this.appConfig.port, this.appConfig.address, cb));
-    // }
-    // this.logger.info(`Server started: ${this.appConfig.address}:${this.appConfig.port}`);
-
-    // this.logger.info('Modules ready and launched. Loading Blockchain...');
-    // const loaderModule = this.container.get<LoaderModule>(Symbols.modules.loader);
-    // await loaderModule.loadBlockChain()
-    //   .catch(catchToLoggerAndRemapError('Cannot load blockchain', this.logger));
-    // this.logger.info('App Booted');
-    // const aM = this.container.get<IAccountsModule>(Symbols.modules.accounts);
-    // const bit = await aM.getAccount({address: '15326312953541715317R'});
-    // console.log(bit);
+    this.logger.info('App Booted');
   }
   //
   // private async modelsElements(sequelize) {

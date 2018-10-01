@@ -6,7 +6,7 @@ import { TXSymbols } from '@risevision/core-transactions';
 import { CommanderStatic } from 'commander';
 import { AccountsAPI, DelegatesAPI } from './apis';
 import { constants, DposAppConfig, dPoSSymbols, RoundChanges, Slots } from './helpers';
-import { BlockHooks, Transactionshooks } from './hooks/subscribers';
+import { Transactionshooks } from './hooks/subscribers';
 import { RegisterDelegateTransaction } from './logic/delegateTransaction';
 import { RoundLogic } from './logic/round';
 import { RoundsLogic } from './logic/rounds';
@@ -100,18 +100,17 @@ export class CoreModule extends BaseCoreModule<DposAppConfig> implements ICoreMo
       .to(RoundsModule)
       .inSingletonScope();
 
-    this.container.bind(dPoSSymbols.hooksSubscribers.blocks)
-      .to(BlockHooks)
-      .inSingletonScope();
     this.container.bind(dPoSSymbols.hooksSubscribers.transactions)
       .to(Transactionshooks)
       .inSingletonScope();
   }
 
   public async initAppElements() {
-    await this.container.get<any>(dPoSSymbols.hooksSubscribers.blocks)
-      .hookMethods();
     await this.container.get<any>(dPoSSymbols.hooksSubscribers.transactions)
+      .hookMethods();
+    await this.container.get<RoundsModule>(dPoSSymbols.modules.rounds)
+      .hookMethods();
+    await this.container.get<DelegatesModule>(dPoSSymbols.modules.delegates)
       .hookMethods();
   }
 
@@ -123,11 +122,10 @@ export class CoreModule extends BaseCoreModule<DposAppConfig> implements ICoreMo
   }
 
   public async teardown() {
-    await this.container.get<any>(dPoSSymbols.hooksSubscribers.blocks)
-      .unHook();
     await this.container.get<any>(dPoSSymbols.hooksSubscribers.transactions)
       .unHook();
-
+    await this.container.get<RoundsModule>(dPoSSymbols.modules.rounds)
+      .unHook();
     await Promise.all([dPoSSymbols.modules.forge, dPoSSymbols.modules.delegates]
       .map((s) => this.container.get<IModule>(s))
       .map((m) => m.cleanup())

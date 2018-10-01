@@ -1,4 +1,4 @@
-import { CoreSymbols, RecreateAccountsTables } from '@risevision/core';
+import { CoreSymbols } from '@risevision/core';
 import {
   AccountDiffType,
   AccountFilterData,
@@ -9,14 +9,11 @@ import {
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
-import { catchToLoggerAndRemapError, MyBigNumb } from '@risevision/core-utils';
 import { ConstantsType, DBOp, ModelAttributes } from '@risevision/core-types';
+import { MyBigNumb } from '@risevision/core-utils';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
-import * as fs from 'fs';
-import { decorate, inject, injectable, named, postConstruct } from 'inversify';
-import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
-import * as path from 'path';
+import { inject, injectable, named, postConstruct } from 'inversify';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
@@ -24,11 +21,8 @@ import { AccountsSymbols } from '../symbols';
 import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
 
-const DecoratedSubscriber = WPHooksSubscriber(Object);
-decorate(injectable(), DecoratedSubscriber);
-
 @injectable()
-export class AccountLogic extends DecoratedSubscriber implements IAccountLogic {
+export class AccountLogic implements IAccountLogic {
   private table = 'mem_accounts';
 
   /**
@@ -66,9 +60,6 @@ export class AccountLogic extends DecoratedSubscriber implements IAccountLogic {
   @inject(LaunchpadSymbols.zschema)
   private schema: z_schema;
 
-  @inject(LaunchpadSymbols.hookSystem)
-  public hookSystem: WordPressHookSystem;
-
   @postConstruct()
   public postConstruct() {
     this.model = accountsModelCreator(this.table, this.constants);
@@ -100,15 +91,6 @@ export class AccountLogic extends DecoratedSubscriber implements IAccountLogic {
       .filter((field) => !field.immutable)
       .map((field) => field.name);
 
-  }
-
-  @RecreateAccountsTables()
-  public async recreateTables(): Promise<void> {
-    await this.AccountsModel.drop({ cascade: true })
-      .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
-    await this.AccountsModel.sequelize.query(
-      fs.readFileSync(path.join(__dirname, '..', '..', 'sql', 'memoryTables.sql'), { encoding: 'utf8' })
-    );
   }
 
   /**

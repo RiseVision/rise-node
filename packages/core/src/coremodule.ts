@@ -1,6 +1,7 @@
 import { APISymbols } from '@risevision/core-apis';
-import { Symbols } from '@risevision/core-interfaces';
+import { IInfoModel, Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
+import * as uuid from 'uuid';
 import { LoaderAPI } from './apis';
 import { constants } from './constants';
 import { TimeToEpoch } from './helpers';
@@ -22,6 +23,22 @@ export class CoreModule extends BaseCoreModule<void> {
       .whenTargetNamed(CoreSymbols.api.loader);
   }
 
+  public async boot() {
+    const infoModel = this.container.get<typeof IInfoModel>(Symbols.models.info);
+    // Create or restore nonce!
+    const [val] = await infoModel
+      .findOrCreate({where: {key: 'nonce'}, defaults: {value: uuid.v4()}});
+    this.container.bind(Symbols.generic.nonce).toConstantValue(val.value);
+    await infoModel
+      .upsert({
+        key  : 'genesisAccount',
+        value: this.container.get<any>(Symbols.generic.genesisBlock)
+          .transactions[0].senderId,
+      });
+
+    const loaderModule = this.container.get<LoaderModule>(CoreSymbols.modules.loader);
+    await loaderModule.loadBlockChain();
+  }
   public async teardown(): Promise<void> {
     await this.container.get<LoaderModule>(CoreSymbols.modules.loader).cleanup();
   }

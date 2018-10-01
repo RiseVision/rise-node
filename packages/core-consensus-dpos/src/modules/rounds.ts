@@ -1,4 +1,5 @@
 import { OnCheckIntegrity, SnapshotBlocksCountFilter, UtilsCommonHeightList } from '@risevision/core';
+import { OnPostApplyBlock } from '@risevision/core-blocks';
 import {
   IAccountsModel,
   IAccountsModule,
@@ -8,7 +9,8 @@ import {
   ILogger,
   Symbols
 } from '@risevision/core-interfaces';
-import { address, AppConfig, DBOp, SignedBlockType } from '@risevision/core-types';
+import { ModelSymbols } from '@risevision/core-models';
+import { address, AppConfig, DBOp, SignedAndChainedBlockType, SignedBlockType } from '@risevision/core-types';
 import * as fs from 'fs';
 import { decorate, inject, injectable, named } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
@@ -19,7 +21,7 @@ import { IRoundLogicNewable, RoundLogicScope } from '../logic/round';
 import { RoundsLogic } from '../logic/rounds';
 import { AccountsModelForDPOS, RoundsModel } from '../models/';
 import { DelegatesModule } from './delegates';
-import { ModelSymbols } from '@risevision/core-models';
+import * as sequelize from 'sequelize';
 
 const performRoundSnapshotSQL = fs.readFileSync(
   `${__dirname}/../../sql/performRoundSnapshot.sql`,
@@ -138,6 +140,11 @@ export class RoundsModule extends Extended {
           this.logger.trace('Round snapshot done');
         }
       });
+  }
+
+  @OnPostApplyBlock()
+  public onTxApply(block: SignedAndChainedBlockType, tx: sequelize.Transaction) {
+    return this.tick(block, tx);
   }
 
   @OnCheckIntegrity()

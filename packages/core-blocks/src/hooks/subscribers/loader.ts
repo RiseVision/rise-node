@@ -10,9 +10,9 @@ import { wait, WrapInDefaultSequence } from '@risevision/core-utils';
 import { decorate, inject, injectable, named } from 'inversify';
 import { OnWPAction, OnWPFilter, WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import * as promiseRetry from 'promise-retry';
-import { BlocksSymbols } from './blocksSymbols';
-import { BlocksModuleProcess } from './modules';
-import { GetBlocksRequest } from './p2p';
+import { BlocksSymbols } from '../../blocksSymbols';
+import { BlocksModuleProcess, BlocksModuleUtils } from '../../modules';
+import { GetBlocksRequest } from '../../p2p';
 
 const Extendable = WPHooksSubscriber(Object);
 decorate(injectable(), Extendable);
@@ -36,12 +36,20 @@ export class BlockLoader extends Extendable {
   @inject(BlocksSymbols.modules.process)
   private blocksModuleProcess: BlocksModuleProcess;
 
+  @inject(BlocksSymbols.modules.utils)
+  private blocksModuleUtils: BlocksModuleUtils;
+
   @inject(p2pSymbols.transportMethod)
   @named(BlocksSymbols.p2p.getBlocks)
   private getBlocksRequest: GetBlocksRequest;
 
   @inject(Symbols.helpers.timeToEpoch)
   private timeToEpoch: ITimeToEpoch;
+
+  @OnWPAction('core/loader/loadBlockchain/checkIntegrity')
+  public async checkBlocksIntegrity(totalBlocks: number) {
+    await this.blocksModuleUtils.loadLastBlock();
+  }
 
   @OnWPFilter('core/loader/whatToSync')
   public async whatToSync(toSync: string[]) {

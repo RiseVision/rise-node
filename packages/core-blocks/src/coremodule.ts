@@ -1,16 +1,17 @@
 import { APISymbols } from '@risevision/core-apis';
+import { Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
-import { AppConfig } from '@risevision/core-types';
+import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
 import { BlocksAPI } from './apis/blocksAPI';
 import { BlocksSymbols } from './blocksSymbols';
+import { BlockLoader } from './hooks/';
 import { BlockLogic, BlockRewardLogic } from './logic/';
 import { BlocksModel } from './models/BlocksModel';
 import { BlocksModule, BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify } from './modules';
 import { CommonBlockRequest, GetBlocksRequest, HeightRequest, PostBlockRequest } from './p2p';
 import { BlocksP2P } from './p2p/';
-import { BlockLoader } from './loader';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
@@ -64,5 +65,16 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
   public async teardown(): Promise<void> {
     await this.container.get<BlocksP2P>(BlocksSymbols.__internals.mainP2P).unHook();
     await this.container.get<BlockLoader>(BlocksSymbols.__internals.loader).unHook();
+  }
+
+  public async boot() {
+    // Move the genesis from string signatures to buffer signatures
+    const genesis = this.container.get<SignedAndChainedBlockType>(Symbols.generic.genesisBlock);
+    genesis.previousBlock = '1'; // exception for genesisblock
+    this.container.get<BlockLogic>(BlocksSymbols.logic.block).objectNormalize(genesis);
+    genesis.previousBlock = null;
+
+    const blocksChainModule = this.container.get<BlocksModuleChain>(BlocksSymbols.modules.chain);
+    await blocksChainModule.saveGenesisBlock();
   }
 }

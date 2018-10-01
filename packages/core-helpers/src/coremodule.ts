@@ -50,4 +50,8 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     }
     return appConfig;
   }
+
+  public async boot() {
+    await this.container.get<Migrator>(HelpersSymbols.migrator).init();
+  }
 }

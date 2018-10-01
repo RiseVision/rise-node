@@ -10,7 +10,7 @@ import {
 } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import { decorate, inject, injectable, named, postConstruct } from 'inversify';
-import { WPHooksSubscriber, WordPressHookSystem } from 'mangiafuoco';
+import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import * as os from 'os';
 import * as semver from 'semver';
 

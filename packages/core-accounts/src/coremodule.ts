@@ -5,6 +5,7 @@ import { ModelSymbols } from '@risevision/core-models';
 import { AppConfig, ConstantsType } from '@risevision/core-types';
 import * as z_schema from 'z-schema';
 import { AccountsAPI } from './apis';
+import { AccountsLoaderSubscriber } from './hooks/';
 import { AccountLogic } from './logic';
 import { AccountsModel } from './models';
 import { AccountsModule } from './modules';
@@ -22,19 +23,23 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     this.container.bind(APISymbols.api).to(AccountsAPI)
       .inSingletonScope()
       .whenTargetNamed(AccountsSymbols.api);
+
+    this.container.bind(AccountsSymbols.__internal.loaderHooks)
+      .to(AccountsLoaderSubscriber)
+      .inSingletonScope();
   }
 
-  public initAppElements() {
-    const accLogic = this.container.get<AccountLogic>(AccountsSymbols.logic);
+  public async initAppElements() {
     z_schema.registerFormat('address', (str: string) => {
       // tslint:disable-next-line
       return new RegExp(`^[0-9]{1,20}${this.container.get<ConstantsType>(Symbols.generic.constants).addressSuffix}$`).test(str);
     });
-    return accLogic.hookMethods();
+    await this.container.get<AccountsLoaderSubscriber>(AccountsSymbols.__internal.loaderHooks)
+      .hookMethods();
   }
 
-  public teardown() {
-    const accLogic = this.container.get<AccountLogic>(AccountsSymbols.logic);
-    return accLogic.unHook();
+  public async teardown() {
+    await this.container.get<AccountsLoaderSubscriber>(AccountsSymbols.__internal.loaderHooks)
+      .unHook();
   }
 }

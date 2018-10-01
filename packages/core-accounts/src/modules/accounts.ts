@@ -1,6 +1,6 @@
 import {
   AccountDiffType,
-  AccountFilterData, IAccountLogic,
+  AccountFilterData,
   IAccountsModel,
   IAccountsModule,
 } from '@risevision/core-interfaces';
@@ -16,16 +16,13 @@ export class AccountsModule implements IAccountsModule {
   // TODO: migrate to IAccountLogic
   @inject(AccountsSymbols.logic)
   private accountLogic: AccountLogic;
+
   @inject(ModelSymbols.helpers.db)
   private dbHelper: DBHelper;
 
   @inject(ModelSymbols.model)
   @named(AccountsSymbols.model)
   private AccountsModel: typeof IAccountsModel;
-
-  public cleanup() {
-    return Promise.resolve();
-  }
 
   public getAccount(filter: AccountFilterData): Promise<IAccountsModel> {
     if (filter.publicKey) {
@@ -69,7 +66,7 @@ export class AccountsModule implements IAccountsModule {
     return sendersMap;
   }
 
-  public async checkTXsAccountsMap(txs: Array<IBaseTransaction<any>>, accMap: {[add: string]: IAccountsModel}) {
+  public async checkTXsAccountsMap(txs: Array<IBaseTransaction<any>>, accMap: { [add: string]: IAccountsModel }) {
     const allSenders = this.unfoldSenders(txs);
 
     await Promise.all(allSenders.map(async ({ address, publicKey }) => {
@@ -93,16 +90,16 @@ export class AccountsModule implements IAccountsModule {
    * Sets some data to specific account
    */
   // tslint:disable-next-line max-line-length
-  public async assignPublicKeyToAccount(opts: {address?: string, publicKey: Buffer}): Promise<IAccountsModel> {
-    const {address, publicKey} = opts;
+  public async assignPublicKeyToAccount(opts: { address?: string, publicKey: Buffer }): Promise<IAccountsModel> {
+    const { address, publicKey } = opts;
     if (!publicKey) {
       throw new Error(`Missing publicKey for ${address}`);
     }
-    const data = this.fixAndCheckInputParams({address, publicKey});
+    const data = this.fixAndCheckInputParams({ address, publicKey });
     if (data.address !== address && address) {
       throw new Error(`Attempting to assign publicKey to non correct address ${data.address} != ${address}`);
     }
-    await this.accountLogic.set(data.address, {publicKey: data.publicKey});
+    await this.accountLogic.set(data.address, { publicKey: data.publicKey });
     return this.accountLogic.get({ address: data.address });
   }
 

@@ -1,4 +1,4 @@
-import { BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksSymbols } from '@risevision/core-blocks';
+import { BlocksModuleChain, BlocksModuleProcess, BlocksSymbols } from '@risevision/core-blocks';
 import {
   IAccountLogic,
   IAccountsModel,
@@ -11,34 +11,28 @@ import {
   ISequence,
   ISystemModule,
   ITransactionLogic,
-  ITransactionsModule,
   Symbols
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { BroadcasterLogic, IPeersModule, Peer } from '@risevision/core-p2p';
-import { AppConfig, ConstantsType, SignedAndChainedBlockType, SignedBlockType } from '@risevision/core-types';
-import { wait, WrapInDefaultSequence } from '@risevision/core-utils';
+import { AppConfig, ConstantsType, SignedAndChainedBlockType } from '@risevision/core-types';
+import { logOnly } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
-import * as promiseRetry from 'promise-retry';
-import * as sequelize from 'sequelize';
-import { Op } from 'sequelize';
 import SocketIO from 'socket.io';
 import z_schema from 'z-schema';
-import sql from '../sql/loader';
-import { OnBlockchainReady, OnSyncRequested, RecreateAccountsTables, WhatToSync } from '../hooks';
-import Timer = NodeJS.Timer;
+import {
+  OnBlockchainReady, OnCheckIntegrity,
+  OnSyncRequested,
+  RecreateAccountsTables, RestoreUnconfirmedEntries,
+  WhatToSync
+} from '../hooks';
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
 
   public loaded: boolean                       = false;
-  private blocksToSync: number                 = 0;
-  private isActive: boolean                    = false;
-  private lastblock: SignedAndChainedBlockType = null;
   private network: { height: number, peers: Peer[] };
-  private retries: number                      = 5;
-  private syncIntervalId: Timer                = null;
 
   // Generic
   @inject(Symbols.generic.appConfig)
@@ -80,14 +74,10 @@ export class LoaderModule implements ILoaderModule {
   private blocksModule: IBlocksModule;
   @inject(BlocksSymbols.modules.process)
   private blocksProcessModule: BlocksModuleProcess;
-  @inject(BlocksSymbols.modules.utils)
-  private blocksUtilsModule: BlocksModuleUtils;
   @inject(Symbols.modules.peers)
   private peersModule: IPeersModule;
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
-  @inject(Symbols.modules.transactions)
-  private transactionsModule: ITransactionsModule;
 
   // Models
   @inject(ModelSymbols.model)
@@ -137,10 +127,6 @@ export class LoaderModule implements ILoaderModule {
     if (this.loaded) {
       await this.doSync();
     }
-  }
-
-  public onBlockchainReady() {
-    this.loaded = true;
   }
 
   public cleanup() {
@@ -195,47 +181,17 @@ export class LoaderModule implements ILoaderModule {
       process.exit(0);
     }
 
+    await this.hookSystem.do_action(RestoreUnconfirmedEntries.name);
+
     try {
-      await this.hookSystem.do_action('core/loader/performIntegrityChecks');
+      await this.hookSystem.do_action(OnCheckIntegrity.name, blocksCount);
     } catch (e) {
       return this.load(blocksCount, limit, e.message, true);
     }
 
-    const updatedAccountsInLastBlock = await this.AccountsModel
-      .count({
-        where: {
-          blockId: { [Op.in]: sequelize.literal('(SELECT "id" from blocks ORDER BY "height" DESC LIMIT 1)') },
-        },
-      });
-
-    if (updatedAccountsInLastBlock === 0) {
-      return this.load(blocksCount, limit, 'Detected missed blocks in mem_accounts', true);
-    }
-
-    await this.hookSystem.do_action('core/loader/accounts/restoreUnconfirmedEntries');
-
-    const orphanedMemAccounts = await this.AccountsModel.sequelize.query(
-      sql.getOrphanedMemAccounts,
-      { type: sequelize.QueryTypes.SELECT });
-
-    if (orphanedMemAccounts.length > 0) {
-      return this.load(blocksCount, limit, 'Detected orphaned blocks in mem_accounts', true);
-    }
-
-    try {
-      this.lastblock = await this.blocksUtilsModule.loadLastBlock();
-    } catch (err) {
-      return this.load(blocksCount, limit, err.message || 'Failed to load last block');
-    }
-
-    try {
-      await this.hookSystem.do_action('core/loader/loadBlockchain/checkIntegrity', blocksCount);
-    } catch (e) {
-      return this.load(blocksCount, limit, e.message);
-    }
-
     this.logger.info('Blockchain ready');
-    await this.hookSystem.do_action('core/loader/onBlockchainReady');
+    await this.hookSystem.do_action(OnBlockchainReady.name);
+    this.syncTimer();
   }
 
   private async verifySnapshot(blocksCount: number, limit: number) {
@@ -270,77 +226,34 @@ export class LoaderModule implements ILoaderModule {
     }
 
     await this.hookSystem.do_action(RecreateAccountsTables.name);
-    // await this.accountLogic.removeTables();
 
-    // await this.accountLogic.createTables();
-
-    try {
-      while (count >= offset) {
-        if (count > 1) {
-          this.logger.info('Rebuilding blockchain, current block height: ' + (offset + 1));
-        }
-        const lastBlock = await this.blocksProcessModule.loadBlocksOffset(
-          Math.min(limitPerIteration, 1 + count - offset), // exclusive limit
-          offset,
-          true/*verify*/
-        );
-        offset          = offset + limitPerIteration;
-        this.lastblock  = lastBlock;
+    while (count >= offset) {
+      if (count > 1) {
+        this.logger.info('Rebuilding blockchain, current block height: ' + (offset + 1));
       }
-      if (emitBlockchainReady) {
-        this.logger.info('Blockchain ready');
-        await this.hookSystem.do_action(OnBlockchainReady.name);
-      }
-    } catch (err) {
-      this.logger.error(err);
-      if (err.block) {
-        this.logger.error('Blockchain failed at: ' + err.block.height);
-        await this.blocksChainModule.deleteAfterBlock(err.block.id);
-        this.logger.error('Blockchain clipped');
-        await this.hookSystem.do_action(OnBlockchainReady.name);
-      } else {
-        throw err;
-      }
+      await this.blocksProcessModule.loadBlocksOffset(
+        Math.min(limitPerIteration, 1 + count - offset), // exclusive limit
+        offset,
+        true/*verify*/
+      );
+      offset          = offset + limitPerIteration;
     }
-
-  }
-
-  /**
-   * Cancels timers based on input parameter and private variable syncIntervalId
-   * or Sync trigger by sending a socket signal with 'loader/sync' and setting
-   * next sync with 1000 milliseconds.
-   */
-  private syncTrigger(turnOn: boolean) {
-    if (turnOn === false && this.syncIntervalId) {
-      this.logger.trace('Clearing sync interval');
-      clearTimeout(this.syncIntervalId);
-      this.syncIntervalId = null;
-      this.appState.set('loader.isSyncing', false);
+    if (emitBlockchainReady) {
+      this.logger.info('Blockchain ready');
+      await this.hookSystem.do_action(OnBlockchainReady.name);
     }
-    if (turnOn === true && !this.syncIntervalId) {
-      this.logger.trace('Setting sync interval');
-      this.syncIntervalId = setTimeout(() => {
-        this.logger.trace('Sync trigger');
-        this.hookSystem.do_action('pushapi/onNewMessage', 'loader/sync', {
-          blocks: this.blocksToSync,
-          height: this.blocksModule.lastBlock.height,
-        });
-      }, 1000);
-      this.appState.set('loader.isSyncing', true);
-    }
+    this.syncTimer();
   }
 
   private async doSync() {
-    const shouldSyncBlocks     = this.loaded && !this.isSyncing && (this.blocksModule.lastReceipt.isStale());
-    const whatToSync: string[] = await this.hookSystem
-      .apply_filters(WhatToSync.name, shouldSyncBlocks ? ['blocks', 'transactions'] : []);
+    const whatToSync: string[] = await this.hookSystem.apply_filters(WhatToSync.name, []);
     for (const what of whatToSync) {
       this.logger.info(`Syncing ${what}`);
       await this.hookSystem.do_action(OnSyncRequested.name, what, () => this.getRandomPeer());
     }
   }
 
-  private async syncTimer() {
+  private syncTimer() {
     this.logger.trace('Setting sync timer');
     this.jobsQueue.register('loaderSyncTimer', async () => {
         this.logger.trace('Sync timer trigger', {
@@ -348,7 +261,9 @@ export class LoaderModule implements ILoaderModule {
           loaded      : this.loaded,
           syncing     : this.isSyncing,
         });
-        await this.doSync();
+        this.appState.set('loader.isSyncing', true);
+        await this.doSync().catch(logOnly(this.logger));
+        this.appState.set('loader.isSyncing', false);
       },
       Math.max(1000, this.constants.blockTime * (1000 / 50))
     );
