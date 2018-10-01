@@ -330,103 +330,6 @@ export class LoaderModule implements ILoaderModule {
     }
   }
 
-  private async innerLoad() {
-    let loaded = false;
-
-    const randomPeer = await this.getRandomPeer();
-    const lastBlock  = this.blocksModule.lastBlock;
-    if (typeof(randomPeer) === 'undefined') {
-      await wait(1000);
-      // This could happen when we received a block but we did not get the updated peer list.
-      throw new Error('No random peer');
-    }
-
-    if (lastBlock.height !== 1) {
-      this.logger.info(`Looking for common block with: ${randomPeer.string}`);
-      try {
-        const commonBlock = await this.blocksProcessModule.getCommonBlock(randomPeer, lastBlock.height);
-        if (!commonBlock) {
-          throw new Error('Failed to find common block');
-        }
-      } catch (err) {
-        this.logger.error(`Failed to find common block with: ${randomPeer.string}`);
-        throw err;
-      }
-    }
-    // Now that we know that peer is reliable we can sync blocks with him!!
-    this.blocksToSync = randomPeer.height;
-    try {
-      const lastValidBlock: SignedBlockType = await this.blocksProcessModule.loadBlocksFromPeer(randomPeer);
-
-      loaded = lastValidBlock.id === lastBlock.id;
-      // update blocksmodule last receipt with last block timestamp!
-      this.blocksModule.lastReceipt
-        .update(Math.floor(this.constants.epochTime.getTime() / 1000 + lastValidBlock.timestamp));
-    } catch (err) {
-      this.logger.error(err.toString());
-      this.logger.error('Failed to load blocks from: ' + randomPeer.string);
-      throw err;
-    }
-    return loaded;
-  }
-
-  /**
-   * Loads blocks from the network
-   */
-  private async loadBlocksFromNetwork() {
-    let loaded = false;
-    do {
-      loaded = await promiseRetry(
-        (retry) => this.innerLoad().catch(retry),
-        { retries: 3, maxTimeout: 2000 }
-      )
-        .catch((e) => {
-          this.logger.warn('Something went wrong when trying to sync block from network', e);
-          return true;
-        });
-    } while (!loaded);
-
-  }
-
-  /**
-   * - Undoes unconfirmed transactions.
-   * - Establish broadhash consensus
-   * - Syncs: loadBlocksFromNetwork, updateSystem
-   * - Establish broadhash consensus
-   * - Applies unconfirmed transactions
-   */
-  @WrapInDefaultSequence
-  private async sync() {
-    this.logger.info('Starting sync');
-    await this.hookSystem.do_action('core/loader/onSyncBlocks.started');
-
-    this.isActive = true;
-    this.syncTrigger(true);
-
-    // Logic block of "real work"
-    {
-
-      // Establish consensus. (internally)
-      this.logger.debug('Establishing broadhash consensus before sync');
-      await this.peersModule.getPeers({ limit: this.constants.maxPeers });
-
-      await this.loadBlocksFromNetwork();
-      await this.systemModule.update();
-
-      this.logger.debug('Establishing broadhash consensus after sync');
-      await this.peersModule.getPeers({ limit: this.constants.maxPeers });
-
-    }
-
-    this.isActive = false;
-    this.syncTrigger(false);
-    this.blocksToSync = 0;
-
-    this.logger.info('Finished sync');
-    await this.hookSystem.do_action('core/loader/onSyncBlocks.finished');
-
-  }
-
   private async doSync() {
     const shouldSyncBlocks     = this.loaded && !this.isSyncing && (this.blocksModule.lastReceipt.isStale());
     const whatToSync: string[] = await this.hookSystem
@@ -434,22 +337,6 @@ export class LoaderModule implements ILoaderModule {
     for (const what of whatToSync) {
       this.logger.info(`Syncing ${what}`);
       await this.hookSystem.do_action(OnSyncRequested.name, what, () => this.getRandomPeer());
-      // TODO: Lerna blocks loading.
-      // switch (what) {
-      //   case 'blocks':
-      //     await promiseRetry(async (retries) => {
-      //       try {
-      //         await this.sync();
-      //       } catch (err) {
-      //         this.logger.warn('Error syncing... Retrying... ', err);
-      //         retries(err);
-      //       }
-      //     }, { retries: this.retries });
-      //     break;
-      //   default:
-      //
-      //     break;
-      // }
     }
   }
 

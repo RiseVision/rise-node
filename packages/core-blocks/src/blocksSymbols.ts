@@ -25,6 +25,7 @@ export const BlocksSymbols = {
   },
   // tslint:disable-next-line
   __internals: {
+    loader : Symbol.for('rise.blocks.internals.loder'),
     mainP2P: Symbol.for('rise.blocks.internals.mainP2P'),
   },
 };

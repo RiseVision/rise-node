@@ -338,8 +338,8 @@ describe('modules/loader', () => {
       // loadTransactionsStub   = sandbox
       //   .stub(instance as any, 'loadTransactions')
       //   .resolves({});
-      loadBlocksFromNetwork  = sandbox.stub(instance as any, 'loadBlocksFromNetwork')
-        .resolves();
+      // loadBlocksFromNetwork  = sandbox.stub(instance as any, 'loadBlocksFromNetwork')
+      //   .resolves();
       systemModuleUpdateStub = sandbox.stub(systemModule, 'update')
         .resolves();
       // loadSignaturesStub   = sandbox
@@ -930,6 +930,7 @@ describe('modules/loader', () => {
       });
     });
   */
+  /*
   describe('.sync', () => {
     let transactionsModuleStub: ITransactionsModule;
     let broadcasterLogicStub: IBroadcasterLogic;
@@ -1285,7 +1286,7 @@ describe('modules/loader', () => {
       expect(loadBlocksFromPeerStub.callCount).eq(4);
     });
   });
-
+*/
   // describe('.loadSignatures', () => {
   //   let getRandomPeerStub: SinonStub;
   //   let loggerStub: LoggerStub;

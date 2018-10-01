@@ -40,4 +40,4 @@ export interface PeerType extends BasePeerType {
 // tslint:disable-next-line
 
 // tslint:disable-next-line
-export type PeerRequestOptions<T = any> = { url?: string, method: 'GET' | 'POST', data?: T, query?: any };
+export type PeerRequestOptions<T = any> = { url?: string, method: 'GET' | 'POST', data?: T, query?: any, headers: {[h: string]: string} };

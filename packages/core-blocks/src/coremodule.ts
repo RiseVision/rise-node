@@ -10,6 +10,7 @@ import { BlocksModel } from './models/BlocksModel';
 import { BlocksModule, BlocksModuleChain, BlocksModuleProcess, BlocksModuleUtils, BlocksModuleVerify } from './modules';
 import { CommonBlockRequest, GetBlocksRequest, HeightRequest, PostBlockRequest } from './p2p';
 import { BlocksP2P } from './p2p/';
+import { BlockLoader } from './loader';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
@@ -52,13 +53,16 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       .whenTargetNamed(BlocksSymbols.p2p.getHeight);
 
     this.container.bind(BlocksSymbols.__internals.mainP2P).to(BlocksP2P).inSingletonScope();
+    this.container.bind(BlocksSymbols.__internals.loader).to(BlockLoader).inSingletonScope();
   }
 
-  public teardown(): Promise<void> {
-    return this.container.get<BlocksP2P>(BlocksSymbols.__internals.mainP2P).unHook();
+  public async initAppElements(): Promise<void> {
+    await this.container.get<BlocksP2P>(BlocksSymbols.__internals.mainP2P).hookMethods();
+    await this.container.get<BlockLoader>(BlocksSymbols.__internals.loader).hookMethods();
   }
 
-  public initAppElements(): Promise<void> {
-    return this.container.get<BlocksP2P>(BlocksSymbols.__internals.mainP2P).hookMethods();
+  public async teardown(): Promise<void> {
+    await this.container.get<BlocksP2P>(BlocksSymbols.__internals.mainP2P).unHook();
+    await this.container.get<BlockLoader>(BlocksSymbols.__internals.loader).unHook();
   }
 }

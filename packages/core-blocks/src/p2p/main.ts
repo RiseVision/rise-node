@@ -1,6 +1,7 @@
 import { ILogger, ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { IBroadcasterLogic, p2pSymbols } from '@risevision/core-p2p';
 import { SignedAndChainedBlockType } from '@risevision/core-types';
+import { logOnly } from '@risevision/core-utils';
 import { decorate, inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
@@ -11,6 +12,10 @@ import { PostBlockRequest } from './PostBlockRequest';
 const Extendable = WPHooksSubscriber(Object);
 decorate(injectable(), Extendable);
 
+/**
+ * This class will subscribe to "PostApplyBlock" and will broadcast resulting block
+ * to all other peers which have not the updated block yet (filter over old broadhash)
+ */
 @injectable()
 export class BlocksP2P extends Extendable {
   @inject(Symbols.generic.hookSystem)
@@ -25,7 +30,7 @@ export class BlocksP2P extends Extendable {
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
-  @OnPostApplyBlock()
+  @OnPostApplyBlock(-100)
   public async onNewBlock(block: SignedAndChainedBlockType & { relays?: number }, dbTx: any, broadcast: boolean) {
     if (broadcast) {
       const broadhash = this.systemModule.broadhash;
@@ -33,21 +38,21 @@ export class BlocksP2P extends Extendable {
       block.relays    = block.relays || 0;
       if (block.relays < this.broadcaster.maxRelays()) {
         block.relays++;
-        // We avoid awaiting the broadcast result as it could result in unnecessary peer removals.
-        // Ex: Peer A, B, C
-        // A broadcasts block to B which wants to rebroadcast to A (which is waiting for B to respond) =>
-        // | - A will remove B as it will timeout and the same will happen to B
-        this.broadcaster.broadcast({
+        await this.broadcaster.broadcast({
           filters: { broadhash },
           options: {
             immediate: true,
             method   : this.postBlockRequest,
             payload: {
               body: { block },
+              headers: {
+                // We need to advertise ourselves with the new broadhash
+                broadhash: block.payloadHash.toString('hex'),
+              },
             },
           },
         })
-          .catch((err) => this.logger.warn('Error broadcasting block', err));
+          .catch(logOnly(this.logger));
       }
     }
   }
