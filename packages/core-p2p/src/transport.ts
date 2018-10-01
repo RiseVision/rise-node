@@ -117,6 +117,7 @@ export class TransportModule extends Extendable {
         ... this.systemModule.headers as any,
         accept        : 'application/octet-stream',
         'content-type': 'application/octet-stream',
+        ... options.headers,
       },
       method   : options.method,
       timeout  : this.appConfig.peers.options.timeout,

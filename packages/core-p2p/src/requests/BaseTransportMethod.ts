@@ -25,9 +25,10 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
   public async createRequestOptions(req: SingleTransportPayload<Data, Query> = { body: null }): Promise<PeerRequestOptions<Buffer>> {
     const queryString = req.query !== null ? `?${querystring.stringify(req.query)}` : '';
     return {
-      data  : await this.encodeRequest(req.body),
-      method: this.method,
-      url   : `${this.baseUrl}${queryString}`,
+      data   : await this.encodeRequest(req.body),
+      headers: req.headers || {},
+      method : this.method,
+      url    : `${this.baseUrl}${queryString}`,
     };
   }
 

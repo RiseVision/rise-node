@@ -1,7 +1,11 @@
 import { PeerRequestOptions } from '@risevision/core-types';
 import { Peer } from '../peer';
 
-export type SingleTransportPayload<Body, Query> = { body?: Body, query?: Query, requester?: Peer } | null;
+export type SingleTransportPayload<Body, Query> = {
+  headers?: { [h: string]: string }
+  body?: Body,
+  query?: Query,
+  requester?: Peer } | null;
 
 export interface ITransportMethod<Data, Query, Out> {
   batchable: boolean;

@@ -19,6 +19,7 @@ export type BroadcastFilters = {
 // tslint:disable-next-line
 export interface BroadcastTaskOptions<Body, Query, Out> {
   immediate?: boolean;
+  headers?: {[h: string]: string};
   method: BaseTransportMethod<Body, Query, Out>;
   payload?: SingleTransportPayload<Body, Query>;
 }

@@ -185,7 +185,19 @@ describe('src/modules/transport.ts', () => {
       expect(popsicleUseStub.use.firstCall.args[0]).to.be.a('function');
     });
 
-
+    it('should call override headers if provided', async () => {
+      await inst.getFromPeer(peer, { ...options, headers: { broadhash: 'meow', other: 'hey' } });
+      expect(popsicleStub.request.calledOnce).to.be.true;
+      expect(popsicleStub.request.firstCall.args.length).to.be.equal(1);
+      delete popsicleStub.request.firstCall.args[0].transport;
+      expect(popsicleStub.request.firstCall.args[0].headers).to.be.deep.equal({
+        ...systemModule.headers,
+        accept        : 'application/octet-stream',
+        'content-type': 'application/octet-stream',
+        other         : 'hey',
+        broadhash     : 'meow',
+      });
+    });
     it('should call popsicle twice (retry) if rejects and return 2nd result', async function () {
       this.timeout(2100);
       const start = Date.now();
