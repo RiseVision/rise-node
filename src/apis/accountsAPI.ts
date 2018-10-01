@@ -5,6 +5,7 @@ import { Body, Get, JsonController, Post, Put, QueryParams } from 'routing-contr
 import * as z_schema from 'z-schema';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { DeprecatedEndpoint } from '../helpers/decorators/deprecatedEndpoint';
 import { ResponseSchema, OpenAPI } from 'rc-openapi-gen'
 import { IAccountsModule, IDelegatesModule, ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
@@ -75,6 +76,7 @@ export class AccountsAPI {
   }
 
   @Get('/getBalance')
+  @ResponseSchema('responses.balance')
   @ValidateSchema()
   public async getBalance(@SchemaValid(accountSchema.getBalance)
                           @QueryParams() params: { address: string }) {
@@ -86,6 +88,7 @@ export class AccountsAPI {
   }
 
   @Get('/getPublicKey')
+  @ResponseSchema('responses.publicKey')
   @ValidateSchema()
   public async getPublickey(@SchemaValid(accountSchema.getPublicKey)
                             @QueryParams() params: { address: string }) {
@@ -98,6 +101,7 @@ export class AccountsAPI {
   }
 
   @Get('/delegates')
+  @ResponseSchema('responses.delegates')
   @ValidateSchema()
   public async getDelegates(@SchemaValid(accountSchema.getDelegates)
                             @QueryParams() params: { address: string }) {
@@ -129,6 +133,7 @@ export class AccountsAPI {
   }
 
   @Get('/delegates/fee')
+  @ResponseSchema('responses.fee')
   @ValidateSchema()
   public async getDelegatesFee(@SchemaValid(accountSchema.getDelegatesFee, {castNumbers: true})
                                @QueryParams() params: { height: number }) {
@@ -166,26 +171,23 @@ export class AccountsAPI {
   }
 
   @Post('/open')
+  @DeprecatedEndpoint()
   @ValidateSchema()
   public async open(@SchemaValid(accountSchema.open)
-                    @Body() body: { secret: string }): Promise<any> {
-    throw new DeprecatedAPIError();
-  }
+                    @Body() body: { secret: string }): Promise<any> {}
 
   /**
    * @deprecated
    */
   @Put('/delegates')
-  public async addDelegate() {
-    throw new DeprecatedAPIError();
-  }
+  @DeprecatedEndpoint()
+  public async addDelegate() {}
 
   /**
    * @deprecated
    */
   @Post('/generatePublicKey')
-  public async generatePublicKey() {
-    throw new DeprecatedAPIError();
-  }
+  @DeprecatedEndpoint()
+  public async generatePublicKey() {}
 
 }

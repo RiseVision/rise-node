@@ -1,23 +1,6 @@
 {
   "components": {
     "schemas": {
-      "Buffer": {
-        "id": "Buffer",
-        "type": "string",
-        "format": "binary"
-      },
-      "CSV": {
-        "id": "CSV",
-        "type": "string",
-        "format": "csv"
-      },
-      "ID": {
-        "id": "ID",
-        "type": "string",
-        "format": "id",
-        "minLength": 1,
-        "maxLength": 20
-      },
       "TransactionQuery": {
         "id": "TransactionQuery",
         "type": "object",
@@ -1169,25 +1152,34 @@
             "type": "object",
             "properties": {
               "address": {
-                "type": "string"
+                "id": "address",
+                "type": "string",
+                "format": "address",
+                "minLength": 1,
+                "maxLength": 22
               },
               "balance": {
-                "type": "number"
+                "id": "balance",
+                "type": "number",
+                "minimum": 0
               },
               "multisignatures": {
                 "type": "array",
                 "items": {
+                  "id": "signature",
                   "type": "string",
                   "format": "binary"
                 }
               },
               "publicKey": {
+                "id": "publicKey",
                 "type": "string",
-                "format": "binary"
+                "format": "publicKey"
               },
               "secondPublicKey": {
+                "id": "publicKey",
                 "type": "string",
-                "format": "binary"
+                "format": "publicKey"
               },
               "secondSignature": {
                 "type": "boolean"
@@ -1195,12 +1187,15 @@
               "u_multisignatures": {
                 "type": "array",
                 "items": {
+                  "id": "signature",
                   "type": "string",
                   "format": "binary"
                 }
               },
               "unconfirmedBalance": {
-                "type": "number"
+                "id": "balance",
+                "type": "number",
+                "minimum": 0
               },
               "unconfirmedSignature": {
                 "type": "boolean"
@@ -1221,6 +1216,318 @@
             "u_multisignatures": []
           }
         }
+      },
+      "responses.balance": {
+        "id": "responses.balance",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "balance": {
+            "id": "balance",
+            "type": "number",
+            "minimum": 0
+          },
+          "unconfirmedBalance": {
+            "id": "balance",
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "example": {
+          "balance": 10,
+          "unconfirmedBalance": 20
+        }
+      },
+      "responses.publicKey": {
+        "id": "responses.publicKey",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "publicKey": {
+            "id": "publicKey",
+            "type": "string",
+            "format": "publicKey"
+          }
+        },
+        "example": {
+          "publicKey": "0x1242acdf..."
+        }
+      },
+      "responses.delegates": {
+        "id": "responses.delegates",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "publicKey": {
+            "id": "publicKey",
+            "type": "string",
+            "format": "publicKey"
+          },
+          "delegates": {
+            "type": "array",
+            "items": {
+              "address": {
+                "id": "address",
+                "type": "string",
+                "format": "address",
+                "minLength": 1,
+                "maxLength": 22
+              },
+              "publicKey": {
+                "id": "publicKey",
+                "type": "string",
+                "format": "publicKey"
+              },
+              "username": {
+                "id": "username",
+                "type": "string",
+                "format": "username",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "approval": {
+                "type": "number"
+              },
+              "rank": {
+                "type": "number"
+              },
+              "rate": {
+                "type": "number"
+              },
+              "missedblocks": {
+                "type": "number"
+              },
+              "producedblocks": {
+                "type": "number"
+              },
+              "productivity": {
+                "type": "number"
+              },
+              "vote": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      },
+      "responses.fee": {
+        "id": "responses.fee",
+        "type": "object",
+        "proprties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "fee": {
+            "type": "number"
+          }
+        }
+      },
+      "respones.topAccounts": {
+        "id": "respones.topAccounts",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "accounts": {
+            "address": {
+              "id": "address",
+              "type": "string",
+              "format": "address",
+              "minLength": 1,
+              "maxLength": 22
+            },
+            "balance": {
+              "id": "balance",
+              "type": "number",
+              "minimum": 0
+            },
+            "publicKey": {
+              "id": "publicKey",
+              "type": "string",
+              "format": "publicKey"
+            }
+          }
+        }
+      },
+      "responses.deprecated": {
+        "id": "responses.deprecated",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": false,
+          "message": "Method is deprecated"
+        }
+      },
+      "Buffer": {
+        "id": "Buffer",
+        "type": "string",
+        "format": "binary"
+      },
+      "CSV": {
+        "id": "CSV",
+        "type": "string",
+        "format": "csv"
+      },
+      "id": {
+        "id": "id",
+        "type": "string",
+        "format": "id",
+        "minLength": 1,
+        "maxLength": 20
+      },
+      "secret": {
+        "id": "secret",
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "address": {
+        "id": "address",
+        "type": "string",
+        "format": "address",
+        "minLength": 1,
+        "maxLength": 22
+      },
+      "height": {
+        "id": "height",
+        "type": "integer",
+        "minimum": 1
+      },
+      "publicKey": {
+        "id": "publicKey",
+        "type": "string",
+        "format": "publicKey"
+      },
+      "amount": {
+        "id": "amount",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10999999991000000
+      },
+      "reward": {
+        "id": "reward",
+        "type": "integer",
+        "minimum": 0
+      },
+      "username": {
+        "id": "username",
+        "type": "string",
+        "format": "username",
+        "minLength": 1,
+        "maxLength": 20
+      },
+      "query": {
+        "id": "query",
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 20
+      },
+      "multisigMin": {
+        "id": "multisigMin",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 15
+      },
+      "multisigLifetime": {
+        "id": "multisigLifetime",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 72
+      },
+      "multisigKeysgroup": {
+        "id": "multisigKeysgroup",
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 15
+      },
+      "port": {
+        "id": "port",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 65535
+      },
+      "ipAddress": {
+        "id": "ipAddress",
+        "type": "string",
+        "format": "ip"
+      },
+      "version": {
+        "id": "version",
+        "type": "string",
+        "format": "version",
+        "minLength": 5,
+        "maxLength": 12
+      },
+      "usState": {
+        "id": "usState",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "os": {
+        "id": "os",
+        "type": "string",
+        "format": "os",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "hex": {
+        "id": "hex",
+        "type": "string",
+        "format": "hex"
+      },
+      "nonce": {
+        "id": "nonce",
+        "type": "string",
+        "minLength": 16,
+        "maxLength": 36
+      },
+      "balance": {
+        "id": "balance",
+        "type": "number",
+        "minimum": 0
+      },
+      "signature": {
+        "id": "signature",
+        "type": "string",
+        "format": "binary"
+      },
+      "boolQuery": {
+        "id": "boolQuery",
+        "type": "string",
+        "enum": [
+          "true",
+          "false"
+        ]
       },
       "signatures.getFee": {
         "id": "signatures.getFee",
@@ -1688,9 +1995,13 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.balance"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": ""
           }
         },
         "summary": "Get balance",
@@ -1716,9 +2027,13 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.publicKey"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": ""
           }
         },
         "summary": "Get publickey",
@@ -1744,9 +2059,13 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.delegates"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": ""
           }
         },
         "summary": "Get delegates",
@@ -1758,17 +2077,22 @@
       "put": {
         "operationId": "AccountsAPI.addDelegate",
         "responses": {
-          "200": {
+          "500": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.deprecated"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": "Deprecated API Error"
           }
         },
         "summary": "Add delegate",
         "tags": [
           "Accounts API"
         ],
+        "deprecated": true,
         "x-code-samples": []
       }
     },
@@ -1788,9 +2112,13 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.fee"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": ""
           }
         },
         "summary": "Get delegates fee",
@@ -1843,17 +2171,22 @@
           "required": false
         },
         "responses": {
-          "200": {
+          "500": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.deprecated"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": "Deprecated API Error"
           }
         },
         "summary": "Open",
         "tags": [
           "Accounts API"
         ],
+        "deprecated": true,
         "x-code-samples": []
       }
     },
@@ -1861,17 +2194,22 @@
       "post": {
         "operationId": "AccountsAPI.generatePublicKey",
         "responses": {
-          "200": {
+          "500": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.deprecated"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": "Deprecated API Error"
           }
         },
         "summary": "Generate public key",
         "tags": [
           "Accounts API"
         ],
+        "deprecated": true,
         "x-code-samples": []
       }
     },
@@ -2906,7 +3244,7 @@
             "name": "lastBlockId",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/ID"
+              "$ref": "#/components/schemas/id"
             }
           }
         ],
@@ -3075,7 +3413,7 @@
             "name": "lastBlockId",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/ID"
+              "$ref": "#/components/schemas/id"
             }
           }
         ],

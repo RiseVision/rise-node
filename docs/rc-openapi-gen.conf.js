@@ -17,23 +17,6 @@ module.exports = {
     }
   },
   baseSchema: {
-    Buffer: {
-      id: 'Buffer',
-      type: 'string',
-      format: 'binary'
-    },
-    CSV: {
-      id: 'CSV',
-      type: 'string',
-      format: 'csv'
-    },
-    ID: {
-      id: 'ID',
-      type: 'string',
-      format: 'id',
-      minLength: 1,
-      maxLength: 20
-    },
     TransactionQuery: {
       id: 'TransactionQuery',
       type: 'object',
