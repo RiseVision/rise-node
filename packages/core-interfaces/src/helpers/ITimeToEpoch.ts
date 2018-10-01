@@ -5,4 +5,6 @@ export interface ITimeToEpoch {
    * @return {number}
    */
   getTime(time?: number): number;
+
+  fromTimeStamp(timestamp: number): number;
 }
