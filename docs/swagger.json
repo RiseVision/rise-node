@@ -2022,6 +2022,339 @@
           "transaction",
           "signature"
         ]
+      },
+      "responses.accounts.getAccount": {
+        "id": "responses.accounts.getAccount",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "account": {
+            "type": "object",
+            "properties": {
+              "address": {
+                "id": "address",
+                "type": "string",
+                "format": "address",
+                "minLength": 1,
+                "maxLength": 22
+              },
+              "balance": {
+                "id": "balance",
+                "type": "string"
+              },
+              "multisignatures": {
+                "type": "array",
+                "items": {
+                  "id": "signature",
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "publicKey": {
+                "id": "publicKey",
+                "type": "string",
+                "format": "publicKey"
+              },
+              "secondPublicKey": {
+                "id": "publicKey",
+                "type": "string",
+                "format": "publicKey"
+              },
+              "secondSignature": {
+                "id": "boolInt",
+                "type": "integer",
+                "enum": [
+                  1,
+                  0
+                ]
+              },
+              "u_multisignatures": {
+                "type": "array",
+                "items": {
+                  "id": "signature",
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "unconfirmedBalance": {
+                "id": "balance",
+                "type": "string"
+              },
+              "unconfirmedSignature": {
+                "id": "boolInt",
+                "type": "integer",
+                "enum": [
+                  1,
+                  0
+                ]
+              }
+            }
+          }
+        },
+        "example": {
+          "success": true,
+          "account": {
+            "address": "8093718274007724701R",
+            "balance": "2973803650603",
+            "multisignatures": [],
+            "publicKey": "7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0",
+            "secondPublicKey": "e26988a52c519c9766d6f32ec32202b1ab16e77f6e404134222552fb3df23565",
+            "unconfirmedBalance": "2973803650603",
+            "unconfirmedSignature": 1,
+            "secondSignature": 1,
+            "u_multisignatures": []
+          }
+        }
+      },
+      "responses.accounts.getBalance": {
+        "id": "responses.accounts.getBalance",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "balance": {
+            "id": "balance",
+            "type": "string"
+          },
+          "unconfirmedBalance": {
+            "id": "balance",
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": true,
+          "balance": "2973803650603",
+          "unconfirmedBalance": "2973803650603"
+        }
+      },
+      "responses.accounts.getPublickey": {
+        "id": "responses.accounts.getPublickey",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "publicKey": {
+            "id": "publicKey",
+            "type": "string",
+            "format": "publicKey"
+          }
+        },
+        "example": {
+          "success": true,
+          "publicKey": "7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0"
+        }
+      },
+      "responses.accounts.getDelegates": {
+        "id": "responses.accounts.getDelegates",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "publicKey": {
+            "id": "publicKey",
+            "type": "string",
+            "format": "publicKey"
+          },
+          "delegates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "id": "address",
+                  "type": "string",
+                  "format": "address",
+                  "minLength": 1,
+                  "maxLength": 22
+                },
+                "publicKey": {
+                  "id": "publicKey",
+                  "type": "string",
+                  "format": "publicKey"
+                },
+                "username": {
+                  "id": "username",
+                  "type": "string",
+                  "format": "username",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "approval": {
+                  "type": "number"
+                },
+                "rank": {
+                  "type": "number"
+                },
+                "rate": {
+                  "type": "number"
+                },
+                "missedblocks": {
+                  "type": "number"
+                },
+                "producedblocks": {
+                  "type": "number"
+                },
+                "productivity": {
+                  "type": "number"
+                },
+                "vote": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        },
+        "example": {
+          "success": true,
+          "delegates": [
+            {
+              "username": "therisepool",
+              "address": "14056190751918729107R",
+              "publicKey": "5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde",
+              "vote": 97064376561139,
+              "producedblocks": 11939,
+              "missedblocks": 409,
+              "rate": 19,
+              "rank": 19,
+              "approval": 0.75,
+              "productivity": 96.69
+            }
+          ]
+        }
+      },
+      "responses.accounts.getDelegatesFee": {
+        "id": "responses.accounts.getDelegatesFee",
+        "type": "object",
+        "proprties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "fee": {
+            "type": "number"
+          }
+        },
+        "example": {
+          "success": true,
+          "fee": 2500000000
+        }
+      },
+      "responses.accounts.top": {
+        "id": "responses.accounts.top",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "id": "address",
+                  "type": "string",
+                  "format": "address",
+                  "minLength": 1,
+                  "maxLength": 22
+                },
+                "balance": {
+                  "id": "balance",
+                  "type": "string"
+                },
+                "publicKey": {
+                  "id": "publicKey",
+                  "type": "string",
+                  "format": "publicKey"
+                }
+              }
+            }
+          }
+        },
+        "example": {
+          "success": true,
+          "accounts": [
+            {
+              "address": "3262489507414775391R",
+              "balance": "1991694.49514931",
+              "publicKey": "e433144892f40c838d0ea865dde0915e4fdaecf3521efef585ff306e6513c8fc"
+            },
+            {
+              "address": "8093718274007724701R",
+              "balance": "29762.04739711",
+              "publicKey": "7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0"
+            }
+          ]
+        }
+      },
+      "responses.general.deprecated": {
+        "id": "responses.general.deprecated",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": false,
+          "error": "Method is deprecated"
+        }
+      },
+      "responses.general.success": {
+        "id": "responses.general.success",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": true
+        }
+      },
+      "responses.general.error": {
+        "id": "responses.general.error",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": false,
+          "error": "An error has occured"
+        }
       }
     }
   },
@@ -2050,7 +2383,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/responses.account"
+                  "$ref": "#/components/schemas/responses.accounts.getAccount"
                 }
               }
             },
@@ -2088,7 +2421,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/responses.balance"
+                  "$ref": "#/components/schemas/responses.accounts.getBalance"
                 }
               }
             },
@@ -2125,7 +2458,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/responses.publicKey"
+                  "$ref": "#/components/schemas/responses.accounts.getPublickey"
                 }
               }
             },
@@ -2162,7 +2495,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/responses.delegates"
+                  "$ref": "#/components/schemas/responses.accounts.getDelegates"
                 }
               }
             },
@@ -2187,7 +2520,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/responses.deprecated"
+                  "$ref": "#/components/schemas/responses.general.deprecated"
                 }
               }
             },
@@ -2198,8 +2531,7 @@
         "tags": [
           "Accounts API"
         ],
-        "deprecated": true,
-        "x-code-samples": []
+        "deprecated": true
       }
     },
     "/api/accounts/delegates/fee": {
@@ -2220,7 +2552,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/responses.fee"
+                  "$ref": "#/components/schemas/responses.accounts.getDelegatesFee"
                 }
               }
             },
@@ -2230,8 +2562,7 @@
         "summary": "Get delegates fee",
         "tags": [
           "Accounts API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/accounts/top": {
@@ -2252,7 +2583,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/responses.topAccounts"
+                  "$ref": "#/components/schemas/responses.accounts.top"
                 }
               }
             },
@@ -2262,7 +2593,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/responses.error"
+                  "$ref": "#/components/schemas/responses.general.error"
                 }
               }
             },
@@ -2272,8 +2603,7 @@
         "summary": "Top accounts",
         "tags": [
           "Accounts API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/accounts/open": {
@@ -2295,7 +2625,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/responses.deprecated"
+                  "$ref": "#/components/schemas/responses.general.deprecated"
                 }
               }
             },
@@ -2306,8 +2636,7 @@
         "tags": [
           "Accounts API"
         ],
-        "deprecated": true,
-        "x-code-samples": []
+        "deprecated": true
       }
     },
     "/api/accounts/generatePublicKey": {
@@ -2318,7 +2647,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/responses.deprecated"
+                  "$ref": "#/components/schemas/responses.general.deprecated"
                 }
               }
             },
@@ -2329,8 +2658,7 @@
         "tags": [
           "Accounts API"
         ],
-        "deprecated": true,
-        "x-code-samples": []
+        "deprecated": true
       }
     },
     "/api/blocks/": {
@@ -2357,8 +2685,7 @@
         "summary": "Get blocks",
         "tags": [
           "Blocks API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/blocks/get": {
@@ -2385,8 +2712,7 @@
         "summary": "Get block",
         "tags": [
           "Blocks API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/blocks/getHeight": {
@@ -2403,8 +2729,7 @@
         "summary": "Get height",
         "tags": [
           "Blocks API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/blocks/getBroadhash": {
@@ -2421,8 +2746,7 @@
         "summary": "Get broad hash",
         "tags": [
           "Blocks API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/blocks/getEpoch": {
@@ -2439,8 +2763,7 @@
         "summary": "Get epoch",
         "tags": [
           "Blocks API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/blocks/getFee": {
@@ -2467,8 +2790,7 @@
         "summary": "Get fee",
         "tags": [
           "Blocks API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/blocks/getFees": {
@@ -2495,8 +2817,7 @@
         "summary": "Get fees",
         "tags": [
           "Blocks API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/blocks/getNethash": {
@@ -2513,8 +2834,7 @@
         "summary": "Get nethash",
         "tags": [
           "Blocks API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/blocks/getMilestone": {
@@ -2531,8 +2851,7 @@
         "summary": "Get milestone",
         "tags": [
           "Blocks API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/blocks/getReward": {
@@ -2549,8 +2868,7 @@
         "summary": "Get reward",
         "tags": [
           "Blocks API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/blocks/getSupply": {
@@ -2567,8 +2885,7 @@
         "summary": "Get supply",
         "tags": [
           "Blocks API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/blocks/getStatus": {
@@ -2585,8 +2902,7 @@
         "summary": "Get status",
         "tags": [
           "Blocks API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/delegates/": {
@@ -2613,8 +2929,7 @@
         "summary": "Get delegates",
         "tags": [
           "Delegates API"
-        ],
-        "x-code-samples": []
+        ]
       },
       "put": {
         "operationId": "DelegatesAPI.createDelegate",
@@ -2629,8 +2944,7 @@
         "summary": "Create delegate",
         "tags": [
           "Delegates API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/delegates/fee": {
@@ -2657,8 +2971,7 @@
         "summary": "Get fee",
         "tags": [
           "Delegates API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/delegates/forging/getForgedByAccount": {
@@ -2685,8 +2998,7 @@
         "summary": "Get forged by account",
         "tags": [
           "Delegates API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/delegates/get": {
@@ -2713,8 +3025,7 @@
         "summary": "Get delegate",
         "tags": [
           "Delegates API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/delegates/voters": {
@@ -2741,8 +3052,7 @@
         "summary": "Get voters",
         "tags": [
           "Delegates API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/delegates/search": {
@@ -2769,8 +3079,7 @@
         "summary": "Search",
         "tags": [
           "Delegates API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/delegates/count": {
@@ -2787,8 +3096,7 @@
         "summary": "Count",
         "tags": [
           "Delegates API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/delegates/getNextForgers": {
@@ -2815,8 +3123,7 @@
         "summary": "Get next forgers",
         "tags": [
           "Delegates API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/delegates/forging/status": {
@@ -2843,8 +3150,7 @@
         "summary": "Get forging status",
         "tags": [
           "Delegates API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/delegates/forging/enable": {
@@ -2872,8 +3178,7 @@
         "summary": "Forging enable",
         "tags": [
           "Delegates API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/delegates/forging/disable": {
@@ -2901,8 +3206,7 @@
         "summary": "Forging disable",
         "tags": [
           "Delegates API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/loader/status/": {
@@ -2919,8 +3223,7 @@
         "summary": "Get status",
         "tags": [
           "Loader API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/loader/status/sync": {
@@ -2937,8 +3240,7 @@
         "summary": "Get status sync",
         "tags": [
           "Loader API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/loader/status/ping": {
@@ -2955,8 +3257,7 @@
         "summary": "Ping",
         "tags": [
           "Loader API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/multisignatures/accounts": {
@@ -2983,8 +3284,7 @@
         "summary": "Get accounts",
         "tags": [
           "Multisignature API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/multisignatures/pending": {
@@ -3011,8 +3311,7 @@
         "summary": "Get pending",
         "tags": [
           "Multisignature API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/multisignatures/sign": {
@@ -3029,8 +3328,7 @@
         "summary": "Sign",
         "tags": [
           "Multisignature API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/multisignatures/": {
@@ -3047,8 +3345,7 @@
         "summary": "Add multisignature",
         "tags": [
           "Multisignature API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/peers/": {
@@ -3075,8 +3372,7 @@
         "summary": "Get peers",
         "tags": [
           "Peers API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/peers/get": {
@@ -3103,8 +3399,7 @@
         "summary": "Get peer",
         "tags": [
           "Peers API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/peers/count": {
@@ -3121,8 +3416,7 @@
         "summary": "Count",
         "tags": [
           "Peers API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/peers/version": {
@@ -3139,8 +3433,7 @@
         "summary": "Version",
         "tags": [
           "Peers API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/signatures/fee": {
@@ -3167,8 +3460,7 @@
         "summary": "Fees",
         "tags": [
           "Signatures API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/api/signatures/": {
@@ -3185,8 +3477,7 @@
         "summary": "Add signature",
         "tags": [
           "Signatures API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/peer/height": {
@@ -3203,8 +3494,7 @@
         "summary": "Height",
         "tags": [
           "Transport API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/peer/ping": {
@@ -3221,8 +3511,7 @@
         "summary": "Ping",
         "tags": [
           "Transport API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/peer/list": {
@@ -3239,8 +3528,7 @@
         "summary": "List",
         "tags": [
           "Transport API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/peer/signatures": {
@@ -3257,8 +3545,7 @@
         "summary": "Signatures",
         "tags": [
           "Transport API"
-        ],
-        "x-code-samples": []
+        ]
       },
       "post": {
         "operationId": "TransportAPI.postSignatures",
@@ -3273,8 +3560,7 @@
         "summary": "Post signatures",
         "tags": [
           "Transport API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/peer/transactions": {
@@ -3291,8 +3577,7 @@
         "summary": "Transactions",
         "tags": [
           "Transport API"
-        ],
-        "x-code-samples": []
+        ]
       },
       "post": {
         "operationId": "TransportAPI.postTransactions",
@@ -3307,8 +3592,7 @@
         "summary": "Post transactions",
         "tags": [
           "Transport API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/peer/blocks/common": {
@@ -3335,8 +3619,7 @@
         "summary": "Get blocks common",
         "tags": [
           "Transport API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/peer/blocks": {
@@ -3353,8 +3636,7 @@
         "summary": "Post block",
         "tags": [
           "Transport API"
-        ],
-        "x-code-samples": []
+        ]
       },
       "get": {
         "operationId": "TransportAPI.getBlocks",
@@ -3379,8 +3661,7 @@
         "summary": "Get blocks",
         "tags": [
           "Transport API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/v2/peer/list": {
@@ -3397,8 +3678,7 @@
         "summary": "List",
         "tags": [
           "Transport V 2 API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/v2/peer/signatures": {
@@ -3415,8 +3695,7 @@
         "summary": "Signatures",
         "tags": [
           "Transport V 2 API"
-        ],
-        "x-code-samples": []
+        ]
       },
       "post": {
         "operationId": "TransportV2API.postSignatures",
@@ -3442,8 +3721,7 @@
         "summary": "Post signatures",
         "tags": [
           "Transport V 2 API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/v2/peer/transactions": {
@@ -3460,8 +3738,7 @@
         "summary": "Transactions",
         "tags": [
           "Transport V 2 API"
-        ],
-        "x-code-samples": []
+        ]
       },
       "post": {
         "operationId": "TransportV2API.postTransactions",
@@ -3476,8 +3753,7 @@
         "summary": "Post transactions",
         "tags": [
           "Transport V 2 API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/v2/peer/blocks/common": {
@@ -3504,8 +3780,7 @@
         "summary": "Get blocks common",
         "tags": [
           "Transport V 2 API"
-        ],
-        "x-code-samples": []
+        ]
       }
     },
     "/v2/peer/blocks": {
@@ -3522,8 +3797,7 @@
         "summary": "Post block",
         "tags": [
           "Transport V 2 API"
-        ],
-        "x-code-samples": []
+        ]
       },
       "get": {
         "operationId": "TransportV2API.getBlocks",
@@ -3548,8 +3822,7 @@
         "summary": "Get blocks",
         "tags": [
           "Transport V 2 API"
-        ],
-        "x-code-samples": []
+        ]
       }
     }
   }

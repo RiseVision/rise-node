@@ -33,7 +33,7 @@ export class AccountsAPI {
   private appConfig: AppConfig;
 
   @Get('/')
-  @ResponseSchema('responses.account')
+  @ResponseSchema('responses.accounts.getAccount')
   @OpenAPI({
     summary: 'Get Account',
     description: 'A really nice **Description** for Get Account'
@@ -76,7 +76,7 @@ export class AccountsAPI {
   }
 
   @Get('/getBalance')
-  @ResponseSchema('responses.balance')
+  @ResponseSchema('responses.accounts.getBalance')
   @ValidateSchema()
   public async getBalance(@SchemaValid(accountSchema.getBalance)
                           @QueryParams() params: { address: string }) {
@@ -88,7 +88,7 @@ export class AccountsAPI {
   }
 
   @Get('/getPublicKey')
-  @ResponseSchema('responses.publicKey')
+  @ResponseSchema('responses.accounts.getPublickey')
   @ValidateSchema()
   public async getPublickey(@SchemaValid(accountSchema.getPublicKey)
                             @QueryParams() params: { address: string }) {
@@ -101,7 +101,7 @@ export class AccountsAPI {
   }
 
   @Get('/delegates')
-  @ResponseSchema('responses.delegates')
+  @ResponseSchema('responses.accounts.getDelegates')
   @ValidateSchema()
   public async getDelegates(@SchemaValid(accountSchema.getDelegates)
                             @QueryParams() params: { address: string }) {
@@ -133,7 +133,7 @@ export class AccountsAPI {
   }
 
   @Get('/delegates/fee')
-  @ResponseSchema('responses.fee')
+  @ResponseSchema('responses.accounts.getDelegatesFee')
   @ValidateSchema()
   public async getDelegatesFee(@SchemaValid(accountSchema.getDelegatesFee, {castNumbers: true})
                                @QueryParams() params: { height: number }) {
@@ -143,8 +143,11 @@ export class AccountsAPI {
   }
 
   @Get('/top')
-  @ResponseSchema('responses.topAccounts')
-  @ResponseSchema('responses.error', { statusCode: 403, description: "Top Accounts is not enabled" })
+  @ResponseSchema('responses.accounts.top')
+  @ResponseSchema('responses.general.error', {
+    statusCode: 403,
+    description: "Top Accounts is not enabled"
+  })
   @ValidateSchema()
   public async topAccounts(@SchemaValid(accountSchema.top, {castNumbers: true})
                            @QueryParams() params: { limit?: number, offset?: number }) {

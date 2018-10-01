@@ -7,7 +7,7 @@ const README = fs.readFileSync(
 
 module.exports = {
   controllers: 'dist/apis/*API.js',
-  schemas: 'dist/schema/*.js',
+  schemas: 'dist/schema/*.js,dist/schema/responses/*.js',
   out: 'docs/swagger.json',
   static: {
     info: {

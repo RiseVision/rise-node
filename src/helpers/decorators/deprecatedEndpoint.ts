@@ -10,7 +10,7 @@ export function DeprecatedEndpoint() {
   ) => {
     HttpCode(500)(target, property, descriptor);
     OpenAPI({ deprecated: true })(target, property, descriptor);
-    ResponseSchema("responses.deprecated", {
+    ResponseSchema("responses.general.deprecated", {
       statusCode: 500,
       description: "Deprecated API Error"
     })(target, property, descriptor);
