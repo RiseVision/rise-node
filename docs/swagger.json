@@ -1160,8 +1160,7 @@
               },
               "balance": {
                 "id": "balance",
-                "type": "number",
-                "minimum": 0
+                "type": "string"
               },
               "multisignatures": {
                 "type": "array",
@@ -1182,7 +1181,12 @@
                 "format": "publicKey"
               },
               "secondSignature": {
-                "type": "boolean"
+                "id": "boolInt",
+                "type": "integer",
+                "enum": [
+                  1,
+                  0
+                ]
               },
               "u_multisignatures": {
                 "type": "array",
@@ -1194,11 +1198,15 @@
               },
               "unconfirmedBalance": {
                 "id": "balance",
-                "type": "number",
-                "minimum": 0
+                "type": "string"
               },
               "unconfirmedSignature": {
-                "type": "boolean"
+                "id": "boolInt",
+                "type": "integer",
+                "enum": [
+                  1,
+                  0
+                ]
               }
             }
           }
@@ -1206,13 +1214,14 @@
         "example": {
           "success": true,
           "account": {
-            "address": "0xabc1234...",
-            "balance": 20,
+            "address": "8093718274007724701R",
+            "balance": "2973803650603",
             "multisignatures": [],
-            "publicKey": "0xdef789...",
-            "unconfirmedBalance": 21,
-            "unconfirmedSignature": false,
-            "secondSignature": false,
+            "publicKey": "7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0",
+            "secondPublicKey": "e26988a52c519c9766d6f32ec32202b1ab16e77f6e404134222552fb3df23565",
+            "unconfirmedBalance": "2973803650603",
+            "unconfirmedSignature": 1,
+            "secondSignature": 1,
             "u_multisignatures": []
           }
         }
@@ -1229,18 +1238,17 @@
           },
           "balance": {
             "id": "balance",
-            "type": "number",
-            "minimum": 0
+            "type": "string"
           },
           "unconfirmedBalance": {
             "id": "balance",
-            "type": "number",
-            "minimum": 0
+            "type": "string"
           }
         },
         "example": {
-          "balance": 10,
-          "unconfirmedBalance": 20
+          "success": true,
+          "balance": "2973803650603",
+          "unconfirmedBalance": "2973803650603"
         }
       },
       "responses.publicKey": {
@@ -1260,7 +1268,8 @@
           }
         },
         "example": {
-          "publicKey": "0x1242acdf..."
+          "success": true,
+          "publicKey": "7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0"
         }
       },
       "responses.delegates": {
@@ -1281,48 +1290,68 @@
           "delegates": {
             "type": "array",
             "items": {
-              "address": {
-                "id": "address",
-                "type": "string",
-                "format": "address",
-                "minLength": 1,
-                "maxLength": 22
-              },
-              "publicKey": {
-                "id": "publicKey",
-                "type": "string",
-                "format": "publicKey"
-              },
-              "username": {
-                "id": "username",
-                "type": "string",
-                "format": "username",
-                "minLength": 1,
-                "maxLength": 20
-              },
-              "approval": {
-                "type": "number"
-              },
-              "rank": {
-                "type": "number"
-              },
-              "rate": {
-                "type": "number"
-              },
-              "missedblocks": {
-                "type": "number"
-              },
-              "producedblocks": {
-                "type": "number"
-              },
-              "productivity": {
-                "type": "number"
-              },
-              "vote": {
-                "type": "number"
+              "type": "object",
+              "properties": {
+                "address": {
+                  "id": "address",
+                  "type": "string",
+                  "format": "address",
+                  "minLength": 1,
+                  "maxLength": 22
+                },
+                "publicKey": {
+                  "id": "publicKey",
+                  "type": "string",
+                  "format": "publicKey"
+                },
+                "username": {
+                  "id": "username",
+                  "type": "string",
+                  "format": "username",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "approval": {
+                  "type": "number"
+                },
+                "rank": {
+                  "type": "number"
+                },
+                "rate": {
+                  "type": "number"
+                },
+                "missedblocks": {
+                  "type": "number"
+                },
+                "producedblocks": {
+                  "type": "number"
+                },
+                "productivity": {
+                  "type": "number"
+                },
+                "vote": {
+                  "type": "number"
+                }
               }
             }
           }
+        },
+        "example": {
+          "success": true,
+          "delegates": [
+            {
+              "username": "therisepool",
+              "address": "14056190751918729107R",
+              "publicKey": "5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde",
+              "vote": 97064376561139,
+              "producedblocks": 11939,
+              "missedblocks": 409,
+              "rate": 19,
+              "rank": 19,
+              "approval": 0.75,
+              "productivity": 96.69
+            }
+          ]
         }
       },
       "responses.fee": {
@@ -1338,10 +1367,14 @@
           "fee": {
             "type": "number"
           }
+        },
+        "example": {
+          "success": true,
+          "fee": 2500000000
         }
       },
-      "respones.topAccounts": {
-        "id": "respones.topAccounts",
+      "responses.topAccounts": {
+        "id": "responses.topAccounts",
         "type": "object",
         "properties": {
           "success": {
@@ -1351,24 +1384,44 @@
             "type": "string"
           },
           "accounts": {
-            "address": {
-              "id": "address",
-              "type": "string",
-              "format": "address",
-              "minLength": 1,
-              "maxLength": 22
-            },
-            "balance": {
-              "id": "balance",
-              "type": "number",
-              "minimum": 0
-            },
-            "publicKey": {
-              "id": "publicKey",
-              "type": "string",
-              "format": "publicKey"
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "id": "address",
+                  "type": "string",
+                  "format": "address",
+                  "minLength": 1,
+                  "maxLength": 22
+                },
+                "balance": {
+                  "id": "balance",
+                  "type": "string"
+                },
+                "publicKey": {
+                  "id": "publicKey",
+                  "type": "string",
+                  "format": "publicKey"
+                }
+              }
             }
           }
+        },
+        "example": {
+          "success": true,
+          "accounts": [
+            {
+              "address": "3262489507414775391R",
+              "balance": "1991694.49514931",
+              "publicKey": "e433144892f40c838d0ea865dde0915e4fdaecf3521efef585ff306e6513c8fc"
+            },
+            {
+              "address": "8093718274007724701R",
+              "balance": "29762.04739711",
+              "publicKey": "7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0"
+            }
+          ]
         }
       },
       "responses.deprecated": {
@@ -1384,7 +1437,38 @@
         },
         "example": {
           "success": false,
-          "message": "Method is deprecated"
+          "error": "Method is deprecated"
+        }
+      },
+      "responses.success": {
+        "id": "responses.success",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": true
+        }
+      },
+      "responses.error": {
+        "id": "responses.error",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": false,
+          "error": "An error has occured"
         }
       },
       "Buffer": {
@@ -1513,13 +1597,20 @@
       },
       "balance": {
         "id": "balance",
-        "type": "number",
-        "minimum": 0
+        "type": "string"
       },
       "signature": {
         "id": "signature",
         "type": "string",
         "format": "binary"
+      },
+      "boolInt": {
+        "id": "boolInt",
+        "type": "integer",
+        "enum": [
+          1,
+          0
+        ]
       },
       "boolQuery": {
         "id": "boolQuery",
@@ -1974,7 +2065,7 @@
         "x-code-samples": [
           {
             "lang": "javascript",
-            "source": "import { rise } from 'risejs'\n\nrise.accounts\n  .getAccount({ address: '0xabc1213...' })\n  .then(function(res) {\n    console.log(res.balance) // 20\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+            "source": "import { rise } from 'risejs'\n\nrise.accounts\n  .getAccount('8093718274007724701R')\n  .then(function({ account }) {\n    console.log(account.balance) // 2973803650603\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
           }
         ]
       }
@@ -2008,7 +2099,12 @@
         "tags": [
           "Accounts API"
         ],
-        "x-code-samples": []
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.accounts\n  .getBalance('8093718274007724701R')\n  .then(function({ balance }) {\n    console.log(balance) // 2973803650603\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ]
       }
     },
     "/api/accounts/getPublicKey": {
@@ -2040,7 +2136,12 @@
         "tags": [
           "Accounts API"
         ],
-        "x-code-samples": []
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.accounts\n  .getPublicKey('8093718274007724701R')\n  .then(function({ publicKey }) {\n    console.log(publicKey) // \"7067a911f3a4...\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ]
       }
     },
     "/api/accounts/delegates": {
@@ -2072,7 +2173,12 @@
         "tags": [
           "Accounts API"
         ],
-        "x-code-samples": []
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.accounts\n  .getDelegates('8093718274007724701R')\n  .then(function({ delegates }) {\n    console.log(delegates[0].publicKey) // \"5d3c3c5cdead6...\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ]
       },
       "put": {
         "operationId": "AccountsAPI.addDelegate",
@@ -2144,9 +2250,23 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.topAccounts"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.error"
+                }
+              }
+            },
+            "description": "Top Accounts is not enabled"
           }
         },
         "summary": "Top accounts",

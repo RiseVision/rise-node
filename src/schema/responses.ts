@@ -1,6 +1,6 @@
 import scalars from "./scalars";
 
-const { username, address, balance, signature, publicKey } = scalars;
+const { username, address, balance, signature, publicKey, boolInt } = scalars;
 
 const respProps = (props = {}) =>
   Object.assign(
@@ -10,6 +10,8 @@ const respProps = (props = {}) =>
     },
     props
   );
+
+const successResp = (example = {}) => Object.assign({ success: true }, example);
 
 export default {
   account: {
@@ -27,29 +29,29 @@ export default {
           },
           publicKey,
           secondPublicKey: publicKey,
-          secondSignature: { type: "boolean" },
+          secondSignature: boolInt,
           u_multisignatures: {
             type: "array",
             items: signature
           },
           unconfirmedBalance: balance,
-          unconfirmedSignature: { type: "boolean" }
+          unconfirmedSignature: boolInt
         }
       }
     }),
-    example: {
-      success: true,
+    example: successResp({
       account: {
-        address: "0xabc1234...",
-        balance: 20,
+        address: "8093718274007724701R",
+        balance: "2973803650603",
         multisignatures: [],
-        publicKey: "0xdef789...",
-        unconfirmedBalance: 21,
-        unconfirmedSignature: false,
-        secondSignature: false,
+        publicKey: "7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0",
+        secondPublicKey: "e26988a52c519c9766d6f32ec32202b1ab16e77f6e404134222552fb3df23565",
+        unconfirmedBalance: "2973803650603",
+        unconfirmedSignature: 1,
+        secondSignature: 1,
         u_multisignatures: []
       }
-    }
+    })
   },
   balance: {
     id: "responses.balance",
@@ -58,10 +60,10 @@ export default {
       balance,
       unconfirmedBalance: balance
     }),
-    example: {
-      balance: 10,
-      unconfirmedBalance: 20
-    }
+    example: successResp({
+      balance: "2973803650603",
+      unconfirmedBalance: "2973803650603"
+    })
   },
   publicKey: {
     id: "responses.publicKey",
@@ -69,9 +71,9 @@ export default {
     properties: respProps({
       publicKey
     }),
-    example: {
-      publicKey: "0x1242acdf..."
-    }
+    example: successResp({
+      publicKey: "7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0"
+    })
   },
   delegates: {
     id: "responses.delegates",
@@ -81,18 +83,37 @@ export default {
       delegates: {
         type: "array",
         items: {
-          address,
-          publicKey,
-          username,
-          approval: { type: "number" },
-          rank: { type: "number" },
-          rate: { type: "number" },
-          missedblocks: { type: "number" },
-          producedblocks: { type: "number" },
-          productivity: { type: "number" },
-          vote: { type: "number" }
+          type: "object",
+          properties: {
+            address,
+            publicKey,
+            username,
+            approval: { type: "number" },
+            rank: { type: "number" },
+            rate: { type: "number" },
+            missedblocks: { type: "number" },
+            producedblocks: { type: "number" },
+            productivity: { type: "number" },
+            vote: { type: "number" }
+          }
         }
       }
+    }),
+    example: successResp({
+      delegates: [
+        {
+          username: "therisepool",
+          address: "14056190751918729107R",
+          publicKey: "5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde",
+          vote: 97064376561139,
+          producedblocks: 11939,
+          missedblocks: 409,
+          rate: 19,
+          rank: 19,
+          approval: 0.75,
+          productivity: 96.69
+        }
+      ]
     })
   },
   fee: {
@@ -100,17 +121,40 @@ export default {
     type: "object",
     proprties: respProps({
       fee: { type: "number" }
+    }),
+    example: successResp({
+      fee: 2500000000
     })
   },
   topAccounts: {
-    id: "respones.topAccounts",
+    id: "responses.topAccounts",
     type: "object",
     properties: respProps({
       accounts: {
-        address,
-        balance,
-        publicKey
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            address,
+            balance,
+            publicKey
+          }
+        }
       }
+    }),
+    example: successResp({
+      accounts: [
+        {
+          address: "3262489507414775391R",
+          balance: "1991694.49514931",
+          publicKey: "e433144892f40c838d0ea865dde0915e4fdaecf3521efef585ff306e6513c8fc"
+        },
+        {
+          address: "8093718274007724701R",
+          balance: "29762.04739711",
+          publicKey: "7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0"
+        }
+      ]
     })
   },
   deprecated: {
@@ -119,7 +163,24 @@ export default {
     properties: respProps(),
     example: {
       success: false,
-      message: "Method is deprecated"
+      error: "Method is deprecated"
+    }
+  },
+  success: {
+    id: "responses.success",
+    type: "object",
+    properties: respProps(),
+    example: {
+      success: true
+    }
+  },
+  error: {
+    id: "responses.error",
+    type: "object",
+    properties: respProps(),
+    example: {
+      success: false,
+      error: "An error has occured"
     }
   }
 };

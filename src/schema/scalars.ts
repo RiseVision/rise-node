@@ -127,14 +127,18 @@ export default {
   },
   balance: {
     id: "balance",
-    type: "number",
-    minimum: 0
+    type: "string"
   },
   signature: {
     id: "signature",
     type: "string",
     format: "binary"
   },
+    boolInt: {
+        "id": "boolInt",
+        type: "integer",
+        enum: [1, 0]
+    },
   boolQuery: {
     id: "boolQuery",
     type: "string",

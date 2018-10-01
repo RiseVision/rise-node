@@ -143,6 +143,8 @@ export class AccountsAPI {
   }
 
   @Get('/top')
+  @ResponseSchema('responses.topAccounts')
+  @ResponseSchema('responses.error', { statusCode: 403, description: "Top Accounts is not enabled" })
   @ValidateSchema()
   public async topAccounts(@SchemaValid(accountSchema.top, {castNumbers: true})
                            @QueryParams() params: { limit?: number, offset?: number }) {
