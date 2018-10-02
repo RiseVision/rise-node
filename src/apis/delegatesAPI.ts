@@ -8,6 +8,8 @@ import * as z_schema from 'z-schema';
 import { constants, Ed, Slots } from '../helpers/';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { DeprecatedEndpoint } from '../helpers/decorators/deprecatedEndpoint';
+import { ResponseSchema, OpenApi } from 'rc-openapi-gen'
 import {
   IAccountsModule,
   IBlocksModule,
@@ -57,6 +59,7 @@ export class DelegatesAPI {
   private TransactionsModel: typeof TransactionsModel;
 
   @Get('/')
+  @ResponseSchema('responses.delegates.getDelegates')
   @ValidateSchema()
   public async getDelegates(@SchemaValid(schema.getDelegates, { castNumbers: true })
                             @QueryParams() data: { orderBy: string, limit: number, offset: number }) {
@@ -100,6 +103,7 @@ export class DelegatesAPI {
   }
 
   @Get('/fee')
+  @ResponseSchema('responses.delegates.getFee')
   @ValidateSchema()
   public async getFee(@SchemaValid(schema.getFee, { castNumbers: true })
                       @QueryParams() params: { height?: number }) {
@@ -111,6 +115,7 @@ export class DelegatesAPI {
   }
 
   @Get('/forging/getForgedByAccount')
+  @ResponseSchema('responses.delegates.getForgedByAccount')
   @ValidateSchema()
   public async getForgedByAccount(@SchemaValid(schema.getForgedByAccount, { castNumbers: true })
                                   // tslint:disable-next-line max-line-length
@@ -146,9 +151,11 @@ export class DelegatesAPI {
   }
 
   @Get('/get')
+  @ResponseSchema('responses.delegates.getDelegate')
   @ValidateSchema()
   public async getDelegate(@SchemaValid(schema.getDelegate)
-                           @QueryParams() params: { publicKey: publicKey, username: string }) {
+
+      @QueryParams() params: { publicKey: publicKey, username: string }) {
     // FIXME: Delegates returned are automatically limited by maxDelegates. This means that a delegate cannot be found
     // if ranked (username) below the desired value.
     const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'username:asc' });
@@ -167,6 +174,7 @@ export class DelegatesAPI {
   }
 
   @Get('/voters')
+  @ResponseSchema('responses.delegates.getVoters')
   @ValidateSchema()
   public async getVoters(@SchemaValid(schema.getVoters)
                          @QueryParams() params: { publicKey: publicKey }) {
@@ -189,6 +197,7 @@ export class DelegatesAPI {
   }
 
   @Get('/search')
+  @ResponseSchema('responses.delegates.search')
   @ValidateSchema()
   public async search(@SchemaValid(schema.search, { castNumbers: true })
                       @QueryParams() params: { q: string, limit?: number, orderBy?: string }) {
@@ -211,11 +220,13 @@ export class DelegatesAPI {
   }
 
   @Get('/count')
+  @ResponseSchema('responses.delegates.count')
   public async count() {
     return { count: await this.Accounts2DelegatesModel.count() };
   }
 
   @Get('/getNextForgers')
+  @ResponseSchema('responses.delegates.getNextForgers')
   public async getNextForgers(@QueryParam('limit', { required: false }) limit: number = 10) {
     const curBlock = this.blocks.lastBlock;
 
@@ -240,12 +251,16 @@ export class DelegatesAPI {
   }
 
   @Put('/')
-  public async createDelegate() {
-    throw new DeprecatedAPIError();
-  }
+  @DeprecatedEndpoint()
+  public async createDelegate() {}
 
   // internal stuff.
   @Get('/forging/status')
+  @ResponseSchema('responses.delegates.getForgingStatus')
+  @ResponseSchema('responses.delegates.accessDenied', {
+    statusCode: 403,
+    description: 'Delegates API Access Denied'
+  })
   @ValidateSchema()
   @UseBefore(ForgingApisWatchGuard)
   public async getForgingStatus(@SchemaValid(schema.forgingStatus)
@@ -266,6 +281,11 @@ export class DelegatesAPI {
   }
 
   @Post('/forging/enable')
+  @ResponseSchema('responses.delegates.forgingEnable')
+  @ResponseSchema('responses.delegates.accessDenied', {
+    statusCode: 403,
+    description: 'Delegates API Access Denied'
+  })
   @ValidateSchema()
   @UseBefore(ForgingApisWatchGuard)
   public async forgingEnable(@SchemaValid(schema.disableForging)
@@ -295,6 +315,11 @@ export class DelegatesAPI {
   }
 
   @Post('/forging/disable')
+  @ResponseSchema('responses.delegates.forgingDisable')
+  @ResponseSchema('responses.delegates.accessDenied', {
+    statusCode: 403,
+    description: 'Delegates API Access Denied'
+  })
   @ValidateSchema()
   @UseBefore(ForgingApisWatchGuard)
   public async forgingDisable(@SchemaValid(schema.disableForging)

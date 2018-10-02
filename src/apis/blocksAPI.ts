@@ -7,6 +7,7 @@ import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidat
 import { WrapInDBSequence } from '../helpers/decorators/wrapInSequence';
 import { IBlockLogic, IBlockReward, ITransactionLogic } from '../ioc/interfaces/logic';
 import { IBlocksModule, ISystemModule } from '../ioc/interfaces/modules';
+import { OpenApi, ResponseSchema } from 'rc-openapi-gen'
 import { Symbols } from '../ioc/symbols';
 import { BlocksModel, TransactionsModel } from '../models';
 import blocksSchema from '../schema/blocks';
@@ -49,6 +50,7 @@ export class BlocksAPI {
   private TransactionsModel: typeof TransactionsModel;
 
   @Get('/')
+  @ResponseSchema('responses.blocks.getBlocks')
   @ValidateSchema()
   @WrapInDBSequence
   public async getBlocks(@SchemaValid(blocksSchema.getBlocks, { castNumbers: true })
@@ -94,6 +96,7 @@ export class BlocksAPI {
   }
 
   @Get('/get')
+  @ResponseSchema('responses.blocks.getBlock')
   @ValidateSchema()
   public async getBlock(@SchemaValid(blocksSchema.getBlock, { castNumbers: true })
                         @QueryParams() filters: { id: string }) {
@@ -109,22 +112,26 @@ export class BlocksAPI {
   }
 
   @Get('/getHeight')
+  @ResponseSchema('responses.blocks.getHeight')
   @ValidateSchema()
   public async getHeight() {
     return { height: this.blocksModule.lastBlock.height };
   }
 
   @Get('/getBroadhash')
+  @ResponseSchema('responses.blocks.getBroadHash')
   public async getBroadHash() {
     return { broadhash: await this.systemModule.getBroadhash() };
   }
 
   @Get('/getEpoch')
+  @ResponseSchema('responses.blocks.getEpoch')
   public getEpoch() {
     return { epoch: this.constants.epochTime };
   }
 
   @Get('/getFee')
+  @ResponseSchema('responses.blocks.getFee')
   @ValidateSchema()
   public async getFee(@SchemaValid(blocksSchema.getFee, { castNumbers: true })
                       @QueryParams() params: { height: number }) {
@@ -133,6 +140,7 @@ export class BlocksAPI {
   }
 
   @Get('/getFees')
+  @ResponseSchema('responses.blocks.getFees')
   @ValidateSchema()
   public async getFees(@SchemaValid(blocksSchema.getFees, { castNumbers: true })
                        @QueryParams() params: { height: number }) {
@@ -140,26 +148,31 @@ export class BlocksAPI {
   }
 
   @Get('/getNethash')
+  @ResponseSchema('responses.blocks.getNethash')
   public getNethash() {
     return { nethash: this.systemModule.getNethash() };
   }
 
   @Get('/getMilestone')
+  @ResponseSchema('responses.blocks.getMilestone')
   public getMilestone() {
     return { milestone: this.blockRewardLogic.calcMilestone(this.blocksModule.lastBlock.height) };
   }
 
   @Get('/getReward')
+  @ResponseSchema('responses.blocks.getReward')
   public getReward() {
     return { reward: this.blockRewardLogic.calcReward(this.blocksModule.lastBlock.height) };
   }
 
   @Get('/getSupply')
+  @ResponseSchema('responses.blocks.getSupply')
   public getSupply() {
     return { supply: this.blockRewardLogic.calcSupply(this.blocksModule.lastBlock.height) };
   }
 
   @Get('/getStatus')
+  @ResponseSchema('responses.blocks.getStatus')
   public async getStatus() {
     const lastBlock = this.blocksModule.lastBlock;
     return {

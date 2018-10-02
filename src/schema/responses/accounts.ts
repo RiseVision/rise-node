@@ -1,10 +1,16 @@
-import scalars from "../scalars";
-import { respProps, successResp } from './general'
-
-const { username, address, balance, signature, publicKey, boolInt } = scalars;
+import { respProps, successResp } from '../utils/responses'
+import {
+  username,
+  address,
+  balance,
+  signature,
+  publicKey,
+  boolInt
+} from "../common/scalars";
+import { Delegate } from '../common/models'
 
 export default {
-  account: {
+  getAccount: {
     id: "responses.accounts.getAccount",
     type: "object",
     properties: respProps({
@@ -43,7 +49,7 @@ export default {
       }
     })
   },
-  balance: {
+  getBalance: {
     id: "responses.accounts.getBalance",
     type: "object",
     properties: respProps({
@@ -55,7 +61,7 @@ export default {
       unconfirmedBalance: "2973803650603"
     })
   },
-  publicKey: {
+  getPublickey: {
     id: "responses.accounts.getPublickey",
     type: "object",
     properties: respProps({
@@ -72,21 +78,7 @@ export default {
       publicKey,
       delegates: {
         type: "array",
-        items: {
-          type: "object",
-          properties: {
-            address,
-            publicKey,
-            username,
-            approval: { type: "number" },
-            rank: { type: "number" },
-            rate: { type: "number" },
-            missedblocks: { type: "number" },
-            producedblocks: { type: "number" },
-            productivity: { type: "number" },
-            vote: { type: "number" }
-          }
-        }
+        items: Delegate
       }
     }),
     example: successResp({
@@ -106,7 +98,7 @@ export default {
       ]
     })
   },
-  fee: {
+  getDelegatesFee: {
     id: "responses.accounts.getDelegatesFee",
     type: "object",
     proprties: respProps({
@@ -116,7 +108,7 @@ export default {
       fee: 2500000000
     })
   },
-  topAccounts: {
+  top: {
     id: "responses.accounts.top",
     type: "object",
     properties: respProps({
@@ -146,5 +138,5 @@ export default {
         }
       ]
     })
-  },
+  }
 };

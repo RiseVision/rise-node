@@ -1,12 +1,16 @@
 import {
+  address,
+  amount,
+  countingNum,
+  floatnum,
+  height,
   hex,
   id,
   publicKey,
-  height,
-  wholeNum,
-  timestamp,
   signature,
-  amount
+  timestamp,
+  username,
+  wholeNum
 } from "./scalars";
 
 export const Transaction = {
@@ -60,14 +64,19 @@ export const Block = {
   }
 };
 
-export const Fees = {
-  id: "common.models.Fee",
+export const Delegate = {
+  id: "common.models.Delegate",
   type: "object",
   properties: {
-    send: amount,
-    vote: amount,
-    secondSignature: amount,
-    delegate: amount,
-    multisignature: amount
+    address,
+    approval: floatnum,
+    missedblocks: wholeNum,
+    producedBlocks: wholeNum,
+    productivity: floatnum,
+    publicKey,
+    rank: countingNum,
+    rate: countingNum,
+    username,
+    vote: wholeNum
   }
 };

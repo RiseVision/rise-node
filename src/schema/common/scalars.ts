@@ -179,3 +179,20 @@ export const timestamp = {
   type: "integer",
   minimum: 1
 };
+
+export const datetime = {
+  id: "common.scalars.datetime",
+  type: "string",
+  format: "date-time"
+};
+
+export const stringnum = {
+  id: "common.scalars.stringnum",
+  type: "string",
+  format: "stringnum"
+};
+
+export const floatnum = {
+  type: "number",
+  format: "float"
+};

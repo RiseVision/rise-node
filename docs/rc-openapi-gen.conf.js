@@ -6,8 +6,8 @@ const README = fs.readFileSync(
 ).toString()
 
 module.exports = {
-  controllers: 'dist/apis/*API.js',
-  schemas: 'dist/schema/*.js,dist/schema/responses/*.js',
+  controllers: 'dist/apis/!(transport)*API.js',
+  schemas: 'dist/schema/*.js,dist/schema/+(common|responses)/*.js',
   out: 'docs/swagger.json',
   static: {
     info: {
@@ -24,6 +24,11 @@ module.exports = {
         transaction: { type: 'object' },
         transactions: { type: 'array', maxItems: 10 }
       }
+    },
+    Buffer: {
+      id: "Buffer",
+      type: "string",
+      format: "binary"
     }
   },
   samples: {
