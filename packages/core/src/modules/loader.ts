@@ -30,8 +30,6 @@ import {
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
-
-  public loaded: boolean                       = false;
   private network: { height: number, peers: Peer[] };
 
   // Generic
@@ -121,16 +119,7 @@ export class LoaderModule implements ILoaderModule {
     return this.appState.get('loader.isSyncing') || false;
   }
 
-  public async onPeersReady() {
-    await this.syncTimer();
-    // If transactions polling is not enabled, sync txs only on boot.
-    if (this.loaded) {
-      await this.doSync();
-    }
-  }
-
   public cleanup() {
-    this.loaded = false;
     this.jobsQueue.unregister('loaderSyncTimer');
     return Promise.resolve();
   }
@@ -258,7 +247,6 @@ export class LoaderModule implements ILoaderModule {
     this.jobsQueue.register('loaderSyncTimer', async () => {
         this.logger.trace('Sync timer trigger', {
           last_receipt: this.blocksModule.lastReceipt.get(),
-          loaded      : this.loaded,
           syncing     : this.isSyncing,
         });
         this.appState.set('loader.isSyncing', true);

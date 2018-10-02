@@ -23,8 +23,9 @@ export class LoaderAPI {
 
   @Get('/')
   public getStatus() {
+    // To remove? useless.
     return {
-      loaded: this.loaderModule.loaded,
+      loaded: true,
     };
   }
 

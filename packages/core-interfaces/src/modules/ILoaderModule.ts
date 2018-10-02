@@ -2,7 +2,6 @@ import { PeerType } from '@risevision/core-types';
 
 export interface ILoaderModule {
   readonly isSyncing: boolean;
-  readonly loaded: boolean;
 
   getNetwork(): Promise<{ height: number; peers: PeerType[] }>;
 

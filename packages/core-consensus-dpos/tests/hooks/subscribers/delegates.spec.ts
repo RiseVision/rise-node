@@ -7,8 +7,7 @@ import { createContainer } from '@risevision/core-launchpad/tests/utils/createCo
 import { DelegatesHooks } from '../../../src/hooks/subscribers';
 import { dPoSSymbols } from '../../../src/helpers';
 import { InMemoryFilterModel, WordPressHookSystem } from 'mangiafuoco';
-import { RoundsModule } from '../../../src/modules';
-import { DelegatesModel, RoundsModel } from '../../../src/models';
+import { DelegatesModel } from '../../../src/models';
 import { ModelSymbols } from '@risevision/core-models';
 import { SinonSandbox } from 'sinon';
 import { OnCheckIntegrity } from '@risevision/core';
@@ -61,6 +60,7 @@ describe('hooks/subscribers/delegates', () => {
     it('should add error if block is from wrong generator');
     it('should not add any error if block was already marked as unverified');
   });
+
   describe('verifyBlock', () => {
     it('should add error if block is from wrong generator');
     it('should add error if block has slot less than lastblockslot');
