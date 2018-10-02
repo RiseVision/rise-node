@@ -21,15 +21,15 @@ type ModuleInfo = {
   subDeps: { [k: string]: ModuleInfo }
 };
 
-export function resolveModule(modulePath: string, allDependencies: any): ModuleInfo {
+export function resolveModule(modulePath: string, modules: any): ModuleInfo {
   const sourceModuleRootDirectory = path.dirname(findPkg.sync(modulePath));
   const packageJSON               = require(`${sourceModuleRootDirectory}/package.json`);
   const name                      = packageJSON.name;
-  if (allDependencies[name]) {
-    if (allDependencies[name].rootDirectory !== sourceModuleRootDirectory) {
-      throw new Error(`Requiring a different version for ${name} ${allDependencies[name].rootDirectory} - ${sourceModuleRootDirectory}`);
+  if (modules[name]) {
+    if (modules[name].rootDirectory !== sourceModuleRootDirectory) {
+      throw new Error(`Requiring a different version for ${name} ${modules[name].rootDirectory} - ${sourceModuleRootDirectory}`);
     }
-    return allDependencies[name];
+    return modules[name];
   }
   const dependencies = packageJSON.dependencies;
   const depHandles   = Object.keys(dependencies);
@@ -43,14 +43,14 @@ export function resolveModule(modulePath: string, allDependencies: any): ModuleI
     });
     const packageJSONPath = findPkg.sync(subModulePath);
     if (checkIsModule(packageJSONPath)) {
-      subModules[depHandle] = resolveModule(subModulePath, allDependencies);
+      subModules[depHandle] = resolveModule(subModulePath, modules);
     }
 
   }
   Object.keys(subModules)
-    .forEach((k) => allDependencies[k] = subModules[k]);
+    .forEach((k) => modules[k] = subModules[k]);
 
-  return {
+  const toRet = {
     modulePath,
     name,
     packageJSON,
@@ -58,6 +58,13 @@ export function resolveModule(modulePath: string, allDependencies: any): ModuleI
     subDeps      : subModules,
   };
 
+  if (!modules[name]) {
+    if (checkIsModule(`${sourceModuleRootDirectory}/package.json`)) {
+      modules[name] = toRet;
+    }
+  }
+
+  return toRet;
 }
 
 export function loadCoreSortedModules(allModules: { [k: string]: ModuleInfo},

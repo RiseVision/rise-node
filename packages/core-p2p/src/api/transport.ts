@@ -1,5 +1,6 @@
 import { ILogger, Symbols } from '@risevision/core-interfaces';
-import express, { Application, NextFunction, Request, RequestHandler, Response } from 'express';
+import * as express from 'express';
+import { Application, NextFunction, Request, RequestHandler, Response } from 'express';
 import { inject, injectable, multiInject, postConstruct } from 'inversify';
 import { ExpressMiddlewareInterface } from 'routing-controllers';
 import { p2pSymbols } from '../helpers';
@@ -8,13 +9,13 @@ import { TransportWrapper } from '../utils/TransportWrapper';
 
 @injectable()
 export class TransportAPI {
-  @multiInject(p2pSymbols.transportMethod)
+  @inject(p2pSymbols.__internals.resolvedTransportMethods)
   private transportMethods: Array<ITransportMethod<any, any, any>>;
 
   @inject(p2pSymbols.express)
   private express: Application;
 
-  @multiInject(p2pSymbols.transportMiddleware)
+  @inject(p2pSymbols.__internals.resolvedTransportMiddlewares)
   private transportMiddlewares: ExpressMiddlewareInterface[];
 
   @inject(Symbols.helpers.logger)

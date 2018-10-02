@@ -4,7 +4,7 @@
   "version"        : "1.0.1",
   "fileLogLevel"   : "info",
   "logFileName"    : "logs/rise-master.log",
-  "consoleLogLevel": "info",
+  "consoleLogLevel": "debug",
   "trustProxy"     : false,
   "topAccounts"    : false,
   "cacheEnabled"   : false,
@@ -49,6 +49,7 @@
   },
   "peers"          : {
     "enabled": true,
+    "trustProxy": false,
     "list"   : [
       {
         "ip"  : "45.32.136.66",

@@ -9,7 +9,7 @@ export const Symbols = {
     nonce: Symbol.for('rise.nonce'),
     socketIO: Symbol.for('rise.socketIO'),
     versionBuild: Symbol.for('rise.versionBuild'),
-    zschema: Symbol.for('rise.zscahema'),
+    zschema: Symbol.for('rise.zschema'),
   },
   helpers: {
     db: Symbol.for('rise.dbHelper'),

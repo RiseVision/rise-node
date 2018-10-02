@@ -45,17 +45,25 @@ export class CoreModule extends BaseCoreModule<DbAppConfig> {
       .whenTargetNamed(ModelSymbols.names.migrations);
   }
 
-  public initAppElements() {
+  public async initAppElements() {
     for (const m of this.sortedModules) {
       // tslint:disable-next-line
       if (typeof(m['onPreInitModels']) === 'function') {
         // tslint:disable-next-line
-        m['onPreInitModels']();
+        await m['onPreInitModels']();
       }
     }
     const models = this.container.getAll<typeof BaseModel>(ModelSymbols.model);
     models.forEach((m) => m.container = this.container);
     this.sequelize.addModels(models);
+
+    for (const m of this.sortedModules) {
+      // tslint:disable-next-line
+      if (typeof(m['onPostInitModels']) === 'function') {
+        // tslint:disable-next-line
+        await m['onPostInitModels']();
+      }
+    }
   }
 
   public afterConfigValidation<T extends DbAppConfig>(config: T): T {

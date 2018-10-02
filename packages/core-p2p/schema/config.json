@@ -94,8 +94,7 @@
         "trustProxy",
         "list",
         "options",
-        "access",
-        "options"
+        "access"
       ]
     }
   },

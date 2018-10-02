@@ -38,9 +38,9 @@ export async function createContainer(modules: string[] = ['core', 'core-account
 
   container.bind(Symbols.generic.genesisBlock).toConstantValue(block);
   container.bind(Symbols.generic.appConfig).toConstantValue(config);
-  container.bind(Symbols.generic.nonce).toConstantValue('nonce');
+  // container.bind(Symbols.generic.nonce).toConstantValue('nonce');
   container.bind(Symbols.generic.versionBuild).toConstantValue('test');
-  container.bind(Symbols.generic.zschema).toConstantValue(new z_schema({}));
+  // container.bind(Symbols.generic.zschema).toConstantValue(new z_schema({}));
   container.bind(Symbols.generic.hookSystem).toConstantValue(new WordPressHookSystem(new InMemoryFilterModel()));
   container.rebind(Symbols.helpers.logger).toConstantValue(new LoggerStub());
   container.bind(LaunchpadSymbols.coremodules).toConstantValue(sortedModules);

@@ -8,6 +8,7 @@ describe('modulesLoader', () => {
       '@risevision/core-models',
       '@risevision/core-p2p',
       '@risevision/core-apis',
+      '@risevision/core-helpers',
       '@risevision/core-exceptions',
       '@risevision/core-transactions',
       '@risevision/core-blocks',
@@ -15,6 +16,8 @@ describe('modulesLoader', () => {
       '@risevision/core-accounts',
       '@risevision/core-consensus-dpos',
       '@risevision/core-multisignature',
-      '@risevision/core-secondsignature']);
+      '@risevision/core-secondsignature',
+      '@risevision/rise',
+    ]);
   });
 });

@@ -166,6 +166,10 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
 
   public async boot(): Promise<void> {
     const appConfig = this.container.get<P2pConfig>(Symbols.generic.appConfig);
+    this.container.bind(p2pSymbols.__internals.resolvedTransportMethods)
+      .toConstantValue(this.container.getAll(p2pSymbols.transportMethod));
+    this.container.bind(p2pSymbols.__internals.resolvedTransportMiddlewares)
+      .toConstantValue(this.container.getAll(p2pSymbols.transportMiddleware));
     // This calls postConstruct which installs all the transport routes.
     this.container.get(p2pSymbols.api.transport);
     await cbToPromise((cb) => this.srv.listen(appConfig.port, appConfig.address, cb));

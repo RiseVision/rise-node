@@ -1,14 +1,14 @@
 import { Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { AppConfig } from '@risevision/core-types';
-import { loggerCreator } from '@risevision/core-utils';
+import { loggerCreator, z_schema } from '@risevision/core-utils';
 import { CommanderStatic } from 'commander';
+import { AppState } from './appState';
 import { Crypto } from './crypto';
 import { HelpersSymbols } from './helpersSymbols';
 import { JobsQueue } from './jobsQueue';
 import { Migrator } from './migrator';
 import { Sequence } from './sequence';
-import { AppState } from './appState';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
@@ -24,6 +24,7 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       filename  : this.config.logFileName,
     });
     this.container.bind(Symbols.helpers.logger).toConstantValue(logger);
+    this.container.bind(Symbols.generic.zschema).toConstantValue(new z_schema({}));
     this.container.bind(HelpersSymbols.migrator).to(Migrator).inSingletonScope();
     [
       HelpersSymbols.names.balancesSequence,

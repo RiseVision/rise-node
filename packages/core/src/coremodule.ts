@@ -8,12 +8,13 @@ import { constants } from './constants';
 import { TimeToEpoch } from './helpers';
 import { ForkModule, LoaderModule, SystemModule } from './modules';
 import { CoreSymbols } from './symbols';
+import { ICoreModuleWithModels, ModelSymbols } from '@risevision/core-models';
 
-export class CoreModule extends BaseCoreModule<void> {
+export class CoreModule extends BaseCoreModule<void> implements ICoreModuleWithModels {
   public configSchema = {};
   public constants    = constants;
 
-  public addElementsToContainer(): void {
+  public async addElementsToContainer() {
     this.container.bind(Symbols.helpers.timeToEpoch).to(TimeToEpoch).inSingletonScope();
     this.container.bind(CoreSymbols.constants).toConstantValue(this.constants);
     this.container.bind(CoreSymbols.modules.fork).to(ForkModule).inSingletonScope();
@@ -24,7 +25,23 @@ export class CoreModule extends BaseCoreModule<void> {
       .whenTargetNamed(CoreSymbols.api.loader);
   }
 
-  public initAppElements() {
+  public async onPostInitModels() {
+    // const infoModel = this.container.getNamed<typeof IInfoModel>(ModelSymbols.model, ModelSymbols.names.info);
+    // Create or restore nonce!
+    // const [val] = await infoModel
+    //   .findOrCreate({where: {key: 'nonce'}, defaults: {value: uuid.v4()}});
+    // TODO: Fixme.
+    this.container.bind(Symbols.generic.nonce).toConstantValue('meow');
+    // await infoModel
+    //   .upsert({
+    //     key  : 'genesisAccount',
+    //     value: this.container.get<any>(Symbols.generic.genesisBlock)
+    //       .transactions[0].senderId,
+    //   });
+    // console.log('NONCE', this.container.get(Symbols.generic.nonce));
+  }
+
+  public async initAppElements() {
     let c = this.container.get<any>(CoreSymbols.constants);
     for (const sortedModule of this.sortedModules) {
       c = _.merge(c, sortedModule.constants || {});
@@ -32,18 +49,6 @@ export class CoreModule extends BaseCoreModule<void> {
   }
 
   public async boot() {
-    const infoModel = this.container.get<typeof IInfoModel>(Symbols.models.info);
-    // Create or restore nonce!
-    const [val] = await infoModel
-      .findOrCreate({where: {key: 'nonce'}, defaults: {value: uuid.v4()}});
-    this.container.bind(Symbols.generic.nonce).toConstantValue(val.value);
-    await infoModel
-      .upsert({
-        key  : 'genesisAccount',
-        value: this.container.get<any>(Symbols.generic.genesisBlock)
-          .transactions[0].senderId,
-      });
-
     const loaderModule = this.container.get<LoaderModule>(CoreSymbols.modules.loader);
     await loaderModule.loadBlockChain();
   }

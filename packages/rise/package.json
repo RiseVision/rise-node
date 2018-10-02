@@ -1,5 +1,8 @@
 {
   "name": "@risevision/rise",
+  "rise_vision": {
+    "module": true
+  },
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",

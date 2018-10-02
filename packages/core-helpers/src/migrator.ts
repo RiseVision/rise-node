@@ -1,4 +1,4 @@
-import { IMigrationsModel } from '@risevision/core-interfaces';
+import { ILogger, IMigrationsModel, Symbols } from '@risevision/core-interfaces';
 import { ICoreModule, LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { BigNumber } from 'bignumber.js';
@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import { inject, injectable, named } from 'inversify';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
-
+type MigrationEntry = { id: BigNumber, name: string, path: string, moduleName: string };
 @injectable()
 export class Migrator {
   @inject(ModelSymbols.model)
@@ -15,6 +15,9 @@ export class Migrator {
 
   @inject(LaunchpadSymbols.coremodules)
   private modules: Array<ICoreModule<any>>;
+
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
 
   public async init(): Promise<void> {
     const hasMigrations   = await this.checkMigrations();
@@ -53,13 +56,16 @@ export class Migrator {
    * Reads sql migration folder and returns only pending migrations sqls.
    */
   // tslint:disable-next-line max-line-length
-  private async readPendingMigrations(lastMigration: BigNumber): Promise<Array<{ id: BigNumber, name: string, path: string }>> {
-    return this.modules
+  private async readPendingMigrations(lastMigration: BigNumber): Promise<MigrationEntry[]> {
+    const pms = await Promise.all(this.modules
       .map((m) => this.readPendingMigrationsForSingleCoreModule(m, lastMigration))
-      .reduce((a, b) => a.concat(b), []);
+    );
+    return pms
+      .reduce((a, b) => a.concat(b), [])
+      .sort((a, b) => path.basename(a.path).localeCompare(path.basename(b.path)));
   }
 
-  private async readPendingMigrationsForSingleCoreModule(coreModule: ICoreModule<any>, lastMigration: BigNumber): Promise<Array<{ id: BigNumber, name: string, path: string }>> {
+  private async readPendingMigrationsForSingleCoreModule(coreModule: ICoreModule<any>, lastMigration: BigNumber): Promise<MigrationEntry[]> {
     const migrationsPath = path.join(coreModule.directory, 'sql', 'migrations');
     if (!fs.existsSync(migrationsPath)) {
       return [];
@@ -79,9 +85,10 @@ export class Migrator {
 
     return fs.readdirSync(migrationsPath)
       .map((file) => ({
-        id  : matchMigrationId(file),
-        name: matchMigrationName(file),
-        path: path.join(migrationsPath, file),
+        id        : matchMigrationId(file),
+        moduleName: coreModule.name,
+        name      : matchMigrationName(file),
+        path      : path.join(migrationsPath, file),
       }))
       // only non null and existing file ending with .sql
       .filter((d) => (d.id && d.name))
@@ -91,8 +98,9 @@ export class Migrator {
       .filter((d) => !lastMigration || d.id.isGreaterThan(lastMigration));
   }
 
-  private async applyPendingMigrations(pendingMigrations: Array<{ id: BigNumber, name: string, path: string }>) {
+  private async applyPendingMigrations(pendingMigrations: MigrationEntry[]) {
     for (const m of pendingMigrations) {
+      this.logger.info(`Applying Pending migration from ${m.moduleName} - named: ${m.name}`);
       await this.MigrationsModel.sequelize.query(fs.readFileSync(m.path, { encoding: 'utf8' }));
     }
     return pendingMigrations;
@@ -101,7 +109,7 @@ export class Migrator {
   /**
    * Inserts into `migrations` table the previous applied migrations.
    */
-  private async insertAppliedMigrations(appMigrs: Array<{ id: BigNumber, name: string, path: string }>) {
+  private async insertAppliedMigrations(appMigrs: MigrationEntry[]) {
     for (const m of appMigrs) {
       await this.MigrationsModel.create({ id: m.id.toString(), name: m.name });
     }
@@ -112,10 +120,14 @@ export class Migrator {
    * @method
    * @return {function} waterCb with error
    */
-  private applyRuntimeQueryFile() {
-    return Promise.resolve(
-      this.MigrationsModel.sequelize
-        .query(fs.readFileSync(path.join(process.cwd(), 'sql', 'runtime.sql'), { encoding: 'utf8' }))
-    );
+  private async applyRuntimeQueryFile() {
+    for (const m of this.modules) {
+      const runtimePath = path.join(m.directory, 'sql', 'runtime.sql');
+      if (fs.existsSync(runtimePath)) {
+        this.logger.info(`Applying runtime.sql from ${m.name}`);
+        await this.MigrationsModel.sequelize
+          .query(fs.readFileSync(runtimePath, { encoding: 'utf8' }));
+      }
+    }
   }
 }
