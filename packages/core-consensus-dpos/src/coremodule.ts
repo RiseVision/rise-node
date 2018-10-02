@@ -6,7 +6,7 @@ import { TXSymbols } from '@risevision/core-transactions';
 import { CommanderStatic } from 'commander';
 import { AccountsAPI, DelegatesAPI } from './apis';
 import { constants, DposAppConfig, dPoSSymbols, RoundChanges, Slots } from './helpers';
-import { Transactionshooks } from './hooks/subscribers';
+import { DelegatesHooks, RoundsHooks, Transactionshooks } from './hooks/subscribers';
 import { RegisterDelegateTransaction } from './logic/delegateTransaction';
 import { RoundLogic } from './logic/round';
 import { RoundsLogic } from './logic/rounds';
@@ -103,14 +103,20 @@ export class CoreModule extends BaseCoreModule<DposAppConfig> implements ICoreMo
     this.container.bind(dPoSSymbols.hooksSubscribers.transactions)
       .to(Transactionshooks)
       .inSingletonScope();
+    this.container.bind(dPoSSymbols.hooksSubscribers.rounds)
+      .to(RoundsHooks)
+      .inSingletonScope();
+    this.container.bind(dPoSSymbols.hooksSubscribers.delegates)
+      .to(DelegatesHooks)
+      .inSingletonScope();
   }
 
   public async initAppElements() {
-    await this.container.get<any>(dPoSSymbols.hooksSubscribers.transactions)
+    await this.container.get<Transactionshooks>(dPoSSymbols.hooksSubscribers.transactions)
       .hookMethods();
-    await this.container.get<RoundsModule>(dPoSSymbols.modules.rounds)
+    await this.container.get<RoundsHooks>(dPoSSymbols.hooksSubscribers.rounds)
       .hookMethods();
-    await this.container.get<DelegatesModule>(dPoSSymbols.modules.delegates)
+    await this.container.get<DelegatesHooks>(dPoSSymbols.hooksSubscribers.delegates)
       .hookMethods();
   }
 
@@ -122,13 +128,13 @@ export class CoreModule extends BaseCoreModule<DposAppConfig> implements ICoreMo
   }
 
   public async teardown() {
-    await this.container.get<any>(dPoSSymbols.hooksSubscribers.transactions)
+    await this.container.get<Transactionshooks>(dPoSSymbols.hooksSubscribers.transactions)
       .unHook();
-    await this.container.get<RoundsModule>(dPoSSymbols.modules.rounds)
+    await this.container.get<RoundsHooks>(dPoSSymbols.hooksSubscribers.rounds)
       .unHook();
-    await Promise.all([dPoSSymbols.modules.forge, dPoSSymbols.modules.delegates]
-      .map((s) => this.container.get<IModule>(s))
-      .map((m) => m.cleanup())
-    );
+    await this.container.get<DelegatesHooks>(dPoSSymbols.hooksSubscribers.delegates)
+      .unHook();
+    await this.container.get<ForgeModule>(dPoSSymbols.modules.forge)
+      .cleanup();
   }
 }

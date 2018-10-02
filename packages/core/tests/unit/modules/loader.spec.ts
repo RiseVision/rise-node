@@ -553,25 +553,7 @@ describe('modules/loader', () => {
             'should process.exit 1 if it was not possible to load until desired block'
           );
         });
-        it('should call load if no accounts where updated on last block', async () => {
-          accountsCountStub.resolves(0);
-          await instance.loadBlockChain();
-          expect(loadStub.called).is.true;
-          expect(accountsCountStub.firstCall.args[0]).deep.eq({
-            where: { blockId: {} },
-          });
-          expect(
-            accountsCountStub.firstCall.args[0].where.blockId[Op.in]
-          ).deep.eq({
-            val: '(SELECT "id" from blocks ORDER BY "height" DESC LIMIT 1)',
-          });
-          expect(loadStub.firstCall.args).deep.eq([
-            blocksCount,
-            10,
-            'Detected missed blocks in mem_accounts',
-            true,
-          ]);
-        });
+
         describe('with accounts ok', async () => {
           let roundsModel: typeof RoundsModel;
           let roundsFindAllStub: SinonStub;
@@ -631,20 +613,6 @@ describe('modules/loader', () => {
                 restoreUnconfirmedEntriesStub.rejects(new Error('hey'));
                 await expect(instance.loadBlockChain()).rejectedWith('hey');
                 expect(restoreUnconfirmedEntriesStub.called).is.true;
-              });
-              it('should call load if there are some orphanedMemAccounts', async () => {
-                sequelizeQueryStub.onSecondCall().resolves(['a']);
-                await instance.loadBlockChain();
-                expect(loadStub.called).is.true;
-                expect(loadStub.firstCall.args).deep.eq([
-                  blocksCount,
-                  10,
-                  'Detected orphaned blocks in mem_accounts',
-                  true,
-                ]);
-                expect(sequelizeQueryStub.secondCall.args[0]).to.be.deep.eq(
-                  'SELECT a."blockId", b."id" FROM mem_accounts a LEFT OUTER JOIN blocks b ON b."id" = a."blockId" WHERE a."blockId" IS NOT NULL AND a."blockId" != \'0\' AND b."id" IS NULL'
-                );
               });
               describe('with no orphan accounts', () => {
                 beforeEach(() => {

@@ -33,11 +33,11 @@ describe('modules/accounts', () => {
     sandbox.restore();
   });
 
-  describe('cleanup', () => {
-    it('should return resolved promise', async () => {
-      await expect(accountModule.cleanup()).to.be.fulfilled;
-    });
-  });
+  // describe('cleanup', () => {
+  //   it('should return resolved promise', async () => {
+  //     await expect(accountModule.cleanup()).to.be.fulfilled;
+  //   });
+  // });
 
   describe('.getAccount', () => {
     let getStub: SinonStub;

@@ -283,27 +283,6 @@ describe('modules/delegates', () => {
 
   });
 
-  describe('onBlockchainReady', () => {
-    it('should set loaded to true', async () => {
-      await instance.onBlockchainReady();
-      expect((instance as any).loaded).to.be.true;
-    });
-  });
-
-  describe('cleanup', () => {
-    it('should set loaded to false', async () => {
-      await instance.cleanup();
-      expect((instance as any).loaded).to.be.false;
-    });
-  });
-
-  describe('isLoaded', () => {
-    it('should return this.loaded', () => {
-      const retVal = instance.isLoaded();
-      expect(retVal).to.be.equal((instance as any).loaded);
-    });
-  });
-
   describe('getKeysSortByVote', () => {
     let getAccountsStub: SinonStub;
     beforeEach(() => {

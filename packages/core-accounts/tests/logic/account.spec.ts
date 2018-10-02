@@ -73,28 +73,28 @@ describe('logic/account', () => {
       ]);
     });
   });
-  describe('recreateTables', () => {
-    let dropStub: SinonStub;
-    let sequelizeStub: SinonStub;
-    beforeEach(() => {
-      dropStub = sandbox.stub(accModel, 'drop').resolves();
-      sequelizeStub = sandbox.stub(accModel.sequelize, 'query').resolves();
-
-    });
-    it('should drop and issue SQL query', async () => {
-      await instance.recreateTables();
-      expect(dropStub.called).is.true;
-      expect(sequelizeStub.called).is.true;
-      expect(sequelizeStub.calledWith(fs.readFileSync(path.join(__dirname, '..', '..', 'sql', 'memoryTables.sql'), { encoding: 'utf8' })))
-    });
-
-    it('should be called using hookSystem', async () => {
-      const stub = sinon.stub(instance, 'recreateTables').resolves();
-      const hookSystem: WordPressHookSystem = container.get(Symbols.generic.hookSystem);
-      await hookSystem.do_action('core/loader/load/recreateAccountsDatastores');
-      expect(stub.called).true;
-    });
-  });
+  // describe('recreateTables', () => {
+  //   let dropStub: SinonStub;
+  //   let sequelizeStub: SinonStub;
+  //   beforeEach(() => {
+  //     dropStub = sandbox.stub(accModel, 'drop').resolves();
+  //     sequelizeStub = sandbox.stub(accModel.sequelize, 'query').resolves();
+  //
+  //   });
+  //   it('should drop and issue SQL query', async () => {
+  //     await instance.recreateTables();
+  //     expect(dropStub.called).is.true;
+  //     expect(sequelizeStub.called).is.true;
+  //     expect(sequelizeStub.calledWith(fs.readFileSync(path.join(__dirname, '..', '..', 'sql', 'memoryTables.sql'), { encoding: 'utf8' })))
+  //   });
+  //
+  //   it('should be called using hookSystem', async () => {
+  //     const stub = sinon.stub(instance, 'recreateTables').resolves();
+  //     const hookSystem: WordPressHookSystem = container.get(Symbols.generic.hookSystem);
+  //     await hookSystem.do_action('core/loader/load/recreateAccountsDatastores');
+  //     expect(stub.called).true;
+  //   });
+  // });
 
   describe('account.assertPublicKey', () => {
     it('public key is not a string error', () => {

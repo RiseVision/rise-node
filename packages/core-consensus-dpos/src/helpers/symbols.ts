@@ -7,6 +7,8 @@ export const dPoSSymbols = {
     slots       : Symbol.for('rise.dpos.slots'),
   },
   hooksSubscribers: {
+    delegates   : Symbol.for('rise.dpos.hs.delegates'),
+    rounds      : Symbol.for('rise.dpos.hs.rounds'),
     transactions: Symbol.for('rise.dpos.hs.transactions'),
   },
   logic           : {

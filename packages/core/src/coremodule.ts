@@ -1,6 +1,7 @@
 import { APISymbols } from '@risevision/core-apis';
 import { IInfoModel, Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
+import * as _ from 'lodash';
 import * as uuid from 'uuid';
 import { LoaderAPI } from './apis';
 import { constants } from './constants';
@@ -21,6 +22,13 @@ export class CoreModule extends BaseCoreModule<void> {
     this.container.bind(APISymbols.api).to(LoaderAPI)
       .inSingletonScope()
       .whenTargetNamed(CoreSymbols.api.loader);
+  }
+
+  public initAppElements() {
+    let c = this.container.get<any>(CoreSymbols.constants);
+    for (const sortedModule of this.sortedModules) {
+      c = _.merge(c, sortedModule.constants || {});
+    }
   }
 
   public async boot() {
