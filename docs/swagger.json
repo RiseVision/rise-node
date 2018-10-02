@@ -3993,6 +3993,77 @@
           "success": false,
           "error": "An error has occured"
         }
+      },
+      "responses.loader.getStatus": {
+        "id": "responses.loader.getStatus",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "loaded": {
+            "type": "boolean"
+          }
+        },
+        "example": {
+          "success": true,
+          "loaded": true
+        }
+      },
+      "responses.loader.getStatusSync": {
+        "id": "responses.loader.getStatusSync",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "broadhash": {
+            "id": "common.scalars.hex",
+            "type": "string",
+            "format": "hex"
+          },
+          "consensus": {
+            "id": "common.scalars.wholeNum",
+            "type": "integer",
+            "minimum": 0
+          },
+          "height": {
+            "id": "common.scalars.height",
+            "type": "integer",
+            "minimum": 1
+          },
+          "syncing": {
+            "type": "boolean"
+          }
+        },
+        "example": {
+          "success": true,
+          "broadhash": "fa4a803eaf159154de7c4311580debb068ffd178a03dd793c4799fb04a3997bd",
+          "consensus": 97,
+          "height": 1356891,
+          "syncing": false
+        }
+      },
+      "responses.loader.ping": {
+        "id": "responses.loader.ping",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": true
+        }
       }
     }
   },
@@ -5082,9 +5153,13 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.loader.getStatus"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": ""
           }
         },
         "summary": "Get status",
@@ -5099,9 +5174,13 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.loader.getStatusSync"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": ""
           }
         },
         "summary": "Get status sync",
@@ -5116,9 +5195,13 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.loader.ping"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": ""
           }
         },
         "summary": "Ping",
