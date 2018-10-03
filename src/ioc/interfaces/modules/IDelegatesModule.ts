@@ -1,4 +1,4 @@
-import { SignedBlockType } from '../../../logic';
+import { SignedAndChainedBlockType, SignedBlockType } from '../../../logic';
 import { AccountsModel } from '../../../models';
 import { IModule } from './IModule';
 
@@ -42,4 +42,6 @@ export interface IDelegatesModule extends IModule {
   assertValidBlockSlot(block: SignedBlockType): Promise<void>;
 
   isLoaded(): boolean;
+
+  onRoundBackwardTick(block: SignedAndChainedBlockType)
 }

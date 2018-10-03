@@ -11,10 +11,10 @@ import {
 import { RunThroughExceptions } from '../helpers/decorators/exceptions';
 import { IAppState, IRoundsLogic, } from '../ioc/interfaces/logic';
 import {
-  IAccountsModule, IBlocksModule, IDelegatesModule, ITransactionsModule,
+  IAccountsModule, IBlocksModule, IDelegatesModule,
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { AccountFilterData, BlockRewardLogic, SignedBlockType } from '../logic/';
+import { AccountFilterData, BlockRewardLogic, SignedAndChainedBlockType, SignedBlockType } from '../logic/';
 import { AccountsModel, BlocksModel, TransactionsModel } from '../models';
 import { publicKey } from '../types/sanityTypes';
 import { FieldsInModel } from '../types/utils';
@@ -57,8 +57,6 @@ export class DelegatesModule implements IDelegatesModule {
   private accountsModule: IAccountsModule;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.transactions)
-  private transactionsModule: ITransactionsModule;
 
   private roundSeeds: {[seed: number]: number[]} = {};
 
@@ -84,7 +82,7 @@ export class DelegatesModule implements IDelegatesModule {
       let pool: Array<{publicKey: Buffer, vote: number, weight?: number}>;
 
       // Initialize source random numbers that will generate a predictable sequence, given the seed.
-      const generator = new MersenneTwister(this.calculateSafeRoundSeed(height));
+      const generator = new MersenneTwister(await this.calculateSafeRoundSeed(height));
 
       // Assign a weight to each delegate, which is its normalized vote weight multiplied by a random factor
       pool = delegates.map((delegate) => {
@@ -221,6 +219,11 @@ export class DelegatesModule implements IDelegatesModule {
     return this.loaded;
   }
 
+  public onRoundBackwardTick(block: SignedAndChainedBlockType) {
+    // Delete round seed cache for this round
+    delete this.roundSeeds[this.roundsLogic.calcRound(block.height)];
+  }
+
   /**
    * Get delegates public keys sorted by descending vote.
    */
@@ -313,7 +316,7 @@ export class DelegatesModule implements IDelegatesModule {
    * @param {number} height
    * @returns {Promise<number[]>}
    */
-  // TODO: Maybe move elsewhere? Separate cache from calculation logic ?
+  // TODO: Maybe separate cache from calculation logic ?
   private async calculateSafeRoundSeed(height: number): Promise<number[]> {
     const currentRound = this.roundsLogic.calcRound(height);
     // Calculation is expensive, let's keep a cache of seeds
@@ -332,7 +335,7 @@ export class DelegatesModule implements IDelegatesModule {
     const previousRoundLastBlockHeight = this.roundsLogic.lastInRound(currentRound - 1);
     // Get the last block of previous round from database
     const block = await this.BlocksModel.
-      findById(previousRoundLastBlockHeight, { include: [this.TransactionsModel] });
+      findById(previousRoundLastBlockHeight);
     if (block === null) {
       throw new Error(`Error in Round Seed calculation, block ${previousRoundLastBlockHeight} not found`);
     }

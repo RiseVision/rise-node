@@ -1,7 +1,3 @@
-/* Add votesWeight Column to Mem Accounts
- *
- */
-
 BEGIN;
 
 ALTER TABLE "mem_accounts" ADD COLUMN IF NOT EXISTS "votesWeight" BIGINT DEFAULT 0;

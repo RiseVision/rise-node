@@ -155,6 +155,7 @@ describe('modules/delegates', () => {
       roundsLogicStub.stubs.calcRound.returns(123);
       (instance as any).constants.dposv2.firstBlock = Number.MAX_SAFE_INTEGER;
       slotsStub.delegates = 101;
+      roundsLogicStub.stubs.lastInRound.returns(19532);
     });
 
     it('should call getKeysSortByVote', async () => {
@@ -222,6 +223,7 @@ describe('modules/delegates', () => {
 
     describe('dposv2', () => {
       let delegates;
+      let seedGenStub: SinonStub;
       beforeEach(() => {
         (instance as any).constants.dposv2.firstBlock = 0;
         // we add delegate.id for easily mapping them
@@ -232,9 +234,27 @@ describe('modules/delegates', () => {
         delegates[201].vote = 0;
         getKeysSortByVoteStub.resolves(delegates);
         roundsLogicStub.stubs.calcRound.callsFake((h) => Math.ceil(h / slotsStub.delegates));
+        roundsLogicStub.stubs.lastInRound.callsFake((r) => Math.ceil(r * 101));
+        (blocksModel as any).findById = sandbox.stub().returns({id: '1231352636353'});
+        seedGenStub = sandbox.stub(instance, 'calculateSafeRoundSeed').callsFake(() => {
+          const toRet = [];
+          for (let i = 0; i < 8; i++) {
+            toRet.push(Math.random() * Number.MAX_SAFE_INTEGER);
+          }
+          return toRet;
+        });
+      });
+      after(() => {
+        (instance as any).constants.dposv2.firstBlock = Number.MAX_SAFE_INTEGER;
       });
 
-      it('should produce the same array, given the same round and delegates', async () => {
+      afterEach(() => {
+        seedGenStub.restore();
+      });
+
+      it('should produce the same array, given the same round and delegates', async function() {
+        seedGenStub.restore();
+        this.timeout(10000);
         slotsStub.delegates = 101;
         const roundNum = Math.round(Math.random() * 1000000)
         const list = await instance.generateDelegateList(roundNum);
@@ -247,8 +267,7 @@ describe('modules/delegates', () => {
         createHashSpy.restore();
         slotsStub.delegates = 101;
         // 1 year...
-        // const numRounds = 10407;
-        const numRounds = 50000;
+        const numRounds = 10407;
         let includedDelegates = 0;
         const delegatesMap = {};
         delegates.forEach((d) => {
@@ -327,7 +346,7 @@ describe('modules/delegates', () => {
         sort      : { vote: -1, publicKey: 1 },
       });
       expect(accountsModuleStub.stubs.getAccounts.firstCall.args[1]).to.be.deep.equal([
-        'username', 'address', 'publicKey', 'vote', 'missedblocks', 'producedblocks',
+        'username', 'address', 'publicKey', 'vote', 'votesWeight', 'missedblocks', 'producedblocks',
       ]);
     });
 
@@ -546,6 +565,63 @@ describe('modules/delegates', () => {
       const wrongVotes = ['+deleg1', '+deleg2'];
       await expect((instance as any).checkDelegates(theAccount.publicKey, wrongVotes, 'confirmed')).to.be.
         rejectedWith('Maximum number of 1 votes exceeded (1 too many)');
+    });
+  });
+
+  describe('calculateSafeRoundSeed', async () => {
+    const height = 129353456;
+    beforeEach(() => {
+      // Make sure cache is clean
+      (instance as any).roundSeeds = {};
+      roundsLogicStub.stubs.calcRound.callsFake((h) => Math.ceil(h / 101));
+      roundsLogicStub.stubs.lastInRound.callsFake((r) => Math.ceil(r * 101));
+      (blocksModel as any).findById = sandbox.stub().resolves({id: '1231352636353'});
+    });
+
+    it('should query the db for the right block', async function() {
+      this.timeout(50000);
+      const seed = await instance.calculateSafeRoundSeed(height);
+      expect((instance as any).BlocksModel.findById.calledOnce).to.be.true;
+      expect((instance as any).BlocksModel.findById.firstCall.args).to.be.deep
+        .equal([(Math.ceil(height / 101) - 1) * 101]);
+    });
+
+    it('should return a predictable seed given a specific height', async function() {
+      this.timeout(50000);
+      const seed = await instance.calculateSafeRoundSeed(height);
+      expect(seed).to.be.deep.equal([
+        3474557505,
+        1689392474,
+        2466231691,
+        2060924045,
+        3067574310,
+        4198023853,
+        1557267628,
+        4254844739,
+      ]);
+    });
+
+    it('should return different seeds given different rounds', async function() {
+      this.timeout(50000);
+      const seed1 = await instance.calculateSafeRoundSeed(height);
+      (blocksModel as any).findById.resolves({id: '987654321'} );
+      const seed2 = await instance.calculateSafeRoundSeed(height + 102);
+      expect(seed1).not.to.be.deep.equal(seed2);
+    });
+
+    it('should cache the result', async function() {
+      this.timeout(50000);
+      expect((instance as any).roundSeeds[Math.ceil(height / 101)]).to.be.undefined;
+      const seed = await instance.calculateSafeRoundSeed(height);
+      expect((instance as any).roundSeeds[Math.ceil(height / 101)]).to.be.deep.equal(seed);
+    });
+
+    it('should execute in more than 40ms', async function() {
+      this.timeout(50000);
+      const start = Date.now();
+      await instance.calculateSafeRoundSeed(height);
+      const elapsed = Date.now() - start;
+      expect(elapsed).to.be.gte(40);
     });
   });
 });

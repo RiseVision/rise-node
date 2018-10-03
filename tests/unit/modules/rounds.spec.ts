@@ -163,6 +163,9 @@ describe('modules/rounds', () => {
   });
 
   describe('backwardTick', () => {
+    beforeEach(() => {
+      roundsLogicStub.stubs.calcRound.returns(1);
+    });
     it('should call innerTick', async () => {
       await instance.backwardTick(block as any, previousBlock, {transaction: 'tx'} as any);
       expect(innerTickStub.calledOnce).to.be.true;

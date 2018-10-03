@@ -347,6 +347,9 @@ describe('logic/round', () => {
       const updateMissedBlocks = sandbox.stub(instance, 'updateMissedBlocks').returns({updateMissed: true});
       const flushRound         = sandbox.stub(instance, 'flushRound').returns({flushRound: true});
       const applyRound         = sandbox.stub(instance, 'applyRound').returns([{apply: 1}, {apply: 2}]);
+      const reCalcVotes        = sandbox.stub(instance, 'reCalcVotes');
+      reCalcVotes.onCall(0).returns({reCalcVotes: 1});
+      reCalcVotes.onCall(1).returns({reCalcVotes: 2});
 
       const res = instance.land();
 
@@ -354,6 +357,7 @@ describe('logic/round', () => {
       expect(updateMissedBlocks.calledOnce).to.be.true;
       expect(flushRound.calledTwice).to.be.true;
       expect(applyRound.calledOnce).to.be.true;
+      expect(reCalcVotes.calledTwice).to.be.true;
 
       updateVotes.restore();
       updateMissedBlocks.restore();
@@ -362,11 +366,13 @@ describe('logic/round', () => {
 
       expect(res).to.be.deep.eq([
         { updateVote: true},
+        { reCalcVotes: 1},
         { updateMissed: true},
         { flushRound: true},
         { apply: 1},
         { apply: 2},
         { updateVote: true},
+        { reCalcVotes: 2},
         { flushRound: true},
       ]);
     });
@@ -381,6 +387,9 @@ describe('logic/round', () => {
       const applyRound         = sandbox.stub(instance, 'applyRound').returns([{apply: 1}, {apply: 2}]);
       const restoreRoundSnapshot = sandbox.stub(instance, 'restoreRoundSnapshot').returns({restoreRound: true});
       const restoreVotesSnapshot = sandbox.stub(instance, 'restoreVotesSnapshot').returns({restorevotes: true});
+      const reCalcVotes        = sandbox.stub(instance, 'reCalcVotes');
+      reCalcVotes.onCall(0).returns({reCalcVotes: 1});
+      reCalcVotes.onCall(1).returns({reCalcVotes: 2});
 
       const res = instance.backwardLand();
 
@@ -399,11 +408,13 @@ describe('logic/round', () => {
 
       expect(res).to.be.deep.eq([
         { updateVote: true},
+        { reCalcVotes: 1},
         { updateMissed: true},
         { flushRound: true},
         { apply: 1},
         { apply: 2},
         { updateVote: true},
+        { reCalcVotes: 2},
         { flushRound: true},
         { restoreRound: true},
         { restorevotes: true},

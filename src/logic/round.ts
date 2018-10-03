@@ -135,7 +135,7 @@ export class RoundLogic implements IRoundLogic {
   }
 
   /**
-   * Calls sql flush, deletes round from mem_round
+   * Recalculates votesWeight
    */
   public reCalcVotes(): DBOp<any> {
     return {
