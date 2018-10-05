@@ -6,7 +6,7 @@ const README = fs.readFileSync(
 ).toString()
 
 module.exports = {
-  controllers: 'dist/apis/!(transport)*API.js',
+  controllers: 'dist/apis/!(index|transport)*.js',
   schemas: 'dist/schema/*.js,dist/schema/+(common|responses)/*.js',
   out: 'docs/swagger.json',
   static: {
@@ -14,17 +14,19 @@ module.exports = {
       title: 'RISE Node',
       version: package.version,
       description: README
-    }
+    },
+    "x-servers": [
+      {
+        url: 'https://wallet.rise.vision',
+        description: 'Mainnet'
+      },
+      {
+        url: 'http://localhost:5566',
+        description: 'Local Testnet'
+      }
+    ]
   },
   baseSchema: {
-    TransactionQuery: {
-      id: 'TransactionQuery',
-      type: 'object',
-      properties: {
-        transaction: { type: 'object' },
-        transactions: { type: 'array', maxItems: 10 }
-      }
-    },
     Buffer: {
       id: "Buffer",
       type: "string",

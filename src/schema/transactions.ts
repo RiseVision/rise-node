@@ -259,4 +259,17 @@ export default {
     },
     required  : ['secret', 'amount', 'recipientId'],
   },
+  put                  : {
+    id        : 'transactions.put',
+    type      : 'object',
+    properties: {
+      transaction : {
+        type     : 'object'
+      },
+      transactions: {
+        type    : 'array',
+        maxItems: 10
+      },
+    },
+  },
 };

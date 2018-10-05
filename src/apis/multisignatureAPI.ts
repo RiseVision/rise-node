@@ -5,6 +5,8 @@ import * as z_schema from 'z-schema';
 import { ILogger } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { DeprecatedEndpoint } from '../helpers/decorators/deprecatedEndpoint'
+import { ResponseSchema } from 'rc-openapi-gen'
 import { ITransactionLogic, VerificationType } from '../ioc/interfaces/logic';
 import { IAccountsModule, IBlocksModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
@@ -44,6 +46,7 @@ export class MultisignatureAPI {
   private TransactionsModel: typeof TransactionsModel;
 
   @Get('/accounts')
+  @ResponseSchema('responses.multisignatures.getAccounts')
   @ValidateSchema()
   public async getAccounts(@SchemaValid(multisigSchema.getAccounts)
                            @QueryParams() params: { publicKey: pkType }) {
@@ -85,6 +88,7 @@ export class MultisignatureAPI {
   }
 
   @Get('/pending')
+  @ResponseSchema('responses.multisignatures.getPending')
   @ValidateSchema()
   public async getPending(@SchemaValid(multisigSchema.pending)
                           @QueryParams() params: { publicKey: pkType }) {
@@ -136,12 +140,10 @@ export class MultisignatureAPI {
   }
 
   @Post('/sign')
-  public async sign() {
-    throw new DeprecatedAPIError();
-  }
+  @DeprecatedEndpoint()
+  public async sign() {}
 
   @Put('/')
-  public async addMultisignature() {
-    throw new DeprecatedAPIError();
-  }
+  @DeprecatedEndpoint()
+  public async addMultisignature() {}
 }

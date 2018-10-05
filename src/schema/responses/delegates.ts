@@ -9,10 +9,13 @@ import {
 } from "../common/scalars";
 import { Delegate, Block } from "../common/models";
 import { successResp, respProps } from "../utils/responses";
+import { scope } from '../utils/scope'
+
+const s = scope('responses.delegates')
 
 export default {
   getDelegates: {
-    id: "responses.delegates.getDelegates",
+    id: s`getDelegates`,
     type: "object",
     properties: respProps({
       delegates: {
@@ -64,7 +67,7 @@ export default {
     })
   },
   getFee: {
-    id: "responses.delegates.getFee",
+    id: s`getFee`,
     type: "object",
     properties: respProps({
       fee: amount,
@@ -80,7 +83,7 @@ export default {
     })
   },
   getForgedByAccount: {
-    id: "responses.delegates.getForgedByAccount",
+    id: s`getForgedByAccount`,
     type: "object",
     properties: respProps({
       fees: amount,
@@ -94,7 +97,7 @@ export default {
     })
   },
   getDelegate: {
-    id: "responses.delegates.getDelegate",
+    id: s`getDelegate`,
     type: "object",
     properties: respProps({
       delegate: Delegate
@@ -115,7 +118,7 @@ export default {
     })
   },
   getVoters: {
-    id: "responses.delegates.getVoters",
+    id: s`getVoters`,
     type: "object",
     properties: respProps({
       accounts: {
@@ -155,7 +158,7 @@ export default {
     })
   },
   search: {
-    id: "responses.delegates.search",
+    id: s`search`,
     type: "object",
     properties: respProps({
       delegates: {
@@ -193,7 +196,7 @@ export default {
     })
   },
   count: {
-    id: "responses.delegates.count",
+    id: s`count`,
     type: "object",
     properties: respProps({
       count: wholeNum
@@ -203,7 +206,7 @@ export default {
     })
   },
   getNextForgers: {
-    id: "responses.delegates.getNextForgers",
+    id: s`getNextForgers`,
     type: "object",
     properties: respProps({
       currentBlock: Block,
@@ -248,7 +251,7 @@ export default {
     })
   },
   getForgingStatus: {
-    id: "responses.delegates.getForgingStatus",
+    id: s`getForgingStatus`,
     type: "object",
     properties: respProps({
       enabled: { type: "boolean" },
@@ -274,19 +277,19 @@ export default {
     })
   },
   forgingEnable: {
-    id: "responses.delegates.forgingEnable",
+    id: s`forgingEnable`,
     type: "object",
     properties: respProps(),
 	example: successResp()
   },
   forgingDisable: {
-    id: "responses.delegates.forgingDisable",
+    id: s`forgingDisable`,
     type: "object",
     properties: respProps(),
 	example: successResp()
   },
   accessDenied: {
-    id: "responses.delegates.accessDenied",
+    id: s`accessDenied`,
     type: "object",
     properties: respProps(),
     example: {

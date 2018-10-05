@@ -7,6 +7,7 @@ import * as z_schema from 'z-schema';
 import {castFieldsToNumberUsingSchema, constants, removeEmptyObjKeys, TransactionType} from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { assertValidSchema, SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { ResponseSchema } from 'rc-openapi-gen'
 import { ISlots } from '../ioc/interfaces/helpers';
 import { ITransactionLogic } from '../ioc/interfaces/logic';
 import {
@@ -54,6 +55,7 @@ export class TransactionsAPI {
   private systemModule: ISystemModule;
 
   @Get()
+  @ResponseSchema('responses.transactions.getTransactions')
   public async getTransactions(@QueryParams() body: any) {
     const pattern = /(and|or){1}:/i;
 
@@ -107,11 +109,13 @@ export class TransactionsAPI {
   }
 
   @Get('/count')
+  @ResponseSchema('responses.transactions.getCount')
   public getCount(): Promise<{ confirmed: number, multisignature: number, queued: number, unconfirmed: number }> {
     return this.transactionsModule.count();
   }
 
   @Get('/get')
+  @ResponseSchema('responses.transactions.getTransaction')
   @ValidateSchema()
   public async getTX(
     @SchemaValid(schema.getTransaction)
@@ -137,6 +141,7 @@ export class TransactionsAPI {
   }
 
   @Get('/multisignatures')
+  @ResponseSchema('responses.transactions.getMultiSigs')
   @ValidateSchema()
   public async getMultiSigs(@SchemaValid(schema.getPooledTransactions)
                             @QueryParams() params: { senderPublicKey?: string, address?: string }) {
@@ -153,6 +158,7 @@ export class TransactionsAPI {
   }
 
   @Get('/multisignatures/get')
+  @ResponseSchema('responses.transactions.getMultiSig')
   @ValidateSchema()
   public async getMultiSig(@SchemaValid(schema.getPooledTransaction.properties.id)
                            @QueryParam('id') id: string) {
@@ -164,6 +170,7 @@ export class TransactionsAPI {
   }
 
   @Get('/queued')
+  @ResponseSchema('responses.transactions.getQueuedTransactions')
   @ValidateSchema()
   public async getQueuedTxs(@SchemaValid(schema.getPooledTransactions)
                             @QueryParams() params: { senderPublicKey?: string, address?: string }) {
@@ -181,6 +188,7 @@ export class TransactionsAPI {
   }
 
   @Get('/queued/get')
+  @ResponseSchema('responses.transactions.getQueuedTransaction')
   @ValidateSchema()
   public async getQueuedTx(@SchemaValid(schema.getPooledTransaction.properties.id)
                            @QueryParam('id') id: string) {
@@ -192,6 +200,7 @@ export class TransactionsAPI {
   }
 
   @Get('/unconfirmed')
+  @ResponseSchema('responses.transactions.getUnconfirmedTransactions')
   @ValidateSchema()
   public async getUnconfirmedTxs(@SchemaValid(schema.getPooledTransactions)
                                  @QueryParams() params: { senderPublicKey?: string, address?: string }) {
@@ -219,6 +228,7 @@ export class TransactionsAPI {
   }
 
   @Get('/unconfirmed/get')
+  @ResponseSchema('responses.transactions.getUnconfirmedTransaction')
   @ValidateSchema()
   public async getUnconfirmedTx(@SchemaValid(schema.getPooledTransaction.properties.id)
                                 @QueryParam('id') id: string) {
@@ -230,6 +240,7 @@ export class TransactionsAPI {
   }
 
   @Post()
+  @ResponseSchema('responses.transactions.localCreate')
   @ValidateSchema()
   @UseBefore(RestrictedAPIWatchGuard)
   public async localCreate(
@@ -261,9 +272,10 @@ export class TransactionsAPI {
   }
 
   @Put()
+  @ResponseSchema('responses.transactions.put')
   @ValidateSchema()
   public async put(
-    @SchemaValid({type: 'object', properties: { transaction: {type: 'object'}, transactions: {type: 'array', maxItems: 10}}})
+    @SchemaValid(schema.put)
     @Body() body: {
       transaction?: ITransportTransaction<any>,
       transactions?: Array<ITransportTransaction<any>>

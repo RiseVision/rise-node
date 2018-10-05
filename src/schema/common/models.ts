@@ -9,19 +9,26 @@ import {
   publicKey,
   signature,
   timestamp,
+  stringnum,
   username,
-  wholeNum
+  wholeNum,
+  ipAddress,
+  osState,
+  os,
+  port,
+  version,
+  vote,
+  transactionType
 } from "./scalars";
+import { allAssets, multisigAsset } from './fragments'
 
-export const Transaction = {
-  id: "common.models.Transaction",
+export const UnconfirmedTransaction = {
+  id: "common.models.UnconfirmedTransaction",
   type: "object",
   properties: {
     amount,
-    blockId: id,
-    confirmations: wholeNum,
+    type: transactionType,
     fee: amount,
-    height,
     id,
     recipientId: id,
     requesterPublicKey: publicKey,
@@ -35,9 +42,29 @@ export const Transaction = {
       items: signature
     },
     timestamp,
-    type: wholeNum
+    asset: allAssets
   }
 };
+
+export const Transaction = {
+  ...UnconfirmedTransaction,
+  id: "common.models.Transaction",
+  properties: {
+    ...UnconfirmedTransaction.properties,
+    blockId: id,
+    confirmations: wholeNum,
+    height
+  }
+};
+
+export const MultisigTransaction = {
+	...Transaction,
+	id: 'common.models.MultisigTransaction',
+	properties: {
+		...Transaction.properties,
+		asset: multisigAsset
+	}
+}
 
 export const Block = {
   id: "common.models.Block",
@@ -77,6 +104,23 @@ export const Delegate = {
     rank: countingNum,
     rate: countingNum,
     username,
-    vote: wholeNum
+    vote: stringnum
+  }
+};
+
+export const Peer = {
+  id: "common.models.Peer",
+  type: "object",
+  properties: {
+    ip: ipAddress,
+    port: port,
+    state: osState,
+    os,
+    version,
+    broadhash: hex,
+    height: height,
+    clock: wholeNum,
+    updated: timestamp,
+    nonce: "d845b08b-7824-45f3-9033-5317622d0d2f"
   }
 };

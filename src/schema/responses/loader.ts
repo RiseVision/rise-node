@@ -1,9 +1,12 @@
 import { height, hex, wholeNum } from "../common/scalars";
 import { successResp, respProps } from "../utils/responses";
+import { scope } from '../utils/scope'
+
+const s = scope('responses.loader')
 
 export default {
   getStatus: {
-    id: "responses.loader.getStatus",
+    id: s`getStatus`,
     type: "object",
     properties: respProps({
       loaded: { type: "boolean" }
@@ -13,7 +16,7 @@ export default {
     })
   },
   getStatusSync: {
-    id: "responses.loader.getStatusSync",
+    id: s`getStatusSync`,
     type: "object",
     properties: respProps({
       broadhash: hex,
@@ -29,7 +32,7 @@ export default {
     })
   },
   ping: {
-    id: "responses.loader.ping",
+    id: s`ping`,
     type: "object",
     properties: respProps(),
     example: successResp()

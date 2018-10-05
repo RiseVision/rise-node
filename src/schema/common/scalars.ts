@@ -87,7 +87,8 @@ export const multisigKeysgroup = {
   id: "common.scalars.multisigKeysgroup",
   type: "array",
   minItems: constants.multisigConstraints.keysgroup.minItems,
-  maxItems: constants.multisigConstraints.keysgroup.maxItems
+  maxItems: constants.multisigConstraints.keysgroup.maxItems,
+  items: publicKey
 };
 
 export const port = {
@@ -111,8 +112,8 @@ export const version = {
   maxLength: 12
 };
 
-export const usState = {
-  id: "common.scalars.usState",
+export const osState = {
+  id: "common.scalars.osState",
   type: "integer",
   minimum: 0,
   maximum: 2
@@ -147,7 +148,7 @@ export const balance = {
 export const signature = {
   id: "common.scalars.signature",
   type: "string",
-  format: "binary"
+  format: "signatureBuf"
 };
 
 export const boolInt = {
@@ -195,4 +196,15 @@ export const stringnum = {
 export const floatnum = {
   type: "number",
   format: "float"
+};
+
+export const vote = {
+  type: "string",
+  pattern: "^[-+]{1}[0-9a-z]{64}$"
+};
+
+export const transactionType = {
+  type: "integer",
+  minimum: 0,
+  maximum: 4
 };

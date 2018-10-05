@@ -1,8 +1,11 @@
 import { respProps, successResp } from '../utils/responses'
+import { scope } from '../utils/scope'
+
+const s = scope('responses.general')
 
 export default {
   deprecated: {
-    id: "responses.general.deprecated",
+    id: s`deprecated`,
     type: "object",
     properties: respProps(),
     example: {
@@ -11,7 +14,7 @@ export default {
     }
   },
   success: {
-    id: "responses.general.success",
+    id: s`success`,
     type: "object",
     properties: respProps(),
     example: {
@@ -19,7 +22,7 @@ export default {
     }
   },
   error: {
-    id: "responses.general.error",
+    id: s`error`,
     type: "object",
     properties: respProps(),
     example: {

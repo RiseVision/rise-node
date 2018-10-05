@@ -18,10 +18,22 @@
     </style>
   </head>
   <body>
-    <redoc spec-url='swagger.json'></redoc>
+    <div id='app'></div>
     <script src="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"> </script>
     <script>
-        // document.querySelectorAll('td[kind=field]').forEach((item) => item.click())
+      Redoc.init(
+        'swagger.json',
+        {
+          expandResponses: '200,201',
+        },
+        document.getElementById('app'),
+        function() {
+          // expand query fields on load
+          document
+            .querySelectorAll('td[kind=field]')
+            .forEach((item) => item.click());
+        }
+      );
     </script>
   </body>
 </html>

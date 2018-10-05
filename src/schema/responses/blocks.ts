@@ -1,10 +1,14 @@
 import { respProps, successResp } from "../utils/responses";
 import { wholeNum, height, amount, hex, datetime } from "../common/scalars";
 import { Block } from "../common/models";
+import { feeHeight } from "../common/fragments";
+import { scope } from '../utils/scope'
+
+const s = scope('responses.blocks')
 
 export default {
   getBlock: {
-    id: "responses.blocks.getBlock",
+    id: s`getBlock`,
     type: "object",
     properties: respProps({
       block: Block
@@ -50,7 +54,7 @@ export default {
     })
   },
   getBlocks: {
-    id: "responses.blocks.getBlocks",
+    id: s`getBlocks`,
     type: "object",
     properties: respProps({
       blocks: {
@@ -137,7 +141,7 @@ export default {
     })
   },
   getHeight: {
-    id: "responses.blocks.getHeight",
+    id: s`getHeight`,
     type: "object",
     properties: respProps({
       height
@@ -147,13 +151,11 @@ export default {
     })
   },
   getFee: {
-    id: "responses.blocks.getFee",
+    id: s`getFee`,
     type: "object",
     properties: respProps({
-      fee: amount,
-      fromHeight: height,
-      toHeight: height,
-      height
+      ...feeHeight,
+      fee: amount
     }),
     example: successResp({
       fee: 10000000,
@@ -163,9 +165,10 @@ export default {
     })
   },
   getFees: {
-    id: "responses.blocks.getFees",
+    id: s`getFees`,
     type: "object",
     properties: respProps({
+      ...feeHeight,
       fees: {
         type: "object",
         properties: {
@@ -175,10 +178,7 @@ export default {
           delegate: amount,
           multisignature: amount
         }
-      },
-      fromHeight: height,
-      toHeight: height,
-      height
+      }
     }),
     example: successResp({
       fees: {
@@ -194,7 +194,7 @@ export default {
     })
   },
   getNethash: {
-    id: "responses.blocks.getNethash",
+    id: s`getNethash`,
     type: "object",
     properties: respProps({
       nethash: hex
@@ -204,7 +204,7 @@ export default {
     })
   },
   getMilestone: {
-    id: "responses.blocks.getMilestone",
+    id: s`getMilestone`,
     type: "object",
     properties: respProps({
       milestone: wholeNum
@@ -214,7 +214,7 @@ export default {
     })
   },
   getReward: {
-    id: "responses.blocks.getReward",
+    id: s`getReward`,
     type: "object",
     properties: respProps({
       reward: amount
@@ -224,7 +224,7 @@ export default {
     })
   },
   getEpoch: {
-    id: "responses.blocks.getEpoch",
+    id: s`getEpoch`,
     type: "object",
     properties: respProps({
       epoch: datetime
@@ -234,7 +234,7 @@ export default {
     })
   },
   getSupply: {
-    id: "responses.blocks.getSupply",
+    id: s`getSupply`,
     type: "object",
     properties: respProps({
       supply: amount
@@ -244,7 +244,7 @@ export default {
     })
   },
   getBroadHash: {
-    id: "responses.blocks.getBroadHash",
+    id: s`getBroadHash`,
     type: "object",
     properties: respProps({
       broadhash: hex
@@ -254,7 +254,7 @@ export default {
     })
   },
   getStatus: {
-    id: "responses.blocks.getStatus",
+    id: s`getStatus`,
     type: "object",
     properties: respProps({
       broadhash: hex,

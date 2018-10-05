@@ -3,6 +3,7 @@ import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
+import { ResponseSchema } from 'rc-openapi-gen'
 import { IPeerLogic } from '../ioc/interfaces/logic';
 import { IPeersModule, ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
@@ -31,6 +32,7 @@ export class PeersAPI {
   private systemModule: ISystemModule;
 
   @Get('/')
+  @ResponseSchema('responses.peers.getPeers')
   @ValidateSchema()
   public async getPeers(@SchemaValid(peersSchema.getPeers, { castNumbers: true })
                         @QueryParams() params: any) {
@@ -46,6 +48,7 @@ export class PeersAPI {
   }
 
   @Get('/get')
+  @ResponseSchema('responses.peers.getPeer')
   @ValidateSchema()
   public async getPeer(@SchemaValid(peersSchema.getPeer, { castNumbers: true })
                        @QueryParams() params: { ip: string, port: number }) {
@@ -62,6 +65,7 @@ export class PeersAPI {
   }
 
   @Get('/count')
+  @ResponseSchema('responses.peers.count')
   public async count() {
     try {
       const connected    = (await this.peersModule.getByFilter({ state: PeerState.CONNECTED })).length;
@@ -75,6 +79,7 @@ export class PeersAPI {
   }
 
   @Get('/version')
+  @ResponseSchema('responses.peers.version')
   public async version() {
     return {
       build     : this.versionBuild,

@@ -1,19 +1,6 @@
 {
   "components": {
     "schemas": {
-      "TransactionQuery": {
-        "id": "TransactionQuery",
-        "type": "object",
-        "properties": {
-          "transaction": {
-            "type": "object"
-          },
-          "transactions": {
-            "type": "array",
-            "maxItems": 10
-          }
-        }
-      },
       "Buffer": {
         "id": "Buffer",
         "type": "string",
@@ -1362,6 +1349,19 @@
           "recipientId"
         ]
       },
+      "transactions.put": {
+        "id": "transactions.put",
+        "type": "object",
+        "properties": {
+          "transaction": {
+            "type": "object"
+          },
+          "transactions": {
+            "type": "array",
+            "maxItems": 10
+          }
+        }
+      },
       "transport.headers": {
         "id": "transport.headers",
         "type": "object",
@@ -1488,8 +1488,132 @@
           "signature"
         ]
       },
-      "common.models.Transaction": {
-        "id": "common.models.Transaction",
+      "6920969059388666996": {
+        "signatures": [],
+        "id": "6920969059388666996",
+        "type": 0,
+        "timestamp": 54069408,
+        "senderPublicKey": "bf4809a1a08c9dffbba741f0c7b9f49145602341d5fa306fb3cd592d3e1058b3",
+        "senderId": "1644223775232371040R",
+        "recipientId": "3303015780877366956R",
+        "amount": 199533766861,
+        "fee": 10000000,
+        "signature": "12a4afbb3c9cf449d14745a190b874a7e0d44c00c8bd68284a826a4e825b0662b59b48df2f8d8ba5f85b3a68dac35b97896224623a86a0d661d669dd9df0ba07",
+        "signSignature": null,
+        "requesterPublicKey": null,
+        "rowId": 230339,
+        "asset": null,
+        "height": 694239,
+        "blockId": "14986452887816815162",
+        "confirmations": 670383
+      },
+      "6059220831601703385": {
+        "signatures": [],
+        "id": "6059220831601703385",
+        "type": 1,
+        "timestamp": 54027458,
+        "senderPublicKey": "5cc3326c126e56d0f54aa61bfe6d98071c49983505e49e176f017ada1a777c57",
+        "senderId": "14470084663212135040R",
+        "recipientId": null,
+        "amount": 0,
+        "fee": 500000000,
+        "signature": "c2e81420ee4d0ad3f2cc78e16375cbd6720dc225d5987c2d1467a69193b45b85d371a515313253ecd58216abdce14a462dd9fcecd43a129787b07b958cf99301",
+        "signSignature": null,
+        "requesterPublicKey": null,
+        "rowId": 229412,
+        "asset": {
+          "signature": {
+            "publicKey": "7a1e8d2721b55ac7e8c2c0a51e297d8caee2b0fd07d72f1389aec9977023f83f"
+          }
+        },
+        "height": 692846,
+        "blockId": "11971020380225057286",
+        "confirmations": 671776
+      },
+      "1433374155612627632": {
+        "signatures": [],
+        "id": "1433374155612627632",
+        "type": 2,
+        "timestamp": 53952216,
+        "senderPublicKey": "a39343f6343f72d08811e2c11c6137ae4246bc6446d199883d1a6668eb62b9dd",
+        "senderId": "11334711468380890209R",
+        "recipientId": null,
+        "amount": 0,
+        "fee": 2500000000,
+        "signature": "f5fb637d6152af237aa8174c61ef59eadb315c716aafe1f916f347b4b3c8e2a64ac2517c74a8691af0f3cc79b6921f5cd7ae5865766b3e031306f755c053fd00",
+        "signSignature": null,
+        "requesterPublicKey": null,
+        "rowId": 227998,
+        "asset": {
+          "delegate": {
+            "username": "mbkz"
+          }
+        },
+        "height": 690355,
+        "blockId": "1002473113321949051",
+        "confirmations": 674267
+      },
+      "8427347107286041778": {
+        "signatures": [],
+        "id": "8427347107286041778",
+        "type": 3,
+        "timestamp": 54068843,
+        "senderPublicKey": "72822092a16ce58afea8e76ff609832401695b5d32da2c488c7f9272626be02f",
+        "senderId": "7638830122069556640R",
+        "recipientId": "7638830122069556640R",
+        "amount": 0,
+        "fee": 100000000,
+        "signature": "a96d28826480e8b5be80ebaf8ba64124a5ecb9201325c5054be7af5ff5ccaca49cbf9f51a89070e6cf4e9b54845ce0f301b1738e44e91f7dd62d7f7c6911e705",
+        "signSignature": null,
+        "requesterPublicKey": null,
+        "rowId": 230295,
+        "asset": {
+          "votes": [
+            "+7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0"
+          ]
+        },
+        "height": 694221,
+        "blockId": "5564349571033117319",
+        "confirmations": 670401
+      },
+      "2800934512471301755": {
+        "signatures": [
+          "c0aae9fbc57aed5c5bb4ff54b1f508759b868965164a3fafbe1b58cc8bd3ea84786b4b3eb7ab4db1036f2fe1b30f9cc293ce966fa281c677928d2d4dcefd710f",
+          "9bbe5e04cbe277091f6291d9f136ba1581d31bef6ca5946f42010bc2fa0dbaa0d0079057087e8e147754f316d13389c6a8aed954a30ef408415ad71f99469201"
+        ],
+        "id": "2800934512471301755",
+        "type": 4,
+        "timestamp": 37507653,
+        "senderPublicKey": "00f928f3e3bc136e74eef1aa75df7b43a99cf22fce74a4a93b0c618bed6f60d1",
+        "senderId": "12109113090353923093R",
+        "recipientId": "2688837343357225875R",
+        "amount": 50000000000,
+        "fee": 500000000,
+        "signature": null,
+        "signSignature": "a96621f7f14bcfde6b7819f0a68e0535df413d489a2c39ab0a28db73d8ae4ee59885d6ac2858386b2b369aba19c8491c0df5bfd79ca898a91a96039e9b6ba908",
+        "requesterPublicKey": null,
+        "rowId": 5273,
+        "asset": {
+          "multisignature": {
+            "min": 2,
+            "lifetime": 12,
+            "keysgroup": [
+              "b759b3f12e927560f5dd85fd63ae3964cd907f0cef732e5913fd200505444059",
+              "bf4809a1a08c9dffbba741f0c7b9f49145602341d5fa306fb3cd592d3e1058b3"
+            ]
+          }
+        },
+        "height": 149100,
+        "blockId": "1416515249237234263",
+        "confirmations": 1215659
+      },
+      "common.scalars.height": {
+        "id": "common.scalars.height",
+        "type": "integer",
+        "minimum": 1
+      },
+      "common.models.UnconfirmedTransaction": {
+        "id": "common.models.UnconfirmedTransaction",
         "type": "object",
         "properties": {
           "amount": {
@@ -1498,28 +1622,16 @@
             "minimum": 0,
             "maximum": 10999999991000000
           },
-          "blockId": {
-            "id": "common.scalars.id",
-            "type": "string",
-            "format": "id",
-            "minLength": 1,
-            "maxLength": 20
-          },
-          "confirmations": {
-            "id": "common.scalars.wholeNum",
+          "type": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 4
           },
           "fee": {
             "id": "common.scalars.amount",
             "type": "integer",
             "minimum": 0,
             "maximum": 10999999991000000
-          },
-          "height": {
-            "id": "common.scalars.height",
-            "type": "integer",
-            "minimum": 1
           },
           "id": {
             "id": "common.scalars.id",
@@ -1560,19 +1672,19 @@
           "signSignature": {
             "id": "common.scalars.signature",
             "type": "string",
-            "format": "binary"
+            "format": "signatureBuf"
           },
           "signature": {
             "id": "common.scalars.signature",
             "type": "string",
-            "format": "binary"
+            "format": "signatureBuf"
           },
           "signatures": {
             "type": "array",
             "items": {
               "id": "common.scalars.signature",
               "type": "string",
-              "format": "binary"
+              "format": "signatureBuf"
             }
           },
           "timestamp": {
@@ -1580,10 +1692,351 @@
             "type": "integer",
             "minimum": 1
           },
+          "asset": {
+            "type": "object",
+            "properties": {
+              "multisig": {
+                "min": {
+                  "id": "common.scalars.multisigMin",
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 15
+                },
+                "lifetime": {
+                  "id": "common.scalars.multisigLifetime",
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 72
+                },
+                "keysgroup": {
+                  "id": "common.scalars.multisigKeysgroup",
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 15,
+                  "items": {
+                    "id": "common.scalars.publicKey",
+                    "type": "string",
+                    "format": "publicKey"
+                  }
+                }
+              },
+              "signature": {
+                "type": "object",
+                "properties": {
+                  "publicKey": {
+                    "id": "common.scalars.publicKey",
+                    "type": "string",
+                    "format": "publicKey"
+                  }
+                }
+              },
+              "votes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[-+]{1}[0-9a-z]{64}$"
+                }
+              },
+              "delegate": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "id": "common.scalars.username",
+                    "type": "string",
+                    "format": "username",
+                    "minLength": 1,
+                    "maxLength": 20
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "common.models.Transaction": {
+        "id": "common.models.Transaction",
+        "type": "object",
+        "properties": {
+          "amount": {
+            "id": "common.scalars.amount",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10999999991000000
+          },
           "type": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "fee": {
+            "id": "common.scalars.amount",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10999999991000000
+          },
+          "id": {
+            "id": "common.scalars.id",
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "recipientId": {
+            "id": "common.scalars.id",
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "requesterPublicKey": {
+            "id": "common.scalars.publicKey",
+            "type": "string",
+            "format": "publicKey"
+          },
+          "rowId": {
             "id": "common.scalars.wholeNum",
             "type": "integer",
             "minimum": 0
+          },
+          "senderId": {
+            "id": "common.scalars.id",
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "senderPublicKey": {
+            "id": "common.scalars.publicKey",
+            "type": "string",
+            "format": "publicKey"
+          },
+          "signSignature": {
+            "id": "common.scalars.signature",
+            "type": "string",
+            "format": "signatureBuf"
+          },
+          "signature": {
+            "id": "common.scalars.signature",
+            "type": "string",
+            "format": "signatureBuf"
+          },
+          "signatures": {
+            "type": "array",
+            "items": {
+              "id": "common.scalars.signature",
+              "type": "string",
+              "format": "signatureBuf"
+            }
+          },
+          "timestamp": {
+            "id": "common.scalars.timestamp",
+            "type": "integer",
+            "minimum": 1
+          },
+          "asset": {
+            "type": "object",
+            "properties": {
+              "multisig": {
+                "min": {
+                  "id": "common.scalars.multisigMin",
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 15
+                },
+                "lifetime": {
+                  "id": "common.scalars.multisigLifetime",
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 72
+                },
+                "keysgroup": {
+                  "id": "common.scalars.multisigKeysgroup",
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 15,
+                  "items": {
+                    "id": "common.scalars.publicKey",
+                    "type": "string",
+                    "format": "publicKey"
+                  }
+                }
+              },
+              "signature": {
+                "type": "object",
+                "properties": {
+                  "publicKey": {
+                    "id": "common.scalars.publicKey",
+                    "type": "string",
+                    "format": "publicKey"
+                  }
+                }
+              },
+              "votes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[-+]{1}[0-9a-z]{64}$"
+                }
+              },
+              "delegate": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "id": "common.scalars.username",
+                    "type": "string",
+                    "format": "username",
+                    "minLength": 1,
+                    "maxLength": 20
+                  }
+                }
+              }
+            }
+          },
+          "blockId": {
+            "id": "common.scalars.id",
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "confirmations": {
+            "id": "common.scalars.wholeNum",
+            "type": "integer",
+            "minimum": 0
+          },
+          "height": {
+            "id": "common.scalars.height",
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "common.models.MultisigTransaction": {
+        "id": "common.models.MultisigTransaction",
+        "type": "object",
+        "properties": {
+          "amount": {
+            "id": "common.scalars.amount",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10999999991000000
+          },
+          "type": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "fee": {
+            "id": "common.scalars.amount",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10999999991000000
+          },
+          "id": {
+            "id": "common.scalars.id",
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "recipientId": {
+            "id": "common.scalars.id",
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "requesterPublicKey": {
+            "id": "common.scalars.publicKey",
+            "type": "string",
+            "format": "publicKey"
+          },
+          "rowId": {
+            "id": "common.scalars.wholeNum",
+            "type": "integer",
+            "minimum": 0
+          },
+          "senderId": {
+            "id": "common.scalars.id",
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "senderPublicKey": {
+            "id": "common.scalars.publicKey",
+            "type": "string",
+            "format": "publicKey"
+          },
+          "signSignature": {
+            "id": "common.scalars.signature",
+            "type": "string",
+            "format": "signatureBuf"
+          },
+          "signature": {
+            "id": "common.scalars.signature",
+            "type": "string",
+            "format": "signatureBuf"
+          },
+          "signatures": {
+            "type": "array",
+            "items": {
+              "id": "common.scalars.signature",
+              "type": "string",
+              "format": "signatureBuf"
+            }
+          },
+          "timestamp": {
+            "id": "common.scalars.timestamp",
+            "type": "integer",
+            "minimum": 1
+          },
+          "asset": {
+            "type": "object",
+            "properties": {
+              "multisig": {
+                "min": {
+                  "id": "common.scalars.multisigMin",
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 15
+                },
+                "lifetime": {
+                  "id": "common.scalars.multisigLifetime",
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 72
+                },
+                "keysgroup": {
+                  "id": "common.scalars.multisigKeysgroup",
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 15,
+                  "items": {
+                    "id": "common.scalars.publicKey",
+                    "type": "string",
+                    "format": "publicKey"
+                  }
+                }
+              }
+            }
+          },
+          "blockId": {
+            "id": "common.scalars.id",
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "confirmations": {
+            "id": "common.scalars.wholeNum",
+            "type": "integer",
+            "minimum": 0
+          },
+          "height": {
+            "id": "common.scalars.height",
+            "type": "integer",
+            "minimum": 1
           }
         }
       },
@@ -1674,28 +2127,16 @@
                   "minimum": 0,
                   "maximum": 10999999991000000
                 },
-                "blockId": {
-                  "id": "common.scalars.id",
-                  "type": "string",
-                  "format": "id",
-                  "minLength": 1,
-                  "maxLength": 20
-                },
-                "confirmations": {
-                  "id": "common.scalars.wholeNum",
+                "type": {
                   "type": "integer",
-                  "minimum": 0
+                  "minimum": 0,
+                  "maximum": 4
                 },
                 "fee": {
                   "id": "common.scalars.amount",
                   "type": "integer",
                   "minimum": 0,
                   "maximum": 10999999991000000
-                },
-                "height": {
-                  "id": "common.scalars.height",
-                  "type": "integer",
-                  "minimum": 1
                 },
                 "id": {
                   "id": "common.scalars.id",
@@ -1736,19 +2177,19 @@
                 "signSignature": {
                   "id": "common.scalars.signature",
                   "type": "string",
-                  "format": "binary"
+                  "format": "signatureBuf"
                 },
                 "signature": {
                   "id": "common.scalars.signature",
                   "type": "string",
-                  "format": "binary"
+                  "format": "signatureBuf"
                 },
                 "signatures": {
                   "type": "array",
                   "items": {
                     "id": "common.scalars.signature",
                     "type": "string",
-                    "format": "binary"
+                    "format": "signatureBuf"
                   }
                 },
                 "timestamp": {
@@ -1756,10 +2197,81 @@
                   "type": "integer",
                   "minimum": 1
                 },
-                "type": {
+                "asset": {
+                  "type": "object",
+                  "properties": {
+                    "multisig": {
+                      "min": {
+                        "id": "common.scalars.multisigMin",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 15
+                      },
+                      "lifetime": {
+                        "id": "common.scalars.multisigLifetime",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 72
+                      },
+                      "keysgroup": {
+                        "id": "common.scalars.multisigKeysgroup",
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 15,
+                        "items": {
+                          "id": "common.scalars.publicKey",
+                          "type": "string",
+                          "format": "publicKey"
+                        }
+                      }
+                    },
+                    "signature": {
+                      "type": "object",
+                      "properties": {
+                        "publicKey": {
+                          "id": "common.scalars.publicKey",
+                          "type": "string",
+                          "format": "publicKey"
+                        }
+                      }
+                    },
+                    "votes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[-+]{1}[0-9a-z]{64}$"
+                      }
+                    },
+                    "delegate": {
+                      "type": "object",
+                      "properties": {
+                        "username": {
+                          "id": "common.scalars.username",
+                          "type": "string",
+                          "format": "username",
+                          "minLength": 1,
+                          "maxLength": 20
+                        }
+                      }
+                    }
+                  }
+                },
+                "blockId": {
+                  "id": "common.scalars.id",
+                  "type": "string",
+                  "format": "id",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "confirmations": {
                   "id": "common.scalars.wholeNum",
                   "type": "integer",
                   "minimum": 0
+                },
+                "height": {
+                  "id": "common.scalars.height",
+                  "type": "integer",
+                  "minimum": 1
                 }
               }
             }
@@ -1823,10 +2335,68 @@
             "maxLength": 20
           },
           "vote": {
+            "id": "common.scalars.stringnum",
+            "type": "string",
+            "format": "stringnum"
+          }
+        }
+      },
+      "common.models.Peer": {
+        "id": "common.models.Peer",
+        "type": "object",
+        "properties": {
+          "ip": {
+            "id": "common.scalars.ipAddress",
+            "type": "string",
+            "format": "ip"
+          },
+          "port": {
+            "id": "common.scalars.port",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "state": {
+            "id": "common.scalars.osState",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "os": {
+            "id": "common.scalars.os",
+            "type": "string",
+            "format": "os",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "version": {
+            "id": "common.scalars.version",
+            "type": "string",
+            "format": "version",
+            "minLength": 5,
+            "maxLength": 12
+          },
+          "broadhash": {
+            "id": "common.scalars.hex",
+            "type": "string",
+            "format": "hex"
+          },
+          "height": {
+            "id": "common.scalars.height",
+            "type": "integer",
+            "minimum": 1
+          },
+          "clock": {
             "id": "common.scalars.wholeNum",
             "type": "integer",
             "minimum": 0
-          }
+          },
+          "updated": {
+            "id": "common.scalars.timestamp",
+            "type": "integer",
+            "minimum": 1
+          },
+          "nonce": "d845b08b-7824-45f3-9033-5317622d0d2f"
         }
       },
       "common.scalars.CSV": {
@@ -1853,11 +2423,6 @@
         "format": "address",
         "minLength": 1,
         "maxLength": 22
-      },
-      "common.scalars.height": {
-        "id": "common.scalars.height",
-        "type": "integer",
-        "minimum": 1
       },
       "common.scalars.publicKey": {
         "id": "common.scalars.publicKey",
@@ -1904,7 +2469,12 @@
         "id": "common.scalars.multisigKeysgroup",
         "type": "array",
         "minItems": 1,
-        "maxItems": 15
+        "maxItems": 15,
+        "items": {
+          "id": "common.scalars.publicKey",
+          "type": "string",
+          "format": "publicKey"
+        }
       },
       "common.scalars.port": {
         "id": "common.scalars.port",
@@ -1924,8 +2494,8 @@
         "minLength": 5,
         "maxLength": 12
       },
-      "common.scalars.usState": {
-        "id": "common.scalars.usState",
+      "common.scalars.osState": {
+        "id": "common.scalars.osState",
         "type": "integer",
         "minimum": 0,
         "maximum": 2
@@ -1955,7 +2525,7 @@
       "common.scalars.signature": {
         "id": "common.scalars.signature",
         "type": "string",
-        "format": "binary"
+        "format": "signatureBuf"
       },
       "common.scalars.boolInt": {
         "id": "common.scalars.boolInt",
@@ -2027,7 +2597,7 @@
                 "items": {
                   "id": "common.scalars.signature",
                   "type": "string",
-                  "format": "binary"
+                  "format": "signatureBuf"
                 }
               },
               "publicKey": {
@@ -2053,7 +2623,7 @@
                 "items": {
                   "id": "common.scalars.signature",
                   "type": "string",
-                  "format": "binary"
+                  "format": "signatureBuf"
                 }
               },
               "unconfirmedBalance": {
@@ -2201,9 +2771,9 @@
                   "maxLength": 20
                 },
                 "vote": {
-                  "id": "common.scalars.wholeNum",
-                  "type": "integer",
-                  "minimum": 0
+                  "id": "common.scalars.stringnum",
+                  "type": "string",
+                  "format": "stringnum"
                 }
               }
             }
@@ -2394,28 +2964,16 @@
                       "minimum": 0,
                       "maximum": 10999999991000000
                     },
-                    "blockId": {
-                      "id": "common.scalars.id",
-                      "type": "string",
-                      "format": "id",
-                      "minLength": 1,
-                      "maxLength": 20
-                    },
-                    "confirmations": {
-                      "id": "common.scalars.wholeNum",
+                    "type": {
                       "type": "integer",
-                      "minimum": 0
+                      "minimum": 0,
+                      "maximum": 4
                     },
                     "fee": {
                       "id": "common.scalars.amount",
                       "type": "integer",
                       "minimum": 0,
                       "maximum": 10999999991000000
-                    },
-                    "height": {
-                      "id": "common.scalars.height",
-                      "type": "integer",
-                      "minimum": 1
                     },
                     "id": {
                       "id": "common.scalars.id",
@@ -2456,19 +3014,19 @@
                     "signSignature": {
                       "id": "common.scalars.signature",
                       "type": "string",
-                      "format": "binary"
+                      "format": "signatureBuf"
                     },
                     "signature": {
                       "id": "common.scalars.signature",
                       "type": "string",
-                      "format": "binary"
+                      "format": "signatureBuf"
                     },
                     "signatures": {
                       "type": "array",
                       "items": {
                         "id": "common.scalars.signature",
                         "type": "string",
-                        "format": "binary"
+                        "format": "signatureBuf"
                       }
                     },
                     "timestamp": {
@@ -2476,10 +3034,81 @@
                       "type": "integer",
                       "minimum": 1
                     },
-                    "type": {
+                    "asset": {
+                      "type": "object",
+                      "properties": {
+                        "multisig": {
+                          "min": {
+                            "id": "common.scalars.multisigMin",
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 15
+                          },
+                          "lifetime": {
+                            "id": "common.scalars.multisigLifetime",
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 72
+                          },
+                          "keysgroup": {
+                            "id": "common.scalars.multisigKeysgroup",
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 15,
+                            "items": {
+                              "id": "common.scalars.publicKey",
+                              "type": "string",
+                              "format": "publicKey"
+                            }
+                          }
+                        },
+                        "signature": {
+                          "type": "object",
+                          "properties": {
+                            "publicKey": {
+                              "id": "common.scalars.publicKey",
+                              "type": "string",
+                              "format": "publicKey"
+                            }
+                          }
+                        },
+                        "votes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^[-+]{1}[0-9a-z]{64}$"
+                          }
+                        },
+                        "delegate": {
+                          "type": "object",
+                          "properties": {
+                            "username": {
+                              "id": "common.scalars.username",
+                              "type": "string",
+                              "format": "username",
+                              "minLength": 1,
+                              "maxLength": 20
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "blockId": {
+                      "id": "common.scalars.id",
+                      "type": "string",
+                      "format": "id",
+                      "minLength": 1,
+                      "maxLength": 20
+                    },
+                    "confirmations": {
                       "id": "common.scalars.wholeNum",
                       "type": "integer",
                       "minimum": 0
+                    },
+                    "height": {
+                      "id": "common.scalars.height",
+                      "type": "integer",
+                      "minimum": 1
                     }
                   }
                 }
@@ -2632,28 +3261,16 @@
                         "minimum": 0,
                         "maximum": 10999999991000000
                       },
-                      "blockId": {
-                        "id": "common.scalars.id",
-                        "type": "string",
-                        "format": "id",
-                        "minLength": 1,
-                        "maxLength": 20
-                      },
-                      "confirmations": {
-                        "id": "common.scalars.wholeNum",
+                      "type": {
                         "type": "integer",
-                        "minimum": 0
+                        "minimum": 0,
+                        "maximum": 4
                       },
                       "fee": {
                         "id": "common.scalars.amount",
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 10999999991000000
-                      },
-                      "height": {
-                        "id": "common.scalars.height",
-                        "type": "integer",
-                        "minimum": 1
                       },
                       "id": {
                         "id": "common.scalars.id",
@@ -2694,19 +3311,19 @@
                       "signSignature": {
                         "id": "common.scalars.signature",
                         "type": "string",
-                        "format": "binary"
+                        "format": "signatureBuf"
                       },
                       "signature": {
                         "id": "common.scalars.signature",
                         "type": "string",
-                        "format": "binary"
+                        "format": "signatureBuf"
                       },
                       "signatures": {
                         "type": "array",
                         "items": {
                           "id": "common.scalars.signature",
                           "type": "string",
-                          "format": "binary"
+                          "format": "signatureBuf"
                         }
                       },
                       "timestamp": {
@@ -2714,10 +3331,81 @@
                         "type": "integer",
                         "minimum": 1
                       },
-                      "type": {
+                      "asset": {
+                        "type": "object",
+                        "properties": {
+                          "multisig": {
+                            "min": {
+                              "id": "common.scalars.multisigMin",
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 15
+                            },
+                            "lifetime": {
+                              "id": "common.scalars.multisigLifetime",
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 72
+                            },
+                            "keysgroup": {
+                              "id": "common.scalars.multisigKeysgroup",
+                              "type": "array",
+                              "minItems": 1,
+                              "maxItems": 15,
+                              "items": {
+                                "id": "common.scalars.publicKey",
+                                "type": "string",
+                                "format": "publicKey"
+                              }
+                            }
+                          },
+                          "signature": {
+                            "type": "object",
+                            "properties": {
+                              "publicKey": {
+                                "id": "common.scalars.publicKey",
+                                "type": "string",
+                                "format": "publicKey"
+                              }
+                            }
+                          },
+                          "votes": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[-+]{1}[0-9a-z]{64}$"
+                            }
+                          },
+                          "delegate": {
+                            "type": "object",
+                            "properties": {
+                              "username": {
+                                "id": "common.scalars.username",
+                                "type": "string",
+                                "format": "username",
+                                "minLength": 1,
+                                "maxLength": 20
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "blockId": {
+                        "id": "common.scalars.id",
+                        "type": "string",
+                        "format": "id",
+                        "minLength": 1,
+                        "maxLength": 20
+                      },
+                      "confirmations": {
                         "id": "common.scalars.wholeNum",
                         "type": "integer",
                         "minimum": 0
+                      },
+                      "height": {
+                        "id": "common.scalars.height",
+                        "type": "integer",
+                        "minimum": 1
                       }
                     }
                   }
@@ -2845,12 +3533,6 @@
           "error": {
             "type": "string"
           },
-          "fee": {
-            "id": "common.scalars.amount",
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 10999999991000000
-          },
           "fromHeight": {
             "id": "common.scalars.height",
             "type": "integer",
@@ -2865,6 +3547,12 @@
             "id": "common.scalars.height",
             "type": "integer",
             "minimum": 1
+          },
+          "fee": {
+            "id": "common.scalars.amount",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10999999991000000
           }
         },
         "example": {
@@ -2884,6 +3572,21 @@
           },
           "error": {
             "type": "string"
+          },
+          "fromHeight": {
+            "id": "common.scalars.height",
+            "type": "integer",
+            "minimum": 1
+          },
+          "toHeight": {
+            "id": "common.scalars.height",
+            "type": "integer",
+            "minimum": 1
+          },
+          "height": {
+            "id": "common.scalars.height",
+            "type": "integer",
+            "minimum": 1
           },
           "fees": {
             "type": "object",
@@ -2919,21 +3622,6 @@
                 "maximum": 10999999991000000
               }
             }
-          },
-          "fromHeight": {
-            "id": "common.scalars.height",
-            "type": "integer",
-            "minimum": 1
-          },
-          "toHeight": {
-            "id": "common.scalars.height",
-            "type": "integer",
-            "minimum": 1
-          },
-          "height": {
-            "id": "common.scalars.height",
-            "type": "integer",
-            "minimum": 1
           }
         },
         "example": {
@@ -3208,9 +3896,9 @@
                   "maxLength": 20
                 },
                 "vote": {
-                  "id": "common.scalars.wholeNum",
-                  "type": "integer",
-                  "minimum": 0
+                  "id": "common.scalars.stringnum",
+                  "type": "string",
+                  "format": "stringnum"
                 }
               }
             }
@@ -3401,9 +4089,9 @@
                 "maxLength": 20
               },
               "vote": {
-                "id": "common.scalars.wholeNum",
-                "type": "integer",
-                "minimum": 0
+                "id": "common.scalars.stringnum",
+                "type": "string",
+                "format": "stringnum"
               }
             }
           }
@@ -3556,9 +4244,9 @@
                   "maxLength": 20
                 },
                 "vote": {
-                  "id": "common.scalars.wholeNum",
-                  "type": "integer",
-                  "minimum": 0
+                  "id": "common.scalars.stringnum",
+                  "type": "string",
+                  "format": "stringnum"
                 }
               }
             }
@@ -3712,28 +4400,16 @@
                       "minimum": 0,
                       "maximum": 10999999991000000
                     },
-                    "blockId": {
-                      "id": "common.scalars.id",
-                      "type": "string",
-                      "format": "id",
-                      "minLength": 1,
-                      "maxLength": 20
-                    },
-                    "confirmations": {
-                      "id": "common.scalars.wholeNum",
+                    "type": {
                       "type": "integer",
-                      "minimum": 0
+                      "minimum": 0,
+                      "maximum": 4
                     },
                     "fee": {
                       "id": "common.scalars.amount",
                       "type": "integer",
                       "minimum": 0,
                       "maximum": 10999999991000000
-                    },
-                    "height": {
-                      "id": "common.scalars.height",
-                      "type": "integer",
-                      "minimum": 1
                     },
                     "id": {
                       "id": "common.scalars.id",
@@ -3774,19 +4450,19 @@
                     "signSignature": {
                       "id": "common.scalars.signature",
                       "type": "string",
-                      "format": "binary"
+                      "format": "signatureBuf"
                     },
                     "signature": {
                       "id": "common.scalars.signature",
                       "type": "string",
-                      "format": "binary"
+                      "format": "signatureBuf"
                     },
                     "signatures": {
                       "type": "array",
                       "items": {
                         "id": "common.scalars.signature",
                         "type": "string",
-                        "format": "binary"
+                        "format": "signatureBuf"
                       }
                     },
                     "timestamp": {
@@ -3794,10 +4470,81 @@
                       "type": "integer",
                       "minimum": 1
                     },
-                    "type": {
+                    "asset": {
+                      "type": "object",
+                      "properties": {
+                        "multisig": {
+                          "min": {
+                            "id": "common.scalars.multisigMin",
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 15
+                          },
+                          "lifetime": {
+                            "id": "common.scalars.multisigLifetime",
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 72
+                          },
+                          "keysgroup": {
+                            "id": "common.scalars.multisigKeysgroup",
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 15,
+                            "items": {
+                              "id": "common.scalars.publicKey",
+                              "type": "string",
+                              "format": "publicKey"
+                            }
+                          }
+                        },
+                        "signature": {
+                          "type": "object",
+                          "properties": {
+                            "publicKey": {
+                              "id": "common.scalars.publicKey",
+                              "type": "string",
+                              "format": "publicKey"
+                            }
+                          }
+                        },
+                        "votes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^[-+]{1}[0-9a-z]{64}$"
+                          }
+                        },
+                        "delegate": {
+                          "type": "object",
+                          "properties": {
+                            "username": {
+                              "id": "common.scalars.username",
+                              "type": "string",
+                              "format": "username",
+                              "minLength": 1,
+                              "maxLength": 20
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "blockId": {
+                      "id": "common.scalars.id",
+                      "type": "string",
+                      "format": "id",
+                      "minLength": 1,
+                      "maxLength": 20
+                    },
+                    "confirmations": {
                       "id": "common.scalars.wholeNum",
                       "type": "integer",
                       "minimum": 0
+                    },
+                    "height": {
+                      "id": "common.scalars.height",
+                      "type": "integer",
+                      "minimum": 1
                     }
                   }
                 }
@@ -4064,6 +4811,2096 @@
         "example": {
           "success": true
         }
+      },
+      "responses.multisignatures.getAccounts": {
+        "id": "responses.multisignatures.getAccounts",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "id": "common.scalars.address",
+                  "type": "string",
+                  "format": "address",
+                  "minLength": 1,
+                  "maxLength": 22
+                },
+                "balance": {
+                  "id": "common.scalars.amount",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10999999991000000
+                },
+                "multisignatures": {
+                  "type": "array",
+                  "items": {
+                    "id": "common.scalars.signature",
+                    "type": "string",
+                    "format": "signatureBuf"
+                  }
+                },
+                "multilifetime": {
+                  "id": "common.scalars.multisigLifetime",
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 72
+                },
+                "multimin": {
+                  "id": "common.scalars.multisigMin",
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 15
+                },
+                "multisigaccounts": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "address": {
+                        "id": "common.scalars.address",
+                        "type": "string",
+                        "format": "address",
+                        "minLength": 1,
+                        "maxLength": 22
+                      },
+                      "publicKey": {
+                        "id": "common.scalars.publicKey",
+                        "type": "string",
+                        "format": "publicKey"
+                      },
+                      "balance": {
+                        "id": "common.scalars.amount",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10999999991000000
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "example": {
+          "success": true,
+          "accounts": [
+            {
+              "address": "6507244540548668920R",
+              "balance": "186507978130",
+              "multisignatures": [
+                "12a4afbb3c9cf449d14745a190b874a7e0d44c00c8bd68284a826a4e825b0662b59b48df2f8d8ba5f85b3a68dac35b97896224623a86a0d661d669dd9df0ba07",
+                "c2e81420ee4d0ad3f2cc78e16375cbd6720dc225d5987c2d1467a69193b45b85d371a515313253ecd58216abdce14a462dd9fcecd43a129787b07b958cf99301"
+              ],
+              "multilifetime": 12,
+              "multimin": 2,
+              "multisigaccounts": [
+                {
+                  "address": "5822762156194763844R",
+                  "publicKey": "7aa47589efa3089969ffa62ea67d05fb89b1772a279ae950c186785768907408",
+                  "balance": "37301595626"
+                },
+                {
+                  "address": "16552458475694562786R",
+                  "publicKey": "215e91ad97c027ae2e0fcfa965ecf3f9af412060a94559b8ff8b7b9c4f73381a",
+                  "balance": "149206382504"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "responses.multisignatures.getPending": {
+        "id": "responses.multisignatures.getPending",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "lifetime": {
+            "id": "common.scalars.multisigLifetime",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 72
+          },
+          "min": {
+            "id": "common.scalars.multisigMin",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 15
+          },
+          "max": {
+            "id": "common.scalars.multisigMin",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 15
+          },
+          "signed": {
+            "type": "boolean"
+          },
+          "transaction": {
+            "id": "common.models.MultisigTransaction",
+            "type": "object",
+            "properties": {
+              "amount": {
+                "id": "common.scalars.amount",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10999999991000000
+              },
+              "type": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              },
+              "fee": {
+                "id": "common.scalars.amount",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10999999991000000
+              },
+              "id": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "recipientId": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "requesterPublicKey": {
+                "id": "common.scalars.publicKey",
+                "type": "string",
+                "format": "publicKey"
+              },
+              "rowId": {
+                "id": "common.scalars.wholeNum",
+                "type": "integer",
+                "minimum": 0
+              },
+              "senderId": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "senderPublicKey": {
+                "id": "common.scalars.publicKey",
+                "type": "string",
+                "format": "publicKey"
+              },
+              "signSignature": {
+                "id": "common.scalars.signature",
+                "type": "string",
+                "format": "signatureBuf"
+              },
+              "signature": {
+                "id": "common.scalars.signature",
+                "type": "string",
+                "format": "signatureBuf"
+              },
+              "signatures": {
+                "type": "array",
+                "items": {
+                  "id": "common.scalars.signature",
+                  "type": "string",
+                  "format": "signatureBuf"
+                }
+              },
+              "timestamp": {
+                "id": "common.scalars.timestamp",
+                "type": "integer",
+                "minimum": 1
+              },
+              "asset": {
+                "type": "object",
+                "properties": {
+                  "multisig": {
+                    "min": {
+                      "id": "common.scalars.multisigMin",
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 15
+                    },
+                    "lifetime": {
+                      "id": "common.scalars.multisigLifetime",
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 72
+                    },
+                    "keysgroup": {
+                      "id": "common.scalars.multisigKeysgroup",
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 15,
+                      "items": {
+                        "id": "common.scalars.publicKey",
+                        "type": "string",
+                        "format": "publicKey"
+                      }
+                    }
+                  }
+                }
+              },
+              "blockId": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "confirmations": {
+                "id": "common.scalars.wholeNum",
+                "type": "integer",
+                "minimum": 0
+              },
+              "height": {
+                "id": "common.scalars.height",
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "example": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "lifetime": 12,
+          "min": 2,
+          "max": 2,
+          "signed": true,
+          "transaction": {
+            "signatures": [
+              "c0aae9fbc57aed5c5bb4ff54b1f508759b868965164a3fafbe1b58cc8bd3ea84786b4b3eb7ab4db1036f2fe1b30f9cc293ce966fa281c677928d2d4dcefd710f",
+              "9bbe5e04cbe277091f6291d9f136ba1581d31bef6ca5946f42010bc2fa0dbaa0d0079057087e8e147754f316d13389c6a8aed954a30ef408415ad71f99469201"
+            ],
+            "id": "2800934512471301755",
+            "type": 4,
+            "timestamp": 37507653,
+            "senderPublicKey": "00f928f3e3bc136e74eef1aa75df7b43a99cf22fce74a4a93b0c618bed6f60d1",
+            "senderId": "12109113090353923093R",
+            "recipientId": "2688837343357225875R",
+            "amount": 50000000000,
+            "fee": 500000000,
+            "signature": null,
+            "signSignature": "a96621f7f14bcfde6b7819f0a68e0535df413d489a2c39ab0a28db73d8ae4ee59885d6ac2858386b2b369aba19c8491c0df5bfd79ca898a91a96039e9b6ba908",
+            "requesterPublicKey": null,
+            "rowId": 5273,
+            "asset": {
+              "multisignature": {
+                "min": 2,
+                "lifetime": 12,
+                "keysgroup": [
+                  "b759b3f12e927560f5dd85fd63ae3964cd907f0cef732e5913fd200505444059",
+                  "bf4809a1a08c9dffbba741f0c7b9f49145602341d5fa306fb3cd592d3e1058b3"
+                ]
+              }
+            },
+            "height": 149100,
+            "blockId": "1416515249237234263",
+            "confirmations": 1215659
+          }
+        }
+      },
+      "responses.peers.getPeers": {
+        "id": "responses.peers.getPeers",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "peers": {
+            "type": "array",
+            "items": {
+              "id": "common.models.Peer",
+              "type": "object",
+              "properties": {
+                "ip": {
+                  "id": "common.scalars.ipAddress",
+                  "type": "string",
+                  "format": "ip"
+                },
+                "port": {
+                  "id": "common.scalars.port",
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                },
+                "state": {
+                  "id": "common.scalars.osState",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2
+                },
+                "os": {
+                  "id": "common.scalars.os",
+                  "type": "string",
+                  "format": "os",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "version": {
+                  "id": "common.scalars.version",
+                  "type": "string",
+                  "format": "version",
+                  "minLength": 5,
+                  "maxLength": 12
+                },
+                "broadhash": {
+                  "id": "common.scalars.hex",
+                  "type": "string",
+                  "format": "hex"
+                },
+                "height": {
+                  "id": "common.scalars.height",
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "clock": {
+                  "id": "common.scalars.wholeNum",
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "updated": {
+                  "id": "common.scalars.timestamp",
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "nonce": "d845b08b-7824-45f3-9033-5317622d0d2f"
+              }
+            }
+          }
+        },
+        "example": {
+          "success": true,
+          "peers": [
+            {
+              "ip": "45.32.178.6",
+              "port": 5555,
+              "state": 2,
+              "os": "linux4.4.0-127-generic",
+              "version": "1.0.3",
+              "broadhash": "c194859fe6e3e84eeccd588ca50821ce575038aeac242a5ee2eb6aa7f81b78a6",
+              "height": 1364618,
+              "clock": null,
+              "updated": 1538744321864,
+              "nonce": "fb55b102-6751-4b70-b199-2375ef82730b"
+            },
+            {
+              "ip": "178.128.215.219",
+              "port": 5555,
+              "state": 2,
+              "os": "linux4.15.0-30-generic",
+              "version": "1.1.1",
+              "broadhash": "c194859fe6e3e84eeccd588ca50821ce575038aeac242a5ee2eb6aa7f81b78a6",
+              "height": 1364618,
+              "clock": null,
+              "updated": 1538744317157,
+              "nonce": "36da9e48-c280-48b8-9a0b-3e2e2a7f59d8"
+            },
+            {
+              "ip": "163.172.133.156",
+              "port": 5555,
+              "state": 2,
+              "os": "linux4.4.103-mainline-rev1",
+              "version": "1.1.1",
+              "broadhash": "c194859fe6e3e84eeccd588ca50821ce575038aeac242a5ee2eb6aa7f81b78a6",
+              "height": 1364618,
+              "clock": null,
+              "updated": 1538744324232,
+              "nonce": "69fb5f37-e671-4c40-9018-b9a756c069f8"
+            }
+          ]
+        }
+      },
+      "responses.peers.getPeer": {
+        "id": "responses.peers.getPeer",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "peer": {
+            "id": "common.models.Peer",
+            "type": "object",
+            "properties": {
+              "ip": {
+                "id": "common.scalars.ipAddress",
+                "type": "string",
+                "format": "ip"
+              },
+              "port": {
+                "id": "common.scalars.port",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535
+              },
+              "state": {
+                "id": "common.scalars.osState",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2
+              },
+              "os": {
+                "id": "common.scalars.os",
+                "type": "string",
+                "format": "os",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "version": {
+                "id": "common.scalars.version",
+                "type": "string",
+                "format": "version",
+                "minLength": 5,
+                "maxLength": 12
+              },
+              "broadhash": {
+                "id": "common.scalars.hex",
+                "type": "string",
+                "format": "hex"
+              },
+              "height": {
+                "id": "common.scalars.height",
+                "type": "integer",
+                "minimum": 1
+              },
+              "clock": {
+                "id": "common.scalars.wholeNum",
+                "type": "integer",
+                "minimum": 0
+              },
+              "updated": {
+                "id": "common.scalars.timestamp",
+                "type": "integer",
+                "minimum": 1
+              },
+              "nonce": "d845b08b-7824-45f3-9033-5317622d0d2f"
+            }
+          }
+        },
+        "example": {
+          "success": true,
+          "peer": {
+            "ip": "45.32.178.6",
+            "port": 5555,
+            "state": 2,
+            "os": "linux4.4.0-127-generic",
+            "version": "1.0.3",
+            "broadhash": "c194859fe6e3e84eeccd588ca50821ce575038aeac242a5ee2eb6aa7f81b78a6",
+            "height": 1364618,
+            "clock": null,
+            "updated": 1538744321864,
+            "nonce": "fb55b102-6751-4b70-b199-2375ef82730b"
+          }
+        }
+      },
+      "responses.peers.version": {
+        "id": "responses.peers.version",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "build": {
+            "type": "string"
+          },
+          "minVersion": {
+            "type": "string"
+          },
+          "version": {
+            "id": "common.scalars.version",
+            "type": "string",
+            "format": "version",
+            "minLength": 5,
+            "maxLength": 12
+          }
+        },
+        "example": {
+          "success": true,
+          "build": "",
+          "minVersion": ">=0.1.2",
+          "version": "1.1.1"
+        }
+      },
+      "responses.peers.count": {
+        "id": "responses.peers.count",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "connected": {
+            "id": "common.scalars.wholeNum",
+            "type": "integer",
+            "minimum": 0
+          },
+          "disconnected": {
+            "id": "common.scalars.wholeNum",
+            "type": "integer",
+            "minimum": 0
+          },
+          "banned": {
+            "id": "common.scalars.wholeNum",
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "example": {
+          "success": true,
+          "connected": 107,
+          "disconnected": 0,
+          "banned": 0
+        }
+      },
+      "responses.signatures.fees": {
+        "id": "responses.signatures.fees",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "fromHeight": {
+            "id": "common.scalars.height",
+            "type": "integer",
+            "minimum": 1
+          },
+          "toHeight": {
+            "id": "common.scalars.height",
+            "type": "integer",
+            "minimum": 1
+          },
+          "height": {
+            "id": "common.scalars.height",
+            "type": "integer",
+            "minimum": 1
+          },
+          "fee": {
+            "id": "common.scalars.amount",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10999999991000000
+          }
+        },
+        "example": {
+          "success": true,
+          "fromHeight": 1,
+          "height": 1362861,
+          "toHeight": null,
+          "fee": 500000000
+        }
+      },
+      "responses.transactions.getTransactions": {
+        "id": "responses.transactions.getTransactions",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "count": {
+            "id": "common.scalars.wholeNum",
+            "type": "integer",
+            "minimum": 0
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "id": "common.models.Transaction",
+              "type": "object",
+              "properties": {
+                "amount": {
+                  "id": "common.scalars.amount",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10999999991000000
+                },
+                "type": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                "fee": {
+                  "id": "common.scalars.amount",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10999999991000000
+                },
+                "id": {
+                  "id": "common.scalars.id",
+                  "type": "string",
+                  "format": "id",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "recipientId": {
+                  "id": "common.scalars.id",
+                  "type": "string",
+                  "format": "id",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "requesterPublicKey": {
+                  "id": "common.scalars.publicKey",
+                  "type": "string",
+                  "format": "publicKey"
+                },
+                "rowId": {
+                  "id": "common.scalars.wholeNum",
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "senderId": {
+                  "id": "common.scalars.id",
+                  "type": "string",
+                  "format": "id",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "senderPublicKey": {
+                  "id": "common.scalars.publicKey",
+                  "type": "string",
+                  "format": "publicKey"
+                },
+                "signSignature": {
+                  "id": "common.scalars.signature",
+                  "type": "string",
+                  "format": "signatureBuf"
+                },
+                "signature": {
+                  "id": "common.scalars.signature",
+                  "type": "string",
+                  "format": "signatureBuf"
+                },
+                "signatures": {
+                  "type": "array",
+                  "items": {
+                    "id": "common.scalars.signature",
+                    "type": "string",
+                    "format": "signatureBuf"
+                  }
+                },
+                "timestamp": {
+                  "id": "common.scalars.timestamp",
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "asset": {
+                  "type": "object",
+                  "properties": {
+                    "multisig": {
+                      "min": {
+                        "id": "common.scalars.multisigMin",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 15
+                      },
+                      "lifetime": {
+                        "id": "common.scalars.multisigLifetime",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 72
+                      },
+                      "keysgroup": {
+                        "id": "common.scalars.multisigKeysgroup",
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 15,
+                        "items": {
+                          "id": "common.scalars.publicKey",
+                          "type": "string",
+                          "format": "publicKey"
+                        }
+                      }
+                    },
+                    "signature": {
+                      "type": "object",
+                      "properties": {
+                        "publicKey": {
+                          "id": "common.scalars.publicKey",
+                          "type": "string",
+                          "format": "publicKey"
+                        }
+                      }
+                    },
+                    "votes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[-+]{1}[0-9a-z]{64}$"
+                      }
+                    },
+                    "delegate": {
+                      "type": "object",
+                      "properties": {
+                        "username": {
+                          "id": "common.scalars.username",
+                          "type": "string",
+                          "format": "username",
+                          "minLength": 1,
+                          "maxLength": 20
+                        }
+                      }
+                    }
+                  }
+                },
+                "blockId": {
+                  "id": "common.scalars.id",
+                  "type": "string",
+                  "format": "id",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "confirmations": {
+                  "id": "common.scalars.wholeNum",
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "height": {
+                  "id": "common.scalars.height",
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "example": {
+          "success": true,
+          "count": 563381,
+          "transactions": [
+            {
+              "signatures": [],
+              "id": "6920969059388666996",
+              "type": 0,
+              "timestamp": 54069408,
+              "senderPublicKey": "bf4809a1a08c9dffbba741f0c7b9f49145602341d5fa306fb3cd592d3e1058b3",
+              "senderId": "1644223775232371040R",
+              "recipientId": "3303015780877366956R",
+              "amount": 199533766861,
+              "fee": 10000000,
+              "signature": "12a4afbb3c9cf449d14745a190b874a7e0d44c00c8bd68284a826a4e825b0662b59b48df2f8d8ba5f85b3a68dac35b97896224623a86a0d661d669dd9df0ba07",
+              "signSignature": null,
+              "requesterPublicKey": null,
+              "rowId": 230339,
+              "asset": null,
+              "height": 694239,
+              "blockId": "14986452887816815162",
+              "confirmations": 670383
+            },
+            {
+              "signatures": [],
+              "id": "6059220831601703385",
+              "type": 1,
+              "timestamp": 54027458,
+              "senderPublicKey": "5cc3326c126e56d0f54aa61bfe6d98071c49983505e49e176f017ada1a777c57",
+              "senderId": "14470084663212135040R",
+              "recipientId": null,
+              "amount": 0,
+              "fee": 500000000,
+              "signature": "c2e81420ee4d0ad3f2cc78e16375cbd6720dc225d5987c2d1467a69193b45b85d371a515313253ecd58216abdce14a462dd9fcecd43a129787b07b958cf99301",
+              "signSignature": null,
+              "requesterPublicKey": null,
+              "rowId": 229412,
+              "asset": {
+                "signature": {
+                  "publicKey": "7a1e8d2721b55ac7e8c2c0a51e297d8caee2b0fd07d72f1389aec9977023f83f"
+                }
+              },
+              "height": 692846,
+              "blockId": "11971020380225057286",
+              "confirmations": 671776
+            },
+            {
+              "signatures": [],
+              "id": "1433374155612627632",
+              "type": 2,
+              "timestamp": 53952216,
+              "senderPublicKey": "a39343f6343f72d08811e2c11c6137ae4246bc6446d199883d1a6668eb62b9dd",
+              "senderId": "11334711468380890209R",
+              "recipientId": null,
+              "amount": 0,
+              "fee": 2500000000,
+              "signature": "f5fb637d6152af237aa8174c61ef59eadb315c716aafe1f916f347b4b3c8e2a64ac2517c74a8691af0f3cc79b6921f5cd7ae5865766b3e031306f755c053fd00",
+              "signSignature": null,
+              "requesterPublicKey": null,
+              "rowId": 227998,
+              "asset": {
+                "delegate": {
+                  "username": "mbkz"
+                }
+              },
+              "height": 690355,
+              "blockId": "1002473113321949051",
+              "confirmations": 674267
+            },
+            {
+              "signatures": [],
+              "id": "8427347107286041778",
+              "type": 3,
+              "timestamp": 54068843,
+              "senderPublicKey": "72822092a16ce58afea8e76ff609832401695b5d32da2c488c7f9272626be02f",
+              "senderId": "7638830122069556640R",
+              "recipientId": "7638830122069556640R",
+              "amount": 0,
+              "fee": 100000000,
+              "signature": "a96d28826480e8b5be80ebaf8ba64124a5ecb9201325c5054be7af5ff5ccaca49cbf9f51a89070e6cf4e9b54845ce0f301b1738e44e91f7dd62d7f7c6911e705",
+              "signSignature": null,
+              "requesterPublicKey": null,
+              "rowId": 230295,
+              "asset": {
+                "votes": [
+                  "+7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0"
+                ]
+              },
+              "height": 694221,
+              "blockId": "5564349571033117319",
+              "confirmations": 670401
+            },
+            {
+              "signatures": [
+                "c0aae9fbc57aed5c5bb4ff54b1f508759b868965164a3fafbe1b58cc8bd3ea84786b4b3eb7ab4db1036f2fe1b30f9cc293ce966fa281c677928d2d4dcefd710f",
+                "9bbe5e04cbe277091f6291d9f136ba1581d31bef6ca5946f42010bc2fa0dbaa0d0079057087e8e147754f316d13389c6a8aed954a30ef408415ad71f99469201"
+              ],
+              "id": "2800934512471301755",
+              "type": 4,
+              "timestamp": 37507653,
+              "senderPublicKey": "00f928f3e3bc136e74eef1aa75df7b43a99cf22fce74a4a93b0c618bed6f60d1",
+              "senderId": "12109113090353923093R",
+              "recipientId": "2688837343357225875R",
+              "amount": 50000000000,
+              "fee": 500000000,
+              "signature": null,
+              "signSignature": "a96621f7f14bcfde6b7819f0a68e0535df413d489a2c39ab0a28db73d8ae4ee59885d6ac2858386b2b369aba19c8491c0df5bfd79ca898a91a96039e9b6ba908",
+              "requesterPublicKey": null,
+              "rowId": 5273,
+              "asset": {
+                "multisignature": {
+                  "min": 2,
+                  "lifetime": 12,
+                  "keysgroup": [
+                    "b759b3f12e927560f5dd85fd63ae3964cd907f0cef732e5913fd200505444059",
+                    "bf4809a1a08c9dffbba741f0c7b9f49145602341d5fa306fb3cd592d3e1058b3"
+                  ]
+                }
+              },
+              "height": 149100,
+              "blockId": "1416515249237234263",
+              "confirmations": 1215659
+            }
+          ]
+        }
+      },
+      "responses.transactions.getCount": {
+        "id": "responses.transactions.getCount",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "confirmed": {
+            "id": "common.scalars.wholeNum",
+            "type": "integer",
+            "minimum": 0
+          },
+          "multisignature": {
+            "id": "common.scalars.wholeNum",
+            "type": "integer",
+            "minimum": 0
+          },
+          "queued": {
+            "id": "common.scalars.wholeNum",
+            "type": "integer",
+            "minimum": 0
+          },
+          "unconfirmed": {
+            "id": "common.scalars.wholeNum",
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "example": {
+          "success": true,
+          "confirmed": 563381,
+          "multisignature": 0,
+          "queued": 1,
+          "unconfirmed": 1
+        }
+      },
+      "responses.transactions.getTransaction": {
+        "id": "responses.transactions.getTransaction",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "transaction": {
+            "id": "common.models.Transaction",
+            "type": "object",
+            "properties": {
+              "amount": {
+                "id": "common.scalars.amount",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10999999991000000
+              },
+              "type": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              },
+              "fee": {
+                "id": "common.scalars.amount",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10999999991000000
+              },
+              "id": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "recipientId": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "requesterPublicKey": {
+                "id": "common.scalars.publicKey",
+                "type": "string",
+                "format": "publicKey"
+              },
+              "rowId": {
+                "id": "common.scalars.wholeNum",
+                "type": "integer",
+                "minimum": 0
+              },
+              "senderId": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "senderPublicKey": {
+                "id": "common.scalars.publicKey",
+                "type": "string",
+                "format": "publicKey"
+              },
+              "signSignature": {
+                "id": "common.scalars.signature",
+                "type": "string",
+                "format": "signatureBuf"
+              },
+              "signature": {
+                "id": "common.scalars.signature",
+                "type": "string",
+                "format": "signatureBuf"
+              },
+              "signatures": {
+                "type": "array",
+                "items": {
+                  "id": "common.scalars.signature",
+                  "type": "string",
+                  "format": "signatureBuf"
+                }
+              },
+              "timestamp": {
+                "id": "common.scalars.timestamp",
+                "type": "integer",
+                "minimum": 1
+              },
+              "asset": {
+                "type": "object",
+                "properties": {
+                  "multisig": {
+                    "min": {
+                      "id": "common.scalars.multisigMin",
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 15
+                    },
+                    "lifetime": {
+                      "id": "common.scalars.multisigLifetime",
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 72
+                    },
+                    "keysgroup": {
+                      "id": "common.scalars.multisigKeysgroup",
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 15,
+                      "items": {
+                        "id": "common.scalars.publicKey",
+                        "type": "string",
+                        "format": "publicKey"
+                      }
+                    }
+                  },
+                  "signature": {
+                    "type": "object",
+                    "properties": {
+                      "publicKey": {
+                        "id": "common.scalars.publicKey",
+                        "type": "string",
+                        "format": "publicKey"
+                      }
+                    }
+                  },
+                  "votes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[-+]{1}[0-9a-z]{64}$"
+                    }
+                  },
+                  "delegate": {
+                    "type": "object",
+                    "properties": {
+                      "username": {
+                        "id": "common.scalars.username",
+                        "type": "string",
+                        "format": "username",
+                        "minLength": 1,
+                        "maxLength": 20
+                      }
+                    }
+                  }
+                }
+              },
+              "blockId": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "confirmations": {
+                "id": "common.scalars.wholeNum",
+                "type": "integer",
+                "minimum": 0
+              },
+              "height": {
+                "id": "common.scalars.height",
+                "type": "integer",
+                "minimum": 1
+              },
+              "votes": {
+                "type": "object",
+                "properties": {
+                  "added": {
+                    "type": "array",
+                    "items": {
+                      "id": "common.scalars.publicKey",
+                      "type": "string",
+                      "format": "publicKey"
+                    }
+                  },
+                  "deleted": {
+                    "type": "array",
+                    "items": {
+                      "id": "common.scalars.publicKey",
+                      "type": "string",
+                      "format": "publicKey"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "example": {
+          "success": true,
+          "transaction": {
+            "signatures": [],
+            "id": "8427347107286041778",
+            "type": 3,
+            "timestamp": 54068843,
+            "senderPublicKey": "72822092a16ce58afea8e76ff609832401695b5d32da2c488c7f9272626be02f",
+            "senderId": "7638830122069556640R",
+            "recipientId": "7638830122069556640R",
+            "amount": 0,
+            "fee": 100000000,
+            "signature": "a96d28826480e8b5be80ebaf8ba64124a5ecb9201325c5054be7af5ff5ccaca49cbf9f51a89070e6cf4e9b54845ce0f301b1738e44e91f7dd62d7f7c6911e705",
+            "signSignature": null,
+            "requesterPublicKey": null,
+            "rowId": 230295,
+            "asset": {
+              "votes": [
+                "+7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0"
+              ]
+            },
+            "height": 694221,
+            "blockId": "5564349571033117319",
+            "confirmations": 670401,
+            "votes": {
+              "added": [
+                "7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0"
+              ],
+              "deleted": []
+            }
+          }
+        }
+      },
+      "responses.transactions.getMultiSigs": {
+        "id": "responses.transactions.getMultiSigs",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "count": {
+            "id": "common.scalars.wholeNum",
+            "type": "integer",
+            "minimum": 0
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "id": "common.models.MultisigTransaction",
+              "type": "object",
+              "properties": {
+                "amount": {
+                  "id": "common.scalars.amount",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10999999991000000
+                },
+                "type": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                "fee": {
+                  "id": "common.scalars.amount",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10999999991000000
+                },
+                "id": {
+                  "id": "common.scalars.id",
+                  "type": "string",
+                  "format": "id",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "recipientId": {
+                  "id": "common.scalars.id",
+                  "type": "string",
+                  "format": "id",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "requesterPublicKey": {
+                  "id": "common.scalars.publicKey",
+                  "type": "string",
+                  "format": "publicKey"
+                },
+                "rowId": {
+                  "id": "common.scalars.wholeNum",
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "senderId": {
+                  "id": "common.scalars.id",
+                  "type": "string",
+                  "format": "id",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "senderPublicKey": {
+                  "id": "common.scalars.publicKey",
+                  "type": "string",
+                  "format": "publicKey"
+                },
+                "signSignature": {
+                  "id": "common.scalars.signature",
+                  "type": "string",
+                  "format": "signatureBuf"
+                },
+                "signature": {
+                  "id": "common.scalars.signature",
+                  "type": "string",
+                  "format": "signatureBuf"
+                },
+                "signatures": {
+                  "type": "array",
+                  "items": {
+                    "id": "common.scalars.signature",
+                    "type": "string",
+                    "format": "signatureBuf"
+                  }
+                },
+                "timestamp": {
+                  "id": "common.scalars.timestamp",
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "asset": {
+                  "type": "object",
+                  "properties": {
+                    "multisig": {
+                      "min": {
+                        "id": "common.scalars.multisigMin",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 15
+                      },
+                      "lifetime": {
+                        "id": "common.scalars.multisigLifetime",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 72
+                      },
+                      "keysgroup": {
+                        "id": "common.scalars.multisigKeysgroup",
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 15,
+                        "items": {
+                          "id": "common.scalars.publicKey",
+                          "type": "string",
+                          "format": "publicKey"
+                        }
+                      }
+                    }
+                  }
+                },
+                "blockId": {
+                  "id": "common.scalars.id",
+                  "type": "string",
+                  "format": "id",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "confirmations": {
+                  "id": "common.scalars.wholeNum",
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "height": {
+                  "id": "common.scalars.height",
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "example": {
+          "success": true,
+          "count": 102,
+          "transactions": [
+            {
+              "signatures": [
+                "c0aae9fbc57aed5c5bb4ff54b1f508759b868965164a3fafbe1b58cc8bd3ea84786b4b3eb7ab4db1036f2fe1b30f9cc293ce966fa281c677928d2d4dcefd710f",
+                "9bbe5e04cbe277091f6291d9f136ba1581d31bef6ca5946f42010bc2fa0dbaa0d0079057087e8e147754f316d13389c6a8aed954a30ef408415ad71f99469201"
+              ],
+              "id": "2800934512471301755",
+              "type": 4,
+              "timestamp": 37507653,
+              "senderPublicKey": "00f928f3e3bc136e74eef1aa75df7b43a99cf22fce74a4a93b0c618bed6f60d1",
+              "senderId": "12109113090353923093R",
+              "recipientId": "2688837343357225875R",
+              "amount": 50000000000,
+              "fee": 500000000,
+              "signature": null,
+              "signSignature": "a96621f7f14bcfde6b7819f0a68e0535df413d489a2c39ab0a28db73d8ae4ee59885d6ac2858386b2b369aba19c8491c0df5bfd79ca898a91a96039e9b6ba908",
+              "requesterPublicKey": null,
+              "rowId": 5273,
+              "asset": {
+                "multisignature": {
+                  "min": 2,
+                  "lifetime": 12,
+                  "keysgroup": [
+                    "b759b3f12e927560f5dd85fd63ae3964cd907f0cef732e5913fd200505444059",
+                    "bf4809a1a08c9dffbba741f0c7b9f49145602341d5fa306fb3cd592d3e1058b3"
+                  ]
+                }
+              },
+              "height": 149100,
+              "blockId": "1416515249237234263",
+              "confirmations": 1215659
+            }
+          ]
+        }
+      },
+      "responses.transactions.getMultiSig": {
+        "id": "responses.transactions.getMultiSig",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": true,
+          "transaction": {
+            "signatures": [
+              "c0aae9fbc57aed5c5bb4ff54b1f508759b868965164a3fafbe1b58cc8bd3ea84786b4b3eb7ab4db1036f2fe1b30f9cc293ce966fa281c677928d2d4dcefd710f",
+              "9bbe5e04cbe277091f6291d9f136ba1581d31bef6ca5946f42010bc2fa0dbaa0d0079057087e8e147754f316d13389c6a8aed954a30ef408415ad71f99469201"
+            ],
+            "id": "2800934512471301755",
+            "type": 4,
+            "timestamp": 37507653,
+            "senderPublicKey": "00f928f3e3bc136e74eef1aa75df7b43a99cf22fce74a4a93b0c618bed6f60d1",
+            "senderId": "12109113090353923093R",
+            "recipientId": "2688837343357225875R",
+            "amount": 50000000000,
+            "fee": 500000000,
+            "signature": null,
+            "signSignature": "a96621f7f14bcfde6b7819f0a68e0535df413d489a2c39ab0a28db73d8ae4ee59885d6ac2858386b2b369aba19c8491c0df5bfd79ca898a91a96039e9b6ba908",
+            "requesterPublicKey": null,
+            "rowId": 5273,
+            "asset": {
+              "multisignature": {
+                "min": 2,
+                "lifetime": 12,
+                "keysgroup": [
+                  "b759b3f12e927560f5dd85fd63ae3964cd907f0cef732e5913fd200505444059",
+                  "bf4809a1a08c9dffbba741f0c7b9f49145602341d5fa306fb3cd592d3e1058b3"
+                ]
+              }
+            },
+            "height": 149100,
+            "blockId": "1416515249237234263",
+            "confirmations": 1215659
+          }
+        }
+      },
+      "responses.transactions.getQueuedTransactions": {
+        "id": "responses.transactions.getQueuedTransactions",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "count": {
+            "id": "common.scalars.wholeNum",
+            "type": "integer",
+            "minimum": 0
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "id": "common.models.UnconfirmedTransaction",
+              "type": "object",
+              "properties": {
+                "amount": {
+                  "id": "common.scalars.amount",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10999999991000000
+                },
+                "type": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                "fee": {
+                  "id": "common.scalars.amount",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10999999991000000
+                },
+                "id": {
+                  "id": "common.scalars.id",
+                  "type": "string",
+                  "format": "id",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "recipientId": {
+                  "id": "common.scalars.id",
+                  "type": "string",
+                  "format": "id",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "requesterPublicKey": {
+                  "id": "common.scalars.publicKey",
+                  "type": "string",
+                  "format": "publicKey"
+                },
+                "rowId": {
+                  "id": "common.scalars.wholeNum",
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "senderId": {
+                  "id": "common.scalars.id",
+                  "type": "string",
+                  "format": "id",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "senderPublicKey": {
+                  "id": "common.scalars.publicKey",
+                  "type": "string",
+                  "format": "publicKey"
+                },
+                "signSignature": {
+                  "id": "common.scalars.signature",
+                  "type": "string",
+                  "format": "signatureBuf"
+                },
+                "signature": {
+                  "id": "common.scalars.signature",
+                  "type": "string",
+                  "format": "signatureBuf"
+                },
+                "signatures": {
+                  "type": "array",
+                  "items": {
+                    "id": "common.scalars.signature",
+                    "type": "string",
+                    "format": "signatureBuf"
+                  }
+                },
+                "timestamp": {
+                  "id": "common.scalars.timestamp",
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "asset": {
+                  "type": "object",
+                  "properties": {
+                    "multisig": {
+                      "min": {
+                        "id": "common.scalars.multisigMin",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 15
+                      },
+                      "lifetime": {
+                        "id": "common.scalars.multisigLifetime",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 72
+                      },
+                      "keysgroup": {
+                        "id": "common.scalars.multisigKeysgroup",
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 15,
+                        "items": {
+                          "id": "common.scalars.publicKey",
+                          "type": "string",
+                          "format": "publicKey"
+                        }
+                      }
+                    },
+                    "signature": {
+                      "type": "object",
+                      "properties": {
+                        "publicKey": {
+                          "id": "common.scalars.publicKey",
+                          "type": "string",
+                          "format": "publicKey"
+                        }
+                      }
+                    },
+                    "votes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[-+]{1}[0-9a-z]{64}$"
+                      }
+                    },
+                    "delegate": {
+                      "type": "object",
+                      "properties": {
+                        "username": {
+                          "id": "common.scalars.username",
+                          "type": "string",
+                          "format": "username",
+                          "minLength": 1,
+                          "maxLength": 20
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "example": {
+          "success": true,
+          "count": 5,
+          "transaction": [
+            {
+              "signatures": [],
+              "id": "6920969059388666996",
+              "type": 0,
+              "timestamp": 54069408,
+              "senderPublicKey": "bf4809a1a08c9dffbba741f0c7b9f49145602341d5fa306fb3cd592d3e1058b3",
+              "senderId": "1644223775232371040R",
+              "recipientId": "3303015780877366956R",
+              "amount": 199533766861,
+              "fee": 10000000,
+              "signature": "12a4afbb3c9cf449d14745a190b874a7e0d44c00c8bd68284a826a4e825b0662b59b48df2f8d8ba5f85b3a68dac35b97896224623a86a0d661d669dd9df0ba07",
+              "signSignature": null,
+              "requesterPublicKey": null,
+              "rowId": 230339,
+              "asset": null
+            },
+            {
+              "signatures": [],
+              "id": "6059220831601703385",
+              "type": 1,
+              "timestamp": 54027458,
+              "senderPublicKey": "5cc3326c126e56d0f54aa61bfe6d98071c49983505e49e176f017ada1a777c57",
+              "senderId": "14470084663212135040R",
+              "recipientId": null,
+              "amount": 0,
+              "fee": 500000000,
+              "signature": "c2e81420ee4d0ad3f2cc78e16375cbd6720dc225d5987c2d1467a69193b45b85d371a515313253ecd58216abdce14a462dd9fcecd43a129787b07b958cf99301",
+              "signSignature": null,
+              "requesterPublicKey": null,
+              "rowId": 229412,
+              "asset": {
+                "signature": {
+                  "publicKey": "7a1e8d2721b55ac7e8c2c0a51e297d8caee2b0fd07d72f1389aec9977023f83f"
+                }
+              }
+            },
+            {
+              "signatures": [],
+              "id": "1433374155612627632",
+              "type": 2,
+              "timestamp": 53952216,
+              "senderPublicKey": "a39343f6343f72d08811e2c11c6137ae4246bc6446d199883d1a6668eb62b9dd",
+              "senderId": "11334711468380890209R",
+              "recipientId": null,
+              "amount": 0,
+              "fee": 2500000000,
+              "signature": "f5fb637d6152af237aa8174c61ef59eadb315c716aafe1f916f347b4b3c8e2a64ac2517c74a8691af0f3cc79b6921f5cd7ae5865766b3e031306f755c053fd00",
+              "signSignature": null,
+              "requesterPublicKey": null,
+              "rowId": 227998,
+              "asset": {
+                "delegate": {
+                  "username": "mbkz"
+                }
+              }
+            },
+            {
+              "signatures": [],
+              "id": "8427347107286041778",
+              "type": 3,
+              "timestamp": 54068843,
+              "senderPublicKey": "72822092a16ce58afea8e76ff609832401695b5d32da2c488c7f9272626be02f",
+              "senderId": "7638830122069556640R",
+              "recipientId": "7638830122069556640R",
+              "amount": 0,
+              "fee": 100000000,
+              "signature": "a96d28826480e8b5be80ebaf8ba64124a5ecb9201325c5054be7af5ff5ccaca49cbf9f51a89070e6cf4e9b54845ce0f301b1738e44e91f7dd62d7f7c6911e705",
+              "signSignature": null,
+              "requesterPublicKey": null,
+              "rowId": 230295,
+              "asset": {
+                "votes": [
+                  "+7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0"
+                ]
+              }
+            },
+            {
+              "signatures": [
+                "c0aae9fbc57aed5c5bb4ff54b1f508759b868965164a3fafbe1b58cc8bd3ea84786b4b3eb7ab4db1036f2fe1b30f9cc293ce966fa281c677928d2d4dcefd710f",
+                "9bbe5e04cbe277091f6291d9f136ba1581d31bef6ca5946f42010bc2fa0dbaa0d0079057087e8e147754f316d13389c6a8aed954a30ef408415ad71f99469201"
+              ],
+              "id": "2800934512471301755",
+              "type": 4,
+              "timestamp": 37507653,
+              "senderPublicKey": "00f928f3e3bc136e74eef1aa75df7b43a99cf22fce74a4a93b0c618bed6f60d1",
+              "senderId": "12109113090353923093R",
+              "recipientId": "2688837343357225875R",
+              "amount": 50000000000,
+              "fee": 500000000,
+              "signature": null,
+              "signSignature": "a96621f7f14bcfde6b7819f0a68e0535df413d489a2c39ab0a28db73d8ae4ee59885d6ac2858386b2b369aba19c8491c0df5bfd79ca898a91a96039e9b6ba908",
+              "requesterPublicKey": null,
+              "rowId": 5273,
+              "asset": {
+                "multisignature": {
+                  "min": 2,
+                  "lifetime": 12,
+                  "keysgroup": [
+                    "b759b3f12e927560f5dd85fd63ae3964cd907f0cef732e5913fd200505444059",
+                    "bf4809a1a08c9dffbba741f0c7b9f49145602341d5fa306fb3cd592d3e1058b3"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      },
+      "responses.transactions.getQueuedTransaction": {
+        "id": "responses.transactions.getQueuedTransaction",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": true,
+          "transaction": {
+            "signatures": [],
+            "id": "6920969059388666996",
+            "type": 0,
+            "timestamp": 54069408,
+            "senderPublicKey": "bf4809a1a08c9dffbba741f0c7b9f49145602341d5fa306fb3cd592d3e1058b3",
+            "senderId": "1644223775232371040R",
+            "recipientId": "3303015780877366956R",
+            "amount": 199533766861,
+            "fee": 10000000,
+            "signature": "12a4afbb3c9cf449d14745a190b874a7e0d44c00c8bd68284a826a4e825b0662b59b48df2f8d8ba5f85b3a68dac35b97896224623a86a0d661d669dd9df0ba07",
+            "signSignature": null,
+            "requesterPublicKey": null,
+            "rowId": 230339,
+            "asset": null
+          }
+        }
+      },
+      "responses.transactions.getUnconfirmedTransactions": {
+        "id": "responses.transactions.getUnconfirmedTransactions",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "count": {
+            "id": "common.scalars.wholeNum",
+            "type": "integer",
+            "minimum": 0
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "id": "common.models.UnconfirmedTransaction",
+              "type": "object",
+              "properties": {
+                "amount": {
+                  "id": "common.scalars.amount",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10999999991000000
+                },
+                "type": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                "fee": {
+                  "id": "common.scalars.amount",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10999999991000000
+                },
+                "id": {
+                  "id": "common.scalars.id",
+                  "type": "string",
+                  "format": "id",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "recipientId": {
+                  "id": "common.scalars.id",
+                  "type": "string",
+                  "format": "id",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "requesterPublicKey": {
+                  "id": "common.scalars.publicKey",
+                  "type": "string",
+                  "format": "publicKey"
+                },
+                "rowId": {
+                  "id": "common.scalars.wholeNum",
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "senderId": {
+                  "id": "common.scalars.id",
+                  "type": "string",
+                  "format": "id",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "senderPublicKey": {
+                  "id": "common.scalars.publicKey",
+                  "type": "string",
+                  "format": "publicKey"
+                },
+                "signSignature": {
+                  "id": "common.scalars.signature",
+                  "type": "string",
+                  "format": "signatureBuf"
+                },
+                "signature": {
+                  "id": "common.scalars.signature",
+                  "type": "string",
+                  "format": "signatureBuf"
+                },
+                "signatures": {
+                  "type": "array",
+                  "items": {
+                    "id": "common.scalars.signature",
+                    "type": "string",
+                    "format": "signatureBuf"
+                  }
+                },
+                "timestamp": {
+                  "id": "common.scalars.timestamp",
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "asset": {
+                  "type": "object",
+                  "properties": {
+                    "multisig": {
+                      "min": {
+                        "id": "common.scalars.multisigMin",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 15
+                      },
+                      "lifetime": {
+                        "id": "common.scalars.multisigLifetime",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 72
+                      },
+                      "keysgroup": {
+                        "id": "common.scalars.multisigKeysgroup",
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 15,
+                        "items": {
+                          "id": "common.scalars.publicKey",
+                          "type": "string",
+                          "format": "publicKey"
+                        }
+                      }
+                    },
+                    "signature": {
+                      "type": "object",
+                      "properties": {
+                        "publicKey": {
+                          "id": "common.scalars.publicKey",
+                          "type": "string",
+                          "format": "publicKey"
+                        }
+                      }
+                    },
+                    "votes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[-+]{1}[0-9a-z]{64}$"
+                      }
+                    },
+                    "delegate": {
+                      "type": "object",
+                      "properties": {
+                        "username": {
+                          "id": "common.scalars.username",
+                          "type": "string",
+                          "format": "username",
+                          "minLength": 1,
+                          "maxLength": 20
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "example": {
+          "success": true,
+          "count": 5,
+          "transaction": [
+            {
+              "signatures": [],
+              "id": "6920969059388666996",
+              "type": 0,
+              "timestamp": 54069408,
+              "senderPublicKey": "bf4809a1a08c9dffbba741f0c7b9f49145602341d5fa306fb3cd592d3e1058b3",
+              "senderId": "1644223775232371040R",
+              "recipientId": "3303015780877366956R",
+              "amount": 199533766861,
+              "fee": 10000000,
+              "signature": "12a4afbb3c9cf449d14745a190b874a7e0d44c00c8bd68284a826a4e825b0662b59b48df2f8d8ba5f85b3a68dac35b97896224623a86a0d661d669dd9df0ba07",
+              "signSignature": null,
+              "requesterPublicKey": null,
+              "rowId": 230339,
+              "asset": null
+            },
+            {
+              "signatures": [],
+              "id": "6059220831601703385",
+              "type": 1,
+              "timestamp": 54027458,
+              "senderPublicKey": "5cc3326c126e56d0f54aa61bfe6d98071c49983505e49e176f017ada1a777c57",
+              "senderId": "14470084663212135040R",
+              "recipientId": null,
+              "amount": 0,
+              "fee": 500000000,
+              "signature": "c2e81420ee4d0ad3f2cc78e16375cbd6720dc225d5987c2d1467a69193b45b85d371a515313253ecd58216abdce14a462dd9fcecd43a129787b07b958cf99301",
+              "signSignature": null,
+              "requesterPublicKey": null,
+              "rowId": 229412,
+              "asset": {
+                "signature": {
+                  "publicKey": "7a1e8d2721b55ac7e8c2c0a51e297d8caee2b0fd07d72f1389aec9977023f83f"
+                }
+              }
+            },
+            {
+              "signatures": [],
+              "id": "1433374155612627632",
+              "type": 2,
+              "timestamp": 53952216,
+              "senderPublicKey": "a39343f6343f72d08811e2c11c6137ae4246bc6446d199883d1a6668eb62b9dd",
+              "senderId": "11334711468380890209R",
+              "recipientId": null,
+              "amount": 0,
+              "fee": 2500000000,
+              "signature": "f5fb637d6152af237aa8174c61ef59eadb315c716aafe1f916f347b4b3c8e2a64ac2517c74a8691af0f3cc79b6921f5cd7ae5865766b3e031306f755c053fd00",
+              "signSignature": null,
+              "requesterPublicKey": null,
+              "rowId": 227998,
+              "asset": {
+                "delegate": {
+                  "username": "mbkz"
+                }
+              }
+            },
+            {
+              "signatures": [],
+              "id": "8427347107286041778",
+              "type": 3,
+              "timestamp": 54068843,
+              "senderPublicKey": "72822092a16ce58afea8e76ff609832401695b5d32da2c488c7f9272626be02f",
+              "senderId": "7638830122069556640R",
+              "recipientId": "7638830122069556640R",
+              "amount": 0,
+              "fee": 100000000,
+              "signature": "a96d28826480e8b5be80ebaf8ba64124a5ecb9201325c5054be7af5ff5ccaca49cbf9f51a89070e6cf4e9b54845ce0f301b1738e44e91f7dd62d7f7c6911e705",
+              "signSignature": null,
+              "requesterPublicKey": null,
+              "rowId": 230295,
+              "asset": {
+                "votes": [
+                  "+7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0"
+                ]
+              }
+            },
+            {
+              "signatures": [
+                "c0aae9fbc57aed5c5bb4ff54b1f508759b868965164a3fafbe1b58cc8bd3ea84786b4b3eb7ab4db1036f2fe1b30f9cc293ce966fa281c677928d2d4dcefd710f",
+                "9bbe5e04cbe277091f6291d9f136ba1581d31bef6ca5946f42010bc2fa0dbaa0d0079057087e8e147754f316d13389c6a8aed954a30ef408415ad71f99469201"
+              ],
+              "id": "2800934512471301755",
+              "type": 4,
+              "timestamp": 37507653,
+              "senderPublicKey": "00f928f3e3bc136e74eef1aa75df7b43a99cf22fce74a4a93b0c618bed6f60d1",
+              "senderId": "12109113090353923093R",
+              "recipientId": "2688837343357225875R",
+              "amount": 50000000000,
+              "fee": 500000000,
+              "signature": null,
+              "signSignature": "a96621f7f14bcfde6b7819f0a68e0535df413d489a2c39ab0a28db73d8ae4ee59885d6ac2858386b2b369aba19c8491c0df5bfd79ca898a91a96039e9b6ba908",
+              "requesterPublicKey": null,
+              "rowId": 5273,
+              "asset": {
+                "multisignature": {
+                  "min": 2,
+                  "lifetime": 12,
+                  "keysgroup": [
+                    "b759b3f12e927560f5dd85fd63ae3964cd907f0cef732e5913fd200505444059",
+                    "bf4809a1a08c9dffbba741f0c7b9f49145602341d5fa306fb3cd592d3e1058b3"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      },
+      "responses.transactions.getUnconfirmedTransaction": {
+        "id": "responses.transactions.getUnconfirmedTransaction",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": true,
+          "transaction": {
+            "signatures": [],
+            "id": "6920969059388666996",
+            "type": 0,
+            "timestamp": 54069408,
+            "senderPublicKey": "bf4809a1a08c9dffbba741f0c7b9f49145602341d5fa306fb3cd592d3e1058b3",
+            "senderId": "1644223775232371040R",
+            "recipientId": "3303015780877366956R",
+            "amount": 199533766861,
+            "fee": 10000000,
+            "signature": "12a4afbb3c9cf449d14745a190b874a7e0d44c00c8bd68284a826a4e825b0662b59b48df2f8d8ba5f85b3a68dac35b97896224623a86a0d661d669dd9df0ba07",
+            "signSignature": null,
+            "requesterPublicKey": null,
+            "rowId": 230339,
+            "asset": null
+          }
+        }
+      },
+      "responses.transactions.localCreate": {
+        "id": "responses.transactions.localCreate",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "transactionId": {
+            "id": "common.scalars.id",
+            "type": "string",
+            "format": "id",
+            "minLength": 1,
+            "maxLength": 20
+          }
+        },
+        "example": {
+          "success": true,
+          "transactionId": "6920969059388666996"
+        }
+      },
+      "responses.transactions.put": {
+        "id": "responses.transactions.put",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "accepted": {
+            "type": "array",
+            "items": {
+              "id": "common.scalars.id",
+              "type": "string",
+              "format": "id",
+              "minLength": 1,
+              "maxLength": 20
+            }
+          },
+          "invalid": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "id": "common.scalars.id",
+                  "type": "string",
+                  "format": "id",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "example": {
+          "success": true,
+          "accepted": [
+            "6920969059388666996"
+          ],
+          "invalid": [
+            {
+              "id": "6059220831601703385",
+              "reason": "Failed to validated transaction schema"
+            }
+          ]
+        }
       }
     }
   },
@@ -4109,6 +6946,16 @@
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.accounts\n  .getAccount('8093718274007724701R')\n  .then(function({ account }) {\n    console.log(account.balance) // 2973803650603\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
           }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -4145,6 +6992,16 @@
           {
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.accounts\n  .getBalance('8093718274007724701R')\n  .then(function({ balance }) {\n    console.log(balance) // 2973803650603\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
           }
         ]
       }
@@ -4183,6 +7040,16 @@
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.accounts\n  .getPublicKey('8093718274007724701R')\n  .then(function({ publicKey }) {\n    console.log(publicKey) // \"7067a911f3a4...\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
           }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -4220,6 +7087,16 @@
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.accounts\n  .getDelegates('8093718274007724701R')\n  .then(function({ delegates }) {\n    console.log(delegates[0].publicKey) // \"5d3c3c5cdead6...\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
           }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       },
       "put": {
@@ -4240,7 +7117,17 @@
         "tags": [
           "Accounts API"
         ],
-        "deprecated": true
+        "deprecated": true,
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
+        ]
       }
     },
     "/api/accounts/delegates/fee": {
@@ -4271,6 +7158,16 @@
         "summary": "Get delegates fee",
         "tags": [
           "Accounts API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -4312,6 +7209,16 @@
         "summary": "Top accounts",
         "tags": [
           "Accounts API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -4345,7 +7252,17 @@
         "tags": [
           "Accounts API"
         ],
-        "deprecated": true
+        "deprecated": true,
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
+        ]
       }
     },
     "/api/accounts/generatePublicKey": {
@@ -4367,7 +7284,17 @@
         "tags": [
           "Accounts API"
         ],
-        "deprecated": true
+        "deprecated": true,
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
+        ]
       }
     },
     "/api/blocks/": {
@@ -4403,6 +7330,16 @@
           {
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.blocks\n  .getBlocks({ limit: 3 })\n  .then(function({ blocks }) {\n    console.log(blocks[0].id) // 1359353064084280533\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
           }
         ]
       }
@@ -4441,6 +7378,16 @@
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.blocks\n  .getBlock('1359353064084280533')\n  .then(function({ block }) {\n    console.log(block.id) // 1359353064084280533\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
           }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -4468,6 +7415,16 @@
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.blocks\n  .getHeight()\n  .then(function({ height }) {\n    console.log(height) // 1356378\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
           }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -4489,6 +7446,16 @@
         "summary": "Get broad hash",
         "tags": [
           "Blocks API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -4510,6 +7477,16 @@
         "summary": "Get epoch",
         "tags": [
           "Blocks API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -4546,6 +7523,16 @@
           {
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.blocks\n  .getFee()\n  .then(function({ fee }) {\n    console.log(fee) // 10000000\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
           }
         ]
       }
@@ -4584,6 +7571,16 @@
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.blocks\n  .getFeeSchedule()\n  .then(function({ fees }) {\n    console.log(fees.send) // 10000000\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
           }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -4610,6 +7607,16 @@
           {
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.blocks\n  .getNethash()\n  .then(function({ nethash }) {\n    console.log(nethash) // cd8171332c...\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
           }
         ]
       }
@@ -4638,6 +7645,16 @@
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.blocks\n  .getMilestone()\n  .then(function({ milestone }) {\n    console.log(milestone) // 5\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
           }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -4664,6 +7681,16 @@
           {
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.blocks\n  .getReward()\n  .then(function({ reward }) {\n    console.log(reward) // 1200000000\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
           }
         ]
       }
@@ -4692,6 +7719,16 @@
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.blocks\n  .getSupply()\n  .then(function({ supply }) {\n    console.log(supply) // 12943860841000000\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
           }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -4718,6 +7755,16 @@
           {
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.blocks\n  .getStatus()\n  .then(function({ height }) {\n    console.log(height) // 1356378\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
           }
         ]
       }
@@ -4756,6 +7803,16 @@
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.delegates\n  .getList()\n  .then(function({ delegates }) {\n    console.log(delegates[0].username) // official_pool\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
           }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       },
       "put": {
@@ -4776,7 +7833,17 @@
         "tags": [
           "Delegates API"
         ],
-        "deprecated": true
+        "deprecated": true,
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
+        ]
       }
     },
     "/api/delegates/fee": {
@@ -4807,6 +7874,16 @@
         "summary": "Get fee",
         "tags": [
           "Delegates API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -4843,6 +7920,16 @@
           {
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.delegates\n  .getForgedByAccount(\n    '7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0'\n  )\n  .then(function({ forged }) {\n    console.log(forged) // 19066025346961\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
           }
         ]
       }
@@ -4881,6 +7968,16 @@
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.delegates\n  .getByPublicKey(\n    '7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0'\n  )\n  .then(function({ delegate }) {\n    console.log(delegate.username) // official_pool\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
           }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -4917,6 +8014,16 @@
           {
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.delegates\n  .getVoters('a65a8160b1e0733f66d1f1a8f322c9af29b26d5e491a84d6e3ae0ec43e000446')\n  .then(function({ accounts }) {\n    console.log(accounts.length) // 5\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
           }
         ]
       }
@@ -4955,6 +8062,16 @@
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.delegates\n  .search({ q: 'pool' })\n  .then(function({ delegates }) {\n    console.log(delegates[0].username) // official_pool\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
           }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -4976,6 +8093,16 @@
         "summary": "Count",
         "tags": [
           "Delegates API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -5012,6 +8139,16 @@
           {
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.delegates\n  .getNextForgers()\n  .then(function({ delegates }) {\n    console.log(delegates[0]) // a65a8160b1e07...\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
           }
         ]
       }
@@ -5060,6 +8197,16 @@
             "lang": "javascript",
             "source": "import { rise } from 'risejs'\n\nrise.delegates\n  .getForgingStatus()\n  .then(function({ enabled }) {\n    console.log(enabled) // true\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
           }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -5102,6 +8249,16 @@
         "summary": "Forging enable",
         "tags": [
           "Delegates API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -5144,6 +8301,16 @@
         "summary": "Forging disable",
         "tags": [
           "Delegates API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -5165,6 +8332,22 @@
         "summary": "Get status",
         "tags": [
           "Loader API"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.loader\n  .status()\n  .then(function({ loaded }) {\n    console.log(loaded) // true\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -5186,6 +8369,16 @@
         "summary": "Get status sync",
         "tags": [
           "Loader API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -5207,6 +8400,16 @@
         "summary": "Ping",
         "tags": [
           "Loader API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -5226,14 +8429,28 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.multisignatures.getAccounts"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": ""
           }
         },
         "summary": "Get accounts",
         "tags": [
           "Multisignature API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -5253,14 +8470,28 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.multisignatures.getPending"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": ""
           }
         },
         "summary": "Get pending",
         "tags": [
           "Multisignature API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -5268,16 +8499,31 @@
       "post": {
         "operationId": "MultisignatureAPI.sign",
         "responses": {
-          "200": {
+          "500": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.general.deprecated"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": "Deprecated API Error"
           }
         },
         "summary": "Sign",
         "tags": [
           "Multisignature API"
+        ],
+        "deprecated": true,
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -5285,16 +8531,31 @@
       "put": {
         "operationId": "MultisignatureAPI.addMultisignature",
         "responses": {
-          "200": {
+          "500": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.general.deprecated"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": "Deprecated API Error"
           }
         },
         "summary": "Add multisignature",
         "tags": [
           "Multisignature API"
+        ],
+        "deprecated": true,
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -5314,14 +8575,28 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.peers.getPeers"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": ""
           }
         },
         "summary": "Get peers",
         "tags": [
           "Peers API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -5341,14 +8616,28 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.peers.getPeer"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": ""
           }
         },
         "summary": "Get peer",
         "tags": [
           "Peers API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -5358,14 +8647,28 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.peers.count"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": ""
           }
         },
         "summary": "Count",
         "tags": [
           "Peers API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -5375,14 +8678,28 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.peers.version"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": ""
           }
         },
         "summary": "Version",
         "tags": [
           "Peers API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -5402,14 +8719,28 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.signatures.fees"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": ""
           }
         },
         "summary": "Fees",
         "tags": [
           "Signatures API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     },
@@ -5417,18 +8748,480 @@
       "put": {
         "operationId": "SignaturesAPI.addSignature",
         "responses": {
-          "200": {
+          "500": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.general.deprecated"
+                }
+              }
             },
-            "description": "Successful response"
+            "description": "Deprecated API Error"
           }
         },
         "summary": "Add signature",
         "tags": [
           "Signatures API"
+        ],
+        "deprecated": true,
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
+        ]
+      }
+    },
+    "/api/transactions": {
+      "get": {
+        "operationId": "TransactionsAPI.getTransactions",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "",
+            "required": false,
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.transactions.getTransactions"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Get transactions",
+        "tags": [
+          "Transactions API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
+        ]
+      },
+      "post": {
+        "operationId": "TransactionsAPI.localCreate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/transactions.addTransactions"
+              }
+            }
+          },
+          "description": "transactions.addTransactions",
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.transactions.localCreate"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Local create",
+        "tags": [
+          "Transactions API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
+        ]
+      },
+      "put": {
+        "operationId": "TransactionsAPI.put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/transactions.put"
+              }
+            }
+          },
+          "description": "transactions.put",
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.transactions.put"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Put",
+        "tags": [
+          "Transactions API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
+        ]
+      }
+    },
+    "/api/transactions/count": {
+      "get": {
+        "operationId": "TransactionsAPI.getCount",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.transactions.getCount"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Get count",
+        "tags": [
+          "Transactions API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
+        ]
+      }
+    },
+    "/api/transactions/get": {
+      "get": {
+        "operationId": "TransactionsAPI.getTX",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "transactions.getTransaction",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/transactions.getTransaction"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.transactions.getTransaction"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Get tx",
+        "tags": [
+          "Transactions API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
+        ]
+      }
+    },
+    "/api/transactions/multisignatures": {
+      "get": {
+        "operationId": "TransactionsAPI.getMultiSigs",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "transactions.getPooledTransactions",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/transactions.getPooledTransactions"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.transactions.getMultiSigs"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Get multi sigs",
+        "tags": [
+          "Transactions API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
+        ]
+      }
+    },
+    "/api/transactions/multisignatures/get": {
+      "get": {
+        "operationId": "TransactionsAPI.getMultiSig",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/common.scalars.id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.transactions.getMultiSig"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Get multi sig",
+        "tags": [
+          "Transactions API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
+        ]
+      }
+    },
+    "/api/transactions/queued": {
+      "get": {
+        "operationId": "TransactionsAPI.getQueuedTxs",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "transactions.getPooledTransactions",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/transactions.getPooledTransactions"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.transactions.getQueuedTransactions"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Get queued txs",
+        "tags": [
+          "Transactions API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
+        ]
+      }
+    },
+    "/api/transactions/queued/get": {
+      "get": {
+        "operationId": "TransactionsAPI.getQueuedTx",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/common.scalars.id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.transactions.getQueuedTransaction"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Get queued tx",
+        "tags": [
+          "Transactions API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
+        ]
+      }
+    },
+    "/api/transactions/unconfirmed": {
+      "get": {
+        "operationId": "TransactionsAPI.getUnconfirmedTxs",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "transactions.getPooledTransactions",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/transactions.getPooledTransactions"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.transactions.getUnconfirmedTransactions"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Get unconfirmed txs",
+        "tags": [
+          "Transactions API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
+        ]
+      }
+    },
+    "/api/transactions/unconfirmed/get": {
+      "get": {
+        "operationId": "TransactionsAPI.getUnconfirmedTx",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/common.scalars.id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.transactions.getUnconfirmedTransaction"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Get unconfirmed tx",
+        "tags": [
+          "Transactions API"
+        ],
+        "servers": [
+          {
+            "url": "https://wallet.rise.vision",
+            "description": "Mainnet"
+          },
+          {
+            "url": "http://localhost:5566",
+            "description": "Local Testnet"
+          }
         ]
       }
     }
-  }
+  },
+  "x-servers": [
+    {
+      "url": "https://wallet.rise.vision",
+      "description": "Mainnet"
+    },
+    {
+      "url": "http://localhost:5566",
+      "description": "Local Testnet"
+    }
+  ]
 }

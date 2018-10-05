@@ -8,10 +8,13 @@ import {
   boolInt
 } from "../common/scalars";
 import { Delegate } from '../common/models'
+import { scope } from '../utils/scope'
+
+const s = scope('responses.accounts')
 
 export default {
   getAccount: {
-    id: "responses.accounts.getAccount",
+    id: s`getAccount`,
     type: "object",
     properties: respProps({
       account: {
@@ -50,7 +53,7 @@ export default {
     })
   },
   getBalance: {
-    id: "responses.accounts.getBalance",
+    id: s`getBalance`,
     type: "object",
     properties: respProps({
       balance,
@@ -62,7 +65,7 @@ export default {
     })
   },
   getPublickey: {
-    id: "responses.accounts.getPublickey",
+    id: s`getPublickey`,
     type: "object",
     properties: respProps({
       publicKey
@@ -72,7 +75,7 @@ export default {
     })
   },
   delegates: {
-    id: "responses.accounts.getDelegates",
+    id: s`getDelegates`,
     type: "object",
     properties: respProps({
       publicKey,
@@ -99,7 +102,7 @@ export default {
     })
   },
   getDelegatesFee: {
-    id: "responses.accounts.getDelegatesFee",
+    id: s`getDelegatesFee`,
     type: "object",
     proprties: respProps({
       fee: { type: "number" }
@@ -109,7 +112,7 @@ export default {
     })
   },
   top: {
-    id: "responses.accounts.top",
+    id: s`top`,
     type: "object",
     properties: respProps({
       accounts: {
