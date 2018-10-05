@@ -1,9 +1,9 @@
 import { rise } from 'risejs'
 
-rise.loader
-  .syncStatus()
-  .then(function({ syncing }) {
-    console.log(syncing) // false
+rise.transactions
+  .count()
+  .then(function({ confirmed }) {
+    console.log(confirmed) // 563381
   })
   .catch(function(err) {
     console.log('Error: ', err) // handle error

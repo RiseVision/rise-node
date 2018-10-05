@@ -29,5 +29,14 @@ export default {
       success: false,
       error: "An error has occured"
     }
+  },
+  accessDenied: {
+    id: s`accessDenied`,
+    type: "object",
+    properties: respProps(),
+    example: {
+      success: false,
+      error: "Secure API Access Denied"
+    }
   }
 };

@@ -19,7 +19,7 @@ const list = model => ({
 });
 
 const item = model => ({
-  transaction: item
+  transaction: model
 });
 
 export default {

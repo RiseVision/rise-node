@@ -1488,6 +1488,77 @@
           "signature"
         ]
       },
+      "1359353064084280533": {
+        "id": "1359353064084280533",
+        "rowId": 1356766,
+        "version": 0,
+        "timestamp": 74366340,
+        "height": 1356391,
+        "previousBlock": "6501365850122980670",
+        "numberOfTransactions": 1,
+        "totalAmount": 155090000000,
+        "totalFee": 10000000,
+        "reward": 1200000000,
+        "payloadLength": 117,
+        "payloadHash": "8f20883b18d72a47ee3a6dafdbc6d3e398b5e51f7f2d717c33975fd4ad945a34",
+        "generatorPublicKey": "c3bf0d2e95d2eb2479ee338915d72430a114c509c453ef21d8a07d6b9a564c19",
+        "blockSignature": "8d05f09d9a25a03d6234e36b20ba08467618eab4b2df9c3453606964ba7a030c22044f2fa6018892230a1cc8a04e5d73f122fc770d0629884e5ba6de00a05507",
+        "transactions": [
+          {
+            "signatures": [],
+            "id": "5128147624792694927",
+            "rowId": 560070,
+            "height": 1355968,
+            "blockId": "1359353064084280533",
+            "type": 0,
+            "timestamp": 74366321,
+            "senderPublicKey": "7605b8b4baa61efbf493a5e2c783e701226a2200c45bc28ebea8f52ab4ce3188",
+            "senderId": "1887676714119818627R",
+            "recipientId": "5920507067941756798R",
+            "amount": 155090000000,
+            "fee": 10000000,
+            "signature": "d8c4c0ac3c45781922865dcec37362d2785bbc89bb8e6d0b219e6755c7d72f78beea0fccb6b15442772623d973c722f6cd64d9ad63e896f36688e9bb13f87505",
+            "signSignature": null,
+            "requesterPublicKey": null,
+            "asset": null,
+            "confirmations": 29
+          }
+        ]
+      },
+      "6501365850122980670": {
+        "id": "6501365850122980670",
+        "rowId": 1356765,
+        "version": 0,
+        "timestamp": 74379510,
+        "height": 1356390,
+        "previousBlock": "14921645259042587857",
+        "numberOfTransactions": 0,
+        "totalAmount": 0,
+        "totalFee": 0,
+        "reward": 1200000000,
+        "payloadLength": 0,
+        "payloadHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "generatorPublicKey": "16d725d3430beb17638397f48c66f035ed25ddcc02220ab3d311b6a0a3d8f349",
+        "blockSignature": "7197567651282ae370066d953d3aa1a5ef99965ca504115ca690e651888d1bb19e10fab0ae95982013143e9c636114a86be7abbdae255e188113d13393ef460a",
+        "transactions": []
+      },
+      "14921645259042587857": {
+        "id": "14921645259042587857",
+        "rowId": 1356764,
+        "version": 0,
+        "timestamp": 74379480,
+        "height": 1356389,
+        "previousBlock": "11101205285804076839",
+        "numberOfTransactions": 0,
+        "totalAmount": 0,
+        "totalFee": 0,
+        "reward": 1200000000,
+        "payloadLength": 0,
+        "payloadHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "generatorPublicKey": "696a15b1e89a1e9b22858500d982095f4bfbf315b337f6181a6f278602340577",
+        "blockSignature": "466ab9de1d95469d2da02ed4fcbc15d2560f512b82b478b7d29e2a00b65dbac5b6df6cab7f02c65affa3d933a1c95e0f7c3f43d9999b5682b355ed57fac7fa09",
+        "transactions": []
+      },
       "6920969059388666996": {
         "signatures": [],
         "id": "6920969059388666996",
@@ -1625,7 +1696,7 @@
           "type": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 4
+            "maximum": 7
           },
           "fee": {
             "id": "common.scalars.amount",
@@ -1695,28 +1766,31 @@
           "asset": {
             "type": "object",
             "properties": {
-              "multisig": {
-                "min": {
-                  "id": "common.scalars.multisigMin",
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 15
-                },
-                "lifetime": {
-                  "id": "common.scalars.multisigLifetime",
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 72
-                },
-                "keysgroup": {
-                  "id": "common.scalars.multisigKeysgroup",
-                  "type": "array",
-                  "minItems": 1,
-                  "maxItems": 15,
-                  "items": {
-                    "id": "common.scalars.publicKey",
-                    "type": "string",
-                    "format": "publicKey"
+              "multisignature": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "id": "common.scalars.multisigMin",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 15
+                  },
+                  "lifetime": {
+                    "id": "common.scalars.multisigLifetime",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 72
+                  },
+                  "keysgroup": {
+                    "id": "common.scalars.multisigKeysgroup",
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 15,
+                    "items": {
+                      "id": "common.scalars.publicKey",
+                      "type": "string",
+                      "format": "publicKey"
+                    }
                   }
                 }
               },
@@ -1766,7 +1840,7 @@
           "type": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 4
+            "maximum": 7
           },
           "fee": {
             "id": "common.scalars.amount",
@@ -1836,28 +1910,31 @@
           "asset": {
             "type": "object",
             "properties": {
-              "multisig": {
-                "min": {
-                  "id": "common.scalars.multisigMin",
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 15
-                },
-                "lifetime": {
-                  "id": "common.scalars.multisigLifetime",
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 72
-                },
-                "keysgroup": {
-                  "id": "common.scalars.multisigKeysgroup",
-                  "type": "array",
-                  "minItems": 1,
-                  "maxItems": 15,
-                  "items": {
-                    "id": "common.scalars.publicKey",
-                    "type": "string",
-                    "format": "publicKey"
+              "multisignature": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "id": "common.scalars.multisigMin",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 15
+                  },
+                  "lifetime": {
+                    "id": "common.scalars.multisigLifetime",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 72
+                  },
+                  "keysgroup": {
+                    "id": "common.scalars.multisigKeysgroup",
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 15,
+                    "items": {
+                      "id": "common.scalars.publicKey",
+                      "type": "string",
+                      "format": "publicKey"
+                    }
                   }
                 }
               },
@@ -1924,7 +2001,7 @@
           "type": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 4
+            "maximum": 7
           },
           "fee": {
             "id": "common.scalars.amount",
@@ -1994,28 +2071,31 @@
           "asset": {
             "type": "object",
             "properties": {
-              "multisig": {
-                "min": {
-                  "id": "common.scalars.multisigMin",
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 15
-                },
-                "lifetime": {
-                  "id": "common.scalars.multisigLifetime",
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 72
-                },
-                "keysgroup": {
-                  "id": "common.scalars.multisigKeysgroup",
-                  "type": "array",
-                  "minItems": 1,
-                  "maxItems": 15,
-                  "items": {
-                    "id": "common.scalars.publicKey",
-                    "type": "string",
-                    "format": "publicKey"
+              "multisignature": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "id": "common.scalars.multisigMin",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 15
+                  },
+                  "lifetime": {
+                    "id": "common.scalars.multisigLifetime",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 72
+                  },
+                  "keysgroup": {
+                    "id": "common.scalars.multisigKeysgroup",
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 15,
+                    "items": {
+                      "id": "common.scalars.publicKey",
+                      "type": "string",
+                      "format": "publicKey"
+                    }
                   }
                 }
               }
@@ -2130,7 +2210,7 @@
                 "type": {
                   "type": "integer",
                   "minimum": 0,
-                  "maximum": 4
+                  "maximum": 7
                 },
                 "fee": {
                   "id": "common.scalars.amount",
@@ -2200,28 +2280,31 @@
                 "asset": {
                   "type": "object",
                   "properties": {
-                    "multisig": {
-                      "min": {
-                        "id": "common.scalars.multisigMin",
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 15
-                      },
-                      "lifetime": {
-                        "id": "common.scalars.multisigLifetime",
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 72
-                      },
-                      "keysgroup": {
-                        "id": "common.scalars.multisigKeysgroup",
-                        "type": "array",
-                        "minItems": 1,
-                        "maxItems": 15,
-                        "items": {
-                          "id": "common.scalars.publicKey",
-                          "type": "string",
-                          "format": "publicKey"
+                    "multisignature": {
+                      "type": "object",
+                      "properties": {
+                        "min": {
+                          "id": "common.scalars.multisigMin",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 15
+                        },
+                        "lifetime": {
+                          "id": "common.scalars.multisigLifetime",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 72
+                        },
+                        "keysgroup": {
+                          "id": "common.scalars.multisigKeysgroup",
+                          "type": "array",
+                          "minItems": 1,
+                          "maxItems": 15,
+                          "items": {
+                            "id": "common.scalars.publicKey",
+                            "type": "string",
+                            "format": "publicKey"
+                          }
                         }
                       }
                     },
@@ -2967,7 +3050,7 @@
                     "type": {
                       "type": "integer",
                       "minimum": 0,
-                      "maximum": 4
+                      "maximum": 7
                     },
                     "fee": {
                       "id": "common.scalars.amount",
@@ -3037,28 +3120,31 @@
                     "asset": {
                       "type": "object",
                       "properties": {
-                        "multisig": {
-                          "min": {
-                            "id": "common.scalars.multisigMin",
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 15
-                          },
-                          "lifetime": {
-                            "id": "common.scalars.multisigLifetime",
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 72
-                          },
-                          "keysgroup": {
-                            "id": "common.scalars.multisigKeysgroup",
-                            "type": "array",
-                            "minItems": 1,
-                            "maxItems": 15,
-                            "items": {
-                              "id": "common.scalars.publicKey",
-                              "type": "string",
-                              "format": "publicKey"
+                        "multisignature": {
+                          "type": "object",
+                          "properties": {
+                            "min": {
+                              "id": "common.scalars.multisigMin",
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 15
+                            },
+                            "lifetime": {
+                              "id": "common.scalars.multisigLifetime",
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 72
+                            },
+                            "keysgroup": {
+                              "id": "common.scalars.multisigKeysgroup",
+                              "type": "array",
+                              "minItems": 1,
+                              "maxItems": 15,
+                              "items": {
+                                "id": "common.scalars.publicKey",
+                                "type": "string",
+                                "format": "publicKey"
+                              }
                             }
                           }
                         },
@@ -3125,11 +3211,11 @@
           "success": true,
           "block": {
             "id": "1359353064084280533",
-            "rowId": 1356343,
+            "rowId": 1356766,
             "version": 0,
             "timestamp": 74366340,
-            "height": 1355968,
-            "previousBlock": "16932703546606415596",
+            "height": 1356391,
+            "previousBlock": "6501365850122980670",
             "numberOfTransactions": 1,
             "totalAmount": 155090000000,
             "totalFee": 10000000,
@@ -3264,7 +3350,7 @@
                       "type": {
                         "type": "integer",
                         "minimum": 0,
-                        "maximum": 4
+                        "maximum": 7
                       },
                       "fee": {
                         "id": "common.scalars.amount",
@@ -3334,28 +3420,31 @@
                       "asset": {
                         "type": "object",
                         "properties": {
-                          "multisig": {
-                            "min": {
-                              "id": "common.scalars.multisigMin",
-                              "type": "integer",
-                              "minimum": 1,
-                              "maximum": 15
-                            },
-                            "lifetime": {
-                              "id": "common.scalars.multisigLifetime",
-                              "type": "integer",
-                              "minimum": 1,
-                              "maximum": 72
-                            },
-                            "keysgroup": {
-                              "id": "common.scalars.multisigKeysgroup",
-                              "type": "array",
-                              "minItems": 1,
-                              "maxItems": 15,
-                              "items": {
-                                "id": "common.scalars.publicKey",
-                                "type": "string",
-                                "format": "publicKey"
+                          "multisignature": {
+                            "type": "object",
+                            "properties": {
+                              "min": {
+                                "id": "common.scalars.multisigMin",
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 15
+                              },
+                              "lifetime": {
+                                "id": "common.scalars.multisigLifetime",
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 72
+                              },
+                              "keysgroup": {
+                                "id": "common.scalars.multisigKeysgroup",
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 15,
+                                "items": {
+                                  "id": "common.scalars.publicKey",
+                                  "type": "string",
+                                  "format": "publicKey"
+                                }
                               }
                             }
                           },
@@ -4403,7 +4492,7 @@
                     "type": {
                       "type": "integer",
                       "minimum": 0,
-                      "maximum": 4
+                      "maximum": 7
                     },
                     "fee": {
                       "id": "common.scalars.amount",
@@ -4473,28 +4562,31 @@
                     "asset": {
                       "type": "object",
                       "properties": {
-                        "multisig": {
-                          "min": {
-                            "id": "common.scalars.multisigMin",
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 15
-                          },
-                          "lifetime": {
-                            "id": "common.scalars.multisigLifetime",
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 72
-                          },
-                          "keysgroup": {
-                            "id": "common.scalars.multisigKeysgroup",
-                            "type": "array",
-                            "minItems": 1,
-                            "maxItems": 15,
-                            "items": {
-                              "id": "common.scalars.publicKey",
-                              "type": "string",
-                              "format": "publicKey"
+                        "multisignature": {
+                          "type": "object",
+                          "properties": {
+                            "min": {
+                              "id": "common.scalars.multisigMin",
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 15
+                            },
+                            "lifetime": {
+                              "id": "common.scalars.multisigLifetime",
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 72
+                            },
+                            "keysgroup": {
+                              "id": "common.scalars.multisigKeysgroup",
+                              "type": "array",
+                              "minItems": 1,
+                              "maxItems": 15,
+                              "items": {
+                                "id": "common.scalars.publicKey",
+                                "type": "string",
+                                "format": "publicKey"
+                              }
                             }
                           }
                         },
@@ -4741,6 +4833,22 @@
           "error": "An error has occured"
         }
       },
+      "responses.general.accessDenied": {
+        "id": "responses.general.accessDenied",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": false,
+          "error": "Secure API Access Denied"
+        }
+      },
       "responses.loader.getStatus": {
         "id": "responses.loader.getStatus",
         "type": "object",
@@ -4962,7 +5070,7 @@
               "type": {
                 "type": "integer",
                 "minimum": 0,
-                "maximum": 4
+                "maximum": 7
               },
               "fee": {
                 "id": "common.scalars.amount",
@@ -5032,28 +5140,31 @@
               "asset": {
                 "type": "object",
                 "properties": {
-                  "multisig": {
-                    "min": {
-                      "id": "common.scalars.multisigMin",
-                      "type": "integer",
-                      "minimum": 1,
-                      "maximum": 15
-                    },
-                    "lifetime": {
-                      "id": "common.scalars.multisigLifetime",
-                      "type": "integer",
-                      "minimum": 1,
-                      "maximum": 72
-                    },
-                    "keysgroup": {
-                      "id": "common.scalars.multisigKeysgroup",
-                      "type": "array",
-                      "minItems": 1,
-                      "maxItems": 15,
-                      "items": {
-                        "id": "common.scalars.publicKey",
-                        "type": "string",
-                        "format": "publicKey"
+                  "multisignature": {
+                    "type": "object",
+                    "properties": {
+                      "min": {
+                        "id": "common.scalars.multisigMin",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 15
+                      },
+                      "lifetime": {
+                        "id": "common.scalars.multisigLifetime",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 72
+                      },
+                      "keysgroup": {
+                        "id": "common.scalars.multisigKeysgroup",
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 15,
+                        "items": {
+                          "id": "common.scalars.publicKey",
+                          "type": "string",
+                          "format": "publicKey"
+                        }
                       }
                     }
                   }
@@ -5456,7 +5567,7 @@
                 "type": {
                   "type": "integer",
                   "minimum": 0,
-                  "maximum": 4
+                  "maximum": 7
                 },
                 "fee": {
                   "id": "common.scalars.amount",
@@ -5526,28 +5637,31 @@
                 "asset": {
                   "type": "object",
                   "properties": {
-                    "multisig": {
-                      "min": {
-                        "id": "common.scalars.multisigMin",
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 15
-                      },
-                      "lifetime": {
-                        "id": "common.scalars.multisigLifetime",
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 72
-                      },
-                      "keysgroup": {
-                        "id": "common.scalars.multisigKeysgroup",
-                        "type": "array",
-                        "minItems": 1,
-                        "maxItems": 15,
-                        "items": {
-                          "id": "common.scalars.publicKey",
-                          "type": "string",
-                          "format": "publicKey"
+                    "multisignature": {
+                      "type": "object",
+                      "properties": {
+                        "min": {
+                          "id": "common.scalars.multisigMin",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 15
+                        },
+                        "lifetime": {
+                          "id": "common.scalars.multisigLifetime",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 72
+                        },
+                        "keysgroup": {
+                          "id": "common.scalars.multisigKeysgroup",
+                          "type": "array",
+                          "minItems": 1,
+                          "maxItems": 15,
+                          "items": {
+                            "id": "common.scalars.publicKey",
+                            "type": "string",
+                            "format": "publicKey"
+                          }
                         }
                       }
                     },
@@ -5791,7 +5905,7 @@
               "type": {
                 "type": "integer",
                 "minimum": 0,
-                "maximum": 4
+                "maximum": 7
               },
               "fee": {
                 "id": "common.scalars.amount",
@@ -5861,28 +5975,31 @@
               "asset": {
                 "type": "object",
                 "properties": {
-                  "multisig": {
-                    "min": {
-                      "id": "common.scalars.multisigMin",
-                      "type": "integer",
-                      "minimum": 1,
-                      "maximum": 15
-                    },
-                    "lifetime": {
-                      "id": "common.scalars.multisigLifetime",
-                      "type": "integer",
-                      "minimum": 1,
-                      "maximum": 72
-                    },
-                    "keysgroup": {
-                      "id": "common.scalars.multisigKeysgroup",
-                      "type": "array",
-                      "minItems": 1,
-                      "maxItems": 15,
-                      "items": {
-                        "id": "common.scalars.publicKey",
-                        "type": "string",
-                        "format": "publicKey"
+                  "multisignature": {
+                    "type": "object",
+                    "properties": {
+                      "min": {
+                        "id": "common.scalars.multisigMin",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 15
+                      },
+                      "lifetime": {
+                        "id": "common.scalars.multisigLifetime",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 72
+                      },
+                      "keysgroup": {
+                        "id": "common.scalars.multisigKeysgroup",
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 15,
+                        "items": {
+                          "id": "common.scalars.publicKey",
+                          "type": "string",
+                          "format": "publicKey"
+                        }
                       }
                     }
                   },
@@ -6021,7 +6138,7 @@
                 "type": {
                   "type": "integer",
                   "minimum": 0,
-                  "maximum": 4
+                  "maximum": 7
                 },
                 "fee": {
                   "id": "common.scalars.amount",
@@ -6091,28 +6208,31 @@
                 "asset": {
                   "type": "object",
                   "properties": {
-                    "multisig": {
-                      "min": {
-                        "id": "common.scalars.multisigMin",
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 15
-                      },
-                      "lifetime": {
-                        "id": "common.scalars.multisigLifetime",
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 72
-                      },
-                      "keysgroup": {
-                        "id": "common.scalars.multisigKeysgroup",
-                        "type": "array",
-                        "minItems": 1,
-                        "maxItems": 15,
-                        "items": {
-                          "id": "common.scalars.publicKey",
-                          "type": "string",
-                          "format": "publicKey"
+                    "multisignature": {
+                      "type": "object",
+                      "properties": {
+                        "min": {
+                          "id": "common.scalars.multisigMin",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 15
+                        },
+                        "lifetime": {
+                          "id": "common.scalars.multisigLifetime",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 72
+                        },
+                        "keysgroup": {
+                          "id": "common.scalars.multisigKeysgroup",
+                          "type": "array",
+                          "minItems": 1,
+                          "maxItems": 15,
+                          "items": {
+                            "id": "common.scalars.publicKey",
+                            "type": "string",
+                            "format": "publicKey"
+                          }
                         }
                       }
                     }
@@ -6186,6 +6306,138 @@
           },
           "error": {
             "type": "string"
+          },
+          "transaction": {
+            "id": "common.models.MultisigTransaction",
+            "type": "object",
+            "properties": {
+              "amount": {
+                "id": "common.scalars.amount",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10999999991000000
+              },
+              "type": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 7
+              },
+              "fee": {
+                "id": "common.scalars.amount",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10999999991000000
+              },
+              "id": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "recipientId": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "requesterPublicKey": {
+                "id": "common.scalars.publicKey",
+                "type": "string",
+                "format": "publicKey"
+              },
+              "rowId": {
+                "id": "common.scalars.wholeNum",
+                "type": "integer",
+                "minimum": 0
+              },
+              "senderId": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "senderPublicKey": {
+                "id": "common.scalars.publicKey",
+                "type": "string",
+                "format": "publicKey"
+              },
+              "signSignature": {
+                "id": "common.scalars.signature",
+                "type": "string",
+                "format": "signatureBuf"
+              },
+              "signature": {
+                "id": "common.scalars.signature",
+                "type": "string",
+                "format": "signatureBuf"
+              },
+              "signatures": {
+                "type": "array",
+                "items": {
+                  "id": "common.scalars.signature",
+                  "type": "string",
+                  "format": "signatureBuf"
+                }
+              },
+              "timestamp": {
+                "id": "common.scalars.timestamp",
+                "type": "integer",
+                "minimum": 1
+              },
+              "asset": {
+                "type": "object",
+                "properties": {
+                  "multisignature": {
+                    "type": "object",
+                    "properties": {
+                      "min": {
+                        "id": "common.scalars.multisigMin",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 15
+                      },
+                      "lifetime": {
+                        "id": "common.scalars.multisigLifetime",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 72
+                      },
+                      "keysgroup": {
+                        "id": "common.scalars.multisigKeysgroup",
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 15,
+                        "items": {
+                          "id": "common.scalars.publicKey",
+                          "type": "string",
+                          "format": "publicKey"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "blockId": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "confirmations": {
+                "id": "common.scalars.wholeNum",
+                "type": "integer",
+                "minimum": 0
+              },
+              "height": {
+                "id": "common.scalars.height",
+                "type": "integer",
+                "minimum": 1
+              }
+            }
           }
         },
         "example": {
@@ -6253,7 +6505,7 @@
                 "type": {
                   "type": "integer",
                   "minimum": 0,
-                  "maximum": 4
+                  "maximum": 7
                 },
                 "fee": {
                   "id": "common.scalars.amount",
@@ -6323,28 +6575,31 @@
                 "asset": {
                   "type": "object",
                   "properties": {
-                    "multisig": {
-                      "min": {
-                        "id": "common.scalars.multisigMin",
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 15
-                      },
-                      "lifetime": {
-                        "id": "common.scalars.multisigLifetime",
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 72
-                      },
-                      "keysgroup": {
-                        "id": "common.scalars.multisigKeysgroup",
-                        "type": "array",
-                        "minItems": 1,
-                        "maxItems": 15,
-                        "items": {
-                          "id": "common.scalars.publicKey",
-                          "type": "string",
-                          "format": "publicKey"
+                    "multisignature": {
+                      "type": "object",
+                      "properties": {
+                        "min": {
+                          "id": "common.scalars.multisigMin",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 15
+                        },
+                        "lifetime": {
+                          "id": "common.scalars.multisigLifetime",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 72
+                        },
+                        "keysgroup": {
+                          "id": "common.scalars.multisigKeysgroup",
+                          "type": "array",
+                          "minItems": 1,
+                          "maxItems": 15,
+                          "items": {
+                            "id": "common.scalars.publicKey",
+                            "type": "string",
+                            "format": "publicKey"
+                          }
                         }
                       }
                     },
@@ -6503,6 +6758,150 @@
           },
           "error": {
             "type": "string"
+          },
+          "transaction": {
+            "id": "common.models.UnconfirmedTransaction",
+            "type": "object",
+            "properties": {
+              "amount": {
+                "id": "common.scalars.amount",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10999999991000000
+              },
+              "type": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 7
+              },
+              "fee": {
+                "id": "common.scalars.amount",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10999999991000000
+              },
+              "id": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "recipientId": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "requesterPublicKey": {
+                "id": "common.scalars.publicKey",
+                "type": "string",
+                "format": "publicKey"
+              },
+              "rowId": {
+                "id": "common.scalars.wholeNum",
+                "type": "integer",
+                "minimum": 0
+              },
+              "senderId": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "senderPublicKey": {
+                "id": "common.scalars.publicKey",
+                "type": "string",
+                "format": "publicKey"
+              },
+              "signSignature": {
+                "id": "common.scalars.signature",
+                "type": "string",
+                "format": "signatureBuf"
+              },
+              "signature": {
+                "id": "common.scalars.signature",
+                "type": "string",
+                "format": "signatureBuf"
+              },
+              "signatures": {
+                "type": "array",
+                "items": {
+                  "id": "common.scalars.signature",
+                  "type": "string",
+                  "format": "signatureBuf"
+                }
+              },
+              "timestamp": {
+                "id": "common.scalars.timestamp",
+                "type": "integer",
+                "minimum": 1
+              },
+              "asset": {
+                "type": "object",
+                "properties": {
+                  "multisignature": {
+                    "type": "object",
+                    "properties": {
+                      "min": {
+                        "id": "common.scalars.multisigMin",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 15
+                      },
+                      "lifetime": {
+                        "id": "common.scalars.multisigLifetime",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 72
+                      },
+                      "keysgroup": {
+                        "id": "common.scalars.multisigKeysgroup",
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 15,
+                        "items": {
+                          "id": "common.scalars.publicKey",
+                          "type": "string",
+                          "format": "publicKey"
+                        }
+                      }
+                    }
+                  },
+                  "signature": {
+                    "type": "object",
+                    "properties": {
+                      "publicKey": {
+                        "id": "common.scalars.publicKey",
+                        "type": "string",
+                        "format": "publicKey"
+                      }
+                    }
+                  },
+                  "votes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[-+]{1}[0-9a-z]{64}$"
+                    }
+                  },
+                  "delegate": {
+                    "type": "object",
+                    "properties": {
+                      "username": {
+                        "id": "common.scalars.username",
+                        "type": "string",
+                        "format": "username",
+                        "minLength": 1,
+                        "maxLength": 20
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "example": {
@@ -6555,7 +6954,7 @@
                 "type": {
                   "type": "integer",
                   "minimum": 0,
-                  "maximum": 4
+                  "maximum": 7
                 },
                 "fee": {
                   "id": "common.scalars.amount",
@@ -6625,28 +7024,31 @@
                 "asset": {
                   "type": "object",
                   "properties": {
-                    "multisig": {
-                      "min": {
-                        "id": "common.scalars.multisigMin",
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 15
-                      },
-                      "lifetime": {
-                        "id": "common.scalars.multisigLifetime",
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 72
-                      },
-                      "keysgroup": {
-                        "id": "common.scalars.multisigKeysgroup",
-                        "type": "array",
-                        "minItems": 1,
-                        "maxItems": 15,
-                        "items": {
-                          "id": "common.scalars.publicKey",
-                          "type": "string",
-                          "format": "publicKey"
+                    "multisignature": {
+                      "type": "object",
+                      "properties": {
+                        "min": {
+                          "id": "common.scalars.multisigMin",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 15
+                        },
+                        "lifetime": {
+                          "id": "common.scalars.multisigLifetime",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 72
+                        },
+                        "keysgroup": {
+                          "id": "common.scalars.multisigKeysgroup",
+                          "type": "array",
+                          "minItems": 1,
+                          "maxItems": 15,
+                          "items": {
+                            "id": "common.scalars.publicKey",
+                            "type": "string",
+                            "format": "publicKey"
+                          }
                         }
                       }
                     },
@@ -6805,6 +7207,150 @@
           },
           "error": {
             "type": "string"
+          },
+          "transaction": {
+            "id": "common.models.UnconfirmedTransaction",
+            "type": "object",
+            "properties": {
+              "amount": {
+                "id": "common.scalars.amount",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10999999991000000
+              },
+              "type": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 7
+              },
+              "fee": {
+                "id": "common.scalars.amount",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10999999991000000
+              },
+              "id": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "recipientId": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "requesterPublicKey": {
+                "id": "common.scalars.publicKey",
+                "type": "string",
+                "format": "publicKey"
+              },
+              "rowId": {
+                "id": "common.scalars.wholeNum",
+                "type": "integer",
+                "minimum": 0
+              },
+              "senderId": {
+                "id": "common.scalars.id",
+                "type": "string",
+                "format": "id",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "senderPublicKey": {
+                "id": "common.scalars.publicKey",
+                "type": "string",
+                "format": "publicKey"
+              },
+              "signSignature": {
+                "id": "common.scalars.signature",
+                "type": "string",
+                "format": "signatureBuf"
+              },
+              "signature": {
+                "id": "common.scalars.signature",
+                "type": "string",
+                "format": "signatureBuf"
+              },
+              "signatures": {
+                "type": "array",
+                "items": {
+                  "id": "common.scalars.signature",
+                  "type": "string",
+                  "format": "signatureBuf"
+                }
+              },
+              "timestamp": {
+                "id": "common.scalars.timestamp",
+                "type": "integer",
+                "minimum": 1
+              },
+              "asset": {
+                "type": "object",
+                "properties": {
+                  "multisignature": {
+                    "type": "object",
+                    "properties": {
+                      "min": {
+                        "id": "common.scalars.multisigMin",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 15
+                      },
+                      "lifetime": {
+                        "id": "common.scalars.multisigLifetime",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 72
+                      },
+                      "keysgroup": {
+                        "id": "common.scalars.multisigKeysgroup",
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 15,
+                        "items": {
+                          "id": "common.scalars.publicKey",
+                          "type": "string",
+                          "format": "publicKey"
+                        }
+                      }
+                    }
+                  },
+                  "signature": {
+                    "type": "object",
+                    "properties": {
+                      "publicKey": {
+                        "id": "common.scalars.publicKey",
+                        "type": "string",
+                        "format": "publicKey"
+                      }
+                    }
+                  },
+                  "votes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[-+]{1}[0-9a-z]{64}$"
+                    }
+                  },
+                  "delegate": {
+                    "type": "object",
+                    "properties": {
+                      "username": {
+                        "id": "common.scalars.username",
+                        "type": "string",
+                        "format": "username",
+                        "minLength": 1,
+                        "maxLength": 20
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "example": {
@@ -8370,6 +8916,12 @@
         "tags": [
           "Loader API"
         ],
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.loader\n  .syncStatus()\n  .then(function({ syncing }) {\n    console.log(syncing) // false\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -8442,6 +8994,12 @@
         "tags": [
           "Multisignature API"
         ],
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.multiSignatures\n  .getAccounts(\n    '05e5b4cbe7aa75eaf80cca6a085a35f5f20be68e1d08b98b1dd32b2c108fc328'\n  )\n  .then(function({ accounts }) {\n    console.log(accounts[0].address) // 6507244540548668920R\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -8482,6 +9040,12 @@
         "summary": "Get pending",
         "tags": [
           "Multisignature API"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.multiSignatures\n  .getPending(\n    '05e5b4cbe7aa75eaf80cca6a085a35f5f20be68e1d08b98b1dd32b2c108fc328'\n  )\n  .then(function({ signed }) {\n    console.log(signed) // true\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
         ],
         "servers": [
           {
@@ -8588,6 +9152,12 @@
         "tags": [
           "Peers API"
         ],
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.peers\n  .getList()\n  .then(function({ peers }) {\n    console.log(peers.length) // 5\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -8628,6 +9198,12 @@
         "summary": "Get peer",
         "tags": [
           "Peers API"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.peers\n  .getByIPPort({ ip: '45.32.178.6', port: 5555 })\n  .then(function({ peer }) {\n    console.log(peer.version) // 1.0.3\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
         ],
         "servers": [
           {
@@ -8691,6 +9267,12 @@
         "tags": [
           "Peers API"
         ],
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.peers\n  .version()\n  .then(function({ version }) {\n    console.log(version) // 1.1.1\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -8731,6 +9313,12 @@
         "summary": "Fees",
         "tags": [
           "Signatures API"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.signatures\n  .getSecondSignatureFee()\n  .then(function({ fee }) {\n    console.log(fee) // 500000000\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
         ],
         "servers": [
           {
@@ -8803,6 +9391,12 @@
         "tags": [
           "Transactions API"
         ],
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.transactions\n  .getList()\n  .then(function({ count }) {\n    console.log(count) // 563381\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -8837,6 +9431,16 @@
               }
             },
             "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responses.general.accessDenied"
+                }
+              }
+            },
+            "description": "Secure API Access Denied"
           }
         },
         "summary": "Local create",
@@ -8883,6 +9487,12 @@
         "tags": [
           "Transactions API"
         ],
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.transactions\n  .put({\n    type: 0,\n    senderPublicKey: \"bf4809a1a08c9dffbba741f0c7b9f49145602341d5fa306fb3cd592d3e1058b3\",\n    senderId: \"1644223775232371040R\",\n    recipientId: \"3303015780877366956R\",\n    amount: 199533766861,\n    fee: 10000000\n    ...\n  })\n  .then(function({ accepted }) {\n    console.log(accepted.length) // 1\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -8913,6 +9523,12 @@
         "summary": "Get count",
         "tags": [
           "Transactions API"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.transactions\n  .count()\n  .then(function({ confirmed }) {\n    console.log(confirmed) // 563381\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
         ],
         "servers": [
           {
@@ -8954,6 +9570,12 @@
         "summary": "Get tx",
         "tags": [
           "Transactions API"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.transactions\n  .getTransaction('6920969059388666996')\n  .then(function({ transaction }) {\n    console.log(transaction.type) // 0\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
         ],
         "servers": [
           {
@@ -9160,6 +9782,12 @@
         "tags": [
           "Transactions API"
         ],
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.transactions\n  .getUnconfirmedTransactions()\n  .then(function({ count }) {\n    console.log(count) // 3\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
+        ],
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -9200,6 +9828,12 @@
         "summary": "Get unconfirmed tx",
         "tags": [
           "Transactions API"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "import { rise } from 'risejs'\n\nrise.transactions\n  .getUnconfirmedTransaction('6920969059388666996')\n  .then(function({ transaction }) {\n    console.log(transaction.fee) // 10000000\n  })\n  .catch(function(err) {\n    console.log('Error: ', err) // handle error\n  })\n"
+          }
         ],
         "servers": [
           {

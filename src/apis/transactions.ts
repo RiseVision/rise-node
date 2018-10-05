@@ -241,6 +241,10 @@ export class TransactionsAPI {
 
   @Post()
   @ResponseSchema('responses.transactions.localCreate')
+  @ResponseSchema('responses.general.accessDenied', {
+    statusCode: 403,
+    description: 'Secure API Access Denied'
+  })
   @ValidateSchema()
   @UseBefore(RestrictedAPIWatchGuard)
   public async localCreate(

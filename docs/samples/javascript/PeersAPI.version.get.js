@@ -1,9 +1,9 @@
 import { rise } from 'risejs'
 
-rise.loader
-  .syncStatus()
-  .then(function({ syncing }) {
-    console.log(syncing) // false
+rise.peers
+  .version()
+  .then(function({ version }) {
+    console.log(version) // 1.1.1
   })
   .catch(function(err) {
     console.log('Error: ', err) // handle error

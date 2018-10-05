@@ -1,3 +1,77 @@
+export const BlockExamples = [
+  {
+    id: "1359353064084280533",
+    rowId: 1356766,
+    version: 0,
+    timestamp: 74366340,
+    height: 1356391,
+    previousBlock: "6501365850122980670",
+    numberOfTransactions: 1,
+    totalAmount: 155090000000,
+    totalFee: 10000000,
+    reward: 1200000000,
+    payloadLength: 117,
+    payloadHash: "8f20883b18d72a47ee3a6dafdbc6d3e398b5e51f7f2d717c33975fd4ad945a34",
+    generatorPublicKey: "c3bf0d2e95d2eb2479ee338915d72430a114c509c453ef21d8a07d6b9a564c19",
+    blockSignature: "8d05f09d9a25a03d6234e36b20ba08467618eab4b2df9c3453606964ba7a030c22044f2fa6018892230a1cc8a04e5d73f122fc770d0629884e5ba6de00a05507",
+    transactions: [
+      {
+        signatures: [],
+        id: "5128147624792694927",
+        rowId: 560070,
+        height: 1355968,
+        blockId: "1359353064084280533",
+        type: 0,
+        timestamp: 74366321,
+        senderPublicKey: "7605b8b4baa61efbf493a5e2c783e701226a2200c45bc28ebea8f52ab4ce3188",
+        senderId: "1887676714119818627R",
+        recipientId: "5920507067941756798R",
+        amount: 155090000000,
+        fee: 10000000,
+        signature: "d8c4c0ac3c45781922865dcec37362d2785bbc89bb8e6d0b219e6755c7d72f78beea0fccb6b15442772623d973c722f6cd64d9ad63e896f36688e9bb13f87505",
+        signSignature: null,
+        requesterPublicKey: null,
+        asset: null,
+        confirmations: 29
+      }
+    ]
+  },
+  {
+    id: "6501365850122980670",
+    rowId: 1356765,
+    version: 0,
+    timestamp: 74379510,
+    height: 1356390,
+    previousBlock: "14921645259042587857",
+    numberOfTransactions: 0,
+    totalAmount: 0,
+    totalFee: 0,
+    reward: 1200000000,
+    payloadLength: 0,
+    payloadHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    generatorPublicKey: "16d725d3430beb17638397f48c66f035ed25ddcc02220ab3d311b6a0a3d8f349",
+    blockSignature: "7197567651282ae370066d953d3aa1a5ef99965ca504115ca690e651888d1bb19e10fab0ae95982013143e9c636114a86be7abbdae255e188113d13393ef460a",
+    transactions: []
+  },
+  {
+    id: "14921645259042587857",
+    rowId: 1356764,
+    version: 0,
+    timestamp: 74379480,
+    height: 1356389,
+    previousBlock: "11101205285804076839",
+    numberOfTransactions: 0,
+    totalAmount: 0,
+    totalFee: 0,
+    reward: 1200000000,
+    payloadLength: 0,
+    payloadHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    generatorPublicKey: "696a15b1e89a1e9b22858500d982095f4bfbf315b337f6181a6f278602340577",
+    blockSignature: "466ab9de1d95469d2da02ed4fcbc15d2560f512b82b478b7d29e2a00b65dbac5b6df6cab7f02c65affa3d933a1c95e0f7c3f43d9999b5682b355ed57fac7fa09",
+    transactions: []
+  }
+];
+
 export const PeerExamples = [
   {
     ip: "45.32.178.6",
@@ -34,6 +108,45 @@ export const PeerExamples = [
     clock: null,
     updated: 1538744324232,
     nonce: "69fb5f37-e671-4c40-9018-b9a756c069f8"
+  }
+];
+
+export const DelegateExamples = [
+  {
+    address: "8093718274007724701R",
+    username: "official_pool",
+    publicKey: "7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0",
+    vote: "325086457459378",
+    producedblocks: 13268,
+    missedblocks: 30,
+    rate: 1,
+    rank: 1,
+    approval: 2.51,
+    productivity: 99.77
+  },
+  {
+    address: "3262489507414775391R",
+    username: "jan",
+    publicKey: "e433144892f40c838d0ea865dde0915e4fdaecf3521efef585ff306e6513c8fc",
+    vote: "206316281125264",
+    producedblocks: 13175,
+    missedblocks: 36,
+    rate: 2,
+    rank: 2,
+    approval: 1.59,
+    productivity: 99.73
+  },
+  {
+    address: "18103881046813301656R",
+    username: "trnpallypool",
+    publicKey: "029c5489b5e3f7951028b07c2665dedc2072c5454982b945e8d4a24e6a789828",
+    vote: "179239667188718",
+    producedblocks: 12032,
+    missedblocks: 15,
+    rate: 3,
+    rank: 3,
+    approval: 1.38,
+    productivity: 99.88
   }
 ];
 
@@ -174,3 +287,16 @@ export const TransactionExamples = [
   ...UnconfirmedTransactionExamples[index],
   ...confirmed
 }));
+
+export const publicKeyExamples = [
+  "df06ac715314397ae7736d0ad448c6524dc89752ee41147bc6b7dd44948bd8b1",
+  "976b9f0c87004fee662de6bdccdbe22125a0de04cb4692ead9c713bd4a201380",
+  "0b7bb40385c5261c8cc763babebc9ccf9d392e618dc15104db5efb1c6a5719ee",
+  "1413fc21fb3caa48a934b81e04f4a57b8e4042c255f3738135e1e4803dd146cb",
+  "b481e38ca5ac6d4db9ad220306d451614aa1603419451d5eaf1eb49db00f18a4",
+  "25b51a18f6e90d8436ee1b5ec67cf9eaaf4273d0f9501e7f42e185e8fbd36033",
+  "da03aa8bd684eb0b9c62206e284d74e9361d4a2fb8e90c6ee0bd31b79ff56f3f",
+  "0134394f4789bade973b36d4c4302eb9156b56a1723f4d4a8e150805a2be583e",
+  "ef3c4554a4ab9e581c88d8b4826eff955dde027239b4899304552d83d20dc897",
+  "05e5b4cbe7aa75eaf80cca6a085a35f5f20be68e1d08b98b1dd32b2c108fc328"
+];

@@ -206,5 +206,5 @@ export const vote = {
 export const transactionType = {
   type: "integer",
   minimum: 0,
-  maximum: 4
+  maximum: 7
 };

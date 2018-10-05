@@ -51,10 +51,13 @@ export const signatureAsset = {
 export const multisigAsset = {
   type: "object",
   properties: {
-    multisig: {
-      min: multisigMin,
-      lifetime: multisigLifetime,
-      keysgroup: multisigKeysgroup
+    multisignature: {
+      type: "object",
+      properties: {
+        min: multisigMin,
+        lifetime: multisigLifetime,
+        keysgroup: multisigKeysgroup
+      }
     }
   }
 };
