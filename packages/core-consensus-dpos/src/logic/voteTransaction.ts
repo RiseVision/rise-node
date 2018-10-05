@@ -207,6 +207,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
    * Checks vote integrity of tx sender
    */
   public checkUnconfirmedDelegates(tx: IBaseTransaction<VoteAsset>, sender: AccountsModelForDPOS): Promise<any> {
+    console.log(tx, sender);
     return this.delegatesModule.checkUnconfirmedDelegates(sender, tx.asset.votes);
   }
 
@@ -214,6 +215,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
    * Checks vote integrity of sender
    */
   public checkConfirmedDelegates(tx: IBaseTransaction<VoteAsset>, sender: AccountsModelForDPOS): Promise<any> {
+    console.log(tx);
     return this.delegatesModule.checkConfirmedDelegates(sender, tx.asset.votes);
   }
 

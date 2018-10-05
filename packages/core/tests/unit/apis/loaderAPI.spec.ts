@@ -36,7 +36,7 @@ describe('apis/loaderAPI', () => {
     constants    = container.get(Symbols.generic.constants);
     loaderModule = container.get(CoreSymbols.modules.loader);
 
-    loaderModule.loaded    = true;
+    // loaderModule.loaded    = true;
     blocksModule.lastBlock = { height: 1 } as any;
 
     instance = container.getNamed(APISymbols.api, CoreSymbols.api.loader);

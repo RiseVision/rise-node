@@ -43,7 +43,8 @@ export const p2pSymbols = {
   },
   model               : Symbols.models.peers,
   __internals         : {
+    loadSubscriber              : Symbol.for('rise.p2p.__internals.loadsubscriber'),
     resolvedTransportMethods    : Symbol.for('rise.p2p.__internals.resolvedTransportMethods'),
-    resolvedTransportMiddlewares: Symbol.for('rise.p2p.__internals.resolvedTransportMiddlewares')
+    resolvedTransportMiddlewares: Symbol.for('rise.p2p.__internals.resolvedTransportMiddlewares'),
   },
 };

@@ -17,6 +17,7 @@ import { PeersAPI } from './api/peersAPI';
 import { TransportAPI } from './api/transport';
 import { BroadcasterLogic } from './broadcaster';
 import { constants, middleware, P2pConfig, p2pSymbols, ProtoBufHelper } from './helpers';
+import { PeersLoaderSubscriber } from './hooks/subscribers/load';
 import { Peer } from './peer';
 import { PeersLogic } from './peersLogic';
 import { PeersModel } from './PeersModel';
@@ -87,13 +88,13 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
         },
       }
     );
-    let controllers: any[] = []
+    let controllers: any[] = [];
     try {
       controllers = this.container.getAll<any>(p2pSymbols.controller);
     } catch (e) {
       // Amen
     }
-    let middlewares: any[] = []
+    let middlewares: any[] = [];
     try {
       middlewares = this.container.getAll<any>(p2pSymbols.middleware);
     } catch (e) {
@@ -155,16 +156,19 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
       .inSingletonScope()
       .whenTargetNamed(p2pSymbols.transportMiddlewares.validatePeer);
 
+    this.container.bind(p2pSymbols.__internals.loadSubscriber).to(PeersLoaderSubscriber);
   }
 
-  public teardown(): Promise<void> {
-    this.container.get<BroadcasterLogic>(p2pSymbols.logic.broadcaster).cleanup();
-    this.container.get<TransportModule>(p2pSymbols.modules.transport).cleanup();
+  public async teardown(): Promise<void> {
+    await this.container.get<BroadcasterLogic>(p2pSymbols.logic.broadcaster).cleanup();
+    await this.container.get<TransportModule>(p2pSymbols.modules.transport).cleanup();
+    await this.container.get<PeersLoaderSubscriber>(p2pSymbols.__internals.loadSubscriber).unHook();
     return cbToPromise((cb) => this.srv.close(cb))
       .catch((e) => void 0);
   }
 
   public async boot(): Promise<void> {
+    await this.container.get<PeersLoaderSubscriber>(p2pSymbols.__internals.loadSubscriber).hookMethods();
     const appConfig = this.container.get<P2pConfig>(Symbols.generic.appConfig);
     this.container.bind(p2pSymbols.__internals.resolvedTransportMethods)
       .toConstantValue(this.container.getAll(p2pSymbols.transportMethod));

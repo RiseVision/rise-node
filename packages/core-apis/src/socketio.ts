@@ -1,8 +1,8 @@
-import { decorate, inject, injectable } from 'inversify';
-import { WordPressHookSystem, WPHooksSubscriber, OnWPAction } from 'mangiafuoco';
-import * as SocketIO from 'socket.io';
-import { IBaseTransaction, SignedBlockType } from '@risevision/core-types';
 import { Symbols } from '@risevision/core-interfaces';
+import { IBaseTransaction, SignedBlockType } from '@risevision/core-types';
+import { decorate, inject, injectable } from 'inversify';
+import { OnWPAction, WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
+import * as SocketIO from 'socket.io';
 
 const Extendable = WPHooksSubscriber(Object);
 decorate(injectable(), Extendable);

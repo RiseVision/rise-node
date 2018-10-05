@@ -81,7 +81,7 @@ export class AppManager {
 
   public async finishBoot() {
     for (const module of this.modules) {
-      console.log(`Booting ${module.name}`);
+      this.logger.info(`Booting ${module.name}`);
       await module.boot();
     }
     await this.hookSystem.do_action(OnFinishBoot.name);

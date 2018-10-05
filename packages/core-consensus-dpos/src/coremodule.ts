@@ -17,7 +17,7 @@ import {
   AccountsModelForDPOS,
   DelegatesModel,
   RoundsFeesModel,
-  RoundsModel
+  RoundsModel, VotesModel
 } from './models/';
 import { DelegatesModule, ForgeModule, RoundsModule } from './modules';
 
@@ -86,7 +86,7 @@ export class CoreModule extends BaseCoreModule<DposAppConfig> implements ICoreMo
       .whenTargetNamed(dPoSSymbols.models.rounds);
 
     this.container.bind(ModelSymbols.model)
-      .toConstructor(RoundsModel)
+      .toConstructor(VotesModel)
       .whenTargetNamed(dPoSSymbols.models.votes);
 
     // Modules

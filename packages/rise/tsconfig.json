@@ -17,8 +17,10 @@
       "es7"
     ],
     "paths": {
+      "@risevision/core-accounts": ["../core-accounts/*"],
       "@risevision/core-types": ["../core-types/*"],
       "@risevision/core-helpers": ["../core-helpers/*"],
+      "@risevision/core-models": ["../core-models/*"],
       "@risevision/core-consensus-dpos": ["../core-consensus-dpos/*"]
     }
   },

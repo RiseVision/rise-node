@@ -176,7 +176,9 @@ export class BlocksModuleChain {
       this.logger.error(err);
       process.exit(0);
     }
-    this.blocksModule.lastBlock = new this.BlocksModel(block);
+    this.blocksModule.lastBlock = deepFreeze(
+      this.BlocksModel.toStringBlockType(block)
+    );
     await this.BlocksModel.sequelize
       .transaction((tx) => this.hookSystem
         .do_action(

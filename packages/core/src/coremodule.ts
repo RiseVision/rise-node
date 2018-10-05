@@ -26,19 +26,18 @@ export class CoreModule extends BaseCoreModule<void> implements ICoreModuleWithM
   }
 
   public async onPostInitModels() {
-    // const infoModel = this.container.getNamed<typeof IInfoModel>(ModelSymbols.model, ModelSymbols.names.info);
+    const infoModel = this.container.getNamed<typeof IInfoModel>(ModelSymbols.model, ModelSymbols.names.info);
     // Create or restore nonce!
-    // const [val] = await infoModel
-    //   .findOrCreate({where: {key: 'nonce'}, defaults: {value: uuid.v4()}});
-    // TODO: Fixme.
-    this.container.bind(Symbols.generic.nonce).toConstantValue('meow');
-    // await infoModel
-    //   .upsert({
-    //     key  : 'genesisAccount',
-    //     value: this.container.get<any>(Symbols.generic.genesisBlock)
-    //       .transactions[0].senderId,
-    //   });
-    // console.log('NONCE', this.container.get(Symbols.generic.nonce));
+    const [val] = await infoModel
+      .findOrCreate({where: {key: 'nonce'}, defaults: {value: uuid.v4()}});
+
+    this.container.bind(Symbols.generic.nonce).toConstantValue(val);
+    await infoModel
+      .upsert({
+        key  : 'genesisAccount',
+        value: this.container.get<any>(Symbols.generic.genesisBlock)
+          .transactions[0].senderId,
+      });
   }
 
   public async initAppElements() {

@@ -4,14 +4,11 @@ import { AppConfig, ConstantsType, PeerState, PeerType } from '@risevision/core-
 import { inject, injectable, named } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
-import { WordPressHookSystem } from 'mangiafuoco';
 import * as shuffle from 'shuffle-array';
 import { p2pSymbols } from './helpers';
-import { OnPeersReady } from './hooks/actions';
 import { IPeersModule, PeerFilter } from './interfaces';
 import { Peer } from './peer';
 import { PeersLogic } from './peersLogic';
-import { PingRequest } from './requests';
 
 @injectable()
 export class PeersModule implements IPeersModule {
@@ -19,8 +16,6 @@ export class PeersModule implements IPeersModule {
   // Generic
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
-  @inject(Symbols.generic.hookSystem)
-  private hookSystem: WordPressHookSystem;
 
   // Helpers
   @inject(Symbols.generic.constants)
@@ -43,10 +38,6 @@ export class PeersModule implements IPeersModule {
   @inject(ModelSymbols.model)
   @named(p2pSymbols.model)
   private PeersModel: typeof IPeersModel;
-
-  @inject(p2pSymbols.transportMethod)
-  @named(p2pSymbols.requests.ping)
-  private pingRequest: PingRequest;
 
   public cleanup() {
     // save on cleanup.
@@ -229,16 +220,6 @@ export class PeersModule implements IPeersModule {
     return { consensus, peers: peersList };
   }
 
-  public async onBlockchainReady() {
-    if (process.env.NODE_ENV !== 'test') {
-      await this.insertSeeds();
-      await this.dbLoad();
-
-      await this.hookSystem.do_action(OnPeersReady.name);
-      // await this.bus.message('peersReady');
-    }
-  }
-
   private async dbSave() {
     const peers = this.peersLogic.list(true);
     if (peers.length === 0) {
@@ -263,57 +244,6 @@ export class PeersModule implements IPeersModule {
       this.logger.error('Export peers to database failed', { error: err.message || err });
     });
 
-  }
-
-  /**
-   * Loads peers from db and calls ping on any peer.
-   */
-  private async dbLoad() {
-    this.logger.trace('Importing peers from database');
-
-    try {
-      const rows  = await this.PeersModel.findAll({ raw: true });
-      let updated = 0;
-      await Promise.all(rows
-        .map((rawPeer) => this.peersLogic.create(rawPeer))
-        .filter((peer) => !this.peersLogic.exists(peer))
-        .map(async (peer) => {
-          try {
-            await peer.makeRequest(this.pingRequest);
-            updated++;
-          } catch (e) {
-            this.logger.info(`Peer ${peer.string} seems to be unresponsive.`, e.message);
-          }
-        })
-      );
-      this.logger.trace('Peers->dbLoad Peers discovered', { updated, total: rows.length });
-    } catch (e) {
-      this.logger.error('Import peers from database failed', { error: e.message || e });
-    }
-  }
-
-  private async insertSeeds() {
-    this.logger.trace('Peers->insertSeeds');
-    let updated = 0;
-    await Promise.all(this.appConfig.peers.list.map(async (seed) => {
-      const peer = this.peersLogic.create(seed);
-      this.logger.trace(`Processing seed peer ${peer.string}`);
-      // Sets the peer as connected. Seed can be offline but it will be removed later.
-      try {
-        await peer.makeRequest(this.pingRequest);
-        updated++;
-      } catch (e) {
-        // seed peer is down?
-        this.logger.warn(`Seed ${peer.string} is down`, e);
-      }
-    }));
-    if (updated === 0) {
-      throw new Error('No valid seed peers');
-    }
-    this.logger.info('Peers->insertSeeds - Peers discovered', {
-      total: this.appConfig.peers.list.length,
-      updated,
-    });
   }
 
 }

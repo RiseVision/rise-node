@@ -45,7 +45,7 @@ export class DBHelper {
       autoQuoteFieldNames: true,
       autoQuoteTableNames: true,
       nameQuoteCharacter : '"',
-      stringFormatter    : (s) => `"${s}"`,
+      stringFormatter    : (s) => `'${s}'`,
     })
       .into(insertOp.model.getTableName() as string)
       .setFieldsRows(insertOp.values)

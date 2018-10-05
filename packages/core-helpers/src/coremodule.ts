@@ -41,6 +41,10 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     });
   }
 
+  public initAppElements() {
+    return this.container.get<Migrator>(HelpersSymbols.migrator).init();
+  }
+
   public extendCommander(program: CommanderStatic): void {
     program.option('-l, --log <level>', 'log level');
   }
@@ -52,7 +56,4 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     return appConfig;
   }
 
-  public async boot() {
-    await this.container.get<Migrator>(HelpersSymbols.migrator).init();
-  }
 }

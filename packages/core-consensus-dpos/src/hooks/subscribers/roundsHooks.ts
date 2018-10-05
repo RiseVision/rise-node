@@ -1,4 +1,9 @@
-import { OnCheckIntegrity, SnapshotBlocksCountFilter, UtilsCommonHeightList } from '@risevision/core';
+import {
+  OnCheckIntegrity,
+  RecreateAccountsTables,
+  SnapshotBlocksCountFilter,
+  UtilsCommonHeightList
+} from '@risevision/core';
 import { OnPostApplyBlock } from '@risevision/core-blocks';
 import { Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
@@ -8,8 +13,9 @@ import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import * as sequelize from 'sequelize';
 import { DposConstantsType, dPoSSymbols } from '../../helpers';
 import { RoundsLogic } from '../../logic/rounds';
-import { RoundsModel } from '../../models';
+import { Accounts2DelegatesModel, Accounts2U_DelegatesModel, RoundsModel } from '../../models';
 import { RoundsModule } from '../../modules';
+import { catchToLoggerAndRemapError } from '@risevision/core-utils';
 
 const Extendable = WPHooksSubscriber(Object);
 decorate(injectable(), Extendable);
@@ -17,13 +23,27 @@ decorate(injectable(), Extendable);
 @injectable()
 export class RoundsHooks extends Extendable {
 
+  @inject(Symbols.generic.hookSystem)
+  public hookSystem: WordPressHookSystem;
+
   @inject(dPoSSymbols.logic.rounds)
   private roundsLogic: RoundsLogic;
+
   @inject(dPoSSymbols.modules.rounds)
   private roundsModule: RoundsModule;
   @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.rounds)
   private RoundsModel: typeof RoundsModel;
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.votes)
+  private VotesModel: typeof VotesModel;
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.accounts2Delegates)
+  private Accounts2DelegatesModel: typeof Accounts2DelegatesModel;
+
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.accounts2UDelegates)
+  private Accounts2U_DelegatesModel: typeof Accounts2U_DelegatesModel;
 
   @inject(Symbols.generic.constants)
   private constants: DposConstantsType;
@@ -31,8 +51,18 @@ export class RoundsHooks extends Extendable {
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
 
-  @inject(Symbols.generic.hookSystem)
-  public hookSystem: WordPressHookSystem;
+  @RecreateAccountsTables()
+  public async onRecreateAcctTables() {
+    const models = [
+      this.RoundsModel,
+      this.Accounts2DelegatesModel,
+      this.Accounts2U_DelegatesModel,
+    ];
+    for (const model of models) {
+      await model.drop({cascade: true})
+        .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
+    }
+  }
 
   @OnPostApplyBlock()
   public onTxApply(block: SignedAndChainedBlockType, tx: sequelize.Transaction) {
