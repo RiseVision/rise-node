@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
 import * as MersenneTwister from 'mersenne-twister';
+import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import {
   constants as constantsType, ExceptionsList, ExceptionsManager,
@@ -334,8 +335,12 @@ export class DelegatesModule implements IDelegatesModule {
     }
     const previousRoundLastBlockHeight = this.roundsLogic.lastInRound(currentRound - 1);
     // Get the last block of previous round from database
-    const block = await this.BlocksModel.
-      findById(previousRoundLastBlockHeight);
+    const block = await this.BlocksModel.findOne({
+      attributes: ['id'],
+      limit     : 1,
+      where     : { height: { [Op.eq]: previousRoundLastBlockHeight } },
+    });
+
     if (block === null) {
       throw new Error(`Error in Round Seed calculation, block ${previousRoundLastBlockHeight} not found`);
     }
