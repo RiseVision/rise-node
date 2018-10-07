@@ -15,6 +15,7 @@ import {IModelField} from './modelField';
  * @property {number} balance - Between 0 and totalAmount from constants.
  * @property {number} u_balance - Between 0 and totalAmount from constants.
  * @property {number} vote
+ * @property {number} votesWeight
  * @property {number} rate
  * @property {String[]} delegates - From mem_account2delegates table, filtered by address.
  * @property {String[]} u_delegates - From mem_account2u_delegates table, filtered by address.
@@ -156,6 +157,15 @@ export const accountsModelCreator = (table:string): IModelField[] =>  [
     },
     conv      : Number,
     expression: '("vote")::bigint'
+  },
+  {
+    name      : 'votesWeight',
+    type      : 'BigInt',
+    filter    : {
+      type: 'integer'
+    },
+    conv      : Number,
+    expression: '("votesWeight")::bigint'
   },
   {
     name      : 'rate',

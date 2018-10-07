@@ -163,7 +163,7 @@ export class AccountsModel extends Model<AccountsModel> {
         m.address,
         ENCODE(m."publicKey", 'hex') AS "publicKey",
         m.vote,
-        m.votesWeight,
+        m."votesWeight",
         m.producedblocks,
         m.missedblocks,
         ROUND(vote / (SELECT * FROM supply) * 100, 2)::float AS approval,

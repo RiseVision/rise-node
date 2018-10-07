@@ -468,7 +468,7 @@ describe('highlevel checks', function () {
         ]);
 
 
-        expect(blocksModule.lastBlock.blockSignature).to.be.deep.eq(block.blockSignature);
+        expect(blocksModule.lastBlock.blockSignature).to.be.deep.eq(block.blockSignature.toString('hex'));
 
         // Next TX should be in pool we ensure it gets processed by refilling pool
         expect(txModule.transactionInPool(nextTx.id)).true;
@@ -544,7 +544,7 @@ describe('highlevel checks', function () {
 
         ]);
 
-        expect(blocksModule.lastBlock.blockSignature).to.be.deep.eq(block.blockSignature);
+        expect(blocksModule.lastBlock.blockSignature).to.be.deep.eq(block.blockSignature.toString('hex'));
 
 
         if (txModule.getMergedTransactionList().length > 0) {

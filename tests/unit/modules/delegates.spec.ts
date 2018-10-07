@@ -236,7 +236,7 @@ describe('modules/delegates', () => {
         roundsLogicStub.stubs.calcRound.callsFake((h) => Math.ceil(h / slotsStub.delegates));
         roundsLogicStub.stubs.lastInRound.callsFake((r) => Math.ceil(r * 101));
         (blocksModel as any).findById = sandbox.stub().returns({id: '1231352636353'});
-        seedGenStub = sandbox.stub(instance, 'calculateSafeRoundSeed').callsFake(() => {
+        seedGenStub = sandbox.stub(instance as any, 'calculateSafeRoundSeed').callsFake(() => {
           const toRet = [];
           for (let i = 0; i < 8; i++) {
             toRet.push(Math.random() * Number.MAX_SAFE_INTEGER);
@@ -580,7 +580,7 @@ describe('modules/delegates', () => {
 
     it('should query the db for the right block', async function() {
       this.timeout(50000);
-      const seed = await instance.calculateSafeRoundSeed(height);
+      const seed = await (instance as any).calculateSafeRoundSeed(height);
       expect((instance as any).BlocksModel.findById.calledOnce).to.be.true;
       expect((instance as any).BlocksModel.findById.firstCall.args).to.be.deep
         .equal([(Math.ceil(height / 101) - 1) * 101]);
@@ -588,7 +588,7 @@ describe('modules/delegates', () => {
 
     it('should return a predictable seed given a specific height', async function() {
       this.timeout(50000);
-      const seed = await instance.calculateSafeRoundSeed(height);
+      const seed = await (instance as any).calculateSafeRoundSeed(height);
       expect(seed).to.be.deep.equal([
         3474557505,
         1689392474,
@@ -603,23 +603,23 @@ describe('modules/delegates', () => {
 
     it('should return different seeds given different rounds', async function() {
       this.timeout(50000);
-      const seed1 = await instance.calculateSafeRoundSeed(height);
+      const seed1 = await (instance as any).calculateSafeRoundSeed(height);
       (blocksModel as any).findById.resolves({id: '987654321'} );
-      const seed2 = await instance.calculateSafeRoundSeed(height + 102);
+      const seed2 = await (instance as any).calculateSafeRoundSeed(height + 102);
       expect(seed1).not.to.be.deep.equal(seed2);
     });
 
     it('should cache the result', async function() {
       this.timeout(50000);
       expect((instance as any).roundSeeds[Math.ceil(height / 101)]).to.be.undefined;
-      const seed = await instance.calculateSafeRoundSeed(height);
+      const seed = await (instance as any).calculateSafeRoundSeed(height);
       expect((instance as any).roundSeeds[Math.ceil(height / 101)]).to.be.deep.equal(seed);
     });
 
     it('should execute in more than 40ms', async function() {
       this.timeout(50000);
       const start = Date.now();
-      await instance.calculateSafeRoundSeed(height);
+      await (instance as any).calculateSafeRoundSeed(height);
       const elapsed = Date.now() - start;
       expect(elapsed).to.be.gte(40);
     });

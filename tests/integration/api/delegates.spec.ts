@@ -262,12 +262,14 @@ describe('api/delegates', () => {
         .get('/api/delegates/search?q=33')
         .expect(200)
         .then((response) => {
+          console.log(response.body);
           expect(response.body.success).is.true;
           expect(response.body.delegates).to.be.deep.equal([{
             username: 'genesisDelegate33',
             address: '14851457879581478143R',
             publicKey: 'eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44',
             vote: 108912391000000,
+            votesWeight: 108912391000000,
             producedblocks: 1,
             missedblocks: 1,
             rank: 82,

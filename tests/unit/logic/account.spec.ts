@@ -78,6 +78,7 @@ describe('logic/account', () => {
         { expression: '("balance")::bigint', alias: 'balance' },
         { expression: '("u_balance")::bigint', alias: 'u_balance' },
         { expression: '("vote")::bigint', alias: 'vote' },
+        { expression: '("votesWeight")::bigint', alias: 'votesWeight' },
         { expression: '("rate")::bigint', alias: 'rate' },
         {
           alias     : 'delegates',
@@ -168,6 +169,7 @@ describe('logic/account', () => {
         },
         virgin           : { type: 'boolean' },
         vote             : { type: 'integer' },
+        votesWeight      : { type: 'integer' },
       };
       expect((account as any).filter).to.deep.equal(filter);
     });
@@ -201,6 +203,7 @@ describe('logic/account', () => {
         username         : String,
         virgin           : Boolean,
         vote             : Number,
+        votesWeight      : Number,
       };
       expect((account as any).conv).to.deep.equal(conv);
     });
@@ -214,6 +217,7 @@ describe('logic/account', () => {
         'balance',
         'u_balance',
         'vote',
+        'votesWeight',
         'rate',
         'delegates',
         'u_delegates',
