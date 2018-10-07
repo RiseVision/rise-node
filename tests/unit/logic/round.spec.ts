@@ -176,6 +176,16 @@ describe('logic/round', () => {
     });
   });
 
+  describe('reCalcVotes', () => {
+
+    it('should return custom DBOp with reCalcVotes SQL', () => {
+      const ret   = instance.reCalcVotes();
+      expect(ret.type).is.eq('custom');
+      expect(ret.model).is.deep.eq(roundsModel);
+      expect(ret.query).is.deep.eq(roundSQL.reCalcVotes);
+    });
+  });
+
   describe('markBlockId', () => {
     it('should return null if backwards is true', () => {
       scope.backwards = false;

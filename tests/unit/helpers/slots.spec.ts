@@ -33,4 +33,14 @@ describe('helpers/slots', () => {
     expect(retVal).to.be.eq( 48804000000 + constants.activeDelegates );
   });
 
+  it('getDelegatesPoolSize() should return activeDelegates before dposv2 activation', () => {
+    const retVal = slots.getDelegatesPoolSize(constants.dposv2.firstBlock - 1);
+    expect(retVal).to.be.equal(constants.activeDelegates);
+  });
+
+  it('getDelegatesPoolSize() should return constants.dposv2.delegatesPoolSize after dposv2 activation', () => {
+    const retVal = slots.getDelegatesPoolSize(constants.dposv2.firstBlock);
+    expect(retVal).to.be.equal(constants.dposv2.delegatesPoolSize);
+  });
+
 });

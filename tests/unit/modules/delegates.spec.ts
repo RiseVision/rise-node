@@ -3,6 +3,7 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
 import {Container} from 'inversify';
+import * as MersenneTwister from 'mersenne-twister';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import * as helpers from '../../../src/helpers';
@@ -256,7 +257,7 @@ describe('modules/delegates', () => {
         seedGenStub.restore();
         this.timeout(10000);
         slotsStub.delegates = 101;
-        const roundNum = Math.round(Math.random() * 1000000)
+        const roundNum = Math.round(Math.random() * 1000000);
         const list = await instance.generateDelegateList(roundNum);
         const list2 = await instance.generateDelegateList(roundNum);
         expect(list).to.be.deep.eq(list2);
@@ -325,6 +326,38 @@ describe('modules/delegates', () => {
           expect(inclusionCount[idx]).not.to.be.undefined;
           expect(inclusionCount[idx]).to.be.gt(0);
         }
+      });
+
+      it('should sort delegates by public Key if resulting weight is the same', async () => {
+        const oldRandom = MersenneTwister.prototype.random;
+        // We need to make sure to get the same weight for all delegates. (same vote, same random factor)
+        MersenneTwister.prototype.random = () => {
+          return 0.999;
+        };
+        for (let i = 0; i < delegates.length; i++) {
+          const k = new Buffer(1);
+          k.writeUInt8(i, 0);
+          delegates[i] = {
+            publicKey: k,
+            vote: 1000000000,
+          };
+        }
+        const list = await instance.generateDelegateList(32 * 101);
+        const stringList = list.map((k) => k.toString('hex'));
+        const excluded = delegates.length - slotsStub.delegates;
+        // Delegates with low-value publicKey are excluded
+        for (let i = 0; i < excluded; i++) {
+          const pk = new Buffer(1);
+          pk.writeUInt8(i, 0);
+          expect(stringList.indexOf(pk.toString('hex'))).to.be.equal(-1);
+        }
+        // Delegates with high-value publicKey are included
+        for (let i = excluded; i < delegates.length; i++) {
+          const pk = new Buffer(1);
+          pk.writeUInt8(i, 0);
+          expect(stringList.indexOf(pk.toString('hex'))).to.be.gte(0);
+        }
+        MersenneTwister.prototype.random = oldRandom;
       });
     });
   });
