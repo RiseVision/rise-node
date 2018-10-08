@@ -11,16 +11,17 @@ import { ModelSymbols } from '@risevision/core-models';
 import { address, DBOp, SignedBlockType } from '@risevision/core-types';
 import * as fs from 'fs';
 import { inject, injectable, named } from 'inversify';
+import * as sequelize from 'sequelize';
 import { Transaction } from 'sequelize';
 import SocketIO from 'socket.io';
 import { DposConstantsType, dPoSSymbols, RoundChanges, Slots } from '../helpers';
 import { IRoundLogicNewable, RoundLogicScope } from '../logic/round';
 import { RoundsLogic } from '../logic/rounds';
-import { AccountsModelForDPOS, RoundsModel } from '../models/';
+import { AccountsModelForDPOS } from '../models/';
 import { DelegatesModule } from './delegates';
 
-const performRoundSnapshotSQL = fs.readFileSync(
-  `${__dirname}/../../sql/performRoundSnapshot.sql`,
+const sumRoundSQL = fs.readFileSync(
+  `${__dirname}/../../sql/sumRound.sql`,
   { encoding: 'utf8' }
 );
 
@@ -62,9 +63,6 @@ export class RoundsModule {
   @inject(ModelSymbols.model)
   @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
-  @inject(ModelSymbols.model)
-  @named(dPoSSymbols.models.rounds)
-  private RoundsModel: typeof RoundsModel;
 
   /**
    * Performs a backward tick on the round
@@ -106,27 +104,7 @@ export class RoundsModule {
           }
         }
         ops.push(roundLogic.markBlockId());
-        await this.dbHelper.performOps(ops, transaction);
-        if (roundLogicScope.finishRound) {
-          // TODO:
-          // await this.bus.message('finishRound', roundLogicScope.round);
-        }
-      },
-      async () => {
-        // Check if we are one block before last block of round, if yes - perform round snapshot
-        // TODO: Check either logic or comment one of the 2 seems off.
-        if ((block.height + 1) % this.slots.delegates === 0) {
-          this.logger.debug('Performing round snapshot...');
-          await this.dbHelper.performOps(
-            [{
-              model: this.RoundsModel,
-              query: performRoundSnapshotSQL,
-              type : 'custom',
-            }],
-            transaction
-          );
-          this.logger.trace('Round snapshot done');
-        }
+        return this.dbHelper.performOps(ops, transaction);
       });
   }
 
@@ -172,7 +150,6 @@ export class RoundsModule {
         models : {
           AccountsModel: this.AccountsModel,
           BlocksModel  : this.BlocksModel,
-          RoundsModel  : this.RoundsModel,
         },
         modules: {
           accounts: this.accountsModule,
@@ -209,7 +186,17 @@ export class RoundsModule {
   // tslint:disable-next-line
   private async sumRound(round: number, tx: Transaction): Promise<{ roundFees: number, roundRewards: number[], roundDelegates: Buffer[] }> {
     this.logger.debug('Summing round', round);
-    const res = await this.RoundsModel.sumRound(this.constants.activeDelegates, round, tx);
+    // tslint:disable-next-line
+    type sumRoundRes = { fees: null | string, rewards: null | string[], delegates: null | Buffer[] };
+    const res: sumRoundRes = await this.AccountsModel.sequelize.query(
+      sumRoundSQL,
+      {
+        plain       : true, // Returns single row.
+        replacements: { activeDelegates: this.constants.activeDelegates, round },
+        transaction : tx,
+        type        : sequelize.QueryTypes.SELECT,
+      }
+    );
 
     const roundRewards   = res.rewards.map((reward) => Math.floor(parseFloat(reward)));
     const roundFees      = Math.floor(parseFloat(res.fees));

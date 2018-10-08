@@ -3,10 +3,9 @@ import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import { publicKey } from '@risevision/core-types';
 import { BelongsTo, Column, ForeignKey, IBuildOptions, PrimaryKey, Table } from 'sequelize-typescript';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { RoundsModel } from './RoundsModel';
 
 @Table({ tableName: 'votes' })
-export class VotesModel extends BaseModel<RoundsModel>  {
+export class VotesModel extends BaseModel<VotesModel>  {
   @PrimaryKey
   @Column
   public votes: string;

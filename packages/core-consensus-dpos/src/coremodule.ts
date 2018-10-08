@@ -6,7 +6,7 @@ import { TXSymbols } from '@risevision/core-transactions';
 import { CommanderStatic } from 'commander';
 import { AccountsAPI, DelegatesAPI } from './apis';
 import { constants, DposAppConfig, dPoSSymbols, RoundChanges, Slots } from './helpers';
-import { DelegatesHooks, RoundsHooks, Transactionshooks } from './hooks/subscribers';
+import { DelegatesHooks, RoundsHooks } from './hooks/subscribers';
 import { RegisterDelegateTransaction } from './logic/delegateTransaction';
 import { RoundLogic } from './logic/round';
 import { RoundsLogic } from './logic/rounds';
@@ -17,7 +17,7 @@ import {
   AccountsModelForDPOS,
   DelegatesModel,
   RoundsFeesModel,
-  RoundsModel, VotesModel
+  VotesModel
 } from './models/';
 import { DelegatesModule, ForgeModule, RoundsModule } from './modules';
 
@@ -82,10 +82,6 @@ export class CoreModule extends BaseCoreModule<DposAppConfig> implements ICoreMo
       .whenTargetNamed(dPoSSymbols.models.roundsFees);
 
     this.container.bind(ModelSymbols.model)
-      .toConstructor(RoundsModel)
-      .whenTargetNamed(dPoSSymbols.models.rounds);
-
-    this.container.bind(ModelSymbols.model)
       .toConstructor(VotesModel)
       .whenTargetNamed(dPoSSymbols.models.votes);
 
@@ -100,9 +96,6 @@ export class CoreModule extends BaseCoreModule<DposAppConfig> implements ICoreMo
       .to(RoundsModule)
       .inSingletonScope();
 
-    this.container.bind(dPoSSymbols.hooksSubscribers.transactions)
-      .to(Transactionshooks)
-      .inSingletonScope();
     this.container.bind(dPoSSymbols.hooksSubscribers.rounds)
       .to(RoundsHooks)
       .inSingletonScope();
@@ -112,8 +105,6 @@ export class CoreModule extends BaseCoreModule<DposAppConfig> implements ICoreMo
   }
 
   public async initAppElements() {
-    await this.container.get<Transactionshooks>(dPoSSymbols.hooksSubscribers.transactions)
-      .hookMethods();
     await this.container.get<RoundsHooks>(dPoSSymbols.hooksSubscribers.rounds)
       .hookMethods();
     await this.container.get<DelegatesHooks>(dPoSSymbols.hooksSubscribers.delegates)
@@ -128,8 +119,6 @@ export class CoreModule extends BaseCoreModule<DposAppConfig> implements ICoreMo
   }
 
   public async teardown() {
-    await this.container.get<Transactionshooks>(dPoSSymbols.hooksSubscribers.transactions)
-      .unHook();
     await this.container.get<RoundsHooks>(dPoSSymbols.hooksSubscribers.rounds)
       .unHook();
     await this.container.get<DelegatesHooks>(dPoSSymbols.hooksSubscribers.delegates)

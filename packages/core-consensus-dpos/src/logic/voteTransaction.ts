@@ -3,9 +3,9 @@ import {
   IAccountsModel,
   ISystemModule, Symbols
 } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 import { BaseTx } from '@risevision/core-transactions';
 import {
-  DBCustomOp,
   DBOp,
   IBaseTransaction,
   IConfirmedTransaction,
@@ -21,12 +21,11 @@ import {
   Accounts2DelegatesModel,
   Accounts2U_DelegatesModel,
   AccountsModelForDPOS,
-  RoundsModel,
   VotesModel
 } from '../models/';
 import { DelegatesModule } from '../modules/';
 import { RoundsLogic } from './rounds';
-import { ModelSymbols } from '@risevision/core-models';
+
 const voteSchema = require('../../schema/vote.json');
 
 // tslint:disable-next-line interface-over-type-literal
@@ -69,9 +68,6 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   @inject(ModelSymbols.model)
   @named(Symbols.models.accounts)
   private AccountsModel: typeof IAccountsModel;
-  @inject(ModelSymbols.model)
-  @named(dPoSSymbols.models.rounds)
-  private RoundsModel: typeof RoundsModel;
 
   constructor() {
     super(TransactionType.VOTE);
@@ -146,23 +142,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModelForDPOS): Promise<Array<DBOp<any>>> {
     await this.checkConfirmedDelegates(tx, sender);
     sender.applyDiffArray('delegates', tx.asset.votes);
-    const ops = this.calculateOPs(this.Accounts2DelegatesModel, block.id, tx.asset.votes, sender.address);
-    ops.push(... tx.asset.votes.map<DBCustomOp<RoundsModel>>((vote) => {
-      const add      = vote[0] === '+';
-      const delegate = vote.substr(1);
-      return {
-        model: this.RoundsModel,
-        query: this.RoundsModel.insertMemRoundDelegatesSQL({
-          add,
-          address: sender.address,
-          blockId: block.id,
-          delegate,
-          round  : this.roundsLogic.calcRound(block.height),
-        }),
-        type : 'custom',
-      };
-    }));
-    return ops;
+    return this.calculateOPs(this.Accounts2DelegatesModel, block.id, tx.asset.votes, sender.address);
   }
 
   // tslint:disable-next-line max-line-length
@@ -170,24 +150,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     this.objectNormalize(tx);
     const invertedVotes = Diff.reverse(tx.asset.votes);
     sender.applyDiffArray('delegates', invertedVotes);
-    const ops = this.calculateOPs(this.Accounts2DelegatesModel, block.id, invertedVotes, sender.address);
-    // tslint:disable-next-line
-    ops.push(... invertedVotes.map<DBCustomOp<RoundsModel>>((vote) => {
-      const add      = vote[0] === '+';
-      const delegate = vote.substr(1);
-      return {
-        model: this.RoundsModel,
-        query: this.RoundsModel.insertMemRoundDelegatesSQL({
-          add,
-          address: sender.address,
-          blockId: block.id,
-          delegate,
-          round  : this.roundsLogic.calcRound(block.height),
-        }),
-        type : 'custom',
-      };
-    }));
-    return ops;
+    return this.calculateOPs(this.Accounts2DelegatesModel, block.id, invertedVotes, sender.address);
   }
 
   public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModelForDPOS): Promise<Array<DBOp<any>>> {
@@ -207,7 +170,6 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
    * Checks vote integrity of tx sender
    */
   public checkUnconfirmedDelegates(tx: IBaseTransaction<VoteAsset>, sender: AccountsModelForDPOS): Promise<any> {
-    console.log(tx, sender);
     return this.delegatesModule.checkUnconfirmedDelegates(sender, tx.asset.votes);
   }
 
@@ -215,7 +177,6 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
    * Checks vote integrity of sender
    */
   public checkConfirmedDelegates(tx: IBaseTransaction<VoteAsset>, sender: AccountsModelForDPOS): Promise<any> {
-    console.log(tx);
     return this.delegatesModule.checkConfirmedDelegates(sender, tx.asset.votes);
   }
 

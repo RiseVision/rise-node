@@ -8,14 +8,17 @@ import * as fs from 'fs';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import { RoundChanges, Slots } from '../helpers/';
-import { RoundsModel } from '../models';
 
-const restoreRoundSnasphotSQL = fs.readFileSync(
-  `${__dirname}/../../sql/restoreRoundSnapshot.sql`,
+const performVotesSnapshotSQL = fs.readFileSync(
+  `${__dirname}/../../sql/performVotesSnapshot.sql`,
   { encoding: 'utf8' }
 );
 const restoreVotesSnasphotSQL = fs.readFileSync(
   `${__dirname}/../../sql/restoreVotesSnapshot.sql`,
+  { encoding: 'utf8' }
+);
+const recalcVotesSQL = fs.readFileSync(
+  `${__dirname}/../../sql/recalcVotes.sql`,
   { encoding: 'utf8' }
 );
 
@@ -34,8 +37,7 @@ export type RoundLogicScope = {
   },
   models: {
     AccountsModel: typeof IAccountsModel,
-    BlocksModel: typeof IBlocksModel,
-    RoundsModel: typeof RoundsModel,
+    BlocksModel: typeof IBlocksModel
   }
   modules: {
     accounts: IAccountsModule;
@@ -110,7 +112,7 @@ export class RoundLogic {
   public updateVotes(): DBCustomOp<any> {
     return {
       model: this.scope.models.AccountsModel,
-      query: this.scope.models.RoundsModel.updateVotesSQL(this.scope.round),
+      query: recalcVotesSQL,
       type : 'custom',
     };
   }
@@ -137,17 +139,6 @@ export class RoundLogic {
   }
 
   /**
-   * Calls sql flush, deletes round from mem_round
-   */
-  public flushRound(): DBOp<any> {
-    return {
-      model  : this.scope.models.RoundsModel,
-      options: { where: { round: this.scope.round } },
-      type   : 'remove',
-    };
-  }
-
-  /**
    * Remove blocks higher than this block height
    */
   public truncateBlocks(): DBOp<IBlocksModel> {
@@ -160,16 +151,15 @@ export class RoundLogic {
 
   /**
    * Performed when rollbacking last block of a round.
-   * It restores the round snapshot from sql
+   * It restores the votes snapshot from sql
    */
-  public restoreRoundSnapshot(): DBOp<RoundsModel> {
+  public performVotesSnapshot(): DBOp<IAccountsModel> {
     return {
-      model: this.scope.models.RoundsModel,
-      query: restoreRoundSnasphotSQL,
+      model: this.scope.models.AccountsModel,
+      query: performVotesSnapshotSQL,
       type : 'custom',
     };
   }
-
   /**
    * Performed when rollbacking last block of a round.
    * It restores the votes snapshot from sql
@@ -242,12 +232,11 @@ export class RoundLogic {
    */
   public land(): Array<DBOp<any>> {
     return [
-      this.updateVotes(),
+      // this.updateVotes(),
       this.updateMissedBlocks(),
-      this.flushRound(),
       ...this.applyRound(),
+      this.performVotesSnapshot(),
       this.updateVotes(),
-      this.flushRound(),
     ];
   }
 
@@ -256,13 +245,9 @@ export class RoundLogic {
    */
   public backwardLand(): Array<DBOp<any>> {
     return [
-      this.updateVotes(),
+      // this.updateVotes(),
       this.updateMissedBlocks(),
-      this.flushRound(),
       ...this.applyRound(),
-      this.updateVotes(),
-      this.flushRound(),
-      this.restoreRoundSnapshot(),
       this.restoreVotesSnapshot(),
     ];
   }

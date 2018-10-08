@@ -5,17 +5,18 @@ import {
   UtilsCommonHeightList
 } from '@risevision/core';
 import { OnPostApplyBlock } from '@risevision/core-blocks';
-import { Symbols } from '@risevision/core-interfaces';
+import { ILogger, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
+import { catchToLoggerAndRemapError } from '@risevision/core-utils';
+import * as fs from 'fs';
 import { decorate, inject, injectable, named } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import * as sequelize from 'sequelize';
 import { DposConstantsType, dPoSSymbols } from '../../helpers';
 import { RoundsLogic } from '../../logic/rounds';
-import { Accounts2DelegatesModel, Accounts2U_DelegatesModel, RoundsModel } from '../../models';
+import { Accounts2DelegatesModel, Accounts2U_DelegatesModel, VotesModel } from '../../models';
 import { RoundsModule } from '../../modules';
-import { catchToLoggerAndRemapError } from '@risevision/core-utils';
 
 const Extendable = WPHooksSubscriber(Object);
 decorate(injectable(), Extendable);
@@ -26,14 +27,13 @@ export class RoundsHooks extends Extendable {
   @inject(Symbols.generic.hookSystem)
   public hookSystem: WordPressHookSystem;
 
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
   @inject(dPoSSymbols.logic.rounds)
   private roundsLogic: RoundsLogic;
 
   @inject(dPoSSymbols.modules.rounds)
   private roundsModule: RoundsModule;
-  @inject(ModelSymbols.model)
-  @named(dPoSSymbols.models.rounds)
-  private RoundsModel: typeof RoundsModel;
   @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.votes)
   private VotesModel: typeof VotesModel;
@@ -54,7 +54,6 @@ export class RoundsHooks extends Extendable {
   @RecreateAccountsTables()
   public async onRecreateAcctTables() {
     const models = [
-      this.RoundsModel,
       this.Accounts2DelegatesModel,
       this.Accounts2U_DelegatesModel,
     ];
@@ -62,22 +61,15 @@ export class RoundsHooks extends Extendable {
       await model.drop({cascade: true})
         .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
     }
+
+    await this.Accounts2DelegatesModel.sequelize.query(
+      fs.readFileSync(`${__dirname}/../../../sql/memoryTables.sql`, {encoding: 'utf8'})
+    );
   }
 
   @OnPostApplyBlock()
-  public onTxApply(block: SignedAndChainedBlockType, tx: sequelize.Transaction) {
+  public onPostApplyBlock(block: SignedAndChainedBlockType, tx: sequelize.Transaction) {
     return this.roundsModule.tick(block, tx);
-  }
-
-  @OnCheckIntegrity()
-  private async checkLoadingIntegrity(totalBlocks: number) {
-    const round     = this.roundsLogic.calcRound(totalBlocks);
-    const rounds    = await this.RoundsModel.findAll({ attributes: ['round'], group: 'round' });
-    const unapplied = rounds.filter((r) => r.round !== round);
-    if (unapplied.length > 0) {
-      // round is not applied.
-      throw new Error('Detected unapplied rounds in mem_round');
-    }
   }
 
   @UtilsCommonHeightList()
