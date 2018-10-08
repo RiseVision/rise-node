@@ -1,7 +1,7 @@
 import { respProps, successResp } from "../utils/responses";
 import { amount } from "../common/scalars";
 import { feeHeight } from "../common/fragments";
-import { scope } from '../utils/scope'
+import { scope } from "../../helpers/strings";
 
 const s = scope('responses.signatures')
 

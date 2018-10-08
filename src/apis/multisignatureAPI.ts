@@ -6,7 +6,7 @@ import { ILogger } from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { DeprecatedEndpoint } from '../helpers/decorators/deprecatedEndpoint'
-import { ResponseSchema } from 'rc-openapi-gen'
+import { ResponseSchema, OpenAPI } from 'rc-openapi-gen';
 import { ITransactionLogic, VerificationType } from '../ioc/interfaces/logic';
 import { IAccountsModule, IBlocksModule, ITransactionsModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
@@ -14,6 +14,7 @@ import { Accounts2MultisignaturesModel, TransactionsModel } from '../models';
 import multisigSchema from '../schema/multisignatures';
 import { publicKey as pkType } from '../types/sanityTypes';
 import { APIError, DeprecatedAPIError } from './errors';
+import { md } from '../helpers/strings';
 
 @JsonController('/api/multisignatures')
 @injectable()
@@ -46,6 +47,10 @@ export class MultisignatureAPI {
   private TransactionsModel: typeof TransactionsModel;
 
   @Get('/accounts')
+  @OpenAPI({
+    summary: "Get Multisignature Accounts",
+    description: "Retrieve accounts belonging to multisignature wallet"
+  })
   @ResponseSchema('responses.multisignatures.getAccounts')
   @ValidateSchema()
   public async getAccounts(@SchemaValid(multisigSchema.getAccounts)
@@ -88,6 +93,10 @@ export class MultisignatureAPI {
   }
 
   @Get('/pending')
+  @OpenAPI({
+    summary: "Get Pending Transactions",
+    description: "Retrieve pending transactions on a multisignature wallet"
+  })
   @ResponseSchema('responses.multisignatures.getPending')
   @ValidateSchema()
   public async getPending(@SchemaValid(multisigSchema.pending)
@@ -140,10 +149,24 @@ export class MultisignatureAPI {
   }
 
   @Post('/sign')
+  @OpenAPI({
+    summary: 'Sign',
+    description: md`
+      _**Deprecated**: Please use the [Transactions API](#tag/Transactions-API)_.
+      Sign a transaction with a multisignature wallet.
+    `
+  })
   @DeprecatedEndpoint()
   public async sign() {}
 
   @Put('/')
+  @OpenAPI({
+    summary: 'Add Multisignature',
+    description: md`
+      _**Deprecated**: Please use the [Transactions API](#tag/Transactions-API)_.
+      Add a multisignature wallet.
+    `
+  })
   @DeprecatedEndpoint()
   public async addMultisignature() {}
 }

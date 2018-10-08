@@ -1,16 +1,17 @@
-import { respProps, successResp } from '../utils/responses'
+import { respProps, successResp } from "../utils/responses";
 import {
   username,
   address,
   balance,
   signature,
   publicKey,
-  boolInt
+  boolInt,
+  wholeNum
 } from "../common/scalars";
-import { Delegate } from '../common/models'
-import { scope } from '../utils/scope'
+import { Delegate } from "../common/models";
+import { scope } from "../../helpers/strings";
 
-const s = scope('responses.accounts')
+const s = scope("responses.accounts");
 
 export default {
   getAccount: {
@@ -104,8 +105,8 @@ export default {
   getDelegatesFee: {
     id: s`getDelegatesFee`,
     type: "object",
-    proprties: respProps({
-      fee: { type: "number" }
+    properties: respProps({
+      fee: wholeNum
     }),
     example: successResp({
       fee: 2500000000

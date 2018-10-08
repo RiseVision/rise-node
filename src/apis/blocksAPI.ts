@@ -7,7 +7,7 @@ import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidat
 import { WrapInDBSequence } from '../helpers/decorators/wrapInSequence';
 import { IBlockLogic, IBlockReward, ITransactionLogic } from '../ioc/interfaces/logic';
 import { IBlocksModule, ISystemModule } from '../ioc/interfaces/modules';
-import { OpenApi, ResponseSchema } from 'rc-openapi-gen'
+import { OpenAPI, ResponseSchema } from 'rc-openapi-gen';
 import { Symbols } from '../ioc/symbols';
 import { BlocksModel, TransactionsModel } from '../models';
 import blocksSchema from '../schema/blocks';
@@ -50,6 +50,10 @@ export class BlocksAPI {
   private TransactionsModel: typeof TransactionsModel;
 
   @Get('/')
+  @OpenAPI({
+    summary: 'Get Block List',
+    description: 'Retrieve blocks from the RISE blockchain. Defaults to last 100 blocks'
+  })
   @ResponseSchema('responses.blocks.getBlocks')
   @ValidateSchema()
   @WrapInDBSequence
@@ -96,6 +100,10 @@ export class BlocksAPI {
   }
 
   @Get('/get')
+  @OpenAPI({
+    summary: 'Get Block',
+    description: 'Fetch block by block id'
+  })
   @ResponseSchema('responses.blocks.getBlock')
   @ValidateSchema()
   public async getBlock(@SchemaValid(blocksSchema.getBlock, { castNumbers: true })
@@ -112,6 +120,10 @@ export class BlocksAPI {
   }
 
   @Get('/getHeight')
+  @OpenAPI({
+    summary: 'Get Height',
+    description: 'Fetch current blockchain height'
+  })
   @ResponseSchema('responses.blocks.getHeight')
   @ValidateSchema()
   public async getHeight() {
@@ -119,18 +131,30 @@ export class BlocksAPI {
   }
 
   @Get('/getBroadhash')
+  @OpenAPI({
+    summary: 'Get Broadhash',
+    description: 'Fetch the current broadhash from the network'
+  })
   @ResponseSchema('responses.blocks.getBroadHash')
   public async getBroadHash() {
     return { broadhash: await this.systemModule.getBroadhash() };
   }
 
   @Get('/getEpoch')
+  @OpenAPI({
+    summary: 'Get Epoch',
+    description: 'Fetch the RISE epoch time in ISO8601 format'
+  })
   @ResponseSchema('responses.blocks.getEpoch')
   public getEpoch() {
     return { epoch: this.constants.epochTime };
   }
 
   @Get('/getFee')
+  @OpenAPI({
+    summary: 'Get Send Fee',
+    description: 'Fetch the fee for sending a transaction at a certain height. Defaults to current height'
+  })
   @ResponseSchema('responses.blocks.getFee')
   @ValidateSchema()
   public async getFee(@SchemaValid(blocksSchema.getFee, { castNumbers: true })
@@ -140,6 +164,10 @@ export class BlocksAPI {
   }
 
   @Get('/getFees')
+  @OpenAPI({
+    summary: 'Get Fee Schedule',
+    description: 'Fetch fees for all transaction types at a certain height. Defaults to current height'
+  })
   @ResponseSchema('responses.blocks.getFees')
   @ValidateSchema()
   public async getFees(@SchemaValid(blocksSchema.getFees, { castNumbers: true })
@@ -148,30 +176,50 @@ export class BlocksAPI {
   }
 
   @Get('/getNethash')
+  @OpenAPI({
+    summary: 'Get Nethash',
+    description: 'Get the Nethash from the network'
+  })
   @ResponseSchema('responses.blocks.getNethash')
   public getNethash() {
     return { nethash: this.systemModule.getNethash() };
   }
 
   @Get('/getMilestone')
+  @OpenAPI({
+    summary: 'Get Milestone',
+    description: 'Get the current milestone in reference to rewards for mining'
+  })
   @ResponseSchema('responses.blocks.getMilestone')
   public getMilestone() {
     return { milestone: this.blockRewardLogic.calcMilestone(this.blocksModule.lastBlock.height) };
   }
 
   @Get('/getReward')
+  @OpenAPI({
+    summary: 'Get Reward',
+    description: 'Get the current reward for mining a block'
+  })
   @ResponseSchema('responses.blocks.getReward')
   public getReward() {
     return { reward: this.blockRewardLogic.calcReward(this.blocksModule.lastBlock.height) };
   }
 
   @Get('/getSupply')
+  @OpenAPI({
+    summary: 'Get Supply',
+    description: 'Get the current RISE token supply'
+  })
   @ResponseSchema('responses.blocks.getSupply')
   public getSupply() {
     return { supply: this.blockRewardLogic.calcSupply(this.blocksModule.lastBlock.height) };
   }
 
   @Get('/getStatus')
+  @OpenAPI({
+    summary: 'Get Blockchain Status',
+    description: 'Get collected blockchain status information'
+  })
   @ResponseSchema('responses.blocks.getStatus')
   public async getStatus() {
     const lastBlock = this.blocksModule.lastBlock;

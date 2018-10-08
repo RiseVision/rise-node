@@ -1,7 +1,7 @@
 import { respProps, successResp } from "../utils/responses";
 import { version, wholeNum } from "../common/scalars";
 import { Peer } from "../common/models";
-import { scope } from "../utils/scope";
+import { scope } from "../../helpers/strings";
 import { PeerExamples } from "../common/examples";
 
 const s = scope("responses.peers");

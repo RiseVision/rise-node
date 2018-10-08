@@ -3,7 +3,7 @@ import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
-import { ResponseSchema } from 'rc-openapi-gen'
+import { ResponseSchema, OpenAPI } from 'rc-openapi-gen'
 import { IPeerLogic } from '../ioc/interfaces/logic';
 import { IPeersModule, ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
@@ -32,6 +32,10 @@ export class PeersAPI {
   private systemModule: ISystemModule;
 
   @Get('/')
+  @OpenAPI({
+    summary: "Get Peer List",
+    description: "Retrieve a list of peers connected to the node"
+  })
   @ResponseSchema('responses.peers.getPeers')
   @ValidateSchema()
   public async getPeers(@SchemaValid(peersSchema.getPeers, { castNumbers: true })
@@ -48,6 +52,10 @@ export class PeersAPI {
   }
 
   @Get('/get')
+  @OpenAPI({
+    summary: "Get Peer",
+    description: "Retrieve a peer by IP address and port"
+  })
   @ResponseSchema('responses.peers.getPeer')
   @ValidateSchema()
   public async getPeer(@SchemaValid(peersSchema.getPeer, { castNumbers: true })
@@ -65,6 +73,10 @@ export class PeersAPI {
   }
 
   @Get('/count')
+  @OpenAPI({
+    summary: "Get Peer Count",
+    description: "Get total number of peers connected, disconnected and banned"
+  })
   @ResponseSchema('responses.peers.count')
   public async count() {
     try {
@@ -79,6 +91,10 @@ export class PeersAPI {
   }
 
   @Get('/version')
+  @OpenAPI({
+    summary: "Get Node Version",
+    description: "Get node version information"
+  })
   @ResponseSchema('responses.peers.version')
   public async version() {
     return {

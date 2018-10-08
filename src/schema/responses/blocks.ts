@@ -2,7 +2,7 @@ import { respProps, successResp } from "../utils/responses";
 import { wholeNum, height, amount, hex, datetime } from "../common/scalars";
 import { Block } from "../common/models";
 import { feeHeight } from "../common/fragments";
-import { scope } from "../utils/scope";
+import { scope } from "../../helpers/strings";
 import { BlockExamples } from "../common/examples";
 
 const s = scope("responses.blocks");

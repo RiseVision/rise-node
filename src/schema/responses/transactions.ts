@@ -2,7 +2,7 @@ import { respProps, successResp } from "../utils/responses";
 import { wholeNum, id, publicKey } from "../common/scalars";
 import { Transaction, MultisigTransaction, UnconfirmedTransaction } from "../common/models";
 import { TransactionType } from "../../helpers";
-import { scope } from "../utils/scope";
+import { scope } from "../../helpers/strings";
 import {
   TransactionExamples,
   UnconfirmedTransactionExamples

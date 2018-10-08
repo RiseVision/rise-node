@@ -9,7 +9,7 @@ import {
 } from "../common/scalars";
 import { Delegate, Block } from "../common/models";
 import { successResp, respProps } from "../utils/responses";
-import { scope } from "../utils/scope";
+import { scope } from "../../helpers/strings";
 import { DelegateExamples, publicKeyExamples } from "../common/examples";
 
 const s = scope("responses.delegates");

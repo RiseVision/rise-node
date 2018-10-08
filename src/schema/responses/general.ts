@@ -1,5 +1,5 @@
 import { respProps, successResp } from '../utils/responses'
-import { scope } from '../utils/scope'
+import { scope } from "../../helpers/strings";
 
 const s = scope('responses.general')
 

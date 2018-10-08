@@ -9,7 +9,7 @@ import { constants, Ed, Slots } from '../helpers/';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
 import { DeprecatedEndpoint } from '../helpers/decorators/deprecatedEndpoint';
-import { ResponseSchema, OpenApi } from 'rc-openapi-gen'
+import { ResponseSchema, OpenAPI } from 'rc-openapi-gen';
 import {
   IAccountsModule,
   IBlocksModule,
@@ -24,6 +24,7 @@ import schema from '../schema/delegates';
 import { publicKey } from '../types/sanityTypes';
 import { APIError, DeprecatedAPIError } from './errors';
 import { ForgingApisWatchGuard } from './utils/forgingApisWatchGuard';
+import { md } from '../helpers/strings';
 
 @JsonController('/api/delegates')
 @injectable()
@@ -59,6 +60,13 @@ export class DelegatesAPI {
   private TransactionsModel: typeof TransactionsModel;
 
   @Get('/')
+  @OpenAPI({
+    summary: 'Get Delegate List',
+    description: md`
+      Get list of delegates sorted by rank.
+      Defaults to top 101 delegates (e.g. active delegates)
+    `
+  })
   @ResponseSchema('responses.delegates.getDelegates')
   @ValidateSchema()
   public async getDelegates(@SchemaValid(schema.getDelegates, { castNumbers: true })
@@ -103,6 +111,13 @@ export class DelegatesAPI {
   }
 
   @Get('/fee')
+  @OpenAPI({
+    summary: 'Get Delegates Fee',
+    description: md`
+      Get the fee for registering as a delegate at a certain height of the blockchain
+      (omit the height for the current fee).
+    `
+  })
   @ResponseSchema('responses.delegates.getFee')
   @ValidateSchema()
   public async getFee(@SchemaValid(schema.getFee, { castNumbers: true })
@@ -115,6 +130,10 @@ export class DelegatesAPI {
   }
 
   @Get('/forging/getForgedByAccount')
+  @OpenAPI({
+    summary: 'Get Forged by Account',
+    description: "Get earnings from forging by account public key"
+  })
   @ResponseSchema('responses.delegates.getForgedByAccount')
   @ValidateSchema()
   public async getForgedByAccount(@SchemaValid(schema.getForgedByAccount, { castNumbers: true })
@@ -151,6 +170,10 @@ export class DelegatesAPI {
   }
 
   @Get('/get')
+  @OpenAPI({
+    summary: 'Get Delegate',
+    description: "Retrieve delegate account and associated stats by public key or username"
+  })
   @ResponseSchema('responses.delegates.getDelegate')
   @ValidateSchema()
   public async getDelegate(@SchemaValid(schema.getDelegate)
@@ -174,6 +197,10 @@ export class DelegatesAPI {
   }
 
   @Get('/voters')
+  @OpenAPI({
+    summary: 'Get Voters',
+    description: "Retrieve a list of accounts which voted for a delegate"
+  })
   @ResponseSchema('responses.delegates.getVoters')
   @ValidateSchema()
   public async getVoters(@SchemaValid(schema.getVoters)
@@ -197,6 +224,10 @@ export class DelegatesAPI {
   }
 
   @Get('/search')
+  @OpenAPI({
+    summary: 'Search Delegates',
+    description: "Retrieve a list of delegates whose usernames are like the search query"
+  })
   @ResponseSchema('responses.delegates.search')
   @ValidateSchema()
   public async search(@SchemaValid(schema.search, { castNumbers: true })
@@ -220,12 +251,23 @@ export class DelegatesAPI {
   }
 
   @Get('/count')
+  @OpenAPI({
+    summary: 'Get Delegate Count',
+    description: "Retrieve the total number of registered delegates"
+  })
   @ResponseSchema('responses.delegates.count')
   public async count() {
     return { count: await this.Accounts2DelegatesModel.count() };
   }
 
   @Get('/getNextForgers')
+  @OpenAPI({
+    summary: 'Get Next Forgers',
+    description: md`
+      Retrieve the current slot and block to be forged,
+      as well as the list of the next delegates' public keys in the round (defaults to 10)
+    `
+  })
   @ResponseSchema('responses.delegates.getNextForgers')
   public async getNextForgers(@QueryParam('limit', { required: false }) limit: number = 10) {
     const curBlock = this.blocks.lastBlock;
@@ -251,11 +293,25 @@ export class DelegatesAPI {
   }
 
   @Put('/')
+  @OpenAPI({
+    summary: 'Add Delegate',
+    description: md`
+      _**Deprecated**: Please use the [Transactions API](#tag/Transactions-API)_.
+      Registers a delegate.
+    `
+  })
   @DeprecatedEndpoint()
   public async createDelegate() {}
 
   // internal stuff.
   @Get('/forging/status')
+  @OpenAPI({
+    summary: 'Get Forging Status',
+    description: md`
+      Checks to see if forging is enabled for the network or a public key if provided.
+      _Forging APIs must be enabled on the providing node_
+    `
+  })
   @ResponseSchema('responses.delegates.getForgingStatus')
   @ResponseSchema('responses.delegates.accessDenied', {
     statusCode: 403,
@@ -281,6 +337,13 @@ export class DelegatesAPI {
   }
 
   @Post('/forging/enable')
+  @OpenAPI({
+    summary: 'Enable Forging',
+    description: md`
+      Enable forging for a secret / public key pair.
+      _Forging APIs must be enabled on the providing node_
+    `
+  })
   @ResponseSchema('responses.delegates.forgingEnable')
   @ResponseSchema('responses.delegates.accessDenied', {
     statusCode: 403,
@@ -315,6 +378,13 @@ export class DelegatesAPI {
   }
 
   @Post('/forging/disable')
+  @OpenAPI({
+    summary: 'Disable Forging',
+    description: md`
+      Disable forging for a secret / public key pair.
+      _Forging APIs must be enabled on the providing node_
+    `
+  })
   @ResponseSchema('responses.delegates.forgingDisable')
   @ResponseSchema('responses.delegates.accessDenied', {
     statusCode: 403,

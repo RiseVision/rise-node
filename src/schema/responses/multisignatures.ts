@@ -8,7 +8,7 @@ import {
   publicKey
 } from "../common/scalars";
 import { MultisigTransaction } from "../common/models";
-import { scope } from "../utils/scope";
+import { scope } from "../../helpers/strings";
 import { TransactionExamples } from "../common/examples";
 import { TransactionType } from "../../helpers";
 

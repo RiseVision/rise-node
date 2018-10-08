@@ -2883,7 +2883,7 @@
       "responses.accounts.getDelegatesFee": {
         "id": "responses.accounts.getDelegatesFee",
         "type": "object",
-        "proprties": {
+        "properties": {
           "success": {
             "type": "boolean"
           },
@@ -2891,7 +2891,9 @@
             "type": "string"
           },
           "fee": {
-            "type": "number"
+            "id": "common.scalars.wholeNum",
+            "type": "integer",
+            "minimum": 0
           }
         },
         "example": {
@@ -7486,7 +7488,7 @@
         "tags": [
           "Accounts API"
         ],
-        "description": "A really nice **Description** for Get Account",
+        "description": "Retrieve an account object by its address or public key",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -7530,10 +7532,11 @@
             "description": ""
           }
         },
-        "summary": "Get balance",
+        "summary": "Get Balance",
         "tags": [
           "Accounts API"
         ],
+        "description": "Retrieve an account's RISE balance its address",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -7577,10 +7580,11 @@
             "description": ""
           }
         },
-        "summary": "Get publickey",
+        "summary": "Get Public Key",
         "tags": [
           "Accounts API"
         ],
+        "description": "Retrieve an account's public key by its address",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -7624,10 +7628,11 @@
             "description": ""
           }
         },
-        "summary": "Get delegates",
+        "summary": "Get Account Delegates",
         "tags": [
           "Accounts API"
         ],
+        "description": "Fetch a list of delegates a certain account has voted for",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -7659,10 +7664,11 @@
             "description": "Deprecated API Error"
           }
         },
-        "summary": "Add delegate",
+        "summary": "Add Delegate",
         "tags": [
           "Accounts API"
         ],
+        "description": "\n_**Deprecated**: Please use the [Transactions API](#tag/Transactions-API)_.\nRegisters a delegate.\n",
         "deprecated": true,
         "servers": [
           {
@@ -7701,10 +7707,11 @@
             "description": ""
           }
         },
-        "summary": "Get delegates fee",
+        "summary": "Get Delegates Fee",
         "tags": [
           "Accounts API"
         ],
+        "description": "\nGet the fee for registering as a delegate at a certain height of the blockchain\n(omit the height for the current fee).\n",
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -7752,10 +7759,11 @@
             "description": "Top Accounts is not enabled"
           }
         },
-        "summary": "Top accounts",
+        "summary": "Get Top Accounts",
         "tags": [
           "Accounts API"
         ],
+        "description": "\nGet a list of accounts sorted by descending balance.\n_Top accounts must be enabled on the providing node_\n",
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -7794,10 +7802,11 @@
             "description": "Deprecated API Error"
           }
         },
-        "summary": "Open",
+        "summary": "Open Account",
         "tags": [
           "Accounts API"
         ],
+        "description": "\n_**Deprecated**: Please use the [Transactions API](#tag/Transactions-API)_.\nRegisters a delegate.\n",
         "deprecated": true,
         "servers": [
           {
@@ -7826,10 +7835,11 @@
             "description": "Deprecated API Error"
           }
         },
-        "summary": "Generate public key",
+        "summary": "Generate Public Key",
         "tags": [
           "Accounts API"
         ],
+        "description": "\n_**Deprecated**: Please use a client library like\n[vekexasia/dpos-offline](https://github.com/vekexasia/dpos-offline)\nto generate public keys_. Generates a public key.\n",
         "deprecated": true,
         "servers": [
           {
@@ -7868,10 +7878,11 @@
             "description": ""
           }
         },
-        "summary": "Get blocks",
+        "summary": "Get Block List",
         "tags": [
           "Blocks API"
         ],
+        "description": "Retrieve blocks from the RISE blockchain. Defaults to last 100 blocks",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -7915,10 +7926,11 @@
             "description": ""
           }
         },
-        "summary": "Get block",
+        "summary": "Get Block",
         "tags": [
           "Blocks API"
         ],
+        "description": "Fetch block by block id",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -7952,10 +7964,11 @@
             "description": ""
           }
         },
-        "summary": "Get height",
+        "summary": "Get Height",
         "tags": [
           "Blocks API"
         ],
+        "description": "Fetch current blockchain height",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -7989,10 +8002,11 @@
             "description": ""
           }
         },
-        "summary": "Get broad hash",
+        "summary": "Get Broadhash",
         "tags": [
           "Blocks API"
         ],
+        "description": "Fetch the current broadhash from the network",
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -8020,10 +8034,11 @@
             "description": ""
           }
         },
-        "summary": "Get epoch",
+        "summary": "Get Epoch",
         "tags": [
           "Blocks API"
         ],
+        "description": "Fetch the RISE epoch time in ISO8601 format",
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -8061,10 +8076,11 @@
             "description": ""
           }
         },
-        "summary": "Get fee",
+        "summary": "Get Send Fee",
         "tags": [
           "Blocks API"
         ],
+        "description": "Fetch the fee for sending a transaction at a certain height. Defaults to current height",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -8108,10 +8124,11 @@
             "description": ""
           }
         },
-        "summary": "Get fees",
+        "summary": "Get Fee Schedule",
         "tags": [
           "Blocks API"
         ],
+        "description": "Fetch fees for all transaction types at a certain height. Defaults to current height",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -8145,10 +8162,11 @@
             "description": ""
           }
         },
-        "summary": "Get nethash",
+        "summary": "Get Nethash",
         "tags": [
           "Blocks API"
         ],
+        "description": "Get the Nethash from the network",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -8182,10 +8200,11 @@
             "description": ""
           }
         },
-        "summary": "Get milestone",
+        "summary": "Get Milestone",
         "tags": [
           "Blocks API"
         ],
+        "description": "Get the current milestone in reference to rewards for mining",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -8219,10 +8238,11 @@
             "description": ""
           }
         },
-        "summary": "Get reward",
+        "summary": "Get Reward",
         "tags": [
           "Blocks API"
         ],
+        "description": "Get the current reward for mining a block",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -8256,10 +8276,11 @@
             "description": ""
           }
         },
-        "summary": "Get supply",
+        "summary": "Get Supply",
         "tags": [
           "Blocks API"
         ],
+        "description": "Get the current RISE token supply",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -8293,10 +8314,11 @@
             "description": ""
           }
         },
-        "summary": "Get status",
+        "summary": "Get Blockchain Status",
         "tags": [
           "Blocks API"
         ],
+        "description": "Get collected blockchain status information",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -8340,10 +8362,11 @@
             "description": ""
           }
         },
-        "summary": "Get delegates",
+        "summary": "Get Delegate List",
         "tags": [
           "Delegates API"
         ],
+        "description": "\nGet list of delegates sorted by rank.\nDefaults to top 101 delegates (e.g. active delegates)\n",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -8375,10 +8398,11 @@
             "description": "Deprecated API Error"
           }
         },
-        "summary": "Create delegate",
+        "summary": "Add Delegate",
         "tags": [
           "Delegates API"
         ],
+        "description": "\n_**Deprecated**: Please use the [Transactions API](#tag/Transactions-API)_.\nRegisters a delegate.\n",
         "deprecated": true,
         "servers": [
           {
@@ -8417,10 +8441,11 @@
             "description": ""
           }
         },
-        "summary": "Get fee",
+        "summary": "Get Delegates Fee",
         "tags": [
           "Delegates API"
         ],
+        "description": "\nGet the fee for registering as a delegate at a certain height of the blockchain\n(omit the height for the current fee).\n",
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -8458,10 +8483,11 @@
             "description": ""
           }
         },
-        "summary": "Get forged by account",
+        "summary": "Get Forged by Account",
         "tags": [
           "Delegates API"
         ],
+        "description": "Get earnings from forging by account public key",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -8505,10 +8531,11 @@
             "description": ""
           }
         },
-        "summary": "Get delegate",
+        "summary": "Get Delegate",
         "tags": [
           "Delegates API"
         ],
+        "description": "Retrieve delegate account and associated stats by public key or username",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -8552,10 +8579,11 @@
             "description": ""
           }
         },
-        "summary": "Get voters",
+        "summary": "Get Voters",
         "tags": [
           "Delegates API"
         ],
+        "description": "Retrieve a list of accounts which voted for a delegate",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -8599,10 +8627,11 @@
             "description": ""
           }
         },
-        "summary": "Search",
+        "summary": "Search Delegates",
         "tags": [
           "Delegates API"
         ],
+        "description": "Retrieve a list of delegates whose usernames are like the search query",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -8636,10 +8665,11 @@
             "description": ""
           }
         },
-        "summary": "Count",
+        "summary": "Get Delegate Count",
         "tags": [
           "Delegates API"
         ],
+        "description": "Retrieve the total number of registered delegates",
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -8677,10 +8707,11 @@
             "description": ""
           }
         },
-        "summary": "Get next forgers",
+        "summary": "Get Next Forgers",
         "tags": [
           "Delegates API"
         ],
+        "description": "\nRetrieve the current slot and block to be forged,\nas well as the list of the next delegates' public keys in the round (defaults to 10)\n",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -8734,10 +8765,11 @@
             "description": "Delegates API Access Denied"
           }
         },
-        "summary": "Get forging status",
+        "summary": "Get Forging Status",
         "tags": [
           "Delegates API"
         ],
+        "description": "\nChecks to see if forging is enabled for the network or a public key if provided.\n_Forging APIs must be enabled on the providing node_\n",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -8792,10 +8824,11 @@
             "description": "Delegates API Access Denied"
           }
         },
-        "summary": "Forging enable",
+        "summary": "Enable Forging",
         "tags": [
           "Delegates API"
         ],
+        "description": "\nEnable forging for a secret / public key pair.\n_Forging APIs must be enabled on the providing node_\n",
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -8844,10 +8877,11 @@
             "description": "Delegates API Access Denied"
           }
         },
-        "summary": "Forging disable",
+        "summary": "Disable Forging",
         "tags": [
           "Delegates API"
         ],
+        "description": "\nDisable forging for a secret / public key pair.\n_Forging APIs must be enabled on the providing node_\n",
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -8875,10 +8909,11 @@
             "description": ""
           }
         },
-        "summary": "Get status",
+        "summary": "Get Loader Status",
         "tags": [
           "Loader API"
         ],
+        "description": "Check to see if blockchain has been loaded by node",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -8912,10 +8947,11 @@
             "description": ""
           }
         },
-        "summary": "Get status sync",
+        "summary": "Get Loader Sync Status",
         "tags": [
           "Loader API"
         ],
+        "description": "Retrieve current status of node's blockchain sync",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -8953,6 +8989,7 @@
         "tags": [
           "Loader API"
         ],
+        "description": "Ping node to see if capable of syncing quickly enough (within two blocks)",
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -8990,10 +9027,11 @@
             "description": ""
           }
         },
-        "summary": "Get accounts",
+        "summary": "Get Multisignature Accounts",
         "tags": [
           "Multisignature API"
         ],
+        "description": "Retrieve accounts belonging to multisignature wallet",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -9037,10 +9075,11 @@
             "description": ""
           }
         },
-        "summary": "Get pending",
+        "summary": "Get Pending Transactions",
         "tags": [
           "Multisignature API"
         ],
+        "description": "Retrieve pending transactions on a multisignature wallet",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -9078,6 +9117,7 @@
         "tags": [
           "Multisignature API"
         ],
+        "description": "\n_**Deprecated**: Please use the [Transactions API](#tag/Transactions-API)_.\nSign a transaction with a multisignature wallet.\n",
         "deprecated": true,
         "servers": [
           {
@@ -9106,10 +9146,11 @@
             "description": "Deprecated API Error"
           }
         },
-        "summary": "Add multisignature",
+        "summary": "Add Multisignature",
         "tags": [
           "Multisignature API"
         ],
+        "description": "\n_**Deprecated**: Please use the [Transactions API](#tag/Transactions-API)_.\nAdd a multisignature wallet.\n",
         "deprecated": true,
         "servers": [
           {
@@ -9148,10 +9189,11 @@
             "description": ""
           }
         },
-        "summary": "Get peers",
+        "summary": "Get Peer List",
         "tags": [
           "Peers API"
         ],
+        "description": "Retrieve a list of peers connected to the node",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -9195,10 +9237,11 @@
             "description": ""
           }
         },
-        "summary": "Get peer",
+        "summary": "Get Peer",
         "tags": [
           "Peers API"
         ],
+        "description": "Retrieve a peer by IP address and port",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -9232,10 +9275,11 @@
             "description": ""
           }
         },
-        "summary": "Count",
+        "summary": "Get Peer Count",
         "tags": [
           "Peers API"
         ],
+        "description": "Get total number of peers connected, disconnected and banned",
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -9263,10 +9307,11 @@
             "description": ""
           }
         },
-        "summary": "Version",
+        "summary": "Get Node Version",
         "tags": [
           "Peers API"
         ],
+        "description": "Get node version information",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -9310,10 +9355,11 @@
             "description": ""
           }
         },
-        "summary": "Fees",
+        "summary": "Get Signature Fee",
         "tags": [
           "Signatures API"
         ],
+        "description": "\nGet the fee for adding a second signature at a certain height of the blockchain\n(omit the height for the current fee).\n",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -9347,10 +9393,11 @@
             "description": "Deprecated API Error"
           }
         },
-        "summary": "Add signature",
+        "summary": "Add Signature",
         "tags": [
           "Signatures API"
         ],
+        "description": "\n_**Deprecated**: Please use the [Transactions API](#tag/Transactions-API)_.\nAdds a second signature to an account\n",
         "deprecated": true,
         "servers": [
           {
@@ -9387,10 +9434,11 @@
             "description": ""
           }
         },
-        "summary": "Get transactions",
+        "summary": "Get Transaction List",
         "tags": [
           "Transactions API"
         ],
+        "description": "\nFetch a list of transactions and the count of transactions matching the query.\nDefaults to the last 100 transactions.\n",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -9443,10 +9491,11 @@
             "description": "Secure API Access Denied"
           }
         },
-        "summary": "Local create",
+        "summary": "Add Local Transaction",
         "tags": [
           "Transactions API"
         ],
+        "description": "\nAdd a transaction to the node's local transaction List\n_Secure APIs must be enabled on the providing node_\n",
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -9483,10 +9532,11 @@
             "description": ""
           }
         },
-        "summary": "Put",
+        "summary": "Add Transactions",
         "tags": [
           "Transactions API"
         ],
+        "description": "Add one or multiple transactions to the transaction queue",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -9520,10 +9570,11 @@
             "description": ""
           }
         },
-        "summary": "Get count",
+        "summary": "Get Transaction Count",
         "tags": [
           "Transactions API"
         ],
+        "description": "Retrieve the current number of transactions confirmed, unconfirmed, queued and multisignature",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -9567,10 +9618,11 @@
             "description": ""
           }
         },
-        "summary": "Get tx",
+        "summary": "Get Transaction",
         "tags": [
           "Transactions API"
         ],
+        "description": "Fetch a transaction by transaction id",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -9614,10 +9666,11 @@
             "description": ""
           }
         },
-        "summary": "Get multi sigs",
+        "summary": "Get Multisignature Transaction List",
         "tags": [
           "Transactions API"
         ],
+        "description": "Retrieve a list of multisignature transactions and the count of transactions matching the query.",
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -9655,10 +9708,11 @@
             "description": ""
           }
         },
-        "summary": "Get multi sig",
+        "summary": "Get Multisignature Transaction",
         "tags": [
           "Transactions API"
         ],
+        "description": "Fetch a multisignature transaction by transaction id",
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -9696,10 +9750,11 @@
             "description": ""
           }
         },
-        "summary": "Get queued txs",
+        "summary": "Get Queued Transaction List",
         "tags": [
           "Transactions API"
         ],
+        "description": "Retrieve a list of queued transactions and the count of transactions matching the query.",
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -9737,10 +9792,11 @@
             "description": ""
           }
         },
-        "summary": "Get queued tx",
+        "summary": "Get Queued Transaction",
         "tags": [
           "Transactions API"
         ],
+        "description": "Fetch a queued transaction by transaction id",
         "servers": [
           {
             "url": "https://wallet.rise.vision",
@@ -9778,10 +9834,11 @@
             "description": ""
           }
         },
-        "summary": "Get unconfirmed txs",
+        "summary": "Get Unconfirmed Transaction List",
         "tags": [
           "Transactions API"
         ],
+        "description": "Retrieve a list of unconfirmed transactions and the count of transactions matching the query.",
         "x-code-samples": [
           {
             "lang": "javascript",
@@ -9825,10 +9882,11 @@
             "description": ""
           }
         },
-        "summary": "Get unconfirmed tx",
+        "summary": "Get Unconfirmed Transaction",
         "tags": [
           "Transactions API"
         ],
+        "description": "Fetch a unconfirmed transaction by transaction id",
         "x-code-samples": [
           {
             "lang": "javascript",

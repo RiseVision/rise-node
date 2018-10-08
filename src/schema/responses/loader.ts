@@ -1,6 +1,6 @@
 import { height, hex, wholeNum } from "../common/scalars";
 import { successResp, respProps } from "../utils/responses";
-import { scope } from '../utils/scope'
+import { scope } from "../../helpers/strings";
 
 const s = scope('responses.loader')
 

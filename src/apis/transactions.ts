@@ -7,7 +7,7 @@ import * as z_schema from 'z-schema';
 import {castFieldsToNumberUsingSchema, constants, removeEmptyObjKeys, TransactionType} from '../helpers';
 import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { assertValidSchema, SchemaValid, ValidateSchema } from '../helpers/decorators/schemavalidators';
-import { ResponseSchema } from 'rc-openapi-gen'
+import { ResponseSchema, OpenAPI } from 'rc-openapi-gen';
 import { ISlots } from '../ioc/interfaces/helpers';
 import { ITransactionLogic } from '../ioc/interfaces/logic';
 import {
@@ -23,6 +23,7 @@ import { TransactionsModel } from '../models';
 import schema from '../schema/transactions';
 import { APIError } from './errors';
 import { RestrictedAPIWatchGuard } from './utils/restrictedAPIWatchGuard';
+import { md } from '../helpers/strings';
 
 @JsonController('/api/transactions')
 @injectable()
@@ -55,6 +56,13 @@ export class TransactionsAPI {
   private systemModule: ISystemModule;
 
   @Get()
+  @OpenAPI({
+    summary: 'Get Transaction List',
+    description: md`
+      Fetch a list of transactions and the count of transactions matching the query.
+      Defaults to the last 100 transactions.
+    `
+  })
   @ResponseSchema('responses.transactions.getTransactions')
   public async getTransactions(@QueryParams() body: any) {
     const pattern = /(and|or){1}:/i;
@@ -109,12 +117,20 @@ export class TransactionsAPI {
   }
 
   @Get('/count')
+  @OpenAPI({
+    summary: 'Get Transaction Count',
+    description: "Retrieve the current number of transactions confirmed, unconfirmed, queued and multisignature"
+  })
   @ResponseSchema('responses.transactions.getCount')
   public getCount(): Promise<{ confirmed: number, multisignature: number, queued: number, unconfirmed: number }> {
     return this.transactionsModule.count();
   }
 
   @Get('/get')
+  @OpenAPI({
+    summary: 'Get Transaction',
+    description: "Fetch a transaction by transaction id"
+  })
   @ResponseSchema('responses.transactions.getTransaction')
   @ValidateSchema()
   public async getTX(
@@ -141,6 +157,10 @@ export class TransactionsAPI {
   }
 
   @Get('/multisignatures')
+  @OpenAPI({
+    summary: 'Get Multisignature Transaction List',
+    description: "Retrieve a list of multisignature transactions and the count of transactions matching the query."
+  })
   @ResponseSchema('responses.transactions.getMultiSigs')
   @ValidateSchema()
   public async getMultiSigs(@SchemaValid(schema.getPooledTransactions)
@@ -158,6 +178,10 @@ export class TransactionsAPI {
   }
 
   @Get('/multisignatures/get')
+  @OpenAPI({
+    summary: 'Get Multisignature Transaction',
+    description: "Fetch a multisignature transaction by transaction id"
+  })
   @ResponseSchema('responses.transactions.getMultiSig')
   @ValidateSchema()
   public async getMultiSig(@SchemaValid(schema.getPooledTransaction.properties.id)
@@ -170,6 +194,10 @@ export class TransactionsAPI {
   }
 
   @Get('/queued')
+  @OpenAPI({
+    summary: 'Get Queued Transaction List',
+    description: "Retrieve a list of queued transactions and the count of transactions matching the query."
+  })
   @ResponseSchema('responses.transactions.getQueuedTransactions')
   @ValidateSchema()
   public async getQueuedTxs(@SchemaValid(schema.getPooledTransactions)
@@ -188,6 +216,10 @@ export class TransactionsAPI {
   }
 
   @Get('/queued/get')
+  @OpenAPI({
+    summary: 'Get Queued Transaction',
+    description: "Fetch a queued transaction by transaction id"
+  })
   @ResponseSchema('responses.transactions.getQueuedTransaction')
   @ValidateSchema()
   public async getQueuedTx(@SchemaValid(schema.getPooledTransaction.properties.id)
@@ -200,6 +232,10 @@ export class TransactionsAPI {
   }
 
   @Get('/unconfirmed')
+  @OpenAPI({
+    summary: 'Get Unconfirmed Transaction List',
+    description: "Retrieve a list of unconfirmed transactions and the count of transactions matching the query."
+  })
   @ResponseSchema('responses.transactions.getUnconfirmedTransactions')
   @ValidateSchema()
   public async getUnconfirmedTxs(@SchemaValid(schema.getPooledTransactions)
@@ -228,6 +264,10 @@ export class TransactionsAPI {
   }
 
   @Get('/unconfirmed/get')
+  @OpenAPI({
+    summary: 'Get Unconfirmed Transaction',
+    description: "Fetch a unconfirmed transaction by transaction id"
+  })
   @ResponseSchema('responses.transactions.getUnconfirmedTransaction')
   @ValidateSchema()
   public async getUnconfirmedTx(@SchemaValid(schema.getPooledTransaction.properties.id)
@@ -240,6 +280,13 @@ export class TransactionsAPI {
   }
 
   @Post()
+  @OpenAPI({
+    summary: 'Add Local Transaction',
+    description: md`
+      Add a transaction to the node's local transaction List
+      _Secure APIs must be enabled on the providing node_
+    `
+  })
   @ResponseSchema('responses.transactions.localCreate')
   @ResponseSchema('responses.general.accessDenied', {
     statusCode: 403,
@@ -276,6 +323,10 @@ export class TransactionsAPI {
   }
 
   @Put()
+  @OpenAPI({
+    summary: 'Add Transactions',
+    description: "Add one or multiple transactions to the transaction queue"
+  })
   @ResponseSchema('responses.transactions.put')
   @ValidateSchema()
   public async put(

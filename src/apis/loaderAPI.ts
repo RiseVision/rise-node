@@ -5,7 +5,7 @@ import { IoCSymbol } from '../helpers/decorators/iocSymbol';
 import { IAppState } from '../ioc/interfaces/logic';
 import { IBlocksModule, ILoaderModule, ISystemModule } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { ResponseSchema, OpenAPI } from 'rc-openapi-gen'
+import { ResponseSchema, OpenAPI } from 'rc-openapi-gen';
 
 @JsonController('/api/loader/status')
 @IoCSymbol(Symbols.api.loader)
@@ -24,6 +24,10 @@ export class LoaderAPI {
   private systemModule: ISystemModule;
 
   @Get('/')
+  @OpenAPI({
+    summary: "Get Loader Status",
+    description: "Check to see if blockchain has been loaded by node"
+  })
   @ResponseSchema('responses.loader.getStatus')
   public getStatus() {
     return {
@@ -32,6 +36,10 @@ export class LoaderAPI {
   }
 
   @Get('/sync')
+  @OpenAPI({
+    summary: "Get Loader Sync Status",
+    description: "Retrieve current status of node's blockchain sync"
+  })
   @ResponseSchema('responses.loader.getStatusSync')
   public getStatusSync() {
     return {
@@ -43,6 +51,10 @@ export class LoaderAPI {
   }
 
   @Get('/ping')
+  @OpenAPI({
+    summary: "Ping",
+    description: "Ping node to see if capable of syncing quickly enough (within two blocks)"
+  })
   @ResponseSchema('responses.loader.ping')
   public ping() {
     let status = false;
