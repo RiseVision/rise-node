@@ -4,7 +4,7 @@
   "version"        : "1.0.1",
   "fileLogLevel"   : "info",
   "logFileName"    : "logs/rise-master.log",
-  "consoleLogLevel": "debug",
+  "consoleLogLevel": "info",
   "trustProxy"     : false,
   "topAccounts"    : false,
   "cacheEnabled"   : false,

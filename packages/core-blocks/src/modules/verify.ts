@@ -158,6 +158,7 @@ export class BlocksModuleVerify {
 
     // check transactions
     const accountsMap = await this.accountsModule.txAccounts(block.transactions);
+
     await this.accountsModule.checkTXsAccountsMap(block.transactions, accountsMap);
     await this.checkBlockTransactions(block, accountsMap);
 
@@ -174,6 +175,7 @@ export class BlocksModuleVerify {
     );
   }
 
+  // TODO: me
   public async onBlockchainReady() {
     const blocks       = await this.BlocksModel.findAll({
       attributes: ['id'],

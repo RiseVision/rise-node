@@ -57,7 +57,7 @@ export class BlocksModuleChain {
   private blocksModuleUtils: BlocksModuleUtils;
   // @inject(Symbols.modules.rounds)
   // private roundsModule: IRoundsModule;
-  @inject(Symbols.modules.transactions)
+  @inject(Symbols.logic.txpool)
   private txPool: ITransactionPool;
 
   @inject(ModelSymbols.model)

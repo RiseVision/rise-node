@@ -220,11 +220,13 @@ export class BlocksModuleProcess {
         // FIXME: Looks like we are missing some validations here, because applyBlock is
         // different than processBlock used elesewhere
         // - that need to be checked and adjusted to be consistent
+        const txAccounts = await this.accountsModule.txAccounts(block.transactions);
+        await this.accountsModule.checkTXsAccountsMap(block.transactions, txAccounts);
         await this.blocksChainModule.applyBlock(
           block,
           false,
           false,
-          await this.accountsModule.txAccounts(block.transactions)
+          txAccounts
         );
       }
 
