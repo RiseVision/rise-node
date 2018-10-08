@@ -631,7 +631,7 @@ describe('apis/delegatesAPI', () => {
       const ret = await instance.getNextForgers(limit);
 
       expect(ret).to.be.deep.equal({
-        currentBlock    : BlocksModel.toStringBlockType((blocks as any).lastBlock, null, null),
+        currentBlock    : (blocks as any).lastBlock,
         currentBlockSlot: 1,
         currentSlot     : 1,
         delegates       : ['cc'],
@@ -643,7 +643,7 @@ describe('apis/delegatesAPI', () => {
       const ret = await instance.getNextForgers(limit);
 
       expect(ret).to.be.deep.equal({
-        currentBlock    : BlocksModel.toStringBlockType((blocks as any).lastBlock, null, null),
+        currentBlock    : (blocks as any).lastBlock,
         currentBlockSlot: 1,
         currentSlot     : 1,
         delegates       : [],
@@ -655,7 +655,7 @@ describe('apis/delegatesAPI', () => {
       const ret                = await instance.getNextForgers(limit);
 
       expect(ret).to.be.deep.equal({
-        currentBlock    : BlocksModel.toStringBlockType((blocks as any).lastBlock, null, null),
+        currentBlock    : (blocks as any).lastBlock,
         currentBlockSlot: 1,
         currentSlot     : 1,
         delegates       : [],

@@ -4,6 +4,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
 import {Container} from 'inversify';
 import * as MersenneTwister from 'mersenne-twister';
+import { Op } from 'sequelize';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import * as helpers from '../../../src/helpers';
@@ -48,6 +49,8 @@ describe('modules/delegates', () => {
   let pubKey: string;
   let votes: string[];
   let testAccounts = generateAccounts(101 + Math.ceil(Math.random() * 200));
+  let findOneStub: SinonStub;
+
   // Add delegate-specific fields
   testAccounts     = testAccounts.map((el, k) => {
     (el as any).vote           = (1000 - k) * 100000;
@@ -105,6 +108,7 @@ describe('modules/delegates', () => {
     signedBlock                                       = Object.assign({}, lastBlock);
     signedBlock.height++;
     slotsStub.stubs.getDelegatesPoolSize.returns(101);
+    findOneStub = sandbox.stub((blocksModel as any), 'findOne');
   });
 
   afterEach(() => {
@@ -236,7 +240,7 @@ describe('modules/delegates', () => {
         getKeysSortByVoteStub.resolves(delegates);
         roundsLogicStub.stubs.calcRound.callsFake((h) => Math.ceil(h / slotsStub.delegates));
         roundsLogicStub.stubs.lastInRound.callsFake((r) => Math.ceil(r * 101));
-        (blocksModel as any).findById = sandbox.stub().returns({id: '1231352636353'});
+        findOneStub.returns({id: '1231352636353'});
         seedGenStub = sandbox.stub(instance as any, 'calculateSafeRoundSeed').callsFake(() => {
           const toRet = [];
           for (let i = 0; i < 8; i++) {
@@ -608,15 +612,21 @@ describe('modules/delegates', () => {
       (instance as any).roundSeeds = {};
       roundsLogicStub.stubs.calcRound.callsFake((h) => Math.ceil(h / 101));
       roundsLogicStub.stubs.lastInRound.callsFake((r) => Math.ceil(r * 101));
-      (blocksModel as any).findById = sandbox.stub().resolves({id: '1231352636353'});
+      findOneStub.resolves({id: '1231352636353'});
     });
 
     it('should query the db for the right block', async function() {
       this.timeout(50000);
       const seed = await (instance as any).calculateSafeRoundSeed(height);
-      expect((instance as any).BlocksModel.findById.calledOnce).to.be.true;
-      expect((instance as any).BlocksModel.findById.firstCall.args).to.be.deep
-        .equal([(Math.ceil(height / 101) - 1) * 101]);
+      expect(findOneStub.calledOnce).to.be.true;
+      expect(findOneStub.firstCall.args).to.be.deep
+        .equal([
+          {
+            attributes: ['id'],
+            limit     : 1,
+            where     : { height: { [Op.eq]: (Math.ceil(height / 101) - 1) * 101 } },
+          }
+        ]);
     });
 
     it('should return a predictable seed given a specific height', async function() {
@@ -637,7 +647,7 @@ describe('modules/delegates', () => {
     it('should return different seeds given different rounds', async function() {
       this.timeout(50000);
       const seed1 = await (instance as any).calculateSafeRoundSeed(height);
-      (blocksModel as any).findById.resolves({id: '987654321'} );
+      findOneStub.resolves({id: '987654321'} );
       const seed2 = await (instance as any).calculateSafeRoundSeed(height + 102);
       expect(seed1).not.to.be.deep.equal(seed2);
     });
