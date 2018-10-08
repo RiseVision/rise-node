@@ -1,7 +1,8 @@
-import { inject, injectable, named } from 'inversify';
-import { ExceptionSymbols } from './symbols';
-import { ExceptionModel } from './ExceptionModel';
 import { ModelSymbols } from '@risevision/core-models';
+import { AppConfig } from '@risevision/core-types';
+import { inject, injectable, named } from 'inversify';
+import { ExceptionModel } from './ExceptionModel';
+import { ExceptionSymbols } from './symbols';
 
 export interface IExceptionHandler<K> {
   canHandle(obj: K, ...args: any[]): boolean;
@@ -24,6 +25,8 @@ export class ExceptionsManager {
   @named(ExceptionSymbols.model)
   private exceptionModel: typeof ExceptionModel;
 
+  private appConfig: AppConfig;
+
   public registerExceptionHandler<T= any>(what: symbol, handlerKey: string, handler: IExceptionHandler<T>) {
     this.handlers[what]             = this.handlers[what] || {};
     this.handlers[what][handlerKey] = handler;
@@ -44,6 +47,11 @@ export class ExceptionsManager {
 
   public async createOrUpdateDBExceptions(exceptions: ExceptionType[]) {
     for (const exception of exceptions) {
+      if (this.appConfig.loading.snapshot) {
+        // If we're in snapshot verification we need to reset the exceptions
+        await this.exceptionModel
+          .destroy({where: {type: exception.type, key: exception.address}});
+      }
       await this.exceptionModel.findOrCreate({
         defaults: {remainingCount: exception.maxCount},
         where   : {type: exception.type, key: exception.address},

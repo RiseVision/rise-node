@@ -17,7 +17,8 @@
     ],
     "paths": {
       "@risevision/core-models": ["../core-models/*"],
-      "@risevision/core-launchpad": ["../core-launchpad/*"]
+      "@risevision/core-launchpad": ["../core-launchpad/*"],
+      "@risevision/core-types": ["../core-types/*"]
     }
   },
   "include": [
