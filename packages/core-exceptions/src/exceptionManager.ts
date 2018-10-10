@@ -1,3 +1,4 @@
+import { Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { AppConfig } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
@@ -25,6 +26,7 @@ export class ExceptionsManager {
   @named(ExceptionSymbols.model)
   private exceptionModel: typeof ExceptionModel;
 
+  @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
 
   public registerExceptionHandler<T= any>(what: symbol, handlerKey: string, handler: IExceptionHandler<T>) {

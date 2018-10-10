@@ -7,19 +7,21 @@ import {
   ILogger,
   ITransactionsModule, Symbols
 } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 import { publicKey, SignedBlockType } from '@risevision/core-types';
 import { OrderBy } from '@risevision/core-utils';
 import * as crypto from 'crypto';
 import { inject, injectable, named } from 'inversify';
 import * as z_schema from 'z-schema';
+import { DposExceptionsList } from '../dposExceptionsList';
 import { DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
 import { RoundsLogic } from '../logic/rounds';
 import { AccountsModelForDPOS, DelegatesModel } from '../models';
-import { DposExceptionsList } from '../dposExceptionsList';
-import { ModelSymbols } from '@risevision/core-models';
 
 @injectable()
 export class DelegatesModule {
+  // Holds the current round delegates cache list.
+  private delegatesListCache: {[round: number]: Buffer[]} = {};
 
   // Generic
   @inject(Symbols.generic.zschema)
@@ -73,22 +75,28 @@ export class DelegatesModule {
    * @return {Promise<publicKey[]>}
    */
   public async generateDelegateList(height: number): Promise<Buffer[]> {
-    const pkeys      = await this.getKeysSortByVote();
-    const seedSource = this.roundsLogic.calcRound(height).toString();
-    let currentSeed  = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
+    const round = this.roundsLogic.calcRound(height);
+    const seedSource = round.toString();
+    if (!this.delegatesListCache[round]) {
+      const pkeys      = await this.getKeysSortByVote();
+      let currentSeed  = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
 
-    // Shuffle public keys.
-    for (let i = 0, delegatesCount = pkeys.length; i < delegatesCount; i++) {
-      for (let x = 0; x < 4 && i < delegatesCount; i++, x++) {
-        const newIndex  = currentSeed[x] % delegatesCount;
-        const b         = pkeys[newIndex];
-        pkeys[newIndex] = pkeys[i];
-        pkeys[i]        = b;
+      // Shuffle public keys.
+      for (let i = 0, delegatesCount = pkeys.length; i < delegatesCount; i++) {
+        for (let x = 0; x < 4 && i < delegatesCount; i++, x++) {
+          const newIndex  = currentSeed[x] % delegatesCount;
+          const b         = pkeys[newIndex];
+          pkeys[newIndex] = pkeys[i];
+          pkeys[i]        = b;
+        }
+        currentSeed = crypto.createHash('sha256').update(currentSeed).digest();
       }
-      currentSeed = crypto.createHash('sha256').update(currentSeed).digest();
+      // delete previous and
+      delete this.delegatesListCache[round + 1];
+      delete this.delegatesListCache[round - 1];
+      this.delegatesListCache[round] = pkeys;
     }
-
-    return pkeys;
+    return this.delegatesListCache[round];
   }
 
   /**
