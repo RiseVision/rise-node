@@ -1,0 +1,98 @@
+# TERMINATOR LAYOUT: Launches 5 Devnet nodes, one forging.
+# Important: This assumes your rise node directory is ~/rise-node/
+# Save this file as this file path ~/.config/terminator/config
+# Then launch:
+# terminator -l Devnet
+# Works best on a fullHD display or larger
+
+[layouts]
+  [[default]]
+    [[[child1]]]
+      parent = window0
+      type = Terminal
+    [[[window0]]]
+      parent = ""
+      type = Window
+  [[Devnet]]
+    [[[child0]]]
+      fullscreen = False
+      last_active_window = True
+      maximised = True
+      order = 0
+      parent = ""
+      position = 0:24
+      size = 1855, 1056
+      title = devnet
+      type = Window
+    [[[child1]]]
+      order = 0
+      parent = child0
+      position = 704
+      ratio = 0.666666666667
+      type = VPaned
+    [[[child2]]]
+      order = 0
+      parent = child1
+      position = 352
+      ratio = 0.5
+      type = VPaned
+    [[[child3]]]
+      order = 0
+      parent = child2
+      position = 924
+      ratio = 0.5
+      type = HPaned
+    [[[child6]]]
+      order = 1
+      parent = child2
+      position = 924
+      ratio = 0.5
+      type = HPaned
+    [[[child9]]]
+      order = 1
+      parent = child1
+      position = 924
+      ratio = 0.5
+      type = HPaned
+    [[[terminal10]]]
+      command = .devutils/launch_devnet_node.sh 1 -o $.version=1.2.1;bash
+      directory = ~/rise-node/
+      order = 0
+      parent = child9
+      profile = default
+      type = Terminal
+    [[[terminal11]]]
+      command = .devutils/launch_devnet_node.sh -o $.version=1.2.1;bash
+      directory = ~/rise-node/
+      order = 1
+      parent = child9
+      profile = default
+      type = Terminal
+    [[[terminal4]]]
+      command = ""
+      directory = ~/rise-node/
+      order = 0
+      parent = child3
+      profile = default
+      type = Terminal
+    [[[terminal5]]]
+      command = .devutils/launch_devnet_node.sh 4 -o $.version=1.2.1;bash
+      directory = ~/rise-node/
+      order = 1
+      parent = child3
+      profile = default
+      type = Terminal
+    [[[terminal7]]]
+      command = .devutils/launch_devnet_node.sh 3 -o $.version=1.2.1;bash
+      directory = ~/rise-node/
+      order = 0
+      parent = child6
+      profile = default
+      type = Terminal
+    [[[terminal8]]]
+      command = .devutils/launch_devnet_node.sh 2 -o $.version=1.2.1;bash
+      directory = ~/rise-node/
+      order = 1
+      parent = child6
+      profile = default
+      type = Terminal

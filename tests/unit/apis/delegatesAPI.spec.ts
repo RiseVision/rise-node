@@ -77,7 +77,8 @@ describe('apis/delegatesAPI', () => {
       producedblocks: undefined,
       productivity  : undefined,
       username      : undefined,
-      vote          : '0'
+      vote          : '0',
+      votesWeight   : undefined,
     };
     let data;
     let d;
