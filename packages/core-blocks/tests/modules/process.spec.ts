@@ -382,7 +382,6 @@ describe('modules/blocks/process', () => {
     let stubs = {
       amGettAccount             : null as SinonStub,
       txModuleFilterConfirmedIds: null as SinonStub,
-      processBlockStub: null as SinonStub
     };
     beforeEach(() => {
       txs                              = createRandomTransactions(10);
@@ -390,9 +389,6 @@ describe('modules/blocks/process', () => {
         .stub(txModule, 'filterConfirmedIds').resolves([txs[0].id, txs[2].id]);
       stubs.amGettAccount              = sandbox
         .stub(accountsModule, 'getAccount').callsFake((what) => Promise.resolve(new AccountsModel(what)));
-
-      stubs.processBlockStub = sandbox
-        .stub(blockVerifyModule, 'processBlock').resolves();
     });
     it('should use blockLogic.create with the proper data and post result to verify.processBlock', async () => {
       blocksModule.lastBlock = { height: 10, id: '11'} as any;
@@ -402,7 +398,7 @@ describe('modules/blocks/process', () => {
         privateKey: Buffer.from(wallet.privKey, 'hex'),
         publicKey : Buffer.from(wallet.publicKey, 'hex'),
       };
-      await instance.generateBlock(keypair, 10);
+      const r = await instance.generateBlock(keypair, 10);
 
       expect(createSpy.called).is.true;
       expect(createSpy.firstCall.args[0])
@@ -410,13 +406,15 @@ describe('modules/blocks/process', () => {
         keypair,
         previousBlock: {height: 10, id: '11'},
         timestamp: 10,
-        transactions: []
+        transactions: [],
       });
 
-      expect(stubs.processBlockStub.calledOnce).is.true;
-      expect(stubs.processBlockStub.firstCall.args[0]).deep.eq(createSpy.firstCall.returnValue);
-      expect(stubs.processBlockStub.firstCall.args[1]).deep.eq(true /*broadcast*/);
-      expect(stubs.processBlockStub.firstCall.args[2]).deep.eq(true /*save the block in db */);
+      expect (r).deep.eq(createSpy.firstCall.returnValue);
+      //
+      // expect(stubs.processBlockStub.calledOnce).is.true;
+      // expect(stubs.processBlockStub.firstCall.args[0]).deep.eq(createSpy.firstCall.returnValue);
+      // expect(stubs.processBlockStub.firstCall.args[1]).deep.eq(true /*broadcast*/);
+      // expect(stubs.processBlockStub.firstCall.args[2]).deep.eq(true /*save the block in db */);
     });
     it('should filter transactions by verifying them', async () => {
       blocksModule.lastBlock = { height: 10, id: '11'} as any;

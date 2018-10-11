@@ -205,6 +205,9 @@ export class LoaderModule implements ILoaderModule {
       this.logger.error(`LastBlock height does not expected block. Expected: ${blocksCount} - Received: ${this.blocksModule.lastBlock.height}`);
       process.exit(1);
     }
+
+    // Clip blockchain
+    await this.blocksChainModule.deleteAfterBlock(this.blocksModule.lastBlock.height);
   }
 
   public async load(count: number, limitPerIteration: number, message?: string, emitBlockchainReady = false) {
@@ -230,8 +233,8 @@ export class LoaderModule implements ILoaderModule {
     if (emitBlockchainReady) {
       this.logger.info('Blockchain ready');
       await this.hookSystem.do_action(OnBlockchainReady.name);
+      this.syncTimer();
     }
-    this.syncTimer();
   }
 
   private async doSync() {

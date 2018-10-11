@@ -102,7 +102,7 @@ export class BlocksModuleChain {
   }
 
   public async deleteAfterBlock(height: number): Promise<void> {
-    await this.BlocksModel.destroy({ where: { [Op.gte]: height } });
+    await this.BlocksModel.destroy({ where: { height: { [Op.gt]: height } } });
   }
 
   /**

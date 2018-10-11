@@ -28,12 +28,11 @@ import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-
 import { BlocksSymbols } from '../blocksSymbols';
+import { CommonBlockRequest, GetBlocksRequest } from '../p2p';
 import { BlocksModuleChain } from './chain';
 import { BlocksModuleUtils } from './utils';
 import { BlocksModuleVerify } from './verify';
-import { CommonBlockRequest, GetBlocksRequest } from '../p2p';
 
 const schema = require('../../schema/blocks.json');
 
@@ -87,9 +86,6 @@ export class BlocksModuleProcess {
   private transactionsModule: ITransactionsModule;
   @inject(Symbols.logic.txpool)
   private txPool: ITransactionPool;
-
-  // @inject(Symbols.modules.transport)
-  // private transportModule: ITransportModule;
 
   // models
   @inject(ModelSymbols.model)
@@ -259,7 +255,7 @@ export class BlocksModuleProcess {
         return lastValidBlock;
       }
       try {
-        await this.blocksVerifyModule.processBlock(block, false, true);
+        await this.processBlock(block, {broadcast: false, saveBlock: true});
         lastValidBlock = block;
         this.logger.info(`Block ${block.id} loaded from ${peer.string}`, `height: ${block.height}`);
       } catch (err) {
@@ -279,7 +275,7 @@ export class BlocksModuleProcess {
    * @param {number} timestamp
    * @return {Promise<void>}
    */
-  public async generateBlock(keypair: IKeypair, timestamp: number) {
+  public async generateBlock(keypair: IKeypair, timestamp: number): Promise<SignedAndChainedBlockType> {
     const previousBlock = this.blocksModule.lastBlock;
     const txs           = this.txPool.unconfirmed.txList({limit: this.constants.maxTxsPerBlock});
 
@@ -314,7 +310,7 @@ export class BlocksModuleProcess {
 
     }
 
-    const block = this.blockLogic.create({
+    return this.blockLogic.create({
       keypair,
       previousBlock,
       timestamp,
@@ -322,15 +318,61 @@ export class BlocksModuleProcess {
     });
 
     // Call process block to save and broadcast the newly forged block!
-    return this.blocksVerifyModule.processBlock(block, true, true);
+    // return this.blocksVerifyModule.processBlock(block, true, true);
+  }
+
+  public async processBlock(block: SignedBlockType, opts: {broadcast: boolean, saveBlock: boolean} = {broadcast: true, saveBlock: true}) {
+    if (this.isCleaning) {
+      // We're shutting down so stop processing any further
+      throw new Error('Cleaning up');
+    }
+    // if (!this.loaded) {
+    //  throw new Error('Blockchain is still loading');
+    // }
+
+    block = this.blockLogic.objectNormalize(block);
+
+    // after verifyBlock block also have 'height' field so it's a SignedAndChainedBlock
+    // That's because of verifyReceipt.
+    const { verified, errors } = await this.blocksVerifyModule.verifyBlock(block);
+
+    if (!verified) {
+      this.logger.error(`Block ${block.id} verification failed`, errors.join(', '));
+      throw new Error(errors[0]);
+    }
+
+    // check if blocks exists.
+    const dbBlock = await this.BlocksModel.findById(block.id);
+    if (dbBlock !== null) {
+      throw new Error(`Block ${block.id} already exists`);
+    }
+
+    // check transactions
+    const accountsMap = await this.accountsModule.txAccounts(block.transactions);
+
+    await this.accountsModule.checkTXsAccountsMap(block.transactions, accountsMap);
+    await this.blocksVerifyModule.checkBlockTransactions(block, accountsMap);
+
+    this.blocksModule.lastReceipt.update();
+
+    // if nothing has thrown till here then block is valid and can be applied.
+    // The block and the transactions are OK i.e:
+    // * Block and transactions have valid values (signatures, block slots, etc...)
+    // * The check against database state passed (for instance sender has enough LSK, votes are under 101, etc...)
+    // We thus update the database with the transactions values, save the block and tick it
+    return this.blocksChainModule.applyBlock(
+      block as SignedAndChainedBlockType,
+      opts.broadcast,
+      opts.saveBlock,
+      accountsMap
+    );
   }
 
   @WrapInDefaultSequence
   public async onReceiveBlock(block: SignedBlockType) {
     // When client is not loaded, is syncing or round is ticking
     // Do not receive new blocks as client is not ready
-    if (this.appStateLogic.get('loader.isSyncing') ||
-      this.appStateLogic.get('rounds.isTicking')) {
+    if (this.appStateLogic.get('loader.isSyncing')) {
       this.logger.debug('Client not ready to receive block', block.id);
       return;
     }
@@ -339,7 +381,7 @@ export class BlocksModuleProcess {
     // Detect sane block
     if (block.previousBlock === lastBlock.id && lastBlock.height + 1 === block.height) {
       // Process received block
-      return this.receiveBlock(block);
+      return this.processBlock(block);
     } else if (block.previousBlock !== lastBlock.id && lastBlock.height + 1 === block.height) {
       // Process received fork cause 1
       return this.receiveForkOne(block, lastBlock);
@@ -360,24 +402,6 @@ export class BlocksModuleProcess {
       }
 
     }
-  }
-
-  /**
-   * called by onReceiveBlock. Will update receipt on blocks module and call processBlock on verify Submodule
-   * @param {SignedBlockType} block
-   * @return {Promise<any>}
-   */
-  private receiveBlock(block: SignedBlockType) {
-    this.logger.info([
-      'Received new block id:', block.id,
-      'height:', block.height,
-      'reward:', block.reward,
-    ].join(' '));
-
-    // Update last receipt
-    this.blocksModule.lastReceipt.update();
-    // Start block processing - broadcast: true, saveBlock: true
-    return this.blocksVerifyModule.processBlock(block, true, true);
   }
 
   /**
@@ -445,7 +469,7 @@ export class BlocksModuleProcess {
         await this.blocksChainModule.deleteLastBlock();
 
         // Process new block (again);
-        await this.receiveBlock(block);
+        await this.processBlock(block);
       } catch (err) {
         this.logger.error('Fork recovery failed', err);
         throw err;

@@ -99,6 +99,6 @@ export class RoundsHooks extends Extendable {
         this.appConfig.loading.snapshot = (round > 1) ? (round - 1) : 1;
       }
     }
-    return this.roundsLogic.lastInRound(this.appConfig.loading.snapshot - 1);
+    return this.roundsLogic.lastInRound(this.appConfig.loading.snapshot);
   }
 }

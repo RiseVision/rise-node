@@ -352,6 +352,7 @@ describe('modules/blocks/verify', () => {
     // });
   });
 
+  /* TODO: Move to process spec file
   describe('processBlock', () => {
     let findByIdStub: SinonStub;
     let resolveAcctsStub: SinonStub;
@@ -497,5 +498,5 @@ describe('modules/blocks/verify', () => {
       ]);
     });
   });
-
+*/
 });

@@ -8,16 +8,20 @@ import * as path from 'path';
 import { ICoreModule, LaunchpadSymbols } from '../../src';
 import { IBlockLogic } from '../../../core-interfaces/src/logic';
 import { ModelSymbols } from '../../../core-models/src/helpers';
-import { Symbols, IJobsQueue } from '@risevision/core-interfaces';
+import { Symbols, IJobsQueue, IBaseModel } from '@risevision/core-interfaces';
 import * as activeHandles from 'active-handles';
 import * as fs from 'fs';
+import { Models, Sequelize } from 'sequelize';
+import { HelpersSymbols } from '@risevision/core-helpers';
+
 activeHandles.hookSetInterval();
 
 let curContainer: Container = new Container();
 
 curContainer.snapshot();
 curContainer.bind<Array<ICoreModule<any>>>('__test__modules').toConstantValue([]);
-export async function createContainer(modules: string[] = ['core', 'core-accounts', 'core-blocks', 'core-p2p', 'core-helpers', 'core-transactions', 'core-accounts'],
+
+export async function createContainer(modules: string[]                = ['core', 'core-accounts', 'core-blocks', 'core-p2p', 'core-helpers', 'core-transactions', 'core-accounts'],
                                       config: any                      = JSON.parse(fs.readFileSync(`${__dirname}/../assets/config.json`, 'utf8')),
                                       block: SignedAndChainedBlockType = JSON.parse(fs.readFileSync(`${__dirname}/../assets/genesisBlock.json`, 'utf8'))): Promise<Container> {
 
@@ -30,30 +34,44 @@ export async function createContainer(modules: string[] = ['core', 'core-account
   }
   const sortedModules = loadCoreSortedModules(allDeps);
   for (const sortedModule of sortedModules) {
-    sortedModule.config    = config;
-    sortedModule.container = container;
+    sortedModule.config        = config;
+    sortedModule.container     = container;
     sortedModule.sortedModules = sortedModules;
     sortedModule.addElementsToContainer();
   }
 
   container.bind(Symbols.generic.genesisBlock).toConstantValue(block);
   container.bind(Symbols.generic.appConfig).toConstantValue(config);
-  // container.bind(Symbols.generic.nonce).toConstantValue('nonce');
+  container.bind(Symbols.generic.nonce).toConstantValue('nonce');
   container.bind(Symbols.generic.versionBuild).toConstantValue('test');
   // container.bind(Symbols.generic.zschema).toConstantValue(new z_schema({}));
   container.bind(Symbols.generic.hookSystem).toConstantValue(new WordPressHookSystem(new InMemoryFilterModel()));
   container.rebind(Symbols.helpers.logger).toConstantValue(new LoggerStub());
   container.bind(LaunchpadSymbols.coremodules).toConstantValue(sortedModules);
+  container.rebind(HelpersSymbols.migrator).toConstantValue({
+    init() {
+      return Promise.resolve();
+    },
+  });
 
   container.get<any>(Symbols.generic.constants).addressSuffix = 'R';
-
+  // const infoModel = container.getNamed<IBaseModel>(ModelSymbols.model, ModelSymbols.names.info);
+  for (const sm of sortedModules) {
+    if (sm.name === '@risevision/core') {
+      sm['onPostInitModels'] = () => null;
+    }
+  }
+  const s = container.get<Sequelize>(ModelSymbols.sequelize);
+  s.query = (...args) => {
+    return Promise.resolve(null) as any;
+  };
   for (const sortedModule of sortedModules) {
     await sortedModule.initAppElements();
   }
 
   if (sortedModules.some((m) => m.name.indexOf('core-blocks') !== -1)) {
     block.previousBlock = '1'; // exception for genesisblock
-    block.transactions = [];
+    block.transactions  = [];
     container.get<IBlockLogic>(Symbols.logic.block).objectNormalize(block);
     block.previousBlock = null;
   }
@@ -62,10 +80,12 @@ export async function createContainer(modules: string[] = ['core', 'core-account
   // curContainer = container;
   return container;
 }
+
 let firstRun = true;
+
 export async function tearDownContainer() {
   const container = curContainer;
-  const modules = container.get<Array<ICoreModule<any>>>('__test__modules');
+  const modules   = container.get<Array<ICoreModule<any>>>('__test__modules');
   for (const m of modules) {
     try {
       await m.teardown();
@@ -109,11 +129,11 @@ export async function tearDownContainer() {
 }
 
 const Memwatch = require('memwatch-next');
-const Util = require('util');
+const Util     = require('util');
 /**
  * Check for memory leaks
  */
-let hd = null;
+let hd         = null;
 Memwatch.on('leak', (info) => {
   console.log('memwatch::leak');
   console.error(info);

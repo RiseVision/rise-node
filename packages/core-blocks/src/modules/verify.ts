@@ -130,51 +130,6 @@ export class BlocksModuleVerify {
     );
   }
 
-  public async processBlock(block: SignedBlockType, broadcast: boolean, saveBlock: boolean): Promise<any> {
-    if (this.isCleaning) {
-      // We're shutting down so stop processing any further
-      throw new Error('Cleaning up');
-    }
-    // if (!this.loaded) {
-    //  throw new Error('Blockchain is still loading');
-    // }
-
-    block = this.blockLogic.objectNormalize(block);
-
-    // after verifyBlock block also have 'height' field so it's a SignedAndChainedBlock
-    // That's because of verifyReceipt.
-    const { verified, errors } = await this.verifyBlock(block);
-
-    if (!verified) {
-      this.logger.error(`Block ${block.id} verification failed`, errors.join(', '));
-      throw new Error(errors[0]);
-    }
-
-    // check if blocks exists.
-    const dbBlock = await this.BlocksModel.findById(block.id);
-    if (dbBlock !== null) {
-      throw new Error(`Block ${block.id} already exists`);
-    }
-
-    // check transactions
-    const accountsMap = await this.accountsModule.txAccounts(block.transactions);
-
-    await this.accountsModule.checkTXsAccountsMap(block.transactions, accountsMap);
-    await this.checkBlockTransactions(block, accountsMap);
-
-    // if nothing has thrown till here then block is valid and can be applied.
-    // The block and the transactions are OK i.e:
-    // * Block and transactions have valid values (signatures, block slots, etc...)
-    // * The check against database state passed (for instance sender has enough LSK, votes are under 101, etc...)
-    // We thus update the database with the transactions values, save the block and tick it
-    return this.blocksChainModule.applyBlock(
-      block as SignedAndChainedBlockType,
-      broadcast,
-      saveBlock,
-      accountsMap
-    );
-  }
-
   // TODO: me
   public async onBlockchainReady() {
     const blocks       = await this.BlocksModel.findAll({
@@ -327,7 +282,7 @@ export class BlocksModuleVerify {
     return [];
   }
 
-  private async checkBlockTransactions(block: SignedBlockType, accountsMap: { [address: string]: IAccountsModel }) {
+  async checkBlockTransactions(block: SignedBlockType, accountsMap: { [address: string]: IAccountsModel }) {
     const allIds = [];
     for (const tx of block.transactions) {
       tx.id         = this.transactionLogic.getId(tx);

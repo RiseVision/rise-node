@@ -139,8 +139,8 @@ describe('modules/blocks/chain', () => {
     it('should issue db query', async () => {
       await instance.deleteAfterBlock(11);
       expect(destroyStub.called).is.true;
-      expect(destroyStub.firstCall.args[0]).deep.eq({ where: { [Op.gte]: 11 } });
-      expect(destroyStub.firstCall.args[0].where[Op.gte]).deep.eq(11);
+      expect(destroyStub.firstCall.args[0]).deep.eq({ where: { height: { [Op.gt]: 11 }} });
+      expect(destroyStub.firstCall.args[0].where.height[Op.gt]).deep.eq(11);
     });
   });
 
