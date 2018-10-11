@@ -1,13 +1,15 @@
 import {
   IAccountsModel,
-  IAccountsModule, IBlockLogic, IBlocksModel,
+  IAccountsModule,
+  IBlockLogic,
+  IBlocksModel,
   IBlocksModule,
   IDBHelper,
   ILogger,
   ISequence,
-  ITransactionLogic, ITransactionPool,
+  ITransactionLogic,
+  ITransactionPool,
   ITransactionsModel,
-  ITransactionsModule,
   Symbols
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
@@ -15,7 +17,6 @@ import { ModelSymbols } from '@risevision/core-models';
 import { DBOp, SignedAndChainedBlockType, SignedBlockType, TransactionType } from '@risevision/core-types';
 import { catchToLoggerAndRemapError, wait, WrapInBalanceSequence } from '@risevision/core-utils';
 import * as deepFreeze from 'js-flock/deepFreeze';
-import bs = require('binary-search');
 import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
@@ -23,6 +24,7 @@ import { Op, Transaction } from 'sequelize';
 import { BlocksSymbols } from '../blocksSymbols';
 import { OnDestroyBlock, OnPostApplyBlock, OnTransactionsSaved } from '../hooks';
 import { BlocksModuleUtils } from './utils';
+import bs = require('binary-search');
 
 @injectable()
 export class BlocksModuleChain {
@@ -177,7 +179,7 @@ export class BlocksModuleChain {
       process.exit(0);
     }
     this.blocksModule.lastBlock = deepFreeze(
-      this.BlocksModel.toStringBlockType(block)
+      block instanceof this.BlocksModel ? block.toJSON() : block
     );
     await this.BlocksModel.sequelize
       .transaction((tx) => this.hookSystem
@@ -271,7 +273,7 @@ export class BlocksModuleChain {
       // await this.bus.message('newBlock', block, broadcast);
 
       this.blocksModule.lastBlock = deepFreeze(
-        this.BlocksModel.toStringBlockType(block)
+        block instanceof this.BlocksModel ? block.toJSON() : block
       );
       await this.hookSystem.do_action(
         OnPostApplyBlock.name,
