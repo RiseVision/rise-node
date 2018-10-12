@@ -1,9 +1,8 @@
 import * as chai from 'chai';
 import { SinonSpy } from 'sinon';
 import * as sinon from 'sinon';
-import { ExceptionsManager } from '../src';
-import { RunThroughExceptions } from '../src/runThroughExceptionsDecorator';
-
+import { ExceptionsManager } from '../../src';
+import { RunThroughExceptions } from '../../src/runThroughExceptionsDecorator';
 
 const { expect } = chai;
 

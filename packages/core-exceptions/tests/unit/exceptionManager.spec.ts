@@ -1,5 +1,5 @@
 import * as chai from 'chai';
-import { ExceptionsManager } from '../src';
+import { ExceptionsManager } from '../../src';
 
 const { expect } = chai;
 

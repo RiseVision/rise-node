@@ -1,8 +1,8 @@
 import { Column, DefaultScope, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
 import { expect } from 'chai';
-import { mergeModels } from '../src/helpers/utils';
-import { BaseModel } from '../src/models';
-import { createNewTestSequelize } from './utils/createNewTestSequelize';
+import { mergeModels } from '../../src/helpers/utils';
+import { BaseModel } from '../../src/models';
+import { createNewTestSequelize } from '../utils/createNewTestSequelize';
 
 describe('helpers/mergeModels', () => {
   it('should merge attributes', () => {

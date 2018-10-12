@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { Model } from 'sequelize-typescript';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { DBHelper } from '../src';
+import { DBHelper } from '../../src';
 
 // tslint:disable no-unused-expression
 describe('helpers/db', () => {
