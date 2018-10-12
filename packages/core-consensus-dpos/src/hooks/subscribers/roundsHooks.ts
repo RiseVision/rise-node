@@ -3,7 +3,7 @@ import {
   SnapshotBlocksCountFilter,
   UtilsCommonHeightList
 } from '@risevision/core';
-import { ApplyBlockDBOps } from '@risevision/core-blocks';
+import { ApplyBlockDBOps, RollbackBlockDBOps } from '@risevision/core-blocks';
 import { ILogger, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { AppConfig, DBOp, SignedAndChainedBlockType } from '@risevision/core-types';
@@ -66,8 +66,14 @@ export class RoundsHooks extends Extendable {
   }
 
   @ApplyBlockDBOps()
-  public async onPostApplyBlock(dbOP: Array<DBOp<any>>, block: SignedAndChainedBlockType) {
+  public async onApplyBlockDBOpsFilter(dbOP: Array<DBOp<any>>, block: SignedAndChainedBlockType) {
     const roundOps = await this.roundsModule.tick(block);
+    return dbOP.concat(... roundOps.filter((op) => op !== null));
+  }
+
+  @RollbackBlockDBOps()
+  public async onRollbackBlockDBOpsFilter(dbOP: Array<DBOp<any>>, block: SignedAndChainedBlockType, prevBlock: SignedAndChainedBlockType) {
+    const roundOps = await this.roundsModule.backwardTick(block, prevBlock);
     return dbOP.concat(... roundOps.filter((op) => op !== null));
   }
 

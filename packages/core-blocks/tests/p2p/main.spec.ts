@@ -38,37 +38,37 @@ describe('blocks/p2p/main', () => {
   });
 
   it('should not broadcast if broadcast is false.', async () => {
-    await hookSystem.do_action(OnPostApplyBlock.name, createFakeBlock(container), null, false);
+    await hookSystem.do_action(OnPostApplyBlock.name, createFakeBlock(container), false);
     expect(broadcastStub.called).is.false;
   });
   it('should not broadcast if broadcast is true but block exceeded maxRelays', async () => {
-    await hookSystem.do_action(OnPostApplyBlock.name, {... createFakeBlock(container), relays: 2}, null, false);
+    await hookSystem.do_action(OnPostApplyBlock.name, {... createFakeBlock(container), relays: 2}, false);
     expect(broadcastStub.called).is.false;
   });
   it('should broadcast', async () => {
-    await hookSystem.do_action(OnPostApplyBlock.name, createFakeBlock(container), null, true);
+    await hookSystem.do_action(OnPostApplyBlock.name, createFakeBlock(container), true);
     expect(broadcastStub.called).is.true;
   });
   it('should broadcast with new broadhash as header', async () => {
     const block = createFakeBlock(container);
-    await hookSystem.do_action(OnPostApplyBlock.name, block, null, true);
+    await hookSystem.do_action(OnPostApplyBlock.name, block, true);
     expect(broadcastStub.firstCall.args[0].options.payload.headers.broadhash).eq(block.payloadHash.toString('hex'));
   });
   it('should broadcast the block filtering for old broadhash', async () => {
     const block = createFakeBlock(container);
-    await hookSystem.do_action(OnPostApplyBlock.name, block, null, true);
+    await hookSystem.do_action(OnPostApplyBlock.name, block, true);
     expect(broadcastStub.firstCall.args[0].filters.broadhash).not.eq(block.payloadHash.toString('hex'));
     expect(broadcastStub.firstCall.args[0].filters.broadhash).eq(genesis.payloadHash.toString('hex'));
   });
   it('should set relays to 1 if not set', async () => {
     const block = createFakeBlock(container);
-    await hookSystem.do_action(OnPostApplyBlock.name, block, null, true);
+    await hookSystem.do_action(OnPostApplyBlock.name, block, true);
     expect(broadcastStub.firstCall.args[0].options.payload.body.block.relays).eq(1);
   });
   it('should incrementa relays to +1 if set and not exceeding maxRelays', async () => {
     const block = createFakeBlock(container);
     block['relays'] = 1;
-    await hookSystem.do_action(OnPostApplyBlock.name, block, null, true);
+    await hookSystem.do_action(OnPostApplyBlock.name, block, true);
     expect(broadcastStub.firstCall.args[0].options.payload.body.block.relays).eq(2);
   });
 
@@ -77,7 +77,7 @@ describe('blocks/p2p/main', () => {
     ls.stubReset();
     broadcastStub.rejects(new Error('meow'));
     const block = createFakeBlock(container);
-    await hookSystem.do_action(OnPostApplyBlock.name, block, null, true);
+    await hookSystem.do_action(OnPostApplyBlock.name, block, true);
     expect(ls.stubs.warn.calledOnce).is.true;
     expect(ls.stubs.warn.firstCall.args[0]).contains('meow');
   });

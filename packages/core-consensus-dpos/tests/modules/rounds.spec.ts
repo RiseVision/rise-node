@@ -11,7 +11,6 @@ import { SignedBlockType } from '@risevision/core-types';
 import { RoundLogic, RoundLogicScope } from '../../src/logic/round';
 import { IAccountsModule, IAppState, IBlocksModel, IDBHelper, Symbols } from '@risevision/core-interfaces';
 import { createFakeBlock } from '../../../core-blocks/tests/utils/createFakeBlocks';
-import { RoundsModel } from '../../src/models';
 import { dPoSSymbols, Slots } from '../../src/helpers';
 import { RoundsLogic } from '../../src/logic/rounds';
 import { ModelSymbols } from '@risevision/core-models';
@@ -39,8 +38,6 @@ describe('modules/rounds', () => {
   // Utility variables
   let roundLogicScope: RoundLogicScope;
   let txGenerator: (scope: RoundLogicScope) => (task: any) => Promise<any>;
-  let txGeneratorScoped: (task: any) => Promise<any>;
-  let afterTxPromise: () => () => Promise<any>;
   let innerTickStub: SinonStub;
 
   beforeEach(async () => {
@@ -81,7 +78,6 @@ describe('modules/rounds', () => {
       models        : {
         AccountsModel: container.getNamed(ModelSymbols.model, Symbols.models.accounts),
         BlocksModel  : container.getNamed(ModelSymbols.model, Symbols.models.blocks),
-        RoundsModel  : container.getNamed(ModelSymbols.model, dPoSSymbols.models.rounds),
       },
       round         : 12,
       roundDelegates: [],
@@ -91,9 +87,8 @@ describe('modules/rounds', () => {
     };
     innerTickStub   = sandbox.stub(instance as any, 'innerTick');
     // Expose the passed txGenerator so we can test it
-    innerTickStub.callsFake((blk, transaction, backwards, txGen, afterTx = () => Promise.resolve(null)) => {
+    innerTickStub.callsFake((blk, backwards, txGen) => {
       txGenerator    = txGen;
-      afterTxPromise = afterTx;
       return Promise.resolve('innerTick DONE');
     });
     // roundLogicStub.stubs.mergeBlockGenerator.resolves();
@@ -116,21 +111,17 @@ describe('modules/rounds', () => {
   //   });
   // });
 
-
   describe('backwardTick', () => {
     it('should call innerTick', async () => {
-      await instance.backwardTick(block as any, previousBlock, { transaction: 'tx' } as any);
+      await instance.backwardTick(block as any, previousBlock);
       expect(innerTickStub.calledOnce).to.be.true;
       expect(innerTickStub.firstCall.args[0]).to.be.deep.equal(block);
-      expect(innerTickStub.firstCall.args[1]).to.be.deep.eq({ transaction: 'tx' });
-      expect(innerTickStub.firstCall.args[2]).is.true;
-      expect(innerTickStub.firstCall.args[3]).to.be.a('function');
+      expect(innerTickStub.firstCall.args[1]).is.true;
+      expect(innerTickStub.firstCall.args[2]).to.be.a('function');
     });
 
     it('should return from innerTick', async () => {
-      const retVal = await instance.backwardTick(block as any,
-        previousBlock,
-        { transaction: 'tx' } as any);
+      const retVal = await instance.backwardTick(block as any, previousBlock);
       expect(retVal).to.be.equal('innerTick DONE');
     });
 
@@ -145,7 +136,7 @@ describe('modules/rounds', () => {
         performOPsStub = sandbox.stub(dbHelpersStub, 'performOps').resolves();
       });
       async function doCallBackwardTick() {
-        await instance.backwardTick(block, previousBlock, 'tx' as any);
+        await instance.backwardTick(block, previousBlock);
         return txGenerator(roundLogicScope);
       }
 

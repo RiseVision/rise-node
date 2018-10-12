@@ -69,7 +69,7 @@ export class RoundsModule {
    * @param {SignedBlockType} block
    * @param {SignedBlockType} previousBlock
    */
-  public backwardTick(block: IBlocksModel, previousBlock: SignedBlockType): Promise<Array<DBOp<any>>> {
+  public backwardTick(block: SignedBlockType, previousBlock: SignedBlockType): Promise<Array<DBOp<any>>> {
     return this.innerTick(block, true, async (roundLogicScope) => {
       this.logger.debug('Performing backward tick');
 

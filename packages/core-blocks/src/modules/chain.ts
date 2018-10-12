@@ -22,7 +22,7 @@ import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Op, Transaction } from 'sequelize';
 import { BlocksSymbols } from '../blocksSymbols';
-import { ApplyBlockDBOps, OnDestroyBlock, OnPostApplyBlock, OnTransactionsSaved } from '../hooks';
+import { ApplyBlockDBOps, OnDestroyBlock, OnPostApplyBlock, OnTransactionsSaved, RollbackBlockDBOps } from '../hooks';
 import { BlocksModuleUtils } from './utils';
 import bs = require('binary-search');
 
@@ -393,7 +393,16 @@ export class BlocksModuleChain {
         ops.push(... await this.transactionLogic.undo(tx, lb, accountsMap[tx.senderId]));
         ops.push(... await this.transactionLogic.undoUnconfirmed(tx, accountsMap[tx.senderId]));
       }
-      await this.dbHelper.performOps(ops, dbTX);
+
+      await this.dbHelper.performOps(await this.hookSystem
+          .apply_filters(
+            RollbackBlockDBOps.name,
+            ops,
+            lb, // From Block
+            previousBlock // To Block
+          ),
+        dbTX
+      );
       // await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
       await lb.destroy({ transaction: dbTX });
       await this.hookSystem.do_action(OnDestroyBlock.name, this.blocksModule.lastBlock, dbTX);

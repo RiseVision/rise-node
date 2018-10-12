@@ -14,3 +14,7 @@ export const ApplyBlockDBOps = createFilterDecorator<(
   dbOps: Array<DBOp<any>>,
   block?: SignedAndChainedBlockType,
   saveBlock?: boolean) => Promise<Array<DBOp<any>>>>('core/blocks/chain/applyBlockDBOps');
+export const RollbackBlockDBOps = createFilterDecorator<(
+  dbOps: Array<DBOp<any>>,
+  from?: SignedAndChainedBlockType,
+  to?: SignedAndChainedBlockType) => Promise<Array<DBOp<any>>>>('core/blocks/chain/rollbackBlockDBOps');

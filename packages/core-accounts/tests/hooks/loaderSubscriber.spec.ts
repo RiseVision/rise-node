@@ -52,20 +52,6 @@ describe('accounts/hooks/loaderSubscriber', () => {
       accountsCountStub = sandbox.stub(accModel, 'count').resolves(1);
       queryStub = sandbox.stub(accModel.sequelize, 'query').resolves([]);
     });
-    it('should fail if no accounts where updated on last block', async () => {
-      accountsCountStub.resolves(0);
-      await expect(hookSystem.do_action(OnCheckIntegrity.name, 1))
-        .rejectedWith('Detected missed blocks in mem_accounts');
-
-      expect(accountsCountStub.firstCall.args[0]).deep.eq({
-        where: { blockId: {} },
-      });
-      expect(
-        accountsCountStub.firstCall.args[0].where.blockId[Op.in]
-      ).deep.eq({
-        val: '(SELECT "id" from blocks ORDER BY "height" DESC LIMIT 1)',
-      });
-    });
     it('should call load if there are some orphanedMemAccounts', async () => {
       queryStub.resolves(['a']);
       await expect(hookSystem.do_action(OnCheckIntegrity.name, 1))

@@ -12,7 +12,6 @@ import {
   Accounts2DelegatesModel,
   Accounts2U_DelegatesModel,
   AccountsModelForDPOS,
-  RoundsModel,
   VotesModel
 } from '../../../src/models';
 import { createContainer } from '../../../../core-launchpad/tests/utils/createContainer';
@@ -55,7 +54,6 @@ describe('logic/transactions/vote', () => {
   let votesModel: typeof VotesModel;
   let accounts2DelegatesModel: typeof Accounts2DelegatesModel;
   let accounts2U_DelegatesModel: typeof Accounts2U_DelegatesModel;
-  let roundsModel: typeof RoundsModel;
   before(async () => {
     container = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
 
@@ -76,7 +74,6 @@ describe('logic/transactions/vote', () => {
     accountsModel             = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
     accounts2DelegatesModel   = container.getNamed(ModelSymbols.model, dPoSSymbols.models.accounts2Delegates);
     accounts2U_DelegatesModel = container.getNamed(ModelSymbols.model, dPoSSymbols.models.accounts2UDelegates);
-    roundsModel               = container.getNamed(ModelSymbols.model, dPoSSymbols.models.rounds);
     votesModel                = container.getNamed(ModelSymbols.model, dPoSSymbols.models.votes);
 
     tx = {
@@ -237,12 +234,10 @@ describe('logic/transactions/vote', () => {
     it('should return proper ops', async () => {
       checkConfirmedDelegatesStub.resolves();
       const ops = await instance.apply(tx, block, sender);
-      expect(ops.length).eq(3 + 2);
+      expect(ops.length).eq(3);
       const first: DBRemoveOp<any>      = ops[0] as any;
       const second: DBBulkCreateOp<any> = ops[1] as any;
       const third: DBUpdateOp<any>      = ops[2] as any;
-      const fourth: DBCustomOp<any>     = ops[3] as any;
-      const fifth: DBCustomOp<any>      = ops[4] as any;
 
       expect({ ...first, model: first.model.getTableName() }).deep.eq({
         type   : 'remove',
@@ -273,16 +268,6 @@ describe('logic/transactions/vote', () => {
         values : { blockId: block.id },
       });
 
-      expect({ ...fourth, model: fourth.model.getTableName() }).deep.eq({
-        type : 'custom',
-        model: roundsModel.getTableName(),
-        query: "INSERT INTO mem_round (\"address\", \"amount\", \"delegate\", \"blockId\", \"round\") SELECT '1233456789012345R', (-balance)::bigint, '7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381', '13191140260435645922', 111 FROM mem_accounts WHERE address = '1233456789012345R'",
-      });
-      expect({ ...fifth, model: fifth.model.getTableName() }).deep.eq({
-        type : 'custom',
-        model: roundsModel.getTableName(),
-        query: "INSERT INTO mem_round (\"address\", \"amount\", \"delegate\", \"blockId\", \"round\") SELECT '1233456789012345R', (balance)::bigint, '05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a', '13191140260435645922', 111 FROM mem_accounts WHERE address = '1233456789012345R'",
-      });
 
     });
 
@@ -325,7 +310,7 @@ describe('logic/transactions/vote', () => {
     it('should return proper ops', async () => {
       objectNormalizeStub.resolves();
       const ops = await instance.undo(tx, block, sender);
-      expect(ops.length).eq(3 + 2);
+      expect(ops.length).eq(3);
       const first: DBRemoveOp<any>      = ops[0] as any;
       const second: DBBulkCreateOp<any> = ops[1] as any;
       const third: DBUpdateOp<any>      = ops[2] as any;
@@ -362,17 +347,6 @@ describe('logic/transactions/vote', () => {
         model  : accountsModel.getTableName(),
         options: { where: { address: tx.senderId } },
         values : { blockId: block.id },
-      });
-
-      expect({ ...fourth, model: fourth.model.getTableName() }).deep.eq({
-        type : 'custom',
-        model: roundsModel.getTableName(),
-        query: "INSERT INTO mem_round (\"address\", \"amount\", \"delegate\", \"blockId\", \"round\") SELECT '1233456789012345R', (balance)::bigint, '7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381', '13191140260435645922', 111 FROM mem_accounts WHERE address = '1233456789012345R'",
-      });
-      expect({ ...fifth, model: fifth.model.getTableName() }).deep.eq({
-        type : 'custom',
-        model: roundsModel.getTableName(),
-        query: "INSERT INTO mem_round (\"address\", \"amount\", \"delegate\", \"blockId\", \"round\") SELECT '1233456789012345R', (-balance)::bigint, '05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a', '13191140260435645922', 111 FROM mem_accounts WHERE address = '1233456789012345R'",
       });
 
     });

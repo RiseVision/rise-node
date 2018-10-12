@@ -7,15 +7,13 @@ import { createContainer } from '@risevision/core-launchpad/tests/utils/createCo
 import { RoundsHooks } from '../../../src/hooks/subscribers';
 import { dPoSSymbols } from '../../../src/helpers';
 import { WordPressHookSystem, InMemoryFilterModel } from 'mangiafuoco';
-import { OnPostApplyBlock } from '@risevision/core-blocks';
 import { createFakeBlock } from '@risevision/core-blocks/tests/utils/createFakeBlocks';
 import { Symbols } from '@risevision/core-interfaces';
 import { RoundsModule } from '../../../src/modules';
-import { RoundsModel } from '../../../src/models';
-import { ModelSymbols } from '@risevision/core-models';
 import { SinonSandbox } from 'sinon';
-import { OnCheckIntegrity, SnapshotBlocksCountFilter, UtilsCommonHeightList } from '@risevision/core';
+import { SnapshotBlocksCountFilter, UtilsCommonHeightList } from '@risevision/core';
 import { AppConfig } from '@risevision/core-types';
+import { ApplyBlockDBOps, RollbackBlockDBOps } from '@risevision/core-blocks';
 
 chai.use(chaiAsPromised);
 
@@ -24,7 +22,6 @@ describe('hooks/subscribers/rounds', () => {
   let instance: RoundsHooks;
   let wphooksystem: WordPressHookSystem;
   let roundsModule: RoundsModule;
-  let roundsModel: typeof RoundsModel;
   let sandbox: SinonSandbox;
   before(async () => {
     sandbox      = sinon.createSandbox();
@@ -32,7 +29,6 @@ describe('hooks/subscribers/rounds', () => {
     instance     = container.get(dPoSSymbols.hooksSubscribers.rounds);
     wphooksystem = new WordPressHookSystem(new InMemoryFilterModel());
     roundsModule = container.get(dPoSSymbols.modules.rounds);
-    roundsModel  = container.getNamed(ModelSymbols.model, dPoSSymbols.models.rounds);
     await instance.unHook();
     delete instance.__wpuid;
     instance.hookSystem = wphooksystem;
@@ -42,24 +38,25 @@ describe('hooks/subscribers/rounds', () => {
     sandbox.restore();
   });
 
-  it('should call round tick OnPostApply with proper data', async () => {
-    const stub  = sinon.stub(roundsModule, 'tick').resolves();
+  it('should call round tick ApplyBlockDBOps with proper data', async () => {
+    const stub  = sinon.stub(roundsModule, 'tick').resolves(['b', null, 'c']);
     const block = createFakeBlock(container);
-    await wphooksystem.do_action(OnPostApplyBlock.name, block, { tx: 'ciao' });
+    const r     = await wphooksystem.apply_filters(ApplyBlockDBOps.name, ['a'], block);
     expect(stub.called).is.true;
     expect(stub.firstCall.args[0]).deep.eq(block);
-    expect(stub.firstCall.args[1]).deep.eq({ tx: 'ciao' });
+    expect(r).deep.eq(['a', 'b', 'c']);
   });
 
-  it('should throw in OnCheckIntegrity if there is some unapplied round in db', async () => {
-    const stub = sandbox.stub(roundsModel, 'findAll').resolves([{ round: 11 }]);
-    await wphooksystem.do_action(OnCheckIntegrity.name, 10 * 101 + 1);
-
-    stub.resolves([{ round: 10 }, { round: 11 }]);
-
-    await expect(wphooksystem.do_action(OnCheckIntegrity.name, 10 * 101 + 1))
-      .rejectedWith('Detected unapplied rounds in mem_round');
-  });
+  it ('should call round backwardTick on block rollback and properly merge ops', async () => {
+    const stub  = sinon.stub(roundsModule, 'backwardTick').resolves(['b', null, 'c']);
+    const block = createFakeBlock(container);
+    const block2 = createFakeBlock(container);
+    const r     = await wphooksystem.apply_filters(RollbackBlockDBOps.name, ['a'], block, block2);
+    expect(stub.called).is.true;
+    expect(stub.firstCall.args[0]).deep.eq(block);
+    expect(stub.firstCall.args[1]).deep.eq(block2);
+    expect(r).deep.eq(['a', 'b', 'c']);
+  })
 
   it('commonHeightList should overwrite filter data and return proper heights', async () => {
     const res = await wphooksystem

@@ -128,9 +128,8 @@ describe('modules/accounts', () => {
       const res = await accountModule.txAccounts([]);
       expect(res).to.be.deep.eq({});
 
-      // should call findAll with empty array
-      expect(findAllStub.calledOnce).is.true;
-      expect(findAllStub.firstCall.args[0]).deep.eq({ where: { address: [] } });
+      // should not even call findAll
+      expect(findAllStub.calledOnce).is.false;
     });
     it('should return empty object if account not in db', async () => {
       const r = await accountModule
