@@ -73,18 +73,6 @@ export class RoundLogic {
   }
 
   /**
-   * Adds or remove the blocks to the generator account.
-   * @returns {Promise<void>}
-   */
-  public mergeBlockGenerator(): Array<DBOp<any>> {
-    return this.scope.modules.accounts.mergeAccountAndGetOPs({
-      blockId       : this.scope.block.id,
-      producedblocks: (this.scope.backwards ? -1 : 1),
-      publicKey     : this.scope.block.generatorPublicKey,
-    });
-  }
-
-  /**
    * Updates accounts and add a missing block to whoever skipped one
    * @returns {Promise<void>}
    */
@@ -139,17 +127,6 @@ export class RoundLogic {
   }
 
   /**
-   * Remove blocks higher than this block height
-   */
-  public truncateBlocks(): DBOp<IBlocksModel> {
-    return {
-      model  : this.scope.models.BlocksModel,
-      options: { where: { height: { [Op.gt]: this.scope.block.height } } },
-      type   : 'remove',
-    };
-  }
-
-  /**
    * Performed when rollbacking last block of a round.
    * It restores the votes snapshot from sql
    */
@@ -188,13 +165,14 @@ export class RoundLogic {
 
       // merge Account in the direction.
       queries.push(... this.scope.modules.accounts.mergeAccountAndGetOPs({
-        balance  : (this.scope.backwards ? -changes.balance : changes.balance),
-        blockId  : this.scope.block.id,
-        fees     : (this.scope.backwards ? -changes.fees : changes.fees),
-        publicKey: delegate,
-        rewards  : (this.scope.backwards ? -changes.rewards : changes.rewards),
-        round    : this.scope.round,
-        u_balance: (this.scope.backwards ? -changes.balance : changes.balance),
+        balance       : (this.scope.backwards ? -changes.balance : changes.balance),
+        blockId       : this.scope.block.id,
+        fees          : (this.scope.backwards ? -changes.fees : changes.fees),
+        producedblocks: (this.scope.backwards ? -1 : 1),
+        publicKey     : delegate,
+        rewards       : (this.scope.backwards ? -changes.rewards : changes.rewards),
+        round         : this.scope.round,
+        u_balance     : (this.scope.backwards ? -changes.balance : changes.balance),
       }));
     }
 
@@ -232,7 +210,6 @@ export class RoundLogic {
    */
   public land(): Array<DBOp<any>> {
     return [
-      // this.updateVotes(),
       this.updateMissedBlocks(),
       ...this.applyRound(),
       this.performVotesSnapshot(),
@@ -245,7 +222,6 @@ export class RoundLogic {
    */
   public backwardLand(): Array<DBOp<any>> {
     return [
-      // this.updateVotes(),
       this.updateMissedBlocks(),
       ...this.applyRound(),
       this.restoreVotesSnapshot(),

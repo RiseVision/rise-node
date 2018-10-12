@@ -1,18 +1,16 @@
 import {
-  OnCheckIntegrity,
   RecreateAccountsTables,
   SnapshotBlocksCountFilter,
   UtilsCommonHeightList
 } from '@risevision/core';
-import { OnPostApplyBlock } from '@risevision/core-blocks';
+import { ApplyBlockDBOps } from '@risevision/core-blocks';
 import { ILogger, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
+import { AppConfig, DBOp, SignedAndChainedBlockType } from '@risevision/core-types';
 import { catchToLoggerAndRemapError } from '@risevision/core-utils';
 import * as fs from 'fs';
 import { decorate, inject, injectable, named } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
-import * as sequelize from 'sequelize';
 import { DposConstantsType, dPoSSymbols } from '../../helpers';
 import { RoundsLogic } from '../../logic/rounds';
 import { Accounts2DelegatesModel, Accounts2U_DelegatesModel, VotesModel } from '../../models';
@@ -67,9 +65,10 @@ export class RoundsHooks extends Extendable {
     );
   }
 
-  @OnPostApplyBlock()
-  public onPostApplyBlock(block: SignedAndChainedBlockType, tx: sequelize.Transaction) {
-    return this.roundsModule.tick(block, tx);
+  @ApplyBlockDBOps()
+  public async onPostApplyBlock(dbOP: Array<DBOp<any>>, block: SignedAndChainedBlockType) {
+    const roundOps = await this.roundsModule.tick(block);
+    return dbOP.concat(... roundOps.filter((op) => op !== null));
   }
 
   @UtilsCommonHeightList()

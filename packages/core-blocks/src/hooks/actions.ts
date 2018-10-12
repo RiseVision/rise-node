@@ -8,7 +8,7 @@ import { IConfirmedTransaction, SignedAndChainedBlockType, SignedBlockType } fro
  * Called Before core module starts issuing any database query.
  * You can interrupt the block apply process by throwing or rejecting a promise.
  */
-export const OnPostApplyBlock = createAction<(block: IBlocksModel, tx?: Transaction, broadcast?: boolean) => Promise<void>>('core/blocks/chain/applyBlock.post');
+export const OnPostApplyBlock = createAction<(block: IBlocksModel, broadcast?: boolean) => Promise<void>>('core/blocks/chain/applyBlock.post');
 /**
  * Called After core module has performed all its operation about destroying a block.
  * You can interrupt the process by throwing or rejecting

@@ -22,7 +22,7 @@ import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Op, Transaction } from 'sequelize';
 import { BlocksSymbols } from '../blocksSymbols';
-import { OnDestroyBlock, OnPostApplyBlock, OnTransactionsSaved } from '../hooks';
+import { ApplyBlockDBOps, OnDestroyBlock, OnPostApplyBlock, OnTransactionsSaved } from '../hooks';
 import { BlocksModuleUtils } from './utils';
 import bs = require('binary-search');
 
@@ -182,13 +182,26 @@ export class BlocksModuleChain {
       block instanceof this.BlocksModel ? block.toJSON() : block
     );
     await this.BlocksModel.sequelize
-      .transaction((tx) => this.hookSystem
-        .do_action(
-          OnPostApplyBlock.name,
-          this.blocksModule.lastBlock,
-          tx,
-          false
-        )
+      .transaction(async (tx) => {
+          // perform extra operations via filter.
+          await this.dbHelper.performOps(
+            await this.hookSystem.apply_filters(
+              ApplyBlockDBOps.name,
+              [],
+              block,
+              true
+            ),
+            tx
+          );
+          // Perform postApplyHook
+          await this.hookSystem
+            .do_action(
+              OnPostApplyBlock.name,
+              this.blocksModule.lastBlock,
+              tx,
+              false
+            );
+        }
       );
   }
 
@@ -215,81 +228,93 @@ export class BlocksModuleChain {
       return !exists && typeof(accountsMap[tx.senderId]) !== 'undefined';
     });
     // Start atomic block saving.
-    await this.BlocksModel.sequelize.transaction(async (dbTX) => {
-      const ops: Array<DBOp<any>> = [];
 
-      const recipients = _.sortedUniq(block.transactions
-        .map((tx) => tx.recipientId)
-        .filter((recipient) => recipient)
-        .sort()
+    const ops: Array<DBOp<any>> = [];
+
+    const recipients = _.sortedUniq(block.transactions
+      .map((tx) => tx.recipientId)
+      .filter((recipient) => recipient)
+      .sort()
+    );
+
+    // undo all overlapping txs.
+    for (const overTX of overlappingTXs) {
+      ops.push(... await this.transactionLogic.undoUnconfirmed(overTX, accountsMap[overTX.senderId]));
+    }
+
+    if (recipients.length > 0) {
+      ops.push({
+        model: this.AccountsModel,
+        query: await this.AccountsModel.createBulkAccountsSQL(recipients),
+        type : 'custom',
+      });
+    }
+
+    for (const tx of block.transactions) {
+      if (this.txPool.unconfirmed.has(tx.id)) {
+        continue;
+      }
+      ops.push(
+        ... await this.transactionLogic.applyUnconfirmed(
+          tx,
+          accountsMap[tx.senderId],
+          tx.requesterPublicKey
+            ? accountsMap[this.accountsModule.generateAddressByPublicKey(tx.requesterPublicKey)]
+            : undefined
+        )
       );
+    }
 
-      // undo all overlapping txs.
-      for (const overTX of overlappingTXs) {
-        ops.push(... await this.transactionLogic.undoUnconfirmed(overTX, accountsMap[overTX.senderId]));
-      }
+    // Apply
+    for (const tx of block.transactions) {
+      ops.push(
+        ... await this.transactionLogic.apply(tx as any, block, accountsMap[tx.senderId])
+      );
+      this.txPool.unconfirmed.remove(tx.id);
+    }
 
-      if (recipients.length > 0) {
-        ops.push({
-          model: this.AccountsModel,
-          query: await this.AccountsModel.createBulkAccountsSQL(recipients),
-          type : 'custom',
-        });
-      }
+    const filteredOPs = (await this.hookSystem.apply_filters(
+      ApplyBlockDBOps.name,
+      ops,
+      block,
+      saveBlock
+    )).filter((op) => op != null);
 
-      for (const tx of block.transactions) {
-        if (this.txPool.unconfirmed.has(tx.id)) {
-          continue;
+    if (filteredOPs.length > 0 || saveBlock) {
+      await this.BlocksModel.sequelize.transaction(async (dbTX) => {
+        await this.dbHelper.performOps(filteredOPs, dbTX);
+
+        if (saveBlock) {
+          try {
+            await this.saveBlock(block, dbTX);
+          } catch (err) {
+            this.logger.error('Failed to save block...');
+            this.logger.error('Block', block.id);
+            throw err;
+          }
+          this.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');
         }
-        ops.push(
-          ... await this.transactionLogic.applyUnconfirmed(
-            tx,
-            accountsMap[tx.senderId],
-            tx.requesterPublicKey
-              ? accountsMap[this.accountsModule.generateAddressByPublicKey(tx.requesterPublicKey)]
-              : undefined
-          )
+
+        // await this.bus.message('newBlock', block, broadcast);
+
+        this.blocksModule.lastBlock = deepFreeze(
+          block instanceof this.BlocksModel ? block.toJSON() : block
         );
-      }
-
-      // Apply
-      for (const tx of block.transactions) {
-        ops.push(
-          ... await this.transactionLogic.apply(tx as any, block, accountsMap[tx.senderId])
+        await this.hookSystem.do_action(
+          OnPostApplyBlock.name,
+          this.blocksModule.lastBlock,
+          broadcast
         );
-        this.txPool.unconfirmed.remove(tx.id);
-      }
-
-      if (ops.length > 0) {
-        await this.dbHelper.performOps(ops, dbTX);
-      }
-      if (saveBlock) {
-        try {
-          await this.saveBlock(block, dbTX);
-        } catch (err) {
-          this.logger.error('Failed to save block...');
-          this.logger.error('Block', block.id);
-          throw err;
-        }
-        this.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');
-      }
-
-      // await this.bus.message('newBlock', block, broadcast);
-
+      }).catch((err) => {
+        // Allow cleanup as processing finished even if rollback.
+        this.isProcessing = false;
+        throw err;
+      });
+    } else {
       this.blocksModule.lastBlock = deepFreeze(
         block instanceof this.BlocksModel ? block.toJSON() : block
       );
-      await this.hookSystem.do_action(
-        OnPostApplyBlock.name,
-        this.blocksModule.lastBlock,
-        dbTX,
-        broadcast
-      );
-    }).catch((err) => {
-      // Allow cleanup as processing finished even if rollback.
-      this.isProcessing = false;
-      throw err;
-    });
+    }
 
     // remove overlapping txs from unconfirmed and move it to queued to allow re-process
     // If some of the overlapping txs are now "invalid" they will be discared within the next

@@ -31,7 +31,7 @@ export class BlocksP2P extends Extendable {
   private logger: ILogger;
 
   @OnPostApplyBlock(-100)
-  public async onNewBlock(block: SignedAndChainedBlockType & { relays?: number }, dbTx: any, broadcast: boolean) {
+  public async onNewBlock(block: SignedAndChainedBlockType & { relays?: number }, broadcast: boolean) {
     if (broadcast) {
       const broadhash = this.systemModule.broadhash;
       block           = _.cloneDeep(block);

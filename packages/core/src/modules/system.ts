@@ -227,7 +227,7 @@ export class SystemModule extends Extendable implements ISystemModule {
   }
 
   @OnPostApplyBlock(1000)
-  public async onNewBlock(block: SignedBlockType & { relays?: number }, dbTx: any, broadcast: boolean) {
+  public async onNewBlock(block: SignedBlockType & { relays?: number }, broadcast: boolean) {
     if (broadcast) {
       await this.update();
     }

@@ -68,58 +68,40 @@ export class RoundsModule {
    * Performs a backward tick on the round
    * @param {SignedBlockType} block
    * @param {SignedBlockType} previousBlock
-   * @param {Transaction} transaction
    */
-  public backwardTick(block: IBlocksModel, previousBlock: SignedBlockType, transaction: Transaction) {
-    return this.innerTick(block, transaction, true, async (roundLogicScope) => {
+  public backwardTick(block: IBlocksModel, previousBlock: SignedBlockType): Promise<Array<DBOp<any>>> {
+    return this.innerTick(block, true, async (roundLogicScope) => {
       this.logger.debug('Performing backward tick');
 
       const roundLogic            = new this.RoundLogic(roundLogicScope, this.slots);
-      const ops: Array<DBOp<any>> = [...roundLogic.mergeBlockGenerator()];
+      const ops: Array<DBOp<any>> = [];
       if (roundLogicScope.finishRound) {
         // call backwardLand only if this was the last block in round.
         ops.push(... roundLogic.backwardLand());
       }
       ops.push(roundLogic.markBlockId());
-      return this.dbHelper.performOps(ops, transaction);
+      return ops;
     });
   }
 
-  public async tick(block: SignedBlockType, transaction: Transaction) {
-    return this.innerTick(
+  public async tick(block: SignedBlockType): Promise<Array<DBOp<any>>> {
+    return this.innerTick<Array<DBOp<any>>>(
       block,
-      transaction,
       false,
-      async (roundLogicScope) => {
+      async (roundLogicScope): Promise<Array<DBOp<any>>> => {
         this.logger.debug('Performing forward tick');
         const roundLogic            = new this.RoundLogic(roundLogicScope, this.slots);
-        const snapshotRound         = (
-          this.getSnapshotRounds() > 0 && this.getSnapshotRounds() === roundLogicScope.round
-        );
-        const ops: Array<DBOp<any>> = [...roundLogic.mergeBlockGenerator()];
+        const ops: Array<DBOp<any>> = [];
         if (roundLogicScope.finishRound) {
           ops.push(... roundLogic.land());
-          if (snapshotRound) {
-            ops.push(roundLogic.truncateBlocks());
-          }
         }
-        ops.push(roundLogic.markBlockId());
-        return this.dbHelper.performOps(ops, transaction);
+        return ops;
       });
   }
 
-  /**
-   * gets the snapshot rounds
-   */
-  private getSnapshotRounds() {
-    return this.appStateLogic.get('rounds.snapshot') || 0;
-  }
-
-  private async innerTick(block: SignedBlockType,
-                          dbTransaction: Transaction,
-                          backwards: boolean,
-                          txGenerator: (ls: RoundLogicScope) => Promise<any>,
-                          afterTxPromise: () => Promise<any> = () => Promise.resolve(null)) {
+  private async innerTick<T>(block: SignedBlockType,
+                             backwards: boolean,
+                             txGenerator: (ls: RoundLogicScope) => Promise<T>): Promise<T> {
     const round     = this.roundsLogic.calcRound(block.height);
     const nextRound = this.roundsLogic.calcRound(block.height + 1);
 
@@ -129,7 +111,7 @@ export class RoundsModule {
     try {
       // Set ticking flag to true
       this.appStateLogic.set('rounds.isTicking', true);
-      let roundSums = finishRound ? await this.sumRound(round, dbTransaction) : null;
+      let roundSums = finishRound ? await this.sumRound(round) : null;
       if (block.height === 1 && roundSums.roundDelegates.length !== 1) {
         // in round 1 (and height=1) and when verifying snapshot delegates are there (and created in 2nd round #1)
         // so roundDelegates are 101 not 1 (genesis generator) causing genesis to have an extra block accounted.
@@ -158,9 +140,9 @@ export class RoundsModule {
         roundOutsiders,
         ...roundSums,
       };
-      await txGenerator(roundLogicScope);
-      await afterTxPromise();
+      const r = await txGenerator(roundLogicScope);
       this.appStateLogic.set('rounds.isTicking', false);
+      return r;
     } catch (e) {
       this.logger.warn(`Error while doing modules.innerTick [backwards=${backwards}]`, e.message || e);
       this.appStateLogic.set('rounds.isTicking', false);
@@ -184,7 +166,7 @@ export class RoundsModule {
   }
 
   // tslint:disable-next-line
-  private async sumRound(round: number, tx: Transaction): Promise<{ roundFees: number, roundRewards: number[], roundDelegates: Buffer[] }> {
+  private async sumRound(round: number): Promise<{ roundFees: number, roundRewards: number[], roundDelegates: Buffer[] }> {
     this.logger.debug('Summing round', round);
     // tslint:disable-next-line
     type sumRoundRes = { fees: null | string, rewards: null | string[], delegates: null | Buffer[] };
@@ -193,7 +175,6 @@ export class RoundsModule {
       {
         plain       : true, // Returns single row.
         replacements: { activeDelegates: this.constants.activeDelegates, round },
-        transaction : tx,
         type        : sequelize.QueryTypes.SELECT,
       }
     );

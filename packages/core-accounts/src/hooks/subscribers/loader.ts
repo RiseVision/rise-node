@@ -37,17 +37,6 @@ export class AccountsLoaderSubscriber extends DecoratedSubscriber {
 
   @OnCheckIntegrity()
   private async onLoadIntegrityChecks(b: number) {
-    const updatedAccountsInLastBlock = await this.AccountsModel
-      .count({
-        where: {
-          blockId: { [Op.in]: sequelize.literal('(SELECT "id" from blocks ORDER BY "height" DESC LIMIT 1)') },
-        },
-      });
-
-    if (updatedAccountsInLastBlock === 0) {
-      throw new Error('Detected missed blocks in mem_accounts');
-    }
-
     const orphanedMemAccounts = await this.AccountsModel.sequelize.query(
       fs.readFileSync(
         path.join(__dirname, '..', '..', '..', 'sql', 'getOrphanedMemAccounts.sql'),
