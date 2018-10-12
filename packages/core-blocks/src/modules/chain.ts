@@ -229,11 +229,13 @@ export class BlocksModuleChain {
         ops.push(... await this.transactionLogic.undoUnconfirmed(overTX, accountsMap[overTX.senderId]));
       }
 
-      ops.push({
-        model: this.AccountsModel,
-        query: await this.AccountsModel.createBulkAccountsSQL(recipients),
-        type : 'custom',
-      });
+      if (recipients.length > 0) {
+        ops.push({
+          model: this.AccountsModel,
+          query: await this.AccountsModel.createBulkAccountsSQL(recipients),
+          type : 'custom',
+        });
+      }
 
       for (const tx of block.transactions) {
         if (this.txPool.unconfirmed.has(tx.id)) {
@@ -258,7 +260,9 @@ export class BlocksModuleChain {
         this.txPool.unconfirmed.remove(tx.id);
       }
 
-      await this.dbHelper.performOps(ops, dbTX);
+      if (ops.length > 0) {
+        await this.dbHelper.performOps(ops, dbTX);
+      }
       if (saveBlock) {
         try {
           await this.saveBlock(block, dbTX);

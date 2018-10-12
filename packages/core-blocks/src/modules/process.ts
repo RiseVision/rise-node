@@ -36,6 +36,23 @@ import { BlocksModuleVerify } from './verify';
 
 const schema = require('../../schema/blocks.json');
 
+const bit:any = {start: {}, counters: {}, duration: {}};
+
+const pushTime1= (type: 'start'|'end', event: string) => {
+  if (type === 'end') {
+    bit.duration[event] = (bit.duration[event] || 0) + Date.now() - bit.start[event];
+    bit.counters[event] = (bit.counters[event] || 0) + 1;
+    if (bit.counters[event] % 100 === 0) {
+      console.log(event, bit.duration[event] / 100);
+      bit.duration[event] = 0;
+    }
+  } else {
+    bit.start[event] = Date.now();
+  }
+};
+const pushTime2 = (type: string, event: string) => null;
+
+const pushTime = pushTime2;
 @injectable()
 export class BlocksModuleProcess {
 
@@ -192,16 +209,18 @@ export class BlocksModuleProcess {
       if (this.isCleaning) {
         return;
       }
+      pushTime('start', 'block');
       this.logger.debug('Processing block', block.id);
-
+      pushTime('start', 'attachAssets');
       // Attach assets to block transactions
       await this.transactionLogic.attachAssets(block.transactions);
-
+      pushTime('end', 'attachAssets');
       if (verify && block.id !== this.genesisBlock.id) {
         // Sanity check of the block, if values are coherent.
         // No access to database.
+        pushTime('start', 'verifyBlock');
         const check = await this.blocksVerifyModule.verifyBlock(block);
-
+        pushTime('end', 'verifyBlock');
         if (!check.verified) {
           this.logger.error(`Block ${block.id} verification failed`, check.errors.join(', '));
           // Return first error from checks
@@ -216,18 +235,24 @@ export class BlocksModuleProcess {
         // FIXME: Looks like we are missing some validations here, because applyBlock is
         // different than processBlock used elesewhere
         // - that need to be checked and adjusted to be consistent
+        pushTime('start', 'txAccounts');
         const txAccounts = await this.accountsModule.txAccounts(block.transactions);
+        pushTime('end', 'txAccounts');
+        pushTime('start', 'checkTXsAccountsMap');
         await this.accountsModule.checkTXsAccountsMap(block.transactions, txAccounts);
+        pushTime('end', 'checkTXsAccountsMap');
+        pushTime('start', 'applyBlock');
         await this.blocksChainModule.applyBlock(
           block,
           false,
           false,
           txAccounts
         );
+        pushTime('end', 'applyBlock');
       }
 
       this.blocksModule.lastBlock = block;
-
+      pushTime('end', 'block');
     }
 
     return this.blocksModule.lastBlock;

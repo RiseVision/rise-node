@@ -53,6 +53,9 @@ export class AccountsModule implements IAccountsModule {
   }
 
   public async txAccounts(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: IAccountsModel }> {
+    if (txs.length === 0) {
+      return {};
+    }
     const allSenders = this.unfoldSenders(txs);
 
     const senderAccounts = await this.AccountsModel
