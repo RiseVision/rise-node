@@ -1,4 +1,3 @@
-import { ExceptionsManager, ExceptionSymbols, RunThroughExceptions } from '@risevision/core-exceptions';
 import {
   IAccountsModule,
   IAppState,
@@ -13,7 +12,6 @@ import { OrderBy } from '@risevision/core-utils';
 import * as crypto from 'crypto';
 import { inject, injectable, named } from 'inversify';
 import * as z_schema from 'z-schema';
-import { DposExceptionsList } from '../dposExceptionsList';
 import { DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
 import { RoundsLogic } from '../logic/rounds';
 import { AccountsModelForDPOS, DelegatesModel } from '../models';
@@ -31,8 +29,6 @@ export class DelegatesModule {
   @inject(dPoSSymbols.constants)
   private dposConstants: DposConstantsType;
   // tslint:disable-next-line member-ordering
-  @inject(ExceptionSymbols.manager)
-  public excManager: ExceptionsManager;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(dPoSSymbols.helpers.slots)
@@ -171,7 +167,7 @@ export class DelegatesModule {
   /**
    * Assets that the block was signed by the correct delegate.
    */
-  @RunThroughExceptions(DposExceptionsList.assertValidSlot)
+  // @RunThroughExceptions(DposExceptionsList.assertValidSlot)
   public async assertValidBlockSlot(block: SignedBlockType) {
     const delegates = await this.generateDelegateList(block.height);
 

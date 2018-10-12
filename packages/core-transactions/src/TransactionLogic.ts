@@ -1,4 +1,3 @@
-import { ExceptionsManager, ExceptionSymbols, RunThroughExceptions } from '@risevision/core-exceptions';
 import {
   IAccountLogic,
   IAccountsModel,
@@ -31,7 +30,6 @@ import { WordPressHookSystem } from 'mangiafuoco';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
 import { BaseTx } from './BaseTx';
-import { TXExceptions } from './exceptionLists';
 import { TxLogicStaticCheck, TxLogicVerify } from './hooks/actions';
 import { TxApplyFilter, TxApplyUnconfirmedFilter, TxUndoFilter, TxUndoUnconfirmedFilter } from './hooks/filters';
 import { TXSymbols } from './txSymbols';
@@ -45,9 +43,6 @@ export class TransactionLogic implements ITransactionLogic {
 
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
-
-  @inject(ExceptionSymbols.manager)
-  public excManager: ExceptionsManager;
 
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
@@ -292,7 +287,6 @@ export class TransactionLogic implements ITransactionLogic {
   /**
    * Checks if balanceKey is less than amount for sender
    */
-  @RunThroughExceptions(TXExceptions.checkBalance)
   public checkBalance(amount: number | BigNumber, balanceKey: 'balance' | 'u_balance',
                       tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: IAccountsModel) {
     const accountBalance  = sender[balanceKey].toString();
@@ -411,7 +405,6 @@ export class TransactionLogic implements ITransactionLogic {
     );
   }
 
-  @RunThroughExceptions(TXExceptions.tx_apply)
   public async apply(tx: IConfirmedTransaction<any>,
                      block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
     if (!await this.ready(tx, sender)) {
@@ -471,7 +464,6 @@ export class TransactionLogic implements ITransactionLogic {
     return await this.hookSystem.apply_filters(TxUndoFilter.name, ops, tx, block, sender);
   }
 
-  @RunThroughExceptions(TXExceptions.tx_applyUnconfirmed)
   // tslint:disable-next-line max-line-length
   public async applyUnconfirmed(tx: IBaseTransaction<any>, sender: IAccountsModel, requester?: IAccountsModel): Promise<Array<DBOp<any>>> {
     const amount        = new MyBigNumb(tx.amount.toString()).plus(tx.fee.toString());

@@ -1,6 +1,6 @@
 import { ExceptionsManager, ExceptionSymbols } from '@risevision/core-exceptions';
 import { BaseCoreModule } from '@risevision/core-launchpad';
-import { allExceptionCreator } from './exceptions/mainnet';
+import { registerExceptions } from './exceptions/mainnet';
 
 export class CoreModule extends BaseCoreModule<any> {
   public configSchema = {};
@@ -8,6 +8,6 @@ export class CoreModule extends BaseCoreModule<any> {
 
   public async initAppElements(): Promise<void> {
     const manager = this.container.get<ExceptionsManager>(ExceptionSymbols.manager);
-    await Promise.all(allExceptionCreator.map((e) => e(manager)));
+    await registerExceptions(manager, this.container);
   }
 }
