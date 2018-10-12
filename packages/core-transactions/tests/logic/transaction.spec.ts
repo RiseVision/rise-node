@@ -2,14 +2,13 @@ import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
-import * as uuid from 'uuid';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import {
   TransactionLogic,
   TransactionsModel,
-  TxApplyFilter, TxApplyUnconfirmedFilter, TXExceptions,
+  TxApplyFilter, TxApplyUnconfirmedFilter,
   TxLogicStaticCheck,
   TxLogicVerify,
   TXSymbols, TxUndoFilter, TxUndoUnconfirmedFilter
@@ -19,12 +18,8 @@ import { IAccountLogic, VerificationType } from '../../../core-interfaces/src/lo
 import { SendTransaction } from '../../src/sendTransaction';
 import {
   IBaseTransaction,
-  IConfirmedTransaction,
-  IKeypair,
   SignedAndChainedBlockType, SignedBlockType,
-  TransactionType
 } from '../../../core-types/src';
-import { ExceptionsManager, ExceptionSymbols } from '../../../core-exceptions/src';
 import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
 import { Symbols } from '../../../core-interfaces/src';
 import { createSendTransaction, toBufferedTransaction } from '../utils/txCrafter';
@@ -49,7 +44,6 @@ describe('logic/transaction', () => {
   let container: Container;
   let cryptoImpl: ICrypto;
   let accountLogic: IAccountLogic;
-  let excManager: ExceptionsManager;
   let sendTransaction: SendTransaction;
   let sandbox: SinonSandbox;
   let logger: ILogger;
@@ -71,7 +65,6 @@ describe('logic/transaction', () => {
     accountLogic    = container.get(Symbols.logic.account);
     logger          = container.get(Symbols.helpers.logger);
     genesisBlock    = container.get(Symbols.generic.genesisBlock);
-    excManager      = container.get(ExceptionSymbols.manager);
     txModel         = container.getNamed(ModelSymbols.model, Symbols.models.transactions);
     account = new LiskWallet('meow', 'R');
     tx = toBufferedTransaction(createSendTransaction(account, '15256762582730568272R', 10, { amount: 108910891000000}));
@@ -705,21 +698,6 @@ describe('logic/transaction', () => {
       expect(stub.firstCall.args.length).eq(4);
       expect(res[0]).eq('meow');
       await a.unHook();
-    });
-    it('should run through exceptions', async () => {
-      const canHandleStub = sandbox.stub().returns(true);
-      const handleStub = sandbox.stub().resolves(['haha']);
-      excManager.registerExceptionHandler(TXExceptions.tx_apply, 'test', {
-        canHandle: canHandleStub,
-        handle: handleStub,
-      });
-      const res = await instance.apply(tx as any, block, sender);
-      expect(res).deep.eq(['haha']);
-      expect(canHandleStub.calledOnce).true;
-      expect(handleStub.calledOnce).true;
-      expect(canHandleStub.calledWith(instance, tx, block, sender)).true;
-      expect(handleStub.calledWith(instance, tx, block, sender)).true;
-      excManager.unregisterExceptionHandler(TXExceptions.tx_apply, 'test');
     });
   });
 
