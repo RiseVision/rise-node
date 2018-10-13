@@ -8,3 +8,4 @@ export * from './peer';
 export * from './peersLogic';
 export * from './peersModule';
 export * from './transport';
+export * from './utils/TransportWrapper';

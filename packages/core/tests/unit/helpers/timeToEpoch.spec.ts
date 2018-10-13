@@ -1,9 +1,9 @@
 import { Container } from 'inversify';
-import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
+import { SinonSandbox } from 'sinon';
 import { expect } from 'chai';
 import { TimeToEpoch } from '../../../src/helpers';
-import { createContainer } from '@risevision/core-launchpad/tests/utils/createContainer';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ConstantsType } from '@risevision/core-types';
 import { Symbols } from '@risevision/core-interfaces';
 

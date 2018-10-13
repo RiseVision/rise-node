@@ -3,28 +3,24 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as proxyquire from 'proxyquire';
-import * as sequelize from 'sequelize';
-import { Op } from 'sequelize';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import * as helpers from '../../../src/helpers';
 import { LoaderModule } from '../../../src/modules';
-import { createContainer } from '../../../../core-launchpad/tests/utils/createContainer';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import {
-  Symbols,
   IAppState,
   IBlocksModel,
   IBlocksModule,
-  ITransactionsModule,
-  ISystemModule, ISequence, ITransactionLogic, IJobsQueue
+  IJobsQueue,
+  ISystemModule,
+  Symbols
 } from '@risevision/core-interfaces';
 import { CoreSymbols } from '../../../src';
-import { LoggerStub } from '../../../../core-utils/tests/stubs';
+import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import { PeerType } from '@risevision/core-types';
-import { createFakePeers } from '../../../../core-p2p/tests/utils/fakePeersFactory';
-import { PeersLogic, IPeersModule, IBroadcasterLogic, p2pSymbols  } from '@risevision/core-p2p';
+import { createFakePeers } from '@risevision/core-p2p/tests/unit/utils/fakePeersFactory';
+import { IPeersModule, PeersLogic } from '@risevision/core-p2p';
 import { wait } from '@risevision/core-utils';
-import { BlocksModuleProcess, BlocksSymbols } from '@risevision/core-blocks';
 import { ModelSymbols } from '@risevision/core-models';
 
 chai.use(chaiAsPromised);

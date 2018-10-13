@@ -6,7 +6,7 @@ import { SinonSandbox } from 'sinon';
 import * as sinon from 'sinon';
 import { LoaderAPI } from '../../../src/apis';
 import { IAppState, IBlocksModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
-import { createContainer } from '../../../../core-launchpad/tests/utils/createContainer';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { APISymbols } from '@risevision/core-apis';
 import { LoaderModule } from '../../../src/modules';
 import { CoreSymbols } from '../../../src';

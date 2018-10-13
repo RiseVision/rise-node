@@ -4,7 +4,7 @@ import { Container } from 'inversify';
 import 'reflect-metadata';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { createContainer } from '../../../../core-launchpad/tests/utils/createContainer';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { SystemModule } from '../../../src/modules';
 import { ConstantsType } from '@risevision/core-types';
 import { IBlocksModel, IBlocksModule, Symbols } from '@risevision/core-interfaces';
@@ -47,9 +47,9 @@ describe('modules/system', () => {
   });
 
   beforeEach(() => {
-    sandbox                   = sinon.createSandbox();
-    inst = container.get(Symbols.modules.system);
-    blocksModule = container.get(Symbols.modules.blocks);
+    sandbox                = sinon.createSandbox();
+    inst                   = container.get(Symbols.modules.system);
+    blocksModule           = container.get(Symbols.modules.blocks);
     blocksModule.lastBlock = {
       height: 10,
     } as any;
@@ -72,8 +72,8 @@ describe('modules/system', () => {
       expect(inst.getMinVersion(3)).to.be.eq('^0.1.3');
     });
     it('should return ^0.1.3 for default height taken from blocksModule', () => {
-      const origStub     = sinon.stub().returns(10);
-      const stub         = sinon.stub(blocksModule.lastBlock, 'height')
+      const origStub = sinon.stub().returns(10);
+      const stub     = sinon.stub(blocksModule.lastBlock, 'height')
         .get(() => origStub());
       expect(inst.getMinVersion()).to.be.eq('^0.1.3');
 
@@ -129,8 +129,8 @@ describe('modules/system', () => {
     });
 
     it('should use height from blockmodule if not provided', () => {
-      const origStub     = sinon.stub().returns(10);
-      const stub         = sinon.stub(blocksModule.lastBlock, 'height')
+      const origStub = sinon.stub().returns(10);
+      const stub     = sinon.stub(blocksModule.lastBlock, 'height')
         .get(() => origStub());
 
       inst.getFees();
