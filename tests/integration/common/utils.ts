@@ -23,6 +23,10 @@ import { IBaseTransaction } from '../../../src/logic/transactions';
 const delegates    = require('../genesisDelegates.json');
 const genesisBlock = require('../genesisBlock.json');
 
+export const addNewDelegate = (d) => {
+  delegates.push(d);
+};
+
 export const findDelegateByPkey = (pk: publicKey): {
   secret: string,
   address: string,
@@ -30,11 +34,13 @@ export const findDelegateByPkey = (pk: publicKey): {
   username: string
 } => {
   const del    = delegates.filter((d) => d.keypair.publicKey === pk)[0];
-  del.username = genesisBlock
-    .transactions
-    .filter((t) => t.type === 2)
-    .filter((t) => t.senderPublicKey.toString('hex') === pk)
-    .map((t) => t.asset.delegate.username)[0];
+  if (typeof del.username === 'undefined') {
+    del.username = genesisBlock
+      .transactions
+      .filter((t) => t.type === 2)
+      .filter((t) => t.senderPublicKey.toString('hex') === pk)
+      .map((t) => t.asset.delegate.username)[0];
+  }
 
   return del;
 };
