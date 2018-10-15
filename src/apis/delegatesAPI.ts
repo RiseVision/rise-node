@@ -233,7 +233,7 @@ export class DelegatesAPI {
     }
 
     return {
-      currentBlock: curBlock,
+      currentBlock: this.BlocksModel.toStringBlockType(curBlock, this.TransactionsModel, this.blocks),
       currentBlockSlot,
       currentSlot,
       delegates   : nextForgers,
