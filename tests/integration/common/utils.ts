@@ -26,6 +26,9 @@ const genesisBlock = require('../genesisBlock.json');
 export const addNewDelegate = (d) => {
   delegates.push(d);
 };
+export const removeDelegatePass = (address: string) => {
+  return delegates.splice([].findIndex((d) => d.address === address), 1);
+};
 
 export const findDelegateByPkey = (pk: publicKey): {
   secret: string,

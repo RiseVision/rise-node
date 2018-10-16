@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import {
   addNewDelegate, createRandomAccountWithFunds,
-  createRegDelegateTransaction, createVoteTransaction, createWallet,
+  createRegDelegateTransaction, createVoteTransaction, createWallet, removeDelegatePass,
 } from '../common/utils';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import { BlocksModule, RoundsModule } from '../../../src/modules';
@@ -48,6 +48,7 @@ describe('Fair vote system', async () => {
     await createVoteTransaction(1, newDelegateWallet, newDelegateWallet.publicKey, true);
   });
   afterEach(async () => {
+    removeDelegatePass(newDelegateWallet.address);
     await initializer.rawDeleteBlocks(3);
   });
 
@@ -93,9 +94,12 @@ describe('Fair vote system', async () => {
     acc.set('producedblocks', 200);
     acc.set('missedblocks', 201);
     await acc.save();
-    await initializer.rawMineBlocks(constants.activeDelegates);
-    blocksToDelete += constants.activeDelegates;
-    const accAfter = await accountsModel.findById(newDelegateWallet.address);
+    let accAfter = acc;
+    while (accAfter.producedblocks <= 200) {
+      await initializer.rawMineBlocks(constants.activeDelegates);
+      blocksToDelete += constants.activeDelegates;
+      accAfter = await accountsModel.findById(newDelegateWallet.address);
+    }
     await initializer.rawDeleteBlocks(blocksToDelete);
     expect(accAfter.producedblocks).to.be.eq(201);
     expect(accAfter.missedblocks).to.be.eq(201);
