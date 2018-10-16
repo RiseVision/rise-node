@@ -92,7 +92,7 @@ describe('Fair vote system', async () => {
     expect(initialVotesWeight).to.be.equal(acc.balance);
     acc.set('producedblocks', 200);
     acc.set('missedblocks', 201);
-    acc.save();
+    await acc.save();
     await initializer.rawMineBlocks(constants.activeDelegates);
     blocksToDelete += constants.activeDelegates;
     const accAfter = await accountsModel.findById(newDelegateWallet.address);
