@@ -1,6 +1,6 @@
 import { Column, DataType, HasMany, Model, PrimaryKey, Table } from 'sequelize-typescript';
 import * as _ from 'lodash';
-import { SignedBlockType } from '../logic';
+import { SignedAndChainedBlockType, SignedBlockType } from '../logic';
 import { TransactionsModel } from './TransactionsModel';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
@@ -67,7 +67,13 @@ export class BlocksModel extends Model<BlocksModel> {
   @HasMany(() => TransactionsModel, { as: "TransactionsModel" })
   private TransactionsModel: TransactionsModel[];
 
-  // tslint:disable member-ordering
+  public toJSON(): SignedAndChainedBlockType {
+    const toRet = super.toJSON();
+    toRet.transactions = toRet.TransactionsModel;
+    return toRet;
+  }
+
+// tslint:disable member-ordering
   public static classFromPOJO(pojo: SignedBlockType): BlocksModel {
     const toRet = new this();
     Object.keys(pojo).forEach((k) => toRet[k] = pojo[k]);
@@ -88,7 +94,6 @@ export class BlocksModel extends Model<BlocksModel> {
       generatorPublicKey: b.generatorPublicKey.toString('hex'),
       payloadHash       : b.payloadHash.toString('hex'),
     };
-    delete toRet.TransactionsModel;
     return toRet;
   }
 }
