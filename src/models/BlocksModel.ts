@@ -68,8 +68,12 @@ export class BlocksModel extends Model<BlocksModel> {
   private TransactionsModel: TransactionsModel[];
 
   public toJSON(): SignedAndChainedBlockType {
-    const toRet = super.toJSON();
-    toRet.transactions = toRet.TransactionsModel;
+    const toRet        = super.toJSON();
+    toRet.transactions = (toRet.TransactionsModel || [])
+      .map((t, idx) => {
+        t.asset = this.transactions[idx].asset;
+        return t;
+      });
     return toRet;
   }
 
@@ -81,7 +85,7 @@ export class BlocksModel extends Model<BlocksModel> {
   }
 
   public static toStringBlockType(btmp: SignedBlockType, TxModel: typeof TransactionsModel, blocksModule: IBlocksModule): SignedBlockType<string> {
-    const b = _.cloneDeep(btmp instanceof BlocksModel ? btmp.toJSON() : btmp);
+    const b   = _.cloneDeep(btmp instanceof BlocksModel ? btmp.toJSON() : btmp);
     const txs = (btmp.transactions || [])
       .map((t) => TxModel.toTransportTransaction(t, blocksModule));
     if (!Buffer.isBuffer(b.blockSignature) || !Buffer.isBuffer(b.generatorPublicKey) || !Buffer.isBuffer(b.payloadHash)) {

@@ -10,10 +10,10 @@ UPDATE "mem_accounts" AS m SET "votesWeight" = vote_weight FROM (
     SUM("total_balance"::bigint) *
         (
             CASE WHEN ma.producedblocks + ma.missedblocks < 200
-            THEN 100.00
-            ELSE ROUND(100 - (ma.missedblocks::numeric / (ma.producedblocks + ma.missedblocks + 1) * 100), 2)
+            THEN 1
+            ELSE ma.producedblocks::numeric / (ma.producedblocks + ma.missedblocks)
             END
-        )::float/100 AS vote_weight
+        )::float AS vote_weight
         FROM mem_accounts ma
     LEFT JOIN mem_accounts2delegates ma2d
         ON ENCODE(ma."publicKey", 'hex')=ma2d."dependentId"
