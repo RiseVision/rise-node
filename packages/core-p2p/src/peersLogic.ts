@@ -146,7 +146,7 @@ export class PeersLogic {
       .uniqWith((a, b) => `${a.ip}${a.port}` === `${b.ip}${b.port}`)
       .filter((peer) => {
         if ((process.env.NODE_ENV || '').toUpperCase() === 'TEST') {
-          return peer.nonce !== this.systemModule.getNonce() && (peer.os !== 'lisk-js-api');
+          return peer.nonce !== this.systemModule.getNonce();
         }
         return !ip.isPrivate(peer.ip) && peer.nonce !== this.systemModule.getNonce() && (peer.os !== 'lisk-js-api');
       })

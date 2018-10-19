@@ -20,7 +20,7 @@ import { getKeypairByPkey } from './utils';
 
 export class IntegrationTestInitializer {
   public appManager: AppManager;
-
+  public expressApp: Express.Application;
   public setupEach() {
     const s = this;
     beforeEach(function () {
@@ -197,6 +197,7 @@ export class IntegrationTestInitializer {
     this.createAppManager();
     await this.appManager.initAppElements();
     await this.appManager.finishBoot();
+    this.expressApp = this.appManager.container.get(p2pSymbols.express);
   }
 
   private async runAfter() {

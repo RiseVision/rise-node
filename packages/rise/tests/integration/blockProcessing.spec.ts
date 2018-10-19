@@ -1,29 +1,31 @@
+import 'reflect-metadata';
 import { expect } from 'chai';
 import {
   createRandomAccountsWithFunds,
-  createRegDelegateTransaction, createSecondSignTransaction, createVoteTransaction,
+  createRegDelegateTransaction,
+  createSecondSignTransaction,
+  createVoteTransaction,
   easyCreateMultiSignAccount
 } from './common/utils';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
-import { BlocksModule } from '../../src/modules';
 import initializer from './common/init';
-import { Symbols } from '../../src/ioc/symbols';
-import { SignedAndChainedBlockType } from '../../src/logic';
-import { BlocksModuleChain } from '../../src/modules/blocks/';
 import * as supertest from 'supertest';
+import { BlocksModule, BlocksModuleChain, BlocksSymbols } from '@risevision/core-blocks';
+import { SignedAndChainedBlockType } from '@risevision/core-types';
 
-describe('blockProcessing', async () => {
+describe('blockProcessing', async function () {
+  this.timeout(100000);
   let blocksModule: BlocksModule;
   let blocksChainModule: BlocksModuleChain;
   initializer.setup();
   beforeEach(() => {
-    blocksModule      = initializer.appManager.container.get(Symbols.modules.blocks);
-    blocksChainModule = initializer.appManager.container.get(Symbols.modules.blocksSubModules.chain);
+    blocksModule      = initializer.appManager.container.get(BlocksSymbols.modules.blocks);
+    blocksChainModule = initializer.appManager.container.get(BlocksSymbols.modules.chain);
   });
   describe('delete block', () => {
     let creationOps: Array<{ tx: ITransaction, account: LiskWallet, senderWallet: LiskWallet }>;
-    let multisigOp: { wallet: LiskWallet, keys: LiskWallet[], tx: ITransaction};
+    let multisigOp: { wallet: LiskWallet, keys: LiskWallet[], tx: ITransaction };
     let block: SignedAndChainedBlockType;
     let initBlock: SignedAndChainedBlockType;
     let regDelegateTX: ITransaction;
@@ -33,17 +35,19 @@ describe('blockProcessing', async () => {
     let allAccounts: LiskWallet[];
     initializer.autoRestoreEach();
     beforeEach(async () => {
-      initBlock = blocksModule.lastBlock;
+      initBlock     = blocksModule.lastBlock;
+      console.log('ciao');
       creationOps   = await createRandomAccountsWithFunds(10, 10e10);
-      multisigOp = await easyCreateMultiSignAccount(3, 2);
+      multisigOp    = await easyCreateMultiSignAccount(3, 2);
+      console.log(multisigOp);
       regDelegateTX = await createRegDelegateTransaction(1, creationOps[0].account, 'meow');
-      secondSignTX = await createSecondSignTransaction(1, creationOps[1].account, creationOps[2].account.publicKey);
-      voteTX = await createVoteTransaction(1, creationOps[0].account, creationOps[0].account.publicKey, true);
+      secondSignTX  = await createSecondSignTransaction(1, creationOps[1].account, creationOps[2].account.publicKey);
+      voteTX        = await createVoteTransaction(1, creationOps[0].account, creationOps[0].account.publicKey, true);
 
-      block = blocksModule.lastBlock;
+      block       = blocksModule.lastBlock;
       allAccounts = creationOps.map((op) => op.account)
         .concat(multisigOp.wallet);
-      allTxs = creationOps.map((op) => op.tx)
+      allTxs      = creationOps.map((op) => op.tx)
         .concat(multisigOp.tx)
         .concat(regDelegateTX)
         .concat(secondSignTX)
@@ -56,7 +60,7 @@ describe('blockProcessing', async () => {
       }
       const b = blocksModule.lastBlock;
       expect(blocksModule.lastBlock.height).eq(initBlock.height);
-      const res = await supertest(initializer.appManager.expressApp)
+      const res = await supertest(initializer.expressApp)
         .get('/api/blocks/get?id=' + block.id)
         .expect(200);
 
@@ -72,7 +76,7 @@ describe('blockProcessing', async () => {
       for (const op of allTxs) {
         const txID = op.id;
 
-        const res = await supertest(initializer.appManager.expressApp)
+        const res = await supertest(initializer.expressApp)
           .get(`/api/transactions/get?id=${txID}`)
           .expect(200);
         expect(res.body.success).is.false;
@@ -85,7 +89,7 @@ describe('blockProcessing', async () => {
       }
 
       for (const account of allAccounts) {
-        const res = await supertest(initializer.appManager.expressApp)
+        const res = await supertest(initializer.expressApp)
           .get(`/api/accounts/?address=${account.address}`)
           .expect(200);
 

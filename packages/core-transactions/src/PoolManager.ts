@@ -171,19 +171,18 @@ export class PoolManager {
   protected async processQueued(tx: IBaseTransaction<any>, accMap: { [add: string]: IAccountsModel }) {
     try {
       await this.accountsModule.checkTXsAccountsMap([tx], accMap);
-      await this.module.checkTransaction(tx, accMap, null);
+      if (!await this.logic.ready(tx, accMap[tx.senderId])) {
+        await this.pool.moveTx(tx.id, 'queued', 'pending');
+        const p = await this.pool.pending.getPayload(tx);
+        p.ready = false;
+      } else {
+        await this.module.checkTransaction(tx, accMap, null);
+        await this.pool.moveTx(tx.id, 'queued', 'ready');
+      }
     } catch (e) {
       await this.pool.removeFromPool(tx.id);
       this.logger.warn(`Processing Transaction ${tx.id} resulted in error`, e);
       return;
-    }
-
-    if (await this.logic.ready(tx, accMap[tx.senderId])) {
-      await this.pool.moveTx(tx.id, 'queued', 'pending');
-      const p = await this.pool.pending.getPayload(tx);
-      p.ready = false;
-    } else {
-      await this.pool.moveTx(tx.id, 'queued', 'ready');
     }
   }
 

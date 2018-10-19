@@ -142,13 +142,13 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
       return null;
     }
     const bb = ByteBuffer.wrap(bytes, 'binary');
-    const min = bb.readByte(1);
-    const lifetime = bb.readByte(2);
-    const keysString = bytes.slice(3, bb.buffer.length).toString('hex');
+    const min = bb.readByte(0);
+    const lifetime = bb.readByte(1);
+    const keysString = bytes.slice(2, bb.buffer.length).toString('utf8');
     // Cut keys string into 32-bytes chunks
     const keysgroup = [].concat.apply([],
       keysString.split('').map(
-        (x, i) => i % 64 ? [] : keysString.slice(i, i + 64)
+        (x, i) => i % 65 ? [] : keysString.slice(i, i + 65)
       )
     );
     return {
@@ -335,6 +335,9 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
   public objectNormalize(tx: IBaseTransaction<MultisigAsset>): IBaseTransaction<MultisigAsset> {
     const report = this.schema.validate(tx.asset.multisignature, this.multisigSchema);
     if (!report) {
+      console.log(this.multisigSchema);
+      console.log(tx);
+      process.exit(1);
       throw new Error(`Failed to validate multisignature schema: ${this.schema.getLastErrors()
         .map((err) => err.message).join(', ')}`);
     }
@@ -388,6 +391,7 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
    * @returns {boolean}
    */
   public async ready(tx: IBaseTransaction<any>, sender: AccountsModelWithMultisig): Promise<boolean> {
+    console.log('called ready');
     if (!Array.isArray(tx.signatures)) {
       return false;
     }

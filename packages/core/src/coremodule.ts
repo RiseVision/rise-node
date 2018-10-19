@@ -31,7 +31,7 @@ export class CoreModule extends BaseCoreModule<void> implements ICoreModuleWithM
     const [val] = await infoModel
       .findOrCreate({where: {key: 'nonce'}, defaults: {value: uuid.v4()}});
 
-    this.container.bind(Symbols.generic.nonce).toConstantValue(val);
+    this.container.bind(Symbols.generic.nonce).toConstantValue(val.value);
     await infoModel
       .upsert({
         key  : 'genesisAccount',
