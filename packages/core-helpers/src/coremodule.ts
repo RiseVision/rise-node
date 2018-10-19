@@ -1,5 +1,6 @@
 import { Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
+import { ICoreModuleWithModels } from '@risevision/core-models';
 import { AppConfig } from '@risevision/core-types';
 import { loggerCreator, z_schema } from '@risevision/core-utils';
 import { CommanderStatic } from 'commander';
@@ -10,7 +11,7 @@ import { JobsQueue } from './jobsQueue';
 import { Migrator } from './migrator';
 import { Sequence } from './sequence';
 
-export class CoreModule extends BaseCoreModule<AppConfig> {
+export class CoreModule extends BaseCoreModule<AppConfig> implements ICoreModuleWithModels {
   public configSchema = {};
   public constants    = {};
 
@@ -18,12 +19,20 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     this.container.bind(HelpersSymbols.crypto).toConstantValue(new Crypto());
     this.container.bind(HelpersSymbols.appState).to(AppState).inSingletonScope();
     this.container.bind(HelpersSymbols.jobsQueue).to(JobsQueue).inSingletonScope();
-    const logger = loggerCreator({
-      echo      : this.config.consoleLogLevel,
-      errorLevel: this.config.fileLogLevel,
-      filename  : this.config.logFileName,
-    });
-    this.container.bind(Symbols.helpers.logger).toConstantValue(logger);
+    let logger;
+    try {
+      logger = this.container.get(Symbols.helpers.logger);
+    } catch (e) {
+    }
+    if (!logger) {
+      logger = loggerCreator({
+        echo      : this.config.consoleLogLevel,
+        errorLevel: this.config.fileLogLevel,
+        filename  : this.config.logFileName,
+      });
+      this.container.bind(Symbols.helpers.logger).toConstantValue(logger);
+    }
+
     this.container.bind(Symbols.generic.zschema).toConstantValue(new z_schema({}));
     this.container.bind(HelpersSymbols.migrator).to(Migrator).inSingletonScope();
     [
@@ -41,7 +50,7 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     });
   }
 
-  public initAppElements() {
+  public onPostInitModels() {
     return this.container.get<Migrator>(HelpersSymbols.migrator).init();
   }
 

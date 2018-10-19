@@ -163,7 +163,7 @@ describe('src/modules/transport.ts', () => {
       expect(popsicleStub.request.firstCall.args.length).to.be.equal(1);
       delete popsicleStub.request.firstCall.args[0].transport;
       expect(popsicleStub.request.firstCall.args[0]).to.be.deep.equal({
-        body   : null,
+        body   : undefined,
         headers: {
           ...systemModule.headers,
           accept        : 'application/octet-stream',

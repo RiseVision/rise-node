@@ -10,7 +10,7 @@
     "test-integration": "NODE_ENV=test mocha  --bail --exit --require ts-node/register './tests/integration/**/*.spec.ts'",
     "test-unit": "mocha  --bail --exit --require ts-node/register './tests/unit/**/*.spec.ts'",
     "test-all": "NODE_ENV=test mocha  --bail --exit --require ts-node/register './tests/unit/**/*.spec.ts' './tests/integration/**/*.spec.ts'",
-    "transpile": "shx rm -rf dist; tsc",
+    "transpile": "lerna run transpile",
     "single-transpile": "f(){ cd packages/$1; npm run transpile; }; f",
     "watch-single-transpile": "f(){ cd packages/$1; tsc -w ; }; f",
     "watch-all-transpile": "for i in $(ls packages); do echo \"npm run watch-single-transpile $i &\"; done | bash",

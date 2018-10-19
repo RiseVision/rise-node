@@ -11,6 +11,7 @@ import { inject, injectable, named } from 'inversify';
 import { Op } from 'sequelize';
 import { BlocksSymbols } from '../blocksSymbols';
 import { BlocksModuleUtils } from '../modules';
+import { TXSymbols } from '@risevision/core-transactions';
 
 // tslint:disable-next-line
 export type GetBlocksRequestDataType = { blocks: SignedAndChainedBlockType[] };
@@ -41,7 +42,7 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<null, { lastBl
   @named(BlocksSymbols.model)
   private BlocksModel: typeof IBlocksModel;
   @inject(ModelSymbols.model)
-  @named(BlocksSymbols.model)
+  @named(TXSymbols.model)
   private TransactionsModel: typeof ITransactionsModel;
 
   @inject(Symbols.generic.constants)

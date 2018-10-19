@@ -61,6 +61,7 @@ export class AppManager {
       m.sortedModules = this.modules;
     });
 
+    this.container.bind(Symbols.helpers.logger).toConstantValue(this.logger);
     this.container.bind(LaunchpadSymbols.coremodules).toConstantValue(this.modules);
     this.container.bind(Symbols.generic.appConfig).toConstantValue(this.appConfig);
     this.container.bind(Symbols.generic.versionBuild).toConstantValue(this.versionBuild);

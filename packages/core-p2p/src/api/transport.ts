@@ -1,7 +1,7 @@
 import { ILogger, Symbols } from '@risevision/core-interfaces';
 import * as express from 'express';
 import { Application, NextFunction, Request, RequestHandler, Response } from 'express';
-import { inject, injectable, multiInject, postConstruct } from 'inversify';
+import { inject, injectable, postConstruct } from 'inversify';
 import { ExpressMiddlewareInterface } from 'routing-controllers';
 import { p2pSymbols } from '../helpers';
 import { ITransportMethod } from '../requests';
@@ -38,10 +38,13 @@ export class TransportAPI {
 
         // Real work.
         async (req: Request, res: Response, next: NextFunction) => {
-          res.set('content-type', 'application/octet-stream');
           const resp = await tm.handleRequest(req.body, req.query);
-          return this.transportWrapper
+          const wrappedResp = await this.transportWrapper
             .wrapResponse({ success: true, wrappedResponse: resp });
+          res
+            .set('content-type', 'application/octet-stream')
+            .send(wrappedResp);
+          return;
         },
 
         // Error handler

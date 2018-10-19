@@ -112,7 +112,7 @@ export class TransportModule extends Extendable {
     const url     = options.url;
     const thePeer = this.peersLogic.create(peer);
     const req     = {
-      body     : null,
+      body     : options.data,
       headers  : {
         ... this.systemModule.headers as any,
         accept        : 'application/octet-stream',

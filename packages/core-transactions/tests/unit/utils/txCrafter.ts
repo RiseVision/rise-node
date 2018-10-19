@@ -81,35 +81,8 @@ export const createSendTransaction = (from: LiskWallet, recipient: string, fee: 
       .withRecipientId(recipient)
   );
 };
+
 //
-// export const createVoteTransaction = (from: LiskWallet, fee: number, obj: any = {}): ITransaction => {
-//   const t = new dposOffline.transactions.VoteTx(obj.asset)
-//     .withRecipientId(from.address)
-//     .withTimestamp(0);
-//   Object.keys(obj).forEach((k) => t.set(k as any, obj[k]));
-//   return from.signTransaction(t.withFees(fee));
-// };
+
 //
-// export const createRegDelegateTX = (from: LiskWallet, fee: number, obj: any = {}): ITransaction => {
-//   const t = new dposOffline.transactions.DelegateTx(obj.asset)
-//   // .withRecipientId(from.address)
-//     .withTimestamp(0);
-//   Object.keys(obj).forEach((k) => t.set(k as any, obj[k]));
-//   return from.signTransaction(t.withFees(fee));
-// };
-//
-// export const create2ndSigTX = (from: LiskWallet, fee: number, obj: any = {}): ITransaction => {
-//   const t = new dposOffline.transactions.CreateSignatureTx(obj.asset)
-//   // .withRecipientId(from.address)
-//     .withTimestamp(0);
-//   Object.keys(obj).forEach((k) => t.set(k as any, obj[k]));
-//   return from.signTransaction(t.withFees(fee));
-// };
-//
-// export const createMultiSigTX = (from: LiskWallet, fee: number, obj: any = {}): ITransaction => {
-//   const t = new dposOffline.transactions.MultiSignatureTx(obj.asset)
-//   // .withRecipientId(from.address)
-//     .withTimestamp(0);
-//   Object.keys(obj).forEach((k) => t.set(k as any, obj[k]));
-//   return from.signTransaction(t.withFees(fee));
-// };
+

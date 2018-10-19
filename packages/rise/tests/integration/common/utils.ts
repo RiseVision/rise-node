@@ -1,27 +1,29 @@
+import * as dposTXCrafter from '@risevision/core-consensus-dpos/tests/utils/tx';
+import { Crypto } from '@risevision/core-helpers';
+import { IAccountsModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { MultisignaturesModule, MultisigSymbols } from '@risevision/core-multisignature';
+import * as multiTXCrafter from '@risevision/core-multisignature/tests/utils/tx';
+import { p2pSymbols, Peer } from '@risevision/core-p2p';
+import * as secondTXCrafter from '@risevision/core-secondsignature/tests/utils/tx';
+import {
+  PoolManager,
+  PostTransactionsRequest,
+  TransactionPool,
+  TXSymbols
+} from '@risevision/core-transactions';
+import * as txCrafter from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import { ConstantsType, IKeypair, publicKey } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as crypto from 'crypto';
 import { dposOffline } from 'dpos-offline';
-import * as uuid from 'uuid';
-import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
-import { Ed, IKeypair, Sequence } from '../../../src/helpers';
-import { publicKey } from '../../../src/types/sanityTypes';
-import initializer from './init';
-import {
-  IAccountsModule,
-  IMultisignaturesModule,
-  ISystemModule,
-  ITransactionsModule, ITransportModule
-} from '../../../src/ioc/interfaces/modules';
-import { Symbols } from '../../../src/ioc/symbols';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
-import * as txCrafter from '../../utils/txCrafter';
-import { toBufferedTransaction } from '../../utils/txCrafter';
-import constants from '../../../src/helpers/constants';
-import { ITransactionPoolLogic } from '../../../src/ioc/interfaces/logic';
-import { IBaseTransaction } from '../../../src/logic/transactions';
+import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
+import * as uuid from 'uuid';
+import initializer from './init';
 
-const delegates    = require('../genesisDelegates.json');
-const genesisBlock = require('../genesisBlock.json');
+const delegates    = require('../../../../core-launchpad/tests/unit/assets/genesisDelegates.json');
+const genesisBlock = require('../../../../core-launchpad/tests/unit/assets/genesisBlock.json');
 
 export const findDelegateByPkey = (pk: publicKey): {
   secret: string,
@@ -53,29 +55,35 @@ export const getKeypairByPkey = (pk: publicKey): IKeypair => {
   if (typeof (d) === 'undefined') {
     throw new Error('cannot find delegate for this pk ' + pk);
   }
-  const ed = new Ed();
-  return ed.makeKeypair(crypto
+  const ed = new Crypto();
+  return ed.makeKeyPair(crypto
     .createHash('sha256').update(d.secret, 'utf8')
     .digest());
 };
+export const getLocalPeer     = (): Peer => {
+  const peerFactory = initializer.appManager.container.get<(a: any) => Peer>(p2pSymbols.logic.peerFactory);
+
+  return peerFactory({ ip: '127.0.0.1', port: 9999 });
+};
 
 export const enqueueAndProcessTransactions = async (txs: Array<ITransaction<any>>) => {
-  const txPool = initializer.appManager.container.get<ITransactionPoolLogic>(Symbols.logic.transactionPool);
-  const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
-  const transportModule = initializer.appManager.container.get<ITransportModule>(Symbols.modules.transport);
-  await transportModule.receiveTransactions(txs, {} as any, false);
-  await txPool.processBundled();
-  await txModule.fillPool();
+  const poolManager = initializer.appManager.container.get<PoolManager>(TXSymbols.poolManager);
+  const postTXReq   = initializer.appManager.container.getNamed<PostTransactionsRequest>(p2pSymbols.transportMethod, TXSymbols.p2p.postTxRequest);
+  const p           = getLocalPeer();
+  await p.makeRequest(postTXReq, {
+    body: { transactions: txs.map((t) => toBufferedTransaction(t) as any) },
+  });
+  await poolManager.processPool();
 };
 
 export const confirmTransactions = async (txs: Array<ITransaction<any>>, withTxPool: boolean) => {
   txs          = txs.slice();
-  const consts = initializer.appManager.container.get<typeof constants>(Symbols.helpers.constants);
+  const consts = initializer.appManager.container.get<ConstantsType>(Symbols.generic.constants);
   if (withTxPool) {
-    const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
+    const txPool = initializer.appManager.container.get<TransactionPool>(TXSymbols.pool);
     try {
       for (const tx of txs) {
-        await enqueueAndProcessBundledTransaction(tx);
+        await enqueueAndProcessTransactions([tx]);
       }
     } catch (e) {
       console.warn('receive tx err', e);
@@ -83,16 +91,13 @@ export const confirmTransactions = async (txs: Array<ITransaction<any>>, withTxP
 
     await initializer.rawMineBlocks(Math.ceil(txs.length / consts.maxTxsPerBlock));
     for (const tx of txs) {
-      expect(txModule.transactionInPool(tx.id)).is.false; // (`TX ${tx.id} is still in pool :(`);
+      expect(txPool.transactionInPool(tx.id)).is.false; // (`TX ${tx.id} is still in pool :(`);
     }
     return;
   } else {
-    //const log = txs.length / consts.maxTxsPerBlock > 10;
     while (txs.length > 0) {
-      //if (log) {
-      //  console.log(`Missing: ${txs.length}`);
-      //}
-      await initializer.rawMineBlockWithTxs(txs.splice(0, consts.maxTxsPerBlock).map((t) => toBufferedTransaction(t)));
+      await initializer.rawMineBlockWithTxs(txs.splice(0, consts.maxTxsPerBlock)
+        .map((t) => toBufferedTransaction(t)));
     }
   }
 };
@@ -104,23 +109,9 @@ export const createWallet = (secret: string): LiskWallet => {
   return new dposOffline.wallets.LiskLikeWallet(secret, 'R');
 };
 
-export const enqueueAndProcessBundledTransaction = async (tx: ITransaction<any>) => {
-  const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
-  const defaultSequence = initializer.appManager.container.getTagged<Sequence>(Symbols.helpers.sequence, Symbols.helpers.sequence, Symbols.tags.helpers.defaultSequence);
-  const txPool = initializer.appManager.container.get<ITransactionPoolLogic>(Symbols.logic.transactionPool);
-  try {
-    await txModule.processUnconfirmedTransaction(toBufferedTransaction(tx), false);
-  } catch (e) {
-    console.warn('receive tx err', e);
-  }
-  await txPool.processBundled();
-  // ForgeModule calls fillpool within a dft sequence.
-  await defaultSequence.addAndPromise(() => txModule.fillPool());
-}
-
 export const createVoteTransaction = async (confirmations: number, from: LiskWallet, to: publicKey, add: boolean, obj: any = {}): Promise<ITransaction> => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
-  const tx           = txCrafter.createVoteTransaction(from, systemModule.getFees().fees.vote, {
+  const tx           = dposTXCrafter.createVoteTransaction(from, systemModule.getFees().fees.vote, {
     ... {
       asset: {
         votes: [`${add ? '+' : '-'}${to}`],
@@ -129,7 +120,7 @@ export const createVoteTransaction = async (confirmations: number, from: LiskWal
     ...obj,
   });
   tx['senderId']     = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts)
-    .generateAddressByPublicKey(tx.senderPublicKey);
+    .generateAddressByPublicKey(Buffer.from(tx.senderPublicKey, 'hex'));
   if (confirmations > 0) {
     await confirmTransactions([tx], true);
   }
@@ -138,7 +129,7 @@ export const createVoteTransaction = async (confirmations: number, from: LiskWal
 
 export const createSecondSignTransaction = async (confirmations: number, from: LiskWallet, pk: publicKey) => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
-  const tx           = txCrafter.create2ndSigTX(
+  const tx           = secondTXCrafter.create2ndSigTX(
     from,
     systemModule.getFees().fees.secondsignature,
     {
@@ -153,11 +144,12 @@ export const createSecondSignTransaction = async (confirmations: number, from: L
   }
   return tx;
 };
+
 export const easyCreateMultiSignAccount  = async (howMany: number, min: number = howMany) => {
   const { wallet } = await createRandomAccountWithFunds(Math.pow(10, 11));
   const keys       = new Array(howMany).fill(null).map(() => createRandomWallet());
   return createMultiSignAccount(wallet, keys, min);
-}
+};
 
 export const createMultiSignAccount = async (wallet: LiskWallet, keys: LiskWallet[], min: number, extra: any = {}) => {
   const { tx, signatures } = createMultiSignTransactionWithSignatures(
@@ -167,21 +159,14 @@ export const createMultiSignAccount = async (wallet: LiskWallet, keys: LiskWalle
     24,
     extra
   );
+  const multisigModule     = initializer.appManager.container
+    .get<MultisignaturesModule>(MultisigSymbols.module);
 
-  const txModule        = initializer.appManager.container
-    .get<ITransactionsModule>(Symbols.modules.transactions);
-  const txPool          = initializer.appManager.container
-    .get<ITransactionPoolLogic>(Symbols.logic.transactionPool);
-  const multisigModule  = initializer.appManager.container
-    .get<IMultisignaturesModule>(Symbols.modules.multisignatures);
-
-  await txModule.processUnconfirmedTransaction(toBufferedTransaction(tx), false);
-  await txPool.processBundled();
-  await txModule.fillPool();
+  await enqueueAndProcessTransactions([tx]);
   // We should ask multisignature module to change readyness state of such tx.
 
   for (const signature of signatures) {
-    await multisigModule.processSignature({ signature, transaction: tx.id });
+    await multisigModule.onNewSignature({ signature: Buffer.from(signature, 'hex'), transaction: tx.id, relays: 10 });
   }
   await initializer.rawMineBlocks(1);
   return { wallet, keys, tx };
@@ -195,7 +180,7 @@ export const createMultiSignTransactionWithSignatures = (from: LiskWallet, min: 
 
 export const createMultiSignTransaction = (from: LiskWallet, min: number, keysgroup: publicKey[], lifetime: number = 24, extra: any = {}) => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
-  const tx           = txCrafter.createMultiSigTX(
+  const tx           = multiTXCrafter.createMultiSigTX(
     from,
     systemModule.getFees().fees.secondsignature,
     {
@@ -212,24 +197,24 @@ export const createMultiSignTransaction = (from: LiskWallet, min: number, keysgr
     }
   );
   tx['senderId']     = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts)
-    .generateAddressByPublicKey(tx.senderPublicKey);
+    .generateAddressByPublicKey(Buffer.from(tx.senderPublicKey, 'hex'));
   return tx;
 };
 
 export const createRegDelegateTransaction = async (confirmations: number, from: LiskWallet, name: string, obj: any = {}): Promise<ITransaction> => {
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
-  const tx           = txCrafter.createRegDelegateTX(from, systemModule.getFees().fees.delegate, {
+  const tx           = dposTXCrafter.createRegDelegateTX(from, systemModule.getFees().fees.delegate, {
     ... {
       asset: {
         delegate: {
-          username : name
+          username: name
         },
       },
     },
     ...obj,
   });
   tx['senderId']     = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts)
-    .generateAddressByPublicKey(tx.senderPublicKey);
+    .generateAddressByPublicKey(Buffer.from(tx.senderPublicKey, 'hex'));
   if (confirmations > 0) {
     await confirmTransactions([tx], true);
   }
@@ -240,8 +225,8 @@ export const createSendTransaction = async (confirmations: number, amount: numbe
   const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
   const tx           = txCrafter.createSendTransaction(from, dest, systemModule.getFees().fees.send, { ...{ amount }, ...opts });
   tx['senderId']     = initializer.appManager.container.get<IAccountsModule>(Symbols.modules.accounts)
-    .generateAddressByPublicKey(tx.senderPublicKey);
-  tx.asset = null;
+    .generateAddressByPublicKey(Buffer.from(tx.senderPublicKey, 'hex'));
+  tx.asset           = null;
   if (confirmations > 0) {
     await confirmTransactions([tx], true);
   }
@@ -287,7 +272,7 @@ export const createRandomAccountsWithFunds = async (howManyAccounts: number, amo
     t.set('fee', systemModule.getFees().fees.send);
     t.set('timestamp', 0);
     t.set('recipientId', randomRecipient.address);
-    const signedTx       = senderWallet.signTransaction(t);
+    const signedTx = senderWallet.signTransaction(t);
     txs.push(signedTx);
     accounts.push(randomRecipient);
   }

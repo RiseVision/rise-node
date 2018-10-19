@@ -1,23 +1,22 @@
-import { expect } from 'chai';
-import 'reflect-metadata';
-import { Bus, constants, loggerCreator, Sequence, Slots } from '../../../src/helpers';
-import { AppManager } from '../../../src/AppManager';
-import { Symbols } from '../../../src/ioc/symbols';
 import {
-  IBlocksModule,
-  IBlocksModuleChain,
-  IBlocksModuleProcess, IBlocksModuleVerify,
-  IDelegatesModule,
-  ITransactionsModule
-} from '../../../src/ioc/interfaces/modules';
+  BlockLogic,
+  BlocksModule,
+  BlocksModuleChain,
+  BlocksModuleProcess,
+  BlocksSymbols,
+  PostBlockRequest,
+} from '@risevision/core-blocks';
+import { DelegatesModule, dPoSSymbols, Slots } from '@risevision/core-consensus-dpos';
+import { AppManager, fetchCoreModuleImplementations } from '@risevision/core-launchpad';
+import { MigrationsModel, ModelSymbols } from '@risevision/core-models';
+import { p2pSymbols, Peer } from '@risevision/core-p2p';
+import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import { IBaseTransaction, SignedAndChainedBlockType } from '@risevision/core-types';
+import { loggerCreator } from '@risevision/core-utils';
+import { expect } from 'chai';
+import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
+import 'reflect-metadata';
 import { getKeypairByPkey } from './utils';
-import { SignedAndChainedBlockType, SignedBlockType } from '../../../src/logic';
-import { IBlockLogic } from '../../../src/ioc/interfaces/logic';
-import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
-import { toBufferedTransaction } from '../../utils/txCrafter';
-import { MigrationsModel } from '../../../src/models';
-import { IBaseTransaction } from '../../../src/logic/transactions';
-import { SequenceStub } from '../../stubs';
 
 export class IntegrationTestInitializer {
   public appManager: AppManager;
@@ -28,7 +27,7 @@ export class IntegrationTestInitializer {
       this.timeout(10000);
       return s.runBefore();
     });
-    afterEach(function()  {
+    afterEach(function () {
       this.timeout(10000);
       return s.runAfter();
     });
@@ -42,14 +41,14 @@ export class IntegrationTestInitializer {
     const self = this;
     beforeEach(() => {
       const blockModule = this.appManager.container
-        .get<IBlocksModule>(Symbols.modules.blocks);
+        .get<BlocksModule>(BlocksSymbols.modules.blocks);
       height            = blockModule.lastBlock.height;
     });
     afterEach(async function () {
 
       const blockModule = self.appManager.container
-        .get<IBlocksModule>(Symbols.modules.blocks);
-      const howMany      = blockModule.lastBlock.height - height;
+        .get<BlocksModule>(BlocksSymbols.modules.blocks);
+      const howMany     = blockModule.lastBlock.height - height;
       this.timeout(howMany * 5000 + 150);
       await self.rawDeleteBlocks(howMany);
       expect(blockModule.lastBlock.height).to.be.eq(height);
@@ -59,7 +58,7 @@ export class IntegrationTestInitializer {
   public createBlocks(howMany: number, when: 'each' | 'single') {
     const before = when === 'single' ? 'before' : 'beforeEach';
     const after  = when === 'single' ? 'after' : 'afterEach';
-    const self = this;
+    const self   = this;
     global[before](async function () {
       this.timeout(howMany * 300 + 150);
       await self.rawMineBlocks(howMany);
@@ -74,9 +73,9 @@ export class IntegrationTestInitializer {
 
   public async rawDeleteBlocks(howMany: number) {
     const blockModule      = this.appManager.container
-      .get<IBlocksModule>(Symbols.modules.blocks);
+      .get<BlocksModule>(BlocksSymbols.modules.blocks);
     const blockChainModule = this.appManager.container
-      .get<IBlocksModuleChain>(Symbols.modules.blocksSubModules.chain);
+      .get<BlocksModuleChain>(BlocksSymbols.modules.chain);
     const height           = blockModule.lastBlock.height;
     for (let i = 0; i < howMany; i++) {
       await blockChainModule.deleteLastBlock();
@@ -84,12 +83,12 @@ export class IntegrationTestInitializer {
     expect(blockModule.lastBlock.height).to.be.eq(height - howMany);
   }
 
-  public async generateBlock(transactions: Array<ITransaction<any>> = []): Promise<SignedBlockType & {height: number}> {
-    const blockLogic      = this.appManager.container.get<IBlockLogic>(Symbols.logic.block);
-    const blockModule     = this.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
+  public async generateBlock(transactions: Array<ITransaction<any>> = []): Promise<SignedAndChainedBlockType & { height: number }> {
+    const blockLogic      = this.appManager.container.get<BlockLogic>(BlocksSymbols.logic.block);
+    const blockModule     = this.appManager.container.get<BlocksModule>(BlocksSymbols.modules.blocks);
     const height          = blockModule.lastBlock.height;
-    const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
-    const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
+    const delegatesModule = this.appManager.container.get<DelegatesModule>(dPoSSymbols.modules.delegates);
+    const slots           = this.appManager.container.get<Slots>(dPoSSymbols.helpers.slots);
     const delegates       = await delegatesModule.generateDelegateList(height + 1);
     const theSlot         = height;
     const delegateId      = delegates[theSlot % slots.delegates];
@@ -110,11 +109,11 @@ export class IntegrationTestInitializer {
    * @returns {Promise<SignedBlockType>}
    */
   public async rawMineBlockWithTxs(transactions: Array<IBaseTransaction<any>>) {
-    const blockLogic = this.appManager.container.get<IBlockLogic>(Symbols.logic.block);
-    const blockModule     = this.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
-    const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
-    const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
-    const height = blockModule.lastBlock.height;
+    const blockLogic      = this.appManager.container.get<BlockLogic>(BlocksSymbols.logic.block);
+    const blockModule     = this.appManager.container.get<BlocksModule>(BlocksSymbols.modules.blocks);
+    const delegatesModule = this.appManager.container.get<DelegatesModule>(dPoSSymbols.modules.delegates);
+    const slots           = this.appManager.container.get<Slots>(dPoSSymbols.helpers.slots);
+    const height          = blockModule.lastBlock.height;
 
     const delegates  = await delegatesModule.generateDelegateList(height + 1);
     const theSlot    = height;
@@ -133,36 +132,35 @@ export class IntegrationTestInitializer {
   }
 
   public async postBlock(block: SignedAndChainedBlockType) {
-    const blocksVerifyModule     = this.appManager.container.get<IBlocksModuleVerify>(Symbols.modules.blocksSubModules.verify);
-    const defaultSequence = this.appManager.container.getTagged<Sequence>(
-      Symbols.helpers.sequence,
-      Symbols.helpers.sequence,
-      Symbols.tags.helpers.defaultSequence);
-    await defaultSequence.addAndPromise(() => blocksVerifyModule.processBlock(block, false, true));
+    const pbr = this.appManager.container.getNamed<PostBlockRequest>(p2pSymbols.transportMethod, BlocksSymbols.p2p.postBlock);
+    const pf  = this.appManager.container.get<(b: any) => Peer>(p2pSymbols.logic.peerFactory);
+    const p   = pf({ ip: '127.0.0.1', port: 9999 });
+    await p.makeRequest(pbr, {
+      body: { block }
+    });
   }
 
   public async rawMineBlocks(howMany: number): Promise<number> {
     // const db              = this.appManager.container.get<IDatabase<any>>(Symbols.generic.db);
-    const blockModule     = this.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
-    const txModule        = this.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
-    const blockProcess    = this.appManager.container.get<IBlocksModuleProcess>(Symbols.modules.blocksSubModules.process);
-    const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
-    const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
+    const blockModule     = this.appManager.container.get<BlocksModule>(BlocksSymbols.modules.blocks);
+    const delegatesModule = this.appManager.container.get<DelegatesModule>(dPoSSymbols.modules.delegates);
+    const slots           = this.appManager.container.get<Slots>(dPoSSymbols.helpers.slots);
+    const blockProcess    = this.appManager.container.get<BlocksModuleProcess>(BlocksSymbols.modules.process);
     const height          = blockModule.lastBlock.height;
+    // Maybe well need to process with txProcessor.
     // console.log(`Mining ${howMany} blocks from height: ${height}`);
     for (let i = 0; i < howMany; i++) {
       const delegates  = await delegatesModule.generateDelegateList(height + i + 1);
-      const theSlot    = height + i ;
+      const theSlot    = height + i;
       const delegateId = delegates[theSlot % slots.delegates];
       const kp         = getKeypairByPkey(delegateId.toString('hex'));
-      await txModule.fillPool();
-      // console.log(await db.query(sql.list({
-      //  where     : ['"b_height" = ${height}'],
-      // }), {height: height + i + 1, limit: 1, offset: 0}));
-      await blockProcess.generateBlock(
+
+      const b = await blockProcess.generateBlock(
         kp,
         slots.getSlotTime(theSlot)
       );
+
+      await blockProcess.processBlock(b);
     }
     expect(blockModule.lastBlock.height).to.be.eq(height + howMany);
     return blockModule.lastBlock.height;
@@ -183,37 +181,31 @@ export class IntegrationTestInitializer {
 
   private createAppManager() {
     this.appManager = new AppManager(
-      JSON.parse(JSON.stringify(require('../config.json'))),
+      JSON.parse(JSON.stringify(require(`${__dirname}/../../../../core-launchpad/tests/unit/assets/config.json`))),
       loggerCreator({
-        echo    : 'none',
+        echo    : 'debug',
         filename: '/dev/null',
       }),
       'integration-version',
-      JSON.parse(JSON.stringify(require('../genesisBlock.json'))),
-      constants,
-      []
+      JSON.parse(JSON.stringify(require(`${__dirname}/../../../../core-launchpad/tests/unit/assets/genesisBlock.json`))),
+      fetchCoreModuleImplementations(`${__dirname}/../../../`)
     );
   }
 
   private async runBefore() {
-
+    process.env.NODE_ENV = 'test';
     this.createAppManager();
     await this.appManager.initAppElements();
-    await this.appManager.initExpress();
     await this.appManager.finishBoot();
-
-    const bus = this.appManager.container.get<Bus>(Symbols.helpers.bus);
-    await bus.message('syncFinished');
   }
 
   private async runAfter() {
-    const migrations: typeof MigrationsModel = this.appManager.container.get(Symbols.models.migrations);
+    const migrations: typeof MigrationsModel = this.appManager.container.getNamed(ModelSymbols.model, ModelSymbols.names.migrations);
     await this.appManager.tearDown();
     const tables = ['blocks', 'delegates', 'forks_stat', 'mem_accounts',
       'info',
       'mem_accounts2delegates',
-      'mem_accounts2multisignatures', 'mem_accounts2u_delegates', 'mem_accounts2u_multisignatures', 'mem_round',
-      // 'migrations',
+      'mem_accounts2multisignatures', 'mem_accounts2u_delegates', 'mem_accounts2u_multisignatures',
       'multisignatures', 'peers', 'rounds_fees', 'signatures', 'trs', 'votes'];
 
     await migrations.sequelize.query(`TRUNCATE ${tables.join(', ')} CASCADE`);
