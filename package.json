@@ -10,9 +10,7 @@
     "transpile": "shx rm -rf dist; tsc",
     "test-cover-unit": "nyc -e '.ts' -x 'tests/**' -r lcov npm run test-unit && cat ./coverage/lcov.info | coveralls",
     "test-cover-all": "nyc -e '.ts' -x 'tests/**' -r lcov npm run test-all && cat ./coverage/lcov.info | coveralls",
-    "static-analysis": "tslint --force --project ./tsconfig.json 'src/**/*.ts'",
-    "docs": "shx rm docs/swagger.json && npm run transpile && rc-openapi-gen",
-    "dev": "shx rm -rf dist; tsc -w"
+    "static-analysis": "tslint --force --project ./tsconfig.json 'src/**/*.ts'"
   },
   "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
   "license": "GPL-3.0",
@@ -51,7 +49,7 @@
     "promise-parallel-throttle": "^3.0.0",
     "promise-retry": "^1.1.1",
     "protobufjs": "^6.8.6",
-    "rc-openapi-gen": "^0.1.0",
+    "rc-openapi-gen": "^0.1.1",
     "redis": "^2.8.0",
     "routing-controllers": "=0.7.7",
     "semver": "=5.5.0",
