@@ -7,6 +7,14 @@
         "enabled": {
           "type": "boolean"
         },
+        "address": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
         "access" : {
           "type"      : "object",
           "properties": {
@@ -68,6 +76,7 @@
         }
       },
       "required"  : [
+        "port",
         "enabled",
         "access",
         "options"

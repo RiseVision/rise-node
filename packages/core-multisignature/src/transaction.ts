@@ -391,7 +391,6 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
    * @returns {boolean}
    */
   public async ready(tx: IBaseTransaction<any>, sender: AccountsModelWithMultisig): Promise<boolean> {
-    console.log('called ready');
     if (!Array.isArray(tx.signatures)) {
       return false;
     }

@@ -20,8 +20,8 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     this.container.bind(ModelSymbols.model).toConstructor(AccountsModel)
       .whenTargetNamed(AccountsSymbols.model);
     this.container.bind(AccountsSymbols.module).to(AccountsModule).inSingletonScope();
-    this.container.bind(APISymbols.api).to(AccountsAPI)
-      .inSingletonScope()
+    this.container.bind(APISymbols.api)
+      .toConstructor(AccountsAPI)
       .whenTargetNamed(AccountsSymbols.api);
 
     this.container.bind(AccountsSymbols.__internal.loaderHooks)

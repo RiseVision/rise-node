@@ -1,3 +1,4 @@
+import { APISymbols } from '@risevision/core-apis';
 import {
   BlockLogic,
   BlocksModule,
@@ -18,9 +19,11 @@ import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
 import 'reflect-metadata';
 import { getKeypairByPkey } from './utils';
 
+
 export class IntegrationTestInitializer {
   public appManager: AppManager;
   public expressApp: Express.Application;
+  public apiExpress: Express.Application;
   public setupEach() {
     const s = this;
     beforeEach(function () {
@@ -198,6 +201,7 @@ export class IntegrationTestInitializer {
     await this.appManager.initAppElements();
     await this.appManager.finishBoot();
     this.expressApp = this.appManager.container.get(p2pSymbols.express);
+    this.apiExpress = this.appManager.container.get(APISymbols.express);
   }
 
   private async runAfter() {

@@ -28,8 +28,8 @@ export class CoreModule extends BaseCoreModule {
       .inSingletonScope()
       .whenTargetNamed(TXSymbols.sendTX);
 
-    this.container.bind(APISymbols.api).to(TransactionsAPI)
-      .inSingletonScope()
+    this.container.bind(APISymbols.api)
+      .toConstructor(TransactionsAPI)
       .whenTargetNamed(TXSymbols.api.api);
 
     this.container.bind(ModelSymbols.model)

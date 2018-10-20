@@ -141,7 +141,6 @@ export class TransportModule extends Extendable {
             retries   : 1,
           }
         );
-      console.log('finito', url);
     } catch (err) {
       this.removePeer({ peer: thePeer, code: 'HTTPERROR' }, err.message);
       return Promise.reject(err);

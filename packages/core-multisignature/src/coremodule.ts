@@ -36,8 +36,7 @@ export class CoreModule extends BaseCoreModule implements ICoreModuleWithModels 
       .whenTargetNamed(MultisigSymbols.tx);
 
     this.container.bind(APISymbols.api)
-      .to(MultiSignaturesApi)
-      .inSingletonScope()
+      .toConstructor(MultiSignaturesApi)
       .whenTargetNamed(MultisigSymbols.api);
 
     this.container.bind(MultisigSymbols.multiSigTransport)

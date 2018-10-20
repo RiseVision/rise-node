@@ -22,10 +22,7 @@ export const p2pSymbols = {
     transport: Symbols.modules.transport,
   },
   api                 : {
-
-    peersAPI : Symbol.for('rise.p2p.peersAPI'),
     transport: Symbol.for('rise.p2p.transport'),
-
   },
   logic               : {
     broadcaster: Symbols.logic.broadcaster,

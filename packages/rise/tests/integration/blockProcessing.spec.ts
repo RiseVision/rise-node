@@ -13,6 +13,7 @@ import initializer from './common/init';
 import * as supertest from 'supertest';
 import { BlocksModule, BlocksModuleChain, BlocksSymbols } from '@risevision/core-blocks';
 import { SignedAndChainedBlockType } from '@risevision/core-types';
+import { wait } from '@risevision/core-utils';
 
 describe('blockProcessing', async function () {
   this.timeout(100000);
@@ -36,10 +37,8 @@ describe('blockProcessing', async function () {
     initializer.autoRestoreEach();
     beforeEach(async () => {
       initBlock     = blocksModule.lastBlock;
-      console.log('ciao');
       creationOps   = await createRandomAccountsWithFunds(10, 10e10);
       multisigOp    = await easyCreateMultiSignAccount(3, 2);
-      console.log(multisigOp);
       regDelegateTX = await createRegDelegateTransaction(1, creationOps[0].account, 'meow');
       secondSignTX  = await createSecondSignTransaction(1, creationOps[1].account, creationOps[2].account.publicKey);
       voteTX        = await createVoteTransaction(1, creationOps[0].account, creationOps[0].account.publicKey, true);
@@ -60,7 +59,7 @@ describe('blockProcessing', async function () {
       }
       const b = blocksModule.lastBlock;
       expect(blocksModule.lastBlock.height).eq(initBlock.height);
-      const res = await supertest(initializer.expressApp)
+      const res = await supertest(initializer.apiExpress)
         .get('/api/blocks/get?id=' + block.id)
         .expect(200);
 
@@ -76,7 +75,7 @@ describe('blockProcessing', async function () {
       for (const op of allTxs) {
         const txID = op.id;
 
-        const res = await supertest(initializer.expressApp)
+        const res = await supertest(initializer.apiExpress)
           .get(`/api/transactions/get?id=${txID}`)
           .expect(200);
         expect(res.body.success).is.false;
@@ -89,7 +88,7 @@ describe('blockProcessing', async function () {
       }
 
       for (const account of allAccounts) {
-        const res = await supertest(initializer.expressApp)
+        const res = await supertest(initializer.apiExpress)
           .get(`/api/accounts/?address=${account.address}`)
           .expect(200);
 
@@ -97,7 +96,7 @@ describe('blockProcessing', async function () {
         expect(res.body.account.address).is.deep.eq(account.address);
         expect(res.body.account.balance).is.deep.eq('0');
         expect(res.body.account.username).is.undefined;
-        expect(res.body.account.multisignatures).is.deep.eq([]);
+        expect(res.body.account.multisignatures).is.deep.eq(null);
         expect(res.body.account.secondSignature).is.eq(0);
         expect(res.body.account.secondPublicKey).is.null;
         expect(res.body.account.unconfirmedBalance).is.deep.eq('0');

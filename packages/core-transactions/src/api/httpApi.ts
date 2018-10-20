@@ -137,6 +137,9 @@ export class TransactionsAPI {
 
     const { id } = params;
     const txOBJ  = await this.TXModel.findById(id);
+    if (txOBJ === null) {
+      throw new Error('Transaction not found');
+    }
     await this.txLogic.attachAssets([txOBJ]);
 
     const tx = await this.hookSystem.apply_filters(TXApiGetTxFilter.name, txOBJ.toTransport());

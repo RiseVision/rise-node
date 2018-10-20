@@ -6,6 +6,7 @@ import { ExpressErrorMiddlewareInterface, Middleware } from 'routing-controllers
 import { APISymbols } from '../helpers';
 
 @IoCSymbol(APISymbols.errorHandler)
+@Middleware({type: 'after'})
 @injectable()
 export class APIErrorHandler implements ExpressErrorMiddlewareInterface {
 

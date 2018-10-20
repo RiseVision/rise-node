@@ -25,8 +25,7 @@ export class CoreModule extends BaseCoreModule implements ICoreModuleWithModels 
       .whenTargetNamed(SigSymbols.transaction);
 
     this.container.bind(APISymbols.api)
-      .to(SignaturesAPI)
-      .inSingletonScope()
+      .toConstructor(SignaturesAPI)
       .whenTargetNamed(SigSymbols.api);
 
     this.container.bind(SigSymbols.hooksListener)

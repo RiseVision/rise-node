@@ -31,8 +31,7 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     this.container.bind(BlocksSymbols.logic.blockReward).to(BlockRewardLogic).inSingletonScope();
 
     this.container.bind(APISymbols.api)
-      .to(BlocksAPI)
-      .inSingletonScope()
+      .toConstructor(BlocksAPI)
       .whenTargetNamed(BlocksSymbols.api.api);
 
     // Adding request factories

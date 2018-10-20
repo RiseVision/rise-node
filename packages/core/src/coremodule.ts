@@ -20,8 +20,7 @@ export class CoreModule extends BaseCoreModule<void> implements ICoreModuleWithM
     this.container.bind(CoreSymbols.modules.fork).to(ForkModule).inSingletonScope();
     this.container.bind(CoreSymbols.modules.system).to(SystemModule).inSingletonScope();
     this.container.bind(CoreSymbols.modules.loader).to(LoaderModule).inSingletonScope();
-    this.container.bind(APISymbols.api).to(LoaderAPI)
-      .inSingletonScope()
+    this.container.bind(APISymbols.api).toConstructor(LoaderAPI)
       .whenTargetNamed(CoreSymbols.api.loader);
   }
 
