@@ -29,6 +29,13 @@ describe('logic/transactions/secondSignature', () => {
   let tx: any;
   let sender: any;
   let block: any;
+  const genRandHexStr = (bytes: number) => {
+    const buf = new Buffer(bytes);
+    for (let i = 0; i < bytes; i++) {
+      buf.writeUInt8((Math.floor(Math.random() * 256)), i);
+    }
+    return buf.toString('hex');
+  };
 
   beforeEach(() => {
     sandbox            = sinon.createSandbox();
@@ -110,6 +117,53 @@ describe('logic/transactions/secondSignature', () => {
     it('should return a Buffer', () => {
       const retVal = instance.getBytes(tx, false, false);
       expect(retVal).to.be.deep.equal(Buffer.from(tx.asset.signature.publicKey, 'hex'));
+    });
+  });
+
+  describe('getBytes(), unstubbed', () => {
+    it('should return an expected value', () => {
+      const expected = 'a2bac0a1525e9605a37e6c6588716f9c941530c74eabdf0b27b10b3817e58fe3';
+      const buf = instance.getBytes(tx, false, false);
+      expect(buf.toString('hex')).to.be.equal(expected);
+    });
+  });
+
+  describe('fromBytes(), unstubbed', () => {
+    it('should return the original tx asset', () => {
+      const bytes = 'a2bac0a1525e9605a37e6c6588716f9c941530c74eabdf0b27b10b3817e58fe3';
+      const asset = instance.fromBytes(Buffer.from(bytes, 'hex'), tx);
+      expect(asset).to.be.deep.equal(tx.asset);
+    });
+
+    it('getBytes() -> fromBytes() -> getBytes() -> fromBytes() should be fine', () => {
+      const randTX = {
+        amount         : 0,
+        asset          : {
+          signature: {
+            publicKey: genRandHexStr(32),
+          },
+        },
+        fee            : 10,
+        id             : '8139741256612355994',
+        recipientId    : '1233456789012345R',
+        senderId       : '1233456789012345R',
+        senderPublicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+        signature      : Buffer.from('sig0', 'utf8'),
+        signatures     : ['sig1', 'sig2'],
+        timestamp      : 0,
+        type           : TransactionType.MULTI,
+      };
+      const bytes1 = instance.getBytes(randTX, false, false);
+      const asset1 = instance.fromBytes(bytes1, randTX);
+      const randTX2 = {
+        ...randTX,
+        asset: asset1,
+      };
+      const bytes2 = instance.getBytes(randTX2, false, false);
+      const asset2 = instance.fromBytes(bytes2, randTX2);
+      expect(bytes1).to.be.deep.equal(bytes2);
+      expect(asset1).to.be.deep.equal(asset2);
+      expect(randTX).to.be.deep.equal(randTX2);
     });
   });
 
