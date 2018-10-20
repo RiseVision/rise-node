@@ -96,13 +96,13 @@ export class MultiSignatureTransaction extends BaseTransactionType<MultisigAsset
       return null;
     }
     const bb = ByteBuffer.wrap(bytes, 'binary');
-    const min = bb.readByte(1);
-    const lifetime = bb.readByte(2);
-    const keysString = bytes.slice(3, bb.buffer.length).toString('hex');
+    const min = bb.readByte(0);
+    const lifetime = bb.readByte(1);
+    const keysString = bytes.slice(2, bb.buffer.length).toString('utf8');
     // Cut keys string into 32-bytes chunks
     const keysgroup = [].concat.apply([],
       keysString.split('').map(
-        (x, i) => i % 64 ? [] : keysString.slice(i, i + 64)
+        (x, i) => i % 65 ? [] : keysString.slice(i, i + 65)
       )
     );
     return {

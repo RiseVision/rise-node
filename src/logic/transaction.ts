@@ -123,7 +123,7 @@ export class TransactionLogic implements ITransactionLogic {
     const bb = new ByteBuffer(1 + 4 + 32 + 32 + 8 + 8 + 64 + 64 + assetBytes.length, true);
 
     bb.writeByte(tx.type);
-    bb.writeInt(tx.timestamp);
+    bb.writeUint32(tx.timestamp);
 
     const senderPublicKeyBuffer = Buffer.isBuffer(tx.senderPublicKey) ?
       tx.senderPublicKey : Buffer.from(tx.senderPublicKey, 'hex');
@@ -191,7 +191,7 @@ export class TransactionLogic implements ITransactionLogic {
   public fromBytes(tx: IBytesTransaction): IBaseTransaction<any> & { relays: number } {
     const bb = ByteBuffer.wrap(tx.bytes, 'binary', true);
     const type = bb.readByte(0);
-    const timestamp = bb.readInt(1);
+    const timestamp = bb.readUint32(1);
     const senderPublicKey = tx.bytes.slice(5, 37);
     let requesterPublicKey = null;
     let offset = 37;
