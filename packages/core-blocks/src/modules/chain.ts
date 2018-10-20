@@ -320,8 +320,7 @@ export class BlocksModuleChain {
     // If some of the overlapping txs are now "invalid" they will be discared within the next
     // txPool.processBundled loop.
     for (const overTX of overlappingTXs) {
-      const info = this.txPool.unconfirmed.get(overTX.id);
-      this.txPool.queued.add(info.tx, info.payload);
+      this.txPool.moveTx(overTX.id, 'unconfirmed', 'queued');
     }
 
     block = null;

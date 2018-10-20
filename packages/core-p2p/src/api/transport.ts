@@ -38,13 +38,16 @@ export class TransportAPI {
 
         // Real work.
         async (req: Request, res: Response, next: NextFunction) => {
-          const resp = await tm.handleRequest(req.body, req.query);
-          const wrappedResp = await this.transportWrapper
-            .wrapResponse({ success: true, wrappedResponse: resp });
-          res
-            .set('content-type', 'application/octet-stream')
-            .send(wrappedResp);
-          return;
+          try {
+            const resp        = await tm.handleRequest(req.body, req.query);
+            const wrappedResp = await this.transportWrapper
+              .wrapResponse({ success: true, wrappedResponse: resp });
+            res
+              .set('content-type', 'application/octet-stream')
+              .send(wrappedResp);
+          } catch (e) {
+            next(e);
+          }
         },
 
         // Error handler
@@ -67,7 +70,8 @@ export class TransportAPI {
       message = message.message;
     }
     res.set('content-type', 'application/octet-stream');
-    res.send(this.transportWrapper
-      .wrapResponse({ success: false, error: message as string })).end();
+    this.transportWrapper
+      .wrapResponse({ success: false, error: message as string })
+      .then((r) => res.send(r));
   }
 }

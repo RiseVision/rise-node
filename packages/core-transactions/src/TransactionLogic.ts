@@ -2,7 +2,7 @@ import {
   IAccountLogic,
   IAccountsModel,
   ICrypto,
-  ILogger,
+  ILogger, ITimeToEpoch,
   ITransactionLogic,
   ITransactionsModel,
   Symbols,
@@ -57,6 +57,9 @@ export class TransactionLogic implements ITransactionLogic {
   private logger: ILogger;
   @inject(p2pSymbols.helpers.protoBuf)
   private protoBufHelper: ProtoBufHelper;
+
+  @inject(Symbols.helpers.timeToEpoch)
+  private timeToEpoch: ITimeToEpoch;
 
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
@@ -197,7 +200,7 @@ export class TransactionLogic implements ITransactionLogic {
       );
     const bb = ByteBuffer.wrap(tx.bytes, 'binary', true);
     const type = bb.readByte(0);
-    const timestamp = bb.readInt(1);
+    const timestamp = bb.readUint32(1);
     const senderPublicKey = tx.bytes.slice(5, 37);
     let requesterPublicKey = null;
     let offset = 37;
@@ -311,6 +314,10 @@ export class TransactionLogic implements ITransactionLogic {
       TxLogicStaticCheck.name,
       tx, sender, requester, height
     );
+
+    if (this.timeToEpoch.getTime() < tx.timestamp) {
+      throw new Error('Invalid transaction timestamp. Timestamp is in the future');
+    }
 
     const txID = this.getId(tx);
     if (txID !== tx.id) {
@@ -576,6 +583,8 @@ export class TransactionLogic implements ITransactionLogic {
     const report = this.schema.validate(tx, txSchema);
 
     if (!report) {
+      console.log(tx);
+      console.log(this.schema.getLastErrors());
       throw new Error(`Failed to validate transaction schema: ${this.schema.getLastErrors().map((e) => e.message)
         .join(', ')}`);
     }

@@ -1,11 +1,10 @@
 import * as chai from 'chai';
 import { expect } from 'chai';
 import BigNumber from 'bignumber.js';
-import * as sinon from 'sinon';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Sequelize } from 'sequelize-typescript';
 import initializer from './common/init';
-import { toBufferedTransaction } from '../utils/txCrafter';
+
 import {
   createMultiSignTransactionWithSignatures,
   createRandomAccountWithFunds,
@@ -13,22 +12,22 @@ import {
   createRegDelegateTransaction,
   createSendTransaction,
   createVoteTransaction,
+  enqueueAndProcessTransactions,
   getRandomDelegateWallet
 } from './common/utils';
-import { Symbols } from '../../src/ioc/symbols';
-import { IBlockLogic, ITransactionLogic, ITransactionPoolLogic } from '../../src/ioc/interfaces/logic';
-import {
-  IAccountsModule,
-  IBlocksModule, IBlocksModuleChain,
-  ISystemModule,
-  ITransactionsModule,
-  ITransportModule
-} from '../../src/ioc/interfaces/modules';
-import { Ed } from '../../src/helpers';
 import { LiskWallet } from 'dpos-offline';
-import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
-import { SignedAndChainedBlockType } from '../../src/logic';
-import { SinonSandbox } from 'sinon';
+import { TransactionLogic, TransactionPool, TransactionsModule, TXSymbols } from '@risevision/core-transactions';
+import { BlockLogic, BlocksModule, BlocksSymbols } from '@risevision/core-blocks';
+import { AccountsSymbols } from '@risevision/core-accounts';
+import { SystemModule } from '@risevision/core';
+import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import { IAccountsModule, Symbols } from '@risevision/core-interfaces';
+import { Crypto } from '@risevision/core-helpers';
+import { ModelSymbols } from '@risevision/core-models';
+import { AccountsModelForDPOS } from '@risevision/core-consensus-dpos';
+import { AccountsModelWith2ndSign } from '@risevision/core-secondsignature';
+import { AccountsModelWithMultisig } from '@risevision/core-multisignature';
+import { poolProcess } from '@risevision/core-transactions/tests/integration/utils';
 
 chai.use(chaiAsPromised);
 describe('attackVectors/edgeCases', () => {
@@ -36,87 +35,87 @@ describe('attackVectors/edgeCases', () => {
   initializer.autoRestoreEach();
   const funds = Math.pow(10, 11);
   let senderAccount: LiskWallet;
-  let blocksModule: IBlocksModule;
-  let accModule: IAccountsModule;
-  let txModule: ITransactionsModule;
-  let txPool: ITransactionPoolLogic;
-  let transportModule: ITransportModule;
-  let blockLogic: IBlockLogic;
-  let txLogic: ITransactionLogic;
-  let systemModule: ISystemModule;
+  let blocksModule: BlocksModule;
+  let accModule: IAccountsModule<AccountsModelForDPOS & AccountsModelWith2ndSign & AccountsModelWithMultisig>;
+  let txModule: TransactionsModule;
+  let txPool: TransactionPool;
+  // let transportModule: ITransportModule;
+  let blockLogic: BlockLogic;
+  let txLogic: TransactionLogic;
+  let systemModule: SystemModule;
   let sequelize: Sequelize;
-  let ed: Ed;
+  let ed: Crypto;
   beforeEach(async () => {
-    const {wallet: randomAccount} = await createRandomAccountWithFunds(funds);
-    senderAccount                 = randomAccount;
-    ed                            = initializer.appManager.container.get(Symbols.helpers.crypto);
-    blocksModule                  = initializer.appManager.container.get(Symbols.modules.blocks);
-    blockLogic                    = initializer.appManager.container.get(Symbols.logic.block);
-    accModule                     = initializer.appManager.container.get(Symbols.modules.accounts);
-    txModule                      = initializer.appManager.container.get(Symbols.modules.transactions);
-    transportModule               = initializer.appManager.container.get(Symbols.modules.transport);
-    txPool                        = initializer.appManager.container.get(Symbols.logic.transactionPool);
-    txLogic                       = initializer.appManager.container.get(Symbols.logic.transaction);
-    systemModule                  = initializer.appManager.container.get(Symbols.modules.system);
-    sequelize                     = initializer.appManager.container.get(Symbols.generic.sequelize);
+    const { wallet: randomAccount } = await createRandomAccountWithFunds(funds);
+    senderAccount                   = randomAccount;
+    ed                              = initializer.appManager.container.get(Symbols.generic.crypto);
+    blocksModule                    = initializer.appManager.container.get(BlocksSymbols.modules.blocks);
+    blockLogic                      = initializer.appManager.container.get(BlocksSymbols.logic.block);
+    accModule                       = initializer.appManager.container.get(AccountsSymbols.module);
+    txModule                        = initializer.appManager.container.get(TXSymbols.module);
+    // transportModule               = initializer.appManager.container.get(Symbols.modules.transport);
+    txPool                          = initializer.appManager.container.get(TXSymbols.pool);
+    txLogic                         = initializer.appManager.container.get(TXSymbols.logic);
+    systemModule                    = initializer.appManager.container.get(Symbols.modules.system);
+    sequelize                       = initializer.appManager.container.get(ModelSymbols.sequelize);
   });
   describe('blocks', () => {
     describe('wrong txs', () => {
       describe('steal attempt', () => {
         it('senderId from virgin account', async () => {
 
-          const {wallet: randomAccount} = await createRandomAccountWithFunds(10000);
-          const tx     = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
-          tx['senderId'] = randomAccount.address;
+          const { wallet: randomAccount } = await createRandomAccountWithFunds(10000);
+          const tx                        = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
+          tx['senderId']                  = randomAccount.address;
 
-          const preSenderAccPOJO = (await accModule.getAccount({address: senderAccount.address})).toPOJO();
-          const preRandomAccPOJO = (await accModule.getAccount({address: randomAccount.address})).toPOJO();
-          const lastId = blocksModule.lastBlock.id;
+          const preSenderAccPOJO = (await accModule.getAccount({ address: senderAccount.address })).toPOJO();
+          const preRandomAccPOJO = (await accModule.getAccount({ address: randomAccount.address })).toPOJO();
+          const lastId           = blocksModule.lastBlock.id;
 
           await expect(initializer.rawMineBlockWithTxs(
             [tx].map((t) => toBufferedTransaction(t)),
           )).rejectedWith(`Stealing attempt type.1 for ${randomAccount.address}`);
 
-          const postSenderAccPOJO = (await accModule.getAccount({address: senderAccount.address})).toPOJO();
-          const postRandomAccPOJO = (await accModule.getAccount({address: randomAccount.address})).toPOJO();
+          const postSenderAccPOJO = (await accModule.getAccount({ address: senderAccount.address })).toPOJO();
+          const postRandomAccPOJO = (await accModule.getAccount({ address: randomAccount.address })).toPOJO();
 
           expect(preRandomAccPOJO).deep.eq(postRandomAccPOJO);
-          expect(postSenderAccPOJO).deep.eq({...preSenderAccPOJO, publicKey: senderAccount.publicKey});
+          expect(postSenderAccPOJO).deep.eq({ ...preSenderAccPOJO, publicKey: senderAccount.publicKey });
         });
         it('senderId from non virgin account', async () => {
-          const {wallet: randomAccount} = await createRandomAccountWithFunds(10000);
+          const { wallet: randomAccount } = await createRandomAccountWithFunds(10000);
           // Initialize account
           await createSendTransaction(1, 1, randomAccount, randomAccount.address);
-          const tx     = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
-          tx['senderId'] = randomAccount.address;
-          const preSenderAccPOJO = (await accModule.getAccount({address: senderAccount.address})).toPOJO();
-          const preRandomAccPOJO = (await accModule.getAccount({address: randomAccount.address})).toPOJO();
+          const tx               = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
+          tx['senderId']         = randomAccount.address;
+          const preSenderAccPOJO = (await accModule.getAccount({ address: senderAccount.address })).toPOJO();
+          const preRandomAccPOJO = (await accModule.getAccount({ address: randomAccount.address })).toPOJO();
 
           await expect(initializer.rawMineBlockWithTxs(
             [tx].map((t) => toBufferedTransaction(t)),
           )).rejectedWith(`Stealing attempt type.2 for ${randomAccount.address}`);
 
-          const postSenderAccPOJO = (await accModule.getAccount({address: senderAccount.address})).toPOJO();
-          const postRandomAccPOJO = (await accModule.getAccount({address: randomAccount.address})).toPOJO();
+          const postSenderAccPOJO = (await accModule.getAccount({ address: senderAccount.address })).toPOJO();
+          const postRandomAccPOJO = (await accModule.getAccount({ address: randomAccount.address })).toPOJO();
 
           expect(preSenderAccPOJO).deep.eq(postSenderAccPOJO);
           expect(preRandomAccPOJO).deep.eq(postRandomAccPOJO);
         });
       });
       it('should reject block having tx without senderId', async () => {
-        const tx     = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
+        const tx    = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
         const block = await initializer.generateBlock([tx]);
         delete block.transactions[0].senderId;
-        await expect(initializer.postBlock(block)).rejectedWith('Missing required property: senderId');
+        await expect(initializer.postBlock(block, 'direct')).rejectedWith('Missing required property: senderId');
       });
 
       it('should disallow block with same tx twice', async () => {
         const lastId = blocksModule.lastBlock.id;
         const tx     = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
         await expect(initializer.rawMineBlockWithTxs(
-          [tx, {...tx, hey: 'ou'}].map((t) => toBufferedTransaction(t)),
+          [tx, { ...tx, hey: 'ou' }].map((t) => toBufferedTransaction(t)),
         )).to.rejectedWith('Encountered duplicate transaction');
-        const postAcc = await accModule.getAccount({address: senderAccount.address});
+        const postAcc = await accModule.getAccount({ address: senderAccount.address });
         expect(postAcc.balance).to.be.eq(funds);
         expect(postAcc.u_balance).to.be.eq(funds);
         expect(blocksModule.lastBlock.id).to.be.eq(lastId);
@@ -125,9 +124,10 @@ describe('attackVectors/edgeCases', () => {
         const lastId = blocksModule.lastBlock.id;
         const tx     = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address);
         await expect(initializer.rawMineBlockWithTxs(
-          [tx, {...tx, id: '12123123123123123'}].map((t) => toBufferedTransaction(t)),
+          [tx, { ...tx, id: '12123123123123123' }].map((t) => toBufferedTransaction(t)),
+          'direct' // Skip P2P and try internal way which is less sensitive
         )).to.rejectedWith('Duplicated transaction found in block with id');
-        const postAcc = await accModule.getAccount({address: senderAccount.address});
+        const postAcc = await accModule.getAccount({ address: senderAccount.address });
         expect(postAcc.balance).to.be.eq(funds);
         expect(postAcc.u_balance).to.be.eq(funds);
         expect(blocksModule.lastBlock.id).to.be.eq(lastId);
@@ -135,12 +135,12 @@ describe('attackVectors/edgeCases', () => {
       it('should disallow a block with a previously existing tx', async () => {
         const tx     = await createSendTransaction(1, 1, senderAccount, createRandomWallet().address);
         const lastId = blocksModule.lastBlock.id;
-        const preAcc = await accModule.getAccount({address: senderAccount.address});
+        const preAcc = await accModule.getAccount({ address: senderAccount.address });
 
         await expect(initializer.rawMineBlockWithTxs([toBufferedTransaction(tx)]))
           .to.rejectedWith(`Transactions already confirmed: ${tx.id}`);
 
-        const postAcc = await accModule.getAccount({address: senderAccount.address});
+        const postAcc = await accModule.getAccount({ address: senderAccount.address });
 
         expect(postAcc.balance).to.be.eq(preAcc.balance);
         expect(postAcc.u_balance).to.be.eq(postAcc.balance);
@@ -154,7 +154,7 @@ describe('attackVectors/edgeCases', () => {
         await expect(initializer.rawMineBlockWithTxs(
           [tx].map((t) => toBufferedTransaction(t))
         )).to.rejectedWith('Failed to validate transaction schema');
-        const postAcc = await accModule.getAccount({address: senderAccount.address});
+        const postAcc = await accModule.getAccount({ address: senderAccount.address });
         expect(postAcc.balance).to.be.eq(funds);
         expect(postAcc.u_balance).to.be.eq(funds);
         expect(blocksModule.lastBlock.id).to.be.eq(lastId);
@@ -181,12 +181,19 @@ describe('attackVectors/edgeCases', () => {
           [tx].map((t) => toBufferedTransaction(t)),
         )).to.rejectedWith('Failed to validate transaction schema: Value -1 is less than minimum 0');
       });
-      it('should reject timestamp with more than 32bit', async () => {
+      it('should reject timestamp in the future 32bit', async () => {
         const tx = await createSendTransaction(0, 1, senderAccount, createRandomWallet().address, {
-          timestamp: Math.pow(2, 32) + 1,
+          timestamp: Math.pow(2, 32) - 2,
         });
+        // try internal processing
         await expect(initializer.rawMineBlockWithTxs(
           [tx].map((t) => toBufferedTransaction(t)),
+          'direct'
+        )).to.rejectedWith('Invalid transaction timestamp. Timestamp is in the future');
+        // Try the same via p2p
+        await expect(initializer.rawMineBlockWithTxs(
+          [tx].map((t) => toBufferedTransaction(t)),
+          'p2p' // through p2p
         )).to.rejectedWith('Invalid transaction timestamp. Timestamp is in the future');
       });
     });
@@ -194,7 +201,7 @@ describe('attackVectors/edgeCases', () => {
     describe('amount edge cases', () => {
       it('shouldnt allow a block with txs that overspend a single account', async () => {
         const preHeight = blocksModule.lastBlock.height;
-        const acc       = await accModule.getAccount({address: senderAccount.address});
+        const acc       = await accModule.getAccount({ address: senderAccount.address });
         const txs       = await Promise.all(
           new Array(3).fill(null)
             .map(() => createSendTransaction(
@@ -213,7 +220,7 @@ describe('attackVectors/edgeCases', () => {
         expect(blocksModule.lastBlock.height).to.be.eq(preHeight);
 
         // Check account is equal to itself as no txs were made.
-        const postAcc = await accModule.getAccount({address: senderAccount.address});
+        const postAcc = await accModule.getAccount({ address: senderAccount.address });
         expect(postAcc.balance).to.be.eq(acc.balance);
         expect(postAcc.u_balance).to.be.eq(acc.u_balance);
         expect(postAcc.u_balance).to.be.eq(postAcc.balance);
@@ -232,7 +239,7 @@ describe('attackVectors/edgeCases', () => {
         await expect(initializer
           .rawMineBlockWithTxs(txs.map((t) => toBufferedTransaction(t)))).to.not.be.rejected;
 
-        const postAcc = await accModule.getAccount({address: senderAccount.address});
+        const postAcc = await accModule.getAccount({ address: senderAccount.address });
         expect(postAcc.balance).to.be.eq(0);
         expect(postAcc.u_balance).to.be.eq(0);
       });
@@ -242,22 +249,19 @@ describe('attackVectors/edgeCases', () => {
         const tx1 = await createSendTransaction(0, funds - systemModule.getFees().fees.send, senderAccount, '1R');
         const tx2 = await createSendTransaction(0, funds - systemModule.getFees().fees.send, senderAccount, '2R');
 
-        await transportModule.receiveTransactions([tx1], null, false);
-        await txPool.processBundled();
-        await txModule.fillPool();
+        await enqueueAndProcessTransactions([tx1]);
 
-        expect(txModule.transactionUnconfirmed(tx1.id)).is.true;
+        expect(txPool.unconfirmed.has(tx1.id)).is.true;
 
         await initializer.rawMineBlockWithTxs([toBufferedTransaction(tx2)]);
 
         // After processing the tx should still be in pool but not unconfirmed
         expect(txModule.transactionInPool(tx1.id)).is.true;
-        expect(txModule.transactionUnconfirmed(tx1.id)).is.false;
+        expect(txPool.unconfirmed.has(tx1.id)).is.false;
 
         // Aftee processBundled and fillPool kicks in then failure should kick in.
         // removing the tx from the pool
-        await txPool.processBundled();
-        await txModule.fillPool();
+        await poolProcess(initializer.appManager.container);
         expect(txModule.transactionInPool(tx1.id)).is.false;
 
       });
@@ -267,12 +271,12 @@ describe('attackVectors/edgeCases', () => {
       it('shouldnt allow voting same delegate within same block', async () => {
         const preID          = blocksModule.lastBlock.id;
         const delegate       = getRandomDelegateWallet();
-        const preDelegateAcc = await accModule.getAccount({address: delegate.address});
-        const preAcc         = await accModule.getAccount({address: senderAccount.address});
+        const preDelegateAcc = await accModule.getAccount({ address: delegate.address });
+        const preAcc         = await accModule.getAccount({ address: senderAccount.address });
 
         const txs = [
-          await createVoteTransaction(0, senderAccount, delegate.publicKey, true, {timestamp: 1}),
-          await createVoteTransaction(0, senderAccount, delegate.publicKey, true, {timestamp: 2})
+          await createVoteTransaction(0, senderAccount, delegate.publicKey, true, { timestamp: 1 }),
+          await createVoteTransaction(0, senderAccount, delegate.publicKey, true, { timestamp: 2 })
         ];
 
         await expect(initializer
@@ -281,14 +285,14 @@ describe('attackVectors/edgeCases', () => {
           .rejectedWith(/Failed to add vote, account has already voted for this delegate/);
 
         // consistency checks
-        const acc = await accModule.getAccount({address: senderAccount.address});
+        const acc = await accModule.getAccount({ address: senderAccount.address });
         expect(blocksModule.lastBlock.id).to.be.eq(preID);
         expect(acc.balance).to.be.eq(funds);
         expect(acc.u_balance).to.be.eq(funds);
 
         expect(acc.delegates).to.be.deep.eq(preAcc.delegates);
 
-        const delegateAcc = await accModule.getAccount({address: delegate.address});
+        const delegateAcc = await accModule.getAccount({ address: delegate.address });
         expect(delegateAcc.vote).to.be.eq(preDelegateAcc.vote);
       });
       it('shouldnt allow doublevoting same delegate within same tx', async () => {
@@ -310,8 +314,8 @@ describe('attackVectors/edgeCases', () => {
       it('should not allow removal of just added(same block dif tx) voted delegate', async () => {
         const delegate = getRandomDelegateWallet();
         const txs      = [
-          await createVoteTransaction(0, senderAccount, delegate.publicKey, true, {timestamp: 2}),
-          await createVoteTransaction(0, senderAccount, delegate.publicKey, false, {timestamp: 2})
+          await createVoteTransaction(0, senderAccount, delegate.publicKey, true, { timestamp: 2 }),
+          await createVoteTransaction(0, senderAccount, delegate.publicKey, false, { timestamp: 2 })
         ];
         await expect(initializer
           .rawMineBlockWithTxs(txs.map((t) => toBufferedTransaction(t))))
@@ -355,7 +359,7 @@ describe('attackVectors/edgeCases', () => {
           .to.not
           .rejected;
 
-        const acc = await accModule.getAccount({address: senderAccount.address});
+        const acc = await accModule.getAccount({ address: senderAccount.address });
         expect(acc.delegates).to.contain(delegate2.publicKey);
       });
     });
@@ -373,7 +377,7 @@ describe('attackVectors/edgeCases', () => {
           .to
           .rejectedWith(/Account is already trying to be a delegate/);
 
-        const acc = await accModule.getAccount({address: senderAccount.address});
+        const acc = await accModule.getAccount({ address: senderAccount.address });
         // sequelize.options.logging = false;
         expect(acc.username).to.be.null;
         expect(acc.u_username).to.be.null;
@@ -389,7 +393,7 @@ describe('attackVectors/edgeCases', () => {
           3,
           new Array(3).fill(null).map(() => createRandomWallet()),
           24,
-          {timestamp: idx}
+          { timestamp: idx }
         )).map((t) => {
           t.tx.signatures = t.signatures;
           return t.tx;
@@ -399,7 +403,7 @@ describe('attackVectors/edgeCases', () => {
           .to
           .rejected;
 
-        const acc = await accModule.getAccount({address: senderAccount.address});
+        const acc = await accModule.getAccount({ address: senderAccount.address });
         expect(acc.balance).to.be.eq(funds);
         expect(acc.multilifetime).to.be.eq(0);
         expect(acc.multimin).to.be.eq(0);
@@ -409,6 +413,7 @@ describe('attackVectors/edgeCases', () => {
 
   });
 
+  /*
   describe('account balance protection (<0)', () => {
     const fee = 10000000;
     let tx: ITransaction;
@@ -527,4 +532,5 @@ describe('attackVectors/edgeCases', () => {
       expect(recAcc.balance).eq(funds);
     });
   });
+  */
 });

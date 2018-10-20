@@ -111,7 +111,7 @@ export class IntegrationTestInitializer {
    * @param {Array<IBaseTransaction<any>>} transactions
    * @returns {Promise<SignedBlockType>}
    */
-  public async rawMineBlockWithTxs(transactions: Array<IBaseTransaction<any>>) {
+  public async rawMineBlockWithTxs(transactions: Array<IBaseTransaction<any>>, through: 'p2p'|'direct' = 'direct') {
     const blockLogic      = this.appManager.container.get<BlockLogic>(BlocksSymbols.logic.block);
     const blockModule     = this.appManager.container.get<BlocksModule>(BlocksSymbols.modules.blocks);
     const delegatesModule = this.appManager.container.get<DelegatesModule>(dPoSSymbols.modules.delegates);
@@ -130,17 +130,22 @@ export class IntegrationTestInitializer {
       transactions,
     });
     // mimic process.onReceiveBlock which is wrapped within a BalanceSequence.
-    await this.postBlock(newBlock);
+    await this.postBlock(newBlock, through);
     return newBlock;
   }
 
-  public async postBlock(block: SignedAndChainedBlockType) {
-    const pbr = this.appManager.container.getNamed<PostBlockRequest>(p2pSymbols.transportMethod, BlocksSymbols.p2p.postBlock);
-    const pf  = this.appManager.container.get<(b: any) => Peer>(p2pSymbols.logic.peerFactory);
-    const p   = pf({ ip: '127.0.0.1', port: 9999 });
-    await p.makeRequest(pbr, {
-      body: { block }
-    });
+  public async postBlock(block: SignedAndChainedBlockType, through: 'p2p'|'direct' = 'p2p') {
+    if (through === 'p2p') {
+      const pbr = this.appManager.container.getNamed<PostBlockRequest>(p2pSymbols.transportMethod, BlocksSymbols.p2p.postBlock);
+      const pf  = this.appManager.container.get<(b: any) => Peer>(p2pSymbols.logic.peerFactory);
+      const p   = pf({ ip: '127.0.0.1', port: 9999 });
+      const r = await p.makeRequest(pbr, {
+        body: { block }
+      });
+    } else {
+      const blockProcess    = this.appManager.container.get<BlocksModuleProcess>(BlocksSymbols.modules.process);
+      await blockProcess.processBlock(block);
+    }
   }
 
   public async rawMineBlocks(howMany: number): Promise<number> {

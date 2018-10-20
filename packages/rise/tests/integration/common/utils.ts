@@ -60,7 +60,7 @@ export const getKeypairByPkey = (pk: publicKey): IKeypair => {
     .createHash('sha256').update(d.secret, 'utf8')
     .digest());
 };
-export const getLocalPeer     = (): Peer => {
+export const getSelfTransportPeer     = (): Peer => {
   const peerFactory = initializer.appManager.container.get<(a: any) => Peer>(p2pSymbols.logic.peerFactory);
 
   return peerFactory({ ip: '127.0.0.1', port: 9999 });
@@ -69,7 +69,7 @@ export const getLocalPeer     = (): Peer => {
 export const enqueueAndProcessTransactions = async (txs: Array<ITransaction<any>>) => {
   const poolManager = initializer.appManager.container.get<PoolManager>(TXSymbols.poolManager);
   const postTXReq   = initializer.appManager.container.getNamed<PostTransactionsRequest>(p2pSymbols.transportMethod, TXSymbols.p2p.postTxRequest);
-  const p           = getLocalPeer();
+  const p           = getSelfTransportPeer();
   await p.makeRequest(postTXReq, {
     body: { transactions: txs.map((t) => toBufferedTransaction(t) as any) },
   });
