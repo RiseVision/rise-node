@@ -111,7 +111,7 @@ export class RoundsModule {
     try {
       // Set ticking flag to true
       this.appStateLogic.set('rounds.isTicking', true);
-      let roundSums = finishRound ? await this.sumRound(round) : null;
+      let roundSums = finishRound ? await this.sumRound(round, block) : null;
       if (block.height === 1 && roundSums.roundDelegates.length !== 1) {
         // in round 1 (and height=1) and when verifying snapshot delegates are there (and created in 2nd round #1)
         // so roundDelegates are 101 not 1 (genesis generator) causing genesis to have an extra block accounted.
@@ -166,10 +166,10 @@ export class RoundsModule {
   }
 
   // tslint:disable-next-line
-  private async sumRound(round: number): Promise<{ roundFees: number, roundRewards: number[], roundDelegates: Buffer[] }> {
+  private async sumRound(round: number, block: SignedBlockType): Promise<{ roundFees: number, roundRewards: number[], roundDelegates: Buffer[] }> {
     this.logger.debug('Summing round', round);
     // tslint:disable-next-line
-    type sumRoundRes = { fees: null | string, rewards: null | string[], delegates: null | Buffer[] };
+    type sumRoundRes = { fees: null | number, rewards: null | string[], delegates: null | Buffer[] };
     const res: sumRoundRes = await this.AccountsModel.sequelize.query(
       sumRoundSQL,
       {
@@ -180,8 +180,15 @@ export class RoundsModule {
     );
 
     const roundRewards   = res.rewards.map((reward) => Math.floor(parseFloat(reward)));
-    const roundFees      = Math.floor(parseFloat(res.fees));
+    let roundFees      = Math.floor(res.fees);
     const roundDelegates = res.delegates;
+
+    if (roundDelegates.length === this.constants.activeDelegates - 1) {
+      // cur block is not in the database yet. So lets patch the results manually
+      roundRewards.push(block.reward);
+      roundFees += block.totalFee;
+      roundDelegates.push(block.generatorPublicKey);
+    }
 
     return { roundRewards, roundFees, roundDelegates };
   }

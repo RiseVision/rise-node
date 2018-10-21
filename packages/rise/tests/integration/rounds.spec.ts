@@ -12,21 +12,16 @@ import {
   findDelegateByPkey,
   findDelegateByUsername
 } from './common/utils';
-import { Symbols } from '../../src/ioc/symbols';
-import { IRoundsLogic, ITransactionLogic, ITransactionPoolLogic } from '../../src/ioc/interfaces/logic';
-import {
-  IAccountsModule,
-  IBlocksModule,
-  IDelegatesModule,
-  IRoundsModule,
-  ISystemModule,
-  ITransactionsModule,
-  ITransportModule
-} from '../../src/ioc/interfaces/modules';
-import { Ed } from '../../src/helpers';
 import { dposOffline, LiskWallet } from 'dpos-offline';
-import { BlocksModel } from '../../src/models';
 import { Op } from 'sequelize';
+import { BlocksModel, BlocksModule, BlocksSymbols } from '@risevision/core-blocks';
+import { DelegatesModule, dPoSSymbols, RoundsLogic, RoundsModule } from '@risevision/core-consensus-dpos';
+import { AccountsModule } from '@risevision/core-accounts';
+import { TransactionLogic, TransactionPool, TransactionsModule, TXSymbols } from '@risevision/core-transactions';
+import { SystemModule } from '@risevision/core';
+import { Crypto } from '@risevision/core-helpers';
+import { Symbols } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 
 chai.use(chaiAsPromised);
 describe('rounds', () => {
@@ -34,33 +29,33 @@ describe('rounds', () => {
   initializer.autoRestoreEach();
   const funds = Math.pow(10, 11);
 
-  let blocksModule: IBlocksModule;
+  let blocksModule: BlocksModule;
   let blocksModel: typeof BlocksModel;
-  let delegatesModule: IDelegatesModule;
-  let accModule: IAccountsModule;
-  let txModule: ITransactionsModule;
-  let txPool: ITransactionPoolLogic;
-  let transportModule: ITransportModule;
-  let txLogic: ITransactionLogic;
-  let roundsLogic: IRoundsLogic;
-  let systemModule: ISystemModule;
+  let delegatesModule: DelegatesModule;
+  let accModule: AccountsModule;
+  let txModule: TransactionsModule;
+  let txPool: TransactionPool;
+
+  let txLogic: TransactionLogic;
+  let roundsLogic: RoundsLogic;
+  let systemModule: SystemModule;
   let sequelize: Sequelize;
-  let rounds: IRoundsModule;
-  let ed: Ed;
+  let rounds: RoundsModule;
+  let ed: Crypto;
   beforeEach(async () => {
-    ed              = initializer.appManager.container.get(Symbols.helpers.crypto);
+    ed              = initializer.appManager.container.get(Symbols.generic.crypto);
     blocksModule    = initializer.appManager.container.get(Symbols.modules.blocks);
-    delegatesModule = initializer.appManager.container.get(Symbols.modules.delegates);
+    delegatesModule = initializer.appManager.container.get(dPoSSymbols.modules.delegates);
     accModule       = initializer.appManager.container.get(Symbols.modules.accounts);
-    txModule        = initializer.appManager.container.get(Symbols.modules.transactions);
-    transportModule = initializer.appManager.container.get(Symbols.modules.transport);
-    txPool          = initializer.appManager.container.get(Symbols.logic.transactionPool);
-    txLogic         = initializer.appManager.container.get(Symbols.logic.transaction);
-    systemModule    = initializer.appManager.container.get(Symbols.modules.system);
-    sequelize       = initializer.appManager.container.get(Symbols.generic.sequelize);
-    rounds          = initializer.appManager.container.get(Symbols.modules.rounds);
-    roundsLogic     = initializer.appManager.container.get(Symbols.logic.rounds);
-    blocksModel     = initializer.appManager.container.get(Symbols.models.blocks);
+    txModule        = initializer.appManager.container.get(TXSymbols.module);
+
+    txPool       = initializer.appManager.container.get(TXSymbols.pool);
+    txLogic      = initializer.appManager.container.get(TXSymbols.logic);
+    systemModule = initializer.appManager.container.get(Symbols.modules.system);
+    sequelize    = initializer.appManager.container.get(ModelSymbols.sequelize);
+    rounds       = initializer.appManager.container.get(dPoSSymbols.modules.rounds);
+    roundsLogic  = initializer.appManager.container.get(dPoSSymbols.logic.rounds);
+    blocksModel  = initializer.appManager.container.getNamed(ModelSymbols.model, BlocksSymbols.model);
   });
 
   function mapDelegate(i: any) {
@@ -143,7 +138,8 @@ describe('rounds', () => {
       const { preOBJ, postOBJ } = await getPREPostOBJ();
 
       const blocks       = await blocksModel.findAll({
-        where: { height: { [Op.gt]: 1 } }
+        where: { height: { [Op.gt]: 1 } },
+        order: [['height', 'ASC']],
       });
       const totalRewards = blocks
         .map((x) => x.totalFee)
@@ -170,11 +166,11 @@ describe('rounds', () => {
   describe('endRound + rollback', () => {
     it('rollback should return to original preOBJ', async function () {
       this.timeout(20000);
-      const { preLastBlock} = await getPREPostOBJ();
+      const { preLastBlock } = await getPREPostOBJ();
 
       await initializer.rawDeleteBlocks(1);
 
-      const nowOBJ      = await getmappedDelObj();
+      const nowOBJ = await getmappedDelObj();
       expect(nowOBJ).to.be.deep.eq(preLastBlock);
     });
     it('end + rollback + end should give same result as end only', async function () {
@@ -184,7 +180,7 @@ describe('rounds', () => {
       await initializer.rawDeleteBlocks(1);
       await initializer.rawMineBlocks(1);
 
-      const nowOBJ      = await getmappedDelObj();
+      const nowOBJ = await getmappedDelObj();
       expect(nowOBJ).to.be.deep.eq(postOBJ);
     });
   });

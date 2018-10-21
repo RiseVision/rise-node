@@ -1,5 +1,7 @@
 import * as chai from 'chai';
 import { expect } from 'chai';
+import * as sinon from 'sinon';
+import { SinonSandbox } from 'sinon';
 import BigNumber from 'bignumber.js';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Sequelize } from 'sequelize-typescript';
@@ -17,7 +19,7 @@ import {
 } from './common/utils';
 import { LiskWallet } from 'dpos-offline';
 import { TransactionLogic, TransactionPool, TransactionsModule, TXSymbols } from '@risevision/core-transactions';
-import { BlockLogic, BlocksModule, BlocksSymbols } from '@risevision/core-blocks';
+import { BlockLogic, BlocksModule, BlocksModuleChain, BlocksSymbols } from '@risevision/core-blocks';
 import { AccountsSymbols } from '@risevision/core-accounts';
 import { SystemModule } from '@risevision/core';
 import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
@@ -28,6 +30,8 @@ import { AccountsModelForDPOS } from '@risevision/core-consensus-dpos';
 import { AccountsModelWith2ndSign } from '@risevision/core-secondsignature';
 import { AccountsModelWithMultisig } from '@risevision/core-multisignature';
 import { poolProcess } from '@risevision/core-transactions/tests/integration/utils';
+import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
+import { SignedAndChainedBlockType } from '@risevision/core-types';
 
 chai.use(chaiAsPromised);
 describe('attackVectors/edgeCases', () => {
@@ -413,23 +417,22 @@ describe('attackVectors/edgeCases', () => {
 
   });
 
-  /*
   describe('account balance protection (<0)', () => {
     const fee = 10000000;
     let tx: ITransaction;
-    let chainModule: IBlocksModuleChain;
+    let chainModule: BlocksModuleChain;
     let block: SignedAndChainedBlockType;
     let accsMap: any;
     beforeEach(async () => {
       tx          = await createSendTransaction(0, funds, senderAccount, '11R');
       chainModule = initializer.appManager.container
-        .get<IBlocksModuleChain>(Symbols.modules.blocksSubModules.chain);
+        .get<BlocksModuleChain>(BlocksSymbols.modules.chain);
       block       = await initializer.generateBlock([tx]);
-      accsMap     = await accModule.resolveAccountsForTransactions([toBufferedTransaction(tx)]);
+      accsMap     = await accModule.txAccounts([toBufferedTransaction(tx)]);
     });
     afterEach(async () => {
       expect(blocksModule.lastBlock.id).to.not.be.eq(block.id);
-      const acc = await accModule.getAccount({address: senderAccount.address});
+      const acc = await accModule.getAccount({ address: senderAccount.address });
       expect(acc.balance).to.be.eq(funds);
       expect(acc.u_balance).to.be.eq(funds);
 
@@ -460,18 +463,21 @@ describe('attackVectors/edgeCases', () => {
         accsMap[senderAccount.address].balance   = funds * 10; // poison
 
         // set u balance to valid value.
-        // TODO: lerna - call has been removed - Change to model
-        // await accModule.setAccountAndGet({address: senderAccount.address, u_balance: funds * 10});
+        let act = await accModule.getAccount({address: senderAccount.address});
+        act.u_balance = funds * 10;
+        await act.save();
 
         await expect(chainModule.applyBlock(block, false, true, accsMap))
           .to.rejectedWith(`Address ${senderAccount.address} cannot go < 0 on balance: ${-fee} u_balance: ${funds * 10 - funds - fee}`);
         expect(blocksModule.lastBlock.id).to.not.be.eq(block.id);
 
-        const acc = await accModule.getAccount({address: senderAccount.address});
+        const acc = await accModule.getAccount({ address: senderAccount.address });
         expect(acc.u_balance).be.eq(funds * 10);
         // Restoring u_balance for afterEachChecks
-        // TODO: lerna - call has been removed - Change to model
-        // await accModule.setAccountAndGet({address: acc.address, u_balance: funds});
+        // set u balance to valid value.
+        act = await accModule.getAccount({address: senderAccount.address});
+        act.u_balance = funds;
+        await act.save();
 
       });
     });
@@ -479,7 +485,7 @@ describe('attackVectors/edgeCases', () => {
 
   describe('block with an invalid tx', () => {
     let tx: ITransaction;
-    let chainModule: IBlocksModuleChain;
+    let chainModule: BlocksModuleChain;
     let block: SignedAndChainedBlockType;
     let accsMap: any;
     let sandbox: SinonSandbox;
@@ -489,14 +495,14 @@ describe('attackVectors/edgeCases', () => {
       tx         = await createSendTransaction(0, funds, senderAccount, destWallet.address);
       await createRandomAccountWithFunds(funds, destWallet);
       chainModule = initializer.appManager.container
-        .get<IBlocksModuleChain>(Symbols.modules.blocksSubModules.chain);
+        .get<BlocksModuleChain>(BlocksSymbols.modules.chain);
 
-      accsMap = await accModule.resolveAccountsForTransactions([toBufferedTransaction(tx)]);
+      accsMap = await accModule.txAccounts([toBufferedTransaction(tx)]);
       sandbox = sinon.createSandbox();
     });
     afterEach(() => {
       sandbox.restore();
-    })
+    });
     it('databaselayer should reject whole block if tx has negative amount', async () => {
       tx.amount = -1;
       sandbox.stub(blockLogic, 'objectNormalize').callsFake((t) => t);
@@ -506,11 +512,11 @@ describe('attackVectors/edgeCases', () => {
 
       expect(blocksModule.lastBlock.id).not.eq(block.id);
       expect(txModule.getByID(tx.id)).rejectedWith('Transaction not found');
-      const senderAcc = await accModule.getAccount({address: senderAccount.address});
+      const senderAcc = await accModule.getAccount({ address: senderAccount.address });
       expect(senderAcc.u_balance).eq(funds);
       expect(senderAcc.balance).eq(funds);
 
-      const recAcc = await accModule.getAccount({address: destWallet.address});
+      const recAcc = await accModule.getAccount({ address: destWallet.address });
       expect(recAcc.u_balance).eq(funds);
       expect(recAcc.balance).eq(funds);
     });
@@ -523,14 +529,14 @@ describe('attackVectors/edgeCases', () => {
 
       expect(blocksModule.lastBlock.id).not.eq(block.id);
       expect(txModule.getByID(tx.id)).rejectedWith('Transaction not found');
-      const senderAcc = await accModule.getAccount({address: senderAccount.address});
+      const senderAcc = await accModule.getAccount({ address: senderAccount.address });
       expect(senderAcc.u_balance).eq(funds);
       expect(senderAcc.balance).eq(funds);
 
-      const recAcc = await accModule.getAccount({address: destWallet.address});
+      const recAcc = await accModule.getAccount({ address: destWallet.address });
       expect(recAcc.u_balance).eq(funds);
       expect(recAcc.balance).eq(funds);
     });
   });
-  */
+
 });

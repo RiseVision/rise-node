@@ -161,7 +161,7 @@ export class RoundLogic {
     for (let i = 0; i < delegates.length; i++) {
       const delegate = delegates[i];
       const changes  = roundChanges.at(i);
-      this.scope.library.logger.trace('Delegate changes', { delegate, changes });
+      this.scope.library.logger.trace('Delegate changes', { delegate: delegate.toString('hex'), changes });
 
       // merge Account in the direction.
       queries.push(... this.scope.modules.accounts.mergeAccountAndGetOPs({
