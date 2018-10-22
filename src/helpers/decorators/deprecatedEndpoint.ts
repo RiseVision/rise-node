@@ -14,7 +14,7 @@ export function DeprecatedEndpoint() {
       statusCode: 500,
       description: "Deprecated API Error"
     })(target, property, descriptor);
-    descriptor.value = function(...args) {
+    descriptor.value = async function(...args) {
       throw new DeprecatedAPIError();
     };
   };

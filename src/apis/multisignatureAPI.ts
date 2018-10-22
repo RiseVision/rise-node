@@ -13,7 +13,7 @@ import { Symbols } from '../ioc/symbols';
 import { Accounts2MultisignaturesModel, TransactionsModel } from '../models';
 import multisigSchema from '../schema/multisignatures';
 import { publicKey as pkType } from '../types/sanityTypes';
-import { APIError, DeprecatedAPIError } from './errors';
+import { APIError } from './errors';
 import { md } from '../helpers/strings';
 
 @JsonController('/api/multisignatures')

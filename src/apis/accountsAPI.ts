@@ -14,7 +14,7 @@ import accountSchema from '../schema/accounts';
 import { AppConfig } from '../types/genericTypes';
 import { publicKey } from '../types/sanityTypes';
 import { FieldsInModel } from '../types/utils';
-import { APIError, DeprecatedAPIError } from './errors';
+import { APIError } from './errors';
 import { md } from '../helpers/strings';
 
 @JsonController('/api/accounts')

@@ -22,7 +22,7 @@ import { Symbols } from '../ioc/symbols';
 import { Accounts2DelegatesModel, AccountsModel, BlocksModel, TransactionsModel } from '../models';
 import schema from '../schema/delegates';
 import { publicKey } from '../types/sanityTypes';
-import { APIError, DeprecatedAPIError } from './errors';
+import { APIError } from './errors';
 import { ForgingApisWatchGuard } from './utils/forgingApisWatchGuard';
 import { md } from '../helpers/strings';
 
