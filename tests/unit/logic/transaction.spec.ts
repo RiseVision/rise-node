@@ -250,6 +250,7 @@ describe('logic/transaction', () => {
     before(() => {
       toRestore.writeByte = ByteBuffer.prototype.writeByte;
       toRestore.writeInt  = ByteBuffer.prototype.writeInt;
+      toRestore.writeUint32  = ByteBuffer.prototype.writeUint32;
       toRestore.writeLong = (ByteBuffer.prototype as any).writeLong;
       toRestore.flip      = ByteBuffer.prototype.flip;
     });
@@ -260,6 +261,7 @@ describe('logic/transaction', () => {
         lastBB = this;
       };
       (ByteBuffer.prototype as any).writeInt  = (b) => sequence.push(b);
+      (ByteBuffer.prototype as any).writeUint32  = (b) => sequence.push(b);
       (ByteBuffer.prototype as any).writeLong = (b) => sequence.push(b);
       ByteBuffer.prototype.flip               = sandbox.stub();
     });
@@ -267,6 +269,7 @@ describe('logic/transaction', () => {
     after(() => {
       (ByteBuffer.prototype as any).writeByte = toRestore.writeByte;
       (ByteBuffer.prototype as any).writeInt  = toRestore.writeInt;
+      (ByteBuffer.prototype as any).writeUint32  = toRestore.writeUint32;
       (ByteBuffer.prototype as any).writeLong = toRestore.writeLong;
       ByteBuffer.prototype.flip               = toRestore.flip;
     });

@@ -30,6 +30,13 @@ describe('logic/transactions/delegate', () => {
   let tx: any;
   let sender: any;
   let block: any;
+  const genRandStr = (chars: number) => {
+    let str = '';
+    for (let i = 0; i < chars; i++) {
+      str = str + String.fromCharCode(97 + Math.floor(Math.random() * 26))
+    }
+    return str;
+  };
 
   beforeEach(() => {
     sandbox            = sinon.createSandbox();
@@ -44,8 +51,6 @@ describe('logic/transactions/delegate', () => {
       amount         : 0,
       asset          : {
         delegate: {
-          address  : '74128139741256612355994R',
-          publicKey: Buffer.from('a2bac0a1525e9605a37e6c6588716f9c941530c74eabdf0b27b10b3817e58fe3', 'hex'),
           username : 'topdelegate',
         },
       },
@@ -112,6 +117,54 @@ describe('logic/transactions/delegate', () => {
     it('should return a Buffer', () => {
       const retVal = instance.getBytes(tx, false, false);
       expect(retVal).to.be.deep.equal(Buffer.from(tx.asset.delegate.username, 'utf8'));
+    });
+  });
+
+  describe('getBytes(), unstubbed', () => {
+    it('should return an expected value', () => {
+      const expected = '746f7064656c6567617465';
+      const buf = instance.getBytes(tx, false, false);
+      expect(buf.toString('hex')).to.be.equal(expected);
+    });
+  });
+
+  describe('fromBytes(), unstubbed', () => {
+    it('should return the original tx asset', () => {
+      const bytes = '746f7064656c6567617465';
+      const asset = instance.fromBytes(Buffer.from(bytes, 'hex'), tx);
+      expect(asset).to.be.deep.equal(tx.asset);
+    });
+
+    it('getBytes() -> fromBytes() -> getBytes() -> fromBytes() should be fine', () => {
+      const username = genRandStr(1 + Math.floor(Math.random() * 20));
+      const randTX = {
+        amount         : 0,
+        asset          : {
+          delegate: {
+            username,
+          },
+        },
+        fee            : 10,
+        id             : '8139741256612355994',
+        recipientId    : '1233456789012345R',
+        senderId       : '1233456789012345R',
+        senderPublicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+        signature      : Buffer.from('sig0', 'utf8'),
+        signatures     : ['sig1', 'sig2'],
+        timestamp      : 0,
+        type           : TransactionType.DELEGATE,
+      };
+      const bytes1 = instance.getBytes(randTX, false, false);
+      const asset1 = instance.fromBytes(bytes1, randTX);
+      const randTX2 = {
+        ...randTX,
+        asset: asset1,
+      };
+      const bytes2 = instance.getBytes(randTX2, false, false);
+      const asset2 = instance.fromBytes(bytes2, randTX2);
+      expect(bytes1).to.be.deep.equal(bytes2);
+      expect(asset1).to.be.deep.equal(asset2);
+      expect(randTX).to.be.deep.equal(randTX2);
     });
   });
 

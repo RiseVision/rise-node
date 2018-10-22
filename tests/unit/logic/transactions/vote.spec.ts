@@ -42,6 +42,13 @@ describe('logic/transactions/vote', () => {
   let accountsModel: typeof AccountsModel;
   let votesModel: typeof VotesModel;
 
+  const genRandHexStr = (bytes: number) => {
+    const buf = new Buffer(bytes);
+    for (let i = 0; i < bytes; i++) {
+      buf.writeUInt8((Math.floor(Math.random() * 256)), i);
+    }
+    return buf.toString('hex');
+  };
 
   beforeEach(() => {
     sandbox             = sinon.createSandbox();
@@ -194,6 +201,56 @@ describe('logic/transactions/vote', () => {
       expect(retVal).to.be.deep.equal(Buffer.from(tx.asset.votes.join(''), 'utf8'));
     });
   });
+
+  describe('getBytes(), unstubbed', () => {
+    it('should return an expected value', () => {
+      const expected = '2d376535386665333635383837313666396339343135333063373465616264663062323762316132626163306131' +
+        '353235653936303561333765366330623338312b3035613337653663363538383731366639633961326261633462616330613135323' +
+        '5653936303561626163343135333031366639356133376536633635383861';
+      const buf = instance.getBytes(tx, false, false);
+      expect(buf.toString('hex')).to.be.equal(expected);
+    });
+  });
+
+  describe('fromBytes(), unstubbed', () => {
+    it('should return the original tx asset', () => {
+      const bytes = '2d376535386665333635383837313666396339343135333063373465616264663062323762316132626163306131' +
+        '353235653936303561333765366330623338312b3035613337653663363538383731366639633961326261633462616330613135323' +
+        '5653936303561626163343135333031366639356133376536633635383861';;
+      const asset = instance.fromBytes(Buffer.from(bytes, 'hex'), tx);
+      expect(asset).to.be.deep.equal(tx.asset);
+    });
+    it('getBytes() -> fromBytes() -> getBytes() -> fromBytes() should be fine', () => {
+      const votes = ['+' + genRandHexStr(32), '-' + genRandHexStr(32)];
+      const randTX = {
+        amount         : 0,
+        asset          : {
+          votes,
+        },
+        fee            : 10,
+        id             : '8139741256612355994',
+        recipientId    : '1233456789012345R',
+        senderId       : '1233456789012345R',
+        senderPublicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+        signature      : Buffer.from('sig0', 'utf8'),
+        signatures     : ['sig1', 'sig2'],
+        timestamp      : 0,
+        type           : TransactionType.MULTI,
+      };
+      const bytes1 = instance.getBytes(randTX, false, false);
+      const asset1 = instance.fromBytes(bytes1, randTX);
+      const randTX2 = {
+        ...randTX,
+        asset: asset1,
+      };
+      const bytes2 = instance.getBytes(randTX2, false, false);
+      const asset2 = instance.fromBytes(bytes2, randTX2);
+      expect(bytes1).to.be.deep.equal(bytes2);
+      expect(asset1).to.be.deep.equal(asset2);
+      expect(randTX).to.be.deep.equal(randTX2);
+    });
+  });
+
 
   describe('apply', () => {
     let checkConfirmedDelegatesStub: SinonStub;
