@@ -29,6 +29,7 @@
   },
   "api"            : {
     "enabled": true,
+    "port": 5554,
     "access" : {
       "public"   : false,
       "whiteList": [
