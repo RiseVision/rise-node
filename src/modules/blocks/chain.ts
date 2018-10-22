@@ -172,7 +172,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       this.logger.error(err);
       process.exit(0);
     }
-    this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
+    this.blocksModule.lastBlock = deepFreeze(block instanceof this.BlocksModel ? block.toJSON() : block);
     await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
   }
 
@@ -256,11 +256,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
 
       await this.roundsModule.tick(block, dbTX);
       this.blocksModule.lastBlock = deepFreeze(
-        this.BlocksModel.toStringBlockType(
-          block,
-          this.TransactionsModel,
-          this.blocksModule
-        )
+        block instanceof this.BlocksModel ? block.toJSON() : block
       );
 
       await this.bus.message('newBlock', block, broadcast);

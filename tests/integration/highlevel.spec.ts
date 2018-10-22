@@ -181,11 +181,14 @@ describe('highlevel checks', function () {
         expect(acc.delegates).to.contain(delegate.publicKey);
 
         // Remove vote
-        await createVoteTransaction(1, senderAccount, delegate.publicKey, false);
+        const t = await createVoteTransaction(1, senderAccount, delegate.publicKey, false);
         acc = await accModule.getAccount({address: senderAccount.address});
         expect(acc.delegates).is.null;
         expect(blocksModule.lastBlock.height).to.be.eq(4);
         expect(blocksModule.lastBlock.transactions.length).to.be.eq(1);
+        expect(blocksModule.lastBlock.transactions[0].asset).deep.eq({
+          votes: [ (t.asset as any).votes[0] ]
+        })
       });
 
       it('should not be allowed to add & remove within same transaction (user did not confirmed vote)', async () => {

@@ -12,14 +12,14 @@ import {
   createRandomWallet,
   createRegDelegateTransaction,
   createSendTransaction,
-  createVoteTransaction,
+  createVoteTransaction, findDelegateByUsername,
   getRandomDelegateWallet
 } from './common/utils';
 import { Symbols } from '../../src/ioc/symbols';
 import { IBlockLogic, ITransactionLogic, ITransactionPoolLogic } from '../../src/ioc/interfaces/logic';
 import {
   IAccountsModule,
-  IBlocksModule, IBlocksModuleChain,
+  IBlocksModule, IBlocksModuleChain, IBlocksModuleProcess,
   ISystemModule,
   ITransactionsModule,
   ITransportModule
@@ -479,7 +479,7 @@ describe('attackVectors/edgeCases', () => {
     let destWallet: LiskWallet;
     beforeEach(async () => {
       destWallet = createRandomWallet();
-      tx         = await createSendTransaction(0, funds, senderAccount, destWallet.address);
+      tx         = await createSendTransaction(0, funds / 2, senderAccount, destWallet.address);
       await createRandomAccountWithFunds(funds, destWallet);
       chainModule = initializer.appManager.container
         .get<IBlocksModuleChain>(Symbols.modules.blocksSubModules.chain);
@@ -489,7 +489,7 @@ describe('attackVectors/edgeCases', () => {
     });
     afterEach(() => {
       sandbox.restore();
-    })
+    });
     it('databaselayer should reject whole block if tx has negative amount', async () => {
       tx.amount = -1;
       sandbox.stub(blockLogic, 'objectNormalize').callsFake((t) => t);
@@ -523,6 +523,32 @@ describe('attackVectors/edgeCases', () => {
       const recAcc = await accModule.getAccount({address: destWallet.address});
       expect(recAcc.u_balance).eq(funds);
       expect(recAcc.balance).eq(funds);
+    });
+    describe('various transaction common fields validations', () => {
+      it('fees', async () => {
+        const tx2 = await createSendTransaction(0, 1, senderAccount, destWallet.address);
+        const b = await initializer.generateBlock([tx, tx2]);
+        b.transactions[0].fee = -1;
+
+        await expect(initializer.postBlock(b))
+          .rejectedWith('Failed to validate transaction schema: Value -1');
+      });
+      it('senderId', async () => {
+        tx.senderId = findDelegateByUsername('genesisDelegate1').address;
+        const b = await initializer.generateBlock([tx]);
+        await expect(initializer.postBlock(b))
+          .rejected;
+        await expect(blocksModule.lastBlock.transactions.map((t) => t.id)).to.not.contain(tx.id);
+      });
+      it('id', async () => {
+        const oldId = tx.id;
+        tx.id = '1';
+        const b = await initializer.generateBlock([tx]);
+        await expect(initializer.postBlock(b))
+          .not.rejected;
+        await expect(blocksModule.lastBlock.transactions.map((t) => t.id)).to.not.contain('1');
+        await expect(blocksModule.lastBlock.transactions.map((t) => t.id)).to.contain(oldId);
+      });
     });
   });
 });
