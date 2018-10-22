@@ -177,8 +177,7 @@ export class DelegatesAPI {
   @ResponseSchema('responses.delegates.getDelegate')
   @ValidateSchema()
   public async getDelegate(@SchemaValid(schema.getDelegate)
-
-      @QueryParams() params: { publicKey: publicKey, username: string }) {
+                           @QueryParams() params: { publicKey: publicKey, username: string }) {
     // FIXME: Delegates returned are automatically limited by maxDelegates. This means that a delegate cannot be found
     // if ranked (username) below the desired value.
     const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'username:asc' });

@@ -264,7 +264,7 @@ export default {
     type      : 'object',
     properties: {
       transaction : {
-        type     : 'object'
+        type: 'object'
       },
       transactions: {
         type    : 'array',
