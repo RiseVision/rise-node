@@ -24,6 +24,7 @@ import txSchema from '../schema/logic/transaction';
 import { DBBulkCreateOp, DBOp } from '../types/genericTypes';
 import { SignedAndChainedBlockType, SignedBlockType } from './block';
 import { BaseTransactionType, IBaseTransaction, IConfirmedTransaction, ITransportTransaction } from './transactions/';
+import MyBigNumb from '../helpers/bignum';
 
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
@@ -213,6 +214,7 @@ export class TransactionLogic implements ITransactionLogic {
     };
   }
 
+  @RunThroughExceptions(ExceptionsList.tx_verify)
   public async verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel,
                       requester: AccountsModel, height: number) {
     this.assertKnownTransactionType(tx.type);
@@ -263,6 +265,10 @@ export class TransactionLogic implements ITransactionLogic {
 
     if (String(tx.senderId).toUpperCase() !== String(sender.address).toUpperCase()) {
       throw new Error('Invalid sender address');
+    }
+
+    if (tx.recipientId) {
+      this.accountLogic.assertValidAddress(tx.recipientId);
     }
 
     const multisignatures = (sender.multisignatures || sender.u_multisignatures || []).slice();

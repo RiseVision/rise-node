@@ -4,6 +4,7 @@ import tx_10425551571020716913 from './tx_10425551571020716913';
 import tx_14712341342146176146 from './tx_14712341342146176146';
 import tx_1563714189640390961 from './tx_1563714189640390961';
 import tx_5557619371011868150 from './tx_5557619371011868150';
+import wrong_rec_exceptions from './wrong_rec_exceptions';
 
 const allExceptionCreator: Array<(exc: ExceptionsManager) => Promise<void>> = [
   block127765,
@@ -11,6 +12,7 @@ const allExceptionCreator: Array<(exc: ExceptionsManager) => Promise<void>> = [
   tx_1563714189640390961,
   tx_10425551571020716913,
   tx_5557619371011868150,
+  wrong_rec_exceptions,
 ];
 
 export { allExceptionCreator };

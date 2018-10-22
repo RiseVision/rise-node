@@ -62,6 +62,42 @@ describe('attackVectors/edgeCases', () => {
   });
   describe('blocks', () => {
     describe('wrong txs', () => {
+      describe('wrong recipients', () => {
+        let lastBlock: SignedAndChainedBlockType;
+        beforeEach(async () => {
+          lastBlock = await blocksModule.lastBlock;
+        });
+        afterEach( () => {
+        });
+        it('should not accept 01R', async () => {
+          const tx = await createSendTransaction(0, 1, senderAccount, '01R');
+          await expect(initializer.rawMineBlockWithTxs(
+            [tx].map(toBufferedTransaction),
+          )).rejectedWith('Invalid Address starting with 0');
+          expect(blocksModule.lastBlock.id).eq(lastBlock.id);
+        });
+        it('should not accept 2^64R', async () => {
+          const tx     = await createSendTransaction(0, 1, senderAccount, '18446744073709551616R');
+          await expect(initializer.rawMineBlockWithTxs(
+            [tx].map(toBufferedTransaction),
+          )).rejectedWith('Invalid Address exceeding maximum address');
+          expect(blocksModule.lastBlock.id).eq(lastBlock.id);
+        });
+        it('should accept 2^64-1R', async () => {
+          const tx     = await createSendTransaction(0, 1, senderAccount, '18446744073709551615R');
+          await expect(initializer.rawMineBlockWithTxs(
+            [tx].map(toBufferedTransaction),
+          )).not.rejected;
+          expect(blocksModule.lastBlock.previousBlock).eq(lastBlock.id);
+        });
+        it('should accept 0R', async () => {
+          const tx     = await createSendTransaction(0, 1, senderAccount, '0R');
+          await expect(initializer.rawMineBlockWithTxs(
+            [tx].map(toBufferedTransaction),
+          )).not.rejected;
+          expect(blocksModule.lastBlock.previousBlock).eq(lastBlock.id);
+        });
+      });
       describe('steal attempt', () => {
         it('senderId from virgin account', async () => {
 
