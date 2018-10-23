@@ -9,7 +9,7 @@ import { VoteAsset } from '../logic/transactions';
  */
 export default function wrongRecExceptions(excManager: ExceptionsManager) {
   const handler: IExceptionHandler<ITransactionLogic> = {
-    canHandle(obj: ITransactionLogic, tx: IBaseTransaction<VoteAsset>) {
+    canHandle(obj: ITransactionLogic, tx: IBaseTransaction<void>) {
       return (
           // height 501714 - address exceeding uint64
           tx.id === '17611172093035974263' &&
@@ -21,7 +21,13 @@ export default function wrongRecExceptions(excManager: ExceptionsManager) {
           tx.signature.toString('hex') === '6bdd0c83217230b809893a2b3ca301994398be276ff7858870bebfa63cc5e671fe5c8ecdf53c52a47572958363d7721510d5dbcf49b4aca633df5fc758b1a704'
         );
     },
-    handle() {
+    handle(obj: ITransactionLogic, tx: IBaseTransaction<void>) {
+      const valid = (tx.id === '17611172093035974263' && tx.recipientId === '97269111055079944786R')
+      ||
+        (tx.id === '6132221392997475140' && tx.recipientId === '910097905859080079914R');
+      if (!valid) {
+        return Promise.reject(new Error(`Invalid exception transaction ${tx.id}`));
+      }
       return Promise.resolve();
     },
   };
