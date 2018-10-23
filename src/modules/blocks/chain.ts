@@ -82,7 +82,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * Deletes last block and returns the "new" lastBlock (previous basically)
    * @returns {Promise<SignedBlockType>}
    */
-  public async deleteLastBlock(): Promise<BlocksModel> {
+  public async deleteLastBlock(): Promise<SignedAndChainedBlockType> {
     const lastBlock = this.blocksModule.lastBlock;
     this.logger.warn('Deleting last block', { id: lastBlock.id, height: lastBlock.height });
 
@@ -91,8 +91,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     }
     const newLastBlock          = await this.popLastBlock(lastBlock);
     // Set new "new" last block.
-    this.blocksModule.lastBlock = newLastBlock;
-    return newLastBlock;
+    this.blocksModule.lastBlock = deepFreeze(newLastBlock.toJSON());
+    return this.blocksModule.lastBlock;
   }
 
   public async deleteAfterBlock(height: number): Promise<void> {

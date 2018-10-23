@@ -437,6 +437,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
       this.logger.info('Last block loses');
       try {
         const tmpBlockN = this.blockLogic.objectNormalize(tmpBlock);
+        await this.delegatesModule.assertValidBlockSlot(tmpBlockN);
 
         // verify receipt of block
         const check = this.blocksVerifyModule.verifyReceipt(tmpBlockN);
@@ -449,7 +450,13 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         await this.blocksChainModule.deleteLastBlock();
 
         // Process new block (again);
-        await this.receiveBlock(block);
+        try {
+          await this.receiveBlock(block);
+        } catch (e) {
+          // This means that the block was not properly crafted.
+          this.logger.warn(`Invalid block ${tmpBlockN.id} in fork 5 handling`);
+          await this.receiveBlock(_.cloneDeep(lastBlock)); // We clone cause lastBlock is deepFrozen
+        }
       } catch (err) {
         this.logger.error('Fork recovery failed', err);
         throw err;
