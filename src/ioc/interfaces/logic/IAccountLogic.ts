@@ -63,4 +63,6 @@ export interface IAccountLogic {
   remove(address: string): Promise<number>;
 
   generateAddressByPublicKey(pk: publicKey | Buffer): string;
+
+  assertValidAddress(address: string): void;
 }

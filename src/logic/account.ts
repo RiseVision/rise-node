@@ -23,6 +23,7 @@ import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
 
 import { AccountDiffType } from '../ioc/interfaces/logic';
+import { RunThroughExceptions } from '../helpers/decorators/exceptions';
 
 // tslint:disable-next-line
 export type OptionalsMemAccounts = {
@@ -95,6 +96,8 @@ export type AccountFilterData = {
   offset?: number;
   sort?: string | { [k: string]: -1 | 1 }
 };
+
+const maxAddress = new BigNum('18446744073709551615');
 
 @injectable()
 export class AccountLogic implements IAccountLogic {
@@ -430,5 +433,14 @@ export class AccountLogic implements IAccountLogic {
       tmp[i] = hash[7 - i];
     }
     return `${BigNum.fromBuffer(tmp).toString()}${this.constants.addressSuffix}`;
+  }
+
+  public assertValidAddress(address: string): void {
+    if (address.startsWith('0') && address !== '0R') {
+      throw new Error('Invalid Address starting with 0');
+    }
+    if (new BigNum(address.slice(0, -1)).isGreaterThan(maxAddress)) {
+      throw new Error('Invalid Address exceeding maximum address');
+    }
   }
 }
