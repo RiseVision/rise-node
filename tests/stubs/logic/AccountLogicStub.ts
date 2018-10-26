@@ -65,4 +65,8 @@ export default class AccountLogicStub extends BaseStubClass implements IAccountL
     return undefined;
   }
 
+  @stubMethod()
+  assertValidAddress(address: string): void {
+  }
+
 }

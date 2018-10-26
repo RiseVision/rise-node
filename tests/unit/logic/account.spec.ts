@@ -665,4 +665,37 @@ describe('logic/account', () => {
     });
   });
 
+  describe('assertValidAddress', () => {
+    it('should not throw for valid addresses', () => {
+      account.assertValidAddress('0R');
+      account.assertValidAddress('1R');
+      account.assertValidAddress('11R');
+      account.assertValidAddress('111R');
+      account.assertValidAddress('1111R');
+      account.assertValidAddress('11111R');
+      account.assertValidAddress('111111R');
+      account.assertValidAddress('1111111R');
+      account.assertValidAddress('11111111R');
+      account.assertValidAddress('111111111R');
+      account.assertValidAddress('1111111111R');
+      account.assertValidAddress('11111111111R');
+      account.assertValidAddress('111111111111R');
+      account.assertValidAddress('1111111111111R');
+      account.assertValidAddress('11111111111111R');
+      account.assertValidAddress('111111111111111R');
+      account.assertValidAddress('1111111111111111R');
+      account.assertValidAddress('11111111111111111R');
+      account.assertValidAddress('111111111111111111R');
+      account.assertValidAddress('1111111111111111111R');
+      account.assertValidAddress('11111111111111111111R');
+      account.assertValidAddress('18446744073709551615R');
+    });
+    it('should throw for invalid addresses', () => {
+      const invalid = ['01R', '18446744073709551616R'];
+      for (const addr of invalid) {
+        expect(() => account.assertValidAddress(addr)).to.throw();
+      }
+    });
+  });
+
 });

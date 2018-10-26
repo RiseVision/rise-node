@@ -378,7 +378,7 @@ describe('modules/blocks/chain', () => {
       expect(blocksModule.lastBlock).instanceof(Object);
       expect(blocksModule.lastBlock.id).eq(block.id);
       expect(blocksModule.lastBlock.transactions).deep.eq(allTxs
-        .map(t => toBufferedTransaction(t))
+        .map((t) => toBufferedTransaction(t))
         .map((t) => {
           delete t.requesterPublicKey;
           delete t.signSignature;
